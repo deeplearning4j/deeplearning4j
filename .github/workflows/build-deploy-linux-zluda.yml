@@ -1,0 +1,216 @@
+name: Build Linux x86_64 CUDA+ZLUDA (native validation)
+
+# Builds the CUDA 12.9 backend with the ZLUDA transpiler enabled
+# (-Dlibnd4j.zluda=<AMD|INTEL|AUTO> → --zluda → -DSD_ZLUDA=ON
+# -DSD_ZLUDA_TARGET=<t> → ZludaConfiguration.cmake setup_zluda()).
+#
+# IMPORTANT — this workflow deliberately does NOT `deploy`:
+# a ZLUDA-flavored nd4j-cuda-12.9 must never overwrite the regular CUDA
+# snapshot coordinates (HAVE_ZLUDA changes compile definitions).  It runs
+# `install`, verifies the ZLUDA configuration took effect, and uploads the
+# native artifacts for inspection.  Publishing would require a distinct
+# classifier (e.g. linux-x86_64-cuda-12.9-zluda) — see ADR 0087 / ADR 0102.
+#
+# A pinned ZLUDA release is downloaded and exposed via ZLUDA_PATH so
+# setup_zluda() finds it (it would otherwise attempt its own download).
+# No AMD GPU or ROCm is needed to BUILD — only to run.
+#
+# NOTE: hosted CUDA builds are known to be resource-tight (see the audit in
+# PLATFORM_TESTS_CI_AUDIT.md) — this workflow inherits the same swap/sccache
+# mitigations as build-deploy-linux-cuda-12.9.yml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      zludaTarget:
+        description: 'ZLUDA target backend'
+        required: false
+        default: 'AMD'
+        type: choice
+        options:
+          - AMD
+          - INTEL
+          - AUTO
+
+      zludaVersion:
+        description: 'ZLUDA release tag to download from vosen/ZLUDA'
+        required: false
+        default: 'v6'
+
+      buildThreads:
+        description: 'Build threads for libnd4j (controls memory usage)'
+        required: true
+        default: 2
+
+      mvnFlags:
+        description: 'Extra maven flags'
+        required: false
+        default: ''
+
+      runsOn:
+        description: 'Runner to use (needs ~14GB+ RAM for CUDA compilation)'
+        required: false
+        default: ubuntu-22.04
+
+      swapSize:
+        description: 'Swap file size in GB'
+        required: false
+        default: 16
+
+jobs:
+  linux-x86_64-cuda-zluda:
+    runs-on: ${{ github.event.inputs.runsOn }}
+    timeout-minutes: 350
+    name: linux-x86_64 cuda-12.9 + zluda (${{ github.event.inputs.zludaTarget }})
+
+    steps:
+      - uses: AutoModality/action-clean@v1
+
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Configure swap space
+        shell: bash
+        run: |
+          if swapon --show | grep -q "/"; then
+            echo "Swap already configured."
+            swapon --show
+          else
+            SWAP_SIZE="${{ github.event.inputs.swapSize }}G"
+            echo "Creating ${SWAP_SIZE} swap file..."
+            sudo fallocate -l ${SWAP_SIZE} /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1G count=${{ github.event.inputs.swapSize }} status=progress
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          fi
+          sudo sysctl vm.swappiness=80
+          free -h
+
+      - uses: ./.github/actions/set-linux-distro-version
+
+      - name: Download pinned ZLUDA release (sets ZLUDA_PATH)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/zluda-dl" "$RUNNER_TEMP/zluda"
+          gh release download "${{ github.event.inputs.zludaVersion }}" -R vosen/ZLUDA -p '*linux*' -D "$RUNNER_TEMP/zluda-dl"
+          shopt -s nullglob
+          for f in "$RUNNER_TEMP"/zluda-dl/*.tar.gz "$RUNNER_TEMP"/zluda-dl/*.tgz "$RUNNER_TEMP"/zluda-dl/*.tar.xz; do
+            tar -xf "$f" -C "$RUNNER_TEMP/zluda"
+          done
+          for f in "$RUNNER_TEMP"/zluda-dl/*.zip; do
+            unzip -q "$f" -d "$RUNNER_TEMP/zluda"
+          done
+          LIBCUDA=$(find "$RUNNER_TEMP/zluda" \( -name 'libcuda.so' -o -name 'libcuda.so.*' \) | head -n 1)
+          if [ -z "$LIBCUDA" ]; then
+            echo "::error::libcuda.so not found in ZLUDA release"
+            exit 1
+          fi
+          ZDIR=$(dirname "$LIBCUDA")
+          if [ "$(basename "$ZDIR")" = "lib" ]; then
+            ZLUDA_PATH=$(dirname "$ZDIR")
+          else
+            # ZludaConfiguration.cmake + JZludaBackend expect ZLUDA_PATH/lib/libcuda.so
+            mkdir -p "$ZDIR/lib"
+            ln -sf "$LIBCUDA" "$ZDIR/lib/$(basename "$LIBCUDA")"
+            ZLUDA_PATH="$ZDIR"
+          fi
+          echo "ZLUDA_PATH=$ZLUDA_PATH" >> "$GITHUB_ENV"
+          ls -la "$ZLUDA_PATH"
+
+      - uses: ./.github/actions/update-deps-linux
+
+      - name: Setup sccache
+        id: setup-sccache
+        uses: ./.github/actions/setup-sccache-linux
+        with:
+          cache-suffix: linux-x86_64-cuda-zluda
+
+      - uses: ./.github/actions/install-protobuf-linux
+
+      - uses: ./.github/actions/install-cmake-linux
+
+      - name: Install CUDA toolkit
+        uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
+        env:
+          cuda: 12.9.0
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+
+      - name: Build CUDA backend with ZLUDA enabled (install only — never deploy)
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          MAVEN_OPTS: -Xmx2g
+        run: |
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          mvn --version && cmake --version && protoc --version
+          # compute flag copied verbatim from build-deploy-linux-cuda-12.9.yml — do not change
+          mvn ${{ github.event.inputs.mvnFlags }} -Pcuda \
+            -Dlibnd4j.generate.flatc=ON \
+            -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 \
+            --no-transfer-progress \
+            -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda \
+            -Dlibnd4j.compute='8.6 9.0' \
+            -Dlibnd4j.cpu.compile.skip=true \
+            -Dlibnd4j.zluda=${{ github.event.inputs.zludaTarget }} \
+            -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false \
+            -Dmaven.wagon.http.retryHandler.count=3 \
+            -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \
+            -Djavacpp.platform=linux-x86_64 \
+            --batch-mode -DskipTests \
+            -pl :nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:libnd4j --also-make \
+            install 2>&1 | tee zluda-native-build.log
+
+      - name: Verify ZLUDA configuration took effect
+        shell: bash
+        run: |
+          LOG=libnd4j/blasbuild/cuda/libnd4j-build.log
+          if grep -q "SD_ZLUDA=ON" zluda-native-build.log && grep -qE "ZLUDA configuration complete|Found ZLUDA library" "$LOG" ; then
+            echo "ZLUDA configuration verified:"
+            grep -E "ZLUDA" "$LOG" | head -10
+          else
+            echo "::error::ZLUDA configuration did not take effect — check ZludaConfiguration.cmake output"
+            grep -iE "zluda" "$LOG" | head -20 || true
+            exit 1
+          fi
+
+      - name: Upload ZLUDA-flavored native artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuda-zluda-native-${{ github.event.inputs.zludaTarget }}
+          path: |
+            libnd4j/blasbuild/cuda/libnd4jcuda.so
+            libnd4j/blasbuild/cuda/libnd4j-build.log
+            zluda-native-build.log
+          retention-days: 14
+
+      - name: Show sccache stats
+        if: always()
+        shell: bash
+        run: |
+          sccache --show-stats || true
+          sccache --stop-server || true
+
+      - name: Cleanup swap
+        if: always()
+        shell: bash
+        run: |
+          sudo swapoff /swapfile 2>/dev/null || true
+          sudo rm -f /swapfile 2>/dev/null || true

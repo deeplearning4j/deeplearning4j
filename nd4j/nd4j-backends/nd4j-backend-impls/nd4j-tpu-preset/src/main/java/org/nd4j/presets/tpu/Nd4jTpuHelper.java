@@ -43,7 +43,9 @@ public class Nd4jTpuHelper {
         try {
             // TODO: Check for PJRT library availability
             String pjrtPath = System.getenv("PJRT_PATH");
-            return pjrtPath != null && !pjrtPath.isEmpty();
+            // Values containing "${" are unresolved Maven placeholders leaked by surefire
+            // environmentVariables (e.g. "${env.PJRT_PATH}" when the env var is unset).
+            return pjrtPath != null && !pjrtPath.isEmpty() && !pjrtPath.contains("${");
         } catch (Exception e) {
             return false;
         }

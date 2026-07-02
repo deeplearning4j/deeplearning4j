@@ -20,28 +20,21 @@
 
 package org.nd4j.linalg.jtpu;
 
-import org.nd4j.linalg.factory.Environment;
-
 /**
- * TPU-specific environment configuration.
+ * TPU device information holder.
  *
- * Provides TPU-related settings and information:
- * - TPU version detection (v4, v5)
- * - Memory capacity reporting
- * - Multi-chip topology information
- * - Precision mode configuration (FP32, BF16)
+ * NOTE: this class intentionally does NOT implement {@link org.nd4j.linalg.factory.Environment}
+ * yet. The original scaffolding implemented an old, much smaller revision of that interface and
+ * bit-rotted (the module was unbuildable — see ADR 0102). A real Environment implementation only
+ * makes sense once the PJRT native bindings exist to answer environment queries; until then
+ * {@link JTpuBackend#getEnvironment()} throws UnsupportedOperationException and this class only
+ * reports static TPU device information derived from Cloud TPU VM environment variables.
+ *
+ * See ADR 0072 (TPU Backend) for the binding plan and TpuBackendSmokeTest for the contract tests.
  */
-public class TpuEnvironment implements Environment {
+public class TpuEnvironment {
 
     private static TpuEnvironment instance;
-
-    private boolean blasEnabled = true;
-    private boolean logNativeNDArrayCreation = false;
-    private boolean checkOutputChange = false;
-    private boolean checkInputChange = false;
-    private boolean logNDArrayEvents = false;
-    private boolean truncateNDArrayLogStrings = true;
-    private int numWorkspaceEventsToKeep = 10;
 
     private TpuEnvironment() {
         // Private constructor for singleton
@@ -54,102 +47,26 @@ public class TpuEnvironment implements Environment {
         return instance;
     }
 
-    @Override
-    public boolean isEnableBlas() {
-        return blasEnabled;
-    }
-
-    @Override
-    public void setEnableBlas(boolean enable) {
-        this.blasEnabled = enable;
-    }
-
-    @Override
-    public boolean isLogNativeNDArrayCreation() {
-        return logNativeNDArrayCreation;
-    }
-
-    @Override
-    public void setLogNativeNDArrayCreation(boolean logNativeNDArrayCreation) {
-        this.logNativeNDArrayCreation = logNativeNDArrayCreation;
-    }
-
-    @Override
-    public boolean isCheckOutputChange() {
-        return checkOutputChange;
-    }
-
-    @Override
-    public void setCheckOutputChange(boolean checkOutputChange) {
-        this.checkOutputChange = checkOutputChange;
-    }
-
-    @Override
-    public boolean isCheckInputChange() {
-        return checkInputChange;
-    }
-
-    @Override
-    public void setCheckInputChange(boolean checkInputChange) {
-        this.checkInputChange = checkInputChange;
-    }
-
-    @Override
-    public boolean isLogNDArrayEvents() {
-        return logNDArrayEvents;
-    }
-
-    @Override
-    public void setLogNDArrayEvents(boolean logNDArrayEvents) {
-        this.logNDArrayEvents = logNDArrayEvents;
-    }
-
-    @Override
-    public boolean isTruncateNDArrayLogStrings() {
-        return truncateNDArrayLogStrings;
-    }
-
-    @Override
-    public void setTruncateNDArrayLogStrings(boolean truncate) {
-        this.truncateNDArrayLogStrings = truncate;
-    }
-
-    @Override
-    public int numWorkspaceEventsToKeep() {
-        return numWorkspaceEventsToKeep;
-    }
-
-    @Override
-    public void setNumWorkspaceEventsToKeep(int numWorkspaceEventsToKeep) {
-        this.numWorkspaceEventsToKeep = numWorkspaceEventsToKeep;
-    }
-
     /**
-     * Get the TPU version string (e.g., "v4", "v5").
-     * @return TPU version or "unknown" if not detected
+     * Get the TPU version string (e.g., "v4", "v5e", "v5p").
+     * @return TPU version, or "v4" when not detected
      */
     public String getTpuVersion() {
-        // TODO: Query from native library
         return System.getenv().getOrDefault("TPU_VERSION", "v4");
     }
 
     /**
      * Get the number of TPU cores available.
-     * @return Number of TPU cores
+     * @return Number of TPU cores (default 8 until PJRT bindings can query the device)
      */
     public int getTpuCoreCount() {
-        // TODO: Query from native library
-        return 8; // Default for TPU v4
+        return 8;
     }
 
     /**
-     * Get TPU High Bandwidth Memory (HBM) capacity in bytes.
-     * @return HBM capacity in bytes
+     * Get TPU High Bandwidth Memory (HBM) capacity in bytes for the detected version.
      */
     public long getHbmCapacity() {
-        // TPU v4 has 32GB HBM per chip
-        // TPU v5e has 16GB HBM per chip
-        // TPU v5p has 96GB HBM per chip
         String version = getTpuVersion();
         switch (version) {
             case "v5p":
@@ -164,10 +81,9 @@ public class TpuEnvironment implements Environment {
 
     /**
      * Check if bfloat16 is the preferred precision.
-     * @return true if bfloat16 should be used by default
+     * @return true — TPUs are highly optimized for bfloat16
      */
     public boolean preferBfloat16() {
-        // TPUs are highly optimized for bfloat16
         return true;
     }
 }

@@ -123,9 +123,9 @@ std::vector<std::string> HloIRBuilder::getSupportedOps() {
 std::string HloIRBuilder::formatHloType(DataType dt) {
   switch (dt) {
     case FLOAT32: return "f32";
-    case FLOAT16: return "f16";
+    case HALF: return "f16";
     case BFLOAT16: return "bf16";
-    case FLOAT64: return "f64";
+    case DOUBLE: return "f64";
     case INT8: return "s8";
     case INT16: return "s16";
     case INT32: return "s32";

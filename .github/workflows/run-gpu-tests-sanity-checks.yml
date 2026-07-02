@@ -75,7 +75,6 @@ jobs:
           MAVEN_OPTS: -Xmx2g
           CUDA_LAUNCH_BLOCKING: 1
         run: |
-          export OMP_NUM_THREADS=1
           TEST_FILTER="${{ github.event.inputs.testFilter }}"
           if [ -n "$TEST_FILTER" ]; then
             TEST_FLAGS="-Dtest=${TEST_FILTER}"
@@ -83,10 +82,13 @@ jobs:
             TEST_FLAGS="-Dtest=SameDiffTests,SameDiffTrainingTest,BasicOpValidationTests,CustomOpsTests"
           fi
           cd platform-tests
+          # NOTE: the pom binds surefire excludedGroups to ${excludedTests} and the forked-JVM
+          # OMP_NUM_THREADS to ${omp.num.threads} — shell exports / -DexcludedGroups are no-ops here.
           mvn test \
               -Dtest.heap.size=8g -Dtest.offheap.size=16g \
+              -Domp.num.threads=1 \
               -DskipTestResourceEnforcement=true \
-              -DexcludedGroups="long-running-test,large-resources,downloads" \
+              -DexcludedTests="long-running-test,large-resources,downloads" \
               ${TEST_FLAGS} \
               --no-transfer-progress --batch-mode --fail-at-end
 

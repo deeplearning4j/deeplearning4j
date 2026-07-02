@@ -276,7 +276,23 @@ public class TrainingSession extends InferenceSession {
         // Until OpTraitTable is fixed, use Java-side updaters (applyUpdatersPostDsp path).
         List<String> effectiveOutputVars = outputVars;
 
-        ForwardExecutionDAG dag = buildDspDag(effectiveOutputVars, requiredActivations);
+        // DAG construction validates the training graph structurally. Graphs the DSP
+        // training path cannot yet express (e.g. PEFT adapter injection rewiring the
+        // weight consumers of an already-trained model trips the cycle detector) are
+        // rejected with IllegalStateException. Per this method's contract that is the
+        // same signal as "DSP unavailable": fall back to the standard training path
+        // rather than aborting training.
+        ForwardExecutionDAG dag;
+        try {
+            dag = buildDspDag(effectiveOutputVars, requiredActivations);
+        } catch (IllegalStateException e) {
+            String message = e.getMessage() == null ? "" : e.getMessage();
+            int newline = message.indexOf('\n');
+            log.warn("DSP training DAG rejected this graph — falling back to standard training path: {}",
+                    newline > 0 ? message.substring(0, newline) + " (full detail at debug level)" : message);
+            log.debug("DSP training DAG rejection detail", e);
+            return false;
+        }
         Set<String> dspAllRequired = buildDspAllRequired(dag, effectiveOutputVars, requiredActivations);
 
         getMmgr().scopeIn();

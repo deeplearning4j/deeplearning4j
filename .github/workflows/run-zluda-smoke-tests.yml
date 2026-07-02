@@ -1,0 +1,266 @@
+name: ZLUDA Smoke Tests (AMD/Intel GPU)
+
+# Runs the CUDA backend on AMD (ROCm) or Intel (Level Zero) GPUs through ZLUDA.
+# Requires a self-hosted runner with an RDNA-class AMD GPU + ROCm 6.3/6.4 (or an
+# Intel GPU + oneAPI). GitHub does not offer hosted AMD GPU runners; register a
+# self-hosted runner with labels e.g. [self-hosted, linux, amd-gpu].
+#
+# Scope: driver/runtime API, PTX JIT (NVRTC) and cuBLAS GEMM paths. cuDNN and CUDA
+# graph capture/replay are NOT supported by ZLUDA v6 — this is a correctness gate,
+# not a DSP/perf gate. See ADR 0087 and ADR 0102.
+
+on:
+  workflow_dispatch:
+    inputs:
+      runnerLabels:
+        description: 'JSON array of runner labels'
+        required: false
+        default: '["self-hosted","linux","amd-gpu"]'
+
+      zludaVersion:
+        description: 'ZLUDA release tag to download from vosen/ZLUDA (e.g. v6), or "system" to use a preinstalled ZLUDA_PATH from the runner environment'
+        required: false
+        default: 'v6'
+
+      zludaTarget:
+        description: 'GPU vendor target'
+        required: false
+        default: 'AMD'
+        type: choice
+        options:
+          - AMD
+          - INTEL
+
+      backendArtifactId:
+        description: 'CUDA backend artifact'
+        required: false
+        default: 'nd4j-cuda-12.9'
+        type: choice
+        options:
+          - nd4j-cuda-12.9
+          - nd4j-cuda-12.6
+
+      classifier:
+        description: 'Platform classifier for the backend jars'
+        required: false
+        default: 'linux-x86_64'
+
+      testGroups:
+        description: 'JUnit tag groups to run under the ZLUDA environment (zluda,rocm,amd-gpu = dedicated smoke; "smoke" = broaden to the generic smoke tier)'
+        required: false
+        default: 'zluda,rocm,amd-gpu'
+
+      testFilter:
+        description: 'Surefire -Dtest filter. Empty = ZludaSmokeTest only.'
+        required: false
+        default: ''
+
+env:
+  MAVEN_OPTS: -Xmx2g
+
+jobs:
+  zluda-smoke:
+    runs-on: ${{ fromJSON(inputs.runnerLabels) }}
+    timeout-minutes: 120
+    name: zluda-smoke (${{ inputs.zludaTarget }} / ${{ inputs.backendArtifactId }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clean workspace (self-hosted)
+        if: contains(inputs.runnerLabels, 'self-hosted')
+        uses: AutoModality/action-clean@v1
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: GPU stack sanity report
+        shell: bash
+        run: |
+          echo "── rocminfo ──"
+          rocminfo 2>&1 | head -n 40 || echo "::warning::rocminfo failed or not installed (required for AMD targets)"
+          echo "── sycl-ls ──"
+          sycl-ls 2>&1 | head -n 20 || echo "sycl-ls not available (only needed for Intel targets)"
+
+      - name: Install ZLUDA
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ inputs.zludaVersion }}"
+          if [ "$VERSION" = "system" ]; then
+            if [ -z "$ZLUDA_PATH" ]; then
+              echo "::error::zludaVersion=system but ZLUDA_PATH is not set in the runner environment"
+              exit 1
+            fi
+            echo "Using system ZLUDA at $ZLUDA_PATH"
+            echo "ZLUDA_PATH=$ZLUDA_PATH" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          mkdir -p "$RUNNER_TEMP/zluda-dl" "$RUNNER_TEMP/zluda"
+          gh release download "$VERSION" -R vosen/ZLUDA -p '*linux*' -D "$RUNNER_TEMP/zluda-dl"
+          shopt -s nullglob
+          for f in "$RUNNER_TEMP"/zluda-dl/*.tar.gz "$RUNNER_TEMP"/zluda-dl/*.tgz "$RUNNER_TEMP"/zluda-dl/*.tar.xz; do
+            tar -xf "$f" -C "$RUNNER_TEMP/zluda"
+          done
+          for f in "$RUNNER_TEMP"/zluda-dl/*.zip; do
+            unzip -q "$f" -d "$RUNNER_TEMP/zluda"
+          done
+
+          LIBCUDA=$(find "$RUNNER_TEMP/zluda" \( -name 'libcuda.so' -o -name 'libcuda.so.*' \) | head -n 1)
+          if [ -z "$LIBCUDA" ]; then
+            echo "::error::libcuda.so not found in ZLUDA release $VERSION"
+            find "$RUNNER_TEMP/zluda" -maxdepth 3 -type f | head -n 50
+            exit 1
+          fi
+
+          ZDIR=$(dirname "$LIBCUDA")
+          if [ "$(basename "$ZDIR")" = "lib" ]; then
+            ZLUDA_PATH=$(dirname "$ZDIR")
+          else
+            # JZludaBackend.checkZludaAvailable() expects ZLUDA_PATH/lib/libcuda.so
+            mkdir -p "$ZDIR/lib"
+            ln -sf "$LIBCUDA" "$ZDIR/lib/$(basename "$LIBCUDA")"
+            ZLUDA_PATH="$ZDIR"
+          fi
+          echo "ZLUDA_PATH=$ZLUDA_PATH" >> "$GITHUB_ENV"
+          echo "ZLUDA installed at $ZLUDA_PATH:"
+          ls -la "$ZLUDA_PATH"
+
+      # Advisory: NVRTC stubs in ZLUDA distribution.
+      # cuBLAS GEMM paths work without NVRTC, but Triton/NVRTC-compiled kernels
+      # need libnvrtc.so present in the ZLUDA install.  Non-fatal: real execution
+      # below will surface any actual failures.  See ADR 0087.
+      - name: Advisory — NVRTC stub presence in ZLUDA distribution
+        shell: bash
+        run: |
+          echo "── NVRTC stub advisory ──"
+          if [ -z "$ZLUDA_PATH" ]; then
+            echo "::warning::ZLUDA_PATH is not set; skipping NVRTC stub check."
+          else
+            NVRTC=$(find "$ZLUDA_PATH" -name 'libnvrtc.so*' 2>/dev/null | head -n 1)
+            if [ -n "$NVRTC" ]; then
+              echo "NVRTC stub present: $NVRTC"
+            else
+              echo "::warning::libnvrtc.so not found under ZLUDA_PATH=$ZLUDA_PATH. Triton/NVRTC-compiled kernels will fall back to cuBLAS or skip. Install a ZLUDA build that includes NVRTC stubs for full PTX JIT support."
+            fi
+          fi
+
+      # ZLUDA_PATH is now in the env, so the platform-tests test-zluda profile
+      # auto-activates and pulls nd4j-zluda; -Pzluda puts that module in the reactor.
+      - name: Build Java modules (native jars from snapshots)
+        shell: bash
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Pzluda \
+            -Dbackend.artifactId=${{ inputs.backendArtifactId }} \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=${{ inputs.classifier }} \
+            -Dmaven.javadoc.skip=true \
+            -pl :platform-tests --also-make \
+            -pl !:libnd4j \
+            --no-transfer-progress --batch-mode 2>&1 | tee zluda-build.log
+
+      # Advisory: PTX embedded in the nd4j-cuda native jar.
+      # ZLUDA translates PTX from CUDA fatbins at runtime; if the published jar
+      # shipped without embedded PTX (only sm_XX code targets, no virtual targets)
+      # ZLUDA cannot translate kernels and ops will silently fail.  Emits ::warning::
+      # only — on this AMD runner the real smoke-test execution below will catch
+      # functional failures regardless.  Hard gate: build-zluda-validation.yml.
+      - name: Advisory — PTX presence in nd4j-cuda native jar
+        shell: bash
+        run: |
+          echo "── PTX advisory: scanning nd4j-cuda native jar in local maven cache ──"
+          SO=$(find ~/.m2 -path '*/${{ inputs.backendArtifactId }}/*.so' \
+               -name 'libnd4jcuda*.so' 2>/dev/null | head -n 1)
+          if [ -z "$SO" ]; then
+            # Also try the classifier jar unzipped to a temp location
+            CJAR=$(find ~/.m2 -path '*/${{ inputs.backendArtifactId }}/*linux-x86_64*.jar' \
+                   2>/dev/null | head -n 1)
+            if [ -n "$CJAR" ]; then
+              mkdir -p /tmp/nd4j-cuda-ptx-probe
+              unzip -q "$CJAR" '*.so' -d /tmp/nd4j-cuda-ptx-probe 2>/dev/null || true
+              SO=$(find /tmp/nd4j-cuda-ptx-probe -name 'libnd4jcuda*.so' | head -n 1)
+            fi
+          fi
+
+          if [ -z "$SO" ]; then
+            echo "::warning::libnd4jcuda.so not found in local maven cache — PTX advisory skipped. Run build-zluda-validation.yml for a hard PTX gate."
+          else
+            echo "Scanning: $SO"
+            FATBIN=$(readelf -S "$SO" 2>/dev/null | grep -c 'nv_fatbin\|nv_relfatbin' || true)
+            PTX_SM=$(strings "$SO" 2>/dev/null | grep -E '\.target sm_[0-9]+' | sort -u || true)
+            if [ "${FATBIN:-0}" -gt 0 ] || [ -n "$PTX_SM" ]; then
+              ARCHS=$(echo "$PTX_SM" | grep -oE 'sm_[0-9]+' | sort -u | tr '\n' ' ')
+              echo "PTX embedded — architectures: ${ARCHS}"
+            else
+              echo "::warning::No PTX evidence found in $SO (no .nv_fatbin sections, no .target sm_XX strings). ZLUDA will be unable to translate CUDA kernels from this binary. Rebuild nd4j-cuda with virtual compute targets to embed PTX."
+            fi
+          fi
+
+      - name: Run ZLUDA smoke tests
+        shell: bash
+        run: |
+          TEST_FILTER="${{ inputs.testFilter }}"
+          if [ -n "$TEST_FILTER" ]; then
+            TEST_FLAGS="-Dtest=${TEST_FILTER}"
+          else
+            TEST_FLAGS="-Dtest=ZludaSmokeTest"
+          fi
+          cd platform-tests
+          mvn test \
+            -Ptest-zluda \
+            -Dzluda.test.groups="${{ inputs.testGroups }}" \
+            -Dzluda.target=${{ inputs.zludaTarget }} \
+            -Dbackend.artifactId=${{ inputs.backendArtifactId }} \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=${{ inputs.classifier }} \
+            -Dtest.heap.size=4g -Dtest.offheap.size=6g \
+            -Domp.num.threads=2 \
+            -DskipTestResourceEnforcement=true \
+            ${TEST_FLAGS} \
+            --no-transfer-progress --batch-mode 2>&1 | tee zluda-smoke-tests.log
+
+      - name: Upload logs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zluda-smoke-${{ inputs.zludaTarget }}-${{ inputs.backendArtifactId }}
+          path: |
+            platform-tests/target/surefire-reports/
+            platform-tests/zluda-smoke-tests.log
+            zluda-build.log
+          retention-days: 14

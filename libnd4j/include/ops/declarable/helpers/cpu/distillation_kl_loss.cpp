@@ -59,8 +59,37 @@ void distillationKLLoss(NDArray* studentLogits, NDArray* teacherLogits,
                          NDArray* hardLabels, NDArray* output,
                          double temperature, double alpha,
                          LaunchContext* context) {
-    auto batch = studentLogits->sizeAt(0);
-    auto classes = studentLogits->sizeAt(1);
+    // Support rank-2 [batch, classes] and rank-3 [batch, seq, classes].
+    // For rank-3 inputs we flatten the two leading dims into a single batch dimension.
+    const int rank = studentLogits->rankOf();
+    if (rank < 2 || rank > 3) {
+        throw std::runtime_error("distillationKLLoss: input rank must be 2 or 3, got " +
+                                 std::to_string(rank));
+    }
+
+    sd::LongType batch, classes;
+    if (rank == 3) {
+        batch = studentLogits->sizeAt(0) * studentLogits->sizeAt(1);
+        classes = studentLogits->sizeAt(2);
+    } else {
+        batch = studentLogits->sizeAt(0);
+        classes = studentLogits->sizeAt(1);
+    }
+
+    // Validate class dimension matches before entering OMP (throws from OMP → terminate)
+    if (classes <= 0) {
+        throw std::runtime_error("distillationKLLoss: class dimension must be > 0");
+    }
+
+    // For rank-3, use flattened linear index: flat_idx = b0*sizeAt(1) + b1
+    // We access elements via raw buffer offset to avoid rank-specific e() calls.
+    // Strides for a c-order rank-3 [B, S, V]: stride0=S*V, stride1=V, stride2=1
+    // For rank-2 [B, V]: stride0=V, stride1=1
+    const sd::LongType stride0 = (rank == 3) ? studentLogits->sizeAt(1) * classes : classes;
+    // stride for flat batch (either sizeAt(1)*classes or classes depending on rank)
+    // flat batch index b in [0, batch): raw offset = b * classes (already encoded above in stride0 choice)
+    // We just need: for flat b, elements b*classes .. b*classes+classes-1
+    // Because c-order and we treat the leading dims as one flat batch, this is correct.
 
     double klLoss = 0.0;
     double ceLoss = 0.0;
@@ -69,9 +98,10 @@ void distillationKLLoss(NDArray* studentLogits, NDArray* teacherLogits,
     for (sd::LongType b = 0; b < batch; b++) {
         // Extract logits for this sample
         std::vector<double> sLogits(classes), tLogits(classes);
+        const sd::LongType offset = b * classes;
         for (sd::LongType c = 0; c < classes; c++) {
-            sLogits[c] = studentLogits->e<double>(b, c);
-            tLogits[c] = teacherLogits->e<double>(b, c);
+            sLogits[c] = studentLogits->e<double>(offset + c);
+            tLogits[c] = teacherLogits->e<double>(offset + c);
         }
 
         // KL divergence: KL(P_teacher || P_student) = sum(P_t * (log P_t - log P_s))

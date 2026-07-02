@@ -1259,7 +1259,12 @@
             </build>
         </profile>
 
-        <!-- Profile for ZLUDA-specific testing (AMD/Intel GPUs) -->
+        <!-- Profile for ZLUDA-specific testing (AMD/Intel GPUs).
+             Activates automatically when ZLUDA_PATH is set. The forked test JVM must see
+             ZLUDA's libcuda.so BEFORE the system CUDA driver, so this profile overrides the
+             LD_LIBRARY_PATH that the base surefire config hardcodes to the CUDA toolkit, and
+             enables JavaCPP pathsFirst so ZLUDA's cublas/nvrtc drop-ins can intercept the
+             bundled NVIDIA libraries. See ZludaSmokeTest and ADR 0087 / ADR 0102. -->
         <profile>
             <id>test-zluda</id>
             <activation>
@@ -1270,6 +1275,10 @@
             </activation>
             <properties>
                 <sd.test.backend>zluda</sd.test.backend>
+                <!-- AMD or INTEL; forwarded to the forked JVM as ZLUDA_TARGET for JZludaBackend auto-detection -->
+                <zluda.target></zluda.target>
+                <!-- Override to broaden what runs under the ZLUDA environment, e.g. -Dzluda.test.groups=smoke -->
+                <zluda.test.groups>zluda,rocm,amd-gpu</zluda.test.groups>
             </properties>
             <dependencies>
                 <dependency>
@@ -1286,15 +1295,30 @@
                         <configuration>
                             <systemPropertyVariables>
                                 <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                                <org.bytedeco.javacpp.pathsFirst>true</org.bytedeco.javacpp.pathsFirst>
+                                <org.bytedeco.javacpp.pathsfirst>true</org.bytedeco.javacpp.pathsfirst>
+                                <java.library.path>${env.ZLUDA_PATH}:${env.ZLUDA_PATH}/lib:/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib</java.library.path>
                             </systemPropertyVariables>
-                            <groups>zluda,rocm,amd-gpu</groups>
+                            <environmentVariables>
+                                <ZLUDA_PATH>${env.ZLUDA_PATH}</ZLUDA_PATH>
+                                <ZLUDA_TARGET>${zluda.target}</ZLUDA_TARGET>
+                                <LD_LIBRARY_PATH>${env.ZLUDA_PATH}:${env.ZLUDA_PATH}/lib:/usr/local/cuda/targets/x86_64-linux/lib:/usr/local/cuda/lib64</LD_LIBRARY_PATH>
+                            </environmentVariables>
+                            <groups>${zluda.test.groups}</groups>
                         </configuration>
                     </plugin>
                 </plugins>
             </build>
         </profile>
 
-        <!-- Profile for TPU-specific testing -->
+        <!-- Profile for TPU-specific testing.
+             Point at libtpu.so (real TPU VM) or a PJRT CPU plugin .so (hosted CI, no TPU
+             hardware: `pip install libtpu` and pass the wheel's libtpu.so) via
+             -Dpjrt.path / -Dtpu.library.path; defaults fall back to the PJRT_PATH /
+             TPU_LIBRARY_PATH env vars when set. Values are forwarded to the forked JVM as
+             both system properties and env vars. NOTE: if neither env var nor -D is set,
+             the unresolved "${env...}" literal is forwarded — TpuBackendSmokeTest treats
+             values containing "${" as unset. See ADR 0072 / ADR 0102. -->
         <profile>
             <id>test-tpu</id>
             <activation>
@@ -1302,6 +1326,10 @@
             </activation>
             <properties>
                 <sd.test.backend>tpu</sd.test.backend>
+                <pjrt.path>${env.PJRT_PATH}</pjrt.path>
+                <tpu.library.path>${env.TPU_LIBRARY_PATH}</tpu.library.path>
+                <!-- Override to broaden what runs under the TPU environment, e.g. -Dtpu.test.groups=smoke -->
+                <tpu.test.groups>tpu</tpu.test.groups>
             </properties>
             <dependencies>
                 <dependency>
@@ -1318,8 +1346,151 @@
                         <configuration>
                             <systemPropertyVariables>
                                 <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                                <pjrt.path>${pjrt.path}</pjrt.path>
+                                <tpu.library.path>${tpu.library.path}</tpu.library.path>
                             </systemPropertyVariables>
-                            <groups>tpu</groups>
+                            <environmentVariables>
+                                <PJRT_PATH>${pjrt.path}</PJRT_PATH>
+                                <TPU_LIBRARY_PATH>${tpu.library.path}</TPU_LIBRARY_PATH>
+                            </environmentVariables>
+                            <groups>${tpu.test.groups}</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for AMD-GPU-via-ROCm-PJRT testing. AMD is NOT a separate backend: the ROCm
+             plugin (xla_rocm_plugin.so, jax-rocm7-pjrt wheel) is loaded by the SAME native
+             PjrtClientManager as TPU, so this profile just puts nd4j-tpu (the PJRT carrier) on the
+             classpath and forwards the plugin path. Fetch the plugin python-free with
+             libnd4j/scripts/fetch-pjrt-plugin.sh rocm, then point -Drocm.pjrt.path / the
+             PJRT_PLUGIN_LIBRARY_PATH env at it. Real execution needs a ROCm 7 host; the
+             GetPjrtApi/existence checks run anywhere. See ADR 0102. -->
+        <profile>
+            <id>test-rocm</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.backend>rocm</sd.test.backend>
+                <rocm.pjrt.path>${env.PJRT_PLUGIN_LIBRARY_PATH}</rocm.pjrt.path>
+                <!-- Override to broaden what runs under the ROCm environment, e.g. -Drocm.test.groups=smoke -->
+                <rocm.test.groups>rocm,amd-gpu</rocm.test.groups>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-tpu</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                                <rocm.pjrt.path>${rocm.pjrt.path}</rocm.pjrt.path>
+                            </systemPropertyVariables>
+                            <environmentVariables>
+                                <PJRT_PLUGIN_LIBRARY_PATH>${rocm.pjrt.path}</PJRT_PLUGIN_LIBRARY_PATH>
+                                <ROCM_PJRT_PATH>${rocm.pjrt.path}</ROCM_PJRT_PATH>
+                            </environmentVariables>
+                            <groups>${rocm.test.groups}</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for Hexagon NPU (hexagon-mlir) testing. Mirrors test-tpu: the backend is a
+             stub until hexagon-mlir bindings land; HexagonBackendSmokeTest locks the contracts.
+             Point -Dhexagon.library.path at a hexagon-mlir runtime .so (or its directory) when
+             available; defaults to the HEXAGON_MLIR_PATH env var. See ADR 0088 / ADR 0102. -->
+        <profile>
+            <id>test-hexagon</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.backend>hexagon</sd.test.backend>
+                <hexagon.library.path>${env.HEXAGON_MLIR_PATH}</hexagon.library.path>
+                <!-- Override to broaden what runs under the Hexagon environment, e.g. -Dhexagon.test.groups=smoke -->
+                <hexagon.test.groups>hexagon</hexagon.test.groups>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-hexagon</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                                <hexagon.library.path>${hexagon.library.path}</hexagon.library.path>
+                            </systemPropertyVariables>
+                            <environmentVariables>
+                                <HEXAGON_MLIR_PATH>${hexagon.library.path}</HEXAGON_MLIR_PATH>
+                            </environmentVariables>
+                            <groups>${hexagon.test.groups}</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Profile for Apple Metal/MLX backend (macOS arm64) testing. Mirrors test-tpu/test-hexagon:
+             the backend is a stub until MLX/MPS native bindings land; MetalBackendSmokeTest
+             locks the contracts. Point -Dnd4j.metal.library.path at a libnd4j_metal.dylib (or
+             its directory) when available; defaults to the ND4J_METAL_LIBRARY_PATH env var.
+             IMPORTANT: Must run on macos-14 (Apple Silicon) — tests skip gracefully on Linux/x86.
+             See run-mlx-smoke-tests.yml for the companion CI workflow. -->
+        <profile>
+            <id>test-metal</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <sd.test.backend>metal</sd.test.backend>
+                <nd4j.metal.library.path>${env.ND4J_METAL_LIBRARY_PATH}</nd4j.metal.library.path>
+                <!-- Override to broaden what runs under the Metal environment, e.g. -Dmetal.test.groups=smoke -->
+                <metal.test.groups>metal</metal.test.groups>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-metal</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-metal-preset</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                                <nd4j.metal.library.path>${nd4j.metal.library.path}</nd4j.metal.library.path>
+                            </systemPropertyVariables>
+                            <environmentVariables>
+                                <ND4J_METAL_LIBRARY_PATH>${nd4j.metal.library.path}</ND4J_METAL_LIBRARY_PATH>
+                            </environmentVariables>
+                            <groups>${metal.test.groups}</groups>
                         </configuration>
                     </plugin>
                 </plugins>

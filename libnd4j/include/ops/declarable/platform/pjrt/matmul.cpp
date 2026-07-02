@@ -131,17 +131,17 @@ PLATFORM_CHECK(matmul, ENGINE_TPU) {
 
   // Check data types supported by TPU
   req.expectTrue(isTpuSupportedType(A->dataType()),
-                 REQUIRE_TRUE_MSG("Input A data type must be TPU-compatible"));
+                 "Input A data type must be TPU-compatible");
   req.expectTrue(isTpuSupportedType(B->dataType()),
-                 REQUIRE_TRUE_MSG("Input B data type must be TPU-compatible"));
+                 "Input B data type must be TPU-compatible");
 
   // Check that data types match
   req.expectTrue(A->dataType() == B->dataType(),
-                 REQUIRE_TRUE_MSG("Inputs must have matching data types"));
+                 "Inputs must have matching data types");
 
   // Check rank requirements
-  req.expectTrue(A->rankOf() >= 2, REQUIRE_TRUE_MSG("Input A rank must be >= 2"));
-  req.expectTrue(B->rankOf() >= 2, REQUIRE_TRUE_MSG("Input B rank must be >= 2"));
+  req.expectTrue(A->rankOf() >= 2, "Input A rank must be >= 2");
+  req.expectTrue(B->rankOf() >= 2, "Input B rank must be >= 2");
 
   req.logTheSuccess();
   return req;
@@ -175,13 +175,13 @@ PLATFORM_CHECK(mmul, ENGINE_TPU) {
   Requirements req("PJRT MMUL OP");
 
   req.expectTrue(isTpuSupportedType(A->dataType()),
-                 REQUIRE_TRUE_MSG("Input A data type must be TPU-compatible"));
+                 "Input A data type must be TPU-compatible");
   req.expectTrue(isTpuSupportedType(B->dataType()),
-                 REQUIRE_TRUE_MSG("Input B data type must be TPU-compatible"));
+                 "Input B data type must be TPU-compatible");
   req.expectTrue(A->dataType() == B->dataType(),
-                 REQUIRE_TRUE_MSG("Inputs must have matching data types"));
-  req.expectTrue(A->rankOf() >= 2, REQUIRE_TRUE_MSG("Input A rank must be >= 2"));
-  req.expectTrue(B->rankOf() >= 2, REQUIRE_TRUE_MSG("Input B rank must be >= 2"));
+                 "Inputs must have matching data types");
+  req.expectTrue(A->rankOf() >= 2, "Input A rank must be >= 2");
+  req.expectTrue(B->rankOf() >= 2, "Input B rank must be >= 2");
 
   req.logTheSuccess();
   return req;

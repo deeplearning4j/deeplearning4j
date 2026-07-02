@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.*;
 import org.nd4j.autodiff.samediff.config.*;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -239,6 +240,12 @@ public class PeftModel {
         // Freeze base model parameters
         freezeBaseModel();
 
+        // If the base model was trained (or had gradients computed) before PEFT wrapping,
+        // the duplicated graph carries a backprop function that predates adapter injection
+        // and does not contain the adapter variables. Drop it so the next fit() rebuilds
+        // gradients against the modified graph.
+        model.invalidateGradFunction();
+
         log.info("Applied {} to model. Trainable params: {}, Total params: {}",
             type, getTrainableParameterCount(), getTotalParameterCount());
     }
@@ -342,11 +349,19 @@ public class PeftModel {
             return;
         }
 
+        // The op that PRODUCES newVar (e.g. the add computing W_eff = W + lora delta)
+        // legitimately consumes the original variable and must NOT be rewired — doing so
+        // creates a self-cycle (W_eff = W_eff + delta) that the execution DAG rejects.
+        Variable newVarMeta = model.getVariables().get(newVar.name());
+        String producerOfNewVar = newVarMeta == null ? null : newVarMeta.getOutputOfOp();
+        Variable originalMeta = model.getVariables().get(originalVarName);
+
         // Get all operations that output from this variable (ops where this is an input)
         // We need to update those ops to use the new effective weight instead
         SameDiffOp[] ops = model.getOps().values().toArray(new SameDiffOp[0]);
 
         for (SameDiffOp sdOp : ops) {
+            if (sdOp.getName().equals(producerOfNewVar)) continue;
             List<String> inputVarNames = sdOp.getInputsToOp();
             if (inputVarNames == null || inputVarNames.isEmpty()) continue;
 
@@ -366,15 +381,22 @@ public class PeftModel {
                 // Update the operation to use the new input
                 sdOp.setInputsToOp(newInputs);
 
-                // Also update the variable's input list
-                for (String outputName : sdOp.getOutputsOfOp()) {
-                    SDVariable outVar = model.getVariable(outputName);
-                    if (outVar != null) {
-                        // Update any cached input references
-                        log.trace("Updated op '{}' to use effective weight for output '{}'",
-                            sdOp.getName(), outputName);
+                // Keep the variable -> consumer reverse index consistent: graph traversal
+                // (gradient construction, DAG building) reads Variable.inputsForOp, so a
+                // rewired consumer must move from the original variable's list to the
+                // effective weight's list.
+                if (originalMeta != null && originalMeta.getInputsForOp() != null) {
+                    originalMeta.getInputsForOp().remove(sdOp.getName());
+                }
+                if (newVarMeta != null) {
+                    if (newVarMeta.getInputsForOp() == null) {
+                        newVarMeta.setInputsForOp(new ArrayList<>());
+                    }
+                    if (!newVarMeta.getInputsForOp().contains(sdOp.getName())) {
+                        newVarMeta.getInputsForOp().add(sdOp.getName());
                     }
                 }
+                log.trace("Rewired op '{}' input {} -> {}", sdOp.getName(), originalVarName, newVar.name());
             }
         }
     }

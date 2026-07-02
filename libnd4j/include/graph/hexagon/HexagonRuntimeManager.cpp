@@ -275,18 +275,18 @@ void HexagonRuntimeManager::releaseKernel(void* npuContext, void* kernelHandle) 
 bool HexagonRuntimeManager::dispatchKernel(void* npuContext, void* kernelHandle,
                                             void** args, int numArgs) {
   if (!available_ || fnDispatchKernel_ == nullptr) {
-    DSP_DIAG(EXECUTION, "HexagonRuntimeManager::dispatchKernel: not available");
+    DSP_DIAG(EXECUTE, "HexagonRuntimeManager::dispatchKernel: not available");
     return false;
   }
 
   if (npuContext == nullptr || kernelHandle == nullptr) {
-    DSP_DIAG(EXECUTION, "HexagonRuntimeManager::dispatchKernel: null context or kernel");
+    DSP_DIAG(EXECUTE, "HexagonRuntimeManager::dispatchKernel: null context or kernel");
     return false;
   }
 
   int result = fnDispatchKernel_(npuContext, kernelHandle, args, numArgs);
   if (result != 0) {
-    DSP_DIAG(EXECUTION, "HexagonRuntimeManager::dispatchKernel: dispatch failed with %d",
+    DSP_DIAG(EXECUTE, "HexagonRuntimeManager::dispatchKernel: dispatch failed with %d",
              result);
     return false;
   }
@@ -301,7 +301,7 @@ bool HexagonRuntimeManager::waitForCompletion(void* npuContext) {
 
   int result = fnWaitForCompletion_(npuContext);
   if (result != 0) {
-    DSP_DIAG(EXECUTION, "HexagonRuntimeManager::waitForCompletion: failed with %d",
+    DSP_DIAG(EXECUTE, "HexagonRuntimeManager::waitForCompletion: failed with %d",
              result);
     return false;
   }

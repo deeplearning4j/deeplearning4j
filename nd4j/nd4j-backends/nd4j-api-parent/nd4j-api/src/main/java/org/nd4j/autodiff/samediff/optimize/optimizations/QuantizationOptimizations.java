@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -491,6 +492,270 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             }
 
             return false;
+        }
+    }
+
+    /**
+     * Calibration-based activation INT8 quantization (MIGraphX: quantize_int8 two-phase).
+     *
+     * This optimizer inserts quantize→dequantize pairs around activation tensors that feed
+     * matmul/conv2d inputs, using per-tensor symmetric INT8 quantization:
+     *   scale = maxAbs(activation) / 127
+     *   quantized = round(x / scale), clamped to [-127, 127], cast to INT8
+     *   dequantized = cast(quantized, FP32) * scale
+     *
+     * This is a two-phase process:
+     *   Phase 1 (calibration): run representative inputs through the graph, collect per-tensor
+     *                          activation min/max at matmul inputs.
+     *   Phase 2 (graph rewrite): insert quant→dequant pairs for each calibrated activation,
+     *                             using the computed scale.
+     *
+     * This optimizer is OFF by default. Enable with: -Dnd4j.optimizer.int8.activations=true
+     *
+     * Usage:
+     *   // Phase 1: calibrate
+     *   Map&lt;String, QuantizationInfo&gt; scaleMap = QuantizeActivationsInt8.calibrate(sd, calibInputs);
+     *   // Phase 2: rewrite graph
+     *   SameDiff quantized = QuantizeActivationsInt8.rewriteWithScales(sd, scaleMap);
+     *   // Or trigger via GraphOptimizer after setting system property + providing calibration data
+     */
+    public static class QuantizeActivationsInt8 implements Optimizer {
+
+        /**
+         * System property to enable activation quantization.
+         * Default: off.
+         */
+        public static final String PROP_ENABLE = "nd4j.optimizer.int8.activations";
+
+        // Calibration data: activation variable name → [min, max] observed across all calibration inputs
+        private final Map<String, double[]> calibrationRanges;
+
+        /**
+         * Create an activation int8 quantizer with pre-collected calibration ranges.
+         * @param calibrationRanges map of activation variable name → [minVal, maxVal]
+         */
+        public QuantizeActivationsInt8(Map<String, double[]> calibrationRanges) {
+            this.calibrationRanges = calibrationRanges != null ? calibrationRanges : new HashMap<>();
+        }
+
+        /**
+         * Default no-arg constructor — disabled (returns false for all ops).
+         * Use the constructor with calibration data, or call calibrate() first.
+         */
+        public QuantizeActivationsInt8() {
+            this.calibrationRanges = new HashMap<>();
+        }
+
+        @Override
+        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
+                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            // Only active when system property is set AND calibration data is available
+            if (!Boolean.getBoolean(PROP_ENABLE)) return false;
+            if (calibrationRanges.isEmpty()) return false;
+            // Only fire for Mmul ops (matmul)
+            if (!(op.getOp() instanceof Mmul)) return false;
+
+            List<String> inputs = op.getInputsToOp();
+            if (inputs == null || inputs.size() < 1) return false;
+
+            boolean applied = false;
+
+            // Try to quantize the activation input (index 0, the dynamic input X)
+            // Weight quantization is handled by the weight-only INT8 pass; this pass is for activations.
+            String activationVarName = inputs.get(0);
+            SDVariable activationVar = sd.getVariable(activationVarName);
+            if (activationVar == null) return false;
+
+            // Skip if already a CONSTANT or VARIABLE (those are weights, not activations)
+            if (activationVar.getVariableType() == VariableType.CONSTANT
+                    || activationVar.getVariableType() == VariableType.VARIABLE) {
+                return false;
+            }
+
+            // Look up calibrated range for this activation
+            double[] range = calibrationRanges.get(activationVarName);
+            if (range == null) return false;  // No calibration data for this activation
+
+            double minVal = range[0];
+            double maxVal = range[1];
+            double maxAbs = Math.max(Math.abs(minVal), Math.abs(maxVal));
+            if (maxAbs < 1e-10) return false;  // Near-zero activation, skip
+
+            float scale = (float) (maxAbs / 127.0);
+
+            // Build: quantized = round(activation / scale), clamped to [-127, 127], cast INT8, cast FP32, mul scale
+            // We emulate this via nd4j ops in SameDiff:
+            //   x_scaled = div(activation, scale_const)
+            //   x_rounded = round(x_scaled)    [no round op in SD — use floor(x+0.5)]
+            //   x_clamped = clipByValue(x_rounded, -127, 127)
+            //   x_int8 = cast(x_clamped, INT8)
+            //   x_deq = cast(x_int8, FP32)
+            //   x_out = mul(x_deq, scale_const)
+            //
+            // Then replace activation input of matmul with x_out.
+            //
+            // Note: This inserts the dequantized (still FP32 valued) tensor into the graph.
+            // The quantization error is bounded by scale/2 ≈ maxAbs / (127*2).
+
+            String suffix = "act_q_" + System.identityHashCode(op);
+            String scaleConstName = "act_scale_" + suffix;
+
+            // Create scale constant
+            INDArray scaleArr = Nd4j.scalar(scale);
+            sd.constant(scaleConstName, scaleArr);
+
+            // Build the quant-dequant chain in SameDiff
+            SDVariable actVar = sd.getVariable(activationVarName);
+            SDVariable scaleConst = sd.getVariable(scaleConstName);
+
+            // x / scale
+            SDVariable xScaled = actVar.div(scaleConst).rename("xscaled_" + suffix);
+
+            // round: approximate with floor(x + 0.5) since SD may not have round
+            SDVariable halfConst = sd.constant("half_" + suffix, Nd4j.scalar(0.5f));
+            SDVariable xPlusHalf = xScaled.add(halfConst);
+            SDVariable xRounded = sd.math().floor("xrounded_" + suffix, xPlusHalf);
+
+            // clamp to [-127, 127]
+            SDVariable xClamped = sd.math().clipByValue("xclamped_" + suffix, xRounded, -127.0, 127.0);
+
+            // cast to INT8 then back to FP32 (this is the lossy quantization step)
+            SDVariable xInt8 = xClamped.castTo("xint8_" + suffix, DataType.INT8);
+            SDVariable xDeq = xInt8.castTo("xdeq_" + suffix, DataType.FLOAT);
+
+            // multiply back by scale
+            SDVariable xOut = xDeq.mul(scaleConst).rename("xout_" + suffix);
+
+            // Wire xOut as the new activation input to the matmul
+            inputs.set(0, xOut.name());
+
+            // Update variable tracking: xOut is now consumed by this matmul op
+            Variable xOutVar = sd.getVariables().get(xOut.name());
+            if (xOutVar != null) {
+                if (xOutVar.getInputsForOp() == null) xOutVar.setInputsForOp(new ArrayList<>());
+                if (!xOutVar.getInputsForOp().contains(op.getName())) {
+                    xOutVar.getInputsForOp().add(op.getName());
+                }
+            }
+            // Remove this matmul from original activation's consumer list
+            Variable origActVariable = sd.getVariables().get(activationVarName);
+            if (origActVariable != null && origActVariable.getInputsForOp() != null) {
+                origActVariable.getInputsForOp().remove(op.getName());
+            }
+
+            log.debug("QuantizeActivationsInt8: inserted quant->dequant for activation '{}' (scale={})",
+                    activationVarName, scale);
+            applied = true;
+
+            return applied;
+        }
+
+        /**
+         * Phase 1: collect per-activation min/max ranges by running the graph with calibration inputs.
+         *
+         * For each matmul op in the graph, captures the range of the activation tensor (input[0])
+         * across all calibration batches. The ranges are used in Phase 2 to compute quantization scales.
+         *
+         * @param sd            The SameDiff graph to calibrate
+         * @param calibInputs   List of input maps (placeholder name → array), one per calibration batch
+         * @param outputVarNames Output variable names required for execution
+         * @return Map of activation variable name → [minVal, maxVal] observed across all calibration batches
+         */
+        public static Map<String, double[]> calibrate(SameDiff sd,
+                                                      List<Map<String, INDArray>> calibInputs,
+                                                      String... outputVarNames) {
+            Map<String, double[]> ranges = new HashMap<>();
+
+            // Collect the names of all matmul activation inputs (index 0 = the non-weight input)
+            Set<String> activationVarNames = new LinkedHashSet<>();
+            for (SameDiffOp sdOp : sd.getOps().values()) {
+                if (!(sdOp.getOp() instanceof Mmul)) continue;
+                List<String> ins = sdOp.getInputsToOp();
+                if (ins == null || ins.size() < 1) continue;
+                String actName = ins.get(0);
+                SDVariable actVar = sd.getVariable(actName);
+                // Only dynamic activations (ARRAY or PLACEHOLDER), not weights
+                if (actVar != null
+                        && actVar.getVariableType() != VariableType.CONSTANT
+                        && actVar.getVariableType() != VariableType.VARIABLE) {
+                    activationVarNames.add(actName);
+                }
+            }
+
+            if (activationVarNames.isEmpty()) {
+                log.warn("QuantizeActivationsInt8.calibrate: no matmul activation tensors found");
+                return ranges;
+            }
+
+            // Build list of outputs to fetch: user's required outputs + all activation vars
+            List<String> fetchVars = new ArrayList<>();
+            if (outputVarNames != null) {
+                fetchVars.addAll(Arrays.asList(outputVarNames));
+            }
+            // Add activation vars that exist as graph variables
+            for (String name : activationVarNames) {
+                if (!fetchVars.contains(name) && sd.hasVariable(name)) {
+                    fetchVars.add(name);
+                }
+            }
+
+            // Run each calibration batch and accumulate min/max per activation
+            for (Map<String, INDArray> batch : calibInputs) {
+                try {
+                    Map<String, INDArray> results = sd.output(batch, fetchVars);
+                    for (String actName : activationVarNames) {
+                        INDArray arr = results.get(actName);
+                        if (arr == null) continue;
+                        double minVal = arr.minNumber().doubleValue();
+                        double maxVal = arr.maxNumber().doubleValue();
+                        double[] existing = ranges.get(actName);
+                        if (existing == null) {
+                            ranges.put(actName, new double[]{minVal, maxVal});
+                        } else {
+                            existing[0] = Math.min(existing[0], minVal);
+                            existing[1] = Math.max(existing[1], maxVal);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("QuantizeActivationsInt8.calibrate: error executing batch: {}", e.getMessage());
+                }
+            }
+
+            log.info("QuantizeActivationsInt8.calibrate: collected ranges for {} activations from {} batches",
+                    ranges.size(), calibInputs.size());
+            return ranges;
+        }
+
+        /**
+         * Phase 2: rewrite the graph by inserting quant-dequant pairs for each calibrated activation.
+         *
+         * This is a convenience method that creates a QuantizeActivationsInt8 optimizer
+         * from the given scale map and runs it through the GraphOptimizer with only this pass enabled.
+         *
+         * @param sd        The SameDiff graph to rewrite (will be dup'd internally)
+         * @param scaleMap  Map of activation variable name → QuantizationInfo (from calibrate())
+         * @return The rewritten SameDiff graph
+         */
+        public static SameDiff rewriteWithScales(SameDiff sd, Map<String, QuantizationInfo> scaleMap) {
+            // Convert QuantizationInfo to [min, max] range representation (symmetric: min = -maxAbs)
+            Map<String, double[]> rangeMap = new HashMap<>();
+            for (Map.Entry<String, QuantizationInfo> e : scaleMap.entrySet()) {
+                double maxAbs = e.getValue().scale * 127.0;
+                rangeMap.put(e.getKey(), new double[]{-maxAbs, maxAbs});
+            }
+
+            QuantizeActivationsInt8 optimizer = new QuantizeActivationsInt8(rangeMap);
+            List<org.nd4j.autodiff.samediff.optimize.OptimizerSet> optimizers = new ArrayList<>();
+            optimizers.add(new org.nd4j.autodiff.samediff.optimize.OptimizerSet() {
+                @Override
+                public List<Optimizer> getOptimizers() {
+                    return Collections.singletonList(optimizer);
+                }
+            });
+
+            List<String> outputs = sd.outputs();
+            if (outputs == null) outputs = Collections.emptyList();
+            return org.nd4j.autodiff.samediff.optimize.GraphOptimizer.optimize(sd, outputs, optimizers);
         }
     }
 

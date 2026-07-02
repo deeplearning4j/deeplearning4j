@@ -59,4 +59,17 @@ public class TagNames {
     public final static String SMOKE = "smoke"; //quick sanity checks (<30s total), safe for low-spec CI
     public final static String FULL_CI = "full-ci"; //broader validation (<5 min total), DSP lifecycle, evaluation, op basics
     // Tests without smoke or full-ci tags are implicitly long-running (nightly/weekly)
+
+    // Accelerator / alternative-backend tags - selected by platform-tests pom profiles:
+    // -Ptest-zluda -> zluda,rocm,amd-gpu | -Ptest-tpu -> tpu |
+    // multi-backend-dual/-all -> multi-backend,multi-device[,backend-discovery]
+    public final static String ZLUDA = "zluda"; //CUDA-on-AMD/Intel via ZLUDA (requires ZLUDA_PATH env)
+    public final static String ROCM = "rocm"; //requires a ROCm-capable AMD GPU
+    public final static String AMD_GPU = "amd-gpu"; //requires AMD GPU hardware
+    public final static String TPU = "tpu"; //PJRT/libtpu backend tests (PJRT_PATH / TPU_LIBRARY_PATH)
+    public final static String HEXAGON = "hexagon"; //Qualcomm Hexagon NPU (hexagon-mlir) backend tests
+    public final static String METAL = "metal"; //Apple Metal/MLX backend tests (macOS arm64, -Ptest-metal)
+    public final static String MULTI_BACKEND = "multi-backend"; //tests spanning >1 nd4j backend in one JVM
+    public final static String MULTI_DEVICE = "multi-device"; //tests requiring >1 compute device
+    public final static String BACKEND_DISCOVERY = "backend-discovery"; //Nd4jBackend SPI discovery/priority tests
 }

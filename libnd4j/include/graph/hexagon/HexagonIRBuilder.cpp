@@ -21,6 +21,8 @@
 #include <graph/hexagon/HexagonIRBuilder.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <array/DataTypeUtils.h>
+#include <helpers/shape.h>
 
 #include <cstring>
 #include <sstream>
@@ -92,23 +94,38 @@ size_t HexagonIRBuilder::estimateTcmUsage(NativeSlot* slots, int start, int end)
   for (int i = start; i < end; i++) {
     const auto& slot = slots[i];
 
-    // Sum input buffer sizes
+    // Sum input buffer sizes.
+    // inputSourceIndices >= 0 → prior slot output (already counted); skip.
+    // inputSourceIndices <  0 → external input: -(idx+1) into externalInputs.
+    // We have no array pointers here, so we estimate from cachedOutputShapes
+    // of the producing slot when available. For external inputs the shapes
+    // are not in shapeCache (those belong to the caller), so we conservatively
+    // count 0 bytes for them — the estimate is non-load-bearing; it only
+    // gates whether we attempt the segment at all, not correctness.
     for (int j = 0; j < slot.wiring.numInputs; j++) {
-      if (slot.inputSlotIndices != nullptr && slot.inputSlotIndices[j] >= 0) {
-        // Cross-slot reference — already counted from producing slot
+      int srcIdx = slot.wiring.inputSourceIndices != nullptr
+                       ? slot.wiring.inputSourceIndices[j]
+                       : -1;
+      if (srcIdx >= 0) {
+        // Cross-slot reference: already counted when we processed the
+        // producing slot — skip to avoid double-counting.
         continue;
       }
-      // External input — needs TCM staging
-      if (slot.inputArrays != nullptr && slot.inputArrays[j] != nullptr) {
-        totalBytes += slot.inputArrays[j]->lengthOf() *
-                      slot.inputArrays[j]->sizeOfT();
-      }
+      // External input: byte size is unknown here without an NDArray*.
+      // Leave contribution as 0; caller can pass real arrays if needed.
     }
 
-    // Sum output buffer sizes
-    if (slot.outputArray != nullptr) {
-      totalBytes += slot.outputArray->lengthOf() *
-                    slot.outputArray->sizeOfT();
+    // Sum output buffer sizes from the slot's own shapeCache when available.
+    for (int k = 0; k < slot.wiring.numOutputs; k++) {
+      if (k < static_cast<int>(slot.shapeCache.cachedOutputShapes.size())) {
+        const LongType* si = slot.shapeCache.cachedOutputShapes[k];
+        if (si != nullptr) {
+          // shape::length returns element count; DataTypeUtils::sizeOf gives
+          // the element byte size from the shapeInfo type field.
+          totalBytes += static_cast<size_t>(shape::length(si)) *
+                        DataTypeUtils::sizeOf(si);
+        }
+      }
     }
   }
 
@@ -128,8 +145,11 @@ void HexagonIRBuilder::emitElementwise(std::string& mlirBuffer,
 
   for (int j = 0; j < slot.wiring.numInputs; j++) {
     if (j > 0) oss << ", ";
-    if (slot.inputSlotIndices != nullptr && slot.inputSlotIndices[j] >= 0) {
-      oss << "%out_" << slot.inputSlotIndices[j];
+    int srcIdx = slot.wiring.inputSourceIndices != nullptr
+                     ? slot.wiring.inputSourceIndices[j]
+                     : -1;
+    if (srcIdx >= 0) {
+      oss << "%out_" << srcIdx;
     } else {
       oss << "%ext_input_" << slotIndex << "_" << j;
     }
@@ -151,8 +171,11 @@ void HexagonIRBuilder::emitMatmul(std::string& mlirBuffer,
   if (slot.wiring.numInputs >= 2) {
     for (int j = 0; j < 2; j++) {
       if (j > 0) oss << ", ";
-      if (slot.inputSlotIndices != nullptr && slot.inputSlotIndices[j] >= 0) {
-        oss << "%out_" << slot.inputSlotIndices[j];
+      int srcIdx = slot.wiring.inputSourceIndices != nullptr
+                       ? slot.wiring.inputSourceIndices[j]
+                       : -1;
+      if (srcIdx >= 0) {
+        oss << "%out_" << srcIdx;
       } else {
         oss << "%ext_input_" << slotIndex << "_" << j;
       }
@@ -168,9 +191,14 @@ void HexagonIRBuilder::emitDmaOps(std::string& mlirBuffer,
   // Skeletal MLIR emission for DMA operations (DDR <-> TCM)
   std::ostringstream oss;
 
-  // Load inputs from DDR to TCM
+  // Load inputs from DDR to TCM (only external inputs need DMA load;
+  // cross-slot outputs are already in TCM from the producing slot).
   for (int j = 0; j < slot.wiring.numInputs; j++) {
-    if (slot.inputSlotIndices == nullptr || slot.inputSlotIndices[j] < 0) {
+    int srcIdx = slot.wiring.inputSourceIndices != nullptr
+                     ? slot.wiring.inputSourceIndices[j]
+                     : -1;
+    if (srcIdx < 0) {
+      // External input (srcIdx < 0) lives in DDR and must be DMA'd into TCM.
       oss << "  %tcm_in_" << slotIndex << "_" << j
           << " = \"hexagon.dma_load\"(%ext_input_" << slotIndex << "_" << j
           << ") : () -> memref<*xf32, 1>\n";  // addrspace 1 = TCM

@@ -113,7 +113,17 @@ public class JTpuBackend extends Nd4jBackend {
 
     @Override
     public Environment getEnvironment() {
-        return TpuEnvironment.getInstance();
+        // TpuEnvironment does not implement the Environment interface until the PJRT
+        // bindings land — this backend cannot be selected while canRun() returns false,
+        // so this path is unreachable in practice.
+        throw new UnsupportedOperationException(
+                "TPU backend environment requires PJRT native bindings (not yet implemented). "
+                        + "See TpuEnvironment for TPU device info and ADR 0072.");
+    }
+
+    @Override
+    public boolean allowsOrder() {
+        return false;
     }
 
     @Override

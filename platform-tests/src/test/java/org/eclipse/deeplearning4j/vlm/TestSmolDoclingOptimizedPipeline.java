@@ -144,11 +144,14 @@ public class TestSmolDoclingOptimizedPipeline {
     }
 
     private static List<BenchmarkConfig> getAllConfigs() {
-        boolean triton = Nd4j.getNativeOps().isTritonAvailable();
+        // Use isCudaAvailable() to guard GPU-only configs (OPTIMAL, SMOLDOC_IDEAL, Triton-dependent).
+        // isTritonAvailable() returns true even on CPU (Triton compiler is compiled into CPU libnd4j),
+        // so it cannot be used to distinguish CUDA-capable from CPU-only environments.
+        boolean cuda = Nd4j.backends().isCudaAvailable();
         List<BenchmarkConfig> configs = new ArrayList<>();
 
         // Core configs: OPTIMAL (Triton) and SLOT_BY_SLOT (cuBLAS baseline).
-        if (triton) {
+        if (cuda) {
             configs.add(BenchmarkConfig.optimal());
             configs.add(smolDoclingIdealConfig());
             // DIAG_TIMING mirrors OPTIMAL but enables per-step native timing instrumentation.
@@ -179,7 +182,7 @@ public class TestSmolDoclingOptimizedPipeline {
         if (!includeAll) return configs;
 
         // ── Additional configs below only run with vlm.test.configs=<name> ──
-        if (triton) {
+        if (cuda) {
             configs.add(BenchmarkConfig.create("TRITON_NO_GC")
                     .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
                     .tritonSectionFusion(true).tritonCompileAll(true)
@@ -297,7 +300,12 @@ public class TestSmolDoclingOptimizedPipeline {
         }
         String fp16Prop = System.getProperty("nd4j.optimizer.fp16");
         if (fp16Prop == null || fp16Prop.isEmpty()) {
-            System.setProperty("nd4j.optimizer.fp16", "true");
+            // Default fp16 to false on CPU: software HALF emulation is ~13s/token on CPU.
+            // FP16 weight pre-casting only benefits CUDA Tensor Cores.
+            // When run via run-benchmark.sh, this is already handled by --no-fp16 auto-select;
+            // this guard covers direct mvn test invocations without -Dnd4j.optimizer.fp16.
+            boolean onCuda = Nd4j.backends().isCudaAvailable();
+            System.setProperty("nd4j.optimizer.fp16", onCuda ? "true" : "false");
         }
         System.setProperty("nd4j.optimizer.logApplied", "true");
 
@@ -430,8 +438,13 @@ public class TestSmolDoclingOptimizedPipeline {
         phaseNs = phaseStart("VISION_ENCODE", "frames=" + visionFrames);
         INDArray visionEmbeddings;
         long visionMs;
+        // Keep visionEncoder accessible after this phase so freeModelMemory() can be called
+        // AFTER EmbeddingMerger.mergeEmbeddings() in PIPELINE_SETUP. Calling freeModelMemory()
+        // before mergeEmbeddings() risks freeing model constants whose native addresses may be
+        // recycled into visionEmbeddings by ArrayCacheMemoryMgr, corrupting the buffer.
+        VisionEncoder visionEncoder;
         try {
-            VisionEncoder visionEncoder = VisionEncoder.builder()
+            visionEncoder = VisionEncoder.builder()
                     .model(visionEncoderSd)
                     .targetSize(targetSize)
                     .build();
@@ -445,7 +458,8 @@ public class TestSmolDoclingOptimizedPipeline {
             log.info("Vision encoder done [{}ms]: shape={}", visionMs, Arrays.toString(visionEmbeddings.shape()));
 
             imageInput.close();
-            visionEncoder.freeModelMemory();
+            // NOTE: freeModelMemory() is intentionally deferred to AFTER mergeEmbeddings() below.
+            // See PIPELINE_SETUP phase for the actual call.
         } catch (Throwable t) {
             throw phaseFailure("VISION_ENCODE", "frames=" + visionFrames, t);
         }
@@ -499,6 +513,13 @@ public class TestSmolDoclingOptimizedPipeline {
             if (textEmbeddings.closeable() && !textEmbeddings.wasClosed()) textEmbeddings.close();
             embedMs = System.currentTimeMillis() - embedStart;
             log.info("Embeddings merged [{}ms]: shape={}", embedMs, Arrays.toString(inputsEmbeds.shape()));
+
+            // Free vision encoder model memory AFTER mergeEmbeddings() has consumed visionEmbeddings.
+            // Deferring until here avoids a non-deterministic buffer-aliasing crash: freeModelMemory()
+            // releases ~320 model constant DataBuffers, and ArrayCacheMemoryMgr may immediately recycle
+            // one of those native addresses into visionEmbeddings, setting its _lenInBytes=0.
+            // mergeEmbeddings() then calls reshape() on the corrupted buffer and throws "buffer is empty".
+            visionEncoder.freeModelMemory();
         } catch (Throwable t) {
             throw phaseFailure("PIPELINE_SETUP", "building GenerationPipeline + merging embeddings", t);
         }

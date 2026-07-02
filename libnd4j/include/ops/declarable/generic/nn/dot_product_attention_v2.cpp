@@ -721,9 +721,27 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto training = block.numB() > 1 ? B_ARG(1) : false;
 
   int seed = block.randomSeed();
-  AttentionHelper::dotProductAttentionBpHelper(queries, keys, values, scale, dLdq, dLdk, dLdv, eps, seed, qMask, vMask,
-                                               useCausalMask, dropout, training, attentionScoresWeights,
-                                               attentionScoreLogits, dropoutMask);
+
+  if (queries->rankOf() == 4) {
+    // Rank-4 BSHD path: use FlashAttentionHelper::backward which handles the
+    // BSHD [batch, seq, numHeads, headDim] layout correctly.
+    // attentionScoresOut (input 3) is the forward pass context output (the weighted sum),
+    // which backward4D uses to recompute attention weights internally.
+    FlashAttentionHelper::Config config;
+    config.scale = static_cast<float>(scale);
+    config.isCausal = useCausalMask;
+    config.dropout = static_cast<float>(dropout);
+    config.numHeads = static_cast<int>(queries->sizeAt(2));
+    config.numKvHeads = static_cast<int>(keys->sizeAt(2));
+    FlashAttentionHelper::backward(eps, queries, keys, values,
+                                   attentionScoresOut, nullptr,
+                                   dLdq, dLdk, dLdv,
+                                   config, block.launchContext());
+  } else {
+    AttentionHelper::dotProductAttentionBpHelper(queries, keys, values, scale, dLdq, dLdk, dLdv, eps, seed, qMask, vMask,
+                                                 useCausalMask, dropout, training, attentionScoresWeights,
+                                                 attentionScoreLogits, dropoutMask);
+  }
 
   // Cleanup and restore shapes
   if(reshapedQ) {

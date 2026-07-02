@@ -139,10 +139,15 @@ DECLARE_TYPES(rms_norm) {
     getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
+// rms_norm_bp: inputs are [input, gradOut] or [input, gradOut, gamma].
+// When gamma is present (block.width() >= 3), outputs are [gradIn, gradGamma].
+// When gamma is absent, output is [gradIn] only.
 CUSTOM_OP_IMPL(rms_norm_bp, 2, 1, false, 0, 0) {
     auto input = INPUT_VARIABLE(0);
     auto gradOut = INPUT_VARIABLE(1);
+    NDArray* gamma = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
     auto gradIn = OUTPUT_VARIABLE(0);
+    NDArray* gradGamma = (gamma != nullptr && block.outputWidth() > 1) ? OUTPUT_VARIABLE(1) : nullptr;
 
     float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
     std::vector<LongType> axis = {input->rankOf() - 1};
@@ -158,16 +163,29 @@ CUSTOM_OP_IMPL(rms_norm_bp, 2, 1, false, 0, 0) {
     NDArray* rsqrt = meanPlusEps->transform(transform::RSqrt);
     delete meanPlusEps;
 
-    // Gradient computation
-    NDArray* gradNorm = (*gradOut) * (*rsqrt);
-    NDArray* inputGrad = (*input) * (*gradOut);
+    // Effective upstream gradient: when gamma is present, gradOut is after the gamma scaling.
+    // We need to chain through gamma: effective_gradOut_for_norm = gradOut * gamma (broadcast).
+    NDArray* effectiveGradOut = nullptr;
+    bool ownedEffectiveGradOut = false;
+    if (gamma != nullptr) {
+        // gradOut has the same shape as the normed output [batch..., features].
+        // gamma has shape [features]. Multiply element-wise via broadcast.
+        effectiveGradOut = (*gradOut) * (*gamma);
+        ownedEffectiveGradOut = true;
+    } else {
+        effectiveGradOut = gradOut;
+    }
+
+    // Gradient computation for input
+    // dL/dx = effectiveGradOut * rsqrt - input * (dot(input, effectiveGradOut)/n) * rsqrt^3
+    NDArray* gradNorm = (*effectiveGradOut) * (*rsqrt);
+    NDArray* inputGrad = (*input) * (*effectiveGradOut);
     NDArray* dotProduct = inputGrad->reduceAlongDimension(reduce::Sum, &axis, true);
     delete inputGrad;
 
     NDArray* rsqrt2 = (*rsqrt) * (*rsqrt);
     NDArray* rsqrt3 = (*rsqrt2) * (*rsqrt);
     delete rsqrt2;
-    delete rsqrt;
 
     NDArray* gradMean = (*dotProduct) * (*rsqrt3);
     delete dotProduct;
@@ -186,12 +204,41 @@ CUSTOM_OP_IMPL(rms_norm_bp, 2, 1, false, 0, 0) {
     gradIn->assign(result);
     delete result;
 
+    if (ownedEffectiveGradOut) {
+        delete effectiveGradOut;
+    }
+
+    // Gradient for gamma: dL/dgamma = sum_over_batch_dims(gradOut * x_normed)
+    // x_normed = input * rsqrt (before gamma scaling). rsqrt is still alive here.
+    if (gradGamma != nullptr) {
+        // Compute x_normed = input * rsqrt
+        NDArray* xNormed = (*input) * (*rsqrt);
+        // dL/dgamma = sum(gradOut * x_normed) over all dims except the last (features) dim
+        NDArray* gammaGradFull = (*gradOut) * (*xNormed);
+        delete xNormed;
+        // Sum over all leading dimensions (all except last)
+        std::vector<LongType> batchDims;
+        for (int d = 0; d < input->rankOf() - 1; d++) batchDims.push_back(d);
+        NDArray* gammaGradReduced = gammaGradFull->reduceAlongDimension(reduce::Sum, &batchDims, false);
+        delete gammaGradFull;
+        gradGamma->assign(gammaGradReduced);
+        delete gammaGradReduced;
+    }
+
+    delete rsqrt;
+
     return Status::OK;
 }
 
 DECLARE_SHAPE_FN(rms_norm_bp) {
     auto inShape = inputShape->at(0);
-    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+    auto gradInShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary();
+    if (inputShape->size() > 2) {
+        // gamma present at input 2: output both gradIn and gradGamma
+        auto gammaShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(inputShape->at(2))->primary();
+        return SHAPELIST(gradInShape, gammaShape);
+    }
+    return SHAPELIST(gradInShape);
 }
 
 DECLARE_TYPES(rms_norm_bp) {

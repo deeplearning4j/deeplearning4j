@@ -56,25 +56,25 @@ bool HexagonReplayHandle::initDevice() {
 
   auto& runtime = HexagonRuntimeManager::getInstance();
   if (!runtime.isAvailable()) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::initDevice: runtime not available");
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::initDevice: runtime not available");
     return false;
   }
 
   int deviceCount = runtime.getDeviceCount();
   if (deviceId_ >= deviceCount) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::initDevice: deviceId %d >= deviceCount %d",
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::initDevice: deviceId %d >= deviceCount %d",
              deviceId_, deviceCount);
     return false;
   }
 
   npuContext_ = runtime.initDevice(deviceId_);
   if (npuContext_ == nullptr) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::initDevice: failed to init device %d",
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::initDevice: failed to init device %d",
              deviceId_);
     return false;
   }
 
-  DSP_DIAG(EXECUTION, "HexagonReplayHandle::initDevice: device %d initialized, ctx=%p",
+  DSP_DIAG(EXECUTE, "HexagonReplayHandle::initDevice: device %d initialized, ctx=%p",
            deviceId_, npuContext_);
   return true;
 }
@@ -83,7 +83,7 @@ bool HexagonReplayHandle::initDevice() {
 
 bool HexagonReplayHandle::beginCapture(void* stream) {
   if (state_ != ReplayState::EMPTY && state_ != ReplayState::ERRORED) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::beginCapture: invalid state %d",
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::beginCapture: invalid state %d",
              static_cast<int>(state_));
     return false;
   }
@@ -100,27 +100,27 @@ bool HexagonReplayHandle::beginCapture(void* stream) {
 
   state_ = ReplayState::CAPTURING;
 
-  DSP_DIAG(EXECUTION, "HexagonReplayHandle::beginCapture: command list recording "
+  DSP_DIAG(EXECUTE, "HexagonReplayHandle::beginCapture: command list recording "
            "started on device %d", deviceId_);
   return true;
 }
 
 bool HexagonReplayHandle::endCapture(void* stream) {
   if (state_ != ReplayState::CAPTURING) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::endCapture: not capturing (state %d)",
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::endCapture: not capturing (state %d)",
              static_cast<int>(state_));
     return false;
   }
 
   if (recordedCommands_.empty()) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::endCapture: no commands recorded");
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::endCapture: no commands recorded");
     state_ = ReplayState::ERRORED;
     return false;
   }
 
   // Seal the command list — no more appends allowed
   state_ = ReplayState::CAPTURED;
-  DSP_DIAG(EXECUTION, "HexagonReplayHandle::endCapture: command list sealed with "
+  DSP_DIAG(EXECUTE, "HexagonReplayHandle::endCapture: command list sealed with "
            "%d commands", numCommands_);
   return true;
 }
@@ -129,7 +129,7 @@ bool HexagonReplayHandle::finalize() {
   if (state_ == ReplayState::READY) return true;  // Already finalized
 
   if (state_ != ReplayState::CAPTURED) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::finalize: not captured (state %d)",
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::finalize: not captured (state %d)",
              static_cast<int>(state_));
     return false;
   }
@@ -137,7 +137,7 @@ bool HexagonReplayHandle::finalize() {
   // Validate all recorded kernel handles are still valid
   for (const auto& cmd : recordedCommands_) {
     if (cmd.type == RecordedCommand::KERNEL_DISPATCH && cmd.kernelHandle == nullptr) {
-      DSP_DIAG(EXECUTION, "HexagonReplayHandle::finalize: null kernel handle in "
+      DSP_DIAG(EXECUTE, "HexagonReplayHandle::finalize: null kernel handle in "
                "recorded command");
       state_ = ReplayState::ERRORED;
       return false;
@@ -146,20 +146,20 @@ bool HexagonReplayHandle::finalize() {
 
   state_ = ReplayState::READY;
 
-  DSP_DIAG(EXECUTION, "HexagonReplayHandle::finalize: ready for replay "
+  DSP_DIAG(EXECUTE, "HexagonReplayHandle::finalize: ready for replay "
            "(%d commands)", numCommands_);
   return true;
 }
 
 bool HexagonReplayHandle::replay(void* stream) {
   if (state_ != ReplayState::READY) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::replay: not ready (state %d)",
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::replay: not ready (state %d)",
              static_cast<int>(state_));
     return false;
   }
 
   if (npuContext_ == nullptr) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::replay: null NPU context");
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::replay: null NPU context");
     state_ = ReplayState::ERRORED;
     return false;
   }
@@ -191,7 +191,7 @@ bool HexagonReplayHandle::replay(void* stream) {
     }
 
     if (!ok) {
-      DSP_DIAG(EXECUTION, "HexagonReplayHandle::replay: command failed (type=%d)",
+      DSP_DIAG(EXECUTE, "HexagonReplayHandle::replay: command failed (type=%d)",
                static_cast<int>(cmd.type));
       state_ = ReplayState::ERRORED;
       return false;
@@ -200,14 +200,14 @@ bool HexagonReplayHandle::replay(void* stream) {
 
   // Wait for all NPU operations to complete
   if (!runtime.waitForCompletion(npuContext_)) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::replay: waitForCompletion failed");
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::replay: waitForCompletion failed");
     state_ = ReplayState::ERRORED;
     return false;
   }
 
   replayCount_++;
 
-  DSP_DIAG(EXECUTION, "HexagonReplayHandle::replay: execution %d complete",
+  DSP_DIAG(EXECUTE, "HexagonReplayHandle::replay: execution %d complete",
            replayCount_);
   return true;
 }
@@ -234,7 +234,7 @@ ReplayStatistics HexagonReplayHandle::getStatistics() const {
 bool HexagonReplayHandle::recordDmaHostToTcm(void* tcmDst, const void* hostSrc,
                                               size_t bytes) {
   if (state_ != ReplayState::CAPTURING) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::recordDmaHostToTcm: not capturing");
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::recordDmaHostToTcm: not capturing");
     return false;
   }
 
@@ -246,7 +246,7 @@ bool HexagonReplayHandle::recordDmaHostToTcm(void* tcmDst, const void* hostSrc,
   recordedCommands_.push_back(std::move(cmd));
   numCommands_++;
 
-  DSP_DIAG(EXECUTION, "HexagonReplayHandle::recordDmaHostToTcm: %zu bytes, "
+  DSP_DIAG(EXECUTE, "HexagonReplayHandle::recordDmaHostToTcm: %zu bytes, "
            "host=%p -> tcm=%p", bytes, hostSrc, tcmDst);
   return true;
 }
@@ -254,7 +254,7 @@ bool HexagonReplayHandle::recordDmaHostToTcm(void* tcmDst, const void* hostSrc,
 bool HexagonReplayHandle::recordDmaTcmToHost(void* hostDst, const void* tcmSrc,
                                               size_t bytes) {
   if (state_ != ReplayState::CAPTURING) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::recordDmaTcmToHost: not capturing");
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::recordDmaTcmToHost: not capturing");
     return false;
   }
 
@@ -266,7 +266,7 @@ bool HexagonReplayHandle::recordDmaTcmToHost(void* hostDst, const void* tcmSrc,
   recordedCommands_.push_back(std::move(cmd));
   numCommands_++;
 
-  DSP_DIAG(EXECUTION, "HexagonReplayHandle::recordDmaTcmToHost: %zu bytes, "
+  DSP_DIAG(EXECUTE, "HexagonReplayHandle::recordDmaTcmToHost: %zu bytes, "
            "tcm=%p -> host=%p", bytes, tcmSrc, hostDst);
   return true;
 }
@@ -274,12 +274,12 @@ bool HexagonReplayHandle::recordDmaTcmToHost(void* hostDst, const void* tcmSrc,
 bool HexagonReplayHandle::recordKernelDispatch(void* kernelHandle,
                                                 void** args, int numArgs) {
   if (state_ != ReplayState::CAPTURING) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::recordKernelDispatch: not capturing");
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::recordKernelDispatch: not capturing");
     return false;
   }
 
   if (kernelHandle == nullptr) {
-    DSP_DIAG(EXECUTION, "HexagonReplayHandle::recordKernelDispatch: null kernel handle");
+    DSP_DIAG(EXECUTE, "HexagonReplayHandle::recordKernelDispatch: null kernel handle");
     return false;
   }
 
@@ -292,7 +292,7 @@ bool HexagonReplayHandle::recordKernelDispatch(void* kernelHandle,
   recordedCommands_.push_back(std::move(cmd));
   numCommands_++;
 
-  DSP_DIAG(EXECUTION, "HexagonReplayHandle::recordKernelDispatch: kernel=%p, "
+  DSP_DIAG(EXECUTE, "HexagonReplayHandle::recordKernelDispatch: kernel=%p, "
            "%d args, command #%d", kernelHandle, numArgs, numCommands_);
   return true;
 }

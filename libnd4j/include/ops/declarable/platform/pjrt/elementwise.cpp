@@ -200,9 +200,9 @@ PLATFORM_CHECK(add, ENGINE_TPU) {
 
   Requirements req("PJRT ADD OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("X data type must be TPU-compatible"));
+                 "X data type must be TPU-compatible");
   req.expectTrue(isTpuSupportedType(y->dataType()),
-                 REQUIRE_TRUE_MSG("Y data type must be TPU-compatible"));
+                 "Y data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -261,9 +261,9 @@ PLATFORM_CHECK(subtract, ENGINE_TPU) {
 
   Requirements req("PJRT SUBTRACT OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("X data type must be TPU-compatible"));
+                 "X data type must be TPU-compatible");
   req.expectTrue(isTpuSupportedType(y->dataType()),
-                 REQUIRE_TRUE_MSG("Y data type must be TPU-compatible"));
+                 "Y data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -322,9 +322,9 @@ PLATFORM_CHECK(multiply, ENGINE_TPU) {
 
   Requirements req("PJRT MULTIPLY OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("X data type must be TPU-compatible"));
+                 "X data type must be TPU-compatible");
   req.expectTrue(isTpuSupportedType(y->dataType()),
-                 REQUIRE_TRUE_MSG("Y data type must be TPU-compatible"));
+                 "Y data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -383,9 +383,9 @@ PLATFORM_CHECK(divide, ENGINE_TPU) {
 
   Requirements req("PJRT DIVIDE OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("X data type must be TPU-compatible"));
+                 "X data type must be TPU-compatible");
   req.expectTrue(isTpuSupportedType(y->dataType()),
-                 REQUIRE_TRUE_MSG("Y data type must be TPU-compatible"));
+                 "Y data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -438,7 +438,7 @@ PLATFORM_CHECK(negate, ENGINE_TPU) {
 
   Requirements req("PJRT NEGATE OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -491,7 +491,7 @@ PLATFORM_CHECK(abs, ENGINE_TPU) {
 
   Requirements req("PJRT ABS OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -562,7 +562,7 @@ PLATFORM_CHECK(square, ENGINE_TPU) {
 
   Requirements req("PJRT SQUARE OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -615,7 +615,7 @@ PLATFORM_CHECK(sqrt, ENGINE_TPU) {
 
   Requirements req("PJRT SQRT OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -668,7 +668,7 @@ PLATFORM_CHECK(exp, ENGINE_TPU) {
 
   Requirements req("PJRT EXP OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -721,7 +721,7 @@ PLATFORM_CHECK(log, ENGINE_TPU) {
 
   Requirements req("PJRT LOG OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -780,9 +780,9 @@ PLATFORM_CHECK(Pow, ENGINE_TPU) {
 
   Requirements req("PJRT POW OP");
   req.expectTrue(isTpuSupportedType(x->dataType()),
-                 REQUIRE_TRUE_MSG("X data type must be TPU-compatible"));
+                 "X data type must be TPU-compatible");
   req.expectTrue(isTpuSupportedType(y->dataType()),
-                 REQUIRE_TRUE_MSG("Y data type must be TPU-compatible"));
+                 "Y data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;

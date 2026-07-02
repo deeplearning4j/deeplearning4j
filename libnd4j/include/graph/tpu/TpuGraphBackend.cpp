@@ -38,13 +38,13 @@ TpuGraphBackend::TpuGraphBackend() {
   DSP_DIAG(BACKEND, "TpuGraphBackend: instance created");
 }
 
-TpuGraphBackend* TpuGraphBackend::getInstance() {
+TpuGraphBackend& TpuGraphBackend::getInstance() {
   static TpuGraphBackend* instance = nullptr;
   static std::once_flag initFlag;
   std::call_once(initFlag, []() {
     instance = new TpuGraphBackend();
   });
-  return instance;
+  return *instance;
 }
 
 // ── Availability ────────────────────────────────────────────────────────────

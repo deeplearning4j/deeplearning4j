@@ -133,7 +133,16 @@ public class RmsNorm extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients) {
-        return Arrays.asList(new RmsNormBp(sameDiff, arg(0), gradients.get(0), epsilon).outputVariables());
+        // arg(0) = input, arg(1) = gamma (optional — may be null when op was constructed without gamma)
+        boolean hasGamma = args().length > 1;
+        SDVariable gamma = hasGamma ? arg(1) : null;
+        SDVariable[] bpOutputs = new RmsNormBp(sameDiff, arg(0), gradients.get(0), gamma, epsilon).outputVariables();
+        if (hasGamma) {
+            // bpOutputs[0] = dL/dinput, bpOutputs[1] = dL/dgamma
+            return Arrays.asList(bpOutputs[0], bpOutputs[1]);
+        } else {
+            return Arrays.asList(bpOutputs[0]);
+        }
     }
 
     @Override

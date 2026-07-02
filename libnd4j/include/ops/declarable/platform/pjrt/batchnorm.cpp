@@ -220,18 +220,20 @@ PLATFORM_IMPL(batchnorm, ENGINE_TPU) {
   sd::LongType featureDim = inputShape.size() - 1;  // Assume NHWC
 
   // Create scale and offset if not provided
-  std::unique_ptr<NDArray> defaultGamma, defaultBeta;
+  // (the NDArray shape-vector constructor takes a non-const reference — needs a named local)
+  NDArray *defaultGamma = nullptr, *defaultBeta = nullptr;
+  std::vector<sd::LongType> featureShape = {inputShape[featureDim]};
   if (!gamma) {
-    defaultGamma = std::make_unique<NDArray>(input->ordering(), std::vector<sd::LongType>{inputShape[featureDim]}, input->dataType(), input->getContext());
+    defaultGamma = new NDArray(input->ordering(), featureShape, input->dataType(), input->getContext());
     double one = 1.0;
     defaultGamma->assign(one);
-    gamma = defaultGamma.get();
+    gamma = defaultGamma;
   }
   if (!beta) {
-    defaultBeta = std::make_unique<NDArray>(input->ordering(), std::vector<sd::LongType>{inputShape[featureDim]}, input->dataType(), input->getContext());
+    defaultBeta = new NDArray(input->ordering(), featureShape, input->dataType(), input->getContext());
     double zero = 0.0;
     defaultBeta->assign(zero);
-    beta = defaultBeta.get();
+    beta = defaultBeta;
   }
 
   // Build cache key
@@ -266,6 +268,8 @@ PLATFORM_IMPL(batchnorm, ENGINE_TPU) {
 
   bufOut.toHost(output);
 
+  delete defaultGamma;
+  delete defaultBeta;
   return Status::OK;
 }
 
@@ -275,9 +279,9 @@ PLATFORM_CHECK(batchnorm, ENGINE_TPU) {
   Requirements req("PJRT BATCHNORM OP");
 
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
   req.expectTrue(input->rankOf() >= 2 && input->rankOf() <= 4,
-                 REQUIRE_TRUE_MSG("Input must be 2D, 3D, or 4D tensor"));
+                 "Input must be 2D, 3D, or 4D tensor");
 
   req.logTheSuccess();
   return req;
@@ -312,12 +316,14 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_TPU) {
   sd::LongType featureDim = inputShape.size() - 1;
 
   // Create default gamma if not provided
-  std::unique_ptr<NDArray> defaultGamma;
+  // (the NDArray shape-vector constructor takes a non-const reference — needs a named local)
+  NDArray* defaultGamma = nullptr;
+  std::vector<sd::LongType> featureShape = {inputShape[featureDim]};
   if (!gamma) {
-    defaultGamma = std::make_unique<NDArray>(input->ordering(), std::vector<sd::LongType>{inputShape[featureDim]}, input->dataType(), input->getContext());
+    defaultGamma = new NDArray(input->ordering(), featureShape, input->dataType(), input->getContext());
     double one = 1.0;
     defaultGamma->assign(one);
-    gamma = defaultGamma.get();
+    gamma = defaultGamma;
   }
 
   // Build cache key
@@ -369,18 +375,20 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_TPU) {
     for (sd::LongType d = 0; d < (sd::LongType)inputShape.size(); ++d) {
       if (d != featureDim) allDimsExceptFeature.push_back(d);
     }
-    gradGFull.reduceAlongDimension(reduce::Sum, *gradG, allDimsExceptFeature);
+    gradGFull->reduceAlongDimension(reduce::Sum, gradG, &allDimsExceptFeature);
+    delete gradGFull;
   }
 
   if (gradB != nullptr) {
     // Gradient w.r.t. beta: sum of gradOut over all dims except feature dim
     if (inputShape.size() == 4) {
-      gradOut->reduceAlongDimension(reduce::Sum, *gradB, {0, 1, 2});
+      { std::vector<sd::LongType> bDims3D = {0, 1, 2}; gradOut->reduceAlongDimension(reduce::Sum, gradB, &bDims3D); };
     } else {
-      gradOut->reduceAlongDimension(reduce::Sum, *gradB, {0});
+      { std::vector<sd::LongType> bDims1D = {0}; gradOut->reduceAlongDimension(reduce::Sum, gradB, &bDims1D); };
     }
   }
 
+  delete defaultGamma;
   return Status::OK;
 }
 
@@ -390,9 +398,9 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_TPU) {
   Requirements req("PJRT BATCHNORM_BP OP");
 
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
   req.expectTrue(input->rankOf() >= 2 && input->rankOf() <= 4,
-                 REQUIRE_TRUE_MSG("Input must be 2D, 3D, or 4D tensor"));
+                 "Input must be 2D, 3D, or 4D tensor");
 
   req.logTheSuccess();
   return req;
@@ -514,7 +522,7 @@ PLATFORM_IMPL(layer_norm, ENGINE_TPU) {
 PLATFORM_CHECK(layer_norm, ENGINE_TPU) {
   Requirements req("PJRT LAYER_NORM OP");
   // Currently not fully implemented
-  req.expectFalse(true, REQUIRE_TRUE_MSG("TPU layer_norm not yet implemented"));
+  req.expectFalse(true, "TPU layer_norm not yet implemented");
   return req;
 }
 

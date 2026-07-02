@@ -42,15 +42,22 @@
     <dependencies>
         <!-- ND4J Core API -->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <!-- Native API for backend integration -->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Preset (future hexagon-mlir bindings) — mirrors nd4j-tpu/-preset structure -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-hexagon-preset</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -68,8 +75,13 @@
 
         <!-- Testing -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

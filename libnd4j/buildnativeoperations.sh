@@ -594,6 +594,7 @@ KERNEL_STRATEGY="${KERNEL_STRATEGY:-fastest}"
 KERNEL_AUTOTUNING="${KERNEL_AUTOTUNING:-OFF}"
 KERNEL_CACHING="${KERNEL_CACHING:-ON}"
 HELPER_PRIORITY="${HELPER_PRIORITY:-}"
+ZLUDA="${ZLUDA:-OFF}"  # ZLUDA CUDA-compatibility shim (OFF by default)
 CHECK_VECTORIZATION="${CHECK_VECTORIZATION:-OFF}"
 NAME="${NAME:-}"
 OP_OUTPUT_FILE="${OP_OUTPUT_FILE:-include/generated/include_ops.h}"
@@ -1743,6 +1744,19 @@ do
             fi
             shift # past argument
             ;;
+        --zluda)
+            # Flag to enable SD_ZLUDA=ON in cmake — used for ZLUDA CUDA-compat layer
+            # Accepts value (--zluda ON) or bare flag (--zluda → ON)
+            if [ -n "$value" ] && [ "$value" != "--" ]; then
+                ZLUDA="$value"
+            else
+                ZLUDA="ON"
+            fi
+            if [ "$ZLUDA" == "ON" ]; then
+                print_colored "green" "✓ ZLUDA mode enabled"
+            fi
+            shift # past argument
+            ;;
         --default)
             DEFAULT=YES
             shift # past argument
@@ -2535,6 +2549,8 @@ elif [ "$CHIP" == "cuda" ]; then
     BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
 elif [ "$CHIP" == "tpu" ]; then
     BLAS_ARG="-DSD_TPU=true -DBLAS=TRUE"
+elif [ "$CHIP" == "hexagon" ]; then
+    BLAS_ARG="-DSD_HEXAGON=true -DBLAS=TRUE"
 else
     # Handle CUDA version numbers like "12.9" - treat as CUDA build
     BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
@@ -2549,6 +2565,8 @@ if [ -z "$NAME" ]; then
         NAME="nd4jaurora"
     elif [ "$CHIP" == "tpu" ]; then
         NAME="nd4jtpu"
+    elif [ "$CHIP" == "hexagon" ]; then
+        NAME="nd4jhexagon"
     else
         # Handle CUDA version numbers like "12.9" - treat as CUDA build
         NAME="nd4jcuda"
@@ -2684,6 +2702,7 @@ mkbuilddir() {
 }
 
 HELPERS_CMAKE=""
+ZLUDA_CMAKE=""
 
 # Auto-enable oneDNN when Triton is ON and we're on x86 (x86_64/amd64) for CPU builds only.
 # oneDNN provides the CPU graph backend for DSP and optimized math kernels.
@@ -2807,6 +2826,16 @@ echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
 echo HELPER              = "$HELPER"
 echo HELPERS             = "$HELPERS"
 echo HELPERS_CMAKE       = "$HELPERS_CMAKE"
+# --zluda accepts ON (auto-detect target) or an explicit target: AMD | INTEL | AUTO.
+# Maps to -DSD_ZLUDA=ON [+ -DSD_ZLUDA_TARGET=<target>] consumed by ZludaConfiguration.cmake.
+if [ "$ZLUDA" == "ON" ] || [ "$ZLUDA" == "AMD" ] || [ "$ZLUDA" == "INTEL" ] || [ "$ZLUDA" == "AUTO" ]; then
+    ZLUDA_CMAKE="-DSD_ZLUDA=ON"
+    if [ "$ZLUDA" != "ON" ]; then
+        ZLUDA_CMAKE="$ZLUDA_CMAKE -DSD_ZLUDA_TARGET=$ZLUDA"
+    fi
+    print_colored "green" "✓ ZLUDA cmake flag: $ZLUDA_CMAKE"
+fi
+echo ZLUDA              = "$ZLUDA"
 echo DYNAMIC_KERNEL_SEL  = "$DYNAMIC_KERNEL_SELECTION"
 echo KERNEL_STRATEGY     = "$KERNEL_STRATEGY"
 echo KERNEL_AUTOTUNING   = "$KERNEL_AUTOTUNING"
@@ -2878,6 +2907,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_CUDA_THREADS="${CUDA_THREADS}" \
             -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
             $HELPERS_CMAKE \
+            $ZLUDA_CMAKE \
             $KERNEL_CMAKE \
             $DEP_CACHE_CMAKE \
             $MLIR_ARG \
@@ -2914,6 +2944,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_CUDA_THREADS="${CUDA_THREADS}" \
             -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
             $HELPERS_CMAKE \
+            $ZLUDA_CMAKE \
             $KERNEL_CMAKE \
             $DEP_CACHE_CMAKE \
             $MLIR_ARG \

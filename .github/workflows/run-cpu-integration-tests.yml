@@ -185,21 +185,23 @@ jobs:
         env:
           MAVEN_OPTS: -Xmx2g
         run: |
-          export OMP_NUM_THREADS=1
           TEST_FILTER="${{ github.event.inputs.testFilter }}"
           TEST_FLAGS=""
           if [ -n "$TEST_FILTER" ]; then
             TEST_FLAGS="-Dtest=${TEST_FILTER}"
           fi
           cd platform-tests
+          # NOTE: the pom binds surefire excludedGroups to ${excludedTests} and the forked-JVM
+          # OMP_NUM_THREADS to ${omp.num.threads} — shell exports / -DexcludedGroups are no-ops here.
           mvn test \
               -Dbackend.artifactId=nd4j-native \
               -Djavacpp.platform=${{ matrix.javacpp_platform }} \
               -Djavacpp.platform.extension=${{ matrix.javacpp_extension }} \
               -Dplatform.classifier=${{ matrix.classifier }} \
               -Dtest.heap.size=6g -Dtest.offheap.size=8g \
+              -Domp.num.threads=1 \
               -DskipTestResourceEnforcement=true \
-              -DexcludedGroups="long-running-test,large-resources,distributed-systems,downloads" \
+              -DexcludedTests="long-running-test,large-resources,distributed-systems,downloads" \
               ${TEST_FLAGS} \
               --no-transfer-progress --batch-mode --fail-at-end
 

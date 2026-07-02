@@ -182,6 +182,6 @@ public class Nd4jHexagonPresets implements LoadEnabled, BuildEnabled, InfoMapper
                .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"));
 
         // Handle operations exclusion
-        OpExclusionUtils.processExclusions(infoMap);
+        OpExclusionUtils.processOps(logger, properties, infoMap);
     }
 }

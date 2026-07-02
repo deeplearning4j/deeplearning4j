@@ -47,13 +47,11 @@
             <artifactId>nd4j-presets-common</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>${dependency.groupId}</groupId>
-            <artifactId>${dependency.artifactId}</artifactId>
-            <version>${dependency.version}</version>
-            <type>${dependency.packaging}</type>
-            <classifier>${dependency.classifier}</classifier>
-        </dependency>
+        <!-- NOTE: the standard preset template's ${dependency.*} platform-classified artifact
+             dependency is intentionally omitted until a native libnd4j TPU chip build exists —
+             it would self-reference nd4j-tpu-preset:jar:<platform>, which cannot be built yet
+             and breaks downstream resolution (platform-tests -Ptest-tpu). Restore it when the
+             PJRT bindings land. See ADR 0072 / ADR 0102. -->
 
         <dependency>
             <groupId>org.bytedeco</groupId>

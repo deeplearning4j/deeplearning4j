@@ -40,15 +40,27 @@
     </properties>
 
     <dependencies>
+        <!-- NOTE: presets must not depend on their backend module (nd4j-hexagon depends on THIS
+             module, mirroring nd4j-cuda/-preset and nd4j-tpu/-preset — the reverse edge created
+             a reactor cycle). OpExclusionUtils comes from nd4j-presets-common. -->
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-hexagon</artifactId>
+            <artifactId>nd4j-presets-common</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
         </dependency>
     </dependencies>
 

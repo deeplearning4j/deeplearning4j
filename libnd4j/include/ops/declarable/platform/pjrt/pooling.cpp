@@ -298,10 +298,10 @@ PLATFORM_IMPL(maxpool2d, ENGINE_TPU) {
 
   // Convert to NHWC if needed
   NDArray* inputNHWC = input;
-  std::unique_ptr<NDArray> inputConverted;
+  NDArray* inputConverted = nullptr;
   if (isNCHW) {
-    inputConverted = std::make_unique<NDArray>(input->permute({0, 2, 3, 1}));
-    inputNHWC = inputConverted.get();
+    { std::vector<sd::LongType> _perm_inputConverted = {0, 2, 3, 1}; inputConverted = input->permute(_perm_inputConverted, false, false); };
+    inputNHWC = inputConverted;
   }
 
   std::vector<sd::LongType> inputShape(inputNHWC->shapeOf(), inputNHWC->shapeOf() + inputNHWC->rankOf());
@@ -339,9 +339,10 @@ PLATFORM_IMPL(maxpool2d, ENGINE_TPU) {
 
   // Convert back to NCHW if needed
   if (isNCHW) {
-    output->permutei({0, 3, 1, 2});
+    output->permutei({0, 3, 1, 2}, false, false);
   }
 
+  delete inputConverted;
   return Status::OK;
 }
 
@@ -351,14 +352,14 @@ PLATFORM_CHECK(maxpool2d, ENGINE_TPU) {
   Requirements req("PJRT MAXPOOL2D OP");
 
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
-  req.expectTrue(input->rankOf() == 4, REQUIRE_TRUE_MSG("Input must be 4D tensor"));
+                 "Input data type must be TPU-compatible");
+  req.expectTrue(input->rankOf() == 4, "Input must be 4D tensor");
 
   // Check for unsupported dilation
   int dH = INT_ARG(6);
   int dW = INT_ARG(7);
   req.expectTrue(dH == 1 && dW == 1,
-                 REQUIRE_TRUE_MSG("TPU maxpool2d currently supports dilation=1 only"));
+                 "TPU maxpool2d currently supports dilation=1 only");
 
   req.logTheSuccess();
   return req;
@@ -395,13 +396,13 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_TPU) {
   // Convert to NHWC if needed
   NDArray* inputNHWC = input;
   NDArray* gradOutNHWC = gradOut;
-  std::unique_ptr<NDArray> inputConverted, gradOutConverted;
+  NDArray *inputConverted = nullptr, *gradOutConverted = nullptr;
 
   if (isNCHW) {
-    inputConverted = std::make_unique<NDArray>(input->permute({0, 2, 3, 1}));
-    gradOutConverted = std::make_unique<NDArray>(gradOut->permute({0, 2, 3, 1}));
-    inputNHWC = inputConverted.get();
-    gradOutNHWC = gradOutConverted.get();
+    { std::vector<sd::LongType> _perm_inputConverted = {0, 2, 3, 1}; inputConverted = input->permute(_perm_inputConverted, false, false); };
+    { std::vector<sd::LongType> _perm_gradOutConverted = {0, 2, 3, 1}; gradOutConverted = gradOut->permute(_perm_gradOutConverted, false, false); };
+    inputNHWC = inputConverted;
+    gradOutNHWC = gradOutConverted;
   }
 
   std::vector<sd::LongType> inputShape(inputNHWC->shapeOf(), inputNHWC->shapeOf() + inputNHWC->rankOf());
@@ -441,9 +442,11 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_TPU) {
 
   // Convert back to NCHW if needed
   if (isNCHW) {
-    gradI->permutei({0, 3, 1, 2});
+    gradI->permutei({0, 3, 1, 2}, false, false);
   }
 
+  delete inputConverted;
+  delete gradOutConverted;
   return Status::OK;
 }
 
@@ -453,13 +456,13 @@ PLATFORM_CHECK(maxpool2d_bp, ENGINE_TPU) {
   Requirements req("PJRT MAXPOOL2D_BP OP");
 
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
-  req.expectTrue(input->rankOf() == 4, REQUIRE_TRUE_MSG("Input must be 4D tensor"));
+                 "Input data type must be TPU-compatible");
+  req.expectTrue(input->rankOf() == 4, "Input must be 4D tensor");
 
   int dH = INT_ARG(6);
   int dW = INT_ARG(7);
   req.expectTrue(dH == 1 && dW == 1,
-                 REQUIRE_TRUE_MSG("TPU maxpool2d_bp currently supports dilation=1 only"));
+                 "TPU maxpool2d_bp currently supports dilation=1 only");
 
   req.logTheSuccess();
   return req;
@@ -495,10 +498,10 @@ PLATFORM_IMPL(avgpool2d, ENGINE_TPU) {
 
   // Convert to NHWC if needed
   NDArray* inputNHWC = input;
-  std::unique_ptr<NDArray> inputConverted;
+  NDArray* inputConverted = nullptr;
   if (isNCHW) {
-    inputConverted = std::make_unique<NDArray>(input->permute({0, 2, 3, 1}));
-    inputNHWC = inputConverted.get();
+    { std::vector<sd::LongType> _perm_inputConverted = {0, 2, 3, 1}; inputConverted = input->permute(_perm_inputConverted, false, false); };
+    inputNHWC = inputConverted;
   }
 
   std::vector<sd::LongType> inputShape(inputNHWC->shapeOf(), inputNHWC->shapeOf() + inputNHWC->rankOf());
@@ -536,9 +539,10 @@ PLATFORM_IMPL(avgpool2d, ENGINE_TPU) {
 
   // Convert back to NCHW if needed
   if (isNCHW) {
-    output->permutei({0, 3, 1, 2});
+    output->permutei({0, 3, 1, 2}, false, false);
   }
 
+  delete inputConverted;
   return Status::OK;
 }
 
@@ -548,13 +552,13 @@ PLATFORM_CHECK(avgpool2d, ENGINE_TPU) {
   Requirements req("PJRT AVGPOOL2D OP");
 
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
-  req.expectTrue(input->rankOf() == 4, REQUIRE_TRUE_MSG("Input must be 4D tensor"));
+                 "Input data type must be TPU-compatible");
+  req.expectTrue(input->rankOf() == 4, "Input must be 4D tensor");
 
   int dH = INT_ARG(6);
   int dW = INT_ARG(7);
   req.expectTrue(dH == 1 && dW == 1,
-                 REQUIRE_TRUE_MSG("TPU avgpool2d currently supports dilation=1 only"));
+                 "TPU avgpool2d currently supports dilation=1 only");
 
   req.logTheSuccess();
   return req;
@@ -591,13 +595,13 @@ PLATFORM_IMPL(avgpool2d_bp, ENGINE_TPU) {
   // Convert to NHWC if needed
   NDArray* inputNHWC = input;
   NDArray* gradOutNHWC = gradOut;
-  std::unique_ptr<NDArray> inputConverted, gradOutConverted;
+  NDArray *inputConverted = nullptr, *gradOutConverted = nullptr;
 
   if (isNCHW) {
-    inputConverted = std::make_unique<NDArray>(input->permute({0, 2, 3, 1}));
-    gradOutConverted = std::make_unique<NDArray>(gradOut->permute({0, 2, 3, 1}));
-    inputNHWC = inputConverted.get();
-    gradOutNHWC = gradOutConverted.get();
+    { std::vector<sd::LongType> _perm_inputConverted = {0, 2, 3, 1}; inputConverted = input->permute(_perm_inputConverted, false, false); };
+    { std::vector<sd::LongType> _perm_gradOutConverted = {0, 2, 3, 1}; gradOutConverted = gradOut->permute(_perm_gradOutConverted, false, false); };
+    inputNHWC = inputConverted;
+    gradOutNHWC = gradOutConverted;
   }
 
   std::vector<sd::LongType> inputShape(inputNHWC->shapeOf(), inputNHWC->shapeOf() + inputNHWC->rankOf());
@@ -636,9 +640,11 @@ PLATFORM_IMPL(avgpool2d_bp, ENGINE_TPU) {
 
   // Convert back to NCHW if needed
   if (isNCHW) {
-    gradI->permutei({0, 3, 1, 2});
+    gradI->permutei({0, 3, 1, 2}, false, false);
   }
 
+  delete inputConverted;
+  delete gradOutConverted;
   return Status::OK;
 }
 
@@ -648,13 +654,13 @@ PLATFORM_CHECK(avgpool2d_bp, ENGINE_TPU) {
   Requirements req("PJRT AVGPOOL2D_BP OP");
 
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
-  req.expectTrue(input->rankOf() == 4, REQUIRE_TRUE_MSG("Input must be 4D tensor"));
+                 "Input data type must be TPU-compatible");
+  req.expectTrue(input->rankOf() == 4, "Input must be 4D tensor");
 
   int dH = INT_ARG(6);
   int dW = INT_ARG(7);
   req.expectTrue(dH == 1 && dW == 1,
-                 REQUIRE_TRUE_MSG("TPU avgpool2d_bp currently supports dilation=1 only"));
+                 "TPU avgpool2d_bp currently supports dilation=1 only");
 
   req.logTheSuccess();
   return req;
@@ -677,7 +683,7 @@ PLATFORM_IMPL(maxpool3dnew, ENGINE_TPU) {
 
 PLATFORM_CHECK(maxpool3dnew, ENGINE_TPU) {
   Requirements req("PJRT MAXPOOL3D OP");
-  req.expectFalse(true, REQUIRE_TRUE_MSG("TPU maxpool3d not yet implemented"));
+  req.expectFalse(true, "TPU maxpool3d not yet implemented");
   return req;
 }
 
@@ -688,7 +694,7 @@ PLATFORM_IMPL(avgpool3dnew, ENGINE_TPU) {
 
 PLATFORM_CHECK(avgpool3dnew, ENGINE_TPU) {
   Requirements req("PJRT AVGPOOL3D OP");
-  req.expectFalse(true, REQUIRE_TRUE_MSG("TPU avgpool3d not yet implemented"));
+  req.expectFalse(true, "TPU avgpool3d not yet implemented");
   return req;
 }
 

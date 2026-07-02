@@ -35,9 +35,9 @@ int pjrtBufferType(DataType dtype) {
   switch (dtype) {
     case DataType::FLOAT32:
       return 11;  // F32
-    case DataType::FLOAT64:
+    case DataType::DOUBLE:
       return 12;  // F64
-    case DataType::FLOAT16:
+    case DataType::HALF:
       return 10;  // F16
     case DataType::BFLOAT16:
       return 16;  // BF16
@@ -69,9 +69,9 @@ DataType fromPjrtBufferType(int pjrtType) {
     case 11:
       return DataType::FLOAT32;
     case 12:
-      return DataType::FLOAT64;
+      return DataType::DOUBLE;
     case 10:
-      return DataType::FLOAT16;
+      return DataType::HALF;
     case 16:
       return DataType::BFLOAT16;
     case 2:
@@ -102,7 +102,7 @@ bool isTpuSupportedType(DataType dtype) {
   switch (dtype) {
     case DataType::FLOAT32:
     case DataType::BFLOAT16:
-    case DataType::FLOAT16:
+    case DataType::HALF:
     case DataType::INT32:
     case DataType::INT8:
     case DataType::BOOL:
@@ -116,9 +116,9 @@ std::string getHLOTypeString(DataType dtype) {
   switch (dtype) {
     case DataType::FLOAT32:
       return "f32";
-    case DataType::FLOAT64:
+    case DataType::DOUBLE:
       return "f64";
-    case DataType::FLOAT16:
+    case DataType::HALF:
       return "f16";
     case DataType::BFLOAT16:
       return "bf16";

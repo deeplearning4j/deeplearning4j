@@ -200,7 +200,7 @@ PLATFORM_CHECK(relu, ENGINE_TPU) {
   auto input = INPUT_VARIABLE(0);
   Requirements req("PJRT RELU OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
   req.logTheSuccess();
   return req;
 }
@@ -249,7 +249,7 @@ PLATFORM_CHECK(sigmoid, ENGINE_TPU) {
   auto input = INPUT_VARIABLE(0);
   Requirements req("PJRT SIGMOID OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
   req.logTheSuccess();
   return req;
 }
@@ -298,7 +298,7 @@ PLATFORM_CHECK(tanh, ENGINE_TPU) {
   auto input = INPUT_VARIABLE(0);
   Requirements req("PJRT TANH OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
   req.logTheSuccess();
   return req;
 }
@@ -353,7 +353,7 @@ PLATFORM_CHECK(softmax, ENGINE_TPU) {
   auto input = INPUT_VARIABLE(0);
   Requirements req("PJRT SOFTMAX OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
   req.logTheSuccess();
   return req;
 }
@@ -439,7 +439,7 @@ PLATFORM_CHECK(log_softmax, ENGINE_TPU) {
   auto input = INPUT_VARIABLE(0);
   Requirements req("PJRT LOG_SOFTMAX OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
   req.logTheSuccess();
   return req;
 }

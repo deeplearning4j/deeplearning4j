@@ -1,0 +1,187 @@
+name: AVX-512 Tests under Intel SDE
+
+# GitHub-hosted x64 runners are a hardware lottery (AMD EPYC 7763 has no AVX-512),
+# so the linux-x86_64-avx512 artifacts built by build-deploy-linux-x86_64.yml are
+# normally never executed in CI. This workflow makes AVX-512 execution
+# deterministic by running the test JVM under the Intel Software Development
+# Emulator when the host lacks AVX-512 (5-20x slowdown — correctness only, never
+# use for performance claims).
+#
+# The SDE prefix is injected through the existing platform-tests -Dtest.prefix /
+# bin/java wrapper mechanism. See ADR 0102.
+
+on:
+  workflow_dispatch:
+    inputs:
+      sdeUrl:
+        description: 'Intel SDE linux tarball URL'
+        required: false
+        default: 'https://downloadmirror.intel.com/777395/sde-external-9.21.1-2023-04-24-lin.tar.xz'
+
+      sdeCpu:
+        description: 'SDE CPU model to emulate (skx=Skylake-X AVX-512F/BW/DQ/VL, clx adds VNNI, icl, spr adds AMX)'
+        required: false
+        default: 'skx'
+        type: choice
+        options:
+          - skx
+          - clx
+          - icl
+          - spr
+
+      testTier:
+        description: 'Tag tier to run'
+        required: false
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - full-ci
+
+      testFilter:
+        description: 'Surefire -Dtest filter override (runs within the selected tier tags)'
+        required: false
+        default: ''
+
+env:
+  MAVEN_OPTS: -Xmx2g
+
+jobs:
+  avx512-sde:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    name: avx512-sde (${{ inputs.sdeCpu }} / ${{ inputs.testTier }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Report host CPU features
+        shell: bash
+        run: |
+          lscpu | head -n 25
+          echo "── AVX features ──"
+          grep -o 'avx[0-9a-z_]*' /proc/cpuinfo | sort -u || true
+          if grep -q avx512f /proc/cpuinfo; then
+            echo "Host supports AVX-512 natively"
+          else
+            echo "Host lacks AVX-512 — tests will run under Intel SDE"
+          fi
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: Install Intel SDE
+        shell: bash
+        run: |
+          curl -fL "${{ inputs.sdeUrl }}" -o "$RUNNER_TEMP/sde.tar.xz"
+          mkdir -p "$RUNNER_TEMP/sde"
+          tar -xf "$RUNNER_TEMP/sde.tar.xz" -C "$RUNNER_TEMP/sde" --strip-components=1
+          test -x "$RUNNER_TEMP/sde/sde64" || { echo "::error::sde64 not found after extraction"; exit 1; }
+          echo "SDE_BIN=$RUNNER_TEMP/sde/sde64" >> "$GITHUB_ENV"
+          # SDE uses ptrace to control the target process
+          sudo sysctl -w kernel.yama.ptrace_scope=0 || true
+          "$RUNNER_TEMP/sde/sde64" -help 2>&1 | head -n 5 || true
+
+      - name: Build Java modules (avx512 native jars from snapshots)
+        shell: bash
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension=-avx512 \
+            -Dplatform.classifier=linux-x86_64-avx512 \
+            -Dmaven.javadoc.skip=true \
+            -pl :platform-tests --also-make \
+            -pl !:libnd4j \
+            --no-transfer-progress --batch-mode 2>&1 | tee avx512-build.log
+
+      - name: Download test resources
+        shell: bash
+        run: |
+          wget -q https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip -q master.zip
+          cd dl4j-test-resources-master
+          mvn clean install -DskipTests --no-transfer-progress --batch-mode
+
+      - name: Run ${{ inputs.testTier }} tier (SDE when host lacks AVX-512)
+        shell: bash
+        run: |
+          TIER_PROFILE="-Psmoke"
+          if [ "${{ inputs.testTier }}" = "full-ci" ]; then
+            TIER_PROFILE="-Pfull-ci"
+          fi
+
+          cd platform-tests
+          ARGS=(test "$TIER_PROFILE"
+                -Dbackend.artifactId=nd4j-native
+                -Djavacpp.platform=linux-x86_64
+                -Djavacpp.platform.extension=-avx512
+                -Dplatform.classifier=linux-x86_64-avx512
+                -Dtest.heap.size=4g -Dtest.offheap.size=6g
+                -Domp.num.threads=2
+                -DskipTestResourceEnforcement=true
+                -DexcludedTests=long-running-test,large-resources,downloads
+                --no-transfer-progress --batch-mode --fail-at-end)
+
+          TEST_FILTER="${{ inputs.testFilter }}"
+          if [ -n "$TEST_FILTER" ]; then
+            ARGS+=("-Dtest=${TEST_FILTER}")
+          fi
+
+          if ! grep -q avx512f /proc/cpuinfo; then
+            # bin/java wrapper passes unknown prefixes straight through: sde64 -<cpu> -- java ...
+            ARGS+=("-Dtest.prefix=$SDE_BIN -${{ inputs.sdeCpu }} --")
+          fi
+
+          mvn "${ARGS[@]}" 2>&1 | tee avx512-sde-tests.log
+
+      - name: Upload logs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: avx512-sde-${{ inputs.sdeCpu }}-${{ inputs.testTier }}
+          path: |
+            platform-tests/target/surefire-reports/
+            platform-tests/avx512-sde-tests.log
+            avx512-build.log
+          retention-days: 14

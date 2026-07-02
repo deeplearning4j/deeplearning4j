@@ -200,7 +200,7 @@ PLATFORM_CHECK(transpose, ENGINE_TPU) {
 
   Requirements req("PJRT TRANSPOSE OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -259,7 +259,7 @@ PLATFORM_CHECK(reshape, ENGINE_TPU) {
 
   Requirements req("PJRT RESHAPE OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -334,7 +334,7 @@ PLATFORM_CHECK(concat, ENGINE_TPU) {
 
   Requirements req("PJRT CONCAT OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -449,7 +449,7 @@ PLATFORM_CHECK(slice, ENGINE_TPU) {
 
   Requirements req("PJRT SLICE OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -512,7 +512,7 @@ PLATFORM_IMPL(tile, ENGINE_TPU) {
 
 PLATFORM_CHECK(tile, ENGINE_TPU) {
   Requirements req("PJRT TILE OP");
-  req.expectFalse(true, REQUIRE_TRUE_MSG("TPU tile not yet implemented"));
+  req.expectFalse(true, "TPU tile not yet implemented");
   return req;
 }
 

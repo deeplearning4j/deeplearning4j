@@ -8,6 +8,16 @@ on:
         required: false
         default: ''
 
+      testTier:
+        description: 'Tag tier: classes (default -Dtest list), smoke (-Psmoke, ~30s), full-ci (-Pfull-ci, ~5min). Ignored when testFilter is set.'
+        required: false
+        default: 'classes'
+        type: choice
+        options:
+          - classes
+          - smoke
+          - full-ci
+
       runsOn:
         description: 'Override runner for all jobs'
         required: false
@@ -185,22 +195,31 @@ jobs:
         env:
           MAVEN_OPTS: -Xmx2g
         run: |
-          export OMP_NUM_THREADS=1
+          TIER="${{ github.event.inputs.testTier }}"
           TEST_FILTER="${{ github.event.inputs.testFilter }}"
+          TIER_FLAGS=""
           if [ -n "$TEST_FILTER" ]; then
             TEST_FLAGS="-Dtest=${TEST_FILTER}"
+          elif [ "$TIER" = "smoke" ]; then
+            TIER_FLAGS="-Psmoke"; TEST_FLAGS=""
+          elif [ "$TIER" = "full-ci" ]; then
+            TIER_FLAGS="-Pfull-ci"; TEST_FLAGS=""
           else
             TEST_FLAGS="-Dtest=SameDiffTests,SameDiffTrainingTest,BasicOpValidationTests,CustomOpsTests"
           fi
           cd platform-tests
+          # NOTE: the pom binds surefire excludedGroups to ${excludedTests} and the forked-JVM
+          # OMP_NUM_THREADS to ${omp.num.threads} — shell exports / -DexcludedGroups are no-ops here.
           mvn test \
+              ${TIER_FLAGS} \
               -Dbackend.artifactId=nd4j-native \
               -Djavacpp.platform=${{ matrix.javacpp_platform }} \
               -Djavacpp.platform.extension=${{ matrix.javacpp_extension }} \
               -Dplatform.classifier=${{ matrix.classifier }} \
               -Dtest.heap.size=4g -Dtest.offheap.size=6g \
+              -Domp.num.threads=1 \
               -DskipTestResourceEnforcement=true \
-              -DexcludedGroups="long-running-test,large-resources,downloads" \
+              -DexcludedTests="long-running-test,large-resources,downloads" \
               ${TEST_FLAGS} \
               --no-transfer-progress --batch-mode --fail-at-end
 

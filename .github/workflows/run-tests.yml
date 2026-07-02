@@ -254,7 +254,8 @@ jobs:
             -Dtest.heap.size=${{ inputs.heapSize }} \
             -Dtest.offheap.size=${{ inputs.offHeapSize }} \
             -DskipTestResourceEnforcement=true \
-            -DexcludedGroups="long-running-test,large-resources,downloads" \
+            -Domp.num.threads=1 \
+            -DexcludedTests="long-running-test,large-resources,downloads" \
             ${TEST_FLAGS} \
             --no-transfer-progress --batch-mode --fail-at-end
 
@@ -409,7 +410,8 @@ jobs:
             -Dtest.heap.size=${{ inputs.heapSize }} \
             -Dtest.offheap.size=${{ inputs.offHeapSize }} \
             -DskipTestResourceEnforcement=true \
-            -DexcludedGroups="long-running-test,large-resources,downloads" \
+            -Domp.num.threads=1 \
+            -DexcludedTests="long-running-test,large-resources,downloads" \
             ${TEST_FLAGS} \
             --no-transfer-progress --batch-mode --fail-at-end
 

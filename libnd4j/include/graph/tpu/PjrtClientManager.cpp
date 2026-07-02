@@ -21,12 +21,60 @@
 #include <graph/tpu/PjrtClientManager.h>
 #include <graph/DspDiagnostics.h>
 
+#include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
 #include <mutex>
+#include <string>
+#include <sys/stat.h>
+#include <vector>
 
 namespace sd {
 namespace graph {
+
+// Known PJRT plugin shared-library filenames, in preference order. The SAME
+// PjrtClientManager drives any of them via the uniform GetPjrtApi() C ABI:
+//   libtpu.so                     — Google Cloud TPU
+//   xla_rocm_plugin.so            — AMD ROCm (jax-rocm7-pjrt wheel)
+//   pjrt_c_api_gpu_plugin.so      — NVIDIA CUDA PJRT plugin
+//   libpjrt_c_api_cpu_dynamic.so  — CPU reference plugin (hardware-free smoke)
+static const char* kKnownPjrtPluginNames[] = {
+    "libtpu.so", "xla_rocm_plugin.so", "pjrt_c_api_gpu_plugin.so",
+    "libpjrt_c_api_cpu_dynamic.so", nullptr};
+
+static bool pathIsRegularFile(const std::string& p) {
+  struct stat st;
+  return ::stat(p.c_str(), &st) == 0 && S_ISREG(st.st_mode);
+}
+
+static bool pathIsDir(const std::string& p) {
+  struct stat st;
+  return ::stat(p.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+}
+
+// Resolve candidate PJRT plugin paths from environment, in precedence order.
+// A value may be a direct .so path or a directory containing a known plugin.
+// Values with unresolved Maven placeholders ("${...}") are ignored. This is
+// what lets the TPU-built manager also load the AMD/ROCm or CPU PJRT plugin
+// without any recompile — point PJRT_PLUGIN_LIBRARY_PATH at the fetched .so.
+static void collectPluginCandidatesFromEnv(std::vector<std::string>& out) {
+  static const char* kEnvVars[] = {"PJRT_PLUGIN_LIBRARY_PATH", "ROCM_PJRT_PATH",
+                                    "PJRT_PATH", "TPU_LIBRARY_PATH", nullptr};
+  for (int e = 0; kEnvVars[e] != nullptr; ++e) {
+    const char* raw = std::getenv(kEnvVars[e]);
+    if (raw == nullptr || raw[0] == '\0') continue;
+    std::string val(raw);
+    if (val.find("${") != std::string::npos) continue;  // unresolved placeholder
+    if (pathIsRegularFile(val)) {
+      out.push_back(val);
+    } else if (pathIsDir(val)) {
+      for (int k = 0; kKnownPjrtPluginNames[k] != nullptr; ++k) {
+        std::string cand = val + "/" + kKnownPjrtPluginNames[k];
+        if (pathIsRegularFile(cand)) out.push_back(cand);
+      }
+    }
+  }
+}
 
 // ── PJRT C API function pointer types ───────────────────────────────────────
 // These mirror the PJRT C API signatures but are resolved at runtime via dlsym.
@@ -76,24 +124,27 @@ PjrtClientManager::~PjrtClientManager() {
 // ── Library Loading ─────────────────────────────────────────────────────────
 
 bool PjrtClientManager::loadLibrary() {
-  // Try standard library name first, then fallback paths
-  static const char* libPaths[] = {
-    "libtpu.so",
-    "/usr/lib/libtpu.so",
-    "/usr/local/lib/libtpu.so",
-    nullptr
-  };
+  // Candidate plugin paths: env-provided ones first (this is how the AMD/ROCm or
+  // CPU PJRT plugin is selected without a recompile — see collectPluginCandidatesFromEnv),
+  // then the standard on-disk libtpu locations as a fallback.
+  std::vector<std::string> candidates;
+  collectPluginCandidatesFromEnv(candidates);
+  candidates.push_back("libtpu.so");                 // rely on loader search path
+  candidates.push_back("/usr/lib/libtpu.so");
+  candidates.push_back("/usr/local/lib/libtpu.so");
 
-  for (int i = 0; libPaths[i] != nullptr; ++i) {
-    libHandle_ = dlopen(libPaths[i], RTLD_NOW | RTLD_LOCAL);
+  for (const std::string& path : candidates) {
+    libHandle_ = dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
     if (libHandle_ != nullptr) {
-      DSP_DIAG(BACKEND, "PjrtClientManager: loaded %s", libPaths[i]);
+      DSP_DIAG(BACKEND, "PjrtClientManager: loaded PJRT plugin %s", path.c_str());
       break;
     }
   }
 
   if (libHandle_ == nullptr) {
-    lastError_ = std::string("Failed to load libtpu.so: ") + dlerror();
+    lastError_ = std::string("Failed to load any PJRT plugin (libtpu.so / "
+                             "xla_rocm_plugin.so / CPU plugin). Set "
+                             "PJRT_PLUGIN_LIBRARY_PATH. Last dlerror: ") + dlerror();
     DSP_DIAG(BACKEND, "PjrtClientManager: %s", lastError_.c_str());
     return false;
   }

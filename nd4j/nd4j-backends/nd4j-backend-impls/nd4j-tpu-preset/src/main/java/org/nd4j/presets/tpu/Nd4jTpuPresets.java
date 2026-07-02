@@ -191,6 +191,6 @@ public class Nd4jTpuPresets implements LoadEnabled, BuildEnabled, InfoMapper {
                         .skip());
 
         // Handle operations exclusion
-        OpExclusionUtils.processExclusions(infoMap);
+        OpExclusionUtils.processOps(logger, properties, infoMap);
     }
 }

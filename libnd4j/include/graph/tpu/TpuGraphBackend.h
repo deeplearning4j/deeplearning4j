@@ -51,7 +51,7 @@ class SD_LIB_EXPORT TpuGraphBackend : public GraphBackend {
   /**
    * Get the singleton instance.
    */
-  static TpuGraphBackend* getInstance();
+  static TpuGraphBackend& getInstance();
 
   // ── GraphBackend interface ────────────────────────────────────────────
 

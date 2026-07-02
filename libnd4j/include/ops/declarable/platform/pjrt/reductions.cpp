@@ -297,7 +297,7 @@ PLATFORM_CHECK(reduce_sum, ENGINE_TPU) {
 
   Requirements req("PJRT REDUCE_SUM OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -375,7 +375,7 @@ PLATFORM_CHECK(reduce_mean, ENGINE_TPU) {
 
   Requirements req("PJRT REDUCE_MEAN OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -453,7 +453,7 @@ PLATFORM_CHECK(reduce_max, ENGINE_TPU) {
 
   Requirements req("PJRT REDUCE_MAX OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -531,7 +531,7 @@ PLATFORM_CHECK(reduce_min, ENGINE_TPU) {
 
   Requirements req("PJRT REDUCE_MIN OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -609,7 +609,7 @@ PLATFORM_CHECK(reduce_prod, ENGINE_TPU) {
 
   Requirements req("PJRT REDUCE_PROD OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -742,7 +742,7 @@ PLATFORM_CHECK(argmax, ENGINE_TPU) {
 
   Requirements req("PJRT ARGMAX OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;
@@ -871,7 +871,7 @@ PLATFORM_CHECK(argmin, ENGINE_TPU) {
 
   Requirements req("PJRT ARGMIN OP");
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
 
   req.logTheSuccess();
   return req;

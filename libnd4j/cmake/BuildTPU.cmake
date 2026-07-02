@@ -1,138 +1,112 @@
 # cmake/BuildTPU.cmake
-# Contains all logic for building the TPU library using PJRT.
+# Configures the TPU/PJRT native library (nd4jtpu).
+#
+# MainBuildFlow.cmake (included before this file) already creates the
+# ${SD_LIBRARY_NAME}_object (OBJECT) and ${SD_LIBRARY_NAME} (SHARED) targets
+# with the standard CPU source set. This file's job is to:
+#   1. Detect the PJRT C API header (vendored copy ships in-tree).
+#   2. Add TPU-specific sources (graph/tpu/*.cpp + pjrt platform/*.cpp).
+#   3. Set compile definitions and include directories on the existing targets.
+#   4. Link dlopen support (dlopen/dlsym used in PjrtClientManager.cpp at runtime).
+#
+# libtpu.so is loaded at RUNTIME via dlopen() — it is NOT a link-time dependency.
+# The in-tree vendored pjrt_c_api.h is sufficient for a no-python, no-hardware build.
 
-# Function to set up TPU build environment
 function(setup_tpu_build)
-    message(STATUS "Setting up TPU/PJRT build environment")
+    message(STATUS "=== TPU BUILD CONFIGURATION ===")
 
-    add_definitions(-D__TPUBLAS__=true)
-    add_definitions(-DSD_TPU=true)
-    add_definitions(-DHAVE_PJRT=1)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}" PARENT_SCOPE)
-
-# --- Source File Collection ---
-# Core sources (same as CPU)
-file(GLOB_RECURSE BLAS_SOURCES ./include/blas/*.h)
-file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
-file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/exceptions/*.h)
-file(GLOB_RECURSE EXEC_SOURCES ./include/execution/*.cpp ./include/execution/*.h)
-file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp ./include/types/*.h)
-file(GLOB_RECURSE ARRAY_SOURCES ./include/array/*.cpp ./include/array/*.h)
-file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp ./include/memory/*.h)
-file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp ./include/graph/*.h)
-file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
-file(GLOB_RECURSE CUSTOMOPS_HELPERS_IMPL_SOURCES ./include/ops/declarable/helpers/impl/*.cpp)
-file(GLOB_RECURSE CUSTOMOPS_HELPERS_CPU_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp)
-file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp ./include/ops/*.h)
-file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*.h)
-file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp ./include/helpers/cpu/*.cpp ./include/helpers/*.h)
-file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp ./include/legacy/*.h)
-file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp ./include/loops/*.h)
-file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
-
-set(ALL_SOURCES "")
-set(STATIC_SOURCES_TO_CHECK ${BLAS_SOURCES} ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES} ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES} ${SYSTEM_CONFIG_SOURCES})
-
-# --- TPU/PJRT Platform Sources ---
-if(HAVE_PJRT)
-    file(GLOB_RECURSE CUSTOMOPS_PJRT_SOURCES
-        ./include/ops/declarable/platform/pjrt/*.cpp
-        ./include/ops/declarable/platform/pjrt/*.h)
-    list(APPEND STATIC_SOURCES_TO_CHECK ${CUSTOMOPS_PJRT_SOURCES})
-    message(STATUS "Added PJRT platform sources: ${CUSTOMOPS_PJRT_SOURCES}")
-endif()
-
-# --- TPU Graph Backend Sources ---
-file(GLOB_RECURSE TPU_GRAPH_SOURCES
-    ./include/graph/tpu/*.cpp
-    ./include/graph/tpu/*.h)
-list(APPEND STATIC_SOURCES_TO_CHECK ${TPU_GRAPH_SOURCES})
-message(STATUS "Added TPU graph backend sources: ${TPU_GRAPH_SOURCES}")
-
-# Add no-PLT stub functions for functrace builds (GCC and Clang)
-if(SD_GCC_FUNCTRACE)
-    list(APPEND STATIC_SOURCES_TO_CHECK ./include/platform/noplt_libc_stubs.c)
-    message(STATUS "Added noplt_libc_stubs.c for functrace build")
-endif()
-
-list(APPEND ALL_SOURCES ${STATIC_SOURCES_TO_CHECK})
-
-# --- Exclude CUDA/HIP/Metal/Vulkan/L0/Hexagon specific sources ---
-list(FILTER ALL_SOURCES EXCLUDE REGEX ".*cuda.*")
-list(FILTER ALL_SOURCES EXCLUDE REGEX ".*hip/.*")
-list(FILTER ALL_SOURCES EXCLUDE REGEX ".*metal/.*")
-list(FILTER ALL_SOURCES EXCLUDE REGEX ".*vulkan/.*")
-list(FILTER ALL_SOURCES EXCLUDE REGEX ".*levelzero/.*")
-list(FILTER ALL_SOURCES EXCLUDE REGEX ".*hexagon/.*")
-
-list(REMOVE_DUPLICATES ALL_SOURCES)
-
-# --- Generate Template Instantiations ---
-file(GLOB_RECURSE COMPILATION_UNITS
-        ./include/ops/impl/compilation_units/*.cpp.in
-        ./include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in
-        ./include/loops/cpu/compilation_units/*.cpp.in
-        ./include/helpers/cpu/loops/*.cpp.in)
-
-foreach(FL_ITEM ${COMPILATION_UNITS})
-    genCompilation(${FL_ITEM})
-endforeach()
-
-# --- Build Library ---
-set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
-add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
-add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
-target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
-
-# Add PJRT include directories
-if(HAVE_PJRT AND PJRT_INCLUDE_DIR)
-    target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${PJRT_INCLUDE_DIR})
-endif()
-
-set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-
-add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
-set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
-set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-
-# --- Link Dependencies ---
-target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
-        ${PJRT}
-        ${OPENBLAS_LIBRARIES}
-        ${BLAS_LIBRARIES}
-        ${JVM_LIBRARY}
-        flatbuffers_interface
-)
-
-# --- OpenMP Configuration ---
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    find_package(OpenMP)
-    if(OpenMP_CXX_FOUND)
-        message(STATUS "OpenMP found, linking OpenMP::OpenMP_CXX")
-        target_link_libraries(${SD_LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
-    else()
-        message(WARNING "OpenMP not found, falling back to manual configuration")
-        target_compile_options(${SD_LIBRARY_NAME} INTERFACE "-fopenmp")
-        target_link_libraries(${SD_LIBRARY_NAME} PUBLIC "-fopenmp")
+    if(NOT SD_TPU)
+        message(STATUS "TPU build not enabled (SD_TPU=OFF)")
+        return()
     endif()
-endif()
 
-# --- TPU-specific compile definitions ---
-target_compile_definitions(${SD_LIBRARY_NAME} PUBLIC
-    SD_TPU=1
-    DEFAULT_ENGINE=samediff::ENGINE_TPU
-)
+    # -----------------------------------------------------------------
+    # 1. Detect PJRT C API header (+ optional libtpu.so at build time)
+    #    setup_pjrt_paths() is defined in TpuConfiguration.cmake.
+    # -----------------------------------------------------------------
+    setup_pjrt_paths()
 
-if(HAVE_PJRT)
-    target_compile_definitions(${SD_LIBRARY_NAME} PUBLIC HAVE_PJRT=1)
-endif()
+    # -----------------------------------------------------------------
+    # 2. Collect TPU-specific source files to ADD to the existing target.
+    #    MainBuildFlow already compiled the CPU/base sources.
+    # -----------------------------------------------------------------
+    file(GLOB_RECURSE TPU_GRAPH_SOURCES
+        ${CMAKE_SOURCE_DIR}/include/graph/tpu/*.cpp
+        ${CMAKE_SOURCE_DIR}/include/graph/tpu/*.h)
+    message(STATUS "TPU graph backend sources: ${TPU_GRAPH_SOURCES}")
 
-# --- Install ---
-install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
+    set(TPU_EXTRA_SOURCES ${TPU_GRAPH_SOURCES})
 
-message(STATUS "TPU build configured:")
-message(STATUS "   Library name: ${SD_LIBRARY_NAME}")
-message(STATUS "   PJRT support: ${HAVE_PJRT}")
-message(STATUS "   TPU version: ${TPU_VERSION}")
+    if(HAVE_PJRT)
+        file(GLOB_RECURSE TPU_PJRT_SOURCES
+            ${CMAKE_SOURCE_DIR}/include/ops/declarable/platform/pjrt/*.cpp
+            ${CMAKE_SOURCE_DIR}/include/ops/declarable/platform/pjrt/*.h)
+        list(APPEND TPU_EXTRA_SOURCES ${TPU_PJRT_SOURCES})
+        message(STATUS "PJRT platform sources: ${TPU_PJRT_SOURCES}")
+    endif()
+
+    # -----------------------------------------------------------------
+    # 3. Determine existing target names (set by CMakeLists.txt before
+    #    MainBuildFlow.cmake was included).
+    # -----------------------------------------------------------------
+    set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
+    set(MAIN_LIB_NAME   "${SD_LIBRARY_NAME}")
+
+    if(NOT TARGET ${OBJECT_LIB_NAME})
+        message(FATAL_ERROR "Expected target '${OBJECT_LIB_NAME}' not found. "
+                            "MainBuildFlow.cmake must be included before BuildTPU.cmake.")
+    endif()
+
+    # -----------------------------------------------------------------
+    # 4. Add TPU sources to the existing OBJECT and SHARED targets.
+    # -----------------------------------------------------------------
+    if(TPU_EXTRA_SOURCES)
+        target_sources(${OBJECT_LIB_NAME} PRIVATE ${TPU_EXTRA_SOURCES})
+        list(LENGTH TPU_EXTRA_SOURCES _tpu_src_count)
+        message(STATUS "Added ${_tpu_src_count} TPU source(s) to target '${OBJECT_LIB_NAME}'")
+    endif()
+
+    # -----------------------------------------------------------------
+    # 5. Compile definitions.
+    # -----------------------------------------------------------------
+    target_compile_definitions(${OBJECT_LIB_NAME} PUBLIC
+        SD_TPU=1
+        __TPUBLAS__=true
+        DEFAULT_ENGINE=samediff::ENGINE_TPU
+    )
+    target_compile_definitions(${MAIN_LIB_NAME} PUBLIC
+        SD_TPU=1
+        DEFAULT_ENGINE=samediff::ENGINE_TPU
+    )
+
+    if(HAVE_PJRT)
+        target_compile_definitions(${OBJECT_LIB_NAME} PUBLIC HAVE_PJRT=1)
+        target_compile_definitions(${MAIN_LIB_NAME}   PUBLIC HAVE_PJRT=1)
+    endif()
+
+    # -----------------------------------------------------------------
+    # 6. Include directories.
+    # -----------------------------------------------------------------
+    if(PJRT_INCLUDE_DIR)
+        target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${PJRT_INCLUDE_DIR})
+        message(STATUS "Added PJRT include dir: ${PJRT_INCLUDE_DIR}")
+    endif()
+
+    # -----------------------------------------------------------------
+    # 7. Link dependencies.
+    #    PJRT_LIBRARIES is empty in header-only mode (dlopen at runtime).
+    #    CMAKE_DL_LIBS provides -ldl which dlopen/dlsym need.
+    # -----------------------------------------------------------------
+    target_link_libraries(${MAIN_LIB_NAME} PUBLIC
+        ${PJRT_LIBRARIES}
+        ${CMAKE_DL_LIBS}
+    )
+
+    message(STATUS "TPU build configured:")
+    message(STATUS "   Library name:  ${MAIN_LIB_NAME}")
+    message(STATUS "   PJRT support:  ${HAVE_PJRT}")
+    message(STATUS "   PJRT include:  ${PJRT_INCLUDE_DIR}")
+    message(STATUS "   PJRT library:  ${PJRT_LIBRARIES}")
+    message(STATUS "=== TPU BUILD CONFIGURATION COMPLETE ===")
 
 endfunction()

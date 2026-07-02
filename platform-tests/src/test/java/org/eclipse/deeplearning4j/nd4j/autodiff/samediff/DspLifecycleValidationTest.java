@@ -191,6 +191,16 @@ public class DspLifecycleValidationTest {
         if (originalEnv != null) {
             originalEnv.restore();
         }
+        // Reset DspDiagnostics categories and level unconditionally.
+        // DspDiagnostics.clear() only flushes the ring buffer — it does NOT reset the
+        // enabled-category bitmask or diagnostic level. Tests that call
+        // DspDiagnostics.enableCategories() / setLevel() in their body and only call
+        // DspDiagnostics.clear() in their finally block leave stale category/level state
+        // that persists across test classes (JVM is reused by Surefire). This leaked
+        // EXECUTE category is the root cause of the bgeEncoder/PTX_JIT ~7% divergence
+        // in DspSlotLifecycleAuditTest when run as part of the 4-class batch.
+        DspDiagnostics.setCategories(DspDiagnostics.NONE);
+        DspDiagnostics.setLevel(DspDiagnostics.LEVEL_SUMMARY);
     }
 
     // ─── Config generators ─────────────────────────────────────────────────
@@ -1269,6 +1279,10 @@ public class DspLifecycleValidationTest {
             assertTrue(report.length() > 0, "Plan report should contain phase information");
         } finally {
             sd.close();
+            // clear() only flushes the ring buffer. Also reset categories and level
+            // so they don't leak into the next test class (e.g. DspSlotLifecycleAuditTest).
+            DspDiagnostics.setCategories(DspDiagnostics.NONE);
+            DspDiagnostics.setLevel(DspDiagnostics.LEVEL_SUMMARY);
             DspDiagnostics.clear();
         }
     }
@@ -1405,6 +1419,10 @@ public class DspLifecycleValidationTest {
             assertTrue(report.length() > 0, "Plan report should contain at least one event");
         } finally {
             sd.close();
+            // clear() only flushes the ring buffer. Also reset categories and level
+            // so they don't leak into the next test class (e.g. DspSlotLifecycleAuditTest).
+            DspDiagnostics.setCategories(DspDiagnostics.NONE);
+            DspDiagnostics.setLevel(DspDiagnostics.LEVEL_SUMMARY);
             DspDiagnostics.clear();
             dmm.clearStubTopology();
         }
@@ -1441,6 +1459,17 @@ public class DspLifecycleValidationTest {
         boolean tritonAllowFallbackCapture;
         String tritonIncludeTypes;
         String tritonExcludeOps;
+        // tritonCaptureMinExec: BenchmarkConfigApplier.apply() always sets this to 1
+        // as part of its "neutral baseline" reset, but the original field is missing
+        // from this snapshot — leading to stale value=1 (vs C++ default=2) leaking
+        // into subsequent test classes.
+        int tritonCaptureMinExec;
+        // DspDiagnostics state: category bitmask enabled at the time of capture.
+        // DspDiagnostics.clear() only flushes the ring buffer; categories and level
+        // must be restored explicitly to avoid leaking EXECUTE/SEGMENT/GRAPH_REPLAY
+        // diagnostic categories into DspSlotLifecycleAuditTest (which changes the
+        // execution path of PTX_JIT and causes ~7% numerical divergence).
+        int dspDiagMask;
         // cuBLAS / TF32
         boolean cublasTf32;
         boolean tritonTf32;
@@ -1471,6 +1500,8 @@ public class DspLifecycleValidationTest {
                 s.tritonAllowFallbackCapture = env.tritonAllowFallbackCapture();
                 s.tritonIncludeTypes = env.tritonIncludeTypes();
                 s.tritonExcludeOps = env.tritonExcludeOps();
+                s.tritonCaptureMinExec = env.tritonCaptureMinExec();
+                s.dspDiagMask = Nd4j.getNativeOps().dspDiagGetEnabledMask();
                 s.cublasTf32 = env.cublasTf32Enabled();
                 s.tritonTf32 = env.tritonTf32Enabled();
             } catch (Throwable t) {
@@ -1504,6 +1535,9 @@ public class DspLifecycleValidationTest {
                 env.setTritonAllowFallbackCapture(tritonAllowFallbackCapture);
                 env.setTritonIncludeTypes(tritonIncludeTypes == null ? "" : tritonIncludeTypes);
                 env.setTritonExcludeOps(tritonExcludeOps == null ? "" : tritonExcludeOps);
+                env.setTritonCaptureMinExec(tritonCaptureMinExec);
+                DspDiagnostics.setCategories(dspDiagMask);
+                DspDiagnostics.setLevel(DspDiagnostics.LEVEL_SUMMARY);
                 env.setCublasTf32Enabled(cublasTf32);
                 env.setTritonTf32Enabled(tritonTf32);
             } catch (Throwable t) {

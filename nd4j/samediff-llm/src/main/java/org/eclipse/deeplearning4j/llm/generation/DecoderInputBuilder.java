@@ -430,6 +430,100 @@ public class DecoderInputBuilder {
         }
     }
 
+    // ========== Scoring / Teacher-Forcing Input Map ==========
+
+    /**
+     * Build a complete decoder input map for teacher-forcing, scoring, or perplexity evaluation
+     * over any imported decoder, including hybrid architectures with recurrent states (GDN/SSM/conv).
+     *
+     * <p>Extends {@link #buildDecoderInputMap} with three additional input categories that the
+     * standard per-step builder skips (not needed in the decode pipeline but required for
+     * single-forward teacher-forcing passes):
+     * <ol>
+     *   <li><b>Recurrent state inputs</b> (e.g. {@code past_gdn_state.N}, {@code past_conv_state.N}
+     *       on hybrid architectures like Qwen3.5 or LFM-2) — fed as zero tensors with shapes
+     *       derived from the ops that consume them via
+     *       {@link GenerationPipeline#deriveRecurrentStateShape}.</li>
+     *   <li><b>position_offset</b> — scalar INT64 = 0 (GGUF in-graph KV models only).</li>
+     *   <li><b>cache_position</b> — scalar INT64 = 0 (GGUF in-graph KV models only).</li>
+     * </ol>
+     *
+     * <p>This is the canonical entry point for all scoring uses: perplexity evaluation,
+     * distillation target extraction, and any other teacher-forcing forward over an imported
+     * decoder. Works for pure attention models, GGUF in-graph KV cache models, and hybrid
+     * attention+SSM architectures.
+     *
+     * <p>Resolve the logits output name separately via
+     * {@link ModelIOConfig#findLogitsOutputName(SameDiff)}.
+     *
+     * @param decoder  the imported SameDiff decoder model
+     * @param inputIds input token IDs, shape [1, seqLen]
+     * @return complete input map ready for {@code decoder.output(inputs, logitsName)}
+     */
+    public static Map<String, INDArray> buildScoringInputMap(SameDiff decoder, INDArray inputIds) {
+        return buildScoringInputMap(decoder, inputIds, 0L);
+    }
+
+    /**
+     * Build a complete decoder input map for scoring, with explicit hidden size for KV cache inference.
+     *
+     * <p>{@code hiddenSize} is used only as a fallback when the KV cache input variable lacks
+     * shape information. For most imported GGUF models the shape is embedded in the graph, so
+     * passing {@code 0} is safe for input-ids-driven scoring.</p>
+     *
+     * @param decoder    the imported SameDiff decoder model
+     * @param inputIds   input token IDs, shape [1, seqLen]
+     * @param hiddenSize model hidden size; pass {@code 0} to infer from the graph
+     * @return complete input map ready for {@code decoder.output(inputs, logitsName)}
+     */
+    public static Map<String, INDArray> buildScoringInputMap(
+            SameDiff decoder, INDArray inputIds, long hiddenSize) {
+
+        ModelIOConfig ioConfig = ModelIOConfig.discover(decoder);
+        long seqLen = inputIds.size(inputIds.rank() - 1);
+
+        // Standard inputs: input_ids, attention_mask, causal_mask, position_ids, empty KV caches.
+        // usingStaticKv=false, pastSeqLen=0 → prefill semantics (full causal mask, all-ones attention mask).
+        Map<String, INDArray> inputs = buildDecoderInputMap(
+                ioConfig, decoder.inputs(), decoder,
+                /*embeddings=*/null, inputIds,
+                /*pastSeqLen=*/0L, /*currentSeqLen=*/seqLen,
+                /*staticKvBuffers=*/null, /*maxKvLen=*/seqLen,
+                /*cachePos=*/0L, /*usingStaticKv=*/false, hiddenSize,
+                /*reusableInputs=*/null, /*dspActive=*/false,
+                /*encoderOutputs=*/null, /*encoderAttentionMask=*/null);
+
+        // Feed position_offset and cache_position scalars (GGUF in-graph KV models).
+        // These are not iterated in the main builder loop, so they must be added here.
+        String posOffset = ioConfig.getPositionOffsetName();
+        if (posOffset != null && decoder.hasVariable(posOffset) && !inputs.containsKey(posOffset)) {
+            inputs.put(posOffset, Nd4j.scalar(DataType.INT64, 0));
+        }
+        String cachePosName = ioConfig.getCachePositionName();
+        if (cachePosName != null && decoder.hasVariable(cachePosName) && !inputs.containsKey(cachePosName)) {
+            inputs.put(cachePosName, Nd4j.scalar(DataType.INT64, 0));
+        }
+
+        // Feed zero-filled recurrent state inputs (hybrid architectures: GDN/SSM/causal-conv).
+        // Discovered structurally from the graph op topology (no hardcoded prefix matching).
+        List<ModelIOConfig.RecurrentStatePair> recurrentPairs =
+                ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentPairs) {
+            if (decoder.hasVariable(pair.inputName) && !inputs.containsKey(pair.inputName)) {
+                DataType dt = decoder.getVariable(pair.inputName).dataType();
+                long[] stateShape = GenerationPipeline.deriveRecurrentStateShape(decoder, pair.inputName);
+                if (stateShape != null) {
+                    inputs.put(pair.inputName, Nd4j.zeros(dt, stateShape));
+                } else {
+                    log.warn("buildScoringInputMap: cannot derive shape for recurrent state '{}'; "
+                            + "this input will be missing — forward pass may fail", pair.inputName);
+                }
+            }
+        }
+
+        return inputs;
+    }
+
     // ========== In-Graph KV Cache Masks (GGUF models) ==========
 
     /**

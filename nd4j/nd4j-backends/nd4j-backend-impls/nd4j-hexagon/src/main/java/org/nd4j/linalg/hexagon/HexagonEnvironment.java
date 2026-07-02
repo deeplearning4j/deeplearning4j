@@ -20,28 +20,22 @@
 
 package org.nd4j.linalg.hexagon;
 
-import org.nd4j.linalg.factory.Environment;
-
 /**
- * Hexagon NPU-specific environment configuration.
+ * Hexagon NPU device information holder.
  *
- * Provides Hexagon-related settings and information:
- * - NPU version detection (Hexagon v68, v69, v73, v75)
- * - HVX vector width (128 bytes)
- * - TCM (Tightly Coupled Memory) size (256KB-1MB)
- * - DDR bandwidth reporting
+ * NOTE: this class intentionally does NOT implement {@link org.nd4j.linalg.factory.Environment}
+ * yet. The original scaffolding implemented an old, much smaller revision of that interface and
+ * bit-rotted (the module was unbuildable — see ADR 0102). A real Environment implementation only
+ * makes sense once the hexagon-mlir bindings exist to answer environment queries; until then
+ * {@link HexagonBackend#getEnvironment()} throws UnsupportedOperationException and this class only
+ * reports static NPU information derived from environment variables and architectural constants.
+ *
+ * See ADR 0088 (Hexagon MLIR Backend) for the binding plan and HexagonBackendSmokeTest for the
+ * contract tests.
  */
-public class HexagonEnvironment implements Environment {
+public class HexagonEnvironment {
 
     private static HexagonEnvironment instance;
-
-    private boolean blasEnabled = true;
-    private boolean logNativeNDArrayCreation = false;
-    private boolean checkOutputChange = false;
-    private boolean checkInputChange = false;
-    private boolean logNDArrayEvents = false;
-    private boolean truncateNDArrayLogStrings = true;
-    private int numWorkspaceEventsToKeep = 10;
 
     private HexagonEnvironment() {
         // Private constructor for singleton
@@ -54,128 +48,45 @@ public class HexagonEnvironment implements Environment {
         return instance;
     }
 
-    @Override
-    public boolean isEnableBlas() {
-        return blasEnabled;
-    }
-
-    @Override
-    public void setEnableBlas(boolean enable) {
-        this.blasEnabled = enable;
-    }
-
-    @Override
-    public boolean isLogNativeNDArrayCreation() {
-        return logNativeNDArrayCreation;
-    }
-
-    @Override
-    public void setLogNativeNDArrayCreation(boolean logNativeNDArrayCreation) {
-        this.logNativeNDArrayCreation = logNativeNDArrayCreation;
-    }
-
-    @Override
-    public boolean isCheckOutputChange() {
-        return checkOutputChange;
-    }
-
-    @Override
-    public void setCheckOutputChange(boolean checkOutputChange) {
-        this.checkOutputChange = checkOutputChange;
-    }
-
-    @Override
-    public boolean isCheckInputChange() {
-        return checkInputChange;
-    }
-
-    @Override
-    public void setCheckInputChange(boolean checkInputChange) {
-        this.checkInputChange = checkInputChange;
-    }
-
-    @Override
-    public boolean isLogNDArrayEvents() {
-        return logNDArrayEvents;
-    }
-
-    @Override
-    public void setLogNDArrayEvents(boolean logNDArrayEvents) {
-        this.logNDArrayEvents = logNDArrayEvents;
-    }
-
-    @Override
-    public boolean isTruncateNDArrayLogStrings() {
-        return truncateNDArrayLogStrings;
-    }
-
-    @Override
-    public void setTruncateNDArrayLogStrings(boolean truncate) {
-        this.truncateNDArrayLogStrings = truncate;
-    }
-
-    @Override
-    public int numWorkspaceEventsToKeep() {
-        return numWorkspaceEventsToKeep;
-    }
-
-    @Override
-    public void setNumWorkspaceEventsToKeep(int numWorkspaceEventsToKeep) {
-        this.numWorkspaceEventsToKeep = numWorkspaceEventsToKeep;
-    }
-
     /**
-     * Get the Hexagon NPU version string (e.g., "v73", "v75").
-     * @return Hexagon version or "unknown" if not detected
+     * Get the Hexagon NPU version string (e.g., "v68", "v69", "v73", "v75").
+     * @return NPU version, or "v73" when not detected
      */
     public String getNpuVersion() {
-        // TODO: Query from native library
-        return System.getenv().getOrDefault("HEXAGON_VERSION", "v73");
+        return System.getenv().getOrDefault("HEXAGON_NPU_VERSION", "v73");
     }
 
     /**
-     * Get the HVX vector width in bytes.
-     * All modern Hexagon NPUs use 128-byte HVX vectors.
-     * @return HVX vector width in bytes
+     * HVX vector register width in bytes.
+     * @return 128 — HVX operates on 128-byte vectors on all supported NPU versions
      */
     public int getHvxVectorWidth() {
         return 128;
     }
 
     /**
-     * Get TCM (Tightly Coupled Memory) capacity in bytes.
-     * TCM is high-bandwidth on-chip memory used for staging data.
-     * @return TCM capacity in bytes
+     * Get TCM (Tightly Coupled Memory) capacity in bytes for the detected NPU version.
+     * Default sizes until the hexagon-mlir runtime can query the device.
      */
     public long getTcmCapacity() {
         String version = getNpuVersion();
         switch (version) {
             case "v75":
-                return 1024L * 1024;  // 1MB
+                return 1024L * 1024;      // 1 MB
             case "v73":
-                return 512L * 1024;   // 512KB
-            case "v69":
+                return 512L * 1024;       // 512 KB
             case "v68":
+            case "v69":
             default:
-                return 256L * 1024;   // 256KB
+                return 256L * 1024;       // 256 KB
         }
     }
 
     /**
-     * Get DDR bandwidth estimate in GB/s.
-     * @return Estimated DDR bandwidth
+     * Check if INT8 is the preferred data type.
+     * @return true — Hexagon NPUs are optimized for INT8 quantized inference
      */
-    public double getDdrBandwidthGBps() {
-        // Typical LPDDR5 bandwidth on Snapdragon SoCs
-        return 51.2;
-    }
-
-    /**
-     * Check if INT8 quantized inference is the preferred mode.
-     * Hexagon NPU is highly optimized for INT8 operations.
-     * @return true if INT8 should be used by default
-     */
-    public boolean preferInt8() {
+    public boolean prefersInt8() {
         return true;
     }
 }

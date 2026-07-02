@@ -7,12 +7,20 @@
 function(setup_pjrt_paths)
     message(STATUS "Setting up PJRT/TPU paths...")
 
+    # Vendored header path — ships in-tree, no python/pip required at build time.
+    # Pinned commit: 109c47c1bd003dc856fcfa940c1291700a4addb3 (openxla/xla)
+    # $PJRT_PATH / $PJRT_ROOT still override when a runtime libtpu.so is available.
+    set(_VENDORED_PJRT_INCLUDE "${CMAKE_SOURCE_DIR}/include/external/pjrt")
+
     set(PJRT_SEARCH_PATHS
-            # Environment variables
+            # Environment variables (override vendored copy when set)
             $ENV{PJRT_PATH}
             $ENV{PJRT_ROOT}
             $ENV{XLA_PATH}
             $ENV{TPU_LIBRARY_PATH}
+
+            # In-tree vendored copy — always available, no external dependencies
+            ${_VENDORED_PJRT_INCLUDE}
 
             # Common installation paths
             /usr/local/lib/python3.10/dist-packages/jax_plugins/xla_tpu
@@ -29,7 +37,7 @@ function(setup_pjrt_paths)
             /opt
     )
 
-    # Search for PJRT C API header
+    # Search for PJRT C API header (vendored copy is tried via HINTS before NO_DEFAULT_PATH paths)
     find_path(PJRT_INCLUDE_DIR
             NAMES pjrt_c_api.h
             HINTS ${PJRT_SEARCH_PATHS}
@@ -38,10 +46,10 @@ function(setup_pjrt_paths)
             include/xla/pjrt/c
             xla/pjrt/c
             pjrt/c
-            NO_DEFAULT_PATH
+            .
     )
 
-    # If not found, try system paths
+    # If not found yet, try system paths
     if(NOT PJRT_INCLUDE_DIR)
         find_path(PJRT_INCLUDE_DIR
                 NAMES pjrt_c_api.h
@@ -72,34 +80,40 @@ function(setup_pjrt_paths)
     message(STATUS "   PJRT_INCLUDE_DIR: ${PJRT_INCLUDE_DIR}")
     message(STATUS "   PJRT_LIBRARY: ${PJRT_LIBRARY}")
 
-    # Check if we found both header and library
-    if(PJRT_INCLUDE_DIR AND PJRT_LIBRARY)
-        message(STATUS "PJRT found!")
+    # Header is the primary requirement.  The native library (libtpu.so) is
+    # loaded at RUNTIME via dlopen()/dlsym() inside PjrtClientManager.cpp, so
+    # it is NOT a link-time dependency.  We only need it to exist at cmake
+    # configure time so we can create a proper imported CMake target (optional).
+    if(PJRT_INCLUDE_DIR)
+        message(STATUS "PJRT header found at: ${PJRT_INCLUDE_DIR}")
 
-        # Create imported target if it doesn't exist
-        if(NOT TARGET PJRT::pjrt)
-            add_library(PJRT::pjrt UNKNOWN IMPORTED)
-            set_target_properties(PJRT::pjrt PROPERTIES
-                    IMPORTED_LOCATION "${PJRT_LIBRARY}"
-                    INTERFACE_INCLUDE_DIRECTORIES "${PJRT_INCLUDE_DIR}"
-            )
+        if(PJRT_LIBRARY)
+            message(STATUS "PJRT runtime library found at: ${PJRT_LIBRARY} (will be linked)")
+            # Create imported target for optional link-time binding
+            if(NOT TARGET PJRT::pjrt)
+                add_library(PJRT::pjrt UNKNOWN IMPORTED)
+                set_target_properties(PJRT::pjrt PROPERTIES
+                        IMPORTED_LOCATION "${PJRT_LIBRARY}"
+                        INTERFACE_INCLUDE_DIRECTORIES "${PJRT_INCLUDE_DIR}"
+                )
+            endif()
+            set(PJRT_LIBRARIES "${PJRT_LIBRARY}" PARENT_SCOPE)
+            set(PJRT_LIBRARY "${PJRT_LIBRARY}" PARENT_SCOPE)
+        else()
+            message(STATUS "PJRT runtime library NOT found — header-only mode.")
+            message(STATUS "   libtpu.so will be loaded at runtime via dlopen(). Build succeeds without it.")
+            message(STATUS "   To enable link-time binding: set PJRT_PATH to a dir containing libtpu.so")
+            set(PJRT_LIBRARIES "" PARENT_SCOPE)
+            set(PJRT_LIBRARY "" PARENT_SCOPE)
         endif()
 
-        message(STATUS "PJRT configuration:")
-        message(STATUS "   Include: ${PJRT_INCLUDE_DIR}")
-        message(STATUS "   Library: ${PJRT_LIBRARY}")
-
-        # Set all the variables that might be needed
         set(HAVE_PJRT TRUE PARENT_SCOPE)
         set(PJRT_FOUND TRUE PARENT_SCOPE)
         set(PJRT_INCLUDE_DIR "${PJRT_INCLUDE_DIR}" PARENT_SCOPE)
-        set(PJRT_LIBRARIES "${PJRT_LIBRARY}" PARENT_SCOPE)
-        set(PJRT_LIBRARY "${PJRT_LIBRARY}" PARENT_SCOPE)
-
         return()
     endif()
 
-    # Try package manager detection as fallback
+    # Try package manager detection as fallback (library only — header already searched above)
     find_package(PkgConfig QUIET)
     if(PkgConfig_FOUND)
         pkg_check_modules(PC_PJRT QUIET pjrt)
@@ -112,15 +126,13 @@ function(setup_pjrt_paths)
         endif()
     endif()
 
-    message(STATUS "PJRT not found. Searched extensively in:")
-    message(STATUS "   Environment variables: PJRT_PATH, PJRT_ROOT, XLA_PATH, TPU_LIBRARY_PATH")
-    message(STATUS "   System paths: /usr, /usr/local, /opt")
-    message(STATUS "   Google Cloud TPU: /opt/google-cloud-tpu")
-    message(STATUS "")
-    message(STATUS "To fix this issue:")
-    message(STATUS "   1. Install JAX with TPU support: pip install jax[tpu]")
-    message(STATUS "   2. Set PJRT_PATH to your PJRT/XLA installation")
-    message(STATUS "   3. Or disable TPU with -DSD_TPU=OFF")
+    message(STATUS "PJRT header (pjrt_c_api.h) not found anywhere. Searched:")
+    message(STATUS "   Vendored:          ${CMAKE_SOURCE_DIR}/include/external/pjrt/")
+    message(STATUS "   Env vars:          PJRT_PATH, PJRT_ROOT, XLA_PATH, TPU_LIBRARY_PATH")
+    message(STATUS "   System paths:      /usr, /usr/local, /opt")
+    message(STATUS "   Google Cloud TPU:  /opt/google-cloud-tpu")
+    message(STATUS "The vendored copy should always be present in-tree.")
+    message(STATUS "If missing, run: libnd4j/scripts/vendor-pjrt-header.sh")
 
     set(HAVE_PJRT FALSE PARENT_SCOPE)
 endfunction()

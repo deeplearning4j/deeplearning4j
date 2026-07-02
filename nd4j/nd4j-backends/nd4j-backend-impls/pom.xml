@@ -26,6 +26,8 @@
     <modelVersion>4.0.0</modelVersion>
     <modules>
         <module>nd4j-presets-common</module>
+        <module>nd4j-metal-preset</module>
+        <module>nd4j-metal</module>
       </modules>
 
     <parent>
@@ -243,6 +245,17 @@
             <properties>
                 <zluda.target>INTEL</zluda.target>
             </properties>
+
+        </profile>
+        <profile>
+            <id>hexagon</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-hexagon</module>
+                <module>nd4j-hexagon-preset</module>
+            </modules>
 
         </profile>
         <profile>

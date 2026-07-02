@@ -108,7 +108,17 @@ public class HexagonBackend extends Nd4jBackend {
 
     @Override
     public Environment getEnvironment() {
-        return HexagonEnvironment.getInstance();
+        // HexagonEnvironment does not implement the Environment interface until the
+        // hexagon-mlir bindings land — this backend cannot be selected while canRun()
+        // returns false, so this path is unreachable in practice.
+        throw new UnsupportedOperationException(
+                "Hexagon backend environment requires hexagon-mlir native bindings (not yet implemented). "
+                        + "See HexagonEnvironment for NPU device info and ADR 0088 / ADR 0102.");
+    }
+
+    @Override
+    public boolean allowsOrder() {
+        return false;
     }
 
     @Override

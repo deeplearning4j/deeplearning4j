@@ -195,6 +195,18 @@ public class SameDiffOptimizationCache {
 
     /**
      * Return the conventional optimized SDZ cache file for a source artifact.
+     *
+     * <p>The filename encodes the fp16 optimizer setting so that fp16=true and fp16=false
+     * optimizer runs produce separate cache files. Without this, a CPU run with fp16=false
+     * would load a stale fp16=true model from cache, causing catastrophically slow inference
+     * due to software HALF emulation on CPU (no Tensor Core acceleration).</p>
+     *
+     * <p>Examples:
+     * <ul>
+     *   <li>fp16=true  → {@code smoldocling-decoder.opt.sdz} (backward-compatible with existing cache)</li>
+     *   <li>fp16=false → {@code smoldocling-decoder.nofp16.opt.sdz} (CPU float-weight variant)</li>
+     * </ul>
+     * </p>
      */
     public static File getOptimizedSdzCacheFile(File sourceFile) {
         String name = sourceFile.getName();
@@ -205,7 +217,15 @@ public class SameDiffOptimizationCache {
         } else {
             baseName = name;
         }
-        return new File(sourceFile.getParentFile(), baseName + ".opt.sdz");
+        // Encode the fp16 optimizer setting in the cache filename so that fp16=true and
+        // fp16=false builds produce separate cache entries and never cross-contaminate.
+        // Naming convention preserves backward compatibility with existing .opt.sdz files
+        // (which were always built with fp16=true):
+        //   fp16=true  → <base>.opt.sdz        (existing cache files — no migration needed)
+        //   fp16=false → <base>.nofp16.opt.sdz (new CPU-float cache — built on first CPU run)
+        boolean fp16Enabled = "true".equalsIgnoreCase(System.getProperty("nd4j.optimizer.fp16", "true"));
+        String fp16Suffix = fp16Enabled ? "" : ".nofp16";
+        return new File(sourceFile.getParentFile(), baseName + fp16Suffix + ".opt.sdz");
     }
 
     /**

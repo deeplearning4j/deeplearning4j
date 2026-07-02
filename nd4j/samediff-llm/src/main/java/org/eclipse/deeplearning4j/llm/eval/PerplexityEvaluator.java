@@ -24,6 +24,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JSystemProperties;
+import org.eclipse.deeplearning4j.llm.generation.DecoderInputBuilder;
+import org.eclipse.deeplearning4j.llm.generation.ModelIOConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,7 +38,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -51,8 +52,10 @@ public class PerplexityEvaluator {
 
     private static final String WIKITEXT2_URL =
             "https://huggingface.co/datasets/wikitext/resolve/main/wikitext-2-raw-v1/test-00000-of-00001.parquet";
+    // wikitext-2 test split as shipped in the pytorch/examples repo (the previous
+    // fairseq wikitext-103 path 404s — it never existed at that location).
     private static final String WIKITEXT2_TXT_URL =
-            "https://raw.githubusercontent.com/pytorch/fairseq/main/examples/language_model/wikitext103/wiki.test.tokens";
+            "https://raw.githubusercontent.com/pytorch/examples/main/word_language_model/data/wikitext-2/test.txt";
 
     @Data
     @Builder
@@ -81,6 +84,16 @@ public class PerplexityEvaluator {
 
     /**
      * Evaluate perplexity with custom input/output names.
+     *
+     * <p>Uses {@link DecoderInputBuilder#buildScoringInputMap} to build a complete input map
+     * so that hybrid architectures (recurrent states, in-graph KV caches, scalar scalars like
+     * position_offset / cache_position) work correctly — not just the bare singleton
+     * {@code {inputName → ids}} map. The {@code inputName} parameter is accepted for API
+     * backward compatibility but the discovered input_ids name from the graph takes precedence.</p>
+     *
+     * <p>If {@code logitsName} is not found among the model's declared outputs, the method
+     * falls back to {@link ModelIOConfig#findLogitsOutputName(SameDiff)} (handles models that
+     * expose {@code "lm_logits"} instead of {@code "logits"}, e.g. Qwen3.5).</p>
      */
     public static PerplexityResult evaluate(SameDiff model, Tokenizer tokenizer,
                                              String text, int contextLength, int stride,
@@ -90,6 +103,18 @@ public class PerplexityEvaluator {
         int[] tokenIds = tokenizer.encode(text, false).getIds();
         int seqLen = tokenIds.length;
         log.info("Evaluating perplexity on {} tokens with context={}, stride={}", seqLen, contextLength, stride);
+
+        // Resolve the effective logits output name once — fall back to graph discovery when the
+        // caller-supplied name (default "logits") is absent from the model's declared outputs.
+        String effectiveLogitsName = logitsName;
+        if (!model.outputs().contains(logitsName)) {
+            String discovered = ModelIOConfig.findLogitsOutputName(model);
+            if (discovered != null) {
+                effectiveLogitsName = discovered;
+                log.info("PerplexityEvaluator: logits output '{}' not in model outputs; using discovered name '{}'",
+                        logitsName, effectiveLogitsName);
+            }
+        }
 
         double totalNll = 0.0;
         int totalTokens = 0;
@@ -103,12 +128,11 @@ public class PerplexityEvaluator {
             int[] windowIds = new int[windowLen];
             System.arraycopy(tokenIds, begin, windowIds, 0, windowLen);
 
-            // Run model
+            // Build a complete input map (handles standard inputs, GGUF scalars, and recurrent states).
             INDArray inputArr = Nd4j.createFromArray(windowIds).reshape(1, windowLen);
-            Map<String, INDArray> inputs = new HashMap<>();
-            inputs.put(inputName, inputArr);
-            Map<String, INDArray> outputs = model.output(inputs, logitsName);
-            INDArray logits = outputs.get(logitsName);
+            Map<String, INDArray> inputs = DecoderInputBuilder.buildScoringInputMap(model, inputArr);
+            Map<String, INDArray> outputs = model.output(inputs, effectiveLogitsName);
+            INDArray logits = outputs.get(effectiveLogitsName);
 
             // logits shape: [1, seqLen, vocabSize]
             if (logits.rank() == 3) {

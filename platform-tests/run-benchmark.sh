@@ -130,6 +130,7 @@ MAX_TOKENS=250
 CONFIG="SMOLDOC_IDEAL"
 IDEAL_MODE=true
 FP16=true
+FP16_EXPLICIT=false  # set to true when user passes --fp16 or --no-fp16 explicitly
 NO_OPTIMIZER=false
 OPTIMIZER_LOG=false
 CLEAR_CACHE=false
@@ -224,10 +225,12 @@ while [[ $# -gt 0 ]]; do
             ;;
         --fp16)
             FP16=true
+            FP16_EXPLICIT=true
             shift
             ;;
         --no-fp16)
             FP16=false
+            FP16_EXPLICIT=true
             shift
             ;;
         --no-optimizer)
@@ -425,6 +428,15 @@ elif $CLEAR_DECODER; then
     echo "Clearing decoder cache (base + optimized)..."
     rm -f "$MODEL_CACHE/smoldocling-decoder.sdz" 2>/dev/null || true
     rm -f "$MODEL_CACHE/smoldocling-decoder.opt.sdz" 2>/dev/null || true
+    rm -f "$MODEL_CACHE/smoldocling-decoder.nofp16.opt.sdz" 2>/dev/null || true
+fi
+
+# CPU backend: auto-disable FP16 unless user explicitly passed --fp16.
+# On CPU, HALF weights use software FP16 emulation (~13 seconds per token).
+# The GraphOptimizer FP16 pre-cast is only beneficial with CUDA Tensor Cores.
+if [ "$BACKEND" = "cpu" ] && ! $FP16_EXPLICIT; then
+    FP16=false
+    echo "  [CPU] Auto-disabled FP16 weight pre-cast (use --fp16 to override)"
 fi
 
 echo "═══════════════════════════════════════════════════════════"

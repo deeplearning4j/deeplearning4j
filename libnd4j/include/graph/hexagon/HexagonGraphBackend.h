@@ -66,9 +66,9 @@ class SD_LIB_EXPORT HexagonGraphBackend : public GraphBackend {
   HexagonGraphBackend& operator=(const HexagonGraphBackend&) = delete;
 
   /**
-   * Get the singleton instance.
+   * Get the singleton instance (reference, matching TpuGraphBackend pattern).
    */
-  static HexagonGraphBackend* getInstance();
+  static HexagonGraphBackend& getInstance();
 
   // ── GraphBackend interface ─────────────────────────────────────────────
 

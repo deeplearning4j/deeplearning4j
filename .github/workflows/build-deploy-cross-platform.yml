@@ -311,8 +311,17 @@ jobs:
             GGML_EXCLUDE=",!:nd4j-ggml"
           fi
 
+          # Enable ZLUDA, TPU and Hexagon Java modules on linux-x86_64 (the only
+          # platform that publishes nd4j-zluda/nd4j-tpu/nd4j-hexagon artifacts today;
+          # all are Java-only and pull native deps from snapshots — no C++/nvcc build).
+          PLATFORM_PROFILES=""
+          if [ "${{ matrix.platform }}" == "linux-x86_64" ]; then
+            PLATFORM_PROFILES="-Pzluda,tpu,hexagon"
+          fi
+
           command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native${GGML_EXCLUDE} \
             ${PROTOC_PROFILE} \
+            ${PLATFORM_PROFILES} \
             -DskipTestResourceEnforcement=true \
             -Djavacpp.platform=${{ matrix.platform }} \
             -Dmaven.javadoc.failOnError=false \

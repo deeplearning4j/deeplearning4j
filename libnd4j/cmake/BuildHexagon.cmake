@@ -1,103 +1,92 @@
 # cmake/BuildHexagon.cmake
-# Contains all logic for building the Hexagon NPU library using hexagon-mlir.
+# Configures the Hexagon NPU native library (nd4jhexagon).
+#
+# MainBuildFlow.cmake (included before this file) already creates the
+# ${SD_LIBRARY_NAME}_object (OBJECT) and ${SD_LIBRARY_NAME} (SHARED) targets
+# with the standard CPU source set. This file's job is to:
+#   1. Add Hexagon-specific sources (graph/hexagon/*.cpp).
+#   2. Set compile definitions on the existing targets.
+#   3. Link dlopen support (dlopen/dlsym used in HexagonRuntimeManager.cpp).
+#
+# libhexagon_mlir_runtime.so is loaded at RUNTIME via dlopen() — it is NOT a
+# link-time dependency, and all hexagon-mlir types are opaque void* so no SDK
+# headers are required at build time (hexagon-mlir itself is BSD-3 open source,
+# Qualcomm Dec 2025). This mirrors the BuildTPU.cmake / PjrtClientManager design.
+#
+# DEFAULT_ENGINE stays ENGINE_CPU: there is no ENGINE_HEXAGON in
+# execution/Engine.h and no ops/declarable/platform/hexagon op set yet — the
+# Hexagon path is a graph-level backend (HexagonGraphBackend / HexagonIRBuilder),
+# not a per-op platform engine.
 
 function(setup_hexagon_build)
-    message(STATUS "Setting up Hexagon NPU build environment")
+    message(STATUS "=== HEXAGON BUILD CONFIGURATION ===")
 
-    add_definitions(-DSD_HEXAGON=true)
-    add_definitions(-DHAVE_HEXAGON_MLIR=1)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}" PARENT_SCOPE)
-
-    # --- Source File Collection ---
-    # Core sources (same as CPU)
-    file(GLOB_RECURSE BLAS_SOURCES ./include/blas/*.h)
-    file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
-    file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/exceptions/*.h)
-    file(GLOB_RECURSE EXEC_SOURCES ./include/execution/*.cpp ./include/execution/*.h)
-    file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp ./include/types/*.h)
-    file(GLOB_RECURSE ARRAY_SOURCES ./include/array/*.cpp ./include/array/*.h)
-    file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp ./include/memory/*.h)
-    file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp ./include/graph/*.h)
-    file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
-    file(GLOB_RECURSE CUSTOMOPS_HELPERS_IMPL_SOURCES ./include/ops/declarable/helpers/impl/*.cpp)
-    file(GLOB_RECURSE CUSTOMOPS_HELPERS_CPU_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp)
-    file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp ./include/ops/*.h)
-    file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*.h)
-    file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp ./include/helpers/cpu/*.cpp ./include/helpers/*.h)
-    file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp ./include/legacy/*.h)
-    file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp ./include/loops/*.h)
-    file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
-
-    set(ALL_SOURCES "")
-    set(STATIC_SOURCES_TO_CHECK ${BLAS_SOURCES} ${PERF_SOURCES} ${EXCEPTIONS_SOURCES}
-        ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES}
-        ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
-        ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES}
-        ${HELPERS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES} ${SYSTEM_CONFIG_SOURCES})
-
-    # --- Hexagon Graph Backend Sources ---
-    file(GLOB_RECURSE HEXAGON_GRAPH_SOURCES
-        ./include/graph/hexagon/*.cpp
-        ./include/graph/hexagon/*.h)
-    list(APPEND STATIC_SOURCES_TO_CHECK ${HEXAGON_GRAPH_SOURCES})
-    message(STATUS "Added Hexagon graph backend sources: ${HEXAGON_GRAPH_SOURCES}")
-
-    # Add no-PLT stub functions for functrace builds
-    if(SD_GCC_FUNCTRACE)
-        list(APPEND STATIC_SOURCES_TO_CHECK ./include/platform/noplt_libc_stubs.c)
+    if(NOT SD_HEXAGON)
+        message(STATUS "Hexagon build not enabled (SD_HEXAGON=OFF)")
+        return()
     endif()
 
-    list(APPEND ALL_SOURCES ${STATIC_SOURCES_TO_CHECK})
+    # -----------------------------------------------------------------
+    # 1. Collect Hexagon-specific source files to ADD to the existing
+    #    target. MainBuildFlow already compiled the CPU/base sources.
+    # -----------------------------------------------------------------
+    file(GLOB_RECURSE HEXAGON_GRAPH_SOURCES
+        ${CMAKE_SOURCE_DIR}/include/graph/hexagon/*.cpp
+        ${CMAKE_SOURCE_DIR}/include/graph/hexagon/*.h)
+    message(STATUS "Hexagon graph backend sources: ${HEXAGON_GRAPH_SOURCES}")
 
-    # --- Exclude CUDA/HIP/Metal/Vulkan/L0 specific sources ---
-    list(FILTER ALL_SOURCES EXCLUDE REGEX ".*cuda.*")
-    list(FILTER ALL_SOURCES EXCLUDE REGEX ".*hip/.*")
-    list(FILTER ALL_SOURCES EXCLUDE REGEX ".*metal/.*")
-    list(FILTER ALL_SOURCES EXCLUDE REGEX ".*vulkan/.*")
-    list(FILTER ALL_SOURCES EXCLUDE REGEX ".*levelzero/.*")
-    list(FILTER ALL_SOURCES EXCLUDE REGEX ".*tpu/.*")
+    # -----------------------------------------------------------------
+    # 2. Determine existing target names (set by CMakeLists.txt before
+    #    MainBuildFlow.cmake was included).
+    # -----------------------------------------------------------------
+    set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
+    set(MAIN_LIB_NAME   "${SD_LIBRARY_NAME}")
 
-    message(STATUS "Hexagon source count: ${CMAKE_CURRENT_LIST_LINE}")
+    if(NOT TARGET ${OBJECT_LIB_NAME})
+        message(FATAL_ERROR "Expected target '${OBJECT_LIB_NAME}' not found. "
+                            "MainBuildFlow.cmake must be included before BuildHexagon.cmake.")
+    endif()
 
-    # --- Build Object Library ---
-    add_library(nd4jhexagon_object OBJECT ${ALL_SOURCES})
-    target_compile_definitions(nd4jhexagon_object PRIVATE
+    # -----------------------------------------------------------------
+    # 3. Add Hexagon sources to the existing OBJECT target.
+    # -----------------------------------------------------------------
+    if(HEXAGON_GRAPH_SOURCES)
+        target_sources(${OBJECT_LIB_NAME} PRIVATE ${HEXAGON_GRAPH_SOURCES})
+        list(LENGTH HEXAGON_GRAPH_SOURCES _hexagon_src_count)
+        message(STATUS "Added ${_hexagon_src_count} Hexagon source(s) to target '${OBJECT_LIB_NAME}'")
+    endif()
+
+    # -----------------------------------------------------------------
+    # 4. Compile definitions.
+    # -----------------------------------------------------------------
+    target_compile_definitions(${OBJECT_LIB_NAME} PUBLIC
         SD_HEXAGON=1
         HAVE_HEXAGON_MLIR=1
         DEFAULT_ENGINE=samediff::ENGINE_CPU
     )
-    target_include_directories(nd4jhexagon_object PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/ops"
-    )
-
-    # --- Build Shared Library ---
-    add_library(nd4jhexagon SHARED $<TARGET_OBJECTS:nd4jhexagon_object>)
-    target_compile_definitions(nd4jhexagon PRIVATE
+    target_compile_definitions(${MAIN_LIB_NAME} PUBLIC
         SD_HEXAGON=1
         HAVE_HEXAGON_MLIR=1
     )
 
-    # --- Linking ---
-    target_link_libraries(nd4jhexagon PRIVATE
-        ${OPENBLAS_LIBRARIES}
-        ${BLAS_LIBRARIES}
-        ${JVM_LIBRARY}
-        flatbuffers_interface
+    # -----------------------------------------------------------------
+    # 5. Optional: hexagon-mlir install detected at build time
+    #    (HEXAGON_MLIR_PATH env). Purely additive — dlopen still rules.
+    # -----------------------------------------------------------------
+    if(DEFINED ENV{HEXAGON_MLIR_PATH} AND EXISTS "$ENV{HEXAGON_MLIR_PATH}/include")
+        target_include_directories(${OBJECT_LIB_NAME} PUBLIC "$ENV{HEXAGON_MLIR_PATH}/include")
+        message(STATUS "Added hexagon-mlir include dir: $ENV{HEXAGON_MLIR_PATH}/include")
+    endif()
+
+    # -----------------------------------------------------------------
+    # 6. Link dependencies. CMAKE_DL_LIBS provides -ldl for dlopen/dlsym.
+    # -----------------------------------------------------------------
+    target_link_libraries(${MAIN_LIB_NAME} PUBLIC
         ${CMAKE_DL_LIBS}
     )
 
-    # Link hexagon-mlir if found at compile time
-    if(HEXAGON_MLIR_FOUND)
-        target_include_directories(nd4jhexagon_object PRIVATE ${HEXAGON_MLIR_INCLUDE_DIRS})
-        target_link_libraries(nd4jhexagon PRIVATE ${HEXAGON_MLIR_LIBRARIES})
-    endif()
+    message(STATUS "Hexagon build configured:")
+    message(STATUS "   Library name: ${MAIN_LIB_NAME}")
+    message(STATUS "=== HEXAGON BUILD CONFIGURATION COMPLETE ===")
 
-    set_target_properties(nd4jhexagon PROPERTIES
-        OUTPUT_NAME "nd4jhexagon"
-        VERSION ${PROJECT_VERSION}
-        SOVERSION ${PROJECT_VERSION_MAJOR}
-    )
-
-    message(STATUS "Hexagon build configured successfully")
 endfunction()

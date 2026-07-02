@@ -1,0 +1,157 @@
+name: Apple Metal/MLX Smoke Tests
+
+# Runs the Apple Metal/MLX backend wiring smoke tier on a macOS-14 (Apple
+# Silicon) runner. Apple is NOT a PJRT path (jax-metal is unmaintained and not
+# dlopen-able) — the native path is MLX: MlxGraphBackend (island graph via
+# mx::compile) + MetalReplayHandle (MTLIndirectCommandBuffer replay) + the MPS
+# per-op helpers for gaps. See ADR 0102.
+#
+# Two coverage levels, same pattern as run-tpu-smoke-tests.yml:
+#   - Java wiring (any macos-14): nd4j-metal SPI registration + canRun()==false
+#     stub contract + MetalEnvironment — validated with the Java-only stub
+#     modules (no native dylib needed). JMetalBackend.canRun() stays false until
+#     the JavaCPP MLX preset is generated on macOS.
+#   - Native (requires the mps-compile artifact from build-deploy-mac-arm64.yml):
+#     point -Dnd4j.metal.library.path at the built libnd4j Metal dylib to
+#     exercise real MLX/Metal in-process. Gated by input useNativeArtifact.
+#
+# macos-14 = Apple Silicon M-series (mandatory — macos-13 is x86_64, no Metal GPU
+# path and being retired).
+
+on:
+  workflow_dispatch:
+    inputs:
+      useNativeArtifact:
+        description: 'Download the mps-compile native artifact and run against the real libnd4j Metal dylib (true), or Java-wiring smoke only (false).'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+      testFilter:
+        description: 'Surefire -Dtest filter. Empty = MetalBackendSmokeTest only.'
+        required: false
+        default: ''
+
+  schedule:
+    - cron: '0 6 * * 1'   # weekly Monday 06:00 UTC
+
+env:
+  MAVEN_OPTS: -Xmx2g
+
+jobs:
+  metal-smoke:
+    runs-on: macos-14   # Apple Silicon (M-series) — mandatory for Metal/MLX
+    timeout-minutes: 90
+    name: metal-smoke (macos-14 Apple Silicon)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: GPU / Metal report
+        shell: bash
+        run: |
+          echo "── system_profiler (Metal-capable GPU) ──"
+          system_profiler SPDisplaysDataType 2>/dev/null | grep -iE "Chipset|Metal|Vendor" | head -10 || true
+          sysctl -n machdep.cpu.brand_string 2>/dev/null || true
+
+      - name: Download mps-compile native artifact
+        if: ${{ inputs.useNativeArtifact == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-jars-mac-arm64-mps-compile
+          path: ${{ runner.temp }}/mps-native
+        continue-on-error: true
+
+      - name: Resolve native dylib path (if requested)
+        if: ${{ inputs.useNativeArtifact == 'true' }}
+        shell: bash
+        run: |
+          DYLIB=$(find "$RUNNER_TEMP/mps-native" -name 'libnd4j*metal*.dylib' -o -name 'libnd4jcpu*.dylib' 2>/dev/null | head -1)
+          if [ -n "$DYLIB" ]; then
+            echo "METAL_LIBRARY_PATH=$DYLIB" >> "$GITHUB_ENV"
+            echo "Using native Metal dylib: $DYLIB"
+          else
+            echo "::warning::mps-compile artifact not found — falling back to Java-wiring smoke (canRun stays false)"
+          fi
+
+      # -Pmlx puts nd4j-metal/-preset in the reactor; -Ptest-metal makes
+      # platform-tests depend on nd4j-metal so --also-make builds it from source.
+      - name: Build Metal Java modules (nd4j-metal + preset)
+        shell: bash
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Pmlx,test-metal \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=macosx-arm64 \
+            -Dplatform.classifier=macosx-arm64 \
+            -Dmaven.javadoc.skip=true \
+            -pl :platform-tests --also-make \
+            -pl !:libnd4j \
+            --no-transfer-progress --batch-mode 2>&1 | tee metal-build.log
+
+      - name: Run Metal wiring smoke tests
+        shell: bash
+        run: |
+          TEST_FILTER="${{ inputs.testFilter }}"
+          if [ -n "$TEST_FILTER" ]; then TEST_FLAGS="-Dtest=${TEST_FILTER}"; else TEST_FLAGS="-Dtest=MetalBackendSmokeTest"; fi
+          METAL_LIB_ARG=""
+          if [ -n "${METAL_LIBRARY_PATH:-}" ]; then METAL_LIB_ARG="-Dnd4j.metal.library.path=$METAL_LIBRARY_PATH"; fi
+          cd platform-tests
+          mvn test \
+            -Ptest-metal \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=macosx-arm64 \
+            -Dplatform.classifier=macosx-arm64 \
+            -Dtest.heap.size=4g -Dtest.offheap.size=6g \
+            -Domp.num.threads=2 \
+            -DskipTestResourceEnforcement=true \
+            ${METAL_LIB_ARG} \
+            ${TEST_FLAGS} \
+            --no-transfer-progress --batch-mode 2>&1 | tee metal-smoke-tests.log
+
+      - name: Upload logs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metal-smoke
+          path: |
+            platform-tests/target/surefire-reports/
+            platform-tests/metal-smoke-tests.log
+            metal-build.log
+          retention-days: 14

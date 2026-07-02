@@ -1,0 +1,302 @@
+name: TPU Smoke Tests (PJRT/libtpu)
+
+# Two tiers (see ADR 0072 and ADR 0102):
+#
+#   pjrt-cpu-smoke — runs on ordinary GitHub-hosted x86_64 runners with NO TPU
+#     hardware. Downloads libtpu.so from PyPI via curl+jq (no Python/pip needed).
+#     Validates that the nd4j-tpu SPI wiring is intact and the PJRT library
+#     dlopens in-process.
+#
+#   tpu-vm-smoke — optional; runs on a self-hosted runner on a Google Cloud TPU
+#     VM (e.g. spot v5litepod-1, ~$0.5/hr). libtpu.so is read from the system
+#     path set by the Cloud TPU VM image (TPU_LIBRARY_PATH env var).
+#
+# JTpuBackend.canRun() is a stub returning false until PJRT bindings land, so
+# no execution-on-TPU is attempted yet; the smoke tests lock the current
+# contracts.
+#
+# Python-free: libtpu.so location is resolved via curl + jq + unzip + find.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tpuRunnerLabels:
+        description: 'JSON array of self-hosted TPU VM runner labels (e.g. ["self-hosted","tpu"]). Empty = skip the TPU VM job.'
+        required: false
+        default: ''
+
+      testFilter:
+        description: 'Surefire -Dtest filter. Empty = TpuBackendSmokeTest only.'
+        required: false
+        default: ''
+
+env:
+  MAVEN_OPTS: -Xmx2g
+
+jobs:
+  pjrt-cpu-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    name: pjrt-cpu-smoke (hosted, no TPU hardware)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: Install jq (needed for PyPI JSON parsing)
+        shell: bash
+        run: sudo apt-get install -y jq unzip
+
+      - name: Download libtpu.so from PyPI (no pip/Python required)
+        shell: bash
+        run: |
+          # Query PyPI JSON API and extract the manylinux x86_64 wheel URL
+          PYPI_META=$(curl -sfL "https://pypi.org/pypi/libtpu/json" 2>libtpu-curl.log)
+          LIBTPU_WHL=$(echo "$PYPI_META" \
+            | jq -r '.urls[] | select(.filename | test("manylinux.*x86_64|linux.*x86_64")) | .url' \
+            | head -1)
+
+          # If no platform-specific wheel, try any wheel (some versions are pure-python wrappers)
+          if [ -z "$LIBTPU_WHL" ]; then
+            LIBTPU_WHL=$(echo "$PYPI_META" \
+              | jq -r '.urls[] | select(.packagetype == "bdist_wheel") | .url' \
+              | head -1)
+          fi
+
+          # Final fallback: try libtpu-nightly
+          if [ -z "$LIBTPU_WHL" ]; then
+            PYPI_META=$(curl -sfL "https://pypi.org/pypi/libtpu-nightly/json" 2>>libtpu-curl.log)
+            LIBTPU_WHL=$(echo "$PYPI_META" \
+              | jq -r '.urls[] | select(.packagetype == "bdist_wheel") | .url' \
+              | head -1)
+          fi
+
+          if [ -z "$LIBTPU_WHL" ]; then
+            echo "::error::Could not locate libtpu wheel on PyPI"
+            cat libtpu-curl.log
+            exit 1
+          fi
+
+          echo "Downloading: $LIBTPU_WHL"
+          curl -fL "$LIBTPU_WHL" -o /tmp/libtpu.whl 2>>libtpu-curl.log
+          mkdir -p /tmp/libtpu-extracted
+          # Wheels are ZIP archives — extract .so files
+          unzip -o /tmp/libtpu.whl '*.so*' -d /tmp/libtpu-extracted/ 2>/dev/null \
+            || unzip -o /tmp/libtpu.whl -d /tmp/libtpu-extracted/ 2>/dev/null \
+            || true
+
+          PJRT_PATH=$(find /tmp/libtpu-extracted -name "libtpu.so" 2>/dev/null | head -1)
+
+          if [ -z "$PJRT_PATH" ]; then
+            echo "::error::libtpu.so not found inside downloaded wheel"
+            find /tmp/libtpu-extracted -type f | head -20
+            exit 1
+          fi
+
+          echo "Using PJRT library: $PJRT_PATH"
+          echo "PJRT_PATH=$PJRT_PATH" >> "$GITHUB_ENV"
+
+      # -Ptpu puts nd4j-tpu/-preset in the reactor; -Ptest-tpu makes platform-tests
+      # depend on nd4j-tpu so --also-make builds it from source.
+      - name: Build Java modules (native jars from snapshots)
+        shell: bash
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Ptpu,test-tpu \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dmaven.javadoc.skip=true \
+            -pl :platform-tests --also-make \
+            -pl !:libnd4j \
+            --no-transfer-progress --batch-mode 2>&1 | tee tpu-build.log
+
+      - name: Run TPU wiring smoke tests
+        shell: bash
+        run: |
+          TEST_FILTER="${{ inputs.testFilter }}"
+          if [ -n "$TEST_FILTER" ]; then
+            TEST_FLAGS="-Dtest=${TEST_FILTER}"
+          else
+            TEST_FLAGS="-Dtest=TpuBackendSmokeTest"
+          fi
+          cd platform-tests
+          mvn test \
+            -Ptest-tpu \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dtest.heap.size=4g -Dtest.offheap.size=6g \
+            -Domp.num.threads=2 \
+            -DskipTestResourceEnforcement=true \
+            ${TEST_FLAGS} \
+            --no-transfer-progress --batch-mode 2>&1 | tee tpu-smoke-tests.log
+
+      - name: Upload logs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tpu-pjrt-cpu-smoke
+          path: |
+            platform-tests/target/surefire-reports/
+            platform-tests/tpu-smoke-tests.log
+            tpu-build.log
+            libtpu-curl.log
+          retention-days: 14
+
+  tpu-vm-smoke:
+    if: inputs.tpuRunnerLabels != ''
+    runs-on: ${{ fromJSON(inputs.tpuRunnerLabels) }}
+    timeout-minutes: 90
+    name: tpu-vm-smoke (self-hosted Cloud TPU VM)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clean workspace (self-hosted)
+        uses: AutoModality/action-clean@v1
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: Locate system libtpu (TPU VM image path)
+        shell: bash
+        run: |
+          # TPU VM images set LD_PRELOAD to tcmalloc which breaks unrelated tooling
+          unset LD_PRELOAD
+
+          # Cloud TPU VMs export TPU_LIBRARY_PATH pointing to libtpu.so
+          PJRT_PATH="${TPU_LIBRARY_PATH:-}"
+
+          # Fall back to standard library search paths
+          if [ -z "$PJRT_PATH" ]; then
+            PJRT_PATH=$(find /lib /usr/lib /usr/local/lib /lib64 /usr/lib64 \
+                        -name "libtpu.so" 2>/dev/null | head -1)
+          fi
+
+          # Last resort: download from PyPI via curl+jq (requires jq + unzip)
+          if [ -z "$PJRT_PATH" ] && command -v jq >/dev/null 2>&1; then
+            sudo apt-get install -y unzip 2>/dev/null || true
+            LIBTPU_WHL=$(curl -sfL "https://pypi.org/pypi/libtpu/json" \
+              | jq -r '.urls[] | select(.filename | test("linux.*x86_64|manylinux.*x86_64")) | .url' \
+              | head -1)
+            if [ -n "$LIBTPU_WHL" ]; then
+              curl -fL "$LIBTPU_WHL" -o /tmp/libtpu.whl
+              mkdir -p /tmp/libtpu-extracted
+              unzip -o /tmp/libtpu.whl '*.so*' -d /tmp/libtpu-extracted/ 2>/dev/null || true
+              PJRT_PATH=$(find /tmp/libtpu-extracted -name "libtpu.so" 2>/dev/null | head -1)
+            fi
+          fi
+
+          if [ -z "$PJRT_PATH" ]; then
+            echo "::error::libtpu.so not found on this TPU VM"
+            exit 1
+          fi
+
+          echo "PJRT_PATH=$PJRT_PATH" >> "$GITHUB_ENV"
+          echo "TPU_LIBRARY_PATH=$PJRT_PATH" >> "$GITHUB_ENV"
+
+      - name: Build Java modules (native jars from snapshots)
+        shell: bash
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Ptpu,test-tpu \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dmaven.javadoc.skip=true \
+            -pl :platform-tests --also-make \
+            -pl !:libnd4j \
+            --no-transfer-progress --batch-mode 2>&1 | tee tpu-build.log
+
+      - name: Run TPU wiring smoke tests (real libtpu)
+        shell: bash
+        run: |
+          cd platform-tests
+          mvn test \
+            -Ptest-tpu \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dtest.heap.size=4g -Dtest.offheap.size=6g \
+            -Domp.num.threads=2 \
+            -DskipTestResourceEnforcement=true \
+            -Dtest=TpuBackendSmokeTest \
+            --no-transfer-progress --batch-mode 2>&1 | tee tpu-vm-smoke-tests.log
+
+      - name: Upload logs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tpu-vm-smoke
+          path: |
+            platform-tests/target/surefire-reports/
+            platform-tests/tpu-vm-smoke-tests.log
+            tpu-build.log
+          retention-days: 14

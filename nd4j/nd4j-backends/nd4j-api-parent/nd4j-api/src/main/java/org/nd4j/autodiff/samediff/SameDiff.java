@@ -2558,9 +2558,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
                 Preconditions.checkState(placeholders.size() > 0, "No placeholder variables were set for training");
 
-                //Call TrainingSession to perform training
-                if (!initializedTraining)
-                    initializeTraining();
+                //Call TrainingSession to perform training. initializeTraining() is
+                //self-guarding: full setup on first call, and on later calls it tops up
+                //updater state for trainable variables added since initialization
+                //(e.g. PEFT adapters injected into an already-trained model).
+                initializeTraining();
 
                 lastLoss = ts.trainingIteration(
                         trainingConfig,
@@ -2781,6 +2783,32 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             }
 
             initializedTraining = true;
+        } else {
+            // Training was already initialized, but the trainable set may have grown
+            // since — e.g. PEFT adapter variables injected into an already-trained model
+            // (dup() carries initializedTraining/updaterMap). Create updater state for
+            // any trainable variable that has none, mirroring the handling in
+            // convertToVariables().
+            if (updaterMap == null) {
+                updaterMap = new HashMap<>();
+            }
+            for (Variable v : variables.values()) {
+                if (v.getVariable().getVariableType() != VariableType.VARIABLE
+                        || !v.getVariable().dataType().isFPType()
+                        || updaterMap.containsKey(v.getName())) {
+                    continue;
+                }
+                INDArray arr = v.getVariable().getArr();
+                if (arr == null) {
+                    continue;
+                }
+                long stateSize = trainingConfig.getUpdater().stateSize(arr.length());
+                INDArray view = stateSize == 0 ? null : Nd4j.createUninitialized(arr.dataType(), 1, stateSize);
+                GradientUpdater gu = trainingConfig.getUpdater().instantiate(view, false);
+                gu.setStateViewArray(view, arr.shape(), arr.ordering(), true);
+                updaterMap.put(v.getName(), gu);
+                log.debug("initializeTraining: created updater for late-added trainable variable '{}'", v.getName());
+            }
         }
     }
 
@@ -6980,6 +7008,19 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
+     * Invalidate (remove) the gradient function, if one has been created.<br>
+     * Call this after structurally modifying the graph — adding variables or ops that must
+     * participate in training, such as PEFT adapter injection — so the next {@link #fit}
+     * or gradient calculation rebuilds the backprop graph against the modified forward
+     * graph instead of reusing a stale one that predates the modification.
+     * {@link #convertToConstants(List)} and {@link #convertToVariables(List)} apply the
+     * same invalidation internally.
+     */
+    public void invalidateGradFunction() {
+        sameDiffFunctionInstances.remove(GRAD_FN_KEY);
+    }
+
+    /**
      * Create the gradient function (for calculating gradients via {@link #calculateGradients(Map, Collection)}) if it is not already defined.
      * Users do not usually need to call this function manually, as it is called as required in the aforementioned method.
      * <br><br>
@@ -7475,26 +7516,29 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                                 }
 
                                 //However, when a variable is used multiple times, we need ALL gradient contributions available:
+                                //prereqs is null when the variable feeds a single op — no multi-contribution wait needed.
                                 List<String> prereqs = prerequisites.get(outVar.getName());
                                 //constants may not have operations in the graph (sometimes happens with model import)
                                 //automatically differentiate those to allow proper processing of the graph
-                                for(String prereq : prereqs) {
-                                    String[] prereqOutput = sameDiff.getOutputsForOp(sameDiff.getOpById(prereq));
-                                    for(String prereq2 : prereqOutput) {
-                                        // Constants and placeholders do not need gradient variables created
-                                        // UNLESS the user explicitly requested gradients for them via
-                                        // createGradFunction(varName). Without the explicit request, creating
-                                        // gradient vars for constants/placeholders is spurious.
-                                        boolean isExplicitlyRequested = variablesRequiringGradients != null
-                                                && ArrayUtils.contains(variablesRequiringGradients, prereq2);
-                                        if(sameDiff.hasVariable(prereq2)
-                                                && (sameDiff.isPlaceHolder(prereq2) || sameDiff.isConstant(prereq2))
-                                                && !differentiatedOps.contains(prereq2)
-                                                && !isExplicitlyRequested) {
-                                            differentiatedOps.add(prereq);
+                                if (prereqs != null) {
+                                    for (String prereq : prereqs) {
+                                        String[] prereqOutput = sameDiff.getOutputsForOp(sameDiff.getOpById(prereq));
+                                        for (String prereq2 : prereqOutput) {
+                                            // Constants and placeholders do not need gradient variables created
+                                            // UNLESS the user explicitly requested gradients for them via
+                                            // createGradFunction(varName). Without the explicit request, creating
+                                            // gradient vars for constants/placeholders is spurious.
+                                            boolean isExplicitlyRequested = variablesRequiringGradients != null
+                                                    && ArrayUtils.contains(variablesRequiringGradients, prereq2);
+                                            if (sameDiff.hasVariable(prereq2)
+                                                    && (sameDiff.isPlaceHolder(prereq2) || sameDiff.isConstant(prereq2))
+                                                    && !differentiatedOps.contains(prereq2)
+                                                    && !isExplicitlyRequested) {
+                                                differentiatedOps.add(prereq);
+                                            }
                                         }
-                                    }
 
+                                    }
                                 }
                                 if (prereqs != null) {
                                     allAvailable &= differentiatedOps.containsAll(prereqs);

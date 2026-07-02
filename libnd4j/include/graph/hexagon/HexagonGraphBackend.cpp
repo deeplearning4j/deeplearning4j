@@ -44,13 +44,13 @@ HexagonGraphBackend::~HexagonGraphBackend() {
   }
 }
 
-HexagonGraphBackend* HexagonGraphBackend::getInstance() {
+HexagonGraphBackend& HexagonGraphBackend::getInstance() {
   static HexagonGraphBackend* instance = nullptr;
   static std::once_flag initFlag;
   std::call_once(initFlag, []() {
     instance = new HexagonGraphBackend();
   });
-  return instance;
+  return *instance;
 }
 
 // ── NPU Context ─────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ bool HexagonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) 
   int mappableOps = 0;
 
   for (int i = start; i < end; i++) {
-    if (HexagonIRBuilder::isHexagonMappable(slots[i].ident.opName)) {
+    if (HexagonIRBuilder::isHexagonMappable(slots[i].ident.opName.c_str())) {
       mappableOps++;
     }
   }
@@ -239,14 +239,17 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   if (compiled == nullptr || compiled->kernelHandle == nullptr) {
-    DSP_DIAG(EXECUTION, "HexagonGraphBackend::executeSegment: [%d, %d) no compiled "
+    DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d) no compiled "
              "kernel found", seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
   auto& runtime = HexagonRuntimeManager::getInstance();
 
-  // Collect all input/output buffer pointers as kernel arguments
+  // Collect all input/output buffer pointers as kernel arguments.
+  // Index convention for wiring.inputSourceIndices[j]:
+  //   >= 0 : index into flat outputSlots array (prior op's output)
+  //   <  0 : external input at -(srcIdx+1) into externalInputs
   std::vector<void*> kernelArgs;
 
   for (int i = seg.def.startSlot; i < seg.def.endSlot; i++) {
@@ -255,15 +258,22 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     // Stage inputs
     for (int j = 0; j < slot.wiring.numInputs; j++) {
       NDArray* inputArr = nullptr;
+      int srcIdx = slot.wiring.inputSourceIndices != nullptr
+                       ? slot.wiring.inputSourceIndices[j]
+                       : -1;
 
-      if (slot.inputSlotIndices != nullptr && slot.inputSlotIndices[j] >= 0) {
+      if (srcIdx >= 0) {
         // Cross-slot reference — use the output from the producing slot
-        int srcSlot = slot.inputSlotIndices[j];
-        if (srcSlot >= 0 && srcSlot < totalOutputSlots && outputSlots[srcSlot] != nullptr) {
-          inputArr = outputSlots[srcSlot];
+        if (srcIdx < totalOutputSlots && outputSlots[srcIdx] != nullptr) {
+          inputArr = outputSlots[srcIdx];
         }
-      } else if (slot.inputArrays != nullptr && slot.inputArrays[j] != nullptr) {
-        inputArr = slot.inputArrays[j];
+      } else {
+        // External input: -(srcIdx + 1) into externalInputs
+        int extIdx = -(srcIdx + 1);
+        if (extIdx >= 0 && extIdx < numExternalInputs &&
+            externalInputs[extIdx] != nullptr) {
+          inputArr = externalInputs[extIdx];
+        }
       }
 
       if (inputArr != nullptr) {
@@ -271,9 +281,16 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
     }
 
-    // Output buffer
-    if (slot.outputArray != nullptr) {
-      kernelArgs.push_back(slot.outputArray->buffer());
+    // Output buffers: each output lives in the flat outputSlots array at
+    // slot.wiring.outputSlotIndices[k].
+    for (int k = 0; k < slot.wiring.numOutputs; k++) {
+      int outIdx = slot.wiring.outputSlotIndices != nullptr
+                       ? slot.wiring.outputSlotIndices[k]
+                       : -1;
+      if (outIdx >= 0 && outIdx < totalOutputSlots &&
+          outputSlots[outIdx] != nullptr) {
+        kernelArgs.push_back(outputSlots[outIdx]->buffer());
+      }
     }
   }
 
@@ -281,19 +298,19 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   if (!runtime.dispatchKernel(compiled->npuContext, compiled->kernelHandle,
                                kernelArgs.data(),
                                static_cast<int>(kernelArgs.size()))) {
-    DSP_DIAG(EXECUTION, "HexagonGraphBackend::executeSegment: [%d, %d) dispatch failed",
+    DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d) dispatch failed",
              seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
   // Wait for NPU completion
   if (!runtime.waitForCompletion(compiled->npuContext)) {
-    DSP_DIAG(EXECUTION, "HexagonGraphBackend::executeSegment: [%d, %d) "
+    DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d) "
              "waitForCompletion failed", seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
-  DSP_DIAG(EXECUTION, "HexagonGraphBackend::executeSegment: [%d, %d) executed "
+  DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d) executed "
            "successfully", seg.def.startSlot, seg.def.endSlot);
   return Status::OK;
 }
@@ -336,14 +353,22 @@ bool HexagonGraphBackend::stageInputsToTcm(const NativeSlot& slot,
 
   for (int j = 0; j < slot.wiring.numInputs; j++) {
     NDArray* inputArr = nullptr;
+    int srcIdx = slot.wiring.inputSourceIndices != nullptr
+                     ? slot.wiring.inputSourceIndices[j]
+                     : -1;
 
-    if (slot.inputSlotIndices != nullptr && slot.inputSlotIndices[j] >= 0) {
-      int srcSlot = slot.inputSlotIndices[j];
-      if (srcSlot >= 0 && srcSlot < totalOutputSlots && outputSlots[srcSlot] != nullptr) {
-        inputArr = outputSlots[srcSlot];
+    if (srcIdx >= 0) {
+      // Cross-slot reference: prior op's output in the flat outputSlots array
+      if (srcIdx < totalOutputSlots && outputSlots[srcIdx] != nullptr) {
+        inputArr = outputSlots[srcIdx];
       }
-    } else if (slot.inputArrays != nullptr && slot.inputArrays[j] != nullptr) {
-      inputArr = slot.inputArrays[j];
+    } else {
+      // External input: -(srcIdx + 1) into externalInputs
+      int extIdx = -(srcIdx + 1);
+      if (extIdx >= 0 && extIdx < numExternalInputs &&
+          externalInputs[extIdx] != nullptr) {
+        inputArr = externalInputs[extIdx];
+      }
     }
 
     if (inputArr == nullptr) {

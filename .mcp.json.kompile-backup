@@ -1,8 +1,8 @@
 {
   "mcpServers" : {
     "kompile" : {
-      "url" : "http://localhost:8080/mcp/sse",
-      "transport" : "sse"
+      "command" : "/home/agibsonccc/Documents/GitHub/kompile/kompile-cli/kompile-cli-main/target/kompile-cli-main",
+      "args" : [ "mcp-stdio", "--work-dir", "/home/agibsonccc/Documents/GitHub/deeplearning4j" ]
     }
   }
 }

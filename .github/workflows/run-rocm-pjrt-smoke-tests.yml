@@ -1,0 +1,230 @@
+name: ROCm PJRT Smoke Tests (ND4J on AMD)
+
+# Runs ND4J on AMD GPUs through the ROCm PJRT plugin (xla_rocm_plugin.so), loaded
+# by the SAME native PjrtClientManager as the TPU path (uniform GetPjrtApi C ABI).
+# AMD is not a separate backend — it's the PJRT carrier (nd4j-tpu) pointed at the
+# ROCm plugin via PJRT_PLUGIN_LIBRARY_PATH.
+#
+# The plugin is obtained with NO python/pip: libnd4j/scripts/fetch-pjrt-plugin.sh
+# curl+jq+unzips the jax-rocm7-pjrt wheel and extracts the .so.
+#
+# Two tiers:
+#   pjrt-rocm-static — hosted ubuntu, NO AMD GPU. Fetches the plugin python-free
+#     and validates it (exists + exports GetPjrtApi via a pure-Java ELF reader).
+#     Cannot dlopen (needs ROCm 7 runtime), so the in-process load test skips.
+#   pjrt-rocm-gpu — optional; self-hosted AMD/ROCm runner. Same fetch, then the
+#     plugin actually loads in-process. Provide runner labels to enable.
+#
+# See ADR 0087 (AMD via ZLUDA — the compat alternative) and ADR 0102.
+
+on:
+  workflow_dispatch:
+    inputs:
+      amdRunnerLabels:
+        description: 'JSON array of self-hosted AMD/ROCm runner labels (e.g. ["self-hosted","linux","amd-gpu","rocm"]). Empty = skip the GPU job.'
+        required: false
+        default: ''
+
+      testFilter:
+        description: 'Surefire -Dtest filter. Empty = RocmPjrtSmokeTest only.'
+        required: false
+        default: ''
+
+env:
+  MAVEN_OPTS: -Xmx2g
+
+jobs:
+  pjrt-rocm-static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    name: pjrt-rocm-static (hosted, no AMD GPU)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: Install jq + unzip
+        shell: bash
+        run: sudo apt-get update -qq && sudo apt-get install -y jq unzip
+
+      - name: Fetch ROCm PJRT plugin (python-free)
+        shell: bash
+        run: |
+          PLUGIN=$(bash libnd4j/scripts/fetch-pjrt-plugin.sh rocm "$RUNNER_TEMP/rocm-pjrt")
+          echo "PJRT_PLUGIN_LIBRARY_PATH=$PLUGIN" >> "$GITHUB_ENV"
+          echo "Fetched: $PLUGIN"
+
+      - name: Build PJRT carrier module (nd4j-tpu) from source
+        shell: bash
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Ptpu,test-rocm \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dmaven.javadoc.skip=true \
+            -pl :platform-tests --also-make \
+            -pl !:libnd4j \
+            --no-transfer-progress --batch-mode 2>&1 | tee rocm-build.log
+
+      - name: Run ROCm PJRT static smoke tests
+        shell: bash
+        run: |
+          TEST_FILTER="${{ inputs.testFilter }}"
+          if [ -n "$TEST_FILTER" ]; then TEST_FLAGS="-Dtest=${TEST_FILTER}"; else TEST_FLAGS="-Dtest=RocmPjrtSmokeTest"; fi
+          cd platform-tests
+          mvn test \
+            -Ptest-rocm \
+            -Dbackend.artifactId=nd4j-native \
+            -Drocm.pjrt.path="$PJRT_PLUGIN_LIBRARY_PATH" \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dtest.heap.size=4g -Dtest.offheap.size=6g \
+            -Domp.num.threads=2 \
+            -DskipTestResourceEnforcement=true \
+            ${TEST_FLAGS} \
+            --no-transfer-progress --batch-mode 2>&1 | tee rocm-pjrt-smoke-tests.log
+
+      - name: Upload logs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rocm-pjrt-static
+          path: |
+            platform-tests/target/surefire-reports/
+            platform-tests/rocm-pjrt-smoke-tests.log
+            rocm-build.log
+          retention-days: 14
+
+  pjrt-rocm-gpu:
+    if: inputs.amdRunnerLabels != ''
+    runs-on: ${{ fromJSON(inputs.amdRunnerLabels) }}
+    timeout-minutes: 120
+    name: pjrt-rocm-gpu (self-hosted AMD/ROCm)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clean workspace (self-hosted)
+        uses: AutoModality/action-clean@v1
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: ROCm stack report
+        shell: bash
+        run: |
+          rocminfo 2>&1 | head -n 30 || echo "::warning::rocminfo not available"
+          echo "ROCM_PATH=${ROCM_PATH:-/opt/rocm}"
+
+      - name: Fetch ROCm PJRT plugin (python-free)
+        shell: bash
+        run: |
+          PLUGIN=$(bash libnd4j/scripts/fetch-pjrt-plugin.sh rocm "$RUNNER_TEMP/rocm-pjrt")
+          echo "PJRT_PLUGIN_LIBRARY_PATH=$PLUGIN" >> "$GITHUB_ENV"
+
+      - name: Build PJRT carrier module (nd4j-tpu) from source
+        shell: bash
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+            -Ptpu,test-rocm \
+            -Dbackend.artifactId=nd4j-native \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dmaven.javadoc.skip=true \
+            -pl :platform-tests --also-make \
+            -pl !:libnd4j \
+            --no-transfer-progress --batch-mode 2>&1 | tee rocm-build.log
+
+      - name: Run ROCm PJRT smoke tests (real in-process load)
+        shell: bash
+        run: |
+          cd platform-tests
+          mvn test \
+            -Ptest-rocm \
+            -Dbackend.artifactId=nd4j-native \
+            -Drocm.pjrt.path="$PJRT_PLUGIN_LIBRARY_PATH" \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dtest.heap.size=4g -Dtest.offheap.size=6g \
+            -Domp.num.threads=2 \
+            -DskipTestResourceEnforcement=true \
+            -Dtest=RocmPjrtSmokeTest \
+            --no-transfer-progress --batch-mode 2>&1 | tee rocm-pjrt-gpu-smoke-tests.log
+
+      - name: Upload logs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rocm-pjrt-gpu
+          path: |
+            platform-tests/target/surefire-reports/
+            platform-tests/rocm-pjrt-gpu-smoke-tests.log
+            rocm-build.log
+          retention-days: 14

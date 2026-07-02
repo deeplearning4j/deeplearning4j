@@ -181,6 +181,9 @@
         <!-- JNI Configuration for Java stack trace capture in lifecycle tracking -->
         <libnd4j.build.with.java>ON</libnd4j.build.with.java>
 
+        <!-- ZLUDA Configuration: CUDA-compat shim for AMD/Intel GPUs -->
+        <libnd4j.zluda>OFF</libnd4j.zluda>
+
         <!-- MLIR Configuration -->
         <libnd4j.mlir>OFF</libnd4j.mlir>
         <libnd4j.mlir.version>18</libnd4j.mlir.version>
@@ -964,6 +967,8 @@
                                         <argument>${libnd4j.link.only}</argument>
                                         <argument>--dry-run</argument>
                                         <argument>${libnd4j.dry.run}</argument>
+                                        <argument>--zluda</argument>
+                                        <argument>${libnd4j.zluda}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
@@ -1129,6 +1134,8 @@
                                         <argument>${libnd4j.link.only}</argument>
                                         <argument>--dry-run</argument>
                                         <argument>${libnd4j.dry.run}</argument>
+                                        <argument>--zluda</argument>
+                                        <argument>${libnd4j.zluda}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
@@ -1183,6 +1190,170 @@
                                 <configuration>
                                     <descriptors>
                                         <descriptor>assembly-tpu.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>hexagon</id>
+            <activation>
+                <property>
+                    <name>libnd4j.hexagon</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.cpu.compile.skip>true</libnd4j.cpu.compile.skip>
+                <libnd4j.cuda.compile.skip>true</libnd4j.cuda.compile.skip>
+                <libnd4j.tpu.compile.skip>true</libnd4j.tpu.compile.skip>
+                <libnd4j.hexagon.compile.skip>false</libnd4j.hexagon.compile.skip>
+                <libnd4j.chip>hexagon</libnd4j.chip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <properties>${libnd4j.platform}</properties>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>javacpp-cppbuild-compile-hexagon</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${libnd4j.hexagon.compile.skip}</skip>
+                                    <environmentVariables>
+                                        <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                    </environmentVariables>
+                                    <buildCommand>
+                                        <program>${libnd4j.buildprogram}</program>
+                                        <argument>buildnativeoperations.sh</argument>
+                                        <argument>--output-path</argument>
+                                        <argument>${libnd4j.outputPath}</argument>
+                                        <argument>--build-type</argument>
+                                        <argument>${libnd4j.build}</argument>
+                                        <argument>--chip</argument>
+                                        <argument>hexagon</argument>
+                                        <argument>--platform</argument>
+                                        <argument>${libnd4j.platform}</argument>
+                                        <argument>--chip-extension</argument>
+                                        <argument>${libnd4j.extension}</argument>
+                                        <argument>${libnd4j.tests}</argument>
+                                        <argument>-j</argument>
+                                        <argument>${libnd4j.buildthreads}</argument>
+                                        <argument>--operations</argument>
+                                        <argument>${libnd4j.operations}</argument>
+                                        <argument>--datatypes</argument>
+                                        <argument>${libnd4j.datatypes}</argument>
+                                        <argument>--sanitize</argument>
+                                        <argument>${libnd4j.sanitize}</argument>
+                                        <argument>--sanitizers</argument>
+                                        <argument>${libnd4j.sanitizers}</argument>
+                                        <argument>--use_lto</argument>
+                                        <argument>${libnd4j.lto}</argument>
+                                        <argument>--cuda-lto</argument>
+                                        <argument>${libnd4j.cuda.lto}</argument>
+                                        <argument>--cuda-threads</argument>
+                                        <argument>${libnd4j.cuda.threads}</argument>
+                                        <argument>--cuda-split-compile</argument>
+                                        <argument>${libnd4j.cuda.splitcompile}</argument>
+                                        <argument>--functrace</argument>
+                                        <argument>${libnd4j.calltrace}</argument>
+                                        <argument>--log-output</argument>
+                                        <argument>${libnd4j.log}</argument>
+                                        <argument>--optimization-level</argument>
+                                        <argument>${libnd4j.optimization}</argument>
+                                        <argument>--print-indices</argument>
+                                        <argument>${libnd4j.printindices}</argument>
+                                        <argument>--print-math</argument>
+                                        <argument>${libnd4j.printmath}</argument>
+                                        <argument>--preprocess</argument>
+                                        <argument>${libnd4j.preprocess}</argument>
+                                        <argument>--generate-flatc</argument>
+                                        <argument>${libnd4j.generate.flatc}</argument>
+                                        <argument>--debug-type-profile</argument>
+                                        <argument>${libnd4j.debug.types.profile}</argument>
+                                        <argument>--debug-custom-types</argument>
+                                        <argument>${libnd4j.debug.types.custom}</argument>
+                                        <argument>--debug-auto-reduce</argument>
+                                        <argument>${libnd4j.debug.auto.reduce}</argument>
+                                        <argument>--ppstep</argument>
+                                        <argument>${libnd4j.build.ppstep}</argument>
+                                        <argument>--extract-instantiations</argument>
+                                        <argument>${libnd4j.extract.instantiations}</argument>
+                                        <argument>--cmake-only</argument>
+                                        <argument>${libnd4j.cmake.only}</argument>
+                                        <argument>--compiler</argument>
+                                        <argument>${libnd4j.compiler}</argument>
+                                        <argument>--link-only</argument>
+                                        <argument>${libnd4j.link.only}</argument>
+                                        <argument>--dry-run</argument>
+                                        <argument>${libnd4j.dry.run}</argument>
+                                        <argument>--zluda</argument>
+                                        <argument>${libnd4j.zluda}</argument>
+                                        <argument>--mlir</argument>
+                                        <argument>${libnd4j.mlir}</argument>
+                                        <argument>--mlir-version</argument>
+                                        <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--mlir-gpu</argument>
+                                        <argument>${libnd4j.mlir.gpu}</argument>
+                                        <argument>--triton</argument>
+                                        <argument>${libnd4j.triton}</argument>
+                                        <argument>--build-sdx-standalone</argument>
+                                        <argument>${libnd4j.sdx.standalone}</argument>
+                                        <argument>--sdx-include-triton</argument>
+                                        <argument>${libnd4j.sdx.include.triton}</argument>
+                                        <argument>--unity-build</argument>
+                                        <argument>${libnd4j.unity.build}</argument>
+                                        <argument>--oom-killer</argument>
+                                        <argument>${libnd4j.oom.killer}</argument>
+                                        <argument>--oom-memory-threshold</argument>
+                                        <argument>${libnd4j.oom.memory.threshold}</argument>
+                                        <argument>--oom-monitor-interval</argument>
+                                        <argument>${libnd4j.oom.monitor.interval}</argument>
+                                        <argument>--oom-process-max-mb</argument>
+                                        <argument>${libnd4j.oom.process.max.mb}</argument>
+                                        <argument>--oom-velocity-threshold</argument>
+                                        <argument>${libnd4j.oom.velocity.threshold}</argument>
+                                        <argument>--oom-critical-threshold</argument>
+                                        <argument>${libnd4j.oom.critical.threshold}</argument>
+                                        <argument>--dep-cache</argument>
+                                        <argument>${libnd4j.dep.cache}</argument>
+                                        <argument>--dep-cache-dir</argument>
+                                        <argument>${libnd4j.dep.cache.dir}</argument>
+                                        <argument>--dep-cache-clear</argument>
+                                        <argument>${libnd4j.dep.cache.clear}</argument>
+                                        <argument>--dep-cache-clear-dep</argument>
+                                        <argument>${libnd4j.dep.cache.clear.dep}</argument>
+                                    </buildCommand>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>libnd4j-package-hexagon</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly-hexagon.xml</descriptor>
                                     </descriptors>
                                 </configuration>
                             </execution>
@@ -1344,6 +1515,8 @@
                                         <argument>${libnd4j.link.only}</argument>
                                         <argument>--dry-run</argument>
                                         <argument>${libnd4j.dry.run}</argument>
+                                        <argument>--zluda</argument>
+                                        <argument>${libnd4j.zluda}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>

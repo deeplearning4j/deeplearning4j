@@ -27,15 +27,20 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * TPU-specific NDArray implementation.
+ * TPU-specific NDArray scaffolding.
  *
  * This class represents an n-dimensional array that can be executed on TPU hardware.
  * Key features:
  * - Supports bfloat16 as native TPU data type
  * - Can be backed by TPU device memory (HBM)
  * - Operations are compiled to HLO for efficient execution
+ *
+ * NOTE: abstract until the PJRT native bindings land — the backend-specific INDArray
+ * surface (shape descriptors, device duplication, UTF8 serialization) needs a real PJRT
+ * buffer representation to implement meaningfully. JTpuBackend.getNDArrayClass() returns
+ * BaseNDArray until then. See ADR 0072 / ADR 0102.
  */
-public class JTpuNDArray extends BaseNDArray {
+public abstract class JTpuNDArray extends BaseNDArray {
 
     /**
      * Default constructor - creates an empty array.
@@ -73,20 +78,6 @@ public class JTpuNDArray extends BaseNDArray {
     }
 
     /**
-     * Create array with shape and ordering.
-     */
-    public JTpuNDArray(long[] shape, char ordering) {
-        super(shape, ordering);
-    }
-
-    /**
-     * Create array with shape, data type, and ordering.
-     */
-    public JTpuNDArray(DataType dataType, long[] shape, char ordering) {
-        super(dataType, shape, ordering);
-    }
-
-    /**
      * Create from float data.
      */
     public JTpuNDArray(float[] data, long[] shape, char ordering) {
@@ -101,17 +92,26 @@ public class JTpuNDArray extends BaseNDArray {
     }
 
     /**
-     * Create from int data.
-     */
-    public JTpuNDArray(int[] data, long[] shape, char ordering) {
-        super(data, shape, ordering);
-    }
-
-    /**
      * Create from long data.
      */
     public JTpuNDArray(long[] data, long[] shape, char ordering) {
         super(data, shape, ordering);
+    }
+
+    @Override
+    protected int stringBuffer(com.google.flatbuffers.FlatBufferBuilder builder, DataBuffer buffer) {
+        throw new UnsupportedOperationException(
+                "UTF8 flatbuffer serialization requires PJRT native bindings (not yet implemented)");
+    }
+
+    @Override
+    public INDArray unsafeDuplication() {
+        return dup();
+    }
+
+    @Override
+    public INDArray unsafeDuplication(boolean blocking) {
+        return dup();
     }
 
     @Override

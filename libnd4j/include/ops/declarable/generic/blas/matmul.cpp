@@ -333,7 +333,28 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   //   dL/dX = matmul(eps, Y, transZ, !transY, transX)
   //   dL/dY = matmul(X, eps, !transX, transZ, transY)
   op.execute({eps, y}, {dldx}, {alpha, beta}, {transZ, transY ? 0 : 1, transX}, {});
-  op.execute({x, eps}, {dldy}, {alpha, beta}, {transX ? 0 : 1, transZ, transY}, {});
+
+  // Rank-mismatch case: x is rank-N (N>2) and y is rank-2, e.g. x=[B,S,H] @ y=[H,V] -> z=[B,S,V].
+  // The intermediate gradient matmul(x^T, eps) produces a batched [B,H,V] (or similar).
+  // We must reduce (sum) over the batch leading dimensions to match y's shape [H,V].
+  const int xRank = x->rankOf();
+  const int yRank = y->rankOf();
+  if (xRank > 2 && yRank == 2 && !transY && !transZ) {
+    // Compute intermediate [batch..., H, V] = matmul(x^T_2d, eps_2d) over batch dims
+    NDArray* dldyFull = new NDArray('c', ShapeUtils::evalShapeForMatmul(x->shapeInfo(), eps->shapeInfo(),
+                                                                         transX ? 0 : 1, transZ),
+                                    x->dataType(), block.launchContext());
+    op.execute({x, eps}, {dldyFull}, {alpha, beta}, {transX ? 0 : 1, transZ, transY}, {});
+    // Sum over all leading batch dims (all dims except last 2)
+    std::vector<LongType> batchDims;
+    for (int d = 0; d < xRank - 2; d++) batchDims.push_back(d);
+    NDArray* reduced = dldyFull->reduceAlongDimension(reduce::Sum, &batchDims, false);
+    dldy->assign(reduced);
+    delete reduced;
+    delete dldyFull;
+  } else {
+    op.execute({x, eps}, {dldy}, {alpha, beta}, {transX ? 0 : 1, transZ, transY}, {});
+  }
 
   return Status::OK;
 }

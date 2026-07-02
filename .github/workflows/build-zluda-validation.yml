@@ -1,0 +1,321 @@
+name: ZLUDA Java Module Validation (no GPU / no CUDA build)
+
+# Python-free, GPU-free, no C++/nvcc compilation.
+#
+# Three-part static gate that proves the ZLUDA path is viable on a standard
+# GitHub-hosted runner with zero GPU hardware:
+#
+#   a) Java module build — nd4j-zluda, nd4j-tpu-preset, nd4j-tpu compile against
+#      snapshot deps; no native libnd4j compilation needed.
+#   b) PTX validation — the nd4j-cuda-12.9 linux-x86_64 classifier jar (published
+#      by the per-platform native build) must contain embedded PTX in libnd4jcuda.so.
+#      ZLUDA translates that PTX at runtime; if it is absent ZLUDA execution silently
+#      falls back to stubs.  Gate: readelf + strings scan (no CUDA toolkit required).
+#      Preferred alternative when cuobjdump is available:
+#        apt-get install -y cuda-cuobjdump-12-9  (NVIDIA apt repo, ~12 MB)
+#        cuobjdump --list-ptx libnd4jcuda.so
+#   c) ZLUDA artifact check — static ELF validation of the ZLUDA libcuda.so: file(1)
+#      confirms x86-64 ELF shared object, readelf -d shows SONAME, nm -D confirms
+#      cuInit/cuDeviceGetCount/cuModuleLoadData are exported.
+#
+# This is a per-PR correctness gate. Real GPU execution is covered by
+# run-zluda-smoke-tests.yml on a self-hosted AMD/Intel runner.
+# See ADR 0087 and ADR 0102.
+
+on:
+  workflow_dispatch:
+    inputs:
+      backendArtifactId:
+        description: 'CUDA backend artifact to validate PTX for (from snapshots)'
+        required: false
+        default: 'nd4j-cuda-12.9'
+        type: choice
+        options:
+          - nd4j-cuda-12.9
+          - nd4j-cuda-12.6
+
+      zludaVersion:
+        description: 'ZLUDA release tag to validate from vosen/ZLUDA (e.g. v6)'
+        required: false
+        default: 'v6'
+
+env:
+  MAVEN_OPTS: -Xmx2g
+
+jobs:
+  zluda-java-validation:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    name: zluda-java-validation (no GPU / no CUDA build)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      # ── Step a: Build nd4j-zluda, nd4j-tpu-preset, nd4j-tpu ─────────────────
+      # Native CUDA jars are resolved from the snapshot repo — no C++ compilation,
+      # no nvcc, no GPU driver required.  -pl !:libnd4j keeps the C++ native module
+      # out of the reactor; the nd4j-cuda-12.9 java-only jar is built from sources
+      # and the platform classifier jar comes from snapshots.
+      - name: Build ZLUDA + TPU Java modules (deps from snapshots)
+        shell: bash
+        run: |
+          mvn install \
+            -Pzluda,tpu \
+            -pl :nd4j-zluda,:nd4j-tpu-preset,:nd4j-tpu --also-make \
+            -pl '!:libnd4j' \
+            -Dbackend.artifactId=${{ inputs.backendArtifactId }} \
+            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform.extension= \
+            -DskipTests \
+            -DskipTestResourceEnforcement=true \
+            -Dmaven.javadoc.skip=true \
+            --no-transfer-progress --batch-mode 2>&1 | tee zluda-java-build.log
+          echo "MODULE_BUILD_STATUS=$?" >> "$GITHUB_ENV"
+
+      # Verify the META-INF/services SPI wiring is intact in the installed jar.
+      # JZludaBackend must be registered so ServiceLoader discovers it at runtime.
+      - name: Verify JZludaBackend SPI registration
+        shell: bash
+        run: |
+          JAR=$(find ~/.m2 -path "*/nd4j-zluda/*.jar" \
+                ! -name "*sources*" ! -name "*javadoc*" ! -name "*tests*" \
+                | sort -V | tail -n 1)
+          if [ -z "$JAR" ]; then
+            echo "::error::nd4j-zluda JAR not found in local Maven repository after build"
+            exit 1
+          fi
+          echo "Inspecting: $JAR"
+
+          SPI_ENTRY=$(unzip -p "$JAR" META-INF/services/org.nd4j.linalg.factory.Nd4jBackend 2>/dev/null)
+          if [ -z "$SPI_ENTRY" ]; then
+            echo "::error::SPI file META-INF/services/org.nd4j.linalg.factory.Nd4jBackend is missing from $JAR"
+            exit 1
+          fi
+          echo "SPI file contents: $SPI_ENTRY"
+          if echo "$SPI_ENTRY" | grep -q "JZludaBackend"; then
+            echo "JZludaBackend is registered — SPI wiring OK"
+            echo "SPI_STATUS=OK" >> "$GITHUB_ENV"
+          else
+            echo "::error::JZludaBackend not found in SPI registration file"
+            exit 1
+          fi
+
+      # ── Step b: PTX Validation ────────────────────────────────────────────────
+      # ZLUDA translates PTX from the CUDA fatbins at runtime.  If libnd4jcuda.so
+      # ships WITHOUT embedded PTX (e.g. built with --generate-code arch=compute_X,
+      # code=sm_X only — no PTX code target), ZLUDA cannot JIT-translate kernels and
+      # every op silently fails.  This step proves PTX is present.
+      #
+      # Method: readelf + strings scan (no CUDA toolkit installation required).
+      #   readelf -S detects .nv_fatbin / __nv_relfatbin ELF sections (fatbin presence).
+      #   strings + grep finds '.target sm_XX' and '.version N.M' PTX text markers.
+      #
+      # Preferred alternative (adds ~12 MB, requires NVIDIA apt keyring):
+      #   curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb -o /tmp/cuda-keyring.deb
+      #   sudo dpkg -i /tmp/cuda-keyring.deb && sudo apt-get update -qq
+      #   sudo apt-get install -y cuda-cuobjdump-12-9
+      #   cuobjdump --list-ptx libnd4jcuda.so
+      - name: Validate PTX presence in nd4j-cuda native jar
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "── Resolving nd4j-cuda project version ──"
+          PROJ_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout \
+            --no-transfer-progress -pl :nd4j-zluda 2>/dev/null \
+            || grep -m1 '<version>' nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda/pom.xml \
+               | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+          echo "Project version: ${PROJ_VERSION}"
+
+          echo "── Downloading ${{ inputs.backendArtifactId }} linux-x86_64 classifier jar ──"
+          mkdir -p /tmp/nd4j-cuda-native-jar
+          mvn dependency:copy \
+            -Dartifact="org.eclipse.deeplearning4j:${{ inputs.backendArtifactId }}:${PROJ_VERSION}:jar:linux-x86_64" \
+            -DoutputDirectory=/tmp/nd4j-cuda-native-jar \
+            --no-transfer-progress --batch-mode 2>&1 | tee /tmp/ptx-dep-copy.log
+
+          NATIVE_JAR=$(find /tmp/nd4j-cuda-native-jar -name '*.jar' | head -n 1)
+          if [ -z "$NATIVE_JAR" ]; then
+            echo "::warning::${{ inputs.backendArtifactId }} linux-x86_64 classifier jar not yet published to snapshots — PTX check skipped"
+            echo "PTX_STATUS=SKIPPED (classifier jar not on snapshots yet)" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "Classifier jar: $NATIVE_JAR"
+
+          echo "── Extracting libnd4jcuda.so ──"
+          mkdir -p /tmp/nd4j-cuda-extract
+          unzip -q "$NATIVE_JAR" -d /tmp/nd4j-cuda-extract
+          SO=$(find /tmp/nd4j-cuda-extract -name 'libnd4jcuda*.so' | head -n 1)
+          if [ -z "$SO" ]; then
+            echo "::error::libnd4jcuda.so not found inside $NATIVE_JAR"
+            find /tmp/nd4j-cuda-extract -maxdepth 4 -type f | head -30
+            exit 1
+          fi
+          echo "Found: $SO"
+
+          echo "── readelf: ELF section check for fatbin markers ──"
+          FATBIN_SECTIONS=$(readelf -S "$SO" 2>/dev/null | grep -E 'nv_fatbin|nv_relfatbin' || true)
+          echo "${FATBIN_SECTIONS:-  (no fatbin sections found)}"
+
+          echo "── strings: scanning for PTX text markers ──"
+          PTX_TARGETS=$(strings "$SO" 2>/dev/null | grep -E '\.target sm_[0-9]+' | sort -u || true)
+          PTX_VERSIONS=$(strings "$SO" 2>/dev/null | grep -E '\.version [0-9]+\.[0-9]+' | head -n 5 || true)
+
+          echo "PTX .target lines found:"
+          echo "${PTX_TARGETS:-(none)}"
+          echo "PTX .version lines found:"
+          echo "${PTX_VERSIONS:-(none)}"
+
+          if [ -n "$FATBIN_SECTIONS" ] || [ -n "$PTX_TARGETS" ]; then
+            ARCH_LIST=$(echo "$PTX_TARGETS" | grep -oE 'sm_[0-9]+' | sort -u | tr '\n' ' ')
+            echo "PTX embedded — architectures: ${ARCH_LIST}"
+            echo "PTX_STATUS=PRESENT (${ARCH_LIST})" >> "$GITHUB_ENV"
+          else
+            echo "::error::No PTX evidence found in $SO"
+            echo "  readelf -S shows no .nv_fatbin/.nv_relfatbin sections and"
+            echo "  strings found no '.target sm_XX' PTX markers."
+            echo "  This means ZLUDA cannot JIT-translate kernels from this binary."
+            echo "  Build libnd4j with PTX code targets:"
+            echo "    -DCMAKE_CUDA_ARCHITECTURES=\"50-virtual;70-virtual;80-virtual\""
+            echo "  or via -Dlibnd4j.compute=50;70;80 (include virtual compute targets)."
+            exit 1
+          fi
+
+      # ── Step c: ZLUDA Artifact Static Sanity Check ───────────────────────────
+      # No execution/dlopen required — pure static ELF analysis proves the ZLUDA
+      # release is a well-formed x86-64 shared library that exports the CUDA driver
+      # entry points nd4j relies on.
+      - name: Download and validate ZLUDA release artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ZLUDA_VERSION="${{ inputs.zludaVersion }}"
+          echo "── Downloading ZLUDA $ZLUDA_VERSION from vosen/ZLUDA ──"
+          mkdir -p "$RUNNER_TEMP/zluda-dl" "$RUNNER_TEMP/zluda"
+          gh release download "$ZLUDA_VERSION" -R vosen/ZLUDA -p '*linux*' \
+            -D "$RUNNER_TEMP/zluda-dl"
+
+          # Extract archives
+          shopt -s nullglob
+          for f in "$RUNNER_TEMP"/zluda-dl/*.tar.gz "$RUNNER_TEMP"/zluda-dl/*.tgz \
+                    "$RUNNER_TEMP"/zluda-dl/*.tar.xz; do
+            tar -xf "$f" -C "$RUNNER_TEMP/zluda"
+          done
+          for f in "$RUNNER_TEMP"/zluda-dl/*.zip; do
+            unzip -q "$f" -d "$RUNNER_TEMP/zluda"
+          done
+
+          LIBCUDA=$(find "$RUNNER_TEMP/zluda" \
+            \( -name 'libcuda.so' -o -name 'libcuda.so.*' \) | head -n 1)
+          if [ -z "$LIBCUDA" ]; then
+            echo "::error::libcuda.so not found in ZLUDA $ZLUDA_VERSION release"
+            find "$RUNNER_TEMP/zluda" -maxdepth 3 -type f | head -30
+            exit 1
+          fi
+          echo "Found: $LIBCUDA"
+
+          echo "── file(1): ELF type check ──"
+          FILE_OUT=$(file "$LIBCUDA")
+          echo "$FILE_OUT"
+          if echo "$FILE_OUT" | grep -qE 'ELF 64-bit LSB.*shared object.*x86-64'; then
+            echo "  file check: PASS (x86-64 ELF shared object)"
+          else
+            echo "::error::file(1) check failed: expected ELF 64-bit x86-64 shared object"
+            exit 1
+          fi
+
+          echo "── readelf -d: SONAME check ──"
+          SONAME=$(readelf -d "$LIBCUDA" 2>/dev/null | grep 'SONAME' | head -n 1)
+          echo "${SONAME:-(no SONAME found)}"
+          if [ -z "$SONAME" ]; then
+            echo "::warning::ZLUDA libcuda.so has no SONAME DT entry"
+          fi
+
+          echo "── nm -D: CUDA driver entry-point check ──"
+          MISSING=""
+          for SYM in cuInit cuDeviceGetCount cuModuleLoadData; do
+            if nm -D "$LIBCUDA" 2>/dev/null | grep -qE " T ${SYM}$| W ${SYM}$"; then
+              echo "  $SYM: EXPORTED"
+            else
+              echo "  $SYM: MISSING"
+              MISSING="$MISSING $SYM"
+            fi
+          done
+
+          if [ -n "$MISSING" ]; then
+            echo "::error::ZLUDA $ZLUDA_VERSION is missing required CUDA driver symbols:$MISSING"
+            exit 1
+          fi
+
+          echo "ZLUDA $ZLUDA_VERSION static validation PASSED"
+          echo "ZLUDA_VERSION=$ZLUDA_VERSION" >> "$GITHUB_ENV"
+          echo "ZLUDA_LIBCUDA=$LIBCUDA" >> "$GITHUB_ENV"
+
+      # ── Step d: Write summary and upload artifacts ────────────────────────────
+      - name: Write SUMMARY.md
+        if: always()
+        shell: bash
+        run: |
+          cat > SUMMARY.md << EOF
+          # ZLUDA Java Module Validation Summary
+          Date: $(date -u '+%Y-%m-%d %H:%M UTC')
+          Workflow run: ${{ github.run_id }}
+
+          ## Java Module Build
+          Status: ${MODULE_BUILD_STATUS:-unknown}
+          SPI wiring: ${SPI_STATUS:-not checked}
+
+          ## PTX Validation (libnd4jcuda.so)
+          Backend: ${{ inputs.backendArtifactId }} / linux-x86_64 classifier
+          Result: ${PTX_STATUS:-not checked}
+
+          ## ZLUDA Artifact Static Check
+          Version: ${ZLUDA_VERSION:-not checked}
+          Library: ${ZLUDA_LIBCUDA:-n/a}
+          Symbols checked: cuInit, cuDeviceGetCount, cuModuleLoadData
+          EOF
+          cat SUMMARY.md
+
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zluda-java-validation-${{ github.run_id }}
+          path: |
+            zluda-java-build.log
+            SUMMARY.md
+          retention-days: 7

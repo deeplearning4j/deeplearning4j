@@ -1217,7 +1217,15 @@ public class GenerationPipeline implements AutoCloseable {
      * Derive the initial shape for a recurrent state placeholder by walking the graph.
      * Dispatches to GDN or conv derivation based on the consuming op type.
      */
-    private static long[] deriveRecurrentStateShape(SameDiff sd, String stateName) {
+    /**
+     * Derive the zero-state shape for a recurrent state placeholder (GDN or causal-conv)
+     * from the ops that consume it. Public so external teacher-forcing/scoring callers
+     * (distillation target extraction, perplexity over hybrid architectures) can build
+     * complete prefill input maps: {@link DecoderInputBuilder#buildDecoderInputMap}
+     * covers ids/masks/positions/KV caches, and recurrent states are zero-filled with
+     * the shape this method returns.
+     */
+    public static long[] deriveRecurrentStateShape(SameDiff sd, String stateName) {
         Variable var = sd.getVariables().get(stateName);
         if (var == null || var.getInputsForOp() == null || var.getInputsForOp().isEmpty()) {
             return null;

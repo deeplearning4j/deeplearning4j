@@ -135,10 +135,10 @@ PLATFORM_IMPL(conv2d, ENGINE_TPU) {
 
   // Convert to NHWC if needed (TPU prefers NHWC)
   NDArray* inputNHWC = input;
-  std::unique_ptr<NDArray> inputConverted;
+  NDArray* inputConverted = nullptr;
   if (isNCHW) {
-    inputConverted = std::make_unique<NDArray>(input->permute({0, 2, 3, 1}));
-    inputNHWC = inputConverted.get();
+    { std::vector<sd::LongType> _perm_inputConverted = {0, 2, 3, 1}; inputConverted = input->permute(_perm_inputConverted, false, false); };
+    inputNHWC = inputConverted;
   }
 
   std::vector<sd::LongType> inputShape(inputNHWC->shapeOf(), inputNHWC->shapeOf() + inputNHWC->rankOf());
@@ -184,9 +184,10 @@ PLATFORM_IMPL(conv2d, ENGINE_TPU) {
 
   // Convert back to NCHW if needed
   if (isNCHW) {
-    output->permutei({0, 3, 1, 2});
+    output->permutei({0, 3, 1, 2}, false, false);
   }
 
+  delete inputConverted;
   return Status::OK;
 }
 
@@ -197,19 +198,19 @@ PLATFORM_CHECK(conv2d, ENGINE_TPU) {
   Requirements req("PJRT CONV2D OP");
 
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
   req.expectTrue(isTpuSupportedType(weights->dataType()),
-                 REQUIRE_TRUE_MSG("Weights data type must be TPU-compatible"));
+                 "Weights data type must be TPU-compatible");
   req.expectTrue(input->dataType() == weights->dataType(),
-                 REQUIRE_TRUE_MSG("Input and weights must have matching data types"));
-  req.expectTrue(input->rankOf() == 4, REQUIRE_TRUE_MSG("Input must be 4D tensor"));
-  req.expectTrue(weights->rankOf() == 4, REQUIRE_TRUE_MSG("Weights must be 4D tensor"));
+                 "Input and weights must have matching data types");
+  req.expectTrue(input->rankOf() == 4, "Input must be 4D tensor");
+  req.expectTrue(weights->rankOf() == 4, "Weights must be 4D tensor");
 
   // Check for unsupported dilation (TPU has limited dilation support)
   int dH = INT_ARG(6);
   int dW = INT_ARG(7);
   req.expectTrue(dH == 1 && dW == 1,
-                 REQUIRE_TRUE_MSG("TPU conv2d currently supports dilation=1 only"));
+                 "TPU conv2d currently supports dilation=1 only");
 
   req.logTheSuccess();
   return req;
@@ -248,13 +249,13 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_TPU) {
   // Convert to NHWC if needed
   NDArray* inputNHWC = input;
   NDArray* gradOutNHWC = gradOut;
-  std::unique_ptr<NDArray> inputConverted, gradOutConverted;
+  NDArray *inputConverted = nullptr, *gradOutConverted = nullptr;
 
   if (isNCHW) {
-    inputConverted = std::make_unique<NDArray>(input->permute({0, 2, 3, 1}));
-    gradOutConverted = std::make_unique<NDArray>(gradOut->permute({0, 2, 3, 1}));
-    inputNHWC = inputConverted.get();
-    gradOutNHWC = gradOutConverted.get();
+    { std::vector<sd::LongType> _perm_inputConverted = {0, 2, 3, 1}; inputConverted = input->permute(_perm_inputConverted, false, false); };
+    { std::vector<sd::LongType> _perm_gradOutConverted = {0, 2, 3, 1}; gradOutConverted = gradOut->permute(_perm_gradOutConverted, false, false); };
+    inputNHWC = inputConverted;
+    gradOutNHWC = gradOutConverted;
   }
 
   std::vector<sd::LongType> inputShape(inputNHWC->shapeOf(), inputNHWC->shapeOf() + inputNHWC->rankOf());
@@ -307,14 +308,17 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_TPU) {
   // Compute bias gradient if needed
   if (gradB != nullptr) {
     // Bias gradient is sum over batch and spatial dimensions
-    gradOutNHWC->reduceAlongDimension(reduce::Sum, *gradB, {0, 1, 2});
+    std::vector<sd::LongType> biasAxes = {0, 1, 2};
+    gradOutNHWC->reduceAlongDimension(reduce::Sum, gradB, &biasAxes);
   }
 
   // Convert gradients back to NCHW if needed
   if (isNCHW) {
-    gradI->permutei({0, 3, 1, 2});
+    gradI->permutei({0, 3, 1, 2}, false, false);
   }
 
+  delete inputConverted;
+  delete gradOutConverted;
   return Status::OK;
 }
 
@@ -326,16 +330,16 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_TPU) {
   Requirements req("PJRT CONV2D_BP OP");
 
   req.expectTrue(isTpuSupportedType(input->dataType()),
-                 REQUIRE_TRUE_MSG("Input data type must be TPU-compatible"));
+                 "Input data type must be TPU-compatible");
   req.expectTrue(isTpuSupportedType(weights->dataType()),
-                 REQUIRE_TRUE_MSG("Weights data type must be TPU-compatible"));
-  req.expectTrue(input->rankOf() == 4, REQUIRE_TRUE_MSG("Input must be 4D tensor"));
-  req.expectTrue(weights->rankOf() == 4, REQUIRE_TRUE_MSG("Weights must be 4D tensor"));
+                 "Weights data type must be TPU-compatible");
+  req.expectTrue(input->rankOf() == 4, "Input must be 4D tensor");
+  req.expectTrue(weights->rankOf() == 4, "Weights must be 4D tensor");
 
   int dH = INT_ARG(6);
   int dW = INT_ARG(7);
   req.expectTrue(dH == 1 && dW == 1,
-                 REQUIRE_TRUE_MSG("TPU conv2d_bp currently supports dilation=1 only"));
+                 "TPU conv2d_bp currently supports dilation=1 only");
 
   req.logTheSuccess();
   return req;
