@@ -309,7 +309,14 @@ jobs:
           # OPENBLAS_PATH + include/cblas.h to define HAVE_OPENBLAS;
           # buildnativeoperations.sh uses a non-empty OPENBLAS_PATH env var verbatim
           # (skips its jar auto-detect, which cannot see this workspace dir).
-          OB_HOME="${GITHUB_WORKSPACE}/openblas_home"
+          # Normalize the workspace to forward slashes. On Windows runners
+          # GITHUB_WORKSPACE is "D:\a\repo\repo" (backslashes); those get eaten as
+          # escape chars passing through GITHUB_ENV -> buildnativeoperations.sh ->
+          # cmake -DOPENBLAS_PATH=, turning "D:\a\..." into "D:a..." so CMake can't
+          # find include/cblas.h. Forward slashes survive intact and CMake + msys
+          # bash both accept them on Windows.
+          WS="${GITHUB_WORKSPACE//\\//}"
+          OB_HOME="${WS}/openblas_home"
           mkdir -p "$OB_HOME"
           cd "$OB_HOME"
           curl -fsSL -O https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-windows-x86_64.jar
