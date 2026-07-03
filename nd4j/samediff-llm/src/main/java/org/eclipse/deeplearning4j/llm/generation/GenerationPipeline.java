@@ -396,6 +396,23 @@ public class GenerationPipeline implements AutoCloseable {
             ownsDraftDecoder = true;
         }
 
+        // Speculative decoding is NOT yet wired into this pipeline's decode loops:
+        // buildDraftSpeculator() exists but no decode path consults it, so draft
+        // proposals are never generated or verified. Failing to say so turns a
+        // requested feature into a silent no-op (the pipeline would load a draft
+        // model, then quietly run standard decode with zeroed speculation metrics).
+        if (config.getMaxSpeculativeTokens() > 0
+                || config.getSpeculator() != null
+                || draftDecoder != null) {
+            log.warn("Speculative decoding requested (maxSpeculativeTokens={}, draft={}, "
+                            + "speculator={}) but is NOT yet implemented in GenerationPipeline's "
+                            + "decode loops — standard one-token-per-step decode will run and "
+                            + "GenerationResult speculation metrics will be zero.",
+                    config.getMaxSpeculativeTokens(),
+                    draftDecoder != null ? "present" : "none",
+                    config.getSpeculator() != null ? config.getSpeculator().getClass().getSimpleName() : "none");
+        }
+
         log.info("GenerationPipeline created: decoder ops={}, embedTokens={}, hiddenSize={}, "
                         + "embeddingTable={}, draftDecoder={}, kvStrategy={}, dsp={}",
                 decoder.getOps().size(),
