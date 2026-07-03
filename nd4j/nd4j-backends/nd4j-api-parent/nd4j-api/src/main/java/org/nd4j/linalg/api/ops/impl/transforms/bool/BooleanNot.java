@@ -69,7 +69,15 @@ public class BooleanNot extends BaseTransformBoolOp {
 
     @Override
     public String opName() {
-        return "bool_not";
+        // Canonical declarable name. This op previously reported "bool_not",
+        // which resolves to NOTHING in the native declarable registry (the
+        // declarable op is boolean_not) — so DSP plan slots got ident.op=null
+        // and lost the descriptor traits (UNARY_ELEMENTWISE|FULLY_WRITING|
+        // LOGICAL declared in boolean_not.cpp), which in turn made
+        // isGapRangeCaptureSafe reject the op's whole gap range. Legacy
+        // (de)serialization is opNum-based (LegacyOpMapper.transformBoolOpClass),
+        // so old saved graphs are unaffected by this rename.
+        return "boolean_not";
     }
 
     @Override
