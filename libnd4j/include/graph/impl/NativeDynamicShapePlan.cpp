@@ -103,6 +103,49 @@
 namespace sd {
 namespace graph {
 
+// ── Frozen-pin liveness registry ─────────────────────────────────────────────
+// frozenProtectedRefBuffers_/frozenOutputRefBuffers_ hold RAW DataBuffer*, and
+// addFrozenRef()/removeFrozenRef() WRITE an atomic counter inside the object.
+// Nothing native owns those objects: Java teardown can delete them at any time
+// (freeModelArrays before close), after which removeFrozenRef() is a write to
+// freed memory — heap corruption that crashed teardown's local unordered_set
+// lookups (hs_err_pid1286526 / hs_err_pid927393, SEGV in _M_find_before_node).
+// This registry records every pinned buffer; ~DataBuffer erases itself, so the
+// release paths can tell live pins from dead pointers WITHOUT dereferencing.
+// The map counts pins per buffer (a buffer may be pinned by multiple plans).
+namespace {
+std::mutex g_frozenPinMtx;
+std::unordered_map<DataBuffer*, int> g_frozenPinCounts;
+
+void trackFrozenPin(DataBuffer* db) {
+  std::lock_guard<std::mutex> lk(g_frozenPinMtx);
+  g_frozenPinCounts[db]++;
+}
+
+// Returns true when the buffer object is still alive (pin found) — only then
+// may the caller touch it. Dead/never-tracked pointers return false.
+bool untrackFrozenPin(DataBuffer* db) {
+  std::lock_guard<std::mutex> lk(g_frozenPinMtx);
+  auto it = g_frozenPinCounts.find(db);
+  if (it == g_frozenPinCounts.end()) return false;
+  if (--it->second <= 0) g_frozenPinCounts.erase(it);
+  return true;
+}
+}  // namespace
+
+}  // namespace graph
+
+// Called from DataBuffer::~DataBuffer() (fast-gated on isFrozenPlanRegistered)
+// so a buffer destroyed while pinned drops out of the registry and teardown
+// skips it instead of writing through the dangling pointer. Lives in sd:: (not
+// sd::graph::) so the DataBuffer.cpp seam declaration stays one line.
+SD_LIB_EXPORT void notifyFrozenPinTrackerOfDestruction(DataBuffer* db) {
+  std::lock_guard<std::mutex> lk(sd::graph::g_frozenPinMtx);
+  sd::graph::g_frozenPinCounts.erase(db);
+}
+
+namespace graph {
+
 static void releasePlanFrozenRefsForTeardown(
     const char* owner,
     bool shouldRelease,
@@ -111,22 +154,38 @@ static void releasePlanFrozenRefsForTeardown(
   if (!shouldRelease) return;
 
   int protectedRemoved = 0;
+  int protectedDead = 0;
   for (auto* db : frozenProtectedRefBuffers) {
     if (db != nullptr) {
-      db->removeFrozenRef();
-      protectedRemoved++;
+      if (untrackFrozenPin(db)) {
+        db->removeFrozenRef();
+        protectedRemoved++;
+      } else {
+        protectedDead++;  // destroyed externally while pinned — must not touch
+      }
     }
   }
   frozenProtectedRefBuffers.clear();
 
   int outputRemoved = 0;
+  int outputDead = 0;
   for (auto* db : frozenOutputRefBuffers) {
     if (db != nullptr) {
-      db->removeFrozenRef();
-      outputRemoved++;
+      if (untrackFrozenPin(db)) {
+        db->removeFrozenRef();
+        outputRemoved++;
+      } else {
+        outputDead++;
+      }
     }
   }
   frozenOutputRefBuffers.clear();
+  if (protectedDead > 0 || outputDead > 0) {
+    DSP_DIAG(MEMORY,
+             "%s: skipped frozen-ref release for %d protected + %d output buffers "
+             "destroyed externally while pinned (Java freed model arrays before close)",
+             owner, protectedDead, outputDead);
+  }
 
   DSP_DIAG(MEMORY,
            "%s: removed tracked frozen refs before identity teardown — protectedRefs=%d outputSlotRefs=%d",
@@ -153,6 +212,7 @@ static void replacePlanFrozenRefsForCurrentState(
   for (auto* db : protectedWeightBuffers) {
     if (db != nullptr) {
       db->addFrozenRef();
+      trackFrozenPin(db);
       frozenProtectedRefBuffers.push_back(db);
       protectedAdded++;
     }
@@ -164,6 +224,7 @@ static void replacePlanFrozenRefsForCurrentState(
       if (outputSlots[i] != nullptr && outputSlots[i]->dataBuffer() != nullptr) {
         DataBuffer* db = outputSlots[i]->dataBuffer();
         db->addFrozenRef();
+        trackFrozenPin(db);
         frozenOutputRefBuffers.push_back(db);
         outputAdded++;
       }
@@ -2359,7 +2420,11 @@ Status NativeDynamicShapePlan::execute(
           auto it = std::find(frozenProtectedRefBuffers_.begin(),
                               frozenProtectedRefBuffers_.end(), db);
           if (it != frozenProtectedRefBuffers_.end()) {
-            db->removeFrozenRef();
+            // Liveness-gated: a replaced external may already have been
+            // destroyed by Java (weight close between replays).
+            if (untrackFrozenPin(db)) {
+              db->removeFrozenRef();
+            }
             frozenProtectedRefBuffers_.erase(it);
           } else {
             DSP_DIAG(MEMORY,
@@ -2372,6 +2437,7 @@ Status NativeDynamicShapePlan::execute(
       for (auto* db : current) {
         if (db != nullptr && protectedWeightBuffers_.count(db) == 0) {
           db->addFrozenRef();
+          trackFrozenPin(db);
           frozenProtectedRefBuffers_.push_back(db);
         }
       }
@@ -5588,7 +5654,15 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
         int si = requestedOutputSlotIndices_[i];
         if (si >= 0 && si < totalOutputSlots_) {
           requestedOutputSlotSet.insert(si);
-          if (outputSlots_[si] != nullptr && outputSlots_[si]->dataBuffer() != nullptr) {
+          // Only dereference arrays whose object lifetime the plan controls.
+          // Slots can alias externally-owned NDArrays (pass-through ops store
+          // siInputs[0] directly); Java teardown may already have deleted those
+          // objects, so ->dataBuffer() on them reads freed memory (SEGV_MAPERR
+          // when the freed pages were returned to the OS — hs_err_pid1286526).
+          // Non-plan-owned slots are protected by index alone.
+          if (outputSlots_[si] != nullptr &&
+              planOwnedArrays_.count(outputSlots_[si]) > 0 &&
+              outputSlots_[si]->dataBuffer() != nullptr) {
             requestedOutputDataBuffers.insert(outputSlots_[si]->dataBuffer());
           }
         }
@@ -5607,6 +5681,15 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       for (int i = 0; i < totalOutputSlots_; i++) {
         slotOwnership_[i].reset();
         if (outputSlots_[i] == nullptr) continue;
+        // Externally-owned arrays (not created by this plan) may already have been
+        // deleted by the Java session teardown — dereferencing them is a UAF read.
+        // Classify as VIEW_OF_WEIGHT (borrowed, never freed) WITHOUT touching the
+        // object; pass 3 nulls the pointer. This is the same doctrine as pass 3's
+        // "do NOT delete externally-owned wrappers" but applied to READS as well.
+        if (planOwnedArrays_.count(outputSlots_[i]) == 0) {
+          slotOwnership_[i].ownership = BufferOwnership::VIEW_OF_WEIGHT;
+          continue;
+        }
         auto* db = outputSlots_[i]->dataBuffer();
         if (db == nullptr) {
           slotOwnership_[i].ownership = BufferOwnership::UNSET;
@@ -5621,7 +5704,11 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
         }
         bool isViewOfSlot = false;
         for (int j = 0; j < i; j++) {
-          if (outputSlots_[j] != nullptr && outputSlots_[j]->dataBuffer() == db) {
+          // Same non-deref rule for the comparison target: borrowed slot arrays
+          // may already be deleted externally — only read plan-owned ones.
+          if (outputSlots_[j] != nullptr &&
+              planOwnedArrays_.count(outputSlots_[j]) > 0 &&
+              outputSlots_[j]->dataBuffer() == db) {
             slotOwnership_[i].ownership = BufferOwnership::VIEW_OF_SLOT;
             slotOwnership_[i].parentSlotIdx = j;
             slotOwnership_[i].dataBuffer = db;

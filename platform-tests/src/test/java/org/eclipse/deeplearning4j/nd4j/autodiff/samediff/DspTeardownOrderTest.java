@@ -22,7 +22,6 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.generation.SameDiffMemoryUtils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -52,11 +51,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * The fix swaps the order: close the SameDiff (native plan release) FIRST, then free
  * the model arrays (idempotent — already-closed buffers are skipped).</p>
  *
- * <p>These tests pin the SAFE order at the SameDiff level on a DSP-warmed graph.
- * The unsafe order (free-then-close) is documented in a {@link Disabled} test below:
- * it is a use-after-free, so it crashes the JVM nondeterministically rather than
- * failing an assertion — it can only become a live test once the native teardown is
- * hardened to tolerate closed buffers (defense-in-depth follow-up).</p>
+ * <p>These tests pin BOTH orders at the SameDiff level on a DSP-warmed graph: the
+ * supported order (close-then-free), and the free-before-close order that produced the
+ * original crash — the native teardown is hardened to tolerate externally-freed model
+ * buffers, so callers that get the order wrong degrade to a logged no-op instead of a
+ * process kill.</p>
  *
  * <p>Run:</p>
  * <pre>
@@ -70,20 +69,27 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("DSP teardown ordering regression")
 public class DspTeardownOrderTest {
 
-    /** Small graph with a weight VARIABLE so the plan holds slots referencing model buffers. */
+    /**
+     * Small graph with a weight VARIABLE so the plan holds slots referencing model
+     * buffers — including a slot that is a VIEW of the weight ("wview" via reshape):
+     * view-of-weight slots share the Java-owned DataBuffer and are the dangerous case
+     * for teardown after external frees.
+     */
     private static SameDiff buildAndWarm() {
         SameDiff sd = SameDiff.create();
         SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 64);
         SDVariable w = sd.var("weight", Nd4j.randn(DataType.FLOAT, 64, 64).muli(0.1));
         SDVariable b = sd.var("bias", Nd4j.zeros(DataType.FLOAT, 64));
         sd.nn.tanh("out", x.mmul(w).add(b));
+        // A requested output whose slot is a view sharing the weight's DataBuffer.
+        sd.reshape("wview", w, 64 * 64);
 
         // Multiple executions at a stable shape: warm the DSP plan past compilation so
         // teardown has real native state (slot arrays, plan handle) to release.
         Map<String, INDArray> feed = Collections.singletonMap("x", Nd4j.ones(DataType.FLOAT, 2, 64));
         for (int i = 0; i < 3; i++) {
-            INDArray out = sd.output(feed, "out").get("out");
-            assertFalse(out.isNaN().any(), "warmup forward must be finite");
+            Map<String, INDArray> out = sd.output(feed, "out", "wview");
+            assertFalse(out.get("out").isNaN().any(), "warmup forward must be finite");
         }
         return sd;
     }
@@ -137,21 +143,20 @@ public class DspTeardownOrderTest {
     }
 
     /**
-     * The UNSAFE order that caused the original SIGSEGV. It is a native use-after-free:
-     * when it goes wrong it kills the JVM (uncatchable), and because UAF is timing/heap
-     * dependent it can also pass silently — one survival is NOT evidence of safety
-     * (the GraphOptimizer example survived the same path that killed the distillation
-     * example 2-for-2). Enable only after {@code releaseGpuIntermediates} is hardened
-     * to skip slots whose DataBuffers are already closed.
+     * The order that caused the original SIGSEGV: externally freeing the model's
+     * arrays and only then closing the SameDiff. The native plan teardown must
+     * tolerate externally-freed model buffers — repeated to shake out the
+     * heap-timing dependence a use-after-free would have.
      */
     @Test
-    @Disabled("free-before-close is a native UAF (SIGSEGV, not an exception) until releaseGpuIntermediates tolerates closed buffers")
-    @DisplayName("UNSAFE order: freeModelArrays() then close() — requires native hardening")
-    public void testFreeModelArraysBeforeCloseRequiresHardening() {
-        SameDiff sd = buildAndWarm();
-        assertDoesNotThrow(() -> {
-            SameDiffMemoryUtils.freeModelArrays(sd);
-            sd.close();
-        });
+    @DisplayName("free-before-close order: freeModelArrays() then close() must not crash")
+    public void testFreeModelArraysBeforeClose() {
+        for (int round = 0; round < 5; round++) {
+            SameDiff sd = buildAndWarm();
+            assertDoesNotThrow(() -> {
+                SameDiffMemoryUtils.freeModelArrays(sd);
+                sd.close();
+            }, "free-before-close teardown must be survivable");
+        }
     }
 }

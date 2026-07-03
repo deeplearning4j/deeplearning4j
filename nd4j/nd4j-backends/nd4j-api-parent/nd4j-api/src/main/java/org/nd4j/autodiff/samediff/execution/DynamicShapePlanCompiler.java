@@ -1200,7 +1200,11 @@ public class DynamicShapePlanCompiler {
         );
 
         if (log.isDebugEnabled()) {
-            log.debug("Plan structure:\n{}", PlanIntrospection.formatPlan(plan));
+            // formatPlan renders one line per slot (MBs for LLM-scale plans) — slf4j
+            // placeholders only defer FORMATTING, not argument evaluation, so guard it.
+            if (log.isDebugEnabled()) {
+                log.debug("Plan structure:\n{}", PlanIntrospection.formatPlan(plan));
+            }
         }
 
         // Device placement planning (disabled by default)

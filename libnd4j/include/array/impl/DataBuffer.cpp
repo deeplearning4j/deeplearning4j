@@ -816,7 +816,21 @@ void DataBuffer::deleteBuffers() {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// Defined in graph/impl/NativeDynamicShapePlan.cpp (this file is already inside
+// namespace sd). A buffer destroyed while a frozen plan still pins it
+// (addFrozenRef) must drop out of the plan's pin registry, or the plan's
+// teardown writes removeFrozenRef() through a dangling pointer (heap
+// corruption — hs_err_pid927393). Declared locally to keep this seam out of
+// the widely-included DataBuffer.h.
+SD_LIB_EXPORT void notifyFrozenPinTrackerOfDestruction(DataBuffer* db);
+
 DataBuffer::~DataBuffer() {
+  // Fast path: only buffers destroyed while pinned by a frozen plan (an
+  // out-of-order teardown, e.g. Java freeing model arrays before close)
+  // need deregistration — everyone else skips the registry lock entirely.
+  if (isFrozenPlanRegistered()) {
+    notifyFrozenPinTrackerOfDestruction(this);
+  }
   // Clear magic number to detect use-after-free
   // If anyone tries to use this buffer after destruction, validateIntegrity() will catch it
   _magicNumber = MAGIC_DESTROYED;

@@ -74,10 +74,19 @@ public class SameDiffOptimizationCache {
             synchronized (SameDiffOptimizationCache.class) {
                 if (OPTIMIZER_FINGERPRINT == null) {
                     try {
+                        // Bootstrap the backend BEFORE touching NativeOpsHolder: when a
+                        // cache lookup is the process's first nd4j call (single-model
+                        // importWithCache), NativeOpsHolder's static init runs ahead of
+                        // backend discovery and dies with "No native operations class
+                        // found". Nd4j.getBackend() performs the full supported init.
+                        org.nd4j.linalg.factory.Nd4j.getBackend();
                         String info = NativeOpsHolder.getInstance()
                                 .getDeviceNativeOps().buildInfo();
                         OPTIMIZER_FINGERPRINT = fingerprintForBuildInfo(info);
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
+                        // Throwable, not Exception: NativeOpsHolder init failures surface
+                        // as ExceptionInInitializerError, which must also degrade to the
+                        // "unavailable" fingerprint instead of killing the import.
                         log.warn("SameDiffOptimizationCache: could not read native buildInfo(), " +
                                 "optimizer cache fingerprint unavailable: {}", e.getMessage());
                         OPTIMIZER_FINGERPRINT = fingerprintForBuildInfo("unavailable");
