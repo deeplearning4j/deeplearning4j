@@ -282,7 +282,37 @@ jobs:
             exit 1
           }
 
-
+      - name: Install cuSPARSE (missing from the CUDA install package set)
+        shell: powershell
+        run: |
+          # The CUDA install script (KonduitAI/cuda-install) installs nvcc,
+          # cublas_dev, cusolver_dev, curand_dev, nvrtc_dev and cudart — but NOT
+          # cusparse_dev. libnd4j's helpers/cuda/cublasHelper.cu does
+          # #include <cusparse_v2.h> and calls cusparseCreate(), so nvcc fails with
+          # C1083 "Cannot open include file: 'cusparse_v2.h'" -> nd4jcuda.lib never
+          # links. Drop the matching cuSPARSE redist (headers + import lib + dll)
+          # into CUDA_PATH, exactly as the install script already does for cuDNN.
+          $ErrorActionPreference = "Stop"
+          $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
+          # cuSPARSE 12.5.4.2 is the version bundled with CUDA 12.6.x (NVIDIA redist manifest).
+          $url = "https://developer.download.nvidia.com/compute/cuda/redist/libcusparse/windows-x86_64/libcusparse-windows-x86_64-12.5.4.2-archive.zip"
+          $zip = "$env:RUNNER_TEMP\cusparse.zip"
+          $dst = "$env:RUNNER_TEMP\cusparse"
+          Write-Host "Downloading cuSPARSE redist from $url ..."
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+          Expand-Archive -Path $zip -DestinationPath $dst -Force
+          $src = Get-ChildItem $dst -Directory | Select-Object -First 1
+          Write-Host "Copying cuSPARSE from '$($src.FullName)' into '$cudaPath'"
+          Copy-Item -Path (Join-Path $src.FullName "include\*") -Destination "$cudaPath\include\" -Recurse -Force
+          Copy-Item -Path (Join-Path $src.FullName "lib\x64\*")  -Destination "$cudaPath\lib\x64\"  -Recurse -Force
+          if (Test-Path (Join-Path $src.FullName "bin")) {
+            Copy-Item -Path (Join-Path $src.FullName "bin\*") -Destination "$cudaPath\bin\" -Recurse -Force
+          }
+          if (-not (Test-Path "$cudaPath\include\cusparse_v2.h")) {
+            Write-Error "cusparse_v2.h still missing under $cudaPath\include after copy"
+            exit 1
+          }
+          Write-Host "cuSPARSE installed: $cudaPath\include\cusparse_v2.h"
 
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v4
