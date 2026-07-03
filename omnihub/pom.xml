@@ -273,12 +273,18 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
-                    <compilerArgs>
-                        <arg>--add-exports</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                        <arg>--add-opens</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                    </compilerArgs>
+                    <!--
+                      No java.base/java.nio add-exports/add-opens compiler args here:
+                      java.nio is a public, already-exported package (omnihub uses no
+                      internal nio API), so add-exports is a compile-time no-op and
+                      add-opens is a runtime-only flag that does not belong in the
+                      compiler plugin. Their only effect was to conflict with the
+                      inherited release=11 on JDK 16+ (javac: "exporting a package from
+                      system module java.base is not allowed with release"), which
+                      broke the build on JDK 17 while adding nothing on JDK 11. If a
+                      runtime reflective open is ever needed, wire it via the
+                      surefire/exec argLine, not here.
+                    -->
                 </configuration>
             </plugin>
         </plugins>
