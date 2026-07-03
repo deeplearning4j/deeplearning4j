@@ -186,17 +186,18 @@ public class NativeOpsHolder {
         // backend-specific OpenBLAS knob to set from Java.
 
         // Configure BLAS call serialization.
-        // Default is true (enabled) for safety with OpenBLAS in multi-threaded environments.
-        // This can be disabled via ND4J_BLAS_SERIALIZE=false environment variable.
-        boolean serializeBlasCalls = true; // Safe default
+        // Only push a value down when the user EXPLICITLY set ND4J_BLAS_SERIALIZE —
+        // unconditionally forcing true here stomped the native-side default at every
+        // JVM init, making BlasHelper's BLAS-aware default (and its SD_BLAS_SERIALIZE
+        // env fallback) dead code. Native default: MKL (documented thread-safe) runs
+        // unserialized; OpenBLAS keeps the safety mutex. ND4J_BLAS_SERIALIZE still
+        // wins in both directions when set.
         String serializeBlasString = System.getenv(ND4JEnvironmentVars.ND4J_BLAS_SERIALIZE);
         if (serializeBlasString != null && !serializeBlasString.isEmpty()) {
             String val = serializeBlasString.toLowerCase().trim();
-            if (val.equals("false") || val.equals("0") || val.equals("no")) {
-                serializeBlasCalls = false;
-            }
+            boolean serializeBlasCalls = !(val.equals("false") || val.equals("0") || val.equals("no"));
+            deviceNativeOps.setSerializeBlasCalls(serializeBlasCalls);
         }
-        deviceNativeOps.setSerializeBlasCalls(serializeBlasCalls);
 
         // Propagate DSP execution mode from -Dnd4j.dsp.executionMode into libnd4j.
         // Controls slot-by-slot lifecycle gating: whether actuality ticks, host/device
@@ -248,7 +249,9 @@ public class NativeOpsHolder {
 
         if (logInit) {
             log.info("Number of threads used for linear algebra (incl. OpenBLAS): {}", deviceNativeOps.ompGetMaxThreads());
-            log.info("BLAS call serialization: {} (set ND4J_BLAS_SERIALIZE=false to disable)", serializeBlasCalls ? "enabled" : "disabled");
+            String serializeBlasEnv = System.getenv(ND4JEnvironmentVars.ND4J_BLAS_SERIALIZE);
+            log.info("BLAS call serialization: {} (native BLAS-aware default unless ND4J_BLAS_SERIALIZE is set)",
+                    (serializeBlasEnv == null || serializeBlasEnv.isEmpty()) ? "native default" : serializeBlasEnv);
         }
 
         // DISABLED: Custom signal handlers interfere with JVM's crash handling chain
