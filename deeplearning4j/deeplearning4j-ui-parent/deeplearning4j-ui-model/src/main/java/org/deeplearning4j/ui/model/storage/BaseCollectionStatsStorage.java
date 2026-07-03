@@ -253,7 +253,7 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
 
         for (SessionTypeWorkerId id : updates.keySet()) {
             if (sessionID.equals(id.getSessionID()) && typeID.equals(id.getTypeID())) {
-                Persistable p = getLatestUpdate(sessionID, typeID, id.workerID);
+                Persistable p = getLatestUpdate(sessionID, typeID, id.getWorkerID());
                 if (p != null) {
                     list.add(p);
                 }
