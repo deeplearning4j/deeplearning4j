@@ -291,16 +291,33 @@ jobs:
         shell: powershell
         run: echo "C:\msys64\mingw64\bin;C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Setup libnd4j home if a download url is specified
-        shell: powershell
+      - name: Download OpenBLAS (required CPU BLAS backend for libnd4j)
+        shell: bash
         run: |
-          mkdir "%GITHUB_WORKSPACE%/openblas_home"
-          cd "%GITHUB_WORKSPACE%/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-windows-x86_64.jar
-          unzip openblas-0.3.28-1.5.11-windows-x86_64.jar
-          cd ..
-          echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-        if: ${{ matrix.libnd4j_file_download != '' }}
+          set -euo pipefail
+          # OpenBLAS is required for EVERY windows-cpu build: without it libnd4j's
+          # MklBlasHelper.h fires #error "No BLAS backend available", the nd4jcpu
+          # library never links, and javacpp fails with "cannot find -lnd4jcpu".
+          # This step was previously (a) gated behind `libnd4j_file_download != ''`
+          # — empty for normal builds, so it was SKIPPED and the build always failed
+          # on "No BLAS backend" — and (b) written in powershell using %VAR%/${VAR}
+          # syntax that powershell does not expand, so even when it ran it produced a
+          # broken OPENBLAS_PATH. Now: always run, in bash, with correct expansion.
+          #
+          # The bytedeco openblas jar carries windows-x86_64/{include/cblas.h,
+          # lib/openblas.lib, libopenblas.dll} (verified). setup_blas() keys on
+          # OPENBLAS_PATH + include/cblas.h to define HAVE_OPENBLAS;
+          # buildnativeoperations.sh uses a non-empty OPENBLAS_PATH env var verbatim
+          # (skips its jar auto-detect, which cannot see this workspace dir).
+          OB_HOME="${GITHUB_WORKSPACE}/openblas_home"
+          mkdir -p "$OB_HOME"
+          cd "$OB_HOME"
+          curl -fsSL -O https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-windows-x86_64.jar
+          unzip -o openblas-0.3.28-1.5.11-windows-x86_64.jar
+          OB_PATH="${OB_HOME}/org/bytedeco/openblas/windows-x86_64"
+          test -f "${OB_PATH}/include/cblas.h" || { echo "ERROR: cblas.h missing under ${OB_PATH}"; exit 1; }
+          echo "OPENBLAS_PATH=${OB_PATH}/" >> "$GITHUB_ENV"
+          echo "Set OPENBLAS_PATH=${OB_PATH}/"
 
       - name: Run windows cpu build
         shell: cmd
