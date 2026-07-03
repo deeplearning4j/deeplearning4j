@@ -2734,6 +2734,8 @@ mkbuilddir() {
 
 HELPERS_CMAKE=""
 ZLUDA_CMAKE=""
+MLX_CMAKE=""
+SD_MLX="${SD_MLX:-}"
 
 # Auto-enable oneDNN when Triton is ON and we're on x86 (x86_64/amd64) for CPU builds only.
 # oneDNN provides the CPU graph backend for DSP and optimized math kernels.
@@ -2752,6 +2754,28 @@ if [ "$TRITON" == "ON" ] && [ "$CHIP" != "cuda" ]; then
             print_colored "green" "✓ Auto-adding oneDNN to helper (Triton=ON on x86, CPU build)"
         fi
     fi
+fi
+
+# Apple Silicon is a unified-memory APU — there is no discrete CPU/GPU to opt
+# into, so Triton=ON (the DSP/-compile switch, NOT the lean base CPU build)
+# lights up the WHOLE unified stack on macOS arm64: MPS (Metal Performance
+# Shaders ops) + SD_METAL (Metal ICB replay, set alongside HAVE_MPS) + SD_MLX
+# (the MLX graph backend). Mirrors the x86 oneDNN auto-enable — on Apple Silicon
+# these aren't optional accelerators, they ARE the platform's compute path.
+# The base CPU build (no --triton) stays lean and dependency-light.
+if [ "$TRITON" == "ON" ] && [ "$CHIP" != "cuda" ] && [ "$(uname -s)" == "Darwin" ] && [ "$(uname -m)" == "arm64" ]; then
+    if [[ ",$HELPERS," != *",mps,"* ]] && [[ ",$HELPER," != *",mps,"* ]]; then
+        if [[ -n "$HELPERS" ]]; then
+            HELPERS="${HELPERS},mps"
+        elif [[ -n "$HELPER" ]]; then
+            HELPER="${HELPER},mps"
+        else
+            HELPERS="mps"
+        fi
+        print_colored "green" "✓ Auto-enabling MPS helper + Metal replay (Triton=ON on macOS arm64 APU)"
+    fi
+    SD_MLX="ON"
+    print_colored "green" "✓ Auto-enabling MLX graph backend (Triton=ON on macOS arm64 APU)"
 fi
 
 # Merge a legacy single helper (-h/--helper) into the multi-helper list when
@@ -2884,6 +2908,14 @@ if [ "$ZLUDA" == "ON" ] || [ "$ZLUDA" == "AMD" ] || [ "$ZLUDA" == "INTEL" ] || [
     fi
     print_colored "green" "✓ ZLUDA cmake flag: $ZLUDA_CMAKE"
 fi
+# SD_MLX (macOS arm64 unified-APU MLX graph backend). Set by the Triton=ON
+# auto-enable above (or an SD_MLX=ON env override). Consumed by setup_mlx() in
+# Dependencies.cmake, which finds a pre-installed MLX or builds it from source.
+if [ "$SD_MLX" == "ON" ]; then
+    MLX_CMAKE="-DSD_MLX=ON"
+    print_colored "green" "✓ MLX cmake flag: $MLX_CMAKE"
+fi
+echo MLX                = "$SD_MLX"
 echo ZLUDA              = "$ZLUDA"
 echo DYNAMIC_KERNEL_SEL  = "$DYNAMIC_KERNEL_SELECTION"
 echo KERNEL_STRATEGY     = "$KERNEL_STRATEGY"
@@ -2956,6 +2988,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_CUDA_THREADS="${CUDA_THREADS}" \
             -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
             $HELPERS_CMAKE \
+            $MLX_CMAKE \
             $ZLUDA_CMAKE \
             $KERNEL_CMAKE \
             $DEP_CACHE_CMAKE \
@@ -2993,6 +3026,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_CUDA_THREADS="${CUDA_THREADS}" \
             -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
             $HELPERS_CMAKE \
+            $MLX_CMAKE \
             $ZLUDA_CMAKE \
             $KERNEL_CMAKE \
             $DEP_CACHE_CMAKE \
@@ -3064,6 +3098,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         -DSD_CUDA_THREADS="${CUDA_THREADS}" \
         -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
         $HELPERS_CMAKE \
+        $MLX_CMAKE \
         $KERNEL_CMAKE \
         $DEP_CACHE_CMAKE \
         $MLIR_ARG \
@@ -3107,6 +3142,7 @@ else
         -DSD_CUDA_THREADS="${CUDA_THREADS}" \
         -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
         $HELPERS_CMAKE \
+        $MLX_CMAKE \
         $KERNEL_CMAKE \
         $DEP_CACHE_CMAKE \
         $MLIR_ARG \

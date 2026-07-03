@@ -15,7 +15,8 @@ dnf -y install wget unzip ccache clang gcc-c++ gcc-gfortran \
     alsa-lib-devel freeglut-devel gtk3-devel libusb-devel libusbx-devel \
     curl-devel expat-devel gettext-devel openssl-devel bzip2-devel zlib-devel \
     SDL2-devel libva-devel libxkbcommon-devel libxkbcommon-x11-devel \
-    fontconfig-devel libffi-devel pcre-devel git cmake
+    fontconfig-devel libffi-devel pcre-devel git cmake \
+    openblas-devel
 
 echo "Downloading java from azul"
 cd /opt && wget https://cdn.azul.com/zulu/bin/zulu11.58.15-ca-jdk11.0.16-linux_x64.zip

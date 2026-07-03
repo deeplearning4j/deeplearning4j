@@ -300,6 +300,32 @@ function(setup_blas)
             endif()
         endif()
         if(NOT OPENBLAS_PATH)
+            # System OpenBLAS fallback. There is no bytedeco openblas jar in
+            # ~/.javacpp/cache or ~/.m2 at libnd4j-build time on the glibc-2.28
+            # compat container (openblas is a dependency of nd4j-native, which
+            # builds AFTER libnd4j), so the jar-based auto-detect in
+            # buildnativeoperations.sh leaves OPENBLAS_PATH empty. openblas-devel
+            # installs libopenblas.so under /usr/lib64 (or the Debian multiarch
+            # dir) and cblas.h under /usr/include or /usr/include/openblas. This
+            # link is for symbol resolution only; the portable bytedeco .so is
+            # still bundled and loaded at runtime via the classpath.
+            find_library(SD_SYSTEM_OPENBLAS
+                NAMES openblas openblaso openblasp
+                PATHS /usr/lib64 /usr/lib /usr/lib/x86_64-linux-gnu
+                      /usr/lib/aarch64-linux-gnu /usr/local/lib /usr/local/lib64)
+            find_path(SD_SYSTEM_CBLAS_INCLUDE
+                NAMES cblas.h
+                PATHS /usr/include /usr/include/openblas /usr/local/include)
+            if(SD_SYSTEM_OPENBLAS AND SD_SYSTEM_CBLAS_INCLUDE)
+                message(STATUS "🔧 Using system OpenBLAS: ${SD_SYSTEM_OPENBLAS}")
+                message(STATUS "   System cblas.h dir: ${SD_SYSTEM_CBLAS_INCLUDE}")
+                include_directories(${SD_SYSTEM_CBLAS_INCLUDE})
+                add_compile_definitions(HAVE_OPENBLAS=1)
+                set(HAVE_OPENBLAS 1 PARENT_SCOPE)
+                set(OPENBLAS_LIBRARIES "${SD_SYSTEM_OPENBLAS}" PARENT_SCOPE)
+                message(STATUS "✅ OpenBLAS setup complete (system)")
+                return()
+            endif()
             message(STATUS "❌ OPENBLAS_PATH not set")
             return()
         endif()
@@ -2483,6 +2509,8 @@ function(setup_mlx)
             -DMLX_BUILD_BENCHMARKS=OFF
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            # Force shared library so libmlx.dylib is produced (CMake default is static)
+            -DBUILD_SHARED_LIBS=ON
             ${MLX_CCACHE_ARGS}
         BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel ${DEP_PARALLEL_JOBS}
         TIMEOUT           600

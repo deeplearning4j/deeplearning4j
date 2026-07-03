@@ -930,6 +930,34 @@ function(create_and_link_library)
             endif()
         endif()
 
+        # MLX Apple Silicon backend — must build before Mlx*.cpp compiles
+        # Mlx*.cpp includes <mlx/mlx.h> which lives in MLX_INSTALL_DIR/include;
+        # that directory is exposed only via mlx_interface INTERFACE_INCLUDE_DIRECTORIES.
+        # Without this block the object-library compile races mlx_external AND
+        # gets "mlx/mlx.h: No such file or directory".
+        if(HAVE_MLX AND TARGET mlx_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: MLX Apple Silicon                           ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for MLX to finish       ║")
+            message(STATUS "║  MLX build may take 3-8 minutes...                                ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} mlx_external)
+            if(TARGET mlx_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC mlx_interface)
+                set(_MLX_INSTALL "${CMAKE_BINARY_DIR}/mlx_install")
+                target_include_directories(${OBJECT_LIB_NAME} SYSTEM PUBLIC
+                    "${_MLX_INSTALL}/include"
+                )
+                message(STATUS "✅ MLX include dirs added to ${OBJECT_LIB_NAME}")
+            endif()
+        elseif(HAVE_MLX AND TARGET mlx_interface)
+            # Pre-installed MLX (found via FindMLX.cmake) — no mlx_external to depend on
+            target_link_libraries(${OBJECT_LIB_NAME} PUBLIC mlx_interface)
+            message(STATUS "✅ Pre-installed MLX linked to ${OBJECT_LIB_NAME}")
+        endif()
+
         # picking up incomplete flatbuffers.h from libnd4j/include/flatbuffers/
         # The ExternalProject downloads full headers to flatbuffers-src/include
         get_target_property(FLATBUFFERS_INCLUDES flatbuffers_interface INTERFACE_INCLUDE_DIRECTORIES)

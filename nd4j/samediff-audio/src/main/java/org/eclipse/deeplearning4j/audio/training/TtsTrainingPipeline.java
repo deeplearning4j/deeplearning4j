@@ -33,7 +33,7 @@ import org.nd4j.autodiff.samediff.peft.PeftModel;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.SimpleListMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.curation.audio.AudioDataProcessor;
@@ -431,7 +431,7 @@ public class TtsTrainingPipeline {
         // For reconstruction loss the label equals the input (autoencoder objective)
         INDArray target = batch.dup();
 
-        return new MultiDataSet(
+        return new org.nd4j.linalg.dataset.MultiDataSet(
                 new INDArray[]{batch},
                 new INDArray[]{target});
     }

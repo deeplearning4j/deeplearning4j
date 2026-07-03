@@ -1387,7 +1387,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                      i, si, out ? "db=null" : "null");
           }
         }
-        DSP_THROW_CUDA(EXECUTE, launchErr,
+        DSP_THROW_CUDA(EXECUTE, static_cast<cudaError_t>(launchErr),
                        "CUDA LAUNCH DIAGNOSTIC: dspPeekLastCudaError after slot %d (%s) "
                        "returned error %d. "
                        "seg=[%d-%d] execCount=%d shapesFrozen=%d",

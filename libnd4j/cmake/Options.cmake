@@ -17,6 +17,11 @@ option(SD_CPU "Build CPU backend" ON)
 option(SD_CUDA "Build CUDA/GPU backend" OFF)
 option(SD_TPU "Build TPU backend using PJRT" OFF)
 set(TPU_VERSION "v5" CACHE STRING "TPU version (v4, v5)")
+# Apple Silicon unified-memory MLX/Metal stack.
+# On macOS arm64 + -Dlibnd4j.triton=ON, buildnativeoperations.sh sets this to ON
+# automatically via the MLX_CMAKE variable.  You can also set it directly:
+#   cmake ... -DSD_MLX=ON
+option(SD_MLX "Enable Apple MLX GPU-compute backend (macOS arm64 only; requires Metal)" OFF)
 
 # --- Build Verbosity Options ---
 option(SD_VERBOSE_CUDA "Enable verbose CUDA/nvcc output (increases memory usage)" OFF)
