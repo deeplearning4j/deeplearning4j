@@ -207,9 +207,9 @@ static sd::Status vlm_patch_embed_impl(NDArray* input, NDArray* output,
     return sd::Status::OK;
 }
 
-BUILD_SINGLE_TEMPLATE(extern sd::Status vlm_patch_embed_impl,
-                      (NDArray* input, NDArray* output, int patchSize, int stride, bool includeCls),
-                      SD_FLOAT_TYPES);
+// vlm_patch_embed_impl<T> is instantiated on use by the BUILD_SINGLE_SELECTOR below.
+// No `extern` explicit instantiation: it is a static template used in this TU, and MSVC
+// rejects `extern` on an instantiated specialization (error C2948) — gcc/nvcc tolerate it.
 
 CUSTOM_OP_IMPL(vlm_patch_embed, 1, 1, false, 0, 0) {
     auto input = INPUT_VARIABLE(0);
@@ -270,9 +270,9 @@ static void vlm_cross_attention_causal_mask(NDArray* scores, LongType seqLen, Lo
     scores->syncToDevice();
 }
 
-BUILD_SINGLE_TEMPLATE(extern void vlm_cross_attention_causal_mask,
-                      (NDArray* scores, LongType seqLen, LongType kvLen),
-                      SD_FLOAT_TYPES);
+// vlm_cross_attention_causal_mask<T> is instantiated on use by the BUILD_SINGLE_SELECTOR below.
+// No `extern` explicit instantiation: it is a static template used in this TU, and MSVC
+// rejects `extern` on an instantiated specialization (error C2948) — gcc/nvcc tolerate it.
 
 CUSTOM_OP_IMPL(vlm_cross_attention, 3, 1, false, 0, 0) {
     auto query = INPUT_VARIABLE(0);    // [batch, seq_len, dim]
@@ -527,10 +527,9 @@ static sd::Status vlm_2d_position_encode_impl(NDArray* output,
     return sd::Status::OK;
 }
 
-BUILD_SINGLE_TEMPLATE(extern sd::Status vlm_2d_position_encode_impl,
-                      (NDArray* output, LongType batch, LongType numPatches, LongType dim,
-                       int height, int width, float temperature),
-                      SD_FLOAT_TYPES);
+// vlm_2d_position_encode_impl<T> is instantiated on use by the BUILD_SINGLE_SELECTOR below.
+// No `extern` explicit instantiation: it is a static template used in this TU, and MSVC
+// rejects `extern` on an instantiated specialization (error C2948) — gcc/nvcc tolerate it.
 
 CUSTOM_OP_IMPL(vlm_2d_position_encode, 1, 1, false, 0, 0) {
     auto input = INPUT_VARIABLE(0);   // [batch, num_patches, dim]
