@@ -2,8 +2,8 @@ open module omnihub {
     requires nd4j.api;
     requires deeplearning4j.nn;
     requires deeplearning4j.modelimport;
-    requires samediff.import.onnx;
-    requires samediff.import.tensorflow;
+    requires samediff.modelimport.onnx;
+    requires samediff.modelimport.tensorflow;
     requires kotlin.stdlib;
     requires jackson;
     requires commons.io;
