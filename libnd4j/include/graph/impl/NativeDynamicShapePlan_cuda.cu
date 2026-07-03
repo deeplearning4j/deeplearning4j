@@ -31,9 +31,25 @@
 #ifdef SD_CUDA
 
 // Win32 threading API (HANDLE/LPVOID/DWORD/CreateThread) is used in the _WIN32
-// branch below to launch precompile workers with a 64 MB stack. Same include the
-// sibling TritonGraphBackend_compile.cu uses for its identical CreateThread block.
+// branch below to launch precompile workers with a 64 MB stack.
+// MUST define these guards BEFORE including <windows.h>:
+//   NOGDI  — suppresses wingdi.h's `#define ERROR 0`, which otherwise clobbers the
+//            `ERROR` enumerator in execution/cuda/CudaGraphScheduler.h's
+//            `enum class GraphState { ... ERROR }` (this TU includes that header),
+//            producing nvcc "error: expected an identifier". We use no GDI here.
+//   NOMINMAX — keeps windows.h from defining min()/max() macros that break the
+//            templated CUDA/std code pulled in transitively.
+//   WIN32_LEAN_AND_MEAN — trims rarely-used Win32 headers (also speeds the parse).
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef NOGDI
+#define NOGDI
+#endif
 #include <windows.h>
 #endif
 
