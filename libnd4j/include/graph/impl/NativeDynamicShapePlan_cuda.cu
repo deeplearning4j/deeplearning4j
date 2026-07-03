@@ -30,6 +30,13 @@
 
 #ifdef SD_CUDA
 
+// Win32 threading API (HANDLE/LPVOID/DWORD/CreateThread) is used in the _WIN32
+// branch below to launch precompile workers with a 64 MB stack. Same include the
+// sibling TritonGraphBackend_compile.cu uses for its identical CreateThread block.
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/ModeContract.h>
 #include <graph/NativePlanCompiler.h>
