@@ -239,7 +239,15 @@ jobs:
                   $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.6"
           }
 
-          $mvn_common="${{ matrix.mvn_ext }} -Pcuda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests $mvn_ext"
+          # OOM killer OFF for windows-cuda CI: the libnd4j OOM killer KILLS compile
+          # processes (it does not throttle), so under memory pressure it terminates
+          # nvcc mid-object; ninja then re-dispatches that object, wasting minutes of
+          # the hard 6h GitHub Actions job limit — a real contributor to the build
+          # never finishing (it reached only [1237/1526] CUDA objects in 6h). The
+          # runner is dedicated (nothing else runs on it), so there is no other
+          # process to protect; let nvcc use the full 16 GB. A genuine OOM would then
+          # surface as an honest compiler failure instead of a silent kill+retry loop.
+          $mvn_common="${{ matrix.mvn_ext }} -Pcuda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dlibnd4j.oom.killer=OFF -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests $mvn_ext"
           $command="mvn $mvn_common -pl $modules --also-make deploy"
 
           $to_write = -join("COMMAND=","$($command)");
