@@ -829,14 +829,41 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (placeholderArrays != null) {
             INDArray placeholder = placeholderArrays.get(varName);
             if (placeholder != null) {
-                return placeholder;
+                return detachIfWorkspaceBacked(placeholder, varName);
             }
         }
         if (sd == null) {
             return null;
         }
         SDVariable var = sd.getVariable(varName);
-        return var != null ? var.getArr() : null;
+        return var != null ? detachIfWorkspaceBacked(var.getArr(), varName) : null;
+    }
+
+    /**
+     * DSP plans retain external-input INDArrays across executions, but a
+     * workspace-attached array's native DataBuffer holds a raw {@code Workspace*}
+     * whose lifetime ends with the Java {@code MemoryWorkspace} scope — NOT with
+     * the buffer object. {@code wasClosed()}/{@code isArrayLive()} do NOT catch
+     * this: the buffer stays "live" while its {@code _workspace} field dangles,
+     * and a later {@code allocateSpecial()} self-heal inside the native plan then
+     * calls {@code Workspace::allocateBytes} on the freed workspace object
+     * (MALLOC_PERTURB_-poisoned {@code this=0xaaaa...}) — mid-decode SIGSEGV at
+     * DataBuffer.cu:821 (hs_err pids 983764/1001349/2010769, Jul 4 2026;
+     * reproduces under CPU-load-shifted GC/workspace-cycle timing).
+     *
+     * Fix at the ingestion boundary: detach (copy off-workspace) any attached
+     * array before the plan may retain it. Only fires for attached arrays —
+     * zero cost on the normal path.
+     */
+    private static INDArray detachIfWorkspaceBacked(INDArray arr, String key) {
+        if (arr == null || !arr.isAttached()) {
+            return arr;
+        }
+        INDArray detached = arr.detach();
+        DspDiagnostics.record(DspDiagnostics.MEMORY,
+                "Java: detached workspace-backed external input '" + key
+                        + "' before plan ingestion (plan outlives workspace scope)");
+        return detached;
     }
 
     private static int findOutputSlotIndex(DynamicShapePlan plan, String outputName) {
@@ -2622,7 +2649,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             for (int vi : cachedVariableTypeIndices) {
                 INDArray current = sd.getVariable(extKeys[vi]).getArr();
                 if (current != null && current != cachedInputArrays[vi]) {
-                    extInputs[vi] = current;
+                    extInputs[vi] = detachIfWorkspaceBacked(current, extKeys[vi]);
                     variableRebindCount++;
                 }
             }
@@ -2681,7 +2708,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         stalePlaceholderCount++;
                         INDArray ph = placeholderArrays.get(extKeys[i]);
                         if (ph != null && ph.data() != null && !ph.data().wasClosed()) {
-                            extInputs[i] = ph;
+                            extInputs[i] = detachIfWorkspaceBacked(ph, extKeys[i]);
                             resolvedCount++;
                         } else {
                             // Stale placeholder with no live replacement in the map.
@@ -2727,7 +2754,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                     "LIFECYCLE_ERROR: placeholder input '" + extKeys[i] +
                                     "' DataBuffer was closed — cannot pass freed buffer to native plan.");
                             }
-                            extInputs[i] = ph;
+                            extInputs[i] = detachIfWorkspaceBacked(ph, extKeys[i]);
                         }
                     }
                 }
@@ -2746,6 +2773,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             "LIFECYCLE_ERROR: external input '" + varName + "' (type=PLACEHOLDER)" +
                             " DataBuffer was closed — cannot pass freed buffer to native plan.");
                     }
+                    arr = detachIfWorkspaceBacked(arr, varName);
                 }
                 if (arr == null) {
                     SDVariable var = sd.getVariable(varName);
@@ -2753,7 +2781,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             (var.getVariableType() == VariableType.CONSTANT ||
                                     var.getVariableType() == VariableType.VARIABLE ||
                                     var.getVariableType() == VariableType.ARRAY)) {
-                        arr = var.getArr();
+                        arr = detachIfWorkspaceBacked(var.getArr(), varName);
                         if (arr != null && !isArrayLive(arr)) {
                             throw new RuntimeException(
                                 "LIFECYCLE_ERROR: external input '" + varName + "' (type=" +
