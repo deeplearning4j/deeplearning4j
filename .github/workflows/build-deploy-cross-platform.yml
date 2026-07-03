@@ -317,7 +317,12 @@ jobs:
             PLATFORM_PROFILES="-Pzluda,tpu,hexagon"
           fi
 
-          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native${GGML_EXCLUDE} \
+          # platform-tests is the test suite, never a deployable library: it pulls
+          # org.deeplearning4j:dl4j-test-resources (a large EXTERNAL snapshot not in
+          # this reactor) as a compile dep, so a deploy build cannot resolve it. Per
+          # the project rule it must never be built with the project — exclude it so
+          # the library deploy is not blocked by a test-only, unresolvable dependency.
+          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:platform-tests${GGML_EXCLUDE} \
             ${PROTOC_PROFILE} \
             ${PLATFORM_PROFILES} \
             -DskipTestResourceEnforcement=true \
