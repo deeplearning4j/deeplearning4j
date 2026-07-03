@@ -554,6 +554,16 @@ fi
 
 if $DSP_TIMING; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.executionTiming=true"
+    # COMPOSITE_REPLAY_TIMING emits via DSP_DIAG(TIMING,...) — executionTiming alone
+    # ticks the timers but records nothing unless the TIMING category is enabled.
+    # Use sync-free 'detailed' level (ring + JSON dump; 'full' echoes/syncs and
+    # distorts the numbers being measured). If combined with --diag-* flags their
+    # later -Dnd4j.dsp.diagnostics properties win (Maven last-wins), as before.
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=TIMING"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.level=detailed"
+    if [ -z "$DIAG_JSON" ]; then
+        DIAG_JSON="$SCRIPT_DIR/dsp-timing.json"
+    fi
 fi
 
 if $DRAFT_MODEL; then
