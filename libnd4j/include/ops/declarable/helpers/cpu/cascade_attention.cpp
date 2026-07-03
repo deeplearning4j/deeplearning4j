@@ -24,6 +24,7 @@
 #include <cmath>
 #include <vector>
 #include <limits>
+#include <algorithm>
 
 namespace sd {
 namespace ops {
@@ -44,16 +45,24 @@ static void cascadeAttentionCpu_(LaunchContext* context,
     PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
     for (LongType b = 0; b < batch; b++) {
         for (LongType h = 0; h < heads; h++) {
+            // Per-thread scratch, reused across the q/chunk loops below (E4):
+            // allocating these per-(q,chunk) put 4 heap allocs inside the hot
+            // loop. Sizes are loop-invariant (headDim / chunkSize), so allocate
+            // once per (b,h) body; per-chunk code uses scores[0..chunkLen).
+            std::vector<T> qVec(headDim);
+            std::vector<T> outAccum(headDim);
+            std::vector<T> chunkOut(headDim);
+            std::vector<T> scores(chunkSize);
+
             for (LongType q = 0; q < queryLen; q++) {
                 // Read Q vector
-                std::vector<T> qVec(headDim);
                 for (LongType d = 0; d < headDim; d++) {
                     qVec[d] = query->e<T>(b, h, q, d);
                 }
 
                 // Per-query accumulation across chunks
                 // Using log-sum-exp merge for numerical stability
-                std::vector<T> outAccum(headDim, static_cast<T>(0));
+                // (outAccum needs no reset: the first-chunk branch overwrites it)
                 T globalMax = -std::numeric_limits<T>::infinity();
                 T globalSumExp = static_cast<T>(0);
 
@@ -63,7 +72,6 @@ static void cascadeAttentionCpu_(LaunchContext* context,
                     LongType chunkLen = chunkEnd - chunkStart;
 
                     // Compute attention scores for this chunk: Q @ K_chunk^T * scale
-                    std::vector<T> scores(chunkLen);
                     T chunkMax = -std::numeric_limits<T>::infinity();
 
                     for (LongType k2 = 0; k2 < chunkLen; k2++) {
@@ -83,7 +91,7 @@ static void cascadeAttentionCpu_(LaunchContext* context,
                     }
 
                     // Compute chunk output: softmax_weights @ V_chunk
-                    std::vector<T> chunkOut(headDim, static_cast<T>(0));
+                    std::fill(chunkOut.begin(), chunkOut.end(), static_cast<T>(0));
                     for (LongType k2 = 0; k2 < chunkLen; k2++) {
                         T w = scores[k2]; // unnormalized softmax weight
                         for (LongType d = 0; d < headDim; d++) {

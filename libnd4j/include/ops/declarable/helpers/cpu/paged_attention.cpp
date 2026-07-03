@@ -55,13 +55,15 @@ static void pagedAttentionForward_(
         scale = static_cast<T>(1.0f / sd::math::sd_sqrt<float, float>(static_cast<float>(headDim)));
     }
 
-    // Simple CPU implementation: iterate over batch, heads, compute attention
-    PRAGMA_OMP_PARALLEL_FOR
+    // Simple CPU implementation: iterate over batch, heads, compute attention.
+    // Collapse (batch, head) so decode (batch=1) still parallelizes across heads —
+    // a batch-only parallel-for is single-threaded at batch=1 (E4).
+    PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
     for (int b = 0; b < batch; b++) {
-        int ctxLen = contextLens->e<int>(b);
-        if (ctxLen <= 0) continue;
-
         for (int h = 0; h < numHeads; h++) {
+            int ctxLen = contextLens->e<int>(b);
+            if (ctxLen <= 0) continue;
+
             int kvHead = (numKvHeads > 0 && numKvHeads < numHeads)
                 ? (h * numKvHeads / numHeads) : h;
 
@@ -96,13 +98,15 @@ static void pagedAttentionForward_(
                 sumExp += scores[pos];
             }
             T invSum = static_cast<T>(1) / (sumExp + static_cast<T>(1e-8f));
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
+            // NOTE: no nested PARALLEL pragmas here — we are already inside the
+            // collapsed (b,h) parallel region; nested parallelism is disabled by
+            // default so an inner omp-parallel-for is dead weight. SIMD only.
+            PRAGMA_OMP_SIMD
             for (int pos = 0; pos < ctxLen; pos++) {
                 scores[pos] *= invSum;
             }
 
             // Weighted sum of values
-            PRAGMA_OMP_PARALLEL_FOR
             for (int d = 0; d < headDim; d++) {
                 T acc = static_cast<T>(0);
                 for (int pos = 0; pos < ctxLen; pos++) {
@@ -167,7 +171,9 @@ static void pagedKvCacheAppend_(
             if (physicalBlock < 0) continue;
 
             for (int h = 0; h < numKvHeads; h++) {
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
+                // Inside the outer batch parallel-for — nested PARALLEL is dead
+                // weight (disabled by default); SIMD only.
+                PRAGMA_OMP_SIMD
                 for (int d = 0; d < headDim; d++) {
                     T kVal = newKeys->e<T>(b, t, h, d);
                     T vVal = newValues->e<T>(b, t, h, d);
