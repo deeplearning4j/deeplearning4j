@@ -2754,6 +2754,24 @@ if [ "$TRITON" == "ON" ] && [ "$CHIP" != "cuda" ]; then
     fi
 fi
 
+# Merge a legacy single helper (-h/--helper) into the multi-helper list when
+# BOTH are provided. Otherwise the HELPERS-list branch below wins and the
+# legacy helper is silently dropped — e.g. `--helper mps --helpers mlir` (the
+# macOS mps-compile build) lost MPS/Metal entirely, producing a -mps-compile
+# artifact with DSP but no Metal compiled in.
+if [ -n "$HELPERS" ] && [ -n "$HELPER" ]; then
+    IFS=','
+    read -ra _SD_LEGACY_HLP <<< "$HELPER"
+    for _sd_h in "${_SD_LEGACY_HLP[@]}"; do
+        _sd_h=$(echo "$_sd_h" | tr -d ' ')
+        if [ -n "$_sd_h" ] && [[ ",$HELPERS," != *",$_sd_h,"* ]]; then
+            HELPERS="${HELPERS},${_sd_h}"
+            print_colored "green" "✓ Merged legacy helper '$_sd_h' into --helpers list"
+        fi
+    done
+    IFS=' '
+fi
+
 # Process multi-helper configuration (--helpers flag)
 if [ -n "$HELPERS" ]; then
     print_colored "blue" "=== Multi-Helper Configuration ==="
