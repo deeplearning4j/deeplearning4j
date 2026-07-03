@@ -146,6 +146,20 @@ runs:
         $env:SCCACHE_GHA_ENABLED = "true"
         Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_GHA_ENABLED=true"
 
+        # Never let the server idle-shut-down mid-build (default is 600s).
+        # On Windows CUDA the sccache launcher wraps only CXX (.cpp), NOT nvcc
+        # (.cu) — the CUDA launcher is deliberately skipped because sccache breaks
+        # nvcc's temp-file handling. So the build compiles its .cpp files, then
+        # spends 1-2h on uncached .cu compilation during which the sccache server
+        # receives ZERO requests, idles past 600s, and terminates. The next .cpp
+        # compile (or the end-of-build --show-stats) then hits a dead server and
+        # fails with "Timed out waiting for server startup", killing the whole
+        # build — the chronic windows-cuda failure. 0 = never idle-shutdown.
+        # (Linux CUDA does wrap nvcc, so its server stays busy and never hit this.)
+        # Must be set in the current process too: sccache reads it at --start-server.
+        $env:SCCACHE_IDLE_TIMEOUT = "0"
+        Add-Content -Path $env:GITHUB_ENV -Value "SCCACHE_IDLE_TIMEOUT=0"
+
         # Partition cache by suffix
         $suffix = "${{ inputs.cache-suffix }}" -replace '-+$', ''
         if ($suffix) {
