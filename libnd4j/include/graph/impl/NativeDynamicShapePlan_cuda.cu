@@ -1503,6 +1503,26 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     executionCompleteEventDeviceId_ = -1;
   }
 
+  // Free the reusable cross-stream sync event (WS-N4, same lifecycle).
+  if (ownedCrossStreamEvent_ != nullptr) {
+    cudaEvent_t xEvt = reinterpret_cast<cudaEvent_t>(ownedCrossStreamEvent_);
+    if (ownedCrossStreamEventDeviceId_ >= 0) {
+      int savedDev;
+      cudaGetDevice(&savedDev);
+      if (savedDev != ownedCrossStreamEventDeviceId_) {
+        cudaSetDevice(ownedCrossStreamEventDeviceId_);
+        cudaEventDestroy(xEvt);
+        cudaSetDevice(savedDev);
+      } else {
+        cudaEventDestroy(xEvt);
+      }
+    } else {
+      cudaEventDestroy(xEvt);
+    }
+    ownedCrossStreamEvent_ = nullptr;
+    ownedCrossStreamEventDeviceId_ = -1;
+  }
+
   // Free cached steady-state cross-stream event (created via dspCreateEvent -> handle-value).
   if (steadyStateCrossStreamEvent_ != nullptr) {
     sd::graph::dspDestroyEvent(steadyStateCrossStreamEvent_);
@@ -1915,9 +1935,13 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   // g_captureActive *after* we read it as false but *before* we increment
   // g_execCount — the capturing thread would then see g_execCount==0
   // and start capture while this thread is still executing.
+  // Single cudaGetDevice for this function (WS-N4): the result is reused for
+  // the capture-gate index, ctx->deviceId, and the owned event's device — the
+  // device cannot change between these uses (no cudaSetDevice intervenes).
+  int currentDev = 0;
+  cudaGetDevice(&currentDev);
   {
-    int dev = 0;
-    cudaGetDevice(&dev);
+    int dev = currentDev;
     if (dev < 0 || dev >= 16) dev = 0;
     {
       std::unique_lock<std::mutex> lk(g_captureMtx[dev]);
@@ -1948,7 +1972,7 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   // created during this execute() must be on this device. The DspStreamGuard
   // pins the device via cudaSetDevice and restores on destruction, so even
   // if an op temporarily switches devices, the guard's destructor restores.
-  cudaGetDevice(&ctx->deviceId);
+  ctx->deviceId = currentDev;
 
   // Sync decisions use anySegmentNeedsWarmup() — the SINGLE source of truth
   // for whether segments need warmup after invalidateSegmentCaptures.
@@ -1956,14 +1980,23 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   ctx->needsFullSync = !frozen || execCount <= 1 || segWarmup;
   ctx->isFrozenSteadyState = frozen && execCount > 1 && !segWarmup;
 
-  // Create the per-execution cross-stream sync event.
-  // This replaces the file-scope thread_local tl_crossStreamEvent so each
-  // execute() call owns its event and there is no hidden per-thread state.
-  {
+  // Cross-stream sync event: plan-owned and reused across executions (WS-N4 —
+  // was created + destroyed per execute, ~2 driver calls per decode token).
+  // The event is only ever recorded once and waited once per execution, so a
+  // reusable handle is equivalent; re-create on device change (mirrors
+  // executionCompleteEvent_). platformEndExecution must NOT destroy it.
+  if (ownedCrossStreamEvent_ != nullptr && ownedCrossStreamEventDeviceId_ != currentDev) {
+    cudaEventDestroy(reinterpret_cast<cudaEvent_t>(ownedCrossStreamEvent_));
+    ownedCrossStreamEvent_ = nullptr;
+    ownedCrossStreamEventDeviceId_ = -1;
+  }
+  if (ownedCrossStreamEvent_ == nullptr) {
     cudaEvent_t tmpEvt = nullptr;
     cudaEventCreateWithFlags(&tmpEvt, cudaEventDisableTiming);
-    ctx->crossStreamEvent = static_cast<void*>(tmpEvt);
+    ownedCrossStreamEvent_ = static_cast<void*>(tmpEvt);
+    ownedCrossStreamEventDeviceId_ = currentDev;
   }
+  ctx->crossStreamEvent = ownedCrossStreamEvent_;
 
   // Resolve CUDA streams and set up DspStreamGuard RAII
   if (stream != nullptr) {
@@ -2166,11 +2199,9 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     }
   }
 
-  // Destroy the per-execution cross-stream sync event.
-  if (ctx->crossStreamEvent != nullptr) {
-    cudaEventDestroy(reinterpret_cast<cudaEvent_t>(ctx->crossStreamEvent));
-    ctx->crossStreamEvent = nullptr;
-  }
+  // Cross-stream sync event is plan-owned and reused (WS-N4) — do NOT destroy
+  // it here; it is freed with executionCompleteEvent_ in plan teardown.
+  ctx->crossStreamEvent = nullptr;
 
   // Restore cuBLAS state for modes that enforced deterministic cuBLAS.
   if (ModeContract::forMode(graphExecutionMode_).requiresDeterministicCublas) {
@@ -2255,14 +2286,17 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
 
   // Explicitly delete the stream guard before the context.
   // DspStreamGuard restores tl_dspExecutionStream to its previous value.
+  // Reuse the device id resolved at begin (WS-N4 — was a redundant
+  // cudaGetDevice; DspStreamGuard pinned the device for the whole execution,
+  // and the paired fetch_add at begin used this same id).
+  int endDev = ctx->deviceId;
   delete static_cast<DspStreamGuard*>(ctx->streamGuard);
   ctx->streamGuard = nullptr;
   delete ctx;
 
   // Decrement per-device execution counter and notify any waiting capture thread.
   {
-    int dev = 0;
-    cudaGetDevice(&dev);
+    int dev = endDev;
     if (dev < 0 || dev >= 16) dev = 0;
     int prev = g_execCount[dev].fetch_sub(1, std::memory_order_acq_rel);
     if (prev <= 1) {

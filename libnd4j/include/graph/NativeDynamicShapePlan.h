@@ -2843,6 +2843,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // the default stream (stream 0) before argmax/sampling. This keeps
   // completion ordering on the GPU timeline without blocking the host.
   void* executionCompleteEvent_ = nullptr;  // cudaEvent_t (stored as void* to avoid cuda header)
+
+  // Reusable cross-stream sync event for platformBeginExecution (WS-N4):
+  // previously created + destroyed on EVERY execute (~2 driver calls per
+  // token in steady-state decode). Lazily created, re-created on device
+  // change, destroyed alongside executionCompleteEvent_.
+  void* ownedCrossStreamEvent_ = nullptr;  // cudaEvent_t (void* to avoid cuda header)
+  int ownedCrossStreamEventDeviceId_ = -1;
   int executionCompleteEventDeviceId_ = -1; // Device the event was created on
 
   void* steadyStateCrossStreamEvent_ = nullptr;  // cudaEvent_t, reused across steps

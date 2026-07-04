@@ -199,6 +199,13 @@ int executeDynamicShapePlan(
     // Validate external input GPU pointers before execution.
     // Detect corrupted/freed _specialBuffer pointers that would cause SIGSEGV
     // in cudaMemcpyAsync during slot execution.
+    // WS-N4 NOTE: an attempt to skip this in frozen sealed steady state
+    // regressed testCachedPlanReuseAfterDonorCloseWithPoison (NVRTC borrower
+    // exec #4 read a stale pointer with the historical 1e-2 drift): the
+    // setSpecialBuffer(nullptr) recovery below is LOAD-BEARING for cached-plan
+    // checkout — it heals freed device pointers carried by borrowed plans.
+    // Do not gate this loop until borrowed-plan inputs are sanitized ONCE at
+    // checkout time instead of per-exec here.
     {
       int badCount = 0;
       for (int i = 0; i < numInputs; i++) {

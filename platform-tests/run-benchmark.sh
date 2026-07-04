@@ -140,6 +140,7 @@ DRAFT_MODEL=false
 NO_CUBLAS_WORKSPACE=false
 NO_FREEZE=false
 TRITON_TF32=false
+CUBLAS_TF32=false
 NO_ATTN_OVERRIDE=false
 NO_DIRECT=false
 NO_TRITON=false
@@ -278,6 +279,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-triton-tf32)
             TRITON_TF32=false
+            shift
+            ;;
+        --cublas-tf32)
+            CUBLAS_TF32=true
+            shift
+            ;;
+        --no-cublas-tf32)
+            CUBLAS_TF32=false
             shift
             ;;
         --no-attn-override)
@@ -539,6 +548,13 @@ fi
 
 if $TRITON_TF32; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.triton.tf32=1"
+fi
+
+# cuBLAS TF32 (nd4j.cublas.tf32 / ND4J_CUBLAS_TF32): explicit fast-math opt-in
+# for cuBLAS FP32 GEMMs. Also yields the DSP deterministic-math window (gap
+# GEMMs run TF32 instead of PEDANTIC) — speed over bitwise reproducibility.
+if $CUBLAS_TF32; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.cublas.tf32=true"
 fi
 
 # Isolation flags — disable individual replay mechanisms for debugging

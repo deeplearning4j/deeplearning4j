@@ -344,6 +344,11 @@ void CublasHelper::exitDeterministicWindow() {
   }
 }
 bool CublasHelper::inDeterministicWindow() {
+  // The EXISTING explicit fast-math opt-in wins over the deterministic window:
+  // cublasTf32Enabled is a deliberate, documented user choice for TF32 GEMMs
+  // (speed over bitwise reproducibility — production decode tolerates the
+  // logit drift). Accuracy/parity tests never set it, so they keep PEDANTIC.
+  if (sd::Environment::getInstance().cublasTf32Enabled()) return false;
   return g_deterministicCublasDepth.load(std::memory_order_relaxed) > 0;
 }
 
