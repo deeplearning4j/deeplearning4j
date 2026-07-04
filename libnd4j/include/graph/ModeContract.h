@@ -112,6 +112,14 @@ struct ModeContract {
         c.allowsFrozenFastPath = true;
         c.forceSyncDuringCapture = true;
         c.skipFrozenConstsDuringCapture = true;
+        // JIT modes still route gap ops and not-yet-compiled slots through
+        // cuBLAS (async kernel compilation races the replay lifecycle).
+        // Without PEDANTIC math those GEMMs use tensor-core fast paths while
+        // the SLOT_BY_SLOT reference runs PEDANTIC — a deterministic
+        // 1e-3..1e-2 drift on norm-heavy graphs that appears only when the
+        // compile race is lost (load-dependent: bgeEncoder/attnSingleLayer
+        // replay-accuracy failures in full-suite runs, task #53).
+        c.requiresDeterministicCublas = true;
         return c;
 
       case 9: // GEM_HIP_GRAPHS

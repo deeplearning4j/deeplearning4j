@@ -1114,7 +1114,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   int lastCaptureSlot = seg.def.startSlot;
   int frozenConstSkipped = 0;
   lastCaptureAudit_.clear();
-  handle->captureAudit.clear();  // per-handle audit (task #53) — replay reads the handle's copy
+  handle->resetCaptureAudit();  // per-handle audit (task #53) — replay reads the handle's copy
 
   // Contract-driven capture behavior: the mode contract declares whether
   // forceSync and frozen-const-skip are appropriate for this capture style.
@@ -1237,7 +1237,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           if (auditErr != cudaSuccess) cudaGetLastError();
         }
 
-        handle->captureAudit.push_back(entry);  // per-handle copy (task #53)
+        handle->recordAuditEntry(entry);  // per-handle copy (task #53)
         lastCaptureAudit_.push_back(std::move(entry));
       }
 
@@ -1930,6 +1930,14 @@ void NativeDynamicShapePlan::performReplayVerify(
 Status NativeDynamicShapePlan::postGraphReplayFixup(
     GraphSegment& seg, NDArray** externalArrays, int numExt,
     void* stream, const char* diagTag) {
+  return postReplayFixupRange(seg.exec.replayHandle.get(),
+                              seg.def.startSlot, seg.def.endSlot,
+                              externalArrays, numExt, stream, diagTag);
+}
+
+Status NativeDynamicShapePlan::postReplayFixupRange(
+    GraphReplayHandle* replayHandle, int startSlot, int endSlot,
+    NDArray** externalArrays, int numExt, void* stream, const char* diagTag) {
 
   // Authoritative audit = the replayed handle's own capture audit (task #53).
   // The plan-global lastCaptureAudit_ is only populated by captureSegment
@@ -1940,15 +1948,29 @@ Status NativeDynamicShapePlan::postGraphReplayFixup(
   // (initcheck: uninit cudaMemcpy-source via DataBuffer::syncToPrimary) →
   // oscillating ~4% divergence (bgeEncoder NVRTC/PTX).
   const std::vector<sd::cuda::CaptureAuditEntry>* audit = nullptr;
-  if (seg.exec.replayHandle != nullptr) {
-    auto* cudaReplay = dynamic_cast<CudaGraphReplayHandle*>(seg.exec.replayHandle.get());
+  if (replayHandle != nullptr) {
+    auto* cudaReplay = dynamic_cast<CudaGraphReplayHandle*>(replayHandle);
     if (cudaReplay != nullptr && cudaReplay->getNativeHandle() != nullptr &&
-        !cudaReplay->getNativeHandle()->captureAudit.empty()) {
-      audit = &cudaReplay->getNativeHandle()->captureAudit;
+        cudaReplay->getNativeHandle()->hasCaptureAudit()) {
+      audit = &cudaReplay->getNativeHandle()->getCaptureAudit();
     }
   }
   if (audit == nullptr && !lastCaptureAudit_.empty()) {
     audit = &lastCaptureAudit_;  // legacy fallback (monolithic path compat)
+  }
+  // An audit with NO entries inside [startSlot..endSlot] is stale or belongs
+  // to a different segment (lastCaptureAudit_ holds only the LAST captured
+  // segment). Trusting it would suppress ALL ticks for this range — worse
+  // than blanket. Treat as no-audit and fall back loudly below.
+  if (audit != nullptr) {
+    bool coversRange = false;
+    for (const auto& entry : *audit) {
+      if (entry.slotIndex >= startSlot && entry.slotIndex <= endSlot) {
+        coversRange = true;
+        break;
+      }
+    }
+    if (!coversRange) audit = nullptr;
   }
 
   // Step 1: tick device actuality on slot outputs the replayed graph WROTE.
@@ -1958,13 +1980,13 @@ Status NativeDynamicShapePlan::postGraphReplayFixup(
   // audit-less replay is exactly the condition that produced task #53.
   if (audit == nullptr) {
     DSP_DIAG(FALLBACK,
-             "%s: postGraphReplayFixup has NO capture audit for seg[%d-%d] — "
+             "%s: postReplayFixupRange has NO capture audit for [%d-%d] — "
              "blanket-ticking device actuality on ALL outputs (unwritten slots "
              "may be marked device-actual; capture site must populate "
-             "CudaGraphHandle::captureAudit)",
-             diagTag, seg.def.startSlot, seg.def.endSlot);
+             "CudaGraphHandle's audit via recordSlotAudit/recordAuditEntry)",
+             diagTag, startSlot, endSlot);
   }
-  for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
+  for (int stepIdx = startSlot; stepIdx <= endSlot; stepIdx++) {
     if (stepIdx < 0 || stepIdx >= numSlots_) continue;
     if (audit != nullptr) {
       bool graphWrote = false;
@@ -2000,8 +2022,8 @@ Status NativeDynamicShapePlan::postGraphReplayFixup(
     ScopedDspGapStream gapStreamFixupGuard(
         stream != nullptr ? *static_cast<cudaStream_t*>(stream) : nullptr);
     for (const auto& entry : *audit) {
-      if (entry.slotIndex >= seg.def.startSlot &&
-          entry.slotIndex <= seg.def.endSlot &&
+      if (entry.slotIndex >= startSlot &&
+          entry.slotIndex <= endSlot &&
           (entry.nodesContributed == 0 || entry.kernels == 0)) {
         if (entry.slotIndex >= 0 && entry.slotIndex < numSlots_ &&
             slotSkipsPostReplayFixup(slots_[entry.slotIndex])) {

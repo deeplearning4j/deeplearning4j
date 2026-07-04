@@ -685,6 +685,78 @@ void resetMergedCaptureTLS() {
   tl_mergedCaptureExternals = nullptr;
 }
 
+// ── Merged-capture TLS transitions ────────────────────────────────────────
+// Every write to the merged-capture TLS cluster (tl_mergedCaptureActive,
+// tl_mergedCaptureExternals, tl_islandSlotMin/Max) goes through these helpers
+// so each transition is DSP_DIAG-logged and no call site can forget a field.
+// The enter/exit pair brackets one merged capture group; the island filter
+// has its own set/expand transitions because the leader sets it hard while
+// gaps and extending islands only widen it.
+static void enterMergedCaptureTls(NDArray** stagingExternals, const char* site) {
+  tl_mergedCaptureActive = true;
+  tl_mergedCaptureExternals = stagingExternals;
+  DSP_DIAG(EXECUTE, "MERGED_CAPTURE_TLS_ENTER(%s): externals=%p",
+           site, (void*)stagingExternals);
+}
+static void exitMergedCaptureTls(const char* site) {
+  DSP_DIAG(EXECUTE, "MERGED_CAPTURE_TLS_EXIT(%s): wasActive=%d island=[%d,%d]",
+           site, (int)tl_mergedCaptureActive, tl_islandSlotMin, tl_islandSlotMax);
+  tl_mergedCaptureActive = false;
+  tl_mergedCaptureExternals = nullptr;
+  tl_islandSlotMin = INT_MAX;
+  tl_islandSlotMax = INT_MIN;
+}
+static void setIslandFilterTls(int startSlot, int endSlot, const char* site) {
+  tl_islandSlotMin = startSlot;
+  tl_islandSlotMax = endSlot;
+  DSP_DIAG(EXECUTE, "ISLAND_FILTER_SET(%s): [%d,%d]", site, startSlot, endSlot);
+}
+static void expandIslandFilterTls(int startSlot, int endSlot, const char* site) {
+  if (startSlot < tl_islandSlotMin) tl_islandSlotMin = startSlot;
+  if (endSlot > tl_islandSlotMax) tl_islandSlotMax = endSlot;
+  DSP_DIAG(EXECUTE, "ISLAND_FILTER_EXPAND(%s): +[%d,%d] -> [%d,%d]",
+           site, startSlot, endSlot, tl_islandSlotMin, tl_islandSlotMax);
+}
+
+// ── Capture-workspace TLS binding ─────────────────────────────────────────
+// Binds the bump-allocator TLS to a replay handle's device workspace before
+// capture. All three fields move together — a partial bind leaves the bump
+// allocator carving from a stale workspace (capture-time UAF class).
+static void bindCaptureWorkspaceTls(GraphReplayHandle* handle, const char* site) {
+  tl_captureWorkspace = handle->getWorkspacePtr();
+  tl_captureWorkspaceSize = handle->getWorkspaceBytes();
+  tl_captureWorkspaceOffset = 0;
+  DSP_DIAG(MEMORY, "CAPTURE_WS_BIND(%s): ws=%p size=%zu offset=0",
+           site, (void*)tl_captureWorkspace, tl_captureWorkspaceSize);
+}
+// Rewind the bump allocator to the start of the bound workspace (recapture
+// after a failed first capture — the failure may have bumped the offset).
+static void rewindCaptureWorkspaceTls(const char* site) {
+  DSP_DIAG(MEMORY, "CAPTURE_WS_REWIND(%s): ws=%p size=%zu offset %zu -> 0",
+           site, (void*)tl_captureWorkspace, tl_captureWorkspaceSize,
+           tl_captureWorkspaceOffset);
+  tl_captureWorkspaceOffset = 0;
+}
+
+// ── Capture-scoped cache clears ───────────────────────────────────────────
+// The pointer-table upload cache is scoped to ONE captured graph: a later
+// graph reusing a cached table address would skip recording its own H2D fill
+// node. The pinned-host-ptr list tracks capture workspaces whose ownership
+// transfers to the stored replay handle on success. Fresh capture scopes
+// clear both; merged-group leaders clear ONLY the replicate cache (pinned
+// workspace ownership spans the whole composite scope).
+static void clearCaptureReplicateCacheTls(const char* site) {
+  DSP_DIAG(MEMORY, "CAPTURE_REPLICATE_CACHE_CLEAR(%s): %zu entries",
+           site, tl_captureReplicateCache.size());
+  tl_captureReplicateCache.clear();
+}
+static void clearCaptureScopedCachesTls(const char* site) {
+  DSP_DIAG(MEMORY, "CAPTURE_SCOPED_CACHES_CLEAR(%s): hostPtrs=%zu replicate=%zu",
+           site, tl_capturedHostPtrs.size(), tl_captureReplicateCache.size());
+  tl_capturedHostPtrs.clear();
+  tl_captureReplicateCache.clear();
+}
+
 static void snapshotAddrs(NDArray** outputSlots, int totalOutputSlots,
                           NDArray** externalArrays, int numExt,
                           const char* label) {
@@ -1753,9 +1825,13 @@ Status NativeDynamicShapePlan::compositeReplay(
         }
       }
 
-      // Combined dirty-mark + tickWriteDevice using pre-computed group range.
-      // Iterate through each slot's wiring.outputSlotIndices to correctly map
-      // step indices to output slot indices (they differ for multi-output ops).
+      // Dirty-generation marking stays blanket over the group range: it only
+      // gates downstream view-refresh work (spurious marks are safe). Device
+      // actuality is NOT blanket — postReplayFixupRange below ticks only
+      // audit-confirmed graph-written slots and re-executes host-only ones
+      // (task #53: blanket tickWriteDevice marked never-written device
+      // buffers actual → uninitialized D2H reads via syncToPrimary →
+      // oscillating ~4% bgeEncoder divergence).
       auto tMD0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       int rangeMin, rangeMax;
       if (mgId < static_cast<int>(sched.mergedGroupSlotRanges.size())) {
@@ -1772,15 +1848,15 @@ Status NativeDynamicShapePlan::compositeReplay(
           int outIdx = slot.wiring.outputSlotIndices[o];
           if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;
           dirtySlotGenerations_[outIdx] = currentDirtyGeneration_;
-          NDArray* arr = outputSlots_[outIdx];
-          if (arr != nullptr && arr->dataBuffer() != nullptr && !arr->dataBuffer()->isClosed()) {
-            arr->tickWriteDevice();
-          }
         }
       }
+      auto mergedFixupStatus = postReplayFixupRange(
+          sched.mergedReplayHandles[mgId].get(), rangeMin, rangeMax,
+          effectiveExternals, numExt, stream, "MERGED_REPLAY");
       if (executionTimingEnabled_) {
         tMergedDirtyUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tMD0).count();
       }
+      if (mergedFixupStatus != Status::OK) return mergedFixupStatus;
       continue;
     }
 
@@ -3039,11 +3115,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                     "Replay handle creation failed — fix the root cause.",
                     seg.def.startSlot, seg.def.endSlot, deviceId);
     } else {
-      tl_captureWorkspace = seg.exec.replayHandle->getWorkspacePtr();
-      tl_captureWorkspaceSize = seg.exec.replayHandle->getWorkspaceBytes();
-      tl_captureWorkspaceOffset = 0;
-      tl_capturedHostPtrs.clear();
-      tl_captureReplicateCache.clear();
+      bindCaptureWorkspaceTls(seg.exec.replayHandle.get(), "composite_capture");
+      clearCaptureScopedCachesTls("composite_capture");
 
       // Allocate pinned host workspace for H2D source copies during capture.
       // During capture, DataBuffer::syncToSpecial and PointersManager need a persistent
@@ -3588,6 +3661,18 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          int mergedEndSlot = INT_MIN;
          size_t nodesAtCaptureStart = 0;  // Incremental node tracking
 
+         // Release the in-flight merged handle state (function locals move
+         // together; a partial release leaves mergedNativeHandle dangling
+         // over a reset unique_ptr). TLS exit is separate — call
+         // exitMergedCaptureTls first wherever the capture was active.
+         auto releaseMergedHandle = [&](const char* site) {
+           DSP_DIAG(EXECUTE, "MERGED_CAPTURE_HANDLE_RELEASE(%s): group=%d handle=%p",
+                    site, mergedGroupId, (void*)mergedNativeHandle);
+           captureActive = false;
+           mergedHandle.reset();
+           mergedNativeHandle = nullptr;
+         };
+
          // ── Outer composite-capture scope stream ──────────────────────────────
          // Set tl_compositeCaptureStream for the ENTIRE composite-capture region
          // (across all merged groups and the native-gap slots between them).
@@ -3630,8 +3715,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
                // Expand the island filter to cover this capture-safe gap so the
                // gap handler in executeSegment also accepts gaps within this range.
-               if (unit.startSlot < tl_islandSlotMin) tl_islandSlotMin = unit.startSlot;
-               if (unit.endSlot > tl_islandSlotMax) tl_islandSlotMax = unit.endSlot;
+               expandIslandFilterTls(unit.startSlot, unit.endSlot, "capture_gap");
 
                // Direct gap-stream to capture stream so cuBLAS records here.
                // RAII restore is required: executeSlot may throw.
@@ -3662,6 +3746,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                                        slots_[s].ident.opName.c_str(), _preInvalid);
                      if (_preInvalid) { gapOk = false; break; }
                    }
+                   size_t auditNodesBefore = (mergedNativeHandle != nullptr)
+                       ? mergedNativeHandle->getNumNodesDuringCapture(ctx.cudaStr) : 0;
                    auto gapStatus = executeSlot(s, effectiveExternalsForCapture, numExt, stream);
                    {
                      bool _postInvalid = false;
@@ -3674,6 +3760,14 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                              s, static_cast<int>(gapStatus));
                     gapOk = false;
                     break;
+                  }
+                  // Per-slot capture audit (task #53): a "capture-safe" gap slot can
+                  // still contribute 0 device nodes at runtime (cached-constant or
+                  // zero-length fast paths). Record actual node deltas so the merged
+                  // replay tick only marks device-actual what the graph truly wrote.
+                  if (mergedNativeHandle != nullptr) {
+                    mergedNativeHandle->recordSlotAudit(s, slots_[s].ident.opName,
+                                                        auditNodesBefore, ctx.cudaStr);
                   }
                 }
 
@@ -3692,10 +3786,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                            "capture — aborting group=%d, will fall through to slot-by-slot",
                            unit.startSlot, unit.endSlot, mergedGroupId);
                   mergedCapGuard.deactivate();
-                  tl_mergedCaptureActive = false;
-                  tl_mergedCaptureExternals = nullptr;
-                  tl_islandSlotMin = INT_MAX;
-                  tl_islandSlotMax = INT_MIN;
+                  exitMergedCaptureTls("gap_abort");
                   if (mergedNativeHandle->isCapturing()) {
                     mergedNativeHandle->endCapture(ctx.cudaStr);
                   }
@@ -3706,9 +3797,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                   // blocking the host here.
                   cudaGetLastError();
 
-                  captureActive = false;
-                  mergedHandle.reset();
-                  mergedNativeHandle = nullptr;
+                  releaseMergedHandle("gap_abort");
                   allIslandsOk = false;
                   break;
                }
@@ -3741,11 +3830,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                // If capture was active, finalize the merged capture first.
                  if (captureActive) {
                   // End the merged capture
-                 mergedCapGuard.deactivate();
-                 tl_mergedCaptureActive = false;
-               tl_mergedCaptureExternals = nullptr;
-               tl_islandSlotMin = INT_MAX;
-               tl_islandSlotMax = INT_MIN;
+               mergedCapGuard.deactivate();
+               exitMergedCaptureTls("gap_finalize");
 
                bool endOk = mergedNativeHandle->endCapture(ctx.cudaStr);
                size_t nodeCount = endOk ? mergedNativeHandle->getNumNodes() : 0;
@@ -3762,9 +3848,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  DSP_DIAG(EXECUTE, "MERGED_CAPTURE: group=%d endCapture failed or 0 nodes", mergedGroupId);
                  allIslandsOk = false;
                }
-               captureActive = false;
-               mergedHandle.reset();
-               mergedNativeHandle = nullptr;
+               releaseMergedHandle("gap_finalize");
 
                if (!allIslandsOk) break;
              }
@@ -3815,14 +3899,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  break;
                }
                newHandle->useExternalWorkspace(sharedCaptureWorkspace_, sharedCaptureWorkspaceBytes_);
-               tl_captureWorkspace = newHandle->getWorkspacePtr();
-               tl_captureWorkspaceSize = newHandle->getWorkspaceBytes();
-               tl_captureWorkspaceOffset = 0;
+               bindCaptureWorkspaceTls(newHandle.get(), "merged_leader");
                // Pointer-table uploads are CUDA graph nodes. The shared device workspace
                // is intentionally rewound for each merged graph, so the upload cache must
                // be scoped to that single graph as well; otherwise a later graph can reuse
                // a pointer table address without recording its own H2D fill node.
-               tl_captureReplicateCache.clear();
+               // (Replicate cache ONLY — pinned host-ptr ownership spans the composite.)
+               clearCaptureReplicateCacheTls("merged_leader");
 
                mergedHandle = std::move(newHandle);
                auto* cudaReplay = static_cast<CudaGraphReplayHandle*>(mergedHandle.get());
@@ -3851,14 +3934,15 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                bool beginOk = mergedNativeHandle->beginCapture(ctx.cudaStr, cudaStreamCaptureModeThreadLocal);
                if (!beginOk) {
                  DSP_DIAG(EXECUTE, "MERGED_CAPTURE: island %d beginCapture FAILED", islandIdx);
-                 mergedHandle.reset();
-                 mergedNativeHandle = nullptr;
+                 releaseMergedHandle("begin_fail");
                  allIslandsOk = false;
                  break;
                }
                  nodesAtCaptureStart = 0;
-                 tl_mergedCaptureActive = true;
-                 tl_mergedCaptureExternals = effectiveExternalsForCapture;
+                 // Per-handle capture audit (task #53) — merged replay reads this to
+                 // tick device-actuality only for slots the captured graph wrote.
+                 mergedNativeHandle->resetCaptureAudit();
+                 enterMergedCaptureTls(effectiveExternalsForCapture, "leader_begin");
                  captureActive = true;
                  mergedCapGuard.activate();
                  // Set capture stream TLS immediately after every activate() call.
@@ -3889,8 +3973,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                if (unit.endSlot > mergedEndSlot) mergedEndSlot = unit.endSlot;
                // Expand the island filter so the gap handler accepts gaps within
                // the extended merged range (capture-safe gaps between islands).
-               if (unit.startSlot < tl_islandSlotMin) tl_islandSlotMin = unit.startSlot;
-               if (unit.endSlot > tl_islandSlotMax) tl_islandSlotMax = unit.endSlot;
+               expandIslandFilterTls(unit.startSlot, unit.endSlot, "island_extend");
 
                // Tag this unit as part of the merged group (non-leader)
                unit.mergedGroupId = mergedGroupId;
@@ -3903,8 +3986,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              // refreshArgTablesForReplay() overwrites these with current staging
              // addresses (same pointers, updated content via D2D), keeping the
              // arg tables consistent with what the merged gap nodes read.
-             tl_islandSlotMin = unit.startSlot;
-             tl_islandSlotMax = unit.endSlot;
+             setIslandFilterTls(unit.startSlot, unit.endSlot, "island_exec");
 
               auto captureStatus = ctx.backend->executeSegment(seg, slots_, effectiveExternalsForCapture, numExt,
                                                            outputSlots_, totalOutputSlots_, stream);
@@ -3924,6 +4006,17 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                           "totalNodes=%zu delta=+%zu group=%d",
                           islandIdx, unit.startSlot, unit.endSlot,
                           nodesNow, delta, mergedGroupId);
+                 // Per-slot capture audit (task #53): the island executes as one
+                 // fused range, so per-slot node attribution is impossible — but
+                 // islands are kernel-backed by construction. Record the unit's
+                 // before/after for every slot in the range; a 0-node island
+                 // leaves its slots host-only so replay re-executes them instead
+                 // of falsely ticking device actuality.
+                 for (int s = unit.startSlot; s <= unit.endSlot; s++) {
+                   if (s < 0 || s >= numSlots_) continue;
+                   mergedNativeHandle->recordSlotAudit(s, slots_[s].ident.opName,
+                                                       nodesAtCaptureStart, nodesNow);
+                 }
                  nodesAtCaptureStart = nodesNow;
                }
 
@@ -3954,11 +4047,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                        "captureStatus=%d keepCaptureOpen=%d — ending merged capture",
                        islandIdx, mergedGroupId, mergedStartSlot, mergedEndSlot,
                        (int)captureStatus, (int)keepCaptureOpen);
-              mergedCapGuard.deactivate();
-              tl_mergedCaptureActive = false;
-             tl_mergedCaptureExternals = nullptr;
-             tl_islandSlotMin = INT_MAX;
-             tl_islandSlotMax = INT_MIN;
+             mergedCapGuard.deactivate();
+             exitMergedCaptureTls("midloop_end");
 
              if (captureStatus != Status::OK) {
                DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: island captureStatus=%d at group=%d [%d-%d]",
@@ -3967,9 +4057,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  mergedNativeHandle->endCapture(ctx.cudaStr);
                }
                allIslandsOk = false;
-               captureActive = false;
-               mergedHandle.reset();
-               mergedNativeHandle = nullptr;
+               releaseMergedHandle("island_fail");
                break;
              }
 
@@ -3993,11 +4081,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                allIslandsOk = false;
              }
 
-             captureActive = false;
-             tl_mergedCaptureActive = false;
-             tl_mergedCaptureExternals = nullptr;
-             mergedHandle.reset();
-             mergedNativeHandle = nullptr;
+             exitMergedCaptureTls("post_validate");
+             releaseMergedHandle("post_validate");
            }
          }  // end for each unit
 
@@ -4010,11 +4095,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                      (int)tl_graphExecutionActive, (int)tl_mergedCaptureActive,
                      (void*)tl_cublasWorkspacePtr, tl_cublasWorkspaceSize,
                      (void*)tl_captureWorkspace, tl_captureWorkspaceSize);
-            mergedCapGuard.deactivate();
-            tl_mergedCaptureActive = false;
-           tl_mergedCaptureExternals = nullptr;
-           tl_islandSlotMin = INT_MAX;
-           tl_islandSlotMax = INT_MIN;
+           mergedCapGuard.deactivate();
+           exitMergedCaptureTls("tail_finalize");
 
            bool endOk = mergedNativeHandle->endCapture(ctx.cudaStr);
            size_t nodeCount = endOk ? mergedNativeHandle->getNumNodes() : 0;
@@ -4030,9 +4112,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            } else {
              allIslandsOk = false;
            }
-           captureActive = false;
-           mergedHandle.reset();
-           mergedNativeHandle = nullptr;
+           releaseMergedHandle("tail_finalize");
          }
 
          if (allIslandsOk) {
@@ -4367,11 +4447,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         // MemAlloc graph nodes that corrupt the capture). The monolithic path was
         // missing this setup, causing CudaMemoryPool::allocate to throw
         // "called during CUDA graph capture but NO capture workspace is set".
-        tl_captureWorkspace = seg.exec.replayHandle->getWorkspacePtr();
-        tl_captureWorkspaceSize = seg.exec.replayHandle->getWorkspaceBytes();
-        tl_captureWorkspaceOffset = 0;
-        tl_capturedHostPtrs.clear();
-        tl_captureReplicateCache.clear();
+        bindCaptureWorkspaceTls(seg.exec.replayHandle.get(), "monolithic_capture");
+        clearCaptureScopedCachesTls("monolithic_capture");
 
         tl_captureHostWorkspace = monolithicCaptureHostWs;
         tl_captureHostWorkspaceSize = (monolithicCaptureHostWs != nullptr) ? TRITON_CAPTURE_HOST_WORKSPACE_SIZE : 0;
@@ -4544,16 +4621,12 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           }
 
           // ── Start fresh capture for compute-only ops ──
-          // Reset capture workspace offset for the fresh capture — the first
-          // (failed Triton) capture may have bumped it, and the new capture needs
-          // to start from the beginning of the workspace.
-          tl_captureWorkspaceOffset = 0;
+          rewindCaptureWorkspaceTls("native_recapture");
           // Free host ptrs from the failed first capture before clearing
           for (void* hp : tl_capturedHostPtrs) {
             if (hp != nullptr) cudaFreeHost(hp);
           }
-          tl_capturedHostPtrs.clear();
-          tl_captureReplicateCache.clear();
+          clearCaptureScopedCachesTls("native_recapture");
 
           // Allocate fresh pinned host workspace for the re-capture
           {
@@ -4588,7 +4661,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
             // captured-but-host-only ones. Without this, JIT/native-only
             // captures replayed with an empty audit → blanket ticks on
             // never-written buffers → uninitialized D2H reads.
-            handle->captureAudit.clear();
+            handle->resetCaptureAudit();
 
           // Exception-safe gap-stream routing during native-only capture slots.
           ScopedGapStreamOverride gapStreamOverride(ctx.cudaStr);
@@ -4644,25 +4717,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                 captureStatus = slotStatus;
                 break;
               }
-              {
-                // Per-slot audit entry (task #53). Node-type breakdown is left
-                // at defaults — the fixup's decisions need nodesContributed
-                // (tick vs re-exec) and kernels==0 conservatively re-executes,
-                // which is exactly right for capture-recorded host-side ops.
-                cuda::CaptureAuditEntry auditEntry;
-                auditEntry.slotIndex = s;
-                auditEntry.opName = slots_[s].ident.opName;
-                auditEntry.nodesBefore = auditNodesBefore;
-                auditEntry.nodesAfter = handle->getNumNodesDuringCapture(ctx.cudaStr);
-                auditEntry.nodesContributed =
-                    (auditEntry.nodesAfter > auditEntry.nodesBefore)
-                        ? (auditEntry.nodesAfter - auditEntry.nodesBefore) : 0;
-                // Treat any contributed node as kernel-equivalent for tick
-                // purposes: native-only capture records compute via executeSlot,
-                // so contributed nodes = device writes.
-                auditEntry.kernels = static_cast<int>(auditEntry.nodesContributed > 0 ? 1 : 0);
-                handle->captureAudit.push_back(std::move(auditEntry));
-              }
+              // Per-slot audit entry (task #53): 0 contributed nodes →
+              // host-only → the fixup re-executes instead of ticking.
+              handle->recordSlotAudit(s, slots_[s].ident.opName,
+                                      auditNodesBefore, ctx.cudaStr);
               {
                 bool _slotInvalid = false;
                 DSP_CAPTURE_PROBE(ctx.cudaStr, s, "AFTER_NATIVE_SLOT",

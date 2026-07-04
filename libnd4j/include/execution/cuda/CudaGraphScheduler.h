@@ -239,18 +239,47 @@ public:
     bool endCapture(cudaStream_t stream);
     bool isCapturing() const { return _state == GraphState::CAPTURING; }
 
-    // Per-capture audit: which plan slots contributed nodes/kernels to THIS
-    // handle's captured graph. Populated by the capture sites (monolithic
-    // captureSegment AND the merged/island composite captures); consumed by the
-    // replay fixup/tick paths so device-actuality is ticked ONLY for slots the
-    // graph actually wrote, and host-only slots are re-executed. Lifetime
-    // matches the capture: cleared on each (re)capture; empty = coverage
-    // unknown → replay paths fall back loudly. (Task #53: relying on the
-    // plan-global lastCaptureAudit_ alone left it empty/stale for
-    // composite-captured segments → blanket device-actuality ticks on
+    // ── Per-capture slot audit API (task #53) ────────────────────────────
+    // Tracks which plan slots contributed nodes to THIS handle's captured
+    // graph. Populated by every capture site (monolithic captureSegment,
+    // NATIVE_ONLY_CAPTURE, merged/island composite captures); consumed by
+    // the replay fixup/tick paths so device-actuality is ticked ONLY for
+    // slots the graph actually wrote, and host-only slots are re-executed.
+    // Empty audit = coverage unknown → replay paths fall back loudly.
+    // (Relying on the plan-global lastCaptureAudit_ alone left it
+    // empty/stale for composite-captured segments → blanket ticks on
     // never-written buffers → uninitialized D2H reads via syncToPrimary →
     // oscillating ~4% divergence.)
-    std::vector<CaptureAuditEntry> captureAudit;
+    // ALL audit mutation goes through this API — call sites never touch the
+    // container directly. Reset on every (re)capture begin.
+    void resetCaptureAudit() { _captureAudit.clear(); }
+    // Exact per-slot attribution: snapshot getNumNodesDuringCapture() before
+    // the slot executes under capture, record after it returns. For fused
+    // ranges (Triton islands) per-slot attribution is impossible — pass the
+    // unit's before/after for every slot in the range; nodesContributed>0
+    // then means "this slot's outputs are device-written by the captured
+    // range", which is all the replay tick consumes.
+    void recordSlotAudit(int slotIndex, const std::string& opName,
+                         size_t nodesBefore, size_t nodesAfter) {
+        CaptureAuditEntry e;
+        e.slotIndex = slotIndex;
+        e.opName = opName;
+        e.nodesBefore = nodesBefore;
+        e.nodesAfter = nodesAfter;
+        e.nodesContributed = (nodesAfter > nodesBefore) ? (nodesAfter - nodesBefore) : 0;
+        e.kernels = e.nodesContributed > 0 ? 1 : 0;
+        _captureAudit.push_back(std::move(e));
+    }
+    // Convenience: resolve nodesAfter from the capturing stream.
+    void recordSlotAudit(int slotIndex, const std::string& opName,
+                         size_t nodesBefore, cudaStream_t captureStream) {
+        recordSlotAudit(slotIndex, opName, nodesBefore,
+                        getNumNodesDuringCapture(captureStream));
+    }
+    // Pre-built entries (captureSegment fills node-type breakdowns itself).
+    void recordAuditEntry(const CaptureAuditEntry& entry) { _captureAudit.push_back(entry); }
+    bool hasCaptureAudit() const { return !_captureAudit.empty(); }
+    const std::vector<CaptureAuditEntry>& getCaptureAudit() const { return _captureAudit; }
 
     // Instantiation
     bool instantiate();
@@ -376,6 +405,9 @@ private:
     int _deviceId = 0;
     GraphStatistics _stats;
     mutable std::mutex _mutex;
+
+    // Per-capture slot audit (see public audit API above).
+    std::vector<CaptureAuditEntry> _captureAudit;
 
     // Execution timeline tracking for Chrome trace visualization
     std::vector<ExecutionTimelineEntry> _executionTimeline;

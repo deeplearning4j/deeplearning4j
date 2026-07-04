@@ -45,8 +45,10 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -297,21 +299,35 @@ public class DspSlotLifecycleAuditTest {
 
     /** Cross product of (fixture, mode) for parameterized tests. */
     static Stream<Arguments> fixtureModeMatrix() {
-        // Debug narrowing: -Daudit.fixture=NAME / -Daudit.mode=MODE isolate one
-        // (fixture, mode) — surefire [index] filters don't match these display names.
-        String onlyFixture = System.getProperty("audit.fixture");
-        String onlyMode = System.getProperty("audit.mode");
+        // Debug narrowing: -Daudit.fixture=A,B / -Daudit.mode=M1,M2 restrict the
+        // matrix (comma-separated lists; matrix order preserved) — surefire
+        // [index] filters don't match these display names. Lists exist to
+        // bisect ORDER-dependent failures: run a suspected contaminator mode
+        // together with the victim mode in one JVM.
+        Set<String> onlyFixtures = csvProperty("audit.fixture");
+        Set<String> onlyModes = csvProperty("audit.mode");
         List<Fixture> fs = fixtures();
         List<GraphExecutionMode> modes = executionModes();
         List<Arguments> args = new ArrayList<>(fs.size() * modes.size());
         for (Fixture f : fs) {
-            if (onlyFixture != null && !f.name.equals(onlyFixture)) continue;
+            if (onlyFixtures != null && !onlyFixtures.contains(f.name)) continue;
             for (GraphExecutionMode m : modes) {
-                if (onlyMode != null && !m.name().equals(onlyMode)) continue;
+                if (onlyModes != null && !onlyModes.contains(m.name())) continue;
                 args.add(Arguments.of(f, m));
             }
         }
         return args.stream();
+    }
+
+    /** Comma-separated system property → set of trimmed values (null if unset). */
+    private static Set<String> csvProperty(String key) {
+        String raw = System.getProperty(key);
+        if (raw == null || raw.trim().isEmpty()) return null;
+        Set<String> out = new LinkedHashSet<>();
+        for (String s : raw.split(",")) {
+            if (!s.trim().isEmpty()) out.add(s.trim());
+        }
+        return out.isEmpty() ? null : out;
     }
 
     // ──────────────────────────────────────────────────────────────────────

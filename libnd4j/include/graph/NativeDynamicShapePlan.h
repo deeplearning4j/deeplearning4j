@@ -3085,6 +3085,17 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status postGraphReplayFixup(GraphSegment& seg, NDArray** externalArrays,
                               int numExt, void* stream, const char* diagTag);
 
+  // Range+handle-parameterized core of postGraphReplayFixup. The monolithic
+  // path passes the segment's replay handle and full segment range; the
+  // merged/composite replay path passes the merged group's handle and slot
+  // range (its handle carries its own capture audit — task #53). Audit-driven:
+  // ticks device actuality only for slots the captured graph wrote, re-executes
+  // host-only/setup-only slots, and falls back LOUDLY to a blanket tick when
+  // no in-range audit exists.
+  Status postReplayFixupRange(GraphReplayHandle* replayHandle, int startSlot,
+                              int endSlot, NDArray** externalArrays, int numExt,
+                              void* stream, const char* diagTag);
+
   // Consolidated monolithic CUDA graph replay sequence. Replaces duplicated
   // inline replay blocks in executeSegmentWithGraph (regular replay) and
   // platformTryFrozenFastPath (monolithic branch). Sequence:
