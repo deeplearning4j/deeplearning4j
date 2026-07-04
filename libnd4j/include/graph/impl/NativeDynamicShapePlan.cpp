@@ -884,15 +884,30 @@ void NativeDynamicShapePlan::writeOutputSlot(int slotIdx, NDArray* value, const 
     planOwnedArrays_.insert(value);
   }
 
-  DSP_DIAG(MEMORY, "WRITE_SLOT: slot=%d tag=%s phase=%s execCount=%d",
-           slotIdx, tag, planLifecycle_.displayName(), executeCount_);
+  DSP_DIAG(MEMORY, "WRITE_SLOT: slot=%d tag=%s phase=%s execCount=%d plan=%p value=%p",
+           slotIdx, tag, planLifecycle_.displayName(), executeCount_,
+           (void*)this, (void*)value);
 
   // Capture old buffer address BEFORE any deletion — specialBuffer() calls
   // shapeInfo() internally (via sizeOfT→dataType), so calling DSP_BUF_SAFE
   // after delete is use-after-free on the destroyed NDArray's _shapeInfo.
+  //
+  // MUST be a raw special() peek behind an isValid() gate, NOT
+  // dspBufferSafe→NDArray::specialBuffer(): specialBuffer() SELF-HEALS a
+  // device-null buffer by calling allocateSpecial(). When this plan came from
+  // the shape-keyed plan cache and the previous borrower's test closed its
+  // inputs, `old` is a stale view over a closed/freed DataBuffer — the
+  // self-heal then runs allocateSpecial on the dead object and reads its
+  // freed _workspace field (Workspace::allocateBytes SIGSEGV with poisoned
+  // `this`; MALLOC_PERTURB_ shows ws=0xaaaa...). Same isValid() contract as
+  // the delete-guard below: closed, destroyed, and reused-garbage buffers
+  // all fail the magic check and are never touched.
   uint64_t oldBufAddr = 0;
-  if (old != nullptr && old->dataBuffer() != nullptr) {
-    oldBufAddr = reinterpret_cast<uint64_t>(sd::graph::dspBufferSafe(old));
+  if (old != nullptr) {
+    auto* oldDbPeek = old->dataBuffer();
+    if (oldDbPeek != nullptr && oldDbPeek->isValid()) {
+      oldBufAddr = reinterpret_cast<uint64_t>(oldDbPeek->special());
+    }
   }
 
   // Free the OLD plan-owned array when it's being replaced, unless its
@@ -5588,6 +5603,55 @@ void NativeDynamicShapePlan::reactivate() {
   passivated_ = false;
 }
 
+void NativeDynamicShapePlan::invalidateExternalViewSlotsOnReacquire() {
+  if (slots_ == nullptr || outputSlots_ == nullptr) return;
+  int cleared = 0;
+  for (int s = 0; s < numSlots_; s++) {
+    NativeSlot& slot = slots_[s];
+    if (!slot.isViewCapableOp()) continue;
+    if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) continue;
+    // Only views whose PRIMARY input is an external array (src < 0): those
+    // wrap borrower-owned memory. Views over slot outputs wrap plan-owned
+    // buffers and stay valid across borrowers.
+    if (slot.wiring.inputSourceIndices[0] >= 0) continue;
+    int si = slot.wiring.outputSlotIndices[0];
+    if (si < 0 || si >= totalOutputSlots_) continue;
+    if (outputSlots_[si] == nullptr) continue;
+    // Null value passes the frozen-phase guard and runs the guarded old-array
+    // disposal (isValid()-gated delete, graph-baked address pinning).
+    writeOutputSlot(si, nullptr, "new-borrower-ext-view-invalidate");
+    cleared++;
+    // The cleared slot's segment must pass through warmup again so the view
+    // re-mints BEFORE any REPLAYING-phase all-slots-populated validation runs
+    // (otherwise: "null output slots in REPLAYING phase" on the first exec
+    // after a borrower switch of a frozen plan).
+    for (auto& seg : segments_) {
+      if (s >= seg.def.startSlot && s <= seg.def.endSlot) {
+        // resetForWarmup+markArgsStale alone re-warms CUDA-graph/JIT modes but
+        // NOT the emulated replay handle — EMULATED_REPLAY kept "replaying"
+        // past the freshly-nulled slot without re-minting the view
+        // (longViewChain/EMULATED_REPLAY frozen_replay_5 null-slot residue
+        // after the NVRTC/PTX siblings were fixed). Use the same full
+        // segment-capture invalidation the weight-rebind path uses
+        // (refreshProtectedWeightBuffers -> invalidateSegmentCaptures): it
+        // covers CUDA-graph, JIT and emulated handles in one call.
+        SegmentLifecycle::invalidateSegmentCaptures(this, seg, "new_borrower_ext_view");
+        seg.exec.resetForWarmup();
+        seg.exec.markArgsStale();
+        break;
+      }
+    }
+  }
+  if (cleared > 0) {
+    // A frozen/replaying plan with freshly-nulled slots must re-warm before
+    // replay validation; segment resets above make anySegmentNeedsWarmup()
+    // true, which the execute path already honors.
+    DSP_DIAG(EXECUTE,
+             "NEW_BORROWER: invalidated %d external-fed view slots plan=%p (segments reset to warmup)",
+             cleared, (void*)this);
+  }
+}
+
 // ─── Release GPU intermediates ───────────────────────────────────────────────
 
 
@@ -5884,8 +5948,9 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
       }
       if (nulledRemaining > 0) {
         DSP_DIAG(MEMORY, "releaseGpuIntermediates: pass 3 nulled %d remaining "
-                 "slots (VIEW_OF_WEIGHT / residual) to prevent dangling pointers "
-                 "on plan cache reuse", nulledRemaining);
+                 "slots (VIEW_OF_WEIGHT / residual, first=%d plan=%p execCount=%d) "
+                 "to prevent dangling pointers on plan cache reuse",
+                 nulledRemaining, firstNulled, (void*)this, executeCount_);
       }
     }
 

@@ -1006,6 +1006,15 @@ static ViewCreateResult tryCreateViewForSlot(
       outLen <= (sourceBufferElems - absoluteOffset);
 
   if (elementCountCompatible && fitsBackingBuffer) {
+    if (DSP_DIAG_ENABLED(MEMORY)) {
+      auto* mintDb = input0->dataBuffer();
+      DSP_DIAG_SLOT(MEMORY, stepIdx,
+          "VIEW_MINT_SRC: slot=%d op=%s input0=%p db=%p dbValid=%d dbClosed=%d lenBytes=%zu",
+          stepIdx, slot.ident.opName.c_str(), (void*)input0, (void*)mintDb,
+          mintDb != nullptr && mintDb->isValid() ? 1 : 0,
+          mintDb != nullptr && mintDb->isClosed() ? 1 : 0,
+          mintDb != nullptr ? mintDb->getLenInBytes() : 0);
+    }
     *outView = new NDArray(input0->dataBuffer(),
                            const_cast<LongType*>(effectiveShapeInfo),
                            LaunchContext::defaultContext(),
@@ -1126,10 +1135,28 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
         continue;
       }
 
-      if (!slot.shapeCacheValid() ||
-          outIdx >= static_cast<int>(slot.shapeCache.cachedOutputShapes.size()) ||
-          slot.shapeCache.cachedOutputShapes[outIdx] == nullptr) {
-        // Shape cache not valid — demoteViewProducer inspects + cleans up.
+      const LongType* cachedOutShape = nullptr;
+      if (slot.shapeCacheValid() &&
+          outIdx < static_cast<int>(slot.shapeCache.cachedOutputShapes.size()) &&
+          slot.shapeCache.cachedOutputShapes[outIdx] != nullptr) {
+        cachedOutShape = slot.shapeCache.cachedOutputShapes[outIdx];
+      } else if (cachedValid) {
+        // Shape cache unavailable — EMULATED_REPLAY segments never freeze, so
+        // shapeCache is never built for them; demoting here nulls the slot and
+        // the REPLAYING-phase all-slots-populated visibility check then fails
+        // (longViewChain/EMULATED_REPLAY frozen_replay_5, task #52). The stale
+        // view's own shapeInfo is ConstantShapeHelper-owned and remains valid
+        // even after its parent DataBuffer died — reuse it as the re-mint
+        // target shape so the view is recreated over the CURRENT input instead
+        // of being demoted to a null slot.
+        cachedOutShape = cached->shapeInfo();
+        DSP_DIAG_SLOT(SHAPE, stepIdx,
+            "VIEW_REFRESH_NO_CACHE_FALLBACK: step %d (%s) outputSlot=%d — "
+            "re-minting from the stale view's own shapeInfo (segment never froze)",
+            stepIdx, slot.ident.opName.c_str(), outSi);
+      }
+      if (cachedOutShape == nullptr) {
+        // No shape source at all — demoteViewProducer inspects + cleans up.
         demoteViewProducer(outSi, "refresh-no-shape-cache");
         refreshedCount++;
         continue;
@@ -1138,7 +1165,6 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       // Validate cached shape dtype before creating a view from it.
       // View ops preserve input dtype, so a cached shape with UNKNOWN or INHERIT dtype
       // is corrupt — fix it from the input before it poisons downstream ops.
-      const LongType* cachedOutShape = slot.shapeCache.cachedOutputShapes[outIdx];
       if ((ArrayOptions::dataType(cachedOutShape) == DataType::UNKNOWN ||
            ArrayOptions::dataType(cachedOutShape) == DataType::INHERIT) && input0 != nullptr) {
         DataType inputDt = input0->dataType();
@@ -1152,7 +1178,13 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
               inputDt, shape::order(cachedOutShape),
               static_cast<int>(shape::rank(cachedOutShape)),
               shape::shapeOf(const_cast<LongType*>(cachedOutShape)));
-          slot.shapeCache.cachedOutputShapes[outIdx] = cachedOutShape;
+          // Write-back only when the cache entry actually exists — on the
+          // no-cache fallback path (never-frozen EMULATED_REPLAY segments)
+          // cachedOutputShapes may be empty and this index would be OOB.
+          if (slot.shapeCacheValid() &&
+              outIdx < static_cast<int>(slot.shapeCache.cachedOutputShapes.size())) {
+            slot.shapeCache.cachedOutputShapes[outIdx] = cachedOutShape;
+          }
         }
       }
 
@@ -2247,7 +2279,14 @@ Status NativeDynamicShapePlan::executeSlot(
           }
         }
       }
-      if (hasVariableExtInput) {
+      if (hasVariableExtInput && !slot.isViewCapableOp()) {
+        // Var-ext skip is about kernel-arg stability and does NOT apply to
+        // view-capable slots: a view over a variable external MUST reach the
+        // view-verify/re-mint section below every exec. Breaking out here left
+        // the slot holding the PREVIOUS exec's view over a since-closed input
+        // (test closes inputs per exec) — a dead view surviving into REPLAYING
+        // that reads as length-0/"null slot" and feeds downstream consumers
+        // stale memory (the [cast]-failure close-stress family).
         DSP_DIAG_SLOT(EXECUTE, stepIdx,
             "FF_FAST_PATH_SKIP_VAR_EXT: slot=%d op=%s has variable ext input — falling through to normal path executeCount=%d",
             stepIdx, slot.ident.opName.c_str(), executeCount_);
@@ -2745,6 +2784,26 @@ Status NativeDynamicShapePlan::executeSlot(
     bool invalid = (db == nullptr) || db->isClosed() || !db->isValid();
     if (!invalid && !platformValidateReusableSlotBuffer(cached)) {
       invalid = true;
+    }
+    // Ext-fed view slots: the cached wrapper is only current while the
+    // EXTERNAL it aliases is still the same DataBuffer OBJECT. When the
+    // borrower closed + re-supplied that input (close-stress tests, decode
+    // array churn), the cached view survives over the dead buffer — reading
+    // as a stale/length-0 view in REPLAYING and feeding downstream consumers
+    // freed memory. Compare object identity against the CURRENT external:
+    // same object → reuse (stable weights/decode unchanged, zero cost);
+    // different object → re-mint over the live input. Blanket re-mint is
+    // WRONG (breaks frozen baked-address contracts — 9F/19E regression).
+    if (!invalid && slot.isViewCapableOp() && slot.wiring.numInputs >= 1 &&
+        slot.wiring.inputSourceIndices[0] < 0) {
+      int viewExtIdx = -(slot.wiring.inputSourceIndices[0] + 1);
+      if (viewExtIdx >= 0 && viewExtIdx < numExt &&
+          externalArrays[viewExtIdx] != nullptr) {
+        auto* curDb = externalArrays[viewExtIdx]->dataBuffer();
+        if (curDb != nullptr && db != curDb) {
+          invalid = true;
+        }
+      }
     }
 
     if (!invalid) return cached;

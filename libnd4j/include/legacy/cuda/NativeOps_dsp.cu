@@ -429,7 +429,8 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
                                sd::LongType numOutputs,
                                sd::Pointer phShapeInfoPtrs,
                                sd::LongType numPlaceholders,
-                               int graphExecutionMode) {
+                               int graphExecutionMode,
+                               int newBorrower) {
   try {
     if (!cacheHandle) THROW_EXCEPTION("dispatchNativePlan: cacheHandle is null");
 
@@ -454,6 +455,16 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
 
     sd::graph::NativePlanCache::Key key;
     key.outputSetHash = h;
+    {
+      // Full-plan structural identity (see Key::planContentHash contract).
+      uint64_t ph = 14695981039346656037ULL;
+      const auto* pb = reinterpret_cast<const uint8_t*>(planBytes);
+      for (sd::LongType i = 0; i < planBytesLen; i++) {
+        ph ^= pb[i];
+        ph *= 1099511628211ULL;
+      }
+      key.planContentHash = ph;
+    }
     auto** ptrs = reinterpret_cast<sd::LongType**>(phShapeInfoPtrs);
     key.phShapeContentHash = sd::graph::NativePlanCache::hashShapeInfoContents(ptrs, numPlaceholders);
     key.phCount = numPlaceholders;
@@ -472,6 +483,13 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
     };
 
     auto* plan = cache->getOrInsert(key, factory);
+    if (plan && newBorrower != 0) {
+      // First dispatch from this Java executor: on a cache HIT the plan is
+      // switching borrowers — clear view slots minted over the previous
+      // borrower's (possibly closed) external arrays. Fresh plans have all
+      // slots null, so this is a no-op on cache miss.
+      plan->invalidateExternalViewSlotsOnReacquire();
+    }
     if (plan) {
       DSP_DIAG(COMPILE, "dispatchNativePlan: plan=%p slots=%d contentHash=0x%016llx cacheSize=%zu",
                (void*)plan, plan->getNumSlots(),
@@ -2234,7 +2252,28 @@ int copyPlanStagingToBuffer(sd::Pointer planHandle, int extIdx, OpaqueDataBuffer
 
 OpaqueNDArray getPlanSlotOutputArray(sd::Pointer planHandle, int slotIdx) {
   if (planHandle == nullptr) return nullptr;
-  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getSlotOutputArray(slotIdx);
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto* result = plan->getSlotOutputArray(slotIdx);
+  if (result == nullptr) {
+    // Null-read tracing for the longViewChain/JIT null-slot investigation:
+    // pairs with WRITE_SLOT's plan=%p to show whether the Java handle reads
+    // the same plan instance the writers populated (task #52).
+    DSP_DIAG(MEMORY, "GET_SLOT_OUTPUT_NULL: slot=%d plan=%p", slotIdx, (void*)plan);
+  } else if (DSP_DIAG_ENABLED(MEMORY)) {
+    // Buffer-state fingerprint at Java read time: distinguishes a truly-null
+    // slot from a live wrapper whose underlying buffer is closed/zero-length
+    // (dead ext-fed view) — the Java side only sees "length 0" for both.
+    auto* rdb = result->dataBuffer();
+    DSP_DIAG(MEMORY,
+             "GET_SLOT_OUTPUT: slot=%d arr=%p db=%p dbValid=%d dbClosed=%d lenBytes=%zu "
+             "wrapperLen=%lld plan=%p",
+             slotIdx, (void*)result, (void*)rdb,
+             rdb != nullptr && rdb->isValid() ? 1 : 0,
+             rdb != nullptr && rdb->isClosed() ? 1 : 0,
+             rdb != nullptr ? rdb->getLenInBytes() : 0,
+             (long long)result->lengthOf(), (void*)plan);
+  }
+  return result;
 }
 
 int getTotalPlanOutputSlots(sd::Pointer planHandle) {

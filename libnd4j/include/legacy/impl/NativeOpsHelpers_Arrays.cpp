@@ -26,6 +26,7 @@
 #endif
 
 #include <array/ArrayOptions.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/ConstantTadHelper.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -150,6 +151,17 @@ sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) {
   // DataBuffers via the sentinel magic number regardless of allocator behavior.
   if(array == nullptr || array->dataBuffer() == nullptr
      || !array->dataBuffer()->isValid()) {
+    // Dangling-wrapper tracing (task #52, longViewChain/JIT null-slot): log the
+    // failing DataBuffer's identity so it can be pointer-matched against
+    // STAGING_ALLOC / canonical-external allocations in the diag trail. Gated
+    // on the MEMORY category like the rest of the lifecycle diags.
+    if (array != nullptr) {
+      auto* db = array->dataBuffer();
+      DSP_DIAG(MEMORY, "OPAQUE_LEN_ZERO: arr=%p db=%p dbNull=%d closed=%d valid=%d",
+               (void*)array, (void*)db, db == nullptr ? 1 : 0,
+               (db != nullptr && db->isClosed()) ? 1 : 0,
+               (db != nullptr && db->isValid()) ? 1 : 0);
+    }
     return 0;
   }
   return array->lengthOf();

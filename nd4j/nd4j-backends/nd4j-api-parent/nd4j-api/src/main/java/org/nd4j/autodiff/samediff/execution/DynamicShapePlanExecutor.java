@@ -626,6 +626,17 @@ public class DynamicShapePlanExecutor implements Closeable {
                 continue;
             }
 
+            // Zero-copy outputs of VIEW chains share the CURRENT external
+            // input's DataBuffer (the output IS a view over the input).
+            // Force-closing it here kills the plan's installed view slots over
+            // that same buffer — the native side then reads a closed parent
+            // (isValid()=false -> getSlotOutput length-0 -> "null output slots
+            // in REPLAYING phase", longViewChain/EMULATED_REPLAY, task #52).
+            // Protected externals are never ours to close, shared or not.
+            if (isProtectedExternalBuffer(buf)) {
+                continue;
+            }
+
             if (buf.isConstant() && !buf.isAttached()) {
                 try {
                     buf.setConstant(false);
@@ -1679,12 +1690,18 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Pass mode as part of cache key — each mode gets its own plan (one flow).
             int modeForDispatch = cachedEffectiveGraphModeCode >= 0
                     ? cachedEffectiveGraphModeCode : 0;
+            // First dispatch from this executor instance = potential borrower
+            // switch on a native cache HIT: the native side must invalidate view
+            // wrappers minted over the previous borrower's external arrays.
+            // Re-dispatches from the SAME executor (shape change) pass 0 so live
+            // captured-graph state is never disturbed.
+            int newBorrower = (nativePlanHandle == null || nativePlanHandle.isNull()) ? 1 : 0;
             Pointer newHandle = nativeOps.dispatchNativePlan(
                     cache,
                     planBytes, cachedSerializedPlan.length,
                     outputNamesPtr, cachedSortedOutputs.length,
                     phPtrsPacked, phPtrs.size(),
-                    modeForDispatch);
+                    modeForDispatch, newBorrower);
             if (newHandle == null || newHandle.isNull()) {
                 String cppError = null;
                 try {
@@ -2796,7 +2813,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                 if (arr == null) {
                     throw new RuntimeException("Native executor: missing external input '" + varName +
                             "' (index " + i + "/" + extKeys.length + "). " +
-                            "All external inputs must be resolved. No fallback permitted.");
+                            "All external inputs must be resolved. No fallback permitted." +
+                            " | extKeys=" + Arrays.toString(extKeys) +
+                            " planOutputs=" + (currentPlan != null ? currentPlan.getRequestedOutputs() : null) +
+                            " planId=" + System.identityHashCode(currentPlan) +
+                            " sdVars=" + (sd != null ? sd.variableMap().keySet() : null));
                 }
                 extInputs[i] = arr;
             }

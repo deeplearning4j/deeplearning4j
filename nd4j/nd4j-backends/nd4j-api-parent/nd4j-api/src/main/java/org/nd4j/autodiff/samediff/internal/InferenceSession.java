@@ -342,6 +342,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // nothing meaningful to return. Only trim periodically and always on step 0/1
     // (prefill→decode transition where large buffers are freed).
     protected int dspStepCount = 0;
+    /** Cast placeholder copies from the PREVIOUS DSP execution, awaiting close.
+     *  Non-staging DSP modes (e.g. EMULATED_REPLAY) install view slots directly
+     *  over these copies' DataBuffers — closing them immediately after execute
+     *  leaves those views dangling (task #52). Flushed at the start of the next
+     *  DSP execution, once the plan has re-minted its views over fresh casts. */
+    protected final List<INDArray> pendingCastPlaceholderCloses = new ArrayList<>();
     protected static final int TRIM_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_TRIM_INTERVAL, 10);
 
     // ---- Variable sync tracking ----
@@ -592,6 +598,19 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         outputShapeCacheTl.get().clear();
         outputArrayCacheTl.get().clear();
 
+        // Flush any cast placeholder copies still pending deferred close (the
+        // per-call deferral in the DSP path holds at most ONE call's copies; this
+        // reset-site flush closes the LAST call's copies so nothing outlives the
+        // session — preserving the leak guarantee of eb949f1a99 while keeping the
+        // task #52 dangling-view fix (views may reference the copies mid-session).
+        if (!pendingCastPlaceholderCloses.isEmpty()) {
+            for (INDArray prevCast : pendingCastPlaceholderCloses) {
+                if (prevCast != null && !prevCast.wasClosed()) {
+                    try { prevCast.close(); } catch (Exception ignored) { }
+                }
+            }
+            pendingCastPlaceholderCloses.clear();
+        }
         // Reset DSP step counter so the next session starts with immediate trim
         dspStepCount = 0;
         // Reset variable sync flag — weights may have changed between sessions
@@ -906,6 +925,23 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     OpaqueDataBuffer.suppressCrossDeviceRouting(true);
                     // Lightweight type casting: cast mismatched placeholder dtypes without
                     // the full preprocessPlaceholders overhead (arrayUseTracker iteration).
+                    //
+                    // First: close the PREVIOUS call's cast copies. They could not be closed
+                    // at the end of that call — DSP plans in modes that don't stage externals
+                    // (e.g. EMULATED_REPLAY) install view slots directly over the cast copy's
+                    // DataBuffer, and closing it post-exec left those views dangling
+                    // (DspHandle.getSlotOutput -> "null output slots in REPLAYING phase",
+                    // longViewChain/EMULATED_REPLAY, task #52). By the time the NEXT execution
+                    // starts, the plan re-resolves/re-mints views over the new casts, so the
+                    // previous copies are safe to free here.
+                    if (pendingCastPlaceholderCloses != null && !pendingCastPlaceholderCloses.isEmpty()) {
+                        for (INDArray prevCast : pendingCastPlaceholderCloses) {
+                            if (prevCast != null && !prevCast.wasClosed()) {
+                                try { prevCast.close(); } catch (Exception ignored) { }
+                            }
+                        }
+                        pendingCastPlaceholderCloses.clear();
+                    }
                     Map<String, INDArray> dspPlaceholders = castPlaceholderTypes(placeholderValues);
                     // When listeners are active, augment allRequired with all op output variables
                     // so that DSP returns intermediate arrays. This enables activationAvailable
@@ -972,15 +1008,21 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         // in the correct order. Closing the workspace here causes the finally
                         // block's detach() to fail with "leaked workspace pointer" because
                         // the workspace is no longer active when detach checks isScopeActive().
-                        // Close any cast placeholder copies to prevent GPU memory leak.
-                        // castPlaceholderTypes() allocates new arrays when dtypes mismatch.
-                        // These must be freed after DSP execution completes.
+                        // DEFER (not close) the cast placeholder copies. The plan may have
+                        // installed view slots directly over a cast copy's DataBuffer (modes
+                        // that don't stage externals, e.g. EMULATED_REPLAY) — closing here
+                        // left those views dangling and DspHandle.getSlotOutput read a closed
+                        // parent ("1 null output slots in REPLAYING phase",
+                        // longViewChain/EMULATED_REPLAY, task #52; ground-truth trail:
+                        // DB_DELETE_BUFFERS of the view's parent fired between AUTO_SEAL and
+                        // the handle read). They are closed at the START of the next DSP
+                        // execution, after views re-mint over the fresh casts.
                         if (dspPlaceholders != placeholderValues && dspPlaceholders != null) {
                             for (Map.Entry<String, INDArray> entry : dspPlaceholders.entrySet()) {
                                 INDArray castArr = entry.getValue();
                                 if (placeholderValues != null && castArr != placeholderValues.get(entry.getKey())) {
                                     if (castArr != null && !castArr.wasClosed()) {
-                                        castArr.close();
+                                        pendingCastPlaceholderCloses.add(castArr);
                                     }
                                 }
                             }

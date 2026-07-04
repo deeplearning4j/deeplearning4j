@@ -21,6 +21,7 @@ package org.nd4j.autodiff.samediff.execution;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -411,7 +412,16 @@ public final class DspHandle {
         if (opaqueOut == null || opaqueOut.isNull()) return null;
 
         long[] shapeInfo = OpaqueNDArray.getOpaqueNDArrayShapeInfo(opaqueOut);
-        if (shapeInfo == null) return null;
+        if (shapeInfo == null) {
+            // Null-read tracing (task #52, longViewChain/JIT null-slot): the native
+            // slot array is non-null but its shapeInfo read came back null/invalid —
+            // signature of a released shared ConstantShapeBuffer (view replaced, old
+            // view's deferred delete dropped a shape buffer the replacement still
+            // references). Record WHICH branch nulled so the native root is targetable.
+            DspDiagnostics.record(DspDiagnostics.MEMORY,
+                    "Java getSlotOutput NULL: slot=" + slotIdx + " reason=shapeInfo-null (opaque non-null)");
+            return null;
+        }
 
         long[] shape = Shape.shape(shapeInfo);
         long[] strides = Shape.stride(shapeInfo);
@@ -419,7 +429,14 @@ public final class DspHandle {
         long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
         char ordering = Shape.order(shapeInfo);
 
-        if (length == 0) return null;
+        if (length == 0) {
+            // Null-read tracing (task #52): zero-length at read time — empty view
+            // or length computed from a released/garbage shapeInfo.
+            DspDiagnostics.record(DspDiagnostics.MEMORY,
+                    "Java getSlotOutput NULL: slot=" + slotIdx + " reason=length-0 (shapeInfo="
+                            + java.util.Arrays.toString(shapeInfo) + ")");
+            return null;
+        }
 
         INDArray result = Nd4j.createUninitialized(dtype, shape, strides, ordering);
 

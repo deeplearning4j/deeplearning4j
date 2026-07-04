@@ -20,6 +20,8 @@
 // @author raver119@gmail.com
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
+#include <graph/DspDiagnostics.h>
+#include <atomic>
 #include <array/DataBuffer.h>
 #include <array/DataTypeUtils.h>
 #include <execution/AffinityManager.h>
@@ -127,6 +129,13 @@ DataBuffer::DataBuffer(void* primary, void* special, const size_t lenInBytes, co
   _lenInBytes = lenInBytes;
   _dataType = dataType;
   _workspace = workspace;
+  if (workspace != nullptr) {
+    static std::atomic<int> wsCreateLogBudget{400};
+    if (wsCreateLogBudget.fetch_sub(1) > 0) {
+      DSP_DIAG(MEMORY, "DataBuffer CREATED workspace-attached: db=%p ws=%p bytes=%zu",
+               (void*)this, (void*)workspace, (size_t)getLenInBytes());
+    }
+  }
   _isOwnerPrimary = isOwnerPrimary;
   _isOwnerSpecial = isOwnerSpecial;
   _deviceId = AffinityManager::currentDeviceId();
@@ -222,6 +231,13 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
   _lenInBytes = lenInBytes;
   _dataType = dataType;
   _workspace = workspace;
+  if (workspace != nullptr) {
+    static std::atomic<int> wsCreateLogBudget{400};
+    if (wsCreateLogBudget.fetch_sub(1) > 0) {
+      DSP_DIAG(MEMORY, "DataBuffer CREATED workspace-attached: db=%p ws=%p bytes=%zu",
+               (void*)this, (void*)workspace, (size_t)getLenInBytes());
+    }
+  }
 
   _deviceId = AffinityManager::currentDeviceId();
 
@@ -261,6 +277,13 @@ DataBuffer::DataBuffer(const sd::LongType lenInBytes, const DataType dataType, m
 
   _dataType = dataType;
   _workspace = workspace;
+  if (workspace != nullptr) {
+    static std::atomic<int> wsCreateLogBudget{400};
+    if (wsCreateLogBudget.fetch_sub(1) > 0) {
+      DSP_DIAG(MEMORY, "DataBuffer CREATED workspace-attached: db=%p ws=%p bytes=%zu",
+               (void*)this, (void*)workspace, (size_t)getLenInBytes());
+    }
+  }
   _lenInBytes = lenInBytes;
 
   _primaryBuffer = nullptr;
@@ -782,6 +805,11 @@ void DataBuffer::deleteBuffers() {
   if(isConstant || closed) {
     return;
   }
+  // Ground-truth close tracing (task #52 dangling-view family): pairs with
+  // OPAQUE_LEN_ZERO's db=%p so the trail names WHO freed the view's parent
+  // (native teardown path; Java-driven closes log DB_CLOSE_JNI in dbClose).
+  DSP_DIAG(MEMORY, "DB_DELETE_BUFFERS: db=%p bytes=%lld",
+           (void*)this, (long long)getLenInBytes());
 
   // NOTE: intentionally no throwIfFrozen() here. The destructor calls
   // deleteBuffers() directly, and throwing from a destructor would call
