@@ -500,6 +500,75 @@ public class DspSlotLifecycleAuditTest {
     }
 
     // ──────────────────────────────────────────────────────────────────────
+    // Test: cached-plan checkout after donor close, with POISONED pool blocks.
+    // Deterministic repro for the batch-only corruption family: a borrower
+    // SameDiff with identical shapes checks out the donor's cached native
+    // plan, whose slot wrappers / arg tables may still reference the donor's
+    // freed device buffers. In the wild this only fails when the pool happens
+    // to rehand those blocks with different content (order/heap dependent —
+    // one flaky failure per ~3 full-batch rounds). Here we force it: after
+    // closing the donor we immediately allocate same-sized sentinel-filled
+    // arrays so the freed blocks hold 777s. Any surviving stale-pointer read
+    // (input staging, arg table, or readback wrapper) produces a massive
+    // deterministic divergence instead of a lucky pass.
+    // ──────────────────────────────────────────────────────────────────────
+
+    @ParameterizedTest(name = "cachedPlanPoison[{0}-{1}]")
+    @MethodSource("fixtureModeMatrix")
+    @DisplayName("Borrowing a cached plan after donor close must not read the donor's freed (repoisoned) buffers")
+    public void testCachedPlanReuseAfterDonorCloseWithPoison(Fixture fix, GraphExecutionMode mode) {
+        log.info("PARAM_BANNER testCachedPlanReuseAfterDonorCloseWithPoison fixture={} mode={}", fix.name, mode);
+        assumeBackendAvailable(mode);
+
+        INDArray[] reference = captureReference(fix);
+        try {
+            // Donor: run to frozen/replay so the native plan is fully compiled,
+            // captured, and cached — then tear the SameDiff down completely.
+            sd = buildGraph(fix.graphBuilder);
+            configureDsp(sd, mode);
+            for (int i = 0; i < REPLAYS; i++) {
+                Map<String, INDArray> inputs = fix.inputBuilder.get();
+                try {
+                    sd.output(inputs, fix.outputNames);
+                } finally {
+                    closeAll(inputs);
+                }
+            }
+            sd.close();
+            sd = null;
+
+            // Poison: reclaim the donor's freed pool blocks (its buffers are
+            // 64/256/1024-element FLOAT arrays) and fill them with a sentinel.
+            List<INDArray> poison = new ArrayList<>();
+            try {
+                for (int i = 0; i < 128; i++) poison.add(Nd4j.valueArrayOf(new long[]{64}, 777.777f));
+                for (int i = 0; i < 32; i++) poison.add(Nd4j.valueArrayOf(new long[]{256}, 777.777f));
+                for (int i = 0; i < 16; i++) poison.add(Nd4j.valueArrayOf(new long[]{1024}, 777.777f));
+                Nd4j.getExecutioner().commit();
+
+                // Borrower: identical graph/shapes → plan-cache checkout.
+                sd = buildGraph(fix.graphBuilder);
+                configureDsp(sd, mode);
+                double[] tol = tolerances(mode);
+                for (int i = 0; i < REPLAYS; i++) {
+                    Map<String, INDArray> inputs = fix.inputBuilder.get();
+                    try {
+                        Map<String, INDArray> raw = sd.output(inputs, fix.outputNames);
+                        assertOutputsMatch(reference, raw, fix.outputNames, tol,
+                                fix.name + "/" + mode + "/borrower#" + i);
+                    } finally {
+                        closeAll(inputs);
+                    }
+                }
+            } finally {
+                closeAll(poison.toArray(new INDArray[0]));
+            }
+        } finally {
+            closeAll(reference);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // Test: baseline accuracy across replays. This is the catch-all regression
     // gate — any fixture × mode that produces wrong values or crashes is
     // failed, so wrapper-swap bugs at NON-slot-2 positions also trip.

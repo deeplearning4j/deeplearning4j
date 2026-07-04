@@ -1761,6 +1761,31 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   bool hasVariableInputs = !cachedVariableExtIndices_.empty();
   if (execCount >= 2 && !seg.exec.needsArgRefresh() && !hasVariableInputs) {
     fastPath = true;
+    // Ext-input address-key guard (task #54): the generation counter only
+    // advances when NATIVE code observes a change. When the Java fast-path
+    // resolver replaces a placeholder (new INDArray + new device buffer),
+    // nothing bumps the generation — the fast path then dispatches with
+    // capture/staging buffers still referencing the PREVIOUS (freed) device
+    // address, and the kernel reads recycled memory. Re-use the canonical
+    // staleness detector: recompute the (cheap, pointer-hash) input addr key
+    // and demote to the full path on baseline mismatch. lastExternalInputAddrs_
+    // is useless here — it is re-recorded at every execute ENTRY, so it always
+    // matches the current arrays by construction.
+    LongType fastPathAddrKey =
+        computeSegmentInputAddrKeyPortable(seg, externalArrays, numExt);
+    if (fastPathAddrKey != seg.exec.capturedInputAddrKey) {
+      DSP_DIAG(FALLBACK,
+               "FAST_PATH_EXT_ADDR_MISMATCH: input addr key 0x%llx != captured "
+               "0x%llx with gen %llu unbumped (Java-side placeholder "
+               "re-resolution). Demoting to full key path — staging/arg refresh "
+               "will run.",
+               (long long)fastPathAddrKey,
+               (long long)seg.exec.capturedInputAddrKey,
+               (unsigned long long)seg.exec.argTableGeneration);
+      fastPath = false;
+    }
+  }
+  if (fastPath) {
     DSP_DIAG(EMULATED_REPLAY,
              "  FAST PATH: args current (gen %llu), skipping key recomputation",
              (unsigned long long)seg.exec.argTableGeneration);

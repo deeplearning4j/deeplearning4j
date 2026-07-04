@@ -285,6 +285,16 @@ void MmulHelper::bumpCastCacheEpoch() {
            (unsigned long long)prev, (unsigned long long)(prev + 1));
 }
 
+// Extern-linkage hook for array/cuda/DataBuffer.cu (same pattern as
+// resetMergedCaptureTLS): a CONSTANT DataBuffer is being freed OUTSIDE plan
+// teardown (e.g. Java-side SameDiff.close() closing weight arrays after the
+// plan handle is already gone). Its object address can be heap-reused by the
+// next graph's constant, so the pointer-keyed skip-assign guards must drop.
+// Plan-teardown frees also route here — double bumps are harmless.
+void notifyConstantBufferFreedForCastCache() {
+  MmulHelper::bumpCastCacheEpoch();
+}
+
 static NDArray* castWithPersistentCache(CastCacheSide& side, NDArray* source, DataType targetType) {
   auto& cache = side.cache;
   auto& index = side.index;

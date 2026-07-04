@@ -3543,6 +3543,35 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
 
+    // ── Slot-identity reconciliation (task #54) ─────────────────────────────
+    // A plan checked out from the native cache can carry outputSlots_ wrappers
+    // (re-installed by the step-3 cached-reuse path) that differ from this
+    // frozen context's output arrays (bound at freeze time). The kernel then
+    // writes the ctx array while readback materializes from the wrapper's
+    // stale device pointer — the host reads content this exec never wrote
+    // (bit-identical, batch-only wrong outputs; the two buffers only diverge
+    // after a cross-test plan reuse). Rebind the ctx output to the CURRENT
+    // wrapper so kernel-write and readback share one identity.
+    {
+      auto& fpOutRebind = ctx.fastpath_out();
+      for (int oi = 0; oi < slot.wiring.numOutputs && oi < (int)fpOutRebind.size(); oi++) {
+        int osi = slot.wiring.outputSlotIndices[oi];
+        if (osi < 0 || osi >= totalOutputSlots_) continue;
+        NDArray* wrapper = outputSlots_[osi];
+        NDArray* ctxArr = fpOutRebind[oi];
+        if (wrapper == nullptr || ctxArr == nullptr) continue;
+        if (wrapper->dataBuffer() != ctxArr->dataBuffer()) {
+          DSP_DIAG(FALLBACK,
+                   "FROZEN_CTX_OUTPUT_REBIND: slot=%d op=%s outIdx=%d ctxDb=%p wrapperDb=%p "
+                   "— frozen ctx output diverged from installed slot wrapper (cached-plan "
+                   "reuse); rebinding ctx to the wrapper so write and readback share one buffer",
+                   stepIdx, slot.ident.opName.c_str(), oi,
+                   (void*)ctxArr->dataBuffer(), (void*)wrapper->dataBuffer());
+          ctx.setOutputArray(oi, wrapper);
+        }
+      }
+    }
+
     // Ensure CUDA host↔device coherency before op execution.
     // The standard path gets this via NativeOps entry points (prepareSpecialUse/registerSpecialUse).
     // DSP dispatches ops directly — without this, input arrays may have stale GPU data
@@ -4942,6 +4971,29 @@ Status NativeDynamicShapePlan::executeSlot(
           } else {
             outputs[i] = cached;
             writeOutputSlot(slotIdx, cached, "cached-reuse");
+            // Slot-identity reconciliation (task #54): if this step has a
+            // pooled/frozen op context whose output binding differs from the
+            // wrapper we just installed, rebind the context to the wrapper.
+            // Otherwise the kernel writes the context's array while readback
+            // materializes from this wrapper's (possibly stale, cross-test
+            // recycled) device pointer — host reads content this exec never
+            // wrote. Covers all exec flavors that reuse pooled contexts,
+            // including frozenSlotBySlot (where the frozen-op-exec install
+            // loop is skipped).
+            if (contextPool_ != nullptr && contextPool_[stepIdx] != nullptr) {
+              auto& poolCtxOuts = contextPool_[stepIdx]->fastpath_out();
+              if (i < (int)poolCtxOuts.size() && poolCtxOuts[i] != nullptr &&
+                  poolCtxOuts[i]->dataBuffer() != cached->dataBuffer()) {
+                DSP_DIAG(FALLBACK,
+                         "CACHED_REUSE_CTX_REBIND: slot=%d op=%s outIdx=%d "
+                         "pooled-ctx out db=%p != reused wrapper db=%p — "
+                         "rebinding ctx so kernel-write and readback share one buffer",
+                         stepIdx, slot.ident.opName.c_str(), i,
+                         (void*)poolCtxOuts[i]->dataBuffer(),
+                         (void*)cached->dataBuffer());
+                contextPool_[stepIdx]->setOutputArray(i, cached);
+              }
+            }
             DSP_DIAG_SLOT_WRITE(slotIdx, slot.ident.opName.c_str(),
                                 cachedDb != nullptr ? cachedDb->getLenInBytes() : 0,
                                 stream, "cached-reuse");

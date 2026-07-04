@@ -1382,8 +1382,23 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// Defined in helpers/cuda/MmulHelper.cu (extern linkage, same pattern as
+// resetMergedCaptureTLS): invalidates the FP16 cast cache's pointer-keyed
+// skip-assign guards when a constant buffer dies — its object address can be
+// heap-reused by the next graph's constant (ABA), which would silently skip
+// the cast refresh and serve the DEAD constant's cast values.
+void notifyConstantBufferFreedForCastCache();
+
 void DataBuffer::deleteSpecial() {
   clearSpecialWriteEvent();
+
+  // Constant buffers feed the matmul cast cache keyed by this object's
+  // address — drop those guards before the address can be recycled.
+  // (Bump even if the capture-skip branch below defers the actual free:
+  // the buffer is dying either way; an extra guard refresh is harmless.)
+  if (isConstant) {
+    notifyConstantBufferFreedForCastCache();
+  }
 
   if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
     // During CUDA graph capture, skip ALL GPU memory frees for non-workspace buffers.
