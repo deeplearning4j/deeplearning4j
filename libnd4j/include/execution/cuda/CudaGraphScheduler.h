@@ -239,6 +239,19 @@ public:
     bool endCapture(cudaStream_t stream);
     bool isCapturing() const { return _state == GraphState::CAPTURING; }
 
+    // Per-capture audit: which plan slots contributed nodes/kernels to THIS
+    // handle's captured graph. Populated by the capture sites (monolithic
+    // captureSegment AND the merged/island composite captures); consumed by the
+    // replay fixup/tick paths so device-actuality is ticked ONLY for slots the
+    // graph actually wrote, and host-only slots are re-executed. Lifetime
+    // matches the capture: cleared on each (re)capture; empty = coverage
+    // unknown → replay paths fall back loudly. (Task #53: relying on the
+    // plan-global lastCaptureAudit_ alone left it empty/stale for
+    // composite-captured segments → blanket device-actuality ticks on
+    // never-written buffers → uninitialized D2H reads via syncToPrimary →
+    // oscillating ~4% divergence.)
+    std::vector<CaptureAuditEntry> captureAudit;
+
     // Instantiation
     bool instantiate();
     bool reInstantiate();    // Destroy old exec, create fresh one from same graph

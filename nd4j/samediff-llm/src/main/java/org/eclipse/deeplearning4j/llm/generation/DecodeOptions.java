@@ -52,4 +52,16 @@ public class DecodeOptions {
 
     /** Override speculator for this call. Null = use pipeline's built-in speculator. */
     private final Speculator speculator;
+
+    /**
+     * Encoder hidden states for encoder-decoder models (Whisper, T5-style): fed to
+     * the decoder input declared by {@code ModelIOConfig.encoderHiddenStatesName}
+     * (cross-attention keys/values source). Constant across decode steps — supplied
+     * once at prefill, persisted by the frozen plan's external-input table. Null for
+     * decoder-only models.
+     */
+    private final org.nd4j.linalg.api.ndarray.INDArray encoderOutputs;
+
+    /** Optional encoder attention mask companion to {@link #encoderOutputs}. */
+    private final org.nd4j.linalg.api.ndarray.INDArray encoderAttentionMask;
 }

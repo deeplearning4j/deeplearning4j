@@ -1062,29 +1062,35 @@ public class DifferentialFunctionClassHolder {
                         if(fieldName == null)
                             fieldName = "config";
 
-                        Field configField = null;
-                        try{
-                            configField = current.getDeclaredField(fieldName);
-                        } catch (NoSuchFieldException e){
+                        Field configField = findDeclaredField(current, fieldName);
+                        if (configField == null) {
                             Class<?> currentConfig = current.getSuperclass();
 
                             // find a config field in superclasses
-                            while(currentConfig.getSuperclass() != null) {
-                                try {
-                                    configField = currentConfig.getDeclaredField(fieldName);
+                            while (currentConfig.getSuperclass() != null) {
+                                configField = findDeclaredField(currentConfig, fieldName);
+                                if (configField != null) {
                                     break;
-                                } catch (NoSuchFieldException e2) {
-                                    currentConfig = currentConfig.getSuperclass();
                                 }
+                                currentConfig = currentConfig.getSuperclass();
                             }
                         }
 
-                        if(configField == null)
+                        if(configField == null) {
+                            // No config field visible anywhere in the hierarchy (under
+                            // GraalVM native image reflection metadata may omit it).
+                            // The bare `continue` here used to re-enter the loop WITHOUT
+                            // advancing `current` or clearing `isFirst` — an infinite
+                            // loop. Advance a level and fall back to the plain
+                            // declared-field scan instead.
+                            current = (Class<? extends DifferentialFunction>) current.getSuperclass();
+                            isFirst = false;
                             continue;
+                        }
 
                         val configFieldClass = configField.getType();
 
-                        for (val field : configFieldClass.getDeclaredFields()) {
+                        for (val field : declaredFieldsCached(configFieldClass)) {
                             if (!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
                                     (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
                                 fields.add(field);
@@ -1097,7 +1103,7 @@ public class DifferentialFunctionClassHolder {
                             }
                         }
                     } else {
-                        for (Field field : current.getDeclaredFields()) {
+                        for (Field field : declaredFieldsCached(current)) {
                             if (!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
                                     (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
                                 fields.add(field);
@@ -1229,6 +1235,30 @@ public class DifferentialFunctionClassHolder {
      * @param function the function to get the fields for
      * @return the fields for a given function
      */
+    /**
+     * Declared-field access for {@link #initInstance()} that is cheap under
+     * GraalVM native image: caches {@link Class#getDeclaredFields()} per class
+     * (the shared op base-class hierarchy is otherwise re-decoded once per op)
+     * and replaces {@code getDeclaredField(name)} + {@code NoSuchFieldException}
+     * probing with a scan over the cached array — under SVM every swallowed
+     * exception pays a full fillInStackTrace of the deep {@code <clinit>} stack,
+     * which turned op-map initialization from seconds into minutes.
+     */
+    private static final Map<Class<?>, Field[]> DECLARED_FIELDS_CACHE = new ConcurrentHashMap<>();
+
+    private static Field[] declaredFieldsCached(Class<?> clazz) {
+        return DECLARED_FIELDS_CACHE.computeIfAbsent(clazz, Class::getDeclaredFields);
+    }
+
+    private static Field findDeclaredField(Class<?> clazz, String fieldName) {
+        for (Field field : declaredFieldsCached(clazz)) {
+            if (field.getName().equals(fieldName)) {
+                return field;
+            }
+        }
+        return null;
+    }
+
     public Map<String,Field> getFieldsForFunction(DifferentialFunction function) {
         if(!fieldsForFunction.containsKey(function.getClass().getName())) {
             return Collections.emptyMap();

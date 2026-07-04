@@ -261,8 +261,22 @@ public class GGUFHeader {
      */
     public int getVocabSize() {
         String arch = getArchitecture();
-        if (arch == null) return 0;
-        return getMetadataInt(arch + KEY_VOCAB_SIZE, 0);
+        if (arch != null) {
+            int declared = getMetadataInt(arch + KEY_VOCAB_SIZE, 0);
+            if (declared > 0) return declared;
+        }
+        // Many GGUFs (e.g. qwen35) omit <arch>.vocab_size — per the GGUF spec the
+        // vocabulary is then defined by the embedded tokenizer's token list. Note
+        // this counts the EMBEDDING rows, which may exceed the usable tokenizer
+        // vocabulary (padding rows); tokenizer.json remains the decode authority.
+        Object tokens = getMetadata() != null ? getMetadata().get("tokenizer.ggml.tokens") : null;
+        if (tokens instanceof java.util.List) {
+            return ((java.util.List<?>) tokens).size();
+        }
+        if (tokens instanceof Object[]) {
+            return ((Object[]) tokens).length;
+        }
+        return 0;
     }
 
     /**

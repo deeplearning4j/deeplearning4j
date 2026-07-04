@@ -20,6 +20,7 @@
 #if HAVE_TRITON
 
 #include <graph/gpu/TritonGraphBackend.h>
+#include <graph/gpu/CapturedModuleRegistry.h>
 #include <graph/gpu/TritonGraphBackend_internal.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <graph/DspDiagnostics.h>
@@ -1570,8 +1571,12 @@ void TritonGraphBackend::invalidateCache() {
       }
       if (seg.consolidatedArgTableHostPinned != nullptr) {
         auto& memPool = sd::memory::CudaMemoryPool::getInstance();
-        memPool.freePinnedHost(seg.consolidatedArgTableHostPinned);
+        // Capture-owned: destruction belongs to the replay handle (baked H2D src).
+        if (!seg.consolidatedArgTableCaptureOwned) {
+          memPool.freePinnedHost(seg.consolidatedArgTableHostPinned);
+        }
         seg.consolidatedArgTableHostPinned = nullptr;
+        seg.consolidatedArgTableCaptureOwned = false;
       }
       // Null out per-kernel pointers (they were offsets into consolidated buffer,
       // NOT independent allocations — do NOT cudaFree them!)
@@ -1599,9 +1604,12 @@ void TritonGraphBackend::invalidateCache() {
       }
       if (!seg.useConsolidatedArgTable && kernel.cachedArgTableHostPinned != nullptr) {
         auto& memPool = sd::memory::CudaMemoryPool::getInstance();
-        memPool.freePinnedHost(kernel.cachedArgTableHostPinned);
+        if (!kernel.cachedArgTableCaptureOwned) {
+          memPool.freePinnedHost(kernel.cachedArgTableHostPinned);
+        }
         kernel.cachedArgTableHostPinned = nullptr;
         kernel.cachedArgTableHostPinnedBytes = 0;
+        kernel.cachedArgTableCaptureOwned = false;
       }
       if (kernel.cachedSyncCounterDevice != nullptr) {
         recordModuleFree(kernel.cachedSyncCounterDeviceId >= 0 ? kernel.cachedSyncCounterDeviceId : segDeviceId,
@@ -1627,7 +1635,10 @@ void TritonGraphBackend::invalidateCache() {
       if (kernel.gpuModule) {
         const int moduleDevId = kernel.loadedDeviceId >= 0 ? kernel.loadedDeviceId : segDeviceId;
         recordModuleFree(moduleDevId, kernel.estimatedModuleBytes);
-        TritonTargetDispatch::unloadModule(kernel.gpuModule);
+        if (sd::graph::modreg::releaseFromOwner(kernel.gpuModule)) {
+          TritonTargetDispatch::unloadModule(kernel.gpuModule);
+        }
+        kernel.moduleCaptureOwned = false;
       }
     }
   }
@@ -1689,7 +1700,9 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
       }
       if (seg.consolidatedArgTableHostPinned != nullptr) {
         auto& memPool = sd::memory::CudaMemoryPool::getInstance();
-        memPool.freePinnedHost(seg.consolidatedArgTableHostPinned);
+        if (!seg.consolidatedArgTableCaptureOwned) {
+          memPool.freePinnedHost(seg.consolidatedArgTableHostPinned);
+        }
       }
       for (auto& kernel : seg.subKernels) {
         kernel.cachedArgTableDevice = nullptr;
@@ -1709,7 +1722,9 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
       }
       if (!seg.useConsolidatedArgTable && kernel.cachedArgTableHostPinned != nullptr) {
         auto& memPool = sd::memory::CudaMemoryPool::getInstance();
-        memPool.freePinnedHost(kernel.cachedArgTableHostPinned);
+        if (!kernel.cachedArgTableCaptureOwned) {
+          memPool.freePinnedHost(kernel.cachedArgTableHostPinned);
+        }
       }
       if (kernel.cachedSyncCounterDevice != nullptr) {
         recordModuleFree(kernel.cachedSyncCounterDeviceId >= 0 ? kernel.cachedSyncCounterDeviceId : segDeviceId,
@@ -1730,7 +1745,10 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
       if (kernel.gpuModule) {
         const int moduleDevId = kernel.loadedDeviceId >= 0 ? kernel.loadedDeviceId : segDeviceId;
         recordModuleFree(moduleDevId, kernel.estimatedModuleBytes);
-        TritonTargetDispatch::unloadModule(kernel.gpuModule);
+        if (sd::graph::modreg::releaseFromOwner(kernel.gpuModule)) {
+          TritonTargetDispatch::unloadModule(kernel.gpuModule);
+        }
+        kernel.moduleCaptureOwned = false;
         freedModules++;
       }
     }

@@ -105,6 +105,13 @@ SD_LIB_EXPORT void clearNativePlanCacheHandle(sd::Pointer cacheHandle);
  * @param phShapeInfoPtrs       array of shape-info pointers (from ConstantShapeHelper); identity = key equality
  * @param numPlaceholders       length of phShapeInfoPtrs
  * @param graphExecutionMode    GraphExecutionMode ordinal — each mode gets its own plan
+ * @param newBorrower           nonzero when this dispatch is the FIRST from its Java
+ *                              executor instance (nativePlanHandle was null). A cache
+ *                              HIT then means the plan is switching borrowers: view
+ *                              wrappers minted over the previous borrower's external
+ *                              arrays dangle once it closed its inputs, and must be
+ *                              invalidated. Same-borrower re-dispatches (shape change)
+ *                              pass 0 so live captured-graph state is never disturbed.
  * @return                      NativeDynamicShapePlan* as opaque sd::Pointer; owned by cache
  */
 SD_LIB_EXPORT sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
@@ -114,7 +121,8 @@ SD_LIB_EXPORT sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
                                              sd::LongType numOutputs,
                                              sd::Pointer phShapeInfoPtrs,
                                              sd::LongType numPlaceholders,
-                                             int graphExecutionMode);
+                                             int graphExecutionMode,
+                                             int newBorrower);
 
 /**
  * Unpin a plan handle, making it eligible for LRU eviction.

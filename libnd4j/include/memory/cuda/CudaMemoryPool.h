@@ -245,6 +245,14 @@ class SD_LIB_EXPORT CudaMemoryPool {
   bool freePinnedHost(void* ptr);
 
   /**
+   * Hand ownership of a pinned host allocation to an external holder (e.g. a
+   * CUDA graph replay handle that baked it as an H2D source and frees it at
+   * handle death). Drops pool bookkeeping WITHOUT calling cudaFreeHost, so a
+   * later freePinnedHost on the same pointer becomes a safe no-op.
+   */
+  bool relinquishPinnedHost(void* ptr);
+
+  /**
    * Check if a pointer is a tracked pinned host allocation.
    */
   bool isPinnedHostAllocation(void* ptr) const;

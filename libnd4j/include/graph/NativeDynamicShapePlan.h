@@ -2135,6 +2135,21 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void writeOutputSlot(int slotIdx, NDArray* value, const char* tag);
 
   /**
+   * Invalidate output-slot VIEW wrappers that alias EXTERNAL input buffers.
+   * Called by dispatchNativePlan ONLY on a new-borrower acquire (first dispatch
+   * from a Java executor instance): views minted over the PREVIOUS borrower's
+   * external arrays dangle once that borrower closed its inputs. Touching them
+   * later — view-install old-read, cast input resolve, exec bind — is a
+   * use-after-free surfacing as flaky "Op [cast] execution failed" /
+   * "Invalid argument" / "Owner died" / Workspace::allocateBytes SIGSEGV.
+   * NEVER call on same-borrower re-dispatch: clearing views whose device
+   * addresses are baked into live captured graphs breaks replay (observed:
+   * 67-failure gate regression when triggered on every cache hit).
+   * Plan-owned intermediates are untouched — stable-address replay contract.
+   */
+  void invalidateExternalViewSlotsOnReacquire();
+
+  /**
    * Clear an output slot to nullptr with proper cleanup.
    * Removes from planOwnedArrays_, optionally defers delete.
    * All null-assignments to outputSlots_ MUST go through this method.
@@ -2175,15 +2190,16 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // ── JNI introspection methods (NativeOpsDsp.h wrappers) ──────────────────
 
-  /** Device address of the last external input at index, or 0. */
+  /** Device address of the last external input at index, or 0.
+   *
+   *  Returns the address RECORDED at execute time — never dereferences the
+   *  stored NDArray*. Java only guarantees the input arrays live for the
+   *  duration of the execute call; callers commonly pass fresh inputs each
+   *  step and free the old ones, so a query-time dereference reads a freed
+   *  DataBuffer (garbage magic number → integrity-check throw). */
   long long getLastExternalInputAddress(int extIdx) const {
-    NDArray* arr = getLastExternalInput(extIdx);
-    if (arr == nullptr) return 0;
-    // On CUDA, specialBuffer() holds the device pointer. On CPU,
-    // specialBuffer() is nullptr — fall back to buffer() (primary).
-    void* ptr = arr->specialBuffer();
-    if (ptr == nullptr) ptr = arr->buffer();
-    return reinterpret_cast<long long>(ptr);
+    if (extIdx < 0 || extIdx >= static_cast<int>(lastExternalInputAddrs_.size())) return 0;
+    return lastExternalInputAddrs_[extIdx];
   }
 
   /** Get the output NDArray* at a specific slot index, or nullptr. */
@@ -2627,6 +2643,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int numExternalInputs_;
   std::vector<NDArray*> lastExternalInputsCopy_;  // owned copy of ext input pointer array
   NDArray** lastExternalInputs_ = nullptr;       // points to lastExternalInputsCopy_.data() (stable after execute)
+  // Buffer addresses of the ext inputs, recorded at execute time while the Java-owned
+  // NDArrays are guaranteed live. JNI queries (getLastExternalInputAddress) read THESE —
+  // dereferencing lastExternalInputsCopy_ after execute() returns is a use-after-free
+  // when the caller frees/replaces its input arrays between steps.
+  std::vector<long long> lastExternalInputAddrs_;
   int lastNumExternalInputs_ = 0;               // size of lastExternalInputs_
   std::vector<std::string> externalInputNames_;  // name for each external input index
   std::vector<bool> externalInputIsVariable_;    // true if VARIABLE or PLACEHOLDER (needs forced H2D before replay)
@@ -2845,6 +2866,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Staging buffers are plan-owned NDArrays; effectiveExternals_ contains
   // staging pointers for variable inputs, original pointers for non-variable.
   NDArray** placeholderStagingBuffers_ = nullptr;
+  // True only during an execute() whose pre-replay sync ran (or intra-exec
+  // deduped) the staging D2D — i.e., staging content matches THIS exec's
+  // external inputs. Reset at every execute() entry. Gates the staging
+  // preference in resolveViewInput().
+  bool stagingMaintainedThisExec_ = false;
   NDArray** effectiveExternals_ = nullptr;
   std::vector<int> cachedVariableExtIndices_;  // fast-path: only iterate variable inputs
   std::vector<bool> deviceWritePending_;        // per-input: JNI wrote staging directly, skip D2D overwrite
@@ -3031,8 +3057,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     } else if (srcIdx < 0) {
       int extIdx = -(srcIdx + 1);
       if (extIdx >= numExt) return nullptr;
-      // Prefer staging buffer: stable address that matches what the CUDA graph captured
-      if (placeholderStagingBuffers_ != nullptr && extIdx < numExternalInputs_) {
+      // Prefer staging buffer: stable address that matches what the CUDA graph captured.
+      // ONLY while staging is maintained this exec: once the exec target flips to
+      // direct SBS ("staging D2D skipped"), staging content is no longer refreshed —
+      // a view minted over it reads a PREVIOUS iteration's values forever
+      // (deepAttentionQKV varying#4: bit-identical wrong output across NVRTC/PTX,
+      // views object-matched to the exec-1 staging buffer at every later exec).
+      if (stagingMaintainedThisExec_ &&
+          placeholderStagingBuffers_ != nullptr && extIdx < numExternalInputs_) {
         NDArray* staging = placeholderStagingBuffers_[extIdx];
         if (staging != nullptr && staging->dataBuffer() != nullptr
             && staging->dataBuffer()->isValid() && staging->specialBuffer() != nullptr) {

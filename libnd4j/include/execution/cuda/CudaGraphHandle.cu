@@ -28,6 +28,7 @@
 #include <helpers/logger.h>
 
 #include <system/env_functions.h>
+#include <graph/DspDiagnostics.h>
 
 #include <chrono>
 #include <algorithm>
@@ -85,6 +86,12 @@ void CudaGraphHandle::cleanup() {
     std::lock_guard<std::mutex> lock(_mutex);
 
     if (_graphExec != nullptr) {
+        // Destroy-site log: a replay that SIGSEGVs inside cudaGraphLaunch means the
+        // exec was destroyed between launches — this line names the killer by
+        // pointer match against the replay log.
+        DSP_DIAG_DEV(EXECUTE, _deviceId,
+                     "CudaGraphHandle::cleanup DESTROY graphExec=%p this=%p state=%d",
+                     (void*)_graphExec, (void*)this, (int)_state);
         cudaGraphExecDestroy(_graphExec);
         _graphExec = nullptr;
     }
@@ -267,6 +274,9 @@ bool CudaGraphHandle::reInstantiate() {
 
     // Destroy old exec
     if (_graphExec != nullptr) {
+        DSP_DIAG_DEV(EXECUTE, _deviceId,
+                     "CudaGraphHandle::reInstantiate DESTROY old graphExec=%p this=%p",
+                     (void*)_graphExec, (void*)this);
         cudaGraphExecDestroy(_graphExec);
         _graphExec = nullptr;
     }

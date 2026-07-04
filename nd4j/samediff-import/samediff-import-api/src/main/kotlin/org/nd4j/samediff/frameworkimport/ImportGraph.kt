@@ -110,7 +110,14 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 val output = stripVarSuffix(node.outputAt(i))
                 nodeOutputs[assignedName]!!.add(output)
                 allVariables.add(output)
-                varProducer[output] = assignedName
+                val previousProducer = varProducer.put(output, assignedName)
+                if (previousProducer != null && previousProducer != assignedName) {
+                    // Two nodes claiming one output name silently corrupts the sort:
+                    // consumers bind to the LAST writer and the real producer can be
+                    // ordered after them ("Variable X does not exist" at import).
+                    logger.warn("DUPLICATE OUTPUT NAME '{}' produced by both '{}' and '{}' — " +
+                            "dependency edges will bind to the latter", output, previousProducer, assignedName)
+                }
             }
 
             // Track inputs (non-control dependencies only)
@@ -189,11 +196,18 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 unprocessedNodes.add(nodeName)
             }
         }
-        // Log summary instead of per-node to reduce log spam
+        // Unprocessed nodes mean a dependency CYCLE (or edges to nonexistent
+        // producers): they get appended in original order, which places producers
+        // AFTER their consumers and later fails the import with "Variable X does
+        // not exist". Name the blocking edges so the cycle is directly readable.
         if (unprocessedNodes.isNotEmpty()) {
-            logger.debug("Added {} unprocessed nodes (first 5: {})",
-                unprocessedNodes.size,
-                unprocessedNodes.take(5))
+            logger.warn("TOPOLOGICAL SORT INCOMPLETE: {} nodes never reached in-degree 0 " +
+                    "(dependency cycle) — appended in original order (first 10: {})",
+                unprocessedNodes.size, unprocessedNodes.take(10))
+            unprocessedNodes.take(5).forEach { stuck ->
+                val blocking = nodeDeps[stuck]?.filter { it !in processedNodes } ?: emptyList()
+                logger.warn("  stuck node '{}' blocked by unprocessed deps: {}", stuck, blocking.take(8))
+            }
         }
 
         // Create variable order based on processing order
@@ -650,6 +664,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             appendLine("FATAL: Variable '$inName' required by node '$nodeName' does not exist and could not be resolved!")
                             appendLine("Diagnostic Information:")
                             appendLine("  - Producer node: ${sortResult.variableToProducer[inName] ?: "UNKNOWN"}")
+                            val producerName = sortResult.variableToProducer[inName]
+                            val producerPos = if (producerName != null)
+                                sortResult.sortedNodes.indexOfFirst { sortResult.nodeNameMapping[it] == producerName } else -1
+                            appendLine("  - Producer sort position: $producerPos")
                             appendLine("  - Variable sort position: ${sortResult.sortedVariables.indexOf(inName)}")
                             appendLine("  - Current node sort position: ${sortResult.sortedNodes.indexOf(node)}")
                             appendLine("  - Variable consumers: ${sortResult.variableToConsumers[inName] ?: emptySet()}")

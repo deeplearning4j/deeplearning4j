@@ -33,6 +33,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/gpu/CapturedModuleRegistry.h>
 #include <graph/DspConstants.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspStreamGuard.h>
@@ -305,9 +306,38 @@ static void cleanupCaptureTlsState(bool freeHostPtrs, void* prevCaptureStream) {
   tl_captureWorkspaceOffset = 0;
   if (freeHostPtrs) {
     for (auto* ptr : tl_capturedHostPtrs) {
-      if (ptr != nullptr) cudaFreeHost(ptr);
+      if (ptr != nullptr) {
+        // Lifecycle log: a captured graph whose H2D node bakes this pinned base
+        // dies at relaunch if this free fires while that graph is still live.
+        DSP_DIAG(EXECUTE, "cleanupCaptureTlsState FREEING pinned host ws=%p", ptr);
+        cudaFreeHost(ptr);
+      }
     }
+  } else if (!tl_capturedHostPtrs.empty()) {
+    DSP_DIAG(EXECUTE, "cleanupCaptureTlsState keeping %zu pinned host ptrs (ownership moved)",
+             tl_capturedHostPtrs.size());
   }
+  if (freeHostPtrs) {
+    // Failure path: captures were discarded, so their baked modules have no
+    // graph to outlive — unload now (marks were set on the compiled kernels,
+    // which will simply skip their own unload later).
+    for (auto* mod : tl_capturedModules) {
+      if (mod != nullptr) {
+        // Discarded capture: drop the retain taken at bake time. Unload only
+        // if this was the last holder AND the owner already released.
+        if (sd::graph::modreg::releaseFromHandle(mod)) {
+          DSP_DIAG(EXECUTE, "cleanupCaptureTlsState UNLOADING captured module=%p (capture discarded, last ref)", mod);
+          cuModuleUnload(static_cast<CUmodule>(mod));
+        } else {
+          DSP_DIAG(EXECUTE, "cleanupCaptureTlsState released captured module=%p (holders remain)", mod);
+        }
+      }
+    }
+  } else if (!tl_capturedModules.empty()) {
+    DSP_DIAG(EXECUTE, "cleanupCaptureTlsState keeping %zu captured modules (ownership moved)",
+             tl_capturedModules.size());
+  }
+  tl_capturedModules.clear();
   tl_captureHostWorkspace = nullptr;
   tl_captureHostWorkspaceSize = 0;
   tl_captureHostWorkspaceOffset = 0;
@@ -512,6 +542,50 @@ static bool validateAndStoreMergedCapture(
              nativeHandle->wasLastInstantiateOom() ? 1 : 0, nodeCount);
     return false;
   }
+  // Node autopsy: print every node's identity — for MEMCPY nodes the BAKED
+  // src/dst addresses. A replay that SIGSEGVs inside cudaGraphLaunch means one
+  // of these baked resources died; the src address names its allocator.
+  if (DSP_DIAG_ENABLED(EXECUTE) && nativeHandle->getGraph() != nullptr) {
+    size_t nNodes = 0;
+    cudaGraphGetNodes(nativeHandle->getGraph(), nullptr, &nNodes);
+    if (nNodes > 0 && nNodes <= 16) {
+      std::vector<cudaGraphNode_t> nodes(nNodes);
+      cudaGraphGetNodes(nativeHandle->getGraph(), nodes.data(), &nNodes);
+      for (size_t ni = 0; ni < nNodes; ni++) {
+        cudaGraphNodeType nt;
+        cudaGraphNodeGetType(nodes[ni], &nt);
+        if (nt == cudaGraphNodeTypeMemcpy) {
+          cudaMemcpy3DParms mp; memset(&mp, 0, sizeof(mp));
+          if (cudaGraphMemcpyNodeGetParams(nodes[ni], &mp) == cudaSuccess) {
+            DSP_DIAG(EXECUTE, "%s: group=%d NODE[%zu] MEMCPY kind=%d bytes=%zu srcHost=%p srcDev=%p dstDev=%p",
+                     diagPrefix, mergedGroupId, ni, (int)mp.kind,
+                     mp.extent.width, mp.srcPtr.ptr, (void*)nullptr, mp.dstPtr.ptr);
+          }
+        } else if (nt == cudaGraphNodeTypeKernel) {
+          // Driver-API read: runtime cudaGraphKernelNodeGetParams fails on nodes
+          // captured from cuLaunchKernel (Triton/NVRTC kernels). CUfunction +
+          // owning CUmodule identify exactly which module a later unload kills
+          // (CUDA 98 invalid device function at replay).
+          CUDA_KERNEL_NODE_PARAMS dkp; memset(&dkp, 0, sizeof(dkp));
+          if (cuGraphKernelNodeGetParams(reinterpret_cast<CUgraphNode>(nodes[ni]), &dkp) == CUDA_SUCCESS) {
+            CUmodule ownerMod = nullptr;
+            if (dkp.func != nullptr) cuFuncGetModule(&ownerMod, dkp.func);
+            DSP_DIAG(EXECUTE, "%s: group=%d NODE[%zu] KERNEL(driver) func=%p module=%p gridX=%u",
+                     diagPrefix, mergedGroupId, ni, (void*)dkp.func, (void*)ownerMod, dkp.gridDimX);
+          } else {
+            cudaKernelNodeParams kp; memset(&kp, 0, sizeof(kp));
+            if (cudaGraphKernelNodeGetParams(nodes[ni], &kp) == cudaSuccess) {
+              DSP_DIAG(EXECUTE, "%s: group=%d NODE[%zu] KERNEL func=%p params=%p gridX=%u",
+                       diagPrefix, mergedGroupId, ni, kp.func, (void*)kp.kernelParams, kp.gridDim.x);
+            }
+          }
+        } else {
+          DSP_DIAG(EXECUTE, "%s: group=%d NODE[%zu] type=%d", diagPrefix, mergedGroupId, ni, (int)nt);
+        }
+      }
+    }
+  }
+
   cudaStream_t requestedStream = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
   cudaStream_t validationStream = cudaStr != nullptr ? cudaStr : requestedStream;
   void* validationStreamArg = static_cast<void*>(&validationStream);
@@ -531,22 +605,24 @@ static bool validateAndStoreMergedCapture(
              (void*)nativeHandle->getGraphExec(), nodeCount, (void*)validationStream);
     return false;
   }
-  if (requestedStream != nullptr && validationStream != nullptr && requestedStream != validationStream) {
-    cudaEvent_t evt = nullptr;
-    cudaError_t evtErr = cudaEventCreateWithFlags(&evt, cudaEventDisableTiming);
-    if (evtErr == cudaSuccess && evt != nullptr) {
-      cudaEventRecord(evt, validationStream);
-      cudaStreamWaitEvent(requestedStream, evt, 0);
-      cudaEventDestroy(evt);
-      DSP_DIAG(EXECUTE, "%s: group=%d ordered continuation stream=%p after validationStream=%p",
-               diagPrefix, mergedGroupId, (void*)requestedStream, (void*)validationStream);
-    } else {
-      DSP_DIAG(EXECUTE, "%s: group=%d could not create validation ordering event err=%d (%s)",
-               diagPrefix, mergedGroupId, (int)evtErr, cudaGetErrorString(evtErr));
-    }
+  // The validation replay MUST fully drain before this function returns: a
+  // cudaGraphExec_t supports only ONE in-flight execution. Event-ordering the
+  // requested stream is not enough — the NEXT plan execution can launch this
+  // same exec from a DIFFERENT stream (tl_dspExecutionStream / a new call's
+  // stream) that the event never ordered, giving two concurrent launches of one
+  // exec → host-side SIGSEGV inside cudaGraphLaunch (observed deterministically
+  // on small graphs where validation hasn't drained: DspBufferAliasAccuracyTest
+  // #testBufferAliasVaryingInput). Validation is once per capture, so a blocking
+  // drain here costs nothing on the steady-state path.
+  cudaError_t syncErr = cudaStreamSynchronize(validationStream);
+  if (syncErr != cudaSuccess) {
+    DSP_DIAG(EXECUTE, "%s: group=%d validation replay SYNC FAILED err=%d (%s) — discarding capture",
+             diagPrefix, mergedGroupId, (int)syncErr, cudaGetErrorString(syncErr));
+    cudaGetLastError();
+    return false;
   }
-  DSP_DIAG(EXECUTE, "%s: group=%d [%d-%d] VALIDATE_QUEUED nodes=%zu "
-           "(ordered launch accepted)",
+  DSP_DIAG(EXECUTE, "%s: group=%d [%d-%d] VALIDATE_COMPLETE nodes=%zu "
+           "(validation replay drained synchronously)",
            diagPrefix, mergedGroupId, startSlot, endSlot, nodeCount);
   sched.mergedReplayHandles.push_back(std::move(handle));
   return true;
@@ -4084,10 +4160,18 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            if (!tl_capturedHostPtrs.empty() && !sched.mergedReplayHandles.empty() &&
                sched.mergedReplayHandles[0] != nullptr) {
              for (auto* ptr : tl_capturedHostPtrs) {
+               DSP_DIAG(EXECUTE, "MERGED_CAPTURE: pinned host ws=%p ownership -> mergedGroup[0]", ptr);
                sched.mergedReplayHandles[0]->addCapturedHostPtr(ptr);
              }
-             DSP_DIAG(MEMORY, "MERGED_CAPTURE: preserved %zu pinned host ptrs on mergedGroup[0]",
+             DSP_DIAG(EXECUTE, "MERGED_CAPTURE: preserved %zu pinned host ptrs on mergedGroup[0]",
                       sched.mergedReplayHandles[0]->getCapturedHostPtrs().size());
+           }
+           if (!tl_capturedModules.empty() && !sched.mergedReplayHandles.empty() &&
+               sched.mergedReplayHandles[0] != nullptr) {
+             for (auto* mod : tl_capturedModules) {
+               DSP_DIAG(EXECUTE, "MERGED_CAPTURE: captured module=%p ownership -> mergedGroup[0]", mod);
+               sched.mergedReplayHandles[0]->addCapturedModule(mod);
+             }
            }
            cleanupCaptureTlsState(false, static_cast<void*>(prevCaptureStream));  // false = do NOT free host ptrs
            popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
@@ -4498,6 +4582,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           } else {
             capGuard.activate();
             tl_graphCaptureStream = static_cast<void*>(ctx.cudaStr);
+            // Per-handle capture audit (task #53): record which slots actually
+            // contribute nodes to THIS graph so postGraphReplayFixup ticks
+            // device-actuality only for graph-written slots and re-executes
+            // captured-but-host-only ones. Without this, JIT/native-only
+            // captures replayed with an empty audit → blanket ticks on
+            // never-written buffers → uninitialized D2H reads.
+            handle->captureAudit.clear();
 
           // Exception-safe gap-stream routing during native-only capture slots.
           ScopedGapStreamOverride gapStreamOverride(ctx.cudaStr);
@@ -4544,6 +4635,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                   continue;
                 }
               }
+              size_t auditNodesBefore = handle->getNumNodesDuringCapture(ctx.cudaStr);
               auto slotStatus = executeSlot(s, effectiveExternalsForCapture, numExt, stream);
               slotsExecuted++;
               if (slotStatus != Status::OK) {
@@ -4551,6 +4643,25 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                          s, slots_[s].ident.opName.c_str(), static_cast<int>(slotStatus), slotsExecuted);
                 captureStatus = slotStatus;
                 break;
+              }
+              {
+                // Per-slot audit entry (task #53). Node-type breakdown is left
+                // at defaults — the fixup's decisions need nodesContributed
+                // (tick vs re-exec) and kernels==0 conservatively re-executes,
+                // which is exactly right for capture-recorded host-side ops.
+                cuda::CaptureAuditEntry auditEntry;
+                auditEntry.slotIndex = s;
+                auditEntry.opName = slots_[s].ident.opName;
+                auditEntry.nodesBefore = auditNodesBefore;
+                auditEntry.nodesAfter = handle->getNumNodesDuringCapture(ctx.cudaStr);
+                auditEntry.nodesContributed =
+                    (auditEntry.nodesAfter > auditEntry.nodesBefore)
+                        ? (auditEntry.nodesAfter - auditEntry.nodesBefore) : 0;
+                // Treat any contributed node as kernel-equivalent for tick
+                // purposes: native-only capture records compute via executeSlot,
+                // so contributed nodes = device writes.
+                auditEntry.kernels = static_cast<int>(auditEntry.nodesContributed > 0 ? 1 : 0);
+                handle->captureAudit.push_back(std::move(auditEntry));
               }
               {
                 bool _slotInvalid = false;

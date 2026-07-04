@@ -1114,6 +1114,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   int lastCaptureSlot = seg.def.startSlot;
   int frozenConstSkipped = 0;
   lastCaptureAudit_.clear();
+  handle->captureAudit.clear();  // per-handle audit (task #53) — replay reads the handle's copy
 
   // Contract-driven capture behavior: the mode contract declares whether
   // forceSync and frozen-const-skip are appropriate for this capture style.
@@ -1236,6 +1237,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           if (auditErr != cudaSuccess) cudaGetLastError();
         }
 
+        handle->captureAudit.push_back(entry);  // per-handle copy (task #53)
         lastCaptureAudit_.push_back(std::move(entry));
       }
 
@@ -1929,9 +1931,51 @@ Status NativeDynamicShapePlan::postGraphReplayFixup(
     GraphSegment& seg, NDArray** externalArrays, int numExt,
     void* stream, const char* diagTag) {
 
-  // Step 1: tick device actuality on all slot outputs in this segment.
+  // Authoritative audit = the replayed handle's own capture audit (task #53).
+  // The plan-global lastCaptureAudit_ is only populated by captureSegment
+  // (monolithic path) and was empty or stale-from-another-segment for
+  // composite/JIT-captured segments — Step 1 then blanket-ticked device
+  // actuality on slots the graph never wrote and Step 2 silently skipped
+  // host-only re-exec → host reads D2H'd never-written device memory
+  // (initcheck: uninit cudaMemcpy-source via DataBuffer::syncToPrimary) →
+  // oscillating ~4% divergence (bgeEncoder NVRTC/PTX).
+  const std::vector<sd::cuda::CaptureAuditEntry>* audit = nullptr;
+  if (seg.exec.replayHandle != nullptr) {
+    auto* cudaReplay = dynamic_cast<CudaGraphReplayHandle*>(seg.exec.replayHandle.get());
+    if (cudaReplay != nullptr && cudaReplay->getNativeHandle() != nullptr &&
+        !cudaReplay->getNativeHandle()->captureAudit.empty()) {
+      audit = &cudaReplay->getNativeHandle()->captureAudit;
+    }
+  }
+  if (audit == nullptr && !lastCaptureAudit_.empty()) {
+    audit = &lastCaptureAudit_;  // legacy fallback (monolithic path compat)
+  }
+
+  // Step 1: tick device actuality on slot outputs the replayed graph WROTE.
+  // With an audit: tick only slots that contributed kernel/memcpy/memset nodes
+  // (host-only slots are re-executed in Step 2 and tick themselves). Without
+  // an audit: keep the historical blanket tick, but say so LOUDLY — an
+  // audit-less replay is exactly the condition that produced task #53.
+  if (audit == nullptr) {
+    DSP_DIAG(FALLBACK,
+             "%s: postGraphReplayFixup has NO capture audit for seg[%d-%d] — "
+             "blanket-ticking device actuality on ALL outputs (unwritten slots "
+             "may be marked device-actual; capture site must populate "
+             "CudaGraphHandle::captureAudit)",
+             diagTag, seg.def.startSlot, seg.def.endSlot);
+  }
   for (int stepIdx = seg.def.startSlot; stepIdx <= seg.def.endSlot; stepIdx++) {
     if (stepIdx < 0 || stepIdx >= numSlots_) continue;
+    if (audit != nullptr) {
+      bool graphWrote = false;
+      for (const auto& entry : *audit) {
+        if (entry.slotIndex == stepIdx) {
+          graphWrote = entry.nodesContributed > 0;
+          break;
+        }
+      }
+      if (!graphWrote) continue;  // host-only/uncaptured: Step 2 handles it
+    }
     const NativeSlot& slot = slots_[stepIdx];
     for (int o = 0; o < slot.wiring.numOutputs; o++) {
       int outIdx = slot.wiring.outputSlotIndices[o];
@@ -1952,10 +1996,10 @@ Status NativeDynamicShapePlan::postGraphReplayFixup(
   // LaunchContext::getCudaStream() honors tl_dspGapStream, so executeSlot()
   // below records any GPU work after the graph replay without CPU synchronization
   // or a cross-stream event hop.
-  if (!lastCaptureAudit_.empty()) {
+  if (audit != nullptr) {
     ScopedDspGapStream gapStreamFixupGuard(
         stream != nullptr ? *static_cast<cudaStream_t*>(stream) : nullptr);
-    for (const auto& entry : lastCaptureAudit_) {
+    for (const auto& entry : *audit) {
       if (entry.slotIndex >= seg.def.startSlot &&
           entry.slotIndex <= seg.def.endSlot &&
           (entry.nodesContributed == 0 || entry.kernels == 0)) {
@@ -2171,6 +2215,42 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
 
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
+
+  // Staging content will match THIS exec's externals once the copies below
+  // are issued — gate resolveViewInput's staging preference on it.
+  stagingMaintainedThisExec_ = true;
+
+  // ── LC→DSP ordering barrier ─────────────────────────────────────────────
+  // Step 2 of performPreReplaySync H2Ds fresh external values via
+  // prepareSpecialUse on the LC stream; the D2D copies below READ those same
+  // device buffers on the DSP stream (cudaStr). Without an event between the
+  // two streams the D2D can execute before the H2D lands and stage the
+  // PREVIOUS exec's values — a load-dependent value drift (bgeEncoder/PTX_JIT
+  // close-between diverged only past ~70 accumulated params; VERIFY's
+  // post-segment syncs masked it). Record on LC, wait on DSP. Skipped during
+  // capture: waiting on an outside-capture event on a capturing stream is a
+  // capture violation, and pre-capture staging is ordered by the capture
+  // machinery itself.
+  {
+    cudaStream_t captureProbe = cudaStr;
+    auto* lcStreamPtr2 = LaunchContext::defaultContext()->getCudaStream();
+    cudaStream_t lcStream2 = (lcStreamPtr2 != nullptr) ? *lcStreamPtr2 : nullptr;
+    if (lcStream2 != nullptr && lcStream2 != cudaStr &&
+        !DebugHelper::streamIsCapturing(&captureProbe)) {
+      static thread_local cudaEvent_t tlStagingOrderEvt = nullptr;
+      if (tlStagingOrderEvt == nullptr) {
+        cudaEventCreateWithFlags(&tlStagingOrderEvt, cudaEventDisableTiming);
+      }
+      if (tlStagingOrderEvt != nullptr) {
+        cudaEventRecord(tlStagingOrderEvt, lcStream2);
+        cudaStreamWaitEvent(cudaStr, tlStagingOrderEvt, 0);
+        DSP_DIAG(EXECUTE,
+                 "STAGING_D2D: LC->DSP order event (lc=%p dsp=%p) — H2D of fresh "
+                 "externals ordered before staging D2D",
+                 (void*)lcStream2, (void*)cudaStr);
+      }
+    }
+  }
 
   // One-time allocation — fixed size, never resized.
   if (placeholderStagingBuffers_ == nullptr) {

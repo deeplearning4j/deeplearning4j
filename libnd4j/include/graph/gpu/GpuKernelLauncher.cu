@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 
+#include <graph/DspDiagnostics.h>
 #include <graph/gpu/GpuKernelLauncher.h>
 #include <system/common.h>
 #include <helpers/logger.h>
@@ -126,6 +127,7 @@ bool launchKernel(void* func,
 
 void unloadModule(void* module) {
   if (!module) return;
+  DSP_DIAG(EXECUTE, "GpuKernelLauncher: cuModuleUnload module=%p", module);
   cuModuleUnload(static_cast<CUmodule>(module));
 }
 

@@ -21,6 +21,7 @@
 #if HAVE_TRITON
 
 #include <graph/gpu/TritonGraphBackend.h>
+#include <graph/gpu/CapturedModuleRegistry.h>
 #include <graph/gpu/TritonGraphBackend_internal.h>
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/gpu/TritonIRBuilder_internal.h>
@@ -1276,7 +1277,10 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         if (kernel.gpuModule) {
           recordModuleFree(kernel.loadedDeviceId >= 0 ? kernel.loadedDeviceId : compileDevice,
                            kernel.estimatedModuleBytes);
+          if (sd::graph::modreg::releaseFromOwner(kernel.gpuModule)) {
           TritonTargetDispatch::unloadModule(kernel.gpuModule);
+        }
+        kernel.moduleCaptureOwned = false;
           kernel.gpuModule = nullptr;
           kernel.kernelFunction = nullptr;
           kernel.loadedDeviceId = -1;
@@ -1331,8 +1335,11 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
     if (compiledSeg.consolidatedArgTableHostPinned != nullptr) {
       auto& memPool = sd::memory::CudaMemoryPool::getInstance();
-      memPool.freePinnedHost(compiledSeg.consolidatedArgTableHostPinned);
+      if (!compiledSeg.consolidatedArgTableCaptureOwned) {
+        memPool.freePinnedHost(compiledSeg.consolidatedArgTableHostPinned);
+      }
       compiledSeg.consolidatedArgTableHostPinned = nullptr;
+      compiledSeg.consolidatedArgTableCaptureOwned = false;
     }
     for (auto& k : compiledSeg.subKernels) {
       if (!useConsolidatedArgTable && k.cachedArgTableDevice) {
@@ -1379,7 +1386,10 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       if (k.gpuModule) {
         recordModuleFree(k.loadedDeviceId >= 0 ? k.loadedDeviceId : compileDevice,
                          k.estimatedModuleBytes);
-        TritonTargetDispatch::unloadModule(k.gpuModule);
+        if (sd::graph::modreg::releaseFromOwner(k.gpuModule)) {
+          TritonTargetDispatch::unloadModule(k.gpuModule);
+        }
+        k.moduleCaptureOwned = false;
         k.gpuModule = nullptr;
         k.kernelFunction = nullptr;
         k.loadedDeviceId = -1;
@@ -1438,9 +1448,12 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           kernel.cachedArgTableHostPinnedBytes < tableBytes) {
         auto& memPool = sd::memory::CudaMemoryPool::getInstance();
         if (kernel.cachedArgTableHostPinned != nullptr) {
-          memPool.freePinnedHost(kernel.cachedArgTableHostPinned);
+          if (!kernel.cachedArgTableCaptureOwned) {
+            memPool.freePinnedHost(kernel.cachedArgTableHostPinned);
+          }
           kernel.cachedArgTableHostPinned = nullptr;
           kernel.cachedArgTableHostPinnedBytes = 0;
+          kernel.cachedArgTableCaptureOwned = false;
         }
         kernel.cachedArgTableHostPinned = static_cast<char*>(memPool.allocatePinnedHost(tableBytes));
         if (kernel.cachedArgTableHostPinned == nullptr) {

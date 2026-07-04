@@ -297,11 +297,17 @@ public class DspSlotLifecycleAuditTest {
 
     /** Cross product of (fixture, mode) for parameterized tests. */
     static Stream<Arguments> fixtureModeMatrix() {
+        // Debug narrowing: -Daudit.fixture=NAME / -Daudit.mode=MODE isolate one
+        // (fixture, mode) — surefire [index] filters don't match these display names.
+        String onlyFixture = System.getProperty("audit.fixture");
+        String onlyMode = System.getProperty("audit.mode");
         List<Fixture> fs = fixtures();
         List<GraphExecutionMode> modes = executionModes();
         List<Arguments> args = new ArrayList<>(fs.size() * modes.size());
         for (Fixture f : fs) {
+            if (onlyFixture != null && !f.name.equals(onlyFixture)) continue;
             for (GraphExecutionMode m : modes) {
+                if (onlyMode != null && !m.name().equals(onlyMode)) continue;
                 args.add(Arguments.of(f, m));
             }
         }
@@ -319,6 +325,7 @@ public class DspSlotLifecycleAuditTest {
     @DisplayName("Caller reuses the same input INDArray across N calls — "
             + "must not trip CLOSED DataBuffer or pointer-replacement violations")
     public void testWarmupRecycleInput(Fixture fix, GraphExecutionMode mode) {
+        log.info("PARAM_BANNER testWarmupRecycleInput fixture={} mode={}", fix.name, mode);
         assumeBackendAvailable(mode);
 
         INDArray[] reference = captureReference(fix);
@@ -365,6 +372,7 @@ public class DspSlotLifecycleAuditTest {
     @DisplayName("Caller allocates + closes a fresh input INDArray each call — "
             + "must not leave a stale DataBuffer reference in any slot snapshot")
     public void testFreshInputCloseBetween(Fixture fix, GraphExecutionMode mode) {
+        log.info("PARAM_BANNER testFreshInputCloseBetween fixture={} mode={}", fix.name, mode);
         assumeBackendAvailable(mode);
 
         INDArray[] reference = captureReference(fix);
@@ -412,6 +420,7 @@ public class DspSlotLifecycleAuditTest {
     @MethodSource("fixtureModeMatrix")
     @DisplayName("Caller dup()'s and closes the prior output before the next call")
     public void testCloseDupOutputBetween(Fixture fix, GraphExecutionMode mode) {
+        log.info("PARAM_BANNER testCloseDupOutputBetween fixture={} mode={}", fix.name, mode);
         assumeBackendAvailable(mode);
 
         INDArray[] reference = captureReference(fix);
@@ -462,6 +471,7 @@ public class DspSlotLifecycleAuditTest {
     @MethodSource("fixtureModeMatrix")
     @DisplayName("N replays under the target mode must match the SLOT_BY_SLOT reference")
     public void testReplayAccuracy(Fixture fix, GraphExecutionMode mode) {
+        log.info("PARAM_BANNER testReplayAccuracy fixture={} mode={}", fix.name, mode);
         assumeBackendAvailable(mode);
 
         INDArray[] reference = captureReference(fix);
@@ -515,6 +525,7 @@ public class DspSlotLifecycleAuditTest {
     @DisplayName("Caller closes a weight/constant between DSP calls — "
             + "must not leave a dangling DataBuffer reference in any frozen slot snapshot")
     public void testCloseWeightBetweenReplays(Fixture fix, GraphExecutionMode mode) {
+        log.info("PARAM_BANNER testCloseWeightBetweenReplays fixture={} mode={}", fix.name, mode);
         assumeBackendAvailable(mode);
 
         INDArray[] reference = captureReference(fix);
@@ -632,6 +643,7 @@ public class DspSlotLifecycleAuditTest {
     @DisplayName("Caller rebinds a weight with a fresh INDArray wrapper (same values) — "
             + "output must still match and no LIFECYCLE violation should fire")
     public void testRebindWeightBetweenReplays(Fixture fix, GraphExecutionMode mode) {
+        log.info("PARAM_BANNER testRebindWeightBetweenReplays fixture={} mode={}", fix.name, mode);
         assumeBackendAvailable(mode);
 
         INDArray[] reference = captureReference(fix);
@@ -1194,6 +1206,7 @@ public class DspSlotLifecycleAuditTest {
     @MethodSource("fixtureModeMatrix")
     @DisplayName("Assert every slot has non-null output at every execution phase")
     public void testSlotPhaseVisibility(Fixture fix, GraphExecutionMode mode) {
+        log.info("PARAM_BANNER testSlotPhaseVisibility fixture={} mode={}", fix.name, mode);
         assumeBackendAvailable(mode);
 
         sd = buildGraph(fix.graphBuilder);
@@ -1322,6 +1335,7 @@ public class DspSlotLifecycleAuditTest {
     @MethodSource("fixtureModeMatrix")
     @DisplayName("Slot outputs that are non-null before freeze must remain non-null after freeze")
     public void testSlotNonNullInvariantAcrossFreeze(Fixture fix, GraphExecutionMode mode) {
+        log.info("PARAM_BANNER testSlotNonNullInvariantAcrossFreeze fixture={} mode={}", fix.name, mode);
         assumeBackendAvailable(mode);
 
         sd = buildGraph(fix.graphBuilder);
@@ -1428,6 +1442,7 @@ public class DspSlotLifecycleAuditTest {
     @MethodSource("fixtureModeMatrix")
     @DisplayName("All placeholder external inputs must have non-null addresses at every phase")
     public void testExtInputNonNullAtEveryPhase(Fixture fix, GraphExecutionMode mode) {
+        log.info("PARAM_BANNER testExtInputNonNullAtEveryPhase fixture={} mode={}", fix.name, mode);
         assumeBackendAvailable(mode);
 
         sd = buildGraph(fix.graphBuilder);

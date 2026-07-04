@@ -962,15 +962,39 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         int idx = 1;
         Map<String,SDVariable> allVars = new LinkedHashMap<>();
         for (SDVariable var : variables()) {
+            // A PLACEHOLDER whose name already exists in the target graph IS that
+            // outer variable: subgraph inputs (ONNX If/Loop branch captures) unify
+            // with the enclosing scope by name. placeHolder() would throw
+            // "Another variable ... already exists" — reuse instead of recreating.
+            if (var.getVariableType() == VariableType.PLACEHOLDER && sameDiff.hasVariable(var.name())) {
+                SDVariable existing = sameDiff.getVariable(var.name());
+                allVars.put(existing.name(), existing);
+                thisVertexIdToNew.put(idx, idx);
+                idx++;
+                continue;
+            }
             //NOTE: the var call may not always be the same name, ensure that the samediff instance is aware of both
             SDVariable clone = var.clone(this);
             SDVariable newVar = sameDiff.var(clone);
             allVars.put(newVar.name(),newVar);
 
-            if (var.getVariableType() != VariableType.ARRAY && var.getArr() != null && !var.getArr().isEmpty()) {      //ARRAY type = "activations" - are overwritten anyway
+            // Guard the TARGET type as well: var(clone) returns the EXISTING target
+            // variable on a name collision, and subgraph bodies can share node/output
+            // names with the enclosing graph (ONNX If branches duplicate top-level
+            // glue names) — associating onto an ARRAY-typed activation throws.
+            if (var.getVariableType() != VariableType.ARRAY
+                    && newVar.getVariableType() != VariableType.ARRAY
+                    && var.getArr() != null && !var.getArr().isEmpty()) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
                 if(!newVar.name().equals(clone.name())) {
-                    sameDiff.associateArrayWithVariable(var.getArr(), clone);
+                    // This overload resolves clone.name() BY NAME in the target graph —
+                    // on a subgraph/outer-graph name collision that resolves to the
+                    // target's own variable, which may be an ARRAY-typed activation.
+                    SDVariable targetByName = sameDiff.hasVariable(clone.name())
+                            ? sameDiff.getVariable(clone.name()) : null;
+                    if (targetByName != null && targetByName.getVariableType() != VariableType.ARRAY) {
+                        sameDiff.associateArrayWithVariable(var.getArr(), clone);
+                    }
                 }
             }
 
@@ -1041,7 +1065,9 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                     }
                     SDVariable clone2 = varToClone.clone(this);
                     SDVariable newVar = sameDiff.var(clone2);
-                    if (varToClone.getVariableType() != VariableType.ARRAY && varToClone.getArr() != null && !varToClone.getArr().isEmpty()) {      //ARRAY type = "activations" - are overwritten anyway
+                    if (varToClone.getVariableType() != VariableType.ARRAY
+                            && newVar.getVariableType() != VariableType.ARRAY
+                            && varToClone.getArr() != null && !varToClone.getArr().isEmpty()) {      //ARRAY type = "activations" - are overwritten anyway
                         sameDiff.associateArrayWithVariable(varToClone.getArr(), newVar);
                     }
 
@@ -1428,7 +1454,10 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             for (Map.Entry<String, SameDiff> e : sameDiffFunctionInstances.entrySet()) {
                 SameDiff sd = e.getValue();
                 SDVariable v = sd.getVariable(variable.name());
-                if (v != null) {
+                // Same-name variables in sub-functions may be ARRAY-typed activations
+                // (e.g. If-branch sub-graphs sharing names with the outer scope) —
+                // those are calculated, never associated.
+                if (v != null && v.getVariableType() != VariableType.ARRAY) {
                     sd.associateArrayWithVariable(arr, v);
                 }
             }
@@ -1569,6 +1598,17 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
 
         if (ops.get(function.getOwnName()).getOutputsOfOp() != null && !ops.get(function.getOwnName()).getOutputsOfOp().isEmpty()) {
+            // Op-side outputs already listed (e.g. cloned SameDiffOp during graph
+            // composition) — but the VARIABLE-side reverse links may not exist in
+            // THIS graph yet. Returning without setting them leaves producer-less
+            // variables that execution can never fill (served stale from init).
+            // Setting them is idempotent.
+            for (String varName : ops.get(function.getOwnName()).getOutputsOfOp()) {
+                Variable v = variables.get(varName);
+                if (v != null && v.getOutputOfOp() == null) {
+                    v.setOutputOfOp(function.getOwnName());
+                }
+            }
             log.warn("Outgoing arguments already declared for " + function);
             return;
         }

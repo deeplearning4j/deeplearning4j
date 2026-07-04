@@ -1519,7 +1519,7 @@ public interface NativeOps {
                                     Pointer planBytes, long planBytesLen,
                                     Pointer outputNames, long numOutputs,
                                     Pointer phShapeInfoPtrs, long numPlaceholders,
-                                    int graphExecutionMode) {
+                                    int graphExecutionMode, int newBorrower) {
      throw new UnsupportedOperationException("dispatchNativePlan not implemented in this backend");
  }
 

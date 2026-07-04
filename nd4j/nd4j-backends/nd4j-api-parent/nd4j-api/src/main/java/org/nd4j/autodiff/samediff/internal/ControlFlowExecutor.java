@@ -35,6 +35,8 @@ import java.util.*;
 
 @Slf4j
 public class ControlFlowExecutor {
+    /** Bounded diagnostic counter for switch-routing visibility. */
+    private int switchLogCount = 0;
 
     private final InferenceSession session;
 
@@ -56,6 +58,12 @@ public class ControlFlowExecutor {
 
         SDValue inputValue = variableValues.get(inputVar);
         if (inputValue == null) {
+            // Dead-path passthrough: propagate the null marker so downstream
+            // null-skip discipline (and eventually Merge) resolves the branch.
+            if (variableValues.containsKey(inputVar)) {
+                variableValues.put(outputVar, null);
+                return;
+            }
             throw new IllegalStateException("Input variable " + inputVar + " not found for Identity operation " + opName);
         }
 
@@ -77,13 +85,31 @@ public class ControlFlowExecutor {
         SDValue dataValue = variableValues.get(dataInput);
         SDValue predicateValue = variableValues.get(predicateInput);
 
-        if (dataValue == null || predicateValue == null) {
+        if (predicateValue == null) {
             throw new IllegalStateException("Switch inputs not available: data=" + (dataValue != null) +
-                    ", predicate=" + (predicateValue != null));
+                    ", predicate=false");
+        }
+        if (dataValue == null) {
+            // Null data = a value from a dead path (e.g. deliberately-unfed inputs of
+            // an ONNX If's never-evaluated branch). A Switch with nothing to route
+            // emits null on BOTH sides so downstream null-propagation skips cleanly —
+            // throwing here would make dead-branch inputs fatal, contradicting the
+            // engine's null-skip discipline that Merge relies on.
+            if (outputs.size() >= 2) {
+                variableValues.put(outputs.get(0), null);
+                variableValues.put(outputs.get(1), null);
+            }
+            return;
         }
 
         INDArray predicate = predicateValue.getTensorValue();
         boolean condition = predicate.getDouble(0) != 0.0;
+        if (log.isInfoEnabled() && condition && switchLogCount < 12) {
+            switchLogCount++;
+            log.info("Switch '{}': predicate '{}' = TRUE -> routing data to output[1] ('{}')",
+                    node.getOperationName(), predicateInput,
+                    outputs.size() >= 2 ? outputs.get(1) : "?");
+        }
 
         // Switch outputs: [false_output, true_output]
         if (outputs.size() >= 2) {
@@ -169,19 +195,44 @@ public class ControlFlowExecutor {
 
         String outputVar = outputs.get(0);
 
-        // Find the first available input (standard Merge behavior)
+        // Standard Merge picks the first AVAILABLE input — but dead control-flow
+        // paths can surface as EMPTY arrays rather than nulls (shape-derived
+        // empties from branches whose data inputs are absent, e.g. the compute
+        // side of a nested If whose captures live only in the other outer branch).
+        // An empty must never beat a real value: prefer the first non-null,
+        // NON-EMPTY input; fall back to an empty only when nothing real exists.
+        SDValue emptyFallback = null;
+        String emptyFallbackVar = null;
         for (String inputVar : inputs) {
             SDValue inputValue = variableValues.get(inputVar);
-            if (inputValue != null) {
-                variableValues.put(outputVar, inputValue);
-
-                // Add dependency tracking for the Merge output
-                // This is crucial: the Merge shares the SDValue with its input,
-                // so we need to add a dependency to prevent the array from being
-                // freed when the input's dependency is satisfied
-                session.addConsumerDependencies(inputValue, outputVar, allRequired);
-                return;
+            if (inputValue == null) continue;
+            org.nd4j.linalg.api.ndarray.INDArray t = inputValue.getTensorValue();
+            if (t != null && (t.isEmpty() || t.length() == 0)) {
+                if (emptyFallback == null) {
+                    emptyFallback = inputValue;
+                    emptyFallbackVar = inputVar;
+                }
+                continue;
             }
+            if (log.isInfoEnabled() && outputVar.startsWith("present.")) {
+                log.info("Merge '{}' picked input '{}' -> {}", outputVar, inputVar,
+                        t == null ? "NULL_TENSOR" : java.util.Arrays.toString(t.shape()));
+            }
+            variableValues.put(outputVar, inputValue);
+
+            // Add dependency tracking for the Merge output
+            // This is crucial: the Merge shares the SDValue with its input,
+            // so we need to add a dependency to prevent the array from being
+            // freed when the input's dependency is satisfied
+            session.addConsumerDependencies(inputValue, outputVar, allRequired);
+            return;
+        }
+        if (emptyFallback != null) {
+            log.debug("Merge '{}': only EMPTY input available ('{}') — passing it through",
+                    outputVar, emptyFallbackVar);
+            variableValues.put(outputVar, emptyFallback);
+            session.addConsumerDependencies(emptyFallback, outputVar, allRequired);
+            return;
         }
 
         throw new IllegalStateException("No inputs available for Merge operation " + node.getOperationName());
@@ -385,6 +436,17 @@ public class ControlFlowExecutor {
             // This output is null (inactive). BFS through consumers.
             Queue<String> queue = new LinkedList<>();
             Set<String> consumers = dag.getVariableConsumers().get(output);
+            // NOTE: do NOT fall back to the ":N"-stripped base name on a lookup miss —
+            // the base name is the OTHER (live) switch output, and marking ITS
+            // consumers kills the active branch (observed: entire else-frame encoder
+            // chain marked dead through 'switch' when 'switch:1' missed). A missed
+            // lookup is safe to leave unmarked: skipped-op marker publication makes
+            // dead-side propagation correct without BFS; BFS is only an optimization.
+            if (consumers == null || consumers.isEmpty()) {
+                log.debug("markInactiveBranchForSkipping: dead switch output '{}' has no consumers " +
+                        "in the DAG map — relying on null-marker propagation", output);
+            }
+            int before = skipOps.size();
             if (consumers != null) {
                 queue.addAll(consumers);
             }
@@ -396,8 +458,12 @@ public class ControlFlowExecutor {
                 ExecutionNode consumerNode = dag.getOperationNodes().get(consumerOp);
                 if (consumerNode == null) continue;
 
-                // Stop at Merge nodes — they handle null inputs by picking the other
-                if (consumerNode.getOperation() instanceof Merge) continue;
+                // Stop at Merge nodes — they handle null inputs by picking the other.
+                // Stop at Switch nodes too: a Switch is a re-gating point that handles
+                // dead data itself (emits null markers on both sides); marking it
+                // skipped would swallow its LIVE other input's routing.
+                if (consumerNode.getOperation() instanceof Merge
+                        || consumerNode.getOperation() instanceof Switch) continue;
 
                 skipOps.add(consumerOp);
 
@@ -408,6 +474,10 @@ public class ControlFlowExecutor {
                         queue.addAll(nextConsumers);
                     }
                 }
+            }
+            if (log.isDebugEnabled()) {
+                log.debug("markInactiveBranchForSkipping: dead output '{}' -> marked {} ops inactive",
+                        output, skipOps.size() - before);
             }
         }
     }

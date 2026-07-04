@@ -425,6 +425,14 @@ public class ModelIOConfig {
     private final String cachePositionName = "cache_position";
 
     /**
+     * Name of the merged-decoder branch selector (optimum "decoder_model_merged"
+     * exports, e.g. Whisper): a BOOL scalar choosing the no-past prefill branch
+     * (false) vs the with-past decode branch (true) of the exported If.
+     */
+    @Builder.Default
+    private final String useCacheBranchName = "use_cache_branch";
+
+    /**
      * Prefix for KV cache input variables (e.g., "past_key_values.").
      * Used to identify which inputs are KV cache entries vs. regular inputs.
      */
@@ -524,6 +532,14 @@ public class ModelIOConfig {
      */
     public boolean isCachePosition(String name) {
         return cachePositionName != null && cachePositionName.equals(name);
+    }
+
+    /**
+     * Check whether a given input name is the merged-decoder branch selector
+     * (optimum decoder_model_merged exports).
+     */
+    public boolean isUseCacheBranch(String name) {
+        return useCacheBranchName != null && useCacheBranchName.equals(name);
     }
 
     /**

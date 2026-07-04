@@ -21,6 +21,7 @@
 // This file is compiled by NVCC only on CUDA builds (SD_CUDA defined).
 //
 
+#include <graph/DspDiagnostics.h>
 #include <graph/gpu/TritonCudaDriverDispatch.h>
 
 #ifdef SD_CUDA
@@ -152,6 +153,7 @@ int tritonModuleGetFunction(void** func, void* module, const char* name) {
 
 int tritonModuleUnload(void* module) {
   if (!module) return 0;
+  DSP_DIAG(EXECUTE, "TritonCudaDriverDispatch: cuModuleUnload module=%p", module);
   return static_cast<int>(cuModuleUnload(static_cast<CUmodule>(module)));
 }
 

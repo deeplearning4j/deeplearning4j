@@ -178,6 +178,16 @@ class OnnxFrameworkImporter: FrameworkImporter {
         try {
             val loadGraph = loadGraph(fileName)
             if(suggestDynamicVariables) {
+                // CONTRACT WARNING: suggested inputs are dummy MINIMAL-shape tensors and
+                // import-time eager evaluation FOLDS shape math over them into constants.
+                // For dynamic-sequence models (autoregressive decoders, variable-length
+                // inputs) this silently bakes 1-token geometry into the graph: KV present
+                // outputs collapse to seq-dim 1 and logits are garbage at non-final
+                // positions. Pass suggestDynamicVariables=false for such models.
+                log.warn("suggestDynamicVariables=true: import will CONSTANT-FOLD shape math " +
+                        "over minimal dummy input shapes. Dynamic-sequence models (decoders, " +
+                        "variable-length inputs) MUST use false — baked shapes silently corrupt " +
+                        "multi-token execution.")
                 val newDynamicVariables  = suggestDynamicVariables(loadGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
                 val dynamicVariablesConverted = convertToOnnxTensors(newDynamicVariables)
                 // Add ONNX initializers to dynamicVariables so PreImportHooks can access constant tensors

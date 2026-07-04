@@ -132,6 +132,13 @@ class SD_LIB_EXPORT GraphReplayHandle {
   virtual std::vector<void*>& getCapturedHostPtrs();
   virtual const std::vector<void*>& getCapturedHostPtrs() const;
 
+  // ── Captured GPU module lifetime management ──────────────────────────
+  // Modules whose kernels a captured graph references. Unloaded only at
+  // handle death (CUDA backend); unloading earlier invalidates the baked
+  // kernel nodes (CUDA error 98 'invalid device function' at replay).
+  virtual void addCapturedModule(void* module) { capturedModules_.push_back(module); }
+  virtual std::vector<void*>& getCapturedModules() { return capturedModules_; }
+
   // ── Capture workspace management ─────────────────────────────────────
   // Pre-allocated buffer for PointersManager temporaries during capture.
   // Uses CUDA memory pool (CaptureBufferRegistry) when available,
@@ -192,6 +199,7 @@ class SD_LIB_EXPORT GraphReplayHandle {
   bool workspaceIsExternal_ = false;
   std::vector<void*> capturedExternalAddrs_;
   std::vector<void*> capturedHostPtrs_;
+  std::vector<void*> capturedModules_;
 };
 
 /**

@@ -1717,6 +1717,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         int totalOps = executionOrder.size();
         int opIdx = 0;
+        List<ExecutionNode> deferredMerges = new ArrayList<>();
         for (ExecutionNode node : executionOrder) {
             opIdx++;
             if (node.getNodeType() == ExecutionNode.ExecutionNodeType.VARIABLE_INIT ||
@@ -1727,8 +1728,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             String opName = node.getOperationName();
 
-            // Skip ops marked inactive (e.g., inactive if-branch after Switch)
+            // Skip ops marked inactive (e.g., inactive if-branch after Switch).
+            // Publish explicit NULL MARKERS for the skipped op's outputs: a bare skip
+            // leaves them ABSENT, which downstream readiness logic reads as "still
+            // pending" — deferred merges then hang forever on dead branches.
             if (skipOps.contains(opName)) {
+                for (String outputName : node.getOutputVariables()) {
+                    if (!variableValues.containsKey(outputName)) {
+                        variableValues.put(outputName, null);
+                    }
+                }
+                completedOps.add(opName);
                 continue;
             }
 
@@ -1772,9 +1782,28 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
                 if (!hasInput) {
-                    // All inputs null/missing — this Merge is in a fully inactive branch.
-                    // Skip it and propagate skip to downstream consumers.
-                    log.debug("Merge {} has no available inputs (fully inactive branch), skipping", opName);
+                    // Distinguish PENDING from DEAD: an ABSENT input (no map entry) has
+                    // simply not executed yet — deciding "fully inactive" now kills the
+                    // merge permanently even though its live side arrives later (observed:
+                    // dead side NULL_MARKER + live side ABSENT when DAG ordering placed
+                    // the merge early). Defer such merges to a post-pass; only inputs
+                    // that are ALL explicit null markers mean a truly dead branch.
+                    boolean anyAbsent = false;
+                    for (String input : node.getInputVariables()) {
+                        if (!variableValues.containsKey(input)) { anyAbsent = true; break; }
+                    }
+                    if (anyAbsent) {
+                        deferredMerges.add(node);
+                        continue;
+                    }
+                    StringBuilder inState = new StringBuilder();
+                    for (String input : node.getInputVariables()) {
+                        inState.append(' ').append(input).append('=')
+                                .append(variableValues.containsKey(input) ? "NULL_MARKER" : "ABSENT");
+                        inState.append(DebugFormatHelper.provenanceOf(sameDiff, variableValues, input));
+                    }
+                    log.info("Merge {} has no available inputs (fully inactive branch), skipping. Inputs:{}",
+                            opName, inState);
                     completedOps.add(opName);
                     // BFS from Merge outputs to mark downstream ops for skipping
                     for (String output : node.getOutputVariables()) {
@@ -1786,8 +1815,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             if (skipOps.contains(consumer)) continue;
                             ExecutionNode consumerNode = dag.getOperationNodes().get(consumer);
                             if (consumerNode == null) continue;
-                            // Stop at next Merge — let it decide based on its own inputs
-                            if (consumerNode.getOperation() instanceof Merge) continue;
+                            // Stop at next Merge — let it decide based on its own inputs.
+                            // Stop at Switch too: it re-gates and handles dead data itself.
+                            if (consumerNode.getOperation() instanceof Merge
+                                    || consumerNode.getOperation() instanceof Switch) continue;
                             skipOps.add(consumer);
                             for (String consumerOutput : consumerNode.getOutputVariables()) {
                                 Set<String> nextConsumers = dag.getVariableConsumers().get(consumerOutput);
@@ -1878,6 +1909,60 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
             if (TIMING_ENABLED) timing.arrayReleaseNs += System.nanoTime() - tRelease0;
+        }
+
+        // Post-pass for merges deferred on ABSENT (pending) inputs: by now every
+        // producer has run, so each either has a live side (execute normally) or
+        // all-dead inputs (skip with null outputs). Bounded passes because a
+        // deferred merge's output can be another deferred merge's input.
+        for (int pass = 0; pass < 4 && !deferredMerges.isEmpty(); pass++) {
+            java.util.Iterator<ExecutionNode> it = deferredMerges.iterator();
+            while (it.hasNext()) {
+                ExecutionNode dm = it.next();
+                boolean anyLive = false;
+                boolean anyAbsent = false;
+                for (String input : dm.getInputVariables()) {
+                    SDValue v = variableValues.get(input);
+                    if (v != null) { anyLive = true; break; }
+                    if (!variableValues.containsKey(input)) anyAbsent = true;
+                }
+                if (anyLive) {
+                    executeNode(dm, variableValues, allRequired, listeners, at, batch);
+                    completedOps.add(dm.getOperationName());
+                    it.remove();
+                } else if (!anyAbsent) {
+                    log.info("Deferred merge {} resolved fully dead — outputs null", dm.getOperationName());
+                    for (String output : dm.getOutputVariables()) {
+                        variableValues.put(output, null);
+                    }
+                    completedOps.add(dm.getOperationName());
+                    it.remove();
+                }
+            }
+        }
+        if (!deferredMerges.isEmpty()) {
+            log.warn("{} deferred merges never resolved (inputs still absent): {}",
+                    deferredMerges.size(),
+                    deferredMerges.stream().map(ExecutionNode::getOperationName).limit(5).collect(Collectors.toList()));
+            // Name WHY each absent input never materialized: producer scheduled at all?
+            // skip-marked? completed-but-valueless? — distinguishes DAG-reachability
+            // gaps from skip-BFS overreach without another debugging round.
+            java.util.Set<String> orderedOps = new HashSet<>();
+            for (ExecutionNode en : executionOrder) orderedOps.add(en.getOperationName());
+            int shown = 0;
+            for (ExecutionNode dm : deferredMerges) {
+                if (shown++ >= 3) break;
+                for (String input : dm.getInputVariables()) {
+                    if (variableValues.containsKey(input)) continue;
+                    Variable meta = sameDiff.getVariables().get(input);
+                    String producer = meta != null ? meta.getOutputOfOp() : null;
+                    log.warn("  unresolved merge '{}' input '{}': producer='{}' inExecutionOrder={} skipMarked={} completed={}",
+                            dm.getOperationName(), input, producer,
+                            producer != null && orderedOps.contains(producer),
+                            producer != null && skipOps.contains(producer),
+                            producer != null && completedOps.contains(producer));
+                }
+            }
         }
 
         } catch (Exception execException) {
@@ -3252,6 +3337,20 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
 
+            if (log.isInfoEnabled() && opName.contains("/then/")
+                    && (opName.contains("embed_tokens/Gather") || opName.endsWith("/then//model/decoder/Reshape_output_0"))) {
+                StringBuilder argDump = new StringBuilder();
+                for (int i = 0; i < argNames.length; i++) {
+                    SDValue av = variableValues.get(argNames[i]);
+                    argDump.append(' ').append(argNames[i]).append('=')
+                            .append(av == null ? (variableValues.containsKey(argNames[i]) ? "NULL_MARKER" : "ABSENT")
+                                    : (av.getTensorValue() == null ? "NULL_TENSOR"
+                                    : (av.getTensorValue().isEmpty() ? "EMPTY" : Arrays.toString(av.getTensorValue().shape()))))
+                            .append("(resolved=").append(inputArrays[i] == null ? "null" : Arrays.toString(inputArrays[i].shape())).append(')');
+                }
+                log.info("PROBE then-frame Gather '{}' args:{}", opName, argDump);
+            }
+
             for(int i = 0; i < inputArrays.length; i++) {
                 if(inputArrays[i] == null) {
                     // Check if this null is from a Switch operation (inactive branch)
@@ -3265,8 +3364,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             isFromSwitch = true;
                         }
                     }
+                    // Dead-path nulls are TRANSITIVE: an upstream op skipped on an
+                    // inactive Switch branch publishes an explicit null marker
+                    // (containsKey && null). Any op consuming such a marker is itself
+                    // on the dead path and must skip — creator-type alone only covers
+                    // DIRECT Switch consumers, making every second-level consumer a
+                    // false "control flow management failure".
+                    boolean deadPathMarker = variableValues.containsKey(argName)
+                            && variableValues.get(argName) == null;
 
-                    if (isFromSwitch) {
+                    if (isFromSwitch || deadPathMarker) {
                         // This operation depends on an inactive Switch branch - skip execution
                         // The Merge node will select the output from the active branch
                         if (log.isTraceEnabled()) {
@@ -3896,12 +4003,26 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (kerasWorkaround && e.getKey().endsWith(KERAS_TRAIN_TEST)) {
                 arrayUseTracker().addDependency(arrValue, new ExecDoneDep());
             } else if (arr.dataType() == dt) {
-                //Mark as a placeholder array in the array use tracker, so we never deallocate this array...
-                arrayUseTracker().addDependency(arrValue,
-                        PlaceholderDep.builder()
-                        .phName(e.getKey())
-                        .frame(currentFrame).parentFrame(currParentFrame)
-                        .build());
+                if (arr.isView()) {
+                    // Strided VIEWS fed as placeholders are silently mis-read by some
+                    // native op paths (contiguous-read assumptions) — every value
+                    // computed from them is corrupt with no error. Materialize once at
+                    // the graph boundary, exactly like the dtype-cast case below.
+                    INDArray materialized = mmgr.allocate(false, dt, arr.shape());
+                    materialized.assign(arr);
+                    arr = materialized;
+                    arrayUseTracker().addDependency(arrValue, ExecDoneDep.builder()
+                            .frame(currentFrame)
+                            .parentFrame(currParentFrame)
+                            .build());
+                } else {
+                    //Mark as a placeholder array in the array use tracker, so we never deallocate this array...
+                    arrayUseTracker().addDependency(arrValue,
+                            PlaceholderDep.builder()
+                            .phName(e.getKey())
+                            .frame(currentFrame).parentFrame(currParentFrame)
+                            .build());
+                }
             } else {
                 INDArray cast = mmgr.allocate(false, dt, arr.shape());
                 cast.assign(arr);
@@ -3936,6 +4057,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     out = new HashMap<>(placeholders);
                 }
                 out.put(e.getKey(), e.getValue().castTo(var.dataType()));
+            } else if (e.getValue() != null && e.getValue().isView()) {
+                // Same boundary materialization as preprocessPlaceholders: strided
+                // views are mis-read by contiguous-assuming native paths.
+                if (out == null) {
+                    out = new HashMap<>(placeholders);
+                }
+                out.put(e.getKey(), e.getValue().dup());
             }
         }
         return out != null ? out : placeholders;

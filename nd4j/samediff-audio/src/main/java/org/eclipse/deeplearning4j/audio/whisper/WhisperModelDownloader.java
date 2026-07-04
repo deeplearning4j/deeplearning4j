@@ -127,6 +127,10 @@ public class WhisperModelDownloader {
 
         String[] files = {
                 "encoder_model.onnx",
+                // The merged decoder (past_key_values inputs + use_cache branch) is the
+                // one WhisperModel decodes with — the plain decoder_model.onnx has no
+                // past inputs and cannot carry history across decode steps.
+                "decoder_model_merged.onnx",
                 "decoder_model.onnx",
                 "decoder_with_past_model.onnx"
         };

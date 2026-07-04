@@ -23,6 +23,8 @@
 #include <graph/DspDiagnostics.h>
 #include <memory/cuda/CudaMemoryPool.h>
 #include <cuda_runtime.h>
+#include <cuda.h>
+#include <graph/gpu/CapturedModuleRegistry.h>
 
 namespace sd {
 namespace graph {
@@ -251,6 +253,23 @@ void CudaGraphReplayHandle::freeHostPointers() {
     if (ptr != nullptr) cudaFreeHost(ptr);
   }
   capturedHostPtrs_.clear();
+  // Captured modules die WITH the graph: only now are the baked kernel nodes
+  // gone, so cuModuleUnload is finally legal.
+  for (auto* mod : capturedModules_) {
+    if (mod == nullptr) continue;
+    // The Triton backend is a SINGLETON whose compiled cache outlives plans:
+    // this module may still be served to later plans (cache hit) or baked by
+    // other handles. Only the LAST holder unloads.
+    if (sd::graph::modreg::releaseFromHandle(mod)) {
+      DSP_DIAG_DEV(EXECUTE, deviceId_,
+                   "CudaGraphReplayHandle: last ref — unloading captured module=%p", mod);
+      cuModuleUnload(static_cast<CUmodule>(mod));
+    } else {
+      DSP_DIAG_DEV(EXECUTE, deviceId_,
+                   "CudaGraphReplayHandle: released captured module=%p (other holders remain)", mod);
+    }
+  }
+  capturedModules_.clear();
 }
 
 }  // namespace graph

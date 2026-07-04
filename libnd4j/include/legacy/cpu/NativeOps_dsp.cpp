@@ -288,7 +288,8 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
                                sd::LongType numOutputs,
                                sd::Pointer phShapeInfoPtrs,
                                sd::LongType numPlaceholders,
-                               int graphExecutionMode) {
+                               int graphExecutionMode,
+                               int newBorrower) {
   try {
     if (!cacheHandle) THROW_EXCEPTION("dispatchNativePlan: cacheHandle is null");
 
@@ -331,6 +332,10 @@ sd::Pointer dispatchNativePlan(sd::Pointer cacheHandle,
     };
 
     auto* plan = cache->getOrInsert(key, factory);
+    if (plan && newBorrower != 0) {
+      // Borrower switch on cache HIT — see NativeOpsDsp.h contract.
+      plan->invalidateExternalViewSlotsOnReacquire();
+    }
     return reinterpret_cast<sd::Pointer>(plan);
   } catch (const std::exception& e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

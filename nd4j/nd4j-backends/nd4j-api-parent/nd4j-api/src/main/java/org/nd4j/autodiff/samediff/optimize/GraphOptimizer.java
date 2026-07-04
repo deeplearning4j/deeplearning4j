@@ -137,6 +137,23 @@ public class GraphOptimizer {
     public static SameDiff optimize(SameDiff graph, List<String> requiredOutputs, List<OptimizerSet> optimizations, OptimizationDebugger debugger){
         long startTime = System.currentTimeMillis();
 
+        // Control-flow graphs (ifCond/loop Switch/Merge frames, e.g. ONNX If-merged
+        // decoders) are OUTSIDE the optimizer passes' supported domain: rewrite and
+        // flattening passes remove frame-internal variables (Concat *_flatN artifacts)
+        // that Switch ops still reference, producing a graph that fails validation
+        // with dozens of missing-variable errors. Until the passes are frame-aware,
+        // be honest about the contract: return the graph unoptimized.
+        for (org.nd4j.autodiff.samediff.internal.SameDiffOp op : graph.getOps().values()) {
+            if (op.getOp() instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch
+                    || op.getOp() instanceof org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge) {
+                log.warn("Graph contains control-flow frames (op '{}' is {}): optimizer passes are "
+                                + "not control-flow-aware and would corrupt Switch/Merge wiring — "
+                                + "returning the graph UNOPTIMIZED.",
+                        op.getName(), op.getOp().getClass().getSimpleName());
+                return graph;
+            }
+        }
+
         // Use full dup() - shallowClone shares DifferentialFunction objects which corrupts the original
         SameDiff sd = graph.dup();
 

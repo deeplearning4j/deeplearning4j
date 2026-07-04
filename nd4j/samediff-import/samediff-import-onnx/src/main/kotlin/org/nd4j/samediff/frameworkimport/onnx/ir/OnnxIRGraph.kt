@@ -46,6 +46,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
     var graphDef = graphDef
     val opList = graphDef.nodeList
     val opMappingRegistry = opMappingRegistry
+    private val logger = org.slf4j.LoggerFactory.getLogger(OnnxIRGraph::class.java)
     var cachedNodeList: List<IRNode<Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType>>
     var inputList = ArrayList<String>()
     var outputList = ArrayList<String>()
@@ -76,6 +77,7 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         nodeNames = HashSet()
         preProcessZeroSuffixes()
         preProcessUnnamedNodes()
+        preProcessDuplicateNodeNames()
 
         // Build initializer index for O(1) lookups (before nodeList() which may reference it)
         for (initializer in this.graphDef.initializerList) {
@@ -127,9 +129,20 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         }
         val inputList = this.graphDef.inputList.filter { input ->
             val cleanName = input.name.replace(":0","")
-            !opTypes.containsKey(cleanName) &&
-            !initializerNames.contains(cleanName) &&
-            !nodeOutputNames.contains(cleanName)
+            val excludedByNodeName = opTypes.containsKey(cleanName)
+            val excludedByInitializer = initializerNames.contains(cleanName)
+            val excludedByNodeOutput = nodeOutputNames.contains(cleanName)
+            if (excludedByNodeName || excludedByInitializer || excludedByNodeOutput) {
+                // A dropped graph input never becomes a placeholder — if a real
+                // consumer needs it the import dies later with "Variable ... does
+                // not exist". Name the exclusion reason here so that failure is
+                // diagnosable (this silent filter cost a full debugging session
+                // on whisper's merged decoder).
+                logger.info("Graph input '{}' EXCLUDED from placeholder creation: " +
+                        "nodeNameCollision={} initializer={} producedByNode={}",
+                        cleanName, excludedByNodeName, excludedByInitializer, excludedByNodeOutput)
+            }
+            !excludedByNodeName && !excludedByInitializer && !excludedByNodeOutput
         }.map { input -> input.name.replace(":0","") }
         this.inputList.addAll(inputList)
         this.variableList.addAll(inputList)
@@ -144,6 +157,42 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
      *
      * Optimized: first checks if any unnamed nodes exist before rebuilding the graph.
      */
+    /**
+     * ONNX does not enforce unique node names, and merged/optimum exports do repeat
+     * them (whisper-tiny's merged decoder has two '/model/decoder/layers.N/.../Mul_1'
+     * class collisions per branch). Duplicate NODE names corrupt import silently:
+     * the topological sort keys nodeInputs/nodesByName by name, so the second node
+     * overwrites the first's dependency record, the queue emits one object for the
+     * shared name, and the orphaned first object is tail-appended AFTER its consumers
+     * — failing later with "Variable X does not exist" at a consumer that sorted
+     * before its real producer. Node names are metadata (wiring runs on tensor
+     * names), so uniquifying the second occurrence onward is semantics-preserving.
+     */
+    private fun preProcessDuplicateNodeNames() {
+        val seen = HashSet<String>()
+        var hasDuplicates = false
+        for (node in graphDef.nodeList) {
+            if (node.name.isNotEmpty() && !seen.add(node.name)) { hasDuplicates = true; break }
+        }
+        if (!hasDuplicates) return
+
+        val builder = graphDef.toBuilder()
+        val counts = HashMap<String, Int>()
+        for (i in 0 until builder.nodeCount) {
+            val node = builder.getNode(i)
+            if (node.name.isEmpty()) continue
+            val occurrence = counts.merge(node.name, 1, Int::plus)!!
+            if (occurrence > 1) {
+                val newName = "${node.name}_dedup${occurrence - 1}"
+                logger.warn("Duplicate node name '{}' (occurrence {}) renamed to '{}' — " +
+                        "duplicate node names silently corrupt the import's topological sort",
+                        node.name, occurrence, newName)
+                builder.setNode(i, node.toBuilder().setName(newName).build())
+            }
+        }
+        graphDef = builder.build()
+    }
+
     private fun preProcessUnnamedNodes() {
         // Quick scan: check if any nodes are unnamed
         var hasUnnamed = false
@@ -290,6 +339,11 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
             ret2.add(OnnxIRNode(nodeToAdd, identityOp,opMappingRegistry))
         }
+
+        // Structural accounting for import debugging: a graph whose inputs produce no
+        // pseudo-placeholders cannot import (consumers of those inputs find nothing).
+        logger.info("nodeList(): {} graph inputs -> {} placeholder pseudo-nodes, {} real nodes, total {}",
+                graphDef.inputCount, ret2.size, graphDef.nodeCount, ret2.size + graphDef.nodeCount)
 
         //add inputs and outputs for use cases like placeholder detection
         inputList.addAll(graphDef.inputList.filter { input -> !initializerByName.containsKey(input.name.replace(":0","")) }.map { input -> input.name })

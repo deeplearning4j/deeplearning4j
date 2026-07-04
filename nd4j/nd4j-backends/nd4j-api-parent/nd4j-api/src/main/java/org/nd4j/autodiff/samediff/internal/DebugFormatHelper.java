@@ -129,6 +129,72 @@ public class DebugFormatHelper {
      * @param sameDiff the SameDiff instance
      * @return formatted string with node metadata for error context
      */
+    /**
+     * One-hop provenance for a problem input: names its producing op and the
+     * availability/emptiness of THAT op's inputs — turning "input is missing/empty"
+     * into "because its producer X ran on these states" without a debugger.
+     */
+    /** Public entry: render the dead/empty ancestry of a variable as a multi-line string. */
+    public static String provenanceOf(SameDiff sameDiff, Map<String, SDValue> variableValues, String varName) {
+        StringBuilder sb = new StringBuilder();
+        appendProvenance(sb, sameDiff, variableValues, varName);
+        return sb.toString();
+    }
+
+    private static void appendProvenance(StringBuilder sb, SameDiff sameDiff,
+                                         Map<String, SDValue> variableValues, String varName) {
+        try {
+            java.util.Set<String> visited = new java.util.HashSet<>();
+            appendProvenanceRecursive(sb, sameDiff, variableValues, varName, 0, visited);
+        } catch (Exception e) {
+            sb.append("\n      Provenance: <error: ").append(e.getMessage()).append(">");
+        }
+    }
+
+    /** Walks EMPTY/NULL ancestry until an OK/leaf origin, so a single error dump shows the full dead chain. */
+    private static void appendProvenanceRecursive(StringBuilder sb, SameDiff sameDiff,
+                                                  Map<String, SDValue> variableValues, String varName,
+                                                  int depth, java.util.Set<String> visited) {
+        if (depth > 8 || !visited.add(varName)) return;
+        String indent = "\n      " + "  ".repeat(depth);
+        Variable meta = sameDiff.getVariables().get(varName);
+        String producer = meta != null ? meta.getOutputOfOp() : null;
+        if (producer == null) {
+            sb.append(indent).append("Provenance[").append(depth).append("]: '").append(varName)
+                    .append("' has no producing op (type=")
+                    .append(meta != null && meta.getVariable() != null ? meta.getVariable().getVariableType() : null)
+                    .append(", fed=").append(variableValues.containsKey(varName)).append(")");
+            return;
+        }
+        SameDiffOp producerOp = sameDiff.getOps().get(producer);
+        sb.append(indent).append("Provenance[").append(depth).append("]: '").append(varName)
+                .append("' <- '").append(producer).append("' (")
+                .append(producerOp != null && producerOp.getOp() != null ? producerOp.getOp().opName() : "?")
+                .append("), inputs:");
+        if (producerOp == null || producerOp.getInputsToOp() == null) return;
+        java.util.List<String> followUp = new java.util.ArrayList<>();
+        for (String pin : producerOp.getInputsToOp()) {
+            SDValue pv = variableValues.get(pin);
+            String state;
+            if (pv == null) {
+                state = variableValues.containsKey(pin) ? "NULL_MARKER" : "ABSENT";
+                followUp.add(pin);
+            } else if (pv.getTensorValue() == null) {
+                state = "NULL_TENSOR";
+                followUp.add(pin);
+            } else if (pv.getTensorValue().isEmpty()) {
+                state = "EMPTY" + formatShape(pv.getTensorValue().shape());
+                followUp.add(pin);
+            } else {
+                state = "OK" + formatShape(pv.getTensorValue().shape());
+            }
+            sb.append(" ").append(pin).append("=").append(state);
+        }
+        for (String pin : followUp) {
+            appendProvenanceRecursive(sb, sameDiff, variableValues, pin, depth + 1, visited);
+        }
+    }
+
     public static String formatNodeErrorContext(ExecutionNode node, Map<String, SDValue> variableValues,
                                                 SameDiff sameDiff) {
         StringBuilder sb = new StringBuilder();
@@ -160,14 +226,20 @@ public class DebugFormatHelper {
                 SDValue value = variableValues.get(inputName);
                 if (value == null) {
                     sb.append(" -> VALUE NOT FOUND IN CONTEXT");
+                    appendProvenance(sb, sameDiff, variableValues, inputName);
                 } else if (value.getSdValueType() == SDValueType.TENSOR) {
                     INDArray arr = value.getTensorValue();
                     if (arr == null) {
                         sb.append(" -> null tensor");
+                        appendProvenance(sb, sameDiff, variableValues, inputName);
                     } else {
                         sb.append("\n      Shape: ").append(formatShape(arr.shape()));
                         sb.append(", DataType: ").append(arr.dataType());
                         sb.append(", Closed: ").append(arr.wasClosed());
+                        sb.append(", Empty: ").append(arr.isEmpty());
+                        if (arr.isEmpty()) {
+                            appendProvenance(sb, sameDiff, variableValues, inputName);
+                        }
                         if (arr.data() != null && !arr.wasClosed()) {
                             try {
                                 sb.append("\n      Buffer Address: 0x").append(Long.toHexString(arr.data().pointer().address()));

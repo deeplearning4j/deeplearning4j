@@ -25,6 +25,10 @@
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <graph/DspDiagnostics.h>
 #include <execution/LaunchContext.h>
+#include <helpers/DebugHelper.h>
+#include <array/DataBuffer.h>
+#include <memory/cuda/CudaMemoryPool.h>
+#include <graph/gpu/CapturedModuleRegistry.h>
 #include <system/Environment.h>
 #include <helpers/logger.h>
 
@@ -688,9 +692,14 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
         compiled.cachedArgTableHostPinnedBytes < tableBytes) {
       auto& memPool = sd::memory::CudaMemoryPool::getInstance();
       if (compiled.cachedArgTableHostPinned != nullptr) {
-        memPool.freePinnedHost(compiled.cachedArgTableHostPinned);
+        // Capture-owned blocks belong to a live captured graph — the replay
+        // handle frees them at its death. Never pool-free here; just detach.
+        if (!compiled.cachedArgTableCaptureOwned) {
+          memPool.freePinnedHost(compiled.cachedArgTableHostPinned);
+        }
         compiled.cachedArgTableHostPinned = nullptr;
         compiled.cachedArgTableHostPinnedBytes = 0;
+        compiled.cachedArgTableCaptureOwned = false;
       }
       compiled.cachedArgTableHostPinned = static_cast<char*>(memPool.allocatePinnedHost(tableBytes));
       if (compiled.cachedArgTableHostPinned == nullptr) {
@@ -735,6 +744,36 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       // Uses the persistent pinned host buffer — safe for CUDA graph capture/replay.
       auto memcpyErr = cudaMemcpyAsync(argTableDevice, argTableHostPinned, tableBytes,
                                        cudaMemcpyHostToDevice, cudaExecStream);
+      // Under capture this memcpy becomes a GRAPH NODE that BAKES
+      // argTableHostPinned as its host source. From that moment the block's
+      // lifetime must match the graph's: move destruction ownership to the
+      // capture machinery (tl_capturedHostPtrs -> replay handle) and drop pool
+      // bookkeeping. The block stays cached here as the per-step arg mailbox.
+      // Without this, compiled-kernel teardown pool-frees the block under the
+      // live graph and the next cudaGraphLaunch dies host-side (pointer-matched
+      // on DspBufferAliasAccuracyTest sharedBufferViewFanout/AUTO).
+      if (memcpyErr == cudaSuccess && !compiled.cachedArgTableCaptureOwned) {
+        cudaStream_t execStreamCopy = cudaExecStream;
+        if (DebugHelper::streamIsCapturing(&execStreamCopy)) {
+          tl_capturedHostPtrs.push_back(compiled.cachedArgTableHostPinned);
+          sd::memory::CudaMemoryPool::getInstance().relinquishPinnedHost(
+              compiled.cachedArgTableHostPinned);
+          compiled.cachedArgTableCaptureOwned = true;
+          DSP_DIAG(EXECUTE, "TritonGraphBackend: arg table pinned %p baked into capture "
+                   "for [%d-%d] — ownership -> captured graph",
+                   compiled.cachedArgTableHostPinned, compiled.startSlot_, compiled.endSlot_);
+        }
+        // The kernel node about to be captured references compiled.gpuModule —
+        // same ownership contract: the replay handle unloads it at death.
+        if (!compiled.moduleCaptureOwned && compiled.gpuModule != nullptr) {
+          sd::graph::modreg::retainForHandle(compiled.gpuModule);
+          tl_capturedModules.push_back(compiled.gpuModule);
+          compiled.moduleCaptureOwned = true;
+          DSP_DIAG(EXECUTE, "TritonGraphBackend: module %p baked into capture for [%d-%d] "
+                   "— ownership -> captured graph",
+                   compiled.gpuModule, compiled.startSlot_, compiled.endSlot_);
+        }
+      }
       if (memcpyErr != cudaSuccess) {
         DSP_DIAG(EXECUTE, "TritonGraphBackend: failed to copy arg table (%d bytes) for [%d-%d]: %s "
                   "(devicePtr=%p, hostPtr=%p, cachedDeviceId=%d, currentDevice=%d, stream=%p)",
@@ -1228,6 +1267,22 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
                    compiledSeg->consolidatedArgTableBytes,
                    static_cast<int>(compiledSeg->subKernels.size()),
                    seg.def.startSlot, seg.def.endSlot);
+      // Same capture-ownership contract as the per-kernel arg table: once a
+      // capture bakes this pinned block as an H2D source, the replay handle
+      // owns destruction; pool bookkeeping is dropped and teardown must skip.
+      if (!compiledSeg->consolidatedArgTableCaptureOwned) {
+        cudaStream_t consolStreamCopy = cudaStr;
+        if (DebugHelper::streamIsCapturing(&consolStreamCopy)) {
+          tl_capturedHostPtrs.push_back(compiledSeg->consolidatedArgTableHostPinned);
+          sd::memory::CudaMemoryPool::getInstance().relinquishPinnedHost(
+              compiledSeg->consolidatedArgTableHostPinned);
+          compiledSeg->consolidatedArgTableCaptureOwned = true;
+          DSP_DIAG(EXECUTE, "TritonGraphBackend: consolidated arg table pinned %p baked into "
+                   "capture for seg[%d-%d] — ownership -> captured graph",
+                   compiledSeg->consolidatedArgTableHostPinned,
+                   seg.def.startSlot, seg.def.endSlot);
+        }
+      }
     }
   }
 }

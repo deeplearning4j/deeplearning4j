@@ -57,6 +57,20 @@ abstract class ListAttributeValueLookupToIndex<
         return !argDescriptorType.contains(OpNamespace.ArgDescriptor.ArgType.OUTPUT_TENSOR)
     }
 
+    /**
+     * Resolve an index into an attribute list, tolerating lists SHORTER than the
+     * mapped index: ONNX ops with rank-dependent attribute lists (Conv1D
+     * kernel_shape/strides/pads/dilations have ONE element) are imported through
+     * mappings written for the 2D case (indices 0 and 1). Out-of-range lookups
+     * clamp to the LAST element — the standard 1D->2D lift replicates the single
+     * spatial value — instead of throwing IndexOutOfBoundsException and aborting
+     * the whole model import (previously fatal for every 1D-conv ONNX model,
+     * e.g. Whisper's encoder front end).
+     */
+    private fun clampIndex(index: Int, size: Int): Int {
+        return if (index < size) index else size - 1
+    }
+
     override fun convertAttributes(mappingCtx: MappingContext<GRAPH_DEF, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF, ATTR_VALUE_TYPE, DATA_TYPE>): List<OpNamespace.ArgDescriptor> {
         val ret = ArrayList<OpNamespace.ArgDescriptor>()
         for ((k, v) in mappingNamesToPerform()) {
@@ -68,7 +82,7 @@ abstract class ListAttributeValueLookupToIndex<
                     if(listFloat.isNotEmpty()) {
                         val argDescriptor = ArgDescriptor {
                             name = k
-                            doubleValue = listFloat[index.toInt()].toDouble()
+                            doubleValue = listFloat[clampIndex(index.toInt(), listFloat.size)].toDouble()
                             argType = OpNamespace.ArgDescriptor.ArgType.DOUBLE
                             argIndex = lookupIndexForArgDescriptor(
                                 argDescriptorName = k,
@@ -89,7 +103,7 @@ abstract class ListAttributeValueLookupToIndex<
                     if(listInt.isNotEmpty()) {
                         val argDescriptor = ArgDescriptor {
                             name = k
-                            int64Value = listInt[index.toInt()]
+                            int64Value = listInt[clampIndex(index.toInt(), listInt.size)]
                             argType = OpNamespace.ArgDescriptor.ArgType.INT64
                             argIndex = lookupIndexForArgDescriptor(
                                 argDescriptorName = k,
@@ -111,7 +125,7 @@ abstract class ListAttributeValueLookupToIndex<
                     if(listString.isNotEmpty()) {
                         val argDescriptor = ArgDescriptor {
                             name = k
-                            stringValue = listString[index.toInt()]
+                            stringValue = listString[clampIndex(index.toInt(), listString.size)]
                             argType = OpNamespace.ArgDescriptor.ArgType.STRING
                             argIndex = lookupIndexForArgDescriptor(
                                 argDescriptorName = k,
@@ -133,7 +147,7 @@ abstract class ListAttributeValueLookupToIndex<
                     if(listTensor.isNotEmpty()) {
                         val argDescriptor = ArgDescriptor {
                             name = k
-                            inputValue = listTensor[index.toInt()].toArgTensor()
+                            inputValue = listTensor[clampIndex(index.toInt(), listTensor.size)].toArgTensor()
                             argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
                             argIndex = lookupIndexForArgDescriptor(
                                 argDescriptorName = k,
@@ -155,7 +169,7 @@ abstract class ListAttributeValueLookupToIndex<
                     if(listBool.isNotEmpty()) {
                         val argDescriptor = ArgDescriptor {
                             name = k
-                            boolValue = listBool[index.toInt()]
+                            boolValue = listBool[clampIndex(index.toInt(), listBool.size)]
                             argType = OpNamespace.ArgDescriptor.ArgType.BOOL
                             argIndex = lookupIndexForArgDescriptor(
                                 argDescriptorName = k,

@@ -448,6 +448,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
         private static java.lang.reflect.Method encodeTextMethod;
         private static java.lang.reflect.Method encodingGetLengthMethod;
         private static java.lang.reflect.Method encodingGetIdsMethod;
+        private static java.lang.reflect.Method encodingGetTokensMethod;
         private static java.lang.reflect.Method freeEncodingMethod;
         private static java.lang.reflect.Method decodeIdsMethod;
         private static java.lang.reflect.Method getVocabSizeMethod;
@@ -478,6 +479,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
             encodeTextMethod = nativeClass.getMethod("encodeText", opaqueTokenizerClass, String.class, boolean.class);
             encodingGetLengthMethod = nativeClass.getMethod("encodingGetLength", opaqueEncodingClass);
             encodingGetIdsMethod = nativeClass.getMethod("encodingGetIds", opaqueEncodingClass);
+            encodingGetTokensMethod = nativeClass.getMethod("encodingGetTokens", opaqueEncodingClass);
             freeEncodingMethod = nativeClass.getMethod("freeEncoding", opaqueEncodingClass);
             decodeIdsMethod = nativeClass.getMethod("decodeIds", opaqueTokenizerClass, int[].class, long.class, boolean.class);
             getVocabSizeMethod = nativeClass.getMethod("getVocabSize", opaqueTokenizerClass);
@@ -642,13 +644,35 @@ public class HuggingFaceTokenizer implements Tokenizer {
                         getMethod.invoke(idsPtr, ids);
                     }
 
+                    // Token STRINGS via encoding_get_tokens (const char**). Previously
+                    // this array was left as nulls even though the native binding
+                    // exposes the strings — Encoding.getTokens() returned [null, ...].
+                    // Token strings are informational; never fail an encode over them.
+                    String[] tokens = new String[(int) length];
+                    try {
+                        Object tokensPtr = encodingGetTokensMethod.invoke(nativeLib, encoding);
+                        if (tokensPtr != null && length > 0) {
+                            java.lang.reflect.Method isNullPtr = tokensPtr.getClass().getMethod("isNull");
+                            if (!(Boolean) isNullPtr.invoke(tokensPtr)) {
+                                java.lang.reflect.Method getStringMethod =
+                                        tokensPtr.getClass().getMethod("getString", long.class);
+                                for (int i = 0; i < (int) length; i++) {
+                                    tokens[i] = (String) getStringMethod.invoke(tokensPtr, (long) i);
+                                }
+                            }
+                        }
+                    } catch (Exception tokensError) {
+                        log.debug("encoding_get_tokens unavailable, token strings left null: {}",
+                                tokensError.getMessage());
+                    }
+
                     // Attention mask - default to all 1s
                     int[] attentionMask = new int[(int) length];
                     Arrays.fill(attentionMask, 1);
 
                     return Encoding.builder()
                             .ids(ids)
-                            .tokens(new String[(int) length])
+                            .tokens(tokens)
                             .attentionMask(attentionMask)
                             .build();
                 } finally {

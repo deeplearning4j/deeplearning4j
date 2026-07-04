@@ -1484,6 +1484,157 @@ public class GenerationPipeline implements AutoCloseable {
         return buildResult(generatedTokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs, 0);
     }
 
+    /**
+     * Decode loop for merged-If decoders (optimum decoder_model_merged exports):
+     * true-length dynamic KV — each step feeds the previous step's presents back as
+     * pasts verbatim (the graph derives positions from shape(past), so lengths must
+     * be REAL). Runs on the interpreted session; per-step map, no static buffers.
+     */
+    private GenerationResult dynamicMergedIfDecodeLoop(Map<String, INDArray> prefillOutputs,
+            ModelIOConfig.KVCacheNames kvNames, String useCacheBranchName,
+            SamplingConfig sampling, Random rng, Set<Integer> stopTokenIds,
+            int maxNewTokens, int actualPrefillLen, INDArray encoderOutputs,
+            int[] promptTokenIds, long startTime, List<String> allOutputNames) {
+
+        String logitsOut = ioConfig.getLogitsOutputName() != null
+                && prefillOutputs.containsKey(ioConfig.getLogitsOutputName())
+                ? ioConfig.getLogitsOutputName()
+                : allOutputNames.get(0);
+        INDArray logits = prefillOutputs.get(logitsOut);
+        if (logits == null) {
+            throw new IllegalStateException("Merged-If decode: prefill produced no logits ('"
+                    + logitsOut + "'); outputs=" + prefillOutputs.keySet());
+        }
+        long firstTokenMs = System.currentTimeMillis() - startTime;
+
+        List<Integer> tokens = new ArrayList<>();
+        int samplePos = Math.min(actualPrefillLen - 1, (int) logits.shape()[1] - 1);
+        suppressStopsUnderFloor(logits, samplePos, sampling, 0, stopTokenIds);
+        int token = sampleToken(logits, samplePos, sampling, tokens, rng);
+        tokens.add(token);
+
+        // presents (this step) -> pasts (next step), true-length.
+        Map<String, INDArray> pasts = new LinkedHashMap<>();
+        List<String> presentNames = new ArrayList<>(kvNames.keyNames);
+        presentNames.addAll(kvNames.valueNames);
+        for (String presentName : presentNames) {
+            INDArray present = prefillOutputs.get(presentName);
+            if (present == null) {
+                throw new IllegalStateException("Merged-If decode: prefill missing present '" + presentName + "'");
+            }
+            pasts.put(ioConfig.presentToInputName(presentName), present);
+        }
+        if (log.isInfoEnabled()) {
+            StringBuilder kvStats = new StringBuilder();
+            int shown = 0;
+            for (String presentName : presentNames) {
+                if (shown++ >= 4) break;
+                INDArray p = prefillOutputs.get(presentName);
+                kvStats.append(' ').append(presentName).append("=amean:")
+                        .append(String.format("%.4f", p.amean().getDouble(0)))
+                        .append("/shape:").append(java.util.Arrays.toString(p.shape()));
+            }
+            log.info("Merged-If prefill KV hand-off stats:{}", kvStats);
+        }
+
+        String encName = ioConfig.getEncoderHiddenStatesName();
+        // Experiment/diagnostic mode: recompute the WHOLE prefix through the no-past
+        // branch each step instead of incremental with-past decode. Isolates
+        // with-past-branch defects (that subgraph is otherwise only exercised here).
+        boolean recomputeMode = Boolean.getBoolean("merged.decode.recompute");
+        List<Long> prefixIds = null;
+        if (recomputeMode) {
+            prefixIds = new ArrayList<>();
+            for (int pid : promptTokenIds) prefixIds.add((long) pid);
+            prefixIds.add((long) token);
+            log.info("Merged-If decode: RECOMPUTE mode (full prefix through no-past branch each step)");
+        }
+        while (tokens.size() < maxNewTokens && !stopTokenIds.contains(token)) {
+            Map<String, INDArray> stepMap;
+            if (recomputeMode) {
+                stepMap = new LinkedHashMap<>();
+                long[] ids = prefixIds.stream().mapToLong(Long::longValue).toArray();
+                stepMap.put(ioConfig.getInputIdsName(), Nd4j.createFromArray(new long[][]{ids}));
+                stepMap.put(useCacheBranchName, Nd4j.scalar(false));
+            } else {
+                stepMap = new LinkedHashMap<>(pasts);
+                stepMap.put(ioConfig.getInputIdsName(), Nd4j.createFromArray(new long[][]{{token}}));
+                stepMap.put(useCacheBranchName, Nd4j.scalar(true));
+            }
+            if (encoderOutputs != null && encName != null && decoder.hasVariable(encName)) {
+                stepMap.put(encName, encoderOutputs);
+            }
+
+            Map<String, INDArray> stepOut = decoder.output(stepMap, allOutputNames.toArray(new String[0]));
+            logits = stepOut.get(logitsOut);
+            if (logits == null) {
+                throw new IllegalStateException("Merged-If decode step " + tokens.size()
+                        + ": no logits in outputs " + stepOut.keySet());
+            }
+            suppressStopsUnderFloor(logits, logits.shape()[1] - 1, sampling, tokens.size(), stopTokenIds);
+            if (log.isInfoEnabled() && tokens.size() <= 6) {
+                logTopK(logits, logits.shape()[1] - 1, tokens.size());
+            }
+            token = sampleToken(logits, logits.shape()[1] - 1, sampling, tokens, rng);
+            tokens.add(token);
+
+            if (recomputeMode) {
+                prefixIds.add((long) token);
+                continue;
+            }
+            Map<String, INDArray> nextPasts = new LinkedHashMap<>();
+            for (String presentName : presentNames) {
+                INDArray present = stepOut.get(presentName);
+                String pastName = ioConfig.presentToInputName(presentName);
+                // Optimum merged-decoder CONTRACT: the with-past branch emits EMPTY
+                // constant dummies for presents it does not update (encoder/cross-attn
+                // KV — proto: Constant() with [0,...] value). Empty present means
+                // "unchanged": RETAIN the existing past; only real tensors replace.
+                if (present == null || present.isEmpty() || present.length() == 0) {
+                    INDArray retained = pasts.get(pastName);
+                    if (retained == null) {
+                        throw new IllegalStateException("Merged-If decode step " + tokens.size()
+                                + ": present '" + presentName + "' empty and no prior past to retain");
+                    }
+                    nextPasts.put(pastName, retained);
+                } else {
+                    nextPasts.put(pastName, present);
+                }
+            }
+            pasts = nextPasts;
+        }
+
+        log.info("Merged-If dynamic decode: {} tokens ({} max), stop={}",
+                tokens.size(), maxNewTokens, stopTokenIds.contains(token));
+        return buildResult(tokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+    }
+
+    /** Debug: top-5 token ids/logits at a position — distinguishes near-miss from broken conditioning. */
+    private static void logTopK(INDArray logits, long seqPos, int step) {
+        INDArray row = logits.get(NDArrayIndex.point(0), NDArrayIndex.point(seqPos), NDArrayIndex.all()).dup();
+        float[] vals = row.data().asFloat();
+        Integer[] idx = new Integer[vals.length];
+        for (int i = 0; i < vals.length; i++) idx[i] = i;
+        java.util.Arrays.sort(idx, (a, b) -> Float.compare(vals[b], vals[a]));
+        StringBuilder sb = new StringBuilder();
+        for (int k = 0; k < 5; k++) {
+            sb.append(String.format(" %d:%.2f", idx[k], vals[idx[k]]));
+        }
+        log.info("Decode step {} top-5:{}", step, sb);
+        row.close();
+    }
+
+    /** While under sampling.minNewTokens, mask stop-token logits to -1e9 in-place at the sampled position. */
+    private static void suppressStopsUnderFloor(INDArray logits, long seqPos, SamplingConfig sampling,
+                                                int generatedSoFar, Set<Integer> stopTokenIds) {
+        if (sampling.getMinNewTokens() <= 0 || generatedSoFar >= sampling.getMinNewTokens()) {
+            return;
+        }
+        for (int stopId : stopTokenIds) {
+            logits.putScalar(new long[]{0, seqPos, stopId}, -1e9);
+        }
+    }
+
     private GenerationResult buildResult(List<Integer> generatedTokens, int[] promptTokenIds,
                                           Set<Integer> stopTokenIds, long startTime, long firstTokenMs,
                                           double steadyStateTokPerSec) {
@@ -1573,7 +1724,7 @@ public class GenerationPipeline implements AutoCloseable {
             // zero JNI round-trips. Bugs that previously caused EOS-on-step-2 have been
             // fixed: causal mask pre-unmask, segment splitting for value-key ops,
             // mixed-type GEMV handling.
-            return generateNative(prefillEmbeddings, promptTokenIds, maxNewTokens);
+            return generateNative(prefillEmbeddings, promptTokenIds, maxNewTokens, options);
         } finally {
             OpaqueDataBuffer.suppressCrossDeviceRouting(false);
             restoreDevice(restoreDevice, "embedding-generation");
@@ -1648,6 +1799,11 @@ public class GenerationPipeline implements AutoCloseable {
      * </p>
      */
     private GenerationResult generateNative(INDArray prefillEmbeddings, int[] promptTokenIds, int maxNewTokens) {
+        return generateNative(prefillEmbeddings, promptTokenIds, maxNewTokens, null);
+    }
+
+    private GenerationResult generateNative(INDArray prefillEmbeddings, int[] promptTokenIds,
+                                            int maxNewTokens, DecodeOptions options) {
         long startTime = System.currentTimeMillis();
 
         int maxPrefill = config.getMaxPrefillLength();
@@ -1802,16 +1958,39 @@ public class GenerationPipeline implements AutoCloseable {
         INDArray currentInputIds = Nd4j.createFromArray(effectiveTokenIds)
                 .reshape(1, prefillSeqLen).castTo(DataType.INT64);
 
+        // Encoder-decoder models (Whisper): the encoder output feeds the decoder's
+        // cross-attention input. Supplied per-call via DecodeOptions; constant across
+        // decode steps, so prefill-time binding persists through the frozen plan's
+        // external-input table for the native decode loop.
+        INDArray encoderOutputs = options != null ? options.getEncoderOutputs() : null;
+        INDArray encoderAttentionMask = options != null ? options.getEncoderAttentionMask() : null;
+
         Map<String, INDArray> prefillInputMap = DecoderInputBuilder.buildDecoderInputMap(
                 ioConfig, decoderInputNames, decoder,
                 effectiveEmbeddings, currentInputIds,
                 0, prefillSeqLen,
                 null, maxKvLen, 0,
                 false, hiddenSize,
-                reusableInputs, dspActive);
+                reusableInputs, dspActive,
+                encoderOutputs, encoderAttentionMask);
 
         Map<String, INDArray> prefillOutputs = decoder.output(
                 prefillInputMap, allOutputNames.toArray(new String[0]));
+
+        // ── Merged-If decoders (use_cache_branch): dynamic-KV decode ────────────
+        // The static-pad KV scheme below is semantically INCOMPATIBLE with these
+        // graphs: their with-past branch derives the position from shape(past)[2],
+        // so padding to maxKvLen indexes past the position-embedding table (empty
+        // slice → garbage/crash). These graphs also run on the interpreted session
+        // (If frames — no native plan), so static replay buys nothing. Decode with
+        // TRUE-LENGTH pasts: feed each step's presents back verbatim.
+        String mergedUcbName = ioConfig.getUseCacheBranchName();
+        if (mergedUcbName != null && decoder.hasVariable(mergedUcbName)) {
+            Random mergedRng = sampling.getSeed() != null ? new Random(sampling.getSeed()) : new Random();
+            return dynamicMergedIfDecodeLoop(prefillOutputs, kvNames, mergedUcbName,
+                    sampling, mergedRng, stopTokenIds, maxNewTokens, actualPrefillLen,
+                    encoderOutputs, promptTokenIds, startTime, allOutputNames);
+        }
 
         // ══════════════════════════════════════════════════════════════════════
         // STEP 2: Pad KV caches to static size and prepare decode-step state
@@ -1827,6 +2006,16 @@ public class GenerationPipeline implements AutoCloseable {
         Map<String, INDArray> staticKvBuffers = new LinkedHashMap<>();
         for (String keyName : kvNames.keyNames) {
             INDArray presentKv = prefillOutputs.get(keyName);
+            if (presentKv == null) {
+                StringBuilder state = new StringBuilder();
+                for (Map.Entry<String, INDArray> e : prefillOutputs.entrySet()) {
+                    state.append(' ').append(e.getKey()).append('=')
+                            .append(e.getValue() == null ? "NULL"
+                                    : (e.getValue().isEmpty() ? "EMPTY" : Arrays.toString(e.getValue().shape())));
+                }
+                throw new IllegalStateException("Prefill produced NULL for present KV output '" + keyName
+                        + "'. Full prefill output state:" + state);
+            }
             String inputName = ioConfig.presentToInputName(keyName);
             INDArray padded;
             if (reusingFrozenPlan) {
@@ -2070,6 +2259,21 @@ public class GenerationPipeline implements AutoCloseable {
             if (decoder.hasVariable(entry.getKey())) {
                 decodeInputMap.put(entry.getKey(), entry.getValue());
             }
+        }
+        // Encoder-decoder cross-attention input (Whisper): same constant tensor as
+        // prefill — every decode step's cross-attention reads the full encoder output.
+        String encName = ioConfig.getEncoderHiddenStatesName();
+        if (encoderOutputs != null && encName != null && decoder.hasVariable(encName)) {
+            decodeInputMap.put(encName, encoderOutputs);
+        }
+        String encMaskName = ioConfig.getEncoderAttentionMaskName();
+        if (encoderAttentionMask != null && encMaskName != null && decoder.hasVariable(encMaskName)) {
+            decodeInputMap.put(encMaskName, encoderAttentionMask);
+        }
+        // Merged-decoder branch selector: decode steps carry past KV — with-past branch.
+        String useCacheBranchName = ioConfig.getUseCacheBranchName();
+        if (useCacheBranchName != null && decoder.hasVariable(useCacheBranchName)) {
+            decodeInputMap.put(useCacheBranchName, Nd4j.scalar(true));
         }
         // Associate internal model inputs (non-placeholder variables)
         DecoderInputBuilder.associateInternalModelInputs(ioConfig,

@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.audio.feature.WhisperMelSpectrogram;
 import org.eclipse.deeplearning4j.audio.io.AudioLoader;
 import org.eclipse.deeplearning4j.audio.transform.AudioPreprocessor;
+import org.eclipse.deeplearning4j.llm.generation.DecodeOptions;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
@@ -78,7 +79,9 @@ public class WhisperModel implements Closeable {
     private final WhisperMelSpectrogram melSpectrogram;
 
     private KvCacheStrategy kvCacheStrategy = KvCacheStrategy.STATIC;
-    private SamplingConfig samplingConfig = SamplingConfig.greedy();
+    // minNewTokens: standard Whisper early-EOT suppression — greedy decode on
+    // marginal audio otherwise ends after a word or two.
+    private SamplingConfig samplingConfig = SamplingConfig.greedy().toBuilder().minNewTokens(8).build();
     private int maxTokens = 448;
 
     @Builder
@@ -93,7 +96,8 @@ public class WhisperModel implements Closeable {
         this.config = config;
         this.melSpectrogram = melSpectrogram != null ? melSpectrogram : new WhisperMelSpectrogram(config);
         this.kvCacheStrategy = kvCacheStrategy != null ? kvCacheStrategy : KvCacheStrategy.STATIC;
-        this.samplingConfig = samplingConfig != null ? samplingConfig : SamplingConfig.greedy();
+        this.samplingConfig = samplingConfig != null ? samplingConfig
+                : SamplingConfig.greedy().toBuilder().minNewTokens(8).build();
         this.maxTokens = maxTokens > 0 ? maxTokens : 448;
     }
 
@@ -109,14 +113,27 @@ public class WhisperModel implements Closeable {
      */
     public static WhisperModel fromOnnx(File modelDir, WhisperConfig config) throws IOException {
         File encoderFile = new File(modelDir, "encoder_model.onnx");
-        File decoderFile = new File(modelDir, "decoder_model.onnx");
+        // Autoregressive decode REQUIRES a decoder with past_key_values inputs.
+        // decoder_model.onnx is the NO-past variant: it accepts only the current
+        // token, so every decode step ran without history — the model restarted
+        // each step and emitted <|startoftranscript|><|en|> loops after the first
+        // word. Prefer the merged export (past inputs + use_cache branch, the same
+        // single-graph pattern the generation pipeline runs for SmolDocling), then
+        // the explicit with-past decoder.
+        File decoderFile = new File(modelDir, "decoder_model_merged.onnx");
+        if (!decoderFile.exists()) {
+            decoderFile = new File(modelDir, "decoder_with_past_model.onnx");
+        }
+        if (!decoderFile.exists()) {
+            decoderFile = new File(modelDir, "decoder_model.onnx");
+            log.warn("Neither decoder_model_merged.onnx nor decoder_with_past_model.onnx found "
+                    + "in {} — falling back to decoder_model.onnx, which has NO past_key_values "
+                    + "inputs; multi-token decoding will not carry history.", modelDir);
+        }
         File tokenizerFile = new File(modelDir, "tokenizer.json");
 
         if (!encoderFile.exists()) {
             throw new IOException("encoder_model.onnx not found in " + modelDir);
-        }
-        if (!decoderFile.exists()) {
-            throw new IOException("decoder_model.onnx not found in " + modelDir);
         }
 
         OnnxFrameworkImporter importer = new OnnxFrameworkImporter();
@@ -125,7 +142,45 @@ public class WhisperModel implements Closeable {
         SameDiff encoder = importer.runImport(encoderFile.getAbsolutePath(), Collections.emptyMap(), false, false);
 
         log.info("Loading Whisper decoder from {}...", decoderFile);
-        SameDiff decoder = importer.runImport(decoderFile.getAbsolutePath(), Collections.emptyMap(), false, false);
+        // KNOWN OPEN BUG: importing whisper's decoder_model_merged.onnx currently fails
+        // with "Variable 'input_ids' required by node '/model/decoder/Shape' does not
+        // exist" — ImportGraph does not materialize the graph input before the first
+        // topologically-sorted node consumes it (suggestDynamicVariables does not help;
+        // SmolDocling's merged decoder imports fine, so it is graph-shape-specific).
+        // Until fixed, fall back through the decoder variants ON IMPORT FAILURE, not
+        // just absence, so the pipeline degrades with a loud warning instead of dying.
+        SameDiff decoder = null;
+        // decoder_with_past_model.onnx is deliberately NOT a candidate: it imports
+        // fine but REQUIRES past inputs on every call — including step 0, where the
+        // cross-attention (encoder) pasts cannot exist yet. It only works in the
+        // two-graph ORT scheme (plain decoder for step 0, with-past for steps 1+),
+        // which this single-decoder pipeline does not implement. The merged graph is
+        // the single-graph answer once its import bug is fixed.
+        File[] decoderCandidates = {
+                decoderFile,
+                new File(modelDir, "decoder_model.onnx")
+        };
+        for (File candidate : decoderCandidates) {
+            if (decoder != null || !candidate.exists()) continue;
+            try {
+                decoder = importer.runImport(candidate.getAbsolutePath(), Collections.emptyMap(), false, false);
+                decoderFile = candidate;
+            } catch (Exception e) {
+                // Full stack at WARN: a decoder-variant import failure changes decode
+                // semantics (fallbacks may not carry history) — it must be debuggable
+                // from the default log without a rerun.
+                log.warn("Failed to import {}; trying next decoder variant",
+                        candidate.getName(), e);
+            }
+        }
+        if (decoder == null) {
+            throw new IOException("No Whisper decoder variant could be imported from " + modelDir);
+        }
+        if (decoderFile.getName().equals("decoder_model.onnx")) {
+            log.warn("Decoding with decoder_model.onnx (NO past_key_values inputs): decode "
+                    + "steps carry no history and multi-token transcripts will degenerate. "
+                    + "Fix the merged-decoder import to enable correct autoregressive decode.");
+        }
 
         WhisperTokenizer tokenizer = null;
         if (tokenizerFile.exists()) {
@@ -208,7 +263,28 @@ public class WhisperModel implements Closeable {
     public WhisperDecoderResult transcribe(File audioFile, String language,
                                             String task, boolean timestamps) throws IOException {
         INDArray melFeatures = melSpectrogram.extractFeaturesFromFile(audioFile);
+        logMelEnergyProfile(melFeatures);
         return transcribeMel(melFeatures, language, task, timestamps);
+    }
+
+    /**
+     * Mel time-axis energy profile: mean |mel| per tenth of the 30s window. A
+     * transcript whose OPENING is right but drifts into fluent hallucination is the
+     * signature of content ending prematurely (audio truncated / mel mis-filled) —
+     * this one line tells whether the encoder ever saw the later audio.
+     */
+    private static void logMelEnergyProfile(INDArray mel) {
+        long frames = mel.shape()[2];
+        int blocks = 10;
+        long per = frames / blocks;
+        StringBuilder sb = new StringBuilder();
+        for (int b = 0; b < blocks; b++) {
+            INDArray block = mel.get(org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.interval(b * per, (b + 1) * per));
+            sb.append(String.format(" %.2f", block.amean().getDouble(0)));
+        }
+        log.info("Mel energy profile ({} frames, {} blocks):{}", frames, blocks, sb);
     }
 
     /**
@@ -308,12 +384,22 @@ public class WhisperModel implements Closeable {
                                 .build())
                         .build());
 
-        // Step 5: Decode
+        // Step 5: Decode. The encoder output feeds the decoder's cross-attention
+        // input (encoder_hidden_states) — supplied per-call via DecodeOptions; the
+        // ioConfig above only declares the input NAME.
         log.debug("Running Whisper decoder via GenerationPipeline (encoder-decoder mode)...");
-        GenerationResult genResult = pipeline.generate(prefillEmbeddings, promptTokens, maxTokens);
+        DecodeOptions decodeOptions = DecodeOptions.builder()
+                .encoderOutputs(encoderHidden)
+                .build();
+        GenerationResult genResult = pipeline.generate(prefillEmbeddings, promptTokens, maxTokens, decodeOptions);
 
         // Step 6: Build result
         int[] decodedTokens = genResult.getTokenIds();
+        if (log.isInfoEnabled() && decodedTokens.length > 0) {
+            int show = Math.min(40, decodedTokens.length);
+            log.info("Whisper decode: {} tokens; first {}: {}", decodedTokens.length, show,
+                    java.util.Arrays.toString(java.util.Arrays.copyOf(decodedTokens, show)));
+        }
         String text = tokenizer.decodeSkippingSpecial(decodedTokens);
 
         WhisperDecoderResult.WhisperDecoderResultBuilder resultBuilder = WhisperDecoderResult.builder()

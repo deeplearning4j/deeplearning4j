@@ -200,6 +200,18 @@ class TritonGraphBackend : public GraphBackend {
     // remain valid across graph replays (stack-local vectors would be dead).
     void* cachedArgTableHostPinned;
     size_t cachedArgTableHostPinnedBytes;
+    // Set when a CUDA graph captured an H2D node whose SOURCE is
+    // cachedArgTableHostPinned: ownership of destruction moves to the replay
+    // handle (capturedHostPtrs, freed at handle death). The block stays here as
+    // the per-step arg MAILBOX (host writes + baked H2D re-reads), but teardown
+    // and growth paths must NOT pool-free it — doing so kills the driver's host
+    // registration under the live graph and the next cudaGraphLaunch SIGSEGVs
+    // (pointer-matched: freePinnedHost of a baked src between capture and replay).
+    bool cachedArgTableCaptureOwned;
+    // Same capture-ownership contract for the kernel's GPU MODULE: once a
+    // captured graph bakes a kernel from gpuModule, unload belongs to the
+    // replay handle. Teardown must skip unloadModule when set.
+    bool moduleCaptureOwned;
     void* cachedSyncCounterDevice;
     int cachedSyncCounterDeviceId;
     void* cachedGlobalScratchDevice;
@@ -242,6 +254,8 @@ class TritonGraphBackend : public GraphBackend {
           , cachedArgTableDevice(nullptr), cachedArgTableBytes(0),
             cachedArgTableDeviceId(-1),
             cachedArgTableHostPinned(nullptr), cachedArgTableHostPinnedBytes(0),
+            cachedArgTableCaptureOwned(false),
+            moduleCaptureOwned(false),
             cachedSyncCounterDevice(nullptr),
             cachedSyncCounterDeviceId(-1),
             cachedGlobalScratchDevice(nullptr), cachedGlobalScratchBytes(0),
@@ -272,6 +286,11 @@ class TritonGraphBackend : public GraphBackend {
     void* consolidatedArgTableDevice = nullptr;
     size_t consolidatedArgTableBytes = 0;
     int consolidatedArgTableDeviceId = -1;
+    // Same capture-ownership contract as cachedArgTableCaptureOwned: once a
+    // captured graph bakes this pinned block as an H2D source, destruction
+    // belongs to the replay handle; pool-freeing it under the live graph
+    // SIGSEGVs the next cudaGraphLaunch.
+    bool consolidatedArgTableCaptureOwned = false;
     // Per-kernel byte offsets into the consolidated buffer
     std::vector<size_t> consolidatedArgTableOffsets;
     // Per-kernel: whether this kernel has any dynamic (non-constant) args

@@ -1165,6 +1165,12 @@ bool CudaMemoryPool::freePinnedHost(void* ptr) {
   auto it = hostAllocations_.find(ptr);
   if (it != hostAllocations_.end()) {
     size_t freedSize = it->second;
+    // Lifecycle log: pinned blocks can be BAKED as H2D sources inside captured
+    // CUDA graphs (Triton arg tables). Freeing one while such a graph is live
+    // kills the driver's host registration — the next cudaGraphLaunch of that
+    // graph SIGSEGVs host-side. This line + the NODE[] srcHost dump pointer-match
+    // the killer to the victim.
+    DSP_DIAG(EXECUTE, "CudaMemoryPool::freePinnedHost ptr=%p bytes=%zu", ptr, freedSize);
     hostAllocations_.erase(it);
     pinnedHostBytesUsed_.fetch_sub(freedSize);
     cudaFreeHost(ptr);
@@ -1175,6 +1181,22 @@ bool CudaMemoryPool::freePinnedHost(void* ptr) {
   // This handles pointers from raw cudaMallocHost calls in legacy code.
   cudaFreeHost(ptr);
   return false;
+}
+
+bool CudaMemoryPool::relinquishPinnedHost(void* ptr) {
+  if (ptr == nullptr) return false;
+  std::lock_guard<std::mutex> lock(fallbackAllocMutex_);
+  auto it = hostAllocations_.find(ptr);
+  if (it == hostAllocations_.end()) return false;
+  // Ownership handed to an external holder (e.g. a CUDA graph replay handle's
+  // capturedHostPtrs, which cudaFreeHost's at handle death). Drop bookkeeping
+  // WITHOUT freeing so a later freePinnedHost of this ptr is a no-op instead of
+  // a double free.
+  DSP_DIAG(EXECUTE, "CudaMemoryPool::relinquishPinnedHost ptr=%p bytes=%zu (ownership -> external)",
+           ptr, it->second);
+  pinnedHostBytesUsed_.fetch_sub(it->second);
+  hostAllocations_.erase(it);
+  return true;
 }
 
 bool CudaMemoryPool::isPinnedHostAllocation(void* ptr) const {

@@ -2296,6 +2296,22 @@ Status NativeDynamicShapePlan::execute(
   lastExternalInputsCopy_.assign(externalInputs, externalInputs + numExternalInputs);
   lastExternalInputs_ = lastExternalInputsCopy_.data();
   lastNumExternalInputs_ = numExternalInputs;
+  // Record the ext-input buffer addresses NOW, while the Java-owned NDArrays are guaranteed
+  // live (the duration of this JNI call). The JNI address query (getLastExternalInputAddress)
+  // reads these recorded values — it must NOT dereference the stored NDArray* later, because
+  // callers pass fresh inputs each step and free the old ones (query-time deref = UAF:
+  // garbage magic number → DataBuffer integrity-check throw). Raw db pointers only — no
+  // specialBuffer() self-heal side effects at record time.
+  lastExternalInputAddrs_.resize(numExternalInputs);
+  for (int _e = 0; _e < numExternalInputs; _e++) {
+    NDArray* _a = externalInputs[_e];
+    void* _p = nullptr;
+    if (_a != nullptr && _a->dataBuffer() != nullptr) {
+      _p = _a->dataBuffer()->special();
+      if (_p == nullptr) _p = _a->dataBuffer()->primary();
+    }
+    lastExternalInputAddrs_[_e] = reinterpret_cast<long long>(_p);
+  }
 
   // Capture external input ranks on first call — used by FusionPass pass 5
   // to distinguish 1D bias vectors from N-D residual operands.
@@ -2315,6 +2331,10 @@ Status NativeDynamicShapePlan::execute(
   void* executionStatePtr = platformBeginExecution(stream, frozenOrReplayAtEntry, executeCount_);
   auto* execCtx = static_cast<PlanExecutionContext*>(executionStatePtr);
   activeExecCtx_ = executionStatePtr;  // Expose to _gpubackend.cpp methods
+  // Per-exec reset: staging is only "current" if this exec's pre-replay sync
+  // refreshes it (ensureAndSyncStagingBuffers sets it back to true). Direct-SBS
+  // execs skip staging, so views must alias RAW externals, not stale staging.
+  stagingMaintainedThisExec_ = false;
 
   // RAII guard to ensure platformEndExecution is called even if an exception
   // is thrown (e.g., from reportCaptureError or DSP_THROW_SEG). Without this,
@@ -3636,6 +3656,22 @@ Status NativeDynamicShapePlan::executeSteadyState(
   lastExternalInputsCopy_.assign(externalInputs, externalInputs + numExternalInputs);
   lastExternalInputs_ = lastExternalInputsCopy_.data();
   lastNumExternalInputs_ = numExternalInputs;
+  // Record the ext-input buffer addresses NOW, while the Java-owned NDArrays are guaranteed
+  // live (the duration of this JNI call). The JNI address query (getLastExternalInputAddress)
+  // reads these recorded values — it must NOT dereference the stored NDArray* later, because
+  // callers pass fresh inputs each step and free the old ones (query-time deref = UAF:
+  // garbage magic number → DataBuffer integrity-check throw). Raw db pointers only — no
+  // specialBuffer() self-heal side effects at record time.
+  lastExternalInputAddrs_.resize(numExternalInputs);
+  for (int _e = 0; _e < numExternalInputs; _e++) {
+    NDArray* _a = externalInputs[_e];
+    void* _p = nullptr;
+    if (_a != nullptr && _a->dataBuffer() != nullptr) {
+      _p = _a->dataBuffer()->special();
+      if (_p == nullptr) _p = _a->dataBuffer()->primary();
+    }
+    lastExternalInputAddrs_[_e] = reinterpret_cast<long long>(_p);
+  }
 
   // Reuse cached PlanExecutionContext — avoid heap alloc/free per step.
   // On first call, create the context and a reusable cross-stream event.
@@ -5937,9 +5973,11 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
     // The NDArray wrapper leak is negligible (~200 bytes each).
     {
       int nulledRemaining = 0;
+      int firstNulled = -1;
       for (int i = 0; i < totalOutputSlots_; i++) {
         if (outputSlots_[i] != nullptr) {
           outputSlots_[i] = nullptr;
+          if (firstNulled < 0) firstNulled = i;
           nulledRemaining++;
           if (slotOwnership_) {
             slotOwnership_[i].reset();
@@ -5989,6 +6027,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   lastExternalInputsCopy_.clear();
   lastExternalInputs_ = nullptr;
   lastNumExternalInputs_ = 0;
+  lastExternalInputAddrs_.clear();
   externalInputRanks_.clear();
 
   // ── Step 4d: Free placeholder staging buffers ──────────────────────────

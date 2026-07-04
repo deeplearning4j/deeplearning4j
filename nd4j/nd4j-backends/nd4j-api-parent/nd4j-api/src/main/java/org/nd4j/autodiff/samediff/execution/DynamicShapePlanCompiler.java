@@ -453,6 +453,20 @@ public class DynamicShapePlanCompiler {
                         VariableType vType = varMeta != null ? varMeta.getVariable().getVariableType() : null;
                         String outputOfOp = varMeta != null ? varMeta.getOutputOfOp() : null;
                         if (vType == VariableType.ARRAY || (outputOfOp != null && !outputOfOp.isEmpty())) {
+                            if (hasControlFlow) {
+                                // In a control-flow graph, an op-produced variable falling
+                                // outside the executable subgraph means the frame split is
+                                // structurally incomplete (e.g. ifCond Switch-frame *_flatN
+                                // artifacts) — the native executor would demand an external
+                                // no one can supply. Per this method's contract, signal the
+                                // standard interpreted path (which fully supports
+                                // Switch/Merge) instead of emitting a broken plan.
+                                log.warn("DSP compile: op-produced variable '{}' (op '{}') has no " +
+                                        "slot in a control-flow graph — plan would be structurally " +
+                                        "incomplete. Falling back to the standard execution path.",
+                                        inputVar, outputOfOp);
+                                return null;
+                            }
                             log.warn("DSP compile: {} variable '{}' (produced by op '{}') at step {} " +
                                     "(op '{}') input[{}] has no output slot and is not in external maps. " +
                                     "Adding as last-resort external input ext[{}]. This will resolve " +
@@ -461,6 +475,20 @@ public class DynamicShapePlanCompiler {
                         }
                         externalIdx = externalInputKeys.size();
                         externalInputKeys.add(inputVar);
+                        // externalInputSourceTypes is PARALLEL to externalInputKeys —
+                        // every other add site pairs them; this last-resort path didn't,
+                        // desyncing the lists (IndexOutOfBounds in the ext-input
+                        // diagnostics/frozen-tracking loops once any last-resort
+                        // external exists, e.g. control-flow/ifCond graphs).
+                        String lastResortBase = inputVar.contains(":") ?
+                                inputVar.substring(0, inputVar.lastIndexOf(':')) : inputVar;
+                        if (dag.getConstants().contains(inputVar) || dag.getConstants().contains(lastResortBase)) {
+                            externalInputSourceTypes.add(DynamicShapeSlot.SOURCE_CONSTANT);
+                        } else if (dag.getVariables().contains(inputVar) || dag.getVariables().contains(lastResortBase)) {
+                            externalInputSourceTypes.add(DynamicShapeSlot.SOURCE_VARIABLE);
+                        } else {
+                            externalInputSourceTypes.add(DynamicShapeSlot.SOURCE_PLACEHOLDER);
+                        }
                         externalIndexMap.put(inputVar, externalIdx);
                     }
                     inputSourceIndices[i] = -(externalIdx + 1);
@@ -976,6 +1004,34 @@ public class DynamicShapePlanCompiler {
         }
 
         // Step 6c: Detect loop regions and wire control flow
+        // If-frame gating check: the native executor wires LOOP control flow (Merge
+        // fed by NextIteration, below) but has no branch-skip semantics for IF frames
+        // (Merge without NextIteration): it executes every slot, so the inactive
+        // branch runs on garbage/empty inputs (broadcast/shape failures, or silently
+        // wrong values). Per this method's contract, such graphs go to the standard
+        // interpreted path, which implements Switch/Merge gating.
+        if (hasControlFlow) {
+            for (int stepIdx = 0; stepIdx < numSteps; stepIdx++) {
+                if (slots[stepIdx].getControlFlowType() != DynamicShapeSlot.CF_MERGE) continue;
+                boolean fedByNextIteration = false;
+                for (int cs = 0; cs < numSteps && !fedByNextIteration; cs++) {
+                    if (slots[cs].getControlFlowType() != DynamicShapeSlot.CF_NEXT_ITERATION) continue;
+                    for (int niOut : slots[cs].getOutputSlotIndices()) {
+                        for (int mi : slots[stepIdx].getInputSourceIndices()) {
+                            if (mi >= 0 && mi == niOut) { fedByNextIteration = true; break; }
+                        }
+                        if (fedByNextIteration) break;
+                    }
+                }
+                if (!fedByNextIteration) {
+                    log.warn("DSP compile: plan contains an if/else Merge (slot {}) — the native " +
+                            "executor has no branch-skip semantics for If frames. Falling back to " +
+                            "the standard execution path.", stepIdx);
+                    return null;
+                }
+            }
+        }
+
         List<DynamicShapePlan.LoopRegion> loopRegionsList = new ArrayList<>();
         if (hasControlFlow) {
             for (int stepIdx = 0; stepIdx < numSteps; stepIdx++) {

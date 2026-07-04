@@ -157,8 +157,24 @@ public class DecoderInputBuilder {
                 buildPositionIds(decoderInputMap, inputName, canReuse, reusableInputs,
                         pastSeqLen, currentSeqLen);
             } else if (ioConfig.isKvCacheInput(inputName)) {
-                buildKvCacheInput(decoderInputMap, inputName, decoder, usingStaticKv, usePadded,
-                        staticKvBuffers, cachePos, hiddenSize);
+                // Merged-decoder prefill (use_cache_branch=false): ONNX If semantics
+                // never evaluate the with-past branch, so past inputs are DEAD. Feeding
+                // empty arrays sends len-0 values through the inactive frame's ops
+                // (shape math reads them as real -> OOB/garbage); OMITTING the
+                // placeholder yields null, which the interpreted engine's
+                // null-propagation skips cleanly until the Merge picks the live branch.
+                boolean mergedGraphPrefill = !usingStaticKv
+                        && ioConfig.getUseCacheBranchName() != null
+                        && decoder != null && decoder.hasVariable(ioConfig.getUseCacheBranchName());
+                if (!mergedGraphPrefill) {
+                    buildKvCacheInput(decoderInputMap, inputName, decoder, usingStaticKv, usePadded,
+                            staticKvBuffers, cachePos, hiddenSize);
+                }
+            } else if (ioConfig.isUseCacheBranch(inputName)) {
+                // Merged-decoder branch selector: prefill (no past yet) runs the
+                // no-past branch (false); KV-carrying decode steps run the
+                // with-past branch (true).
+                decoderInputMap.put(inputName, Nd4j.scalar(usingStaticKv));
             } else if (ioConfig.isEncoderHiddenStates(inputName)) {
                 if (encoderOutputs != null) {
                     decoderInputMap.put(inputName, encoderOutputs);
@@ -222,8 +238,15 @@ public class DecoderInputBuilder {
                 // Only associate with VARIABLE or CONSTANT type SDVariables.
                 // ARRAY-type variables are computed intermediates — calling
                 // associateArrayWithVariable on them throws UnsupportedOperationException.
+                // PLACEHOLDERS must be excluded too (this method's contract is
+                // NON-placeholder inputs): associating one writes placeholdersPerThread,
+                // which SHADOWS per-call values on every later run — a warmup's
+                // use_cache_branch=true silently overrode prefill's false, activating
+                // the with-past If branch during prefill. The externalInputs() check
+                // alone misses placeholders under control-flow dependency tracking.
                 SDVariable sdVar = decoder.getVariable(inputName);
-                if (sdVar != null && sdVar.getVariableType() != VariableType.ARRAY) {
+                if (sdVar != null && sdVar.getVariableType() != VariableType.ARRAY
+                        && sdVar.getVariableType() != VariableType.PLACEHOLDER) {
                     decoder.associateArrayWithVariable(arr, inputName);
                 }
             }

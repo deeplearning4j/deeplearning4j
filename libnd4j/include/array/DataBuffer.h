@@ -43,6 +43,10 @@ namespace sd {
 struct DataBufferThreadState {
   bool graphExecutionActive = false;
   std::vector<void*> capturedHostPtrs;
+  // GPU modules (CUmodule) whose kernels were captured into a CUDA graph this
+  // capture scope: ownership transfers to the replay handle (unloaded at handle
+  // death). Unloading earlier kills the baked kernel nodes (CUDA 98 at replay).
+  std::vector<void*> capturedModules;
   std::unordered_map<uint64_t, void*> captureReplicateCache;
   void* captureWorkspace = nullptr;
   size_t captureWorkspaceSize = 0;
@@ -76,6 +80,7 @@ extern SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
 
 #define tl_graphExecutionActive   tl_dataBufferState.graphExecutionActive
 #define tl_capturedHostPtrs       tl_dataBufferState.capturedHostPtrs
+#define tl_capturedModules        tl_dataBufferState.capturedModules
 #define tl_captureReplicateCache  tl_dataBufferState.captureReplicateCache
 #define tl_captureWorkspace       tl_dataBufferState.captureWorkspace
 #define tl_captureWorkspaceSize   tl_dataBufferState.captureWorkspaceSize

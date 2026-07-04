@@ -208,25 +208,24 @@ class Conv : PreImportHook  {
         } else {
             for(i in 0 until groups) {
                 if(rank == 3) {
-                    //notset => valid
-                    //valid => valid + pads zeroed
-                    var totalPad = if(padMode == "NOTSET") {
-                        0
-                    } else {
-                        pads[0]
-                    }
+                    // Explicit pads were already applied UPSTREAM: the NOTSET branch
+                    // above pre-pads the input via paddingOp() and keeps
+                    // padMode="NOTSET". The conv itself therefore always runs
+                    // unpadded (p=0, VALID); SAME computes its own padding. This
+                    // branch had never executed before: PaddingMode.valueOf("NOTSET")
+                    // threw (no such constant — padModeForName is the translator,
+                    // NOTSET->VALID), and the old post-conv indicesForPads crop would
+                    // have cropped the already-correct output of the pre-padded conv.
+                    // First exercised end-to-end by Whisper's kernel-3/pads-1 stem.
                     val oneDConfig = Conv1DConfig.builder()
                         .k(kernelShape[0].toLong())
                         .dataFormat("NWC")
                         .d(dilations[0])
-                        .p(totalPad)
+                        .p(0)
                         .s(strides[0])
-                        .paddingMode(PaddingMode.valueOf(padMode!!))
+                        .paddingMode(padModeForName(padMode!!))
                         .build()
-                    var convolved = sd.cnn().conv1d(xs[i.toInt()],weightGroupsList[i.toInt()], oneDConfig)
-                    if(pads[0] > 0) {
-                        convolved = convolved.get(*indicesForPads("NWC",pads).toTypedArray())
-                    }
+                    val convolved = sd.cnn().conv1d(xs[i.toInt()],weightGroupsList[i.toInt()], oneDConfig)
                     convolvedList.add(convolved)
 
                 } else if(rank == 4) {
@@ -320,6 +319,11 @@ class Conv : PreImportHook  {
         return when(name) {
             "VALID" -> PaddingMode.VALID
             "SAME" -> PaddingMode.SAME
+            // ONNX auto_pad spells the SAME variants explicitly; nd4j SAME matches
+            // SAME_UPPER (TensorFlow convention). SAME_LOWER differs by one cell on
+            // odd padding — mapped to SAME as the closest supported mode.
+            "SAME_UPPER", "SAME_LOWER" -> PaddingMode.SAME
+            // NOTSET = "use the explicit pads attribute": VALID mode + p from pads.
             "NOTSET" -> PaddingMode.VALID
             else -> PaddingMode.CAUSAL
         }

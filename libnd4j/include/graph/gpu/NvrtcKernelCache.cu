@@ -37,6 +37,7 @@ namespace graph {
 
 NvrtcKernelHandle::~NvrtcKernelHandle() {
   if (module != nullptr) {
+    DSP_DIAG(EXECUTE, "NvrtcKernelCache: cuModuleUnload module=%p", (void*)module);
     cuModuleUnload(module);
     module = nullptr;
   }
@@ -55,7 +56,10 @@ NvrtcKernelHandle::NvrtcKernelHandle(NvrtcKernelHandle&& other) noexcept
 
 NvrtcKernelHandle& NvrtcKernelHandle::operator=(NvrtcKernelHandle&& other) noexcept {
   if (this != &other) {
-    if (module != nullptr) cuModuleUnload(module);
+    if (module != nullptr) {
+      DSP_DIAG(EXECUTE, "NvrtcKernelCache(dtor): cuModuleUnload module=%p", (void*)module);
+      cuModuleUnload(module);
+    }
     module = other.module;
     function = other.function;
     kernelName = std::move(other.kernelName);

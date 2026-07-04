@@ -55,7 +55,7 @@ import lombok.Data;
  * @author Eclipse Deeplearning4j Contributors
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 public class SamplingConfig {
 
     /**
@@ -110,6 +110,15 @@ public class SamplingConfig {
      */
     @Builder.Default
     private int maxNewTokens = 512;
+
+    /**
+     * Minimum number of tokens to generate before stop tokens are allowed:
+     * while under this floor, stop-token logits are suppressed at sampling
+     * (standard Whisper/HF practice — greedy decode otherwise ends on a
+     * marginal early EOT). Default 0 = no suppression.
+     */
+    @Builder.Default
+    private int minNewTokens = 0;
 
     /**
      * Random seed for reproducible sampling.

@@ -76,6 +76,35 @@ struct InputArgsCase2 {
 template <typename T>
 void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, NDArray &output,
                                          const LongType axis) {
+  // This entry point is reached by callers that do NOT pre-filter inputs the way
+  // the declarable concat op does. A zero-length or buffer-less input (empty KV
+  // shape vectors, control-flow frame artifacts) walks into the memcpy lambdas and
+  // reads past its allocation (SIGSEGV in lambda#4 on whisper's composed decoder).
+  // Apply the op-level doctrine here: drop empties, assign on a single survivor.
+  {
+    bool anyEmpty = false;
+    for (auto *a : inArrs) {
+      if (a == nullptr || a->isEmpty() || a->lengthOf() <= 0 || a->buffer() == nullptr) {
+        anyEmpty = true;
+        break;
+      }
+    }
+    if (anyEmpty) {
+      std::vector<NDArray *> filtered;
+      filtered.reserve(inArrs.size());
+      for (auto *a : inArrs) {
+        if (a != nullptr && !a->isEmpty() && a->lengthOf() > 0 && a->buffer() != nullptr)
+          filtered.push_back(a);
+      }
+      if (filtered.empty()) return;
+      if (filtered.size() == 1) {
+        output.assign(filtered[0]);
+        return;
+      }
+      concatCpuGeneric(filtered, output, axis);
+      return;
+    }
+  }
   const sd::LongType numOfInArrs = inArrs.size();
   const auto sizeofT = output.sizeOfT();
 
@@ -227,11 +256,28 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
   std::vector<sd::LongType> inAxisDims(numOfInArrs);  // Cache sizeAt(axis) for each input
   std::vector<const T*> inBuffers(numOfInArrs);       // Cache buffer pointers
 
+  sd::LongType axisDimSum = 0;
   for (sd::LongType i = 0; i < numOfInArrs; i++) {
     inRanks[i] = shape::rank(inArrs[i]->shapeInfo());
     inStrides[i] = shape::stride(inArrs[i]->shapeInfo());
     inAxisDims[i] = inArrs[i]->sizeAt(axis);
     inBuffers[i] = inArrs[i]->bufferAsT<T>();
+    axisDimSum += inAxisDims[i];
+  }
+
+  // Bounds precondition: the general path walks output coordinates and maps them to
+  // an input by cumulative axis dim — inputs whose axis dims do not sum to the
+  // output's axis dim silently read/write out of bounds (SIGSEGV in the copy lambda,
+  // observed with control-flow frame graphs feeding mismatched runtime shapes).
+  // Fail with shapes instead of corrupting memory.
+  if (axis < zRank && axisDimSum != zShape[axis]) {
+    std::string msg = "concatCpuGeneric: input axis dims sum (" + std::to_string(axisDimSum) +
+        ") != output axis dim (" + std::to_string(zShape[axis]) + ") at axis " + std::to_string(axis) +
+        "; output rank " + std::to_string(zRank) + ", inputs:";
+    for (sd::LongType i = 0; i < numOfInArrs; i++) {
+      msg += " [" + std::to_string(i) + "]=" + ShapeUtils::shapeAsString(inArrs[i]->shapeInfo());
+    }
+    THROW_EXCEPTION(msg.c_str());
   }
 
   // general case

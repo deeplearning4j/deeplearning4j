@@ -295,6 +295,8 @@ void DataBuffer::expand(const uint64_t size) {
       newSpecialBuffer = reinterpret_cast<int8_t*>(expandBuf);
     } else {
       size_t allocSize = size + 8;
+      DSP_DIAG(MEMORY, "DataBuffer::expand via workspace: db=%p ws=%p bytes=%zu",
+               (void*)this, (void*)_workspace, allocSize);
       newSpecialBuffer = reinterpret_cast<int8_t*>(
           _workspace->allocateBytes(memory::MemoryType::DEVICE, allocSize));
     }
@@ -813,6 +815,8 @@ void DataBuffer::allocateSpecial() {
       _specialBuffer = reinterpret_cast<int8_t*>(specialBuf);
     } else {
       size_t allocSize = getLenInBytes() + 8;
+      DSP_DIAG(MEMORY, "DataBuffer::allocateSpecial via workspace: db=%p ws=%p bytes=%zu",
+               (void*)this, (void*)_workspace, allocSize);
       _specialBuffer = reinterpret_cast<int8_t*>(
           _workspace->allocateBytes(memory::MemoryType::DEVICE, allocSize));
       actualDevice = deviceId;  // workspace allocations stay on requested device
