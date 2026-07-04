@@ -302,12 +302,21 @@ static bool slotIsTransparentHostOnlyForGraphCoverage(
 }
 
 static bool slotSkipsPostReplayFixup(const NativeSlot& slot) {
-  return slot.frozenConstantSlot() || slot.fusedChain.isFusedChainTail;
+  // View-capable ops (reshape/expand_dims/squeeze/strided_slice) produce
+  // ALIASES: their output shares the source DataBuffer, and device-actuality
+  // lives on that shared buffer, which the audit-driven tick of the PRODUCING
+  // slot already maintains. Re-executing them per replay is pure overhead —
+  // measured ~26 wrapped executeSlot calls/token (sync guards, prepare/
+  // register) ≈ 2.3s per 250-token decode (38.5 vs ~53 tok/s), with the ops
+  // themselves costing ~3ms total.
+  return slot.frozenConstantSlot() || slot.fusedChain.isFusedChainTail ||
+         slot.isViewCapableOp();
 }
 
 static const char* postReplayFixupSkipReason(const NativeSlot& slot) {
   if (slot.frozenConstantSlot()) return "frozen constant output is stable";
   if (slot.fusedChain.isFusedChainTail) return "fused-chain tail output is produced by the chain head";
+  if (slot.isViewCapableOp()) return "view/alias output — actuality follows the source buffer";
   return "output is stable by construction";
 }
 
