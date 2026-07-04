@@ -93,11 +93,14 @@ public class DspBufferAliasAccuracyTest {
     // Tolerances: [rtol, atol]
     private static final double[] EXACT_TOL   = {1e-5, 1e-5};
     private static final double[] TRITON_TOL  = {1e-3, 1e-3};
-    // Same calibration as TRITON_TOL: cross-kernel-algorithm float32 comparison.
-    // Softmax-bearing fixtures amplify upstream accumulation-order deltas into
-    // sign-alternating ~1e-4 scatter (verified: no coherent shift toward any
-    // neighboring iteration). Stale-DATA regressions are coherent and ≥5e-3.
-    private static final double[] JIT_TOL     = {1e-3, 1e-3};
+    // Recalibrated after ModeContract gave NVRTC/PTX requiresDeterministicCublas
+    // (374a69cd8d): the old {1e-3,1e-3} was mostly absorbing CUBLAS_DEFAULT_MATH
+    // tensor-core drift in JIT-mode gap GEMMs, not kernel-algorithm variance.
+    // With PEDANTIC parity the measured residual is 6.6e-5 abs / 1.1e-3 rel on
+    // ONE deep softmax chain (deepAttentionQKV varying#4) and <1e-5 everywhere
+    // else — true accumulation-order scatter. 3x headroom over that residual.
+    // Stale-DATA regressions are coherent and ≥5e-3.
+    private static final double[] JIT_TOL     = {2e-4, 1e-3};
 
     private SameDiff sd;
 
