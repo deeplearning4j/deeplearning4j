@@ -804,7 +804,19 @@ public class FlatBuffersMapper {
                                  boolean isCloneContext) throws IOException { // Added isCloneContext flag
         val opName = node.opName();
         val opTypeEnum = node.opType();
-        val hash = FlatBuffersMapper.getOpNum(opName, opTypeEnum); // Assume helper handles null type ok
+        // Instance-accurate op number for LEGACY op types: getOpNum resolves by
+        // NAME through DifferentialFunctionClassHolder, which holds ONE class per
+        // name. A legacy op sharing its name with a custom-op wrapper (e.g.
+        // BooleanNot [TRANSFORM_BOOL, opNum 7] vs LogicalNot [CUSTOM
+        // "boolean_not"]) resolves to the wrong class and writes the custom
+        // HASH into a legacy-typed FlatNode — unreadable by LegacyOpMapper
+        // ("No known transform bool op for op number"). The node instance knows
+        // its own opNum; name lookup is only required for the hash/table-typed
+        // kinds that BaseOp.opNum() cannot answer.
+        final boolean nameResolvedType = opTypeEnum == Type.CUSTOM || opTypeEnum == Type.LOGIC
+                || opTypeEnum == Type.UDF || opTypeEnum == Type.LOOP || opTypeEnum == Type.RETURN
+                || opTypeEnum == Type.CONDITIONAL || opTypeEnum == Type.LOOP_COND;
+        val hash = nameResolvedType ? FlatBuffersMapper.getOpNum(opName, opTypeEnum) : node.opNum();
         val nodeOwnName = node.getOwnName();
         if (nodeOwnName == null) throw new ND4JIllegalStateException("Node ownName cannot be null for serialization.");
 
