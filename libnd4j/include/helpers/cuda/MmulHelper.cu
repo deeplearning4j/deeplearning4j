@@ -31,6 +31,8 @@
 #include <ops/specials_cuda.h>
 
 #include <algorithm>
+#include <atomic>
+#include <graph/DspDiagnostics.h>
 #include <numeric>
 #include <unordered_map>
 #include <utility>
@@ -112,7 +114,13 @@ struct CastCacheSide {
   // When the source NDArray's DataBuffer pointer hasn't changed since the last
   // assign to a given cache slot, we skip the copy — constant weights (frozen
   // in DSP) are the same every decode step.
+  // HAZARD: the pointer is only a valid identity while the DataBuffer object
+  // lives. Plan teardown frees constants and the heap reuses their addresses;
+  // a new plan's same-shape constant can then alias a retired entry and skip
+  // the refresh. bumpCastCacheEpoch() (called at plan destruction) invalidates
+  // these guards lazily on every thread via the epoch check below.
   std::vector<const void*> sourcePtrs;
+  uint64_t epoch = 0;
 
   void resetIndices() {
     index = 0;
@@ -264,10 +272,41 @@ void MmulHelper::clearCastCache() {
   tl_ltAlgoCache.clear();
 }
 
+// Constant-free epoch: bumped whenever constant DataBuffers may have been
+// freed (plan destruction). Each thread's cast cache lazily invalidates its
+// skip-assign guards when it observes a newer epoch — pointer identity is
+// not trustworthy across frees (heap/pool address reuse, ABA).
+static std::atomic<uint64_t> g_castCacheEpoch{1};
+
+void MmulHelper::bumpCastCacheEpoch() {
+  uint64_t prev = g_castCacheEpoch.fetch_add(1, std::memory_order_relaxed);
+  DSP_DIAG(MEMORY, "CAST_CACHE_EPOCH_BUMP: %llu -> %llu (constant DataBuffers freed — "
+           "all threads' skip-assign guards invalidate at next cast)",
+           (unsigned long long)prev, (unsigned long long)(prev + 1));
+}
+
 static NDArray* castWithPersistentCache(CastCacheSide& side, NDArray* source, DataType targetType) {
   auto& cache = side.cache;
   auto& index = side.index;
   auto& srcPtrs = side.sourcePtrs;
+
+  // Epoch check: after any plan teardown, stop trusting recorded source
+  // pointers (freed DataBuffer addresses get reused). Cached cast arrays
+  // stay — their CONTENT refreshes via assign() once the guard is dropped.
+  {
+    uint64_t nowEpoch = g_castCacheEpoch.load(std::memory_order_relaxed);
+    if (side.epoch != nowEpoch) {
+      DSP_DIAG(MEMORY, "CAST_CACHE_EPOCH_SYNC: thread cast cache guards invalidated "
+               "(epoch %llu -> %llu, %zu skip-assign guards dropped, %zu cached arrays kept)",
+               (unsigned long long)side.epoch, (unsigned long long)nowEpoch,
+               srcPtrs.size(), cache.size());
+      std::fill(srcPtrs.begin(), srcPtrs.end(), nullptr);
+      side.captureCastReuse.clear();
+      side.lastCaptureCastSource = nullptr;
+      side.lastCaptureCastArray = nullptr;
+      side.epoch = nowEpoch;
+    }
+  }
 
   if (index < cache.size()) {
     NDArray* cached = cache[index];

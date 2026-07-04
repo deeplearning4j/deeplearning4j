@@ -1432,6 +1432,12 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   DSP_DIAG(MEMORY, "platformFreePlanResources: segments=%d slots=%d outputs=%d",
            (int)segments_.size(), numSlots_, totalOutputSlots_);
 
+  // This teardown frees the plan's constant DataBuffers; their heap addresses
+  // will be reused. Invalidate every thread's cast-cache skip-assign guards
+  // (pointer-identity keyed) so a successor plan's same-shape constant at a
+  // recycled address cannot silently reuse THIS plan's cast weight values.
+  MmulHelper::bumpCastCacheEpoch();
+
   // Drain any pending GPU work on the plan's owned stream BEFORE destroying
   // any resources.  Without this, in-flight kernels or CUDA graph replays
   // may still reference buffers, streams, or graph handles that are about

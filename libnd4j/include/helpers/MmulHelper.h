@@ -194,6 +194,18 @@ class SD_LIB_EXPORT MmulHelper {
   static void resetCastCacheIndices();
 
   /**
+   * Invalidate the skip-assign source-pointer guards of ALL threads' cast
+   * caches (lazily, at each thread's next cast). The guard keys on the raw
+   * source DataBuffer pointer; across a plan teardown those objects are freed
+   * and the heap reuses their addresses, so a NEW plan's same-shape constant
+   * can alias a retired guard entry and skip the refresh — the matmul then
+   * consumes the PREVIOUS plan's cast weight values (bit-identical batch-only
+   * drift). Call whenever constant DataBuffers may have been freed (plan
+   * destruction). Cheap: one relaxed atomic increment.
+   */
+  static void bumpCastCacheEpoch();
+
+  /**
    * Reset the mixed-precision cast cache indices to the given high-water-mark
    * values instead of 0.  Used during composite replay when a merged CUDA
    * graph already "owns" cast-cache slots [0, hwmA) / [0, hwmB): unmerged

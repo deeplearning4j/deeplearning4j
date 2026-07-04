@@ -34,6 +34,7 @@
 #include "config.h"
 #include <array/DataBuffer.h>
 #include <atomic>
+#include <graph/DspDiagnostics.h>
 
 #if HAVE_CUDNN
 #include <cudnn.h>
@@ -296,6 +297,9 @@ void* CublasHelper::handle(int deviceId) {
   if (CublasHelper::inDeterministicWindow()) {
     if (tl_appliedMode != MODE_PEDANTIC) {
       cublasSetMathMode(*tl_handle, CUBLAS_PEDANTIC_MATH);
+      DSP_DIAG(EXECUTE, "CUBLAS_HANDLE_MODE: thread handle %p -> PEDANTIC "
+               "(deterministic window open, was mode=%d)",
+               (void*)tl_handle, tl_appliedMode);
       tl_appliedMode = MODE_PEDANTIC;
     }
   } else if (!tl_cublasLtDisabled) {
@@ -303,6 +307,9 @@ void* CublasHelper::handle(int deviceId) {
     if (want != tl_appliedMode) {
       cublasSetMathMode(*tl_handle, want == MODE_TF32 ? CUBLAS_TF32_TENSOR_OP_MATH
                                                       : CUBLAS_DEFAULT_MATH);
+      DSP_DIAG(EXECUTE, "CUBLAS_HANDLE_MODE: thread handle %p -> %s "
+               "(window closed, was mode=%d)",
+               (void*)tl_handle, want == MODE_TF32 ? "TF32" : "DEFAULT", tl_appliedMode);
       tl_appliedMode = want;
     }
   } else {
@@ -320,10 +327,16 @@ void* CublasHelper::handle(int deviceId) {
 static std::atomic<int> g_deterministicCublasDepth{0};
 
 void CublasHelper::enterDeterministicWindow() {
-  g_deterministicCublasDepth.fetch_add(1, std::memory_order_relaxed);
+  int prev = g_deterministicCublasDepth.fetch_add(1, std::memory_order_relaxed);
+  DSP_DIAG(EXECUTE, "CUBLAS_DETERMINISTIC_WINDOW: enter depth=%d -> %d "
+           "(handles acquired on ANY thread converge to PEDANTIC)",
+           prev, prev + 1);
 }
 void CublasHelper::exitDeterministicWindow() {
   int prev = g_deterministicCublasDepth.fetch_sub(1, std::memory_order_relaxed);
+  DSP_DIAG(EXECUTE, "CUBLAS_DETERMINISTIC_WINDOW: exit depth=%d -> %d%s",
+           prev, prev > 0 ? prev - 1 : 0,
+           prev <= 0 ? " (UNBALANCED — clamped to 0)" : "");
   if (prev <= 0) {
     // Unbalanced exit — clamp to zero rather than going negative (a negative
     // depth would silently disable PEDANTIC for all future windows).

@@ -353,7 +353,29 @@ public class DspSlotLifecycleAuditTest {
             Map<String, INDArray> inputs = fix.inputBuilder.get();
             try {
                 double[] tol = tolerances(mode);
+                // Recycled-input immutability is this test's contract: execution
+                // must never mutate the caller's input arrays. Snapshot host
+                // content up front and verify before every replay so a
+                // corrupted input (pool reuse / staging writeback) fails HERE
+                // with the iteration number, instead of surfacing as an
+                // unexplained output divergence downstream.
+                Map<String, double[]> inputSnapshots = new LinkedHashMap<>();
+                for (Map.Entry<String, INDArray> e : inputs.entrySet()) {
+                    inputSnapshots.put(e.getKey(), e.getValue().dup().data().asDouble());
+                }
                 for (int i = 0; i < REPLAYS; i++) {
+                    for (Map.Entry<String, INDArray> e : inputs.entrySet()) {
+                        double[] snap = inputSnapshots.get(e.getKey());
+                        double[] now = e.getValue().dup().data().asDouble();
+                        for (int k = 0; k < snap.length; k++) {
+                            if (Double.compare(snap[k], now[k]) != 0) {
+                                fail(fix.name + " / " + mode + ": INPUT CORRUPTED before replay #" + i
+                                        + " — input '" + e.getKey() + "' diverges at index " + k
+                                        + " original=" + snap[k] + " now=" + now[k]
+                                        + " (recycled input must never be mutated by execution)");
+                            }
+                        }
+                    }
                     Map<String, INDArray> raw;
                     try {
                         raw = sd.output(inputs, fix.outputNames);
