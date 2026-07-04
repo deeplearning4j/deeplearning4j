@@ -578,6 +578,29 @@ static int getStructuralIArgCount(const std::string& opName) {
 // NativeSlot move operations removed: sub-structs manage their own memory.
 // NativeSlot is now non-movable (deleted in header).
 
+// ─── Broad pre-replay sync flag (weight rebind on cached-plan reuse) ─────────
+// All transitions of needsBroadPreReplaySync_ go through these DSP_DIAG-logged
+// accessors — never poke the field directly (same consolidation contract as the
+// GraphSegmentExec state methods).
+
+void NativeDynamicShapePlan::markWeightRebindNeedsBroadSync(const char* reason) {
+  needsBroadPreReplaySync_ = true;
+  DSP_DIAG(EXECUTE,
+           "BROAD_SYNC_MARK: %s — weight DataBuffer rebind detected; next ext-input "
+           "H2D prepare will cover ALL inputs (phase=%s execCount=%d)",
+           reason, planLifecycle_.displayName(), executeCount_);
+}
+
+bool NativeDynamicShapePlan::consumeBroadPreReplaySync(const char* site) {
+  if (!needsBroadPreReplaySync_) return false;
+  needsBroadPreReplaySync_ = false;
+  DSP_DIAG(EXECUTE,
+           "BROAD_SYNC_CONSUME: %s — broad ext-input H2D prepare for weight rebind; "
+           "flag cleared (phase=%s execCount=%d)",
+           site, planLifecycle_.displayName(), executeCount_);
+  return true;
+}
+
 // ─── NativeDynamicShapePlan ─────────────────────────────────────────────────
 
 NativeDynamicShapePlan::NativeDynamicShapePlan()
@@ -2464,6 +2487,11 @@ Status NativeDynamicShapePlan::execute(
     frozenSnapshot_.clear();
     frozenConstantDetectionDone_ = false;
     planLifecycle_.compilationDone = false;
+    // Weight DataBuffers were rebound (new executor borrowed this cached plan):
+    // the next ext-input H2D prepare must cover ALL inputs — the executeCount_>0
+    // fast path would otherwise skip the new weight buffers (batch-only wrong
+    // results). Consumed by performPreReplaySync's broad branch.
+    markWeightRebindNeedsBroadSync("protected_external_rebind");
 
     int invalidatedSegments = 0;
     for (auto& seg : segments_) {
@@ -2547,8 +2575,12 @@ Status NativeDynamicShapePlan::execute(
     int skippedAlreadyDeviceActual = 0;
     int skippedEmpty = 0;
     const bool hasVariableInputs = !cachedVariableExtIndices_.empty();
+    // weightRebindBroadSyncPending: read-only peek — a cached-plan reuse rebound
+    // the weight DataBuffers, so this prepare must be broad even in steady state.
+    // Consumption (flag clear) is owned by performPreReplaySync's broad branch.
     const bool broadPrepare = !frozenOrReplayAtEntry || executeCount_ <= 1
-                              || anySegmentNeedsWarmup() || hasVariableInputs;
+                              || anySegmentNeedsWarmup() || hasVariableInputs
+                              || weightRebindBroadSyncPending();
 
     for (int i = 0; i < numExternalInputs; i++) {
       NDArray* arr = externalInputs[i];

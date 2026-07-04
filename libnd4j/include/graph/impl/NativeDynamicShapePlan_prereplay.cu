@@ -349,13 +349,22 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
       // when executeCount_<=1. This fallback ensures the defensive prereplay path is
       // consistent with that gate when reached independently (e.g. from phaseWarmup
       // dispatch before the execute-level guard has marked extInputsSynced).
-      const bool firstFrozenExec = !planLifecycle_.isSlotBySlot() && (executeCount_ == 0);
+      // consumeBroadPreReplaySync: a plan-cache hit handed this REPLAYING plan to a
+      // NEW executor whose weight DataBuffers were rebound (marked by
+      // refreshProtectedWeightBuffers). executeCount_>0 makes the first-frozen gate
+      // false, and the variable-filter branch below would skip the new WEIGHT buffers
+      // entirely → ops read stale device memory → batch-only wrong results
+      // (testFreshInputCloseBetween[bgeEncoder][5], ~7% divergence). Broad-sync once;
+      // the accessor clears the flag and logs the consumption.
+      const bool weightRebindBroad = consumeBroadPreReplaySync("performPreReplaySync");
+      const bool firstFrozenExec =
+          (!planLifecycle_.isSlotBySlot() && (executeCount_ == 0)) || weightRebindBroad;
       if (firstFrozenExec) {
         DSP_DIAG(EXECUTE,
-                 "%s H2D prepare: first frozen exec (executeCount_=0) — "
+                 "%s H2D prepare: broad sync (executeCount_=%d weightRebind=%d) — "
                  "preparing ALL %d ext inputs (not just variable-filter) to "
                  "ensure CONSTANT weight buffers are device-synced before capture",
-                 diagTag, numExt);
+                 diagTag, executeCount_, weightRebindBroad ? 1 : 0, numExt);
         for (int ei = 0; ei < numExt; ei++) {
           queueRead(ei, "first-frozen-all");
         }

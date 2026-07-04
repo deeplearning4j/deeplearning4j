@@ -2758,6 +2758,25 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool inShapeChangeWarmup_ = false;  // True during segDispatchCompile's shape-change warmup pass.
                                        // Allows slot shape reassignment in step3_allocateOutputs.
   int executeCount_;  // Total plan execution count (monotonically increasing)
+  // Set when weight DataBuffer rebinds are detected (a NEW Java executor
+  // borrowed this cached plan): the next external-input H2D prepare must be
+  // BROAD (all inputs, not the variable-filter subset) even though
+  // executeCount_>0 makes the firstFrozenExec gate false. Without this, a
+  // plan-cache hit in REPLAYING phase skips weight H2D sync for the new
+  // executor's buffers → wrong results (batch-only bgeEncoder ~7% divergence,
+  // testFreshInputCloseBetween[5]).
+  //
+  // NEVER poke this field directly — all transitions go through the
+  // DSP_DIAG-logged accessors below (same consolidation contract as the
+  // GraphSegmentExec state methods).
+  bool needsBroadPreReplaySync_ = false;
+  // Mark: weight rebind detected (refreshProtectedWeightBuffers). Logged.
+  void markWeightRebindNeedsBroadSync(const char* reason);
+  // Consume-if-set at a broad-prepare site: returns whether broad sync is
+  // required and clears the flag. Logged when it fires.
+  bool consumeBroadPreReplaySync(const char* site);
+  // Read-only peek for gates that must widen but do not own consumption.
+  bool weightRebindBroadSyncPending() const { return needsBroadPreReplaySync_; }
   LastExecStats lastExecStats_;  // Snapshotted from PlanExecutionContext at end of each execute()
   uint64_t identityFingerprint_ = 0; // FNV-1a hash of (numSlots, opNames, wiring) — set at deserialization
   // Sync override depth counter. When > 0, needsSync() returns true regardless
