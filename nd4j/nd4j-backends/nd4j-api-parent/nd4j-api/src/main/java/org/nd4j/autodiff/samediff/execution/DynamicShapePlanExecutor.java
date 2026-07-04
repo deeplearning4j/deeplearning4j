@@ -276,6 +276,12 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  Cleared on close(), releaseGpuIntermediates(), and resetForNextPage(). */
     private Map<String, INDArray> zeroCopyOutputCache;
 
+    /** Readback tracing for the frozen zero-copy refresh path: logs src/dst device
+     *  addresses per output copy so pool-reuse mis-maps can be correlated with
+     *  native DB_DELETE traces. See {@link ND4JSystemProperties#DSP_READBACK_TRACE}. */
+    private static final boolean READBACK_TRACE =
+            Boolean.getBoolean(ND4JSystemProperties.DSP_READBACK_TRACE);
+
     /** Cached OpaqueNDArray wrappers for external inputs when shapesFrozen.
      *  Avoids recreating wrappers + JNI setGraphContextInputArray calls each step.
      *  Only inputs that changed (by INDArray identity) are re-sent to C++. */
@@ -3852,6 +3858,24 @@ public class DynamicShapePlanExecutor implements Closeable {
                         try {
                             OpaqueDataBuffer dstOdb = cached.data().opaqueBuffer();
                             if (dstOdb != null) {
+                                // Readback trace (-Dnd4j.dsp.readbackTrace=true): source vs
+                                // destination device addresses for the frozen zero-copy refresh.
+                                // Ground-truth instrument for the close-weight readback mis-map
+                                // (batch-only wrong 'afterClose' values with correct native slots):
+                                // correlates with native DB_DELETE_BUFFERS / pool-reuse traces to
+                                // show whether src or dst was freed-and-repurposed.
+                                if (READBACK_TRACE) {
+                                    Pointer dstSpecial = nativeOps.dbSpecialBuffer(dstOdb);
+                                    Pointer dstPrimary = nativeOps.dbPrimaryBuffer(dstOdb);
+                                    log.info("READBACK_TRACE out='{}' i={} len={} srcSpecial=0x{} "
+                                            + "dstSpecial=0x{} dstPrimary=0x{} dstArrId={} dstClosed={}",
+                                            outputName, i, length,
+                                            Long.toHexString(nativeSpecial != null ? nativeSpecial.address() : 0L),
+                                            Long.toHexString(dstSpecial != null ? dstSpecial.address() : 0L),
+                                            Long.toHexString(dstPrimary != null ? dstPrimary.address() : 0L),
+                                            System.identityHashCode(cached),
+                                            cached.wasClosed());
+                                }
                                 nativeOps.copyBuffer(dstOdb, length, srcOdb, 0, 0);
                             }
                         } finally {
@@ -4048,6 +4072,18 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // Mark cached outputs as non-closeable — they are reused across steps
                 for (INDArray arr : zeroCopyOutputCache.values()) {
                     arr.setCloseable(false);
+                }
+                if (READBACK_TRACE) {
+                    for (Map.Entry<String, INDArray> e : zeroCopyOutputCache.entrySet()) {
+                        OpaqueDataBuffer odb = e.getValue().data().opaqueBuffer();
+                        Pointer sp = odb != null ? nativeOps.dbSpecialBuffer(odb) : null;
+                        Pointer pp = odb != null ? nativeOps.dbPrimaryBuffer(odb) : null;
+                        log.info("READBACK_TRACE CACHE_BUILD out='{}' dstSpecial=0x{} dstPrimary=0x{} dstArrId={}",
+                                e.getKey(),
+                                Long.toHexString(sp != null ? sp.address() : 0L),
+                                Long.toHexString(pp != null ? pp.address() : 0L),
+                                System.identityHashCode(e.getValue()));
+                    }
                 }
                 log.info("Native executor: cached {} output arrays for frozen reuse (skip allocation)", results.size());
             }

@@ -33,6 +33,7 @@
 #include "../cublasHelper.h"
 #include "config.h"
 #include <array/DataBuffer.h>
+#include <atomic>
 
 #if HAVE_CUDNN
 #include <cudnn.h>
@@ -269,25 +270,68 @@ void* CublasHelper::handle(int deviceId) {
     tl_deviceId = deviceId;
   }
 
-  // Lazily apply/remove TF32 mode when the flag changes.
-  // CRITICAL: When DSP has set deterministic cuBLAS (PEDANTIC_MATH via
-  // tl_cublasLtDisabled=true), skip the lazy TF32 application entirely.
-  static thread_local bool tl_tf32Applied = false;
+  // Lazily converge THIS thread's handle to the mode the process currently
+  // requires. Three states, priority order:
+  //   PEDANTIC — a deterministic window is open (DSP plan execution whose
+  //              ModeContract requires bit-reproducible GEMMs). Handles are
+  //              thread-local, so the window must be applied at ACQUISITION:
+  //              the plan thread's platformBeginExecution cannot reach the
+  //              handles of executor/pool threads that dispatch gap GEMMs —
+  //              they inherited fresh DEFAULT/TF32 handles and drifted vs the
+  //              PEDANTIC reference (batch-only, bit-identical ~1e-2 on
+  //              norm-heavy graphs).
+  //   caller-managed — tl_cublasLtDisabled=true: the calling thread set the
+  //              mode explicitly (setCublasWorkspaceForCapture/Warmup); do
+  //              not overwrite it here.
+  //   TF32/DEFAULT — normal lazy TF32 policy (sm_80+, env-gated).
+  static thread_local int tl_appliedMode = -1;  // CublasMathModeState
   static thread_local int tl_smMajor = -1;
+  constexpr int MODE_DEFAULT = 0, MODE_TF32 = 1, MODE_PEDANTIC = 2;
   bool wantTf32 = sd::Environment::getInstance().cublasTf32Enabled();
-  if (!tl_cublasLtDisabled && wantTf32 != tl_tf32Applied) {
-    if (tl_smMajor < 0) {
-      cudaDeviceProp prop;
-      cudaGetDeviceProperties(&prop, deviceId);
-      tl_smMajor = prop.major;
+  if (tl_smMajor < 0) {
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, deviceId);
+    tl_smMajor = prop.major;
+  }
+  if (CublasHelper::inDeterministicWindow()) {
+    if (tl_appliedMode != MODE_PEDANTIC) {
+      cublasSetMathMode(*tl_handle, CUBLAS_PEDANTIC_MATH);
+      tl_appliedMode = MODE_PEDANTIC;
     }
-    if (tl_smMajor >= 8) {
-      cublasSetMathMode(*tl_handle, wantTf32 ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH);
+  } else if (!tl_cublasLtDisabled) {
+    int want = (wantTf32 && tl_smMajor >= 8) ? MODE_TF32 : MODE_DEFAULT;
+    if (want != tl_appliedMode) {
+      cublasSetMathMode(*tl_handle, want == MODE_TF32 ? CUBLAS_TF32_TENSOR_OP_MATH
+                                                      : CUBLAS_DEFAULT_MATH);
+      tl_appliedMode = want;
     }
-    tl_tf32Applied = wantTf32;
+  } else {
+    // Caller manages the mode explicitly; forget our tracking so the next
+    // unmanaged acquisition re-applies the policy mode.
+    tl_appliedMode = -1;
   }
 
   return reinterpret_cast<void*>(tl_handle);
+}
+
+// ── Process-global deterministic-math window ────────────────────────────
+// Depth-counted so nested/overlapping plan executions (multi-threaded plan
+// sharing) keep the window open until the LAST participant exits.
+static std::atomic<int> g_deterministicCublasDepth{0};
+
+void CublasHelper::enterDeterministicWindow() {
+  g_deterministicCublasDepth.fetch_add(1, std::memory_order_relaxed);
+}
+void CublasHelper::exitDeterministicWindow() {
+  int prev = g_deterministicCublasDepth.fetch_sub(1, std::memory_order_relaxed);
+  if (prev <= 0) {
+    // Unbalanced exit — clamp to zero rather than going negative (a negative
+    // depth would silently disable PEDANTIC for all future windows).
+    g_deterministicCublasDepth.store(0, std::memory_order_relaxed);
+  }
+}
+bool CublasHelper::inDeterministicWindow() {
+  return g_deterministicCublasDepth.load(std::memory_order_relaxed) > 0;
 }
 
 // cuBLAS Lt handle: created on-demand per thread/device

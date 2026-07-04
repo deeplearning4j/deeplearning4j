@@ -1929,6 +1929,9 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     if (handlePtr != nullptr) {
       cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
     }
+    // Leaked flag = a prior begin never reached its end; balance the
+    // deterministic window as well (clamped at zero if already closed).
+    CublasHelper::exitDeterministicWindow();
   }
 
   auto* ctx = new PlanExecutionContext();
@@ -2057,8 +2060,15 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     }
     // (3) Block cublasLt and force CUBLAS_GEMM_DEFAULT
     tl_cublasLtDisabled = true;
+    // (4) Open the process-global deterministic window: cuBLAS handles are
+    // THREAD-LOCAL, so the PEDANTIC set above only covers THIS thread. Gap
+    // GEMMs dispatched from executor/pool threads acquire their own handles —
+    // CublasHelper::handle() applies PEDANTIC to any handle acquired while
+    // the window is open (task #55: off-thread GEMMs ran DEFAULT/TF32 against
+    // the PEDANTIC reference — bit-identical batch-only drift).
+    CublasHelper::enterDeterministicWindow();
     DSP_DIAG(EXECUTE, "platformBeginExecution: deterministic cuBLAS for mode=%d "
-             "(PEDANTIC_MATH + workspace=%p size=%zuMB + no Lt)",
+             "(PEDANTIC_MATH + workspace=%p size=%zuMB + no Lt + global window)",
              static_cast<int>(graphExecutionMode_),
              cublasWorkspaceBuffer_, cublasWorkspaceSize_ / (1024*1024));
   }
@@ -2176,6 +2186,10 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     // from non-DSP code will see tl_cublasLtDisabled=false and correctly
     // lazy-apply TF32 if wanted.
     tl_cublasLtDisabled = false;
+    // Close the deterministic window opened by platformBeginExecution.
+    // Other threads' handles converge back to TF32/DEFAULT on their next
+    // acquisition (lazy, per-thread).
+    CublasHelper::exitDeterministicWindow();
   }
 
   // ── TLS STATE CLEANUP + ASSERTIONS ─────────────────────────────────────
@@ -2216,6 +2230,9 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
     if (handlePtr != nullptr) {
       cublasSetMathMode(*handlePtr, CUBLAS_DEFAULT_MATH);
     }
+    // The leaked flag implies a begin that never reached its end — balance
+    // the deterministic window too (exit clamps at zero if already closed).
+    CublasHelper::exitDeterministicWindow();
   }
   // Capture stream must be null — active capture would mean we're inside beginCapture
   // but exited execution without endCapture.

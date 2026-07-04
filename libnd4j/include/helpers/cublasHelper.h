@@ -56,6 +56,17 @@ class SD_LIB_EXPORT CublasHelper {
   // Call after setCublasTf32Enabled() to update existing handles.
   void applyTf32Mode(bool enable);
 
+  // ── Process-global deterministic-math window ──────────────────────────
+  // cuBLAS handles are THREAD-LOCAL, so a math mode set by the plan-execution
+  // thread never reaches GEMMs dispatched from other threads (ordered-range
+  // executors, pool threads). While the window is open (depth > 0), handle()
+  // applies CUBLAS_PEDANTIC_MATH to WHICHEVER thread's handle is acquired,
+  // and lazily converges back to TF32/DEFAULT after it closes. Depth-counted
+  // and exception-balanced by the callers (plan begin/end pairs).
+  static void enterDeterministicWindow();
+  static void exitDeterministicWindow();
+  static bool inDeterministicWindow();
+
   // cuBLAS Lt (Library) API for optimized GEMM
   // Thread-local, created on-demand per device
   void* ltHandle();

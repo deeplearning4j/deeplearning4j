@@ -752,6 +752,17 @@ public class ND4JSystemProperties {
     public static final String DSP_NATIVE_DUMP_OUTPUTS = "nd4j.dsp.native.dumpOutputs";
 
     /**
+     * When set to {@code true}, logs source/destination device buffer addresses for every
+     * frozen zero-copy output refresh in the native DSP executor (READBACK_TRACE lines),
+     * plus the destination addresses captured at cache build. Correlate with native
+     * DB_DELETE_BUFFERS diagnostics to detect pool-reuse readback mis-maps (a returned
+     * output wrapping a freed-and-repurposed buffer while native slots hold correct data).
+     * Default: false
+     * Example: -Dnd4j.dsp.readbackTrace=true
+     */
+    public static final String DSP_READBACK_TRACE = "nd4j.dsp.readbackTrace";
+
+    /**
      * When set to {@code true}, enables per-step execution timing in the native DSP executor.
      * Prints a breakdown of time spent in graph-replay vs slot-by-slot segments.
      * Default: false
