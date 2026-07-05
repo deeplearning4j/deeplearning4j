@@ -276,6 +276,12 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     return nullptr;
   }
 
+  // Reap event-deferred direct frees whose consumers completed (task #57).
+  // The atomic gate makes this a no-op load in the common (empty) case.
+  if (deferredFreeCount_.load(std::memory_order_acquire) != 0) {
+    drainDeferredDirectFrees();
+  }
+
   // During CUDA graph capture, use pre-allocated workspace instead of cudaMallocAsync.
   // This eliminates cudaGraphMemAllocNode from the captured graph, preventing
   // "invalid argument" on cudaGraphLaunch from unpaired alloc/free nodes.
@@ -351,6 +357,11 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     if (needDeviceRestore) cudaSetDevice(savedDev);
   };
 
+  // Resolve the consumer/allocation stream up front — the soft-limit failover
+  // below needs it for managed-fallback prefetch ordering (task #57).
+  cudaStream_t allocStream = resolveCaptureStream(stream);
+  allocStream = resolveNullStream(allocStream);
+
   // ─── Proactive soft-limit check ───────────────────────────────────────────
   // When enabled, check device usage BEFORE attempting local allocation.
   // If the device is above the soft-limit threshold, route to allocateFailover()
@@ -379,7 +390,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
         // is from other processes), keeping all allocations on device 0 while
         // device 1 sits idle with gigabytes free.
         auto result = allocateFailover(size, deviceId, actualDeviceId,
-                                       /*skipSameDeviceRetry=*/true);
+                                       /*skipSameDeviceRetry=*/true, allocStream);
         if (result != nullptr) {
           restoreDevice();
           return result;
@@ -395,10 +406,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     }
   }
 
-  cudaStream_t allocStream = resolveCaptureStream(stream);
-
-  // Resolve nullptr to a valid stream — prevents cross-stream pool fragmentation.
-  allocStream = resolveNullStream(allocStream);
+  // (allocStream resolved above, before the soft-limit block.)
 
   // If pools not enabled or not supported, fall back to regular cudaMalloc
   if (!enabled_.load() || !supported_) {
@@ -420,7 +428,8 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
     if (err != cudaSuccess) {
       sd_debug("cudaMallocAsync (pools-off path) failed: %s\n", cudaGetErrorString(err), "");
-      auto result = allocateFailover(size, deviceId, actualDeviceId);
+      auto result = allocateFailover(size, deviceId, actualDeviceId,
+                                   /*skipSameDeviceRetry=*/false, allocStream);
       restoreDevice();
       return result;
     }
@@ -449,7 +458,8 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
       if (err != cudaSuccess) {
         sd_debug("cudaMallocAsync (uninit-device path) failed: %s\n", cudaGetErrorString(err), "");
-        auto result = allocateFailover(size, deviceId, actualDeviceId);
+        auto result = allocateFailover(size, deviceId, actualDeviceId,
+                                   /*skipSameDeviceRetry=*/false, allocStream);
         restoreDevice();
         return result;
       }
@@ -528,7 +538,8 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     // bypass pool stats (cudaMemPoolAttrUsedMemCurrent won't track them), causing
     // getStats() to underreport memory usage. Go straight to allocateFailover()
     // which does trimPool + retry in a controlled way.
-    auto result = allocateFailover(size, deviceId, actualDeviceId);
+    auto result = allocateFailover(size, deviceId, actualDeviceId,
+                                   /*skipSameDeviceRetry=*/false, allocStream);
     restoreDevice();
     return result;
   }
@@ -539,10 +550,14 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
 }
 
 void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* actualDeviceId,
-                                       bool skipSameDeviceRetry) {
+                                       bool skipSameDeviceRetry, cudaStream_t consumerStream) {
   sd_debug("CudaMemoryPool::allocateFailover: %s on device %d for %zu bytes\n",
            skipSameDeviceRetry ? "Proactive soft-limit failover" : "Primary allocation failed",
            currentDeviceId, size);
+
+  // OOM path: reap any completed deferred direct frees first — their memory may
+  // be exactly what this allocation needs (task #57).
+  drainDeferredDirectFrees();
 
   // Get available memory on current device for pressure event
   size_t currentFreeMem = 0, currentTotalMem = 0;
@@ -757,31 +772,44 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
       cudaGetLastError();
     } else {
       // Non-peer device: use cudaMallocManaged for transparent UVA access.
-      // Without P2P/NVLink, device 0 cannot directly access device 1's memory.
-      // cudaMallocManaged allocates in the unified address space. We set the
-      // preferred location to currentDeviceId (where kernels run) and hint
-      // that device d (where the allocation was routed) may also access it.
-      // Then prefetch to currentDeviceId so pages are resident BEFORE the
-      // first kernel launch — without this, the first access triggers a
-      // demand-paging fault that can race with kernel execution (error 700).
+      // Without P2P/NVLink, currentDeviceId's kernels cannot read device d's
+      // memory directly, and migrating pages INTO currentDeviceId cannot work
+      // either — this path only runs when currentDeviceId is FULL, so a
+      // demand-paging fault has no evictable frames to migrate into (the
+      // device is packed with unevictable cudaMallocAsync pool memory). The
+      // driver then fails the fault and kills the context with error 700
+      // (the bge [32x512] warmup OOM cascade, task #57 / WS-O3).
+      // The only residency BOTH devices can stably use is HOST: pin pages
+      // there (preferred location CPU) and pre-establish the GPU mapping
+      // (SetAccessedBy), so consumer kernels do PCIe reads with NO page
+      // faults — pinned-host semantics with managed bookkeeping.
       void* ptr = nullptr;
       cudaError_t err = cudaMallocManaged(&ptr, size, cudaMemAttachGlobal);
       if (err == cudaSuccess && ptr != nullptr) {
-        // Preferred location = the device that will run kernels on this memory.
-        // NOT device d — setting preferred to a non-peer device forces pages to
-        // stay where the kernel can't reach them without demand paging, which
-        // causes error 700 ("illegal memory access") on non-peer GPU pairs.
-        cudaMemAdvise(ptr, size, cudaMemAdviseSetPreferredLocation, currentDeviceId);
-        // Hint that both devices will access this memory. The CUDA driver uses
-        // this to set up page table mappings proactively rather than on fault.
+        cudaMemAdvise(ptr, size, cudaMemAdviseSetPreferredLocation, cudaCpuDeviceId);
+        // Map the host-resident pages into both GPUs' page tables up front so
+        // access never takes a fault-and-migrate path.
         cudaMemAdvise(ptr, size, cudaMemAdviseSetAccessedBy, currentDeviceId);
         cudaMemAdvise(ptr, size, cudaMemAdviseSetAccessedBy, d);
-        // Prefetch to currentDeviceId so pages are resident before kernel launch.
-        // Use nullptr stream (default) to avoid LaunchContext recursion.
-        cudaMemPrefetchAsync(ptr, size, currentDeviceId, nullptr);
+        // Populate host residency ordered on the CONSUMER stream. A
+        // default-stream prefetch gives the consuming kernels (DSP/LC exec
+        // stream) no ordering against population — the kernel races the
+        // residency setup. Enqueue-order on the consumer stream is sufficient
+        // (consumers on that stream run strictly after it); NO host sync here
+        // (WS-N mandate). Only an ENQUEUE failure is checked — a bad stream /
+        // bad range surfaces synchronously from the async call itself.
+        cudaError_t prefetchErr = cudaMemPrefetchAsync(ptr, size, cudaCpuDeviceId, consumerStream);
+        if (prefetchErr != cudaSuccess) {
+          cudaGetLastError();
+          sd_printf("CudaMemoryPool::allocateFailover: prefetch enqueue failed on managed "
+                    "fallback (host-resident, for device %d): %s — freeing and trying next candidate\n",
+                    currentDeviceId, cudaGetErrorString(prefetchErr));
+          cudaFree(ptr);  // fresh allocation, never handed out — no consumers to order against
+          continue;
+        }
         sd_debug("CudaMemoryPool::allocateFailover: Succeeded via cudaMallocManaged "
-                  "(backed by device %d, prefetched to device %d) for %zu bytes\n",
-                  d, currentDeviceId, size);
+                  "(host-resident, mapped for device %d) for %zu bytes\n",
+                  currentDeviceId, size);
         registerDirectAllocation(ptr, size);
         if (actualDeviceId) *actualDeviceId = currentDeviceId;
         cudaSetDevice(prevDev);
@@ -915,7 +943,13 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
         sd_printf("CudaMemoryPool::free: Freed pinned host memory %p (%zu bytes)\n", ptr, freedSize);
       }
 
-      cudaFreeHost(ptr);
+      // cudaFreeHost is synchronous and stream-oblivious — same in-flight-consumer
+      // hazard as the direct-allocation cudaFree (task #57): a pinned-host failover
+      // buffer read by a still-running kernel must not be unmapped under it.
+      // NO host sync (WS-N mandate): event-deferred, reaped when the consumer
+      // stream's work at free time has provably completed.
+      deferDirectFree(ptr, freedSize, /*deviceId=*/-1, /*isHostAlloc=*/true,
+                      resolveNullStream(resolveCaptureStream(stream)));
       return;
     }
 
@@ -1001,22 +1035,36 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     }
   }
 
-  // Check if this is a direct (cudaMalloc) allocation — these MUST use cudaFree,
-  // NOT cudaFreeAsync. Direct allocations are weight buffers migrated out of the
-  // async pool to prevent pool fragmentation. Using cudaFreeAsync on a cudaMalloc
-  // pointer returns "invalid argument" and leaks the memory.
+  // Check if this is a direct (cudaMalloc/cudaMallocManaged) allocation — these
+  // MUST use cudaFree, NOT cudaFreeAsync. Direct allocations are weight buffers
+  // migrated out of the async pool, and OOM-failover fallbacks (managed/host-
+  // resident) from allocateFailover. Using cudaFreeAsync on a cudaMalloc pointer
+  // returns "invalid argument" and leaks the memory.
   {
-    std::lock_guard<std::mutex> lock(directAllocMutex_);
-    auto directIt = directAllocations_.find(ptr);
-    if (directIt != directAllocations_.end()) {
-      size_t freedSize = directIt->second;
-      directAllocations_.erase(directIt);
-      cudaError_t err = cudaFree(ptr);
-      if (err != cudaSuccess) {
-        sd_printf("CudaMemoryPool::free: cudaFree failed for direct allocation ptr=%p size=%zu: %s\n",
-                  ptr, freedSize, cudaGetErrorString(err));
-        cudaGetLastError();  // clear error
+    bool isDirect = false;
+    size_t freedSize = 0;
+    {
+      std::lock_guard<std::mutex> lock(directAllocMutex_);
+      auto directIt = directAllocations_.find(ptr);
+      if (directIt != directAllocations_.end()) {
+        isDirect = true;
+        freedSize = directIt->second;
+        directAllocations_.erase(directIt);
       }
+    }
+    if (isDirect) {
+      // cudaFree is SYNCHRONOUS and ignores stream ordering: freeing a managed
+      // failover buffer unmaps its UVM range IMMEDIATELY, even while an enqueued
+      // kernel that reads it is still in flight (async cuBLAS GEMMs inside
+      // dot_product_attention_v2 deliberately don't sync). Pool buffers survive
+      // this dtor-after-enqueue pattern because cudaFreeAsync is stream-ordered
+      // behind the consumer — direct allocations got no such protection, so the
+      // first OOM-failover temp consumed by an async GEMM died with a driver-
+      // level fault: error 700 poisoned the context (bge [32x512] warmup OOM
+      // cascade, task #57). NO host sync here (WS-N mandate): defer the free
+      // behind an event recorded on the consumer stream; it is reaped by
+      // drainDeferredDirectFrees() once cudaEventQuery reports completion.
+      deferDirectFree(ptr, freedSize, deviceId, /*isHostAlloc=*/false, freeStream);
       if (needDeviceRestore) cudaSetDevice(savedDev);
       return;
     }
@@ -1751,6 +1799,107 @@ bool CudaMemoryPool::isInCaptureArena(void* ptr) const {
   return false;
 }
 
+void CudaMemoryPool::immediateDirectFree(void* ptr, size_t size, int deviceId, bool isHostAlloc) {
+  DSP_DIAG(MEMORY, "IMMEDIATE_DIRECT_FREE: ptr=%p size=%zu dev=%d host=%d",
+           ptr, size, deviceId, (int)isHostAlloc);
+  if (isHostAlloc) {
+    cudaError_t err = cudaFreeHost(ptr);
+    if (err != cudaSuccess) {
+      sd_printf("CudaMemoryPool::immediateDirectFree: cudaFreeHost failed ptr=%p size=%zu: %s\n",
+                ptr, size, cudaGetErrorString(err));
+      cudaGetLastError();
+    }
+    return;
+  }
+  int savedDev = -1;
+  cudaGetDevice(&savedDev);
+  bool restore = (deviceId >= 0 && savedDev != deviceId && cudaSetDevice(deviceId) == cudaSuccess);
+  cudaError_t err = cudaFree(ptr);
+  if (err != cudaSuccess) {
+    sd_printf("CudaMemoryPool::immediateDirectFree: cudaFree failed for direct allocation ptr=%p size=%zu: %s\n",
+              ptr, size, cudaGetErrorString(err));
+    cudaGetLastError();
+  }
+  if (restore) cudaSetDevice(savedDev);
+}
+
+void CudaMemoryPool::deferDirectFree(void* ptr, size_t size, int deviceId, bool isHostAlloc,
+                                     cudaStream_t orderStream) {
+  // Async-only ordering (no host sync): record an event on the consumer stream
+  // at free time. The synchronous cudaFree/cudaFreeHost only happens after
+  // cudaEventQuery reports that everything enqueued before the free completed —
+  // so an in-flight consumer (async cuBLAS GEMM reading a failover temp) can
+  // never have its memory unmapped underneath it (task #57).
+  cudaEvent_t evt = nullptr;
+  if (orderStream != nullptr && !tl_graphExecutionActive) {
+    if (cudaEventCreateWithFlags(&evt, cudaEventDisableTiming) != cudaSuccess) {
+      cudaGetLastError();
+      evt = nullptr;
+    } else if (cudaEventRecord(evt, orderStream) != cudaSuccess) {
+      cudaGetLastError();
+      cudaEventDestroy(evt);
+      evt = nullptr;
+    }
+  }
+  if (evt == nullptr) {
+    // No orderable stream (teardown edge, capture guard) — legacy immediate free.
+    DSP_DIAG(MEMORY, "DEFER_DIRECT_FREE: no orderable stream (capture=%d) — immediate free ptr=%p size=%zu",
+             (int)tl_graphExecutionActive, ptr, size);
+    immediateDirectFree(ptr, size, deviceId, isHostAlloc);
+    return;
+  }
+  int pending;
+  {
+    std::lock_guard<std::mutex> lock(deferredFreeMutex_);
+    deferredDirectFrees_.push_back({ptr, size, deviceId, static_cast<void*>(evt), isHostAlloc});
+    pending = static_cast<int>(deferredDirectFrees_.size());
+  }
+  deferredFreeCount_.fetch_add(1, std::memory_order_release);
+  DSP_DIAG(MEMORY, "DEFER_DIRECT_FREE: ptr=%p size=%zu dev=%d host=%d orderStream=%p pending=%d",
+           ptr, size, deviceId, (int)isHostAlloc, (void*)orderStream, pending);
+}
+
+void CudaMemoryPool::drainDeferredDirectFrees(bool force) {
+  if (deferredFreeCount_.load(std::memory_order_acquire) == 0) return;
+  std::vector<DeferredDirectFree> ready;
+  {
+    std::lock_guard<std::mutex> lock(deferredFreeMutex_);
+    auto it = deferredDirectFrees_.begin();
+    while (it != deferredDirectFrees_.end()) {
+      bool reap = force;
+      if (!reap) {
+        cudaError_t q = cudaEventQuery(reinterpret_cast<cudaEvent_t>(it->readyEvent));
+        if (q == cudaSuccess) {
+          reap = true;
+        } else if (q != cudaErrorNotReady) {
+          // Event unusable (poisoned/destroyed context) — reap anyway; leaking
+          // here would compound an already-fatal state.
+          DSP_DIAG(MEMORY, "DRAIN_DEFERRED_FREES: event query error %d for ptr=%p — reaping anyway",
+                   (int)q, it->ptr);
+          cudaGetLastError();
+          reap = true;
+        }
+      }
+      if (reap) {
+        ready.push_back(*it);
+        it = deferredDirectFrees_.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    deferredFreeCount_.store(static_cast<int>(deferredDirectFrees_.size()), std::memory_order_release);
+  }
+  if (!ready.empty()) {
+    DSP_DIAG(MEMORY, "DRAIN_DEFERRED_FREES: reaped=%zu remaining=%d force=%d",
+             ready.size(), deferredFreeCount_.load(std::memory_order_acquire), (int)force);
+  }
+  for (auto& e : ready) {
+    cudaEventDestroy(reinterpret_cast<cudaEvent_t>(e.readyEvent));
+    cudaGetLastError();
+    immediateDirectFree(e.ptr, e.size, e.deviceId, e.isHostAlloc);
+  }
+}
+
 void CudaMemoryPool::registerDirectAllocation(void* ptr, size_t size) {
   if (ptr == nullptr || size == 0) return;
   std::lock_guard<std::mutex> lock(directAllocMutex_);
@@ -1772,6 +1921,10 @@ void CudaMemoryPool::releaseAll() {
   // callers bail out at the top, so by the time we acquire the mutexes below,
   // no other thread is inside the critical sections.
   released_.store(true, std::memory_order_release);
+
+  // Force-reap all event-deferred direct frees — at teardown nothing consumes
+  // these buffers anymore, so event state no longer matters (task #57).
+  drainDeferredDirectFrees(/*force=*/true);
 
   if (!supported_) {
     return;

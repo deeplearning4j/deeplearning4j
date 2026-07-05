@@ -47,6 +47,7 @@
 #include <helpers/DebugHelper.h>
 #include <memory/cuda/CudaMemoryPool.h>
 #include <memory/MultiBackendWorkspace.h>
+#include <array/DataBuffer.h>  // tl_dspExecutionStream (memsetSync stream-ordering, task #57)
 
 #include <execution/cuda/LaunchDims.h>
 #include <loops/special_kernels.h>
@@ -1018,11 +1019,41 @@ int memsetSync(sd::Pointer dst, int value, sd::LongType size, int flags, sd::Poi
     cudaGetLastError();
   }
 
-  // Use cudaMemsetAsync on cudaStreamPerThread instead of synchronous cudaMemset.
-  // Synchronous cudaMemset on the legacy stream causes error 906 when another
-  // thread is mid-CUDA-graph-capture.
-  auto dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), cudaStreamPerThread);
-  if (dZ == 0) cudaStreamSynchronize(cudaStreamPerThread);
+  // Use cudaMemsetAsync instead of synchronous cudaMemset — synchronous cudaMemset
+  // on the legacy stream causes error 906 when another thread is mid-CUDA-graph-capture.
+  //
+  // Stream choice: the memset MUST be ordered with the allocation lifecycle. Pool
+  // allocations resolve to the DSP execution stream or this thread's LaunchContext
+  // exec stream (CudaMemoryPool::resolveNullStream); cudaMemsetAsync on
+  // cudaStreamPerThread is ordered against NEITHER. Under memory pressure the pool
+  // rehands just-freed blocks (with a driver-internal reuse dependency on the
+  // ALLOCATING stream only) and trimPool unmaps released reserves — an unordered
+  // memset then writes into memory whose free/alloc ops haven't executed yet on
+  // their stream: error 700 "illegal memory access" or silent clobber of the
+  // previous owner's in-flight reader (bge [32x512] warmup OOM cascade, task #57;
+  // compute-sanitizer --track-stream-ordered-races flags exactly this pair).
+  // Same-stream memset inherits the alloc's ordering end-to-end. Keep
+  // cudaStreamPerThread only when we switched devices (this thread's streams
+  // belong to the original device) — that path is a fresh cross-device failover
+  // allocation made by this thread, not a pool-reuse candidate.
+  cudaStream_t memsetStream = cudaStreamPerThread;
+  if (!switchedDevice) {
+    // Global-scope JNI function — qualify the thread-state explicitly (the
+    // tl_dspExecutionStream macro expands unqualified inside namespace sd).
+    if (sd::tl_dataBufferState.dspExecutionStream != nullptr) {
+      memsetStream = reinterpret_cast<cudaStream_t>(sd::tl_dataBufferState.dspExecutionStream);
+    } else {
+      auto* ctxStream = sd::LaunchContext::defaultContext()->getCudaStream();
+      if (ctxStream != nullptr) memsetStream = *ctxStream;
+    }
+  }
+  auto dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), memsetStream);
+  // No trailing host sync on the resolved exec stream (WS-N: syncs are being
+  // removed, not added): device consumers are stream-ordered after the memset,
+  // and host reads go through syncToPrimary's own machinery. Keep the legacy
+  // sync ONLY for the per-thread-stream fallback (device-switched case), where
+  // nothing downstream is ordered against the memset.
+  if (dZ == 0 && memsetStream == cudaStreamPerThread) cudaStreamSynchronize(cudaStreamPerThread);
 
   if (switchedDevice) {
     cudaSetDevice(savedDevice);

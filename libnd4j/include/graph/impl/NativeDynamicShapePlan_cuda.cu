@@ -99,6 +99,13 @@ namespace sd { namespace cuda { void clearCudaGraphSchedulerCache(); } }
 
 extern thread_local cudaStream_t tl_dspGapStream;
 
+// Plan-wide gap-stream pin bookkeeping (set in platformBeginExecution, restored
+// in platformEndExecution) — keeps warmup slot-by-slot ops on the SAME stream
+// the pool resolves allocations/frees to, closing the free-vs-inflight-kernel
+// race that poisons the context at OOM pressure (task #57).
+static thread_local cudaStream_t tl_prevGapStreamForPlanExec = nullptr;
+static thread_local bool tl_gapStreamPinnedByPlanExec = false;
+
 namespace sd {
 
 void dspPublishThreadCompletionEvent(void* streamPtr);
@@ -2006,6 +2013,23 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     // duration of execution and restores the previous device on destruction.
     ctx->streamGuard = static_cast<void*>(new DspStreamGuard(cudaStr, ctx->deviceId));
 
+    // Pin the gap-stream override for the WHOLE plan execution, not just
+    // compositeReplay. Without this, slot-by-slot warmup ops launch on the
+    // ContextBuffers exec stream (LaunchContext::getCudaStream) while pool
+    // allocations AND frees resolve to tl_dspExecutionStream — a two-stream
+    // split with no ordering between them. An op temp freed on the (idle)
+    // DSP stream executes immediately while the async GEMM reading it is
+    // still in flight on the LC stream; at OOM pressure the failover trims
+    // then release that block back to the driver (unmap) and the in-flight
+    // kernel faults: error 700 poisons the context (bge [32x512] warmup OOM
+    // cascade, task #57). Control run: CUDA_LAUNCH_BLOCKING=1 survives 507
+    // failover events with zero 700s — the crash is purely this ordering.
+    // Capture/composite phases layer their own ScopedDspGapStream on top and
+    // restore to this value, so inner redirects are unaffected.
+    tl_prevGapStreamForPlanExec = tl_dspGapStream;
+    tl_gapStreamPinnedByPlanExec = true;
+    tl_dspGapStream = cudaStr;
+
     // Resolve LC default stream (a real async stream from ContextBuffers,
     // NOT CUDA stream 0). Post-execution ops (KvScatter, assign, mask updates)
     // run on this stream.
@@ -2282,6 +2306,15 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
              "platformEndExecution exit (execCount=%d). Clearing defensively.",
              (void*)tl_graphCaptureStream, executeCount_);
     tl_graphCaptureStream = nullptr;
+  }
+
+  // Restore the plan-wide gap-stream pin (paired with platformBeginExecution).
+  // Must happen at plan end, NOT earlier — warmup/frozen slot-by-slot phases
+  // rely on it to keep ops, pool allocations, and frees on ONE stream (#57).
+  if (tl_gapStreamPinnedByPlanExec) {
+    tl_dspGapStream = tl_prevGapStreamForPlanExec;
+    tl_prevGapStreamForPlanExec = nullptr;
+    tl_gapStreamPinnedByPlanExec = false;
   }
 
   // Explicitly delete the stream guard before the context.

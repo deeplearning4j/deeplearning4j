@@ -460,9 +460,13 @@ class SD_LIB_EXPORT CudaMemoryPool {
    *        route allocations to another device, retrying on the same device defeats the purpose
    *        (the pool's own usage is low, so trim+retry always succeeds, keeping all allocations
    *        on the overloaded device while other devices sit idle).
+   * @param consumerStream Stream that will consume the allocation (the caller's alloc/exec
+   *        stream). Non-peer managed fallbacks prefetch on THIS stream so residency is
+   *        ordered before the consuming kernels — prefetching on the default stream races
+   *        demand paging on non-peer pairs and produces error 700 (bge warmup OOM cascade).
    */
   void* allocateFailover(size_t size, int currentDeviceId, int* actualDeviceId = nullptr,
-                         bool skipSameDeviceRetry = false);
+                         bool skipSameDeviceRetry = false, cudaStream_t consumerStream = nullptr);
 
   static constexpr int MAX_DEVICES = 16;
 
@@ -537,6 +541,35 @@ class SD_LIB_EXPORT CudaMemoryPool {
   // Shares directAllocMutex_ with directAllocations_.
   struct DirectAsyncInfo { size_t size; int deviceId; };
   std::unordered_map<void*, DirectAsyncInfo> directAsyncAllocations_;
+
+  // ── Event-deferred direct frees (task #57) ──────────────────────────────
+  // cudaFree/cudaFreeHost are SYNCHRONOUS and stream-oblivious: freeing an
+  // OOM-failover buffer (managed / pinned-host) unmaps it IMMEDIATELY, even
+  // while an enqueued consumer kernel is still in flight (async cuBLAS GEMMs
+  // don't sync before the owning NDArray destructs). Pool buffers survive the
+  // same dtor-after-enqueue pattern because cudaFreeAsync is stream-ordered.
+  // NO host sync is allowed here (WS-N mandate) — instead the free records an
+  // event on the consumer stream and is REAPED later, once cudaEventQuery
+  // (non-blocking) reports completion, at pool choke points (allocate entry,
+  // failover entry, releaseAll).
+  struct DeferredDirectFree {
+    void* ptr;
+    size_t size;
+    int deviceId;
+    void* readyEvent;   // cudaEvent_t recorded on the consumer stream
+    bool isHostAlloc;   // true → cudaFreeHost, false → cudaFree
+  };
+  std::vector<DeferredDirectFree> deferredDirectFrees_;
+  std::mutex deferredFreeMutex_;
+  std::atomic<int> deferredFreeCount_{0};
+  // Enqueue a deferred free ordered after orderStream's current work; frees
+  // immediately (legacy behavior) when no orderable stream exists.
+  void deferDirectFree(void* ptr, size_t size, int deviceId, bool isHostAlloc, cudaStream_t orderStream);
+  // Reap deferred entries whose events completed; force=true frees everything
+  // regardless of event state (teardown only).
+  void drainDeferredDirectFrees(bool force = false);
+  // The raw synchronous free (device-switch guard + error handling).
+  void immediateDirectFree(void* ptr, size_t size, int deviceId, bool isHostAlloc);
 
   // Dedicated per-device allocation streams used ONLY by allocateDirect()/its frees.
   // Created lazily, NEVER passed into a CUDA graph capture, so cudaMallocAsync on them
