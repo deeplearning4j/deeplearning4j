@@ -114,6 +114,11 @@ class SD_LIB_EXPORT CoreConfig {
   void setMaxDeviceMemory(uint64_t maxBytes) { _maxDeviceMemory.store(maxBytes); }
   uint64_t maxPrimaryMemory() { return _maxTotalPrimaryMemory.load(); }
   uint64_t maxSpecialMemory() { return _maxTotalSpecialMemory.load(); }
+  // Per-process device (GPU) memory budget in bytes; -1 means unbounded (default).
+  // Returned as int64_t so the -1 "unset" sentinel survives (siblings return
+  // uint64_t and rely on consumers handling the wrap). Read by CudaMemoryPool to
+  // cap this process's device pool usage and fail over to host/peer past it.
+  int64_t maxDeviceMemory() { return _maxDeviceMemory.load(); }
 
   // --- CPU soft limit ---
   int cpuSoftLimitPercent() { return _cpuSoftLimitPercent.load(); }

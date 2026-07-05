@@ -469,6 +469,40 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     }
   }
 
+  // ─── Per-process device budget (Environment::maxDeviceMemory) ─────────────
+  // When a bound is set (>0), cap THIS process's device pool usage: if serving
+  // `size` locally would push pool-used past the budget, route to
+  // allocateFailover (host-resident managed / peer — safe post-#57) instead of
+  // growing device reservation. Uses the pool's OWN usage (cudaMemPoolAttr-
+  // UsedMemCurrent via getStats), NOT cudaMemGetInfo, so co-tenant processes on
+  // the same GPU don't distort the accounting — this is the bound a scheduler
+  // packs against (kompile embedding lane: "this process gets N GB of the GPU").
+  // Skipped during capture (failover would break it) and when unbounded
+  // (-1 default: a single atomic load, zero behavioral change for every existing
+  // caller — the whole regression surface is off unless a bound is explicitly set
+  // via Nd4j.getEnvironment().setMaxDeviceMemory() or SD_MAX_DEVICE_BYTES).
+  const int64_t deviceBudget = Environment::getInstance().maxDeviceMemory();
+  if (deviceBudget > 0 && !tl_graphExecutionActive && poolInitialized_[deviceId]) {
+    size_t poolUsed = 0, poolReserved = 0;
+    getStats(deviceId, poolUsed, poolReserved);
+    if (poolUsed + size > static_cast<size_t>(deviceBudget)) {
+      DSP_DIAG(MEMORY,
+               "DEVICE_BUDGET_EXCEEDED: dev=%d poolUsed=%zu + req=%zu > budget=%lld — failover to host/peer",
+               deviceId, poolUsed, size, static_cast<long long>(deviceBudget));
+      auto result = allocateFailover(size, deviceId, actualDeviceId,
+                                     /*skipSameDeviceRetry=*/true, allocStream);
+      if (result != nullptr) {
+        restoreDevice();
+        return result;
+      }
+      // Failover exhausted every device + host — fall through to a local attempt
+      // rather than hard-failing (the caller still handles a null return). A bound
+      // that cannot be met even with host spill is a genuine, unavoidable OOM.
+      DSP_DIAG(MEMORY, "DEVICE_BUDGET_EXCEEDED: failover found no home — attempting local (device %d)",
+               deviceId);
+    }
+  }
+
   // Use async allocation from pool - THIS IS THE FAST PATH (no tracking needed)
   void* ptr = nullptr;
   // Use the stream provided by the caller. During graph capture, nullptr is resolved
