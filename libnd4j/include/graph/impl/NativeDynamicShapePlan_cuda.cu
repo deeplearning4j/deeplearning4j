@@ -1128,9 +1128,22 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
     // copy below; cleanup runs after the segment dispatch, ordered after the copy on the stream).
     NDArray* srcArr = arr;
     NDArray* srcMat = nullptr;
+    static thread_local cudaEvent_t tl_inputDupEvent = nullptr;
     if (arr->isView()) {
       srcMat = arr->dup(arr->ordering());
       srcArr = srcMat;
+      // NDArray::dup materializes via `new NDArray(order,shape,dtype,getContext()); assign(this)`
+      // (NDArray.hXX ~5273) — the fill runs on srcMat's CONTEXT stream, NOT the target peer-copy
+      // stream. Record it on a REUSABLE event (never destroyed — a per-call destroy invalidates
+      // the copy stream's enqueued wait and hangs) so the copy below waits for the dup; otherwise
+      // it races the still-filling buffer and migrates zeros. (The output path avoids this by
+      // using copyStrides with no dup, but a view INPUT shares its parent buffer so it must be
+      // materialized here.)
+      if (tl_inputDupEvent == nullptr)
+        cudaEventCreateWithFlags(&tl_inputDupEvent, cudaEventDisableTiming);
+      auto* dupStreamPtr =
+          (srcMat->getContext() != nullptr) ? srcMat->getContext()->getCudaStream() : nullptr;
+      cudaEventRecord(tl_inputDupEvent, dupStreamPtr != nullptr ? *dupStreamPtr : cudaStreamPerThread);
     }
     std::vector<NDArray*> reads{srcArr};
     NDArray::prepareSpecialUse({}, reads);
@@ -1150,6 +1163,8 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
     if (srcLen > 0 && srcDev != nullptr && dstDev != nullptr) {
       auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
       cudaStream_t cudaStr = (streamPtr != nullptr) ? *streamPtr : nullptr;
+      // Order the peer copy after the materialization dup (view inputs only — see above).
+      if (srcMat != nullptr) cudaStreamWaitEvent(cudaStr, tl_inputDupEvent, 0);
       auto copyErr = cudaMemcpyPeerAsync(dstDev, targetDevice, srcDev, sourceDevice,
                                          static_cast<size_t>(srcLen), cudaStr);
       if (copyErr != cudaSuccess) {
