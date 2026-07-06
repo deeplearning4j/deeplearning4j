@@ -959,7 +959,9 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
             if (outIdx < totalOutputSlots && outputSlots[outIdx] &&
                 outputSlots[outIdx]->lengthOf() > 0 && !outputSlots[outIdx]->isEmpty()) {
               try {
-                savedOutputs[outIdx] = new NDArray(outputSlots[outIdx]->dup());
+                // dup() returns a heap NDArray*; wrapping it in `new NDArray(...)` copies and
+                // leaks the dup() result — take the pointer directly.
+                savedOutputs[outIdx] = outputSlots[outIdx]->dup();
               } catch (...) {
                 DSP_DIAG(VERIFY, "TRITON VERIFY: dup() failed for slot %d — skipping", outIdx);
               }

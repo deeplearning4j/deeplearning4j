@@ -1181,8 +1181,34 @@ void NativeDynamicShapePlan::materializeViewSlot(int slotIdx, const char* tag) {
     return;
   }
 
-  // Create an independent deep copy
-  NDArray* dup = new NDArray(viewArr->dup(viewArr->ordering()));
+  // Multi-GPU: a view output produced on a secondary device MUST be materialized ON that
+  // device. dup() allocates the copy on the current device and reads the view's (device-N)
+  // buffer; running it on the primary device (the current device at output extraction) would
+  // copy across the non-peer boundary and silently produce garbage. Use the PRODUCING slot's
+  // targetDeviceId — the DataBuffer's deviceId() metadata can be stale (0) when a device-0
+  // pre-pass array had its data migrated to a secondary device. Single-GPU: producer <= 0.
+  int viewDev = -1;
+  for (int s = 0; s < numSlots_ && viewDev < 0; s++) {
+    for (int o = 0; o < slots_[s].wiring.numOutputs; o++) {
+      if (slots_[s].wiring.outputSlotIndices[o] == slotIdx) { viewDev = slots_[s].targetDeviceId; break; }
+    }
+  }
+  int savedDev = -1;
+  bool switchedDev = false;
+  if (viewDev > 0) {
+    savedDev = sd::graph::dspGetCurrentDevice();
+    if (savedDev != viewDev) {
+      sd::graph::dspSetCurrentDevice(viewDev);
+      switchedDev = true;
+    }
+  }
+
+  // Create an independent deep copy (on the view's device — see above). dup() already returns
+  // a heap-allocated NDArray*; wrapping it in `new NDArray(...)` copies it and leaks the dup()
+  // result — use the pointer directly.
+  NDArray* dup = viewArr->dup(viewArr->ordering());
+
+  if (switchedDev) sd::graph::dspSetCurrentDevice(savedDev);
 
   DSP_DIAG(LIFECYCLE, "MATERIALIZE_VIEW: slot=%d tag=%s "
            "oldArr=%p oldDb=%p newArr=%p newDb=%p shape=%s phase=%s exec=%d",

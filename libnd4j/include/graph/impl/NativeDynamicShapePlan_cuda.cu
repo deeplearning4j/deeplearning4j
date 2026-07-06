@@ -1120,21 +1120,33 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
     cudaGetDevice(&savedDevice);
 
     cudaSetDevice(sourceDevice);
-    std::vector<NDArray*> reads{arr};
+    // If the cross-segment input is a VIEW, its DataBuffer is the PARENT's — copying the raw
+    // buffer would migrate the parent's layout, not the view's permuted/sliced layout, silently
+    // corrupting the consumer on the target device. Materialize the view into a contiguous array
+    // (on the source device, in the view's logical order) and migrate THAT. The temp is freed at
+    // segment cleanup via a slot-less migratedInputs_ entry (its buffer is read by the async peer
+    // copy below; cleanup runs after the segment dispatch, ordered after the copy on the stream).
+    NDArray* srcArr = arr;
+    NDArray* srcMat = nullptr;
+    if (arr->isView()) {
+      srcMat = arr->dup(arr->ordering());
+      srcArr = srcMat;
+    }
+    std::vector<NDArray*> reads{srcArr};
     NDArray::prepareSpecialUse({}, reads);
-    void* srcDev = db->special();
+    void* srcDev = (srcArr->dataBuffer() != nullptr) ? srcArr->dataBuffer()->special() : nullptr;
 
     cudaSetDevice(targetDevice);
 
     // Create new array on target device with same shape and data type
-    std::vector<LongType> shapeVec(*arr->getShapeAsVector());
-    auto* copy = new NDArray(arr->ordering(), shapeVec, arr->dataType(),
+    std::vector<LongType> shapeVec(*srcArr->getShapeAsVector());
+    auto* copy = new NDArray(srcArr->ordering(), shapeVec, srcArr->dataType(),
                              LaunchContext::defaultContext());
 
     std::vector<NDArray*> writes{copy};
     NDArray::prepareSpecialUse(writes, {});
     void* dstDev = copy->dataBuffer() != nullptr ? copy->dataBuffer()->special() : nullptr;
-    auto srcLen = arr->lengthOf() * DataTypeUtils::sizeOf(arr->dataType());
+    auto srcLen = srcArr->lengthOf() * DataTypeUtils::sizeOf(srcArr->dataType());
     if (srcLen > 0 && srcDev != nullptr && dstDev != nullptr) {
       auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
       cudaStream_t cudaStr = (streamPtr != nullptr) ? *streamPtr : nullptr;
@@ -1146,6 +1158,7 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
                  sourceDevice, targetDevice, (long long)srcLen, cudaGetErrorString(copyErr));
         cudaGetLastError();
         delete copy;
+        if (srcMat != nullptr) delete srcMat;
         if (savedDevice >= 0) cudaSetDevice(savedDevice);
         continue;
       }
@@ -1157,12 +1170,20 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
       cudaSetDevice(targetDevice);
     }
 
-    // Record migration and replace in outputSlots_
+    // Record migration and replace in outputSlots_. mi.original is the ORIGINAL input (restored
+    // at cleanup); the materialized-view temp (if any) is a slot-less entry, just freed.
     MigratedInput mi;
     mi.outputSlotIdx = slotIdx;
     mi.original = arr;
     mi.migrated = copy;
     migratedInputs_.push_back(mi);
+    if (srcMat != nullptr) {
+      MigratedInput tmp;
+      tmp.outputSlotIdx = -1;
+      tmp.original = nullptr;
+      tmp.migrated = srcMat;
+      migratedInputs_.push_back(tmp);
+    }
 
     outputSlots_[slotIdx] = copy;
     migrated++;
@@ -1224,18 +1245,25 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
     std::vector<NDArray*> reads{arr};
     NDArray::prepareSpecialUse({}, reads);
   }
+  // Preserve arr's EXACT layout (shape + strides + order) in the device-0 copy. cudaMemcpyPeerAsync
+  // is a raw byte copy that ignores strides: a permute/transpose output is F-ordered (strides like
+  // [1,16]) even when mislabeled order='c', so creating the copy with CANONICAL strides would
+  // relabel those bytes as a different layout (the transpose) — a deterministic wrong result.
+  // copyStrides=true clones arr's strides, making the migrated output bit-identical to single-GPU.
+  // No dup is used: arr's buffer already holds the correct bytes (produced by the device kernels,
+  // ordered by the prepareSpecialUse(arr) above), which avoids an async dup-on-unknown-stream race.
   auto* db = arr->dataBuffer();
   void* srcDev = (db != nullptr) ? db->special() : nullptr;
+  DSP_DIAG(MULTI_DEVICE,
+           "platformGetOutputForDevice0: output[%d] slotIdx=%d isView=%d layout-preserving copy",
+           outputIdx, slotIdx, (int)arr->isView());
 
   // 2. Allocate a matching buffer on device-0.
   cudaSetDevice(0);
-  // NOTE: LaunchContext::defaultContext() reads AffinityManager::currentDeviceId() which
-  // calls cudaGetDevice() internally. Because cudaSetDevice(0) was called immediately above,
-  // the current device is 0 here, so defaultContext() correctly returns the device-0 context.
-  // This ensures both the destination NDArray and the copy stream are bound to device 0.
-  std::vector<LongType> shapeVec(*arr->getShapeAsVector());
-  auto* copy = new NDArray(arr->ordering(), shapeVec, arr->dataType(),
-                           LaunchContext::defaultContext());
+  // Current device is 0 here (cudaSetDevice(0) above), so defaultContext() returns the device-0
+  // context, binding both the destination NDArray and the copy stream to device 0.
+  auto* copy = new NDArray(const_cast<LongType*>(arr->shapeInfo()), /*copyStrides=*/true,
+                           LaunchContext::defaultContext(), /*nullify=*/false);
   {
     std::vector<NDArray*> writes{copy};
     NDArray::prepareSpecialUse(writes, {});

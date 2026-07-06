@@ -304,4 +304,83 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
 
         assertTrue(r1.equalsWithEps(r2, 1e-6), "flag-off runs must be deterministic/identical");
     }
+
+    // -----------------------------------------------------------------------
+    // Test 6 — VIEW ops across the device boundary (aliasing lifetime)
+    // -----------------------------------------------------------------------
+
+    /**
+     * A tanh MLP with a transpose/transpose-back (view-capable) op after every layer.
+     * When a view op lands at a device-segment boundary it reads a cross-segment input,
+     * which the sharded executor migrates to the consuming device as a per-segment copy.
+     * A view aliases its input's DataBuffer — so if that migrated copy is freed at segment
+     * cleanup while the view output still references it, the alias dangles (garbage / crash),
+     * and on captured replay the baked buffer address is stale.
+     */
+    private static SameDiff buildViewMlp(int inDim, int hidden, int layers, int outDim, long seed) {
+        Nd4j.getRandom().setSeed(seed);
+        SameDiff sd = SameDiff.create();
+        SDVariable h = sd.placeHolder("x", DataType.FLOAT, -1, inDim);
+        int dim = inDim;
+        for (int l = 0; l < layers; l++) {
+            SDVariable w = sd.var("w" + l, Nd4j.rand(DataType.FLOAT, dim, hidden).muli(0.1));
+            SDVariable b = sd.var("b" + l, Nd4j.rand(DataType.FLOAT, hidden).muli(0.01));
+            h = sd.math().tanh(h.mmul(w).add(b));
+            // View-capable ops: transpose then transpose back. Each permute shares its
+            // input's DataBuffer (a view), so it exercises the alias-of-migrated-input path.
+            SDVariable ht = sd.permute("ht" + l, h, 1, 0);   // [B,H] -> [H,B] (view)
+            h = sd.permute("hb" + l, ht, 1, 0);              // [H,B] -> [B,H] (view of view)
+            dim = hidden;
+        }
+        SDVariable wo = sd.var("wo", Nd4j.rand(DataType.FLOAT, dim, outDim).muli(0.1));
+        // Make the PLAN OUTPUT itself a view (permute of the final matmul). This exercises
+        // output-view materialization + device-N -> device-0 output back-migration of a view
+        // in the sharded path, on top of the interior cross-segment view aliasing above.
+        SDVariable out = sd.permute("out", h.mmul(wo), 1, 0);  // [B,outDim] -> [outDim,B] (view output)
+        return sd;
+    }
+
+    /**
+     * Behavior 6: a sharded model containing view-capable ops (transpose) at layer
+     * boundaries must match the single-GPU reference across {@value #REPLAY_ITERATIONS}
+     * iterations — i.e. a view aliasing a cross-device migrated input must not dangle
+     * after per-segment migration cleanup, in either slot-by-slot warmup or captured replay.
+     */
+    @Test
+    public void testRepeatedShardedViewOpsMatchSingleGpu() {
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() > 1,
+                "multi-GPU sharding requires >1 CUDA device");
+
+        INDArray x = Nd4j.rand(DataType.FLOAT, 8, 64);
+
+        SameDiff single = buildViewMlp(64, 128, 6, 16, 7L);
+        INDArray ref = runOnce(single, x.dup(), false);
+
+        SameDiff sharded = buildViewMlp(64, 128, 6, 16, 7L);
+
+        boolean prevDsp  = InferenceSession.isDynamicShapePlanEnabled();
+        String prevShard = System.getProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+        InferenceSession.setDynamicShapePlanEnabled(true);
+        System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, "true");
+        try {
+            for (int i = 0; i < REPLAY_ITERATIONS; i++) {
+                Map<String, INDArray> res = sharded.output(Collections.singletonMap("x", x.dup()), "out");
+                INDArray got = res.get("out").dup();
+
+                assertArrayEquals(ref.shape(), got.shape(),
+                        "sharded view-op output shape mismatch at iteration " + i);
+                assertFalse(got.isNaN().any(),
+                        "sharded view-op output has NaN at iteration " + i);
+                double maxDiff = ref.sub(got).amaxNumber().doubleValue();
+                log.info("testRepeatedShardedViewOpsMatchSingleGpu iteration {}: maxAbsDiff={}", i, maxDiff);
+                assertTrue(got.equalsWithEps(ref, 1e-3),
+                        "sharded view-op output diverged at iteration " + i
+                                + " (maxAbsDiff=" + maxDiff + ")");
+            }
+        } finally {
+            InferenceSession.setDynamicShapePlanEnabled(prevDsp);
+            if (prevShard != null) System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, prevShard);
+            else System.clearProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+        }
+    }
 }
