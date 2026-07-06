@@ -5716,11 +5716,22 @@ void NativeDynamicShapePlan::invalidateExternalViewSlotsOnReacquire() {
     }
   }
   if (cleared > 0) {
-    // A frozen/replaying plan with freshly-nulled slots must re-warm before
-    // replay validation; segment resets above make anySegmentNeedsWarmup()
-    // true, which the execute path already honors.
+    // The segment resets above put segments back in WARMUP but, until now, left the PLAN phase at
+    // REPLAYING. execute()'s pre-execute steady-state check (isReplaying() && a segment not fully
+    // replaying -> demotePlanPhase THROW, NativeDynamicShapePlan.cpp ~2842) runs BEFORE the
+    // anySegmentNeedsWarmup() re-warm dispatch, so a plan reacquired by a new borrower would throw
+    // "segment no longer satisfies replay steady state ... kind=demotion" (deterministic on a
+    // recurrent GDN model driven across many generates on one shared pipeline — each generate is a
+    // new borrower over fresh external KV/state buffers, invalidating these external-fed views).
+    // Complete the transition here: unseal REPLAYING -> SHAPES_FROZEN so the next execute() re-warms
+    // and re-captures the freshly-nulled views gracefully. Shapes are unchanged (the views only
+    // re-mint over new borrower memory), so SHAPES_FROZEN is correct — not SLOT_BY_SLOT (unfreeze).
+    if (planLifecycle_.isReplaying()) {
+      planLifecycle_.unseal();
+    }
     DSP_DIAG(EXECUTE,
-             "NEW_BORROWER: invalidated %d external-fed view slots plan=%p (segments reset to warmup)",
+             "NEW_BORROWER: invalidated %d external-fed view slots plan=%p (segments reset to warmup, "
+             "plan unsealed REPLAYING->SHAPES_FROZEN for graceful re-warm)",
              cleared, (void*)this);
   }
 }
