@@ -277,21 +277,34 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
         THROW_EXCEPTION(errorMessage.c_str());
       }
     } else {
-      // Route through captureSafeStreamOrDefault() rather than cudaStreamPerThread:
-      // - When inside the outer composite-capture scope (tl_compositeCaptureStream set),
-      //   this returns the main execution stream, keeping H2D copies on the right stream.
-      // - When completely outside capture, it falls back to the LaunchContext default
-      //   stream, which is safe and avoids error 906 from stream 0.
-      // cudaStreamSynchronize ensures the copy is complete before the caller reads ptr.
-      cudaStream_t copyStream = captureSafeStreamOrDefault();
-      if (copyStream == nullptr) copyStream = cudaStreamPerThread;
-      auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, copyStream);
-      if (res != 0) {
+      // Non-capture path. Destination is either real device VRAM on deviceId, or host-
+      // resident memory (managed pages on host — allocateFailover hands non-P2P secondary
+      // devices cudaMallocManaged with actualDevice=deviceId but PreferredLocation=CPU).
+      // Try an ASYNC H2D first; the driver rejects it with cudaErrorInvalidValue when the
+      // dst is host-resident (both endpoints host, pageable src) — then fall back to a plain
+      // HOST copy (UVA migrates the pages to the device on first access). This keeps the
+      // real-device path async and NEVER uses a synchronous cudaMemcpy / cudaDeviceSynchronize.
+      // TEMP GROUND-TRUTH DIAGNOSTIC (remove after root fix): what did the allocation return?
+      {
+        int curDev = -1; cudaGetDevice(&curDev);
+        cudaPointerAttributes pa; cudaError_t par = cudaPointerGetAttributes(&pa, ptr); cudaGetLastError();
+        sd_printf("CONSTANT_DIAG: reqDeviceId=%d curDev=%d ptr=%p attrRes=%d ptrType=%d ptrDev=%d bytes=%zu\n",
+                  deviceId, curDev, (void*)ptr, (int)par, (int)pa.type, pa.device, numBytes);
+      }
+      // ASYNC H2D on the current device's per-thread stream. The destination MUST be real
+      // device VRAM on deviceId — the allocation above is responsible for that. If it is
+      // host-resident managed memory (allocateFailover fallback), this returns
+      // cudaErrorInvalidValue; that is a real allocation bug to fix at the source, NOT to
+      // paper over with a synchronous copy. Never a synchronous cudaMemcpy / cudaDeviceSynchronize here.
+      cudaSetDevice(deviceId);
+      auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
+      if (res != cudaSuccess) {
         cudaGetLastError();
-        std::string errorMessage = "cudaMemcpyAsync (constant helper) failed with error code " + std::to_string(res);
+        std::string errorMessage = "cudaMemcpyAsync (constant helper) failed with error code "
+            + std::to_string(res) + " — secondary-device constant is not on device VRAM (allocation bug)";
         THROW_EXCEPTION(errorMessage.c_str());
       }
-      cudaStreamSynchronize(copyStream);
+      cudaStreamSynchronize(cudaStreamPerThread);
     }
   }
 

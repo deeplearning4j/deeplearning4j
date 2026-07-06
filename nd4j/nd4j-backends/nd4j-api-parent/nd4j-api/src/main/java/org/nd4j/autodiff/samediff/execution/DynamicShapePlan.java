@@ -277,14 +277,27 @@ public class DynamicShapePlan implements Closeable {
             } catch (Exception ignored) {}
 
             long available = cudaFree + poolReusable;
-            // Non-P2P secondary devices: do NOT assign ops here (budget=0). Cross-device
-            // execution on non-P2P GPUs requires expensive D2H+H2D transfers for every input,
-            // and if the secondary GPU is memory-pressured (from model constants placed there by
-            // allocateFailover), output allocation triggers emergency reclaim cycles that cause
-            // 100x slowdowns. Non-P2P GPUs are still used for memory spillover (constants stored
-            // there by allocateFailover), just not for compute. Set nd4j.dsp.nonP2pBudgetFraction
-            // to a positive value (e.g., 0.3) to re-enable if both GPUs have ample free memory.
-            double nonP2pFraction = Double.parseDouble(System.getProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION, "0.0"));
+            // Non-P2P secondary devices: when nd4j.dsp.multiGpuShard=true the caller
+            // explicitly requests op-segment sharding across all GPUs.  In that mode give
+            // non-P2P devices their full available budget so the placement policy assigns
+            // tail segments to the secondary GPU (fitting the oversized model).  Outputs
+            // produced on the secondary device are migrated back to device-0 asynchronously
+            // after each execution (platformGetOutputForDevice0 in the CUDA backend).
+            // Without the flag (default) the budget is zero: non-P2P devices receive no ops
+            // and behaviour is byte-identical to single-GPU.  The explicit fraction override
+            // (nd4j.dsp.nonP2pBudgetFraction) still applies on top of the flag.
+            boolean multiGpuShard = Boolean.getBoolean(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+            // Helper: parse double property, returning defaultVal when absent or empty string.
+            // Surefire can inject empty strings for <systemPropertyVariables> entries that have
+            // no corresponding -D flag on the Maven command line; Double.parseDouble("") throws.
+            String nonP2pPropRaw = System.getProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION);
+            String nonP2pProp = (nonP2pPropRaw != null) ? nonP2pPropRaw.trim() : null;
+            double nonP2pFraction = multiGpuShard ? 1.0 :
+                    ((nonP2pProp != null && !nonP2pProp.isEmpty()) ? Double.parseDouble(nonP2pProp) : 0.0);
+            // Allow explicit fraction override even in shard mode (e.g. 0.8 to leave headroom)
+            if (multiGpuShard && nonP2pProp != null && !nonP2pProp.isEmpty()) {
+                nonP2pFraction = Double.parseDouble(nonP2pProp);
+            }
             long budget = (d == 0 || p2p) ? available : (long)(available * nonP2pFraction);
             if (budget > 0) {
                 freeMemory.put(d, budget);

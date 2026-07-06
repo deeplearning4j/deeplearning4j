@@ -3157,7 +3157,12 @@ Status NativeDynamicShapePlan::execute(
           THROW_EXCEPTION(msg);
         }
       }
-      requestedOutputs[i] = outArr;
+      // Multi-GPU shard: if this output was produced on a secondary device, migrate
+      // it asynchronously to device-0 before returning to Java.  The plan keeps the
+      // original device-N buffer in outputSlots_[slotIdx] for the next execution step;
+      // only the copy returned here is handed to Java (Java owns it).
+      // On CPU or single-GPU this is a no-op returning outArr unchanged.
+      requestedOutputs[i] = platformGetOutputForDevice0(outArr, slotIdx, i);
     } else {
       requestedOutputs[i] = nullptr;
     }
@@ -4462,6 +4467,9 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
 
     platformCleanupMigratedInputs();
     auto postStatus = platformCheckPostSegment(segment);
+    // Multi-GPU sharding: restore the plan-primary device + execution TLS after a secondary
+    // segment (no-op for single-GPU / primary segments). Must run before the next segment binds.
+    platformRestoreSegmentDevice();
     if (postStatus != Status::OK) return postStatus;
   }
 
@@ -5445,6 +5453,9 @@ Status NativeDynamicShapePlan::phaseReplay(NDArray** externalInputs, int numExte
 
     platformCleanupMigratedInputs();
     auto postStatus = platformCheckPostSegment(segment);
+    // Multi-GPU sharding: restore the plan-primary device + execution TLS after a secondary
+    // segment (no-op for single-GPU / primary segments). Must run before the next segment binds.
+    platformRestoreSegmentDevice();
     if (postStatus != Status::OK) return postStatus;
 
     // ── Control flow loop-back across segments ──────────────────────────

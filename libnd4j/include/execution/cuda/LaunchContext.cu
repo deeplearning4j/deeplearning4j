@@ -49,6 +49,13 @@ sd::ContextBuffers& contextBuffersForCurrentDevice() {
   int deviceId = 0;
   cudaGetDevice(&deviceId);
   if (deviceId < 0 || deviceId >= MAX_CUDA_DEVICES) deviceId = 0;
+  // NOTE: contextBuffersStorage[N] for a secondary device N can be default-constructed with a
+  // device-0 stream. The multi-GPU segment guard (platformBindSegmentDevice) routes secondary
+  // ops onto cudaStreamPerThread (the driver-resolved current-device stream) instead of relying
+  // on this per-device stream, so we do NOT re-home here — re-homing (release()+initialize())
+  // inside this hot getter frees buffers still referenced by in-flight ops and does a cudaSetDevice
+  // mid-operation, which corrupted shape/NDArray state. Reduction/scalar buffers for a sharded
+  // secondary device are a separate follow-up (BGE reductions), not needed for the current path.
   return contextBuffersStorage[deviceId];
 }
 
@@ -127,7 +134,11 @@ LaunchContext::~LaunchContext() {
 LaunchContext::LaunchContext() {
   // default constructor, just to make clang/ranlib happy
   _workspace = nullptr;
-  _deviceID = 0;
+  // Bind to the CURRENT device, not a hardcoded 0. defaultContext(deviceId) calls
+  // setCurrentNativeDevice(deviceId) immediately before constructing, so the correct device is
+  // already active here. A hardcoded 0 made defaultContext(1)->getDeviceID() return 0, which
+  // routed device-1 CUDA-graph capture and CudaGraphScheduler onto device 0 (multi-GPU sharding).
+  _deviceID = AffinityManager::currentDeviceId();
 
   _isAllocated = true;
 

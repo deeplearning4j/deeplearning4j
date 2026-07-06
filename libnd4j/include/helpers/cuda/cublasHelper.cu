@@ -251,6 +251,7 @@ void* CublasHelper::handle(int deviceId) {
   // CUDA error 906 (cudaErrorLaunchFailure).
   thread_local cublasHandle_t* tl_handle = nullptr;
   thread_local int tl_deviceId = -1;
+  static thread_local int tl_smMajor = -1;
 
   if (tl_deviceId != deviceId || tl_handle == nullptr) {
     // Device changed or first call on this thread — create a new handle.
@@ -269,6 +270,7 @@ void* CublasHelper::handle(int deviceId) {
       THROW_EXCEPTION(msg.c_str());
     }
     tl_deviceId = deviceId;
+    tl_smMajor = -1;  // force re-query for the new device's SM major
   }
 
   // Lazily converge THIS thread's handle to the mode the process currently
@@ -286,7 +288,6 @@ void* CublasHelper::handle(int deviceId) {
   //              not overwrite it here.
   //   TF32/DEFAULT — normal lazy TF32 policy (sm_80+, env-gated).
   static thread_local int tl_appliedMode = -1;  // CublasMathModeState
-  static thread_local int tl_smMajor = -1;
   constexpr int MODE_DEFAULT = 0, MODE_TF32 = 1, MODE_PEDANTIC = 2;
   bool wantTf32 = sd::Environment::getInstance().cublasTf32Enabled();
   if (tl_smMajor < 0) {

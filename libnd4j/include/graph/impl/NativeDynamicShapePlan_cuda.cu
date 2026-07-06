@@ -98,6 +98,7 @@ namespace sd { namespace cuda { void clearCudaGraphSchedulerCache(); } }
 #include <unordered_set>
 
 extern thread_local cudaStream_t tl_dspGapStream;
+extern SD_TLS_EXPORT thread_local bool tl_cublasGapStreamReady;  // defined (global scope) in NativeDynamicShapePlan_batchgemm.cu
 
 // Plan-wide gap-stream pin bookkeeping (set in platformBeginExecution, restored
 // in platformEndExecution) — keeps warmup slot-by-slot ops on the SAME stream
@@ -157,14 +158,8 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
   }
   if (targetDevice < 0) return true;
 
-  // REPLAY OPTIMIZATION: Cache device count and current device to avoid
-  // calling cudaGetDeviceCount + cudaGetDevice for every segment (656 per step).
-  // Each CUDA runtime call has ~5-10us overhead. Caching saves ~6-13ms per step.
-  // Device count never changes during a process lifetime. Current device is
-  // tracked via the cached value and only refreshed after cudaSetDevice.
+  // Device count never changes during a process lifetime — safe to cache.
   static thread_local int cachedDeviceCount = -1;
-  static thread_local int cachedCurrentDevice = -1;
-
   if (cachedDeviceCount < 0) {
     int deviceCount = 0;
     cudaError_t countErr = cudaGetDeviceCount(&deviceCount);
@@ -183,36 +178,66 @@ bool bindSegmentCudaDevice(const GraphSegment& segment,
     return false;
   }
 
-  if (cachedCurrentDevice < 0) {
-    int currentDevice = -1;
-    cudaError_t getErr = cudaGetDevice(&currentDevice);
-    if (getErr != cudaSuccess) {
-      DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] failed to query current CUDA device: %s",
-               phase, segment.def.startSlot, segment.def.endSlot, cudaGetErrorString(getErr));
-      cudaGetLastError();
-      return false;
-    }
-    cachedCurrentDevice = currentDevice;
+  // Multi-GPU sharding: query the ACTUAL current device each time (do NOT cache it). The
+  // SegmentDeviceStateGuard restores the device to the plan primary after every secondary
+  // segment, so a cached "current device" would desync and skip a needed cudaSetDevice for
+  // the next secondary segment. Only reached for targetDevice >= 0 (the sharding path);
+  // single-GPU segments return at the targetDevice < 0 check above, so this adds no cost there.
+  int currentDevice = -1;
+  cudaError_t getErr = cudaGetDevice(&currentDevice);
+  if (getErr != cudaSuccess) {
+    DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] failed to query current CUDA device: %s",
+             phase, segment.def.startSlot, segment.def.endSlot, cudaGetErrorString(getErr));
+    cudaGetLastError();
+    return false;
   }
-
-  if (cachedCurrentDevice != targetDevice) {
+  if (currentDevice != targetDevice) {
     cudaError_t setErr = cudaSetDevice(targetDevice);
     if (setErr != cudaSuccess) {
       DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] failed to switch CUDA device %d->%d: %s",
                phase, segment.def.startSlot, segment.def.endSlot,
-               cachedCurrentDevice, targetDevice, cudaGetErrorString(setErr));
+               currentDevice, targetDevice, cudaGetErrorString(setErr));
       cudaGetLastError();
       return false;
     }
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] switched CUDA device %d->%d",
-             phase, segment.def.startSlot, segment.def.endSlot, cachedCurrentDevice, targetDevice);
-    cachedCurrentDevice = targetDevice;
+             phase, segment.def.startSlot, segment.def.endSlot, currentDevice, targetDevice);
   } else {
     DSP_DIAG(BACKEND, "NativeDSP::execute: %s seg[%d-%d] using CUDA device %d",
-             phase, segment.def.startSlot, segment.def.endSlot, cachedCurrentDevice);
+             phase, segment.def.startSlot, segment.def.endSlot, currentDevice);
   }
   return true;
 }
+
+// ── Multi-GPU op-segment sharding: per-segment device + TLS bracket ─────────────
+// The DSP pins its stream/workspace thread-locals (tl_dspGapStream, tl_dspExecutionStream,
+// tl_cublasWorkspacePtr, tl_cublasGapStreamReady) to the plan's PRIMARY device at
+// platformBeginExecution. A segment bound to a SECONDARY device switches the CUDA device
+// (bindSegmentCudaDevice) but those thread-locals still point at the primary device's stream
+// and workspace — so every device-1 kernel/gemm/transfer runs on a device-0 stream/workspace
+// (CUDA error 700 / CUBLAS_STATUS_EXECUTION_FAILED). This RAII guard nulls those thread-locals
+// for the secondary segment so all stream resolvers (LaunchContext::getCudaStream,
+// asyncTransferStream, CudaMemoryPool) fall through to the CURRENT device's per-device
+// contextBuffers stream, and cuBLAS uses its own per-handle workspace; then it RESTORES the
+// primary state and the primary device on destruction (bindSegmentCudaDevice does neither).
+// Zero cost on the single-GPU path: targetDeviceId < 0 → inactive, no CUDA calls at all.
+namespace {
+// Thread-local saved primary-device execution state for the multi-GPU segment bracket.
+// platformBindSegmentDevice (enter) saves + nulls the primary-pinned TLS for a secondary
+// segment; platformRestoreSegmentDevice (exit) restores it and the primary CUDA device.
+// The segment loop lives in host code (NativeDynamicShapePlan.cpp) which cannot touch CUDA
+// TLS directly, so this is driven by the two member functions rather than a RAII guard.
+struct SegmentDeviceSavedState {
+  bool active = false;
+  int primaryDevice = -1;
+  cudaStream_t gapStream = nullptr;
+  decltype(tl_dspExecutionStream) execStream = nullptr;
+  bool gapReady = false;
+  decltype(tl_cublasWorkspacePtr) wsPtr = nullptr;
+  decltype(tl_cublasWorkspaceSize) wsSize = 0;
+};
+static thread_local SegmentDeviceSavedState tl_segDevSaved;
+}  // namespace
 
 }  // namespace
 
@@ -964,7 +989,64 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segment) {
-  return bindSegmentCudaDevice(segment, slots_, numSlots_, "segmentExec");
+  // Detect a secondary-device segment and capture the primary device BEFORE the switch.
+  int targetDevice = -1;
+  if (segment.def.startSlot >= 0 && segment.def.startSlot < numSlots_)
+    targetDevice = slots_[segment.def.startSlot].targetDeviceId;
+  int primaryBefore = -1;
+  bool willSwitch = false;
+  if (targetDevice >= 0) {
+    cudaGetDevice(&primaryBefore);
+    willSwitch = (targetDevice != primaryBefore);
+  }
+
+  bool ok = bindSegmentCudaDevice(segment, slots_, numSlots_, "segmentExec");
+
+  // On a genuine secondary-device switch, save + null the primary-pinned execution TLS so every
+  // stream resolver (LaunchContext::getCudaStream, asyncTransferStream, CudaMemoryPool alloc/free)
+  // falls through to THIS device's per-device contextBuffers stream, and cuBLAS uses its own
+  // per-handle workspace. platformRestoreSegmentDevice() restores this after the segment.
+  if (ok && willSwitch) {
+    tl_segDevSaved.primaryDevice = primaryBefore;
+    tl_segDevSaved.gapStream = tl_dspGapStream;
+    tl_segDevSaved.execStream = tl_dspExecutionStream;
+    tl_segDevSaved.gapReady = tl_cublasGapStreamReady;
+    tl_segDevSaved.wsPtr = tl_cublasWorkspacePtr;
+    tl_segDevSaved.wsSize = tl_cublasWorkspaceSize;
+    // Route this device's ops to a GUARANTEED device-current stream. cudaStreamPerThread is
+    // resolved by the driver to the CURRENT device's per-thread stream, so with the CUDA device
+    // set to this segment's target it is unconditionally the right device — bypassing the
+    // per-device contextBuffers stream (which can still be mis-homed). getCudaStream() returns
+    // tl_dspGapStream when non-null, so this covers matmul / elementwise / transfer resolution.
+    // Also set the DSP EXECUTION stream to cudaStreamPerThread (not null): dispatchSegment reads
+    // dspGetExecutionStream() (== tl_dspExecutionStream) and constructs a DspThreadState that
+    // RE-INSTALLS that value as BOTH tl_dspExecutionStream and tl_dspGapStream for the segment. If
+    // we leave it null it falls back to the plan's device-0 stream and clobbers the gap stream
+    // above. Setting both to cudaStreamPerThread makes DspThreadState propagate the device-current
+    // stream through the whole segment dispatch.
+    tl_dspGapStream = cudaStreamPerThread;
+    tl_dspExecutionStream = reinterpret_cast<void*>(cudaStreamPerThread);
+    tl_cublasGapStreamReady = false;
+    tl_cublasWorkspacePtr = nullptr;
+    tl_cublasWorkspaceSize = 0;
+    tl_segDevSaved.active = true;
+  }
+  return ok;
+}
+
+// Restore the primary-device execution state (streams/workspace TLS + CUDA device) saved by
+// platformBindSegmentDevice for a secondary-device segment. No-op for single-GPU / primary
+// segments. Called by the segment loop after each segment's dispatch + post-checks so the next
+// segment starts from the plan's primary-device state.
+void NativeDynamicShapePlan::platformRestoreSegmentDevice() {
+  if (!tl_segDevSaved.active) return;
+  tl_dspGapStream = tl_segDevSaved.gapStream;
+  tl_dspExecutionStream = tl_segDevSaved.execStream;
+  tl_cublasGapStreamReady = tl_segDevSaved.gapReady;
+  tl_cublasWorkspacePtr = tl_segDevSaved.wsPtr;
+  tl_cublasWorkspaceSize = tl_segDevSaved.wsSize;
+  cudaSetDevice(tl_segDevSaved.primaryDevice);
+  tl_segDevSaved.active = false;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1109,6 +1191,97 @@ void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Platform dispatch: Output back-migration to device-0 (multi-GPU shard)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int slotIdx, int outputIdx) {
+  // Fast path: no array, or array is empty — nothing to migrate.
+  if (arr == nullptr || arr->isEmpty()) return arr;
+
+  // Find the device that produced this output slot.
+  // Linear scan across slots is O(numSlots * maxOutputs/slot) but only invoked
+  // O(numRequestedOutputs) times per execute() — acceptable for 1-4 outputs.
+  int sourceDevice = 0;  // default: primary
+  for (int s = 0; s < numSlots_; s++) {
+    const auto& wiring = slots_[s].wiring;
+    for (int o = 0; o < wiring.numOutputs; o++) {
+      if (wiring.outputSlotIndices[o] == slotIdx) {
+        int d = slots_[s].targetDeviceId;
+        if (d > 0) sourceDevice = d;
+        goto found_producing_slot;
+      }
+    }
+  }
+  found_producing_slot:;
+
+  // Fast path: output already on primary device.
+  if (sourceDevice == 0) return arr;
+
+  // ── Async copy from sourceDevice to device-0 ────────────────────────────────
+  // 1. Switch to sourceDevice and ensure its stream has committed the write.
+  cudaSetDevice(sourceDevice);
+  {
+    std::vector<NDArray*> reads{arr};
+    NDArray::prepareSpecialUse({}, reads);
+  }
+  auto* db = arr->dataBuffer();
+  void* srcDev = (db != nullptr) ? db->special() : nullptr;
+
+  // 2. Allocate a matching buffer on device-0.
+  cudaSetDevice(0);
+  // NOTE: LaunchContext::defaultContext() reads AffinityManager::currentDeviceId() which
+  // calls cudaGetDevice() internally. Because cudaSetDevice(0) was called immediately above,
+  // the current device is 0 here, so defaultContext() correctly returns the device-0 context.
+  // This ensures both the destination NDArray and the copy stream are bound to device 0.
+  std::vector<LongType> shapeVec(*arr->getShapeAsVector());
+  auto* copy = new NDArray(arr->ordering(), shapeVec, arr->dataType(),
+                           LaunchContext::defaultContext());
+  {
+    std::vector<NDArray*> writes{copy};
+    NDArray::prepareSpecialUse(writes, {});
+  }
+  auto* copyDb = copy->dataBuffer();
+  void* dstDev = (copyDb != nullptr) ? copyDb->special() : nullptr;
+
+  auto srcLen = static_cast<size_t>(arr->lengthOf()) *
+                DataTypeUtils::sizeOf(arr->dataType());
+
+  if (srcLen > 0 && srcDev != nullptr && dstDev != nullptr) {
+    // 3. Enqueue the peer copy on device-0's stream (async, no device-wide sync).
+    //    For non-P2P pairs CUDA transparently performs a host-staged transfer;
+    //    the source data is captured into host-staging at submission time after
+    //    prepareSpecialUse() above committed sourceDevice's stream.
+    // Current device is still 0 (cudaSetDevice(0) above, nothing changed it since),
+    // so defaultContext() returns the device-0 context and its stream here.
+    auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+    cudaStream_t copyStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+
+    auto err = cudaMemcpyPeerAsync(dstDev, 0, srcDev, sourceDevice,
+                                   srcLen, copyStream);
+    if (err == cudaSuccess) {
+      std::vector<NDArray*> writes{copy};
+      std::vector<NDArray*> reads{arr};
+      NDArray::registerSpecialUse(writes, reads);
+      DSP_DIAG(MULTI_DEVICE,
+               "platformGetOutputForDevice0: output[%d] slotIdx=%d migrated dev%d→dev0 "
+               "bytes=%zu async on dev0-stream", outputIdx, slotIdx, sourceDevice, srcLen);
+      // Return the device-0 copy; Java takes ownership and will eventually delete it.
+      // outputSlots_[slotIdx] is intentionally NOT changed: the plan keeps the device-N
+      // buffer in place so subsequent executions can overwrite it without pointer churn.
+      return copy;
+    }
+    // Copy failed: log, clean up, fall through to return original (wrong device).
+    cudaGetLastError();
+    DSP_DIAG(MULTI_DEVICE,
+             "platformGetOutputForDevice0: cudaMemcpyPeerAsync FAILED output[%d] slotIdx=%d "
+             "dev%d→dev0 err=%s", outputIdx, slotIdx, sourceDevice, cudaGetErrorString(err));
+  }
+
+  delete copy;
+  return arr;  // Fallback: callers still get a valid pointer even if on wrong device.
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Platform dispatch: Graph eligibility check
 // Pre-segment sync is handled by performPreReplaySync (in _prereplay.cu),
 // called from dispatchSegment. All sync tracked via PreReplaySyncPhase.
@@ -1122,6 +1295,13 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
   if (mode.isSlotBySlot) return false;
   if (planLifecycle_.isSlotBySlot()) return false;
   if (!segment.def.isCapturable) return false;  // data-dependent / control-flow ops
+
+  // Secondary-device segments capture as their OWN islands on their target device: the
+  // capture machinery is already device-parameterized (CudaGraphScheduler::beginCapture takes
+  // a deviceId) and the capture arena is already per-device (CudaMemoryPool captureArenaBlocks_
+  // [deviceId]). platformBindSegmentDevice switches to the segment's device + routes its
+  // execution TLS to that device's stream before capture; cross-device transitions between
+  // islands are handled by eager GAP ops (peer copy + event join). No device-0-only restriction.
 
   if (Environment::getInstance().tritonSkipKernels()) {
     DSP_DIAG_SEG(EXECUTE, segment.def.startSlot,
@@ -1620,14 +1800,22 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     seg.exec.jitKernel = nullptr;
   }
 
-  // Release capture workspace reference. If this is the global shared workspace
-  // (used by multiple plans), we don't free it — it persists for other plans.
+  // Release capture workspace reference. If this is the per-device global shared workspace
+  // (used by multiple plans on the same device), we don't free it — it persists for other plans.
   // Only free if it's a plan-private workspace (legacy or non-global).
   if (sharedCaptureWorkspace_ != nullptr) {
-    extern void* g_globalCaptureWorkspace;
-    if (sharedCaptureWorkspace_ == g_globalCaptureWorkspace) {
-      DSP_DIAG(MEMORY, "platformFreePlanResources: releasing reference to GLOBAL capture workspace %zuMB (NOT freeing)",
-               sharedCaptureWorkspaceBytes_ / (1024*1024));
+    extern std::unordered_map<int, void*> g_globalCaptureWorkspaceByDevice;
+    extern std::mutex g_globalCaptureWorkspaceMtx;
+    bool isGlobal = false;
+    {
+      std::lock_guard<std::mutex> lk(g_globalCaptureWorkspaceMtx);
+      auto it = g_globalCaptureWorkspaceByDevice.find(sharedCaptureWorkspaceDevice_);
+      isGlobal = (it != g_globalCaptureWorkspaceByDevice.end() &&
+                  it->second == sharedCaptureWorkspace_);
+    }
+    if (isGlobal) {
+      DSP_DIAG(MEMORY, "platformFreePlanResources: releasing reference to GLOBAL capture workspace %zuMB on device %d (NOT freeing)",
+               sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
     } else {
       memory::CudaMemoryPool::getInstance().unregisterCaptureWorkspace(sharedCaptureWorkspace_);
       memory::CudaMemoryPool::getInstance().free(sharedCaptureWorkspace_, sharedCaptureWorkspaceDevice_);

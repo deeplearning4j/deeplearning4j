@@ -570,6 +570,11 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       // Input must come from another op's output (not external)
       int srcSlot = sl.wiring.inputSourceIndices[0];
       if (srcSlot < 0 || srcSlot >= totalOutputSlots) continue;
+      // Multi-GPU: in-place aliasing reuses the INPUT slot's buffer as this op's output.
+      // If assignDevices() placed this op and its input slot on different GPUs, the alias
+      // would bind the output to a buffer on the wrong device (and the input is migrated
+      // per-segment, so the alias target moves). Only alias same-device producer/consumer.
+      if (sl.targetDeviceId != plan->slots_[srcSlot].targetDeviceId) continue;
       // Input slot must have only this op as consumer (safe to overwrite)
       if (slotConsumerCount[srcSlot] != 1) continue;
       // Skip if this slot is already marked (e.g., from fusion pass)

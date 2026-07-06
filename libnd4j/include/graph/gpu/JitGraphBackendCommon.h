@@ -60,9 +60,32 @@ struct JitCompiledKernel {
   JitCompiledKernel() : gpuModule(nullptr), kernelFunction(nullptr), numArgs(0) {}
 };
 
-// Alias to shared types from GraphBackendCommon.h
-using JitSegmentCacheKey = SegmentCacheKey;
-using JitSegmentCacheHash = SegmentCacheHash;
+// Per-device cache key for JIT backends (NVRTC, PTX).
+// GPU driver module handles (CUmodule) are bound to the device context on
+// which they were loaded.  Sharing a handle across CUDA devices produces
+// CUDA error 700 on cuLaunchKernel.  This key adds a deviceId field so each
+// device gets its own compiled module, mirroring TritonGraphBackend's
+// per-device SegmentCacheKey.
+struct JitSegmentCacheKey {
+  int startSlot = 0;
+  int endSlot = 0;
+  LongType shapeKey = 0;
+  int deviceId = -1;
+  bool operator==(const JitSegmentCacheKey& o) const {
+    return startSlot == o.startSlot && endSlot == o.endSlot &&
+           shapeKey == o.shapeKey && deviceId == o.deviceId;
+  }
+};
+
+struct JitSegmentCacheHash {
+  size_t operator()(const JitSegmentCacheKey& k) const {
+    size_t h = std::hash<int>()(k.startSlot);
+    h ^= std::hash<int>()(k.endSlot) << 1;
+    h ^= std::hash<LongType>()(k.shapeKey) << 2;
+    h ^= std::hash<int>()(k.deviceId) << 3;
+    return h;
+  }
+};
 
 // Minimum ops to attempt fusion (shared constant)
 constexpr int JIT_MIN_FUSIBLE_OPS = 2;

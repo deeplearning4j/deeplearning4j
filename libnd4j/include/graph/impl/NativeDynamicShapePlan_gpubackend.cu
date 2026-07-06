@@ -96,15 +96,17 @@ static bool dsp_disable_workspace_skip() {
 namespace sd {
 namespace graph {
 
-// ── Global shared capture workspace ─────────────────────────────────────
+// ── Per-device shared capture workspace ──────────────────────────────────
 // CUDA graph capture is serialized by DeviceCaptureGuard (only one plan
 // captures at a time per device). So the capture workspace can be shared
-// globally across all plan instances. This avoids the OOM that occurs when
-// multiple concurrent plans each try to allocate their own 512MB workspace.
-// Protected by DeviceCaptureGuard (no additional locking needed).
-void* g_globalCaptureWorkspace = nullptr;
-size_t g_globalCaptureWorkspaceBytes = 0;
-int g_globalCaptureWorkspaceDevice = -1;
+// globally across all plan instances on the SAME device. This avoids OOM
+// when multiple concurrent plans each try to allocate their own 512 MB
+// workspace. The maps are keyed by CUDA device id to support multi-GPU
+// sharding: device 1 never overwrites device 0's workspace entry.
+// Protected by g_globalCaptureWorkspaceMtx on all reads and writes.
+std::mutex g_globalCaptureWorkspaceMtx;
+std::unordered_map<int, void*> g_globalCaptureWorkspaceByDevice;
+std::unordered_map<int, size_t> g_globalCaptureWorkspaceBytesByDevice;
 
 // ── Per-GPU CUDA graph capture/execution coordination ───────────────────
 // Defined in _cuda.cu. Capture sets captureActive, waits for execCount==0,
@@ -1767,8 +1769,11 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
       auto tML0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       bool launchOk = sched.mergedReplayHandles[mgId]->replay(stream);
+      long long mergedUnitUs = 0;  // per-unit ledger (G3): launch + fixup for this leader
       if (executionTimingEnabled_) {
-        tMergedLaunchUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tML0).count();
+        long long mlUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tML0).count();
+        tMergedLaunchUs += mlUs;
+        mergedUnitUs += mlUs;
         nMergedLaunches++;
       }
       if (!launchOk) {
@@ -1854,7 +1859,10 @@ Status NativeDynamicShapePlan::compositeReplay(
           sched.mergedReplayHandles[mgId].get(), rangeMin, rangeMax,
           effectiveExternals, numExt, stream, "MERGED_REPLAY");
       if (executionTimingEnabled_) {
-        tMergedDirtyUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tMD0).count();
+        long long mdUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tMD0).count();
+        tMergedDirtyUs += mdUs;
+        mergedUnitUs += mdUs;
+        sched.recordUnitPerf(static_cast<size_t>(&unit - sched.units.data()), mergedUnitUs);
       }
       if (mergedFixupStatus != Status::OK) return mergedFixupStatus;
       continue;
@@ -2166,8 +2174,10 @@ Status NativeDynamicShapePlan::compositeReplay(
         }
       }
       if (executionTimingEnabled_) {
-        tGapExecUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tGE0).count();
+        long long geUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tGE0).count();
+        tGapExecUs += geUs;
         nGapUnits++;
+        sched.recordUnitPerf(static_cast<size_t>(&unit - sched.units.data()), geUs);
       }
 
     } else {  // REPLAY_UNIT_TRITON_ISLAND (unmerged)
@@ -2232,8 +2242,10 @@ Status NativeDynamicShapePlan::compositeReplay(
       auto tIL0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
       bool launchOk = sched.compositeReplayHandles[idx]->replay(stream);
       if (executionTimingEnabled_) {
-        tIslandLaunchUs += std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tIL0).count();
+        long long ilUs = std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - tIL0).count();
+        tIslandLaunchUs += ilUs;
         nIslandLaunches++;
+        sched.recordUnitPerf(static_cast<size_t>(&unit - sched.units.data()), ilUs);
       }
       if (!launchOk) {
         DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: island %d launch FAILED", idx);
@@ -2308,6 +2320,28 @@ Status NativeDynamicShapePlan::compositeReplay(
         opBreakdown += " " + kv.first + "=" + std::to_string(kv.second);
       }
       DSP_DIAG(TIMING, "%s", opBreakdown.c_str());
+    }
+
+    // ── Per-unit performance ledger dump (Part II-G3) ────────────────────
+    // Cross-execution accumulated stats per replay unit — the measured basis
+    // for the replay-unit auction (G1/G2) and PGO (H1), and the automatic
+    // form of the op-timing-diff regression technique. Early execs + every
+    // 50th to keep logs bounded.
+    if (!sched.unitPerf.empty() &&
+        (seg.exec.executionCount <= 2 || seg.exec.executionCount % 50 == 0)) {
+      for (size_t ui = 0; ui < sched.units.size() && ui < sched.unitPerf.size(); ui++) {
+        auto& ps = sched.unitPerf[ui];
+        if (ps.execs == 0) continue;
+        auto& u = sched.units[ui];
+        DSP_DIAG(TIMING,
+                 "UNIT_LEDGER: unit=%zu kind=%s slots=[%d-%d] mg=%d execs=%lld "
+                 "avgUs=%lld minUs=%lld maxUs=%lld lastUs=%lld totalUs=%lld",
+                 ui,
+                 u.kind == REPLAY_UNIT_GAP ? "GAP"
+                     : (u.mergedGroupId >= 0 ? "MERGED" : "ISLAND"),
+                 u.startSlot, u.endSlot, u.mergedGroupId, ps.execs,
+                 ps.totalUs / ps.execs, ps.minUs, ps.maxUs, ps.lastUs, ps.totalUs);
+      }
     }
   }
 
@@ -2472,9 +2506,12 @@ void NativeDynamicShapePlan::proactivePreCaptureMemoryCleanup(GraphSegment& seg,
 
   // Estimate needed: capture workspace + cuBLAS workspace (if not allocated) + safety margin
   size_t neededBytes = 0;
-  // Only need workspace allocation if neither per-plan nor global workspace exists
-  if (sharedCaptureWorkspace_ == nullptr && g_globalCaptureWorkspace == nullptr) {
-    neededBytes += tritonCaptureWorkspaceSize();
+  // Only need workspace allocation if neither per-plan nor the per-device global workspace exists.
+  if (sharedCaptureWorkspace_ == nullptr) {
+    std::lock_guard<std::mutex> lk(g_globalCaptureWorkspaceMtx);
+    if (g_globalCaptureWorkspaceByDevice.count(deviceId) == 0) {
+      neededBytes += tritonCaptureWorkspaceSize();
+    }
   }
   if (cublasWorkspaceBuffer_ == nullptr) {
     neededBytes += Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL;
@@ -3028,11 +3065,17 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // This avoids OOM when multiple concurrent plans each try to allocate
       // their own 512MB workspace.
       if (sharedCaptureWorkspace_ == nullptr) {
-        // Try to reuse the global workspace first (allocated by another plan)
-        if (g_globalCaptureWorkspace != nullptr && g_globalCaptureWorkspaceDevice == deviceId) {
-          sharedCaptureWorkspace_ = g_globalCaptureWorkspace;
-          sharedCaptureWorkspaceBytes_ = g_globalCaptureWorkspaceBytes;
-          sharedCaptureWorkspaceDevice_ = deviceId;
+        // Try to reuse the per-device global workspace first (allocated by another plan).
+        {
+          std::lock_guard<std::mutex> lk(g_globalCaptureWorkspaceMtx);
+          auto wsIt = g_globalCaptureWorkspaceByDevice.find(deviceId);
+          if (wsIt != g_globalCaptureWorkspaceByDevice.end()) {
+            sharedCaptureWorkspace_ = wsIt->second;
+            sharedCaptureWorkspaceBytes_ = g_globalCaptureWorkspaceBytesByDevice.at(deviceId);
+            sharedCaptureWorkspaceDevice_ = deviceId;
+          }
+        }
+        if (sharedCaptureWorkspace_ != nullptr) {
           DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
                        "reusing GLOBAL capture workspace: %zuMB on device %d",
                        sharedCaptureWorkspaceBytes_ / (1024*1024), deviceId);
@@ -3070,10 +3113,12 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           if (sharedCaptureWorkspace_ != nullptr) {
             sharedCaptureWorkspaceBytes_ = workspaceSize;
             sharedCaptureWorkspaceDevice_ = deviceId;
-            // Promote to global so other plans can reuse
-            g_globalCaptureWorkspace = sharedCaptureWorkspace_;
-            g_globalCaptureWorkspaceBytes = sharedCaptureWorkspaceBytes_;
-            g_globalCaptureWorkspaceDevice = deviceId;
+            // Promote to per-device global so other plans on this device can reuse.
+            {
+              std::lock_guard<std::mutex> lk(g_globalCaptureWorkspaceMtx);
+              g_globalCaptureWorkspaceByDevice[deviceId] = sharedCaptureWorkspace_;
+              g_globalCaptureWorkspaceBytesByDevice[deviceId] = sharedCaptureWorkspaceBytes_;
+            }
             memory::CudaMemoryPool::getInstance().registerCaptureWorkspace(
                 sharedCaptureWorkspace_, sharedCaptureWorkspaceBytes_);
             DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
@@ -5579,6 +5624,22 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
 Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
+
+  // ── Multi-GPU: run a secondary-device island on ITS device's stream ─────────────
+  // The plan-wide `stream` param is the device-0 PRIMARY stream. Capturing a device-1
+  // island on it launches its Triton/cuBLAS kernels on the wrong device
+  // (cuLaunchKernel "invalid resource handle" 400 / cuBLAS err13 during capture). We are
+  // already bound to the segment's device (platformBindSegmentDevice → cudaSetDevice), so
+  // cudaStreamPerThread resolves to the correct secondary device. Substitute it for the
+  // WHOLE pipeline (compile/warmup/capture/replay/direct) so ctx.cudaStr, beginCapture, and
+  // every capture-status query agree on the island's device. Device-0 segments are untouched.
+  static thread_local cudaStream_t tl_secondarySegStream = cudaStreamPerThread;
+  const int segGraphDevice = (seg.def.startSlot >= 0 && seg.def.startSlot < numSlots_)
+      ? slots_[seg.def.startSlot].targetDeviceId : -1;
+  if (segGraphDevice > 0) {
+    tl_secondarySegStream = cudaStreamPerThread;
+    stream = static_cast<void*>(&tl_secondarySegStream);
+  }
 
   // All-frozen-constant segments: outputs already populated from warmup.
   // Should have been caught earlier but defend here too.

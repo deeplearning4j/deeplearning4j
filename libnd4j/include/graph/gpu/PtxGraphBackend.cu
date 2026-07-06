@@ -703,7 +703,18 @@ bool PtxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                       int totalSlots,
                                       int* requestedOutputSlotIndices,
                                       int numRequestedOutputs) {
+  // ── Device management (mirrors TritonGraphBackend::compileSegment) ─────────
+  // Determine the target compile device.  On async precompile threads the
+  // CUDA runtime may not have been initialized at all — cudaSetDevice ensures
+  // the primary context exists before any driver API calls (cuModuleLoadDataEx).
+  int activeDevice = -1;
+  cudaGetDevice(&activeDevice);
+  int targetDevice = (seg.def.startSlot >= 0) ? slots[seg.def.startSlot].targetDeviceId : -1;
+  int compileDevice = (targetDevice >= 0) ? targetDevice : activeDevice;
+  cudaSetDevice(compileDevice);
+
   JitSegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey};
+  key.deviceId = compileDevice;
 
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -786,7 +797,13 @@ Status PtxGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                         NDArray** externalInputs, int numExternalInputs,
                                         NDArray** outputSlots, int totalOutputSlots,
                                         void* stream) {
+  // The execution device is the currently active CUDA device managed by the
+  // caller's LaunchContext.  Include it in the key so we look up the module
+  // that was compiled for this device, not a stale entry from device 0.
+  int currentDevice = -1;
+  cudaGetDevice(&currentDevice);
   JitSegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey};
+  key.deviceId = currentDevice;
   return jitExecuteSegment(key, cache_, cacheMtx_, "PtxGraphBackend",
                            slots, externalInputs, numExternalInputs,
                            outputSlots, totalOutputSlots, stream);

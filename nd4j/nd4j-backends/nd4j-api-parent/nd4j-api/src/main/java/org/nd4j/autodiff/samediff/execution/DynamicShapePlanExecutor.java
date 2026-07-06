@@ -3029,12 +3029,47 @@ public class DynamicShapePlanExecutor implements Closeable {
                     // Subsystems may not be initialized - continue without tracking
                 }
 
+                // ── Multi-GPU sharding: per-external-input consuming device ─────────────
+                // For a sharded plan, an external weight consumed ONLY by a secondary-device
+                // segment must live on that device, NOT be pulled to the primary execution
+                // device below. Pulling it back device-ping-pongs the weight: the device-1
+                // segment migrates it to device 1 (warmup), then this loop yanks it to device 0,
+                // and on captured-graph replay the baked device-1 address is stale → CUDA err700
+                // (illegal access) in the device-1 op. Compute each external input's consuming
+                // device from the plan's slot targetDeviceIds; -1=unknown, -2=mixed(both devices).
+                int[] extConsumerDevice = null;
+                if (numDevices > 1 && currentPlan != null && currentPlan.getSlots() != null) {
+                    extConsumerDevice = new int[extInputs.length];
+                    Arrays.fill(extConsumerDevice, -1);
+                    for (DynamicShapeSlot slot : currentPlan.getSlots()) {
+                        int slotDev = slot.getTargetDeviceId();
+                        if (slotDev < 0) continue;  // unassigned (single-GPU path) — no constraint
+                        int[] srcs = slot.getInputSourceIndices();
+                        if (srcs == null) continue;
+                        for (int s : srcs) {
+                            if (s >= 0) continue;              // internal slot input
+                            int extIdx = -(s + 1);
+                            if (extIdx < 0 || extIdx >= extConsumerDevice.length) continue;
+                            if (extConsumerDevice[extIdx] == -1) extConsumerDevice[extIdx] = slotDev;
+                            else if (extConsumerDevice[extIdx] != slotDev) extConsumerDevice[extIdx] = -2;
+                        }
+                    }
+                }
+
                 int migratedCount = 0;
                 long migratedBytes = 0;
                 for (int i = 0; i < extInputs.length; i++) {
                     INDArray arr = extInputs[i];
                     if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
                         int arrDevice = resolveArrayDevice(arr, numDevices, nativeExecutionDevice);
+                        // Sharding: an input consumed solely by a secondary (non-primary) device
+                        // stays on that device — the native per-segment path placed it there and
+                        // the captured graph baked its address. Do NOT pull it to the primary.
+                        if (extConsumerDevice != null
+                                && extConsumerDevice[i] >= 0
+                                && extConsumerDevice[i] != nativeExecutionDevice) {
+                            continue;
+                        }
                         if (arrDevice >= 0 && arrDevice != nativeExecutionDevice) {
                             // Check if migration is blocked by frozen buffer (pointer stability)
                             if (stabilityGuard != null && stabilityGuard.isFrozen(arr)) {

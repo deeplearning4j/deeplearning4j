@@ -248,6 +248,8 @@ bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segme
   return true;
 }
 
+void NativeDynamicShapePlan::platformRestoreSegmentDevice() {}
+
 // ── Cross-device migration: no-op on CPU ────────────────────────────────────
 
 void NativeDynamicShapePlan::platformMigrateSegmentInputs(
@@ -257,6 +259,11 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
 
 void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   // No-op on CPU
+}
+
+// CPU stub — all memory is host-accessible; no migration required.
+NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int /*slotIdx*/, int /*outputIdx*/) {
+  return arr;
 }
 
 // ── performPreReplaySync: passthrough on CPU ──────────────────────────────────

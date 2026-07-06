@@ -1809,8 +1809,14 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     }
     stream = reinterpret_cast<cudaStream_t>(tl_graphCaptureStream);
   } else {
-    // Cache the stream reference - must obtain AFTER device switch so we get the correct device's stream
-    stream = captureSafeStreamOrDefault();
+    // A secondary-GPU buffer (bufferDeviceId != 0) MUST be memset on ITS device's stream. Ground
+    // truth (SETZERO_DIAG): the current device is already == buffer device == 1, but
+    // captureSafeStreamOrDefault() returns the device-0 LaunchContext stream, and cudaMemsetAsync
+    // requires the stream and the target memory to be on the SAME device — so a device-0 stream on
+    // a device-1 buffer fails with invalid argument even though we are on device 1. Use
+    // cudaStreamPerThread (the current device's per-thread stream) for secondary buffers; device 0
+    // keeps the existing resolver so the single-GPU path stays byte-identical.
+    stream = (bufferDeviceId != 0) ? cudaStreamPerThread : captureSafeStreamOrDefault();
   }
   auto res = cudaMemsetAsync(special(), 0, getLenInBytes(), stream);
 
@@ -1847,6 +1853,14 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
       isHostPtr = sd::memory::CudaMemoryPool::getInstance().isPinnedHostAllocation(special());
     }
     if (attrRes != cudaSuccess) cudaGetLastError();  // Clear attribute query error
+    {
+      // TEMP GROUND-TRUTH DIAGNOSTIC (remove after root fix): why did the memset fail?
+      int actualCurDev = -1; cudaGetDevice(&actualCurDev); cudaGetLastError();
+      sd_printf("SETZERO_DIAG: bufferDeviceId=%d currentDeviceId(affinity)=%d actualCurDev=%d "
+                "switchedDevice=%d stream=%p specialPtr=%p spType=%d spDev=%d isHostPtr=%d res=%d\n",
+                bufferDeviceId, currentDeviceId, actualCurDev, switchedDevice ? 1 : 0,
+                (void*)stream, special(), (int)ptrAttrs.type, ptrAttrs.device, isHostPtr ? 1 : 0, (int)res);
+    }
     if (isHostPtr) {
       memset(special(), 0, getLenInBytes());
     } else {

@@ -135,8 +135,36 @@ NvrtcKernelHandle* compileKernel(const JitKernelSource& source, int deviceId) {
     return nullptr;
   }
 
+  // Ensure the primary context for the target device is bound as the active
+  // driver context, mirroring GpuKernelLauncher::loadPtxModule.
+  // compileKernel() is called with an explicit deviceId so we use it directly.
+  CUdevice cuDev = 0;
+  bool didPush = false;
+  if (cuDeviceGet(&cuDev, deviceId) == CUDA_SUCCESS) {
+    CUcontext existingCtx = nullptr;
+    cuCtxGetCurrent(&existingCtx);
+    if (!existingCtx) {
+      CUcontext primaryCtx = nullptr;
+      if (cuDevicePrimaryCtxRetain(&primaryCtx, cuDev) == CUDA_SUCCESS && primaryCtx) {
+        if (cuCtxPushCurrent(primaryCtx) == CUDA_SUCCESS) {
+          didPush = true;
+        } else {
+          cuDevicePrimaryCtxRelease(cuDev);
+        }
+      }
+    }
+  }
+
   // Load module from PTX
   cuRes = cuModuleLoadDataEx(&handle->module, ptx.c_str(), 0, nullptr, nullptr);
+
+  // Pop pushed context regardless of outcome.
+  if (didPush) {
+    CUcontext popped = nullptr;
+    cuCtxPopCurrent(&popped);
+    cuDevicePrimaryCtxRelease(cuDev);
+  }
+
   if (cuRes != CUDA_SUCCESS) {
     const char* errStr = nullptr;
     cuGetErrorString(cuRes, &errStr);

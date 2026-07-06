@@ -25,6 +25,8 @@
 #include <array/NDArray.h>
 #ifdef SD_CUDA
 #include <memory/cuda/CudaMemoryPool.h>
+#include <unordered_map>
+#include <mutex>
 #endif
 #include <config.h>
 #if HAVE_TRITON
@@ -189,10 +191,18 @@ void dspFreeWorkspaceOnPool(void* ptr) {
   }
 }
 
-extern void* g_globalCaptureWorkspace;
+// Multi-GPU: the capture workspace is per-device (NativeDynamicShapePlan_gpubackend.cu). A pointer
+// is a "global capture workspace" if it matches ANY device's entry.
+extern std::unordered_map<int, void*> g_globalCaptureWorkspaceByDevice;
+extern std::mutex g_globalCaptureWorkspaceMtx;
 
 bool dspIsGlobalCaptureWorkspace(void* ptr) {
-  return ptr != nullptr && ptr == g_globalCaptureWorkspace;
+  if (ptr == nullptr) return false;
+  std::lock_guard<std::mutex> lk(g_globalCaptureWorkspaceMtx);
+  for (const auto& kv : g_globalCaptureWorkspaceByDevice) {
+    if (kv.second == ptr) return true;
+  }
+  return false;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

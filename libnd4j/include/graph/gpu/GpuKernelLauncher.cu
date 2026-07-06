@@ -36,6 +36,32 @@ namespace GpuKernelLauncher {
 void* loadPtxModule(const char* ptxText, size_t ptxSize) {
   if (!ptxText || ptxSize == 0) return nullptr;
 
+  // Ensure the primary context for the current device is bound as the active
+  // driver context.  After cudaSetDevice() the CUDA runtime holds a retain on
+  // the primary context, but the driver API thread-local context stack may
+  // still be empty (e.g., on async compile threads that have never entered the
+  // CUDA runtime).  If no context is current, retain + push the primary context
+  // so cuModuleLoadDataEx operates on the correct device.
+  int currentDev = 0;
+  cudaGetDevice(&currentDev);
+
+  CUdevice cuDev = 0;
+  bool didPush = false;
+  if (cuDeviceGet(&cuDev, currentDev) == CUDA_SUCCESS) {
+    CUcontext existingCtx = nullptr;
+    cuCtxGetCurrent(&existingCtx);
+    if (!existingCtx) {
+      CUcontext primaryCtx = nullptr;
+      if (cuDevicePrimaryCtxRetain(&primaryCtx, cuDev) == CUDA_SUCCESS && primaryCtx) {
+        if (cuCtxPushCurrent(primaryCtx) == CUDA_SUCCESS) {
+          didPush = true;
+        } else {
+          cuDevicePrimaryCtxRelease(cuDev);
+        }
+      }
+    }
+  }
+
   CUmodule module = nullptr;
   char jitErr[8192];
   char jitInfo[8192];
@@ -58,6 +84,14 @@ void* loadPtxModule(const char* ptxText, size_t ptxSize) {
   CUresult res = cuModuleLoadDataEx(
       &module, ptxText, static_cast<unsigned int>(sizeof(options) / sizeof(options[0])),
       options, optionValues);
+
+  // Pop the pushed context regardless of load outcome.
+  if (didPush) {
+    CUcontext popped = nullptr;
+    cuCtxPopCurrent(&popped);
+    cuDevicePrimaryCtxRelease(cuDev);
+  }
+
   if (res != CUDA_SUCCESS) {
     const char* errStr = nullptr;
     cuGetErrorString(res, &errStr);

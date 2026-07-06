@@ -1878,6 +1878,12 @@
                         <!-- DSP freeze/merge -->
                         <nd4j.dsp.freezeMergeSegments>${nd4j.dsp.freezeMergeSegments}</nd4j.dsp.freezeMergeSegments>
                         <nd4j.dsp.freezeRecompile>${nd4j.dsp.freezeRecompile}</nd4j.dsp.freezeRecompile>
+                        <!-- Multi-GPU op-segment sharding -->
+                        <nd4j.dsp.multiGpuShard>${nd4j.dsp.multiGpuShard}</nd4j.dsp.multiGpuShard>
+                        <!-- BGE regression test tuning -->
+                        <bge.repro.batch>${bge.repro.batch}</bge.repro.batch>
+                        <bge.repro.config>${bge.repro.config}</bge.repro.config>
+                        <bge.repro.iterations>${bge.repro.iterations}</bge.repro.iterations>
                         <!-- Debug/verbose mode — picked up by DebugVerboseExtension -->
                         <nd4j.debug>${nd4j.debug}</nd4j.debug>
                         <nd4j.verbose>${nd4j.verbose}</nd4j.verbose>

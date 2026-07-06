@@ -298,6 +298,15 @@ void NativeDynamicShapePlan::detectBatchedGemmGroups(NDArray** externalArrays, i
         for (auto& sg : subGroups) {
           int firstSlot = sg.front();
 
+          // Multi-GPU: a batched-GEMM group must live entirely on one device. assignDevices()
+          // can place same-shape matmuls on different GPUs; batching them would issue a single
+          // cuBLAS batched call whose per-matrix A/B/C device pointers straddle devices (illegal
+          // access) and whose grouped members skip independent per-device output allocation.
+          // Only group slots that share targetDeviceId.
+          if (slots_[slot].targetDeviceId != slots_[firstSlot].targetDeviceId) {
+            continue;
+          }
+
           // Check 1: all inputs of 'slot' must be available at firstSlot's position
           if (!allInputsAvailableBefore(slots_[slot], firstSlot, totalOutputSlots_, outputSlotToStep)) {
             inputRejected++;
@@ -573,29 +582,26 @@ void NativeDynamicShapePlan::prepareBatchedGemmDevice(void* streamPtr) {
       const size_t perMemberBytes = castElem * elemSize;
       group.castScratchBytes = perMemberBytes * bs;
 
-      // cudaMalloc: plan-lifetime persistent buffer — must outlive CUDA-graph capture/replay.
-      // allocateDirect (pool) was attempted here but was recycled before replay → crash.
-      // Plain cudaMalloc guarantees the address is stable until cudaFree in freeBatchedGemmResources.
-      auto err = cudaMalloc(&group.castScratch, group.castScratchBytes);
-      if (err != cudaSuccess) {
-        DSP_DIAG(MEMORY, "batched GEMM group: cast scratch alloc failed (%zu bytes): %s",
-                 group.castScratchBytes, cudaGetErrorString(err));
-        cudaGetLastError();
-        group.castScratch = nullptr;
+      // allocateDirect: capture-safe persistent allocation — outlives CUDA-graph capture/replay
+      // and is device-keyed so device-1 segments get device-1 memory (no cross-device error 700).
+      group.castScratch = memory::CudaMemoryPool::getInstance().allocateDirect(group.castScratchBytes, deviceId);
+      if (group.castScratch == nullptr) {
+        DSP_DIAG(MEMORY, "batched GEMM group: cast scratch alloc failed (%zu bytes)",
+                 group.castScratchBytes);
         group.castScratchBytes = 0;
         group.needsCast = false;  // fall back to per-step alloc
       } else {
-        err = cudaMalloc((void**)&group.d_castPtrs, ptrArrayBytes);
-        if (err != cudaSuccess) {
-          cudaFree(group.castScratch);
-          cudaGetLastError();
+        group.d_castPtrs = reinterpret_cast<void**>(memory::CudaMemoryPool::getInstance().allocateDirect(ptrArrayBytes, deviceId));
+        if (group.d_castPtrs == nullptr) {
+          memory::CudaMemoryPool::getInstance().free(group.castScratch, deviceId);
           group.castScratch = nullptr;
           group.castScratchBytes = 0;
           group.d_castPtrs = nullptr;
           group.needsCast = false;
         } else {
-          DSP_DIAG(MEMORY, "batched GEMM group: persistent cast scratch %zu bytes + %zu ptr bytes",
-                   group.castScratchBytes, ptrArrayBytes);
+          group.castScratchDevice = deviceId;
+          DSP_DIAG(MEMORY, "batched GEMM group: persistent cast scratch %zu bytes + %zu ptr bytes on device %d",
+                   group.castScratchBytes, ptrArrayBytes, deviceId);
         }
       }
     }
@@ -612,6 +618,24 @@ static inline void reapplyCublasWorkspaceBG(cublasHandle_t handle) {
   // before cudaStreamBeginCapture; calling cublasSetWorkspace on a capturing stream may
   // inject a host-callback node into the graph.
   if (!tl_graphExecutionActive && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+    // The DSP cuBLAS workspace is a SINGLE buffer on the primary device (0). Applying it to a
+    // handle on a SECONDARY device (multi-GPU op-segment sharding) makes the batched gemm fail
+    // with CUBLAS_STATUS_EXECUTION_FAILED — the workspace must live on the handle's device. On a
+    // secondary device, verify the workspace resides here; if not, skip it and let cuBLAS use its
+    // own default per-handle workspace. Primary-device hot path (curDev == 0) is unchanged.
+    // Mirrors MmulHelper::reapplyCublasWorkspace.
+    int curDev = 0;
+    cudaGetDevice(&curDev);
+    if (curDev != 0) {
+      cudaPointerAttributes wa;
+      if (cudaPointerGetAttributes(&wa, tl_cublasWorkspacePtr) == cudaSuccess &&
+          wa.type == cudaMemoryTypeDevice && wa.device != curDev) {
+        cudaGetLastError();
+        cublasSetWorkspace(handle, nullptr, 0);  // clear any stale device-0 workspace baked into this handle
+        return;
+      }
+      cudaGetLastError();
+    }
     cublasSetWorkspace(handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
   }
 }
@@ -1016,8 +1040,18 @@ void NativeDynamicShapePlan::freeBatchedGemmResources() {
     if (group.h_A_ptrs) { cudaFreeHost(group.h_A_ptrs); group.h_A_ptrs = nullptr; }
     if (group.h_B_ptrs) { cudaFreeHost(group.h_B_ptrs); group.h_B_ptrs = nullptr; }
     if (group.h_C_ptrs) { cudaFreeHost(group.h_C_ptrs); group.h_C_ptrs = nullptr; }
-    if (group.castScratch) { cudaFree(group.castScratch); group.castScratch = nullptr; group.castScratchBytes = 0; }
-    if (group.d_castPtrs) { cudaFree(reinterpret_cast<void*>(group.d_castPtrs)); group.d_castPtrs = nullptr; }
+    if (group.castScratch || group.d_castPtrs) {
+      int freeDevId = group.castScratchDevice >= 0 ? group.castScratchDevice : deviceId;
+      if (group.castScratch) {
+        memory::CudaMemoryPool::getInstance().free(group.castScratch, freeDevId);
+        group.castScratch = nullptr; group.castScratchBytes = 0;
+      }
+      if (group.d_castPtrs) {
+        memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(group.d_castPtrs), freeDevId);
+        group.d_castPtrs = nullptr;
+      }
+      group.castScratchDevice = -1;
+    }
   }
   batchedGemmGroups_.clear();
   slotToBatchedGemmGroup_.clear();

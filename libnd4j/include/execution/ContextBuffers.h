@@ -40,9 +40,12 @@ class SD_LIB_EXPORT ContextBuffers {
 
   int _deviceId = -1;
 
+ public:
+  // Public so contextBuffersForCurrentDevice() can re-home a secondary-device slot onto its
+  // actual device (the thread_local array is default-constructed on device 0). Idempotent-ish:
+  // sets _deviceId = current device and (re)allocates streams/buffers on it.
   void initialize();
 
- public:
   ContextBuffers();
   ContextBuffers(const ContextBuffers &other);
   ContextBuffers(void *rPointer, void *sPointer, void *aPointer, bool isOwner = false);

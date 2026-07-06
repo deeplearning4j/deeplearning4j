@@ -362,6 +362,18 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   cudaStream_t allocStream = resolveCaptureStream(stream);
   allocStream = resolveNullStream(allocStream);
 
+  // CROSS-DEVICE PLACEMENT: cudaMallocAsync allocates from the mem pool of the STREAM'S
+  // device, NOT the current device. The resolved allocStream (tl_dspExecutionStream / the
+  // LaunchContext stream) is bound to the PRIMARY DSP device (0). For a secondary-device
+  // allocation (multi-GPU op-segment sharding) using it silently places the buffer on device
+  // 0 even though we cudaSetDevice(deviceId) above — and a later device-`deviceId` H2D onto
+  // that device-0 buffer then fails with cudaErrorInvalidValue. We are already on deviceId
+  // here, so use its per-thread stream to guarantee the allocation lands in device
+  // `deviceId`'s VRAM. Device 0 keeps the resolved DSP stream (single-GPU hot path untouched).
+  if (deviceId != 0) {
+    allocStream = cudaStreamPerThread;
+  }
+
   // ─── Proactive soft-limit check ───────────────────────────────────────────
   // When enabled, check device usage BEFORE attempting local allocation.
   // If the device is above the soft-limit threshold, route to allocateFailover()
@@ -557,6 +569,25 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
         }
         cudaGetLastError();
       }
+    }
+
+    // CROSS-DEVICE STREAM FIX: the resolved allocStream (e.g. tl_dspExecutionStream, the DSP
+    // execution stream) can belong to a DIFFERENT device than `deviceId`. During multi-GPU
+    // op-segment sharding a secondary-device segment allocates its constants while that device
+    // is current, but tl_dspExecutionStream is still device 0's stream — and cudaMallocAsync
+    // requires a stream on the allocating device, so it fails. Retry on the target device's OWN
+    // per-thread stream (valid: we are on `deviceId` here) BEFORE spilling to managed host
+    // memory, so the constant lands in device `deviceId`'s VRAM (where an async H2D is valid)
+    // instead of host-resident managed pages (which force slow UVA faults for every device op).
+    {
+      cudaGetLastError();
+      ptr = nullptr;
+      cudaError_t perThreadErr = cudaMallocAsync(&ptr, size, cudaStreamPerThread);
+      if (perThreadErr == cudaSuccess && ptr != nullptr) {
+        restoreDevice();
+        return ptr;
+      }
+      cudaGetLastError();
     }
 
     // Still failed after stream sync. Log and go to full failover.
@@ -1042,6 +1073,15 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   // caller's device, and cudaFreeAsync would run on a foreign stream/device pair.
   cudaStream_t freeStream = resolveCaptureStream(stream);
   freeStream = resolveNullStream(freeStream);
+
+  // CROSS-DEVICE PLACEMENT (mirror of allocate): cudaFreeAsync must run on a stream that
+  // belongs to the buffer's device. The resolved freeStream is bound to the primary DSP
+  // device (0); freeing a secondary-device buffer on it fails silently / leaks. We are on
+  // deviceId here (cudaSetDevice above), so use its per-thread stream. deviceId <= 0 (primary
+  // or unknown) keeps the resolved stream so the single-GPU path is untouched.
+  if (deviceId > 0) {
+    freeStream = cudaStreamPerThread;
+  }
 
   // Persistent capture-safe allocations from allocateDirect() are pool memory
   // (cudaMallocAsync) bound to a dedicated non-capturing allocation stream. Free

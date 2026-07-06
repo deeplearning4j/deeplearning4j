@@ -739,6 +739,29 @@ int FusionPass::applyFusions(
     DSP_DIAG(FUSION, "applyFusions: BEGIN numSlots=%d candidates=%d", numSlots, (int)candidates.size());
 
     for (const auto& fusion : candidates) {
+        // Multi-GPU: never fuse a chain whose slots span a device boundary. assignDevices()
+        // partitions ops across GPUs by targetDeviceId, and that partition can fall in the
+        // middle of a fusible elementwise run (e.g. add on dev0, tanh on dev1). Fusing across
+        // the split makes the cross-device op a fused-chain TAIL, which the shape pre-pass and
+        // slot executor skip for independent output allocation — leaving an uninitialized
+        // NDArray that crashes at freeze/resegment (buildSegments -> estimateSlotOutputBytes).
+        // Leave such ops unfused; they run as separate slots and platformMigrateSegmentInputs
+        // handles the cross-device data transfer between them.
+        {
+            bool crossDevice = false, firstDev = true;
+            int chainDev = -1;
+            for (int idx : fusion.slotIndices) {
+                if (idx < 0 || idx >= numSlots) continue;
+                int d = slots[idx].targetDeviceId;
+                if (firstDev) { chainDev = d; firstDev = false; }
+                else if (d != chainDev) { crossDevice = true; break; }
+            }
+            if (crossDevice) {
+                DSP_DIAG(FUSION, "applyFusions: SKIP cross-device fusion candidate "
+                         "(slots span multiple targetDeviceId)");
+                continue;
+            }
+        }
         switch (fusion.type) {
 
             case FusionCandidate::ELEMENTWISE_CHAIN: {

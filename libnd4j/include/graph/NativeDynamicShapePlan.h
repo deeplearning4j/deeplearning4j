@@ -851,6 +851,33 @@ struct ReplaySchedule {
   // instead of scanning all units per leader.
   struct MergedGroupRange { int minSlot; int maxSlot; };
   std::vector<MergedGroupRange> mergedGroupSlotRanges;
+
+  // ── Per-unit performance ledger (Part II-G3) ─────────────────────────────
+  // Cross-execution accumulated timing per replay unit, keyed by unit index.
+  // Written only when the plan's executionTimingEnabled_ is set (zero cost
+  // otherwise); merged-group launch+fixup time is attributed to the group's
+  // LEADER unit. Feeds the replay-unit auction (G1/G2) and PGO (H1) with
+  // MEASURED per-unit microseconds instead of static heuristics, and makes
+  // per-unit regression diffs (op-timing-diff technique) automatic.
+  struct UnitPerfStats {
+    long long execs = 0;
+    long long totalUs = 0;
+    long long minUs = 0;
+    long long maxUs = 0;
+    long long lastUs = 0;
+    void record(long long us) {
+      execs++;
+      totalUs += us;
+      lastUs = us;
+      if (minUs == 0 || us < minUs) minUs = us;
+      if (us > maxUs) maxUs = us;
+    }
+  };
+  std::vector<UnitPerfStats> unitPerf;  // sized to units.size() on first record
+  void recordUnitPerf(size_t unitIdx, long long us) {
+    if (unitPerf.size() < units.size()) unitPerf.resize(units.size());
+    if (unitIdx < unitPerf.size()) unitPerf[unitIdx].record(us);
+  }
 };
 
 // Batch-zero entry used by NativeDynamicShapePlan::batchZeroEntries_.
@@ -3183,8 +3210,24 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool platformShouldKeepSegmentCache(const GraphSegment& seg) const;
   void platformPrecompileSegments(NDArray** externalInputs, int numExternalInputs);
   bool platformBindSegmentDevice(const GraphSegment& seg);
+  // Restore the plan-primary execution state (stream/workspace TLS + CUDA device) after a
+  // secondary-device segment bound by platformBindSegmentDevice. No-op for single-GPU segments.
+  void platformRestoreSegmentDevice();
   void platformMigrateSegmentInputs(const GraphSegment& seg, NDArray** externalInputs, int numExternalInputs);
   void platformCleanupMigratedInputs();
+  /**
+   * When op-segment sharding places the producer of a requested output on a secondary
+   * device (targetDeviceId > 0), the Java side can only access device-0 memory.
+   * This function checks whether `arr` lives on a non-primary device and, if so,
+   * asynchronously copies it to device-0 via cudaMemcpyPeerAsync (non-blocking on the
+   * device-0 stream).  The returned pointer is a NEW NDArray that the caller (Java)
+   * owns and must eventually deallocate; `arr` (and outputSlots_[slotIdx]) are NOT
+   * modified so the plan can continue using the device-N buffer on subsequent steps.
+   *
+   * On CPU or when the output is already on device-0, returns `arr` unchanged (no copy).
+   * On error the original `arr` is returned so callers always get a valid pointer.
+   */
+  NDArray* platformGetOutputForDevice0(NDArray* arr, int slotIdx, int outputIdx);
   bool platformShouldUseGraph(const GraphSegment& seg);
   // REMOVED: platformPreSegmentExec — was a parallel sync path that competed
   // with performPreReplaySync. All sync now goes through performPreReplaySync
@@ -3509,6 +3552,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     size_t castScratchBytes = 0;       // allocated size
     void** d_castPtrs = nullptr;       // device pointer array for casted batch members
     bool needsCast = false;            // true when aType!=bType and cast is required
+    int castScratchDevice = -1;        // device on which castScratch/d_castPtrs were allocated
   };
   std::vector<BatchedGemmGroup> batchedGemmGroups_;
   // Maps slot index → index into batchedGemmGroups_ (-1 if not part of a group)

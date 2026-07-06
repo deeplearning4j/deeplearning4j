@@ -81,6 +81,27 @@ void MmulHelper::clearLtEpilogue() {
 // inject an internal host-callback node into the graph, serialising every replay on CPU.
 static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
   if (!tl_graphExecutionActive && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+    // The DSP cuBLAS workspace is a SINGLE buffer allocated on the primary device (0). Applying it
+    // to a cuBLAS handle on a SECONDARY device (multi-GPU op-segment sharding) makes the gemm fail
+    // with CUBLAS_STATUS_EXECUTION_FAILED — the workspace must live on the handle's device. On a
+    // secondary device, verify the workspace actually resides here; if not, skip it and let cuBLAS
+    // use its own default per-handle workspace on the correct device. The primary-device hot path
+    // (curDev == 0) is unchanged — no extra query, no behavioural difference.
+    int curDev = 0;
+    cudaGetDevice(&curDev);
+    if (curDev != 0) {
+      cudaPointerAttributes wa;
+      if (cudaPointerGetAttributes(&wa, tl_cublasWorkspacePtr) == cudaSuccess &&
+          wa.type == cudaMemoryTypeDevice && wa.device != curDev) {
+        cudaGetLastError();
+        // Actively RESET the handle's workspace to cuBLAS's own default (not just skip): the
+        // device-1 handle may already carry a stale device-0 workspace from an earlier
+        // setCublasWorkspaceForWarmup/Capture at curDev==1. Leaving it set makes the gemm fail.
+        cublasSetWorkspace(handle, nullptr, 0);
+        return;
+      }
+      cudaGetLastError();
+    }
     cublasSetWorkspace(handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
   }
 }
@@ -397,6 +418,25 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
   auto ltHandle = reinterpret_cast<cublasLtHandle_t*>(ltHandlePtr);
   auto stream = A->getContext()->getCudaStream();
 
+  // Multi-GPU sharding: the DSP cuBLAS workspace (tl_cublasWorkspacePtr) is a SINGLE buffer on the
+  // PRIMARY device (0). On a secondary device it is unusable — and cublasLt fails hard if an algo
+  // chosen FOR a workspace is then executed WITHOUT one (CUBLAS_STATUS_EXECUTION_FAILED). So resolve
+  // the EFFECTIVE workspace size ONCE and thread it through the algo-cache key, the heuristic
+  // preference, and execution: on a device that doesn't own the workspace it is 0, so the heuristic
+  // picks a no-workspace algo, the cache is partitioned per regime, and execution passes no
+  // workspace — all three stay consistent. Primary device is unchanged.
+  size_t usableWorkspaceSize = 0;
+  if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+    usableWorkspaceSize = tl_cublasWorkspaceSize;
+    int wsCurDev = 0; cudaGetDevice(&wsCurDev);
+    cudaPointerAttributes wsAttr;
+    if (cudaPointerGetAttributes(&wsAttr, tl_cublasWorkspacePtr) == cudaSuccess &&
+        wsAttr.type == cudaMemoryTypeDevice && wsAttr.device != wsCurDev) {
+      usableWorkspaceSize = 0;  // workspace lives on another device — unusable here
+    }
+    cudaGetLastError();
+  }
+
   // Build cache key
   LtMatmulCacheKey key;
   key.deviceId = AffinityManager::currentDeviceId();
@@ -411,7 +451,9 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
   key.epilogueType = epilogueType;
   // Keep algo cache partitioned by effective workspace regime. This prevents
   // cross-run reuse of heuristics selected under different workspace settings.
-  key.workspaceSizeHint = tl_cublasWorkspaceSize;
+  // usableWorkspaceSize (not tl_cublasWorkspaceSize) so a secondary device's no-workspace
+  // regime is cached separately from the primary device's with-workspace regime.
+  key.workspaceSizeHint = usableWorkspaceSize;
   // Partition by graph-capture execution regime: tests toggle this between
   // methods and reusing Lt heuristics across regimes can select unstable algos.
   key.graphCaptureEnabled = Environment::getInstance().tritonGraphCapture() ? 1 : 0;
@@ -482,7 +524,7 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
           if (status == CUBLAS_STATUS_SUCCESS) {
             status = cublasLtMatmulPreferenceCreate(&preference);
             if (status == CUBLAS_STATUS_SUCCESS) {
-              size_t maxWorkspace = tl_cublasWorkspaceSize;
+              size_t maxWorkspace = usableWorkspaceSize;  // 0 on a device that doesn't own the workspace
               status = cublasLtMatmulPreferenceSetAttribute(preference, CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES,
                                                             &maxWorkspace, sizeof(maxWorkspace));
 
@@ -559,6 +601,9 @@ static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double
 
           void* workspace = nullptr;
           size_t actualWorkspaceSize = 0;
+          // workspaceSize is 0 on any device that doesn't own tl_cublasWorkspacePtr (the algo was
+          // chosen for no workspace via usableWorkspaceSize above), so this correctly passes no
+          // workspace on a secondary device and the primary device's workspace on device 0.
           if (workspaceSize > 0 && tl_cublasWorkspacePtr != nullptr && workspaceSize <= tl_cublasWorkspaceSize) {
             workspace = tl_cublasWorkspacePtr;
             actualWorkspaceSize = workspaceSize;
@@ -955,6 +1000,7 @@ SD_HOST static void batchedGemm(const int blocksPerGrid, const int threadsPerBlo
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, double beta,
                             const char outOrder) {
+ cudaError_t mmEntryErr = cudaPeekAtLastError();  // TEMP: pending error from a PRIOR op on mmulMxM entry?
  if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM cuda: rank of A array is not equal 2 !");
  if (B->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM cuda: rank of B array is not equal 2 !");
 
@@ -1097,6 +1143,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
  auto stream = A->getContext()->getCudaStream();
 
+
   // N107: Skip cublasSetStream + workspace when DSP gap stream already configured.
   // The gap loop's CublasGapStreamGuard sets the cuBLAS handle stream+workspace once
   // at gap-loop start. Skipping here eliminates 2 cuBLAS host-API calls × 91 matmuls/step.
@@ -1105,7 +1152,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
   if (!tl_cublasGapStreamReady && !tl_graphExecutionActive) {
     status = cublasSetStream_v2(*handle, *stream);
     if (status != CUBLAS_STATUS_SUCCESS) {
-      std::string msg = "MmulHelper::mmulMxM cuda failed !; Error code: [" + std::to_string(status) + "]";
+      std::string msg = "MmulHelper::mmulMxM cuda failed [cublasSetStream]; Error code: [" + std::to_string(status) + "]";
       THROW_EXCEPTION(msg.c_str());
     }
     reapplyCublasWorkspace(*handle);
@@ -1171,6 +1218,28 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    sdToCudaDataType(effAType, ltAType);
    sdToCudaDataType(effBType, ltBType);
    sdToCudaDataType(cType,    ltCType);
+
+   {
+     // TEMP COMPREHENSIVE WORKSPACE/OPERAND DIAGNOSTIC (curDev != 0 only): full device picture at
+     // gemm dispatch — entry-time pending error + every buffer the gemm touches + workspace state.
+     int mmCurDev = -1; cudaGetDevice(&mmCurDev);
+     if (mmCurDev != 0) {
+       auto devOf = [](void* p) -> int {
+         cudaPointerAttributes a; int d = -99;
+         if (p != nullptr && cudaPointerGetAttributes(&a, p) == cudaSuccess)
+           d = (a.type == cudaMemoryTypeDevice ? a.device : -100 - (int)a.type);
+         cudaGetLastError(); return d; };
+       sd_printf("MMUL_DIAG: curDev=%d affinity=%d entryErr=%d(%s) | effA=%d effB=%d pA=%d pB=%d pC=%d C=%d "
+                 "| wsPresent=%d wsDev=%d useCastCache=%d typeFloat=%d gapReady=%d graphActive=%d\n",
+                 mmCurDev, AffinityManager::currentDeviceId(), (int)mmEntryErr, cudaGetErrorName(mmEntryErr),
+                 devOf(effA->specialBuffer()), devOf(effB->specialBuffer()),
+                 devOf(pA->specialBuffer()), devOf(pB->specialBuffer()), devOf(pC->specialBuffer()),
+                 devOf(C->specialBuffer()),
+                 tl_cublasWorkspacePtr != nullptr ? 1 : 0, devOf(tl_cublasWorkspacePtr),
+                 useCastCache ? 1 : 0, typeFloat ? 1 : 0,
+                 tl_cublasGapStreamReady ? 1 : 0, tl_graphExecutionActive ? 1 : 0);
+     }
+   }
 
    if (tryLtMatmul(effA, effB, C, alpha, beta, pA, pB, pC, M, N, K, transA, transB, ltAType, ltBType, ltCType,
                    tl_ltEpilogue.type, tl_ltEpilogue.biasPtr, tl_ltEpilogue.biasSize)) {
@@ -1260,6 +1329,31 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    } else if (typeFloat) {
      getCublasScalars()->alphaF = static_cast<float>(alpha);
      getCublasScalars()->betaF  = static_cast<float>(beta);
+     {
+       // TEMP DEFINITIVE TEST (curDev!=0): distinguish {prior async fault on device-1 stream}
+       // from {handle math-mode / workspace state}. cudaStreamSynchronize surfaces a prior async
+       // error that cudaPeekAtLastError cannot see; cublasGetMathMode reads the handle's real mode.
+       int prDev = -1; cudaGetDevice(&prDev);
+       if (prDev != 0) {
+         cudaError_t preSync = cudaStreamSynchronize(*stream);
+         cudaError_t preCtx  = cudaGetLastError();
+         // DEFINITIVE stream-device probe: cudaMallocAsync allocates on the STREAM'S device.
+         void* sProbe = nullptr; int streamDev = -1;
+         if (stream != nullptr && cudaMallocAsync(&sProbe, 16, *stream) == cudaSuccess && sProbe != nullptr) {
+           cudaPointerAttributes spa;
+           if (cudaPointerGetAttributes(&spa, sProbe) == cudaSuccess) streamDev = spa.device;
+           cudaFreeAsync(sProbe, *stream);
+         }
+         cudaGetLastError();
+         cublasMath_t mm = CUBLAS_DEFAULT_MATH; cublasGetMathMode(*handle, &mm);
+         cublasPointerMode_t pm = CUBLAS_POINTER_MODE_HOST; cublasGetPointerMode(*handle, &pm);
+         sd_printf("PRE_GEMM_DIAG dev%d: streamDev=%d preStreamSync=%d(%s) preCtxErr=%d(%s) mathMode=%d ptrMode=%d "
+                   "gapReady=%d ltDisabled=%d wsPtr=%p stream=%p\n",
+                   prDev, streamDev, (int)preSync, cudaGetErrorName(preSync), (int)preCtx, cudaGetErrorName(preCtx),
+                   (int)mm, (int)pm, tl_cublasGapStreamReady ? 1 : 0, tl_cublasLtDisabled ? 1 : 0,
+                   (void*)tl_cublasWorkspacePtr, (void*)(stream ? *stream : nullptr));
+       }
+     }
      status = cublasGemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF,
                           pA->specialBuffer(), CUDA_R_32F, lda,
                           pB->specialBuffer(), CUDA_R_32F, ldb,
@@ -1296,7 +1390,13 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    }
 
    if (status != CUBLAS_STATUS_SUCCESS) {
-     std::string msg = "MmulHelper::mmulMxM cuda failed !; Error code: [" + std::to_string(status) + "]";
+     int mmFailDev = -1; cudaGetDevice(&mmFailDev);
+     if (mmFailDev != 0)
+       sd_printf("MMUL_DIAG_FAIL[cublasGemmEx-general]: status=%d curDev=%d M=%lld N=%lld K=%lld "
+                 "transA=%d transB=%d lda=%d ldb=%d ldc=%d gemmAlgo=%d ltDisabled=%d (tryLtMatmul returned false)\n",
+                 (int)status, mmFailDev, (long long)M, (long long)N, (long long)K,
+                 (int)transAblas, (int)transBblas, lda, ldb, ldc, (int)gemmAlgo, tl_cublasLtDisabled ? 1 : 0);
+     std::string msg = "MmulHelper::mmulMxM cuda failed [cublasGemmEx-general]; Error code: [" + std::to_string(status) + "]";
      THROW_EXCEPTION(msg.c_str());
    }
 
