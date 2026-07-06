@@ -1115,6 +1115,11 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
     }
     if (sourceDevice == targetDevice) continue;  // Same device, no migration needed
 
+    DSP_DIAG(MULTI_DEVICE,
+             "migrateSlotInputsToTargetDevice: slot=%d dev%d->dev%d isView=%d rank=%d len=%lld",
+             slotIdx, sourceDevice, targetDevice, (int)arr->isView(), arr->rankOf(),
+             (long long)arr->lengthOf());
+
     // Migrate device-to-device without a host-side synchronization.
     int savedDevice = -1;
     cudaGetDevice(&savedDevice);

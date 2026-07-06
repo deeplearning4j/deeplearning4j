@@ -383,4 +383,51 @@ public class DspMultiGpuShardingTest extends BaseND4JTest {
             else System.clearProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
         }
     }
+
+    /**
+     * Behavior 7: force the dev0-&gt;dev1 shard boundary across op positions by sweeping the
+     * non-P2P budget fraction (assignDevices assigns ops in execution order proportional to the
+     * per-device budget). At some ratios a permute (view) lands at the boundary and is migrated
+     * as a cross-segment VIEW input (its buffer is the parent's, so it must be materialized on
+     * the source device). Sharded output must match single-GPU at EVERY split ratio. The
+     * migration-point MULTI_DEVICE diag prints isView=1 when the view-input path actually runs.
+     */
+    @Test
+    public void testShardedViewInputBoundarySweep() {
+        assumeTrue(Nd4j.getAffinityManager().getNumberOfDevices() > 1,
+                "multi-GPU sharding requires >1 CUDA device");
+
+        INDArray x = Nd4j.rand(DataType.FLOAT, 8, 64);
+        SameDiff single = buildViewMlp(64, 128, 6, 16, 99L);
+        INDArray ref = runOnce(single, x.dup(), false);
+
+        boolean prevDsp  = InferenceSession.isDynamicShapePlanEnabled();
+        String prevShard = System.getProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+        String prevFrac  = System.getProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION);
+        InferenceSession.setDynamicShapePlanEnabled(true);
+        System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, "true");
+        try {
+            double[] fractions = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+            for (double frac : fractions) {
+                System.setProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION, Double.toString(frac));
+                SameDiff sharded = buildViewMlp(64, 128, 6, 16, 99L);
+                Map<String, INDArray> res = sharded.output(Collections.singletonMap("x", x.dup()), "out");
+                INDArray got = res.get("out").dup();
+                assertArrayEquals(ref.shape(), got.shape(),
+                        "sharded output shape mismatch at nonP2pFraction=" + frac);
+                assertFalse(got.isNaN().any(), "sharded output has NaN at nonP2pFraction=" + frac);
+                double maxDiff = ref.sub(got).amaxNumber().doubleValue();
+                log.info("BOUNDARY-SWEEP nonP2pFraction={} maxAbsDiff={}", frac, maxDiff);
+                assertTrue(got.equalsWithEps(ref, 1e-3),
+                        "sharded view output diverged at nonP2pFraction=" + frac
+                                + " (maxAbsDiff=" + maxDiff + ")");
+            }
+        } finally {
+            InferenceSession.setDynamicShapePlanEnabled(prevDsp);
+            if (prevShard != null) System.setProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD, prevShard);
+            else System.clearProperty(ND4JSystemProperties.DSP_MULTI_GPU_SHARD);
+            if (prevFrac != null) System.setProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION, prevFrac);
+            else System.clearProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION);
+        }
+    }
 }
