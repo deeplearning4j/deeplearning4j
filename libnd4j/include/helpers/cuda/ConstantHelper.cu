@@ -284,13 +284,6 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
       // dst is host-resident (both endpoints host, pageable src) — then fall back to a plain
       // HOST copy (UVA migrates the pages to the device on first access). This keeps the
       // real-device path async and NEVER uses a synchronous cudaMemcpy / cudaDeviceSynchronize.
-      // TEMP GROUND-TRUTH DIAGNOSTIC (remove after root fix): what did the allocation return?
-      {
-        int curDev = -1; cudaGetDevice(&curDev);
-        cudaPointerAttributes pa; cudaError_t par = cudaPointerGetAttributes(&pa, ptr); cudaGetLastError();
-        sd_printf("CONSTANT_DIAG: reqDeviceId=%d curDev=%d ptr=%p attrRes=%d ptrType=%d ptrDev=%d bytes=%zu\n",
-                  deviceId, curDev, (void*)ptr, (int)par, (int)pa.type, pa.device, numBytes);
-      }
       // ASYNC H2D on the current device's per-thread stream. The destination MUST be real
       // device VRAM on deviceId — the allocation above is responsible for that. If it is
       // host-resident managed memory (allocateFailover fallback), this returns

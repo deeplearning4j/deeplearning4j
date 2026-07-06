@@ -1000,7 +1000,6 @@ SD_HOST static void batchedGemm(const int blocksPerGrid, const int threadsPerBlo
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, double beta,
                             const char outOrder) {
- cudaError_t mmEntryErr = cudaPeekAtLastError();  // TEMP: pending error from a PRIOR op on mmulMxM entry?
  if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM cuda: rank of A array is not equal 2 !");
  if (B->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM cuda: rank of B array is not equal 2 !");
 
@@ -1219,28 +1218,6 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    sdToCudaDataType(effBType, ltBType);
    sdToCudaDataType(cType,    ltCType);
 
-   {
-     // TEMP COMPREHENSIVE WORKSPACE/OPERAND DIAGNOSTIC (curDev != 0 only): full device picture at
-     // gemm dispatch — entry-time pending error + every buffer the gemm touches + workspace state.
-     int mmCurDev = -1; cudaGetDevice(&mmCurDev);
-     if (mmCurDev != 0) {
-       auto devOf = [](void* p) -> int {
-         cudaPointerAttributes a; int d = -99;
-         if (p != nullptr && cudaPointerGetAttributes(&a, p) == cudaSuccess)
-           d = (a.type == cudaMemoryTypeDevice ? a.device : -100 - (int)a.type);
-         cudaGetLastError(); return d; };
-       sd_printf("MMUL_DIAG: curDev=%d affinity=%d entryErr=%d(%s) | effA=%d effB=%d pA=%d pB=%d pC=%d C=%d "
-                 "| wsPresent=%d wsDev=%d useCastCache=%d typeFloat=%d gapReady=%d graphActive=%d\n",
-                 mmCurDev, AffinityManager::currentDeviceId(), (int)mmEntryErr, cudaGetErrorName(mmEntryErr),
-                 devOf(effA->specialBuffer()), devOf(effB->specialBuffer()),
-                 devOf(pA->specialBuffer()), devOf(pB->specialBuffer()), devOf(pC->specialBuffer()),
-                 devOf(C->specialBuffer()),
-                 tl_cublasWorkspacePtr != nullptr ? 1 : 0, devOf(tl_cublasWorkspacePtr),
-                 useCastCache ? 1 : 0, typeFloat ? 1 : 0,
-                 tl_cublasGapStreamReady ? 1 : 0, tl_graphExecutionActive ? 1 : 0);
-     }
-   }
-
    if (tryLtMatmul(effA, effB, C, alpha, beta, pA, pB, pC, M, N, K, transA, transB, ltAType, ltBType, ltCType,
                    tl_ltEpilogue.type, tl_ltEpilogue.biasPtr, tl_ltEpilogue.biasSize)) {
      if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({pC}, {pA, pB});
@@ -1329,31 +1306,6 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    } else if (typeFloat) {
      getCublasScalars()->alphaF = static_cast<float>(alpha);
      getCublasScalars()->betaF  = static_cast<float>(beta);
-     {
-       // TEMP DEFINITIVE TEST (curDev!=0): distinguish {prior async fault on device-1 stream}
-       // from {handle math-mode / workspace state}. cudaStreamSynchronize surfaces a prior async
-       // error that cudaPeekAtLastError cannot see; cublasGetMathMode reads the handle's real mode.
-       int prDev = -1; cudaGetDevice(&prDev);
-       if (prDev != 0) {
-         cudaError_t preSync = cudaStreamSynchronize(*stream);
-         cudaError_t preCtx  = cudaGetLastError();
-         // DEFINITIVE stream-device probe: cudaMallocAsync allocates on the STREAM'S device.
-         void* sProbe = nullptr; int streamDev = -1;
-         if (stream != nullptr && cudaMallocAsync(&sProbe, 16, *stream) == cudaSuccess && sProbe != nullptr) {
-           cudaPointerAttributes spa;
-           if (cudaPointerGetAttributes(&spa, sProbe) == cudaSuccess) streamDev = spa.device;
-           cudaFreeAsync(sProbe, *stream);
-         }
-         cudaGetLastError();
-         cublasMath_t mm = CUBLAS_DEFAULT_MATH; cublasGetMathMode(*handle, &mm);
-         cublasPointerMode_t pm = CUBLAS_POINTER_MODE_HOST; cublasGetPointerMode(*handle, &pm);
-         sd_printf("PRE_GEMM_DIAG dev%d: streamDev=%d preStreamSync=%d(%s) preCtxErr=%d(%s) mathMode=%d ptrMode=%d "
-                   "gapReady=%d ltDisabled=%d wsPtr=%p stream=%p\n",
-                   prDev, streamDev, (int)preSync, cudaGetErrorName(preSync), (int)preCtx, cudaGetErrorName(preCtx),
-                   (int)mm, (int)pm, tl_cublasGapStreamReady ? 1 : 0, tl_cublasLtDisabled ? 1 : 0,
-                   (void*)tl_cublasWorkspacePtr, (void*)(stream ? *stream : nullptr));
-       }
-     }
      status = cublasGemmEx(*handle, transAblas, transBblas, M, N, K, &getCublasScalars()->alphaF,
                           pA->specialBuffer(), CUDA_R_32F, lda,
                           pB->specialBuffer(), CUDA_R_32F, ldb,
@@ -1390,12 +1342,6 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    }
 
    if (status != CUBLAS_STATUS_SUCCESS) {
-     int mmFailDev = -1; cudaGetDevice(&mmFailDev);
-     if (mmFailDev != 0)
-       sd_printf("MMUL_DIAG_FAIL[cublasGemmEx-general]: status=%d curDev=%d M=%lld N=%lld K=%lld "
-                 "transA=%d transB=%d lda=%d ldb=%d ldc=%d gemmAlgo=%d ltDisabled=%d (tryLtMatmul returned false)\n",
-                 (int)status, mmFailDev, (long long)M, (long long)N, (long long)K,
-                 (int)transAblas, (int)transBblas, lda, ldb, ldc, (int)gemmAlgo, tl_cublasLtDisabled ? 1 : 0);
      std::string msg = "MmulHelper::mmulMxM cuda failed [cublasGemmEx-general]; Error code: [" + std::to_string(status) + "]";
      THROW_EXCEPTION(msg.c_str());
    }
