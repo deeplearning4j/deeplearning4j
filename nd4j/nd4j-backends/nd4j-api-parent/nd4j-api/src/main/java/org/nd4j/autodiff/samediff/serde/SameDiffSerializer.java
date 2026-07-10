@@ -908,43 +908,17 @@ public class SameDiffSerializer {
                             try {
                                 dataNio.position((int) arrOffsetBytes);
                                 dataNio.limit((int) (arrOffsetBytes + lengthBytes));
-                                long totalWritten = 0;
-                                long nioWriteStartTime = System.currentTimeMillis();
-                                channel.position(currentWriteOffset);
-
-                                while (totalWritten < lengthBytes) {
-                                    long writtenThisCall = channel.write(dataNio);
-                                    if (writtenThisCall < 0) {
-                                        throw new IOException("FileChannel write error (direct) for " + name);
-                                    }
-                                    totalWritten += writtenThisCall;
-
-                                    if (writtenThisCall == 0) {
-                                        Thread.sleep(1);
-                                        if (System.currentTimeMillis() - nioWriteStartTime > 30000) {
-                                            throw new IOException("Timeout during direct NIO write for variable '" + name + "'.");
-                                        }
-                                    } else {
-                                        nioWriteStartTime = System.currentTimeMillis();
-                                    }
-                                }
-                                if (totalWritten != lengthBytes) {
-                                    throw new IOException("NIO Write incomplete (direct) for " + name + ". Expected: " + lengthBytes + ", Written: " + totalWritten);
-                                }
-
-                                currentWriteOffset = channel.position();
+                                writeFully(channel, dataNio, currentWriteOffset, "raw array data for " + name);
+                                currentWriteOffset += lengthBytes;
                                 raf.seek(currentWriteOffset);
                                 usedDirectNio = true;
-                                log.debug("SAVE [{}]: Successfully used Direct NIO write path ({} bytes).", name, totalWritten);
-                            } catch (IOException | InterruptedException e) {
-                                if(e instanceof InterruptedException) Thread.currentThread().interrupt();
+                                log.debug("SAVE [{}]: Successfully used Direct NIO write path ({} bytes).", name, lengthBytes);
+                            } catch (IOException e) {
                                 log.warn("SAVE [{}]: Direct NIO write failed, attempting fallback. Error: {}", name, e.getMessage());
-                                channel.position(currentWriteOffset);
                                 raf.seek(currentWriteOffset);
                                 usedDirectNio = false;
                             } catch (Exception e) {
                                 log.warn("SAVE [{}]: Unexpected error during Direct NIO write, attempting fallback.", name, e);
-                                channel.position(currentWriteOffset);
                                 raf.seek(currentWriteOffset);
                                 usedDirectNio = false;
                             }
@@ -996,32 +970,11 @@ public class SameDiffSerializer {
                                             nioBufferView.order(ByteOrder.nativeOrder());
                                             nioBufferView.position((int) nioBufferOffsetBytes);
                                             nioBufferView.limit((int) (nioBufferOffsetBytes + chunkLengthBytes));
-                                            long totalWrittenThisChunk = 0;
                                             long currentChunkWritePos = currentWriteOffset + bytesWritten;
-                                            channel.position(currentChunkWritePos);
-
-                                            while (totalWrittenThisChunk < chunkLengthBytes) {
-                                                long writtenNow = channel.write(nioBufferView);
-                                                if (writtenNow < 0) {
-                                                    throw new IOException("FileChannel write error (fallback chunk) for " + name);
-                                                }
-                                                totalWrittenThisChunk += writtenNow;
-
-                                                if (writtenNow == 0) {
-                                                    Thread.sleep(1);
-                                                    if (System.currentTimeMillis() - fallbackWriteStartTime > 300000) {
-                                                        throw new IOException("Timeout during fallback chunk write for variable '" + name + "'.");
-                                                    }
-                                                }
-                                            }
-                                            if (totalWrittenThisChunk != chunkLengthBytes) {
-                                                throw new IOException("Fallback NIO Write incomplete for chunk of " + name + ". Expected: " + chunkLengthBytes + ", Written: " + totalWrittenThisChunk);
-                                            }
-
-                                            bytesWritten += totalWrittenThisChunk;
-                                            log.debug("SAVE [{}]: Fallback NIO write successful for chunk ({} bytes). Total written so far: {}", name, totalWrittenThisChunk, bytesWritten);
-                                        } catch (IOException | InterruptedException e) {
-                                            if(e instanceof InterruptedException) Thread.currentThread().interrupt();
+                                            writeFully(channel, nioBufferView, currentChunkWritePos, "raw array fallback chunk for " + name);
+                                            bytesWritten += chunkLengthBytes;
+                                            log.debug("SAVE [{}]: Fallback NIO write successful for chunk ({} bytes). Total written so far: {}", name, chunkLengthBytes, bytesWritten);
+                                        } catch (IOException e) {
                                             throw new IOException("Failed fallback NIO write for chunk of " + name, e);
                                         }
                                     } else {
@@ -1045,7 +998,7 @@ public class SameDiffSerializer {
                             throw new IOException("Fallback chunking write incomplete for " + name + ". Expected: " + lengthBytes + ", Written: " + bytesWritten);
                         }
 
-                        currentWriteOffset = channel.position();
+                        currentWriteOffset += lengthBytes;
                         raf.seek(currentWriteOffset);
                         log.debug("SAVE [{}]: Fallback chunking write path completed successfully ({} bytes).", name, bytesWritten);
                     }
@@ -1069,19 +1022,151 @@ public class SameDiffSerializer {
                 throw new IOException("Failed to serialize manifest", e);
             }
             manifestLength = manifestBytes.length;
-            raf.seek(manifestOffset);
-            raf.write(manifestBytes);
-            long finalFileSize = raf.getFilePointer();
+            writeFully(channel, ByteBuffer.wrap(manifestBytes), manifestOffset, "SDNB manifest");
+            long finalFileSize = channel.size();
+            long expectedFinalFileSize = manifestOffset + manifestLength;
+            if (finalFileSize != expectedFinalFileSize) {
+                throw new IOException(String.format("SDNB save produced unexpected file size for %s. ManifestOffset=%d, ManifestLength=%d, ExpectedFileSize=%d, ActualFileSize=%d",
+                        file.getAbsolutePath(), manifestOffset, manifestLength, expectedFinalFileSize, finalFileSize));
+            }
             log.info("Manifest written ({} bytes). Final file size for {}: {}", manifestLength, file.getName(), finalFileSize);
 
             // Patch Header
-            raf.seek(manifestOffsetPos);
-            raf.writeLong(manifestOffset);
-            raf.seek(manifestLengthPos);
-            raf.writeLong(manifestLength);
+            ByteBuffer manifestHeaderPatch = ByteBuffer.allocate(16).order(ByteOrder.BIG_ENDIAN);
+            manifestHeaderPatch.putLong(manifestOffset);
+            manifestHeaderPatch.putLong(manifestLength);
+            manifestHeaderPatch.flip();
+            writeFully(channel, manifestHeaderPatch, manifestOffsetPos, "SDNB manifest header fields");
+            channel.force(true);
+            validateSavedManifest(file, channel, manifestOffset, manifestLength);
             log.info("Patched file header for {}: Manifest Offset={}, Manifest Length={}", file.getName(), manifestOffset, manifestLength);
 
         }
+    }
+
+    private static void readFully(@NonNull FileChannel channel, @NonNull ByteBuffer buffer,
+                                  long position, @NonNull String description) throws IOException {
+        long currentPosition = position;
+        int zeroReadCount = 0;
+        while (buffer.hasRemaining()) {
+            int read = channel.read(buffer, currentPosition);
+            if (read < 0) {
+                throw new EOFException("Unexpected EOF while reading " + description + " at file offset " + currentPosition);
+            }
+            if (read == 0) {
+                if (++zeroReadCount > 1000) {
+                    throw new IOException("Unable to make progress while reading " + description + " at file offset " + currentPosition);
+                }
+                Thread.yield();
+                continue;
+            }
+            zeroReadCount = 0;
+            currentPosition += read;
+        }
+    }
+
+    private static void writeFully(@NonNull FileChannel channel, @NonNull ByteBuffer buffer,
+                                   long position, @NonNull String description) throws IOException {
+        long currentPosition = position;
+        int zeroWriteCount = 0;
+        while (buffer.hasRemaining()) {
+            int written = channel.write(buffer, currentPosition);
+            if (written < 0) {
+                throw new EOFException("Unexpected EOF while writing " + description + " at file offset " + currentPosition);
+            }
+            if (written == 0) {
+                if (++zeroWriteCount > 1000) {
+                    throw new IOException("Unable to make progress while writing " + description + " at file offset " + currentPosition);
+                }
+                Thread.yield();
+                continue;
+            }
+            zeroWriteCount = 0;
+            currentPosition += written;
+        }
+    }
+
+    private static void validateSavedManifest(@NonNull File file, @NonNull FileChannel channel,
+                                              long expectedManifestOffset, long expectedManifestLength) throws IOException {
+        if (expectedManifestLength < 4) {
+            throw new IOException("Serialized manifest for " + file.getAbsolutePath() + " is too short: " + expectedManifestLength);
+        }
+
+        ByteBuffer headerBuffer = ByteBuffer.allocate((int) HEADER_SIZE).order(ByteOrder.BIG_ENDIAN);
+        readFully(channel, headerBuffer, 0, "SDNB header validation");
+        headerBuffer.flip();
+        byte[] magicRead = new byte[FILE_MAGIC.length];
+        headerBuffer.get(magicRead);
+        int version = headerBuffer.getInt();
+        long headerManifestOffset = headerBuffer.getLong();
+        long headerManifestLength = headerBuffer.getLong();
+        long headerMetadataOffset = headerBuffer.getLong();
+        if (!Arrays.equals(FILE_MAGIC, magicRead) || version != FILE_VERSION ||
+                headerManifestOffset != expectedManifestOffset || headerManifestLength != expectedManifestLength ||
+                headerMetadataOffset != HEADER_SIZE) {
+            throw new IOException(String.format("SDNB header validation failed for %s. Magic=%s, Version=%d, ManifestOffset=%d (expected %d), ManifestLength=%d (expected %d), MetadataOffset=%d (expected %d)",
+                    file.getAbsolutePath(), bytesToHex(magicRead, 0, magicRead.length), version,
+                    headerManifestOffset, expectedManifestOffset, headerManifestLength, expectedManifestLength,
+                    headerMetadataOffset, HEADER_SIZE));
+        }
+
+        long fileSize = channel.size();
+        if (expectedManifestOffset < HEADER_SIZE || expectedManifestOffset > fileSize ||
+                expectedManifestLength > fileSize - expectedManifestOffset) {
+            throw new IOException(String.format("SDNB manifest range validation failed for %s. ManifestOffset=%d, ManifestLength=%d, FileSize=%d",
+                    file.getAbsolutePath(), expectedManifestOffset, expectedManifestLength, fileSize));
+        }
+
+        ByteBuffer manifestHeader = ByteBuffer.allocate(4);
+        readFully(channel, manifestHeader, expectedManifestOffset, "SDNB manifest validation");
+        manifestHeader.flip();
+        byte[] actual = new byte[4];
+        manifestHeader.get(actual);
+        if (actual[0] != (byte) 0xAC || actual[1] != (byte) 0xED || actual[2] != 0x00 || actual[3] != 0x05) {
+            throw new IOException(String.format("SDNB manifest validation failed for %s. ManifestOffset=%d, ManifestLength=%d, FileSize=%d, FirstBytes=%s, Expected=AC,ED,00,05",
+                    file.getAbsolutePath(), expectedManifestOffset, expectedManifestLength, fileSize, bytesToHex(actual, 0, actual.length)));
+        }
+    }
+
+    private static long deriveMetadataLength(@NonNull File file, long metadataOffset, long manifestOffset,
+                                             @NonNull Map<String, Pair<Long, Long>> manifest,
+                                             long fileSize) throws IOException {
+        long metadataEndOffset = manifestOffset;
+
+        for (Map.Entry<String, Pair<Long, Long>> entry : manifest.entrySet()) {
+            String name = entry.getKey();
+            Pair<Long, Long> location = entry.getValue();
+            if (location == null || location.getFirst() == null || location.getSecond() == null) {
+                throw new IOException("Invalid null manifest location for variable '" + name + "' in file " + file.getAbsolutePath());
+            }
+
+            long offset = location.getFirst();
+            long length = location.getSecond();
+            if (offset < metadataOffset || offset > manifestOffset) {
+                throw new IOException(String.format("Invalid manifest offset for variable '%s' in file %s. Offset=%d, MetadataOffset=%d, ManifestOffset=%d",
+                        name, file.getAbsolutePath(), offset, metadataOffset, manifestOffset));
+            }
+            if (length < 0) {
+                throw new IOException("Invalid negative manifest length for variable '" + name + "' in file " + file.getAbsolutePath() + ": " + length);
+            }
+            if (offset > Long.MAX_VALUE - length) {
+                throw new IOException("Manifest range overflows long for variable '" + name + "' in file " + file.getAbsolutePath());
+            }
+            long endOffset = offset + length;
+            if (endOffset > manifestOffset || endOffset > fileSize) {
+                throw new IOException(String.format("Invalid manifest range for variable '%s' in file %s. Offset=%d, Length=%d, End=%d, ManifestOffset=%d, FileSize=%d",
+                        name, file.getAbsolutePath(), offset, length, endOffset, manifestOffset, fileSize));
+            }
+
+            metadataEndOffset = Math.min(metadataEndOffset, offset);
+        }
+
+        long metadataLength = metadataEndOffset - metadataOffset;
+        if (metadataLength < 0) {
+            throw new IOException(String.format("Invalid metadata length in file %s. MetadataOffset=%d, MetadataEndOffset=%d, ManifestOffset=%d",
+                    file.getAbsolutePath(), metadataOffset, metadataEndOffset, manifestOffset));
+        }
+        return metadataLength;
     }
 
     /**
@@ -1109,9 +1194,7 @@ public class SameDiffSerializer {
 
             // --- Read Header ---
             ByteBuffer headerBuffer = ByteBuffer.allocate((int) HEADER_SIZE).order(ByteOrder.BIG_ENDIAN); // Header is Big Endian
-            int headerRead = channel.read(headerBuffer, 0);
-            if (headerRead != HEADER_SIZE)
-                throw new IOException("Failed to read complete header from: " + file.getAbsolutePath());
+            readFully(channel, headerBuffer, 0, "SDNB header");
             headerBuffer.flip();
             byte[] magicRead = new byte[FILE_MAGIC.length];
             headerBuffer.get(magicRead);
@@ -1123,28 +1206,17 @@ public class SameDiffSerializer {
             manifestLength = headerBuffer.getLong();
             metadataOffset = headerBuffer.getLong();
             // --- Validate Header Offsets/Lengths ---
-            if (metadataOffset != HEADER_SIZE || manifestOffset < metadataOffset || manifestLength < 0 || manifestOffset > fileSize || manifestOffset + manifestLength > fileSize)
+            if (metadataOffset != HEADER_SIZE || manifestOffset < metadataOffset || manifestLength < 0 || manifestOffset > fileSize || manifestLength > fileSize - manifestOffset)
                 throw new IOException(String.format("Invalid header offsets/lengths in file %s. " +
                                 "MetaOffset=%d (expected %d), ManifestOffset=%d, ManifestLength=%d, FileSize=%d",
                         file.getAbsolutePath(), metadataOffset, HEADER_SIZE, manifestOffset, manifestLength, fileSize));
-
-            metadataLength = manifestOffset - metadataOffset;
-            log.info("METADATA_READ: Calculated metadataLength = {} (manifestOffset={} - metadataOffset={})",
-                    metadataLength, manifestOffset, metadataOffset);
-            if (metadataLength < 0) // Should be caught by manifestOffset < metadataOffset, but check explicitly
-                throw new IOException("Invalid metadata length (negative): " + metadataLength);
-            if (metadataLength > Integer.MAX_VALUE)
-                throw new IOException("Metadata length > 2GB not supported for direct ByteBuffer allocation.");
-
 
             // --- Read Manifest ---
             if (manifestLength > 0) {
                 if (manifestLength > Integer.MAX_VALUE)
                     throw new IOException("Manifest length > 2GB not supported for direct ByteBuffer allocation.");
                 ByteBuffer manifestNio = ByteBuffer.allocate((int) manifestLength);
-                int manifestRead = channel.read(manifestNio, manifestOffset);
-                if (manifestRead != manifestLength)
-                    throw new IOException("Failed to read complete manifest from: " + file.getAbsolutePath());
+                readFully(channel, manifestNio, manifestOffset, "SDNB manifest");
                 manifestNio.flip();
                 try (ByteArrayInputStream bais = new ByteArrayInputStream(manifestNio.array(), manifestNio.position(), manifestNio.remaining());
                      ObjectInputStream ois = new ObjectInputStream(bais)) {
@@ -1157,15 +1229,18 @@ public class SameDiffSerializer {
                 log.info("Manifest length is zero in file {}. No appended data expected.", file.getName());
             }
 
+            metadataLength = deriveMetadataLength(file, metadataOffset, manifestOffset, manifest, fileSize);
+            log.info("METADATA_READ: Derived metadataLength = {} (metadataOffset={}, manifestOffset={}, manifestEntries={})",
+                    metadataLength, metadataOffset, manifestOffset, manifest.size());
+            if (metadataLength > Integer.MAX_VALUE)
+                throw new IOException("Metadata length > 2GB not supported for direct ByteBuffer allocation.");
 
             // --- Read Metadata Buffer ---
             // Only read if length > 0 to avoid allocating 0-byte buffer
             FlatGraph fg = null; // Parsed FlatGraph metadata
             if (metadataLength > 0) {
                 metadataBuffer = ByteBuffer.allocateDirect((int) metadataLength).order(ByteOrder.LITTLE_ENDIAN); // FlatBuffers standard
-                int metaRead = channel.read(metadataBuffer, metadataOffset);
-                if (metaRead != metadataLength)
-                    throw new IOException("Failed to read complete metadata FlatBuffer from: " + file.getAbsolutePath());
+                readFully(channel, metadataBuffer, metadataOffset, "SDNB metadata FlatBuffer");
                 metadataBuffer.flip(); // Prepare for reading
                 // Parse FlatGraph once, used by multiple steps below
                 // Parse FlatGraph once, used by multiple steps below
@@ -3147,15 +3222,15 @@ public class SameDiffSerializer {
                             case DOUBLE: {
                                 double val = bb.getDouble();
                                 log.debug("LOAD_INLINE [{}]: Scalar DOUBLE value from buffer: {}", varName, val);
-                                // Downcast to FLOAT when the value survives a float32 round-trip
-                                // (e.g. 0.125, 0.5, 1.0). Prevents DOUBLE scalars from cascading
-                                // through matmul dtype promotion (dtypeZ = max(x,y)) and producing
-                                // DOUBLE output tensors in otherwise-FLOAT graphs.
-                                if ((double)(float) val == val) {
-                                    scalar = Nd4j.constantScalar((float) val);
-                                } else {
-                                    scalar = Nd4j.constantScalar(val);
-                                }
+                                // Deserialize FAITHFULLY as DOUBLE. A previous "optimization" downcast
+                                // float-representable values (0.5, 1.0, ...) to FLOAT to stop DOUBLE
+                                // scalars promoting matmul outputs in FLOAT graphs — but that silently
+                                // corrupted every double-precision graph passing through dup()/optimize():
+                                // the variable became FLOAT while ops' scalar fields stayed DOUBLE, and
+                                // the native scalar-op exec misreads mismatched dtypes into a no-op
+                                // (x + 1.0 -> x). Round-trip serde must preserve dtype exactly; graphs
+                                // that don't want DOUBLE scalars must not create them.
+                                scalar = Nd4j.constantScalar(val);
                                 break;
                             }
                             case INT: {

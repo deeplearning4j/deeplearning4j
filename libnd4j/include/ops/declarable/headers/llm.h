@@ -1327,6 +1327,130 @@ DECLARE_CUSTOM_OP(fused_mrope, 4, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(vision_embedding_merge, 3, 1, false, 0, 1);
 #endif
 
+/**
+ * ggml_qmatmul — Runtime quantized matmul against GGML-packed weights.
+ *
+ * Performs: out[m,n] = sum_k A[m,k] * dequant(W[n,k])
+ * with fp32 accumulation directly on packed GGML quantized weight bytes,
+ * avoiding import-time dequantization.
+ *
+ * Inputs:
+ *   0: activations    [M,K] or [B,S,K]  FLOAT32 or HALF
+ *   1: packedWeights  [N*(K/blockSize)*bytesPerBlock]  INT8 raw GGML block bytes
+ *
+ * Integer args:
+ *   0: ggmlType    — GgmlQuantType enum (4=Q8_0, 8=Q4_K, 10=Q6_K)
+ *   1: N           — number of weight rows (output columns)
+ *   2: K           — inner dimension
+ *   3: outputDtype — 0=FLOAT32, 1=HALF
+ *
+ * Output:
+ *   0: [M,N] or [B,S,N]
+ */
+#if NOT_EXCLUDED(OP_ggml_qmatmul)
+DECLARE_CUSTOM_OP(ggml_qmatmul, 2, 1, false, 0, 4);
+#endif
+
+/**
+ * ggml_qmatmul_bp — Gradient of ggml_qmatmul w.r.t. activations.
+ *
+ * Packed weight is frozen; only the activation gradient is produced.
+ * dA = gradOut @ dequant(W)   (no transpose needed; W stored [N,K])
+ *
+ * Inputs:
+ *   0: activations    [M,K] or [B,S,K]  (shape/dtype reference only)
+ *   1: packedWeights  INT8 rank-1
+ *   2: gradOut        [M,N] or [B,S,N]
+ *
+ * Integer args:
+ *   0: quantType   (4=Q8_0, 8=Q4_K, 10=Q6_K)
+ *   1: N           (weight rows / output columns)
+ *   2: K           (inner dimension)
+ *
+ * Output:
+ *   0: gradActivations  same shape & dtype as activations
+ */
+#if NOT_EXCLUDED(OP_ggml_qmatmul_bp)
+DECLARE_CUSTOM_OP(ggml_qmatmul_bp, 3, 1, false, 0, 3);
+#endif
+
+/**
+ * ggml_qmatmul_lora — Fused quantized base matmul + LoRA delta.
+ *
+ * out = ggml_qmatmul(A, W) + scaling * ((A @ loraAᵀ) @ loraBᵀ)
+ *
+ * Inputs:
+ *   0: activations   [M,K] or [B,S,K]  FLOAT32 or HALF
+ *   1: packedWeights INT8 rank-1
+ *   2: loraA         [rank, K]   trainable
+ *   3: loraB         [N, rank]   trainable
+ *
+ * Float args:
+ *   0: scaling
+ *
+ * Integer args:
+ *   0: quantType   (4=Q8_0, 8=Q4_K, 10=Q6_K)
+ *   1: N
+ *   2: K
+ *   3: outputDtype (0=FP32, 1=HALF)
+ *
+ * Output:
+ *   0: [M,N] or [B,S,N]
+ */
+#if NOT_EXCLUDED(OP_ggml_qmatmul_lora)
+DECLARE_CUSTOM_OP(ggml_qmatmul_lora, 4, 1, false, 1, 4);
+#endif
+
+/**
+ * ggml_qmatmul_lora_bp — Backward for ggml_qmatmul_lora.
+ *
+ * Inputs:
+ *   0: activations   [M,K] or [B,S,K]
+ *   1: packedWeights INT8 frozen
+ *   2: loraA         [rank, K]
+ *   3: loraB         [N, rank]
+ *   4: gradOut       [M,N] or [B,S,N]
+ *
+ * Float args:
+ *   0: scaling
+ *
+ * Integer args:
+ *   0: quantType
+ *   1: N
+ *   2: K
+ *
+ * Outputs (3):
+ *   0: dActivations  same shape as activations
+ *   1: dLoraA        [rank, K]
+ *   2: dLoraB        [N, rank]
+ */
+#if NOT_EXCLUDED(OP_ggml_qmatmul_lora_bp)
+DECLARE_CUSTOM_OP(ggml_qmatmul_lora_bp, 5, 3, false, 1, 3);
+#endif
+
+/**
+ * multi_lora_matmul_bp — Backward for multi_lora_matmul.
+ *
+ * Inputs (6):
+ *   0: input          [batch, in_features]
+ *   1: baseWeight     [in_features, out_features]  (frozen)
+ *   2: loraAWeights   [num_adapters, in_features, rank]
+ *   3: loraBWeights   [num_adapters, rank, out_features]
+ *   4: adapterIds     [batch]  INT32/INT64
+ *   5: gradOut        [batch, out_features]
+ *
+ * Float args:
+ *   0: alpha (LoRA scaling, default 1.0)
+ *
+ * Outputs (3):
+ *   0: dInput         [batch, in_features]
+ *   1: dLoraAWeights  [num_adapters, in_features, rank]
+ *   2: dLoraBWeights  [num_adapters, rank, out_features]
+ */
+#if NOT_EXCLUDED(OP_multi_lora_matmul_bp)
+DECLARE_CUSTOM_OP(multi_lora_matmul_bp, 6, 3, false, 0, 0);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

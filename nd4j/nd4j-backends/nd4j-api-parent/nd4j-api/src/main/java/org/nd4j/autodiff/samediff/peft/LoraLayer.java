@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.config.LoftQConfig;
 import org.nd4j.autodiff.samediff.config.LoraConfig;
+import org.nd4j.autodiff.samediff.config.QLoraConfig;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -93,6 +94,12 @@ public class LoraLayer {
     private SDVariable loraB;
 
     /**
+     * The LoftQ iterated quantized base weight Q_n, set only when LoftQ initialization ran.
+     * When non-null, PeftModel freezes this as the base weight so that Q_n + B@A ≈ W.
+     */
+    private INDArray loftqQuantizedBase;
+
+    /**
      * Create the LoRA variables in the SameDiff graph using standard initialization.
      *
      * @param sd The SameDiff instance
@@ -115,16 +122,28 @@ public class LoraLayer {
      */
     public void createVariables(SameDiff sd, INDArray pretrainedWeight) {
         int r = config.getR();
-        DataType dtype = DataType.FLOAT;
+        // P1-E: read adapter dtype from config rather than hardcoding FLOAT.
+        // QLoraConfig supplies loraDataType; plain LoraConfig defaults to FLOAT.
+        DataType dtype = (config instanceof QLoraConfig)
+            ? ((QLoraConfig) config).getLoraDataType()
+            : DataType.FLOAT;
+        if (dtype == null) dtype = DataType.FLOAT;
 
         String initMethod = config.getInitLoraWeights();
 
         if ("loftq".equalsIgnoreCase(initMethod) && config instanceof LoftQConfig && pretrainedWeight != null) {
             // LoftQ initialization: derive both A and B from SVD of quantization residual
             LoftQConfig loftQConfig = (LoftQConfig) config;
-            Pair<INDArray, INDArray> abPair = LoftQInitializer.initialize(pretrainedWeight, r, loftQConfig);
-            INDArray bInit = abPair.getFirst();   // [outFeatures, r]
-            INDArray aInit = abPair.getSecond();  // [r, inFeatures]
+            LoftQInitializer.LoftQResult loftq = LoftQInitializer.initializeFull(pretrainedWeight, r, loftQConfig);
+            // Retain Q_n so PeftModel can freeze it as the base weight (Q_n + B@A ≈ W).
+            this.loftqQuantizedBase = loftq.quantizedBase;
+            // Pre-divide B by the LoRA scaling so that the injected effective weight
+            // Q_n + scaling*(B'@A) == Q_n + B@A ≈ W at step 0 (LoftQ fits B@A to W - Q_n
+            // with no scaling; the graph later multiplies the delta by alpha/r).
+            double loftqScaling = loftQConfig.getScaling();
+            INDArray bInit = (loftqScaling != 0.0 && loftqScaling != 1.0)
+                ? loftq.loraB.div(loftqScaling) : loftq.loraB;   // [outFeatures, r]
+            INDArray aInit = loftq.loraA;                        // [r, inFeatures]
 
             loraA = sd.var(namePrefix + "_lora_A", aInit);
             loraB = sd.var(namePrefix + "_lora_B", bInit);
@@ -142,7 +161,8 @@ public class LoraLayer {
             INDArray aInit = initializeA(r, inFeatures, dtype);
             loraA = sd.var(namePrefix + "_lora_A", aInit);
 
-            // B matrix: [outFeatures, r] - initialized to zeros
+            // B matrix: [outFeatures, r] - initialized to zeros (zero-init so
+            // initial delta = 0, preserving base-model behaviour at step 0)
             INDArray bInit = Nd4j.zeros(dtype, outFeatures, r);
             loraB = sd.var(namePrefix + "_lora_B", bInit);
 

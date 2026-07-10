@@ -276,6 +276,10 @@ class TritonGraphBackend : public GraphBackend {
     std::vector<CompiledKernel> subKernels;
     std::vector<SlotRange> orderedRanges;   // Native-executed ranges between Triton islands
     std::vector<CompilationAuditEntry> audit;  // Combined audit across all sub-kernels
+    // Stored copy of the dtype hash that was used to key this entry in cache_.
+    // Lets lookup sites that don't have outputSlots (e.g. copyConsolidatedArgTableToDevice,
+    // getGapSlots) reconstruct the exact SegmentCacheKey without recomputing.
+    size_t segInternalDtypeHash = 0;
 
 #ifdef SD_CUDA
     // Consolidated arg table: single pinned host + device buffer for ALL sub-kernels.
@@ -364,10 +368,19 @@ class TritonGraphBackend : public GraphBackend {
     int endSlot;
     LongType shapeKey;
     int deviceId;
-    bool compileAll;         // Whether tritonCompileAll was enabled at compile time
-    size_t excludeOpsHash;   // Hash of tritonExcludeOps string (0 if empty)
-    size_t includeTypesHash; // Hash of tritonIncludeTypes string (0 if empty)
-    bool graphCapture;       // Whether tritonGraphCapture was enabled (affects MATMUL handling)
+    bool compileAll;                  // Whether tritonCompileAll was enabled at compile time
+    size_t excludeOpsHash;            // Hash of tritonExcludeOps string (0 if empty)
+    size_t includeTypesHash;          // Hash of tritonIncludeTypes string (0 if empty)
+    bool graphCapture;                // Whether tritonGraphCapture was enabled (affects MATMUL handling)
+    // FNV-1a hash of the DataType of every output slot owned by this segment
+    // (i.e. segment-internal intermediate arrays).  computeSegmentShapeKey() already
+    // hashes dtype for cross-segment (external) inputs; this field covers the
+    // segment-internal produced arrays whose dtype does NOT appear in shapeKey.
+    // Without it a FLOAT32 kernel and an INT8 kernel with the same shapes can
+    // collide in the cache (same shapeKey, different internal dtypes → wrong kernel).
+    // Defaults to 0 so 3-field aggregate-init call sites in non-Triton backends
+    // still compile without change (their cache maps use different key types).
+    size_t segInternalDtypeHash = 0;
     bool operator==(const SegmentCacheKey& o) const {
       return startSlot == o.startSlot &&
              endSlot == o.endSlot &&
@@ -376,7 +389,8 @@ class TritonGraphBackend : public GraphBackend {
              compileAll == o.compileAll &&
              excludeOpsHash == o.excludeOpsHash &&
              includeTypesHash == o.includeTypesHash &&
-             graphCapture == o.graphCapture;
+             graphCapture == o.graphCapture &&
+             segInternalDtypeHash == o.segInternalDtypeHash;
     }
   };
   struct SegmentCacheHash {
@@ -389,6 +403,7 @@ class TritonGraphBackend : public GraphBackend {
       h ^= std::hash<size_t>()(k.excludeOpsHash) << 5;
       h ^= std::hash<size_t>()(k.includeTypesHash) << 6;
       h ^= std::hash<bool>()(k.graphCapture) << 7;
+      h ^= std::hash<size_t>()(k.segInternalDtypeHash) << 8;
       return h;
     }
   };
@@ -398,6 +413,68 @@ class TritonGraphBackend : public GraphBackend {
   // This avoids repeating expensive compile attempts for known-bad shapes on a given device.
   std::unordered_set<SegmentCacheKey, SegmentCacheHash> failedCache_;
   mutable std::mutex cacheMtx_;
+
+  // Secondary index: (startSlot, endSlot, shapeKey, deviceId) → segInternalDtypeHash.
+  // Populated whenever a CompiledSegment is inserted into cache_; used by lookup sites
+  // that don't have access to outputSlots (e.g. refreshArgTablesForReplay,
+  // copyConsolidatedArgTableToDevice, getGapSlots) to recover the dtype hash needed
+  // to build the correct SegmentCacheKey.  Protected by cacheMtx_.
+  struct DtypeIndexKey {
+    int startSlot;
+    int endSlot;
+    LongType shapeKey;
+    int deviceId;
+    bool operator==(const DtypeIndexKey& o) const {
+      return startSlot == o.startSlot && endSlot == o.endSlot &&
+             shapeKey == o.shapeKey && deviceId == o.deviceId;
+    }
+  };
+  struct DtypeIndexHash {
+    size_t operator()(const DtypeIndexKey& k) const {
+      size_t h = std::hash<int>()(k.startSlot);
+      h ^= std::hash<int>()(k.endSlot) << 1;
+      h ^= std::hash<LongType>()(k.shapeKey) << 2;
+      h ^= std::hash<int>()(k.deviceId) << 3;
+      return h;
+    }
+  };
+  std::unordered_map<DtypeIndexKey, size_t, DtypeIndexHash> dtypeIndex_;
+
+  // Look up the segInternalDtypeHash for a previously-compiled segment.
+  // Returns 0 if not found (safe: lookup with 0 will miss cache_ and fall through).
+  // MUST be called with cacheMtx_ held.
+  size_t lookupDtypeHash(int startSlot, int endSlot, LongType shapeKey, int deviceId) const {
+    auto it = dtypeIndex_.find(DtypeIndexKey{startSlot, endSlot, shapeKey, deviceId});
+    return (it != dtypeIndex_.end()) ? it->second : size_t{0};
+  }
+
+  // Find a compiled segment matching every SegmentCacheKey field EXCEPT segInternalDtypeHash.
+  // Fallback for the key-recovery sites (refreshArgTablesForReplay, copyConsolidatedArgTable,
+  // getGapSlots) when the dtypeIndex_ entry is missing (e.g. evicted/erased between compile and
+  // replay): a silent miss there would falsely take the "no Triton sub-kernels" path and mark
+  // args current, replaying with STALE arg tables. Distinct dtype variants of the same
+  // (slots, shapeKey, device) cannot coexist for one live plan instance, so a unique loose match
+  // is the segment being replayed. Returns nullptr only if no candidate (or an ambiguous pair)
+  // exists. MUST be called with cacheMtx_ held.
+  const CompiledSegment* findCompiledSegmentAnyDtype(const SegmentCacheKey& partial) const {
+    const CompiledSegment* found = nullptr;
+    for (const auto& e : cache_) {
+      const SegmentCacheKey& k = e.first;
+      if (k.startSlot == partial.startSlot && k.endSlot == partial.endSlot &&
+          k.shapeKey == partial.shapeKey && k.deviceId == partial.deviceId &&
+          k.compileAll == partial.compileAll && k.excludeOpsHash == partial.excludeOpsHash &&
+          k.includeTypesHash == partial.includeTypesHash && k.graphCapture == partial.graphCapture) {
+        if (found != nullptr) return nullptr;  // ambiguous — caller keeps its miss path
+        found = &e.second;
+      }
+    }
+    return found;
+  }
+
+  CompiledSegment* findCompiledSegmentAnyDtype(const SegmentCacheKey& partial) {
+    return const_cast<CompiledSegment*>(
+        static_cast<const TritonGraphBackend*>(this)->findCompiledSegmentAnyDtype(partial));
+  }
 
  public:
   // Per-device GPU memory consumed by compiled Triton modules (arg tables, scratch, modules)
@@ -532,6 +609,23 @@ class TritonGraphBackend : public GraphBackend {
   // Check if all ops in a range are Triton-mappable (without size limit check).
   // Used by sub-segment splitting to verify individual sub-segments.
   bool areAllOpsMappable(NativeSlot* slots, int start, int end);
+
+  // Compute a dtype hash over the segment's CROSS-SEGMENT inputs — the external
+  // input arrays and slot-outputs produced OUTSIDE [startSlot, endSlot] that feed
+  // ops in the segment.  This is the same array set whose SHAPES computeSegmentShapeKey()
+  // hashes; folding in their DTYPES here makes an INT8 KV cache map to a DISTINCT
+  // cache entry from the FLOAT32 kernel of the same shape.  Needed because ADR 0107 V2
+  // feeds an INT8 buffer into a graph whose KV placeholders are declared FLOAT, so the
+  // fed dtype (not the declared shape) is what distinguishes the kernel.
+  //
+  // externalInputs / numExternalInputs — the live fed external arrays.
+  // outputSlots / totalOutputSlots     — the plan's full output-slot array.
+  // slots                              — the plan's NativeSlot array.
+  // Slots outside [startSlot, endSlot] are ignored.
+  static size_t computeSegInternalDtypeHash(NativeSlot* slots,
+                                            int startSlot, int endSlot,
+                                            NDArray** externalInputs, int numExternalInputs,
+                                            NDArray** outputSlots, int totalOutputSlots);
 
  private:
 

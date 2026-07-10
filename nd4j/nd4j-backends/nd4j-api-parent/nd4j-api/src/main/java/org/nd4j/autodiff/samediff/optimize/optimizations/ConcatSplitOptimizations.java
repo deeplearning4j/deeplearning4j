@@ -213,7 +213,11 @@ public class ConcatSplitOptimizations extends BaseOptimizerSet {
             log.debug("EliminateConcatSplit: split(concat({} inputs), numSplit={}) eliminated",
                     concatInputs.size(), numSplit);
 
-            // Replace each split output with the corresponding concat input
+            // Replace each split output with the corresponding concat input.
+            // Track which split outputs were registered graph outputs so we can leave
+            // them as zombie variables (no producing op) instead of removing them.
+            // A zombie prevents restoreRequiredOutputNames from re-inserting an identity op.
+            Set<String> wasGraphOutput = new java.util.HashSet<>();
             for (int i = 0; i < numSplit; i++) {
                 String splitOutput = splitOutputs.get(i);
                 String concatInput = concatInputs.get(i);
@@ -225,15 +229,18 @@ public class ConcatSplitOptimizations extends BaseOptimizerSet {
                     for (int j = 0; j < graphOutputs.size(); j++) {
                         if (graphOutputs.get(j).equals(splitOutput)) {
                             graphOutputs.set(j, concatInput);
+                            wasGraphOutput.add(splitOutput);
                         }
                     }
                 }
             }
 
-            // Remove split op and its output variables
+            // Remove split op and its output variables (skip zombies for graph outputs)
             OptimizationUtils.removeOp(sd, helper, op.getName());
             for (String splitOutput : splitOutputs) {
-                OptimizationUtils.removeVariable(sd, helper, splitOutput);
+                if (!wasGraphOutput.contains(splitOutput)) {
+                    OptimizationUtils.removeVariable(sd, helper, splitOutput);
+                }
             }
 
             // Remove concat op and its output variable (only consumed by the now-removed split)

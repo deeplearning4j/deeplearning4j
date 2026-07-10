@@ -69,6 +69,18 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestGenerationPipeline {
 
     @Test
+    @DisplayName("TokenizerConfig accepts Hugging Face unlimited-length sentinel")
+    public void testTokenizerConfigAcceptsHuggingFaceUnlimitedLengthSentinel() throws Exception {
+        org.eclipse.deeplearning4j.llm.config.TokenizerConfig config =
+                org.eclipse.deeplearning4j.llm.config.TokenizerConfig.fromJson(
+                        "{\"model_max_length\":1000000000000000019884624838656,"
+                                + "\"chat_template\":\"{{ messages[0]['content'] }}\"}");
+
+        assertEquals("1000000000000000019884624838656", config.getModelMaxLength().toString());
+        assertTrue(config.hasChatTemplate());
+    }
+
+    @Test
     @DisplayName("GenerationPipeline: VLM generation with SmolDocling")
     public void testVLMGenerationPipeline() throws Exception {
         // --- 1. Download and load models ---

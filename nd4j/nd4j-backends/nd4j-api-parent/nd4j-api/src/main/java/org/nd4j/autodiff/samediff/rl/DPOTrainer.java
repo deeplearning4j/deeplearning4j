@@ -75,7 +75,8 @@ public class DPOTrainer extends RLAlignmentTrainer<DPOConfig> {
         SDVariable chosenLogits = sd.gather("_dpo_chosen_logits", logits, chosenIdx, 0);
         SDVariable rejectedLogits = sd.gather("_dpo_rejected_logits", logits, rejectedIdx, 0);
 
-        // Compute per-sequence log probabilities
+        // Compute per-sequence log probabilities (2D [batch, vocab] policies are handled
+        // by the base helper via config.logits2D)
         SDVariable chosenLP = computeLogProbOps(sd, "_dpo_chosen", chosenLogits, chosenTokens, vocabSize);
         SDVariable rejectedLP = computeLogProbOps(sd, "_dpo_rejected", rejectedLogits, rejectedTokens, vocabSize);
 

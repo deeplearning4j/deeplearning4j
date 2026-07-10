@@ -261,6 +261,7 @@ jobs:
           
           MVN_COMMON="${{ matrix.mvn_ext }} \
             -Dlibnd4j.generate.flatc=ON \
+            -Dlibnd4j.sdx.standalone=ON \
             -Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++ \
             --no-transfer-progress \
             -Posx-aarch64-protoc \

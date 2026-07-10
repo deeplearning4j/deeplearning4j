@@ -22,6 +22,11 @@ package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class MulBpOp extends BaseArithmeticBackpropOp {
 
@@ -29,6 +34,14 @@ public class MulBpOp extends BaseArithmeticBackpropOp {
 
     public MulBpOp(SameDiff sameDiff, SDVariable x, SDVariable y, SDVariable eps) {
         super(sameDiff, x,y,eps);
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3,
+                "Expected exactly 3 input datatypes for %s, got input %s", getClass(), dataTypes);
+        DataType gradType = dataTypes.contains(DataType.DOUBLE) ? DataType.DOUBLE : DataType.FLOAT;
+        return Arrays.asList(gradType, gradType);
     }
 
     @Override

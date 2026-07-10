@@ -24,6 +24,7 @@
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/activations.h>
+#include <ops/op_types.h>
 #include <system/op_boilerplate.h>
 
 #include <numeric>
@@ -252,10 +253,14 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
   auto inBuff = reinterpret_cast<const T *>(vx);
   auto outBuff = reinterpret_cast<T *>(vz);
 
+  // Accumulate max/exp-sum in AggregateType (float for T=HALF/BF16): summing
+  // exps in half saturates the mantissa for long TADs and loses ~0.1% per row.
+  using AccT = typename simdOps::AggregateType<T>::type;
+
   // Shared memory for reductions
-  __shared__ T sPartials[SD_CUDA_BLOCK_SIZE];
-  __shared__ T globalMax;
-  __shared__ T globalSum;
+  __shared__ AccT sPartials[SD_CUDA_BLOCK_SIZE];
+  __shared__ AccT globalMax;
+  __shared__ AccT globalSum;
   __shared__ LongType tadLen;
   __shared__ int xRank;
   __shared__ LongType xStride0;
@@ -279,34 +284,34 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
   // Fast path for rank 1 TADs (most common for attention softmax)
   if (xRank == 1) {
     // Phase 1: Each thread finds local max
-    T threadMax = -DataTypeUtils::max<T>();
+    AccT threadMax = -DataTypeUtils::max<AccT>();
     for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
-      threadMax = math::sd_max<T>(threadMax, inBuff[j * xStride0]);
+      threadMax = math::sd_max<AccT>(threadMax, static_cast<AccT>(inBuff[j * xStride0]));
     }
     sPartials[threadIdx.x] = threadMax;
     __syncthreads();
 
-    reduceMaxHybrid<T>(sPartials, threadIdx.x, numItems);
+    reduceMaxHybrid<AccT>(sPartials, threadIdx.x, numItems);
     if (threadIdx.x == 0) globalMax = sPartials[0];
     __syncthreads();
 
     // Phase 2: Compute exp and local sum
-    T threadSum = static_cast<T>(0);
+    AccT threadSum = static_cast<AccT>(0);
     for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
-      T temp = math::sd_exp<T, T>(inBuff[j * xStride0] - globalMax);
-      outBuff[j * zStride0] = temp;
+      AccT temp = math::sd_exp<AccT, AccT>(static_cast<AccT>(inBuff[j * xStride0]) - globalMax);
+      outBuff[j * zStride0] = static_cast<T>(temp);
       threadSum += temp;
     }
     sPartials[threadIdx.x] = threadSum;
     __syncthreads();
 
-    reduceSumHybrid<T>(sPartials, threadIdx.x, numItems);
+    reduceSumHybrid<AccT>(sPartials, threadIdx.x, numItems);
     if (threadIdx.x == 0) globalSum = sPartials[0];
     __syncthreads();
 
     // Phase 3: Normalize
     for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
-      outBuff[j * zStride0] /= globalSum;
+      outBuff[j * zStride0] = static_cast<T>(static_cast<AccT>(outBuff[j * zStride0]) / globalSum);
     }
   } else {
     // General path for higher ranks
@@ -326,24 +331,24 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
     __syncthreads();
 
     // Phase 1: Each thread finds local max
-    T threadMax = -DataTypeUtils::max<T>();
+    AccT threadMax = -DataTypeUtils::max<AccT>();
     for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
       INDEX2COORDS(j, xRank, xShape, xCoords);
       COORDS2INDEX(xRank, xStride, xCoords, xOffset);
-      T val = inBuff[xOffset];
+      AccT val = static_cast<AccT>(inBuff[xOffset]);
       if (val > threadMax) threadMax = val;
     }
     sPartials[threadIdx.x] = threadMax;
     __syncthreads();
 
-    reduceMaxHybrid<T>(sPartials, threadIdx.x, numItems);
+    reduceMaxHybrid<AccT>(sPartials, threadIdx.x, numItems);
     if (threadIdx.x == 0) globalMax = sPartials[0];
     __syncthreads();
 
     // Phase 2: Compute exp and local sum
-    T threadSum = static_cast<T>(0);
+    AccT threadSum = static_cast<AccT>(0);
     for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
       LongType xCoords[SD_MAX_RANK];
       LongType zCoords[SD_MAX_RANK];
@@ -353,14 +358,14 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
       INDEX2COORDS(j, zRank, zShape, zCoords);
       COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
-      T temp = math::sd_exp<T, T>(inBuff[xOffset] - globalMax);
-      outBuff[zOffset] = temp;
+      AccT temp = math::sd_exp<AccT, AccT>(static_cast<AccT>(inBuff[xOffset]) - globalMax);
+      outBuff[zOffset] = static_cast<T>(temp);
       threadSum += temp;
     }
     sPartials[threadIdx.x] = threadSum;
     __syncthreads();
 
-    reduceSumHybrid<T>(sPartials, threadIdx.x, numItems);
+    reduceSumHybrid<AccT>(sPartials, threadIdx.x, numItems);
     if (threadIdx.x == 0) globalSum = sPartials[0];
     __syncthreads();
 
@@ -370,7 +375,7 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
       LongType zOffset;
       INDEX2COORDS(j, zRank, zShape, zCoords);
       COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-      outBuff[zOffset] /= globalSum;
+      outBuff[zOffset] = static_cast<T>(static_cast<AccT>(outBuff[zOffset]) / globalSum);
     }
   }
 }
@@ -498,33 +503,36 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCudaWarpPerTad(const void
   const int laneId = threadIdx.x % 32;
   const int numWarpsPerBlock = blockDim.x / 32;
 
+  // Accumulate in AggregateType (float for T=HALF/BF16) — see softMaxForVectorCuda.
+  using AccT = typename simdOps::AggregateType<T>::type;
+
   // Each warp handles one TAD, grid-stride over TADs
   for (LongType tadIdx = blockIdx.x * numWarpsPerBlock + warpId; tadIdx < numTads; tadIdx += gridDim.x * numWarpsPerBlock) {
     const T* inBuff = x + xOffsets[tadIdx];
     T* outBuff = z + zOffsets[tadIdx];
 
     // Phase 1: Find max (each lane handles multiple elements) - contiguous access
-    T threadMax = -DataTypeUtils::max<T>();
+    AccT threadMax = -DataTypeUtils::max<AccT>();
     for (LongType j = laneId; j < tadLen; j += 32) {
-      threadMax = math::sd_max<T>(threadMax, inBuff[j]);
+      threadMax = math::sd_max<AccT>(threadMax, static_cast<AccT>(inBuff[j]));
     }
-    T maxVal = warpReduceMax<T>(threadMax);
+    AccT maxVal = warpReduceMax<AccT>(threadMax);
     maxVal = __shfl_sync(0xffffffff, maxVal, 0);  // Broadcast max to all lanes
 
     // Phase 2: Compute exp and sum - contiguous access
-    T threadSum = static_cast<T>(0);
+    AccT threadSum = static_cast<AccT>(0);
     for (LongType j = laneId; j < tadLen; j += 32) {
-      T temp = math::sd_exp<T, T>(inBuff[j] - maxVal);
-      outBuff[j] = temp;
+      AccT temp = math::sd_exp<AccT, AccT>(static_cast<AccT>(inBuff[j]) - maxVal);
+      outBuff[j] = static_cast<T>(temp);
       threadSum += temp;
     }
-    T sumVal = warpReduceSum<T>(threadSum);
+    AccT sumVal = warpReduceSum<AccT>(threadSum);
     sumVal = __shfl_sync(0xffffffff, sumVal, 0);  // Broadcast sum to all lanes
 
     // Phase 3: Normalize - contiguous access
-    T invSum = static_cast<T>(1) / sumVal;
+    AccT invSum = static_cast<AccT>(1) / sumVal;
     for (LongType j = laneId; j < tadLen; j += 32) {
-      outBuff[j] *= invSum;
+      outBuff[j] = static_cast<T>(static_cast<AccT>(outBuff[j]) * invSum);
     }
   }
 }
@@ -538,10 +546,13 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCuda(const void *vx, cons
   const auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
+  // Accumulate in AggregateType (float for T=HALF/BF16) — see softMaxForVectorCuda.
+  using AccT = typename simdOps::AggregateType<T>::type;
+
   // Shared memory for inter-warp reduction (max 32 warps per block)
-  __shared__ T warpPartials[32];
-  __shared__ T globalMax;
-  __shared__ T globalSum;
+  __shared__ AccT warpPartials[32];
+  __shared__ AccT globalMax;
+  __shared__ AccT globalSum;
   __shared__ LongType tadLen;
   __shared__ int xRank;
   __shared__ LongType xStride0;
@@ -568,13 +579,13 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCuda(const void *vx, cons
     // Fast path for rank 1 TADs
     if (xRank == 1) {
       // Phase 1: Find max using warp shuffles
-      T threadMax = -DataTypeUtils::max<T>();
+      AccT threadMax = -DataTypeUtils::max<AccT>();
       for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
-        threadMax = math::sd_max<T>(threadMax, inBuff[j * xStride0]);
+        threadMax = math::sd_max<AccT>(threadMax, static_cast<AccT>(inBuff[j * xStride0]));
       }
 
       // Warp-level reduction
-      threadMax = warpReduceMax<T>(threadMax);
+      threadMax = warpReduceMax<AccT>(threadMax);
 
       // Store warp results
       if (laneId == 0) warpPartials[warpId] = threadMax;
@@ -582,22 +593,22 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCuda(const void *vx, cons
 
       // Final reduction by first warp
       if (warpId == 0) {
-        T val = (laneId < numWarps) ? warpPartials[laneId] : -DataTypeUtils::max<T>();
-        val = warpReduceMax<T>(val);
+        AccT val = (laneId < numWarps) ? warpPartials[laneId] : -DataTypeUtils::max<AccT>();
+        val = warpReduceMax<AccT>(val);
         if (laneId == 0) globalMax = val;
       }
       __syncthreads();
 
       // Phase 2: Compute exp and sum
-      T threadSum = static_cast<T>(0);
+      AccT threadSum = static_cast<AccT>(0);
       for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
-        T temp = math::sd_exp<T, T>(inBuff[j * xStride0] - globalMax);
-        outBuff[j * zStride0] = temp;
+        AccT temp = math::sd_exp<AccT, AccT>(static_cast<AccT>(inBuff[j * xStride0]) - globalMax);
+        outBuff[j * zStride0] = static_cast<T>(temp);
         threadSum += temp;
       }
 
       // Warp-level sum reduction
-      threadSum = warpReduceSum<T>(threadSum);
+      threadSum = warpReduceSum<AccT>(threadSum);
 
       // Store warp results
       if (laneId == 0) warpPartials[warpId] = threadSum;
@@ -605,15 +616,15 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCuda(const void *vx, cons
 
       // Final reduction by first warp
       if (warpId == 0) {
-        T val = (laneId < numWarps) ? warpPartials[laneId] : static_cast<T>(0);
-        val = warpReduceSum<T>(val);
+        AccT val = (laneId < numWarps) ? warpPartials[laneId] : static_cast<AccT>(0);
+        val = warpReduceSum<AccT>(val);
         if (laneId == 0) globalSum = val;
       }
       __syncthreads();
 
       // Phase 3: Normalize
       for (LongType j = threadIdx.x; j < tadLen; j += blockDim.x) {
-        outBuff[j * zStride0] /= globalSum;
+        outBuff[j * zStride0] = static_cast<T>(static_cast<AccT>(outBuff[j * zStride0]) / globalSum);
       }
     } else {
       // General path - delegate to device function

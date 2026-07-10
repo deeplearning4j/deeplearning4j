@@ -347,4 +347,26 @@ public class TestCausalConv1d {
             }
         }
     }
+
+    @Test
+    public void testActualLengthStopsStateUpdate() {
+        int B = 1, L = 5, D = 2, K = 3;
+        INDArray x = Nd4j.createFromArray(new float[]{
+                1f, 2f,
+                3f, 4f,
+                5f, 6f,
+                100f, 200f,
+                300f, 400f
+        }).reshape(B, L, D);
+        INDArray weight = Nd4j.ones(DataType.FLOAT, D, K);
+        INDArray actualLen = Nd4j.scalar(DataType.INT64, 3L);
+
+        INDArray[] results = Nd4j.exec(new CausalConv1d(x, weight, null, null, actualLen, 0, 0));
+        INDArray stateOut = results[1];
+
+        assertEquals(3.0f, stateOut.getFloat(0, 0, 0), 1e-5f);
+        assertEquals(5.0f, stateOut.getFloat(0, 0, 1), 1e-5f);
+        assertEquals(4.0f, stateOut.getFloat(0, 1, 0), 1e-5f);
+        assertEquals(6.0f, stateOut.getFloat(0, 1, 1), 1e-5f);
+    }
 }

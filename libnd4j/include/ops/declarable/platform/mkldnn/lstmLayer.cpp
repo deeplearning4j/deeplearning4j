@@ -279,11 +279,14 @@ static void lstmLayerMKLDNN(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, ND
   lstm_forward(lstm_prim_desc).execute(stream, args);
 
   // reorder outputs if necessary
+  // Guard hL and cL reorders: when retLastH/retLastC == false, hL_user_mem and cL_user_mem are
+  // never initialized (default dnnl::memory{}), and calling .get_desc() on an uninitialized
+  // oneDNN memory object throws "object is not initialized".
   if (lstm_prim_desc.dst_layer_desc() != h_user_mem.get_desc())
     reorder(args[DNNL_ARG_DST_LAYER], h_user_mem).execute(stream, args[DNNL_ARG_DST_LAYER], h_user_mem);
-  if (lstm_prim_desc.dst_iter_desc() != hL_user_mem.get_desc())
+  if (hL && lstm_prim_desc.dst_iter_desc() != hL_user_mem.get_desc())
     reorder(args[DNNL_ARG_DST_ITER], hL_user_mem).execute(stream, args[DNNL_ARG_DST_ITER], hL_user_mem);
-  if (lstm_prim_desc.dst_iter_c_desc() != cL_user_mem.get_desc())
+  if (cL && lstm_prim_desc.dst_iter_c_desc() != cL_user_mem.get_desc())
     reorder(args[DNNL_ARG_DST_ITER_C], cL_user_mem).execute(stream, args[DNNL_ARG_DST_ITER_C], cL_user_mem);
 
   stream.wait();
@@ -429,7 +432,9 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
 
   std::vector<sd::LongType> shapeOne = {1, dirDim, nIn, 4, nOut};
   WxR = Wx->reshape(Wx->ordering(), shapeOne);  // reshape() already returns NDArray*
-  WrR = Wr->reshape(Wr->ordering(), shapeOne);  // reshape() already returns NDArray*
+  // Wr has shape [nOut, 4*nOut] (or [2,nOut,4*nOut] bidirectional), so its 5D form uses nOut, not nIn
+  std::vector<sd::LongType> shapeOneWr = {1, dirDim, nOut, 4, nOut};
+  WrR = Wr->reshape(Wr->ordering(), shapeOneWr);  // reshape() already returns NDArray*
 
   std::vector<sd::LongType> shapeTwo = {1, dirDim, 4, nOut};
   if (b)

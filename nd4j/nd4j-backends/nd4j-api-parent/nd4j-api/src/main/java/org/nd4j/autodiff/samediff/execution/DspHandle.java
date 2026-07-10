@@ -77,9 +77,19 @@ public final class DspHandle {
         InferenceSession session = sd.getOrCreateSession();
         DynamicShapePlanExecutor exec = session.getDynamicShapePlanExecutor();
         if (exec == null) {
+            // Training executes on the gradient-function instance in its own
+            // TrainingSession — fall back to it so DSP plan state can be inspected
+            // right after fit(). The executor is thread-local to the thread that
+            // ran the training loop.
+            InferenceSession trainingSession = sd.getLastTrainingSession();
+            if (trainingSession != null) {
+                exec = trainingSession.getDynamicShapePlanExecutor();
+            }
+        }
+        if (exec == null) {
             throw new IllegalStateException(
                 "DspHandle: no DynamicShapePlanExecutor. " +
-                "Call sd.output() or sd.compileNativeDynamicShapePlan() first.");
+                "Call sd.output(), sd.fit() or sd.compileNativeDynamicShapePlan() first.");
         }
         return exec;
     }

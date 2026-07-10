@@ -26,11 +26,18 @@ namespace helpers {
 
 template <typename T>
 static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
-                           NDArray* stateIn, NDArray* output, NDArray* stateOut, int activation, int wFormat) {
+                           NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                           int activation, int wFormat) {
     const auto B = x->sizeAt(0);
     const auto L = x->sizeAt(1);
     const auto D = x->sizeAt(2);
     const auto K = (wFormat == 0) ? weight->sizeAt(1) : weight->sizeAt(0);
+    LongType effectiveLen = L;
+    if (actualLen != nullptr) {
+        effectiveLen = actualLen->e<LongType>(0);
+        if (effectiveLen < 0) effectiveLen = 0;
+        if (effectiveLen > L) effectiveLen = L;
+    }
 
     const T* xBuf = x->bufferAsT<T>();
     const T* wBuf = weight->bufferAsT<T>();
@@ -94,9 +101,9 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
                 outBuf[b * oS0 + t * oS1 + d * oS2] = static_cast<T>(sum);
             }
 
-            // Update conv state: last K-1 timesteps of input
+            // Update conv state from the last K-1 real timesteps, not fixed-buffer padding.
             for (LongType kk = 0; kk < K - 1; ++kk) {
-                LongType srcT = L - (K - 1) + kk;
+                LongType srcT = effectiveLen - (K - 1) + kk;
                 T val = static_cast<T>(0);
                 if (srcT >= 0) {
                     val = xBuf[b * xS0 + srcT * xS1 + d * xS2];
@@ -112,14 +119,15 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
 }
 
 void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
-                   NDArray* stateIn, NDArray* output, NDArray* stateOut, int activation, int wFormat) {
-    NDArray::preparePrimaryUse({output, stateOut}, {x, weight, bias});
+                   NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                   int activation, int wFormat) {
+    NDArray::preparePrimaryUse({output, stateOut}, {x, weight, bias, actualLen});
     if (stateIn != nullptr) NDArray::preparePrimaryUse({}, {stateIn});
 
     BUILD_SINGLE_SELECTOR(x->dataType(), causalConv1d_,
-        (context, x, weight, bias, stateIn, output, stateOut, activation, wFormat), SD_FLOAT_TYPES);
+        (context, x, weight, bias, stateIn, actualLen, output, stateOut, activation, wFormat), SD_FLOAT_TYPES);
 
-    NDArray::registerPrimaryUse({output, stateOut}, {x, weight, bias});
+    NDArray::registerPrimaryUse({output, stateOut}, {x, weight, bias, actualLen});
     if (stateIn != nullptr) NDArray::registerPrimaryUse({}, {stateIn});
 }
 

@@ -22,9 +22,11 @@ package org.nd4j.linalg.api.ops.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class Eig extends DynamicCustomOp {
@@ -57,6 +59,18 @@ public class Eig extends DynamicCustomOp {
         this(new INDArray[]{input},null);
     }
 
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        // eig returns: eigenvalues [n] and eigenvectors [n, n], both same dtype as input
+        DataType type = inputDataTypes.get(0);
+        return Arrays.asList(type, type);
+    }
+
+    @Override
+    public int getNumOutputs() {
+        return 2;
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

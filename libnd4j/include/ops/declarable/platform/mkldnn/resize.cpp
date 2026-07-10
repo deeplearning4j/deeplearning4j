@@ -125,7 +125,11 @@ PLATFORM_CHECK(resize_bilinear, ENGINE_CPU) {
       req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
       req.expectEq(makeInfoVariable(x->sizeAt(0), "INPUT_BATCH_DIM"), makeInfoVariable(z->sizeAt(0), "OUTPUT_BATCH_DIM")) &&
-      req.expectEq(makeInfoVariable(x->sizeAt(-1), "INPUT_CHANNEL_DIM"), makeInfoVariable(z->sizeAt(-1), "OUTPUT_CHANNEL_DIM")) &&
+      // OneDNN always interprets rank-4 tensors as NCHW (via abcd format tag), so the channel
+      // is always at dim 1.  For NHWC input [N,H,W,C]→[N,H',W',C] the oneDNN "channel" (dim 1)
+      // is H≠H', causing primitive descriptor creation to fail.  Checking sizeAt(1) equality
+      // correctly rejects NHWC inputs (H≠H') and accepts NCHW inputs (C==C).
+      req.expectEq(makeInfoVariable(x->sizeAt(1), "INPUT_CHANNEL_DIM"), makeInfoVariable(z->sizeAt(1), "OUTPUT_CHANNEL_DIM")) &&
       // OneDNN resampling does not support input spatial dimensions of 1; fall back to generic impl
       req.expectGreater(makeInfoVariable(x->sizeAt(1), "INPUT_HEIGHT_DIM"), (sd::LongType)1) &&
       req.expectGreater(makeInfoVariable(x->sizeAt(2), "INPUT_WIDTH_DIM"), (sd::LongType)1);

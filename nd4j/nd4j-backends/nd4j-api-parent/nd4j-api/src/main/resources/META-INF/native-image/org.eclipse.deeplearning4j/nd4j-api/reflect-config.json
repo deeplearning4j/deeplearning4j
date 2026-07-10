@@ -1,347 +1,204 @@
 [
   {
-    "name":"org.nd4j.linalg.learning.config.IUpdater",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.AdaBelief",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.AdaDelta",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.AdaGrad",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.Adam",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.AdaMax",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.AMSGrad",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.Nadam",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.Nesterovs",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.NoOp",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.RmsProp",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.learning.config.Sgd",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.linalg.lossfunctions.ILossFunction",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.autodiff.samediff.TrainingConfig",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },{
-  "name":"org.nd4j.linalg.api.blas.BLASLapackDelegator",
-  "allDeclaredFields":true,
-  "allDeclaredMethods":true,
-  "allDeclaredConstructors":true,
-  "allDeclaredClasses" : true,
-  "allPublicClasses" : true
-},
-  {
-    "name":"org.nd4j.autodiff.samediff.SameDiff",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.autodiff.samediff.ops.SDMath",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.autodiff.samediff.ops.SDRandom",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.autodiff.samediff.ops.SDNN",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.autodiff.functions.DifferentialFunction",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-{
-  "name":"org.nd4j.autodiff.samediff.ops.SDCNN",
-  "allDeclaredFields":true,
-  "allDeclaredMethods":true,
-  "allDeclaredConstructors":true,
-  "allDeclaredClasses" : true,
-  "allPublicClasses" : true
-},
-  {
-    "name":"org.nd4j.autodiff.samediff.ops.SDLoss",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.autodiff.samediff.ops.SDImage",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name":"org.nd4j.autodiff.samediff.ops.SDBitwise",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.autodiff.samediff.ops.SDLinalg",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.Raw",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.FloatRawIndexer",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.HalfRawIndexer",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.IntRawIndexer",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.ShortRawIndexer",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.CharRawIndexer",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.BooleanRawIndexer",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.DoubleRawIndexer",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.UByteRawIndexer",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.ULongRawIndexer",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.bytedeco.javacpp.indexer.UShortRawIndexer",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.nativeblas.NativeOpsHolder",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.nativeblas.NativeOps",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.linalg.convolution.ConvolutionInstance",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.linalg.convolution.DefaultConvolutionInstance",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.linalg.env.EnvironmentalAction",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
     "name": "java.lang.Object",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
     "allDeclaredClasses": true,
     "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.BooleanRawIndexer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.CharRawIndexer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.DoubleRawIndexer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.FloatRawIndexer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.HalfRawIndexer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.IntRawIndexer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.Raw",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.ShortRawIndexer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.UByteRawIndexer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.ULongRawIndexer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.indexer.UShortRawIndexer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.functions.DifferentialFunction",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.samediff.SameDiff",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.samediff.TrainingConfig",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.samediff.ops.SDBitwise",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.samediff.ops.SDCNN",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.samediff.ops.SDImage",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.samediff.ops.SDLinalg",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.samediff.ops.SDLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.samediff.ops.SDMath",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.samediff.ops.SDNN",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.autodiff.samediff.ops.SDRandom",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.blas.BLASLapackDelegator",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.buffer.DataType",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true,
+    "allPublicFields": true
   },
   {
     "name": "org.nd4j.linalg.api.ops.BaseOp",
@@ -352,68 +209,1924 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.env.impl.WorkspacesSpillAction",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.linalg.env.impl.WorkspacesBypassAction",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.linalg.env.impl.VerboseAction",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.linalg.env.impl.OmpNumThreadsAction",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.linalg.env.impl.NDArrayUnpackAction",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.linalg.env.impl.FallbackAction",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
-    "name": "org.nd4j.linalg.env.impl.DebugAction",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
-  },
-  {
     "name": "org.nd4j.linalg.api.ops.DynamicCustomOp",
-    "allDeclaredFields":true,
-    "allDeclaredMethods":true,
-    "allDeclaredConstructors":true,
-    "allDeclaredClasses" : true,
-    "allPublicClasses" : true
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.NoOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.compat.CompatSparseToDense",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.compat.CompatStringSplit",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.AdjustContrast",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.AdjustHue",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.AdjustSaturation",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.BarnesEdgeForces",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.BarnesHutGains",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.BetaInc",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.BitCast",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.CompareAndBitpack",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Digamma",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.DivideNoNan",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.DrawBoundingBoxes",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Eig",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.FakeQuantWithMinMaxVarsPerChannel",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Flatten",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Flatten",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.FusedBatchNorm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.HsvToRgb",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Igamma",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Igammac",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Invoke",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.KnnMinDistance",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Lgamma",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.LinearCopy",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.LinearSolve",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Logdet",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Lstsq",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Lu",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.MatrixBandPart",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Polygamma",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.RandomCrop",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.RgbToGrayscale",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.RgbToHsv",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.RgbToYiq",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.RgbToYuv",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Roll",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.SpTreeCell",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.ToggleBits",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Tri",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.TriangularSolve",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.Triu",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.TriuBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.YiqToRgb",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.custom.YuvToRgb",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.AWeighting",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.AudioNormalize",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.AudioResample",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.ChromaFeatures",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.GriffinLim",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.MFCC",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.MelFilterbank",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.MelSpectrogram",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.PitchDetection",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.PreEmphasis",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.SpectralCentroid",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.SpectralRolloff",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.WhisperMelSpectrogramOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.audio.ZeroCrossingRate",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMax",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastGradientArgs",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMax",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastRDivOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastRSubOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThanOrEqual",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThan",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThanOrEqual",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastNotEqual",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.Select",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.Where",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.LoopCond",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.StopGradient",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.While",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.grid.FreeGridOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.AffineGrid",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.CropAndResize",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.GridSample",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.ImageResize",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.NonMaxSuppressionV3",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.NonMaxSuppressionWithOverlaps",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.ResizeArea",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.ResizeBicubic",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.ResizeBilinear",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.image.ResizeNearestNeighbor",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmax",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling2DBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveAvgPooling3D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AdaptiveMaxPooling2DBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNormDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1DDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2DDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3DDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2DDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2DTF",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DTF",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Im2colBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalizationDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3DDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2DDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2dDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3dBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayerBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.AttentionDistillationLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.CtcLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.DistillationKLLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.FeatureDistillationLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.HingeLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.HuberLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.L2Loss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.LogLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyWithLogitsLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.SparseSoftmaxCrossEntropyLossWithLogits",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.WeightedCrossEntropyLoss",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.AbsoluteDifferenceLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.AttentionDistillationLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.ContrastiveLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.CosineDistanceLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.CtcLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.DistillationKLLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.FeatureDistillationLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.HingeLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.HuberLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.LogLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.LogPoissonLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.MeanPairwiseSquaredErrorLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.MeanSquaredErrorLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.SigmoidCrossEntropyLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.SoftmaxCrossEntropyLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.SoftmaxCrossEntropyWithLogitsLossBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.SparseSoftmaxCrossEntropyLossWithLogitsBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.nlp.CbowInference",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.nlp.CbowRound",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.nlp.SkipGramInference",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.HashCode",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.Mmul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.MmulBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.Moments",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.SufficientStatistics",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.TensorMmul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.TensorMmulBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.ZeroFraction",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bool.All",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bool.Any",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bool.IsNaN",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.CumProdBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.CumSumBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.DotBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.MaxBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.MinBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.Norm1Bp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.Norm2Bp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.NormMaxBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.PowBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.ProdBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.SquaredNormBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.StandardDeviationBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp",
@@ -433,6 +2146,14 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmulBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -680,6 +2401,14 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.scalar.PRelu",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.scalar.Pow",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -689,14 +2418,6 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.scalar.PowDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.PowBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -720,23 +2441,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.ThresholdRelu",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
     "name": "org.nd4j.linalg.api.ops.impl.scalar.Relu6",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.scalar.PRelu",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1064,6 +2769,22 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.shape.Create",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.shape.CreateView",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.shape.Cross",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -1113,6 +2834,14 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.shape.Gather",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.shape.GatherBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1184,6 +2913,14 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.shape.OnesAs",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.shape.OnesLike",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -1240,7 +2977,23 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.shape.SequenceMask",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.shape.SetShape",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1368,7 +3121,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.shape.bp.MergeMaxBp",
+    "name": "org.nd4j.linalg.api.ops.impl.shape.bp.MergeAvgBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1376,7 +3129,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.shape.bp.MergeAvgBp",
+    "name": "org.nd4j.linalg.api.ops.impl.shape.bp.MergeMaxBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1448,6 +3201,14 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayRemove",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayScatter",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -1473,6 +3234,438 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayWrite",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.signal.BlackmanWindow",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.signal.DFT",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.signal.HammingWindow",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.signal.HannWindow",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.signal.STFT",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.BsrSpmm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.BsrSpmmBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.BsrToDense",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.BsrToDenseBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CooToCsr",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CooToCsrBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CscToDense",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CscToDenseBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrAdd",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrAddBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrDiagMm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrDiagMmBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrEdgeAggregate",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrEdgeAggregateBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrEdgeGather",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrEdgeGatherBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrRowSoftmax",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrRowSoftmaxBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSddmmSparse",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSddmmSparseBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSegmentMax",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSegmentMaxBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSpgemm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSpgemmBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSpmm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSpmmBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSpmmSemiring",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSpmv",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSpmvBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSpmvSemiring",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSubgraphExtract",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrSubgraphExtractBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrToBsr",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrToBsrBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrToCsc",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrToCscBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrToDense",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.CsrToDenseBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.DenseToCoo",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.DenseToCooBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.DenseToCsc",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.DenseToCscBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.DenseToCsr",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.DenseToCsrBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.GraphDisjointUnion",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.GraphDisjointUnionBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.Sddmm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.SddmmBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.sparse.Spdiags",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1712,7 +3905,23 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.ApplyAlibi",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Assign",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1736,7 +3945,55 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Choose",
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BitsHammingDistance",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseAnd",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseOr",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseXor",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1760,6 +4017,62 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.CascadeAttention",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpenBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Choose",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -1776,31 +4089,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BitsHammingDistance",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseAnd",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseXor",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseOr",
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1816,7 +4105,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits",
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1825,6 +4114,22 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMulBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1864,6 +4169,14 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicPartition",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -1873,6 +4186,30 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicStitch",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdateBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1912,6 +4249,238 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttention",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttentionBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Dequantize",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Quantize",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedBiasDropoutResidual",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELUBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwiglu",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwigluBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNorm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNormBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLUBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPEBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GGMLDequantize",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GeluAndMul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLora",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLoraBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThan",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -1921,6 +4490,22 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttention",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttentionBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -1968,6 +4553,38 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -1993,6 +4610,14 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2056,6 +4681,70 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMulBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMulBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMulBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MLAAttention",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Mamba2SSM",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixDeterminant",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -2112,6 +4801,22 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquareBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Min",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -2121,6 +4826,38 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MirrorPad",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MoeGate",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MoeWeightedSum",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2144,7 +4881,63 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmulBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.PadInput",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.PadInputBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.PagedAttentionForward",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.PagedKvAppend",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2160,7 +4953,55 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.PixelShuffle",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Pow",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Qr",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2200,7 +5041,87 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits",
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinearBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.RoPEBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.RowParallelLinear",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SamplingPenalties",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SegmentGemm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2209,6 +5130,54 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SiLUBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SiluAndMul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2240,6 +5209,14 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SquaredReLU",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -2264,6 +5241,38 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMulBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.ThresholdRelu",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.TopK",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -2272,7 +5281,47 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.TopKRenorm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.TopPRenorm",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Trace",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttentionBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2296,7 +5345,39 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.UnpadInput",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusBBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2344,6 +5425,22 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentSoftmax",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentSoftmaxBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentSum",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -2353,6 +5450,14 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2376,6 +5481,22 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.floating.SqrtM",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -2392,7 +5513,23 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.EluBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2408,7 +5545,23 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2432,7 +5585,31 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.PReluBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.RectifiedTanhBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2456,14 +5633,6 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.PReluBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.SELUDerivative",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -2472,79 +5641,15 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.EluBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.RectifiedTanhBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.SeluBp",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2568,7 +5673,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.ThresholdReluBp",
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2585,6 +5690,14 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.gradient.ThresholdReluBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2688,7 +5801,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp",
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2696,7 +5809,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp",
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2800,7 +5913,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.ModBpOp",
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.MergeAddBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -2808,7 +5921,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.MergeAddBp",
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.ModBpOp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3488,6 +6601,86 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.updaters.AdaBeliefUpdater",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.updaters.AdaDeltaUpdater",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.updaters.AdaGradUpdater",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.updaters.AdaMaxUpdater",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.updaters.AdamUpdater",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.updaters.AmsGradUpdater",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.updaters.NadamUpdater",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.updaters.NesterovsUpdater",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.updaters.RmsPropUpdater",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.updaters.SgdUpdater",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.persistence.RestoreV2",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -3497,14 +6690,6 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.persistence.SaveV2",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.random.impl.RandomMultinomial",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3544,7 +6729,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.random.custom.RandomNormal",
+    "name": "org.nd4j.linalg.api.ops.random.custom.RandomGamma",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3552,7 +6737,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.random.custom.RandomGamma",
+    "name": "org.nd4j.linalg.api.ops.random.custom.RandomNormal",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3577,14 +6762,6 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.random.impl.AlphaDropOut",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.random.impl.CustomDropOut",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3617,6 +6794,30 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.random.impl.Choice",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.random.impl.CustomDropOut",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.random.impl.DropOut",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.random.impl.DropOutBp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3664,6 +6865,14 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.random.impl.RandomMultinomial",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.random.impl.Range",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -3704,7 +6913,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.compat.CompatSparseToDense",
+    "name": "org.nd4j.linalg.convolution.ConvolutionInstance",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3712,7 +6921,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.compat.CompatStringSplit",
+    "name": "org.nd4j.linalg.convolution.DefaultConvolutionInstance",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3720,7 +6929,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.AdjustContrast",
+    "name": "org.nd4j.linalg.env.EnvironmentalAction",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3728,7 +6937,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.HsvToRgb",
+    "name": "org.nd4j.linalg.env.impl.DebugAction",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3736,7 +6945,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.RgbToHsv",
+    "name": "org.nd4j.linalg.env.impl.FallbackAction",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3744,7 +6953,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.RgbToYiq",
+    "name": "org.nd4j.linalg.env.impl.NDArrayUnpackAction",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3752,7 +6961,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.RgbToGrayscale",
+    "name": "org.nd4j.linalg.env.impl.OmpNumThreadsAction",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3760,7 +6969,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.YiqToRgb",
+    "name": "org.nd4j.linalg.env.impl.VerboseAction",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3768,7 +6977,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.RgbToYuv",
+    "name": "org.nd4j.linalg.env.impl.WorkspacesBypassAction",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3776,7 +6985,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.YuvToRgb",
+    "name": "org.nd4j.linalg.env.impl.WorkspacesSpillAction",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3784,7 +6993,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.BitCast",
+    "name": "org.nd4j.linalg.learning.config.AMSGrad",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3792,7 +7001,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.CompareAndBitpack",
+    "name": "org.nd4j.linalg.learning.config.AdaBelief",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3800,7 +7009,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.DivideNoNan",
+    "name": "org.nd4j.linalg.learning.config.AdaDelta",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3808,7 +7017,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.DrawBoundingBoxes",
+    "name": "org.nd4j.linalg.learning.config.AdaGrad",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3816,7 +7025,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.FakeQuantWithMinMaxVarsPerChannel",
+    "name": "org.nd4j.linalg.learning.config.AdaMax",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3824,7 +7033,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.AdjustSaturation",
+    "name": "org.nd4j.linalg.learning.config.Adam",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3832,7 +7041,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.AdjustHue",
+    "name": "org.nd4j.linalg.learning.config.IUpdater",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3840,7 +7049,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.FusedBatchNorm",
+    "name": "org.nd4j.linalg.learning.config.Nadam",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3848,7 +7057,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.BetaInc",
+    "name": "org.nd4j.linalg.learning.config.Nesterovs",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3856,7 +7065,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.MatrixBandPart",
+    "name": "org.nd4j.linalg.learning.config.NoOp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3864,7 +7073,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.Polygamma",
+    "name": "org.nd4j.linalg.learning.config.RmsProp",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3872,7 +7081,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.Lgamma",
+    "name": "org.nd4j.linalg.learning.config.Sgd",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3880,7 +7089,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.RandomCrop",
+    "name": "org.nd4j.linalg.lossfunctions.ILossFunction",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3888,7 +7097,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.Roll",
+    "name": "org.nd4j.nativeblas.NativeOps",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,
@@ -3896,1513 +7105,7 @@
     "allPublicClasses": true
   },
   {
-    "name": "org.nd4j.linalg.api.ops.custom.ToggleBits",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Tri",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Triu",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.TriuBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Igamma",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Igammac",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Digamma",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Lu",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.TriangularSolve",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.LinearSolve",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Lstsq",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Qr",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-
-  {
-    "name": "org.nd4j.linalg.api.ops.NoOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.updaters.SgdUpdater",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.updaters.RmsPropUpdater",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.updaters.NesterovsUpdater",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.updaters.NadamUpdater",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.updaters.AmsGradUpdater",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.updaters.AdamUpdater",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.updaters.AdaMaxUpdater",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.updaters.AdaGradUpdater",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.updaters.AdaDeltaUpdater",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.BarnesEdgeForces",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.BarnesHutGains",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.KnnMinDistance",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.SpTreeCell",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.buffer.DataType",
-    "allDeclaredConstructors": true,
-    "allPublicConstructors": true,
-    "allDeclaredMethods": true,
-    "allPublicMethods": true,
-    "allDeclaredFields": true,
-    "allPublicFields": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Flatten",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Flatten",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMax",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastGradientArgs",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMax",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastRDivOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastRSubOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.shape.Create",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThanOrEqual",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThan",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThanOrEqual",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastNotEqual",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.Select",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.Where",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.While",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.LoopCond",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.StopGradient",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.grid.FreeGridOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.image.CropAndResize",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.image.ImageResize",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.image.NonMaxSuppressionV3",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.image.NonMaxSuppressionWithOverlaps",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.image.ResizeBilinear",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.image.ResizeBicubic",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.image.ResizeNearestNeighbor",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.shape.SetShape",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.image.ResizeArea",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmax",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Invoke",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNormDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1DDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2DDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3DDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2DDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2DTF",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DTF",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Im2colBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalizationDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3DDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2DDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3dBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2dDerivative",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayerBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.CosineDistanceLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.HingeLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.HuberLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.L2Loss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.LogLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.LogPoissonLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.custom.Logdet",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.MeanPairwiseSquaredErrorLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.MeanSquaredErrorLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.SigmoidCrossEntropyLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyWithLogitsLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.SparseSoftmaxCrossEntropyLossWithLogits",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.WeightedCrossEntropyLoss",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.AbsoluteDifferenceLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.CosineDistanceLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.HingeLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.HuberLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.LogLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.LogPoissonLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.MeanPairwiseSquaredErrorLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.MeanSquaredErrorLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.SigmoidCrossEntropyLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.SoftmaxCrossEntropyLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.SoftmaxCrossEntropyWithLogitsLossBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.loss.bp.SparseSoftmaxCrossEntropyLossWithLogitsBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.meta.InvertedPredicateMetaOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.meta.PostulateMetaOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.meta.PredicateMetaOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.meta.ReduceMetaOp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.nlp.CbowRound",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.nlp.SkipGramRound",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.HashCode",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.Mmul",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.MmulBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.Moments",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.SufficientStatistics",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.TensorMmul",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.ZeroFraction",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bool.All",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bool.Any",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bool.IsInf",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bool.IsNaN",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.CumProdBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.CumSumBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.DotBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.MaxBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.MinBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.Norm1Bp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.Norm2Bp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.NormMaxBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.ProdBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.SquaredNormBp",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true,
-    "allDeclaredClasses": true,
-    "allPublicClasses": true
-  },
-  {
-    "name": "org.nd4j.linalg.api.ops.impl.reduce.bp.StandardDeviationBp",
+    "name": "org.nd4j.nativeblas.NativeOpsHolder",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,

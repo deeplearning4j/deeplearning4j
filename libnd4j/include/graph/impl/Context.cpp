@@ -21,6 +21,7 @@
 //
 #include <array/InteropDataBuffer.h>
 #include <graph/Context.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/shape.h>
 #include <system/env_functions.h>
@@ -95,6 +96,7 @@ Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
       _intermediateResults.size(), _handles.size(),
       _workspace != nullptr, isFastPath());
 #endif
+  DSP_DIAG(LIFECYCLE, "CTX_CTOR this=%p node=%d (proto)", (void*)this, _nodeId);
 }
 DataType Context::dataType(int index) {
   if(numD() < 1) {
@@ -155,6 +157,7 @@ Context::Context(int nodeId, VariableSpace *variableSpace) {
       _intermediateResults.size(), _handles.size(),
       _workspace != nullptr, isFastPath());
 #endif
+  DSP_DIAG(LIFECYCLE, "CTX_CTOR this=%p node=%d", (void*)this, _nodeId);
 }
 
 Context::Context(int nodeId, VariableSpace *variableSpace, bool isInplace) : Context(nodeId, variableSpace) {
@@ -166,6 +169,7 @@ Context::~Context() {
   // Track OpContext deallocation before cleanup
   OpContextLifecycleTracker::getInstance().recordDeallocation(this);
 #endif
+  DSP_DIAG(LIFECYCLE, "CTX_DTOR this=%p _context=%p node=%d", (void*)this, (void*)_context, _nodeId);
 
   //  Capture _context value BEFORE any vector operations.
   // There's evidence of memory corruption where _context gets corrupted to point
@@ -174,10 +178,15 @@ Context::~Context() {
   LaunchContext* contextToDelete = _context;
   _context = nullptr;  // Clear immediately to prevent double-free attempts
 
-  // Tripwire: Check if _context was already corrupted before destructor
+  // Tripwire: Check if _context was already corrupted before destructor.
+  // Include this-ptr so the log's CTX_CTOR/CTX_DTOR lifecycle for the same
+  // address identifies double-destruction vs. an external stomp.
   if (contextToDelete != nullptr) {
-    SD_VALIDATE_PTR(contextToDelete, "Context::~Context _context");
-    SD_VALIDATE_ALIGNED(contextToDelete, 8, "Context::~Context _context");
+    char _ctxWho[96];
+    snprintf(_ctxWho, sizeof(_ctxWho), "Context::~Context _context (this=%p node=%d)", (void*)this,
+             _nodeId);
+    SD_VALIDATE_PTR(contextToDelete, _ctxWho);
+    SD_VALIDATE_ALIGNED(contextToDelete, 8, _ctxWho);
   }
 
   // SAFETY: Wrap all cleanup in try-catch to prevent crashes from memory corruption.

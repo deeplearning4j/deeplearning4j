@@ -317,3 +317,9 @@ its rationale, and its current implementation status.
 | 0098 | OpenVINO CPU Graph Backend | Accepted |
 | 0099 | GraalVM Native Image Support | Accepted |
 | 0100 | SameDiff Graph Optimizer | Implemented |
+| 0101 | TorchScript Import | Accepted |
+| 0102 | Accelerator and CPU-Architecture CI Test Tiers | Proposed |
+| 0103 | DSP Execution-Mode Auction and Per-Unit Performance Ledger | Proposed |
+| 0104 | Triton Tile-Config Profile-Guided Optimization | Proposed |
+| 0105 | Generation Session Continuation (Resume Decode) | Proposed |
+| 0106 | Consolidated Masked Multi-Position Decode Substrate | Proposed |

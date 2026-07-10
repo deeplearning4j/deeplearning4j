@@ -213,9 +213,10 @@ public class GpuReductionOpValidationTests {
                 {2, 4, 4, 4, 5, 5, 7, 9}
         });
 
-        INDArray stdResult = arr.std(true); // bias corrected
+        // Population std (biasCorrected=false): mean=5, SS=32, n=8 → sqrt(32/8) = 2.0
+        INDArray stdResult = arr.std(false);
         assertTrue(stdResult.isScalar());
-        // Known std of this data = 2.0
+        // Known population std of this data = 2.0
         assertEquals(2.0, stdResult.getDouble(0), 1e-5);
     }
 
@@ -257,9 +258,10 @@ public class GpuReductionOpValidationTests {
                 {2, 4, 4, 4, 5, 5, 7, 9}
         });
 
-        INDArray varResult = arr.var(true); // bias corrected
+        // Population variance (biasCorrected=false): mean=5, SS=32, n=8 → 32/8 = 4.0
+        INDArray varResult = arr.var(false);
         assertTrue(varResult.isScalar());
-        // Variance = std^2 = 4.0
+        // Population variance = population_std^2 = 2.0^2 = 4.0
         assertEquals(4.0, varResult.getDouble(0), 1e-5);
     }
 

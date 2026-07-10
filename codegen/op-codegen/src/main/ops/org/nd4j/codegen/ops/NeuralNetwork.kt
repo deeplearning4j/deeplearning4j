@@ -901,7 +901,7 @@ fun NN() = Namespace("NN") {
 
         val numExperts = Arg(INT, "numExperts") { description = "Total number of experts" }
         val topK = Arg(INT, "topK") { defaultValue = 2; description = "Number of experts to route to per token" }
-        val normalizeProbs = Arg(BOOL, "normalizeProbs") { defaultValue = true; description = "Whether to normalize router probabilities for selected experts" }
+        val normalizeProbs = Arg(BOOL, "normalizeProbs") { defaultValue = false; description = "Whether to normalize router probabilities for selected experts. Default false is the gradient-safe choice (normalizing amplifies gradients by ~numExperts/topK)." }
         val capacityFactor = Arg(FLOATING_POINT, "capacityFactor") { defaultValue = 1.0; description = "Expert capacity factor for load balancing" }
 
         Output(NUMERIC, "output") { description = "Combined expert outputs. Shape: [batch, seqLen, expertHiddenSize]" }
@@ -952,7 +952,7 @@ fun NN() = Namespace("NN") {
 
         val numRoutedExperts = Arg(INT, "numRoutedExperts") { description = "Number of routed experts" }
         val topK = Arg(INT, "topK") { defaultValue = 2; description = "Number of experts to route to per token" }
-        val normalizeProbs = Arg(BOOL, "normalizeProbs") { defaultValue = true; description = "Whether to normalize router probabilities for selected experts" }
+        val normalizeProbs = Arg(BOOL, "normalizeProbs") { defaultValue = false; description = "Whether to normalize router probabilities for selected experts. Default false is the gradient-safe choice (normalizing amplifies gradients by ~numRoutedExperts/topK)." }
         val capacityFactor = Arg(FLOATING_POINT, "capacityFactor") { defaultValue = 1.0; description = "Expert capacity factor for load balancing" }
 
         Output(NUMERIC, "output") { description = "Combined shared + routed expert outputs. Shape: [batch, seqLen, hiddenSize]" }
@@ -1317,6 +1317,45 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("ggmlQMatMul") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "GgmlQMatMul"
+        Input(NUMERIC, "activations") { description = "Activations [M, K] or [B, S, K] (FLOAT32 or HALF)" }
+        Input(NUMERIC, "packedWeights") { description = "Packed GGML quantized weight bytes (INT8, rank 1) for a logical [N, K] weight" }
+        Arg(INT, "quantType") { description = "GGML quantization type: 4=Q8_0, 8=Q4_K, 10=Q6_K" }
+        Arg(INT, "n") { description = "Number of weight rows (output columns)" }
+        Arg(INT, "k") { description = "Inner dimension (must be divisible by the quant block size)" }
+        Arg(INT, "outputDtype") { description = "Output dtype: 0=FLOAT32, 1=HALF" }
+        Output(NUMERIC, "output") { description = "out = activations @ dequant(weight)^T, [M, N] or [B, S, N]" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Runtime quantized matmul against GGML-packed weights: dequantizes the packed
+                weight on the fly (fp32 accumulation) without materializing a dense weight.
+            """.trimIndent()
+        }
+    }
+
+    Op("ggmlQMatMulLora") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "GgmlQMatMulLora"
+        Input(NUMERIC, "activations") { description = "Activations [M, K] or [B, S, K]" }
+        Input(NUMERIC, "packedWeights") { description = "Packed GGML quantized weight bytes (INT8) for a logical [N, K] weight" }
+        Input(NUMERIC, "loraA") { description = "LoRA down-projection [rank, K]" }
+        Input(NUMERIC, "loraB") { description = "LoRA up-projection [N, rank]" }
+        Arg(FLOATING_POINT, "scaling") { description = "LoRA scaling factor" }
+        Arg(INT, "quantType") { description = "GGML quantization type: 4=Q8_0, 8=Q4_K, 10=Q6_K" }
+        Arg(INT, "n") { description = "Number of weight rows (output columns)" }
+        Arg(INT, "k") { description = "Inner dimension" }
+        Arg(INT, "outputDtype") { description = "Output dtype: 0=FLOAT32, 1=HALF" }
+        Output(NUMERIC, "output") { description = "ggml_qmatmul(activations, weight) + scaling * (activations @ loraA^T) @ loraB^T" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Fused QLoRA op: runtime quantized base matmul (frozen GGML-packed weight) plus a
+                trainable low-rank LoRA residual, computed in a single op.
+            """.trimIndent()
+        }
+    }
+
     Op("kvCacheQuantize") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "KVCacheQuantize"
@@ -1531,11 +1570,17 @@ fun NN() = Namespace("NN") {
     Op("selectiveScan") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "SelectiveScan"
-        Input(NUMERIC, "input") { description = "Input tensor" }
-        Output(NUMERIC, "output") { description = "Selective scan output" }
+        Input(NUMERIC, "x") { description = "Input sequence [B, L, D]" }
+        Input(NUMERIC, "a") { description = "Discretized state transition [B, L, S]" }
+        Input(NUMERIC, "b") { description = "Input projection [B, L, S]" }
+        Input(NUMERIC, "c") { description = "Output projection [B, L, S]" }
+        Input(NUMERIC, "d") { description = "Skip connection weight [D]" }
+        Input(NUMERIC, "h0") { description = "Optional initial hidden state [B, D, S] (may be null)"; defaultValue = null }
+        Output(NUMERIC, "output") { description = "Selective scan output [B, L, D]" }
         Doc(Language.ANY, DocScope.ALL) {
             """
-                Selective scan operation for state space models (Mamba architecture).
+                Selective scan (S6/Mamba) operation for state space models. Consumes the
+                discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).
             """.trimIndent()
         }
     }

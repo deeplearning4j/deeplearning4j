@@ -479,6 +479,32 @@ DECLARE_CUSTOM_OP(moe_shared_experts, 6, 3, false, -2, 3);
 #endif
 
 /**
+ * MoE Weighted Sum — fused top-K expert output accumulation
+ *
+ * Reduces expert outputs into the final hidden state without the caller
+ * materialising and holding the large intermediate through subsequent ops.
+ *
+ *   out[t, d] = Σ_{k}  weights[t, k] · expertOutputs[t, k, d]   (dense)
+ *   out[t, d] = Σ_{r: rowIndex[r,0]==t}  weights[t, rowIndex[r,1]] · eo[r, d]  (flat)
+ *
+ * fp32 accumulation; output type matches expertOutputs type.
+ *
+ * Inputs:
+ *   0: expertOutputs — [T, topK, D] (dense) or [totalRows, D] (flat/segment_gemm)
+ *   1: weights       — [T, topK]   (already normalised; NOT re-normalised here)
+ *   2: rowIndex (flat mode only) — [totalRows, 2] INT32/INT64 = {token_idx, k_idx}
+ *
+ * Integer args:
+ *   0: mode — 0=dense [T,topK,D], 1=flat [totalRows,D] + rowIndex
+ *
+ * Output:
+ *   0: [T, D]
+ */
+#if NOT_EXCLUDED(OP_moe_weighted_sum)
+DECLARE_CUSTOM_OP(moe_weighted_sum, 2, 1, false, 0, 1);
+#endif
+
+/**
  * Deformable Convolution 2D
  *
  * Implements deformable convolution where learned offsets are added to

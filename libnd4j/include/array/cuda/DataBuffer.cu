@@ -235,6 +235,33 @@ int handleNonPeerFailover(void*& buffer, size_t allocSize, int requestedDevice, 
   buffer = pinnedPtr;
   return requestedDevice;
 }
+
+SD_INLINE bool isHostResidentSpecialAllocation(void* buffer, size_t allocSize) {
+  if (buffer == nullptr || allocSize == 0) return false;
+  if (memory::CudaMemoryPool::getInstance().isPinnedHostAllocation(buffer)) return true;
+
+  cudaPointerAttributes attrs;
+  cudaError_t queryErr = cudaPointerGetAttributes(&attrs, buffer);
+  if (queryErr != cudaSuccess) {
+    cudaGetLastError();
+    return false;
+  }
+
+  if (attrs.type == cudaMemoryTypeHost) return true;
+  if (attrs.type != cudaMemoryTypeManaged) return false;
+
+  int preferredLocation = -2;
+  cudaError_t rangeErr = cudaMemRangeGetAttribute(&preferredLocation,
+                                                  sizeof(preferredLocation),
+                                                  cudaMemRangeAttributePreferredLocation,
+                                                  buffer, allocSize);
+  if (rangeErr != cudaSuccess) {
+    cudaGetLastError();
+    return false;
+  }
+
+  return preferredLocation == cudaCpuDeviceId;
+}
 }  // namespace
 
 void dspPublishThreadCompletionEvent(void* streamPtr) {
@@ -839,8 +866,14 @@ void DataBuffer::allocateSpecial() {
 #endif
 
     if (_workspace == nullptr) {
-      memory::MemoryCounter::getInstance().countIn(actualDevice >= 0 ? actualDevice : deviceId, getLenInBytes());
-      memory::MemoryCounter::getInstance().countIn(memory::MemoryType::DEVICE, getLenInBytes());
+      if (isHostResidentSpecialAllocation(_specialBuffer, _specialAllocBytes)) {
+        DSP_DIAG(MEMORY,
+                 "DataBuffer::allocateSpecial: host-resident special buffer not charged to device MemoryCounter ptr=%p bytes=%zu actualDevice=%d requestedDevice=%d",
+                 (void*)_specialBuffer, _specialAllocBytes, actualDevice, deviceId);
+      } else {
+        memory::MemoryCounter::getInstance().countIn(actualDevice >= 0 ? actualDevice : deviceId, getLenInBytes());
+        memory::MemoryCounter::getInstance().countIn(memory::MemoryType::DEVICE, getLenInBytes());
+      }
     }
 alloc_done:  // Target for capture-workspace goto (skips pool alloc + counters already set)
     (void)0;  // Empty statement after label (C++ requires statement after label)
@@ -1467,13 +1500,15 @@ void DataBuffer::deleteSpecial() {
     array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
         _specialBuffer,array::BufferType::SPECIAL);
 #endif
+    const bool countAsDeviceMemory = !isHostResidentSpecialAllocation(_specialBuffer, _specialAllocBytes);
+
     // Use device-aware free - critical for multi-GPU correctness
     tl_dspFreeBytes += getLenInBytes();
     tl_dspFreeCount++;
     RELEASE_SPECIAL_WITH_DEVICE(p, bufferDeviceId, _workspace);
 
     // count out towards DataBuffer device, only if we're not in workspace
-    if (_workspace == nullptr) {
+    if (_workspace == nullptr && countAsDeviceMemory) {
       sd::memory::MemoryCounter::getInstance().countOut(bufferDeviceId, getLenInBytes());
       sd::memory::MemoryCounter::getInstance().countOut(sd::memory::MemoryType::DEVICE, getLenInBytes());
     }
@@ -1532,10 +1567,11 @@ void DataBuffer::freeGpuOnStream(void* stream) {
     if (!switchedDevice && stream != nullptr) {
       freeStream = *reinterpret_cast<cudaStream_t*>(stream);
     }
+    const bool countAsDeviceMemory = !isHostResidentSpecialAllocation(_specialBuffer, _specialAllocBytes);
     memory::CudaMemoryPool::getInstance().free(p, bufferDeviceId, freeStream);
 
     // count out towards DataBuffer device, only if we're not in workspace
-    if (_workspace == nullptr) {
+    if (_workspace == nullptr && countAsDeviceMemory) {
       sd::memory::MemoryCounter::getInstance().countOut(bufferDeviceId, getLenInBytes());
       sd::memory::MemoryCounter::getInstance().countOut(sd::memory::MemoryType::DEVICE, getLenInBytes());
     }

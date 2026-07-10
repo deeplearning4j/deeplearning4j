@@ -85,6 +85,7 @@ template <typename T>
 SD_KERNEL void convStateUpdateKernel(
     const T* __restrict__ x,
     const T* __restrict__ stateIn,
+    const LongType* __restrict__ actualLen,
     T* __restrict__ stateOut,
     const LongType B, const LongType L, const LongType D, const LongType K,
     const LongType xS0, const LongType xS1, const LongType xS2,
@@ -99,7 +100,13 @@ SD_KERNEL void convStateUpdateKernel(
     const LongType d = (idx / (K - 1)) % D;
     const LongType b = idx / (D * (K - 1));
 
-    LongType srcT = L - (K - 1) + kk;
+    LongType effectiveLen = L;
+    if (actualLen != nullptr) {
+        effectiveLen = actualLen[0];
+        if (effectiveLen < 0) effectiveLen = 0;
+        if (effectiveLen > L) effectiveLen = L;
+    }
+    LongType srcT = effectiveLen - (K - 1) + kk;
     T val = static_cast<T>(0);
     if (srcT >= 0) {
         val = x[b * xS0 + srcT * xS1 + d * xS2];
@@ -113,6 +120,7 @@ SD_KERNEL void convStateUpdateKernel(
 template <typename T>
 static void launchCausalConv1d(
     const T* x, const T* weight, const T* bias, const T* stateIn,
+    const LongType* actualLen,
     T* out, T* stateOut,
     LongType B, LongType L, LongType D, LongType K, int activation,
     LongType xS0, LongType xS1, LongType xS2,
@@ -135,7 +143,7 @@ static void launchCausalConv1d(
     if (stateTotal > 0) {
         int stateBlocks = (stateTotal + threadsPerBlock - 1) / threadsPerBlock;
         convStateUpdateKernel<T><<<stateBlocks, threadsPerBlock, 0, stream>>>(
-            x, stateIn, stateOut, B, L, D, K,
+            x, stateIn, actualLen, stateOut, B, L, D, K,
             xS0, xS1, xS2, siS0, siS1, siS2, soS0, soS1, soS2);
         DebugHelper::checkGlobalErrorCode("convStateUpdateKernel failed");
     }
@@ -144,7 +152,8 @@ static void launchCausalConv1d(
 // No explicit instantiation needed — launchCausalConv1d is file-local and called via type switch below.
 
 void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
-                   NDArray* stateIn, NDArray* output, NDArray* stateOut, int activation, int wFormat) {
+                   NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                   int activation, int wFormat) {
     const auto B = x->sizeAt(0);
     const auto L = x->sizeAt(1);
     const auto D = x->sizeAt(2);
@@ -155,7 +164,7 @@ void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* 
     const LongType wChanStride = (wFormat == 0) ? weight->strideAt(0) : weight->strideAt(1);
     const LongType wDimStride  = (wFormat == 0) ? weight->strideAt(1) : weight->strideAt(0);
 
-    NDArray::prepareSpecialUse({output, stateOut}, {x, weight, bias});
+    NDArray::prepareSpecialUse({output, stateOut}, {x, weight, bias, actualLen});
     if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
 
     auto stream = context->getCudaStream();
@@ -174,6 +183,7 @@ void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* 
             reinterpret_cast<const float*>(weight->specialBuffer()),
             bias ? reinterpret_cast<const float*>(bias->specialBuffer()) : nullptr,
             stateIn ? reinterpret_cast<const float*>(stateIn->specialBuffer()) : nullptr,
+            actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
             reinterpret_cast<float*>(output->specialBuffer()),
             reinterpret_cast<float*>(stateOut->specialBuffer()),
             B, L, D, K, activation,
@@ -189,6 +199,7 @@ void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* 
             reinterpret_cast<const double*>(weight->specialBuffer()),
             bias ? reinterpret_cast<const double*>(bias->specialBuffer()) : nullptr,
             stateIn ? reinterpret_cast<const double*>(stateIn->specialBuffer()) : nullptr,
+            actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
             reinterpret_cast<double*>(output->specialBuffer()),
             reinterpret_cast<double*>(stateOut->specialBuffer()),
             B, L, D, K, activation,
@@ -204,6 +215,7 @@ void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* 
             reinterpret_cast<const float16*>(weight->specialBuffer()),
             bias ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
             stateIn ? reinterpret_cast<const float16*>(stateIn->specialBuffer()) : nullptr,
+            actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
             reinterpret_cast<float16*>(output->specialBuffer()),
             reinterpret_cast<float16*>(stateOut->specialBuffer()),
             B, L, D, K, activation,
@@ -217,7 +229,7 @@ void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* 
         THROW_EXCEPTION("causalConv1d: Unsupported data type");
     }
 
-    NDArray::registerSpecialUse({output, stateOut}, {x, weight, bias});
+    NDArray::registerSpecialUse({output, stateOut}, {x, weight, bias, actualLen});
     if (stateIn != nullptr) NDArray::registerSpecialUse({}, {stateIn});
 }
 

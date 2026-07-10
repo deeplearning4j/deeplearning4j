@@ -28,7 +28,7 @@ namespace helpers {
 SD_LIB_HIDDEN void gatedDeltaRule(LaunchContext* context,
                                    NDArray* Q, NDArray* K, NDArray* V,
                                    NDArray* beta, NDArray* gate, NDArray* stateIn,
-                                   NDArray* output, NDArray* stateOut);
+                                   NDArray* actualLen, NDArray* output, NDArray* stateOut);
 
 }  // namespace helpers
 }  // namespace ops

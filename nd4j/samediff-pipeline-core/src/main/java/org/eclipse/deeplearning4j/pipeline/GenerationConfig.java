@@ -44,8 +44,11 @@ public class GenerationConfig {
     private Double temperature;
     private Double topP;
     private Double topK;
+    private Double minP;
     private Double typicalP;
     private Double repetitionPenalty;
+    private Double frequencyPenalty;
+    private Double presencePenalty;
     private Double lengthPenalty;
     private Boolean doSample;
 
@@ -92,8 +95,11 @@ public class GenerationConfig {
         if (json.has("temperature")) builder.temperature(json.get("temperature").getAsDouble());
         if (json.has("top_p")) builder.topP(json.get("top_p").getAsDouble());
         if (json.has("top_k")) builder.topK(json.get("top_k").getAsDouble());
+        if (json.has("min_p")) builder.minP(json.get("min_p").getAsDouble());
         if (json.has("typical_p")) builder.typicalP(json.get("typical_p").getAsDouble());
         if (json.has("repetition_penalty")) builder.repetitionPenalty(json.get("repetition_penalty").getAsDouble());
+        if (json.has("frequency_penalty")) builder.frequencyPenalty(json.get("frequency_penalty").getAsDouble());
+        if (json.has("presence_penalty")) builder.presencePenalty(json.get("presence_penalty").getAsDouble());
         if (json.has("length_penalty")) builder.lengthPenalty(json.get("length_penalty").getAsDouble());
         if (json.has("do_sample")) builder.doSample(json.get("do_sample").getAsBoolean());
 

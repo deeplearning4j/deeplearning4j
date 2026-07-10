@@ -44,31 +44,34 @@ CUSTOM_OP_IMPL(causal_conv1d, 2, 2, false, 0, 0) {
 
     NDArray* bias = nullptr;
     NDArray* stateIn = nullptr;
+    NDArray* actualLen = nullptr;
 
-    if (block.width() == 3) {
-        // Could be bias [D] (rank 1) or stateIn [B, D, K-1] (rank 3)
-        auto third = INPUT_VARIABLE(2);
-        if (third->rankOf() == 1) {
-            bias = third;
+    for (int i = 2; i < block.width(); ++i) {
+        auto input = INPUT_VARIABLE(i);
+        if (input->rankOf() == 0) {
+            actualLen = input;
+        } else if (input->rankOf() == 1) {
+            bias = input;
         } else {
-            stateIn = third;
+            stateIn = input;
         }
-    } else if (block.width() >= 4) {
-        bias = INPUT_VARIABLE(2);
-        stateIn = INPUT_VARIABLE(3);
     }
+
+    REQUIRE_TRUE(actualLen == nullptr || actualLen->dataType() == DataType::INT64, 0,
+                 "causal_conv1d: actualLen input must be INT64 scalar");
 
     int activation = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
     int wFormat = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
 
-    helpers::causalConv1d(block.launchContext(), x, weight, bias, stateIn, output, stateOut, activation, wFormat);
+    helpers::causalConv1d(block.launchContext(), x, weight, bias, stateIn, actualLen,
+                          output, stateOut, activation, wFormat);
 
     return sd::Status::OK;
 }
 
 DECLARE_TYPES(causal_conv1d) {
     getOpDescriptor()
-        ->setAllowedInputTypes({ALL_FLOATS})
+        ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS})
         ->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }

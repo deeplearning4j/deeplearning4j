@@ -27,7 +27,8 @@ namespace helpers {
 
 SD_LIB_HIDDEN void causalConv1d(LaunchContext* context,
                                  NDArray* x, NDArray* weight, NDArray* bias, NDArray* stateIn,
-                                 NDArray* output, NDArray* stateOut, int activation, int wFormat = 0);
+                                 NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                                 int activation, int wFormat = 0);
 
 }  // namespace helpers
 }  // namespace ops

@@ -851,10 +851,16 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMulBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmulBp.class,
+                // QLoRA / quantized-base adapter ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLora.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLoraBp.class,
                 // Quantization ops
                 org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul.class,
                 // Parallel / distributed ops
@@ -863,6 +869,7 @@ public class DifferentialFunctionClassHolder {
                 // MoE ops
                 org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.MoeGate.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MoeWeightedSum.class,
                 // Fused ops
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedBiasDropoutResidual.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.class,

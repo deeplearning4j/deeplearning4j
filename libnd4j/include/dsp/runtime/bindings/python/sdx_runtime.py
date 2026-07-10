@@ -9,7 +9,7 @@ import platform
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 try:
     import numpy as _np  # type: ignore
@@ -39,10 +39,13 @@ SDX_GPU_TARGET_AMD = 2
 
 
 _SDX_BACKENDS: Tuple[str, ...] = ("cpu", "cuda", "amd")
-_SDX_BACKEND_TO_LIB: Dict[str, str] = {
-    "cpu": "nd4jcpu",
-    "cuda": "nd4jcuda",
-    "amd": "nd4jamd",
+# Standalone SDX libraries (libsdx_*) are preferred: they export only the sdx*
+# C ABI and carry no JVM dependency. Monolithic backend libraries (libnd4j*)
+# remain as fallback — they export the same sdx* symbols.
+_SDX_BACKEND_TO_LIBS: Dict[str, Tuple[str, ...]] = {
+    "cpu": ("sdx_cpu", "nd4jcpu"),
+    "cuda": ("sdx_cuda", "nd4jcuda"),
+    "amd": ("sdx_cuda", "nd4jamd"),
 }
 
 
@@ -96,12 +99,15 @@ def _shared_library_extension(platform_id: str) -> str:
     return ".so"
 
 
-def _runtime_library_filename(platform_id: str, backend: str) -> str:
-    lib_base = _SDX_BACKEND_TO_LIB[backend]
+def _runtime_library_filenames(platform_id: str, backend: str) -> List[str]:
     ext = _shared_library_extension(platform_id)
-    if platform_id.startswith("windows-"):
-        return f"{lib_base}{ext}"
-    return f"lib{lib_base}{ext}"
+    names: List[str] = []
+    for lib_base in _SDX_BACKEND_TO_LIBS[backend]:
+        if platform_id.startswith("windows-"):
+            names.append(f"{lib_base}{ext}")
+        else:
+            names.append(f"lib{lib_base}{ext}")
+    return names
 
 
 def _backend_priority(preferred_backend: Optional[str]) -> List[str]:
@@ -164,17 +170,17 @@ def _collect_packaged_library_candidates(
             continue
 
         for backend in backends:
-            base = _runtime_library_filename(platform_id, backend)
-            patterns = [base]
-            if ext in (".so", ".dylib"):
-                patterns.append(base + ".*")
+            for base in _runtime_library_filenames(platform_id, backend):
+                patterns = [base]
+                if ext in (".so", ".dylib"):
+                    patterns.append(base + ".*")
 
-            for pattern in patterns:
-                for candidate_path in sorted(directory.glob(pattern)):
-                    candidate = str(candidate_path)
-                    if candidate not in seen:
-                        seen.add(candidate)
-                        candidates.append(candidate)
+                for pattern in patterns:
+                    for candidate_path in sorted(directory.glob(pattern)):
+                        candidate = str(candidate_path)
+                        if candidate not in seen:
+                            seen.add(candidate)
+                            candidates.append(candidate)
 
     return candidates
 
@@ -182,9 +188,9 @@ def _collect_packaged_library_candidates(
 def _system_library_names(platform_id: str, backends: Sequence[str]) -> List[str]:
     names: List[str] = []
     for backend in backends:
-        lib_base = _SDX_BACKEND_TO_LIB[backend]
-        runtime_filename = _runtime_library_filename(platform_id, backend)
-        names.extend([runtime_filename, lib_base])
+        filenames = _runtime_library_filenames(platform_id, backend)
+        for lib_base, runtime_filename in zip(_SDX_BACKEND_TO_LIBS[backend], filenames):
+            names.extend([runtime_filename, lib_base])
     return names
 
 
@@ -382,6 +388,10 @@ class ExecutionReport(ctypes.Structure):
         ("execution_time_ns", ctypes.c_uint64),
         ("requested_gpu_target", ctypes.c_int32),
         ("applied_gpu_target", ctypes.c_int32),
+        # Plan phase after execution: 0=SLOT_BY_SLOT (warmup), 1=SHAPES_FROZEN, 2=REPLAYING, 3=REPLAY_BLOCKED
+        ("plan_phase", ctypes.c_int32),
+        # Number of executions completed on this context
+        ("execution_count", ctypes.c_int32),
     ]
 
     def __init__(self) -> None:
@@ -393,6 +403,113 @@ class _Handles:
     runtime: ctypes.c_void_p
     model: Optional[ctypes.c_void_p] = None
     context: Optional[ctypes.c_void_p] = None
+
+
+@dataclass(frozen=True)
+class InputMetadata:
+    """Metadata for one external plan input — mirrors onnxruntime's NodeArg shape.
+
+    Attributes:
+        name:  The plan input name (matches ``input_names()`` order).
+        index: Positional index in the plan's external-input binding list.
+    """
+
+    name: str
+    index: int
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"InputMetadata(name={self.name!r}, index={self.index})"
+
+
+# Symbolic plan-phase names used by ExecutionSummary.
+_PLAN_PHASE_NAMES: Dict[int, str] = {
+    0: "SLOT_BY_SLOT",
+    1: "SHAPES_FROZEN",
+    2: "REPLAYING",
+    3: "REPLAY_BLOCKED",
+}
+
+# Symbolic backend names used by ExecutionSummary.
+_BACKEND_NAMES: Dict[int, str] = {
+    0: "AUTO",
+    1: "SLOT_BY_SLOT",
+    2: "CUDA_GRAPHS",
+    3: "NVRTC",
+    4: "PTX",
+    5: "TRITON",
+    6: "MLX",
+    7: "ARM_HYBRID",
+    8: "NNAPI",
+}
+
+
+@dataclass(frozen=True)
+class ExecutionSummary:
+    """Human-friendly execution report returned by :meth:`SdxContext.run_named`.
+
+    This is a pure Python dataclass (not a ctypes struct) so callers can
+    inspect it via normal attribute access, pass it to logging, etc.
+
+    Attributes:
+        status_code:        0 on success.
+        requested_backend:  The backend code requested at load time.
+        applied_backend:    The backend that actually executed.
+        used_fallback:      True if the runtime fell back from the requested backend.
+        plan_phase:         DSP plan phase after this run (0–3).
+        execution_count:    Total executions completed on this context.
+        execution_time_ns:  Wall time of the last run in nanoseconds.
+        requested_gpu_target: GPU target requested (0=AUTO, 1=CUDA, 2=AMD).
+        applied_gpu_target:   GPU target that was actually used.
+    """
+
+    status_code: int
+    requested_backend: int
+    applied_backend: int
+    used_fallback: bool
+    plan_phase: int
+    execution_count: int
+    execution_time_ns: int
+    requested_gpu_target: int
+    applied_gpu_target: int
+
+    @property
+    def execution_time_ms(self) -> float:
+        """Wall time in milliseconds (convenience alias)."""
+        return self.execution_time_ns / 1e6
+
+    @property
+    def plan_phase_name(self) -> str:
+        """Human-readable plan phase name."""
+        return _PLAN_PHASE_NAMES.get(self.plan_phase, f"UNKNOWN({self.plan_phase})")
+
+    @property
+    def applied_backend_name(self) -> str:
+        """Human-readable applied backend name."""
+        return _BACKEND_NAMES.get(self.applied_backend, f"UNKNOWN({self.applied_backend})")
+
+    @classmethod
+    def _from_ctypes(cls, report: "ExecutionReport") -> "ExecutionSummary":
+        return cls(
+            status_code=int(report.status_code),
+            requested_backend=int(report.requested_backend),
+            applied_backend=int(report.applied_backend),
+            used_fallback=bool(report.used_fallback),
+            plan_phase=int(report.plan_phase),
+            execution_count=int(report.execution_count),
+            execution_time_ns=int(report.execution_time_ns),
+            requested_gpu_target=int(report.requested_gpu_target),
+            applied_gpu_target=int(report.applied_gpu_target),
+        )
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return (
+            f"ExecutionSummary("
+            f"phase={self.plan_phase_name}, "
+            f"backend={self.applied_backend_name}, "
+            f"fallback={self.used_fallback}, "
+            f"count={self.execution_count}, "
+            f"time={self.execution_time_ms:.3f}ms)"
+        )
 
 
 class SdxRuntime:
@@ -521,6 +638,30 @@ class SdxRuntime:
 
         self._lib.sdxGetExecutionReport.argtypes = [ctypes.c_void_p, ctypes.POINTER(ExecutionReport)]
         self._lib.sdxGetExecutionReport.restype = ctypes.c_int
+
+        self._lib.sdxMarkInputVariable.argtypes = [ctypes.c_void_p, ctypes.c_int32]
+        self._lib.sdxMarkInputVariable.restype = ctypes.c_int
+
+        self._lib.sdxMarkInputPlaceholder.argtypes = [ctypes.c_void_p, ctypes.c_int32]
+        self._lib.sdxMarkInputPlaceholder.restype = ctypes.c_int
+
+        self._lib.sdxFreezeShapes.argtypes = [ctypes.c_void_p]
+        self._lib.sdxFreezeShapes.restype = ctypes.c_int
+
+        self._lib.sdxGetPlanPhase.argtypes = [ctypes.c_void_p]
+        self._lib.sdxGetPlanPhase.restype = ctypes.c_int32
+
+        self._lib.sdxGetExecutionCount.argtypes = [ctypes.c_void_p]
+        self._lib.sdxGetExecutionCount.restype = ctypes.c_int32
+
+        self._lib.sdxGetNumInputs.argtypes = [ctypes.c_void_p]
+        self._lib.sdxGetNumInputs.restype = ctypes.c_int32
+
+        self._lib.sdxGetNumOutputs.argtypes = [ctypes.c_void_p]
+        self._lib.sdxGetNumOutputs.restype = ctypes.c_int32
+
+        self._lib.sdxGetInputName.argtypes = [ctypes.c_void_p, ctypes.c_int32]
+        self._lib.sdxGetInputName.restype = ctypes.c_char_p
 
     def abi_version(self) -> int:
         return int(self._lib.sdxGetRuntimeAbiVersion())
@@ -656,6 +797,136 @@ class SdxContext:
         status = self._runtime._lib.sdxGetExecutionReport(self._context_handle, ctypes.byref(report))
         self._runtime._raise_on_error(status, self._runtime._handles.runtime, "sdxGetExecutionReport")
         return report
+
+    def mark_input_variable(self, input_index: int) -> None:
+        """Mark an input as VARIABLE (value changes between runs, shape stays fixed).
+
+        Enables D2D staging buffers for that input. Call after context creation,
+        before the first run().
+        """
+        status = self._runtime._lib.sdxMarkInputVariable(self._context_handle, int(input_index))
+        self._runtime._raise_on_error(status, self._runtime._handles.runtime, "sdxMarkInputVariable")
+
+    def mark_input_placeholder(self, input_index: int) -> None:
+        """Mark an input as PLACEHOLDER (value and potentially shape change between runs)."""
+        status = self._runtime._lib.sdxMarkInputPlaceholder(self._context_handle, int(input_index))
+        self._runtime._raise_on_error(status, self._runtime._handles.runtime, "sdxMarkInputPlaceholder")
+
+    def freeze_shapes(self) -> None:
+        """Freeze plan shapes, enabling CUDA graph capture and the stable fast path.
+
+        Typically called after a few warmup run() calls have stabilized shapes.
+        """
+        status = self._runtime._lib.sdxFreezeShapes(self._context_handle)
+        self._runtime._raise_on_error(status, self._runtime._handles.runtime, "sdxFreezeShapes")
+
+    def plan_phase(self) -> int:
+        """Current plan phase: 0=SLOT_BY_SLOT (warmup), 1=SHAPES_FROZEN, 2=REPLAYING, 3=REPLAY_BLOCKED, -1 on error."""
+        return int(self._runtime._lib.sdxGetPlanPhase(self._context_handle))
+
+    def execution_count(self) -> int:
+        """Number of executions completed on this context (-1 on error)."""
+        return int(self._runtime._lib.sdxGetExecutionCount(self._context_handle))
+
+    def num_inputs(self) -> int:
+        """Number of external inputs the plan expects per run (-1 on error).
+
+        External inputs cover the model's constants, variables, AND
+        placeholders — every one must be bound, positionally in plan order.
+        """
+        return int(self._runtime._lib.sdxGetNumInputs(self._context_handle))
+
+    def num_outputs(self) -> int:
+        """Number of outputs the plan produces per run (-1 on error)."""
+        return int(self._runtime._lib.sdxGetNumOutputs(self._context_handle))
+
+    def input_name(self, input_index: int) -> Optional[str]:
+        """Name of the external input at the given plan index, or None."""
+        raw = self._runtime._lib.sdxGetInputName(self._context_handle, int(input_index))
+        if not raw:
+            return None
+        return raw.decode("utf-8", errors="replace")
+
+    def input_names(self) -> List[str]:
+        """All external input names in plan binding order."""
+        count = self.num_inputs()
+        if count < 0:
+            return []
+        return [self.input_name(i) or "" for i in range(count)]
+
+    def get_inputs(self) -> List[InputMetadata]:
+        """Return metadata for every external plan input in binding order.
+
+        Mirrors ``onnxruntime.InferenceSession.get_inputs()`` so callers can
+        discover the plan contract the same way they would with ONNX Runtime::
+
+            meta = ctx.get_inputs()
+            # [InputMetadata(name='w1', index=0), InputMetadata(name='x', index=1), ...]
+        """
+        return [InputMetadata(name=name, index=i) for i, name in enumerate(self.input_names())]
+
+    def run_named(
+        self,
+        input_feed: "Mapping[str, Union[_np.ndarray, TensorView]]",
+        outputs: "Sequence[Union[_np.ndarray, TensorView]]",
+        options: Optional["RunOptions"] = None,
+    ) -> "ExecutionSummary":
+        """Run the plan with inputs supplied by name — onnxruntime-style API.
+
+        Reorders ``input_feed`` into the plan's positional binding contract
+        (discovered via :meth:`get_inputs`) so callers never need to track
+        position numbers manually.
+
+        Parameters
+        ----------
+        input_feed:
+            Dict mapping input *name* → ``numpy.ndarray`` or ``TensorView``.
+            All external inputs discovered via :meth:`get_inputs` must be
+            present.  Order is determined by the plan's binding contract,
+            not insertion order.
+        outputs:
+            Pre-allocated output buffers in context output order (same
+            semantics as the positional ``outputs`` argument of :meth:`run`).
+        options:
+            Optional ``RunOptions`` to override backend / GPU target.
+
+        Returns
+        -------
+        ExecutionSummary
+            A frozen Python dataclass with phase, backend, timing, and
+            fallback information for the just-completed run.
+
+        Raises
+        ------
+        ValueError
+            If a required input name is missing from *input_feed* or an
+            unexpected name is supplied.
+        RuntimeError
+            Propagated from the C ABI on execution failure.
+
+        Example
+        -------
+        >>> probs = np.zeros((2, 3), dtype=np.float32)
+        >>> report = ctx.run_named({"x": x_arr, "w1": w1_arr, ...}, [probs])
+        >>> print(report.plan_phase_name, f"{report.execution_time_ms:.2f}ms")
+        """
+        names = self.input_names()
+        missing = [n for n in names if n not in input_feed]
+        if missing:
+            raise ValueError(
+                f"run_named: missing inputs for plan binding: {missing}. "
+                f"Plan expects: {names}"
+            )
+        extra = [n for n in input_feed if n not in set(names)]
+        if extra:
+            raise ValueError(
+                f"run_named: unexpected inputs not in plan binding: {extra}. "
+                f"Plan expects: {names}"
+            )
+        ordered_inputs = [input_feed[name] for name in names]
+        self.run(ordered_inputs, outputs, options=options)
+        raw = self.execution_report()
+        return ExecutionSummary._from_ctypes(raw)
 
     def close(self) -> None:
         if self._context_handle:

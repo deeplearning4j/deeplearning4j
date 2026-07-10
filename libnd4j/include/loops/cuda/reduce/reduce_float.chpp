@@ -132,7 +132,12 @@ SD_DEVICE void ReduceFloatFunction<X,Z>::transformCuda(
   auto z          = reinterpret_cast<Z*>(vz);
   auto extraParams= reinterpret_cast<Z*>(vextraParams);
 
-  __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
+  // Partials MUST be OpType::InterType: aggregatePartials reinterprets this
+  // buffer as InterType*. For Z=HALF/BFLOAT16 InterType is float, so a Z-typed
+  // array here makes the tree reduction misread 2-byte slots as 4-byte floats
+  // (and index past the array) — non-finite garbage for fp16 dimensional reduces.
+  using Y = typename OpType::InterType;
+  __shared__ Y sPartials[SD_CUDA_BLOCK_SIZE];
   __shared__ sd::LongType tadLen;
   __shared__ sd::LongType numTads;
   __shared__ bool sameOffsets;
@@ -234,9 +239,15 @@ SD_DEVICE void ReduceFloatFunction<X, Z>::execScalarCuda(
   auto x           = reinterpret_cast<const X*>(vx);
   auto z           = reinterpret_cast<Z*>(vz);
   auto extraParams = reinterpret_cast<Z*>(vextraParams);
-  auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
 
   using Y = typename OpType::InterType;
+  // Stage cross-block partials in InterType, NOT Z: for Z=HALF/BF16 the per-block
+  // partial SUMS (e.g. Mean/Norm2 over large arrays) can exceed 65504 → inf, and
+  // narrowing float partials to half between blocks throws away the InterType
+  // accumulation precision. The staging region (bytes [0, 65536) of the reduction
+  // scratch, before the ticket counter at tc[16384]) holds 16384 floats — far above
+  // any scalar-reduce grid size.
+  auto reductionBuffer = reinterpret_cast<Y*>(vreductionBuffer);
 
   __shared__ Y sPartials[SD_CUDA_BLOCK_SIZE];
   __shared__ sd::LongType length;

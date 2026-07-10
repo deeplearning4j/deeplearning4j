@@ -19,6 +19,7 @@
 #include <ops/declarable/helpers/autoregressive_decode.h>
 #include <ops/declarable/helpers/token_sample.h>
 #include <ops/declarable/helpers/kv_scatter.h>
+#include <ops/declarable/helpers/kv_cache_quantize.h>
 #include <graph/Context.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
@@ -272,6 +273,17 @@ void autoregressiveDecode(
         }
     }
 
+    // ── ADR 0106 Phase 1: window substrate ──────────────────────────────────
+    // When activeWindow > 1, we replace the single-token mask/posIds with
+    // the pre-allocated window tensors. These are updated in-place each step
+    // so device addresses remain stable (pointer-stability contract, ADR 0105).
+    // The MASK_FILL value for float masks that mark positions as inaccessible.
+    constexpr float WINDOW_MASK_FILL = -3.4028235e+38f;
+
+    const bool useWindowSubstrate = (config->activeWindow > 1
+                                     && config->windowGridMask != nullptr
+                                     && config->windowPositionGrid != nullptr);
+
     for (int step = 0; step < maxNewTokens; step++) {
         auto stepStart = std::chrono::high_resolution_clock::now();
 
@@ -280,12 +292,59 @@ void autoregressiveDecode(
             extInputs[config->embeddingsExtIdx] = decodeEmbedding;
         }
 
-        if (config->maskExtIdx >= 0 && config->maskExtIdx < numExtInputs) {
-            extInputs[config->maskExtIdx] = attentionMask;
-        }
+        // ── ADR 0106 Phase 1: window mask and position grid update ──────────
+        // When W>1, fill the fixed [1,1,W_max,past+W_max] mask and [1,W_max] posGrid
+        // in-place, then wire them into the plan's ext inputs in place of the 1-wide
+        // tensors. When W=1 the existing path runs unmodified.
+        if (useWindowSubstrate) {
+            NDArray* wMask = config->windowGridMask;
+            NDArray* wPos  = config->windowPositionGrid;
+            LongType wMax  = config->windowMax;
+            LongType aW    = config->activeWindow;
+            // wMask shape: [1,1,wMax,past+wMax] — treat as flat rows of length (past+wMax)
+            LongType rowLen = wMask->sizeAt(3);  // past_len + wMax
 
-        if (config->posIdsExtIdx >= 0 && config->posIdsExtIdx < numExtInputs) {
-            extInputs[config->posIdsExtIdx] = positionIds;
+            // Fill entire mask with MASK_FILL (all masked).
+            // assign() requires a non-const reference, so copy into a local variable.
+            float maskFillVal = WINDOW_MASK_FILL;
+            wMask->assign(maskFillVal);
+
+            // wMask is [1, 1, wMax, rowLen] — use 4D indexing p(batch, head, w, k, value).
+            float zeroVal = 0.0f;
+            for (LongType w = 0; w < aW && w < wMax; w++) {
+                // Attend to all past KV positions
+                for (LongType k = 0; k < currentPosition; k++) {
+                    wMask->p(0LL, 0LL, w, k, zeroVal);
+                }
+                // Attend to self (position w in the window block = past+w)
+                LongType selfK = currentPosition + w;
+                if (selfK < rowLen) {
+                    wMask->p(0LL, 0LL, w, selfK, zeroVal);
+                }
+                // Causal: positions past+j for j < w remain MASK_FILL (already set by assign)
+            }
+            // Inactive rows (w >= aW): remain all-masked (already done by assign above)
+
+            // Fill window position grid: [1, wMax] — 2D: p(batch=0, w, pos)
+            for (LongType w = 0; w < wMax; w++) {
+                LongType pos = (w < aW) ? (currentPosition + w) : currentPosition;
+                wPos->p(0LL, w, pos);
+            }
+
+            // Wire window tensors into ext inputs (replacing 1-wide mask/posIds)
+            if (config->maskExtIdx >= 0 && config->maskExtIdx < numExtInputs) {
+                extInputs[config->maskExtIdx] = wMask;
+            }
+            if (config->posIdsExtIdx >= 0 && config->posIdsExtIdx < numExtInputs) {
+                extInputs[config->posIdsExtIdx] = wPos;
+            }
+        } else {
+            if (config->maskExtIdx >= 0 && config->maskExtIdx < numExtInputs) {
+                extInputs[config->maskExtIdx] = attentionMask;
+            }
+            if (config->posIdsExtIdx >= 0 && config->posIdsExtIdx < numExtInputs) {
+                extInputs[config->posIdsExtIdx] = positionIds;
+            }
         }
 
         if (config->inputIdsExtIdx >= 0 && config->inputIdsExtIdx < numExtInputs) {
@@ -336,10 +395,30 @@ void autoregressiveDecode(
 
         // ── Step 2: Execute plan ──
         // On CPU, use execute() instead of executeSteadyState() (which is CUDA-only).
+
+        // ADR 0107 V2: inject scale buffers into the thread-local registry so that
+        // dot_product_attention_v2 can look them up by INT8 KV cache pointer identity.
+        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr
+            && config->kvInputExtIndices != nullptr) {
+            static thread_local std::vector<NDArray*> tl_kvQuantPtrs;
+            int N = numKvPairs;
+            tl_kvQuantPtrs.resize(N);
+            for (int ki = 0; ki < N; ki++) {
+                int extIdx = config->kvInputExtIndices[ki];
+                tl_kvQuantPtrs[ki] = (extIdx >= 0 && extIdx < numExtInputs)
+                    ? extInputs[extIdx] : nullptr;
+            }
+            setKvScaleRegistry(tl_kvQuantPtrs.data(), config->kvScaleBuffers, N);
+        }
+
         Status planStatus = plan->execute(
             extInputs, numExtInputs,
             planOutputs, numPlanOutputs,
             nullptr);
+
+        if (config->kvQuantFormat > 0 && config->kvScaleBuffers != nullptr) {
+            clearKvScaleRegistry();
+        }
 
         REQUIRE_TRUE(planStatus == Status::OK, 0,
                      "autoregressive_decode: plan execution FAILED at step %d with status %d. "
@@ -494,33 +573,56 @@ void autoregressiveDecode(
             logitsVocab = logitsOutput->sizeAt(1);
         }
 
-        if (temperature <= 0.0 || (topK <= 1 && topP <= 0.0)) {
-            // Greedy: argmax over last-position logits
-            REQUIRE_TRUE(logitsVocab > 0, 0,
-                         "autoregressive_decode: logits vocab dimension is 0 at step %d. "
-                         "Cannot perform argmax on empty vocabulary.",
-                         step);
-            LongType lastPosOffset = (logitsSeqLen - 1) * logitsVocab;
-            const void* logitsPtr = static_cast<const char*>(logitsOutput->buffer())
-                                    + lastPosOffset * logitsOutput->sizeOfT();
+        REQUIRE_TRUE(logitsVocab > 0, 0,
+                     "autoregressive_decode: logits vocab dimension is 0 at step %d. "
+                     "Cannot perform token selection on empty vocabulary.",
+                     step);
 
-            BUILD_SINGLE_SELECTOR(logitsOutput->dataType(), argmaxCpu,
-                                  (logitsPtr, sampledToken->buffer(), logitsVocab),
-                                  SD_COMMON_TYPES);
+        // ADR 0106 Phase 1: when W>1 the logits output has shape [1, W_max, vocab].
+        // For the greedy/sample policy we sample from position 0 (first window slot).
+        // Phase 2 (speculative) will inspect all W position-logits and apply policy.
+        // When W=1 the slice is identical to the full output (no overhead, no copy).
+        NDArray* logitsForSample = logitsOutput;
+        NDArray* logitsSlice = nullptr;  // owned by this scope if allocated
+        if (useWindowSubstrate && logitsRank == 3 && logitsSeqLen > 1) {
+            // Slice position 0: logitsOutput[0, 0, :] → keeps batch+vocab dims.
+            // operator()(idx) flat format: {dim0Start,dim0End, dim1Start,dim1End, dim2Start,dim2End}
+            std::vector<LongType> sliceIdx{0, 1, 0, 1, 0, logitsVocab};
+            logitsSlice = (*logitsOutput)(sliceIdx, true);
+            logitsForSample = logitsSlice;
+        }
+
+        TokenSampleConfig stepSampleConfig = config != nullptr ? config->sampleConfig : TokenSampleConfig();
+        LongType baseSeed = stepSampleConfig.seed;
+        int generatedOffset = stepSampleConfig.generatedTokenOffset;
+        stepSampleConfig.temperature = temperature;
+        stepSampleConfig.topK = topK;
+        stepSampleConfig.topP = topP;
+        stepSampleConfig.repPenalty = repPenalty;
+        // Force batchMax/windowMax to 1 for the scalar selection step
+        // (policy drives the W-wide selection; the substrate just runs the forward)
+        stepSampleConfig.batchMax = 1;
+        stepSampleConfig.windowMax = 1;
+        stepSampleConfig.activeBatch = 1;
+        stepSampleConfig.activeWindow = 1;
+        stepSampleConfig.seed = baseSeed > 0 ? baseSeed + static_cast<LongType>(step) : 0;
+        stepSampleConfig.generatedTokenOffset = generatedOffset + step;
+        stepSampleConfig.stopTokenIds = stopTokenIds.empty() ? nullptr : stopTokenIds.data();
+        stepSampleConfig.stopTokenCount = static_cast<int>(stopTokenIds.size());
+
+        TokenSampleResult sampleResult;
+        if (step > 0) {
+            NDArray* tokensSoFar = (*generatedTokenIds)({0, step}, true);
+            tokenSamplePolicy(logitsForSample, sampledToken, tokensSoFar,
+                              stepSampleConfig, &sampleResult, context);
+            delete tokensSoFar;
         } else {
-            // Sampling with repetition penalty.
-            // generatedTokenIds is [maxNewTokens] but only 0..step-1 are valid.
-            if (step > 0) {
-                NDArray* tokensSoFar = (*generatedTokenIds)({0, step}, true);
-                tokenSampleWithPenalties(logitsOutput, sampledToken, tokensSoFar,
-                                            temperature, topK, topP, 0.0 /*minP*/,
-                                            repPenalty, 0.0 /*freqPenalty*/, 0.0 /*presPenalty*/,
-                                            static_cast<LongType>(step), context);
-                delete tokensSoFar;
-            } else {
-                tokenSample(logitsOutput, sampledToken, temperature, topK, topP,
-                               static_cast<LongType>(step), context);
-            }
+            tokenSamplePolicy(logitsForSample, sampledToken, inputIds,
+                              stepSampleConfig, &sampleResult, context);
+        }
+        if (logitsSlice != nullptr) {
+            delete logitsSlice;
+            logitsSlice = nullptr;
         }
 
         LongType nextTokenId = sampledToken->e<LongType>(0);
@@ -687,8 +789,15 @@ void autoregressiveDecode(
         // no captured H2D memcpy node, so we must sync explicitly. On CPU this is
         // a no-op.
         decodeEmbedding->syncToDevice();
-        attentionMask->syncToDevice();
-        positionIds->syncToDevice();
+        if (useWindowSubstrate) {
+            // Sync the window tensors — on CUDA they must be device-authoritative
+            // before the next plan execution. On CPU this is a no-op.
+            config->windowGridMask->syncToDevice();
+            config->windowPositionGrid->syncToDevice();
+        } else {
+            attentionMask->syncToDevice();
+            positionIds->syncToDevice();
+        }
         inputIds->syncToDevice();
         if (causalMask != nullptr) {
             causalMask->syncToDevice();

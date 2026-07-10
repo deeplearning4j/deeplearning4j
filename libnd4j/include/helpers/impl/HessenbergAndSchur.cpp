@@ -63,35 +63,56 @@ void Hessenberg<T>::evalData() {
     T coeff, norm;
 
     NDArray hRef = *_H;
-    NDArray *tail1Ptr = hRef({i + 1, -1, i, i + 1});
-    NDArray tail1 = *tail1Ptr;
-    delete tail1Ptr;
-    
+
+    // tail2: rows [i+2 .. end] of column i.  For a 2x2 matrix at i=0 this is
+    // empty; use keepUnitiesInShape=true so the view has a valid shape.
     NDArray *tail2Ptr = hRef({i + 2, -1, i, i + 1}, true);
     NDArray tail2 = *tail2Ptr;
     delete tail2Ptr;
 
-    Householder<T>::evalHHmatrixDataI(tail1, coeff, norm);
+    // tail1: rows [i+1 .. end] of column i — the vector that defines the
+    // Householder reflector.  When the matrix has only two rows (or this is the
+    // last column), tail1 collapses to a single element.  evalHHmatrixDataI
+    // cannot handle a rank-0 (scalar) view; avoid it by computing the trivial
+    // one-element Householder directly: coeff = 0, norm = the element itself.
+    if (i + 2 >= rows) {
+      // Only one sub-diagonal element: Householder is the identity.
+      norm  = _H->t<T>(i + 1, i);
+      coeff = (T)0;
+    } else {
+      NDArray *tail1Ptr = hRef({i + 1, -1, i, i + 1});
+      NDArray tail1 = *tail1Ptr;
+      delete tail1Ptr;
+      Householder<T>::evalHHmatrixDataI(tail1, coeff, norm);
+    }
 
+    // Write the reflector norm back into H[i+1, i]; evalHHmatrixDataI zeroed
+    // it via the view and expects the caller to restore it with the norm value.
     NDArray *hViewPtr = hRef({0, 0, i, i + 1});
     hViewPtr->template r<T>(i + 1) = norm;
     delete hViewPtr;
-    
+
     hhCoeffs.template r<T>(i) = coeff;
 
-    NDArray *bottomRightCornerPtr = hRef({i + 1, -1, i + 1, -1}, true);
-    NDArray bottomRightCorner = *bottomRightCornerPtr;
-    delete bottomRightCornerPtr;
-    
-    Householder<T>::mulLeft(bottomRightCorner, tail2, coeff);
-    
-    NDArray *tail2Trans = tail2.transpose();
-    NDArray *rightColsPtr = hRef({0, 0, i + 1, -1}, true);
-    NDArray rightCols = *rightColsPtr;
-    delete rightColsPtr;
-    
-    Householder<T>::mulRight(rightCols, *tail2Trans, coeff);
-    delete tail2Trans;
+    // tail2 selects rows [i+2 .. end] of column i, which is empty when the
+    // matrix has only (i+2) rows or fewer (e.g. a 2x2 matrix at i=0).
+    // mulLeft/mulRight on an empty tail are no-ops; skip them to avoid calling
+    // transpose() on a 0-element NDArray which would trigger the "buffer is empty" guard.
+    if (tail2.lengthOf() > 0) {
+      NDArray *bottomRightCornerPtr = hRef({i + 1, -1, i + 1, -1}, true);
+      NDArray bottomRightCorner = *bottomRightCornerPtr;
+      delete bottomRightCornerPtr;
+
+      Householder<T>::mulLeft(bottomRightCorner, tail2, coeff);
+
+      NDArray *tail2Trans = tail2.transpose();
+      NDArray *rightColsPtr = hRef({0, 0, i + 1, -1}, true);
+      NDArray rightCols = *rightColsPtr;
+      delete rightColsPtr;
+
+      Householder<T>::mulRight(rightCols, *tail2Trans, coeff);
+      delete tail2Trans;
+    }
   }
 
   // calculate _Q
@@ -138,6 +159,10 @@ void Schur<T>::evalData(NDArray& matrix) {
 
   t = hess._H;
   u = hess._Q;
+  // Null out the Hessenberg pointers so its destructor does not double-free
+  // the arrays we just took ownership of.
+  hess._H = nullptr;
+  hess._Q = nullptr;
 
   calcFromHessenberg();
 

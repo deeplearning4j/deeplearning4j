@@ -172,7 +172,7 @@ public class LFM2Architecture implements ModelArchitecture {
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
 
         // Logits in FP32 to prevent overflow
-        SDVariable logits = fp32Mmul(sd, "lm_logits", hidden, lmHead.permute(1, 0), dtype);
+        SDVariable logits = QuantizedLinear.matMul(sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
         outputNames.add("lm_logits");
         sd.setOutputs(outputNames);
 
@@ -265,11 +265,13 @@ public class LFM2Architecture implements ModelArchitecture {
             return input;
         }
 
-        // Derive headDim from K weight shape (more reliable than metadata)
         int numKvHeads = config.getNumKVHeadsForLayer(layerIdx);
-        int kOutDim = (int) kWeight.shape()[0];
-        int headDim = kOutDim / numKvHeads;
-        int qOutDim = (int) qWeight.shape()[0];
+        int kOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_k.weight", kWeight);
+        int qOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_q.weight", qWeight);
+        int headDim = config.getHeadDimension();
+        if (headDim <= 0) {
+            headDim = kOutDim / numKvHeads;
+        }
         int actualNumHeads = qOutDim / headDim;
 
         if (layerIdx < 5) {
@@ -284,9 +286,9 @@ public class LFM2Architecture implements ModelArchitecture {
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
         // FP32 matmuls to prevent overflow
-        SDVariable q = fp32Mmul(sd, "q_" + layerIdx, input, wq.permute(1, 0), dtype);
-        SDVariable k = fp32Mmul(sd, "k_" + layerIdx, input, wk.permute(1, 0), dtype);
-        SDVariable v = fp32Mmul(sd, "v_" + layerIdx, input, wv.permute(1, 0), dtype);
+        SDVariable q = QuantizedLinear.matMul(sd, "q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
+        SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, prefix + ".attn_k.weight", dtype);
+        SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, prefix + ".attn_v.weight", dtype);
 
         SDVariable batchDim = sd.sizeAt(input, 0);
         SDVariable seqDim = sd.sizeAt(input, 1);
@@ -347,7 +349,7 @@ public class LFM2Architecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
-        return fp32Mmul(sd, "attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", dtype);
     }
 
     // ========================================================================
@@ -428,13 +430,13 @@ public class LFM2Architecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
-        SDVariable gate = fp32Mmul(sd, "gate_" + layerIdx, input, wGate.permute(1, 0), dtype);
-        SDVariable up = fp32Mmul(sd, "up_" + layerIdx, input, wUp.permute(1, 0), dtype);
+        SDVariable gate = QuantizedLinear.matMul(sd, "gate_" + layerIdx, input, wGate, weights, prefix + ".ffn_gate.weight", dtype);
+        SDVariable up = QuantizedLinear.matMul(sd, "up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", dtype);
 
         SDVariable silu = sd.nn.swish(gate);
         SDVariable gated = silu.mul("swiglu_" + layerIdx, up);
 
-        return fp32Mmul(sd, "down_" + layerIdx, gated, wDown.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "down_" + layerIdx, gated, wDown, weights, prefix + ".ffn_down.weight", dtype);
     }
 
     // ========================================================================

@@ -13,5 +13,12 @@ path = "src/lib.rs"
 default = []
 cuda = []
 amd = []
+# Link the JVM-free standalone runtime (libsdx_cpu / libsdx_cuda) instead of
+# the monolithic libnd4j* backend library.
+standalone = []
+# Enable zero-copy ndarray interop: exposes Context::run_named() which accepts
+# ArrayViewD<f32> inputs and returns Vec<ArrayD<f32>> outputs.
+ndarray = ["dep:ndarray"]
 
-# Example moved to deeplearning4j-examples/sdx-runtime-examples/rust/
+[dependencies]
+ndarray = { version = "0.16", optional = true }

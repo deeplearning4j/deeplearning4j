@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.RandomOp;
+import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -160,8 +161,16 @@ public class ConstantFunctionOptimizations extends BaseOptimizerSet {
                     // Use OpContext to execute the legacy op. Explicit z pre-allocation avoids
                     // the workspace-backed ulike() allocation that exec(op, null) uses internally —
                     // workspace memory can be reclaimed before the caller reads the result.
-                    // For ScalarOp: native execScalar always reads the scalar from op.scalar()
-                    // regardless of what is in the context, so op.scalar() must be correct.
+                    // If the op is a ScalarOp and its scalar is null after SDNB round-trip,
+                    // try to recover the scalar from the DifferentialFunction's scalarValue field.
+                    // (The field is defined with @Getter in DifferentialFunction so getScalarValue()
+                    //  is always accessible, even for legacy BaseScalarOp subclasses.)
+                    if (o instanceof ScalarOp && ((ScalarOp) o).scalar() == null) {
+                        INDArray recovered = df.getScalarValue();
+                        if (recovered != null) {
+                            ((ScalarOp) o).setScalar(recovered);
+                        }
+                    }
                     OpContext ctx = Nd4j.getExecutioner().buildContext();
                     try {
                         INDArray xArr = o.x();

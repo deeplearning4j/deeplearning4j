@@ -440,8 +440,35 @@ public class DeallocatorService {
         blockDeallocator.set(shouldBlock);
     }
 
+    // Reference.refersTo(Object) is JDK 16+; this codebase compiles with
+    // release 11, so resolve it reflectively once. Null on older JDKs.
+    private static final java.lang.reflect.Method REFERS_TO = resolveRefersTo();
+
+    private static java.lang.reflect.Method resolveRefersTo() {
+        try {
+            return java.lang.ref.Reference.class.getMethod("refersTo", Object.class);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
     /**
-     * Force-flush all entries in the referenceMap by invoking their deallocators.
+     * True when the reference's referent has been collected (the phantom
+     * reference is cleared — JDK 9+ clears phantoms at enqueue time). When the
+     * liveness probe is unavailable (JDK &lt; 16), reports true to preserve the
+     * legacy force-everything behavior.
+     */
+    private static boolean referentCollected(DeallocatableReference ref) {
+        if (REFERS_TO == null) return true;
+        try {
+            return (Boolean) REFERS_TO.invoke(ref, (Object) null);
+        } catch (Throwable t) {
+            return true;
+        }
+    }
+
+    /**
+     * Flush all DEAD entries in the referenceMap by invoking their deallocators.
      * Call this after closing a model when you need to guarantee GPU memory is freed
      * immediately, rather than waiting for GC to enqueue PhantomReferences.
      *
@@ -451,15 +478,28 @@ public class DeallocatorService {
      * Without this flush, sequential model configs can OOM because the previous
      * model's GPU memory hasn't been reclaimed.</p>
      *
+     * <p>Entries whose Java owner is still reachable are skipped: a live
+     * INDArray, a constant / shape / TAD cache entry, or a running pipeline's
+     * buffers will be touched again, and freeing their native memory here is a
+     * guaranteed use-after-free — on CUDA it trips the BUFFER_LIFECYCLE guard,
+     * on CPU it is silent heap corruption. Reclaiming the collected entries is
+     * all the OOM-prevention goal ever required. (On JDK &lt; 16, where the
+     * liveness probe is unavailable, all entries are flushed as before.)</p>
+     *
      * @return the number of entries that were deallocated
      */
     public int forceFlushAll() {
         int flushed = 0;
         int errors = 0;
+        int skippedLive = 0;
         // Snapshot the keys to avoid ConcurrentModificationException
         for (Long id : new java.util.ArrayList<>(referenceMap.keySet())) {
             DeallocatableReference ref = referenceMap.get(id);
             if (ref == null) continue;
+            if (!referentCollected(ref)) {
+                skippedLive++;
+                continue;
+            }
             try {
                 ref.deallocate();
                 flushed++;
@@ -471,9 +511,9 @@ public class DeallocatorService {
             }
             referenceMap.remove(id);
         }
-        if (flushed > 0 || errors > 0) {
-            log.info("DeallocatorService.forceFlushAll: deallocated {} entries ({} errors), refMap now {}",
-                    flushed, errors, referenceMap.size());
+        if (flushed > 0 || errors > 0 || skippedLive > 0) {
+            log.info("DeallocatorService.forceFlushAll: deallocated {} entries ({} errors, {} live skipped), refMap now {}",
+                    flushed, errors, skippedLive, referenceMap.size());
         }
         return flushed;
     }

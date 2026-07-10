@@ -129,20 +129,25 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         }
         val inputList = this.graphDef.inputList.filter { input ->
             val cleanName = input.name.replace(":0","")
-            val excludedByNodeName = opTypes.containsKey(cleanName)
+            val nodeNameCollision = opTypes.containsKey(cleanName)
             val excludedByInitializer = initializerNames.contains(cleanName)
             val excludedByNodeOutput = nodeOutputNames.contains(cleanName)
-            if (excludedByNodeName || excludedByInitializer || excludedByNodeOutput) {
-                // A dropped graph input never becomes a placeholder — if a real
-                // consumer needs it the import dies later with "Variable ... does
-                // not exist". Name the exclusion reason here so that failure is
-                // diagnosable (this silent filter cost a full debugging session
-                // on whisper's merged decoder).
+            // A graph input is only NOT a placeholder when the value is genuinely defined
+            // elsewhere: as an initializer, or as a node OUTPUT. A mere node-NAME collision
+            // (opTypes keys on node names) does NOT define the value — a node named the same
+            // as the input can still produce a different output. Excluding on name collision
+            // dropped real inputs (VLM 'pixel_values', whisper 'input_ids'), leaving consumers
+            // with a missing external input at execution. Exclude only on real redefinition.
+            val exclude = excludedByInitializer || excludedByNodeOutput
+            if (exclude) {
                 logger.info("Graph input '{}' EXCLUDED from placeholder creation: " +
                         "nodeNameCollision={} initializer={} producedByNode={}",
-                        cleanName, excludedByNodeName, excludedByInitializer, excludedByNodeOutput)
+                        cleanName, nodeNameCollision, excludedByInitializer, excludedByNodeOutput)
+            } else if (nodeNameCollision) {
+                logger.info("Graph input '{}' KEPT as placeholder despite node-name collision " +
+                        "(not an initializer, not a node output)", cleanName)
             }
-            !excludedByNodeName && !excludedByInitializer && !excludedByNodeOutput
+            !exclude
         }.map { input -> input.name.replace(":0","") }
         this.inputList.addAll(inputList)
         this.variableList.addAll(inputList)

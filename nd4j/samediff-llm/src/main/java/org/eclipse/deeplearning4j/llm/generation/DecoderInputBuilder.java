@@ -623,4 +623,127 @@ public class DecoderInputBuilder {
         }
         return mask;
     }
+
+    // ==================== Masked multi-position decode window (ADR 0106) ====================
+    //
+    // Generalizes the single-query decode mask to a FIXED window of wMax query slots so the DSP plan
+    // freezes once at wMax and inactive slots are handled by masking (not reshaping). This is the
+    // shared substrate the beam / contrastive / speculative policies ride on: greedy decode is the
+    // wMax=1 special case (buildInGraphWindowMask(chainParents(1,1), cachePos, 1, 1, ...) is identical
+    // to buildInGraphDecodeMask(cachePos, ...)).
+
+    /**
+     * Build the fixed-width grid attention bias for a masked multi-position decode step.
+     *
+     * <p>Shape {@code [1, 1, wMax, maxKvLen]}, additive bias (0.0 = attend, dtype-safe {@code maskVal}
+     * = masked), matching {@link #buildInGraphDecodeMask}. The {@code wActive} live slots occupy KV
+     * columns {@code cachePos .. cachePos+wActive-1} (each slot scatters its K/V in-place at its column
+     * during the forward). Query slot {@code j} attends to the committed past {@code [0..cachePos-1]},
+     * its in-window ancestors, and itself. {@code parent[j]} is the window-slot index of {@code j}'s
+     * parent, or {@code -1} when slot {@code j} has no in-window ancestor (past + self only — contrastive
+     * siblings, or a chain root). Inactive slots {@code [wActive..wMax-1]} attend to past + self so their
+     * softmax rows stay finite (their logits are ignored).</p>
+     *
+     * @param parent   per-slot parent window index, length {@code wMax}; {@code -1} = no in-window parent
+     * @param cachePos current KV write position (column of the first live slot)
+     * @param wActive  number of live slots, in {@code [1, wMax]}
+     * @param wMax     fixed (frozen) window width
+     * @param maxKvLen total KV buffer size
+     * @param dtype    mask dtype (drives the dtype-safe mask value)
+     * @return attention bias {@code [1, 1, wMax, maxKvLen]}
+     */
+    public static INDArray buildInGraphWindowMask(int[] parent, long cachePos, int wActive, int wMax,
+                                                  long maxKvLen, DataType dtype) {
+        if (parent == null || parent.length != wMax) {
+            throw new IllegalArgumentException("parent length " + (parent == null ? "null" : parent.length)
+                    + " must equal wMax=" + wMax);
+        }
+        if (wActive < 1 || wActive > wMax) {
+            throw new IllegalArgumentException("wActive=" + wActive + " out of range [1," + wMax + "]");
+        }
+        if (cachePos < 0 || cachePos + wMax > maxKvLen) {
+            throw new IllegalArgumentException("cachePos(" + cachePos + ") + wMax(" + wMax
+                    + ") exceeds maxKvLen(" + maxKvLen + ")");
+        }
+
+        final int K = (int) maxKvLen;
+        final int cp = (int) cachePos;
+        final float maskVal = (dtype == DataType.HALF || dtype == DataType.FLOAT16) ? -65504.0f : -1e9f;
+
+        // Start fully masked, then unmask the allowed columns per slot (sparse tree attention).
+        float[] data = new float[wMax * K];
+        java.util.Arrays.fill(data, maskVal);
+
+        for (int j = 0; j < wMax; j++) {
+            int rowOffset = j * K;
+            for (int k = 0; k < cp; k++) data[rowOffset + k] = 0.0f;   // committed past
+            data[rowOffset + cp + j] = 0.0f;                            // self
+            if (j < wActive) {                                          // in-window ancestors (live only)
+                int a = parent[j];
+                int guard = 0;
+                while (a >= 0 && a < wMax && guard++ <= wMax) {
+                    data[rowOffset + cp + a] = 0.0f;
+                    a = parent[a];
+                }
+            }
+        }
+
+        INDArray mask = Nd4j.create(data, new long[]{1, 1, wMax, maxKvLen}, 'c');
+        if (dtype != DataType.FLOAT) {
+            INDArray cast = mask.castTo(dtype);
+            mask.close();
+            return cast;
+        }
+        return mask;
+    }
+
+    /**
+     * Build the position-id grid for a masked multi-position decode window. Shape {@code [1, wMax]}
+     * LONG; slot {@code j}'s absolute position is {@code cachePos + posOffset[j]} (siblings at the same
+     * logical step share an offset; a chain increments). Inactive slots take {@code cachePos} (benign).
+     *
+     * @param posOffset per-slot position offset relative to {@code cachePos}, length {@code wMax}
+     */
+    public static INDArray buildInGraphWindowPositionIds(int[] posOffset, long cachePos, int wMax) {
+        if (posOffset == null || posOffset.length != wMax) {
+            throw new IllegalArgumentException("posOffset length must equal wMax=" + wMax);
+        }
+        long[] pos = new long[wMax];
+        for (int j = 0; j < wMax; j++) pos[j] = cachePos + posOffset[j];
+        return Nd4j.createFromArray(pos).reshape(1, wMax);
+    }
+
+    /**
+     * Parent array for a linear chain window (slot {@code j}'s parent is {@code j-1}): speculative
+     * single-chain / multi-token lookahead. Slot 0 is the root ({@code -1}); inactive slots are
+     * {@code -1} (past + self only).
+     */
+    public static int[] chainParents(int wActive, int wMax) {
+        int[] p = new int[wMax];
+        java.util.Arrays.fill(p, -1);
+        for (int j = 1; j < wActive; j++) p[j] = j - 1;
+        return p;
+    }
+
+    /** Position offsets for a chain window: live slot {@code j} at offset {@code j}, inactive at 0. */
+    public static int[] chainPositions(int wActive, int wMax) {
+        int[] o = new int[wMax];
+        for (int j = 0; j < wActive; j++) o[j] = j;
+        return o;
+    }
+
+    /**
+     * Parent array for a depth-1 sibling window: every slot attends to past + self only ({@code -1}),
+     * i.e. the {@code wActive} candidates are alternatives at the SAME step (contrastive top-k).
+     */
+    public static int[] siblingParents(int wActive, int wMax) {
+        int[] p = new int[wMax];
+        java.util.Arrays.fill(p, -1);
+        return p;
+    }
+
+    /** Position offsets for a sibling window: all slots at offset 0 (same logical step). */
+    public static int[] siblingPositions(int wActive, int wMax) {
+        return new int[wMax];
+    }
 }

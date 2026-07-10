@@ -19,20 +19,18 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * Non-peer device failover regression tests.
  *
- * Targets the handleNonPeerFailover fix in DataBuffer.cu:
- * - Bug: freed non-peer buffer BEFORE allocating pinned replacement.
- *        If cudaMallocHost failed, caller got null buffer + exception with no recovery.
- * - Fix: allocate pinned buffer FIRST, only free old buffer after success.
+ * Non-peer fallback now uses CudaMemoryPool's host-resident managed allocation path
+ * for non-P2P candidates. The older pinned-host replacement path in
+ * handleNonPeerFailover remains as a defensive fallback for non-managed, non-peer
+ * pointers, but the normal pool path should return CPU-preferred cudaMallocManaged
+ * memory that is UVA-accessible from the requesting device.
  *
  * This system has RTX 4090 (device 0, cc 8.9) and RTX 3070 Ti (device 1, cc 8.6).
  * Different architectures = non-peer (no NVLink, no P2P DMA).
- * handleNonPeerFailover converts non-peer device buffers to pinned host memory (UVA).
  *
  * Tests use DeviceMemoryManager memory simulation to force allocation routing
- * to non-peer device 1, exercising the 3 call sites of handleNonPeerFailover:
- *   1. DataBuffer::allocateSpecial() — via memory simulation overflow to device 1
- *   2. DataBuffer::expand() — reallocate buffers that were allocated via overflow
- *   3. DataBuffer::migrate() — cross-device buffer migration
+ * to non-peer device 1, exercising the relevant non-peer allocation, expansion,
+ * and migration paths.
  */
 @Slf4j
 @Tag("multi-gpu")

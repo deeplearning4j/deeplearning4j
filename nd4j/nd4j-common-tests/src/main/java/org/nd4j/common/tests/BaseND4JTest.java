@@ -257,6 +257,18 @@ public abstract class BaseND4JTest {
         } catch (Exception e) {
             // ignore — may fail if the backend/ConstantHandler is not yet initialized
         }
+        // Step 2c: same hazard for the SameDiff ArrayCacheMemoryMgr. Its capacity/LRU
+        // caches are static ThreadLocals that survive across tests while wrapping
+        // DataBuffers whose native memory Step 2 just freed. The next test's
+        // allocate() would re-issue a cached INDArray over freed memory — on CUDA
+        // this trips the BUFFER_LIFECYCLE guard, on CPU it is silent heap
+        // corruption. Drop the cache state (no closes — the flush already freed
+        // the memory) so subsequent tests allocate fresh buffers.
+        try {
+            org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr.clearCacheState();
+        } catch (Throwable t) {
+            // ignore — nd4j-api may not be on the classpath in minimal setups
+        }
         // Step 3: commit any in-flight CUDA operations on the current stream.
         try {
             Nd4j.getExecutioner().commit();

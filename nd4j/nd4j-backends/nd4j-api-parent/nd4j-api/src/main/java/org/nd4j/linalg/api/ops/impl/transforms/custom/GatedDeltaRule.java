@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,8 +43,9 @@ import java.util.List;
  *   1: K      [B, L, H, D_k]
  *   2: V      [B, L, H, D_v]
  *   3: beta   [B, L, H]
- *   4: gate   [B, L, H]
- *   5: stateIn [B, H, D_k, D_v] (optional)
+ *   4: gate      [B, L, H]
+ *   5: stateIn   [B, H, D_k, D_v] (optional)
+ *   6: actualLen scalar INT64, timesteps allowed to update state (optional)
  *
  * Outputs:
  *   0: output    [B, L, H, D_v]
@@ -55,25 +57,58 @@ import java.util.List;
 public class GatedDeltaRule extends DynamicCustomOp {
 
     public GatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate) {
-        super(new INDArray[]{q, k, v, beta, gate}, null);
+        this(q, k, v, beta, gate, null, null);
     }
 
     public GatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate, INDArray stateIn) {
-        super(stateIn != null
-                ? new INDArray[]{q, k, v, beta, gate, stateIn}
-                : new INDArray[]{q, k, v, beta, gate}, null);
+        this(q, k, v, beta, gate, stateIn, null);
+    }
+
+    public GatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate,
+                          INDArray stateIn, INDArray actualLen) {
+        super(buildInputs(q, k, v, beta, gate, stateIn, actualLen), null);
     }
 
     public GatedDeltaRule(SameDiff sd, SDVariable q, SDVariable k, SDVariable v,
                           SDVariable beta, SDVariable gate) {
-        super(null, sd, new SDVariable[]{q, k, v, beta, gate});
+        this(sd, q, k, v, beta, gate, null, null);
     }
 
     public GatedDeltaRule(SameDiff sd, SDVariable q, SDVariable k, SDVariable v,
                           SDVariable beta, SDVariable gate, SDVariable stateIn) {
-        super(null, sd, stateIn != null
-                ? new SDVariable[]{q, k, v, beta, gate, stateIn}
-                : new SDVariable[]{q, k, v, beta, gate});
+        this(sd, q, k, v, beta, gate, stateIn, null);
+    }
+
+    public GatedDeltaRule(SameDiff sd, SDVariable q, SDVariable k, SDVariable v,
+                          SDVariable beta, SDVariable gate, SDVariable stateIn, SDVariable actualLen) {
+        super(null, sd, buildSdInputs(q, k, v, beta, gate, stateIn, actualLen));
+    }
+
+    private static INDArray[] buildInputs(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate,
+                                          INDArray stateIn, INDArray actualLen) {
+        List<INDArray> inputs = new ArrayList<>();
+        inputs.add(q);
+        inputs.add(k);
+        inputs.add(v);
+        inputs.add(beta);
+        inputs.add(gate);
+        if (stateIn != null) inputs.add(stateIn);
+        if (actualLen != null) inputs.add(actualLen);
+        return inputs.toArray(new INDArray[0]);
+    }
+
+    private static SDVariable[] buildSdInputs(SDVariable q, SDVariable k, SDVariable v,
+                                              SDVariable beta, SDVariable gate,
+                                              SDVariable stateIn, SDVariable actualLen) {
+        List<SDVariable> inputs = new ArrayList<>();
+        inputs.add(q);
+        inputs.add(k);
+        inputs.add(v);
+        inputs.add(beta);
+        inputs.add(gate);
+        if (stateIn != null) inputs.add(stateIn);
+        if (actualLen != null) inputs.add(actualLen);
+        return inputs.toArray(new SDVariable[0]);
     }
 
     @Override

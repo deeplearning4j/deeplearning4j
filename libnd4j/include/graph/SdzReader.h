@@ -45,6 +45,14 @@ class SD_LIB_EXPORT SdzReader {
    */
   static SdzReader* openFile(const char* zipPath);
 
+  /**
+   * Extract ALL entries of a ZIP archive (any entry name; STORED and, with
+   * zlib, DEFLATE) into destDir, recreating subdirectories. Used for packed
+   * .dspb bundle archives. Rejects absolute and '..'-traversing entry names.
+   * Requires std::filesystem; returns false with an error message otherwise.
+   */
+  static bool extractArchive(const char* zipPath, const char* destDir, std::string* errorOut);
+
   ~SdzReader();
 
   // No copy

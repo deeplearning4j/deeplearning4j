@@ -19,6 +19,7 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 01.06.2018
 //
+#include <array/DataTypeUtils.h>
 #include <ops/declarable/headers/parity_ops.h>
 #include <system/op_boilerplate.h>
 #include <helpers/ConstantShapeHelper.h>
@@ -94,8 +95,9 @@ DECLARE_SHAPE_FN(reduce_mean) {
                "REDUCE_MEAN OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
                inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  auto outShapeInfo =
-      ShapeUtils::evalReduceShapeInfo(shape::order(in), &dimensions, in, keepDims, false, block.getWorkspace());
+  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(in), &dimensions, in,
+                                                      DataTypeUtils::pickFloatingType(ArrayOptions::dataType(in)),
+                                                      keepDims, false, block.getWorkspace());
 
   return SHAPELIST(outShapeInfo);
 }

@@ -220,13 +220,15 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         String fnName = fn.getGradPlaceholderName();
         for(int j=0; j<inputs.size(); j++ ){
             String name = inputs.get(j);
-            dLdIns[j] = sameDiff.grad(name).getArr();
+            dLdIns[j] = gradsMap.get(name);
 
-            String gradName = sameDiff.grad(inputNames.get(j)).name();
-            if(dLdIns[j] == null && fnName.equals(gradName)){
+            if(dLdIns[j] == null){
                 //Edge case with lambda vertices like identity: SameDiff doesn't store the placeholders
-                // So, this getArr() can be trying to get placeholder from SameDiff instance, when it's available here
-                dLdIns[j] = epsilon;
+                // So, gradsMap can return null for placeholder whose grad == the external error placeholder
+                String gradName = sameDiff.grad(inputNames.get(j)).name();
+                if(fnName.equals(gradName)){
+                    dLdIns[j] = epsilon;
+                }
             }
 
             //Edge case: "vertex" is just an identity activation, for example

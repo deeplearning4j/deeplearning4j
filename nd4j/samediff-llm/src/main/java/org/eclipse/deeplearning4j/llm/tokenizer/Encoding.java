@@ -73,6 +73,8 @@ public class Encoding {
 
     /**
      * Type IDs for multi-sequence inputs (e.g., sentence A vs B).
+     * May be null when the tokenizer does not emit segment ids (common for
+     * single-segment BPE tokenizers); accessors then synthesize all-zeros.
      */
     private final int[] typeIds;
 
@@ -83,6 +85,17 @@ public class Encoding {
      */
     public int getLength() {
         return ids != null ? ids.length : 0;
+    }
+
+    /**
+     * Type IDs, or an all-zeros (single-segment) array when the tokenizer
+     * produced none.
+     */
+    private int[] typeIdsOrZeros() {
+        if (typeIds != null) {
+            return typeIds;
+        }
+        return new int[ids != null ? ids.length : 0];
     }
 
     /**
@@ -127,7 +140,7 @@ public class Encoding {
      * @return 1D INDArray of type IDs with shape [length]
      */
     public INDArray getTypeIdsAsArray() {
-        return Nd4j.createFromArray(typeIds);
+        return Nd4j.createFromArray(typeIdsOrZeros());
     }
 
     /**
@@ -136,7 +149,8 @@ public class Encoding {
      * @return 2D INDArray of type IDs with shape [1, length]
      */
     public INDArray getTypeIdsAsBatchedArray() {
-        return Nd4j.createFromArray(typeIds).reshape(1, typeIds.length);
+        int[] t = typeIdsOrZeros();
+        return Nd4j.createFromArray(t).reshape(1, t.length);
     }
 
     /**
@@ -159,10 +173,11 @@ public class Encoding {
         int[] paddedTypeIds = new int[maxLength];
         String[] paddedTokens = new String[maxLength];
 
+        int[] srcTypeIds = typeIdsOrZeros();
         if (padOnRight) {
             System.arraycopy(ids, 0, paddedIds, 0, ids.length);
             System.arraycopy(attentionMask, 0, paddedMask, 0, attentionMask.length);
-            System.arraycopy(typeIds, 0, paddedTypeIds, 0, typeIds.length);
+            System.arraycopy(srcTypeIds, 0, paddedTypeIds, 0, srcTypeIds.length);
             System.arraycopy(tokens, 0, paddedTokens, 0, tokens.length);
 
             for (int i = ids.length; i < maxLength; i++) {
@@ -181,7 +196,7 @@ public class Encoding {
 
             System.arraycopy(ids, 0, paddedIds, padLength, ids.length);
             System.arraycopy(attentionMask, 0, paddedMask, padLength, attentionMask.length);
-            System.arraycopy(typeIds, 0, paddedTypeIds, padLength, typeIds.length);
+            System.arraycopy(srcTypeIds, 0, paddedTypeIds, padLength, srcTypeIds.length);
             System.arraycopy(tokens, 0, paddedTokens, padLength, tokens.length);
         }
 
@@ -210,16 +225,17 @@ public class Encoding {
         int[] truncatedTypeIds = new int[maxLength];
         String[] truncatedTokens = new String[maxLength];
 
+        int[] srcTypeIds = typeIdsOrZeros();
         if (truncateFromRight) {
             System.arraycopy(ids, 0, truncatedIds, 0, maxLength);
             System.arraycopy(attentionMask, 0, truncatedMask, 0, maxLength);
-            System.arraycopy(typeIds, 0, truncatedTypeIds, 0, maxLength);
+            System.arraycopy(srcTypeIds, 0, truncatedTypeIds, 0, maxLength);
             System.arraycopy(tokens, 0, truncatedTokens, 0, maxLength);
         } else {
             int offset = ids.length - maxLength;
             System.arraycopy(ids, offset, truncatedIds, 0, maxLength);
             System.arraycopy(attentionMask, offset, truncatedMask, 0, maxLength);
-            System.arraycopy(typeIds, offset, truncatedTypeIds, 0, maxLength);
+            System.arraycopy(srcTypeIds, offset, truncatedTypeIds, 0, maxLength);
             System.arraycopy(tokens, offset, truncatedTokens, 0, maxLength);
         }
 
@@ -291,7 +307,7 @@ public class Encoding {
      * @return 1D INDArray of type IDs on the specified device
      */
     public INDArray getTypeIdsAsArrayOnDevice(DeviceDescriptor device) {
-        INDArray array = Nd4j.createFromArray(typeIds);
+        INDArray array = Nd4j.createFromArray(typeIdsOrZeros());
         ensureOnDevice(array, device);
         return array;
     }

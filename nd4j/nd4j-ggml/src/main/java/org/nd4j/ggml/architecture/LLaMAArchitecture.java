@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.autodiff.samediff.SDIndex;
 
@@ -116,6 +117,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable positionOffset = sd.placeHolder("position_offset", DataType.INT64);
         // cache_position: scalar INT64 — write position in KV cache buffers
         SDVariable cachePosition = sd.placeHolder("cache_position", DataType.INT64);
+        // actual_sequence_length: scalar INT64 — real (unpadded) timesteps for recurrent GDN state updates
+        SDVariable actualSequenceLength = sd.placeHolder("actual_sequence_length", DataType.INT64);
         // _causal_mask: [1, 1, Tq, maxKvLen] — attention bias masking padded cache positions
         SDVariable causalMask = sd.placeHolder("_causal_mask", DataType.FLOAT, -1, -1, -1, -1);
 
@@ -131,6 +134,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
             String layerType = getLayerType(config, layer);
             if (!"linear_attention".equals(layerType)) {
                 // Cacheable layer: [batch, maxKvLen, numKVHeads, headDim]
+                // Note: when kvQuantFormat > 0, GenerationPipeline manages INT8-compressed storage
+                // (quantizedKvBuffers) alongside these float placeholders (staticKvBuffers). The graph
+                // always receives float KV — the dequantize step happens in Java before each decode batch.
                 SDVariable keyCache = sd.placeHolder("past_key_values." + layer + ".key",
                         dtype, -1, -1, numKVHeads, headDim);
                 SDVariable valueCache = sd.placeHolder("past_key_values." + layer + ".value",
@@ -163,7 +169,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
             SDVariable gdnState = gdnStatePlaceholders.get(layer);
             SDVariable convState = convStatePlaceholders.get(layer);
             hidden = buildTransformerBlock(sd, hidden, layer, config, weights, dtype,
-                    positionOffset, cachePosition, causalMask,
+                    positionOffset, cachePosition, actualSequenceLength, causalMask,
                     keyCachePlaceholders.get(layer),
                     valueCachePlaceholders.get(layer),
                     gdnState, convState);
@@ -192,8 +198,34 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // Logits: [batch, seq_len, vocab_size]
         // Upcast to FP32: hidden=1024 dot products easily overflow FP16 (±65504) at vocab scale.
-        SDVariable logits = fp32Mmul(sd, "lm_logits", hidden, lmHead.permute(1, 0), dtype);
+        SDVariable logits = QuantizedLinear.matMulFloatOutput(sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
         outputNames.add("lm_logits");
+
+        // Last-position logits: [batch, 1, vocab_size] — TTFT optimisation.
+        // Slice the hidden states at position S-1 (shape-derived, NOT a baked constant)
+        // BEFORE the lm_head matmul so that for prefill (S>1) DSP can skip computing
+        // logits for all S positions and only compute the single last-position result.
+        // For decode (S=1) this is identical to lm_logits[:, 0, :]; both outputs resolve
+        // to the same value and DSP will naturally merge them via shared computation.
+        //
+        // Implementation: slice hidden [B, S, H] → [B, 1, H] at seq-dim index S-1.
+        // begin = [0, S-1, 0], size = [B, 1, H] — all shape-derived via sizeAt.
+        {
+            SDVariable batchSize = sd.sizeAt(hidden, 0);
+            SDVariable seqLen    = sd.sizeAt(hidden, 1);
+            SDVariable hiddenDim = sd.sizeAt(hidden, 2);
+            SDVariable one       = sd.constant(Nd4j.scalar(DataType.INT64, 1L));
+            SDVariable seqMinus1 = seqLen.sub(one);
+            SDVariable zero      = sd.constant(Nd4j.scalar(DataType.INT64, 0L));
+            // begin: [0, S-1, 0]  — shape [3], dtype INT64
+            SDVariable beginVec = sd.stack("lm_last_begin", 0, zero, seqMinus1, zero);
+            // size:  [B, 1, H]    — shape [3], dtype INT64
+            SDVariable sizeVec  = sd.stack("lm_last_size",  0, batchSize, one, hiddenDim);
+            SDVariable hiddenLast = sd.slice("hidden_last", hidden, beginVec, sizeVec);
+            QuantizedLinear.matMulFloatOutput(sd, "lm_logits_last", hiddenLast, lmHead, weights, "output.weight", dtype);
+            outputNames.add("lm_logits_last");
+        }
+
         sd.setOutputs(outputNames);
 
         return sd;
@@ -201,8 +233,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
     private SDVariable buildTransformerBlock(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
-            SDVariable positionOffset, SDVariable cachePosition, SDVariable causalMask,
-            SDVariable keyCache, SDVariable valueCache,
+            SDVariable positionOffset, SDVariable cachePosition, SDVariable actualSequenceLength,
+            SDVariable causalMask, SDVariable keyCache, SDVariable valueCache,
             SDVariable gdnStateIn, SDVariable convStateIn) {
 
         String prefix = "blk." + layerIdx;
@@ -224,7 +256,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
             case "linear_attention":
                 // GDN layers have no cacheable K/V — GDN recurrent state passed instead
                 attnOut = buildGDNAttention(sd, normed, layerIdx, config, weights, dtype,
-                        gdnStateIn, convStateIn);
+                        gdnStateIn, convStateIn, actualSequenceLength);
                 break;
             case "full_attention":
                 // Full attention with QK norms and output gating (Qwen3.5)
@@ -324,6 +356,51 @@ public class LLaMAArchitecture implements ModelArchitecture {
             return result.castTo(name, dtype);
         }
         return sd.mmul(name, a, b);
+    }
+
+    /**
+     * Emit either ggml_qmatmul (if the weight is a packed INT8 quantized buffer with companion
+     * metadata) or the standard fp32Mmul.
+     *
+     * <p>In RUNTIME_QUANTIZED_MATMUL mode the converter stores:
+     * <ul>
+     *   <li>weightName → INT8 1D packed bytes</li>
+     *   <li>weightName + ".__q__" → LONG[3] = [ggmlQuantType, N, K]</li>
+     * </ul>
+     * When both are present and the weight is INT8, this method wires up ggml_qmatmul.
+     * Otherwise it falls through to fp32Mmul with the weight permuted as usual.</p>
+     *
+     * @param sd          SameDiff graph
+     * @param name        output variable name
+     * @param activation  input activations, [B,S,K] or [M,K]
+     * @param weightName  SameDiff variable name of the weight (used to look up companion metadata)
+     * @param weights     raw INDArray weight map (contains companion metadata if applicable)
+     * @param dtype       model working dtype
+     * @return            output variable [B,S,N] or [M,N]
+     */
+    private SDVariable qMatMulOrFp32Mmul(SameDiff sd, String name, SDVariable activation,
+                                         String weightName, Map<String, INDArray> weights,
+                                         DataType dtype) {
+        INDArray meta = weights.get(weightName + ".__q__");
+        // The weight variable is registered in sd under weightName; check its datatype
+        SDVariable wVar = sd.getVariable(weightName);
+        if (meta != null && wVar != null && wVar.dataType() == DataType.BYTE) {
+            // Runtime quantized path: emit ggml_qmatmul
+            int ggmlQuantType = (int) meta.getLong(0);
+            long N = meta.getLong(1);
+            long K = meta.getLong(2);
+            int outputDtype = (dtype == DataType.HALF) ? GgmlQMatMul.OUTPUT_FLOAT16 : GgmlQMatMul.OUTPUT_FLOAT32;
+            log.debug("ggml_qmatmul: {} [N={}, K={}, quantType={}]", name, N, K, ggmlQuantType);
+            // Wire ggml_qmatmul as a SameDiff graph node (graph-build time, NOT eager)
+            SDVariable result = new GgmlQMatMul(sd, activation, wVar, ggmlQuantType, N, K, outputDtype)
+                    .outputVariable();
+            result = sd.identity(name, result);  // rename to requested output name
+            return result;
+        }
+        // Standard path: permute weight [N,K] → [K,N] and do fp32Mmul
+        return fp32Mmul(sd, name, activation,
+                wVar != null ? wVar.permute(1, 0) : sd.getVariable(weightName).permute(1, 0),
+                dtype);
     }
 
     // ========================================================================
@@ -428,11 +505,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
             return input;
         }
 
-        // Derive headDim from K weight shape: kOutDim / numKVHeads
-        // This is more reliable than Q which may include gate projections
-        int kOutDim = (int) kWeight.shape()[0];
-        int headDim = kOutDim / numKVHeads;
-        int qOutDim = (int) qWeight.shape()[0];
+        int kOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_k.weight", kWeight);
+        int qOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_q.weight", qWeight);
+        int headDim = config.getHeadDimension();
+        if (headDim <= 0) {
+            headDim = kOutDim / numKVHeads;
+        }
         int actualNumHeads = qOutDim / headDim;
 
         if (layerIdx == 0 || layerIdx == 3) {
@@ -449,9 +527,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Project to Q, K, V: [batch, seq, hidden] -> [batch, seq, proj_dim]
         // Upcast to FP32 inside fp32Mmul to prevent FP16 overflow (hidden=1024 dot products
         // easily exceed ±65504 in FP16). Result is cast back to dtype after the multiply.
-        SDVariable q = fp32Mmul(sd, "q_" + layerIdx, input, wq.permute(1, 0), dtype);
-        SDVariable k = fp32Mmul(sd, "k_" + layerIdx, input, wk.permute(1, 0), dtype);
-        SDVariable v = fp32Mmul(sd, "v_" + layerIdx, input, wv.permute(1, 0), dtype);
+        SDVariable q = QuantizedLinear.matMul(sd, "q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
+        SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, prefix + ".attn_k.weight", dtype);
+        SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, prefix + ".attn_v.weight", dtype);
 
         // Add biases if present
         INDArray qBias = weights.get(prefix + ".attn_q.bias");
@@ -509,7 +587,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
-        return fp32Mmul(sd, "attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", dtype);
     }
 
     /**
@@ -547,7 +625,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
 
         // Q weight is 2x because it includes Q + gate: [2 * numHeads * headDim, hidden]
-        int qOutDim = (int) qWeight.shape()[0];
+        int qOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_q.weight", qWeight);
         int attnDim = numHeads * headDim;  // actual attention Q dimension
         int gateDim = qOutDim - attnDim;    // gate dimension (should equal attnDim)
 
@@ -565,9 +643,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Project Q (includes gate), K, V
         // Upcast to FP32 inside fp32Mmul to prevent FP16 overflow (hidden=1024 dot products
         // easily exceed ±65504 in FP16). Result is cast back to dtype after the multiply.
-        SDVariable qFull = fp32Mmul(sd, "q_full_" + layerIdx, input, wq.permute(1, 0), dtype);
-        SDVariable k = fp32Mmul(sd, "k_" + layerIdx, input, wk.permute(1, 0), dtype);
-        SDVariable v = fp32Mmul(sd, "v_" + layerIdx, input, wv.permute(1, 0), dtype);
+        SDVariable qFull = QuantizedLinear.matMul(sd, "q_full_" + layerIdx, input, wq, weights, "blk." + layerIdx + ".attn_q.weight", dtype);
+        SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, "blk." + layerIdx + ".attn_k.weight", dtype);
+        SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, "blk." + layerIdx + ".attn_v.weight", dtype);
 
         SDVariable batchDim = sd.sizeAt(input, 0);
         SDVariable seqDim = sd.sizeAt(input, 1);
@@ -595,8 +673,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Reshape K, V to [batch, seq, kv_heads, headDim]
         // Derive actual KV head count from weight shapes — in gated attention layers,
         // the V/K weight first dimension may differ from config.numKVHeads * headDim
-        int kOutDim = (int) kWeight.shape()[0];
-        int vOutDim = (int) vWeight.shape()[0];
+        int kOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_k.weight", kWeight);
+        int vOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_v.weight", vWeight);
         int actualKHeads = kOutDim / headDim;
         int actualVHeads = vOutDim / headDim;
         log.info("Layer {} V reshape: vWeight.shape={}, vOutDim={}, actualVHeads={}, headDim={}, target=[B,seq,{},{}]",
@@ -661,7 +739,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable gatedOut = attnFlat.mul("gated_attn_" + layerIdx, gateActivated);
 
         // Output projection
-        return fp32Mmul(sd, "attn_proj_" + layerIdx, gatedOut, wo.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, gatedOut, wo, weights, "blk." + layerIdx + ".attn_output.weight", dtype);
     }
 
     /**
@@ -681,7 +759,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
      */
     private SDVariable buildGDNAttention(SameDiff sd, SDVariable input, int layerIdx,
             ArchitectureConfig config, Map<String, INDArray> weights, DataType dtype,
-            SDVariable gdnStateIn, SDVariable convStateIn) {
+            SDVariable gdnStateIn, SDVariable convStateIn, SDVariable actualSequenceLength) {
 
         String prefix = "blk." + layerIdx;
         String attnPrefix = "model.layers." + layerIdx + ".gdn.";
@@ -740,12 +818,13 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // 1. QKV projection: [B, L, hidden] -> [B, L, qkvDim]
         // Upcast to FP32 to prevent FP16 overflow (hidden=1024 dot products saturate in FP16).
         SDVariable wqkv = sd.var(attnPrefix + "qkv.weight", qkvWeight);
-        SDVariable qkv = fp32Mmul(sd, "gdn_qkv_" + layerIdx, input, wqkv.permute(1, 0), dtype);
+        SDVariable qkv = QuantizedLinear.matMul(sd, "gdn_qkv_" + layerIdx, input, wqkv, weights, "blk." + layerIdx + ".attn_qkv.weight", dtype);
 
         // 2. Causal conv1d with SiLU activation
         if (convWeight != null) {
             SDVariable wConv = sd.var(attnPrefix + "conv.weight", convWeight);
-            SDVariable[] convResult = new CausalConv1d(sd, qkv, wConv, null, convStateIn, 1).outputVariables();
+            SDVariable[] convResult = new CausalConv1d(sd, qkv, wConv, null, convStateIn,
+                    actualSequenceLength, 1, 0).outputVariables();
             qkv = convResult[0];
             sd.updateVariableNameAndReference(qkv, "gdn_conv_" + layerIdx);
             SDVariable convStateOut = convResult[1];
@@ -797,7 +876,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable beta;
         if (betaWeight != null) {
             SDVariable wBeta = sd.var(attnPrefix + "beta.weight", betaWeight);
-            beta = fp32Mmul(sd, "gdn_beta_proj_" + layerIdx, input, wBeta.permute(1, 0), dtype);
+            beta = QuantizedLinear.matMul(sd, "gdn_beta_proj_" + layerIdx, input, wBeta, weights, "blk." + layerIdx + ".ssm_beta.weight", dtype);
             beta = sd.nn.sigmoid("gdn_beta_" + layerIdx, beta);
         } else {
             beta = q.mean("gdn_beta_" + layerIdx, false, -1);
@@ -815,7 +894,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
             SDVariable aLog = sd.var(attnPrefix + "a", ssmA);           // ssmA = -A_log (NEGATIVE in GGUF)
             SDVariable expALog = sd.math.exp(aLog.neg());                // exp(-ssmA) = exp(A_log): [H]
             SDVariable wAlpha = sd.var(attnPrefix + "alpha.weight", alphaWeight);
-            SDVariable aProj = fp32Mmul(sd, "gdn_alpha_proj_" + layerIdx, input, wAlpha.permute(1, 0), dtype); // [B,L,H]
+            SDVariable aProj = QuantizedLinear.matMul(sd, "gdn_alpha_proj_" + layerIdx, input, wAlpha, weights, "blk." + layerIdx + ".ssm_alpha.weight", dtype); // [B,L,H]
             if (dtBias != null) {
                 aProj = aProj.add("gdn_a_plus_bias_" + layerIdx, sd.var(attnPrefix + "dt.bias", dtBias));
             }
@@ -836,7 +915,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
 
         // 8. Gated delta rule: [B, L, H, D] -> [B, L, H, D]
-        SDVariable[] gdrResult = new GatedDeltaRule(sd, q, k, v, beta, gateDecay, gdnStateIn).outputVariables();
+        SDVariable[] gdrResult = new GatedDeltaRule(sd, q, k, v, beta, gateDecay,
+                gdnStateIn, actualSequenceLength).outputVariables();
         SDVariable gdnOut = gdrResult[0];
         sd.updateVariableNameAndReference(gdnOut, "gdn_out_" + layerIdx);
         SDVariable gdnStateOut = gdrResult[1];
@@ -852,7 +932,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
         if (gateWeight != null) {
             SDVariable wGate = sd.var(attnPrefix + "gate.weight", gateWeight);
-            SDVariable z = fp32Mmul(sd, "gdn_gate_proj_" + layerIdx, input, wGate.permute(1, 0), dtype); // [B,L,vDim]
+            SDVariable z = QuantizedLinear.matMul(sd, "gdn_gate_proj_" + layerIdx, input, wGate, weights, "blk." + layerIdx + ".attn_gate.weight", dtype); // [B,L,vDim]
             SDVariable zReshaped = sd.reshape("gdn_z_reshaped_" + layerIdx, z, vHeadShape); // [B,L,H,headDimV]
             SDVariable gateAct = sd.nn.swish("gdn_gate_act_" + layerIdx, zReshaped);
             gdnOut = gdnOut.mul("gdn_gated_" + layerIdx, gateAct);
@@ -866,7 +946,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // 11. Output projection: [B, L, vDim] -> [B, L, hidden]
         SDVariable wOut = sd.var(attnPrefix + "out.weight", outWeight);
-        return fp32Mmul(sd, "gdn_proj_" + layerIdx, gdnOut, wOut.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "gdn_proj_" + layerIdx, gdnOut, wOut, weights, "blk." + layerIdx + ".ssm_out.weight", dtype);
     }
 
     /**
@@ -889,8 +969,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
 
         if (headDim <= 0) {
-            // Derive from QKV shape
-            int qkvOutDim = (int) qkvWeight.shape()[0];
+            // Derive from logical QKV output size. Runtime-quantized packed arrays do not expose matrix shape.
+            int qkvOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_qkv.weight", qkvWeight);
             int totalHeads = numHeads + 2 * numKVHeads;
             headDim = qkvOutDim / totalHeads;
         }
@@ -904,7 +984,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
         // Upcast to FP32 to prevent FP16 overflow in large fused QKV projections.
-        SDVariable qkv = fp32Mmul(sd, "qkv_" + layerIdx, input, wqkv.permute(1, 0), dtype);
+        SDVariable qkv = QuantizedLinear.matMul(sd, "qkv_" + layerIdx, input, wqkv, weights, prefix + ".attn_qkv.weight", dtype);
 
         INDArray qkvBias = weights.get(prefix + ".attn_qkv.bias");
         if (qkvBias != null) {
@@ -961,7 +1041,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
-        return fp32Mmul(sd, "attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", dtype);
     }
 
     // ========================================================================
@@ -988,13 +1068,13 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
         // Upcast to FP32 to prevent FP16 overflow in large intermediate projections.
-        SDVariable gate = fp32Mmul(sd, "gate_" + layerIdx, input, wGate.permute(1, 0), dtype);
-        SDVariable up = fp32Mmul(sd, "up_" + layerIdx, input, wUp.permute(1, 0), dtype);
+        SDVariable gate = QuantizedLinear.matMul(sd, "gate_" + layerIdx, input, wGate, weights, prefix + ".ffn_gate.weight", dtype);
+        SDVariable up = QuantizedLinear.matMul(sd, "up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", dtype);
 
         SDVariable silu = sd.nn.swish(gate);
         SDVariable hidden = silu.mul("swiglu_" + layerIdx, up);
 
-        return fp32Mmul(sd, "down_" + layerIdx, hidden, wDown.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "down_" + layerIdx, hidden, wDown, weights, prefix + ".ffn_down.weight", dtype);
     }
 
     private SDVariable buildGELUFFN(SameDiff sd, SDVariable input, int layerIdx,
@@ -1015,9 +1095,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
         // Upcast to FP32 to prevent FP16 overflow in large intermediate projections.
-        SDVariable up = fp32Mmul(sd, "up_" + layerIdx, input, wUp.permute(1, 0), dtype);
+        SDVariable up = QuantizedLinear.matMul(sd, "up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", dtype);
         SDVariable activated = sd.nn.gelu("gelu_" + layerIdx, up);
-        return fp32Mmul(sd, "down_" + layerIdx, activated, wDown.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "down_" + layerIdx, activated, wDown, weights, prefix + ".ffn_down.weight", dtype);
     }
 
     /**
@@ -1032,7 +1112,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         SDVariable gate = sd.var(mlpPrefix + "gate.weight", routerGateWeight);
         // Router logits: small dimension (num_experts), FP32 cast still avoids NaN in softmax
-        SDVariable routerLogits = fp32Mmul(sd, "router_logits_" + layerIdx, input, gate.permute(1, 0), dtype);
+        SDVariable routerLogits = QuantizedLinear.matMul(sd, "router_logits_" + layerIdx, input, gate, weights, prefix + ".ffn_gate_inp.weight", dtype);
         SDVariable routerWeights = sd.nn.softmax("router_weights_" + layerIdx, routerLogits, -1);
 
         int numExperts = 0;
@@ -1089,13 +1169,13 @@ public class LLaMAArchitecture implements ModelArchitecture {
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downW);
 
         // Upcast to FP32 to prevent FP16 overflow in large expert projections.
-        SDVariable g = fp32Mmul(sd, "gate" + nameSuffix, input, wGate.permute(1, 0), dtype);
-        SDVariable u = fp32Mmul(sd, "up" + nameSuffix, input, wUp.permute(1, 0), dtype);
+        SDVariable g = QuantizedLinear.matMul(sd, "gate" + nameSuffix, input, wGate, weights, prefix + ".ffn_gate" + weightSuffix + ".weight", dtype);
+        SDVariable u = QuantizedLinear.matMul(sd, "up" + nameSuffix, input, wUp, weights, prefix + ".ffn_up" + weightSuffix + ".weight", dtype);
 
         SDVariable silu = sd.nn.swish(g);
         SDVariable h = silu.mul("swiglu" + nameSuffix, u);
 
-        return fp32Mmul(sd, "down" + nameSuffix, h, wDown.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "down" + nameSuffix, h, wDown, weights, prefix + ".ffn_down" + weightSuffix + ".weight", dtype);
     }
 
     // ========================================================================

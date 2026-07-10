@@ -54,7 +54,14 @@ public class ConversionOptions {
     private boolean preserveTokenizerInfo = true;
 
     /**
-     * Whether to build for training (includes gradient support)
+     * Whether to build for training (marks weight variables as trainable in SameDiff).
+     *
+     * <p>This field is independent of {@link #quantizationMode}: setting
+     * {@code forTraining=true} with {@code RUNTIME_QUANTIZED_MATMUL} is valid and is
+     * the recommended configuration for QLoRA (see {@link #forTrainingQuantized()}).
+     * Setting {@code forTraining=true} with any {@code DEQUANTIZE_*} mode is only
+     * appropriate for full-parameter fine-tuning where you accept the memory blowup
+     * from dequantizing all weights to dense FP32 or FP16.</p>
      */
     @Builder.Default
     private boolean forTraining = false;
@@ -88,6 +95,30 @@ public class ConversionOptions {
     private long maxFileSize = 0;
 
     /**
+     * KV cache quantization format for the graph builder.
+     *
+     * <p>When {@code > 0}, the architecture builder creates INT8 (or FP8/INT4) KV cache
+     * placeholders instead of float ones and inserts {@code kv_cache_dequantize} nodes
+     * between the cache placeholders and {@code DotProductAttentionV2}. This enables
+     * compact in-memory storage of KV histories with on-the-fly dequantization during
+     * decode — the dequant op is captured into the CUDA graph for zero-overhead replay.</p>
+     *
+     * <p>Values correspond to {@code KVQuantFormat} in the C++ enum:</p>
+     * <ul>
+     *   <li>{@code 0} — disabled (default); float KV cache, standard graph</li>
+     *   <li>{@code 1} — INT8 symmetric per-row absmax quantization (recommended)</li>
+     *   <li>{@code 2} — FP8 E4M3 (requires hardware FP8 support; falls back to INT8 on CPU)</li>
+     *   <li>{@code 3} — FP8 E5M2</li>
+     *   <li>{@code 4} — INT4 packed (2 values/byte; 4x compression vs float)</li>
+     * </ul>
+     *
+     * <p>Pairing with {@link org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy#QUANTIZED}
+     * is required; setting this without {@code QUANTIZED} strategy has no effect at runtime.</p>
+     */
+    @Builder.Default
+    private int kvQuantFormat = 0;
+
+    /**
      * How to handle quantized weights during conversion
      */
     public enum QuantizationMode {
@@ -114,7 +145,16 @@ public class ConversionOptions {
         /**
          * Hybrid: dequantize some layers (attention), preserve others (FFN)
          */
-        HYBRID
+        HYBRID,
+
+        /**
+         * Keep supported quantization types (Q8_0, Q4_K, Q6_K) as packed INT8 bytes
+         * and insert ggml_qmatmul ops at every linear layer that uses them.
+         * Unsupported types fall back to DEQUANTIZE_TO_FLOAT16.
+         * Default is OFF to preserve byte-identical behavior; enable via
+         * system property nd4j.ggml.runtimeQuant=true or this mode.
+         */
+        RUNTIME_QUANTIZED_MATMUL
     }
 
     /**
@@ -134,7 +174,17 @@ public class ConversionOptions {
     }
 
     /**
-     * Create default options for training/fine-tuning
+     * Create options for full-parameter fine-tuning.
+     *
+     * <p><b>WARNING — memory blowup:</b> this preset dequantizes ALL weights to dense FP32.
+     * A 13 GB Q8_0 GGUF becomes approximately 50 GB of FP32 tensors.  Only use this preset
+     * when you intend to train every parameter from scratch or when quantization is irrelevant
+     * (e.g. a non-quantized GGUF model).</p>
+     *
+     * <p>For LoRA / QLoRA on a quantized GGUF base model, use {@link #forTrainingQuantized()}
+     * instead: it keeps supported weight types (Q8_0, Q4_K, Q6_K) packed as INT8 bytes and
+     * emits {@code ggml_qmatmul} ops, so a 13 GB GGUF stays 13 GB while the LoRA adapters
+     * added by {@code PeftModel} are the only new trainable parameters.</p>
      */
     public static ConversionOptions forTraining() {
         return ConversionOptions.builder()
@@ -160,6 +210,84 @@ public class ConversionOptions {
     public static ConversionOptions preserveQuantization() {
         return ConversionOptions.builder()
                 .quantizationMode(QuantizationMode.PRESERVE_QUANTIZATION)
+                .build();
+    }
+
+    /**
+     * Create options for runtime quantized matmul.
+     * Supported types (Q8_0, Q4_K, Q6_K) are kept as raw INT8 packed bytes;
+     * ggml_qmatmul ops are wired in place of normal matmuls for those weights.
+     * Unsupported types fall back to FP16 dequantization.
+     * Existing default conversion behavior is NOT changed when this is not used.
+     */
+    public static ConversionOptions runtimeQuantizedMatmul() {
+        return ConversionOptions.builder()
+                .quantizationMode(QuantizationMode.RUNTIME_QUANTIZED_MATMUL)
+                .targetDataType(DataType.HALF)
+                .build();
+    }
+
+    /**
+     * Create options for QLoRA (Quantized Low-Rank Adaptation) on a GGUF base model.
+     *
+     * <p>This is the correct preset for parameter-efficient fine-tuning (LoRA/QLoRA) of a
+     * quantized GGUF model:</p>
+     * <ul>
+     *   <li>Base weights whose GGUF quantization type is supported (Q8_0, Q4_K, Q6_K) remain
+     *       packed as raw INT8 bytes; the graph emits {@code ggml_qmatmul} ops for them.
+     *       A 13 GB Q8_0 GGUF stays roughly 13 GB on disk and in memory — NOT 50 GB of
+     *       dense FP32 shards.</li>
+     *   <li>Unsupported quantization types fall back to FP16 dequantization (hybrid graph).</li>
+     *   <li>{@code forTraining=true} marks weight variables as trainable in SameDiff so that
+     *       a {@code PeftModel} can freeze the base weights and attach LoRA adapter parameters.</li>
+     *   <li>Working dtype is FP16 so activations and LoRA adapters share a compact dtype.</li>
+     * </ul>
+     *
+     * <p>The base weights registered as {@code sd.var} with the GGUF tensor name (e.g.
+     * {@code "blk.0.attn_q.weight"}) allow a {@code PeftModel} with
+     * {@code targetModules = "attn_q"} to locate and freeze/attach LoRA to them.
+     * {@code PeftModel} reads N, K, and quantType from the {@code ggml_qmatmul} op's
+     * {@code iArgs} — no additional metadata is required.</p>
+     *
+     * <p><b>Do NOT use {@link #forTraining()} for LoRA/QLoRA.</b>
+     * {@code forTraining()} dequantizes everything to FP32 (a 13 GB GGUF becomes ~50 GB of
+     * dense shards) and is only appropriate for full-parameter fine-tuning where every weight
+     * must be a dense FP32 gradient target.</p>
+     *
+     * @return conversion options suitable for QLoRA base model loading
+     */
+    public static ConversionOptions forTrainingQuantized() {
+        return ConversionOptions.builder()
+                .quantizationMode(QuantizationMode.RUNTIME_QUANTIZED_MATMUL)
+                .targetDataType(DataType.HALF)
+                .forTraining(true)
+                .build();
+    }
+
+    /**
+     * Returns true if this ConversionOptions is configured for runtime quantized matmul.
+     */
+    public boolean isRuntimeQuantizedMatmul() {
+        return quantizationMode == QuantizationMode.RUNTIME_QUANTIZED_MATMUL;
+    }
+
+    /**
+     * Returns {@code true} when the KV cache should be built with INT8/FP8 quantized placeholders
+     * and in-graph {@code kv_cache_dequantize} nodes.
+     */
+    public boolean isKvCacheQuantized() {
+        return kvQuantFormat > 0;
+    }
+
+    /**
+     * Create options with INT8-quantized KV cache placeholders (4x memory vs float).
+     * Weights are dequantized to FP16; KV cache uses INT8 per-row absmax quantization.
+     */
+    public static ConversionOptions withInt8KvCache() {
+        return ConversionOptions.builder()
+                .quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT16)
+                .targetDataType(DataType.HALF)
+                .kvQuantFormat(1) // INT8
                 .build();
     }
 }

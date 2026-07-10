@@ -21,6 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
+#include <array/DataTypeUtils.h>
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/transforms.h>
@@ -90,8 +91,9 @@ DECLARE_SHAPE_FN(reduce_norm_max) {
         "REDUCE_NORM_MAX OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  return SHAPELIST(
-      ShapeUtils::evalReduceShapeInfo(shape::order(in), &dimensions, in, keepDims, false, block.getWorkspace()));
+  return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(in), &dimensions, in,
+                                                   DataTypeUtils::pickFloatingType(ArrayOptions::dataType(in)),
+                                                   keepDims, false, block.getWorkspace()));
 }
 
 DECLARE_TYPES(reduce_norm_max) {

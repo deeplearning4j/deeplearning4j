@@ -571,17 +571,22 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
 
             OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, originalInput);
 
+            // Track wasOutput so we can leave outputVar as a zombie variable when it was
+            // a registered graph output. A zombie prevents restoreRequiredOutputNames from
+            // re-inserting an unwanted identity op.
             List<String> graphOutputs = sd.outputs();
+            boolean wasOutput = false;
             if (graphOutputs != null) {
                 for (int i = 0; i < graphOutputs.size(); i++) {
                     if (graphOutputs.get(i).equals(outputVar)) {
                         graphOutputs.set(i, originalInput);
+                        wasOutput = true;
                     }
                 }
             }
 
             OptimizationUtils.removeOp(sd, helper, op.getName());
-            OptimizationUtils.removeVariable(sd, helper, outputVar);
+            if (!wasOutput) OptimizationUtils.removeVariable(sd, helper, outputVar);
 
             // If expand_dims now has no consumers, remove it too
             Variable intermediateAfter = sd.getVariables().get(inputVar);
@@ -653,17 +658,22 @@ public class ShapeFunctionOptimizations extends BaseOptimizerSet {
 
             OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, originalInput);
 
+            // Track wasOutput so we can leave outputVar as a zombie variable when it was
+            // a registered graph output. A zombie prevents restoreRequiredOutputNames from
+            // re-inserting an unwanted identity op.
             List<String> graphOutputs = sd.outputs();
+            boolean wasOutput = false;
             if (graphOutputs != null) {
                 for (int i = 0; i < graphOutputs.size(); i++) {
                     if (graphOutputs.get(i).equals(outputVar)) {
                         graphOutputs.set(i, originalInput);
+                        wasOutput = true;
                     }
                 }
             }
 
             OptimizationUtils.removeOp(sd, helper, op.getName());
-            OptimizationUtils.removeVariable(sd, helper, outputVar);
+            if (!wasOutput) OptimizationUtils.removeVariable(sd, helper, outputVar);
 
             Variable intermediateAfter = sd.getVariables().get(inputVar);
             if (intermediateAfter != null) {

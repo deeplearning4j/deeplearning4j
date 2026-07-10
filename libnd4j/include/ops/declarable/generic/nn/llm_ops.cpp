@@ -150,11 +150,44 @@ CUSTOM_OP_IMPL(rms_norm_bp, 2, 1, false, 0, 0) {
     NDArray* gradGamma = (gamma != nullptr && block.outputWidth() > 1) ? OUTPUT_VARIABLE(1) : nullptr;
 
     float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
-    std::vector<LongType> axis = {input->rankOf() - 1};
-    auto n = input->sizeAt(axis[0]);
+
+    // For HALF/BFLOAT16, rsqrt^3 can overflow even when the mathematically expected
+    // result is finite, and zero * inf then poisons gradients with NaN. Keep the
+    // backward intermediates in at least FLOAT32 and cast/assign at the outputs.
+    bool inputLowPrecision = input->dataType() == DataType::HALF || input->dataType() == DataType::BFLOAT16;
+    bool gradLowPrecision = gradOut->dataType() == DataType::HALF || gradOut->dataType() == DataType::BFLOAT16;
+    bool gammaLowPrecision = gamma != nullptr &&
+        (gamma->dataType() == DataType::HALF || gamma->dataType() == DataType::BFLOAT16);
+    DataType calcType = input->dataType() == DataType::DOUBLE ? DataType::DOUBLE : DataType::FLOAT32;
+    bool useCalcCast = inputLowPrecision || gradLowPrecision || gammaLowPrecision;
+
+    NDArray* inputCalc = input;
+    NDArray* gradOutCalc = gradOut;
+    NDArray* gammaCalc = gamma;
+    NDArray* inputCast = nullptr;
+    NDArray* gradOutCast = nullptr;
+    NDArray* gammaCast = nullptr;
+
+    if (useCalcCast) {
+        if (input->dataType() != calcType) {
+            inputCast = input->cast(calcType);
+            inputCalc = inputCast;
+        }
+        if (gradOut->dataType() != calcType) {
+            gradOutCast = gradOut->cast(calcType);
+            gradOutCalc = gradOutCast;
+        }
+        if (gamma != nullptr && gamma->dataType() != calcType) {
+            gammaCast = gamma->cast(calcType);
+            gammaCalc = gammaCast;
+        }
+    }
+
+    std::vector<LongType> axis = {inputCalc->rankOf() - 1};
+    auto n = inputCalc->sizeAt(axis[0]);
 
     // Forward pass values
-    NDArray* squared = (*input) * (*input);
+    NDArray* squared = (*inputCalc) * (*inputCalc);
     NDArray* meanSquared = squared->reduceAlongDimension(reduce::Mean, &axis, true);
     delete squared;
 
@@ -167,19 +200,19 @@ CUSTOM_OP_IMPL(rms_norm_bp, 2, 1, false, 0, 0) {
     // We need to chain through gamma: effective_gradOut_for_norm = gradOut * gamma (broadcast).
     NDArray* effectiveGradOut = nullptr;
     bool ownedEffectiveGradOut = false;
-    if (gamma != nullptr) {
+    if (gammaCalc != nullptr) {
         // gradOut has the same shape as the normed output [batch..., features].
         // gamma has shape [features]. Multiply element-wise via broadcast.
-        effectiveGradOut = (*gradOut) * (*gamma);
+        effectiveGradOut = (*gradOutCalc) * (*gammaCalc);
         ownedEffectiveGradOut = true;
     } else {
-        effectiveGradOut = gradOut;
+        effectiveGradOut = gradOutCalc;
     }
 
     // Gradient computation for input
     // dL/dx = effectiveGradOut * rsqrt - input * (dot(input, effectiveGradOut)/n) * rsqrt^3
     NDArray* gradNorm = (*effectiveGradOut) * (*rsqrt);
-    NDArray* inputGrad = (*input) * (*effectiveGradOut);
+    NDArray* inputGrad = (*inputCalc) * (*effectiveGradOut);
     NDArray* dotProduct = inputGrad->reduceAlongDimension(reduce::Sum, &axis, true);
     delete inputGrad;
 
@@ -194,7 +227,7 @@ CUSTOM_OP_IMPL(rms_norm_bp, 2, 1, false, 0, 0) {
     NDArray* gradMeanScaled = (*gradMean) / static_cast<float>(n);
     delete gradMean;
 
-    NDArray* inputScaled = (*input) * (*gradMeanScaled);
+    NDArray* inputScaled = (*inputCalc) * (*gradMeanScaled);
     delete gradMeanScaled;
 
     NDArray* result = (*gradNorm) - (*inputScaled);
@@ -212,13 +245,13 @@ CUSTOM_OP_IMPL(rms_norm_bp, 2, 1, false, 0, 0) {
     // x_normed = input * rsqrt (before gamma scaling). rsqrt is still alive here.
     if (gradGamma != nullptr) {
         // Compute x_normed = input * rsqrt
-        NDArray* xNormed = (*input) * (*rsqrt);
+        NDArray* xNormed = (*inputCalc) * (*rsqrt);
         // dL/dgamma = sum(gradOut * x_normed) over all dims except the last (features) dim
-        NDArray* gammaGradFull = (*gradOut) * (*xNormed);
+        NDArray* gammaGradFull = (*gradOutCalc) * (*xNormed);
         delete xNormed;
         // Sum over all leading dimensions (all except last)
         std::vector<LongType> batchDims;
-        for (int d = 0; d < input->rankOf() - 1; d++) batchDims.push_back(d);
+        for (int d = 0; d < inputCalc->rankOf() - 1; d++) batchDims.push_back(d);
         NDArray* gammaGradReduced = gammaGradFull->reduceAlongDimension(reduce::Sum, &batchDims, false);
         delete gammaGradFull;
         gradGamma->assign(gammaGradReduced);
@@ -226,6 +259,9 @@ CUSTOM_OP_IMPL(rms_norm_bp, 2, 1, false, 0, 0) {
     }
 
     delete rsqrt;
+    delete inputCast;
+    delete gradOutCast;
+    delete gammaCast;
 
     return Status::OK;
 }
@@ -1507,8 +1543,18 @@ CUSTOM_OP_IMPL(kv_cache_quantize, 1, 2, false, 0, 1) {
     auto scales = OUTPUT_VARIABLE(1);
 
     int quantFormat = INT_ARG(0);
+    // ADR 0107 V2 ROW-INLINE (INT8 only): when the 2nd I-arg is 1, OUTPUT 0 is a row-inline INT8
+    // tensor of the input shape with the last dimension extended by 4 — each row holds rowLen
+    // int8 values followed by that row's float32 scale. The scale rides INSIDE the logical
+    // tensor, so any DSP staging/copy preserves it. OUTPUT 1 is an unused dummy scalar.
+    // helpers::kvCacheQuantize writes the in-row scales when passed a null scales array.
+    const bool inlineScale = (block.numI() > 1 && INT_ARG(1) != 0);
 
-    helpers::kvCacheQuantize(input, quantized, scales, quantFormat, block.launchContext());
+    if (inlineScale) {
+        helpers::kvCacheQuantize(input, quantized, /*scales=*/nullptr, quantFormat, block.launchContext());
+    } else {
+        helpers::kvCacheQuantize(input, quantized, scales, quantFormat, block.launchContext());
+    }
 
     return Status::OK;
 }
@@ -1516,6 +1562,25 @@ CUSTOM_OP_IMPL(kv_cache_quantize, 1, 2, false, 0, 1) {
 DECLARE_SHAPE_FN(kv_cache_quantize) {
     auto inShape = inputShape->at(0);
     auto rank = shape::rank(inShape);
+    const bool inlineScale = (block.numI() > 1 && INT_ARG(1) != 0);
+
+    // Row layout: rows span dims[0..rank-2], rowLen = dims[rank-1]; one float scale per row.
+    const LongType rowLen = (rank >= 1) ? shape::sizeAt(inShape, rank - 1) : 1;
+
+    if (inlineScale) {
+        // Output 0: ROW-INLINE INT8 tensor — input shape with the last dimension extended by 4
+        // (each row = rowLen int8 values ++ that row's float32 scale). Rank-preserved so the
+        // tensor's logical bytes cover the scales and survive any staging/copy.
+        std::vector<LongType> rowInlineShape;
+        for (int i = 0; i < rank - 1; ++i) rowInlineShape.push_back(shape::sizeAt(inShape, i));
+        rowInlineShape.push_back(rowLen + 4);
+        auto rowInlineInfo = ConstantShapeHelper::getInstance().createShapeInfo(
+            DataType::INT8, 'c', rowInlineShape);
+        // Output 1: unused dummy scalar (scale rides inline in output 0).
+        auto dummyInfo = ConstantShapeHelper::getInstance().createShapeInfo(
+            DataType::FLOAT32, 'c', std::vector<LongType>{1});
+        return new ShapeList(std::vector<LongType*>{rowInlineInfo, dummyInfo});
+    }
 
     // Output 0: quantized data — same shape as input, INT8 dtype
     auto quantShape = ConstantShapeHelper::getInstance().createShapeInfo(

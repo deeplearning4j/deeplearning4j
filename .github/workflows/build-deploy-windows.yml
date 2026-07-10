@@ -262,7 +262,7 @@ jobs:
              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
           }
 
-          $mvn_common="${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests $mvn_ext"
+          $mvn_common="${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests $mvn_ext"
           $command="mvn $mvn_common -pl $modules --also-make deploy"
 
           if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {

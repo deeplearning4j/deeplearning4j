@@ -182,7 +182,7 @@ public class MistralArchitecture implements ModelArchitecture {
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
 
         // Logits: [batch, seq_len, vocab_size]
-        SDVariable logits = sd.mmul("logits", hidden, lmHead.permute(1, 0));
+        SDVariable logits = QuantizedLinear.matMul(sd, "logits", hidden, lmHead, weights, "output.weight", dtype);
 
         return sd;
     }
@@ -285,10 +285,12 @@ public class MistralArchitecture implements ModelArchitecture {
             return input;
         }
 
-        // Derive headDim from K weight shape: kOutDim / numKVHeads
-        int kOutDim = (int) kWeight.shape()[0];
-        int headDim = kOutDim / numKVHeads;
-        int qOutDim = (int) qWeight.shape()[0];
+        int kOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_k.weight", kWeight);
+        int qOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_q.weight", qWeight);
+        int headDim = config.getHeadDimension();
+        if (headDim <= 0) {
+            headDim = kOutDim / numKVHeads;
+        }
         int actualNumHeads = qOutDim / headDim;
 
         if (layerIdx == 0) {
@@ -305,9 +307,9 @@ public class MistralArchitecture implements ModelArchitecture {
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
         // Project to Q, K, V: [batch, seq, hidden] -> [batch, seq, proj_dim]
-        SDVariable q = sd.mmul("q_" + layerIdx, input, wq.permute(1, 0));
-        SDVariable k = sd.mmul("k_" + layerIdx, input, wk.permute(1, 0));
-        SDVariable v = sd.mmul("v_" + layerIdx, input, wv.permute(1, 0));
+        SDVariable q = QuantizedLinear.matMul(sd, "q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
+        SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, prefix + ".attn_k.weight", dtype);
+        SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, prefix + ".attn_v.weight", dtype);
 
         // Add biases if present
         INDArray qBias = weights.get(prefix + ".attn_q.bias");
@@ -365,7 +367,7 @@ public class MistralArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
-        return sd.mmul("attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", dtype);
     }
 
     // ========================================================================
@@ -395,13 +397,13 @@ public class MistralArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
-        SDVariable gate = sd.mmul("gate_" + layerIdx, input, wGate.permute(1, 0));
-        SDVariable up = sd.mmul("up_" + layerIdx, input, wUp.permute(1, 0));
+        SDVariable gate = QuantizedLinear.matMul(sd, "gate_" + layerIdx, input, wGate, weights, prefix + ".ffn_gate.weight", dtype);
+        SDVariable up = QuantizedLinear.matMul(sd, "up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", dtype);
 
         SDVariable silu = sd.nn.swish(gate);
         SDVariable hidden = silu.mul("swiglu_" + layerIdx, up);
 
-        return sd.mmul("down_" + layerIdx, hidden, wDown.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "down_" + layerIdx, hidden, wDown, weights, prefix + ".ffn_down.weight", dtype);
     }
 
     /**
@@ -426,7 +428,7 @@ public class MistralArchitecture implements ModelArchitecture {
 
         // Router gate: [hidden_dim, num_experts] -> softmax routing weights
         SDVariable gate = sd.var(moePrefix + "gate.weight", routerGateWeight);
-        SDVariable routerLogits = sd.mmul("router_logits_" + layerIdx, input, gate.permute(1, 0));
+        SDVariable routerLogits = QuantizedLinear.matMul(sd, "router_logits_" + layerIdx, input, gate, weights, prefix + ".ffn_gate_inp.weight", dtype);
         SDVariable routerWeights = sd.nn.softmax("router_weights_" + layerIdx, routerLogits, -1);
 
         // Detect number of experts from weight presence
@@ -538,13 +540,13 @@ public class MistralArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(expertPrefix + "w3.weight", upW);
         SDVariable wDown = sd.var(expertPrefix + "w2.weight", downW);
 
-        SDVariable g = sd.mmul("gate" + nameSuffix, input, wGate.permute(1, 0));
-        SDVariable u = sd.mmul("up" + nameSuffix, input, wUp.permute(1, 0));
+        SDVariable g = QuantizedLinear.matMul(sd, "gate" + nameSuffix, input, wGate, weights, prefix + ".ffn_gate." + expertIdx + ".weight", dtype);
+        SDVariable u = QuantizedLinear.matMul(sd, "up" + nameSuffix, input, wUp, weights, prefix + ".ffn_up." + expertIdx + ".weight", dtype);
 
         SDVariable silu = sd.nn.swish(g);
         SDVariable h = silu.mul("swiglu" + nameSuffix, u);
 
-        return sd.mmul("down" + nameSuffix, h, wDown.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "down" + nameSuffix, h, wDown, weights, prefix + ".ffn_down." + expertIdx + ".weight", dtype);
     }
 
     // ========================================================================

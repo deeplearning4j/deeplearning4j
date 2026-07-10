@@ -49,16 +49,28 @@ CUSTOM_OP_IMPL(gated_delta_rule, 5, 2, false, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);     // [B, L, H, D_v]
     auto stateOut = OUTPUT_VARIABLE(1);   // [B, H, D_k, D_v]
 
-    NDArray* stateIn = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
+    NDArray* stateIn = nullptr;
+    NDArray* actualLen = nullptr;
+    for (int i = 5; i < block.width(); ++i) {
+        auto input = INPUT_VARIABLE(i);
+        if (input->rankOf() == 0) {
+            actualLen = input;
+        } else {
+            stateIn = input;
+        }
+    }
+    REQUIRE_TRUE(actualLen == nullptr || actualLen->dataType() == DataType::INT64, 0,
+                 "gated_delta_rule: actualLen input must be INT64 scalar");
 
-    helpers::gatedDeltaRule(block.launchContext(), Q, K, V, beta, gate, stateIn, output, stateOut);
+    helpers::gatedDeltaRule(block.launchContext(), Q, K, V, beta, gate, stateIn, actualLen,
+                            output, stateOut);
 
     return sd::Status::OK;
 }
 
 DECLARE_TYPES(gated_delta_rule) {
     getOpDescriptor()
-        ->setAllowedInputTypes({ALL_FLOATS})
+        ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS})
         ->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
 }

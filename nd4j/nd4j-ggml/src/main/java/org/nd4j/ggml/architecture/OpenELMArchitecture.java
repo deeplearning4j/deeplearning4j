@@ -129,7 +129,7 @@ public class OpenELMArchitecture implements ModelArchitecture {
             outputWeight = tokenEmbedWeight;
         }
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
-        sd.mmul("logits", hidden, lmHead.permute(1, 0));
+        QuantizedLinear.matMul(sd, "logits", hidden, lmHead, weights, "output.weight", hidden.dataType());
 
         return sd;
     }
@@ -215,7 +215,7 @@ public class OpenELMArchitecture implements ModelArchitecture {
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
         // Project QKV
-        SDVariable qkv = sd.mmul("qkv_" + layerIdx, input, wqkv.permute(1, 0));
+        SDVariable qkv = QuantizedLinear.matMul(sd, "qkv_" + layerIdx, input, wqkv, weights, prefix + ".attn_qkv.weight", input.dataType());
 
         // Split into Q, K, V
         SDVariable q = qkv.get(SDIndex.all(), SDIndex.all(), SDIndex.interval(0, qDim));
@@ -284,7 +284,7 @@ public class OpenELMArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
-        return sd.mmul("attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", attnFlat.dataType());
     }
 
     // ========================================================================
@@ -322,13 +322,13 @@ public class OpenELMArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
-        SDVariable gate = sd.mmul("gate_" + layerIdx, input, wGate.permute(1, 0));
-        SDVariable up = sd.mmul("up_" + layerIdx, input, wUp.permute(1, 0));
+        SDVariable gate = QuantizedLinear.matMul(sd, "gate_" + layerIdx, input, wGate, weights, prefix + ".ffn_gate.weight", input.dataType());
+        SDVariable up = QuantizedLinear.matMul(sd, "up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", input.dataType());
 
         SDVariable silu = sd.nn.swish(gate);
         SDVariable gated = silu.mul("swiglu_" + layerIdx, up);
 
-        return sd.mmul("down_" + layerIdx, gated, wDown.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "down_" + layerIdx, gated, wDown, weights, prefix + ".ffn_down.weight", gated.dataType());
     }
 
     // ========================================================================

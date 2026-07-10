@@ -23,6 +23,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_add)
 
+#include <array/DataTypeUtils.h>
+#include <helpers/ConstantShapeHelper.h>
 #include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/helpers/broadcastableFused.h>
@@ -236,6 +238,13 @@ DECLARE_TYPES(add) {
 
 DECLARE_TYPES(add_bp) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
 
+static DataType addBpGradientType(DataType xType, DataType yType, DataType epsType) {
+  auto type = DataTypeUtils::pickPairwiseResultType(xType, yType);
+  type = DataTypeUtils::pickPairwiseResultType(type, epsType);
+  if (DataTypeUtils::isR(type) && type != DataType::DOUBLE && type != DataType::FLOAT32) return DataType::FLOAT32;
+  return type;
+}
+
 CUSTOM_OP_IMPL(add_bp, 3, 2, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
@@ -283,9 +292,10 @@ DECLARE_SHAPE_FN(add_bp) {
   auto y = inputShape->at(1);
   auto e = inputShape->at(2);
 
-  // eps always has shape of x
-  // grad always has shape of y
-  return SHAPELIST(CONSTANT(x), CONSTANT(y));
+  auto gradType = addBpGradientType(ArrayOptions::dataType(x), ArrayOptions::dataType(y), ArrayOptions::dataType(e));
+  auto gradXShape = ConstantShapeHelper::getInstance().createShapeInfo(gradType, const_cast<LongType*>(x));
+  auto gradYShape = ConstantShapeHelper::getInstance().createShapeInfo(gradType, const_cast<LongType*>(y));
+  return SHAPELIST(gradXShape, gradYShape);
 }
 }  // namespace ops
 }  // namespace sd

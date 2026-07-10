@@ -221,6 +221,8 @@ public class SDNN extends SDOps {
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
    * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight, SDVariable bias,
       SDVariable convStateIn, int activation, int wFormat) {
@@ -250,6 +252,8 @@ public class SDNN extends SDOps {
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
    * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight, SDVariable bias,
       SDVariable convStateIn, int activation, int wFormat) {
@@ -275,6 +279,8 @@ public class SDNN extends SDOps {
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
@@ -293,6 +299,8 @@ public class SDNN extends SDOps {
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
@@ -312,6 +320,8 @@ public class SDNN extends SDOps {
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight, SDVariable bias) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
@@ -334,6 +344,8 @@ public class SDNN extends SDOps {
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight,
       SDVariable bias) {
@@ -358,6 +370,8 @@ public class SDNN extends SDOps {
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight, SDVariable bias,
       SDVariable convStateIn) {
@@ -385,6 +399,8 @@ public class SDNN extends SDOps {
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight, SDVariable bias,
       SDVariable convStateIn) {
@@ -413,6 +429,8 @@ public class SDNN extends SDOps {
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight, SDVariable bias,
       SDVariable convStateIn, int activation) {
@@ -441,6 +459,8 @@ public class SDNN extends SDOps {
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight, SDVariable bias,
       SDVariable convStateIn, int activation) {
@@ -588,6 +608,8 @@ public class SDNN extends SDOps {
    * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
    * @param mergeRepeated Whether to merge repeated characters in output
    * @param blankIndex Index of the blank label in the vocabulary
+   * @return decoded Decoded sequences. Shape: [batch, timeSteps] (padded with blank) (NUMERIC type)
+   * @return logProbability Log probability of decoded sequences. Shape: [batch] (NUMERIC type)
    */
   public SDVariable[] ctcGreedyDecoder(SDVariable logits, boolean mergeRepeated, int blankIndex) {
     SDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
@@ -618,6 +640,8 @@ public class SDNN extends SDOps {
    * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
    * @param mergeRepeated Whether to merge repeated characters in output
    * @param blankIndex Index of the blank label in the vocabulary
+   * @return decoded Decoded sequences. Shape: [batch, timeSteps] (padded with blank) (NUMERIC type)
+   * @return logProbability Log probability of decoded sequences. Shape: [batch] (NUMERIC type)
    */
   public SDVariable[] ctcGreedyDecoder(String[] names, SDVariable logits, boolean mergeRepeated,
       int blankIndex) {
@@ -650,6 +674,8 @@ public class SDNN extends SDOps {
    * @param sequenceLength Optional actual sequence lengths. Shape: [batch] (NUMERIC type)
    * @param mergeRepeated Whether to merge repeated characters in output
    * @param blankIndex Index of the blank label in the vocabulary
+   * @return decoded Decoded sequences. Shape: [batch, timeSteps] (padded with blank) (NUMERIC type)
+   * @return logProbability Log probability of decoded sequences. Shape: [batch] (NUMERIC type)
    */
   public SDVariable[] ctcGreedyDecoder(SDVariable logits, SDVariable sequenceLength,
       boolean mergeRepeated, int blankIndex) {
@@ -685,6 +711,8 @@ public class SDNN extends SDOps {
    * @param sequenceLength Optional actual sequence lengths. Shape: [batch] (NUMERIC type)
    * @param mergeRepeated Whether to merge repeated characters in output
    * @param blankIndex Index of the blank label in the vocabulary
+   * @return decoded Decoded sequences. Shape: [batch, timeSteps] (padded with blank) (NUMERIC type)
+   * @return logProbability Log probability of decoded sequences. Shape: [batch] (NUMERIC type)
    */
   public SDVariable[] ctcGreedyDecoder(String[] names, SDVariable logits, SDVariable sequenceLength,
       boolean mergeRepeated, int blankIndex) {
@@ -2105,6 +2133,9 @@ public class SDNN extends SDOps {
    * @param headDimK Key head dimension (D_k)
    * @param headDimV Value head dimension (D_v)
    * @param rmsNormEpsilon RMSNorm epsilon
+   * @return output Layer output [batch, seqLen, modelDim] (NUMERIC type)
+   * @return recurrentStateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return convStateOut Final conv state [batch, modelDim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] gatedDeltaNetBlock(SDVariable x, SDVariable wqkv, SDVariable wbeta,
       SDVariable wgate, SDVariable wout, SDVariable convWeight, SDVariable convBias,
@@ -2149,6 +2180,9 @@ public class SDNN extends SDOps {
    * @param headDimK Key head dimension (D_k)
    * @param headDimV Value head dimension (D_v)
    * @param rmsNormEpsilon RMSNorm epsilon
+   * @return output Layer output [batch, seqLen, modelDim] (NUMERIC type)
+   * @return recurrentStateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return convStateOut Final conv state [batch, modelDim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] gatedDeltaNetBlock(String[] names, SDVariable x, SDVariable wqkv,
       SDVariable wbeta, SDVariable wgate, SDVariable wout, SDVariable convWeight,
@@ -2191,6 +2225,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads (H)
    * @param headDimK Key head dimension (D_k)
    * @param headDimV Value head dimension (D_v)
+   * @return output Layer output [batch, seqLen, modelDim] (NUMERIC type)
+   * @return recurrentStateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return convStateOut Final conv state [batch, modelDim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] gatedDeltaNetBlock(SDVariable x, SDVariable wqkv, SDVariable wbeta,
       SDVariable wgate, SDVariable wout, SDVariable convWeight, SDVariable convBias, int numHeads,
@@ -2229,6 +2266,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads (H)
    * @param headDimK Key head dimension (D_k)
    * @param headDimV Value head dimension (D_v)
+   * @return output Layer output [batch, seqLen, modelDim] (NUMERIC type)
+   * @return recurrentStateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return convStateOut Final conv state [batch, modelDim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] gatedDeltaNetBlock(String[] names, SDVariable x, SDVariable wqkv,
       SDVariable wbeta, SDVariable wgate, SDVariable wout, SDVariable convWeight,
@@ -2260,6 +2300,8 @@ public class SDNN extends SDOps {
    * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
    * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
    * @param stateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
    */
   public SDVariable[] gatedDeltaRule(SDVariable q, SDVariable k, SDVariable v, SDVariable beta,
       SDVariable gate, SDVariable stateIn) {
@@ -2291,6 +2333,8 @@ public class SDNN extends SDOps {
    * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
    * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
    * @param stateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
    */
   public SDVariable[] gatedDeltaRule(String[] names, SDVariable q, SDVariable k, SDVariable v,
       SDVariable beta, SDVariable gate, SDVariable stateIn) {
@@ -2321,6 +2365,8 @@ public class SDNN extends SDOps {
    * @param v Value tensor [batch, seqLen, numHeads, headDimV] (NUMERIC type)
    * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
    * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
    */
   public SDVariable[] gatedDeltaRule(SDVariable q, SDVariable k, SDVariable v, SDVariable beta,
       SDVariable gate) {
@@ -2348,6 +2394,8 @@ public class SDNN extends SDOps {
    * @param v Value tensor [batch, seqLen, numHeads, headDimV] (NUMERIC type)
    * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
    * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
    */
   public SDVariable[] gatedDeltaRule(String[] names, SDVariable q, SDVariable k, SDVariable v,
       SDVariable beta, SDVariable gate) {
@@ -2385,6 +2433,98 @@ public class SDNN extends SDOps {
   public SDVariable gelu(String name, SDVariable x) {
     SDValidation.validateNumerical("gelu", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.strict.GELU(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Runtime quantized matmul against GGML-packed weights: dequantizes the packed<br>
+   * weight on the fly (fp32 accumulation) without materializing a dense weight.<br>
+   *
+   * @param activations Activations [M, K] or [B, S, K] (FLOAT32 or HALF) (NUMERIC type)
+   * @param packedWeights Packed GGML quantized weight bytes (INT8, rank 1) for a logical [N, K] weight (NUMERIC type)
+   * @param quantType GGML quantization type: 4=Q8_0, 8=Q4_K, 10=Q6_K
+   * @param n Number of weight rows (output columns)
+   * @param k Inner dimension (must be divisible by the quant block size)
+   * @param outputDtype Output dtype: 0=FLOAT32, 1=HALF
+   * @return output out = activations @ dequant(weight)^T, [M, N] or [B, S, N] (NUMERIC type)
+   */
+  public SDVariable ggmlQMatMul(SDVariable activations, SDVariable packedWeights, int quantType,
+      int n, int k, int outputDtype) {
+    SDValidation.validateNumerical("ggmlQMatMul", "activations", activations);
+    SDValidation.validateNumerical("ggmlQMatMul", "packedWeights", packedWeights);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul(sd,activations, packedWeights, quantType, n, k, outputDtype).outputVariable();
+  }
+
+  /**
+   * Runtime quantized matmul against GGML-packed weights: dequantizes the packed<br>
+   * weight on the fly (fp32 accumulation) without materializing a dense weight.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param activations Activations [M, K] or [B, S, K] (FLOAT32 or HALF) (NUMERIC type)
+   * @param packedWeights Packed GGML quantized weight bytes (INT8, rank 1) for a logical [N, K] weight (NUMERIC type)
+   * @param quantType GGML quantization type: 4=Q8_0, 8=Q4_K, 10=Q6_K
+   * @param n Number of weight rows (output columns)
+   * @param k Inner dimension (must be divisible by the quant block size)
+   * @param outputDtype Output dtype: 0=FLOAT32, 1=HALF
+   * @return output out = activations @ dequant(weight)^T, [M, N] or [B, S, N] (NUMERIC type)
+   */
+  public SDVariable ggmlQMatMul(String name, SDVariable activations, SDVariable packedWeights,
+      int quantType, int n, int k, int outputDtype) {
+    SDValidation.validateNumerical("ggmlQMatMul", "activations", activations);
+    SDValidation.validateNumerical("ggmlQMatMul", "packedWeights", packedWeights);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul(sd,activations, packedWeights, quantType, n, k, outputDtype).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused QLoRA op: runtime quantized base matmul (frozen GGML-packed weight) plus a<br>
+   * trainable low-rank LoRA residual, computed in a single op.<br>
+   *
+   * @param activations Activations [M, K] or [B, S, K] (NUMERIC type)
+   * @param packedWeights Packed GGML quantized weight bytes (INT8) for a logical [N, K] weight (NUMERIC type)
+   * @param loraA LoRA down-projection [rank, K] (NUMERIC type)
+   * @param loraB LoRA up-projection [N, rank] (NUMERIC type)
+   * @param scaling LoRA scaling factor
+   * @param quantType GGML quantization type: 4=Q8_0, 8=Q4_K, 10=Q6_K
+   * @param n Number of weight rows (output columns)
+   * @param k Inner dimension
+   * @param outputDtype Output dtype: 0=FLOAT32, 1=HALF
+   * @return output ggml_qmatmul(activations, weight) + scaling * (activations @ loraA^T) @ loraB^T (NUMERIC type)
+   */
+  public SDVariable ggmlQMatMulLora(SDVariable activations, SDVariable packedWeights,
+      SDVariable loraA, SDVariable loraB, double scaling, int quantType, int n, int k,
+      int outputDtype) {
+    SDValidation.validateNumerical("ggmlQMatMulLora", "activations", activations);
+    SDValidation.validateNumerical("ggmlQMatMulLora", "packedWeights", packedWeights);
+    SDValidation.validateNumerical("ggmlQMatMulLora", "loraA", loraA);
+    SDValidation.validateNumerical("ggmlQMatMulLora", "loraB", loraB);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLora(sd,activations, packedWeights, loraA, loraB, scaling, quantType, n, k, outputDtype).outputVariable();
+  }
+
+  /**
+   * Fused QLoRA op: runtime quantized base matmul (frozen GGML-packed weight) plus a<br>
+   * trainable low-rank LoRA residual, computed in a single op.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param activations Activations [M, K] or [B, S, K] (NUMERIC type)
+   * @param packedWeights Packed GGML quantized weight bytes (INT8) for a logical [N, K] weight (NUMERIC type)
+   * @param loraA LoRA down-projection [rank, K] (NUMERIC type)
+   * @param loraB LoRA up-projection [N, rank] (NUMERIC type)
+   * @param scaling LoRA scaling factor
+   * @param quantType GGML quantization type: 4=Q8_0, 8=Q4_K, 10=Q6_K
+   * @param n Number of weight rows (output columns)
+   * @param k Inner dimension
+   * @param outputDtype Output dtype: 0=FLOAT32, 1=HALF
+   * @return output ggml_qmatmul(activations, weight) + scaling * (activations @ loraA^T) @ loraB^T (NUMERIC type)
+   */
+  public SDVariable ggmlQMatMulLora(String name, SDVariable activations, SDVariable packedWeights,
+      SDVariable loraA, SDVariable loraB, double scaling, int quantType, int n, int k,
+      int outputDtype) {
+    SDValidation.validateNumerical("ggmlQMatMulLora", "activations", activations);
+    SDValidation.validateNumerical("ggmlQMatMulLora", "packedWeights", packedWeights);
+    SDValidation.validateNumerical("ggmlQMatMulLora", "loraA", loraA);
+    SDValidation.validateNumerical("ggmlQMatMulLora", "loraB", loraB);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLora(sd,activations, packedWeights, loraA, loraB, scaling, quantType, n, k, outputDtype).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2672,6 +2812,8 @@ public class SDNN extends SDOps {
    * @param newKeys New keys to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
    * @param newValues New values to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
    * @param startPosition Position in cache where new keys/values should be inserted
+   * @return updatedKeyCache Updated key cache (NUMERIC type)
+   * @return updatedValueCache Updated value cache (NUMERIC type)
    */
   public SDVariable[] kvCacheUpdate(SDVariable keyCache, SDVariable valueCache, SDVariable newKeys,
       SDVariable newValues, int startPosition) {
@@ -2702,6 +2844,8 @@ public class SDNN extends SDOps {
    * @param newKeys New keys to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
    * @param newValues New values to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
    * @param startPosition Position in cache where new keys/values should be inserted
+   * @return updatedKeyCache Updated key cache (NUMERIC type)
+   * @return updatedValueCache Updated value cache (NUMERIC type)
    */
   public SDVariable[] kvCacheUpdate(String[] names, SDVariable keyCache, SDVariable valueCache,
       SDVariable newKeys, SDVariable newValues, int startPosition) {
@@ -3501,6 +3645,8 @@ public class SDNN extends SDOps {
    * @param numHeads Number of SSM heads (H)
    * @param headDim Dimension per head (P = D/H)
    * @param stateDim State dimension (N)
+   * @return output SSM output [batch, seqLen, D] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, stateDim, headDim] (NUMERIC type)
    */
   public SDVariable[] mamba2Ssm(SDVariable x, SDVariable A, SDVariable B, SDVariable C,
       SDVariable dt, int numHeads, int headDim, int stateDim) {
@@ -3534,6 +3680,8 @@ public class SDNN extends SDOps {
    * @param numHeads Number of SSM heads (H)
    * @param headDim Dimension per head (P = D/H)
    * @param stateDim State dimension (N)
+   * @return output SSM output [batch, seqLen, D] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, stateDim, headDim] (NUMERIC type)
    */
   public SDVariable[] mamba2Ssm(String[] names, SDVariable x, SDVariable A, SDVariable B,
       SDVariable C, SDVariable dt, int numHeads, int headDim, int stateDim) {
@@ -3599,13 +3747,15 @@ public class SDNN extends SDOps {
    * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
    * @param numExperts Total number of experts
    * @param topK Number of experts to route to per token
+   * @return output Combined expert outputs. Shape: [batch, seqLen, expertHiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public SDVariable[] mixtureOfExperts(SDVariable input, SDVariable routerWeights,
       SDVariable expertWeights, int numExperts, int topK) {
     SDValidation.validateNumerical("mixtureOfExperts", "input", input);
     SDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
     SDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
-    // normalizeProbs=false: gradient-safe default (avoids ~numExperts/topK gradient amplification).
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, null, numExperts, topK, false, 1.0).outputVariables();
   }
 
@@ -3639,13 +3789,15 @@ public class SDNN extends SDOps {
    * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
    * @param numExperts Total number of experts
    * @param topK Number of experts to route to per token
+   * @return output Combined expert outputs. Shape: [batch, seqLen, expertHiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public SDVariable[] mixtureOfExperts(String[] names, SDVariable input, SDVariable routerWeights,
       SDVariable expertWeights, int numExperts, int topK) {
     SDValidation.validateNumerical("mixtureOfExperts", "input", input);
     SDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
     SDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
-    // normalizeProbs=false: gradient-safe default (avoids ~numExperts/topK gradient amplification).
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, null, numExperts, topK, false, 1.0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -3680,8 +3832,11 @@ public class SDNN extends SDOps {
    * @param expertBias Optional expert biases. Shape: [numExperts, expertHiddenSize] (NUMERIC type)
    * @param numExperts Total number of experts
    * @param topK Number of experts to route to per token
-   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts. Default false is the gradient-safe choice (normalizing amplifies gradients by ~numExperts/topK).
    * @param capacityFactor Expert capacity factor for load balancing
+   * @return output Combined expert outputs. Shape: [batch, seqLen, expertHiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public SDVariable[] mixtureOfExperts(SDVariable input, SDVariable routerWeights,
       SDVariable expertWeights, SDVariable expertBias, int numExperts, int topK,
@@ -3726,8 +3881,11 @@ public class SDNN extends SDOps {
    * @param expertBias Optional expert biases. Shape: [numExperts, expertHiddenSize] (NUMERIC type)
    * @param numExperts Total number of experts
    * @param topK Number of experts to route to per token
-   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts. Default false is the gradient-safe choice (normalizing amplifies gradients by ~numExperts/topK).
    * @param capacityFactor Expert capacity factor for load balancing
+   * @return output Combined expert outputs. Shape: [batch, seqLen, expertHiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public SDVariable[] mixtureOfExperts(String[] names, SDVariable input, SDVariable routerWeights,
       SDVariable expertWeights, SDVariable expertBias, int numExperts, int topK,
@@ -3837,6 +3995,9 @@ public class SDNN extends SDOps {
    * @param sharedDownProj Shared expert down projection. Shape: [sharedIntermediateSize, hiddenSize] (NUMERIC type)
    * @param numRoutedExperts Number of routed experts
    * @param topK Number of experts to route to per token
+   * @return output Combined shared + routed expert outputs. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numRoutedExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public SDVariable[] moeSharedExperts(SDVariable input, SDVariable routerWeights,
       SDVariable routedExpertWeights, SDVariable sharedGateProj, SDVariable sharedUpProj,
@@ -3847,7 +4008,6 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
-    // normalizeProbs=false: gradient-safe default (avoids ~numRoutedExperts/topK gradient amplification).
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(sd,input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, null, numRoutedExperts, topK, false, 1.0).outputVariables();
   }
 
@@ -3876,6 +4036,9 @@ public class SDNN extends SDOps {
    * @param sharedDownProj Shared expert down projection. Shape: [sharedIntermediateSize, hiddenSize] (NUMERIC type)
    * @param numRoutedExperts Number of routed experts
    * @param topK Number of experts to route to per token
+   * @return output Combined shared + routed expert outputs. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numRoutedExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public SDVariable[] moeSharedExperts(String[] names, SDVariable input, SDVariable routerWeights,
       SDVariable routedExpertWeights, SDVariable sharedGateProj, SDVariable sharedUpProj,
@@ -3886,7 +4049,6 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
     SDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
-    // normalizeProbs=false: gradient-safe default (avoids ~numRoutedExperts/topK gradient amplification).
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(sd,input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, null, numRoutedExperts, topK, false, 1.0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
@@ -3916,8 +4078,11 @@ public class SDNN extends SDOps {
    * @param routedExpertBias Optional routed expert biases (NUMERIC type)
    * @param numRoutedExperts Number of routed experts
    * @param topK Number of experts to route to per token
-   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts. Default false is the gradient-safe choice (normalizing amplifies gradients by ~numRoutedExperts/topK).
    * @param capacityFactor Expert capacity factor for load balancing
+   * @return output Combined shared + routed expert outputs. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numRoutedExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public SDVariable[] moeSharedExperts(SDVariable input, SDVariable routerWeights,
       SDVariable routedExpertWeights, SDVariable sharedGateProj, SDVariable sharedUpProj,
@@ -3961,8 +4126,11 @@ public class SDNN extends SDOps {
    * @param routedExpertBias Optional routed expert biases (NUMERIC type)
    * @param numRoutedExperts Number of routed experts
    * @param topK Number of experts to route to per token
-   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts. Default false is the gradient-safe choice (normalizing amplifies gradients by ~numRoutedExperts/topK).
    * @param capacityFactor Expert capacity factor for load balancing
+   * @return output Combined shared + routed expert outputs. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numRoutedExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public SDVariable[] moeSharedExperts(String[] names, SDVariable input, SDVariable routerWeights,
       SDVariable routedExpertWeights, SDVariable sharedGateProj, SDVariable sharedUpProj,
@@ -4003,6 +4171,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public SDVariable[] multiHeadAttention(SDVariable query, SDVariable key, SDVariable value,
       int numHeads, double scale, boolean useCausalMask) {
@@ -4035,6 +4206,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public SDVariable[] multiHeadAttention(String[] names, SDVariable query, SDVariable key,
       SDVariable value, int numHeads, double scale, boolean useCausalMask) {
@@ -4068,6 +4242,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public SDVariable[] multiHeadAttention(SDVariable query, SDVariable key, SDVariable value,
       SDVariable attnBias, int numHeads, double scale, boolean useCausalMask) {
@@ -4104,6 +4281,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public SDVariable[] multiHeadAttention(String[] names, SDVariable query, SDVariable key,
       SDVariable value, SDVariable attnBias, int numHeads, double scale, boolean useCausalMask) {
@@ -4141,6 +4321,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public SDVariable[] multiHeadAttention(SDVariable query, SDVariable key, SDVariable value,
       SDVariable pastKey, SDVariable pastValue, int numHeads, double scale, boolean useCausalMask) {
@@ -4181,6 +4364,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public SDVariable[] multiHeadAttention(String[] names, SDVariable query, SDVariable key,
       SDVariable value, SDVariable pastKey, SDVariable pastValue, int numHeads, double scale,
@@ -4223,6 +4409,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public SDVariable[] multiHeadAttention(SDVariable query, SDVariable key, SDVariable value,
       SDVariable attnBias, SDVariable pastKey, SDVariable pastValue, int numHeads, double scale,
@@ -4268,6 +4457,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public SDVariable[] multiHeadAttention(String[] names, SDVariable query, SDVariable key,
       SDVariable value, SDVariable attnBias, SDVariable pastKey, SDVariable pastValue, int numHeads,
@@ -4314,6 +4506,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public SDVariable[] multiHeadAttention(SDVariable query, SDVariable key, SDVariable value,
       SDVariable attnBias, SDVariable pastKey, SDVariable pastValue, SDVariable cachePosition,
@@ -4363,6 +4558,9 @@ public class SDNN extends SDOps {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public SDVariable[] multiHeadAttention(String[] names, SDVariable query, SDVariable key,
       SDVariable value, SDVariable attnBias, SDVariable pastKey, SDVariable pastValue,
@@ -5340,26 +5538,98 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Selective scan operation for state space models (Mamba architecture).<br>
+   * Selective scan (S6/Mamba) operation for state space models. Consumes the<br>
+   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).<br>
    *
-   * @param input Input tensor (NUMERIC type)
-   * @return output Selective scan output (NUMERIC type)
+   * @param x Input sequence [B, L, D] (NUMERIC type)
+   * @param a Discretized state transition [B, L, S] (NUMERIC type)
+   * @param b Input projection [B, L, S] (NUMERIC type)
+   * @param c Output projection [B, L, S] (NUMERIC type)
+   * @param d Skip connection weight [D] (NUMERIC type)
+   * @param h0 Optional initial hidden state [B, D, S] (may be null) (NUMERIC type)
+   * @return output Selective scan output [B, L, D] (NUMERIC type)
    */
-  public SDVariable selectiveScan(SDVariable input) {
-    SDValidation.validateNumerical("selectiveScan", "input", input);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(sd,input).outputVariable();
+  public SDVariable selectiveScan(SDVariable x, SDVariable a, SDVariable b, SDVariable c,
+      SDVariable d, SDVariable h0) {
+    SDValidation.validateNumerical("selectiveScan", "x", x);
+    SDValidation.validateNumerical("selectiveScan", "a", a);
+    SDValidation.validateNumerical("selectiveScan", "b", b);
+    SDValidation.validateNumerical("selectiveScan", "c", c);
+    SDValidation.validateNumerical("selectiveScan", "d", d);
+    if (h0 != null) {
+      SDValidation.validateNumerical("selectiveScan", "h0", h0);
+    }
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(sd,x, a, b, c, d, h0).outputVariable();
   }
 
   /**
-   * Selective scan operation for state space models (Mamba architecture).<br>
+   * Selective scan (S6/Mamba) operation for state space models. Consumes the<br>
+   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input Input tensor (NUMERIC type)
-   * @return output Selective scan output (NUMERIC type)
+   * @param x Input sequence [B, L, D] (NUMERIC type)
+   * @param a Discretized state transition [B, L, S] (NUMERIC type)
+   * @param b Input projection [B, L, S] (NUMERIC type)
+   * @param c Output projection [B, L, S] (NUMERIC type)
+   * @param d Skip connection weight [D] (NUMERIC type)
+   * @param h0 Optional initial hidden state [B, D, S] (may be null) (NUMERIC type)
+   * @return output Selective scan output [B, L, D] (NUMERIC type)
    */
-  public SDVariable selectiveScan(String name, SDVariable input) {
-    SDValidation.validateNumerical("selectiveScan", "input", input);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(sd,input).outputVariable();
+  public SDVariable selectiveScan(String name, SDVariable x, SDVariable a, SDVariable b,
+      SDVariable c, SDVariable d, SDVariable h0) {
+    SDValidation.validateNumerical("selectiveScan", "x", x);
+    SDValidation.validateNumerical("selectiveScan", "a", a);
+    SDValidation.validateNumerical("selectiveScan", "b", b);
+    SDValidation.validateNumerical("selectiveScan", "c", c);
+    SDValidation.validateNumerical("selectiveScan", "d", d);
+    if (h0 != null) {
+      SDValidation.validateNumerical("selectiveScan", "h0", h0);
+    }
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(sd,x, a, b, c, d, h0).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Selective scan (S6/Mamba) operation for state space models. Consumes the<br>
+   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).<br>
+   *
+   * @param x Input sequence [B, L, D] (NUMERIC type)
+   * @param a Discretized state transition [B, L, S] (NUMERIC type)
+   * @param b Input projection [B, L, S] (NUMERIC type)
+   * @param c Output projection [B, L, S] (NUMERIC type)
+   * @param d Skip connection weight [D] (NUMERIC type)
+   * @return output Selective scan output [B, L, D] (NUMERIC type)
+   */
+  public SDVariable selectiveScan(SDVariable x, SDVariable a, SDVariable b, SDVariable c,
+      SDVariable d) {
+    SDValidation.validateNumerical("selectiveScan", "x", x);
+    SDValidation.validateNumerical("selectiveScan", "a", a);
+    SDValidation.validateNumerical("selectiveScan", "b", b);
+    SDValidation.validateNumerical("selectiveScan", "c", c);
+    SDValidation.validateNumerical("selectiveScan", "d", d);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(sd,x, a, b, c, d, null).outputVariable();
+  }
+
+  /**
+   * Selective scan (S6/Mamba) operation for state space models. Consumes the<br>
+   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input sequence [B, L, D] (NUMERIC type)
+   * @param a Discretized state transition [B, L, S] (NUMERIC type)
+   * @param b Input projection [B, L, S] (NUMERIC type)
+   * @param c Output projection [B, L, S] (NUMERIC type)
+   * @param d Skip connection weight [D] (NUMERIC type)
+   * @return output Selective scan output [B, L, D] (NUMERIC type)
+   */
+  public SDVariable selectiveScan(String name, SDVariable x, SDVariable a, SDVariable b,
+      SDVariable c, SDVariable d) {
+    SDValidation.validateNumerical("selectiveScan", "x", x);
+    SDValidation.validateNumerical("selectiveScan", "a", a);
+    SDValidation.validateNumerical("selectiveScan", "b", b);
+    SDValidation.validateNumerical("selectiveScan", "c", c);
+    SDValidation.validateNumerical("selectiveScan", "d", d);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(sd,x, a, b, c, d, null).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -6239,6 +6509,8 @@ public class SDNN extends SDOps {
    * @param input Input data (NUMERIC type)
    * @param k The number of values to return
    * @param sorted Whether to return the values sorted or not
+   * @return output the top k values in the input (NUMERIC type)
+   * @return indices the indices of the top k values (NUMERIC type)
    */
   public SDVariable[] topK(SDVariable input, double k, boolean sorted) {
     SDValidation.validateNumerical("topK", "input", input);
@@ -6252,6 +6524,8 @@ public class SDNN extends SDOps {
    * @param input Input data (NUMERIC type)
    * @param k The number of values to return
    * @param sorted Whether to return the values sorted or not
+   * @return output the top k values in the input (NUMERIC type)
+   * @return indices the indices of the top k values (NUMERIC type)
    */
   public SDVariable[] topK(String[] names, SDVariable input, double k, boolean sorted) {
     SDValidation.validateNumerical("topK", "input", input);
@@ -6423,6 +6697,8 @@ public class SDNN extends SDOps {
    * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param scale Attention scale factor (default: 1/sqrt(embedDim))
+   * @return tokenOutput Attended token embeddings [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @return imageOutput Attended image embeddings [batch, imageSeqLen, embedDim] (NUMERIC type)
    */
   public SDVariable[] twoWayCrossAttention(SDVariable tokenQuery, SDVariable tokenKey,
       SDVariable tokenValue, SDVariable imageQuery, SDVariable imageKey, SDVariable imageValue,
@@ -6451,6 +6727,8 @@ public class SDNN extends SDOps {
    * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param scale Attention scale factor (default: 1/sqrt(embedDim))
+   * @return tokenOutput Attended token embeddings [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @return imageOutput Attended image embeddings [batch, imageSeqLen, embedDim] (NUMERIC type)
    */
   public SDVariable[] twoWayCrossAttention(String[] names, SDVariable tokenQuery,
       SDVariable tokenKey, SDVariable tokenValue, SDVariable imageQuery, SDVariable imageKey,
@@ -6478,6 +6756,8 @@ public class SDNN extends SDOps {
    * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @return tokenOutput Attended token embeddings [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @return imageOutput Attended image embeddings [batch, imageSeqLen, embedDim] (NUMERIC type)
    */
   public SDVariable[] twoWayCrossAttention(SDVariable tokenQuery, SDVariable tokenKey,
       SDVariable tokenValue, SDVariable imageQuery, SDVariable imageKey, SDVariable imageValue) {
@@ -6504,6 +6784,8 @@ public class SDNN extends SDOps {
    * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @return tokenOutput Attended token embeddings [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @return imageOutput Attended image embeddings [batch, imageSeqLen, embedDim] (NUMERIC type)
    */
   public SDVariable[] twoWayCrossAttention(String[] names, SDVariable tokenQuery,
       SDVariable tokenKey, SDVariable tokenValue, SDVariable imageQuery, SDVariable imageKey,

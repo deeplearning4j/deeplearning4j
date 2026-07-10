@@ -237,7 +237,7 @@ jobs:
           else
              mvn_ext=""
           fi
-          command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --batch-mode -DskipTests ${mvn_ext} -pl $modules --also-make deploy"
+          command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --batch-mode -DskipTests ${mvn_ext} -pl $modules --also-make deploy"
           echo "Setting command for helper ${{ matrix.helper }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
 

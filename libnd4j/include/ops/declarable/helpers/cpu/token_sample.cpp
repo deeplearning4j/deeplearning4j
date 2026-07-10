@@ -179,19 +179,167 @@ void tokenSampleWithPenalties(NDArray* logits, NDArray* output,
                                  double topP, double minP,
                                  double repPenalty, double freqPenalty,
                                  double presPenalty,
+                                 double typicalP,
+                                 double xtcProbability, double xtcThreshold,
                                  LongType seed, LaunchContext* context) {
+    // Sampling pipeline order (see token_sample.h for canonical documentation):
+    // 1. Penalties (repetition / frequency / presence)
+    // 2. Temperature + top-k + min-p + top-p → handled by tokenSample_
+    // 3. Typical-p filter (entropy-deviation, applied after softmax stage inside tokenSample_
+    //    cannot be injected there cleanly — so we pre-filter on logits before tokenSample_)
+    // 4. XTC filter
+    // 5. multinomial / greedy in tokenSample_
+    //
+    // NOTE: typical-p and XTC are both applied to pre-softmax logits (in-place).
+    // typical-p: operates on the post-temperature logits; since tokenSample_ applies temperature
+    // internally, we must apply typical-p *after* we scale the logits ourselves here and
+    // pass temperature=1.0 to tokenSample_. However, to stay compatible with the tokenSample_
+    // flow (which also does topK, topP), we apply typical-p to the raw logits before calling
+    // tokenSample_. The semantic difference is minor: typical-p is designed to operate on
+    // the softmax probability distribution, which is shift-invariant w.r.t. temperature
+    // scaling only if typicalP acts on the temperature-scaled logits. Conservative decision:
+    // apply typical-p to logits after penalties but before tokenSample_ (which applies
+    // temperature). This matches llama.cpp's pipeline placement (typical sampling runs
+    // before temperature in llama.cpp 2024+, after penalties).
+
     // Step 1: Apply penalties to logits (in-place)
     if (inputIds != nullptr && (repPenalty != 1.0 || freqPenalty != 0.0 || presPenalty != 0.0)) {
         applyLogitPenalties(logits, inputIds, repPenalty, freqPenalty, presPenalty, context);
     }
 
-    // Step 2: Apply min-p filtering (in-place)
+    // Step 2: Apply min-p filtering (in-place, uses softmax internally)
     if (minP > 0.0) {
         applyMinPFilter(logits, minP, context);
     }
 
-    // Step 3: Standard sampling (temperature, topK, topP)
+    // Step 3: Apply typical-p filtering (in-place; computes its own softmax)
+    if (typicalP > 0.0 && typicalP < 1.0) {
+        applyTypicalPFilter(logits, typicalP, context);
+    }
+
+    // Step 4: Apply XTC filter (in-place; stochastic, uses seed)
+    if (xtcProbability > 0.0) {
+        applyXtcFilter(logits, xtcProbability, xtcThreshold, seed, context);
+    }
+
+    // Step 5: Standard sampling (temperature, topK, topP)
     tokenSample(logits, output, temperature, topK, topP, seed, context);
+}
+
+static int resolveScalarStrategy(const TokenSampleConfig& config) {
+    if (config.strategy == TOKEN_SAMPLE_AUTO) {
+        return (config.temperature <= 0.0 || (config.topK <= 1 && config.topP <= 0.0))
+               ? TOKEN_SAMPLE_GREEDY : TOKEN_SAMPLE_SAMPLE;
+    }
+    return config.strategy;
+}
+
+static bool shouldSuppressStopTokens(const TokenSampleConfig& config) {
+    return config.minNewTokens > 0
+        && config.generatedTokenOffset < config.minNewTokens
+        && config.stopTokenIds != nullptr
+        && config.stopTokenCount > 0;
+}
+
+template <typename T>
+static void suppressStopTokens_(NDArray* logits, const TokenSampleConfig& config) {
+    if (!shouldSuppressStopTokens(config)) return;
+
+    const int rank = logits->rankOf();
+    LongType batch = 1;
+    LongType vocabSize;
+    LongType seqLen = 1;
+    if (rank == 1) {
+        vocabSize = logits->sizeAt(0);
+    } else if (rank == 2) {
+        batch = logits->sizeAt(0);
+        vocabSize = logits->sizeAt(1);
+    } else {
+        batch = logits->sizeAt(0);
+        seqLen = logits->sizeAt(1);
+        vocabSize = logits->sizeAt(2);
+    }
+
+    T* buf = logits->bufferAsT<T>();
+    auto strides = logits->stridesOf();
+    LongType batchStride = 0;
+    LongType elemStride;
+    LongType rowOffset = 0;
+    if (rank == 1) {
+        elemStride = strides[0];
+    } else if (rank == 2) {
+        batchStride = strides[0];
+        elemStride = strides[1];
+    } else {
+        batchStride = strides[0];
+        elemStride = strides[2];
+        rowOffset = (seqLen - 1) * strides[1];
+    }
+
+    for (LongType b = 0; b < batch; b++) {
+        LongType base = b * batchStride + rowOffset;
+        for (int i = 0; i < config.stopTokenCount; i++) {
+            int stopId = config.stopTokenIds[i];
+            if (stopId >= 0 && stopId < vocabSize) {
+                buf[base + static_cast<LongType>(stopId) * elemStride] =
+                    static_cast<T>(-std::numeric_limits<float>::infinity());
+            }
+        }
+    }
+}
+
+static void suppressStopTokens(NDArray* logits, const TokenSampleConfig& config, LaunchContext* context) {
+    BUILD_SINGLE_SELECTOR(logits->dataType(), suppressStopTokens_,
+                          (logits, config), SD_FLOAT_TYPES);
+}
+
+void tokenSamplePolicy(NDArray* logits, NDArray* output,
+                       NDArray* inputIds,
+                       const TokenSampleConfig& config,
+                       TokenSampleResult* result,
+                       LaunchContext* context) {
+    const int strategy = resolveScalarStrategy(config);
+    const bool scalar = config.batchMax == 1 && config.windowMax == 1
+                        && config.activeBatch == 1 && config.activeWindow == 1;
+    if (!scalar || (strategy != TOKEN_SAMPLE_GREEDY && strategy != TOKEN_SAMPLE_SAMPLE)) {
+        THROW_EXCEPTION("tokenSamplePolicy: only scalar GREEDY/SAMPLE is implemented until "
+                        "autoregressive_decode exposes the ADR 0106 B/W substrate");
+    }
+
+    if (result != nullptr) {
+        result->selectedToken = -1;
+        result->selectedBatch = 0;
+        result->selectedWindow = 0;
+        result->acceptedCount = 1;
+        result->parentBeam = 0;
+        result->score = 0.0;
+    }
+
+    suppressStopTokens(logits, config, context);
+
+    if (strategy == TOKEN_SAMPLE_GREEDY) {
+        tokenSample(logits, output, 0.0, 0, 0.0, config.seed, context);
+    } else {
+        const bool hasPenalties = inputIds != nullptr
+            && (config.repPenalty != 1.0 || config.freqPenalty != 0.0 || config.presPenalty != 0.0);
+        const bool hasExtendedSamplers = config.minP > 0.0
+            || (config.typicalP > 0.0 && config.typicalP < 1.0)
+            || config.xtcProbability > 0.0;
+        if (hasPenalties || hasExtendedSamplers) {
+            tokenSampleWithPenalties(logits, output, inputIds,
+                                     config.temperature, config.topK, config.topP, config.minP,
+                                     config.repPenalty, config.freqPenalty, config.presPenalty,
+                                     config.typicalP, config.xtcProbability, config.xtcThreshold,
+                                     config.seed, context);
+        } else {
+            tokenSample(logits, output, config.temperature, config.topK, config.topP,
+                        config.seed, context);
+        }
+    }
+
+    if (result != nullptr && output != nullptr && output->lengthOf() > 0) {
+        result->selectedToken = output->e<LongType>(0);
+    }
 }
 
 }  // namespace helpers

@@ -147,9 +147,14 @@ public class SmoothQuant extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        if (inputDataTypes != null && inputDataTypes.size() == 2) {
+            // Simple 2-input mode: smooth_quant acts as activation scaling (input / diag(s))
+            // Returns same dtype as the activation input
+            return Collections.singletonList(inputDataTypes.get(0));
+        }
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() >= 5,
                 "Expected at least 5 input data types for smooth_quant, got %s", inputDataTypes);
-        // Output is always FLOAT (dequantized result)
+        // Full W8A8 mode: output is always FLOAT (dequantized result)
         return Collections.singletonList(DataType.FLOAT);
     }
 

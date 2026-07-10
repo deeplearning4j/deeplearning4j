@@ -20,6 +20,7 @@
 // Created by george@skymind.io on 11/13/2018.
 //
 
+#include <array/DataTypeUtils.h>
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 namespace sd {
@@ -111,8 +112,10 @@ DECLARE_SHAPE_FN(reduce_logsumexp) {
     axes = *block.getIArguments();
   }
 
-  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), &axes, inputShape->at(0),
-                                                      keepDims, false, block.getWorkspace());
+  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(
+      shape::order(inputShape->at(0)), &axes, inputShape->at(0),
+      DataTypeUtils::pickFloatingType(ArrayOptions::dataType(inputShape->at(0))),
+      keepDims, false, block.getWorkspace());
 
   return SHAPELIST(outShapeInfo);
 }

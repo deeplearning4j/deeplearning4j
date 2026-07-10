@@ -950,4 +950,22 @@ dim3 getFusedGQADecodeDims(int numQHeads, int batch, int seqKV, int headDim, int
 #define BLOCK_SIZE_FUSED_GQA_DECODE getEnvVariable("BLOCK_SIZE_FUSED_GQA_DECODE", 256)
 #define SHARED_MEM_SIZE_FUSED_GQA_DECODE getEnvVariable("SHARED_MEM_SIZE_FUSED_GQA_DECODE", 8192)
 
+// ggml_qmatmul — runtime quantized matmul (fused dequant-dot kernels).
+// Q8_0: grid=(ceil(N/4), M), block=128 (4 warps, one warp per n element).
+//   Shared memory: 128 * sizeof(float) = 512 bytes for warp reduction scratch.
+// Q4_K / Q6_K: grid=(N, M), block=128 threads reducing over 256 elements.
+//   Shared memory: 128 * sizeof(float) = 512 bytes for block reduction.
+#define GRID_SIZE_GGML_QMATMUL getEnvVariable("GRID_SIZE_GGML_QMATMUL", 256)
+#define BLOCK_SIZE_GGML_QMATMUL getEnvVariable("BLOCK_SIZE_GGML_QMATMUL", 128)
+#define SHARED_MEM_SIZE_GGML_QMATMUL getEnvVariable("SHARED_MEM_SIZE_GGML_QMATMUL", 512)
+
+// moe_weighted_sum — fused top-K expert accumulation.
+// Dense: grid=T (one block per token), block=256 threads tiling over D.
+// Flat:  grid=totalRows (one block per sorted row), block=256 threads.
+// Shared memory (dense): topK * sizeof(float) for router weights cache.
+// topK is typically ≤ 8, so 8 * 4 = 32 bytes; use 256 as conservative default.
+#define GRID_SIZE_MOE_WEIGHTED_SUM getEnvVariable("GRID_SIZE_MOE_WEIGHTED_SUM", 256)
+#define BLOCK_SIZE_MOE_WEIGHTED_SUM getEnvVariable("BLOCK_SIZE_MOE_WEIGHTED_SUM", 256)
+#define SHARED_MEM_SIZE_MOE_WEIGHTED_SUM getEnvVariable("SHARED_MEM_SIZE_MOE_WEIGHTED_SUM", 256)
+
 #endif //LIBND4J_LAUNCHCONTEXT_H

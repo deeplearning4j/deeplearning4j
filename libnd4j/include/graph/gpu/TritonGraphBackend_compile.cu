@@ -127,7 +127,15 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   size_t cacheExcludeHash = std::hash<std::string>()(cacheEnv.tritonExcludeOps());
   size_t cacheIncludeHash = std::hash<std::string>()(cacheEnv.tritonIncludeTypes());
   bool cacheGraphCapture = cacheEnv.tritonGraphCapture();
+  // Include a hash of segment-internal output dtypes so that FLOAT32 and INT8
+  // kernels for the same shapes produce distinct cache entries.
+  // computeSegmentShapeKey() only hashes dtype for cross-segment inputs; this
+  // covers the segment-owned intermediates (e.g. dequantised INT8 K/V arrays).
+  size_t cacheDtypeHash = computeSegInternalDtypeHash(slots, seg.def.startSlot, seg.def.endSlot,
+                                                       externalInputs, numExternalInputs,
+                                                       outputSlots, totalOutputSlots);
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice, cacheCompileAll, cacheExcludeHash, cacheIncludeHash, cacheGraphCapture};
+  key.segInternalDtypeHash = cacheDtypeHash;
 
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -816,10 +824,14 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     DSP_DIAG(COMPILE, "TritonGraphBackend: no sub-segments to compile for segment [%d-%d]",
              seg.def.startSlot, seg.def.endSlot);
     lastCompilationAudit_ = compiledSeg.audit;
+    compiledSeg.segInternalDtypeHash = cacheDtypeHash;
     {
       std::lock_guard<std::mutex> lock(cacheMtx_);
       failedCache_.erase(key);
       cache_[key] = std::move(compiledSeg);
+      // Populate secondary dtype index so lookup sites without outputSlots can
+      // find the right dtype hash by (startSlot, endSlot, shapeKey, deviceId).
+      dtypeIndex_[DtypeIndexKey{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice}] = cacheDtypeHash;
     }
     return true;
   }
@@ -1654,6 +1666,10 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   lastCompilationAudit_ = compiledSeg.audit;
   const int compiledKernelCount = static_cast<int>(compiledSeg.subKernels.size());
 
+  // Store dtype hash in the segment so lookup sites without outputSlots can
+  // reconstruct the exact SegmentCacheKey via CompiledSegment::segInternalDtypeHash.
+  compiledSeg.segInternalDtypeHash = cacheDtypeHash;
+
   // Stable references to register with ModuleResidencyCache after the move.
   CompiledSegment* installedSeg = nullptr;
   {
@@ -1661,6 +1677,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     failedCache_.erase(key);
     cache_[key] = std::move(compiledSeg);
     installedSeg = &cache_[key];
+    // Populate secondary dtype index so lookup sites without outputSlots can
+    // find the right dtype hash by (startSlot, endSlot, shapeKey, deviceId).
+    dtypeIndex_[DtypeIndexKey{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice}] = cacheDtypeHash;
   }
 
   // Register each freshly-installed sub-kernel with the residency cache.

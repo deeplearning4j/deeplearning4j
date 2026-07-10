@@ -358,14 +358,19 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
         int extIdx = -(srcIdx + 1);
         if (extIdx < 0 || extIdx >= numExt) continue;
         if (extIdx >= static_cast<int>(externalInputIsVariable_.size())) continue;
-        // Skip ALL variable inputs: their addresses churn every step as Java
-        // recreates NDArray wrappers, causing the addr key to be perpetually
-        // unstable and forcing expensive O(N) recomputation. Variable inputs
-        // are handled by performPreReplaySync (H2D sync every step) and staging
-        // buffers (D2D into stable plan-owned addresses for graph replay).
-        if (externalInputIsVariable_[extIdx]) continue;
         NDArray* extArr = externalInputs[extIdx];
         if (extArr == nullptr) continue;
+        // Generic variable inputs use staging buffers, so their raw addresses are
+        // intentionally ignored. Device-managed pass-through inputs are different:
+        // the CUDA graph reads their live device buffers directly, so their
+        // addresses must participate in the replay key and trigger recapture if a
+        // cached plan is handed different buffers.
+        if (externalInputIsVariable_[extIdx]) {
+          if (isDeviceManagedExternalInput(extArr)) {
+            mix(reinterpret_cast<LongType>(extArr->specialBuffer()));
+          }
+          continue;
+        }
         mix(reinterpret_cast<LongType>(extArr->specialBuffer()));
       } else if (srcIdx < totalOutputSlots_ && !isSegOutput[srcIdx]) {
         if (outputSlots_[srcIdx] != nullptr) {
@@ -2289,6 +2294,10 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     effectiveExternals_ = new NDArray*[numExt]();
   }
 
+  auto isPlanManagedDeviceBuffer = [&](NDArray* ext) -> bool {
+    return isDeviceManagedExternalInput(ext);
+  };
+
   // Fast path: after first call, only iterate variable input indices
   // instead of all 1000+ entries. Non-variable (weight) pointers are stable.
   // Guard: fast path requires all variable staging buffers to be allocated.
@@ -2298,7 +2307,12 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
   bool allStagingAllocated = !cachedVariableExtIndices_.empty();
   if (allStagingAllocated) {
     for (int i : cachedVariableExtIndices_) {
-      if (placeholderStagingBuffers_[i] == nullptr) {
+      if (i < 0 || i >= numExt) {
+        allStagingAllocated = false;
+        break;
+      }
+      if (placeholderStagingBuffers_[i] == nullptr &&
+          !isPlanManagedDeviceBuffer(externalArrays[i])) {
         allStagingAllocated = false;
         break;
       }
@@ -2317,12 +2331,22 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     // INDArray via setGraphContextInputArray before calling into C++. No need
     // to scan all ~1333 non-variable inputs for isPrimaryActual() here.
 
-    int copiedCount = 0, skippedNull = 0, skippedEmpty = 0, skippedNullBuf = 0, skippedJniWrite = 0;
+    int copiedCount = 0, skippedNull = 0, skippedEmpty = 0, skippedNullBuf = 0, skippedJniWrite = 0, skippedManaged = 0;
     for (int i : cachedVariableExtIndices_) {
       NDArray* ext = externalArrays[i];
       effectiveExternals_[i] = externalArrays[i];  // default passthrough
       if (ext == nullptr || ext->isEmpty()) {
         skippedEmpty++;
+        continue;
+      }
+
+      if (isPlanManagedDeviceBuffer(ext)) {
+        skippedManaged++;
+        effectiveExternals_[i] = externalArrays[i];
+        DSP_DIAG(MEMORY,
+                 "STAGING_D2D[%d]: SKIPPED — plan-managed device buffer "
+                 "(devAddr=%p), passing through directly",
+                 i, ext->specialBuffer());
         continue;
       }
 
@@ -2429,17 +2453,18 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     }
 
     // Detect silent D2D skip conditions — O(1) counter checks, zero perf impact.
-    if (copiedCount == 0 && static_cast<int>(cachedVariableExtIndices_.size()) > 0) {
+    if (copiedCount == 0 && skippedManaged == 0 &&
+        static_cast<int>(cachedVariableExtIndices_.size()) > 0) {
       DSP_DIAG(EXECUTE,
                "STAGING_D2D_WARNING: ALL %d variable inputs skipped D2D copy! "
-               "Breakdown: empty=%d nullBuf=%d. "
+               "Breakdown: empty=%d nullBuf=%d managed=%d. "
                "CUDA graph replay will use STALE staging data.",
                static_cast<int>(cachedVariableExtIndices_.size()),
-               skippedEmpty, skippedNullBuf);
+               skippedEmpty, skippedNullBuf, skippedManaged);
     }
     DSP_DIAG(EXECUTE, "STAGING_D2D: copied=%d skippedEmpty=%d "
-             "skippedNullBuf=%d total=%d",
-             copiedCount, skippedEmpty, skippedNullBuf,
+             "skippedNullBuf=%d skippedManaged=%d total=%d",
+             copiedCount, skippedEmpty, skippedNullBuf, skippedManaged,
              static_cast<int>(cachedVariableExtIndices_.size()));
 
     return effectiveExternals_;
@@ -2461,32 +2486,17 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       continue;
     }
 
-    // Skip staging for KV cache buffers. KV caches are written by GPU kernels
-    // (KV scatter) during execution — their device buffer is the source of truth,
-    // and their pointers are already stable (static buffers owned by the caller).
-    // D2D-copying them into staging would capture stale pre-scatter data.
-    //
-    // Detection: match the external input's device buffer address against the
-    // static KV buffers registered via configureKvScatter(). NDArray pointers
-    // differ (Java creates fresh wrappers), so compare specialBuffer() addresses.
-    if (kvScatterConfigured_ && ext->specialBuffer() != nullptr) {
-      bool isKvBuffer = false;
-      void* extDevAddr = ext->specialBuffer();
-      for (auto& entry : kvScatterEntries_) {
-        if (entry.staticBuf != nullptr &&
-            entry.staticBuf->specialBuffer() == extDevAddr) {
-          isKvBuffer = true;
-          break;
-        }
-      }
-      if (isKvBuffer) {
-        DSP_DIAG(MEMORY,
-                 "STAGING_D2D_SLOW[%d]: SKIPPED — KV cache buffer detected "
-                 "(devAddr=%p matches kvScatterEntry), passing through directly",
-                 i, ext->specialBuffer());
-        effectiveExternals_[i] = externalArrays[i];
-        continue;
-      }
+    // Skip staging for device-managed buffers. KV caches and recurrent decode
+    // state are written by GPU kernels during execution; their device buffers
+    // are the source of truth, and D2D-copying them into staging would capture
+    // stale pre-update data.
+    if (isPlanManagedDeviceBuffer(ext)) {
+      DSP_DIAG(MEMORY,
+               "STAGING_D2D_SLOW[%d]: SKIPPED — plan-managed device buffer "
+               "(devAddr=%p), passing through directly",
+               i, ext->specialBuffer());
+      effectiveExternals_[i] = externalArrays[i];
+      continue;
     }
 
     // Record this as a variable index for the fast path on subsequent calls

@@ -79,7 +79,8 @@ public class ORPOTrainer extends RLAlignmentTrainer<ORPOConfig> {
         SDVariable chosenLogits = sd.gather("_orpo_chosen_logits", logits, chosenIdx, 0);
         SDVariable rejectedLogits = sd.gather("_orpo_rejected_logits", logits, rejectedIdx, 0);
 
-        // Compute per-sequence log probabilities in-graph
+        // Compute per-sequence log probabilities in-graph (2D [batch, vocab] policies
+        // are handled by the base helper via config.logits2D)
         SDVariable chosenLP = computeLogProbOps(sd, "_orpo_chosen", chosenLogits, chosenTokens, vocabSize);
         SDVariable rejectedLP = computeLogProbOps(sd, "_orpo_rejected", rejectedLogits, rejectedTokens, vocabSize);
 

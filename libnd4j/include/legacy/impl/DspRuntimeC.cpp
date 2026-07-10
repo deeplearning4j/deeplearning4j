@@ -18,6 +18,7 @@
 
 #include <dsp/runtime/dsp_runtime_c.h>
 #include <dsp/NativeOpsDsp.h>
+#include <graph/SdzReader.h>
 #include <graph/gpu/DspCudaDispatch.h>
 
 #include <array/DataTypeUtils.h>
@@ -57,6 +58,7 @@ static inline const char* lastErrorMessage() {
 }
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cctype>
 #include <cstddef>
@@ -93,6 +95,7 @@ static inline const char* lastErrorMessage() {
 #include <fstream>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -102,6 +105,12 @@ static inline const char* lastErrorMessage() {
 // An anonymous-namespace definition creates a distinct type the typedef can't see.
 struct sdx_runtime {
   std::string last_error;
+  // Guards last_error across threads. sdxGetLastError copies into
+  // error_snapshot (fixed storage owned by the runtime) so the returned
+  // pointer stays valid even if another thread updates the error afterwards;
+  // only the content may change on a subsequent error.
+  mutable std::mutex error_mutex;
+  char error_snapshot[4096] = {0};
 };
 
 struct sdx_model {
@@ -109,6 +118,8 @@ struct sdx_model {
   sd::Pointer model_handle = nullptr;
   std::string bundle_path;
   std::string model_path;
+  // Temp dir a packed .dspb archive was extracted into; removed at unload.
+  std::string extracted_dir;
   int backend = static_cast<int>(SDX_BACKEND_AUTO);
   int gpu_target = static_cast<int>(SDX_GPU_TARGET_AUTO);
   bool strict_backend = false;
@@ -195,6 +206,11 @@ struct sdx_context {
   std::vector<std::unique_ptr<sd::NDArray>> constant_replicas;
   // Track which inputs are marked as placeholders (change shape/value per step)
   std::vector<bool> is_placeholder_input;
+
+  // Serializes sdxRun / report reads / plan-state mutations on this context.
+  // A context is a single execution stream; concurrent callers are serialized
+  // rather than corrupting the cached wrappers and graph context.
+  mutable std::mutex exec_mutex;
 };
 
 namespace {
@@ -211,11 +227,25 @@ struct BundleManifestData {
 #else
   std::string model_path;
 #endif
+  // Set when a packed .dspb archive was extracted; the model owns the dir.
+  std::string extracted_dir;
   int gpu_target = static_cast<int>(SDX_GPU_TARGET_AUTO);
 };
 
+// Sniff the 4-byte local-file-header magic that identifies a packed (ZIP)
+// .dspb archive, as opposed to a manifest-JSON .dspb file.
+inline bool fileHasZipMagic(const std::string& path) {
+  std::ifstream f(path, std::ios::binary);
+  if (!f.is_open()) return false;
+  char magic[4] = {0, 0, 0, 0};
+  f.read(magic, 4);
+  return f.gcount() == 4 && magic[0] == 'P' && magic[1] == 'K' && magic[2] == 0x03 &&
+         magic[3] == 0x04;
+}
+
 inline void setLastError(sdx_runtime* runtime, const std::string& error) {
   if (runtime != nullptr) {
+    std::lock_guard<std::mutex> lock(runtime->error_mutex);
     runtime->last_error = error;
   }
 }
@@ -476,6 +506,55 @@ bool resolveBundleManifestData(const std::string& bundlePath, BundleManifestData
   }
 
   if (ext == ".dspb" || ext == ".json") {
+    // Packed .dspb: a ZIP archive of an unpacked bundle directory
+    // (manifest.json + graph/weights/segments, per sdx-compile.sh layout).
+    // Extract to a temp dir owned by the model, then resolve as a directory.
+    if (ext == ".dspb" && fileHasZipMagic(p.string())) {
+      static std::atomic<uint64_t> extractCounter{0};
+      std::error_code ec;
+      const auto tempBase = std::filesystem::temp_directory_path(ec);
+      if (ec) {
+        *errorOut = "Cannot resolve temp directory for packed .dspb extraction";
+        return false;
+      }
+      std::filesystem::path extractDir;
+      for (int attempt = 0; attempt < 1024 && extractDir.empty(); attempt++) {
+        auto candidate =
+            tempBase / ("sdx-dspb-" + std::to_string(extractCounter.fetch_add(1)));
+        std::error_code createEc;
+        if (std::filesystem::create_directory(candidate, createEc)) {
+          extractDir = candidate;
+        }
+      }
+      if (extractDir.empty()) {
+        *errorOut = "Could not allocate temp extraction dir for packed .dspb bundle";
+        return false;
+      }
+
+      std::string zipError;
+      if (!sd::graph::SdzReader::extractArchive(p.string().c_str(),
+                                                extractDir.string().c_str(), &zipError)) {
+        std::error_code cleanupEc;
+        std::filesystem::remove_all(extractDir, cleanupEc);
+        *errorOut = "Failed to extract packed .dspb bundle: " + zipError;
+        return false;
+      }
+
+      auto manifestPath = extractDir / "manifest.json";
+      if (!std::filesystem::exists(manifestPath)) {
+        std::error_code cleanupEc;
+        std::filesystem::remove_all(extractDir, cleanupEc);
+        *errorOut = "Packed .dspb archive has no manifest.json: " + p.string();
+        return false;
+      }
+      if (!parseBundleManifest(manifestPath, out, errorOut)) {
+        std::error_code cleanupEc;
+        std::filesystem::remove_all(extractDir, cleanupEc);
+        return false;
+      }
+      out->extracted_dir = extractDir.string();
+      return true;
+    }
     return parseBundleManifest(p, out, errorOut);
   }
 
@@ -537,6 +616,10 @@ bool resolveBundleManifestData(const std::string& bundlePath, BundleManifestData
     }
 
     if (ext == ".dspb" || ext == ".json") {
+      if (ext == ".dspb" && fileHasZipMagic(bundlePath)) {
+        *errorOut = "Packed .dspb archives require std::filesystem support in this build";
+        return false;
+      }
       return parseBundleManifest(bundlePath, out, errorOut);
     }
   }
@@ -798,12 +881,13 @@ SDX_API sdx_status_t sdxLoadBundle(
   model->model_handle = modelHandle;
   model->bundle_path = bundle_path;
   model->model_path = modelPathStr;
+  model->extracted_dir = manifestData.extracted_dir;
   model->backend = backend;
   model->gpu_target = gpuTarget;
   model->strict_backend = strictBackend;
   model->allow_runtime_jit = allowRuntimeJit;
 
-  runtime->last_error.clear();
+  setLastError(runtime, "");
   *out_model = model;
   return SDX_STATUS_OK;
 }
@@ -814,6 +898,12 @@ SDX_API void sdxUnloadModel(sdx_model_t* model) {
       freeLoadedModel(model->model_handle);
       model->model_handle = nullptr;
     }
+#if HAS_FILESYSTEM
+    if (!model->extracted_dir.empty()) {
+      std::error_code ec;
+      std::filesystem::remove_all(model->extracted_dir, ec);
+    }
+#endif
     delete model;
   }
 }
@@ -908,6 +998,9 @@ SDX_API void sdxDestroyContext(sdx_context_t* context) {
     return;
   }
 
+  // Wait for any in-flight run to finish before tearing down.
+  { std::lock_guard<std::mutex> execLock(context->exec_mutex); }
+
   context->input_wrappers.clear();
   context->output_wrappers.clear();
   context->cached_input_meta.clear();
@@ -937,6 +1030,8 @@ SDX_API sdx_status_t sdxRun(
   if (context == nullptr || inputs == nullptr || outputs == nullptr || num_inputs < 0 || num_outputs < 0) {
     return SDX_STATUS_INVALID_ARGUMENT;
   }
+
+  std::lock_guard<std::mutex> execLock(context->exec_mutex);
 
   if (options != nullptr && options->struct_size != 0 &&
       options->struct_size <
@@ -1294,14 +1389,36 @@ SDX_API sdx_status_t sdxRun(
   }
   context->last_report.struct_size = sizeof(sdx_execution_report_t);
   context->last_report.requested_backend = requestedBackend;
-  context->last_report.applied_backend = requestedBackend;
+  // Applied backend is read back from the plan: reflects clamping and any
+  // mode changes the plan made, rather than echoing the request.
+  {
+    int appliedMode = getPlanGraphExecutionMode(context->plan_handle);
+    context->last_report.applied_backend =
+        appliedMode >= 0 ? appliedMode : requestedBackend;
+  }
   context->last_report.requested_gpu_target = requestedGpuTarget;
   context->last_report.applied_gpu_target = requestedGpuTarget;
   context->last_report.status_code = static_cast<int32_t>(status);
-  context->last_report.used_fallback = -1;
   context->last_report.execution_time_ns = durationNs;
   context->last_report.plan_phase = getPlanPhase(context->plan_handle);
   context->last_report.execution_count = context->execution_count;
+  // Coarse fallback telemetry: fallback observed when any segment failed
+  // graph capture or the plan is REPLAY_BLOCKED (phase 3) — both mean the
+  // plan is executing below its requested/optimal path.
+  {
+    int32_t usedFallback = 0;
+    int numSegments = getPlanNumSegments(context->plan_handle);
+    for (int s = 0; s < numSegments; s++) {
+      if (isPlanSegmentCaptureFailed(context->plan_handle, s)) {
+        usedFallback = 1;
+        break;
+      }
+    }
+    if (usedFallback == 0 && context->last_report.plan_phase == 3) {
+      usedFallback = 1;
+    }
+    context->last_report.used_fallback = usedFallback;
+  }
 
   if (status != SDX_STATUS_OK) {
     const char* nativeError = lastErrorMessage();
@@ -1313,13 +1430,41 @@ SDX_API sdx_status_t sdxRun(
     return status;
   }
 
-  // Sync outputs: skip syncToHost for GPU-targeted outputs (zero-copy path)
+  // Copy results into the caller-provided output buffers.
+  //
+  // executeDynamicShapePlan does NOT write into the context's bound output
+  // arrays: the plan produces its own arrays and the context's output slots
+  // are REPLACED with pointers to them post-execute (see NativeOps_dsp.cpp).
+  // The caller-buffer wrappers therefore act as destinations we copy into.
   for (int i = 0; i < context->num_outputs; i++) {
     auto& out = context->output_wrappers[static_cast<size_t>(i)];
+    sd::NDArray* produced = context->graph_context->outputArray(i);
+    if (produced == nullptr) {
+      setContextError(context,
+                      "sdxRun: plan produced no output at index " + std::to_string(i));
+      return SDX_STATUS_EXECUTION_FAILED;
+    }
+    if (produced != out.get()) {
+      if (produced->dataType() != out->dataType()) {
+        setContextError(context,
+                        "sdxRun: output dtype mismatch at index " + std::to_string(i) +
+                        " (produced=" + std::to_string(static_cast<int>(produced->dataType())) +
+                        ", caller=" + std::to_string(static_cast<int>(out->dataType())) + ")");
+        return SDX_STATUS_EXECUTION_FAILED;
+      }
+      if (produced->lengthOf() != out->lengthOf()) {
+        setContextError(context,
+                        "sdxRun: output length mismatch at index " + std::to_string(i) +
+                        " (produced=" + std::to_string(produced->lengthOf()) +
+                        ", caller=" + std::to_string(out->lengthOf()) + ")");
+        return SDX_STATUS_EXECUTION_FAILED;
+      }
+      out->assign(produced);
+    }
     if (outputs[i].device_type == static_cast<int32_t>(SDX_DEVICE_HOST)) {
       out->syncToHost();
     }
-    // GPU outputs: data is already on device, no sync needed
+    // GPU outputs: data stays on device, no host sync needed
   }
 
   setContextError(context, "");
@@ -1330,7 +1475,11 @@ SDX_API const char* sdxGetLastError(const sdx_runtime_t* runtime) {
   if (runtime == nullptr) {
     return "runtime is null";
   }
-  return runtime->last_error.c_str();
+  std::lock_guard<std::mutex> lock(runtime->error_mutex);
+  auto* snapshot = const_cast<char*>(runtime->error_snapshot);
+  std::strncpy(snapshot, runtime->last_error.c_str(), sizeof(runtime->error_snapshot) - 1);
+  snapshot[sizeof(runtime->error_snapshot) - 1] = '\0';
+  return snapshot;
 }
 
 SDX_API sdx_status_t sdxGetExecutionReport(
@@ -1339,6 +1488,8 @@ SDX_API sdx_status_t sdxGetExecutionReport(
   if (context == nullptr || out_report == nullptr) {
     return SDX_STATUS_INVALID_ARGUMENT;
   }
+
+  std::lock_guard<std::mutex> execLock(context->exec_mutex);
 
   size_t dstSize = out_report->struct_size;
   if (dstSize == 0 || dstSize > sizeof(sdx_execution_report_t)) {
@@ -1354,6 +1505,7 @@ SDX_API sdx_status_t sdxMarkInputVariable(sdx_context_t* context, int32_t input_
   if (context == nullptr) {
     return SDX_STATUS_INVALID_ARGUMENT;
   }
+  std::lock_guard<std::mutex> execLock(context->exec_mutex);
   if (input_index < 0 || input_index >= context->num_inputs) {
     setContextError(context, "sdxMarkInputVariable: input_index out of range");
     return SDX_STATUS_INVALID_ARGUMENT;
@@ -1366,6 +1518,7 @@ SDX_API sdx_status_t sdxMarkInputPlaceholder(sdx_context_t* context, int32_t inp
   if (context == nullptr) {
     return SDX_STATUS_INVALID_ARGUMENT;
   }
+  std::lock_guard<std::mutex> execLock(context->exec_mutex);
   if (input_index < 0 || input_index >= context->num_inputs) {
     setContextError(context, "sdxMarkInputPlaceholder: input_index out of range");
     return SDX_STATUS_INVALID_ARGUMENT;
@@ -1380,6 +1533,7 @@ SDX_API sdx_status_t sdxFreezeShapes(sdx_context_t* context) {
   if (context == nullptr) {
     return SDX_STATUS_INVALID_ARGUMENT;
   }
+  std::lock_guard<std::mutex> execLock(context->exec_mutex);
   if (context->plan_handle == nullptr) {
     setContextError(context, "sdxFreezeShapes: no compiled plan");
     return SDX_STATUS_EXECUTION_FAILED;
@@ -1392,6 +1546,7 @@ SDX_API int32_t sdxGetPlanPhase(const sdx_context_t* context) {
   if (context == nullptr || context->plan_handle == nullptr) {
     return -1;
   }
+  std::lock_guard<std::mutex> execLock(context->exec_mutex);
   return getPlanPhase(context->plan_handle);
 }
 
@@ -1399,7 +1554,29 @@ SDX_API int32_t sdxGetExecutionCount(const sdx_context_t* context) {
   if (context == nullptr) {
     return -1;
   }
+  std::lock_guard<std::mutex> execLock(context->exec_mutex);
   return context->execution_count;
+}
+
+SDX_API int32_t sdxGetNumInputs(const sdx_context_t* context) {
+  if (context == nullptr) {
+    return -1;
+  }
+  return context->num_inputs;
+}
+
+SDX_API int32_t sdxGetNumOutputs(const sdx_context_t* context) {
+  if (context == nullptr) {
+    return -1;
+  }
+  return context->num_outputs;
+}
+
+SDX_API const char* sdxGetInputName(const sdx_context_t* context, int32_t input_index) {
+  if (context == nullptr || context->plan_handle == nullptr) {
+    return nullptr;
+  }
+  return getPlanExternalInputName(context->plan_handle, input_index);
 }
 
 }  // extern "C"

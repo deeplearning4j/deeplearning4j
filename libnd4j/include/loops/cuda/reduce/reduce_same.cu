@@ -83,7 +83,10 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::aggregatePartials(
     sd::LongType numItems,
     void* vextraParams) {
 
-  auto sPartials   = reinterpret_cast<X*>(vsPartials);
+  // Partials are OpType::InterType (float for X=HALF/BF16): HALF-typed Sum/Prod
+  // accumulation saturates the fp16 mantissa and overflows at 65504.
+  using Y = typename OpType::InterType;
+  auto sPartials   = reinterpret_cast<Y*>(vsPartials);
   auto extraParams = reinterpret_cast<X*>(vextraParams);
 
   sd::LongType floorPow2 = numItems;
@@ -93,7 +96,7 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::aggregatePartials(
     }
     if (tid >= floorPow2) {
       sPartials[tid - floorPow2] =
-          OpType::update(sPartials[tid - floorPow2], sPartials[tid], extraParams);
+          OpType::updateInter(sPartials[tid - floorPow2], sPartials[tid], extraParams);
     }
     __syncthreads();
   }
@@ -101,7 +104,7 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::aggregatePartials(
   for (sd::LongType activeThreads = (floorPow2 >> 1); activeThreads; activeThreads >>= 1) {
     if (tid < activeThreads && (tid + activeThreads) < numItems) {
       sPartials[tid] =
-          OpType::update(sPartials[tid], sPartials[tid + activeThreads], extraParams);
+          OpType::updateInter(sPartials[tid], sPartials[tid + activeThreads], extraParams);
     }
     __syncthreads();
   }
@@ -123,7 +126,9 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::transformCuda(
   auto z           = reinterpret_cast<X*>(vz);
   auto extraParams = reinterpret_cast<X*>(vextraParams);
 
-  __shared__ X sPartials[SD_CUDA_BLOCK_SIZE];
+  // Accumulate in InterType (see aggregatePartials) — output narrows at postProcessInter.
+  using Y = typename OpType::InterType;
+  __shared__ Y sPartials[SD_CUDA_BLOCK_SIZE];
   __shared__ int tadLen;
   __shared__ int numTads;
   __shared__ bool sameOffsets;
@@ -178,7 +183,7 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::transformCuda(
     }
 
     const X* xTad = x + outerOffset;
-    sPartials[threadIdx.x] = OpType::startingValue(xTad);
+    sPartials[threadIdx.x] = OpType::startingValueInter(xTad);
 
     for (sd::LongType i = threadIdx.x; i < tadLen; i += blockDim.x) {
       sd::LongType iCoords[SD_MAX_RANK];
@@ -187,9 +192,9 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::transformCuda(
       INDEX2COORDS(i, innerRank, innerShapePtr, iCoords);
       COORDS2INDEX(innerRank, innerStridePtr, iCoords, xOffset);
 
-      sPartials[threadIdx.x] = OpType::update(
+      sPartials[threadIdx.x] = OpType::updateInter(
           sPartials[threadIdx.x],
-          OpType::op(xTad[xOffset], extraParams),
+          OpType::opInter(xTad[xOffset], extraParams),
           extraParams);
     }
     __syncthreads();
@@ -202,7 +207,7 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::transformCuda(
     __syncthreads();
 
     if (threadIdx.x == 0) {
-      z[zOffset] = OpType::postProcess(sPartials[0], tadLen, extraParams);
+      z[zOffset] = OpType::postProcessInter(sPartials[0], tadLen, extraParams);
     }
     __syncthreads();
   }
@@ -242,9 +247,14 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::execScalarCuda(
   auto z           = reinterpret_cast<X*>(vz);
   auto extraParams = reinterpret_cast<X*>(vextraParams);
 
-  __shared__ X sPartials[SD_CUDA_BLOCK_SIZE];
+  // Accumulate AND stage cross-block partials in InterType: X=HALF partial sums
+  // saturate/overflow (65504) both in shared memory and in the staging buffer.
+  // The staging region (bytes [0, 65536) before the ticket at tc[16384]) holds
+  // 16384 floats — far above any scalar-reduce grid size.
+  using Y = typename OpType::InterType;
+  __shared__ Y sPartials[SD_CUDA_BLOCK_SIZE];
   __shared__ sd::LongType length;
-  auto reductionBuffer = reinterpret_cast<X *>(vreductionBuffer);
+  auto reductionBuffer = reinterpret_cast<Y *>(vreductionBuffer);
 
   // Cache shape info
   __shared__ sd::LongType xRank;
@@ -262,7 +272,7 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::execScalarCuda(
   }
   __syncthreads();
 
-  sPartials[threadIdx.x] = OpType::startingValue(x);
+  sPartials[threadIdx.x] = OpType::startingValueInter(x);
 
   sd::LongType gridSize = gridDim.x * blockDim.x;
   for (sd::LongType i = tid; i < length; i += gridSize) {
@@ -272,9 +282,9 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::execScalarCuda(
     INDEX2COORDS(i, xRank, xShapePtr, xCoords);
     COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
 
-    sPartials[threadIdx.x] = OpType::update(
+    sPartials[threadIdx.x] = OpType::updateInter(
         sPartials[threadIdx.x],
-        OpType::op(x[xOffset], extraParams),
+        OpType::opInter(x[xOffset], extraParams),
         extraParams);
   }
   __syncthreads();
@@ -304,11 +314,11 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::execScalarCuda(
 
     if (amLast) {
       tc[16384]           = 0;
-      sPartials[threadIdx.x] = OpType::startingValue(x);
+      sPartials[threadIdx.x] = OpType::startingValueInter(x);
 
       for (sd::LongType i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
         sPartials[threadIdx.x] =
-            OpType::update(sPartials[threadIdx.x], reinterpret_cast<X*>(vreductionBuffer)[i], extraParams);
+            OpType::updateInter(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
       }
       __syncthreads();
 
@@ -320,14 +330,14 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::execScalarCuda(
       __syncthreads();
 
       if (threadIdx.x == 0) {
-        z[0] = OpType::postProcess(sPartials[0], length, extraParams);
+        z[0] = OpType::postProcessInter(sPartials[0], length, extraParams);
       }
     }
   } else {
     if (threadIdx.x == 0) {
       auto tc   = reinterpret_cast<unsigned int*>(vreductionBuffer);
       tc[16384] = 0;
-      z[0]      = OpType::postProcess(sPartials[0], length, extraParams);
+      z[0]      = OpType::postProcessInter(sPartials[0], length, extraParams);
     }
   }
 }

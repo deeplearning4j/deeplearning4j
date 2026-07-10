@@ -1047,21 +1047,32 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
                       std::hash<std::string>()(refreshEnv.tritonExcludeOps()),
                       std::hash<std::string>()(refreshEnv.tritonIncludeTypes()),
                       refreshEnv.tritonGraphCapture()};
-
   CompiledSegment* compiledSeg = nullptr;
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
+    // Recover the segInternalDtypeHash via the secondary dtype index (populated at
+    // compile time) since this function does not receive the slots array needed
+    // for computeSegInternalDtypeHash directly.
+    key.segInternalDtypeHash = lookupDtypeHash(seg.def.startSlot, seg.def.endSlot,
+                                                seg.def.shapeKeyState.compiledShapeKey, currentDevice);
     auto it = cache_.find(key);
-    if (it == cache_.end()) {
-      DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: no compiled segment for [%d-%d] "
-                "(shapeKey=%lld, device=%d) → marking args current (no arg tables to refresh)",
-                seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice);
-      // No Triton sub-kernels = no arg tables to refresh. Mark stable so fast replay
-      // path can be used (skip iterating over all external inputs for sync checks).
-      seg.exec.markArgsCurrent();
-      return Status::KERNEL_FAILURE;
+    if (it != cache_.end()) {
+      compiledSeg = &it->second;
+    } else {
+      // Recovered hash may be stale/0 (dtypeIndex_ entry evicted between compile and replay).
+      // A silent miss here would falsely mark args current and replay with STALE arg tables —
+      // fall back to a loose match ignoring the dtype hash before concluding "no sub-kernels".
+      compiledSeg = findCompiledSegmentAnyDtype(key);
+      if (compiledSeg == nullptr) {
+        DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: no compiled segment for [%d-%d] "
+                  "(shapeKey=%lld, device=%d) → marking args current (no arg tables to refresh)",
+                  seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, currentDevice);
+        // No Triton sub-kernels = no arg tables to refresh. Mark stable so fast replay
+        // path can be used (skip iterating over all external inputs for sync checks).
+        seg.exec.markArgsCurrent();
+        return Status::KERNEL_FAILURE;
+      }
     }
-    compiledSeg = &it->second;
   }
 
   bool useDirtyTracking = Environment::getInstance().tritonArgDirtyTracking()
@@ -1236,12 +1247,22 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
   CompiledSegment* compiledSeg = nullptr;
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
+    // Recover the segInternalDtypeHash via the secondary dtype index since this
+    // function does not receive outputSlots (needed for computeSegInternalDtypeHash).
+    key.segInternalDtypeHash = lookupDtypeHash(seg.def.startSlot, seg.def.endSlot,
+                                                seg.def.shapeKeyState.compiledShapeKey, currentDevice);
     auto it = cache_.find(key);
-    if (it == cache_.end()) {
-      // No compiled segment - nothing to copy
-      return;
+    if (it != cache_.end()) {
+      compiledSeg = &it->second;
+    } else {
+      // Recovered hash may be stale/0 — a silent skip here leaves the device arg table stale.
+      // Fall back to a loose match ignoring the dtype hash before concluding nothing to copy.
+      compiledSeg = findCompiledSegmentAnyDtype(key);
+      if (compiledSeg == nullptr) {
+        // No compiled segment - nothing to copy
+        return;
+      }
     }
-    compiledSeg = &it->second;
   }
 
   // Do consolidated H2D copy if available

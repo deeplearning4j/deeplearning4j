@@ -42,6 +42,7 @@ import java.util.List;
  *   1: weight    [D, K] (wFormat=0) or [K, D] (wFormat=1)
  *   2: bias      [D] (optional)
  *   3: stateIn   [B, D, K-1] (optional)
+ *   4: actualLen scalar INT64, real sequence length for stateOut (optional)
  *
  * Int args:
  *   0: activation (0=none, 1=SiLU/Swish)
@@ -57,42 +58,54 @@ import java.util.List;
 public class CausalConv1d extends DynamicCustomOp {
 
     public CausalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray stateIn, int activation) {
-        super(buildInputs(x, weight, bias, stateIn), null);
-        addIArgument(activation, 0);
+        this(x, weight, bias, stateIn, null, activation, 0);
     }
 
     public CausalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray stateIn, int activation, int wFormat) {
-        super(buildInputs(x, weight, bias, stateIn), null);
+        this(x, weight, bias, stateIn, null, activation, wFormat);
+    }
+
+    public CausalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray stateIn,
+                        INDArray actualLen, int activation, int wFormat) {
+        super(buildInputs(x, weight, bias, stateIn, actualLen), null);
         addIArgument(activation, wFormat);
     }
 
     public CausalConv1d(SameDiff sd, SDVariable x, SDVariable weight, SDVariable bias,
                         SDVariable stateIn, int activation) {
-        super(null, sd, buildSdInputs(x, weight, bias, stateIn));
-        addIArgument(activation, 0);
+        this(sd, x, weight, bias, stateIn, null, activation, 0);
     }
 
     public CausalConv1d(SameDiff sd, SDVariable x, SDVariable weight, SDVariable bias,
                         SDVariable stateIn, int activation, int wFormat) {
-        super(null, sd, buildSdInputs(x, weight, bias, stateIn));
+        this(sd, x, weight, bias, stateIn, null, activation, wFormat);
+    }
+
+    public CausalConv1d(SameDiff sd, SDVariable x, SDVariable weight, SDVariable bias,
+                        SDVariable stateIn, SDVariable actualLen, int activation, int wFormat) {
+        super(null, sd, buildSdInputs(x, weight, bias, stateIn, actualLen));
         addIArgument(activation, wFormat);
     }
 
-    private static INDArray[] buildInputs(INDArray x, INDArray weight, INDArray bias, INDArray stateIn) {
+    private static INDArray[] buildInputs(INDArray x, INDArray weight, INDArray bias, INDArray stateIn,
+                                          INDArray actualLen) {
         List<INDArray> inputs = new ArrayList<>();
         inputs.add(x);
         inputs.add(weight);
         if (bias != null) inputs.add(bias);
         if (stateIn != null) inputs.add(stateIn);
+        if (actualLen != null) inputs.add(actualLen);
         return inputs.toArray(new INDArray[0]);
     }
 
-    private static SDVariable[] buildSdInputs(SDVariable x, SDVariable weight, SDVariable bias, SDVariable stateIn) {
+    private static SDVariable[] buildSdInputs(SDVariable x, SDVariable weight, SDVariable bias, SDVariable stateIn,
+                                              SDVariable actualLen) {
         List<SDVariable> inputs = new ArrayList<>();
         inputs.add(x);
         inputs.add(weight);
         if (bias != null) inputs.add(bias);
         if (stateIn != null) inputs.add(stateIn);
+        if (actualLen != null) inputs.add(actualLen);
         return inputs.toArray(new SDVariable[0]);
     }
 

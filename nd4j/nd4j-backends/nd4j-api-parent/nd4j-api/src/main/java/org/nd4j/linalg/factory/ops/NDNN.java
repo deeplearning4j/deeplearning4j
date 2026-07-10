@@ -27,6 +27,107 @@ import static org.nd4j.linalg.factory.NDValidation.isSameType;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.PadMode;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.LinearCopy;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm;
+import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
+import org.nd4j.linalg.api.ops.impl.scalar.PRelu;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
+import org.nd4j.linalg.api.ops.impl.scalar.Relu6;
+import org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy;
+import org.nd4j.linalg.api.ops.impl.transforms.Pad;
+import org.nd4j.linalg.api.ops.impl.transforms.ReluLayer;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.ApplyAlibi;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedBiasDropoutResidual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwiglu;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLora;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LinearAttentionDecode;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.MLAAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Mamba2SSM;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.MoeGate;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RowParallelLinear;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SquaredReLU;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.TopK;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.ELU;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.GELU;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.HardSigmoid;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.HardTanh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoid;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELU;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SELU;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Sigmoid;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftPlus;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftSign;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Swish;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh;
+import org.nd4j.linalg.api.ops.random.impl.CustomDropOut;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -42,7 +143,7 @@ public class NDNN {
    */
   public INDArray cReLU(INDArray x) {
     NDValidation.validateNumerical("CReLU", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(x));
+    INDArray[] __tmp = Nd4j.exec(new CReLU(x));
     try {
       return __tmp[0];
     } finally {
@@ -65,7 +166,7 @@ public class NDNN {
    */
   public INDArray applyAlibi(INDArray scores, int numHeads) {
     NDValidation.validateNumerical("applyAlibi", "scores", scores);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ApplyAlibi(scores, numHeads));
+    INDArray[] __tmp = Nd4j.exec(new ApplyAlibi(scores, numHeads));
     try {
       return __tmp[0];
     } finally {
@@ -93,7 +194,7 @@ public class NDNN {
     NDValidation.validateNumerical("awqMatmul", "input", input);
     NDValidation.validateNumerical("awqMatmul", "weightPacked", weightPacked);
     NDValidation.validateNumerical("awqMatmul", "weightScale", weightScale);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul(input, weightPacked, weightScale, groupSize));
+    INDArray[] __tmp = Nd4j.exec(new AwqMatmul(input, weightPacked, weightScale, groupSize));
     try {
       return __tmp[0];
     } finally {
@@ -130,7 +231,7 @@ public class NDNN {
     NDValidation.validateNumerical("batchNorm", "gamma", gamma);
     NDValidation.validateNumerical("batchNorm", "beta", beta);
     Preconditions.checkArgument(axis.length >= 1, "axis has incorrect size/length. Expected: axis.length >= 1, got %s", axis.length);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm(input, mean, variance, gamma, beta, epsilon, axis));
+    INDArray[] __tmp = Nd4j.exec(new BatchNorm(input, mean, variance, gamma, beta, epsilon, axis));
     try {
       return __tmp[0];
     } finally {
@@ -156,7 +257,7 @@ public class NDNN {
   public INDArray biasAdd(INDArray input, INDArray bias, boolean nchw) {
     NDValidation.validateNumerical("biasAdd", "input", input);
     NDValidation.validateNumerical("biasAdd", "bias", bias);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd(input, bias, nchw));
+    INDArray[] __tmp = Nd4j.exec(new BiasAdd(input, bias, nchw));
     try {
       return __tmp[0];
     } finally {
@@ -184,6 +285,8 @@ public class NDNN {
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
    * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn,
       int activation, int wFormat) {
@@ -195,7 +298,7 @@ public class NDNN {
     if (convStateIn != null) {
       NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, activation, wFormat));
+    return Nd4j.exec(new CausalConv1d(x, weight, bias, convStateIn, activation, wFormat));
   }
 
   /**
@@ -208,11 +311,13 @@ public class NDNN {
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public INDArray[] causalConv1d(INDArray x, INDArray weight) {
     NDValidation.validateNumerical("causalConv1d", "x", x);
     NDValidation.validateNumerical("causalConv1d", "weight", weight);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, null, null, 0, 0));
+    return Nd4j.exec(new CausalConv1d(x, weight, null, null, 0, 0));
   }
 
   /**
@@ -226,6 +331,8 @@ public class NDNN {
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias) {
     NDValidation.validateNumerical("causalConv1d", "x", x);
@@ -233,7 +340,7 @@ public class NDNN {
     if (bias != null) {
       NDValidation.validateNumerical("causalConv1d", "bias", bias);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, null, 0, 0));
+    return Nd4j.exec(new CausalConv1d(x, weight, bias, null, 0, 0));
   }
 
   /**
@@ -248,6 +355,8 @@ public class NDNN {
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn) {
     NDValidation.validateNumerical("causalConv1d", "x", x);
@@ -258,7 +367,7 @@ public class NDNN {
     if (convStateIn != null) {
       NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, 0, 0));
+    return Nd4j.exec(new CausalConv1d(x, weight, bias, convStateIn, 0, 0));
   }
 
   /**
@@ -274,6 +383,8 @@ public class NDNN {
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
+   * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
+   * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn,
       int activation) {
@@ -285,7 +396,7 @@ public class NDNN {
     if (convStateIn != null) {
       NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, activation, 0));
+    return Nd4j.exec(new CausalConv1d(x, weight, bias, convStateIn, activation, 0));
   }
 
   /**
@@ -302,7 +413,7 @@ public class NDNN {
   public INDArray centerAndSharpen(INDArray input, INDArray center, double temperature) {
     NDValidation.validateNumerical("centerAndSharpen", "input", input);
     NDValidation.validateNumerical("centerAndSharpen", "center", center);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen(input, center, temperature));
+    INDArray[] __tmp = Nd4j.exec(new CenterAndSharpen(input, center, temperature));
     try {
       return __tmp[0];
     } finally {
@@ -329,7 +440,7 @@ public class NDNN {
   public INDArray centerAndSharpen(INDArray input, INDArray center) {
     NDValidation.validateNumerical("centerAndSharpen", "input", input);
     NDValidation.validateNumerical("centerAndSharpen", "center", center);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen(input, center, 0.07));
+    INDArray[] __tmp = Nd4j.exec(new CenterAndSharpen(input, center, 0.07));
     try {
       return __tmp[0];
     } finally {
@@ -358,7 +469,7 @@ public class NDNN {
       boolean gatherOutput) {
     NDValidation.validateNumerical("columnParallelLinear", "input", input);
     NDValidation.validateNumerical("columnParallelLinear", "weight", weight);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear(input, weight, tpRank, tpSize, gatherOutput));
+    INDArray[] __tmp = Nd4j.exec(new ColumnParallelLinear(input, weight, tpRank, tpSize, gatherOutput));
     try {
       return __tmp[0];
     } finally {
@@ -395,10 +506,12 @@ public class NDNN {
    * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
    * @param mergeRepeated Whether to merge repeated characters in output
    * @param blankIndex Index of the blank label in the vocabulary
+   * @return decoded Decoded sequences. Shape: [batch, timeSteps] (padded with blank) (NUMERIC type)
+   * @return logProbability Log probability of decoded sequences. Shape: [batch] (NUMERIC type)
    */
   public INDArray[] ctcGreedyDecoder(INDArray logits, boolean mergeRepeated, int blankIndex) {
     NDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(logits, null, mergeRepeated, blankIndex));
+    return Nd4j.exec(new CTCGreedyDecoder(logits, null, mergeRepeated, blankIndex));
   }
 
   /**
@@ -425,6 +538,8 @@ public class NDNN {
    * @param sequenceLength Optional actual sequence lengths. Shape: [batch] (NUMERIC type)
    * @param mergeRepeated Whether to merge repeated characters in output
    * @param blankIndex Index of the blank label in the vocabulary
+   * @return decoded Decoded sequences. Shape: [batch, timeSteps] (padded with blank) (NUMERIC type)
+   * @return logProbability Log probability of decoded sequences. Shape: [batch] (NUMERIC type)
    */
   public INDArray[] ctcGreedyDecoder(INDArray logits, INDArray sequenceLength,
       boolean mergeRepeated, int blankIndex) {
@@ -432,7 +547,7 @@ public class NDNN {
     if (sequenceLength != null) {
       NDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(logits, sequenceLength, mergeRepeated, blankIndex));
+    return Nd4j.exec(new CTCGreedyDecoder(logits, sequenceLength, mergeRepeated, blankIndex));
   }
 
   /**
@@ -451,7 +566,7 @@ public class NDNN {
     NDValidation.validateNumerical("decoderMaskedMha", "query", query);
     NDValidation.validateNumerical("decoderMaskedMha", "key", key);
     NDValidation.validateNumerical("decoderMaskedMha", "value", value);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha(query, key, value, numHeads, isCausal));
+    INDArray[] __tmp = Nd4j.exec(new DecoderMaskedMha(query, key, value, numHeads, isCausal));
     try {
       return __tmp[0];
     } finally {
@@ -484,7 +599,7 @@ public class NDNN {
     NDValidation.validateNumerical("doraMatMul", "loraA", loraA);
     NDValidation.validateNumerical("doraMatMul", "loraB", loraB);
     NDValidation.validateNumerical("doraMatMul", "magnitude", magnitude);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul(input, weight, loraA, loraB, magnitude, scaling));
+    INDArray[] __tmp = Nd4j.exec(new DoraMatMul(input, weight, loraA, loraB, magnitude, scaling));
     try {
       return __tmp[0];
     } finally {
@@ -535,7 +650,7 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttention", "keys", keys);
     NDValidation.validateNumerical("dotProductAttention", "values", values);
     NDValidation.validateNumerical("dotProductAttention", "mask", mask);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention(queries, keys, values, mask, scaled, false));
+    INDArray[] __tmp = Nd4j.exec(new DotProductAttention(queries, keys, values, mask, scaled, false));
     try {
       return __tmp[0];
     } finally {
@@ -595,7 +710,7 @@ public class NDNN {
     if (valueMask != null) {
       NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, null, null, null, null, scaleFactor, dropoutProbability, useCausalMask, training));
+    INDArray[] __tmp = Nd4j.exec(new DotProductAttentionV2(queries, values, keys, queryMask, valueMask, null, null, null, null, scaleFactor, dropoutProbability, useCausalMask, training));
     try {
       return __tmp[0];
     } finally {
@@ -659,7 +774,7 @@ public class NDNN {
     if (attentionBias != null) {
       NDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, null, null, null, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training));
+    INDArray[] __tmp = Nd4j.exec(new DotProductAttentionV2(queries, values, keys, queryMask, valueMask, null, null, null, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training));
     try {
       return __tmp[0];
     } finally {
@@ -736,7 +851,7 @@ public class NDNN {
     if (attentionBias != null) {
       NDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training));
+    INDArray[] __tmp = Nd4j.exec(new DotProductAttentionV2(queries, values, keys, queryMask, valueMask, keyCache, valueCache, cachePosition, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training));
     try {
       return __tmp[0];
     } finally {
@@ -761,7 +876,7 @@ public class NDNN {
    */
   public INDArray dropout(INDArray input, boolean inverted, int seed, double probabilityValue) {
     NDValidation.validateNumerical("dropout", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, seed, probabilityValue));
+    INDArray[] __tmp = Nd4j.exec(new CustomDropOut(input, inverted, seed, probabilityValue));
     try {
       return __tmp[0];
     } finally {
@@ -785,7 +900,7 @@ public class NDNN {
    */
   public INDArray dropout(INDArray input, boolean inverted, double probabilityValue) {
     NDValidation.validateNumerical("dropout", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.CustomDropOut(input, inverted, 0, probabilityValue));
+    INDArray[] __tmp = Nd4j.exec(new CustomDropOut(input, inverted, 0, probabilityValue));
     try {
       return __tmp[0];
     } finally {
@@ -824,7 +939,7 @@ public class NDNN {
   public INDArray dualRoPE(INDArray input, int attentionType, int positionOffset,
       double localFreqBase, double globalFreqBase, double localFreqScale, double globalFreqScale) {
     NDValidation.validateNumerical("dualRoPE", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, attentionType, positionOffset, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale));
+    INDArray[] __tmp = Nd4j.exec(new DualRoPE(input, attentionType, positionOffset, localFreqBase, globalFreqBase, localFreqScale, globalFreqScale));
     try {
       return __tmp[0];
     } finally {
@@ -856,7 +971,7 @@ public class NDNN {
    */
   public INDArray dualRoPE(INDArray input) {
     NDValidation.validateNumerical("dualRoPE", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, 0, 0, 10000.0, 1000000.0, 1.0, 1.0));
+    INDArray[] __tmp = Nd4j.exec(new DualRoPE(input, 0, 0, 10000.0, 1000000.0, 1.0, 1.0));
     try {
       return __tmp[0];
     } finally {
@@ -889,7 +1004,7 @@ public class NDNN {
    */
   public INDArray dualRoPE(INDArray input, int attentionType) {
     NDValidation.validateNumerical("dualRoPE", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, attentionType, 0, 10000.0, 1000000.0, 1.0, 1.0));
+    INDArray[] __tmp = Nd4j.exec(new DualRoPE(input, attentionType, 0, 10000.0, 1000000.0, 1.0, 1.0));
     try {
       return __tmp[0];
     } finally {
@@ -923,7 +1038,7 @@ public class NDNN {
    */
   public INDArray dualRoPE(INDArray input, int attentionType, int positionOffset) {
     NDValidation.validateNumerical("dualRoPE", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE(input, attentionType, positionOffset, 10000.0, 1000000.0, 1.0, 1.0));
+    INDArray[] __tmp = Nd4j.exec(new DualRoPE(input, attentionType, positionOffset, 10000.0, 1000000.0, 1.0, 1.0));
     try {
       return __tmp[0];
     } finally {
@@ -950,7 +1065,7 @@ public class NDNN {
    */
   public INDArray elu(INDArray x) {
     NDValidation.validateNumerical("elu", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.ELU(x));
+    INDArray[] __tmp = Nd4j.exec(new ELU(x));
     try {
       return __tmp[0];
     } finally {
@@ -977,7 +1092,7 @@ public class NDNN {
   public INDArray emaUpdate(INDArray model, INDArray shadow, double decay) {
     NDValidation.validateNumerical("emaUpdate", "model", model);
     NDValidation.validateNumerical("emaUpdate", "shadow", shadow);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate(model, shadow, decay));
+    INDArray[] __tmp = Nd4j.exec(new EmaUpdate(model, shadow, decay));
     try {
       return __tmp[0];
     } finally {
@@ -1003,7 +1118,7 @@ public class NDNN {
   public INDArray emaUpdate(INDArray model, INDArray shadow) {
     NDValidation.validateNumerical("emaUpdate", "model", model);
     NDValidation.validateNumerical("emaUpdate", "shadow", shadow);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate(model, shadow, 0.999));
+    INDArray[] __tmp = Nd4j.exec(new EmaUpdate(model, shadow, 0.999));
     try {
       return __tmp[0];
     } finally {
@@ -1044,7 +1159,7 @@ public class NDNN {
     NDValidation.validateNumerical("flashAttention", "query", query);
     NDValidation.validateNumerical("flashAttention", "key", key);
     NDValidation.validateNumerical("flashAttention", "value", value);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttention(query, key, value, scale, isCausal, numHeads, numKvHeads));
+    INDArray[] __tmp = Nd4j.exec(new FlashAttention(query, key, value, scale, isCausal, numHeads, numKvHeads));
     try {
       return __tmp[0];
     } finally {
@@ -1072,7 +1187,7 @@ public class NDNN {
     NDValidation.validateNumerical("fp8Matmul", "b", b);
     NDValidation.validateNumerical("fp8Matmul", "scaleA", scaleA);
     NDValidation.validateNumerical("fp8Matmul", "scaleB", scaleB);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul(a, b, scaleA, scaleB));
+    INDArray[] __tmp = Nd4j.exec(new Fp8Matmul(a, b, scaleA, scaleB));
     try {
       return __tmp[0];
     } finally {
@@ -1101,7 +1216,7 @@ public class NDNN {
     NDValidation.validateNumerical("fusedBiasDropoutResidual", "input", input);
     NDValidation.validateNumerical("fusedBiasDropoutResidual", "bias", bias);
     NDValidation.validateNumerical("fusedBiasDropoutResidual", "residual", residual);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedBiasDropoutResidual(input, bias, residual, dropoutProb, training));
+    INDArray[] __tmp = Nd4j.exec(new FusedBiasDropoutResidual(input, bias, residual, dropoutProb, training));
     try {
       return __tmp[0];
     } finally {
@@ -1129,7 +1244,7 @@ public class NDNN {
     NDValidation.validateNumerical("fusedElementwiseChain", "secondaryInputs", secondaryInputs);
     Preconditions.checkArgument(secondaryInputs.length >= 0, "secondaryInputs has incorrect size/length. Expected: secondaryInputs.length >= 0, got %s", secondaryInputs.length);
     Preconditions.checkArgument(opCodes.length >= 1, "opCodes has incorrect size/length. Expected: opCodes.length >= 1, got %s", opCodes.length);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain(input, secondaryInputs, opCodes));
+    INDArray[] __tmp = Nd4j.exec(new FusedElementwiseChain(input, secondaryInputs, opCodes));
     try {
       return __tmp[0];
     } finally {
@@ -1151,7 +1266,7 @@ public class NDNN {
    */
   public INDArray fusedGelu(INDArray input) {
     NDValidation.validateNumerical("fusedGelu", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU(input));
+    INDArray[] __tmp = Nd4j.exec(new FusedGELU(input));
     try {
       return __tmp[0];
     } finally {
@@ -1177,7 +1292,7 @@ public class NDNN {
     NDValidation.validateNumerical("fusedGemmSwiglu", "input", input);
     NDValidation.validateNumerical("fusedGemmSwiglu", "wGate", wGate);
     NDValidation.validateNumerical("fusedGemmSwiglu", "wUp", wUp);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwiglu(input, wGate, wUp));
+    INDArray[] __tmp = Nd4j.exec(new FusedGemmSwiglu(input, wGate, wUp));
     try {
       return __tmp[0];
     } finally {
@@ -1204,7 +1319,7 @@ public class NDNN {
     NDValidation.validateNumerical("fusedLayerNorm", "input", input);
     NDValidation.validateNumerical("fusedLayerNorm", "gamma", gamma);
     NDValidation.validateNumerical("fusedLayerNorm", "beta", beta);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNorm(input, gamma, beta, epsilon));
+    INDArray[] __tmp = Nd4j.exec(new FusedLayerNorm(input, gamma, beta, epsilon));
     try {
       return __tmp[0];
     } finally {
@@ -1248,7 +1363,7 @@ public class NDNN {
     NDValidation.validateInteger("fusedMRoPE", "posT", posT);
     NDValidation.validateInteger("fusedMRoPE", "posH", posH);
     NDValidation.validateInteger("fusedMRoPE", "posW", posW);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE(input, posT, posH, posW, sectionT, sectionH, sectionW, interleaved, freqBase));
+    INDArray[] __tmp = Nd4j.exec(new FusedMRoPE(input, posT, posH, posW, sectionT, sectionH, sectionW, interleaved, freqBase));
     try {
       return __tmp[0];
     } finally {
@@ -1274,7 +1389,7 @@ public class NDNN {
   public INDArray fusedNormQuantize(INDArray input, INDArray gamma, double epsilon, int quantType) {
     NDValidation.validateNumerical("fusedNormQuantize", "input", input);
     NDValidation.validateNumerical("fusedNormQuantize", "gamma", gamma);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize(input, gamma, epsilon, quantType));
+    INDArray[] __tmp = Nd4j.exec(new FusedNormQuantize(input, gamma, epsilon, quantType));
     try {
       return __tmp[0];
     } finally {
@@ -1305,7 +1420,7 @@ public class NDNN {
     NDValidation.validateNumerical("fusedRmsNormSwiglu", "gamma", gamma);
     NDValidation.validateNumerical("fusedRmsNormSwiglu", "wGate", wGate);
     NDValidation.validateNumerical("fusedRmsNormSwiglu", "wUp", wUp);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU(input, gamma, wGate, wUp, epsilon));
+    INDArray[] __tmp = Nd4j.exec(new FusedRmsNormSwiGLU(input, gamma, wGate, wUp, epsilon));
     try {
       return __tmp[0];
     } finally {
@@ -1339,7 +1454,7 @@ public class NDNN {
     if (ropeCache != null) {
       NDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(input, ropeCache, null, startPosition, 0, 10000.0, 1.0, 0));
+    INDArray[] __tmp = Nd4j.exec(new FusedRoPE(input, ropeCache, null, startPosition, 0, 10000.0, 1.0, 0));
     try {
       return __tmp[0];
     } finally {
@@ -1377,7 +1492,7 @@ public class NDNN {
     if (positionOffset != null) {
       NDValidation.validateNumerical("fusedRoPE", "positionOffset", positionOffset);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(input, null, positionOffset, 0, ropeType, freqBase, freqScale, rotaryDims));
+    INDArray[] __tmp = Nd4j.exec(new FusedRoPE(input, null, positionOffset, 0, ropeType, freqBase, freqScale, rotaryDims));
     try {
       return __tmp[0];
     } finally {
@@ -1416,6 +1531,9 @@ public class NDNN {
    * @param headDimK Key head dimension (D_k)
    * @param headDimV Value head dimension (D_v)
    * @param rmsNormEpsilon RMSNorm epsilon
+   * @return output Layer output [batch, seqLen, modelDim] (NUMERIC type)
+   * @return recurrentStateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return convStateOut Final conv state [batch, modelDim, kernelSize-1] (NUMERIC type)
    */
   public INDArray[] gatedDeltaNetBlock(INDArray x, INDArray wqkv, INDArray wbeta, INDArray wgate,
       INDArray wout, INDArray convWeight, INDArray convBias, INDArray recurrentStateIn,
@@ -1430,7 +1548,7 @@ public class NDNN {
     if (recurrentStateIn != null) {
       NDValidation.validateNumerical("gatedDeltaNetBlock", "recurrentStateIn", recurrentStateIn);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock(x, wqkv, wbeta, wgate, wout, convWeight, convBias, recurrentStateIn, numHeads, headDimK, headDimV, rmsNormEpsilon));
+    return Nd4j.exec(new GatedDeltaNetBlock(x, wqkv, wbeta, wgate, wout, convWeight, convBias, recurrentStateIn, numHeads, headDimK, headDimV, rmsNormEpsilon));
   }
 
   /**
@@ -1456,6 +1574,9 @@ public class NDNN {
    * @param numHeads Number of attention heads (H)
    * @param headDimK Key head dimension (D_k)
    * @param headDimV Value head dimension (D_v)
+   * @return output Layer output [batch, seqLen, modelDim] (NUMERIC type)
+   * @return recurrentStateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return convStateOut Final conv state [batch, modelDim, kernelSize-1] (NUMERIC type)
    */
   public INDArray[] gatedDeltaNetBlock(INDArray x, INDArray wqkv, INDArray wbeta, INDArray wgate,
       INDArray wout, INDArray convWeight, INDArray convBias, int numHeads, int headDimK,
@@ -1467,7 +1588,7 @@ public class NDNN {
     NDValidation.validateNumerical("gatedDeltaNetBlock", "wout", wout);
     NDValidation.validateNumerical("gatedDeltaNetBlock", "convWeight", convWeight);
     NDValidation.validateNumerical("gatedDeltaNetBlock", "convBias", convBias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock(x, wqkv, wbeta, wgate, wout, convWeight, convBias, null, numHeads, headDimK, headDimV, 1.0E-5));
+    return Nd4j.exec(new GatedDeltaNetBlock(x, wqkv, wbeta, wgate, wout, convWeight, convBias, null, numHeads, headDimK, headDimV, 1.0E-5));
   }
 
   /**
@@ -1486,6 +1607,8 @@ public class NDNN {
    * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
    * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
    * @param stateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
    */
   public INDArray[] gatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate,
       INDArray stateIn) {
@@ -1497,7 +1620,7 @@ public class NDNN {
     if (stateIn != null) {
       NDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(q, k, v, beta, gate, stateIn));
+    return Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate, stateIn));
   }
 
   /**
@@ -1515,6 +1638,8 @@ public class NDNN {
    * @param v Value tensor [batch, seqLen, numHeads, headDimV] (NUMERIC type)
    * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
    * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
+   * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
    */
   public INDArray[] gatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta,
       INDArray gate) {
@@ -1523,7 +1648,7 @@ public class NDNN {
     NDValidation.validateNumerical("gatedDeltaRule", "v", v);
     NDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
     NDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(q, k, v, beta, gate, null));
+    return Nd4j.exec(new GatedDeltaRule(q, k, v, beta, gate, null));
   }
 
   /**
@@ -1536,7 +1661,72 @@ public class NDNN {
    */
   public INDArray gelu(INDArray x) {
     NDValidation.validateNumerical("gelu", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.GELU(x));
+    return Nd4j.exec(new GELU(x));
+  }
+
+  /**
+   * Runtime quantized matmul against GGML-packed weights: dequantizes the packed<br>
+   * weight on the fly (fp32 accumulation) without materializing a dense weight.<br>
+   *
+   * @param activations Activations [M, K] or [B, S, K] (FLOAT32 or HALF) (NUMERIC type)
+   * @param packedWeights Packed GGML quantized weight bytes (INT8, rank 1) for a logical [N, K] weight (NUMERIC type)
+   * @param quantType GGML quantization type: 4=Q8_0, 8=Q4_K, 10=Q6_K
+   * @param n Number of weight rows (output columns)
+   * @param k Inner dimension (must be divisible by the quant block size)
+   * @param outputDtype Output dtype: 0=FLOAT32, 1=HALF
+   * @return output out = activations @ dequant(weight)^T, [M, N] or [B, S, N] (NUMERIC type)
+   */
+  public INDArray ggmlQMatMul(INDArray activations, INDArray packedWeights, int quantType, int n,
+      int k, int outputDtype) {
+    NDValidation.validateNumerical("ggmlQMatMul", "activations", activations);
+    NDValidation.validateNumerical("ggmlQMatMul", "packedWeights", packedWeights);
+    INDArray[] __tmp = Nd4j.exec(new GgmlQMatMul(activations, packedWeights, quantType, n, k, outputDtype));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused QLoRA op: runtime quantized base matmul (frozen GGML-packed weight) plus a<br>
+   * trainable low-rank LoRA residual, computed in a single op.<br>
+   *
+   * @param activations Activations [M, K] or [B, S, K] (NUMERIC type)
+   * @param packedWeights Packed GGML quantized weight bytes (INT8) for a logical [N, K] weight (NUMERIC type)
+   * @param loraA LoRA down-projection [rank, K] (NUMERIC type)
+   * @param loraB LoRA up-projection [N, rank] (NUMERIC type)
+   * @param scaling LoRA scaling factor
+   * @param quantType GGML quantization type: 4=Q8_0, 8=Q4_K, 10=Q6_K
+   * @param n Number of weight rows (output columns)
+   * @param k Inner dimension
+   * @param outputDtype Output dtype: 0=FLOAT32, 1=HALF
+   * @return output ggml_qmatmul(activations, weight) + scaling * (activations @ loraA^T) @ loraB^T (NUMERIC type)
+   */
+  public INDArray ggmlQMatMulLora(INDArray activations, INDArray packedWeights, INDArray loraA,
+      INDArray loraB, double scaling, int quantType, int n, int k, int outputDtype) {
+    NDValidation.validateNumerical("ggmlQMatMulLora", "activations", activations);
+    NDValidation.validateNumerical("ggmlQMatMulLora", "packedWeights", packedWeights);
+    NDValidation.validateNumerical("ggmlQMatMulLora", "loraA", loraA);
+    NDValidation.validateNumerical("ggmlQMatMulLora", "loraB", loraB);
+    INDArray[] __tmp = Nd4j.exec(new GgmlQMatMulLora(activations, packedWeights, loraA, loraB, scaling, quantType, n, k, outputDtype));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1549,7 +1739,7 @@ public class NDNN {
    */
   public INDArray gpuTopKSample(INDArray logits, int k, double temperature) {
     NDValidation.validateNumerical("gpuTopKSample", "logits", logits);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample(logits, k, temperature));
+    INDArray[] __tmp = Nd4j.exec(new GpuTopKSample(logits, k, temperature));
     try {
       return __tmp[0];
     } finally {
@@ -1573,7 +1763,7 @@ public class NDNN {
    */
   public INDArray gpuTopPSample(INDArray logits, double p, double temperature) {
     NDValidation.validateNumerical("gpuTopPSample", "logits", logits);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample(logits, p, temperature));
+    INDArray[] __tmp = Nd4j.exec(new GpuTopPSample(logits, p, temperature));
     try {
       return __tmp[0];
     } finally {
@@ -1616,7 +1806,7 @@ public class NDNN {
     NDValidation.validateNumerical("groupedQueryAttention", "query", query);
     NDValidation.validateNumerical("groupedQueryAttention", "key", key);
     NDValidation.validateNumerical("groupedQueryAttention", "value", value);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttention(query, key, value, scale, isCausal, numHeads, numKvHeads));
+    INDArray[] __tmp = Nd4j.exec(new GroupedQueryAttention(query, key, value, scale, isCausal, numHeads, numKvHeads));
     try {
       return __tmp[0];
     } finally {
@@ -1641,7 +1831,7 @@ public class NDNN {
    */
   public INDArray hardSigmoid(INDArray x) {
     NDValidation.validateNumerical("hardSigmoid", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.HardSigmoid(x));
+    return Nd4j.exec(new HardSigmoid(x));
   }
 
   /**
@@ -1655,7 +1845,7 @@ public class NDNN {
    */
   public INDArray hardTanh(INDArray x) {
     NDValidation.validateNumerical("hardTanh", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.HardTanh(x));
+    return Nd4j.exec(new HardTanh(x));
   }
 
   /**
@@ -1666,7 +1856,7 @@ public class NDNN {
    */
   public INDArray hardTanhDerivative(INDArray x) {
     NDValidation.validateNumerical("hardTanhDerivative", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative(x));
+    return Nd4j.exec(new HardTanhDerivative(x));
   }
 
   /**
@@ -1680,7 +1870,7 @@ public class NDNN {
   public INDArray kvCacheDequantize(INDArray input, INDArray scale, int quantType) {
     NDValidation.validateNumerical("kvCacheDequantize", "input", input);
     NDValidation.validateNumerical("kvCacheDequantize", "scale", scale);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize(input, scale, quantType));
+    INDArray[] __tmp = Nd4j.exec(new KVCacheDequantize(input, scale, quantType));
     try {
       return __tmp[0];
     } finally {
@@ -1704,7 +1894,7 @@ public class NDNN {
    */
   public INDArray kvCacheQuantize(INDArray input, int quantType, int groupSize) {
     NDValidation.validateNumerical("kvCacheQuantize", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize(input, quantType, groupSize));
+    INDArray[] __tmp = Nd4j.exec(new KVCacheQuantize(input, quantType, groupSize));
     try {
       return __tmp[0];
     } finally {
@@ -1737,6 +1927,8 @@ public class NDNN {
    * @param newKeys New keys to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
    * @param newValues New values to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
    * @param startPosition Position in cache where new keys/values should be inserted
+   * @return updatedKeyCache Updated key cache (NUMERIC type)
+   * @return updatedValueCache Updated value cache (NUMERIC type)
    */
   public INDArray[] kvCacheUpdate(INDArray keyCache, INDArray valueCache, INDArray newKeys,
       INDArray newValues, int startPosition) {
@@ -1744,7 +1936,7 @@ public class NDNN {
     NDValidation.validateNumerical("kvCacheUpdate", "valueCache", valueCache);
     NDValidation.validateNumerical("kvCacheUpdate", "newKeys", newKeys);
     NDValidation.validateNumerical("kvCacheUpdate", "newValues", newValues);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate(keyCache, valueCache, newKeys, newValues, startPosition));
+    return Nd4j.exec(new KVCacheUpdate(keyCache, valueCache, newKeys, newValues, startPosition));
   }
 
   /**
@@ -1769,7 +1961,7 @@ public class NDNN {
   public INDArray kvScatter(INDArray present, INDArray staticBuffer, long cachePos) {
     NDValidation.validateNumerical("kvScatter", "present", present);
     NDValidation.validateNumerical("kvScatter", "staticBuffer", staticBuffer);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(present, staticBuffer, cachePos, 1));
+    INDArray[] __tmp = Nd4j.exec(new KvScatter(present, staticBuffer, cachePos, 1));
     try {
       return __tmp[0];
     } finally {
@@ -1806,7 +1998,7 @@ public class NDNN {
   public INDArray kvScatter(INDArray present, INDArray staticBuffer, long cachePos, int numPairs) {
     NDValidation.validateNumerical("kvScatter", "present", present);
     NDValidation.validateNumerical("kvScatter", "staticBuffer", staticBuffer);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(present, staticBuffer, cachePos, numPairs));
+    INDArray[] __tmp = Nd4j.exec(new KvScatter(present, staticBuffer, cachePos, numPairs));
     try {
       return __tmp[0];
     } finally {
@@ -1840,7 +2032,7 @@ public class NDNN {
       NDValidation.validateNumerical("layerNorm", "bias", bias);
     }
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, bias, channelsFirst, dimensions));
+    INDArray[] __tmp = Nd4j.exec(new LayerNorm(input, gain, bias, channelsFirst, dimensions));
     try {
       return __tmp[0];
     } finally {
@@ -1870,7 +2062,7 @@ public class NDNN {
     NDValidation.validateNumerical("layerNorm", "input", input);
     NDValidation.validateNumerical("layerNorm", "gain", gain);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, null, channelsFirst, dimensions));
+    INDArray[] __tmp = Nd4j.exec(new LayerNorm(input, gain, null, channelsFirst, dimensions));
     try {
       return __tmp[0];
     } finally {
@@ -1896,7 +2088,7 @@ public class NDNN {
    */
   public INDArray leakyRelu(INDArray x, double alpha) {
     NDValidation.validateNumerical("leakyRelu", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU(x, alpha));
+    return Nd4j.exec(new LeakyReLU(x, alpha));
   }
 
   /**
@@ -1908,7 +2100,7 @@ public class NDNN {
    */
   public INDArray leakyReluDerivative(INDArray x, double alpha) {
     NDValidation.validateNumerical("leakyReluDerivative", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative(x, alpha));
+    return Nd4j.exec(new LeakyReLUDerivative(x, alpha));
   }
 
   /**
@@ -1940,7 +2132,7 @@ public class NDNN {
     NDValidation.validateNumerical("lightningAttention", "value", value);
     NDValidation.validateNumerical("lightningAttention", "decayRates", decayRates);
     NDValidation.validateNumerical("lightningAttention", "state", state);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention(query, key, value, decayRates, state, isCausal));
+    INDArray[] __tmp = Nd4j.exec(new LightningAttention(query, key, value, decayRates, state, isCausal));
     try {
       return __tmp[0];
     } finally {
@@ -1982,7 +2174,7 @@ public class NDNN {
     NDValidation.validateNumerical("lightningAttention", "value", value);
     NDValidation.validateNumerical("lightningAttention", "decayRates", decayRates);
     NDValidation.validateNumerical("lightningAttention", "state", state);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention(query, key, value, decayRates, state, 1));
+    INDArray[] __tmp = Nd4j.exec(new LightningAttention(query, key, value, decayRates, state, 1));
     try {
       return __tmp[0];
     } finally {
@@ -2013,7 +2205,7 @@ public class NDNN {
     NDValidation.validateNumerical("linear", "input", input);
     NDValidation.validateNumerical("linear", "weights", weights);
     NDValidation.validateNumerical("linear", "bias", bias);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, transposeA, transposeB, transposeC));
+    INDArray[] __tmp = Nd4j.exec(new XwPlusB(input, weights, bias, transposeA, transposeB, transposeC));
     try {
       return __tmp[0];
     } finally {
@@ -2040,7 +2232,7 @@ public class NDNN {
     NDValidation.validateNumerical("linear", "input", input);
     NDValidation.validateNumerical("linear", "weights", weights);
     NDValidation.validateNumerical("linear", "bias", bias);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB(input, weights, bias, false, false, false));
+    INDArray[] __tmp = Nd4j.exec(new XwPlusB(input, weights, bias, false, false, false));
     try {
       return __tmp[0];
     } finally {
@@ -2078,7 +2270,7 @@ public class NDNN {
     NDValidation.validateNumerical("linearAttentionDecode", "value", value);
     NDValidation.validateNumerical("linearAttentionDecode", "decayRates", decayRates);
     NDValidation.validateNumerical("linearAttentionDecode", "state", state);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LinearAttentionDecode(query, key, value, decayRates, state));
+    INDArray[] __tmp = Nd4j.exec(new LinearAttentionDecode(query, key, value, decayRates, state));
     try {
       return __tmp[0];
     } finally {
@@ -2100,7 +2292,7 @@ public class NDNN {
    */
   public INDArray linearCopy(INDArray input) {
     NDValidation.validateNumerical("linearCopy", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.LinearCopy(input));
+    INDArray[] __tmp = Nd4j.exec(new LinearCopy(input));
     try {
       return __tmp[0];
     } finally {
@@ -2122,7 +2314,7 @@ public class NDNN {
    */
   public INDArray logSigmoid(INDArray x) {
     NDValidation.validateNumerical("logSigmoid", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoid(x));
+    return Nd4j.exec(new LogSigmoid(x));
   }
 
   /**
@@ -2133,7 +2325,7 @@ public class NDNN {
    */
   public INDArray logSoftmax(INDArray x) {
     NDValidation.validateNumerical("logSoftmax", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x));
+    INDArray[] __tmp = Nd4j.exec(new LogSoftMax(x));
     try {
       return __tmp[0];
     } finally {
@@ -2156,7 +2348,7 @@ public class NDNN {
    */
   public INDArray logSoftmax(INDArray x, int dimension) {
     NDValidation.validateNumerical("logSoftmax", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x, dimension));
+    INDArray[] __tmp = Nd4j.exec(new LogSoftMax(x, dimension));
     try {
       return __tmp[0];
     } finally {
@@ -2192,7 +2384,7 @@ public class NDNN {
     NDValidation.validateNumerical("lohaMatMul", "lohaB1", lohaB1);
     NDValidation.validateNumerical("lohaMatMul", "lohaA2", lohaA2);
     NDValidation.validateNumerical("lohaMatMul", "lohaB2", lohaB2);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMul(input, weight, lohaA1, lohaB1, lohaA2, lohaB2, scaling, transposeWeight));
+    INDArray[] __tmp = Nd4j.exec(new LohaMatMul(input, weight, lohaA1, lohaB1, lohaA2, lohaB2, scaling, transposeWeight));
     try {
       return __tmp[0];
     } finally {
@@ -2228,7 +2420,7 @@ public class NDNN {
     NDValidation.validateNumerical("lokrMatMul", "lokrC", lokrC);
     NDValidation.validateNumerical("lokrMatMul", "lokrA", lokrA);
     NDValidation.validateNumerical("lokrMatMul", "lokrB", lokrB);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMul(input, weight, lokrC, lokrA, lokrB, factor1, factor2, scaling, transposeWeight));
+    INDArray[] __tmp = Nd4j.exec(new LokrMatMul(input, weight, lokrC, lokrA, lokrB, factor1, factor2, scaling, transposeWeight));
     try {
       return __tmp[0];
     } finally {
@@ -2260,7 +2452,7 @@ public class NDNN {
     NDValidation.validateNumerical("loraMatMul", "weight", weight);
     NDValidation.validateNumerical("loraMatMul", "loraA", loraA);
     NDValidation.validateNumerical("loraMatMul", "loraB", loraB);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMul(input, weight, loraA, loraB, scaling, transposeWeight));
+    INDArray[] __tmp = Nd4j.exec(new LoraMatMul(input, weight, loraA, loraB, scaling, transposeWeight));
     try {
       return __tmp[0];
     } finally {
@@ -2295,6 +2487,8 @@ public class NDNN {
    * @param numHeads Number of SSM heads (H)
    * @param headDim Dimension per head (P = D/H)
    * @param stateDim State dimension (N)
+   * @return output SSM output [batch, seqLen, D] (NUMERIC type)
+   * @return stateOut Final recurrent state [batch, numHeads, stateDim, headDim] (NUMERIC type)
    */
   public INDArray[] mamba2Ssm(INDArray x, INDArray A, INDArray B, INDArray C, INDArray dt,
       int numHeads, int headDim, int stateDim) {
@@ -2303,7 +2497,7 @@ public class NDNN {
     NDValidation.validateNumerical("mamba2Ssm", "B", B);
     NDValidation.validateNumerical("mamba2Ssm", "C", C);
     NDValidation.validateNumerical("mamba2Ssm", "dt", dt);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Mamba2SSM(x, A, B, C, dt, numHeads, headDim, stateDim));
+    return Nd4j.exec(new Mamba2SSM(x, A, B, C, dt, numHeads, headDim, stateDim));
   }
 
   /**
@@ -2314,7 +2508,7 @@ public class NDNN {
    */
   public INDArray meanSquare(INDArray input) {
     NDValidation.validateNumerical("meanSquare", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare(input));
+    INDArray[] __tmp = Nd4j.exec(new MeanSquare(input));
     try {
       return __tmp[0];
     } finally {
@@ -2357,13 +2551,16 @@ public class NDNN {
    * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
    * @param numExperts Total number of experts
    * @param topK Number of experts to route to per token
+   * @return output Combined expert outputs. Shape: [batch, seqLen, expertHiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public INDArray[] mixtureOfExperts(INDArray input, INDArray routerWeights, INDArray expertWeights,
       int numExperts, int topK) {
     NDValidation.validateNumerical("mixtureOfExperts", "input", input);
     NDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
     NDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(input, routerWeights, expertWeights, null, numExperts, topK, true, 1.0));
+    return Nd4j.exec(new MixtureOfExperts(input, routerWeights, expertWeights, null, numExperts, topK, false, 1.0));
   }
 
   /**
@@ -2396,8 +2593,11 @@ public class NDNN {
    * @param expertBias Optional expert biases. Shape: [numExperts, expertHiddenSize] (NUMERIC type)
    * @param numExperts Total number of experts
    * @param topK Number of experts to route to per token
-   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts. Default false is the gradient-safe choice (normalizing amplifies gradients by ~numExperts/topK).
    * @param capacityFactor Expert capacity factor for load balancing
+   * @return output Combined expert outputs. Shape: [batch, seqLen, expertHiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public INDArray[] mixtureOfExperts(INDArray input, INDArray routerWeights, INDArray expertWeights,
       INDArray expertBias, int numExperts, int topK, boolean normalizeProbs,
@@ -2408,7 +2608,7 @@ public class NDNN {
     if (expertBias != null) {
       NDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor));
+    return Nd4j.exec(new MixtureOfExperts(input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor));
   }
 
   /**
@@ -2424,7 +2624,7 @@ public class NDNN {
   public INDArray mlaAttention(INDArray input, INDArray kvDownProj, int numHeads, int latentDim) {
     NDValidation.validateNumerical("mlaAttention", "input", input);
     NDValidation.validateNumerical("mlaAttention", "kvDownProj", kvDownProj);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MLAAttention(input, kvDownProj, numHeads, latentDim));
+    INDArray[] __tmp = Nd4j.exec(new MLAAttention(input, kvDownProj, numHeads, latentDim));
     try {
       return __tmp[0];
     } finally {
@@ -2451,7 +2651,7 @@ public class NDNN {
   public INDArray moeGate(INDArray input, INDArray gateWeights, int numExperts, int topK) {
     NDValidation.validateNumerical("moeGate", "input", input);
     NDValidation.validateNumerical("moeGate", "gateWeights", gateWeights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeGate(input, gateWeights, numExperts, topK));
+    INDArray[] __tmp = Nd4j.exec(new MoeGate(input, gateWeights, numExperts, topK));
     try {
       return __tmp[0];
     } finally {
@@ -2489,6 +2689,9 @@ public class NDNN {
    * @param sharedDownProj Shared expert down projection. Shape: [sharedIntermediateSize, hiddenSize] (NUMERIC type)
    * @param numRoutedExperts Number of routed experts
    * @param topK Number of experts to route to per token
+   * @return output Combined shared + routed expert outputs. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numRoutedExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public INDArray[] moeSharedExperts(INDArray input, INDArray routerWeights,
       INDArray routedExpertWeights, INDArray sharedGateProj, INDArray sharedUpProj,
@@ -2499,7 +2702,7 @@ public class NDNN {
     NDValidation.validateNumerical("moeSharedExperts", "sharedGateProj", sharedGateProj);
     NDValidation.validateNumerical("moeSharedExperts", "sharedUpProj", sharedUpProj);
     NDValidation.validateNumerical("moeSharedExperts", "sharedDownProj", sharedDownProj);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, null, numRoutedExperts, topK, true, 1.0));
+    return Nd4j.exec(new MoeSharedExperts(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, null, numRoutedExperts, topK, false, 1.0));
   }
 
   /**
@@ -2527,8 +2730,11 @@ public class NDNN {
    * @param routedExpertBias Optional routed expert biases (NUMERIC type)
    * @param numRoutedExperts Number of routed experts
    * @param topK Number of experts to route to per token
-   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts. Default false is the gradient-safe choice (normalizing amplifies gradients by ~numRoutedExperts/topK).
    * @param capacityFactor Expert capacity factor for load balancing
+   * @return output Combined shared + routed expert outputs. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @return routerProbs Router probabilities. Shape: [batch, seqLen, numRoutedExperts] (NUMERIC type)
+   * @return expertIndices Selected expert indices. Shape: [batch, seqLen, topK] (NUMERIC type)
    */
   public INDArray[] moeSharedExperts(INDArray input, INDArray routerWeights,
       INDArray routedExpertWeights, INDArray sharedGateProj, INDArray sharedUpProj,
@@ -2543,7 +2749,7 @@ public class NDNN {
     if (routedExpertBias != null) {
       NDValidation.validateNumerical("moeSharedExperts", "routedExpertBias", routedExpertBias);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeSharedExperts(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, routedExpertBias, numRoutedExperts, topK, normalizeProbs, capacityFactor));
+    return Nd4j.exec(new MoeSharedExperts(input, routerWeights, routedExpertWeights, sharedGateProj, sharedUpProj, sharedDownProj, routedExpertBias, numRoutedExperts, topK, normalizeProbs, capacityFactor));
   }
 
   /**
@@ -2568,13 +2774,16 @@ public class NDNN {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public INDArray[] multiHeadAttention(INDArray query, INDArray key, INDArray value, int numHeads,
       double scale, boolean useCausalMask) {
     NDValidation.validateNumerical("multiHeadAttention", "query", query);
     NDValidation.validateNumerical("multiHeadAttention", "key", key);
     NDValidation.validateNumerical("multiHeadAttention", "value", value);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(query, key, value, null, null, null, null, numHeads, scale, useCausalMask));
+    return Nd4j.exec(new OnnxMultiHeadAttention(query, key, value, null, null, null, null, numHeads, scale, useCausalMask));
   }
 
   /**
@@ -2600,6 +2809,9 @@ public class NDNN {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public INDArray[] multiHeadAttention(INDArray query, INDArray key, INDArray value,
       INDArray attnBias, int numHeads, double scale, boolean useCausalMask) {
@@ -2609,7 +2821,7 @@ public class NDNN {
     if (attnBias != null) {
       NDValidation.validateNumerical("multiHeadAttention", "attnBias", attnBias);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(query, key, value, attnBias, null, null, null, numHeads, scale, useCausalMask));
+    return Nd4j.exec(new OnnxMultiHeadAttention(query, key, value, attnBias, null, null, null, numHeads, scale, useCausalMask));
   }
 
   /**
@@ -2636,6 +2848,9 @@ public class NDNN {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public INDArray[] multiHeadAttention(INDArray query, INDArray key, INDArray value,
       INDArray pastKey, INDArray pastValue, int numHeads, double scale, boolean useCausalMask) {
@@ -2648,7 +2863,7 @@ public class NDNN {
     if (pastValue != null) {
       NDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(query, key, value, null, pastKey, pastValue, null, numHeads, scale, useCausalMask));
+    return Nd4j.exec(new OnnxMultiHeadAttention(query, key, value, null, pastKey, pastValue, null, numHeads, scale, useCausalMask));
   }
 
   /**
@@ -2676,6 +2891,9 @@ public class NDNN {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public INDArray[] multiHeadAttention(INDArray query, INDArray key, INDArray value,
       INDArray attnBias, INDArray pastKey, INDArray pastValue, int numHeads, double scale,
@@ -2692,7 +2910,7 @@ public class NDNN {
     if (pastValue != null) {
       NDValidation.validateNumerical("multiHeadAttention", "pastValue", pastValue);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(query, key, value, attnBias, pastKey, pastValue, null, numHeads, scale, useCausalMask));
+    return Nd4j.exec(new OnnxMultiHeadAttention(query, key, value, attnBias, pastKey, pastValue, null, numHeads, scale, useCausalMask));
   }
 
   /**
@@ -2721,6 +2939,9 @@ public class NDNN {
    * @param numHeads Number of attention heads
    * @param scale Scale factor (0 = auto: 1/sqrt(headDim))
    * @param useCausalMask Whether to apply causal masking
+   * @return output Attention output [batch, seqQ, hidden] (NUMERIC type)
+   * @return presentKey Present key (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
+   * @return presentValue Present value (past + new) [batch, numHeads, totalSeq, headDim] (NUMERIC type)
    */
   public INDArray[] multiHeadAttention(INDArray query, INDArray key, INDArray value,
       INDArray attnBias, INDArray pastKey, INDArray pastValue, INDArray cachePosition, int numHeads,
@@ -2740,7 +2961,7 @@ public class NDNN {
     if (cachePosition != null) {
       NDValidation.validateNumerical("multiHeadAttention", "cachePosition", cachePosition);
     }
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(query, key, value, attnBias, pastKey, pastValue, cachePosition, numHeads, scale, useCausalMask));
+    return Nd4j.exec(new OnnxMultiHeadAttention(query, key, value, attnBias, pastKey, pastValue, cachePosition, numHeads, scale, useCausalMask));
   }
 
   /**
@@ -2777,7 +2998,7 @@ public class NDNN {
     NDValidation.validateNumerical("multiHeadDotProductAttention", "Wv", Wv);
     NDValidation.validateNumerical("multiHeadDotProductAttention", "Wo", Wo);
     NDValidation.validateNumerical("multiHeadDotProductAttention", "mask", mask);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false));
+    INDArray[] __tmp = Nd4j.exec(new MultiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false));
     try {
       return __tmp[0];
     } finally {
@@ -2809,7 +3030,7 @@ public class NDNN {
     NDValidation.validateNumerical("multiLoraMatmul", "loraAWeights", loraAWeights);
     NDValidation.validateNumerical("multiLoraMatmul", "loraBWeights", loraBWeights);
     NDValidation.validateNumerical("multiLoraMatmul", "adapterIds", adapterIds);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul(input, baseWeight, loraAWeights, loraBWeights, adapterIds, scaling));
+    INDArray[] __tmp = Nd4j.exec(new MultiLoraMatmul(input, baseWeight, loraAWeights, loraBWeights, adapterIds, scaling));
     try {
       return __tmp[0];
     } finally {
@@ -2835,7 +3056,7 @@ public class NDNN {
   public INDArray pad(INDArray input, INDArray padding, PadMode PadMode, double constant) {
     NDValidation.validateNumerical("pad", "input", input);
     NDValidation.validateNumerical("pad", "padding", padding);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode, constant));
+    INDArray[] __tmp = Nd4j.exec(new Pad(input, padding, PadMode, constant));
     try {
       return __tmp[0];
     } finally {
@@ -2860,7 +3081,7 @@ public class NDNN {
   public INDArray pad(INDArray input, INDArray padding, double constant) {
     NDValidation.validateNumerical("pad", "input", input);
     NDValidation.validateNumerical("pad", "padding", padding);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode.CONSTANT, constant));
+    INDArray[] __tmp = Nd4j.exec(new Pad(input, padding, PadMode.CONSTANT, constant));
     try {
       return __tmp[0];
     } finally {
@@ -2896,7 +3117,7 @@ public class NDNN {
     NDValidation.validateNumerical("perLayerEmbedding", "hiddenStates", hiddenStates);
     NDValidation.validateNumerical("perLayerEmbedding", "pleWeight", pleWeight);
     NDValidation.validateInteger("perLayerEmbedding", "tokenIds", tokenIds);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding(hiddenStates, pleWeight, tokenIds, scale));
+    INDArray[] __tmp = Nd4j.exec(new PerLayerEmbedding(hiddenStates, pleWeight, tokenIds, scale));
     try {
       return __tmp[0];
     } finally {
@@ -2930,7 +3151,7 @@ public class NDNN {
     NDValidation.validateNumerical("perLayerEmbedding", "hiddenStates", hiddenStates);
     NDValidation.validateNumerical("perLayerEmbedding", "pleWeight", pleWeight);
     NDValidation.validateInteger("perLayerEmbedding", "tokenIds", tokenIds);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding(hiddenStates, pleWeight, tokenIds, 1.0));
+    INDArray[] __tmp = Nd4j.exec(new PerLayerEmbedding(hiddenStates, pleWeight, tokenIds, 1.0));
     try {
       return __tmp[0];
     } finally {
@@ -2954,7 +3175,7 @@ public class NDNN {
    */
   public INDArray preciseGelu(INDArray x) {
     NDValidation.validateNumerical("preciseGelu", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELU(x));
+    return Nd4j.exec(new PreciseGELU(x));
   }
 
   /**
@@ -2976,7 +3197,7 @@ public class NDNN {
     NDValidation.validateNumerical("prelu", "input", input);
     NDValidation.validateNumerical("prelu", "alpha", alpha);
     Preconditions.checkArgument(sharedAxes.length >= 1, "sharedAxes has incorrect size/length. Expected: sharedAxes.length >= 1, got %s", sharedAxes.length);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.PRelu(input, alpha, sharedAxes));
+    INDArray[] __tmp = Nd4j.exec(new PRelu(input, alpha, sharedAxes));
     try {
       return __tmp[0];
     } finally {
@@ -3000,7 +3221,7 @@ public class NDNN {
   public INDArray quantizedMatmul(INDArray a, INDArray b) {
     NDValidation.validateNumerical("quantizedMatmul", "a", a);
     NDValidation.validateNumerical("quantizedMatmul", "b", b);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul(a, b));
+    INDArray[] __tmp = Nd4j.exec(new QuantizedMatmul(a, b));
     try {
       return __tmp[0];
     } finally {
@@ -3042,7 +3263,7 @@ public class NDNN {
    */
   public INDArray relativePositionBias(INDArray biasTable, int numHeads, int windowSize) {
     NDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(biasTable, null, numHeads, windowSize, false));
+    INDArray[] __tmp = Nd4j.exec(new RelativePositionBias(biasTable, null, numHeads, windowSize, false));
     try {
       return __tmp[0];
     } finally {
@@ -3089,7 +3310,7 @@ public class NDNN {
     if (relativePositionIndex != null) {
       NDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(biasTable, relativePositionIndex, numHeads, windowSize, false));
+    INDArray[] __tmp = Nd4j.exec(new RelativePositionBias(biasTable, relativePositionIndex, numHeads, windowSize, false));
     try {
       return __tmp[0];
     } finally {
@@ -3114,7 +3335,7 @@ public class NDNN {
    */
   public INDArray relu(INDArray x, double cutoff) {
     NDValidation.validateNumerical("relu", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear(x, cutoff));
+    return Nd4j.exec(new RectifiedLinear(x, cutoff));
   }
 
   /**
@@ -3127,7 +3348,7 @@ public class NDNN {
    */
   public INDArray relu6(INDArray x, double cutoff) {
     NDValidation.validateNumerical("relu6", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.Relu6(x, cutoff));
+    return Nd4j.exec(new Relu6(x, cutoff));
   }
 
   /**
@@ -3142,7 +3363,7 @@ public class NDNN {
     NDValidation.validateNumerical("reluLayer", "input", input);
     NDValidation.validateNumerical("reluLayer", "weights", weights);
     NDValidation.validateNumerical("reluLayer", "bias", bias);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.ReluLayer(input, weights, bias));
+    INDArray[] __tmp = Nd4j.exec(new ReluLayer(input, weights, bias));
     try {
       return __tmp[0];
     } finally {
@@ -3167,7 +3388,7 @@ public class NDNN {
   public INDArray reshapeNoCopy(INDArray input, INDArray shape) {
     NDValidation.validateNumerical("reshapeNoCopy", "input", input);
     NDValidation.validateNumerical("reshapeNoCopy", "shape", shape);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(input, shape));
+    INDArray[] __tmp = Nd4j.exec(new ReshapeNoCopy(input, shape));
     try {
       return __tmp[0];
     } finally {
@@ -3198,7 +3419,7 @@ public class NDNN {
     if (gamma != null) {
       NDValidation.validateNumerical("rmsNorm", "gamma", gamma);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, gamma, epsilon));
+    INDArray[] __tmp = Nd4j.exec(new RmsNorm(input, gamma, epsilon));
     try {
       return __tmp[0];
     } finally {
@@ -3228,7 +3449,7 @@ public class NDNN {
     if (gamma != null) {
       NDValidation.validateNumerical("rmsNorm", "gamma", gamma);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, gamma, 1.0E-5));
+    INDArray[] __tmp = Nd4j.exec(new RmsNorm(input, gamma, 1.0E-5));
     try {
       return __tmp[0];
     } finally {
@@ -3255,7 +3476,7 @@ public class NDNN {
    */
   public INDArray rmsNorm(INDArray input, double epsilon) {
     NDValidation.validateNumerical("rmsNorm", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, null, epsilon));
+    INDArray[] __tmp = Nd4j.exec(new RmsNorm(input, null, epsilon));
     try {
       return __tmp[0];
     } finally {
@@ -3281,7 +3502,7 @@ public class NDNN {
    */
   public INDArray rmsNorm(INDArray input) {
     NDValidation.validateNumerical("rmsNorm", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, null, 1.0E-5));
+    INDArray[] __tmp = Nd4j.exec(new RmsNorm(input, null, 1.0E-5));
     try {
       return __tmp[0];
     } finally {
@@ -3311,7 +3532,7 @@ public class NDNN {
     NDValidation.validateNumerical("rmsNormLinear", "input", input);
     NDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
     NDValidation.validateNumerical("rmsNormLinear", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(input, gamma, weights, epsilon));
+    INDArray[] __tmp = Nd4j.exec(new RmsNormLinear(input, gamma, weights, epsilon));
     try {
       return __tmp[0];
     } finally {
@@ -3340,7 +3561,7 @@ public class NDNN {
     NDValidation.validateNumerical("rmsNormLinear", "input", input);
     NDValidation.validateNumerical("rmsNormLinear", "gamma", gamma);
     NDValidation.validateNumerical("rmsNormLinear", "weights", weights);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear(input, gamma, weights, 1.0E-6));
+    INDArray[] __tmp = Nd4j.exec(new RmsNormLinear(input, gamma, weights, 1.0E-6));
     try {
       return __tmp[0];
     } finally {
@@ -3369,7 +3590,7 @@ public class NDNN {
   public INDArray rope(INDArray input, int mode, int nPast, int nDims, double freqBase,
       double freqScale) {
     NDValidation.validateNumerical("rope", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE(input, mode, nPast, nDims, freqBase, freqScale));
+    INDArray[] __tmp = Nd4j.exec(new RoPE(input, mode, nPast, nDims, freqBase, freqScale));
     try {
       return __tmp[0];
     } finally {
@@ -3398,7 +3619,7 @@ public class NDNN {
       boolean reduceOutput) {
     NDValidation.validateNumerical("rowParallelLinear", "input", input);
     NDValidation.validateNumerical("rowParallelLinear", "weight", weight);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RowParallelLinear(input, weight, tpRank, tpSize, reduceOutput));
+    INDArray[] __tmp = Nd4j.exec(new RowParallelLinear(input, weight, tpRank, tpSize, reduceOutput));
     try {
       return __tmp[0];
     } finally {
@@ -3413,14 +3634,59 @@ public class NDNN {
   }
 
   /**
-   * Selective scan operation for state space models (Mamba architecture).<br>
+   * Selective scan (S6/Mamba) operation for state space models. Consumes the<br>
+   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).<br>
    *
-   * @param input Input tensor (NUMERIC type)
-   * @return output Selective scan output (NUMERIC type)
+   * @param x Input sequence [B, L, D] (NUMERIC type)
+   * @param a Discretized state transition [B, L, S] (NUMERIC type)
+   * @param b Input projection [B, L, S] (NUMERIC type)
+   * @param c Output projection [B, L, S] (NUMERIC type)
+   * @param d Skip connection weight [D] (NUMERIC type)
+   * @param h0 Optional initial hidden state [B, D, S] (may be null) (NUMERIC type)
+   * @return output Selective scan output [B, L, D] (NUMERIC type)
    */
-  public INDArray selectiveScan(INDArray input) {
-    NDValidation.validateNumerical("selectiveScan", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(input));
+  public INDArray selectiveScan(INDArray x, INDArray a, INDArray b, INDArray c, INDArray d,
+      INDArray h0) {
+    NDValidation.validateNumerical("selectiveScan", "x", x);
+    NDValidation.validateNumerical("selectiveScan", "a", a);
+    NDValidation.validateNumerical("selectiveScan", "b", b);
+    NDValidation.validateNumerical("selectiveScan", "c", c);
+    NDValidation.validateNumerical("selectiveScan", "d", d);
+    if (h0 != null) {
+      NDValidation.validateNumerical("selectiveScan", "h0", h0);
+    }
+    INDArray[] __tmp = Nd4j.exec(new SelectiveScan(x, a, b, c, d, h0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Selective scan (S6/Mamba) operation for state space models. Consumes the<br>
+   * discretized SSM inputs x, a, b, c, d (and an optional initial hidden state h0).<br>
+   *
+   * @param x Input sequence [B, L, D] (NUMERIC type)
+   * @param a Discretized state transition [B, L, S] (NUMERIC type)
+   * @param b Input projection [B, L, S] (NUMERIC type)
+   * @param c Output projection [B, L, S] (NUMERIC type)
+   * @param d Skip connection weight [D] (NUMERIC type)
+   * @return output Selective scan output [B, L, D] (NUMERIC type)
+   */
+  public INDArray selectiveScan(INDArray x, INDArray a, INDArray b, INDArray c, INDArray d) {
+    NDValidation.validateNumerical("selectiveScan", "x", x);
+    NDValidation.validateNumerical("selectiveScan", "a", a);
+    NDValidation.validateNumerical("selectiveScan", "b", b);
+    NDValidation.validateNumerical("selectiveScan", "c", c);
+    NDValidation.validateNumerical("selectiveScan", "d", d);
+    INDArray[] __tmp = Nd4j.exec(new SelectiveScan(x, a, b, c, d, null));
     try {
       return __tmp[0];
     } finally {
@@ -3445,7 +3711,7 @@ public class NDNN {
    */
   public INDArray selu(INDArray x) {
     NDValidation.validateNumerical("selu", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.SELU(x));
+    return Nd4j.exec(new SELU(x));
   }
 
   /**
@@ -3479,7 +3745,7 @@ public class NDNN {
     if (mask != null) {
       NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, scale));
+    INDArray[] __tmp = Nd4j.exec(new SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, scale));
     try {
       return __tmp[0];
     } finally {
@@ -3516,7 +3782,7 @@ public class NDNN {
     NDValidation.validateNumerical("sharedKvAttention", "query", query);
     NDValidation.validateNumerical("sharedKvAttention", "sharedKey", sharedKey);
     NDValidation.validateNumerical("sharedKvAttention", "sharedValue", sharedValue);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, null, numHeads, numKvHeads, 1, 0, 0.0));
+    INDArray[] __tmp = Nd4j.exec(new SharedKvAttention(query, sharedKey, sharedValue, null, numHeads, numKvHeads, 1, 0, 0.0));
     try {
       return __tmp[0];
     } finally {
@@ -3557,7 +3823,7 @@ public class NDNN {
     if (mask != null) {
       NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, 1, 0, 0.0));
+    INDArray[] __tmp = Nd4j.exec(new SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, 1, 0, 0.0));
     try {
       return __tmp[0];
     } finally {
@@ -3600,7 +3866,7 @@ public class NDNN {
     if (mask != null) {
       NDValidation.validateNumerical("sharedKvAttention", "mask", mask);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, 0.0));
+    INDArray[] __tmp = Nd4j.exec(new SharedKvAttention(query, sharedKey, sharedValue, mask, numHeads, numKvHeads, causal, slidingWindowSize, 0.0));
     try {
       return __tmp[0];
     } finally {
@@ -3622,7 +3888,7 @@ public class NDNN {
    */
   public INDArray sigmoid(INDArray x) {
     NDValidation.validateNumerical("sigmoid", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.Sigmoid(x));
+    return Nd4j.exec(new Sigmoid(x));
   }
 
   /**
@@ -3635,7 +3901,7 @@ public class NDNN {
   public INDArray sigmoidDerivative(INDArray x, INDArray wrt) {
     NDValidation.validateNumerical("sigmoidDerivative", "x", x);
     NDValidation.validateNumerical("sigmoidDerivative", "wrt", wrt);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(x, wrt));
+    INDArray[] __tmp = Nd4j.exec(new SigmoidDerivative(x, wrt));
     try {
       return __tmp[0];
     } finally {
@@ -3658,7 +3924,7 @@ public class NDNN {
    */
   public INDArray silu(INDArray input) {
     NDValidation.validateNumerical("silu", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU(input));
+    INDArray[] __tmp = Nd4j.exec(new SiLU(input));
     try {
       return __tmp[0];
     } finally {
@@ -3692,7 +3958,7 @@ public class NDNN {
     if (bias != null) {
       NDValidation.validateNumerical("skipRmsNorm", "bias", bias);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(input, skip, gamma, bias, epsilon));
+    INDArray[] __tmp = Nd4j.exec(new SkipRmsNorm(input, skip, gamma, bias, epsilon));
     try {
       return __tmp[0];
     } finally {
@@ -3721,7 +3987,7 @@ public class NDNN {
     NDValidation.validateNumerical("skipRmsNorm", "input", input);
     NDValidation.validateNumerical("skipRmsNorm", "skip", skip);
     NDValidation.validateNumerical("skipRmsNorm", "gamma", gamma);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SkipRmsNorm(input, skip, gamma, null, epsilon));
+    INDArray[] __tmp = Nd4j.exec(new SkipRmsNorm(input, skip, gamma, null, epsilon));
     try {
       return __tmp[0];
     } finally {
@@ -3764,7 +4030,7 @@ public class NDNN {
     NDValidation.validateNumerical("slidingWindowAttention", "query", query);
     NDValidation.validateNumerical("slidingWindowAttention", "key", key);
     NDValidation.validateNumerical("slidingWindowAttention", "value", value);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention(query, key, value, windowSize, numHeads, numKvHeads, scale));
+    INDArray[] __tmp = Nd4j.exec(new SlidingWindowAttention(query, key, value, windowSize, numHeads, numKvHeads, scale));
     try {
       return __tmp[0];
     } finally {
@@ -3788,7 +4054,7 @@ public class NDNN {
   public INDArray smoothQuant(INDArray input, INDArray smoothScale) {
     NDValidation.validateNumerical("smoothQuant", "input", input);
     NDValidation.validateNumerical("smoothQuant", "smoothScale", smoothScale);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant(input, smoothScale));
+    INDArray[] __tmp = Nd4j.exec(new SmoothQuant(input, smoothScale));
     try {
       return __tmp[0];
     } finally {
@@ -3811,7 +4077,7 @@ public class NDNN {
    */
   public INDArray softmax(INDArray x, int dimension) {
     NDValidation.validateNumerical("softmax", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, dimension));
+    INDArray[] __tmp = Nd4j.exec(new SoftMax(x, dimension));
     try {
       return __tmp[0];
     } finally {
@@ -3833,7 +4099,7 @@ public class NDNN {
    */
   public INDArray softmax(INDArray x) {
     NDValidation.validateNumerical("softmax", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, -1));
+    INDArray[] __tmp = Nd4j.exec(new SoftMax(x, -1));
     try {
       return __tmp[0];
     } finally {
@@ -3855,7 +4121,7 @@ public class NDNN {
    */
   public INDArray softplus(INDArray x) {
     NDValidation.validateNumerical("softplus", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.SoftPlus(x));
+    return Nd4j.exec(new SoftPlus(x));
   }
 
   /**
@@ -3866,7 +4132,7 @@ public class NDNN {
    */
   public INDArray softsign(INDArray x) {
     NDValidation.validateNumerical("softsign", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.SoftSign(x));
+    return Nd4j.exec(new SoftSign(x));
   }
 
   /**
@@ -3877,7 +4143,7 @@ public class NDNN {
    */
   public INDArray softsignDerivative(INDArray x) {
     NDValidation.validateNumerical("softsignDerivative", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative(x));
+    return Nd4j.exec(new SoftSignDerivative(x));
   }
 
   /**
@@ -3889,7 +4155,7 @@ public class NDNN {
    */
   public INDArray squaredRelu(INDArray x) {
     NDValidation.validateNumerical("squaredRelu", "x", x);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SquaredReLU(x));
+    INDArray[] __tmp = Nd4j.exec(new SquaredReLU(x));
     try {
       return __tmp[0];
     } finally {
@@ -3912,7 +4178,7 @@ public class NDNN {
    */
   public INDArray swish(INDArray x) {
     NDValidation.validateNumerical("swish", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.Swish(x));
+    return Nd4j.exec(new Swish(x));
   }
 
   /**
@@ -3926,7 +4192,7 @@ public class NDNN {
   public INDArray swishMul(INDArray input, INDArray gate) {
     NDValidation.validateNumerical("swishMul", "input", input);
     NDValidation.validateNumerical("swishMul", "gate", gate);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul(input, gate));
+    INDArray[] __tmp = Nd4j.exec(new SwishMul(input, gate));
     try {
       return __tmp[0];
     } finally {
@@ -3948,7 +4214,7 @@ public class NDNN {
    */
   public INDArray tanh(INDArray x) {
     NDValidation.validateNumerical("tanh", "x", x);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh(x));
+    return Nd4j.exec(new Tanh(x));
   }
 
   /**
@@ -3969,7 +4235,7 @@ public class NDNN {
    */
   public INDArray tokenSample(INDArray logits) {
     NDValidation.validateNumerical("tokenSample", "logits", logits);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample(logits, 0.0, 0, 0.0, 0));
+    INDArray[] __tmp = Nd4j.exec(new TokenSample(logits, 0.0, 0, 0.0, 0));
     try {
       return __tmp[0];
     } finally {
@@ -4006,7 +4272,7 @@ public class NDNN {
   public INDArray tokenSample(INDArray logits, double temperature, int topK, double topP,
       long seed) {
     NDValidation.validateNumerical("tokenSample", "logits", logits);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample(logits, temperature, topK, topP, seed));
+    INDArray[] __tmp = Nd4j.exec(new TokenSample(logits, temperature, topK, topP, seed));
     try {
       return __tmp[0];
     } finally {
@@ -4026,10 +4292,12 @@ public class NDNN {
    * @param input Input data (NUMERIC type)
    * @param k The number of values to return
    * @param sorted Whether to return the values sorted or not
+   * @return output the top k values in the input (NUMERIC type)
+   * @return indices the indices of the top k values (NUMERIC type)
    */
   public INDArray[] topK(INDArray input, double k, boolean sorted) {
     NDValidation.validateNumerical("topK", "input", input);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TopK(input, k, sorted));
+    return Nd4j.exec(new TopK(input, k, sorted));
   }
 
   /**
@@ -4066,7 +4334,7 @@ public class NDNN {
     NDValidation.validateNumerical("turboQuantAttention", "qjlMatrix", qjlMatrix);
     NDValidation.validateNumerical("turboQuantAttention", "values", values);
     NDValidation.validateNumerical("turboQuantAttention", "attentionMask", attentionMask);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention(query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim, scale));
+    INDArray[] __tmp = Nd4j.exec(new TurboQuantAttention(query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim, scale));
     try {
       return __tmp[0];
     } finally {
@@ -4113,7 +4381,7 @@ public class NDNN {
     NDValidation.validateNumerical("turboQuantAttention", "qjlMatrix", qjlMatrix);
     NDValidation.validateNumerical("turboQuantAttention", "values", values);
     NDValidation.validateNumerical("turboQuantAttention", "attentionMask", attentionMask);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention(query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim, 0.0));
+    INDArray[] __tmp = Nd4j.exec(new TurboQuantAttention(query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim, 0.0));
     try {
       return __tmp[0];
     } finally {
@@ -4141,6 +4409,8 @@ public class NDNN {
    * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param scale Attention scale factor (default: 1/sqrt(embedDim))
+   * @return tokenOutput Attended token embeddings [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @return imageOutput Attended image embeddings [batch, imageSeqLen, embedDim] (NUMERIC type)
    */
   public INDArray[] twoWayCrossAttention(INDArray tokenQuery, INDArray tokenKey,
       INDArray tokenValue, INDArray imageQuery, INDArray imageKey, INDArray imageValue,
@@ -4151,7 +4421,7 @@ public class NDNN {
     NDValidation.validateNumerical("twoWayCrossAttention", "imageQuery", imageQuery);
     NDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
     NDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, scale));
+    return Nd4j.exec(new TwoWayCrossAttention(tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, scale));
   }
 
   /**
@@ -4167,6 +4437,8 @@ public class NDNN {
    * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
    * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @return tokenOutput Attended token embeddings [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @return imageOutput Attended image embeddings [batch, imageSeqLen, embedDim] (NUMERIC type)
    */
   public INDArray[] twoWayCrossAttention(INDArray tokenQuery, INDArray tokenKey,
       INDArray tokenValue, INDArray imageQuery, INDArray imageKey, INDArray imageValue) {
@@ -4176,7 +4448,7 @@ public class NDNN {
     NDValidation.validateNumerical("twoWayCrossAttention", "imageQuery", imageQuery);
     NDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
     NDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, 0.0));
+    return Nd4j.exec(new TwoWayCrossAttention(tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, 0.0));
   }
 
   /**
@@ -4201,7 +4473,7 @@ public class NDNN {
     NDValidation.validateNumerical("visionEmbeddingMerge", "textEmbeddings", textEmbeddings);
     NDValidation.validateNumerical("visionEmbeddingMerge", "visionEmbeddings", visionEmbeddings);
     NDValidation.validateInteger("visionEmbeddingMerge", "tokenIds", tokenIds);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge(textEmbeddings, visionEmbeddings, tokenIds, targetTokenId));
+    INDArray[] __tmp = Nd4j.exec(new VisionEmbeddingMerge(textEmbeddings, visionEmbeddings, tokenIds, targetTokenId));
     try {
       return __tmp[0];
     } finally {
@@ -4245,7 +4517,7 @@ public class NDNN {
     NDValidation.validateNumerical("windowedAttention", "query", query);
     NDValidation.validateNumerical("windowedAttention", "key", key);
     NDValidation.validateNumerical("windowedAttention", "value", value);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(query, key, value, null, null, windowSize, numHeads, 0, 0.0, false));
+    INDArray[] __tmp = Nd4j.exec(new WindowedAttention(query, key, value, null, null, windowSize, numHeads, 0, 0.0, false));
     try {
       return __tmp[0];
     } finally {
@@ -4301,7 +4573,7 @@ public class NDNN {
     if (attentionMask != null) {
       NDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
     }
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights));
+    INDArray[] __tmp = Nd4j.exec(new WindowedAttention(query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights));
     try {
       return __tmp[0];
     } finally {

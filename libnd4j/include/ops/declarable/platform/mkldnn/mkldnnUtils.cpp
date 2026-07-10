@@ -70,8 +70,31 @@ dnnl::memory::format_tag getFormat(NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////
+// Returns true when the array's strides are the canonical dense strides for its
+// ordering flag. Permuted/sliced VIEWS keep their original ordering flag but carry
+// non-canonical strides — for those the oneDNN memory descriptor MUST get explicit
+// strides, or oneDNN silently reads the buffer as if it were dense (wrong results,
+// e.g. softmax over a permuted view normalizing the wrong element groups).
+static bool hasDefaultStrides(NDArray& array) {
+  const int rank = array.rankOf();
+  if (rank == 0) return true;
+  sd::LongType expected = 1;
+  if (array.ordering() == 'c') {
+    for (int i = rank - 1; i >= 0; --i) {
+      if (array.sizeAt(i) != 1 && array.strideAt(i) != expected) return false;
+      expected *= array.sizeAt(i);
+    }
+  } else {
+    for (int i = 0; i < rank; ++i) {
+      if (array.sizeAt(i) != 1 && array.strideAt(i) != expected) return false;
+      expected *= array.sizeAt(i);
+    }
+  }
+  return true;
+}
+
 void setBlockStrides(NDArray& array, dnnl::memory::desc& mklMd, const std::vector<int>& permut) {
-  if ((array.rankOf() > 3 && array.ordering() == 'f') || !permut.empty()) {
+  if ((array.rankOf() > 3 && array.ordering() == 'f') || !permut.empty() || !hasDefaultStrides(array)) {
     // OneDNN 3.x: create new memory descriptor with explicit strides
     dnnl::memory::dims dims = mklMd.get_dims();
     dnnl::memory::data_type dtype = mklMd.get_data_type();

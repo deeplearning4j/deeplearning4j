@@ -713,7 +713,17 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.LinearSolve.class,
             org.nd4j.linalg.api.ops.custom.Lstsq.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.Qr.class,
-            org.nd4j.linalg.api.ops.custom.Logdet.class
+            org.nd4j.linalg.api.ops.custom.Logdet.class,
+            // LoRA / adapter ops (also registered in DifferentialFunctionClassHolder)
+            org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMul.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMulBp.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmulBp.class,
+            // QLoRA / quantized-base adapter ops
+            org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulBp.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLora.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMulLoraBp.class
     ));
 
     static {

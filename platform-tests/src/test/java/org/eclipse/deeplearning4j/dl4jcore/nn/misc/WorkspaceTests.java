@@ -29,16 +29,19 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.eclipse.deeplearning4j.dl4jcore.nn.layers.samediff.testlayers.SameDiffSimpleLambdaVertex;
 import org.eclipse.deeplearning4j.dl4jcore.nn.misc.iter.WSTestDataSetIterator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.util.ModelSerializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -55,6 +58,9 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -697,5 +703,82 @@ public class WorkspaceTests extends BaseDL4JTest {
                 }
             }
         }
+    }
+
+    /**
+     * Regression test for the WS_OUTPUT_MEM workspace-scope leak that occurred when
+     * ComputationGraph.evaluate() was called on a graph containing a SameDiffLambdaVertex.
+     *
+     * Root cause: outputOfLayersDetached() calls notifyScopeEntered(ACTIVATIONS) on the
+     * caller-supplied outputWorkspace (WS_OUTPUT_MEM), which is already open. It then calls
+     * wsAct.setPreviousWorkspace(initialWorkspace) — but at that point wsAct IS outputWorkspace,
+     * and initialWorkspace IS outputWorkspace (it was current when outputOfLayersDetached was
+     * entered). That overwrites WS_OUTPUT_MEM's previousWorkspace with itself. When the outer
+     * try-with-resources in doEvaluationHelper closes WS_OUTPUT_MEM, it restores the current
+     * workspace to WS_OUTPUT_MEM even though it has just been closed — leaking the pointer on
+     * the calling thread. A subsequent ComputationGraph.init() allocates params into the leaked
+     * (closed) workspace; save() then throws "Cannot duplicate INDArray: Array uses leaked
+     * workspace pointer from workspace WS_OUTPUT_MEM".
+     *
+     * Fix: skip setPreviousWorkspace when wsAct == outputWorkspace (re-entrant open of an
+     * already-open outer scope whose chain must not be disturbed).
+     */
+    @Test
+    public void testNoWorkspaceScopeLeakAfterEvaluateWithSameDiffLambdaVertex() throws Exception {
+        // Build a small ComputationGraph with a SameDiffLambdaVertex (the trigger for the bug).
+        // Topology: in1 -> dense0, in2 -> dense1, lambda(dense0, dense1) -> output.
+        // nIn/nOut=4 to keep it tiny.
+        final int nIn = 4;
+        final int nOut = 3;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(42)
+                .updater(new Adam(0.01))
+                .trainingWorkspaceMode(WorkspaceMode.ENABLED)
+                .inferenceWorkspaceMode(WorkspaceMode.ENABLED)
+                .graphBuilder()
+                .addInputs("in1", "in2")
+                .addLayer("d0", new DenseLayer.Builder().nIn(nIn).nOut(nIn).activation(Activation.TANH).build(), "in1")
+                .addLayer("d1", new DenseLayer.Builder().nIn(nIn).nOut(nIn).activation(Activation.TANH).build(), "in2")
+                // SameDiffLambdaVertex that element-wise-multiplies its two inputs
+                .addVertex("lambda", new SameDiffSimpleLambdaVertex(), "d0", "d1")
+                .addLayer("out", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .nIn(nIn).nOut(nOut).activation(Activation.SOFTMAX).build(), "lambda")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        // One tiny batch of training data.
+        INDArray feat1 = Nd4j.rand(2, nIn);
+        INDArray feat2 = Nd4j.rand(2, nIn);
+        INDArray labels = Nd4j.zeros(2, nOut);
+        labels.putScalar(0, 0, 1.0);
+        labels.putScalar(1, 1, 1.0);
+
+        org.nd4j.linalg.dataset.MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(
+                new INDArray[]{feat1, feat2}, new INDArray[]{labels});
+
+        // fit() then evaluate() — this is the sequence that triggered the leak.
+        net.fit(mds);
+        net.evaluate(new org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator(mds));
+
+        // After evaluate() the calling thread must have NO active workspace.
+        // If the WS_OUTPUT_MEM scope leaked, this assertion fires first.
+        MemoryWorkspace active = Nd4j.getMemoryManager().getCurrentWorkspace();
+        assertNull(active,
+                "Workspace scope leaked after evaluate(): active workspace = "
+                        + (active == null ? "null" : active.getId()));
+
+        // Create a FRESH graph (never trained, never run output) — its init() must NOT
+        // allocate params inside a leaked workspace.
+        ComputationGraph fresh = new ComputationGraph(conf);
+        fresh.init();
+
+        // Save must succeed without "leaked workspace pointer" error.
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ModelSerializer.writeModel(fresh, new DataOutputStream(baos), true);
+        assertTrue(baos.size() > 0, "ModelSerializer wrote 0 bytes — save failed silently");
     }
 }

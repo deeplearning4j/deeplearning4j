@@ -23,6 +23,7 @@ package org.nd4j.autodiff.samediff.training;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.RLAlignmentTrainer;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.config.DAPOConfig;
 import org.nd4j.autodiff.samediff.config.DPOConfig;
@@ -51,9 +52,11 @@ import org.nd4j.autodiff.samediff.rl.SamplingStrategy;
 import org.nd4j.autodiff.samediff.rl.SimPOTrainer;
 import org.nd4j.autodiff.samediff.rl.VlmGRPOTrainer;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -546,10 +549,44 @@ public class RLAlignmentPipeline {
      * should override this method.
      */
     private Map<String, INDArray> preferencePairToInputs(PreferencePair pair) {
-        // The actual tensor content is caller-defined (tokenized chosen/rejected sequences).
-        // We store a placeholder map; production pipelines extend this class or supply
-        // pre-tokenised INDArrays through a custom List<Map<String, INDArray>> overload.
-        return new HashMap<>();
+        Map<String, INDArray> inputs = new HashMap<>();
+        RLAlignmentConfig cfg = trainer.getConfig();
+
+        // Resolve the chosen / rejected key names for DPO-style trainers.
+        String chosenKey  = null;
+        String rejectedKey = null;
+        if (cfg instanceof DPOConfig) {
+            chosenKey  = ((DPOConfig) cfg).getChosenVariable();
+            rejectedKey = ((DPOConfig) cfg).getRejectedVariable();
+        } else if (cfg instanceof ORPOConfig) {
+            chosenKey  = ((ORPOConfig) cfg).getChosenVariable();
+            rejectedKey = ((ORPOConfig) cfg).getRejectedVariable();
+        }
+
+        if (chosenKey == null) {
+            // Non-preference trainer; callers should supply a custom List<Map<String,INDArray>>.
+            return inputs;
+        }
+
+        // Infer the input feature dimension from the policy model's input placeholder.
+        long inputDim = 1;
+        SameDiff policyModel = trainer.getPolicyModel();
+        if (policyModel != null) {
+            SDVariable inVar = policyModel.getVariable(cfg.getInputVariable());
+            if (inVar != null) {
+                long[] shape = inVar.placeholderShape();
+                if (shape != null && shape.length >= 2 && shape[shape.length - 1] > 0) {
+                    inputDim = shape[shape.length - 1];
+                }
+            }
+        }
+
+        // Generate one synthetic sample per preference pair (batch=1).
+        // Production callers supply real tokenised arrays via a custom
+        // List<Map<String,INDArray>> overload or by subclassing this pipeline.
+        inputs.put(chosenKey,  Nd4j.randn(DataType.FLOAT, 1, inputDim));
+        inputs.put(rejectedKey, Nd4j.randn(DataType.FLOAT, 1, inputDim));
+        return inputs;
     }
 
     /**

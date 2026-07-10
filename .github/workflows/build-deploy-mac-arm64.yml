@@ -154,7 +154,7 @@ jobs:
                 echo "Adding libnd4j download"
                 echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
               fi
-              command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -Dlibnd4j.arch=armv8-a -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Pcpu --batch-mode -DskipTests ${mvn_ext} -pl $modules --also-make deploy"
+              command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON --no-transfer-progress -Dlibnd4j.arch=armv8-a -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Pcpu --batch-mode -DskipTests ${mvn_ext} -pl $modules --also-make deploy"
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
               sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/MacOSX10*

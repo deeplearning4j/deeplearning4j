@@ -20,7 +20,7 @@ if str(_PARENT) not in sys.path:
 from sdx_runtime import (
     _backend_priority,
     _build_library_search_plan,
-    _runtime_library_filename,
+    _runtime_library_filenames,
     detect_host_platform_id,
 )
 
@@ -49,10 +49,20 @@ class SdxRuntimeLoaderTests(unittest.TestCase):
             "android-arm64",
         )
 
-    def test_runtime_library_filename_by_platform(self):
-        self.assertEqual(_runtime_library_filename("linux-x86_64", "cpu"), "libnd4jcpu.so")
-        self.assertEqual(_runtime_library_filename("macos-arm64", "cuda"), "libnd4jcuda.dylib")
-        self.assertEqual(_runtime_library_filename("windows-x86_64", "amd"), "nd4jamd.dll")
+    def test_runtime_library_filenames_by_platform(self):
+        # Standalone (libsdx_*) names are preferred, monolithic names are the fallback.
+        self.assertEqual(
+            _runtime_library_filenames("linux-x86_64", "cpu"),
+            ["libsdx_cpu.so", "libnd4jcpu.so"],
+        )
+        self.assertEqual(
+            _runtime_library_filenames("macos-arm64", "cuda"),
+            ["libsdx_cuda.dylib", "libnd4jcuda.dylib"],
+        )
+        self.assertEqual(
+            _runtime_library_filenames("windows-x86_64", "amd"),
+            ["sdx_cuda.dll", "nd4jamd.dll"],
+        )
 
     def test_backend_priority_validation(self):
         self.assertEqual(_backend_priority("cuda"), ["cuda", "cpu", "amd"])
@@ -98,6 +108,28 @@ class SdxRuntimeLoaderTests(unittest.TestCase):
 
             self.assertIn(str(expected), plan)
             self.assertLess(plan.index(str(expected)), plan.index("nd4jamd"))
+
+    def test_standalone_library_preferred_over_monolithic(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = pathlib.Path(tmp)
+            lib_dir = tmp_path / "lib"
+            lib_dir.mkdir(parents=True, exist_ok=True)
+            (lib_dir / "libsdx_cpu.so").write_bytes(b"x")
+            (lib_dir / "libnd4jcpu.so").write_bytes(b"x")
+
+            plan = _build_library_search_plan(
+                explicit_library=None,
+                platform_id="linux-x86_64",
+                preferred_backend="cpu",
+                module_dir=tmp_path / "module",
+                environ={"SDX_RUNTIME_LIBRARY_DIR": str(lib_dir)},
+            )
+
+            standalone = str(lib_dir / "libsdx_cpu.so")
+            monolithic = str(lib_dir / "libnd4jcpu.so")
+            self.assertIn(standalone, plan)
+            self.assertIn(monolithic, plan)
+            self.assertLess(plan.index(standalone), plan.index(monolithic))
 
     def test_explicit_library_is_first(self):
         plan = _build_library_search_plan(

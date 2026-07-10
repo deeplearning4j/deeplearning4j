@@ -16,6 +16,8 @@ from .sdx_runtime import (
     SDX_GPU_TARGET_CUDA,
     SDX_GPU_TARGET_AMD,
     detect_host_platform_id,
+    InputMetadata,
+    ExecutionSummary,
     RuntimeOptions,
     ModelOptions,
     RunOptions,

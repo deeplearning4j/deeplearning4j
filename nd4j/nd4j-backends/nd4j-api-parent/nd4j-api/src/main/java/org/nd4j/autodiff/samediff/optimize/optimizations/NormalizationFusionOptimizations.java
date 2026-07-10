@@ -565,6 +565,19 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 SDVariable meanSquareOutput = new MeanSquare(sd, xSdVar, true).outputVariable();
                 OptimizationUtils.replaceOpInputsWith(sd, helper, meanOutputVar, meanSquareOutput.name());
 
+                // Redirect any registered graph-output entries BEFORE removal: the removal
+                // guards refuse to orphan registered outputs, and a half-blocked rewrite
+                // (mul removed, mean refused) corrupts the graph. The optimizer's
+                // required-output reconciliation restores the original name afterwards.
+                List<String> graphOutputs = sd.outputs();
+                if (graphOutputs != null) {
+                    for (int i = 0; i < graphOutputs.size(); i++) {
+                        if (graphOutputs.get(i).equals(meanOutputVar)) {
+                            graphOutputs.set(i, meanSquareOutput.name());
+                        }
+                    }
+                }
+
                 OptimizationUtils.removeOp(sd, helper, op.getName());
                 OptimizationUtils.removeOp(sd, helper, producerOp.getName());
                 OptimizationUtils.removeVariable(sd, helper, inputVar);
@@ -724,6 +737,30 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
 
                 String xVar = rmsNormInputs.get(0);
                 String gammaVar = rmsNormInputs.get(1);
+
+                // Guard: do NOT fuse rms_norm + matmul when the matmul output feeds into
+                // another normalization op (e.g., the stacked "rms_norm -> matmul -> rms_norm"
+                // decoder pattern). Fusing would collapse rms_norm_1 + matmul into
+                // rms_norm_linear and leave only 1 rms_norm in the graph instead of 2.
+                {
+                    Variable matmulOutVar = sd.getVariables().get(matmulOutputVar);
+                    if (matmulOutVar != null && matmulOutVar.getInputsForOp() != null) {
+                        boolean feedsNorm = false;
+                        for (String consumerOpName : matmulOutVar.getInputsForOp()) {
+                            SameDiffOp consumerOp = sd.getOps().get(consumerOpName);
+                            if (consumerOp != null && (consumerOp.getOp() instanceof RmsNorm
+                                    || consumerOp.getOp() instanceof RmsNormLinear)) {
+                                feedsNorm = true;
+                                break;
+                            }
+                        }
+                        if (feedsNorm) {
+                            log.debug("FuseRMSNormLinear: skipping fusion — matmul output '{}' feeds a normalization op",
+                                    matmulOutputVar);
+                            continue;
+                        }
+                    }
+                }
 
                 try {
                     SDVariable x = sd.getVariable(xVar);

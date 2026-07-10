@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.ggml.architecture.QuantizedLinear;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -140,7 +141,7 @@ public class OLMoArchitecture implements ModelArchitecture {
             outputWeight = tokenEmbedWeight;
         }
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
-        sd.mmul("logits", hidden, lmHead.permute(1, 0));
+        QuantizedLinear.matMul(sd, "logits", hidden, lmHead, weights, "output.weight", dtype);
 
         return sd;
     }
@@ -243,9 +244,9 @@ public class OLMoArchitecture implements ModelArchitecture {
         SDVariable wv = sd.var(attnPrefix + "v_proj.weight", vWeight);
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
-        SDVariable q = sd.mmul("q_" + layerIdx, input, wq.permute(1, 0));
-        SDVariable k = sd.mmul("k_" + layerIdx, input, wk.permute(1, 0));
-        SDVariable v = sd.mmul("v_" + layerIdx, input, wv.permute(1, 0));
+        SDVariable q = QuantizedLinear.matMul(sd, "q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
+        SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, prefix + ".attn_k.weight", dtype);
+        SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, prefix + ".attn_v.weight", dtype);
 
         // Add biases if present (OLMo v1 has biases)
         INDArray qBias = weights.get(prefix + ".attn_q.bias");
@@ -313,7 +314,7 @@ public class OLMoArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
-        return sd.mmul("attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", dtype);
     }
 
     // ========================================================================
@@ -356,13 +357,13 @@ public class OLMoArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
-        SDVariable gate = sd.mmul("gate_" + layerIdx, input, wGate.permute(1, 0));
-        SDVariable up = sd.mmul("up_" + layerIdx, input, wUp.permute(1, 0));
+        SDVariable gate = QuantizedLinear.matMul(sd, "gate_" + layerIdx, input, wGate, weights, prefix + ".ffn_gate.weight", dtype);
+        SDVariable up = QuantizedLinear.matMul(sd, "up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", dtype);
 
         SDVariable silu = sd.nn.swish(gate);
         SDVariable gated = silu.mul("swiglu_" + layerIdx, up);
 
-        return sd.mmul("down_" + layerIdx, gated, wDown.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "down_" + layerIdx, gated, wDown, weights, prefix + ".ffn_down.weight", dtype);
     }
 
     // ========================================================================

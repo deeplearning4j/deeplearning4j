@@ -79,7 +79,8 @@ public class GRPOTrainer extends RLAlignmentTrainer<GRPOConfig> {
         SDVariable advantages = sd.placeHolder("_grpo_advantages", DataType.FLOAT, -1);
         SDVariable refLogProbs = sd.placeHolder("_grpo_ref_log_probs", DataType.FLOAT, -1);
 
-        // Get the model's logit output and compute current log probs in-graph
+        // Get the model's logit output and compute current log probs in-graph (2D
+        // [batch, vocab] policies are handled by the base helper via config.logits2D)
         SDVariable logits = sd.getVariable(logitVar);
         SDVariable currentLP = computeLogProbOps(sd, "_grpo", logits, tokens, vocabSize);
 

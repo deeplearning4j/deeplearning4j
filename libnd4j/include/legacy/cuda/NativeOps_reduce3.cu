@@ -71,13 +71,38 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
     auto dim = dimension != nullptr ? reinterpret_cast<sd::LongType *>(dimension->buffer()) : nullptr;
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
 
+    // TAD-decompose x by the specified dimensions.
+    // For y, only create a TAD pack if all requested dimensions are within y's rank.
+    // When y has a lower rank than x (e.g. rank-1 needle vs rank-2 x), the dimensions
+    // used to TAD x are out-of-bounds for y — pass nullptr for yTad pointers instead.
+    // The CUDA transform kernel handles nullptr yTadShapeInfo by falling back to yShapeInfo,
+    // and uses yTadNum==1 (yLen/xTadLen==1) to avoid dereferencing the null yTadOffsets.
     auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dim, dimensionLength);
     auto xTadShapeInfo = xTadPack->specialShapeInfo();
     auto xOffsets = xTadPack->specialOffsets();
 
-    auto yTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(y->shapeInfo(), dim, dimensionLength);
-    auto yTadShapeInfo = yTadPack->specialShapeInfo();
-    auto yOffsets = yTadPack->specialOffsets();
+    // Check if all dimensions are valid for y's rank before creating y's TAD pack
+    sd::LongType yRank = shape::rank(y->shapeInfo());
+    bool yDimsValid = true;
+    if (dim != nullptr) {
+      for (sd::LongType i = 0; i < dimensionLength; i++) {
+        sd::LongType d = dim[i];
+        if (d < 0) d += yRank;
+        if (d < 0 || d >= yRank) {
+          yDimsValid = false;
+          break;
+        }
+      }
+    }
+
+    const sd::LongType* yTadShapeInfo = nullptr;
+    const sd::LongType* yTadOffsets = nullptr;
+    std::shared_ptr<sd::TadPack> yTadPackHolder;  // keep alive until after the call
+    if (yDimsValid) {
+      yTadPackHolder = sd::ConstantTadHelper::getInstance().tadForDimensions(y->shapeInfo(), dim, dimensionLength);
+      yTadShapeInfo = yTadPackHolder->specialShapeInfo();
+      yTadOffsets = yTadPackHolder->specialOffsets();
+    }
 
     auto lc = sd::LaunchContext::defaultContext();
 
@@ -96,7 +121,7 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
         shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
         z->specialShapeInfo(),
         dim, dimensionLength,
-        xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+        xTadShapeInfo, xOffsets, yTadShapeInfo, yTadOffsets);
 
     x->registerSpecialUse({z}, {x, y});
   } catch (std::exception &e) {

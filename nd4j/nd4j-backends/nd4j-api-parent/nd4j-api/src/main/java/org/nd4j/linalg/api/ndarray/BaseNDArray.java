@@ -3537,14 +3537,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (localData == null || isEmpty() || length() == 0) {
             return new double[0];
         }
-        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
-        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
         int len = (int) length();
-        double[] result = new double[len];
-        for (int i = 0; i < len; i++) {
-            result[i] = getDouble(i);
+        // Single bulk GPU→host sync instead of `len` per-element getDouble(i) syncs on CUDA.
+        if (!isView() && offset() == 0 && localData.length() == length()) {
+            Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+            double[] full = localData.asDouble();
+            if (full.length == len)
+                return full;
+            double[] result = new double[len];
+            System.arraycopy(full, 0, result, 0, len);
+            return result;
         }
-        return result;
+        return dup(ordering()).data().asDouble();
     }
 
     @Override
@@ -3553,14 +3557,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (localData == null || isEmpty() || length() == 0) {
             return new float[0];
         }
-        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
-        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
         int len = (int) length();
-        float[] result = new float[len];
-        for (int i = 0; i < len; i++) {
-            result[i] = getFloat(i);
+        // Contiguous & dense in this array's own ordering: the logical vector equals the
+        // buffer's first `len` elements — read it with a SINGLE GPU→host sync (asFloat()).
+        // The old per-element getFloat(i) loop re-entered AtomicAllocator.synchronizeHostData
+        // (→ CudaExecutioner.commit) on EVERY element for CUDA buffers — an O(n) GPU-sync
+        // footgun (~n device syncs per call).
+        if (!isView() && offset() == 0 && localData.length() == length()) {
+            Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+            float[] full = localData.asFloat();
+            if (full.length == len)
+                return full;
+            float[] result = new float[len];
+            System.arraycopy(full, 0, result, 0, len);
+            return result;
         }
-        return result;
+        // View / non-contiguous: densify in this array's ordering (one device copy) then a
+        // single bulk sync, instead of `len` per-element getFloat() syncs.
+        return dup(ordering()).data().asFloat();
     }
 
     @Override
@@ -3572,14 +3586,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
-        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
         int nRows = (int) rows();
         int nCols = (int) columns();
+        // Single bulk GPU→host sync via a C-ordered dense copy, then host-side reshape —
+        // replaces nRows*nCols per-element getFloat(i,j) calls (each a device sync on CUDA).
+        INDArray cOrdered = (!isView() && ordering() == 'c' && offset() == 0
+                && data.length() == length()) ? this : dup('c');
+        Nd4j.getAffinityManager().ensureLocation(cOrdered, AffinityManager.Location.HOST);
+        float[] flat = cOrdered.data().asFloat();
         float[][] ret = new float[nRows][nCols];
         for(int i = 0; i < nRows; i++) {
+            int base = i * nCols;
             for(int j = 0; j < nCols; j++) {
-                ret[i][j] = getFloat(i, j);
+                ret[i][j] = flat[base + j];
             }
         }
 
@@ -3592,14 +3611,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (localData == null || isEmpty() || length() == 0) {
             return new int[0];
         }
-        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
-        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
         int len = (int) length();
-        int[] result = new int[len];
-        for (int i = 0; i < len; i++) {
-            result[i] = getInt(i);
+        // Single bulk GPU→host sync instead of `len` per-element getInt(i) syncs on CUDA.
+        if (!isView() && offset() == 0 && localData.length() == length()) {
+            Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+            int[] full = localData.asInt();
+            if (full.length == len)
+                return full;
+            int[] result = new int[len];
+            System.arraycopy(full, 0, result, 0, len);
+            return result;
         }
-        return result;
+        return dup(ordering()).data().asInt();
     }
 
     @Override
@@ -3608,14 +3631,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (localData == null || isEmpty() || length() == 0) {
             return new long[0];
         }
-        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
-        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
         int len = (int) length();
-        long[] result = new long[len];
-        for (int i = 0; i < len; i++) {
-            result[i] = getLong(i);
+        // Single bulk GPU→host sync instead of `len` per-element getLong(i) syncs on CUDA.
+        if (!isView() && offset() == 0 && localData.length() == length()) {
+            Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+            long[] full = localData.asLong();
+            if (full.length == len)
+                return full;
+            long[] result = new long[len];
+            System.arraycopy(full, 0, result, 0, len);
+            return result;
         }
-        return result;
+        return dup(ordering()).data().asLong();
     }
 
     @Override

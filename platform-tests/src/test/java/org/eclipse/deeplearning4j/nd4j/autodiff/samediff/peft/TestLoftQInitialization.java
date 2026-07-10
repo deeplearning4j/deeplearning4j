@@ -280,6 +280,7 @@ public class TestLoftQInitialization extends BaseNd4jTestWithBackends {
         int inDim  = 32;
         int rank   = 8;
 
+        Nd4j.getRandom().setSeed(1234);
         INDArray weight = Nd4j.randn(DataType.FLOAT, outDim, inDim).muli(0.1f);
 
         // 1 iteration
@@ -296,13 +297,14 @@ public class TestLoftQInitialization extends BaseNd4jTestWithBackends {
             .targetModules(Arrays.asList("query"))
             .taskType(TaskType.CAUSAL_LM).build();
 
-        Pair<INDArray, INDArray> result1 = LoftQInitializer.initialize(weight.dup(), rank, config1);
-        Pair<INDArray, INDArray> result5 = LoftQInitializer.initialize(weight.dup(), rank, config5);
+        LoftQInitializer.LoftQResult result1 = LoftQInitializer.initializeFull(weight.dup(), rank, config1);
+        LoftQInitializer.LoftQResult result5 = LoftQInitializer.initializeFull(weight.dup(), rank, config5);
 
-        INDArray Q = LoftQInitializer.quantizeNF4(weight, 64);
-
-        INDArray recon1 = Q.add(result1.getFirst().mmul(result1.getSecond()));
-        INDArray recon5 = Q.add(result5.getFirst().mmul(result5.getSecond()));
+        // Reconstruct against EACH run's own iterated quantized base Q_n — NOT quantize(W).
+        // LoftQ jointly optimizes Q and (B,A), so the valid reconstruction is Q_n + B@A; using
+        // quantize(W) for the multi-iteration case measures a mismatched pair and is wrong.
+        INDArray recon1 = result1.quantizedBase.add(result1.loraB.mmul(result1.loraA));
+        INDArray recon5 = result5.quantizedBase.add(result5.loraB.mmul(result5.loraA));
 
         double err1 = weight.sub(recon1).norm2Number().doubleValue();
         double err5 = weight.sub(recon5).norm2Number().doubleValue();

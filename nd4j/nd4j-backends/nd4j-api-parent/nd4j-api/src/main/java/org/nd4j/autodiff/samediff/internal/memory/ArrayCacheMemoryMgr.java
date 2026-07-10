@@ -606,6 +606,14 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 // slightly larger than needed) see stale data that causes degenerate output
                 // in multi-step autoregressive decode.
                 arr.assign(0);
+                // This buffer is now owned by a live array again. If it also sits in the
+                // deferred-close set (e.g. a view over it was released earlier), the next
+                // closeDeferredBuffers() sweep would close it out from under the new owner
+                // — the sweep only protects buffers still INSIDE the cache, and this one
+                // just left it. Drop it from the deferred set before handing it out.
+                if (arr.data() != null) {
+                    getDeferredCloseBuffers().remove(arr.data());
+                }
                 return arr;
             }
 
@@ -814,6 +822,15 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         LinkedHashMap<Long, INDArray> lru = getLruCachedValuesForThread();
         lru.put(array.getId(), array);
         cacheCounters.get()[4]++; // releases cached
+
+        // A buffer entering the reuse cache must not stay in the deferred-close
+        // set (a view over it may have been released earlier). The sweep protects
+        // in-cache buffers, but once this array is re-issued it leaves that
+        // protection while the deferred entry would remain — and the next sweep
+        // would close the re-issued owner's buffer.
+        if (array.data() != null) {
+            getDeferredCloseBuffers().remove(array.data());
+        }
     }
 
     @Override

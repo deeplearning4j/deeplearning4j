@@ -66,6 +66,11 @@ class Schur {
 
   explicit Schur(NDArray& matrix);
 
+  ~Schur() {
+    delete t;
+    delete u;
+  }
+
   void splitTwoRows(const int ind, const T shift);
 
   void calcShift(const int ind, const int iter, T& shift, NDArray& shiftInfo);

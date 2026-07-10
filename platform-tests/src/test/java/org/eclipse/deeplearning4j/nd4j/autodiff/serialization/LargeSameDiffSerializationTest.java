@@ -37,6 +37,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
@@ -75,6 +76,69 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         return totalFree > requiredBytes * 1.2;
     }
 
+    @Test
+    public void testShardedSdnbSparseManifestOffsetDoesNotInflateMetadataLength() throws IOException {
+        File tempDir = new File(System.getProperty("java.io.tmpdir"), "sdnb-sparse-manifest-" + UUID.randomUUID());
+        assertTrue("Could not create temporary directory: " + tempDir.getAbsolutePath(), tempDir.mkdirs());
+        File baseFile = new File(tempDir, "sparse-layout.sd");
+
+        try {
+            SameDiff sd = SameDiff.create();
+            int appendedElements = 300_000; // 1.2MB, above SameDiffSerializer's append threshold.
+            INDArray original = Nd4j.rand(DataType.FLOAT, 1, appendedElements);
+            sd.var("large", original.dup());
+
+            SameDiffSerializer.saveSharded(sd, baseFile, false, 2, Collections.emptyMap());
+            File variableShard = new File(tempDir, "sparse-layout.shard1-of-2.sdnb");
+            assertTrue("Variable shard was not created: " + variableShard.getAbsolutePath(), variableShard.isFile());
+
+            long inflatedMetadataLength = moveManifestPast2GB(variableShard);
+            assertTrue("Test setup must make manifestOffset - metadataOffset exceed Integer.MAX_VALUE",
+                    inflatedMetadataLength > Integer.MAX_VALUE);
+
+            SameDiff loaded = SameDiffSerializer.loadSharded(baseFile, false);
+            assertTrue("Loaded graph is missing variable", loaded.hasVariable("large"));
+            INDArray loadedArray = loaded.getVariable("large").getArr();
+            assertNotNull("Loaded appended array is null", loadedArray);
+            assertArrayEquals("Loaded appended array shape mismatch", original.shape(), loadedArray.shape());
+            assertEquals("Loaded appended array data type mismatch", original.dataType(), loadedArray.dataType());
+            assertTrue("Loaded appended array values changed", original.equalsWithEps(loadedArray, 1e-5));
+        } finally {
+            deleteShardFiles(baseFile);
+            baseFile.delete();
+            tempDir.delete();
+        }
+    }
+
+    @Test
+    public void testFinalInlineShardManifestHeaderIsValid() throws IOException {
+        File tempDir = new File(System.getProperty("java.io.tmpdir"), "sdnb-final-inline-manifest-" + UUID.randomUUID());
+        assertTrue("Could not create temporary directory: " + tempDir.getAbsolutePath(), tempDir.mkdirs());
+        File baseFile = new File(tempDir, "inline-final.sd");
+
+        try {
+            SameDiff sd = SameDiff.create();
+            INDArray smallA = Nd4j.rand(DataType.FLOAT, 4, 8);
+            INDArray smallB = Nd4j.rand(DataType.FLOAT, 8, 4);
+            sd.var("small_a", smallA.dup());
+            sd.var("small_b", smallB.dup());
+
+            SameDiffSerializer.saveSharded(sd, baseFile, false, 2, Collections.emptyMap());
+            File finalShard = new File(tempDir, "inline-final.shard1-of-2.sdnb");
+            assertTrue("Final inline shard was not created: " + finalShard.getAbsolutePath(), finalShard.isFile());
+            assertShardManifestMagic(finalShard);
+
+            SameDiff loaded = SameDiffSerializer.loadSharded(baseFile, false);
+            assertTrue("Loaded final inline shard value changed for small_a",
+                    smallA.equalsWithEps(loaded.getVariable("small_a").getArr(), 1e-5));
+            assertTrue("Loaded final inline shard value changed for small_b",
+                    smallB.equalsWithEps(loaded.getVariable("small_b").getArr(), 1e-5));
+        } finally {
+            deleteShardFiles(baseFile);
+            baseFile.delete();
+            tempDir.delete();
+        }
+    }
 
 
     @Test
@@ -763,6 +827,54 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
         assertArrayEquals("Shape mismatch for " + varName, new long[]{expectedRows, expectedCols}, loadedArray.shape());
         assertTrue("Content mismatch for " + varName, originalArray.equalsWithEps(loadedArray, 1e-5));
 
+    }
+
+    private long moveManifestPast2GB(File shardFile) throws IOException {
+        try (RandomAccessFile raf = new RandomAccessFile(shardFile, "rw")) {
+            raf.seek(8); // SDNB magic (4 bytes) + version (4 bytes)
+            long manifestOffset = raf.readLong();
+            long manifestLength = raf.readLong();
+            long metadataOffset = raf.readLong();
+
+            assertTrue("Manifest must be present for this regression", manifestLength > 0);
+            assertTrue("Manifest must be small enough for the test helper", manifestLength < Integer.MAX_VALUE);
+            assertTrue("Shard must contain appended data before the manifest", manifestOffset > metadataOffset);
+
+            byte[] manifestBytes = new byte[(int) manifestLength];
+            raf.seek(manifestOffset);
+            raf.readFully(manifestBytes);
+
+            long sparseManifestOffset = (long) Integer.MAX_VALUE + metadataOffset + 4096L;
+            raf.seek(sparseManifestOffset);
+            raf.write(manifestBytes);
+            raf.seek(8);
+            raf.writeLong(sparseManifestOffset);
+            raf.setLength(sparseManifestOffset + manifestLength);
+            return sparseManifestOffset - metadataOffset;
+        }
+    }
+
+    private void assertShardManifestMagic(File shardFile) throws IOException {
+        try (RandomAccessFile raf = new RandomAccessFile(shardFile, "r")) {
+            byte[] magic = new byte[4];
+            raf.readFully(magic);
+            assertArrayEquals("SDNB magic mismatch", new byte[]{'S', 'D', 'N', 'B'}, magic);
+            assertEquals("Unexpected SDNB version", 1, raf.readInt());
+            long manifestOffset = raf.readLong();
+            long manifestLength = raf.readLong();
+            long metadataOffset = raf.readLong();
+
+            assertEquals("Unexpected SDNB metadata offset", 32L, metadataOffset);
+            assertTrue("Manifest length must include Java serialization header", manifestLength >= 4);
+            assertTrue("Manifest offset must be inside shard", manifestOffset >= metadataOffset);
+            assertTrue("Manifest range exceeds file", manifestOffset + manifestLength <= raf.length());
+
+            byte[] manifestHeader = new byte[4];
+            raf.seek(manifestOffset);
+            raf.readFully(manifestHeader);
+            assertArrayEquals("Manifest must start with Java serialization stream magic",
+                    new byte[]{(byte) 0xAC, (byte) 0xED, 0x00, 0x05}, manifestHeader);
+        }
     }
 
 

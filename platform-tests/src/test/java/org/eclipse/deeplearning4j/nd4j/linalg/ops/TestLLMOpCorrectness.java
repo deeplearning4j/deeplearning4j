@@ -9,6 +9,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormBp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -28,6 +29,27 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @Slf4j
 public class TestLLMOpCorrectness {
+
+    @Test
+    public void testRmsNormBpHalfZeroInputFinite() {
+        int batch = 1, seq = 1, features = 8;
+        float eps = 1e-5f;
+
+        INDArray input = Nd4j.zeros(DataType.FLOAT16, batch, seq, features);
+        INDArray gradOut = Nd4j.ones(DataType.FLOAT16, batch, seq, features);
+        INDArray gamma = Nd4j.ones(DataType.FLOAT16, features);
+        INDArray gradIn = Nd4j.create(DataType.FLOAT16, batch, seq, features);
+        INDArray gradGamma = Nd4j.create(DataType.FLOAT16, features);
+
+        Nd4j.exec(new RmsNormBp(input, gradOut, gamma, gradIn, gradGamma, eps));
+
+        assertFalse(gradIn.isNaN().any(), "rms_norm_bp gradIn has NaN for zero HALF input");
+        assertFalse(gradIn.isInfinite().any(), "rms_norm_bp gradIn has Inf for zero HALF input");
+        assertFalse(gradGamma.isNaN().any(), "rms_norm_bp gradGamma has NaN for zero HALF input");
+        assertFalse(gradGamma.isInfinite().any(), "rms_norm_bp gradGamma has Inf for zero HALF input");
+        assertTrue(gradIn.norm1Number().doubleValue() > 0.0, "gradIn should carry finite upstream gradient");
+        assertEquals(0.0, gradGamma.norm1Number().doubleValue(), 1e-6, "zero input should give zero gamma gradient");
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     //  skip_rms_norm: output = rms_norm(input + skip) * gamma

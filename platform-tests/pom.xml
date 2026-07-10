@@ -245,6 +245,15 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- JNA for exercising the SDX C ABI (dsp_runtime_c.h) end-to-end.
+             NOTE: compile scope on purpose — this module compiles src/test/java as a
+             MAIN source root (build-helper add-source), so test-scoped deps are not
+             on the compiling classpath. -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.14.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>

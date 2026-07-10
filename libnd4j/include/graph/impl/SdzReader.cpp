@@ -32,6 +32,33 @@
 #include <zlib.h>
 #endif
 
+// std::filesystem availability — same detection as DspRuntimeC.cpp / ReplayCacheManager.cpp.
+#if defined(SD_FILESYSTEM_AVAILABLE)
+#define SDZ_HAS_FILESYSTEM 1
+#elif defined(__has_include)
+#  if __has_include(<filesystem>) && __cplusplus >= 201703L
+#    if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
+#      define SDZ_HAS_FILESYSTEM 0
+#    elif defined(__APPLE__)
+#      if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
+#        define SDZ_HAS_FILESYSTEM 1
+#      else
+#        define SDZ_HAS_FILESYSTEM 0
+#      endif
+#    else
+#      define SDZ_HAS_FILESYSTEM 1
+#    endif
+#  else
+#    define SDZ_HAS_FILESYSTEM 0
+#  endif
+#else
+#define SDZ_HAS_FILESYSTEM 0
+#endif
+
+#if SDZ_HAS_FILESYSTEM
+#include <filesystem>
+#endif
+
 namespace {
 
 bool endsWithIgnoreCase(const std::string& value, const char* suffix) {
@@ -61,6 +88,51 @@ bool readPod(const std::vector<uint8_t>& data, size_t offset, T* out) {
   if (offset + sizeof(T) > data.size()) return false;
   std::memcpy(out, data.data() + offset, sizeof(T));
   return true;
+}
+
+// Parse the ZIP64 extended-information extra field (header ID 0x0001) of a
+// central-directory entry. Per APPNOTE 4.5.3, only the fields saturated at
+// 0xFFFFFFFF (or 0xFFFF for diskStart) in the fixed record are present, in
+// the fixed order: uncompressed size, compressed size, local header offset.
+bool parseZip64ExtraField(const std::vector<uint8_t>& data, size_t extraOffset, uint16_t extraLen,
+                          uint32_t rawUncompressed, uint32_t rawCompressed, uint32_t rawLocalOffset,
+                          uint64_t* uncompressedSize, uint64_t* compressedSize,
+                          uint64_t* localHeaderOffset) {
+  size_t pos = extraOffset;
+  const size_t end = extraOffset + extraLen;
+  if (end > data.size()) return false;
+
+  while (pos + 4 <= end) {
+    uint16_t fieldId = 0;
+    uint16_t fieldSize = 0;
+    std::memcpy(&fieldId, data.data() + pos, sizeof(fieldId));
+    std::memcpy(&fieldSize, data.data() + pos + 2, sizeof(fieldSize));
+    pos += 4;
+    if (pos + fieldSize > end) return false;
+
+    if (fieldId == 0x0001) {
+      size_t p = pos;
+      const size_t fieldEnd = pos + fieldSize;
+      if (rawUncompressed == 0xFFFFFFFFu) {
+        if (p + 8 > fieldEnd) return false;
+        std::memcpy(uncompressedSize, data.data() + p, 8);
+        p += 8;
+      }
+      if (rawCompressed == 0xFFFFFFFFu) {
+        if (p + 8 > fieldEnd) return false;
+        std::memcpy(compressedSize, data.data() + p, 8);
+        p += 8;
+      }
+      if (rawLocalOffset == 0xFFFFFFFFu) {
+        if (p + 8 > fieldEnd) return false;
+        std::memcpy(localHeaderOffset, data.data() + p, 8);
+        p += 8;
+      }
+      return true;
+    }
+    pos += fieldSize;
+  }
+  return false;
 }
 
 #ifdef HAVE_ZLIB
@@ -152,6 +224,30 @@ struct ZipLocalFileHeader {
   uint16_t filenameLen;
   uint16_t extraLen;
 };
+
+// ZIP64 support: archives over 4GB (or >65535 entries) saturate the classic
+// EOCD/central-directory fields at 0xFFFF/0xFFFFFFFF and carry the real
+// 64-bit values in these records. Java's SDZSerializer (java.util.zip)
+// produces ZIP64 automatically for large models.
+struct Zip64EndOfCentralDirLocator {
+  uint32_t signature;        // 0x07064b50
+  uint32_t zip64EocdDisk;
+  uint64_t zip64EocdOffset;
+  uint32_t totalDisks;
+};
+
+struct Zip64EndOfCentralDir {
+  uint32_t signature;        // 0x06064b50
+  uint64_t recordSize;
+  uint16_t versionMadeBy;
+  uint16_t versionNeeded;
+  uint32_t diskNum;
+  uint32_t centralDirDisk;
+  uint64_t numEntriesDisk;
+  uint64_t numEntriesTotal;
+  uint64_t centralDirSize;
+  uint64_t centralDirOffset;
+};
 #pragma pack(pop)
 
 SdzReader::~SdzReader() = default;
@@ -204,15 +300,49 @@ SdzReader* SdzReader::openFile(const char* zipPath) {
     return nullptr;
   }
 
-  if (eocd.centralDirOffset + eocd.centralDirSize > fileSize) {
+  // ZIP64: when the classic EOCD saturates (0xFFFF entries / 0xFFFFFFFF
+  // offset or size), the real values live in the ZIP64 EOCD record, found
+  // via the locator that sits immediately before the classic EOCD.
+  uint64_t numEntriesTotal = eocd.numEntriesTotal;
+  uint64_t centralDirSize = eocd.centralDirSize;
+  uint64_t centralDirOffset = eocd.centralDirOffset;
+
+  const bool eocdSaturated = eocd.numEntriesTotal == 0xFFFFu ||
+                             eocd.centralDirSize == 0xFFFFFFFFu ||
+                             eocd.centralDirOffset == 0xFFFFFFFFu;
+  if (eocdSaturated || eocdOffset >= sizeof(Zip64EndOfCentralDirLocator)) {
+    const size_t locatorOffset = eocdOffset - sizeof(Zip64EndOfCentralDirLocator);
+    Zip64EndOfCentralDirLocator locator{};
+    if (eocdOffset >= sizeof(Zip64EndOfCentralDirLocator) &&
+        readPod(fileData, locatorOffset, &locator) && locator.signature == 0x07064b50) {
+      Zip64EndOfCentralDir eocd64{};
+      if (locator.zip64EocdOffset < fileSize &&
+          readPod(fileData, static_cast<size_t>(locator.zip64EocdOffset), &eocd64) &&
+          eocd64.signature == 0x06064b50) {
+        numEntriesTotal = eocd64.numEntriesTotal;
+        centralDirSize = eocd64.centralDirSize;
+        centralDirOffset = eocd64.centralDirOffset;
+        DSP_DIAG(COMPILE, "SdzReader: ZIP64 archive (%llu entries) in %s",
+                 static_cast<unsigned long long>(numEntriesTotal), zipPath);
+      } else if (eocdSaturated) {
+        DSP_DIAG(COMPILE, "SdzReader: saturated EOCD but invalid ZIP64 record in %s", zipPath);
+        return nullptr;
+      }
+    } else if (eocdSaturated) {
+      DSP_DIAG(COMPILE, "SdzReader: saturated EOCD but no ZIP64 locator in %s", zipPath);
+      return nullptr;
+    }
+  }
+
+  if (centralDirOffset + centralDirSize > fileSize) {
     DSP_DIAG(COMPILE, "SdzReader: invalid central directory bounds in %s", zipPath);
     return nullptr;
   }
 
   auto* reader = new SdzReader();
 
-  size_t cdOffset = eocd.centralDirOffset;
-  for (int i = 0; i < eocd.numEntriesTotal; i++) {
+  size_t cdOffset = static_cast<size_t>(centralDirOffset);
+  for (uint64_t i = 0; i < numEntriesTotal; i++) {
     ZipCentralDirEntry entry{};
     if (!readPod(fileData, cdOffset, &entry)) break;
     if (entry.signature != 0x02014b50) break;
@@ -234,14 +364,35 @@ SdzReader* SdzReader::openFile(const char* zipPath) {
         DSP_DIAG(COMPILE, "SdzReader: encrypted entry '%s' is not supported", filename.c_str());
       }
     } else {
-      const size_t localOffset = entry.localHeaderOffset;
+      // ZIP64: saturated per-entry fields carry their real 64-bit values in
+      // the 0x0001 extended-information extra field.
+      uint64_t entryUncompressed = entry.uncompressedSize;
+      uint64_t entryCompressed = entry.compressedSize;
+      uint64_t entryLocalOffset = entry.localHeaderOffset;
+      if (entry.uncompressedSize == 0xFFFFFFFFu || entry.compressedSize == 0xFFFFFFFFu ||
+          entry.localHeaderOffset == 0xFFFFFFFFu) {
+        if (!parseZip64ExtraField(fileData, filenameEnd, entry.extraLen,
+                                  entry.uncompressedSize, entry.compressedSize,
+                                  entry.localHeaderOffset, &entryUncompressed,
+                                  &entryCompressed, &entryLocalOffset)) {
+          DSP_DIAG(COMPILE, "SdzReader: saturated entry '%s' missing ZIP64 extra field",
+                   filename.c_str());
+          const size_t skipOffset = cdOffset + sizeof(ZipCentralDirEntry) + entry.filenameLen +
+                                    entry.extraLen + entry.commentLen;
+          if (skipOffset <= cdOffset || skipOffset > fileSize) break;
+          cdOffset = skipOffset;
+          continue;
+        }
+      }
+
+      const size_t localOffset = static_cast<size_t>(entryLocalOffset);
       ZipLocalFileHeader local{};
 
       if (readPod(fileData, localOffset, &local) && local.signature == 0x04034b50) {
         const size_t dataOffset =
             localOffset + sizeof(ZipLocalFileHeader) + local.filenameLen + local.extraLen;
-        const size_t compressedSize = entry.compressedSize;
-        const size_t uncompressedSize = entry.uncompressedSize;
+        const size_t compressedSize = static_cast<size_t>(entryCompressed);
+        const size_t uncompressedSize = static_cast<size_t>(entryUncompressed);
 
         if (dataOffset <= fileSize && compressedSize <= (fileSize - dataOffset)) {
           // For STORED entries, check the SDNB magic in-place without extraction.
@@ -302,6 +453,174 @@ SdzReader* SdzReader::openFile(const char* zipPath) {
   }
 
   return reader;
+}
+
+bool SdzReader::extractArchive(const char* zipPath, const char* destDir, std::string* errorOut) {
+#if !SDZ_HAS_FILESYSTEM
+  (void)zipPath;
+  (void)destDir;
+  if (errorOut) *errorOut = "SdzReader::extractArchive requires std::filesystem support";
+  return false;
+#else
+  auto fail = [&](const std::string& msg) {
+    if (errorOut) *errorOut = msg;
+    return false;
+  };
+
+  std::ifstream file(zipPath, std::ios::binary | std::ios::ate);
+  if (!file.is_open()) return fail(std::string("cannot open archive: ") + zipPath);
+
+  const auto fileSize = static_cast<size_t>(file.tellg());
+  file.seekg(0, std::ios::beg);
+  if (fileSize < sizeof(ZipEndOfCentralDir)) return fail("archive too small for ZIP footer");
+
+  std::vector<uint8_t> fileData(fileSize);
+  file.read(reinterpret_cast<char*>(fileData.data()), fileSize);
+  file.close();
+
+  const size_t maxCommentLen = 0xFFFF;
+  const size_t searchStart =
+      (fileSize > sizeof(ZipEndOfCentralDir) + maxCommentLen)
+          ? fileSize - (sizeof(ZipEndOfCentralDir) + maxCommentLen)
+          : 0;
+  size_t eocdOffset = std::numeric_limits<size_t>::max();
+  for (size_t i = fileSize - sizeof(ZipEndOfCentralDir) + 1; i > searchStart;) {
+    --i;
+    uint32_t sig = 0;
+    std::memcpy(&sig, fileData.data() + i, sizeof(sig));
+    if (sig == 0x06054b50) {
+      eocdOffset = i;
+      break;
+    }
+  }
+  if (eocdOffset == std::numeric_limits<size_t>::max()) return fail("not a valid ZIP archive");
+
+  ZipEndOfCentralDir eocd{};
+  if (!readPod(fileData, eocdOffset, &eocd)) return fail("failed to read ZIP footer");
+
+  uint64_t numEntriesTotal = eocd.numEntriesTotal;
+  uint64_t centralDirOffset = eocd.centralDirOffset;
+  uint64_t centralDirSize = eocd.centralDirSize;
+  const bool eocdSaturated = eocd.numEntriesTotal == 0xFFFFu ||
+                             eocd.centralDirSize == 0xFFFFFFFFu ||
+                             eocd.centralDirOffset == 0xFFFFFFFFu;
+  if (eocdOffset >= sizeof(Zip64EndOfCentralDirLocator)) {
+    Zip64EndOfCentralDirLocator locator{};
+    if (readPod(fileData, eocdOffset - sizeof(Zip64EndOfCentralDirLocator), &locator) &&
+        locator.signature == 0x07064b50) {
+      Zip64EndOfCentralDir eocd64{};
+      if (locator.zip64EocdOffset < fileSize &&
+          readPod(fileData, static_cast<size_t>(locator.zip64EocdOffset), &eocd64) &&
+          eocd64.signature == 0x06064b50) {
+        numEntriesTotal = eocd64.numEntriesTotal;
+        centralDirOffset = eocd64.centralDirOffset;
+        centralDirSize = eocd64.centralDirSize;
+      } else if (eocdSaturated) {
+        return fail("saturated EOCD but invalid ZIP64 record");
+      }
+    } else if (eocdSaturated) {
+      return fail("saturated EOCD but no ZIP64 locator");
+    }
+  } else if (eocdSaturated) {
+    return fail("saturated EOCD but no room for a ZIP64 locator");
+  }
+  if (centralDirOffset + centralDirSize > fileSize) return fail("invalid central directory bounds");
+
+  std::error_code ec;
+  const std::filesystem::path destRoot(destDir);
+  std::filesystem::create_directories(destRoot, ec);
+  if (ec) return fail("cannot create destination directory: " + destRoot.string());
+
+  size_t cdOffset = static_cast<size_t>(centralDirOffset);
+  for (uint64_t i = 0; i < numEntriesTotal; i++) {
+    ZipCentralDirEntry entry{};
+    if (!readPod(fileData, cdOffset, &entry)) break;
+    if (entry.signature != 0x02014b50) break;
+
+    const size_t filenameOffset = cdOffset + sizeof(ZipCentralDirEntry);
+    const size_t filenameEnd = filenameOffset + entry.filenameLen;
+    if (filenameEnd > fileSize) break;
+    std::string filename(reinterpret_cast<const char*>(fileData.data() + filenameOffset),
+                         entry.filenameLen);
+
+    const size_t nextOffset = cdOffset + sizeof(ZipCentralDirEntry) + entry.filenameLen +
+                              entry.extraLen + entry.commentLen;
+
+    // Zip-slip guard: reject absolute paths, drive letters, and traversal.
+    const bool unsafe = filename.empty() || filename.front() == '/' || filename.front() == '\\' ||
+                        filename.find("..") != std::string::npos ||
+                        filename.find(':') != std::string::npos;
+    if (unsafe || (entry.flags & 0x1) != 0) {
+      if ((entry.flags & 0x1) != 0) return fail("encrypted entry not supported: " + filename);
+      if (unsafe && !filename.empty()) return fail("unsafe entry name rejected: " + filename);
+      if (nextOffset <= cdOffset || nextOffset > fileSize) break;
+      cdOffset = nextOffset;
+      continue;
+    }
+
+    uint64_t entryUncompressed = entry.uncompressedSize;
+    uint64_t entryCompressed = entry.compressedSize;
+    uint64_t entryLocalOffset = entry.localHeaderOffset;
+    if (entry.uncompressedSize == 0xFFFFFFFFu || entry.compressedSize == 0xFFFFFFFFu ||
+        entry.localHeaderOffset == 0xFFFFFFFFu) {
+      if (!parseZip64ExtraField(fileData, filenameEnd, entry.extraLen, entry.uncompressedSize,
+                                entry.compressedSize, entry.localHeaderOffset, &entryUncompressed,
+                                &entryCompressed, &entryLocalOffset)) {
+        return fail("saturated entry missing ZIP64 extra field: " + filename);
+      }
+    }
+
+    const std::filesystem::path target = destRoot / std::filesystem::path(filename);
+    if (!filename.empty() && (filename.back() == '/' || filename.back() == '\\')) {
+      std::filesystem::create_directories(target, ec);
+      if (ec) return fail("cannot create directory entry: " + target.string());
+    } else {
+      ZipLocalFileHeader local{};
+      const size_t localOffset = static_cast<size_t>(entryLocalOffset);
+      if (!readPod(fileData, localOffset, &local) || local.signature != 0x04034b50) {
+        return fail("corrupt local header for entry: " + filename);
+      }
+      const size_t dataOffset =
+          localOffset + sizeof(ZipLocalFileHeader) + local.filenameLen + local.extraLen;
+      const size_t compressedSize = static_cast<size_t>(entryCompressed);
+      const size_t uncompressedSize = static_cast<size_t>(entryUncompressed);
+      if (dataOffset > fileSize || compressedSize > fileSize - dataOffset) {
+        return fail("entry data out of bounds: " + filename);
+      }
+
+      std::vector<uint8_t> entryData;
+      if (entry.compression == 0) {
+        entryData.assign(fileData.data() + dataOffset, fileData.data() + dataOffset + compressedSize);
+      } else if (entry.compression == 8) {
+#ifdef HAVE_ZLIB
+        std::string inflateError;
+        if (!inflateDeflateRaw(fileData.data() + dataOffset, compressedSize, uncompressedSize,
+                               &entryData, &inflateError)) {
+          return fail("failed to inflate entry '" + filename + "': " + inflateError);
+        }
+#else
+        return fail("deflated entry '" + filename + "' requires zlib support (HAVE_ZLIB)");
+#endif
+      } else {
+        return fail("unsupported ZIP compression method " +
+                    std::to_string(static_cast<unsigned>(entry.compression)) + " for entry: " +
+                    filename);
+      }
+
+      std::filesystem::create_directories(target.parent_path(), ec);
+      std::ofstream outFile(target, std::ios::binary | std::ios::trunc);
+      if (!outFile.is_open()) return fail("cannot write extracted entry: " + target.string());
+      outFile.write(reinterpret_cast<const char*>(entryData.data()),
+                    static_cast<std::streamsize>(entryData.size()));
+      if (!outFile.good()) return fail("short write for extracted entry: " + target.string());
+    }
+
+    if (nextOffset <= cdOffset || nextOffset > fileSize) break;
+    cdOffset = nextOffset;
+  }
+
+  return true;
+#endif  // SDZ_HAS_FILESYSTEM
 }
 
 SdnbReader::LoadedModel SdzReader::load() const {

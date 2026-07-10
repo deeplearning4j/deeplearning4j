@@ -74,7 +74,8 @@ public class KTOTrainer extends RLAlignmentTrainer<KTOConfig> {
         SDVariable tokens = sd.placeHolder("_kto_tokens", DataType.INT64, -1, -1);
         SDVariable klRef = sd.placeHolder("_kto_kl_ref", DataType.FLOAT, -1);
 
-        // Compute policy log probabilities in-graph (gradients flow through here)
+        // Compute policy log probabilities in-graph (gradients flow through here; 2D
+        // [batch, vocab] policies are handled by the base helper via config.logits2D)
         SDVariable piLP = computeLogProbOps(sd, "_kto_pi", logits, tokens, vocabSize);
 
         // Desirable branch: w_d = sigmoid(beta_d * (pi_lp - ref_lp - kl_ref))

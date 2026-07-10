@@ -43,6 +43,140 @@
 
 namespace sd {
 
+namespace {
+
+template <typename T>
+static void cpuDecode4D_(NDArray* query, NDArray* key, NDArray* value,
+                         NDArray* output, double scale,
+                         NDArray* attentionBias,
+                         NDArray* attentionScores,
+                         NDArray* attentionLogits) {
+  const LongType batch = query->sizeAt(0);
+  const LongType numHeads = query->sizeAt(2);
+  const LongType headDim = query->sizeAt(3);
+  const LongType seqLenKV = key->sizeAt(1);
+  const LongType numKvHeads = key->sizeAt(2);
+  const LongType headsPerKvHead = numHeads / numKvHeads;
+
+  const T* qBuf = query->bufferAsT<T>();
+  const T* kBuf = key->bufferAsT<T>();
+  const T* vBuf = value->bufferAsT<T>();
+  T* outBuf = output->bufferAsT<T>();
+
+  T* scoresBuf = (attentionScores != nullptr && !attentionScores->isEmpty() &&
+                  attentionScores->dataType() == query->dataType())
+                     ? attentionScores->bufferAsT<T>() : nullptr;
+  T* logitsBuf = (attentionLogits != nullptr && !attentionLogits->isEmpty() &&
+                  attentionLogits->dataType() == query->dataType())
+                     ? attentionLogits->bufferAsT<T>() : nullptr;
+  const T* biasBuf = (attentionBias != nullptr && !attentionBias->isEmpty() &&
+                      attentionBias->dataType() == query->dataType())
+                       ? attentionBias->bufferAsT<T>() : nullptr;
+
+  const LongType qS0 = query->strideAt(0);
+  const LongType qS2 = query->strideAt(2);
+  const LongType qS3 = query->strideAt(3);
+  const LongType kS0 = key->strideAt(0);
+  const LongType kS1 = key->strideAt(1);
+  const LongType kS2 = key->strideAt(2);
+  const LongType kS3 = key->strideAt(3);
+  const LongType vS0 = value->strideAt(0);
+  const LongType vS1 = value->strideAt(1);
+  const LongType vS2 = value->strideAt(2);
+  const LongType vS3 = value->strideAt(3);
+  const LongType oS0 = output->strideAt(0);
+  const LongType oS2 = output->strideAt(2);
+  const LongType oS3 = output->strideAt(3);
+
+  LongType scoreS0 = 0, scoreS1 = 0, scoreS3 = 0;
+  if (scoresBuf != nullptr) {
+    scoreS0 = attentionScores->strideAt(0);
+    scoreS1 = attentionScores->strideAt(1);
+    scoreS3 = attentionScores->strideAt(3);
+  }
+  LongType logitsS0 = 0, logitsS1 = 0, logitsS3 = 0;
+  if (logitsBuf != nullptr) {
+    logitsS0 = attentionLogits->strideAt(0);
+    logitsS1 = attentionLogits->strideAt(1);
+    logitsS3 = attentionLogits->strideAt(3);
+  }
+
+  LongType biasS0 = 0, biasS1 = 0, biasS3 = 0;
+  int biasRank = 0;
+  if (biasBuf != nullptr) {
+    biasRank = attentionBias->rankOf();
+    if (biasRank == 4) {
+      biasS0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+      biasS1 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
+      biasS3 = attentionBias->strideAt(3);
+    } else if (biasRank == 3) {
+      biasS0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+      biasS3 = attentionBias->strideAt(2);
+    } else if (biasRank == 2) {
+      biasS3 = attentionBias->strideAt(1);
+    }
+  }
+
+  std::vector<double> logits(static_cast<size_t>(seqLenKV));
+
+  for (LongType b = 0; b < batch; ++b) {
+    for (LongType h = 0; h < numHeads; ++h) {
+      const LongType kvHead = h / headsPerKvHead;
+      const T* q = qBuf + b * qS0 + h * qS2;
+      double maxLogit = -std::numeric_limits<double>::infinity();
+
+      for (LongType t = 0; t < seqLenKV; ++t) {
+        const T* k = kBuf + b * kS0 + t * kS1 + kvHead * kS2;
+        double dot = 0.0;
+        for (LongType d = 0; d < headDim; ++d) {
+          dot += static_cast<double>(q[d * qS3]) * static_cast<double>(k[d * kS3]);
+        }
+        dot *= scale;
+        if (biasBuf != nullptr) {
+          LongType biasOffset = 0;
+          if (biasRank == 4) biasOffset = b * biasS0 + h * biasS1 + t * biasS3;
+          else if (biasRank == 3) biasOffset = b * biasS0 + t * biasS3;
+          else if (biasRank == 2) biasOffset = t * biasS3;
+          dot += static_cast<double>(biasBuf[biasOffset]);
+        }
+        logits[static_cast<size_t>(t)] = dot;
+        if (logitsBuf != nullptr) {
+          logitsBuf[b * logitsS0 + h * logitsS1 + t * logitsS3] = static_cast<T>(dot);
+        }
+        if (dot > maxLogit) maxLogit = dot;
+      }
+
+      double sumExp = 0.0;
+      for (LongType t = 0; t < seqLenKV; ++t) {
+        double w = std::exp(logits[static_cast<size_t>(t)] - maxLogit);
+        logits[static_cast<size_t>(t)] = w;
+        sumExp += w;
+      }
+      const double invSum = sumExp > 0.0 ? 1.0 / sumExp : 0.0;
+
+      T* out = outBuf + b * oS0 + h * oS2;
+      for (LongType d = 0; d < headDim; ++d) {
+        double acc = 0.0;
+        for (LongType t = 0; t < seqLenKV; ++t) {
+          double w = logits[static_cast<size_t>(t)] * invSum;
+          const T* v = vBuf + b * vS0 + t * vS1 + kvHead * vS2;
+          acc += w * static_cast<double>(v[d * vS3]);
+          if (d == 0 && scoresBuf != nullptr) {
+            scoresBuf[b * scoreS0 + h * scoreS1 + t * scoreS3] = static_cast<T>(w);
+          }
+        }
+        out[d * oS3] = static_cast<T>(acc);
+      }
+    }
+  }
+
+  output->tickWriteHost();
+  if (attentionScores != nullptr && !attentionScores->isEmpty()) attentionScores->tickWriteHost();
+  if (attentionLogits != nullptr && !attentionLogits->isEmpty()) attentionLogits->tickWriteHost();
+}
+
+}  // namespace
+
 //////////////////////////////////////////////////////////////////////////////
 // KVCache Implementation
 //////////////////////////////////////////////////////////////////////////////
@@ -412,6 +546,15 @@ void FlashAttentionHelper::forward4D(
       if (softmaxLse != nullptr) softmaxLse->nullify();
       return;
     }
+  }
+
+  if (!sd::graph::dspIsCudaBuild() && seqLenQ == 1 && numKvHeads > 0 && numHeads % numKvHeads == 0) {
+    BUILD_SINGLE_SELECTOR(query->dataType(), cpuDecode4D_,
+                          (query, key, value, output, scale, attentionBias,
+                           attentionScores, attentionLogits),
+                          SD_FLOAT_TYPES);
+    if (softmaxLse != nullptr) softmaxLse->nullify();
+    return;
   }
 
   // Fallback path with workspace optimization

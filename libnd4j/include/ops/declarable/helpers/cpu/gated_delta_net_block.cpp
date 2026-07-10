@@ -43,7 +43,8 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     // Causal conv1d + SiLU on x before linear projections
     std::vector<LongType> xConvShape = {B, L, D};
     auto xConv = new NDArray('c', xConvShape, x->dataType());
-    causalConv1d(context, x, convWeight, convBias, nullptr, xConv, convStateOut, /*activation=SiLU*/1, /*wFormat=*/0);
+    causalConv1d(context, x, convWeight, convBias, nullptr, nullptr,
+                 xConv, convStateOut, /*activation=SiLU*/1, /*wFormat=*/0);
 
     // Linear projections: xConv[BL,D] @ W -> projected
     std::vector<LongType> xReshapeVec = {BL, D};
@@ -119,7 +120,7 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     // Gated delta rule recurrence
     auto gdnOutput = NDArrayFactory::create<T>('c', vShape);
     gatedDeltaRule(context, Q, Kmat, V, betaReshaped, gateReshaped,
-                   stateIn, gdnOutput, recurrentStateOut);
+                   stateIn, nullptr, gdnOutput, recurrentStateOut);
 
     // RMS normalization on output
     const LongType hdv = static_cast<LongType>(numHeads) * headDimV;

@@ -160,4 +160,38 @@ public enum GGMLDataType {
         }
         return false;
     }
+
+    /**
+     * Convert this GGMLDataType to the C++ GgmlQuantType positional enum index
+     * used by ggml_dequantize and ggml_qmatmul.
+     * Returns -1 if this type is not a supported quantized type.
+     *
+     * Note: The C++ GgmlQuantType enum uses positional indices starting at 0,
+     * which differ from the GGUF file typeIds stored in this enum.
+     */
+    public int toGgmlQuantType() {
+        switch (this) {
+            case GGML_TYPE_Q4_0:  return 0;
+            case GGML_TYPE_Q4_1:  return 1;
+            case GGML_TYPE_Q5_0:  return 2;
+            case GGML_TYPE_Q5_1:  return 3;
+            case GGML_TYPE_Q8_0:  return 4;
+            case GGML_TYPE_Q8_1:  return 5;
+            case GGML_TYPE_Q2_K:  return 6;
+            case GGML_TYPE_Q3_K:  return 7;
+            case GGML_TYPE_Q4_K:  return 8;
+            case GGML_TYPE_Q5_K:  return 9;
+            case GGML_TYPE_Q6_K:  return 10;
+            case GGML_TYPE_Q8_K:  return 11;
+            default: return -1;
+        }
+    }
+
+    /**
+     * Returns true if this type is supported by ggml_qmatmul (v1).
+     * Supported: Q8_0, Q4_K, Q6_K.
+     */
+    public boolean isRuntimeQMatMulSupported() {
+        return this == GGML_TYPE_Q8_0 || this == GGML_TYPE_Q4_K || this == GGML_TYPE_Q6_K;
+    }
 }

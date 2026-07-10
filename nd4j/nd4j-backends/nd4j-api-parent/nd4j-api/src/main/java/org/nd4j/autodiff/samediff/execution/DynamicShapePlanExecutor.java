@@ -1647,8 +1647,21 @@ public class DynamicShapePlanExecutor implements Closeable {
      *
      * <p>Must be called at the start of every executeNative() after compileNativePlan()
      * has cached the serialized plan bytes and output/placeholder key lists.
+     *
+     * @param isShapeChangeExpected true when caller detected that the placeholder shape hash
+     *        changed since the last dispatch. When true, the C++ cache will return a DIFFERENT
+     *        plan handle than the current nativePlanHandle (frozen multi-plan switch). In that
+     *        case the returned plan may have been previously borrowed by another executor
+     *        (e.g., a prior generation with different KV buffers). Passing newBorrower=1 for
+     *        this case triggers plan->invalidateExternalViewSlotsOnReacquire() in C++, which
+     *        clears any view-output slots that still point to the prior borrower's device memory.
+     *        Without this, view slots for KV-fed ops (permute/reshape over past_key_values)
+     *        retain stale pointers from the previous generation, causing the attention kernels
+     *        to silently compute attention over old K/V data and produce the previous generation's
+     *        token continuation (the KV prefix-cache contamination bug, #testPartialPrefixHit).
      */
-    private void redispatchForCurrentShapes(Map<String, INDArray> placeholderArrays) {
+    private void redispatchForCurrentShapes(Map<String, INDArray> placeholderArrays,
+                                            boolean isShapeChangeExpected) {
         if (cachedSerializedPlan == null) {
             throw new IllegalStateException(
                 "redispatchForCurrentShapes: plan not compiled yet — " +
@@ -1696,12 +1709,22 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Pass mode as part of cache key — each mode gets its own plan (one flow).
             int modeForDispatch = cachedEffectiveGraphModeCode >= 0
                     ? cachedEffectiveGraphModeCode : 0;
-            // First dispatch from this executor instance = potential borrower
-            // switch on a native cache HIT: the native side must invalidate view
-            // wrappers minted over the previous borrower's external arrays.
-            // Re-dispatches from the SAME executor (shape change) pass 0 so live
-            // captured-graph state is never disturbed.
-            int newBorrower = (nativePlanHandle == null || nativePlanHandle.isNull()) ? 1 : 0;
+            // Set newBorrower=1 when:
+            //   (a) First dispatch from this executor (nativePlanHandle is null) — the
+            //       C++ cache may return a plan previously frozen by another executor,
+            //       so view-output slots could point to the prior executor's arrays.
+            //   (b) A shape change is expected (isShapeChangeExpected=true from the caller,
+            //       e.g. prefill→decode switch during warmup). In this case the cache returns
+            //       a DIFFERENT plan handle (the decode plan). That plan was last frozen by
+            //       the PREVIOUS generation's executor with different KV buffers. Without
+            //       newBorrower=1, view slots for permute/reshape ops over past_key_values
+            //       retain the previous generation's device addresses, causing the attention
+            //       kernels to read stale K/V data and produce the prior generation's token
+            //       continuation (root cause of the KV prefix-cache contamination bug).
+            // For same-shape re-dispatches (isShapeChangeExpected=false, nativePlanHandle
+            // non-null) pass 0 — same plan, same borrower, no stale slots to clear.
+            int newBorrower = (nativePlanHandle == null || nativePlanHandle.isNull()
+                    || isShapeChangeExpected) ? 1 : 0;
             Pointer newHandle = nativeOps.dispatchNativePlan(
                     cache,
                     planBytes, cachedSerializedPlan.length,
@@ -2601,7 +2624,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 || (!shapesFrozen && !wasEverFrozen)
                 || shapesChanged;
         if (needsRedispatch) {
-            redispatchForCurrentShapes(placeholderArrays);
+            redispatchForCurrentShapes(placeholderArrays, shapesChanged);
         }
         lastDispatchedShapeHash = currentShapeHash;
         applyMutableExternalInputsIfNeeded(nativeOps, nativePlanHandle);
@@ -2730,7 +2753,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     } else if (vt == VariableType.PLACEHOLDER && placeholderArrays != null) {
                         stalePlaceholderCount++;
                         INDArray ph = placeholderArrays.get(extKeys[i]);
-                        if (ph != null && ph.data() != null && !ph.data().wasClosed()) {
+                        if (ph != null && isArrayLive(ph)) {
                             extInputs[i] = detachIfWorkspaceBacked(ph, extKeys[i]);
                             resolvedCount++;
                         } else {
@@ -3304,7 +3327,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         placeholderIndices.length + " placeholders");
                     for (int pi : placeholderIndices) {
                         INDArray arr = extInputs[pi];
-                        if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                        if (arr != null && isArrayLive(arr)) {
                             OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                             nativeOps.setGraphContextInputArray(opContext, pi, opaqueIn);
                             cachedInputOpaques[pi] = opaqueIn;
@@ -3313,7 +3336,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                     for (int di : frozenDerivedExternalInputIndices) {
                         INDArray arr = resolveCanonicalExternalInput(extKeys[di], placeholderArrays);
-                        if (arr == null || arr.data() == null || arr.data().wasClosed()) {
+                        if (!isArrayLive(arr)) {
                             throw new IllegalStateException("Frozen replay phase violation: derived external input '"
                                     + extKeys[di] + "' is not live during frozen execution");
                         }
@@ -3328,7 +3351,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         if (arr == null) {
                             arr = extInputs[ci];
                         }
-                        if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                        if (arr != null && isArrayLive(arr)) {
                             extInputs[ci] = arr;
                             OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                             nativeOps.setGraphContextInputArray(opContext, ci, opaqueIn);
@@ -3344,7 +3367,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         for (int sc = 0; sc < staleNonPlaceholderCount; sc++) {
                             int ci = staleNonPlaceholderIndices[sc];
                             INDArray arr = extInputs[ci];
-                            if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                            if (arr != null && isArrayLive(arr)) {
                                 OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                                 nativeOps.setGraphContextInputArray(opContext, ci, opaqueIn);
                                 cachedInputOpaques[ci] = opaqueIn;
@@ -3365,7 +3388,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         if (arr == null || arr == cachedInputArrays[i]) {
                             continue;
                         }
-                        if (arr.data() == null || arr.data().wasClosed()) {
+                        if (!isArrayLive(arr)) {
                             throw new IllegalStateException(
                                     "FROZEN_FAST_PATH: external input '" + extKeys[i]
                                             + "' changed identity but is not live");
@@ -3386,7 +3409,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     // Fallback: full iteration (should not happen after first frozen call)
                     for (int i = 0; i < extInputs.length; i++) {
                         boolean staleBuffer = false;
-                        if (extInputs[i] != null) {
+                        if (extInputs[i] != null && !extInputs[i].isEmpty()) {
                             DataBuffer db = extInputs[i].data();
                             if (db == null || db.wasClosed()) {
                                 staleBuffer = true;
@@ -3401,7 +3424,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                             // Guard: ensure buffer is live before creating OpaqueNDArray.
                             // Control flow dead branches may have closed buffers.
                             INDArray arrToSet = extInputs[i];
-                            if (arrToSet != null && (arrToSet.data() == null || arrToSet.data().wasClosed())) {
+                            if (arrToSet != null && !arrToSet.isEmpty()
+                                    && (arrToSet.data() == null || arrToSet.data().wasClosed())) {
                                 try {
                                     arrToSet = Nd4j.zeros(arrToSet.dataType(), arrToSet.shape());
                                 } catch (Exception e) {

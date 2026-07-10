@@ -22,7 +22,6 @@ package org.eclipse.deeplearning4j.ggml;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.eval.GenerationQualityValidator;
-import org.eclipse.deeplearning4j.llm.config.TokenizerConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
@@ -39,7 +38,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.nd4j.ggml.architecture.*;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.ggml.convert.ConversionOptions;
-import org.nd4j.ggml.format.GGMLMetadata;
 
 import java.io.File;
 import java.util.List;
@@ -211,32 +209,14 @@ public class TestArchitectureOutputDegeneracy {
     }
 
     @Test
-    @DisplayName("TokenizerConfig can derive chat template metadata from GGUF tokenizer info")
-    void testTokenizerConfigFromGgufMetadata() {
-        GGMLMetadata.TokenizerInfo tokenizerInfo = GGMLMetadata.TokenizerInfo.builder()
-                .tokens(List.of("<unk>", "<|startoftext|>", "<|im_end|>"))
-                .bosTokenId(1)
-                .eosTokenId(2)
-                .chatTemplate("{{- bos_token -}}<|im_start|>{{ message.role }}")
-                .build();
-
-        TokenizerConfig config = TokenizerConfig.fromGgufMetadata(tokenizerInfo);
-
-        assertNotNull(config, "GGUF tokenizer metadata should produce a config");
-        assertEquals("<|startoftext|>", config.getBosToken(), "BOS token should be resolved through GGUF token ids");
-        assertEquals("<|im_end|>", config.getEosToken(), "EOS token should be resolved through GGUF token ids");
-        assertTrue(config.hasChatTemplate(), "Chat template should come from GGUF metadata");
-    }
-
-    @Test
-    @DisplayName("HuggingFaceTokenizer loads chat template from GGUF sidecar")
-    @EnabledIfSystemProperty(named = "lfm2.tokenizer.dir", matches = ".+")
-    void testHuggingFaceTokenizerLoadsGgufSidecarChatTemplate() throws Exception {
-        File modelDir = new File(System.getProperty("lfm2.tokenizer.dir"));
+    @DisplayName("HuggingFaceTokenizer loads chat template from tokenizer_config.json")
+    @EnabledIfSystemProperty(named = "tokenizer.dir", matches = ".+")
+    void testHuggingFaceTokenizerLoadsConfiguredChatTemplate() throws Exception {
+        File modelDir = new File(System.getProperty("tokenizer.dir"));
         try (Tokenizer tokenizer = HuggingFaceTokenizer.fromDirectory(modelDir)) {
-            assertNotNull(tokenizer.getChatTemplate(), "Tokenizer should expose GGUF sidecar chat template");
+            assertNotNull(tokenizer.getChatTemplate(), "Tokenizer should expose its configured chat template");
             assertTrue(tokenizer.getChatTemplate().contains("<|im_start|>"), "Expected ChatML markers");
-            assertEquals("<|startoftext|>", tokenizer.getBosToken(), "BOS token should come from GGUF token ids");
+            assertEquals("<|startoftext|>", tokenizer.getBosToken(), "BOS token should come from tokenizer configuration");
 
             String formatted = tokenizer.applyChatTemplate(
                     List.of(

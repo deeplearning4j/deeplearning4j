@@ -160,6 +160,9 @@ public class PPOTrainer extends RLAlignmentTrainer<PPOConfig> {
         INDArray values = valueModel.output(completionInputs, valueVar).get(valueVar);
         if (values.rank() > 2) {
             values = values.reshape(batchSize, seqLen);
+        } else if (values.rank() == 1) {
+            // Value model returns one scalar per example [batch]; broadcast across all timesteps
+            values = values.reshape(batchSize, 1).repeat(1, (int) seqLen);
         }
 
         // 4. Compute GAE advantages and returns
@@ -276,6 +279,9 @@ public class PPOTrainer extends RLAlignmentTrainer<PPOConfig> {
         long seqLen = completions.size(1);
         if (values.rank() > 2) {
             values = values.reshape(batchSize, seqLen);
+        } else if (values.rank() == 1) {
+            // Scalar per example [batch]; broadcast across all timesteps
+            values = values.reshape(batchSize, 1).repeat(1, (int) seqLen);
         }
         INDArray flatValues = values.mean(1);
         INDArray valueDiff = flatValues.sub(flatReturns);

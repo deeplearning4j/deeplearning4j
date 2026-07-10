@@ -22,19 +22,23 @@ package org.nd4j.autodiff.samediff.peft;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.*;
 import org.nd4j.autodiff.samediff.config.*;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -176,21 +180,19 @@ public class PeftModel {
      * @return A PeftModel with loaded adapter
      */
     public static PeftModel fromPretrained(SameDiff baseModel, File adapterPath) throws IOException {
-        // Load adapter config and weights
+        // saveAdapter() writes adapter_config.json plus one name-keyed <var>.npy per
+        // adapter variable into adapterPath — there is no monolithic weights blob.
         File configFile = new File(adapterPath, "adapter_config.json");
-        File weightsFile = new File(adapterPath, "adapter_weights.bin");
-
         Preconditions.checkState(configFile.exists(), "Adapter config not found: %s", configFile);
-        Preconditions.checkState(weightsFile.exists(), "Adapter weights not found: %s", weightsFile);
 
         // Load configuration
         PeftConfig config = loadConfig(configFile);
 
-        // Create PEFT model
+        // Create PEFT model (re-injects the adapter structure so variable names match)
         PeftModel model = fromPretrained(baseModel, config);
 
-        // Load weights
-        model.loadAdapterWeights(weightsFile);
+        // Load the per-variable .npy weights from the adapter directory, keyed by name
+        model.loadAdapterWeights(adapterPath);
 
         return model;
     }
@@ -204,9 +206,11 @@ public class PeftModel {
         switch (type) {
             case LORA:
             case QLORA:
-            case DORA:
             case ADALORA:
                 applyLora((LoraConfig) peftConfig);
+                break;
+            case DORA:
+                applyDora((DoraConfig) peftConfig);
                 break;
 
             case LOHA:
@@ -252,23 +256,181 @@ public class PeftModel {
 
     /**
      * Apply LoRA to the model.
+     *
+     * <p>This performs two passes:
+     * <ol>
+     *   <li>Dense pass — scans VARIABLE-type weight tensors (rank-2) and injects the
+     *       classical LoRA residual (W_eff = W + scaling*(B@A)).</li>
+     *   <li>Quantized pass (QLORA) — scans ops whose opName() is "ggml_qmatmul", matches
+     *       the packed-weight variable name against targetModules regexes, and injects a
+     *       graph-level LoRA residual at the op's OUTPUT variable.  loraA/loraB are created
+     *       in the adapter dtype from config; the packed weight is frozen as CONSTANT.</li>
+     * </ol>
+     *
+     * <p>Hybrid models (some quantized, some dense layers) are handled naturally — both
+     * passes run and each matches only the layers they own.
      */
     private void applyLora(LoraConfig config) {
         List<String> targetModules = config.getTargetModules();
         List<Pattern> patterns = compilePatterns(targetModules);
 
-        // Find matching variables and inject LoRA
+        // ── Dense pass ─────────────────────────────────────────────────────────
         for (SDVariable var : model.variables()) {
             if (var.getVariableType() != VariableType.VARIABLE) {
                 continue;
             }
-
             String varName = var.name();
             boolean matches = patterns.stream().anyMatch(p -> p.matcher(varName).find());
-
             if (matches) {
                 injectLoraForVariable(var, config);
             }
+        }
+
+        // ── Quantized pass (ggml_qmatmul ops) ──────────────────────────────────
+        if (config.getPeftType() == PeftType.QLORA || config.getPeftType() == PeftType.LORA) {
+            injectLoraForQuantizedOps(config, patterns);
+        }
+    }
+
+    /**
+     * Scan the graph for "ggml_qmatmul" ops whose packed-weight variable name matches
+     * the targetModules patterns, and inject a graph-level LoRA residual at each one.
+     *
+     * <p>For each matched op:
+     * <ul>
+     *   <li>Read activations = input(0), packedWeights = input(1).</li>
+     *   <li>Read (quantType, N, K) from the op's iArgs.</li>
+     *   <li>Create loraA [rank, K] (Kaiming init) and loraB [N, rank] (zero init) in the
+     *       adapter dtype from config (QLoraConfig.loraDataType or FLOAT).</li>
+     *   <li>Compute delta = scaling * ((A_2D @ loraAᵀ) @ loraBᵀ), handling rank-3
+     *       activations by reshaping [B,S,K] → [B*S,K] and back.</li>
+     *   <li>Find the output variable of the matched op, add the delta to it, rename the
+     *       combined variable, and rewire all consumers via replaceVariableUsages.</li>
+     *   <li>Freeze the packed-weight variable as CONSTANT.</li>
+     * </ul>
+     */
+    private void injectLoraForQuantizedOps(LoraConfig config, List<Pattern> patterns) {
+        int rank = config.getR();
+        double scaling = config.getScaling();
+
+        DataType adapterDtype = (config instanceof QLoraConfig)
+            ? ((QLoraConfig) config).getLoraDataType()
+            : DataType.FLOAT;
+        if (adapterDtype == null) adapterDtype = DataType.FLOAT;
+
+        // Snapshot ops — we modify the graph mid-loop
+        List<SameDiffOp> opsSnapshot = new ArrayList<>(model.getOps().values());
+
+        for (SameDiffOp sdOp : opsSnapshot) {
+            DifferentialFunction fn = sdOp.getOp();
+            if (fn == null || !"ggml_qmatmul".equals(fn.opName())) {
+                continue;
+            }
+
+            // Input 1 is the packed weight variable
+            List<String> opInputs = sdOp.getInputsToOp();
+            if (opInputs == null || opInputs.size() < 2) continue;
+
+            String packedWeightVarName = opInputs.get(1);
+            boolean matches = patterns.stream().anyMatch(p -> p.matcher(packedWeightVarName).find());
+            if (!matches) continue;
+
+            // Read quantType, N, K from iArgs via the public iArgs() accessor
+            GgmlQMatMul ggmlOp = (GgmlQMatMul) fn;
+            long[] iArgsArr = ggmlOp.iArgs();
+            if (iArgsArr == null || iArgsArr.length < 3) {
+                log.warn("ggml_qmatmul op '{}' has insufficient iArgs; skipping QLoRA injection",
+                    sdOp.getName());
+                continue;
+            }
+            int quantType = (int) iArgsArr[0];
+            long N = iArgsArr[1];
+            long K = iArgsArr[2];
+
+            // Output variable of this op (the base result before LoRA)
+            List<String> opOutputs = sdOp.getOutputsOfOp();
+            if (opOutputs == null || opOutputs.isEmpty()) continue;
+            String baseOutputVarName = opOutputs.get(0);
+            SDVariable baseOutput = model.getVariable(baseOutputVarName);
+            if (baseOutput == null) continue;
+
+            // Activation variable (input 0)
+            SDVariable activations = model.getVariable(opInputs.get(0));
+            if (activations == null) continue;
+
+            // Build unique names for the adapter variables
+            String safeName = packedWeightVarName.replace("/", "_").replace(":", "_");
+            String loraAName = safeName + "_qlora_A";
+            String loraBName = safeName + "_qlora_B";
+
+            // loraA [rank, K], loraB [N, rank]. A packed weight can feed multiple
+            // qmatmul ops (for example lm_logits and lm_logits_last). Reuse one
+            // adapter variable pair for all such consumers instead of creating
+            // duplicate SameDiff variable names.
+            SDVariable loraA = model.getVariable(loraAName);
+            SDVariable loraB = model.getVariable(loraBName);
+            if (loraA == null && loraB == null) {
+                double bound = Math.sqrt(6.0 / K);
+                INDArray loraAInit = Nd4j.rand(adapterDtype, rank, K).subi(0.5).muli(2 * bound);
+                INDArray loraBInit = Nd4j.zeros(adapterDtype, N, rank);
+                loraA = model.var(loraAName, loraAInit);
+                loraB = model.var(loraBName, loraBInit);
+                peftVariables.add(loraAName);
+                peftVariables.add(loraBName);
+            } else if (loraA == null || loraB == null) {
+                throw new IllegalStateException("Incomplete QLoRA adapter variables for packed weight "
+                    + packedWeightVarName + ": loraA=" + (loraA != null) + ", loraB=" + (loraB != null));
+            }
+
+            // Compute LoRA delta = scaling * ((A_flat @ loraAᵀ) @ loraBᵀ)
+            // Handle rank-3 activations [B,S,K] → reshape to [B*S,K] for the mmuls.
+            long[] actShape = activations.getShape();
+            boolean rank3 = (actShape != null && actShape.length == 3);
+
+            SDVariable aFlat;
+            if (rank3) {
+                // [B,S,K] → [B*S, K]
+                // Shape may be symbolic (-1); use -1 for the merged dim
+                aFlat = activations.reshape(-1, K);
+            } else {
+                aFlat = activations;
+            }
+
+            // aFlat [M,K] @ loraAᵀ [K,rank] → [M,rank]
+            SDVariable afterA = model.mmul(aFlat, model.transpose(loraA));
+            // [M,rank] @ loraBᵀ [rank,N] → [M,N]
+            SDVariable afterB = model.mmul(afterA, model.transpose(loraB));
+
+            SDVariable delta;
+            if (rank3 && actShape != null) {
+                // reshape back to [B,S,N]
+                SDVariable deltaFlat = afterB.mul(scaling);
+                delta = deltaFlat.reshape(actShape[0], actShape[1], N);
+            } else {
+                delta = afterB.mul(scaling);
+            }
+
+            // New output = base + delta
+            String loraOutputName = baseOutputVarName + "_qlora_out";
+            SDVariable loraOutput = baseOutput.add(delta);
+            loraOutput.rename(loraOutputName);
+
+            // Rewire all consumers of the base output to use the new combined output
+            replaceVariableUsages(baseOutputVarName, loraOutput);
+
+            // Freeze the packed weight
+            SDVariable packedWeightVar = model.getVariable(packedWeightVarName);
+            if (packedWeightVar != null
+                && packedWeightVar.getVariableType() == VariableType.VARIABLE) {
+                INDArray arr = packedWeightVar.getArr();
+                packedWeightVar.setVariableType(VariableType.CONSTANT);
+                if (arr != null) model.setArrayForVariable(packedWeightVarName, arr);
+                frozenVariables.add(packedWeightVarName);
+            }
+
+            log.info("QLoRA: injected LoRA residual for quantized op on '{}' " +
+                "(quantType={}, N={}, K={}, rank={}, scaling={})",
+                packedWeightVarName, quantType, N, K, rank, scaling);
         }
     }
 
@@ -293,6 +455,14 @@ public class PeftModel {
         INDArray pretrainedWeight = (config instanceof LoftQConfig) ? weightVar.getArr() : null;
         LoraLayer loraLayer = LoraLayer.create(model, loraName, config, inFeatures, outFeatures, pretrainedWeight);
         loraLayers.put(varName, loraLayer);
+
+        // LoftQ: freeze the iterated quantized base Q_n as the base weight so that
+        // base + scaling*(B@A) ≈ W. Without this the adapters (fit to W - Q_n) are added to
+        // the original W, which makes multi-iteration LoftQ worse than a single iteration.
+        INDArray loftqBase = loraLayer.getLoftqQuantizedBase();
+        if (loftqBase != null) {
+            model.setArrayForVariable(varName, loftqBase.castTo(weightVar.dataType()));
+        }
 
         // Track PEFT variables
         peftVariables.add(loraName + "_lora_A");
@@ -397,6 +567,98 @@ public class PeftModel {
                     }
                 }
                 log.trace("Rewired op '{}' input {} -> {}", sdOp.getName(), originalVarName, newVar.name());
+            }
+        }
+    }
+
+    /**
+     * Apply DoRA (Weight-Decomposed Low-Rank Adaptation) to the model.
+     *
+     * <p>DoRA uses the {@link DoraMatMul} fused op rather than plain LoRA injection.
+     * For each matching rank-2 weight variable it:
+     * <ol>
+     *   <li>Creates loraA [r, inF], loraB [outF, r], and magnitude [outF] vectors.</li>
+     *   <li>Rewires consumers of the weight variable to use a DoraMatMul op that takes
+     *       (input, weight, loraA, loraB, magnitude) — this requires knowing the
+     *       activation variable, which is found by scanning op inputs.</li>
+     * </ol>
+     *
+     * <p>Because {@link DoraMatMul} requires the activation as an explicit input (not
+     * just the weight), DoRA injection is activation-aware: we look for any op that
+     * consumes the weight as input(1) (the conventional weight slot), take input(0) as
+     * the activation, and replace the entire op with a DoraMatMul.
+     */
+    private void applyDora(DoraConfig config) {
+        List<String> targetModules = config.getTargetModules();
+        List<Pattern> patterns = compilePatterns(targetModules);
+        int r = config.getR();
+        double scaling = config.getScaling();
+
+        for (SDVariable var : model.variables()) {
+            if (var.getVariableType() != VariableType.VARIABLE) continue;
+            String varName = var.name();
+            boolean matches = patterns.stream().anyMatch(p -> p.matcher(varName).find());
+            if (!matches) continue;
+
+            long[] shape = var.getShape();
+            if (shape == null || shape.length != 2) {
+                log.warn("Skipping non-2D variable for DoRA: {} shape={}", varName, Arrays.toString(shape));
+                continue;
+            }
+
+            int outFeatures = (int) shape[0];
+            int inFeatures  = (int) shape[1];
+            String safeName = varName.replace("/", "_").replace(":", "_");
+
+            // Create adapter variables
+            double bound = Math.sqrt(6.0 / inFeatures);
+            INDArray aInit = Nd4j.rand(r, inFeatures).subi(0.5).muli(2 * bound);
+            INDArray bInit = Nd4j.zeros(outFeatures, r);
+            // Magnitude: init to column norms of W, or ones as fallback
+            INDArray wArr = var.getArr();
+            INDArray magInit;
+            if ("pretrained".equalsIgnoreCase(config.getMagnitudeInit()) && wArr != null) {
+                // Compute per-row L2 norm of W [outF, inF] -> [outF]
+                magInit = wArr.norm2(1);  // row norms
+            } else {
+                magInit = Nd4j.ones(outFeatures);
+            }
+
+            SDVariable loraA    = model.var(safeName + "_dora_A",   aInit);
+            SDVariable loraB    = model.var(safeName + "_dora_B",   bInit);
+            SDVariable magnitude = model.var(safeName + "_dora_mag", magInit);
+
+            peftVariables.add(safeName + "_dora_A");
+            peftVariables.add(safeName + "_dora_B");
+            peftVariables.add(safeName + "_dora_mag");
+
+            // Find ops that use this weight as an input and inject DoraMatMul
+            SameDiffOp[] opsSnapshot = model.getOps().values().toArray(new SameDiffOp[0]);
+            for (SameDiffOp sdOp : opsSnapshot) {
+                List<String> opInputs = sdOp.getInputsToOp();
+                if (opInputs == null || !opInputs.contains(varName)) continue;
+
+                int weightIdx = opInputs.indexOf(varName);
+                // Conventional slot: weight is index 1, activation is index 0
+                if (weightIdx != 1 || opInputs.size() < 2) continue;
+
+                SDVariable activation = model.getVariable(opInputs.get(0));
+                if (activation == null) continue;
+
+                // Build DoraMatMul and get its output
+                DoraMatMul doraOp = new DoraMatMul(model, activation, var, loraA, loraB,
+                    magnitude, scaling);
+                SDVariable doraOut = model.updateVariableNameAndReference(
+                    doraOp.outputVariables()[0], null);
+                doraOut.rename(safeName + "_dora_out");
+
+                // Replace the old op's output with the DoraMatMul output
+                List<String> oldOutputs = sdOp.getOutputsOfOp();
+                if (oldOutputs != null && !oldOutputs.isEmpty()) {
+                    replaceVariableUsages(oldOutputs.get(0), doraOut);
+                }
+                log.debug("Injected DoRA for '{}': activation={}", varName, opInputs.get(0));
+                break;  // one injection per weight var
             }
         }
     }
@@ -871,12 +1133,39 @@ public class PeftModel {
     }
 
     /**
-     * Merge LoRA weights into the base model and return an unmodified model.
-     * This is useful for inference without adapter overhead.
+     * Merge LoRA weights into the base model and return a clean model.
      *
-     * @return A new SameDiff model with LoRA weights merged
+     * <p><b>Important:</b> this operation is only valid for models with dense (FP32/FP16)
+     * base weights.  If the model contains quantized (GGML-packed INT8) base weights, the
+     * adapter delta cannot be folded back into the packed bytes — call this method and it
+     * will throw an {@link UnsupportedOperationException} with an explanation.  Keep the
+     * adapter separate in that case.
+     *
+     * @return A new SameDiff model with LoRA weights merged into the dense base weights.
      */
     public SameDiff mergeAndUnload() {
+        // Guard: detect any quantized LoRA targets
+        boolean hasQuantizedBase = false;
+        for (SameDiffOp sdOp : model.getOps().values()) {
+            DifferentialFunction fn = sdOp.getOp();
+            if (fn != null && "ggml_qmatmul".equals(fn.opName())) {
+                List<String> opInputs = sdOp.getInputsToOp();
+                if (opInputs != null && opInputs.size() >= 2) {
+                    String pwName = opInputs.get(1);
+                    boolean matched = loraLayers.containsKey(pwName)
+                        || peftVariables.stream().anyMatch(v -> v.startsWith(
+                            pwName.replace("/","_").replace(":","_") + "_qlora_"));
+                    if (matched) { hasQuantizedBase = true; break; }
+                }
+            }
+        }
+        if (hasQuantizedBase) {
+            throw new UnsupportedOperationException(
+                "mergeAndUnload() is not supported for QLoRA (quantized base) models. " +
+                "The packed GGML bytes cannot absorb a floating-point adapter delta. " +
+                "Keep the adapter separate and load it at inference time via loadAdapterWeights().");
+        }
+
         if (peftConfig.getPeftType() != PeftType.LORA &&
             peftConfig.getPeftType() != PeftType.QLORA) {
             throw new UnsupportedOperationException(
@@ -903,60 +1192,186 @@ public class PeftModel {
     /**
      * Save adapter weights to a directory.
      *
-     * @param outputDir Directory to save to
+     * <p>Saves the adapter in a portable format:
+     * <ul>
+     *   <li>{@code adapter_config.json} — minimal JSON manifest with peftType, r, alpha,
+     *       scaling, targetModules, and adapter variable names.</li>
+     *   <li>One {@code <varName>.npy} file per adapter variable (name-keyed, not
+     *       positional, so loading is robust to variable ordering changes).</li>
+     * </ul>
+     *
+     * <p>The base model is NOT saved.  Only adapter (PEFT) variables are written.
+     *
+     * @param outputDir Directory to save to (created if necessary)
      */
     public void saveAdapter(File outputDir) throws IOException {
         if (!outputDir.exists()) {
             outputDir.mkdirs();
         }
 
-        // Save configuration
-        // TODO: Implement proper JSON serialization
-        // saveConfig(new File(outputDir, "adapter_config.json"));
-
-        // Save adapter weights
-        Map<String, INDArray> adapterWeights = new LinkedHashMap<>();
+        // --- Save adapter weights as per-variable .npy files (name-keyed) ---
+        List<String> savedNames = new ArrayList<>();
         for (String peftVar : peftVariables) {
             SDVariable var = model.getVariable(peftVar);
-            if (var != null && var.getArr() != null) {
-                adapterWeights.put(peftVar, var.getArr());
+            if (var == null) continue;
+            INDArray arr = var.getArr();
+            if (arr == null) continue;
+            // Use a filesystem-safe version of the variable name
+            String fileName = peftVar.replace("/", "__").replace(":", "__") + ".npy";
+            File weightFile = new File(outputDir, fileName);
+            Nd4j.writeAsNumpy(arr, weightFile);
+            savedNames.add(peftVar);
+        }
+
+        // --- Save minimal JSON config (hand-built, no Jackson dep required) ---
+        StringBuilder json = new StringBuilder();
+        json.append("{\n");
+        json.append("  \"peftType\": \"").append(peftConfig.getPeftType().name()).append("\",\n");
+        if (peftConfig instanceof LoraConfig) {
+            LoraConfig lc = (LoraConfig) peftConfig;
+            json.append("  \"r\": ").append(lc.getR()).append(",\n");
+            json.append("  \"loraAlpha\": ").append(lc.getLoraAlpha()).append(",\n");
+            json.append("  \"scaling\": ").append(lc.getScaling()).append(",\n");
+            json.append("  \"initLoraWeights\": \"").append(lc.getInitLoraWeights()).append("\",\n");
+            if (lc.getTargetModules() != null) {
+                json.append("  \"targetModules\": [");
+                for (int i = 0; i < lc.getTargetModules().size(); i++) {
+                    if (i > 0) json.append(", ");
+                    json.append("\"").append(lc.getTargetModules().get(i)).append("\"");
+                }
+                json.append("],\n");
+            }
+            if (peftConfig instanceof QLoraConfig) {
+                QLoraConfig qc = (QLoraConfig) peftConfig;
+                json.append("  \"loraDataType\": \"")
+                    .append(qc.getLoraDataType() != null ? qc.getLoraDataType().name() : "FLOAT")
+                    .append("\",\n");
             }
         }
+        json.append("  \"adapterVariables\": [");
+        for (int i = 0; i < savedNames.size(); i++) {
+            if (i > 0) json.append(", ");
+            json.append("\"").append(savedNames.get(i)).append("\"");
+        }
+        json.append("]\n");
+        json.append("}\n");
 
-        File weightsFile = new File(outputDir, "adapter_weights.bin");
-        INDArray[] weightsArray = adapterWeights.values().toArray(new INDArray[0]);
-        // Save each weight individually with index
-        for (int i = 0; i < weightsArray.length; i++) {
-            File weightFile = new File(outputDir, "adapter_weight_" + i + ".npy");
-            Nd4j.writeAsNumpy(weightsArray[i], weightFile);
+        File configFile = new File(outputDir, "adapter_config.json");
+        try (PrintWriter pw = new PrintWriter(new OutputStreamWriter(
+                new FileOutputStream(configFile), StandardCharsets.UTF_8))) {
+            pw.print(json.toString());
         }
 
-        log.info("Saved {} adapter weights to {}", adapterWeights.size(), outputDir);
+        log.info("Saved {} adapter variables to {} (config: {})",
+            savedNames.size(), outputDir.getAbsolutePath(), configFile.getName());
     }
 
     /**
-     * Load adapter weights from a directory.
+     * Load adapter weights from a weights file or directory.
+     *
+     * <p>Expects the directory produced by {@link #saveAdapter(File)}: each adapter
+     * variable is stored as a {@code <varName>.npy} file (name-keyed).
+     * The method maps each .npy back to the corresponding SameDiff variable by name.
      */
     private void loadAdapterWeights(File weightsDir) throws IOException {
-        // Load weights from individual numpy files
-        List<INDArray> weights = new ArrayList<>();
-        int i = 0;
-        File weightFile = new File(weightsDir, "adapter_weight_" + i + ".npy");
-        while (weightFile.exists()) {
-            INDArray weight = Nd4j.createFromNpyFile(weightFile);
-            weights.add(weight);
-            i++;
-            weightFile = new File(weightsDir, "adapter_weight_" + i + ".npy");
+        // Look for .npy files and infer the variable name from the file name
+        File dir = weightsDir.isDirectory() ? weightsDir : weightsDir.getParentFile();
+        File[] npyFiles = dir.listFiles(f -> f.getName().endsWith(".npy"));
+        if (npyFiles == null || npyFiles.length == 0) {
+            log.warn("No .npy adapter weight files found in {}", dir.getAbsolutePath());
+            return;
         }
-        // TODO: Implement proper weight loading with variable name mapping
+
+        int loaded = 0;
+        for (File npyFile : npyFiles) {
+            // Reverse the name encoding: __ → /
+            String rawName = npyFile.getName().replace(".npy", "")
+                .replace("__", "/");
+            // Also try the underscore-encoded form (some names may have been mangled)
+            SDVariable var = model.getVariable(rawName);
+            if (var == null) {
+                // Fallback: try the filename itself (no slash expansion)
+                String altName = npyFile.getName().replace(".npy", "");
+                var = model.getVariable(altName);
+            }
+            if (var == null) {
+                log.warn("No SameDiff variable found for adapter weight file '{}'; skipping",
+                    npyFile.getName());
+                continue;
+            }
+            INDArray arr = Nd4j.createFromNpyFile(npyFile);
+            var.setArray(arr);
+            loaded++;
+            log.debug("Loaded adapter weight '{}' from {}", var.name(), npyFile.getName());
+        }
+        log.info("Loaded {} adapter weight(s) from {}", loaded, dir.getAbsolutePath());
     }
 
     /**
-     * Load PEFT configuration from a file.
+     * Load PEFT configuration from a JSON file (format produced by {@link #saveAdapter}).
+     *
+     * <p>This is a minimal parser that reads the fields written by saveAdapter.
+     * For full Jackson deserialization of externally-produced configs, extend this method.
      */
     private static PeftConfig loadConfig(File configFile) throws IOException {
-        // TODO: Implement proper JSON deserialization
-        throw new UnsupportedOperationException("Config loading not yet implemented");
+        // Read the whole file
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                new FileInputStream(configFile), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = br.readLine()) != null) sb.append(line).append("\n");
+        }
+        String json = sb.toString();
+
+        // Minimal field extraction (no Jackson dependency)
+        String peftTypeStr = extractJsonString(json, "peftType");
+        PeftType peftType = PeftType.valueOf(peftTypeStr != null ? peftTypeStr : "LORA");
+
+        int r          = parseJsonInt(json, "r", 8);
+        int loraAlpha  = parseJsonInt(json, "loraAlpha", 16);
+        String init    = extractJsonString(json, "initLoraWeights");
+        if (init == null) init = "kaiming_uniform";
+
+        List<String> targetModules = parseJsonStringArray(json, "targetModules");
+
+        if (peftType == PeftType.QLORA) {
+            String dtStr = extractJsonString(json, "loraDataType");
+            DataType dt = dtStr != null ? DataType.valueOf(dtStr) : DataType.FLOAT;
+            return QLoraConfig.builder()
+                .r(r).loraAlpha(loraAlpha).initLoraWeights(init)
+                .targetModules(targetModules).loraDataType(dt)
+                .build();
+        }
+
+        return LoraConfig.builder()
+            .r(r).loraAlpha(loraAlpha).initLoraWeights(init)
+            .targetModules(targetModules)
+            .build();
+    }
+
+    // ─── Minimal JSON helpers ─────────────────────────────────────────────────
+
+    private static String extractJsonString(String json, String key) {
+        String pattern = "\"" + key + "\"\\s*:\\s*\"([^\"]+)\"";
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(pattern).matcher(json);
+        return m.find() ? m.group(1) : null;
+    }
+
+    private static int parseJsonInt(String json, String key, int defaultVal) {
+        String pattern = "\"" + key + "\"\\s*:\\s*(\\d+)";
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile(pattern).matcher(json);
+        return m.find() ? Integer.parseInt(m.group(1)) : defaultVal;
+    }
+
+    private static List<String> parseJsonStringArray(String json, String key) {
+        List<String> result = new ArrayList<>();
+        String pattern = "\"" + key + "\"\\s*:\\s*\\[([^\\]]+)\\]";
+        java.util.regex.Matcher outer = java.util.regex.Pattern.compile(pattern).matcher(json);
+        if (!outer.find()) return result;
+        String inner = outer.group(1);
+        java.util.regex.Matcher items = java.util.regex.Pattern.compile("\"([^\"]+)\"").matcher(inner);
+        while (items.find()) result.add(items.group(1));
+        return result;
     }
 
     /**

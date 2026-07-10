@@ -28,6 +28,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -160,7 +162,18 @@ public final class SamplerUtils {
      * Apply repetition penalty.
      */
     public static INDArray applyRepetitionPenalty(INDArray logits, int[] generatedTokens, double penalty) {
-        if (penalty == 1.0 || generatedTokens == null || generatedTokens.length == 0) {
+        return applyTokenPenalties(logits, generatedTokens, penalty, 0.0, 0.0);
+    }
+
+    /**
+     * Apply repetition, frequency, and presence penalties to seen token logits.
+     */
+    public static INDArray applyTokenPenalties(INDArray logits, int[] generatedTokens,
+                                               double repetitionPenalty,
+                                               double frequencyPenalty,
+                                               double presencePenalty) {
+        if ((repetitionPenalty == 1.0 && frequencyPenalty == 0.0 && presencePenalty == 0.0)
+                || generatedTokens == null || generatedTokens.length == 0) {
             return logits;
         }
 
@@ -168,18 +181,225 @@ public final class SamplerUtils {
         INDArray flat = result.rank() == 1 ? result : result.getRow(0);
         long vocabSize = flat.length();
 
+        Map<Integer, Integer> counts = new HashMap<>();
         for (int tokenId : generatedTokens) {
             if (tokenId >= 0 && tokenId < vocabSize) {
-                double logit = flat.getDouble(tokenId);
-                if (logit > 0) {
-                    flat.putScalar(tokenId, logit / penalty);
-                } else {
-                    flat.putScalar(tokenId, logit * penalty);
-                }
+                counts.merge(tokenId, 1, Integer::sum);
             }
         }
 
+        for (Map.Entry<Integer, Integer> entry : counts.entrySet()) {
+            int tokenId = entry.getKey();
+            int count = entry.getValue();
+            double logit = flat.getDouble(tokenId);
+            if (repetitionPenalty != 1.0) {
+                logit = logit > 0 ? logit / repetitionPenalty : logit * repetitionPenalty;
+            }
+            if (frequencyPenalty != 0.0) {
+                logit -= count * frequencyPenalty;
+            }
+            if (presencePenalty != 0.0) {
+                logit -= presencePenalty;
+            }
+            flat.putScalar(tokenId, logit);
+        }
+
         return result;
+    }
+
+    /**
+     * Apply typical-p (locally typical sampling) filtering to logits.
+     *
+     * Algorithm (Meister et al. 2023):
+     *   1. p = softmax(logits)
+     *   2. H = -sum_i p_i * log(p_i)  (Shannon entropy)
+     *   3. deviation_i = |(-log p_i) - H|
+     *   4. Sort by deviation ascending; accumulate mass until >= typicalP
+     *   5. Mask the rest to -inf
+     *
+     * typicalP in (0, 1) enables; 1.0 is a no-op.
+     *
+     * @param logits   rank-1 [vocabSize] or rank-2 [batch, vocabSize]
+     * @param typicalP cumulative probability mass to keep (1.0 = disabled)
+     * @return filtered logits (new array)
+     */
+    public static INDArray typicalPFilter(INDArray logits, double typicalP) {
+        if (typicalP >= 1.0 || typicalP <= 0.0) return logits;
+
+        boolean was1D = logits.rank() == 1;
+        INDArray input = was1D ? logits.reshape(1, logits.length()) : logits;
+        INDArray result = input.dup();
+
+        long batchSize = result.size(0);
+        for (int b = 0; b < batchSize; b++) {
+            INDArray row = result.getRow(b);
+            float[] vals = row.toFloatVector();
+            int V = vals.length;
+
+            // Softmax
+            float maxLogit = Float.NEGATIVE_INFINITY;
+            for (float v : vals) if (v > maxLogit) maxLogit = v;
+            float sumExp = 0.0f;
+            float[] exps = new float[V];
+            for (int i = 0; i < V; i++) {
+                exps[i] = (float) Math.exp(vals[i] - maxLogit);
+                sumExp += exps[i];
+            }
+            float[] probs = new float[V];
+            for (int i = 0; i < V; i++) probs[i] = exps[i] / sumExp;
+
+            // Entropy H
+            double H = 0.0;
+            for (float p : probs) {
+                if (p > 0.0f) H -= p * Math.log(p);
+            }
+
+            // Deviation and sort
+            float[] devs = new float[V];
+            Integer[] idx = new Integer[V];
+            for (int i = 0; i < V; i++) {
+                devs[i] = (float) Math.abs(-Math.log(Math.max(probs[i], 1e-10)) - H);
+                idx[i] = i;
+            }
+            java.util.Arrays.sort(idx, (a, c) -> Float.compare(devs[a], devs[c]));
+
+            // Accumulate until typicalP
+            double cumProb = 0.0;
+            int cutoff = V;
+            for (int k = 0; k < V; k++) {
+                cumProb += probs[idx[k]];
+                if (cumProb >= typicalP) {
+                    cutoff = k + 1;
+                    break;
+                }
+            }
+
+            // Tie-inclusive cutoff: tokens whose deviation matches the last included
+            // token's (within float noise) are equally typical — keep the whole class.
+            // Matches the native CPU sort filter and the CUDA threshold kernel, which
+            // always include entire deviation classes.
+            if (cutoff > 0 && cutoff < V) {
+                float cutDev = devs[idx[cutoff - 1]];
+                while (cutoff < V && devs[idx[cutoff]] <= cutDev + 1e-6f) cutoff++;
+            }
+
+            // Mask beyond cutoff
+            boolean[] keep = new boolean[V];
+            for (int k = 0; k < cutoff; k++) keep[idx[k]] = true;
+            for (int i = 0; i < V; i++) {
+                if (!keep[i]) vals[i] = (float) NEG_INF;
+            }
+            row.assign(Nd4j.createFromArray(vals));
+        }
+
+        return was1D ? result.reshape(result.length()) : result;
+    }
+
+    /**
+     * Apply XTC (Exclude Top Choices) sampling filter to logits.
+     *
+     * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,
+     * if there are >= 2 such tokens, mask all EXCEPT the lowest-probability one.
+     * This encourages diversity by excluding the most confident choices.
+     *
+     * With probability (1 - xtcProbability) the logits are returned unchanged.
+     *
+     * @param logits          rank-1 [vocabSize] or rank-2 [batch, vocabSize]
+     * @param xtcProbability  probability of applying XTC (0 = never, 1 = always)
+     * @param xtcThreshold    minimum softmax probability to qualify for exclusion (default 0.1)
+     * @param random          RNG source; pass {@code new Random(seed)} for reproducibility
+     * @return filtered logits (new array if modified, same reference otherwise)
+     */
+    public static INDArray xtcFilter(INDArray logits, double xtcProbability, double xtcThreshold,
+                                     Random random) {
+        if (xtcProbability <= 0.0) return logits;
+
+        boolean was1D = logits.rank() == 1;
+        INDArray input = was1D ? logits.reshape(1, logits.length()) : logits;
+        INDArray result = input.dup();
+
+        long batchSize = result.size(0);
+        for (int b = 0; b < batchSize; b++) {
+            // Apply/skip decision per batch element
+            if (random.nextDouble() > xtcProbability) continue;
+
+            INDArray row = result.getRow(b);
+            float[] vals = row.toFloatVector();
+            int V = vals.length;
+
+            // Softmax
+            float maxLogit = Float.NEGATIVE_INFINITY;
+            for (float v : vals) if (v > maxLogit) maxLogit = v;
+            float sumExp = 0.0f;
+            float[] exps = new float[V];
+            for (int i = 0; i < V; i++) {
+                exps[i] = (float) Math.exp(vals[i] - maxLogit);
+                sumExp += exps[i];
+            }
+
+            // Find above-threshold tokens and their argmin
+            float minP = Float.MAX_VALUE;
+            int minIdx = -1;
+            int countAbove = 0;
+            for (int i = 0; i < V; i++) {
+                float p = exps[i] / sumExp;
+                if (p >= xtcThreshold) {
+                    countAbove++;
+                    if (p < minP) {
+                        minP = p;
+                        minIdx = i;
+                    }
+                }
+            }
+
+            if (countAbove < 2) continue;  // No diversity gain if < 2 qualify
+
+            // Mask all qualifying tokens except the lowest-probability one
+            for (int i = 0; i < V; i++) {
+                if (i == minIdx) continue;
+                float p = exps[i] / sumExp;
+                if (p >= xtcThreshold) {
+                    vals[i] = (float) NEG_INF;
+                }
+            }
+            row.assign(Nd4j.createFromArray(vals));
+        }
+
+        return was1D ? result.reshape(result.length()) : result;
+    }
+
+    /**
+     * Apply min-p filtering to logits.
+     */
+    public static INDArray minPFilter(INDArray logits, double minP) {
+        if (minP <= 0.0) {
+            return logits;
+        }
+
+        boolean was1D = logits.rank() == 1;
+        INDArray input = was1D ? logits.reshape(1, logits.length()) : logits;
+        INDArray result = input.dup();
+        long batchSize = result.size(0);
+
+        for (int b = 0; b < batchSize; b++) {
+            INDArray row = result.getRow(b);
+            float[] vals = row.toFloatVector();
+            float maxLogit = Float.NEGATIVE_INFINITY;
+            for (float v : vals) {
+                if (v > maxLogit) maxLogit = v;
+            }
+            for (int i = 0; i < vals.length; i++) {
+                double expVal = Math.exp(vals[i] - maxLogit);
+                if (expVal < minP) {
+                    vals[i] = (float) NEG_INF;
+                }
+            }
+            INDArray filtered = Nd4j.createFromArray(vals);
+            row.assign(filtered);
+            filtered.close();
+        }
+
+        return was1D ? result.reshape(result.length()) : result;
     }
 
     /**

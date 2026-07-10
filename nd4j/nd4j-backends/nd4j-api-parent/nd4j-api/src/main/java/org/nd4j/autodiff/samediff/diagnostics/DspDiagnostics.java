@@ -72,21 +72,26 @@ public class DspDiagnostics {
     public static final int MULTI_DEVICE   = (1 << 15);
     public static final int GRAPH_REPLAY     = (1 << 16);
     public static final int SEGMENT_BUCKETS  = (1 << 17);
+    public static final int LIFECYCLE        = (1 << 18);
+    public static final int COLORING         = (1 << 19);
     public static final int NONE     = 0;
-    public static final int ALL      = 0x3FFFF;
+    public static final int ALL      = 0xFFFFF;
 
     // Detail levels matching C++ DspDiagLevel
     public static final int LEVEL_SUMMARY  = 0;
     public static final int LEVEL_DETAILED = 1;
     public static final int LEVEL_FULL     = 2;
 
+    // Must match the C++ sCategoryNames table in DspDiagnostics.cpp — this
+    // class overrides the native mask, so a name missing here silently
+    // disables a category the native side supports.
     private static final String[] CATEGORY_NAMES = {
         "COMPILE", "JIT", "EXECUTE", "TIMING",
         "MEMORY", "BACKEND", "SHAPE", "SEGMENT",
         "FUSION", "VERIFY", "KV_CACHE", "FALLBACK",
         "TRANSFER", "EMULATED_REPLAY",
         "STREAM_SYNC", "MULTI_DEVICE", "GRAPH_REPLAY",
-        "SEGMENT_BUCKETS"
+        "SEGMENT_BUCKETS", "LIFECYCLE", "COLORING"
     };
 
     private static volatile boolean initialized = false;

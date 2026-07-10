@@ -78,6 +78,19 @@ public class KVCacheQuantize extends DynamicCustomOp {
     }
 
     /**
+     * ADR 0107 V2 ROW-INLINE (INT8 only). When {@code inline} is true, output 0 is a row-inline
+     * INT8 tensor of the input shape with the last dimension extended by 4: each row holds
+     * {@code rowLen} int8 values followed by that row's float32 scale. The scales live INSIDE the
+     * logical tensor, so DSP ext-input staging, H2D re-staging and CUDA-graph capture preserve
+     * them. Output 1 is an unused dummy scalar. Feed output 0 directly as the INT8 keyCache /
+     * valueCache (read by fusedGQADecodeQuantisedCuda / the Triton flash_attn INT8 path).
+     */
+    public KVCacheQuantize(INDArray input, int quantFormat, boolean inline) {
+        super(new INDArray[]{input}, null);
+        addIArgument(quantFormat, inline ? 1 : 0);
+    }
+
+    /**
      * Create a KV cache quantize op for SameDiff graph execution.
      *
      * @param sd          SameDiff instance

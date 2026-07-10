@@ -24,6 +24,7 @@
 #include <ops/declarable/headers/llm.h>
 #include <ops/declarable/helpers/autoregressive_decode.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/Context.h>
 
 namespace sd {
 namespace ops {
@@ -77,6 +78,27 @@ namespace ops {
  *   0: temperature
  *   1: topP
  *   2: topK (as double)
+ *   3: repetitionPenalty
+ *   4: decodeStrategy
+ *   5: batchMax
+ *   6: windowMax
+ *   7: activeBatch
+ *   8: activeWindow
+ *   9: hiddenOutputIdx
+ *  10: numBeams
+ *  11: lengthPenalty
+ *  12: penaltyAlpha
+ *  13: contrastiveTopK
+ *  14: minP
+ *  15: frequencyPenalty
+ *  16: presencePenalty
+ *  17: minNewTokens
+ *  18: generatedTokenOffset
+ *  19: seed low 32 bits
+ *  20: seed high 32 bits
+ *  21: typicalP (1.0 = off)
+ *  22: xtcProbability (0.0 = off)
+ *  23: xtcThreshold (default 0.1)
  *
  * Plan external inputs and outputs are passed as additional input arrays after
  * the KV buffers. The indices in iArgs tell the C++ code which entries in the
@@ -109,7 +131,7 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     positionIds = INPUT_VARIABLE(nextInput++);
   }
 
-  // Collect static KV buffers
+  // Collect static KV buffers (may be INT8 in V2 quantized mode)
   std::vector<NDArray*> staticKvBuffers;
   if (optionalMask & 4) {
     for (int i = 0; i < 2 * numKvPairs; i++) {
@@ -118,15 +140,65 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
     nextInput += 2 * numKvPairs;
   }
 
+  // ADR 0107 V2: collect KV scale buffers (float32, [batch, maxKvLen, kvHeads]).
+  // Bit 7 (128) in optionalMask signals that 2*numKvPairs scale arrays follow the KV buffers.
+  // Layout: scaleBuffers[0..numKvPairs-1] = key scales per layer
+  //         scaleBuffers[numKvPairs..2*numKvPairs-1] = value scales per layer
+  std::vector<NDArray*> kvScaleBuffersVec;
+  bool hasQuantisedKvScales = (optionalMask & 128) != 0;
+  if (hasQuantisedKvScales) {
+    for (int i = 0; i < 2 * numKvPairs; i++) {
+      kvScaleBuffersVec.push_back(INPUT_VARIABLE(nextInput + i));
+    }
+    nextInput += 2 * numKvPairs;
+  }
+
   // Collect additional stop token IDs (always includes eosTokenId)
   std::vector<int> stopTokenIds;
   stopTokenIds.push_back(eosTokenId);
 
-  // Float args: sampling config
+  // Float args: sampling config. Args 0..3 are the legacy scalar sampler contract;
+  // args 4+ carry the ADR 0106 policy envelope without disturbing variable iArgs
+  // (KV indices + stop token IDs).
   double temperature = T_ARG(0);
   double topP = T_ARG(1);
   int topK = static_cast<int>(T_ARG(2));
   double repPenalty = block.getTArguments()->size() > 3 ? T_ARG(3) : 1.0;
+
+  helpers::TokenSampleConfig sampleConfig;
+  sampleConfig.temperature = temperature;
+  sampleConfig.topP = topP;
+  sampleConfig.topK = topK;
+  sampleConfig.repPenalty = repPenalty;
+  sampleConfig.strategy = (temperature <= 0.0 || (topK <= 1 && topP <= 0.0))
+                          ? helpers::TOKEN_SAMPLE_GREEDY : helpers::TOKEN_SAMPLE_SAMPLE;
+  if (block.getTArguments()->size() > 4) sampleConfig.strategy = static_cast<int>(T_ARG(4));
+  if (block.getTArguments()->size() > 5) sampleConfig.batchMax = static_cast<int>(T_ARG(5));
+  if (block.getTArguments()->size() > 6) sampleConfig.windowMax = static_cast<int>(T_ARG(6));
+  if (block.getTArguments()->size() > 7) sampleConfig.activeBatch = static_cast<int>(T_ARG(7));
+  if (block.getTArguments()->size() > 8) sampleConfig.activeWindow = static_cast<int>(T_ARG(8));
+  if (block.getTArguments()->size() > 9) sampleConfig.hiddenOutputIdx = static_cast<int>(T_ARG(9));
+  if (block.getTArguments()->size() > 10) sampleConfig.numBeams = static_cast<int>(T_ARG(10));
+  if (block.getTArguments()->size() > 11) sampleConfig.lengthPenalty = T_ARG(11);
+  if (block.getTArguments()->size() > 12) sampleConfig.penaltyAlpha = T_ARG(12);
+  if (block.getTArguments()->size() > 13) sampleConfig.contrastiveTopK = static_cast<int>(T_ARG(13));
+  if (block.getTArguments()->size() > 14) sampleConfig.minP = T_ARG(14);
+  if (block.getTArguments()->size() > 15) sampleConfig.freqPenalty = T_ARG(15);
+  if (block.getTArguments()->size() > 16) sampleConfig.presPenalty = T_ARG(16);
+  if (block.getTArguments()->size() > 17) sampleConfig.minNewTokens = static_cast<int>(T_ARG(17));
+  if (block.getTArguments()->size() > 18) sampleConfig.generatedTokenOffset = static_cast<int>(T_ARG(18));
+  if (block.getTArguments()->size() > 20) {
+    uint64_t seedLow = static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(19)));
+    uint64_t seedHigh = static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(20)));
+    sampleConfig.seed = static_cast<LongType>((seedHigh << 32) | seedLow);
+  }
+  // tArgs 21-23 (appended, never renumber above):
+  //   21: typicalP    (1.0 = off)
+  //   22: xtcProbability (0.0 = off)
+  //   23: xtcThreshold   (default 0.1)
+  if (block.getTArguments()->size() > 21) sampleConfig.typicalP = T_ARG(21);
+  if (block.getTArguments()->size() > 22) sampleConfig.xtcProbability = T_ARG(22);
+  if (block.getTArguments()->size() > 23) sampleConfig.xtcThreshold = T_ARG(23);
 
   // Validate inputs
   REQUIRE_TRUE(prefillEmbeddings->rankOf() == 3, 0,
@@ -151,6 +223,7 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
 
   // ── Build AutoregressiveDecodeConfig from iArgs ──
   helpers::AutoregressiveDecodeConfig decodeConfig;
+  decodeConfig.sampleConfig = sampleConfig;
   decodeConfig.planHandle = nullptr;
   decodeConfig.extInputContext = nullptr;
   decodeConfig.planExternalInputs = nullptr;
@@ -166,6 +239,16 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   decodeConfig.attnMaskReformatExtIdx = -1;
   decodeConfig.kvInputExtIndices = nullptr;
   decodeConfig.kvOutputIndices = nullptr;
+  // ADR 0106 Phase 1: window substrate — propagate from tArgs into config.
+  // windowGridMask and windowPositionGrid are owned by the Java caller and passed
+  // via extInputContext / additional inputs; the C++ helpers update them in-place.
+  // They remain nullptr when activeWindow == 1 (W=1 path unchanged).
+  decodeConfig.windowMax = sampleConfig.windowMax;
+  decodeConfig.activeWindow = sampleConfig.activeWindow;
+  // windowGridMask / windowPositionGrid pointers are wired by the helper after
+  // extracting them from the ext input context when activeWindow > 1.
+  decodeConfig.windowGridMask = nullptr;
+  decodeConfig.windowPositionGrid = nullptr;
 
   int iArgCount = block.getIArguments()->size();
   bool hasPlanConfig = (iArgCount > 8);  // need at least plan + context pointers
@@ -297,7 +380,41 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       }
     }
 
+    // ADR 0106 Phase 1: window substrate ext input indices (optionalMask bit 6).
+    // Layout: windowGridMaskExtIdx (INT), windowPosGridExtIdx (INT)
+    // These point into the plan's external input array at the pre-allocated
+    // [1,1,W_max,past+W_max] mask and [1,W_max] position grid respectively.
+    // When optionalMask bit 6 is NOT set, windowGridMaskExtIdx / windowPosGridExtIdx
+    // are -1 and the W=1 path runs unchanged.
+    bool hasWindowSubstrate = (optionalMask & 64) != 0;
+    if (hasWindowSubstrate && nextIdx + 1 < iArgCount) {
+      int windowGridMaskExtIdx = INT_ARG(nextIdx);
+      int windowPosGridExtIdx = INT_ARG(nextIdx + 1);
+      nextIdx += 2;
+
+      // Wire the pre-allocated window tensors from the ext input context.
+      // The Java caller pre-allocates these at [1,1,W_max,past+W_max] and [1,W_max]
+      // and registers them in the ext input context before calling the op.
+      auto* extCtx = reinterpret_cast<graph::Context*>(decodeConfig.extInputContext);
+      int numExtInputs = decodeConfig.numPlanExternalInputs;
+      if (extCtx != nullptr) {
+        if (windowGridMaskExtIdx >= 0 && windowGridMaskExtIdx < numExtInputs) {
+          decodeConfig.windowGridMask = extCtx->array(windowGridMaskExtIdx);
+        }
+        if (windowPosGridExtIdx >= 0 && windowPosGridExtIdx < numExtInputs) {
+          decodeConfig.windowPositionGrid = extCtx->array(windowPosGridExtIdx);
+        }
+      }
+    }
+
     stopTokenStartIdx = nextIdx;
+
+    // ADR 0107 V2: wire scale buffers into decodeConfig when bit 7 was set.
+    // kvScaleBuffersVec[0..numKvPairs-1] = key scales, [numKvPairs..2N-1] = value scales.
+    if (hasQuantisedKvScales && !kvScaleBuffersVec.empty()) {
+      decodeConfig.kvScaleBuffers = kvScaleBuffersVec.data();
+      decodeConfig.kvQuantFormat = 1;  // INT8_KV
+    }
 
     // Plan external inputs are read from the extInputContext (OpaqueContext).
     // Plan outputs are allocated locally in the decode helper.
@@ -324,7 +441,9 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
 }
 
 DECLARE_TYPES(autoregressive_decode) {
-  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, INT64});
+  // Allow INT8 for V2 quantized KV buffers (ADR 0107) and INT64 for token IDs.
+  // ALL_FLOATS covers the embedding table, attention mask, and KV scale buffers.
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, INT64, INT8});
   getOpDescriptor()->setAllowedOutputTypes(0, {INT64});
   getOpDescriptor()->setAllowedOutputTypes(1, {INT64});
   getOpDescriptor()->setAllowedOutputTypes(2, {FLOAT32});

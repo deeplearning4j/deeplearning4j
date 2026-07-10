@@ -417,6 +417,22 @@ extern void fusedGQADecodeCuda(NDArray* query, NDArray* key, NDArray* value,
                                 NDArray* output, double scale,
                                 LaunchContext* context,
                                 NDArray* attentionBias = nullptr);
+
+// V2 quantised variant: INT8 K/V with per-token-per-head float scales.
+// Inline dequant (float(int8)*scale) inside the GQA kernel — no scratch buffers.
+// K/V layout: INT8 [batch, seqKV, kvHeads, headDim]; scales: float [batch, seqKV, kvHeads].
+// attentionBias: [batch, 1_or_qH, 1, seqKV] substrate mask or nullptr.
+// ADR 0107 §substrate-contract: accepts [B, 1, W, seqK] grid mask (W=1 today).
+extern void fusedGQADecodeQuantisedCuda(
+    NDArray* query,         // float  [batch, 1, qHeads, headDim]
+    NDArray* quantKeyCache, // INT8   [batch, seqKV, kvHeads, headDim]
+    NDArray* keyScaleCache, // float  [batch, seqKV, kvHeads]
+    NDArray* quantValCache, // INT8   [batch, seqKV, kvHeads, headDim]
+    NDArray* valScaleCache, // float  [batch, seqKV, kvHeads]
+    NDArray* output,        // float  [batch, 1, qHeads, headDim]
+    double scale,
+    LaunchContext* context,
+    NDArray* attentionBias = nullptr);  // float [batch, 1_or_qH, 1, seqKV] or nullptr
 #else  // CPU build — provide no-op stubs so impl/*.cpp files need no #ifdef SD_CUDA
 static inline void fusedAttentionCuda(NDArray*, NDArray*, NDArray*, NDArray*,
                                       double, bool, LaunchContext*, NDArray* = nullptr) {}
@@ -427,6 +443,9 @@ static inline void fusedCausalMaskSoftmaxCuda(NDArray*, NDArray*, NDArray*,
                                                bool, LaunchContext*) {}
 static inline void fusedGQADecodeCuda(NDArray*, NDArray*, NDArray*, NDArray*,
                                        double, LaunchContext*, NDArray* = nullptr) {}
+static inline void fusedGQADecodeQuantisedCuda(NDArray*, NDArray*, NDArray*,
+                                                NDArray*, NDArray*, NDArray*,
+                                                double, LaunchContext*, NDArray* = nullptr) {}
 #endif
 
 }  // namespace sd

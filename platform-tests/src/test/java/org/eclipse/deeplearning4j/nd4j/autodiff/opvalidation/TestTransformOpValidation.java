@@ -62,6 +62,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.AddBpOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.DivBpOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.MulBpOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RDivBpOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SubBpOp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.ASinh;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Erf;
@@ -2423,6 +2428,122 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     .gradientCheck(true));
             assertNull(err);
         }
+    }
+
+    /**
+     * Regression test for multiply_bp mixed precision:
+     * HALF inputs with a FLOAT upstream gradient must produce FLOAT gradients and execute without dtype errors.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMultiplyBpMixedHalfFloatGradients(Nd4jBackend backend) {
+        assertEquals(Arrays.asList(DataType.FLOAT, DataType.FLOAT),
+                new MulBpOp().calculateOutputDataTypes(Arrays.asList(DataType.HALF, DataType.HALF, DataType.FLOAT)));
+
+        INDArray x = Nd4j.createFromArray(new float[]{2.0f, 3.0f, 4.0f, 5.0f}).reshape(1, 1, 4).castTo(DataType.HALF);
+        INDArray y = Nd4j.createFromArray(new float[]{6.0f, 7.0f, 8.0f, 9.0f}).reshape(1, 1, 4).castTo(DataType.HALF);
+        INDArray eps = Nd4j.valueArrayOf(new long[]{1, 1, 4}, 100000.0).castTo(DataType.FLOAT);
+
+        DynamicCustomOp shapeOp = DynamicCustomOp.builder("multiply_bp")
+                .addInputs(x, y, eps)
+                .build();
+        List<DataBuffer> shapes = shapeOp.calculateOutputShape();
+        assertEquals(2, shapes.size());
+        assertEquals(DataType.FLOAT, Shape.dataType(shapes.get(0).asLong()));
+        assertEquals(DataType.FLOAT, Shape.dataType(shapes.get(1).asLong()));
+
+        INDArray dLdx = Nd4j.create(DataType.FLOAT, x.shape());
+        INDArray dLdy = Nd4j.create(DataType.FLOAT, y.shape());
+        DynamicCustomOp op = DynamicCustomOp.builder("multiply_bp")
+                .addInputs(x, y, eps)
+                .addOutputs(dLdx, dLdy)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        for (int i = 0; i < x.length(); i++) {
+            assertEquals(y.getDouble(i) * 100000.0, dLdx.getDouble(i), 1e-3, "dLdx mismatch at index " + i);
+            assertEquals(x.getDouble(i) * 100000.0, dLdy.getDouble(i), 1e-3, "dLdy mismatch at index " + i);
+        }
+        assertTrue(Double.isFinite(dLdx.norm1Number().doubleValue()));
+        assertTrue(Double.isFinite(dLdy.norm1Number().doubleValue()));
+        assertTrue(dLdx.maxNumber().doubleValue() > 65504.0, "Gradient should stay above HALF max without overflow");
+    }
+
+    /**
+     * Addition/subtraction backprop does not multiply by saved inputs, but it must not allocate HALF gradients
+     * when the upstream gradient is FLOAT.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testAddSubBpMixedHalfFloatGradientDtypes(Nd4jBackend backend) {
+        assertEquals(Arrays.asList(DataType.FLOAT, DataType.FLOAT),
+                new AddBpOp().calculateOutputDataTypes(Arrays.asList(DataType.HALF, DataType.HALF, DataType.FLOAT)));
+        assertEquals(Arrays.asList(DataType.FLOAT, DataType.FLOAT),
+                new SubBpOp().calculateOutputDataTypes(Arrays.asList(DataType.HALF, DataType.HALF, DataType.FLOAT)));
+
+        INDArray x = Nd4j.ones(DataType.HALF, 1, 1, 4);
+        INDArray y = Nd4j.ones(DataType.HALF, 1, 1, 4);
+        INDArray eps = Nd4j.valueArrayOf(new long[]{1, 1, 4}, 100000.0).castTo(DataType.FLOAT);
+        for (String opName : new String[]{"add_bp", "subtract_bp"}) {
+            DynamicCustomOp shapeOp = DynamicCustomOp.builder(opName).addInputs(x, y, eps).build();
+            List<DataBuffer> shapes = shapeOp.calculateOutputShape();
+            assertEquals(2, shapes.size(), opName);
+            assertEquals(DataType.FLOAT, Shape.dataType(shapes.get(0).asLong()), opName);
+            assertEquals(DataType.FLOAT, Shape.dataType(shapes.get(1).asLong()), opName);
+        }
+    }
+
+    /**
+     * Division-family backprop combines saved HALF inputs with FLOAT upstream gradients; run it in FLOAT.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDivideBpMixedHalfFloatGradients(Nd4jBackend backend) {
+        assertEquals(Arrays.asList(DataType.FLOAT, DataType.FLOAT),
+                new DivBpOp().calculateOutputDataTypes(Arrays.asList(DataType.HALF, DataType.HALF, DataType.FLOAT)));
+        assertEquals(Arrays.asList(DataType.FLOAT, DataType.FLOAT),
+                new RDivBpOp().calculateOutputDataTypes(Arrays.asList(DataType.HALF, DataType.HALF, DataType.FLOAT)));
+
+        INDArray x = Nd4j.createFromArray(new float[]{2.0f, 4.0f}).reshape(1, 1, 2).castTo(DataType.HALF);
+        INDArray y = Nd4j.createFromArray(new float[]{2.0f, 2.0f}).reshape(1, 1, 2).castTo(DataType.HALF);
+        INDArray eps = Nd4j.valueArrayOf(new long[]{1, 1, 2}, 100000.0).castTo(DataType.FLOAT);
+
+        assertDivideBp("divide_bp", x, y, eps, new double[]{50000.0, 50000.0}, new double[]{-50000.0, -100000.0});
+        assertDivideBp("realdiv_bp", x, y, eps, new double[]{50000.0, 50000.0}, new double[]{-50000.0, -100000.0});
+        assertDivideBp("reversedivide_bp", x, y, eps, new double[]{-50000.0, -12500.0}, new double[]{50000.0, 25000.0});
+    }
+
+    private static void assertDivideBp(String opName, INDArray x, INDArray y, INDArray eps,
+                                       double[] expectedX, double[] expectedY) {
+        DynamicCustomOp shapeOp = DynamicCustomOp.builder(opName).addInputs(x, y, eps).build();
+        List<DataBuffer> shapes = shapeOp.calculateOutputShape();
+        assertEquals(2, shapes.size(), opName);
+        assertEquals(DataType.FLOAT, Shape.dataType(shapes.get(0).asLong()), opName);
+        assertEquals(DataType.FLOAT, Shape.dataType(shapes.get(1).asLong()), opName);
+
+        INDArray dLdx = Nd4j.create(DataType.FLOAT, x.shape());
+        INDArray dLdy = Nd4j.create(DataType.FLOAT, y.shape());
+        DynamicCustomOp op = DynamicCustomOp.builder(opName)
+                .addInputs(x, y, eps)
+                .addOutputs(dLdx, dLdy)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+
+        for (int i = 0; i < x.length(); i++) {
+            assertEquals(expectedX[i], dLdx.getDouble(i), 1e-3, opName + " dLdx mismatch at index " + i);
+            assertEquals(expectedY[i], dLdy.getDouble(i), 1e-3, opName + " dLdy mismatch at index " + i);
+        }
+        assertTrue(Double.isFinite(dLdx.norm1Number().doubleValue()), opName);
+        assertTrue(Double.isFinite(dLdy.norm1Number().doubleValue()), opName);
+        double expectedMax = 0.0;
+        for (double v : expectedX) {
+            expectedMax = Math.max(expectedMax, Math.abs(v));
+        }
+        for (double v : expectedY) {
+            expectedMax = Math.max(expectedMax, Math.abs(v));
+        }
+        assertEquals(expectedMax, Math.max(dLdx.normmaxNumber().doubleValue(), dLdy.normmaxNumber().doubleValue()), 1e-3, opName);
     }
 
     /**

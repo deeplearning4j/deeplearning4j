@@ -83,9 +83,36 @@ import java.util.Set;
  *   1: topP
  *   2: topK (as double)
  *   3: repetitionPenalty (1.0 = disabled)
+ *   4: decodeStrategy (SamplingConfig.DecodeStrategy ordinal: AUTO/GREEDY/SAMPLE/SPECULATIVE/CONTRASTIVE/BEAM)
+ *   5: batchMax (ADR 0106 B dimension)
+ *   6: windowMax (ADR 0106 W dimension)
+ *   7: activeBatch
+ *   8: activeWindow
+ *   9: hiddenOutputIdx (-1 when unused)
+ *   10: numBeams
+ *   11: lengthPenalty
+ *   12: penaltyAlpha
+ *   13: contrastiveTopK
+ *   14: minP
+ *   15: frequencyPenalty
+ *   16: presencePenalty
+ *   17: minNewTokens
+ *   18: generatedTokenOffset
+ *   19: seed low 32 bits
+ *   20: seed high 32 bits
+ *   21: typicalP (1.0 = off)
+ *   22: xtcProbability (0.0 = off)
+ *   23: xtcThreshold (default 0.1)
  */
 @NoArgsConstructor
 public class AutoregressiveDecode extends DynamicCustomOp {
+
+    public static final int DECODE_STRATEGY_AUTO = 0;
+    public static final int DECODE_STRATEGY_GREEDY = 1;
+    public static final int DECODE_STRATEGY_SAMPLE = 2;
+    public static final int DECODE_STRATEGY_SPECULATIVE = 3;
+    public static final int DECODE_STRATEGY_CONTRASTIVE = 4;
+    public static final int DECODE_STRATEGY_BEAM = 5;
 
     @Getter private int maxNewTokens;
     @Getter private int eosTokenId;
@@ -96,6 +123,126 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     @Getter private int topK;
     @Getter private double repetitionPenalty;
     @Getter private int optionalInputMask;
+    @Getter private int decodeStrategy = DECODE_STRATEGY_AUTO;
+    @Getter private int batchMax = 1;
+    @Getter private int windowMax = 1;
+    @Getter private int activeBatch = 1;
+    @Getter private int activeWindow = 1;
+    @Getter private int hiddenOutputIdx = -1;
+    @Getter private int numBeams = 1;
+    @Getter private double lengthPenalty = 1.0;
+    @Getter private double penaltyAlpha = 0.0;
+    @Getter private int contrastiveTopK = 0;
+    @Getter private double minP = 0.0;
+    @Getter private double frequencyPenalty = 0.0;
+    @Getter private double presencePenalty = 0.0;
+    @Getter private int minNewTokens = 0;
+    @Getter private int generatedTokenOffset = 0;
+    @Getter private long seed = 0L;
+    @Getter private double typicalP = 1.0;
+    @Getter private double xtcProbability = 0.0;
+    @Getter private double xtcThreshold = 0.1;
+
+    private static int resolveScalarDecodeStrategy(double temperature, int topK, double topP) {
+        return (temperature <= 0.0 || (topK <= 1 && topP <= 0.0))
+                ? DECODE_STRATEGY_GREEDY : DECODE_STRATEGY_SAMPLE;
+    }
+
+    private static double seedLowBits(long seed) {
+        return (double) (seed & 0xFFFFFFFFL);
+    }
+
+    private static double seedHighBits(long seed) {
+        return (double) ((seed >>> 32) & 0xFFFFFFFFL);
+    }
+
+    private static long combineSeed(double lowBits, double highBits) {
+        long low = ((long) lowBits) & 0xFFFFFFFFL;
+        long high = ((long) highBits) & 0xFFFFFFFFL;
+        return (high << 32) | low;
+    }
+
+    private void addSamplingPolicyArguments(double temperature, double topP, int topK, double repetitionPenalty) {
+        this.decodeStrategy = resolveScalarDecodeStrategy(temperature, topK, topP);
+        addSamplingPolicyArguments(temperature, topP, topK, repetitionPenalty,
+                this.decodeStrategy, 1, 1, 1, 1, -1, 1, 1.0, 0.0, 0,
+                0.0, 0.0, 0.0, 0, 0, 0L,
+                1.0, 0.0, 0.1);
+    }
+
+    private void addSamplingPolicyArguments(double temperature, double topP, int topK, double repetitionPenalty,
+                                            int decodeStrategy, int batchMax, int windowMax,
+                                            int activeBatch, int activeWindow, int hiddenOutputIdx,
+                                            int numBeams, double lengthPenalty,
+                                            double penaltyAlpha, int contrastiveTopK,
+                                            double minP, double frequencyPenalty,
+                                            double presencePenalty, int minNewTokens,
+                                            int generatedTokenOffset, long seed) {
+        addSamplingPolicyArguments(temperature, topP, topK, repetitionPenalty,
+                decodeStrategy, batchMax, windowMax, activeBatch, activeWindow, hiddenOutputIdx,
+                numBeams, lengthPenalty, penaltyAlpha, contrastiveTopK,
+                minP, frequencyPenalty, presencePenalty, minNewTokens, generatedTokenOffset, seed,
+                this.typicalP, this.xtcProbability, this.xtcThreshold);
+    }
+
+    private void addSamplingPolicyArguments(double temperature, double topP, int topK, double repetitionPenalty,
+                                            int decodeStrategy, int batchMax, int windowMax,
+                                            int activeBatch, int activeWindow, int hiddenOutputIdx,
+                                            int numBeams, double lengthPenalty,
+                                            double penaltyAlpha, int contrastiveTopK,
+                                            double minP, double frequencyPenalty,
+                                            double presencePenalty, int minNewTokens,
+                                            int generatedTokenOffset, long seed,
+                                            double typicalP, double xtcProbability,
+                                            double xtcThreshold) {
+        this.temperature = temperature;
+        this.topP = topP;
+        this.topK = topK;
+        this.repetitionPenalty = repetitionPenalty;
+        this.decodeStrategy = decodeStrategy;
+        this.batchMax = batchMax;
+        this.windowMax = windowMax;
+        this.activeBatch = activeBatch;
+        this.activeWindow = activeWindow;
+        this.hiddenOutputIdx = hiddenOutputIdx;
+        this.numBeams = numBeams;
+        this.lengthPenalty = lengthPenalty;
+        this.penaltyAlpha = penaltyAlpha;
+        this.contrastiveTopK = contrastiveTopK;
+        this.minP = minP;
+        this.frequencyPenalty = frequencyPenalty;
+        this.presencePenalty = presencePenalty;
+        this.minNewTokens = minNewTokens;
+        this.generatedTokenOffset = generatedTokenOffset;
+        this.seed = seed;
+        this.typicalP = typicalP;
+        this.xtcProbability = xtcProbability;
+        this.xtcThreshold = xtcThreshold;
+
+        // Args 0..3 are the legacy scalar sampler contract. Args 4+ are the ADR 0106 policy envelope.
+        // Args 21-23 are typical-p / XTC (appended; existing indices never renumbered).
+        addTArgument(temperature, topP, (double) topK, repetitionPenalty,
+                (double) decodeStrategy,
+                (double) batchMax,
+                (double) windowMax,
+                (double) activeBatch,
+                (double) activeWindow,
+                (double) hiddenOutputIdx,
+                (double) numBeams,
+                lengthPenalty,
+                penaltyAlpha,
+                (double) contrastiveTopK,
+                minP,
+                frequencyPenalty,
+                presencePenalty,
+                (double) minNewTokens,
+                (double) generatedTokenOffset,
+                seedLowBits(seed),
+                seedHighBits(seed),
+                typicalP,
+                xtcProbability,
+                xtcThreshold);
+    }
 
     /**
      * Full constructor for native decode loop with plan handle.
@@ -280,8 +427,8 @@ public class AutoregressiveDecode extends DynamicCustomOp {
 
         addIArgument(iArgs.stream().mapToLong(Long::longValue).toArray());
 
-        // Float args: temperature, topP, topK (as float), repetitionPenalty
-        addTArgument(temperature, topP, (double) topK, repetitionPenalty);
+        // Float args: legacy scalar sampler config + ADR 0106 policy envelope.
+        addSamplingPolicyArguments(temperature, topP, topK, repetitionPenalty);
     }
 
     /**
@@ -444,7 +591,7 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         }
 
         addIArgument(iArgs.stream().mapToLong(Long::longValue).toArray());
-        addTArgument(temperature, topP, (double) topK, repetitionPenalty);
+        addSamplingPolicyArguments(temperature, topP, topK, repetitionPenalty);
     }
 
     /**
@@ -505,8 +652,91 @@ public class AutoregressiveDecode extends DynamicCustomOp {
             }
         }
 
-        // Float args: temperature, topP, topK (as float), repetitionPenalty
-        addTArgument(temperature, topP, (double) topK, 1.0);
+        // Float args: legacy scalar sampler config + ADR 0106 policy envelope.
+        addSamplingPolicyArguments(temperature, topP, topK, 1.0);
+    }
+
+    /**
+     * Wire ADR 0107 V2 quantized-KV scale buffers into the op after construction.
+     *
+     * <p>The caller has already constructed this op with {@code staticKvBuffers} containing the INT8
+     * KV arrays (bit 2 in optionalMask). This method appends {@code 2*numKvPairs} float32 scale
+     * arrays after the KV buffers and sets bit 7 (128) in {@code iArgs[4]} (optionalInputMask) so
+     * the C++ decode op knows to read them.</p>
+     *
+     * <p>Scale layout: {@code kvScaleBuffers[0..numKvPairs-1]} = key scales per layer,
+     * {@code [numKvPairs..2*numKvPairs-1]} = value scales per layer.
+     * Each array shape: {@code [batch, maxKvLen, kvHeads]} float32.</p>
+     *
+     * @param kvScaleBuffers the 2*numKvPairs float32 scale arrays (key scales then value scales)
+     * @return this op (for chaining)
+     * @throws IllegalArgumentException if the array length != 2*numKvPairs
+     */
+    public AutoregressiveDecode withQuantisedKvScales(INDArray[] kvScaleBuffers) {
+        if (kvScaleBuffers == null || kvScaleBuffers.length == 0) return this;
+        if (kvScaleBuffers.length != 2 * numKvPairs) {
+            throw new IllegalArgumentException(
+                    "withQuantisedKvScales: expected " + (2 * numKvPairs) + " scale arrays, got " + kvScaleBuffers.length);
+        }
+        // Append scale buffers to the input list
+        for (INDArray sc : kvScaleBuffers) {
+            if (sc != null) inputArguments.add(sc);
+        }
+        // Set bit 7 (128) in iArgs[4] (optionalInputMask)
+        if (iArguments.size() > 4) {
+            long prevMask = iArguments.get(4);
+            iArguments.set(4, prevMask | 128L);
+            this.optionalInputMask = (int)(prevMask | 128L);
+        }
+        return this;
+    }
+
+    /**
+     * Override the decode-policy envelope carried in {@code tArgs[4..13]} while preserving the scalar
+     * sampler args and extended sampler policy. This is the Java-side handoff point for ADR 0106 once
+     * GenerationPipeline starts constructing B/W substrate calls.
+     */
+    public AutoregressiveDecode withDecodePolicy(int decodeStrategy, int batchMax, int windowMax,
+                                                 int activeBatch, int activeWindow, int hiddenOutputIdx,
+                                                 int numBeams, double lengthPenalty,
+                                                 double penaltyAlpha, int contrastiveTopK) {
+        tArguments.clear();
+        addSamplingPolicyArguments(temperature, topP, topK, repetitionPenalty,
+                decodeStrategy, batchMax, windowMax, activeBatch, activeWindow,
+                hiddenOutputIdx, numBeams, lengthPenalty, penaltyAlpha, contrastiveTopK,
+                minP, frequencyPenalty, presencePenalty, minNewTokens, generatedTokenOffset, seed,
+                typicalP, xtcProbability, xtcThreshold);
+        return this;
+    }
+
+    /**
+     * Override scalar sampler policy metadata carried in {@code tArgs[14..20]} while preserving iArgs
+     * and the ADR 0106 decode policy envelope.
+     */
+    public AutoregressiveDecode withSamplingPolicy(double minP, double frequencyPenalty,
+                                                   double presencePenalty, int minNewTokens,
+                                                   int generatedTokenOffset, long seed) {
+        tArguments.clear();
+        addSamplingPolicyArguments(temperature, topP, topK, repetitionPenalty,
+                decodeStrategy, batchMax, windowMax, activeBatch, activeWindow,
+                hiddenOutputIdx, numBeams, lengthPenalty, penaltyAlpha, contrastiveTopK,
+                minP, frequencyPenalty, presencePenalty, minNewTokens, generatedTokenOffset, seed,
+                typicalP, xtcProbability, xtcThreshold);
+        return this;
+    }
+
+    /**
+     * Override typical-p and XTC parameters while preserving all other policy arguments.
+     */
+    public AutoregressiveDecode withTypicalPAndXtc(double typicalP, double xtcProbability,
+                                                   double xtcThreshold) {
+        tArguments.clear();
+        addSamplingPolicyArguments(temperature, topP, topK, repetitionPenalty,
+                decodeStrategy, batchMax, windowMax, activeBatch, activeWindow,
+                hiddenOutputIdx, numBeams, lengthPenalty, penaltyAlpha, contrastiveTopK,
+                minP, frequencyPenalty, presencePenalty, minNewTokens, generatedTokenOffset, seed,
+                typicalP, xtcProbability, xtcThreshold);
+        return this;
     }
 
     @Override
@@ -520,6 +750,26 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         if (tArguments.size() > 1) this.topP = tArguments.get(1);
         if (tArguments.size() > 2) this.topK = tArguments.get(2).intValue();
         if (tArguments.size() > 3) this.repetitionPenalty = tArguments.get(3);
+        this.decodeStrategy = resolveScalarDecodeStrategy(this.temperature, this.topK, this.topP);
+        if (tArguments.size() > 4) this.decodeStrategy = tArguments.get(4).intValue();
+        if (tArguments.size() > 5) this.batchMax = tArguments.get(5).intValue();
+        if (tArguments.size() > 6) this.windowMax = tArguments.get(6).intValue();
+        if (tArguments.size() > 7) this.activeBatch = tArguments.get(7).intValue();
+        if (tArguments.size() > 8) this.activeWindow = tArguments.get(8).intValue();
+        if (tArguments.size() > 9) this.hiddenOutputIdx = tArguments.get(9).intValue();
+        if (tArguments.size() > 10) this.numBeams = tArguments.get(10).intValue();
+        if (tArguments.size() > 11) this.lengthPenalty = tArguments.get(11);
+        if (tArguments.size() > 12) this.penaltyAlpha = tArguments.get(12);
+        if (tArguments.size() > 13) this.contrastiveTopK = tArguments.get(13).intValue();
+        if (tArguments.size() > 14) this.minP = tArguments.get(14);
+        if (tArguments.size() > 15) this.frequencyPenalty = tArguments.get(15);
+        if (tArguments.size() > 16) this.presencePenalty = tArguments.get(16);
+        if (tArguments.size() > 17) this.minNewTokens = tArguments.get(17).intValue();
+        if (tArguments.size() > 18) this.generatedTokenOffset = tArguments.get(18).intValue();
+        if (tArguments.size() > 20) this.seed = combineSeed(tArguments.get(19), tArguments.get(20));
+        if (tArguments.size() > 21) this.typicalP = tArguments.get(21);
+        if (tArguments.size() > 22) this.xtcProbability = tArguments.get(22);
+        if (tArguments.size() > 23) this.xtcThreshold = tArguments.get(23);
     }
 
     @Override

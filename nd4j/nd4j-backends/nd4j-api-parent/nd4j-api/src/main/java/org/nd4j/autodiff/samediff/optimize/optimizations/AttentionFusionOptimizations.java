@@ -2012,6 +2012,17 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
 
+            // Detect BERT/encoder additive attention bias: (1 - attention_mask) * -large_negative_value
+            // This pattern produces a float tensor with values {0.0, -3.4e38} (or similar large negative)
+            // that is ADDED to QK^T scores before softmax to mask out padding positions.
+            // DotProductAttentionV2 expects a boolean mask (non-zero=keep), NOT an additive bias,
+            // so fusing this pattern would completely corrupt attention for all 12 BERT layers.
+            // Return false here so the original Add→Softmax→@V graph is kept intact.
+            if (isAdditiveBiasAttnMask(sd, helper, maskVar, constantArrays)) {
+                log.debug("[ATTN-MASK] Skipping FuseAttentionWithMask: mask is BERT-style additive bias (large-negative Mul), not a boolean mask");
+                return false;
+            }
+
             // Check if add output goes to softmax
             List<String> addOutputs = op.getOutputsOfOp();
             if (addOutputs == null || addOutputs.isEmpty()) {
@@ -2328,6 +2339,85 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
         private boolean isCausalMaskCheck(INDArray arr) {
             return isCausalMaskArray(arr);
+        }
+
+        /**
+         * Returns true when the mask variable is produced by an additive attention bias subgraph
+         * typical of BERT/encoder ONNX exports:
+         *
+         *   attention_mask (INT64 input)
+         *     → Cast (→ FLOAT)
+         *     → Sub  (1.0 - mask)
+         *     → Mul  (* -3.4e38 or similar large negative)        ← "additive bias"
+         *
+         * Such a mask has float values {0.0, -3.4028235e38} and is ADDED to QK^T scores
+         * before softmax to suppress padding positions.  It is NOT a boolean mask:
+         * DotProductAttentionV2's valueMask argument expects non-zero = keep, so fusing
+         * this pattern would invert and corrupt all attention heads.
+         *
+         * Detection: BFS up to 8 hops from maskVar; return true the moment we see a
+         * MulOp or ScalarMultiplication whose constant input has absolute value ≥ 1e10.
+         */
+        private boolean isAdditiveBiasAttnMask(SameDiff sd, OptimizationHelper helper,
+                                               String maskVar, ArrayHolder constantArrays) {
+            if (maskVar == null) return false;
+
+            Set<String> visited = new HashSet<>();
+            List<String> queue = new ArrayList<>();
+            queue.add(maskVar);
+            int idx = 0;
+            final int MAX_HOPS = 8;
+
+            while (idx < queue.size() && idx < MAX_HOPS) {
+                String current = queue.get(idx++);
+                if (!visited.add(current)) continue;
+
+                Variable v = getVariableWithFallback(helper, sd, current);
+                if (v == null) continue;
+                String producerName = v.getOutputOfOp();
+                if (producerName == null) continue;
+
+                SameDiffOp producerOp = sd.getOps().get(producerName);
+                if (producerOp == null || producerOp.getOp() == null) continue;
+
+                boolean isMulOp = producerOp.getOp() instanceof MulOp
+                        || producerOp.getOp() instanceof ScalarMultiplication;
+                if (isMulOp) {
+                    // Check each input: if any is a constant scalar with |value| >= 1e10
+                    // (e.g. -3.4e38, -10000.0, -1e9) this is an additive bias mask.
+                    List<String> mulInputs = producerOp.getInputsToOp();
+                    if (mulInputs != null) {
+                        for (String mulIn : mulInputs) {
+                            SDVariable mulInVar = sd.getVariable(mulIn);
+                            INDArray arr = null;
+                            if (mulInVar != null) {
+                                arr = mulInVar.getArr();
+                                if (arr == null && mulInVar.getVariableType() == VariableType.CONSTANT) {
+                                    arr = constantArrays.getArray(mulIn);
+                                }
+                            }
+                            if (arr != null && arr.isScalar()) {
+                                double val = arr.getDouble(0);
+                                if (Math.abs(val) >= 1e10) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Enqueue this op's inputs for further tracing
+                List<String> inputs = producerOp.getInputsToOp();
+                if (inputs != null) {
+                    for (String in : inputs) {
+                        if (!visited.contains(in)) {
+                            queue.add(in);
+                        }
+                    }
+                }
+            }
+
+            return false;
         }
     }
 

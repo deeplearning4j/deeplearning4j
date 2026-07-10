@@ -280,9 +280,23 @@ public class GGMLToSameDiffConverter {
         for (GGMLTensorInfo info : tensorInfos) {
             INDArray array;
             if (info.getDataType().isQuantized()) {
-                // Quantized tensors need dequantization — use byte[] path
+                // Quantized tensors need dequantization or runtime-packed matmul storage.
                 byte[] data = reader.readTensorData(info);
-                array = convertTensorData(data, info);
+                boolean runtimePackedMatmul = shouldUseRuntimeQuantizedMatmul(info);
+                array = convertTensorData(data, info, runtimePackedMatmul);
+                // For RUNTIME_QUANTIZED_MATMUL: store companion metadata so the
+                // architecture builder can emit ggml_qmatmul instead of normal mmul.
+                // Key: tensorName + ".__q__"  Value: long[3] = [ggmlQuantType, N, K]
+                if (runtimePackedMatmul) {
+                    long[] shape = reverseShape(info.getShape());  // ND4J C-order shape
+                    if (shape != null && shape.length == 2) {
+                        long N = shape[0];
+                        long K = shape[1];
+                        int ggmlQuantType = info.getDataType().toGgmlQuantType();
+                        INDArray meta = Nd4j.createFromArray(new long[]{ggmlQuantType, N, K});
+                        weights.put(info.getName() + ".__q__", meta);
+                    }
+                }
             } else {
                 // Non-quantized tensors: use direct ByteBuffer to avoid heap copies
                 ByteBuffer directData = reader.readTensorDataDirect(info);
@@ -307,6 +321,20 @@ public class GGMLToSameDiffConverter {
         }
 
         return weights;
+    }
+
+    private boolean shouldUseRuntimeQuantizedMatmul(GGMLTensorInfo info) {
+        if (options.getQuantizationMode() != ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_MATMUL
+                || !info.getDataType().isRuntimeQMatMulSupported()) {
+            return false;
+        }
+        String name = info.getName();
+        if (name == null) {
+            return false;
+        }
+        // Embedding tables are consumed by gather, not ggml_qmatmul. Packed bytes would collapse
+        // gather output to byte storage shape instead of [batch, seq, hidden].
+        return !"token_embd.weight".equals(name);
     }
 
     /**
@@ -348,6 +376,10 @@ public class GGMLToSameDiffConverter {
     }
 
     private INDArray convertTensorData(byte[] data, GGMLTensorInfo info) {
+        return convertTensorData(data, info, true);
+    }
+
+    private INDArray convertTensorData(byte[] data, GGMLTensorInfo info, boolean allowRuntimePackedMatmul) {
         GGMLDataType dataType = info.getDataType();
         long[] ggufShape = info.getShape();
 
@@ -360,7 +392,7 @@ public class GGMLToSameDiffConverter {
         long[] shape = reverseShape(ggufShape);
 
         if (dataType.isQuantized()) {
-            return handleQuantizedTensor(data, dataType, shape);
+            return handleQuantizedTensor(data, dataType, shape, allowRuntimePackedMatmul);
         } else {
             return handleNonQuantizedTensor(data, dataType, shape);
         }
@@ -381,7 +413,8 @@ public class GGMLToSameDiffConverter {
         return reversed;
     }
 
-    private INDArray handleQuantizedTensor(byte[] data, GGMLDataType dataType, long[] shape) {
+    private INDArray handleQuantizedTensor(byte[] data, GGMLDataType dataType, long[] shape,
+                                          boolean allowRuntimePackedMatmul) {
         DataType targetType = getTargetDataType();
 
         switch (options.getQuantizationMode()) {
@@ -389,6 +422,21 @@ public class GGMLToSameDiffConverter {
                 // Store raw quantized data - caller needs to handle dequantization
                 log.debug("Preserving quantized data for type: {}", dataType);
                 return Nd4j.create(data, new long[]{data.length}, DataType.INT8);
+
+            case RUNTIME_QUANTIZED_MATMUL:
+                // For supported types: keep raw bytes; ggml_qmatmul will dequant at runtime.
+                // For unsupported types: fall back to FP16 dequantization.
+                if (allowRuntimePackedMatmul && dataType.isRuntimeQMatMulSupported()) {
+                    log.debug("Runtime quantized matmul: preserving raw bytes for {}", dataType);
+                    return Nd4j.create(data, new long[]{data.length}, DataType.INT8);
+                }
+                log.debug("Runtime quantized matmul: dequantizing {} for non-matmul or unsupported tensor", dataType);
+                if (DequantizerFactory.hasDequantizer(dataType)) {
+                    return DequantizerFactory.dequantizeToArray(data, dataType, shape, DataType.HALF);
+                } else {
+                    log.warn("No dequantizer for type {}, storing as raw bytes", dataType);
+                    return Nd4j.create(data, new long[]{data.length}, DataType.INT8);
+                }
 
             case DEQUANTIZE_TO_FLOAT32:
             case DEQUANTIZE_TO_FLOAT16:

@@ -1212,11 +1212,15 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
             // Still failed — fall back to custom CUDA kernel
             mmulNxN(xDup, yDup, zT, alpha, beta, z->ordering());
           }
-          // Sync stream before freeing temporary arrays to ensure async GEMM completes.
-          // During CUDA graph capture, stream sync is illegal (poisons the capture).
-          if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-            sd::graph::dspSyncDefaultStream();
-          }
+          // The batched GEMM reads xDup/yDup ASYNCHRONOUSLY on the arrays' context
+          // stream (cublasSetStream uses A->getContext()). Freeing them before those
+          // reads complete recycles the blocks through the pool; later ops overwrite
+          // them mid-GEMM → garbage/NaN rows in the output (BGE attention NaN root).
+          // dspSyncDefaultStream() synced the WRONG stream (default context) and was
+          // skipped during replay entirely. synchronizeExecStream syncs the dup's own
+          // context stream and is capture-aware (skips only during capture, where the
+          // recorded work has not run yet).
+          xDup->synchronizeExecStream("mmul batched dup free");
           delete xDup;
           delete yDup;
         }

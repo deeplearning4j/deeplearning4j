@@ -723,6 +723,20 @@ int getPlanNumExternalInputs(sd::Pointer planHandle) {
   return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getNumExternalInputs();
 }
 
+const char* getPlanExternalInputName(sd::Pointer planHandle, int index) {
+  if (planHandle == nullptr) return nullptr;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  if (index < 0 || index >= plan->getNumExternalInputs()) return nullptr;
+  const std::string& name = plan->getExternalInputName(index);
+  return name.empty() ? nullptr : name.c_str();
+}
+
+int getPlanGraphExecutionMode(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  return static_cast<int>(
+      reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getGraphExecutionMode());
+}
+
 int getPlanNumRequestedOutputs(sd::Pointer planHandle) {
   if (planHandle == nullptr) return -1;
   return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getNumRequestedOutputs();

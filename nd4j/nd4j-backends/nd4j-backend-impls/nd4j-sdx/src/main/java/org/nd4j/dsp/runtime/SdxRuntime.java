@@ -82,6 +82,12 @@ public final class SdxRuntime implements AutoCloseable {
         int sdxGetPlanPhase(Pointer context);
 
         int sdxGetExecutionCount(Pointer context);
+
+        int sdxGetNumInputs(Pointer context);
+
+        int sdxGetNumOutputs(Pointer context);
+
+        Pointer sdxGetInputName(Pointer context, int inputIndex);
     }
 
     public static final class RuntimeOptions extends Structure {
@@ -197,7 +203,7 @@ public final class SdxRuntime implements AutoCloseable {
         public long execution_time_ns;
         public int requested_gpu_target;
         public int applied_gpu_target;
-        /** Plan phase: 0=WARMUP, 1=STABLE, 2=FROZEN, 3=REPLAYING */
+        /** Plan phase: 0=SLOT_BY_SLOT (warmup), 1=SHAPES_FROZEN, 2=REPLAYING, 3=REPLAY_BLOCKED */
         public int plan_phase;
         /** Number of executions completed on this context */
         public int execution_count;
@@ -637,6 +643,41 @@ public final class SdxRuntime implements AutoCloseable {
         public int executionCount() {
             ensureContextOpen();
             return api.sdxGetExecutionCount(contextHandle);
+        }
+
+        /**
+         * Number of external inputs the plan expects per run — covers the
+         * model's constants, variables, AND placeholders, bound positionally.
+         */
+        public int numInputs() {
+            ensureContextOpen();
+            return api.sdxGetNumInputs(contextHandle);
+        }
+
+        public int numOutputs() {
+            ensureContextOpen();
+            return api.sdxGetNumOutputs(contextHandle);
+        }
+
+        /** Name of the external input at the given plan index, or null if out of range. */
+        public String inputName(int inputIndex) {
+            ensureContextOpen();
+            Pointer name = api.sdxGetInputName(contextHandle, inputIndex);
+            return name == null ? null : name.getString(0);
+        }
+
+        /** All external input names in plan binding order. */
+        public String[] inputNames() {
+            ensureContextOpen();
+            int n = api.sdxGetNumInputs(contextHandle);
+            if (n < 0) {
+                return new String[0];
+            }
+            String[] names = new String[n];
+            for (int i = 0; i < n; i++) {
+                names[i] = inputName(i);
+            }
+            return names;
         }
 
         public ExecutionReport executionReport() {

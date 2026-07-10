@@ -1213,34 +1213,56 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
 
   bool useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
 
+  NDArray* keysForAttention = keys;
+  NDArray* valuesForAttention = values;
+  NDArray* keysCastOwner = nullptr;
+  NDArray* valuesCastOwner = nullptr;
+
+  if (keysForAttention->dataType() != queries->dataType()) {
+    keysCastOwner = keysForAttention->cast(queries->dataType());
+    keysForAttention = keysCastOwner;
+  }
+  if (values == keys) {
+    valuesForAttention = keysForAttention;
+  } else if (valuesForAttention->dataType() != queries->dataType()) {
+    valuesCastOwner = valuesForAttention->cast(queries->dataType());
+    valuesForAttention = valuesCastOwner;
+  }
+
+  auto cleanupAttentionInputs = [&]() {
+    if (keysCastOwner != nullptr) delete keysCastOwner;
+    if (valuesCastOwner != nullptr) delete valuesCastOwner;
+    if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
+  };
+
   // 4D path: route to executeSDPA4D which handles bias, GQA, causal mask, and all dtypes via MKL GEMV.
   // This avoids FlashAttentionHelper's O(headsPerKvHead * seqKV * headDim) K/V tiling.
   if (rank == 4) {
-    executeSDPA4D(queries, keys, values, output, static_cast<float>(scale),
+    executeSDPA4D(queries, keysForAttention, valuesForAttention, output, static_cast<float>(scale),
                   block.launchContext(), hasAttentionBias ? attentionBias : nullptr, useCausalMask);
     if (!attentionScores->isEmpty()) attentionScores->nullify();
     if (!attentionLogits->isEmpty())  attentionLogits->nullify();
-    if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
+    cleanupAttentionInputs();
     return sd::Status::OK;
   }
 
   // Rank 2/3 with bias: delegate to FlashAttentionHelper.
   if (hasAttentionBias) {
     NDArray* q = queries;
-    NDArray* k = keys;
-    NDArray* v = values;
+    NDArray* k = keysForAttention;
+    NDArray* v = valuesForAttention;
     NDArray* out = output;
     bool reshapedQ = false;
 
     if (rank == 2) {
       reshapedQ = true;
       std::vector<sd::LongType> qShape = {1, queries->sizeAt(0), queries->sizeAt(1)};
-      std::vector<sd::LongType> vShape = {1, values->sizeAt(0), values->sizeAt(1)};
+      std::vector<sd::LongType> vShape = {1, valuesForAttention->sizeAt(0), valuesForAttention->sizeAt(1)};
       q = queries->reshape('c', qShape);
-      v = values->reshape('c', vShape);
-      if (keys != values) {
-        std::vector<sd::LongType> kShape = {1, keys->sizeAt(0), keys->sizeAt(1)};
-        k = keys->reshape('c', kShape);
+      v = valuesForAttention->reshape('c', vShape);
+      if (keysForAttention != valuesForAttention) {
+        std::vector<sd::LongType> kShape = {1, keysForAttention->sizeAt(0), keysForAttention->sizeAt(1)};
+        k = keysForAttention->reshape('c', kShape);
       } else {
         k = v;
       }
@@ -1270,11 +1292,11 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
     if (reshapedQ) {
       delete q;
       delete v;
-      if (keys != values) delete k;
+      if (keysForAttention != valuesForAttention) delete k;
       delete out;
     }
 
-    if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
+    cleanupAttentionInputs();
     return sd::Status::OK;
   }
 
@@ -1285,16 +1307,17 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
 
     if (needReshape) {
       std::vector<sd::LongType> shape3d_q = {1, queries->sizeAt(0), queries->sizeAt(1)};
-      std::vector<sd::LongType> shape3d_kv = {1, keys->sizeAt(0), keys->sizeAt(1)};
+      std::vector<sd::LongType> shape3d_k = {1, keysForAttention->sizeAt(0), keysForAttention->sizeAt(1)};
+      std::vector<sd::LongType> shape3d_v = {1, valuesForAttention->sizeAt(0), valuesForAttention->sizeAt(1)};
       std::vector<sd::LongType> shape3d_out = {1, output->sizeAt(0), output->sizeAt(1)};
       q3d = queries->reshape('c', shape3d_q);
-      k3d = keys->reshape('c', shape3d_kv);
-      v3d = values->reshape('c', shape3d_kv);
+      k3d = keysForAttention->reshape('c', shape3d_k);
+      v3d = valuesForAttention->reshape('c', shape3d_v);
       out3d = output->reshape('c', shape3d_out);
     } else {
       q3d = queries;
-      k3d = keys;
-      v3d = values;
+      k3d = keysForAttention;
+      v3d = valuesForAttention;
       out3d = output;
     }
 
@@ -1325,7 +1348,7 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
     }
   }
 
-  if (slicedBiasOwner != nullptr) delete slicedBiasOwner;
+  cleanupAttentionInputs();
   return sd::Status::OK;
 }
 

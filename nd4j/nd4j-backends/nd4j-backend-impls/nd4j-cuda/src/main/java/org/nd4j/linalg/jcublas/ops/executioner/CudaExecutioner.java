@@ -841,6 +841,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         extraArgs,
                         y,
                         z);
+            } else if (op.isComplexAccumulation()) {
+                // Complex accumulation (allEuclideanDistances, allManhattanDistances, allCosineSimilarities):
+                // x has shape [xRows, dims], y has shape [yRows, dims], z has shape [xRows, yRows].
+                // Must use execReduce3All — execReduce3Tad would incorrectly TAD-decompose y with x's
+                // dimension and index yTadOffsets out-of-bounds for i >= yTads, giving wrong results.
+                Nd4j.getNativeOps().execReduce3All(xShapeInfoHostPointer, op.opNum(),
+                        x,
+                        y,
+                        z,
+                        dim,
+                        extraArgs);
             } else {
                 Nd4j.getNativeOps().execReduce3Tad(xShapeInfoHostPointer, op.opNum(),x
                         ,extraArgs,y,z,dim);
@@ -1469,7 +1480,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
 
-        val tadBuffers = x.isEmpty() ? Pair.<DataBuffer, DataBuffer>makePair(x.data(), null) : tadManager.getTADOnlyShapeInfo(x, dimension);
+        // For empty arrays, use the array's own shapeInfo as the TAD shape (no actual TADs exist),
+        // and null offsets. Using x.data() was wrong — empty arrays have no data buffer.
+        val tadBuffers = x.isEmpty() ? Pair.<DataBuffer, DataBuffer>makePair(x.shapeInfoDataBuffer(), null) : tadManager.getTADOnlyShapeInfo(x, dimension);
 
         val hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
         val devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
@@ -1596,13 +1609,26 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             if (y != null && op.getOpType() == Op.Type.REDUCE3) {
                 // Only use Reduce3 for actual two-input reductions (dot, cosine, etc.)
-                Nd4j.getNativeOps().execReduce3Tad(
-                        xShapeInfoHostPointer,
-                        op.opNum(),
-                        xb,
-                        extraArgs,
-                        yb,
-                        zb,dimensionPointer);
+                if (op.isComplexAccumulation()) {
+                    // Complex accumulation (allEuclideanDistances, etc.): x=[xRows,d], y=[yRows,d], z=[xRows,yRows].
+                    // Must use execReduce3All — execReduce3Tad indexes yTadOffsets out-of-bounds for the all-pairs case.
+                    Nd4j.getNativeOps().execReduce3All(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            xb,
+                            yb,
+                            zb,
+                            dimensionPointer,
+                            extraArgs);
+                } else {
+                    Nd4j.getNativeOps().execReduce3Tad(
+                            xShapeInfoHostPointer,
+                            op.opNum(),
+                            xb,
+                            extraArgs,
+                            yb,
+                            zb,dimensionPointer);
+                }
             } else {
                 if (op instanceof Variance) {
                     Nd4j.getNativeOps().execSummaryStatsTad(xShapeInfoHostPointer, op.opNum(),
@@ -1835,6 +1861,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (scalarDevice >= 0 && scalarDevice != currentDevice) {
                 scalar = Nd4j.getAffinityManager().replicateToDevice(currentDevice, scalar);
             }
+        }
+
+        // Native execScalar reinterprets the scalar buffer through x's dtype: a mismatched
+        // scalar (e.g. a DOUBLE 1.0 against FLOAT x) is silently read as garbage (~0.0),
+        // turning ops like x+1 into a no-op copy. Align the scalar dtype explicitly.
+        if (scalar != null && x != null && scalar.dataType() != x.dataType()) {
+            scalar = scalar.castTo(x.dataType());
         }
 
         val hostYShapeInfo = scalar == null ? null : AddressRetriever.retrieveHostPointer(scalar.shapeInfoDataBuffer());

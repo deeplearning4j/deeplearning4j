@@ -114,44 +114,73 @@ public class LoraMatMul extends DynamicCustomOp {
         return "lora_matmul";
     }
 
+    /**
+     * Compute gradients for LoRA matmul.
+     *
+     * <p>Handles rank-2 [batch, in_features] and rank-3 [B, S, in_features] activations.
+     * For rank-3, activations are flattened to [B*S, in_features] before the 2D grad
+     * math, then the result is reshaped back to the original leading dims.
+     */
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients) {
-        SDVariable grad = gradients.get(0); // [batch, out_features]
+        SDVariable grad   = gradients.get(0); // [batch, out_features] or [B,S,out_features]
+        SDVariable input  = arg(0);            // [batch, in_features]  or [B,S,in_features]
+        SDVariable weight = arg(1);            // [out_features, in_features]
+        SDVariable loraA  = arg(2);            // [r, in_features]
+        SDVariable loraB  = arg(3);            // [out_features, r]
 
-        SDVariable input = arg(0);  // [batch, in_features]
-        SDVariable weight = arg(1); // [out_features, in_features]
-        SDVariable loraA = arg(2);  // [r, in_features]
-        SDVariable loraB = arg(3);  // [out_features, r]
+        // Detect rank-3 (e.g. [B, S, F]) — flatten to 2D for the matmul grads
+        long[] inputShape = input.getShape();
+        boolean rank3 = (inputShape != null && inputShape.length == 3);
 
-        // Gradient w.r.t. input:
-        // d(output)/d(input) = weight^T + scaling * A^T @ B^T
-        // grad_input = grad @ (weight + scaling * B @ A)
-        SDVariable weightGradPart = sameDiff.mmul(grad, weight); // grad @ weight
-        SDVariable loraGradPart = sameDiff.mmul(
-            sameDiff.mmul(grad, loraB), // grad @ B: [batch, r]
-            loraA                        // @ A: [batch, in_features]
-        ).mul(scaling);
-        SDVariable gradInput = weightGradPart.add(loraGradPart);
+        SDVariable inputFlat;
+        SDVariable gradFlat;
+        long[] leadDims = null;
+        if (rank3) {
+            leadDims  = new long[]{inputShape[0], inputShape[1]};
+            long inF  = inputShape[2];
+            inputFlat = input.reshape(-1, inF);
+            // out_features must come from the frozen weight [out,in] (always concrete), NOT
+            // from the incoming gradient's static shape — which is frequently unknown (-1) at
+            // doDiff time. Using grad.getShape() there produced reshape(-1, -1) (two unknown
+            // dims), which the reshape op rejects.
+            long[] wShape = weight.getShape();
+            long outF = (wShape != null && wShape.length == 2) ? wShape[0] : loraB.getShape()[0];
+            gradFlat  = grad.reshape(-1, outF);
+        } else {
+            inputFlat = input;
+            gradFlat  = grad;
+        }
 
-        // Gradient w.r.t. weight (frozen, return zeros or skip)
+        // grad_input_flat = gradFlat @ weight + scaling * (gradFlat @ loraB) @ loraA
+        SDVariable weightGradPart = sameDiff.mmul(gradFlat, weight);
+        SDVariable loraGradPart   = sameDiff.mmul(
+            sameDiff.mmul(gradFlat, loraB), loraA).mul(scaling);
+        SDVariable gradInputFlat  = weightGradPart.add(loraGradPart);
+
+        SDVariable gradInput;
+        if (rank3 && leadDims != null && inputShape != null) {
+            gradInput = gradInputFlat.reshape(leadDims[0], leadDims[1], inputShape[2]);
+        } else {
+            gradInput = gradInputFlat;
+        }
+
+        // Weight frozen
         SDVariable gradWeight = sameDiff.zerosLike(weight);
 
-        // Gradient w.r.t. loraA:
-        // d(output)/d(A) involves: scaling * input^T @ (grad @ B)
-        // grad_A = scaling * (grad @ B)^T @ input = scaling * B^T @ grad^T @ input
-        SDVariable gradTimesB = sameDiff.mmul(grad, loraB); // [batch, r]
+        // grad_A = scaling * (gradFlat @ loraB)^T @ inputFlat
+        SDVariable gradTimesB = sameDiff.mmul(gradFlat, loraB); // [M, r]
         SDVariable gradA = sameDiff.mmul(
-            sameDiff.transpose(gradTimesB), // [r, batch]
-            input                            // [batch, in_features]
-        ).mul(scaling); // [r, in_features]
+            sameDiff.transpose(gradTimesB),  // [r, M]
+            inputFlat                         // [M, inF]
+        ).mul(scaling);                       // [r, inF]
 
-        // Gradient w.r.t. loraB:
-        // d(output)/d(B) = scaling * grad^T @ (input @ A^T)
-        SDVariable inputTimesA = sameDiff.mmul(input, sameDiff.transpose(loraA)); // [batch, r]
+        // grad_B = scaling * gradFlat^T @ (inputFlat @ loraA^T)
+        SDVariable inputTimesAT = sameDiff.mmul(inputFlat, sameDiff.transpose(loraA)); // [M, r]
         SDVariable gradB = sameDiff.mmul(
-            sameDiff.transpose(grad), // [out_features, batch]
-            inputTimesA               // [batch, r]
-        ).mul(scaling); // [out_features, r]
+            sameDiff.transpose(gradFlat),  // [outF, M]
+            inputTimesAT                    // [M, r]
+        ).mul(scaling);                     // [outF, r]
 
         return Arrays.asList(gradInput, gradWeight, gradA, gradB);
     }

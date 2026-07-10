@@ -40,9 +40,12 @@ The runtime must load `.sdz` and `.sdnb` directly.
 `sdxLoadBundle(...)` accepts:
 - direct `.sdz` or `.sdnb` model files,
 - unpacked bundle directories containing `manifest.json` that resolves `modelPath`,
-- manifest JSON files (`.json` or `.dspb` manifest path) that point to an underlying model file.
-
-Current scope is unpacked bundles and direct model files. Packed `.dspb` archive extraction is deferred.
+- manifest JSON files (`.json` or `.dspb` manifest path) that point to an underlying model file,
+- packed `.dspb` archives (a ZIP of an unpacked bundle directory, as produced
+  by zipping `sdx-compile.sh` output): detected by ZIP magic, extracted to a
+  model-owned temp directory (removed at `sdxUnloadModel`), then resolved as
+  an unpacked bundle. Requires `std::filesystem`; builds without it reject
+  packed archives with an explicit error.
 
 ### 2. Public C ABI Contract
 
@@ -63,6 +66,16 @@ Core API:
 - `sdxRun`
 - `sdxGetLastError`
 - `sdxGetExecutionReport`
+- Plan lifecycle: `sdxMarkInputVariable` / `sdxMarkInputPlaceholder` /
+  `sdxFreezeShapes` / `sdxGetPlanPhase` / `sdxGetExecutionCount`
+- Input contract discovery: `sdxGetNumInputs` / `sdxGetNumOutputs` /
+  `sdxGetInputName`
+
+Run contract: a plan's external inputs cover the model's **constants,
+variables, and placeholders** — `sdxRun` binds one tensor per external,
+positionally in plan order. Clients discover that order via
+`sdxGetNumInputs` + `sdxGetInputName` (the serving layer reorders named
+request tensors onto it automatically).
 
 ### 3. C Runtime Reuses Existing C++ Execution Path (Parity)
 
@@ -112,6 +125,11 @@ SDZ loading supports ZIP entries with:
 
 If zlib support is absent and model entries require DEFLATE, load fails with an explicit error.
 
+ZIP64 archives are supported (EOCD locator/record + per-entry 0x0001 extended
+info), so `.sdz` models over 4GB — which `java.util.zip` writes as ZIP64
+automatically — load correctly. The reader is in-memory; archives must fit in
+host RAM.
+
 ### 7. SDK Packaging Output
 
 A staging SDK target is provided:
@@ -131,9 +149,36 @@ Platform binding packages are emitted under:
 
 Language wrapper templates are staged in each package under:
 - `wrappers/` with APIs for Swift, Kotlin, Java, Python, Rust, and C#.
+- The Java wrapper source is copied at staging time from its canonical home
+  (the `nd4j-sdx` Maven module) into `wrappers/java/src/main/java/`, keeping a
+  single source of truth while making the staged package self-contained. The
+  Kotlin facade compiles against that staged sibling (or, in the source tree,
+  directly against the `nd4j-sdx` module path).
 
 Helper script for per-platform generation:
 - `libnd4j/tools/sdx-generate-bindings.sh --platform <id> --backend <cpu|cuda|amd>`
+
+### 7a. Standalone (Minimal) Runtime Packaging
+
+`-DSD_BUILD_SDX_STANDALONE=ON` (Maven: `-Dlibnd4j.sdx.standalone=ON`) builds
+`libsdx_cpu.so` / `libsdx_cuda.so` from the already-compiled object set — a
+JVM-free runtime whose exported symbol surface is restricted to `sdx*` via
+`cmake/sdx_exports.lds` (or `-exported_symbol` on Apple). When enabled:
+
+- `sdx_runtime_sdk` and every per-variant binding package/dist zip ship the
+  standalone library instead of the monolithic backend library.
+- `binding.json` records `"standalone": true|false` so loaders can detect
+  which runtime a package carries.
+- The packaged library copy (never the build-tree original) is stripped with
+  the toolchain `strip --strip-unneeded` when available.
+- `sdx-generate-bindings.sh` enables standalone mode by default
+  (`--no-standalone` opts out). The default Maven/CI builds keep it OFF to
+  avoid the extra link; enabling it in the release workflows is the remaining
+  M3 step.
+
+Language binding loaders (Python/Java/C#/Rust) probe the standalone library
+names (`sdx_cpu`, `sdx_cuda`) first and fall back to the monolithic backend
+names — both export the same `sdx*` ABI.
 
 Platform packaging goals remain:
 - Apple: `.xcframework`
@@ -147,7 +192,16 @@ Platform packaging goals remain:
 - requested/applied GPU target,
 - status code,
 - fallback marker (reserved for richer telemetry),
-- execution duration.
+- execution duration,
+- plan phase (0=SLOT_BY_SLOT/warmup, 1=SHAPES_FROZEN, 2=REPLAYING,
+  3=REPLAY_BLOCKED — the `PlanLifecycle::toLegacyCode()` scale),
+- execution count for the context.
+
+All language bindings expose the full report plus `sdxMarkInputVariable`,
+`sdxMarkInputPlaceholder`, `sdxFreezeShapes`, `sdxGetPlanPhase`, and
+`sdxGetExecutionCount`. The C layer serializes concurrent `sdxRun` calls on a
+context and guards error-string access, so bindings may share a context across
+threads without corrupting cached wrapper state.
 
 ### 9. Disk Plan Cache Integration
 
@@ -173,16 +227,18 @@ Configuration: `ND4J_DSP_PLAN_CACHE_DIR`, `ND4J_DSP_PLAN_CACHE_DISK_ENABLED`, `N
 
 ### Disadvantages
 
-- Packed `.dspb` archive support is not complete yet (manifest/unpacked path today).
 - AMD path depends on available GPU runtime plumbing in build/deploy environment.
-- Fallback telemetry is currently coarse (`used_fallback` reserved, not full reason graph yet).
+- Fallback telemetry is coarse: `applied_backend` is the plan's in-force mode
+  and `used_fallback` derives from segment capture failures / REPLAY_BLOCKED —
+  a boolean, not a full per-segment reason graph.
+- The SDZ/packed-.dspb readers are in-memory; archives must fit in host RAM.
 
 ## Milestones
 
 1. `M1` (implemented): public C ABI, SDZ/SDNB loading, runtime/context/run lifecycle, SDK staging target.
 2. `M2` (next): stricter segment-level backend capability checks and richer fallback reasons.
-3. `M3` (next): production packaging (`.xcframework`, `.aar`, Linux/Windows distributables).
-4. `M4` (next): CI/release gates across backend matrix with forced-mode conformance tests.
+3. `M3` (mostly implemented): production packaging (`.xcframework`, `.aar`, Linux/Windows distributables, standalone `libsdx_*` flow incl. per-variant zips + stripped copies + Java wrapper staging). Remaining: enable `-Dlibnd4j.sdx.standalone=ON` in the release CI workflows.
+4. `M4` (partial): `publish-sdx-runtime-sdk` action + `publish-sdk-release.yml` exist; `SdxCApiEndToEndTest` (platform-tests) exercises the full C ABI lifecycle against a real `.sdz`. Remaining: forced-mode conformance matrix across backends.
 
 ## References
 

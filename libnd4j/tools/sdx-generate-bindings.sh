@@ -29,6 +29,9 @@ Options:
   --cmake <path>           CMake executable (default: cmake)
   --jobs <n>               Build parallelism (default: nproc/sysctl)
   --extra-cmake "<flags>"  Additional CMake flags
+  --no-standalone          Package the monolithic backend library instead of the
+                           JVM-free standalone runtime (libsdx_cpu/libsdx_cuda).
+                           Standalone is the default for SDK packaging.
   -h, --help               Show this help
 
 Examples:
@@ -49,6 +52,7 @@ ANDROID_API="27"
 CMAKE_BIN="cmake"
 JOBS=""
 EXTRA_CMAKE=""
+STANDALONE="ON"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -87,6 +91,14 @@ while [[ $# -gt 0 ]]; do
     --extra-cmake)
       EXTRA_CMAKE="${2:-}"
       shift 2
+      ;;
+    --no-standalone)
+      STANDALONE="OFF"
+      shift
+      ;;
+    --standalone)
+      STANDALONE="ON"
+      shift
       ;;
     -h|--help)
       usage
@@ -142,6 +154,7 @@ fi
 
 COMMON_FLAGS=(
   -DSD_CPU=ON
+  -DSD_BUILD_SDX_STANDALONE="${STANDALONE}"
 )
 
 case "${BACKEND}" in

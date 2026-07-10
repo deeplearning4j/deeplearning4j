@@ -34,6 +34,11 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.common.base.Preconditions;
+
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @NoArgsConstructor
@@ -60,6 +65,17 @@ public class SRU extends DynamicCustomOp {
     public SRU(INDArray x, INDArray initialC, SRUWeights sruWeights) {
         super(wrapFilterNull(x, sruWeights.getIWeights(), sruWeights.getIBias(), initialC), null);
         this.weights = sruWeights;
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        // SRU outputs: h (cell outputs) and c (cell states), both same FP type as input x (index 0)
+        Preconditions.checkState(inputDataTypes != null && !inputDataTypes.isEmpty(),
+                "Expected at least 1 input to SRU, got %s", inputDataTypes);
+        DataType dt = inputDataTypes.get(0);
+        Preconditions.checkState(dt.isFPType(),
+                "SRU input x must be a floating point type, got %s", dt);
+        return Arrays.asList(dt, dt);
     }
 
     @Override

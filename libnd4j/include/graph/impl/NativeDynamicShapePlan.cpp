@@ -2296,10 +2296,6 @@ Status NativeDynamicShapePlan::execute(
     WarmupSerializationGuard(const WarmupSerializationGuard&) = delete;
     WarmupSerializationGuard& operator=(const WarmupSerializationGuard&) = delete;
   };
-  int warmupDeviceIdx = sd::graph::dspGetCurrentDevice();
-  if (warmupDeviceIdx < 0 || warmupDeviceIdx >= kMaxDevices) warmupDeviceIdx = 0;
-  bool needsWarmupLock = !planLifecycle_.isReplaying();
-  WarmupSerializationGuard warmupGuard(needsWarmupLock ? &g_warmupSerializationMtx[warmupDeviceIdx] : nullptr);
 
   if (numExternalInputs != numExternalInputs_) {
     DSP_DIAG(EXECUTE, "NativeDynamicShapePlan::execute: expected %d external inputs, got %d",
@@ -2312,6 +2308,12 @@ Status NativeDynamicShapePlan::execute(
               numRequestedOutputs_, numRequestedOutputs);
     return Status::BAD_ARGUMENTS;
   }
+
+  processPendingExternalViewReacquire(externalInputs, numExternalInputs);
+  int warmupDeviceIdx = sd::graph::dspGetCurrentDevice();
+  if (warmupDeviceIdx < 0 || warmupDeviceIdx >= kMaxDevices) warmupDeviceIdx = 0;
+  bool needsWarmupLock = !planLifecycle_.isReplaying();
+  WarmupSerializationGuard warmupGuard(needsWarmupLock ? &g_warmupSerializationMtx[warmupDeviceIdx] : nullptr);
 
   // Clear dirty bitmap.
   std::fill(dirtySlotGenerations_.begin(), dirtySlotGenerations_.end(), 0);
@@ -3650,6 +3652,16 @@ Status NativeDynamicShapePlan::executeSteadyState(
                    requestedOutputs, numRequestedOutputs, stream);
   }
 
+  // Quick argument count validation (cheap)
+  if (numExternalInputs != numExternalInputs_) {
+    return Status::BAD_ARGUMENTS;
+  }
+  if (numRequestedOutputs != numRequestedOutputs_) {
+    return Status::BAD_ARGUMENTS;
+  }
+
+  processPendingExternalViewReacquire(externalInputs, numExternalInputs);
+
   // Precondition check: fall back to full execute() if not in steady state
   if (!planLifecycle_.isReplaying() || executeCount_ < 4 ||
       Environment::getInstance().tritonVerifyKernels()) {
@@ -3661,14 +3673,6 @@ Status NativeDynamicShapePlan::executeSteadyState(
   }
   DSP_DIAG(EXECUTE, "[DSP_GATE] FAST executeSteadyState() — executeCount=%d planPhase=%s",
            (int)executeCount_, planLifecycle_.displayName());
-
-  // Quick argument count validation (cheap)
-  if (numExternalInputs != numExternalInputs_) {
-    return Status::BAD_ARGUMENTS;
-  }
-  if (numRequestedOutputs != numRequestedOutputs_) {
-    return Status::BAD_ARGUMENTS;
-  }
 
   // Advance dirty generation instead of clearing the entire bitmap.
   // The compositeReplay loop marks active slots with currentDirtyGeneration_,
@@ -5677,63 +5681,95 @@ void NativeDynamicShapePlan::reactivate() {
 }
 
 void NativeDynamicShapePlan::invalidateExternalViewSlotsOnReacquire() {
+  externalViewReacquirePending_ = true;
+  DSP_DIAG(EXECUTE,
+           "NEW_BORROWER: queued external-fed view validation plan=%p phase=%s execCount=%d",
+           (void*)this, planLifecycle_.displayName(), executeCount_);
+}
+
+void NativeDynamicShapePlan::processPendingExternalViewReacquire(NDArray** externalInputs, int numExternalInputs) {
+  if (!externalViewReacquirePending_) return;
+  externalViewReacquirePending_ = false;
   if (slots_ == nullptr || outputSlots_ == nullptr) return;
+
+  // Flush deferred slot deletes from prior executes/teardowns before the
+  // writeOutputSlot calls below push new entries. tl_deferredSlotDeletes is
+  // thread-local and outlives any single plan; entries left by a previous
+  // session (e.g. a plan torn down without a following execute on that plan)
+  // are freed-but-pending pointers whose memory the allocator may already
+  // have recycled for this plan's arrays. This runs in the execute preamble,
+  // so nothing on this thread is mid-execution — the flush is safe here for
+  // the same reason it is safe at platformEndExecution.
+  flushDeferredSlotDeletes();
+
+  int checked = 0;
+  int kept = 0;
   int cleared = 0;
+  int invalidCurrent = 0;
+  std::vector<char> touchedSegments(segments_.size(), 0);
+
   for (int s = 0; s < numSlots_; s++) {
     NativeSlot& slot = slots_[s];
     if (!slot.isViewCapableOp()) continue;
     if (slot.wiring.numInputs < 1 || slot.wiring.numOutputs < 1) continue;
-    // Only views whose PRIMARY input is an external array (src < 0): those
-    // wrap borrower-owned memory. Views over slot outputs wrap plan-owned
-    // buffers and stay valid across borrowers.
-    if (slot.wiring.inputSourceIndices[0] >= 0) continue;
+
+    int srcIdx = slot.wiring.inputSourceIndices[0];
+    if (srcIdx >= 0) continue;
+    int extIdx = -srcIdx - 1;
+    if (extIdx < 0 || extIdx >= numExternalInputs) continue;
+
     int si = slot.wiring.outputSlotIndices[0];
     if (si < 0 || si >= totalOutputSlots_) continue;
-    if (outputSlots_[si] == nullptr) continue;
+
+    NDArray* oldView = outputSlots_[si];
+    if (oldView == nullptr) continue;
+    checked++;
+
+    NDArray* currentExt = externalInputs != nullptr ? externalInputs[extIdx] : nullptr;
+    DataBuffer* oldDb = oldView->dataBuffer();
+    DataBuffer* currentDb = currentExt != nullptr ? currentExt->dataBuffer() : nullptr;
+    bool oldDbValid = oldDb != nullptr && oldDb->isValid();
+    bool currentDbValid = currentDb != nullptr && currentDb->isValid();
+
+    if (oldDbValid && currentDbValid && oldDb == currentDb) {
+      kept++;
+      continue;
+    }
+
+    if (!currentDbValid) invalidCurrent++;
+
     // Null value passes the frozen-phase guard and runs the guarded old-array
     // disposal (isValid()-gated delete, graph-baked address pinning).
     writeOutputSlot(si, nullptr, "new-borrower-ext-view-invalidate");
     cleared++;
-    // The cleared slot's segment must pass through warmup again so the view
-    // re-mints BEFORE any REPLAYING-phase all-slots-populated validation runs
-    // (otherwise: "null output slots in REPLAYING phase" on the first exec
-    // after a borrower switch of a frozen plan).
-    for (auto& seg : segments_) {
+
+    for (size_t segIdx = 0; segIdx < segments_.size(); segIdx++) {
+      auto& seg = segments_[segIdx];
       if (s >= seg.def.startSlot && s <= seg.def.endSlot) {
-        // resetForWarmup+markArgsStale alone re-warms CUDA-graph/JIT modes but
-        // NOT the emulated replay handle — EMULATED_REPLAY kept "replaying"
-        // past the freshly-nulled slot without re-minting the view
-        // (longViewChain/EMULATED_REPLAY frozen_replay_5 null-slot residue
-        // after the NVRTC/PTX siblings were fixed). Use the same full
-        // segment-capture invalidation the weight-rebind path uses
-        // (refreshProtectedWeightBuffers -> invalidateSegmentCaptures): it
-        // covers CUDA-graph, JIT and emulated handles in one call.
-        SegmentLifecycle::invalidateSegmentCaptures(this, seg, "new_borrower_ext_view");
-        seg.exec.resetForWarmup();
-        seg.exec.markArgsStale();
+        touchedSegments[segIdx] = 1;
         break;
       }
     }
   }
+
   if (cleared > 0) {
-    // The segment resets above put segments back in WARMUP but, until now, left the PLAN phase at
-    // REPLAYING. execute()'s pre-execute steady-state check (isReplaying() && a segment not fully
-    // replaying -> demotePlanPhase THROW, NativeDynamicShapePlan.cpp ~2842) runs BEFORE the
-    // anySegmentNeedsWarmup() re-warm dispatch, so a plan reacquired by a new borrower would throw
-    // "segment no longer satisfies replay steady state ... kind=demotion" (deterministic on a
-    // recurrent GDN model driven across many generates on one shared pipeline — each generate is a
-    // new borrower over fresh external KV/state buffers, invalidating these external-fed views).
-    // Complete the transition here: unseal REPLAYING -> SHAPES_FROZEN so the next execute() re-warms
-    // and re-captures the freshly-nulled views gracefully. Shapes are unchanged (the views only
-    // re-mint over new borrower memory), so SHAPES_FROZEN is correct — not SLOT_BY_SLOT (unfreeze).
+    for (size_t segIdx = 0; segIdx < segments_.size(); segIdx++) {
+      if (!touchedSegments[segIdx]) continue;
+      auto& seg = segments_[segIdx];
+      SegmentLifecycle::invalidateSegmentCaptures(this, seg, "new_borrower_ext_view");
+      seg.exec.resetForWarmup();
+      seg.exec.markArgsStale();
+    }
+
     if (planLifecycle_.isReplaying()) {
       planLifecycle_.unseal();
     }
-    DSP_DIAG(EXECUTE,
-             "NEW_BORROWER: invalidated %d external-fed view slots plan=%p (segments reset to warmup, "
-             "plan unsealed REPLAYING->SHAPES_FROZEN for graceful re-warm)",
-             cleared, (void*)this);
   }
+
+  DSP_DIAG(EXECUTE,
+           "NEW_BORROWER: external-fed view validation plan=%p checked=%d kept=%d cleared=%d invalidCurrent=%d phase=%s execCount=%d",
+           (void*)this, checked, kept, cleared, invalidCurrent,
+           planLifecycle_.displayName(), executeCount_);
 }
 
 // ─── Release GPU intermediates ───────────────────────────────────────────────
@@ -6050,22 +6086,31 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   releaseFrozenRefsForTeardown();
   platformMigrateWeightsAndClearCaches();
 
-  // ── Step 4b: Clear context pool output pointers ─────────────────────────
+  // ── Step 4b: Clear context pool input AND output pointers ───────────────
   // The context pool stores NDArray* in _fastpath_out that reference the
-  // outputSlots_ arrays freed above. Clear them so no re-use of this plan
-  // (from cache or otherwise) can dereference stale pointers via the
-  // frozen fast-path.
+  // outputSlots_ arrays freed above, and NDArray* in _fastpath_in that
+  // reference both those freed slot outputs and Java-owned external inputs
+  // that become invalid once the session resets (see Step 4c). Clear both so
+  // no re-use of this plan (from cache or otherwise) can dereference stale
+  // pointers via the frozen fast-path, and so a later setInputArray() on the
+  // pooled Context does not resize a vector still holding dangling entries.
   if (contextPool_ != nullptr) {
     int clearedCtxOutputs = 0;
+    int clearedCtxInputs = 0;
     for (int si = 0; si < numSlots_; si++) {
       if (contextPool_[si] != nullptr && !contextPool_[si]->fastpath_out().empty()) {
         contextPool_[si]->fastpath_out().clear();
         clearedCtxOutputs++;
       }
+      if (contextPool_[si] != nullptr && !contextPool_[si]->fastpath_in().empty()) {
+        contextPool_[si]->fastpath_in().clear();
+        clearedCtxInputs++;
+      }
     }
-    if (clearedCtxOutputs > 0) {
-      DSP_DIAG(MEMORY, "releaseGpuIntermediates: cleared context pool outputs for %d/%d slots",
-               clearedCtxOutputs, numSlots_);
+    if (clearedCtxOutputs > 0 || clearedCtxInputs > 0) {
+      DSP_DIAG(MEMORY,
+               "releaseGpuIntermediates: cleared context pool outputs for %d/%d and inputs for %d/%d slots",
+               clearedCtxOutputs, numSlots_, clearedCtxInputs, numSlots_);
     }
   }
 
@@ -6233,6 +6278,36 @@ void NativeDynamicShapePlan::setOutputSlotMaxSizes(const int* slotIndices, const
 
 // ─── Native KV scatter post-execution ───────────────────────────────────────
 
+void NativeDynamicShapePlan::registerDeviceManagedExternalInput(NDArray* input) {
+  if (input == nullptr || input->isEmpty() || input->dataBuffer() == nullptr) return;
+  void* devAddr = input->specialBuffer();
+  if (devAddr == nullptr) return;
+  for (void* existing : deviceManagedExternalInputAddrs_) {
+    if (existing == devAddr) return;
+  }
+  deviceManagedExternalInputAddrs_.push_back(devAddr);
+  DSP_DIAG(EXECUTE,
+           "registerDeviceManagedExternalInput: addr=%p total=%d",
+           devAddr, static_cast<int>(deviceManagedExternalInputAddrs_.size()));
+}
+
+bool NativeDynamicShapePlan::isDeviceManagedExternalInput(NDArray* input) const {
+  if (input == nullptr || input->isEmpty() || input->dataBuffer() == nullptr) return false;
+  void* devAddr = input->specialBuffer();
+  if (devAddr == nullptr) return false;
+  for (void* existing : deviceManagedExternalInputAddrs_) {
+    if (existing == devAddr) return true;
+  }
+  if (kvScatterConfigured_) {
+    for (const auto& entry : kvScatterEntries_) {
+      if (entry.staticBuf != nullptr && entry.staticBuf->specialBuffer() == devAddr) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void NativeDynamicShapePlan::configureKvScatter(const int* presentSlotIndices,
                                                  NDArray** staticKvBuffers,
                                                  int numPairs,
@@ -6360,6 +6435,7 @@ void NativeDynamicShapePlan::releaseKvScatterResources() {
   // The plan does NOT free it — it's managed by the Java UnifiedKvCacheManager
   // or whoever called configureKvScatter. We just clear the pointer.
   kvScatterEntries_.clear();
+  deviceManagedExternalInputAddrs_.clear();
   kvPositionDevice_ = nullptr;
   kvScatterConfigured_ = false;
 }

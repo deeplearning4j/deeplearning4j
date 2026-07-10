@@ -1468,6 +1468,50 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto kPtrTypeAttn = mlir::cast<mlir::triton::PointerType>(kPtr.getType());
   auto vPtrTypeAttn = mlir::cast<mlir::triton::PointerType>(vPtr.getType());
   auto outPtrTypeAttn = mlir::cast<mlir::triton::PointerType>(outPtr.getType());
+
+  // ── INT8 KV-cache path detection ──────────────────────────────────────────
+  // If kPtr's pointee type is i8 we take the INT8 dequant path for both K and V.
+  // Row-inline layout (same for both K and V buffers, BSHD contiguous):
+  //   logical shape [batch, seqK, kvHeads, headDim+4] in i8 elements
+  //   for each (b, s, kvHead) row:
+  //     bytes [0,       headDim)   = headDim i8 quantised values
+  //     bytes [headDim, headDim+4) = ONE f32 per-row scale (4-byte aligned, little-endian)
+  // Row pitch = (headDim+4) i8 elements.
+  // Only the single-buffer (non-dualBuffer) path is INT8-capable.
+  // The dualBuffer past-KV path always uses f32 (different layout).
+  bool kvIsInt8 = mlir::isa<mlir::IntegerType>(kPtrTypeAttn.getPointeeType()) &&
+                  kPtrTypeAttn.getPointeeType().getIntOrFloatBitWidth() == 8;
+
+  // f32 pointer type used for scale loading
+  auto f32PtrType = mlir::triton::PointerType::get(f32Type, 1);
+
+  // Row-inline INT8 KV layout: each row is (headDim i8 values) + (4 bytes = one f32 scale).
+  // Row pitch = headDim + 4 i8 elements; used only when kvIsInt8 && !dualBuffer.
+  mlir::Value kvBaseI8, kvRowStrideI8;
+  mlir::Value vBaseI8, vRowStrideI8;
+  if (kvIsInt8 && !dualBuffer) {
+    // headDimPlus4 = headDim + 4  (compile-time constant, fits in i32)
+    int headDimPlus4 = headDim + 4;
+    auto headDimPlus4Const = builder.create<mlir::arith::ConstantIntOp>(loc, headDimPlus4, 32);
+
+    // BSHD layout (INT8 always staged as BSHD per contract):
+    //   base      = batchIdx * seqK * numKvHeads * (headDim+4) + kvHeadIdx * (headDim+4)
+    //   rowStride = numKvHeads * (headDim+4)
+    auto kvNhTimesHdP4 = builder.create<mlir::arith::MulIOp>(loc, numKvHeadsConst, headDimPlus4Const);
+    auto kvStride0I8 = builder.create<mlir::arith::MulIOp>(loc, seqKConst, kvNhTimesHdP4);
+    kvBaseI8 = builder.create<mlir::arith::AddIOp>(loc,
+        builder.create<mlir::arith::MulIOp>(loc, batchIdx, kvStride0I8),
+        builder.create<mlir::arith::MulIOp>(loc, kvHeadIdx, headDimPlus4Const));
+    kvRowStrideI8 = kvNhTimesHdP4;
+
+    // V has the same layout/strides as K (same pitch).
+    vBaseI8 = kvBaseI8;
+    vRowStrideI8 = kvRowStrideI8;
+
+    DSP_DIAG(JIT, "emitFusedAttentionKernel: INT8 KV row-inline path, headDim=%d pitch=%d",
+             headDim, headDimPlus4);
+  }
+
   auto qPtrTensorType = mlir::RankedTensorType::get({blockM, headDimPadded}, qPtrType);
   auto qSplat = builder.create<mlir::triton::SplatOp>(loc, qPtrTensorType, qPtr);
   auto qPtrs = builder.create<mlir::triton::AddPtrOp>(loc, qPtrTensorType, qSplat, qFinalOffsets);
@@ -1636,8 +1680,84 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
 
     // Merge: addition works because exactly one is zero per element (masked load returns 0)
     kLoaded = builder.create<mlir::arith::AddFOp>(loc, pastKLoaded, curKLoaded);
+  } else if (kvIsInt8) {
+    // ── Single-buffer INT8 K load + dequant (row-inline layout) ──────────────
+    // Row layout: [headDim i8 values | 4 bytes f32 scale] per (b, s, kvHead) row.
+    // Row pitch = headDim+4 i8 elements; kvBaseI8 / kvRowStrideI8 set above.
+
+    // 1. Recompute K pointers using the INT8 row pitch (headDim+4).
+    //    kFinalOffsets was built with float kvBase/kvRowStride (headDim pitch) — wrong for INT8.
+    //    We rebuild: kRowI8Offsets[bn] = kvBaseI8 + kIndicesClamped[bn] * kvRowStrideI8
+    //    then add the column offset (rangeHdForPtr) for the i8 value lanes [0, headDim).
+    auto kvRowStrideI8Splat = builder.create<mlir::triton::SplatOp>(loc,
+        mlir::RankedTensorType::get({blockN, 1}, i32Type), kvRowStrideI8);
+    auto kRowI8Offsets = builder.create<mlir::arith::MulIOp>(loc, kNExpanded, kvRowStrideI8Splat);
+    auto kRowI8Broadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, kRowI8Offsets);
+    auto kI8Offsets2D = builder.create<mlir::arith::AddIOp>(loc, kRowI8Broadcast, hdBroadcastK);
+    auto kvBaseI8Splat = builder.create<mlir::triton::SplatOp>(loc, i32BnHdType, kvBaseI8);
+    auto kI8FinalOffsets = builder.create<mlir::arith::AddIOp>(loc, kvBaseI8Splat, kI8Offsets2D);
+
+    auto kI8PtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, kPtrTypeAttn);
+    auto kI8Splat = builder.create<mlir::triton::SplatOp>(loc, kI8PtrTensorType, kPtr);
+    auto kI8Ptrs = builder.create<mlir::triton::AddPtrOp>(loc, kI8PtrTensorType, kI8Splat, kI8FinalOffsets);
+
+    // 2. Load raw i8 tile [blockN, headDimPadded] with K mask.
+    auto kLoadedI8 = builder.create<mlir::triton::LoadOp>(loc,
+        kI8Ptrs, kMask2D, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    // 3. SIToFP: i8 → f32, tile shape [blockN, headDimPadded]
+    auto kLoadedF32 = builder.create<mlir::arith::SIToFPOp>(loc, f32BnHdType, kLoadedI8);
+
+    // 4. Load per-row scales: row-inline at byte offset headDim within each row.
+    //    scaleByteOffset[bn] = kvBaseI8 + kIndicesClamped[bn] * kvRowStrideI8 + headDim
+    //    This is an i8 element offset into kPtr; we AddPtrOp then PtrToInt/IntToPtr → f32*.
+    auto i32BnTypeScale = mlir::RankedTensorType::get({blockN}, i32Type);
+    auto headDimConstScale = builder.create<mlir::arith::ConstantIntOp>(loc, headDim, 32);
+
+    // kIndicesClamped[bn] * kvRowStrideI8  (vector [blockN])
+    auto kvRowStrideI8Splat1D = builder.create<mlir::triton::SplatOp>(
+        loc, i32BnTypeScale, kvRowStrideI8);
+    auto kRowScaleOffsets = builder.create<mlir::arith::MulIOp>(
+        loc, kIndicesClamped, kvRowStrideI8Splat1D);
+
+    // + kvBaseI8  (scalar broadcast)
+    auto kvBaseI8Splat1D = builder.create<mlir::triton::SplatOp>(
+        loc, i32BnTypeScale, kvBaseI8);
+    auto kRowScaleBase = builder.create<mlir::arith::AddIOp>(
+        loc, kvBaseI8Splat1D, kRowScaleOffsets);
+
+    // + headDim  (byte offset to the f32 scale within the row)
+    auto headDimSplat1D = builder.create<mlir::triton::SplatOp>(
+        loc, i32BnTypeScale, headDimConstScale);
+    auto kScaleByteOffsets = builder.create<mlir::arith::AddIOp>(
+        loc, kRowScaleBase, headDimSplat1D);
+
+    // Build i8* pointer tensor [blockN] pointing at the scale bytes, then reinterpret as f32*.
+    auto kI8PtrBnType = mlir::RankedTensorType::get({blockN}, kPtrTypeAttn);
+    auto kI8ScalePtrSplat = builder.create<mlir::triton::SplatOp>(loc, kI8PtrBnType, kPtr);
+    auto kI8ScalePtrs = builder.create<mlir::triton::AddPtrOp>(
+        loc, kI8PtrBnType, kI8ScalePtrSplat, kScaleByteOffsets);
+    // Reinterpret each i8* as f32* via PtrToInt + IntToPtr (element pointer cast)
+    auto i64Type = builder.getI64Type();
+    auto i64BnType = mlir::RankedTensorType::get({blockN}, i64Type);
+    auto f32PtrBnType = mlir::RankedTensorType::get({blockN}, f32PtrType);
+    auto kScalePtrAsI64 = builder.create<mlir::triton::PtrToIntOp>(
+        loc, i64BnType, kI8ScalePtrs);
+    auto kScalePtrsF32 = builder.create<mlir::triton::IntToPtrOp>(
+        loc, f32PtrBnType, kScalePtrAsI64);
+    // Load f32 scales [blockN] with the same K-position mask as the K tile
+    auto kScalesLoaded = builder.create<mlir::triton::LoadOp>(loc,
+        kScalePtrsF32, kMask1D, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+
+    // 5. Broadcast scale [blockN] → [blockN, headDimPadded] and multiply.
+    auto kScalesExp = builder.create<mlir::triton::ExpandDimsOp>(
+        loc, kScalesLoaded, 1);  // [blockN, 1]
+    auto kScalesBroadcast = builder.create<mlir::triton::BroadcastOp>(
+        loc, f32BnHdType, kScalesExp);
+    kLoaded = builder.create<mlir::arith::MulFOp>(loc, kLoadedF32, kScalesBroadcast);
   } else {
-    // Single-buffer K loading (original path)
+    // Single-buffer K loading (original f32/f16 path — unchanged)
     auto kLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
         kPtrs, kMask2D, mlir::Value(),
         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
@@ -1851,8 +1971,80 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
     auto curVLoaded = castTo(builder, loc, curVLoadedRaw, f32Type);
 
     vLoaded = builder.create<mlir::arith::AddFOp>(loc, pastVLoaded, curVLoaded);
+  } else if (kvIsInt8) {
+    // ── Single-buffer INT8 V load + dequant (row-inline layout) ──────────────
+    // V has the same row-inline layout as K: each (b,s,kvHead) row is
+    //   bytes [0, headDim)   = i8 quantised V values
+    //   bytes [headDim, headDim+4) = f32 per-row scale
+    // Row pitch = headDim+4; vBaseI8 / vRowStrideI8 == kvBaseI8 / kvRowStrideI8 (set above).
+
+    // 1. Recompute V pointers using the INT8 row pitch.
+    //    We cannot reuse kFinalOffsets (built with float headDim pitch) or kI8FinalOffsets
+    //    (belong to K's i8 ptr, not V's i8 ptr — different base pointer).
+    auto vRowStrideI8Splat = builder.create<mlir::triton::SplatOp>(loc,
+        mlir::RankedTensorType::get({blockN, 1}, i32Type), vRowStrideI8);
+    auto vRowI8Offsets = builder.create<mlir::arith::MulIOp>(loc, kNExpanded, vRowStrideI8Splat);
+    auto vRowI8Broadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, vRowI8Offsets);
+    auto vI8Offsets2D = builder.create<mlir::arith::AddIOp>(loc, vRowI8Broadcast, hdBroadcastK);
+    auto vBaseI8Splat2D = builder.create<mlir::triton::SplatOp>(loc, i32BnHdType, vBaseI8);
+    auto vI8FinalOffsets = builder.create<mlir::arith::AddIOp>(loc, vBaseI8Splat2D, vI8Offsets2D);
+
+    auto vI8PtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, vPtrTypeAttn);
+    auto vI8Splat = builder.create<mlir::triton::SplatOp>(loc, vI8PtrTensorType, vPtr);
+    auto vI8Ptrs = builder.create<mlir::triton::AddPtrOp>(loc, vI8PtrTensorType, vI8Splat, vI8FinalOffsets);
+
+    // 2. Load raw i8 tile [blockN, headDimPadded] with K mask.
+    auto vLoadedI8 = builder.create<mlir::triton::LoadOp>(loc,
+        vI8Ptrs, kMask2D, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    // 3. SIToFP: i8 → f32
+    auto vLoadedF32 = builder.create<mlir::arith::SIToFPOp>(loc, f32BnHdType, vLoadedI8);
+
+    // 4. Load per-row V scales: row-inline at byte offset headDim within each V row.
+    //    scaleByteOffset[bn] = vBaseI8 + kIndicesClamped[bn] * vRowStrideI8 + headDim
+    auto i32BnTypeScaleV = mlir::RankedTensorType::get({blockN}, i32Type);
+    auto headDimConstScaleV = builder.create<mlir::arith::ConstantIntOp>(loc, headDim, 32);
+
+    auto vRowStrideI8Splat1D = builder.create<mlir::triton::SplatOp>(
+        loc, i32BnTypeScaleV, vRowStrideI8);
+    auto vRowScaleOffsets = builder.create<mlir::arith::MulIOp>(
+        loc, kIndicesClamped, vRowStrideI8Splat1D);
+
+    auto vBaseI8Splat1D = builder.create<mlir::triton::SplatOp>(
+        loc, i32BnTypeScaleV, vBaseI8);
+    auto vRowScaleBase = builder.create<mlir::arith::AddIOp>(
+        loc, vBaseI8Splat1D, vRowScaleOffsets);
+
+    auto headDimSplat1DV = builder.create<mlir::triton::SplatOp>(
+        loc, i32BnTypeScaleV, headDimConstScaleV);
+    auto vScaleByteOffsets = builder.create<mlir::arith::AddIOp>(
+        loc, vRowScaleBase, headDimSplat1DV);
+
+    // Build i8* pointer tensor [blockN] pointing at the V scale bytes, reinterpret as f32*.
+    auto vI8PtrBnType = mlir::RankedTensorType::get({blockN}, vPtrTypeAttn);
+    auto vI8ScalePtrSplat = builder.create<mlir::triton::SplatOp>(loc, vI8PtrBnType, vPtr);
+    auto vI8ScalePtrs = builder.create<mlir::triton::AddPtrOp>(
+        loc, vI8PtrBnType, vI8ScalePtrSplat, vScaleByteOffsets);
+    auto i64TypeV = builder.getI64Type();
+    auto i64BnTypeV = mlir::RankedTensorType::get({blockN}, i64TypeV);
+    auto f32PtrBnTypeV = mlir::RankedTensorType::get({blockN}, f32PtrType);
+    auto vScalePtrAsI64 = builder.create<mlir::triton::PtrToIntOp>(
+        loc, i64BnTypeV, vI8ScalePtrs);
+    auto vScalePtrsF32 = builder.create<mlir::triton::IntToPtrOp>(
+        loc, f32PtrBnTypeV, vScalePtrAsI64);
+    // Load f32 scales [blockN] with K-position mask (mirrors kMask1D usage in K path)
+    auto vScalesLoaded = builder.create<mlir::triton::LoadOp>(loc,
+        vScalePtrsF32, kMask1D, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+
+    // 5. Broadcast scale [blockN] → [blockN, headDimPadded] and multiply
+    auto vScalesExp = builder.create<mlir::triton::ExpandDimsOp>(
+        loc, vScalesLoaded, 1);  // [blockN, 1]
+    auto vScalesBroadcast = builder.create<mlir::triton::BroadcastOp>(
+        loc, f32BnHdType, vScalesExp);
+    vLoaded = builder.create<mlir::arith::MulFOp>(loc, vLoadedF32, vScalesBroadcast);
   } else {
-    // Single-buffer V loading (original path)
+    // Single-buffer V loading (original f32/f16 path — unchanged)
     auto vPtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, vPtrTypeAttn);
     auto vSplat = builder.create<mlir::triton::SplatOp>(loc, vPtrTensorType, vPtr);
     auto vPtrs = builder.create<mlir::triton::AddPtrOp>(loc, vPtrTensorType, vSplat, kFinalOffsets);
@@ -1908,9 +2100,9 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
                                          mlir::triton::EvictionPolicy::NORMAL);
 
   DSP_DIAG(JIT, "TritonIRBuilder: emitted fused attention kernel batch=%d qHeads=%d kvHeads=%d seqQ=%d seqK=%d "
-            "headDim=%d scale=%f BM=%d BN=%d kvGroupSize=%d hasBias=%d dualBuffer=%d",
+            "headDim=%d scale=%f BM=%d BN=%d kvGroupSize=%d hasBias=%d dualBuffer=%d kvIsInt8=%d",
             batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim, scale, blockM, blockN, kvGroupSize,
-            biasPtr ? 1 : 0, dualBuffer ? 1 : 0);
+            biasPtr ? 1 : 0, dualBuffer ? 1 : 0, kvIsInt8 ? 1 : 0);
 }
 
 // ─── Present KV write (for compound attention ops) ──────────────────────────

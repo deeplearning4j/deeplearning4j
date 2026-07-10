@@ -306,6 +306,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                       std::hash<std::string>()(execEnv.tritonExcludeOps()),
                       std::hash<std::string>()(execEnv.tritonIncludeTypes()),
                       execEnv.tritonGraphCapture()};
+  // Must match the dtype hash used at compileSegment time so INT8 and FLOAT32
+  // kernels for the same shapes map to distinct cache entries.
+  key.segInternalDtypeHash = computeSegInternalDtypeHash(slots, seg.def.startSlot, seg.def.endSlot,
+                                                          externalInputs, numExternalInputs,
+                                                          outputSlots, totalOutputSlots);
 
   CompiledSegment* compiledSeg = nullptr;
   {
@@ -1493,8 +1498,17 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, activeDevice, compileAll, excludeOpsHash, includeTypesHash, graphCapture};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
+  // Recover segInternalDtypeHash via secondary index (no outputSlots here).
+  key.segInternalDtypeHash = lookupDtypeHash(seg.def.startSlot, seg.def.endSlot,
+                                              seg.def.shapeKeyState.compiledShapeKey, activeDevice);
   auto it = cache_.find(key);
-  if (it == cache_.end()) {
+  const CompiledSegment* gapCompiledSeg = (it != cache_.end()) ? &it->second : nullptr;
+  if (gapCompiledSeg == nullptr) {
+    // Recovered hash may be stale/0 — a false miss here classifies EVERY slot as a gap
+    // (whole segment re-executed natively). Loose-match before giving up.
+    gapCompiledSeg = findCompiledSegmentAnyDtype(key);
+  }
+  if (gapCompiledSeg == nullptr) {
     for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
       gapSlots.insert(s);
     }
@@ -1502,7 +1516,7 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
   }
 
   std::unordered_set<int> coveredSlots;
-  for (const auto& sk : it->second.subKernels) {
+  for (const auto& sk : gapCompiledSeg->subKernels) {
     for (int s = sk.startSlot_; s <= sk.endSlot_; s++) {
       coveredSlots.insert(s);
     }
@@ -1646,6 +1660,7 @@ void TritonGraphBackend::invalidateCache() {
   }
   cache_.clear();
   failedCache_.clear();
+  dtypeIndex_.clear();
   lastCompilationAudit_.clear();
 }
 
@@ -1753,6 +1768,11 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
         kernel.moduleCaptureOwned = false;
         freedModules++;
       }
+    }
+    // Remove from secondary dtype index.
+    {
+      const auto& k = it->first;
+      dtypeIndex_.erase(DtypeIndexKey{k.startSlot, k.endSlot, k.shapeKey, k.deviceId});
     }
     freedEntries++;
     it = cache_.erase(it);

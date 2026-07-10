@@ -75,6 +75,8 @@ class _FakeRegistry:
             "execution_time_ns": 123,
             "requested_gpu_target": 0,
             "applied_gpu_target": 0,
+            "plan_phase": 1,
+            "execution_count": 1,
         }
         return outputs, report
 
@@ -159,6 +161,8 @@ class SdxSdkRunnerRestTests(unittest.TestCase):
 
         report = json.loads(response.headers["X-SDX-Execution-Report"])
         self.assertEqual(report["status_code"], 0)
+        self.assertEqual(report["plan_phase"], 1)
+        self.assertEqual(report["execution_count"], 1)
 
     def test_run_unknown_model_returns_not_found(self):
         response = self.client.post(

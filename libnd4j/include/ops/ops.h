@@ -1993,8 +1993,8 @@ DECLARE_NOT_SIMD_SAFE(Not,
 
 
 DECLARE_ACCUMULATION_SIMD_SAFE_OP(Variance,
-                                  X mean = static_cast<InterType>(params[0]);
-                                      X ret = d1 - mean;
+                                  InterType mean = static_cast<InterType>(params[0]);
+                                      InterType ret = d1 - mean;
                                       return ret * ret;,
                                   SUM, static_cast<X>(0.0f),
                                   old + opOutput,

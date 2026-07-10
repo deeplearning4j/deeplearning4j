@@ -48,6 +48,8 @@ def _to_execution_report_dict(report) -> Dict[str, Union[int, bool]]:
         "execution_time_ns": int(report.execution_time_ns),
         "requested_gpu_target": int(report.requested_gpu_target),
         "applied_gpu_target": int(report.applied_gpu_target),
+        "plan_phase": int(getattr(report, "plan_phase", -1)),
+        "execution_count": int(getattr(report, "execution_count", -1)),
     }
 
 
@@ -151,7 +153,7 @@ class SdxModelRegistry:
         if managed is None:
             raise KeyError(model_id)
 
-        input_arrays = [arr for _, arr in inputs]
+        input_arrays = self._order_inputs_for_plan(managed, inputs)
         output_arrays = allocate_outputs(output_specs)
 
         with managed.lock:
@@ -160,6 +162,31 @@ class SdxModelRegistry:
 
         named_outputs = [(spec.name, out) for spec, out in zip(output_specs, output_arrays)]
         return named_outputs, _to_execution_report_dict(report)
+
+    @staticmethod
+    def _order_inputs_for_plan(
+        managed: "_ManagedModel", inputs: Sequence[Tuple[str, object]]
+    ) -> List[object]:
+        """Reorder named request tensors to the plan's external input order.
+
+        The plan binds external inputs positionally (constants, variables, and
+        placeholders). When the context exposes input names and every request
+        tensor name matches, requests may arrive in any order; otherwise the
+        client-provided order is trusted as-is.
+        """
+        by_name = {name: arr for name, arr in inputs}
+        try:
+            plan_names = managed.context.input_names()
+        except Exception:
+            plan_names = []
+        if (
+            plan_names
+            and len(plan_names) == len(inputs)
+            and len(by_name) == len(inputs)
+            and all(name in by_name for name in plan_names)
+        ):
+            return [by_name[name] for name in plan_names]
+        return [arr for _, arr in inputs]
 
 
 # ---------------------------------------------------------------------------
@@ -445,6 +472,8 @@ def _start_grpc_server(
                 response.report.execution_time_ns = int(report["execution_time_ns"])
                 response.report.requested_gpu_target = int(report["requested_gpu_target"])
                 response.report.applied_gpu_target = int(report["applied_gpu_target"])
+                response.report.plan_phase = int(report.get("plan_phase", -1))
+                response.report.execution_count = int(report.get("execution_count", -1))
                 return response
             except KeyError:
                 context.set_code(grpc.StatusCode.NOT_FOUND)

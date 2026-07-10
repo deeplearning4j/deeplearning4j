@@ -55,10 +55,34 @@ _sdx_copy_if_exists(SDX_README_FILE "${_binding_include_dir}")
 _sdx_copy_if_exists(SDX_SCHEMA_FILE "${_binding_share_dir}")
 _sdx_copy_if_exists(SDX_LIBRARY_FILE "${_binding_lib_dir}")
 
+# Strip the PACKAGED copy of the runtime library (never the build-tree
+# original) to keep exported SDK artifacts small. SDX_STRIP_TOOL is the
+# toolchain strip from the parent configure; empty disables stripping.
+if(DEFINED SDX_STRIP_TOOL AND NOT "${SDX_STRIP_TOOL}" STREQUAL "" AND EXISTS "${SDX_STRIP_TOOL}")
+  get_filename_component(_packaged_lib_name "${SDX_LIBRARY_FILE}" NAME)
+  set(_packaged_lib "${_binding_lib_dir}/${_packaged_lib_name}")
+  if(EXISTS "${_packaged_lib}")
+    execute_process(
+        COMMAND "${SDX_STRIP_TOOL}" --strip-unneeded "${_packaged_lib}"
+        RESULT_VARIABLE _strip_rc)
+    if(NOT _strip_rc EQUAL 0)
+      message(WARNING "SdxRuntimePackage: strip failed for ${_packaged_lib} (rc=${_strip_rc}); shipping unstripped")
+    endif()
+  endif()
+endif()
+
 if(DEFINED SDX_BINDINGS_TEMPLATE_DIR AND
    NOT "${SDX_BINDINGS_TEMPLATE_DIR}" STREQUAL "" AND
    EXISTS "${SDX_BINDINGS_TEMPLATE_DIR}")
   file(COPY "${SDX_BINDINGS_TEMPLATE_DIR}/" DESTINATION "${_binding_wrappers_dir}")
+endif()
+
+# Stage the canonical Java wrapper source (kept in the nd4j-sdx module, not
+# duplicated in the bindings template tree) so wrappers/java is buildable.
+if(DEFINED SDX_JAVA_SRC_DIR AND NOT "${SDX_JAVA_SRC_DIR}" STREQUAL "" AND
+   EXISTS "${SDX_JAVA_SRC_DIR}")
+  file(MAKE_DIRECTORY "${_binding_wrappers_dir}/java/src/main/java")
+  file(COPY "${SDX_JAVA_SRC_DIR}/" DESTINATION "${_binding_wrappers_dir}/java/src/main/java")
 endif()
 
 if(DEFINED SDX_LINKER_FILE AND NOT "${SDX_LINKER_FILE}" STREQUAL "" AND
@@ -137,6 +161,12 @@ file(APPEND "${_binding_metadata_path}" "  },\n")
 file(APPEND "${_binding_metadata_path}" "  \"variant\": \"${SDX_VARIANT}\",\n")
 file(APPEND "${_binding_metadata_path}" "  \"defaultGpuTarget\": \"${SDX_DEFAULT_GPU_TARGET}\",\n")
 file(APPEND "${_binding_metadata_path}" "  \"supportedGpuTargets\": ${_gpu_targets_json},\n")
+set(_standalone_json "false")
+if(DEFINED SDX_STANDALONE AND ("${SDX_STANDALONE}" STREQUAL "1" OR
+   "${SDX_STANDALONE}" STREQUAL "ON" OR "${SDX_STANDALONE}" STREQUAL "TRUE"))
+  set(_standalone_json "true")
+endif()
+file(APPEND "${_binding_metadata_path}" "  \"standalone\": ${_standalone_json},\n")
 file(APPEND "${_binding_metadata_path}" "  \"runtimeLibrary\": \"${_runtime_lib_name}\",\n")
 if(NOT "${_runtime_link_name}" STREQUAL "")
   file(APPEND "${_binding_metadata_path}" "  \"runtimeLinkerFile\": \"${_runtime_link_name}\",\n")

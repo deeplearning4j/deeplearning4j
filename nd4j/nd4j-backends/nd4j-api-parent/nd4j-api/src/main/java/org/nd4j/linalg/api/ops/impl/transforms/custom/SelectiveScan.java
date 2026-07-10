@@ -73,6 +73,13 @@ public class SelectiveScan extends DynamicCustomOp {
     }
 
     /**
+     * INDArray constructor (5 inputs, no initial hidden state).
+     */
+    public SelectiveScan(INDArray x, INDArray a, INDArray b, INDArray c, INDArray d) {
+        this(x, a, b, c, d, (INDArray) null);
+    }
+
+    /**
      * INDArray constructor without output pre-allocation.
      */
     public SelectiveScan(INDArray x, INDArray a, INDArray b, INDArray c, INDArray d,

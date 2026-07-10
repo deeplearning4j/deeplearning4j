@@ -616,9 +616,19 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
 
 void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* actualDeviceId,
                                        bool skipSameDeviceRetry, cudaStream_t consumerStream) {
-  sd_debug("CudaMemoryPool::allocateFailover: %s on device %d for %zu bytes\n",
-           skipSameDeviceRetry ? "Proactive soft-limit failover" : "Primary allocation failed",
-           currentDeviceId, size);
+  const char* failoverReason = skipSameDeviceRetry ? "proactive-or-budget" : "primary-allocation-failed";
+  DSP_DIAG(MEMORY,
+           "ALLOCATE_FAILOVER_BEGIN: reason=%s currentDevice=%d requestedBytes=%zu skipSameDeviceRetry=%d consumerStream=%p",
+           failoverReason, currentDeviceId, size, (int)skipSameDeviceRetry, (void*)consumerStream);
+  if (DSP_DIAG_ENABLED(MEMORY) || sd::Environment::getInstance().isVerbose()) {
+    sd_printf("CudaMemoryPool::allocateFailover: BEGIN reason=%s currentDevice=%d requested=%zu bytes "
+              "skipSameDeviceRetry=%d consumerStream=%p\n",
+              failoverReason, currentDeviceId, size, (int)skipSameDeviceRetry, (void*)consumerStream);
+  } else {
+    sd_debug("CudaMemoryPool::allocateFailover: %s on device %d for %zu bytes\n",
+             skipSameDeviceRetry ? "Proactive soft-limit failover" : "Primary allocation failed",
+             currentDeviceId, size);
+  }
 
   // OOM path: reap any completed deferred direct frees first — their memory may
   // be exactly what this allocation needs (task #57).
@@ -747,12 +757,21 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   struct DeviceInfo { int id; size_t freeMem; bool isPeer; };
   std::vector<DeviceInfo> candidates;
   for (int d = 0; d < deviceCount && d < MAX_DEVICES; d++) {
-    if (d == currentDeviceId) continue;
-    if (isDeviceExcludedFromFailover(d)) continue;
+    if (d == currentDeviceId) {
+      DSP_DIAG(MEMORY, "ALLOCATE_FAILOVER_CANDIDATE_SKIP: device=%d reason=current-device", d);
+      continue;
+    }
+    if (isDeviceExcludedFromFailover(d)) {
+      DSP_DIAG(MEMORY, "ALLOCATE_FAILOVER_CANDIDATE_SKIP: device=%d reason=excluded", d);
+      continue;
+    }
 
     bool isPeer = peerAccessEnabled_[currentDeviceId][d];
     cudaError_t setDeviceErr = cudaSetDevice(d);
     if (setDeviceErr != cudaSuccess) {
+      DSP_DIAG(MEMORY,
+               "ALLOCATE_FAILOVER_CANDIDATE_SKIP: device=%d reason=cudaSetDevice-failed error=%d message=%s",
+               d, (int)setDeviceErr, cudaGetErrorString(setDeviceErr));
       cudaGetLastError();
       continue;
     }
@@ -765,9 +784,21 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     }
 
     size_t freeMem = 0, totalMem = 0;
-    cudaMemGetInfo(&freeMem, &totalMem);
+    cudaGetLastError();
+    cudaError_t infoErr = cudaMemGetInfo(&freeMem, &totalMem);
+    if (infoErr != cudaSuccess) {
+      DSP_DIAG(MEMORY,
+               "ALLOCATE_FAILOVER_CANDIDATE_SKIP: device=%d reason=cudaMemGetInfo-failed error=%d message=%s",
+               d, (int)infoErr, cudaGetErrorString(infoErr));
+      cudaGetLastError();
+      continue;
+    }
     if (freeMem > size * 1.1) {  // 10% margin
       candidates.push_back({d, freeMem, isPeer});
+    } else {
+      DSP_DIAG(MEMORY,
+               "ALLOCATE_FAILOVER_CANDIDATE_SKIP: device=%d reason=insufficient-free freeMB=%zu totalMB=%zu requestedBytes=%zu peer=%d",
+               d, freeMem / (1024*1024), totalMem / (1024*1024), size, (int)isPeer);
     }
   }
   cudaSetDevice(prevDev);
@@ -777,6 +808,24 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     if (a.isPeer != b.isPeer) return a.isPeer > b.isPeer;  // peers first
     return a.freeMem > b.freeMem;
   });
+  DSP_DIAG(MEMORY,
+           "ALLOCATE_FAILOVER_CANDIDATES: reason=%s currentDevice=%d deviceCount=%d candidateCount=%zu requestedBytes=%zu",
+           failoverReason, currentDeviceId, deviceCount, candidates.size(), size);
+  if (DSP_DIAG_ENABLED(MEMORY) || sd::Environment::getInstance().isVerbose()) {
+    sd_printf("CudaMemoryPool::allocateFailover: candidates reason=%s currentDevice=%d "
+              "deviceCount=%d candidateCount=%zu requested=%zu bytes\n",
+              failoverReason, currentDeviceId, deviceCount, candidates.size(), size);
+  }
+  for (size_t rank = 0; rank < candidates.size(); rank++) {
+    const auto& c = candidates[rank];
+    DSP_DIAG(MEMORY,
+             "ALLOCATE_FAILOVER_CANDIDATE: rank=%zu device=%d peer=%d freeMB=%zu requestedBytes=%zu",
+             rank, c.id, (int)c.isPeer, c.freeMem / (1024*1024), size);
+    if (DSP_DIAG_ENABLED(MEMORY) || sd::Environment::getInstance().isVerbose()) {
+      sd_printf("CudaMemoryPool::allocateFailover: candidate rank=%zu device=%d %s free=%zu MB requested=%zu bytes\n",
+                rank, c.id, c.isPeer ? "peer" : "non-peer/managed", c.freeMem / (1024*1024), size);
+    }
+  }
 
   // MEMORY PRESSURE EVENT: Build and report to callback
   MemoryPressureEvent event;
@@ -831,9 +880,20 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
       if (err == cudaSuccess && ptr != nullptr) {
         sd_debug("CudaMemoryPool::allocateFailover: Succeeded via pool on peer device %d for %zu bytes\n", d, size);
         if (actualDeviceId) *actualDeviceId = d;
+        DSP_DIAG(MEMORY,
+                 "ALLOCATE_FAILOVER_CHOSEN: reason=%s kind=peer-device requestedDevice=%d actualDevice=%d bytes=%zu freeBeforeMB=%zu",
+                 failoverReason, currentDeviceId, d, size, candidate.freeMem / (1024*1024));
+        if (DSP_DIAG_ENABLED(MEMORY) || sd::Environment::getInstance().isVerbose()) {
+          sd_printf("CudaMemoryPool::allocateFailover: CHOSEN kind=peer-device requestedDevice=%d actualDeviceId=%d "
+                    "bytes=%zu freeBefore=%zu MB\n",
+                    currentDeviceId, d, size, candidate.freeMem / (1024*1024));
+        }
         cudaSetDevice(prevDev);
         return ptr;
       }
+      DSP_DIAG(MEMORY,
+               "ALLOCATE_FAILOVER_CANDIDATE_FAILED: device=%d kind=peer-device error=%d message=%s bytes=%zu",
+               d, (int)err, cudaGetErrorString(err), size);
       cudaGetLastError();
     } else {
       // Non-peer device: use cudaMallocManaged for transparent UVA access.
@@ -877,9 +937,20 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
                   currentDeviceId, size);
         registerDirectAllocation(ptr, size);
         if (actualDeviceId) *actualDeviceId = currentDeviceId;
+        DSP_DIAG(MEMORY,
+                 "ALLOCATE_FAILOVER_CHOSEN: reason=%s kind=managed-host-resident requestedDevice=%d candidateDevice=%d actualDevice=%d bytes=%zu freeBeforeMB=%zu",
+                 failoverReason, currentDeviceId, d, currentDeviceId, size, candidate.freeMem / (1024*1024));
+        if (DSP_DIAG_ENABLED(MEMORY) || sd::Environment::getInstance().isVerbose()) {
+          sd_printf("CudaMemoryPool::allocateFailover: CHOSEN kind=managed-host-resident requestedDevice=%d "
+                    "candidateDevice=%d actualDeviceId=%d bytes=%zu freeBefore=%zu MB\n",
+                    currentDeviceId, d, currentDeviceId, size, candidate.freeMem / (1024*1024));
+        }
         cudaSetDevice(prevDev);
         return ptr;
       }
+      DSP_DIAG(MEMORY,
+               "ALLOCATE_FAILOVER_CANDIDATE_FAILED: device=%d kind=managed-host-resident error=%d message=%s bytes=%zu",
+               d, (int)err, cudaGetErrorString(err), size);
       cudaGetLastError();
     }
   }
@@ -887,9 +958,9 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
 
   // Step 3: Fall back to pinned host memory
   // WARNING: Pinned host memory is accessible from GPU via UVA but at PCIe bandwidth.
-  // The actualDeviceId is NOT updated here - it stays as currentDeviceId since CUDA
-  // operations from that device can still access pinned host memory. The hostAllocations_
-  // map tracks these pointers and sizes for correct deallocation via cudaFreeHost.
+  // actualDeviceId is set to currentDeviceId because CUDA operations from that device
+  // can still access pinned host memory. The hostAllocations_ map tracks these pointers
+  // and sizes for correct deallocation via cudaFreeHost.
 
   // Check pinned host memory budget before allocating
   size_t limit = pinnedHostBytesLimit_.load();
@@ -935,9 +1006,23 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     }
     pinnedHostBytesUsed_.fetch_add(size);
     sd_debug("CudaMemoryPool::allocateFailover: Pinned host fallback succeeded for %zu bytes (ptr=%p, total pinned: %zu)\n", size, ptr, pinnedHostBytesUsed_.load());
+    if (actualDeviceId) *actualDeviceId = currentDeviceId;
+    DSP_DIAG(MEMORY,
+             "ALLOCATE_FAILOVER_CHOSEN: reason=%s kind=pinned-host requestedDevice=%d actualDevice=%d bytes=%zu pinnedUsedMB=%zu hostGroupMB=%zu",
+             failoverReason, currentDeviceId, currentDeviceId, size,
+             pinnedHostBytesUsed_.load() / (1024*1024), hostGroupUsed / (1024*1024));
+    if (DSP_DIAG_ENABLED(MEMORY) || sd::Environment::getInstance().isVerbose()) {
+      sd_printf("CudaMemoryPool::allocateFailover: CHOSEN kind=pinned-host requestedDevice=%d actualDeviceId=%d "
+                "bytes=%zu pinnedUsed=%zu MB hostGroup=%zu MB\n",
+                currentDeviceId, currentDeviceId, size,
+                pinnedHostBytesUsed_.load() / (1024*1024), hostGroupUsed / (1024*1024));
+    }
     return ptr;
   }
 
+  DSP_DIAG(MEMORY,
+           "ALLOCATE_FAILOVER_FAILED: reason=%s currentDevice=%d requestedBytes=%zu cudaHostAllocError=%d message=%s",
+           failoverReason, currentDeviceId, size, (int)err, cudaGetErrorString(err));
   sd_debug("CudaMemoryPool::allocateFailover: All allocation attempts failed for %zu bytes\n", size, "");
   return nullptr;
 }

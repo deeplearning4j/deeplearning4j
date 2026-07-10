@@ -162,6 +162,17 @@ public class GenerationResult {
     private final double effectiveTokensPerSecond = 0.0;
 
     /**
+     * Opaque identifier of the {@link GenerationSession} that produced this result, or {@code 0}
+     * for results from a one-shot {@code generate(...)} call.
+     *
+     * <p>Used by {@link GenerationPipeline#continueFrom(GenerationResult, int)} to verify that a
+     * result being continued actually belongs to the pipeline's currently-active session, since
+     * {@code GenerationResult} is otherwise a pure value object with no session identity.</p>
+     */
+    @Builder.Default
+    private final long sessionId = 0L;
+
+    /**
      * Reason why generation stopped.
      */
     public enum FinishReason {
@@ -188,7 +199,16 @@ public class GenerationResult {
         /**
          * An error occurred.
          */
-        ERROR
+        ERROR,
+
+        /**
+         * Generation was stopped early because the model entered a degenerate repetition loop
+         * (a "thinking trap") with no natural EOS. Only produced by
+         * {@link GenerationPipeline.GenerationSession#continueToCompletion(int)} when its
+         * repetition guard trips — never by the numerically-pure {@code generate}/{@code continueGeneration}
+         * primitives. See {@code RepetitionGuard}.
+         */
+        REPETITION
     }
 
     /**

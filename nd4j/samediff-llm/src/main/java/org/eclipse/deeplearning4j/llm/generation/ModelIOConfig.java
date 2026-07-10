@@ -111,13 +111,14 @@ public class ModelIOConfig {
     /**
      * Discover recurrent state input→output pairs by walking the graph.
      *
-     * <p>For each PLACEHOLDER input that is not a KV cache, position, mask, or
-     * embedding input, find which ops consume it and check if any of those ops
-     * produce a variable that is registered as a graph output. If so, that's a
-     * recurrent state pair (e.g., past_gdn_state.0 → gdn_state_out_0).</p>
+     * <p>For each PLACEHOLDER input that represents recurrent state, find which
+     * ops consume it and check if any of those ops produce a state variable that
+     * is registered as a graph output. If so, that's a recurrent state pair
+     * (e.g., past_gdn_state.0 → gdn_state_out_0).</p>
      *
-     * <p>This replaces hardcoded prefix matching like "past_gdn_state." and
-     * "past_conv_state." — the discovery is purely graph-structural.</p>
+     * <p>Recurrent import ops can also consume scalar control placeholders such as
+     * actual_sequence_length. Those placeholders are not feedback buffers and must
+     * not be allocated or copied as recurrent state.</p>
      */
     public static List<RecurrentStatePair> findRecurrentStatePairs(SameDiff sd, ModelIOConfig ioConfig) {
         List<RecurrentStatePair> pairs = new ArrayList<>();
@@ -136,6 +137,7 @@ public class ModelIOConfig {
         for (String inputName : sd.inputs()) {
             if (knownInputs.contains(inputName)) continue;
             if (ioConfig.isKvCacheInput(inputName)) continue;
+            if (!isRecurrentStateName(inputName)) continue;
 
             SDVariable inputVar = sd.getVariable(inputName);
             if (inputVar == null || inputVar.getVariableType() != VariableType.PLACEHOLDER) continue;
@@ -155,7 +157,7 @@ public class ModelIOConfig {
                 if (opOutputs == null) continue;
 
                 for (String outVar : opOutputs) {
-                    if (graphOutputs.contains(outVar)) {
+                    if (graphOutputs.contains(outVar) && isRecurrentStateName(outVar)) {
                         pairs.add(new RecurrentStatePair(inputName, outVar, op.opName()));
                     }
                 }
@@ -163,6 +165,10 @@ public class ModelIOConfig {
         }
 
         return pairs;
+    }
+
+    private static boolean isRecurrentStateName(String name) {
+        return name != null && name.contains("state");
     }
 
     /**

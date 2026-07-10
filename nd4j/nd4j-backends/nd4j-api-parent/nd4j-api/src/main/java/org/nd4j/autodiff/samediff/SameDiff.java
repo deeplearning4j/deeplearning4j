@@ -158,6 +158,9 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     private final Set<String> mutableDynamicShapePlanInputs = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+    /** Constants temporarily promoted by prepareForTraining() so gradient creation can decide which ones stay trainable. */
+    private Set<String> constantsTemporarilyConvertedForTraining = Collections.emptySet();
+
 
     @Getter
     private Map<String, SameDiff> sameDiffFunctionInstances;
@@ -2541,6 +2544,10 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
 
         TrainingSession ts = new TrainingSession(gradInstance);
+        // Retain for diagnostics: training executes on the gradient-function instance in
+        // this session, which is otherwise unreachable after fit() returns. DspHandle
+        // (sd.dsp()) falls back to it so DSP plan state can be inspected post-fit.
+        this.lastTrainingSession = ts;
         gradInstance.setTrainingConfig(this.trainingConfig);     //In case any listeners want to use it
 
         for(Listener l : activeListeners) {
@@ -4502,6 +4509,10 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
 
+    private boolean autoConvertConstantsForTraining() {
+        return Boolean.getBoolean("org.nd4j.samediff.prepareForTraining.convertConstants");
+    }
+
     public void prepareForTraining(List<String> lossVariables) {
         Queue<Variable> variableQueue = new LinkedList<>();
         Set<String> alreadyProcessedOps = new HashSet<>();
@@ -4514,7 +4525,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         Set<SDVariable> variablesToConvert = new HashSet<>();
         while(!variableQueue.isEmpty()) {
             Variable remove = variableQueue.remove();
-            if(remove.getVariable().isConstant() && remove.getOutputOfOp() == null) {
+            if(remove.getVariable().isConstant() && remove.getOutputOfOp() == null && autoConvertConstantsForTraining()) {
                 variablesToConvert.add(remove.getVariable());
             }
 
@@ -4541,9 +4552,17 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
 
         convertToVariables(new ArrayList<>(variablesToConvert));
+        Set<String> temporarilyConverted = variablesToConvert.stream()
+                .map(SDVariable::name)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
         if(lossVariables != null) {
-            createGradFunction();
+            constantsTemporarilyConvertedForTraining = temporarilyConverted;
+            try {
+                createGradFunction();
+            } finally {
+                constantsTemporarilyConvertedForTraining = Collections.emptySet();
+            }
         }
 
 
@@ -5010,6 +5029,23 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public DspHandle dsp() {
         return new DspHandle(this);
+    }
+
+    /**
+     * The most recent TrainingSession created by fit(). Training executes on the
+     * gradient-function instance in its own session, unreachable after fit() returns;
+     * retaining it lets diagnostics (e.g. {@link #dsp()}) inspect the training run's
+     * DSP plan state.
+     */
+    private transient TrainingSession lastTrainingSession;
+
+    /**
+     * The most recent training session created by fit(), or null if this instance
+     * has never been trained. The executor it exposes is thread-local: it is only
+     * populated on the thread that ran fit().
+     */
+    public InferenceSession getLastTrainingSession() {
+        return lastTrainingSession;
     }
 
     /**
@@ -7473,7 +7509,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                             } else {
                                 SDVariable gTemp = sameDiff.zerosLike(s + "-grad",v);
                                 grads.add(gTemp);
-                                sameDiff.setGradientForVariableName(s,v);
+                                sameDiff.setGradientForVariableName(s,gTemp);
                             }
 
                         }
@@ -7612,9 +7648,24 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                     varEntry = variables.get(s);
                 }
                 SDVariable v = varEntry.getVariable();
+                VariableType vt = v.getVariableType();
+                Variable outerVarEntry = variables.get(s);
+                VariableType outerVt = outerVarEntry == null ? vt : outerVarEntry.getVariable().getVariableType();
+                boolean isExplicitlyRequested = variablesRequiringGradients != null && ArrayUtils.contains(variablesRequiringGradients, s);
+                boolean constantOrPlaceholder = vt == VariableType.CONSTANT || vt == VariableType.PLACEHOLDER
+                        || outerVt == VariableType.CONSTANT || outerVt == VariableType.PLACEHOLDER;
+                boolean temporarilyConvertedConstant = constantsTemporarilyConvertedForTraining.contains(s);
+                if (constantOrPlaceholder && !isExplicitlyRequested) {
+                    continue;
+                }
                 SDVariable g = v.gradient();
+                if (g == null && temporarilyConvertedConstant && !isExplicitlyRequested) {
+                    continue;
+                }
                 if (g == null) {
-                    throw new IllegalStateException("Error encountered during differentiation: no gradient for required variable \"" + s + "\" was calculated");
+                    throw new IllegalStateException("Error encountered during differentiation: no gradient for required variable \"" + s
+                            + "\" was calculated (type=" + vt + ", outerType=" + outerVt
+                            + ", explicit=" + isExplicitlyRequested + ")");
                 }
             }
 
@@ -9384,21 +9435,17 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public SameDiff freeze(boolean inPlace) {
         SameDiff clone = inPlace ? this : dup();
+        List<SDVariable> toConvert = new ArrayList<>();
         for(Map.Entry<String,Variable> varEntry : clone.variables.entrySet()) {
-            Variable varMetaData = varEntry.getValue();
-            SDVariable currVar = varMetaData.getVariable();
-            switch(currVar.getVariableType()) {
-                case VARIABLE:
-                    currVar.setVariableType(VariableType.CONSTANT);
-                    break;
-                case CONSTANT:
-                case ARRAY:
-                case PLACEHOLDER:
-                    break;
+            SDVariable currVar = varEntry.getValue().getVariable();
+            if (currVar.getVariableType() == VariableType.VARIABLE) {
+                toConvert.add(currVar);
             }
         }
-
-
+        // convertToConstants migrates each array from the VARIABLE holder to the
+        // CONSTANT holder — a raw setVariableType would leave the frozen constants
+        // unreadable (getArr: "Could not get array for variable ...").
+        clone.convertToConstants(toConvert);
         return clone;
     }
 
@@ -9410,6 +9457,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param variableNames Names of variables to freeze
      */
     public void freezeVariables(Collection<String> variableNames) {
+        List<SDVariable> toConvert = new ArrayList<>();
         for (String name : variableNames) {
             Variable varMeta = variables.get(name);
             if (varMeta == null) {
@@ -9418,10 +9466,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             }
             SDVariable var = varMeta.getVariable();
             if (var.getVariableType() == VariableType.VARIABLE) {
-                var.setVariableType(VariableType.CONSTANT);
-                log.debug("Froze variable: {}", name);
+                toConvert.add(var);
+                log.debug("Freezing variable: {}", name);
             }
         }
+        // Delegate to convertToConstants: a raw setVariableType would leave the array
+        // stranded in the VARIABLE holder, making the frozen constant unreadable.
+        convertToConstants(toConvert);
     }
 
     /**
@@ -9474,6 +9525,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param variableNames Names of variables to unfreeze
      */
     public void unfreezeVariables(Collection<String> variableNames) {
+        List<SDVariable> toConvert = new ArrayList<>();
         for (String name : variableNames) {
             Variable varMeta = variables.get(name);
             if (varMeta == null) {
@@ -9482,10 +9534,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             }
             SDVariable var = varMeta.getVariable();
             if (var.getVariableType() == VariableType.CONSTANT) {
-                var.setVariableType(VariableType.VARIABLE);
-                log.debug("Unfroze variable: {}", name);
+                toConvert.add(var);
+                log.debug("Unfreezing variable: {}", name);
             }
         }
+        // Delegate to convertToVariables: a raw setVariableType would leave the array
+        // stranded in the CONSTANT holder, making the trainable variable unreadable.
+        convertToVariables(toConvert);
     }
 
     /**

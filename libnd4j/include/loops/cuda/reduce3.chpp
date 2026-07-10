@@ -349,7 +349,7 @@ SD_DEVICE void Reduce3<X, Z>::transformAll(
   const int maxBlock = blockDim.x;
   const int limit    = (xTadLength + maxBlock - 1) / maxBlock; // ceiling division
 
-  for (int r = blockIdx.x; r < xTads; r += (blockDim.x * gridDim.x)) {
+  for (int r = blockIdx.x; r < xTads; r += gridDim.x) {
     // load partial x
     auto xLocal  = dx + xOffsets[r];
 

@@ -30,6 +30,7 @@ import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.execution.PlanIntrospection;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -58,10 +59,30 @@ public class BgeDspExecutionRegressionTest extends BaseND4JTest {
             System.getProperty("user.home") + "/.kompile/models/bge-base-en-v1.5/bge-base-en-v1.5.sdz");
     private static final String OUTPUT = "last_hidden_state";
     private static final int SEQ_LEN = 512;
+    private static final int BATCH = Integer.getInteger("bge.repro.batch", 1);
 
     @Override
     public long getTimeoutMilliseconds() {
         return 20 * 60 * 1000L;
+    }
+
+    // Prod runs BGE in fp16/float through the GraphOptimizer, NOT BaseND4JTest's DOUBLE
+    // default. Double at [32,512] needs ~32 GB and OOMs — that is a test artifact, not the
+    // prod circumstance. Use FLOAT for batch>1 (or -Dbge.repro.float=true).
+    @Override
+    public org.nd4j.linalg.api.buffer.DataType getDataType() {
+        return (BATCH > 1 || Boolean.getBoolean("bge.repro.float"))
+                ? org.nd4j.linalg.api.buffer.DataType.FLOAT
+                : org.nd4j.linalg.api.buffer.DataType.DOUBLE;
+    }
+
+    // -Dbge.repro.fp16=true runs the model in half precision (prod uses fp16 → ~16 GB at
+    // [32,512], leaving device headroom for CUDA-graph capture instead of filling the card).
+    @Override
+    public org.nd4j.linalg.api.buffer.DataType getDefaultFPDataType() {
+        return Boolean.getBoolean("bge.repro.fp16")
+                ? org.nd4j.linalg.api.buffer.DataType.HALF
+                : getDataType();
     }
 
     @Test
@@ -129,17 +150,53 @@ public class BgeDspExecutionRegressionTest extends BaseND4JTest {
 
         SameDiff model = null;
         INDArray inputIds = null;
+        List<INDArray> auxInputs = new ArrayList<>();
         try {
             model = SDZSerializer.load(modelFile, true);
             assertNotNull(model, "SDZSerializer.load returned null");
+            // Prod runs the encoder through GraphOptimizer (fusions + optional fp16 weight
+            // quantization via -Dnd4j.optimizer.fp16=true). Match that so we reproduce the
+            // real graph structure and ~16 GB footprint, not a raw unoptimized load.
+            if (Boolean.getBoolean("bge.repro.optimize")) {
+                int opsBefore = model.ops().length;
+                model = GraphOptimizer.optimize(model, OUTPUT);
+                log.info("GraphOptimizer applied: {} -> {} ops (fp16={})",
+                        opsBefore, model.ops().length,
+                        System.getProperty(ND4JSystemProperties.OPTIMIZER_FP16, "false"));
+            }
             log.info("Loaded BGE model inputs={} outputs={} vars={} ops={}",
                     model.inputs(), model.outputs(), model.variables().size(), model.ops().length);
 
             inputIds = validationInputIds();
             Map<String, INDArray> placeholders = new LinkedHashMap<>();
-            placeholders.put("input_ids", inputIds);
+            // Provide every input the (possibly pre-optimized) model declares: input_ids =
+            // token ids, *mask* = all-1 (real tokens), everything else (token_type_ids) = all-0.
+            for (String inName : model.inputs()) {
+                if (inName.equals("input_ids")) {
+                    placeholders.put(inName, inputIds);
+                } else if (inName.toLowerCase().contains("mask")) {
+                    INDArray mask = Nd4j.ones(DataType.INT64, BATCH, SEQ_LEN);
+                    placeholders.put(inName, mask);
+                    auxInputs.add(mask);
+                } else {
+                    INDArray aux = Nd4j.zeros(DataType.INT64, BATCH, SEQ_LEN);
+                    placeholders.put(inName, aux);
+                    auxInputs.add(aux);
+                }
+            }
+
+            // Repro knob: bge.repro.freshInput=true allocates a NEW input_ids array
+            // (fresh DataBuffer) each iteration — mirrors kompile's crawl, which feeds a
+            // fresh batch every model.output() call. This stresses the frozen fast-path
+            // arg-refresh gate (view-over-external-input DataBuffer changes → needsArgRefresh).
+            boolean freshInput = Boolean.getBoolean("bge.repro.freshInput");
 
             for (int i = 0; i < iterations; i++) {
+                if (freshInput && i > 0) {
+                    inputIds.close();
+                    inputIds = validationInputIds();
+                    placeholders.put("input_ids", inputIds);
+                }
                 Map<String, INDArray> result = model.output(placeholders, OUTPUT);
                 INDArray output = result.get(OUTPUT);
                 assertNotNull(output, config.name + " iteration " + i + ": missing " + OUTPUT);
@@ -165,23 +222,28 @@ public class BgeDspExecutionRegressionTest extends BaseND4JTest {
             if (inputIds != null) {
                 inputIds.close();
             }
+            for (INDArray aux : auxInputs) {
+                if (aux != null) aux.close();
+            }
             restoreProperties(previous);
             InferenceSession.setDynamicShapePlanEnabled(previousDspEnabled);
         }
     }
 
     private static INDArray validationInputIds() {
-        long[] tokenIds = new long[SEQ_LEN];
+        long[] tokenIds = new long[BATCH * SEQ_LEN];
         long[] prefix = {
                 101, 2023, 2003, 1037, 27354, 3231, 2005, 1996,
                 7861, 8270, 4667, 2944, 1012, 102
         };
-        System.arraycopy(prefix, 0, tokenIds, 0, prefix.length);
-        return Nd4j.createFromArray(tokenIds).reshape(1, SEQ_LEN).castTo(DataType.INT64);
+        for (int b = 0; b < BATCH; b++) {
+            System.arraycopy(prefix, 0, tokenIds, b * SEQ_LEN, prefix.length);
+        }
+        return Nd4j.createFromArray(tokenIds).reshape(BATCH, SEQ_LEN).castTo(DataType.INT64);
     }
 
     private static OutputStats validateOutput(String configName, int iteration, INDArray output) {
-        assertArrayEquals(new long[]{1, SEQ_LEN, 768}, output.shape(),
+        assertArrayEquals(new long[]{BATCH, SEQ_LEN, 768}, output.shape(),
                 configName + " iteration " + iteration + ": unexpected " + OUTPUT + " shape");
         boolean hasNaN = output.isNaN().any();
         boolean hasInf = output.isInfinite().any();

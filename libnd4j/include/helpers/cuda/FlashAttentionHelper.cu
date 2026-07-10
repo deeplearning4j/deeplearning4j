@@ -25,6 +25,7 @@
 #include <cuda_fp16.h>
 #include <cublas_v2.h>
 #include <helpers/DebugHelper.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/PointersManager.h>
 #include <helpers/FlashAttentionHelper.h>
 #include <array/NDArray.h>
@@ -1243,6 +1244,359 @@ void fusedGQADecodeCuda(
  } else {
    NDArray::registerSpecialUse({output}, {query, key, value});
  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// V2: fusedGQADecodeQuantisedKernel
+//
+// GQA decode attention with inline INT8 K/V dequantisation.
+// One block per (qHead, batch) pair — same grid as fusedGQADecodeKernel.
+// Inner loop: kval = float(keyQ[idx]) * keyScale[head_pos_idx]
+//             vval = float(valQ[idx]) * valScale[head_pos_idx]
+//
+// Accepts the ADR-0106 substrate mask (attentionBias) with shape
+// [B, 1_or_qH, 1, seqKV] (broadcast-safe via zero strides for size-1 dims).
+//////////////////////////////////////////////////////////////////////////////
+SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeQuantisedKernel(
+    const float* __restrict__ query,       // [batch, 1, numQHeads, headDim]
+    const int8_t* __restrict__ keyQ,       // [batch, seqKV, numKvHeads, headDim]
+    const float*  __restrict__ keyScale,   // [batch, seqKV, numKvHeads]
+    const int8_t* __restrict__ valQ,       // [batch, seqKV, numKvHeads, headDim]
+    const float*  __restrict__ valScale,   // [batch, seqKV, numKvHeads]
+    const float*  __restrict__ attnBias,   // [batch, numQHeads, 1, seqKV] or nullptr
+    float* __restrict__ output,            // [batch, 1, numQHeads, headDim]
+    const LongType batch,
+    const LongType seqKV,
+    const LongType numQHeads,
+    const LongType numKvHeads,
+    const LongType headDim,
+    const LongType headsPerKvHead,
+    const double scale,
+    // Q strides [batch, 1, numQHeads, headDim]
+    const LongType qStride0, const LongType qStride2, const LongType qStride3,
+    // K/V int8 cache strides [batch, seqKV, numKvHeads, headDim] — assumed contiguous
+    const LongType kvS0, const LongType kvS1, const LongType kvS2,
+    // Scale strides [batch, seqKV, numKvHeads] — assumed contiguous
+    const LongType ksS0, const LongType ksS1,
+    // Output strides [batch, 1, numQHeads, headDim]
+    const LongType oStride0, const LongType oStride2, const LongType oStride3,
+    // Bias strides (broadcast-safe)
+    const LongType biasStride0, const LongType biasStride1,
+    const LongType biasStride2, const LongType biasStride3) {
+
+    const LongType qHead    = blockIdx.x;
+    const LongType batchIdx = blockIdx.y;
+    if (batchIdx >= batch || qHead >= numQHeads) return;
+
+    const LongType kvHead = qHead / headsPerKvHead;
+
+    // Shared memory: scores tile [TILE_SIZE_KV] + output accumulator [headDim]
+    extern __shared__ char sharedMemQ2[];
+    float* sharedScores = reinterpret_cast<float*>(sharedMemQ2);
+    float* sharedOutput = sharedScores + TILE_SIZE_KV;
+
+    // Q pointer
+    const float* Q = query + batchIdx * qStride0 + qHead * qStride2;
+
+    // K/V base pointers for this batch × kvHead
+    const int8_t* Kbase = keyQ   + batchIdx * kvS0 + kvHead * kvS2;
+    const float*  KsBase= keyScale+ batchIdx * ksS0;          // seqKV × kvHeads; kvHead added per-token
+    const int8_t* Vbase = valQ   + batchIdx * kvS0 + kvHead * kvS2;
+    const float*  VsBase= valScale+ batchIdx * ksS0;
+
+    // Output
+    float* O = output + batchIdx * oStride0 + qHead * oStride2;
+
+    // Bias row
+    const float* biasRow = nullptr;
+    if (attnBias != nullptr) {
+        biasRow = attnBias + batchIdx * biasStride0 + qHead * biasStride1;
+    }
+
+    // Online softmax state
+    __shared__ float globalMax;
+    __shared__ float globalSum;
+    if (threadIdx.x == 0) {
+        globalMax = -DataTypeUtils::infOrMax<float>();
+        globalSum = 0.0f;
+    }
+
+    for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
+        sharedOutput[d] = 0.0f;
+    }
+    __syncthreads();
+
+    if (headDim <= 0 || seqKV <= 0) return;
+
+    for (LongType kvStart = 0; kvStart < seqKV; kvStart += TILE_SIZE_KV) {
+        const LongType kvEnd  = min(kvStart + TILE_SIZE_KV, seqKV);
+        const int tileSize = static_cast<int>(kvEnd - kvStart);
+        if (tileSize <= 0) continue;
+
+        // Step 1: Q @ K^T scores (inline dequant)
+        // ADR 0107 V2 ROW-INLINE: null keyScale → the cache last dim is headDim+4 and each row's
+        // float32 scale sits at Krow+headDim (inside the logical tensor — staging-proof).
+        for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
+            const LongType kvIdx = kvStart + k;
+            const int8_t* Krow  = Kbase + kvIdx * kvS1;
+            const float   ksc   = keyScale != nullptr
+                ? KsBase[kvIdx * ksS1 + kvHead]
+                : *reinterpret_cast<const float*>(Krow + headDim);
+
+            float score = 0.0f;
+            for (LongType d = 0; d < headDim; d++) {
+                float kval = static_cast<float>(Krow[d]) * ksc;
+                score += Q[d * qStride3] * kval;
+            }
+            score *= static_cast<float>(scale);
+            if (biasRow != nullptr) {
+                score += biasRow[kvIdx * biasStride3];
+            }
+            sharedScores[k] = score;
+        }
+        __syncthreads();
+
+        // Step 2: tile max
+        float tileMax = -DataTypeUtils::infOrMax<float>();
+        for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
+            tileMax = sd::math::sd_max<float>(tileMax, sharedScores[k]);
+        }
+        for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+            tileMax = sd::math::sd_max<float>(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
+        }
+        __shared__ float warpMaxes[32];
+        if (threadIdx.x % WARP_SIZE == 0) warpMaxes[threadIdx.x / WARP_SIZE] = tileMax;
+        __syncthreads();
+        if (threadIdx.x < blockDim.x / WARP_SIZE) tileMax = warpMaxes[threadIdx.x];
+        else tileMax = -DataTypeUtils::infOrMax<float>();
+        for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+            tileMax = sd::math::sd_max<float>(tileMax, __shfl_down_sync(0xffffffff, tileMax, offset));
+        }
+
+        __shared__ float newMax;
+        if (threadIdx.x == 0) newMax = sd::math::sd_max<float>(globalMax, tileMax);
+        __syncthreads();
+
+        // Step 3: rescale previous accumulator
+        if (newMax > globalMax) {
+            float rescale = flashExp<float>(globalMax - newMax);
+            for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
+                sharedOutput[d] *= rescale;
+            }
+            if (threadIdx.x == 0) {
+                globalSum *= rescale;
+                globalMax = newMax;
+            }
+        }
+        __syncthreads();
+
+        // Step 4: softmax weights
+        float tileSum = 0.0f;
+        for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
+            float expScore = flashExp<float>(sharedScores[k] - globalMax);
+            sharedScores[k] = expScore;
+            tileSum += expScore;
+        }
+        for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+            tileSum += __shfl_down_sync(0xffffffff, tileSum, offset);
+        }
+        __shared__ float warpSums[32];
+        if (threadIdx.x % WARP_SIZE == 0) warpSums[threadIdx.x / WARP_SIZE] = tileSum;
+        __syncthreads();
+        if (threadIdx.x < blockDim.x / WARP_SIZE) tileSum = warpSums[threadIdx.x];
+        else tileSum = 0.0f;
+        for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+            tileSum += __shfl_down_sync(0xffffffff, tileSum, offset);
+        }
+        if (threadIdx.x == 0) globalSum += tileSum;
+        __syncthreads();
+
+        // Step 5: weighted V accumulation (inline dequant; row-inline scale when valScale null)
+        for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
+            float acc = 0.0f;
+            for (int k = 0; k < tileSize; k++) {
+                const LongType kvIdx = kvStart + k;
+                const int8_t* Vrow = Vbase + kvIdx * kvS1;
+                const float   vsc  = valScale != nullptr
+                    ? VsBase[kvIdx * ksS1 + kvHead]
+                    : *reinterpret_cast<const float*>(Vrow + headDim);
+                float vval = static_cast<float>(Vrow[d]) * vsc;
+                acc += sharedScores[k] * vval;
+            }
+            sharedOutput[d] += acc;
+        }
+        __syncthreads();
+    }
+
+    // Step 6: normalize and write
+    float invSum = (globalSum > 0.0f) ? (1.0f / globalSum) : 0.0f;
+    for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
+        O[d * oStride3] = sharedOutput[d] * invSum;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Launcher for fusedGQADecodeQuantised
+//////////////////////////////////////////////////////////////////////////////
+static void fusedGQADecodeQuantisedLauncher(
+    const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+    const cudaStream_t* stream,
+    const void* vQuery,
+    const void* vKeyQ, const void* vKeyScale,
+    const void* vValQ, const void* vValScale,
+    const void* vAttnBias,
+    void* vOutput,
+    LongType batch, LongType seqKV, LongType numQHeads, LongType numKvHeads,
+    LongType headDim, LongType headsPerKvHead, double scale,
+    LongType qStride0, LongType qStride2, LongType qStride3,
+    LongType kvS0, LongType kvS1, LongType kvS2,
+    LongType ksS0, LongType ksS1,
+    LongType oStride0, LongType oStride2, LongType oStride3,
+    LongType biasStride0, LongType biasStride1,
+    LongType biasStride2, LongType biasStride3) {
+
+    auto query    = reinterpret_cast<const float*>(vQuery);
+    auto keyQ     = reinterpret_cast<const int8_t*>(vKeyQ);
+    auto keyScale = reinterpret_cast<const float*>(vKeyScale);
+    auto valQ     = reinterpret_cast<const int8_t*>(vValQ);
+    auto valScale = reinterpret_cast<const float*>(vValScale);
+    auto attnBias = vAttnBias != nullptr ? reinterpret_cast<const float*>(vAttnBias) : nullptr;
+    auto output   = reinterpret_cast<float*>(vOutput);
+
+    dim3 grid(numQHeads, batch);
+    dim3 block(threadsPerBlock);
+
+    size_t smem = sharedMem > 0
+        ? static_cast<size_t>(sharedMem)
+        : static_cast<size_t>(TILE_SIZE_KV + headDim) * sizeof(float);
+
+    fusedGQADecodeQuantisedKernel<<<grid, block, smem, *stream>>>(
+        query,
+        keyQ, keyScale, valQ, valScale,
+        attnBias, output,
+        batch, seqKV, numQHeads, numKvHeads,
+        headDim, headsPerKvHead, scale,
+        qStride0, qStride2, qStride3,
+        kvS0, kvS1, kvS2,
+        ksS0, ksS1,
+        oStride0, oStride2, oStride3,
+        biasStride0, biasStride1, biasStride2, biasStride3);
+    DebugHelper::checkGlobalErrorCode("fusedGQADecodeQuantised failed");
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Public interface: fusedGQADecodeQuantisedCuda
+//////////////////////////////////////////////////////////////////////////////
+void fusedGQADecodeQuantisedCuda(
+    NDArray* query,
+    NDArray* quantKeyCache,
+    NDArray* keyScaleCache,
+    NDArray* quantValCache,
+    NDArray* valScaleCache,
+    NDArray* output,
+    double scale,
+    LaunchContext* context,
+    NDArray* attentionBias) {
+
+    auto stream = context->getCudaStream();
+
+    const auto batch        = query->sizeAt(0);
+    const auto numQHeads    = query->sizeAt(2);
+    const auto headDim      = query->sizeAt(3);
+    const auto seqKV        = quantKeyCache->sizeAt(1);
+    const auto numKvHeads   = quantKeyCache->sizeAt(2);
+    const auto headsPerKvH  = numQHeads / numKvHeads;
+
+    // Q strides
+    const LongType qStride0 = query->strideAt(0);
+    const LongType qStride2 = query->strideAt(2);
+    const LongType qStride3 = query->strideAt(3);
+
+    // INT8 K/V cache strides [batch, seqKV, kvHeads, headDim] — typically contiguous
+    const LongType kvS0 = quantKeyCache->strideAt(0);
+    const LongType kvS1 = quantKeyCache->strideAt(1);
+    const LongType kvS2 = quantKeyCache->strideAt(2);
+
+    // ADR 0107 V2 ROW-INLINE: when the scale caches are null the INT8 caches are row-inline
+    // tensors [batch, seqKV, kvHeads, headDim+4] — each row carries its own float32 scale at
+    // row+headDim, INSIDE the logical tensor (survives DSP ext-input staging by construction).
+    // The kernel derives the per-row scale from the row pointer when its scale pointer is null.
+    const bool inlineKeyScale = (keyScaleCache == nullptr);
+    const bool inlineValScale = (valScaleCache == nullptr);
+    if (inlineKeyScale && quantKeyCache->sizeAt(3) != headDim + 4) {
+        THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: row-inline key cache last dim must equal headDim+4");
+    }
+    if (inlineValScale && quantValCache->sizeAt(3) != headDim + 4) {
+        THROW_EXCEPTION("fusedGQADecodeQuantisedCuda: row-inline value cache last dim must equal headDim+4");
+    }
+    const void* keyScalePtr = inlineKeyScale ? nullptr : keyScaleCache->specialBuffer();
+    const void* valScalePtr = inlineValScale ? nullptr : valScaleCache->specialBuffer();
+
+    // ADR 0107 V2 diagnosis: verify the row-inline scale survived DSP ext-input staging.
+    // Reads 4 bytes D2H — slot-by-slot/warmup context only (gated; never during capture).
+    if (inlineKeyScale && DSP_DIAG_ENABLED(KV_CACHE)
+        && !DebugHelper::inGraphCapture(context->getCudaStream())) {
+        float s0 = 0.0f;
+        const int8_t* row0 = static_cast<const int8_t*>(quantKeyCache->specialBuffer());
+        cudaMemcpyAsync(&s0, row0 + headDim, sizeof(float), cudaMemcpyDeviceToHost,
+                        *context->getCudaStream());
+        cudaStreamSynchronize(*context->getCudaStream());
+        DSP_DIAG(KV_CACHE, "row-inline keyScale[row0]=%g base=%p pitch=%lld",
+                 s0, quantKeyCache->specialBuffer(),
+                 static_cast<long long>(quantKeyCache->sizeAt(3)));
+    }
+
+    // Scale strides [batch, seqKV, kvHeads] — unused (0) in row-inline mode.
+    const LongType ksS0 = inlineKeyScale ? 0 : keyScaleCache->strideAt(0);
+    const LongType ksS1 = inlineKeyScale ? 0 : keyScaleCache->strideAt(1);
+
+    // Output strides
+    const LongType oStride0 = output->strideAt(0);
+    const LongType oStride2 = output->strideAt(2);
+    const LongType oStride3 = output->strideAt(3);
+
+    LongType biasStride0 = 0, biasStride1 = 0, biasStride2 = 0, biasStride3 = 0;
+    const void* biasPtr = nullptr;
+
+    // Build the input special-use list; the inline scale tail is covered by the cache buffers, so
+    // only include the scale NDArrays when they are genuinely separate allocations.
+    std::vector<NDArray*> inArrs = {query, quantKeyCache, quantValCache};
+    if (!inlineKeyScale) inArrs.push_back(keyScaleCache);
+    if (!inlineValScale) inArrs.push_back(valScaleCache);
+    if (attentionBias != nullptr && !attentionBias->isEmpty()) {
+        inArrs.push_back(attentionBias);
+        NDArray::prepareSpecialUse({output}, inArrs);
+        biasPtr = attentionBias->specialBuffer();
+        biasStride0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+        biasStride1 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
+        biasStride2 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
+        biasStride3 = attentionBias->sizeAt(3) > 1 ? attentionBias->strideAt(3) : 0;
+    } else {
+        NDArray::prepareSpecialUse({output}, inArrs);
+    }
+
+    // Reuse the existing dims function — same grid structure as float GQA decode
+    int dtypeSize = static_cast<int>(sizeof(float));  // output is always float
+    dim3 launchDims = getFusedGQADecodeDims(
+        static_cast<int>(numQHeads), static_cast<int>(batch),
+        static_cast<int>(seqKV), static_cast<int>(headDim), dtypeSize);
+
+    fusedGQADecodeQuantisedLauncher(
+        launchDims.x, launchDims.y, launchDims.z, stream,
+        query->specialBuffer(),
+        quantKeyCache->specialBuffer(), keyScalePtr,
+        quantValCache->specialBuffer(), valScalePtr,
+        biasPtr, output->specialBuffer(),
+        batch, seqKV, numQHeads, numKvHeads,
+        headDim, headsPerKvH, scale,
+        qStride0, qStride2, qStride3,
+        kvS0, kvS1, kvS2,
+        ksS0, ksS1,
+        oStride0, oStride2, oStride3,
+        biasStride0, biasStride1, biasStride2, biasStride3);
+
+    // inArrs already excludes null (inline) scale caches and includes attentionBias when present.
+    NDArray::registerSpecialUse({output}, inArrs);
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -161,6 +161,12 @@ PLATFORM_CHECK(softmax, ENGINE_CPU) {
   req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
+      // Base buffer offset is NOT carried into the oneDNN memory descriptor (only shape +
+      // strides are). A sliced view (offset != 0) would have oneDNN read from the buffer
+      // start, silently producing wrong values. Decline offset views — the generic helper
+      // handles them correctly.
+      req.expectEq(makeInfoVariable(x->offset(), "input offset"), 0) &&
+      req.expectEq(makeInfoVariable(z->offset(), "output offset"), 0) &&
       req.expectTrue(makeInfoVariable(isSupportedSoftmaxType(x->dataType()), TYPE_MSG_INPUT),
                      "Must be FLOAT32 or BFLOAT16") &&
       req.expectTrue(makeInfoVariable(isSupportedSoftmaxType(z->dataType()), TYPE_MSG_OUTPUT),

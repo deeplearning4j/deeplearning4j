@@ -23,8 +23,6 @@ package org.eclipse.deeplearning4j.llm.tokenizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.TokenizerConfig;
-import org.nd4j.ggml.GGMLModelImport;
-import org.nd4j.ggml.format.GGMLMetadata;
 
 import java.io.File;
 import java.util.*;
@@ -185,14 +183,10 @@ public class HuggingFaceTokenizer implements Tokenizer {
             throw new TokenizerException("Tokenizer file not found: " + file.getAbsolutePath());
         }
 
-        // Try to load config from same directory. If tokenizer_config.json is
-        // absent or incomplete, use GGUF sidecar tokenizer metadata as the
-        // model-owned fallback for chat templates and special token strings.
         TokenizerConfig config = null;
         File parentDir = file.getParentFile();
         if (parentDir != null) {
             config = loadTokenizerConfig(parentDir);
-            config = mergeGgufTokenizerMetadata(parentDir, config);
         }
 
         NativeTokenizerImpl impl = NativeTokenizerImpl.fromFile(file.getAbsolutePath());
@@ -214,55 +208,6 @@ public class HuggingFaceTokenizer implements Tokenizer {
         }
     }
 
-    private static TokenizerConfig mergeGgufTokenizerMetadata(File parentDir, TokenizerConfig config) {
-        if (hasCompleteChatTemplateConfig(config)) {
-            return config;
-        }
-
-        File ggufSidecar = findGgufSidecar(parentDir);
-        if (ggufSidecar == null) {
-            return config;
-        }
-
-        try {
-            GGMLMetadata metadata = GGMLModelImport.inspectModel(ggufSidecar);
-            TokenizerConfig ggufConfig = TokenizerConfig.fromGgufMetadata(metadata.getTokenizerInfo());
-            if (ggufConfig == null) {
-                return config;
-            }
-            if (config == null) {
-                log.debug("Loaded tokenizer metadata from GGUF sidecar: {}", ggufSidecar.getAbsolutePath());
-                return ggufConfig;
-            }
-            config.fillMissingFrom(ggufConfig);
-            log.debug("Filled missing tokenizer metadata from GGUF sidecar: {}", ggufSidecar.getAbsolutePath());
-            return config;
-        } catch (Exception e) {
-            log.warn("Could not load tokenizer metadata from GGUF sidecar {}: {}",
-                    ggufSidecar.getAbsolutePath(), e.getMessage());
-            return config;
-        }
-    }
-
-    private static boolean hasCompleteChatTemplateConfig(TokenizerConfig config) {
-        return config != null
-                && config.hasChatTemplate()
-                && !isBlank(config.getBosToken())
-                && !isBlank(config.getEosToken());
-    }
-
-    private static boolean isBlank(String value) {
-        return value == null || value.isBlank();
-    }
-
-    private static File findGgufSidecar(File parentDir) {
-        File[] ggufs = parentDir.listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(".gguf"));
-        if (ggufs == null || ggufs.length == 0) {
-            return null;
-        }
-        Arrays.sort(ggufs, Comparator.comparing(File::getName));
-        return ggufs[0];
-    }
 
     /**
      * Create a tokenizer from a JSON string.

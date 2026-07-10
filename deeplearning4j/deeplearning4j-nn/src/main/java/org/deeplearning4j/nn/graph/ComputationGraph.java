@@ -2351,7 +2351,18 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 MemoryWorkspace wsAct = null;
                 if (!noWS && !workspaceMgr.isScopedOut(ArrayType.ACTIVATIONS)) {
                     wsAct = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
-                    wsAct.setPreviousWorkspace(initialWorkspace);
+                    // Only override the "previous workspace" pointer when wsAct is a fresh per-layer
+                    // workspace. When ACTIVATIONS has been redirected to outputWorkspace (the outer
+                    // WS_OUTPUT_MEM scope opened by the caller) wsAct IS outputWorkspace — it is already
+                    // open with its previousWorkspace correctly set to whatever was current before the
+                    // caller opened it. Calling setPreviousWorkspace(initialWorkspace) in that case
+                    // overwrites the outer scope's restore-chain with itself (initialWorkspace ==
+                    // outputWorkspace == wsAct at that point), so when the outer scope finally calls
+                    // close() it restores WS_OUTPUT_MEM as the current workspace even after it has
+                    // been marked closed, leaking the workspace pointer to the calling thread.
+                    if (wsAct != outputWorkspace) {
+                        wsAct.setPreviousWorkspace(initialWorkspace);
+                    }
                     openActivationsWorkspaces.put(wsAct, workspaceMgr);
 
                     int closeableAt = vertexOutputsFullyConsumedByStep[vIdx];

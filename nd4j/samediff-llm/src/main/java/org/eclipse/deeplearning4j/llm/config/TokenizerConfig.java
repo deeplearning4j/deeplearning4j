@@ -25,11 +25,9 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.nd4j.ggml.format.GGMLMetadata;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Configuration loaded from tokenizer_config.json.
@@ -60,7 +58,7 @@ public class TokenizerConfig {
     private String tokenizerClass;
 
     @JsonProperty("model_max_length")
-    private Integer modelMaxLength;
+    private Number modelMaxLength;
 
     @JsonProperty("bos_token")
     private Object bosTokenRaw;
@@ -124,38 +122,9 @@ public class TokenizerConfig {
     }
 
     /**
-     * Build a tokenizer configuration from GGUF tokenizer metadata.
-     *
-     * <p>GGUF models may carry the authoritative chat template and special token
-     * ids even when the converted model directory only contains tokenizer.json.
-     * Keeping this conversion in the tokenizer config path lets tokenizer users
-     * apply the model-owned chat template without application-specific fallbacks.</p>
-     *
-     * @param tokenizerInfo GGUF tokenizer metadata
-     * @return a config populated from GGUF metadata, or null if no useful metadata is present
-     */
-    public static TokenizerConfig fromGgufMetadata(GGMLMetadata.TokenizerInfo tokenizerInfo) {
-        if (tokenizerInfo == null) {
-            return null;
-        }
-        TokenizerConfig config = new TokenizerConfig();
-        config.setTokenizerClass("PreTrainedTokenizerFast");
-        config.setBosTokenRaw(tokenFromMetadata(tokenizerInfo, tokenizerInfo.getBosTokenId()));
-        config.setEosTokenRaw(tokenFromMetadata(tokenizerInfo, tokenizerInfo.getEosTokenId()));
-        config.setChatTemplate(tokenizerInfo.getChatTemplate());
-
-        if (isBlank(config.getBosToken())
-                && isBlank(config.getEosToken())
-                && !config.hasChatTemplate()) {
-            return null;
-        }
-        return config;
-    }
-
-    /**
      * Fill missing fields in this config from another config.
      *
-     * @param fallback fallback values, typically derived from GGUF metadata
+     * @param fallback fallback tokenizer configuration
      */
     public void fillMissingFrom(TokenizerConfig fallback) {
         if (fallback == null) {
@@ -270,14 +239,6 @@ public class TokenizerConfig {
      */
     public boolean hasChatTemplate() {
         return chatTemplate != null && !chatTemplate.isEmpty();
-    }
-
-    private static String tokenFromMetadata(GGMLMetadata.TokenizerInfo tokenizerInfo, int tokenId) {
-        List<String> tokens = tokenizerInfo.getTokens();
-        if (tokens == null || tokenId < 0 || tokenId >= tokens.size()) {
-            return null;
-        }
-        return tokens.get(tokenId);
     }
 
     private static boolean isBlank(String value) {

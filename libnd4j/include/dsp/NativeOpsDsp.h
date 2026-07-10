@@ -320,6 +320,26 @@ SD_LIB_EXPORT void freeLoadedModel(sd::Pointer modelHandle);
 SD_LIB_EXPORT int getPlanNumExternalInputs(sd::Pointer planHandle);
 
 /**
+ * Get the name of an external input by plan index. External inputs cover
+ * constants, variables, and placeholders; callers bind values positionally,
+ * so this is the discovery mechanism for the required input order.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param index       External input index in [0, getPlanNumExternalInputs())
+ * @return Input name (valid for the plan's lifetime), or nullptr if invalid
+ */
+SD_LIB_EXPORT const char* getPlanExternalInputName(sd::Pointer planHandle, int index);
+
+/**
+ * Get the plan's current GraphExecutionMode (the mode in force after
+ * clamping/resolution — mirror of setPlanGraphExecutionMode).
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return GraphExecutionMode as int (GEM_AUTO=0 .. GEM_NNAPI=8), -1 if invalid
+ */
+SD_LIB_EXPORT int getPlanGraphExecutionMode(sd::Pointer planHandle);
+
+/**
  * Get the number of requested outputs in a compiled plan.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()

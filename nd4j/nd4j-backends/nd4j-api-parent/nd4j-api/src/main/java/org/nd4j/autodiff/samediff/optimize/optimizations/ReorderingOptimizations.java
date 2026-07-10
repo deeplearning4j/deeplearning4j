@@ -260,19 +260,23 @@ public class ReorderingOptimizations extends BaseOptimizerSet {
             // Replace all uses of the outer transpose output with the original input
             OptimizationUtils.replaceOpInputsWith(sd, helper, outerOutput, originalInput);
 
-            // Update graph outputs
+            // Update graph outputs — track wasOutput so we can leave outerOutput as a
+            // zombie variable when it was a registered graph output. A zombie prevents
+            // restoreRequiredOutputNames from re-inserting an unwanted identity op.
             List<String> graphOutputs = sd.outputs();
+            boolean wasOutput = false;
             if (graphOutputs != null) {
                 for (int i = 0; i < graphOutputs.size(); i++) {
                     if (graphOutputs.get(i).equals(outerOutput)) {
                         graphOutputs.set(i, originalInput);
+                        wasOutput = true;
                     }
                 }
             }
 
             // Remove both transpose ops
             OptimizationUtils.removeOp(sd, helper, op.getName());
-            OptimizationUtils.removeVariable(sd, helper, outerOutput);
+            if (!wasOutput) OptimizationUtils.removeVariable(sd, helper, outerOutput);
 
             // If inner transpose output now has no consumers, remove it too
             Variable innerAfter = sd.getVariables().get(inputVar);

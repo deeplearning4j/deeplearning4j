@@ -109,13 +109,17 @@ public class StrengthReductionOptimizations extends BaseOptimizerSet {
                 log.debug("Strength reduction: pow({}, 1) → {} (identity)", inputVar, inputVar);
                 OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, inputVar);
                 List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = false;
                 if (graphOutputs != null) {
                     for (int i = 0; i < graphOutputs.size(); i++) {
-                        if (graphOutputs.get(i).equals(outputVar)) graphOutputs.set(i, inputVar);
+                        if (graphOutputs.get(i).equals(outputVar)) {
+                            graphOutputs.set(i, inputVar);
+                            wasOutput = true;
+                        }
                     }
                 }
                 OptimizationUtils.removeOp(sd, helper, op.getName());
-                OptimizationUtils.removeVariable(sd, helper, outputVar);
+                if (!wasOutput) OptimizationUtils.removeVariable(sd, helper, outputVar);
                 return true;
             }
 
@@ -128,13 +132,17 @@ public class StrengthReductionOptimizations extends BaseOptimizerSet {
                         org.nd4j.linalg.factory.Nd4j.ones(inputSdVar.dataType(), 1));
                 OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, one.name());
                 List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = false;
                 if (graphOutputs != null) {
                     for (int i = 0; i < graphOutputs.size(); i++) {
-                        if (graphOutputs.get(i).equals(outputVar)) graphOutputs.set(i, one.name());
+                        if (graphOutputs.get(i).equals(outputVar)) {
+                            graphOutputs.set(i, one.name());
+                            wasOutput = true;
+                        }
                     }
                 }
                 OptimizationUtils.removeOp(sd, helper, op.getName());
-                OptimizationUtils.removeVariable(sd, helper, outputVar);
+                if (!wasOutput) OptimizationUtils.removeVariable(sd, helper, outputVar);
                 return true;
             }
 
@@ -279,13 +287,17 @@ public class StrengthReductionOptimizations extends BaseOptimizerSet {
                 log.debug("Strength reduction: Pow({}, 1) → {} (identity)", baseVar, baseVar);
                 OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, baseVar);
                 List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = false;
                 if (graphOutputs != null) {
                     for (int i = 0; i < graphOutputs.size(); i++) {
-                        if (graphOutputs.get(i).equals(outputVar)) graphOutputs.set(i, baseVar);
+                        if (graphOutputs.get(i).equals(outputVar)) {
+                            graphOutputs.set(i, baseVar);
+                            wasOutput = true;
+                        }
                     }
                 }
                 OptimizationUtils.removeOp(sd, helper, op.getName());
-                OptimizationUtils.removeVariable(sd, helper, outputVar);
+                if (!wasOutput) OptimizationUtils.removeVariable(sd, helper, outputVar);
                 return true;
             }
 
@@ -298,13 +310,17 @@ public class StrengthReductionOptimizations extends BaseOptimizerSet {
                         org.nd4j.linalg.factory.Nd4j.ones(baseSdVar.dataType(), 1));
                 OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, one.name());
                 List<String> graphOutputs = sd.outputs();
+                boolean wasOutput = false;
                 if (graphOutputs != null) {
                     for (int i = 0; i < graphOutputs.size(); i++) {
-                        if (graphOutputs.get(i).equals(outputVar)) graphOutputs.set(i, one.name());
+                        if (graphOutputs.get(i).equals(outputVar)) {
+                            graphOutputs.set(i, one.name());
+                            wasOutput = true;
+                        }
                     }
                 }
                 OptimizationUtils.removeOp(sd, helper, op.getName());
-                OptimizationUtils.removeVariable(sd, helper, outputVar);
+                if (!wasOutput) OptimizationUtils.removeVariable(sd, helper, outputVar);
                 return true;
             }
 

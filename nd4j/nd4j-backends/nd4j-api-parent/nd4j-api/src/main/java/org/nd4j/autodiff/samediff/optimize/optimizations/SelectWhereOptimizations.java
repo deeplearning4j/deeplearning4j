@@ -86,17 +86,22 @@ public class SelectWhereOptimizations extends BaseOptimizerSet {
                                           SameDiffOp op, String outputVar, String replacement) {
         OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, replacement);
 
+        // Track wasOutput so we can leave outputVar as a zombie variable when it was
+        // a registered graph output. A zombie prevents restoreRequiredOutputNames from
+        // re-inserting an unwanted identity op.
         List<String> graphOutputs = sd.outputs();
+        boolean wasOutput = false;
         if (graphOutputs != null) {
             for (int i = 0; i < graphOutputs.size(); i++) {
                 if (graphOutputs.get(i).equals(outputVar)) {
                     graphOutputs.set(i, replacement);
+                    wasOutput = true;
                 }
             }
         }
 
         OptimizationUtils.removeOp(sd, helper, op.getName());
-        OptimizationUtils.removeVariable(sd, helper, outputVar);
+        if (!wasOutput) OptimizationUtils.removeVariable(sd, helper, outputVar);
     }
 
     /**

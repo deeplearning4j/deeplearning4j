@@ -143,7 +143,7 @@ public class PhiArchitecture implements ModelArchitecture {
             outputWeight = tokenEmbedWeight;
         }
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
-        sd.mmul("logits", hidden, lmHead.permute(1, 0));
+        QuantizedLinear.matMul(sd, "logits", hidden, lmHead, weights, "output.weight", dtype);
 
         return sd;
     }
@@ -262,7 +262,7 @@ public class PhiArchitecture implements ModelArchitecture {
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
         // Combined QKV projection
-        SDVariable qkv = sd.mmul("qkv_" + layerIdx, input, wqkv.permute(1, 0));
+        SDVariable qkv = QuantizedLinear.matMul(sd, "qkv_" + layerIdx, input, wqkv, weights, prefix + ".attn_qkv.weight", dtype);
 
         // Add QKV bias if present (Phi-2 has biases)
         INDArray qkvBias = weights.get(prefix + ".attn_qkv.bias");
@@ -356,7 +356,7 @@ public class PhiArchitecture implements ModelArchitecture {
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
         // Output projection
-        return sd.mmul("attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", dtype);
     }
 
     // ========================================================================
@@ -380,10 +380,12 @@ public class PhiArchitecture implements ModelArchitecture {
             return input;
         }
 
-        // Derive headDim from K weight shape
-        int kOutDim = (int) kWeight.shape()[0];
-        int headDim = kOutDim / numKvHeads;
-        int qOutDim = (int) qWeight.shape()[0];
+        int kOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_k.weight", kWeight);
+        int qOutDim = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_q.weight", qWeight);
+        int headDim = config.getHeadDimension();
+        if (headDim <= 0) {
+            headDim = kOutDim / numKvHeads;
+        }
         int actualNumHeads = qOutDim / headDim;
 
         if (layerIdx == 0) {
@@ -398,9 +400,9 @@ public class PhiArchitecture implements ModelArchitecture {
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
         // Project to Q, K, V
-        SDVariable q = sd.mmul("q_" + layerIdx, input, wq.permute(1, 0));
-        SDVariable k = sd.mmul("k_" + layerIdx, input, wk.permute(1, 0));
-        SDVariable v = sd.mmul("v_" + layerIdx, input, wv.permute(1, 0));
+        SDVariable q = QuantizedLinear.matMul(sd, "q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
+        SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, prefix + ".attn_k.weight", dtype);
+        SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, prefix + ".attn_v.weight", dtype);
 
         SDVariable batchDim = sd.sizeAt(input, 0);
         SDVariable seqDim = sd.sizeAt(input, 1);
@@ -450,7 +452,7 @@ public class PhiArchitecture implements ModelArchitecture {
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
         // Output projection
-        return sd.mmul("attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", dtype);
     }
 
     // ========================================================================
@@ -476,7 +478,7 @@ public class PhiArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "fc1.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "fc2.weight", downWeight);
 
-        SDVariable up = sd.mmul("up_" + layerIdx, input, wUp.permute(1, 0));
+        SDVariable up = QuantizedLinear.matMul(sd, "up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", dtype);
 
         // Add bias if present (Phi-2 FFN has biases)
         INDArray upBias = weights.get(prefix + ".ffn_up.bias");
@@ -486,7 +488,7 @@ public class PhiArchitecture implements ModelArchitecture {
 
         SDVariable activated = sd.nn.gelu("gelu_" + layerIdx, up);
 
-        SDVariable down = sd.mmul("down_" + layerIdx, activated, wDown.permute(1, 0));
+        SDVariable down = QuantizedLinear.matMul(sd, "down_" + layerIdx, activated, wDown, weights, prefix + ".ffn_down.weight", dtype);
 
         // Add bias if present
         INDArray downBias = weights.get(prefix + ".ffn_down.bias");
@@ -518,13 +520,13 @@ public class PhiArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
-        SDVariable gate = sd.mmul("gate_" + layerIdx, input, wGate.permute(1, 0));
-        SDVariable up = sd.mmul("up_" + layerIdx, input, wUp.permute(1, 0));
+        SDVariable gate = QuantizedLinear.matMul(sd, "gate_" + layerIdx, input, wGate, weights, prefix + ".ffn_gate.weight", dtype);
+        SDVariable up = QuantizedLinear.matMul(sd, "up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", dtype);
 
         SDVariable silu = sd.nn.swish(gate);
         SDVariable gated = silu.mul("swiglu_" + layerIdx, up);
 
-        return sd.mmul("down_" + layerIdx, gated, wDown.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "down_" + layerIdx, gated, wDown, weights, prefix + ".ffn_down.weight", dtype);
     }
 
     /**
@@ -537,7 +539,7 @@ public class PhiArchitecture implements ModelArchitecture {
         String mlpPrefix = "model.layers." + layerIdx + ".mlp.";
 
         SDVariable gate = sd.var(mlpPrefix + "gate.weight", routerGateWeight);
-        SDVariable routerLogits = sd.mmul("router_logits_" + layerIdx, input, gate.permute(1, 0));
+        SDVariable routerLogits = QuantizedLinear.matMul(sd, "router_logits_" + layerIdx, input, gate, weights, prefix + ".ffn_gate_inp.weight", dtype);
         SDVariable routerWeights = sd.nn.softmax("router_weights_" + layerIdx, routerLogits, -1);
 
         int numExperts = 0;
@@ -580,13 +582,13 @@ public class PhiArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upW);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downW);
 
-        SDVariable g = sd.mmul("gate" + nameSuffix, input, wGate.permute(1, 0));
-        SDVariable u = sd.mmul("up" + nameSuffix, input, wUp.permute(1, 0));
+        SDVariable g = QuantizedLinear.matMul(sd, "gate" + nameSuffix, input, wGate, weights, prefix + ".ffn_gate." + expertIdx + ".weight", dtype);
+        SDVariable u = QuantizedLinear.matMul(sd, "up" + nameSuffix, input, wUp, weights, prefix + ".ffn_up." + expertIdx + ".weight", dtype);
 
         SDVariable silu = sd.nn.swish(g);
         SDVariable h = silu.mul("swiglu" + nameSuffix, u);
 
-        return sd.mmul("down" + nameSuffix, h, wDown.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "down" + nameSuffix, h, wDown, weights, prefix + ".ffn_down." + expertIdx + ".weight", dtype);
     }
 
     // ========================================================================

@@ -27,7 +27,6 @@ import org.eclipse.deeplearning4j.llm.generation.sampling.SamplerUtils;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.generation.speculative.Speculator;
 import org.eclipse.deeplearning4j.llm.generation.speculative.DraftModelSpeculator;
-import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfigApplier;
@@ -44,6 +43,11 @@ import org.nd4j.common.config.ND4JSystemProperties;
 
 import org.nd4j.linalg.api.ops.impl.transforms.custom.AutoregressiveDecode;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.KvPrefixBlockPool;
+import org.eclipse.deeplearning4j.llm.generation.kvcache.PrefixLookupResult;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
@@ -69,6 +73,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.concurrent.CompletableFuture;
@@ -113,10 +119,30 @@ import java.util.stream.Collectors;
  * {@link #generate(INDArray, int[])} with pre-built embeddings that include
  * merged vision and text tokens.</p>
  *
+ * <h2>Continue generation (resume / incremental decode)</h2>
+ * <p>For single-model in-graph-KV (GGUF) decoders, {@link #startSession(String, int)} returns a
+ * {@link GenerationSession} that <em>resumes</em> autoregressive decoding across multiple calls,
+ * reusing the already-populated in-graph KV cache — no session reset, no re-prefill — bounded by the
+ * pre-sized KV buffer (the model's context ceiling). This lets a caller self-heal a truncated result
+ * (finishReason {@code MAX_TOKENS}) by continuing into the unused context budget instead of
+ * re-prefilling {@code prompt + textSoFar}:</p>
+ * <pre>{@code
+ * try (GenerationSession s = pipeline.startSession(prompt, contextLen - promptLen)) {
+ *     GenerationResult r = s.generate(64);
+ *     while (r.isTruncated() && s.getRemainingCapacity() > 0) r = s.continueGeneration(64);
+ *     String full = s.getFullText();
+ * }
+ * }</pre>
+ * <p>For greedy decoding with the default repetition penalty, one logical generation spread over K
+ * session calls is token-for-token identical to a single {@code generate()} of the summed budget.
+ * A session is thread-confined and only one may be open per pipeline at a time. See
+ * {@link #startSession(String, int)} for the full contract.</p>
+ *
  * @see GenerationPipelineConfig
  * @see AutoregressiveDecode
  * @see GenerationResult
  * @see ModelIOConfig
+ * @see GenerationSession
  */
 @Slf4j
 public class GenerationPipeline implements AutoCloseable {
@@ -125,6 +151,12 @@ public class GenerationPipeline implements AutoCloseable {
 
     @Getter
     private final SameDiff decoder;
+
+    /** ADR 0107 V2: original KV placeholder dtypes/shapes recorded before the INT8 (row-inline)
+     *  conversion in prefillWarmupAndFreeze — restored in close() because the decoder SameDiff
+     *  may be shared with later pipelines using a non-quantised strategy. */
+    private Map<String, DataType> kvPlaceholderOriginalDtypes;
+    private Map<String, long[]> kvPlaceholderOriginalShapes;
 
     @Getter
     private final SameDiff embedTokens;
@@ -135,6 +167,46 @@ public class GenerationPipeline implements AutoCloseable {
     private final ModelIOConfig ioConfig;
 
     private final GenerationPipelineConfig config;
+
+    /**
+     * The active sampling configuration, applied to every subsequent {@code generate} / {@code startSession}
+     * call. Initialized from {@link GenerationPipelineConfig#getSamplingConfig()} and mutable at runtime via
+     * {@link #setSamplingConfig(SamplingConfig)}, so one loaded pipeline (a single multi-GB model load) can be
+     * driven with many sampling strategies without rebuilding. Sampling is pure logits post-processing and
+     * never touches graph shapes or the frozen DSP plan, so swapping it between generations is free.
+     *
+     * <p>{@code volatile} for safe publication; generation on a pipeline is single-threaded (it binds one
+     * frozen DSP plan + KV buffer set — see {@link GenerationSession}). A change takes effect on the next
+     * generation; an already-open session keeps the sampler it captured at {@code startSession}
+     * (see {@link InGraphKvState#sampling}).</p>
+     */
+    private volatile SamplingConfig activeSamplingConfig;
+
+    private enum DecodePolicyKind {
+        GREEDY,
+        SAMPLE,
+        SPECULATIVE,
+        CONTRASTIVE,
+        BEAM
+    }
+
+    private static final class DecodePolicy {
+        final DecodePolicyKind kind;
+        final int batchMax;
+        final int windowMax;
+        final boolean needsHiddenState;
+
+        DecodePolicy(DecodePolicyKind kind, int batchMax, int windowMax, boolean needsHiddenState) {
+            this.kind = kind;
+            this.batchMax = batchMax;
+            this.windowMax = windowMax;
+            this.needsHiddenState = needsHiddenState;
+        }
+
+        boolean isScalarNativePolicy() {
+            return batchMax == 1 && windowMax == 1 && !needsHiddenState;
+        }
+    }
 
     // ---- Derived state ----
 
@@ -158,6 +230,36 @@ public class GenerationPipeline implements AutoCloseable {
     private final boolean ownsEmbedTokens;
     private final boolean ownsDraftDecoder;
 
+    /**
+     * The single active continuation {@link GenerationSession} on this pipeline, or {@code null}.
+     * Lock-free coordination: {@code startSession} CAS-sets {@code null → session};
+     * {@link GenerationSession#close()} CAS-clears it. Only one session may be open at a time because
+     * it binds the decoder's single frozen DSP plan + KV buffers. See the concurrency contract on
+     * {@link GenerationSession}.
+     */
+    private final AtomicReference<GenerationSession> activeSession = new AtomicReference<>(null);
+    private static final AtomicLong SESSION_ID_COUNTER = new AtomicLong(0);
+    private static final String ACTUAL_SEQUENCE_LENGTH_NAME = "actual_sequence_length";
+
+    /**
+     * FORWARD-FIX (fixed-buffer decode reuse): the {@link InGraphKvState} from the previous one-shot
+     * {@code generate()} on this pipeline, retained so the next compatible generate reuses its frozen
+     * DSP plan + captured CUDA graph + stable-address buffers instead of re-warming (~130s/gen). Only
+     * the fixed-buffer path ({@code maxPrefillLength > 0}) populates it. Invalidated when a
+     * {@link GenerationSession} opens (the session takes over the decoder's executor) and freed in
+     * {@link #close()}. Thread-confined to the pipeline's decode thread (generate() is single-threaded
+     * per pipeline).
+     */
+    private InGraphKvState cachedFixedBufferState;
+
+    /**
+     * Cross-request KV prefix block pool. Non-null when
+     * {@link GenerationPipelineConfig#isPrefixCacheEnabled()} is {@code true}. Shared
+     * across all generate() and startSession() calls on this pipeline instance. Freed in
+     * {@link #close()}.
+     */
+    private final KvPrefixBlockPool prefixBlockPool;
+
     private GenerationPipeline(
             SameDiff decoder, boolean ownsDecoder,
             SameDiff embedTokens, boolean ownsEmbedTokens,
@@ -167,7 +269,8 @@ public class GenerationPipeline implements AutoCloseable {
             long hiddenSize,
             String embedInputName, String[] embedOutputNames,
             SameDiff draftDecoder, boolean ownsDraftDecoder,
-            GenerationPipelineConfig config) {
+            GenerationPipelineConfig config,
+            KvPrefixBlockPool prefixBlockPool) {
         this.decoder = decoder;
         this.ownsDecoder = ownsDecoder;
         this.embedTokens = embedTokens;
@@ -181,6 +284,10 @@ public class GenerationPipeline implements AutoCloseable {
         this.draftDecoder = draftDecoder;
         this.ownsDraftDecoder = ownsDraftDecoder;
         this.config = config;
+        this.prefixBlockPool = prefixBlockPool;
+        // Sampling is pure logits post-processing (never touches graph shapes / the DSP plan), so the
+        // active sampling config is runtime-mutable — one model load can serve many sampling strategies.
+        this.activeSamplingConfig = config.getSamplingConfig();
 
         // Enable DSP auto-compile on models if requested.
         if (config.isDspEnabled()) {
@@ -396,18 +503,17 @@ public class GenerationPipeline implements AutoCloseable {
             ownsDraftDecoder = true;
         }
 
-        // Speculative decoding is NOT yet wired into this pipeline's decode loops:
-        // buildDraftSpeculator() exists but no decode path consults it, so draft
-        // proposals are never generated or verified. Failing to say so turns a
-        // requested feature into a silent no-op (the pipeline would load a draft
-        // model, then quietly run standard decode with zeroed speculation metrics).
+        // Speculative decoding is represented in the unified SamplingConfig strategy surface, but the
+        // native masked multi-position substrate is still the execution gate. A caller that selects
+        // DecodeStrategy.SPECULATIVE will fail fast at decode-policy resolution instead of silently
+        // running the scalar path with zeroed speculation metrics.
         if (config.getMaxSpeculativeTokens() > 0
                 || config.getSpeculator() != null
                 || draftDecoder != null) {
-            log.warn("Speculative decoding requested (maxSpeculativeTokens={}, draft={}, "
-                            + "speculator={}) but is NOT yet implemented in GenerationPipeline's "
-                            + "decode loops — standard one-token-per-step decode will run and "
-                            + "GenerationResult speculation metrics will be zero.",
+            log.warn("Speculative decoding configured (maxSpeculativeTokens={}, draft={}, speculator={}). "
+                            + "Select SamplingConfig.speculative() once the ADR 0106 native masked "
+                            + "multi-position substrate is available; until then the policy resolver "
+                            + "will reject SPECULATIVE rather than fall back silently.",
                     config.getMaxSpeculativeTokens(),
                     draftDecoder != null ? "present" : "none",
                     config.getSpeculator() != null ? config.getSpeculator().getClass().getSimpleName() : "none");
@@ -423,6 +529,43 @@ public class GenerationPipeline implements AutoCloseable {
                 config.getKvCacheStrategy(),
                 config.isDspEnabled());
 
+        // Build cross-request KV prefix block pool if enabled.
+        KvPrefixBlockPool prefixBlockPool = null;
+        if (config.isPrefixCacheEnabled()) {
+            // Validate mutually-exclusive options
+            if (config.isRotatingKvEnabled()) {
+                throw new IllegalArgumentException(
+                        "prefixCacheEnabled=true is not compatible with rotatingKvEnabled=true "
+                        + "(rotating KV changes physical write positions per-step; prefix blocks are "
+                        + "position-indexed and cannot be shared across rotation boundaries in v1). "
+                        + "Disable one or the other.");
+            }
+            if (config.getKvCacheStrategy() == KvCacheStrategy.QUANTIZED
+                    || config.getKvCacheStrategy() == KvCacheStrategy.TURBOQUANT) {
+                throw new IllegalArgumentException(
+                        "prefixCacheEnabled=true is not compatible with KvCacheStrategy."
+                        + config.getKvCacheStrategy() + " in v1. Only STATIC strategy is supported. "
+                        + "QUANTIZED/TURBOQUANT store data in a separate compressed format whose "
+                        + "per-row scale indices are dependent on the full buffer layout, making "
+                        + "block-level reuse incorrect without dequantize+requantize round-trips.");
+            }
+            int resolvedBlockSize = config.getPrefixCacheBlockSize() > 0
+                    ? config.getPrefixCacheBlockSize()
+                    : KvPrefixBlockPool.DEFAULT_BLOCK_SIZE;
+            long resolvedMaxBytes = config.getPrefixCacheMaxBytes() > 0
+                    ? config.getPrefixCacheMaxBytes()
+                    : resolvePrefixCacheDefaultBytes();
+            // Rough bytes-per-block estimate: blockSize * numKVLayers * kvHeads * headDim * 4 bytes.
+            // We don't know the model shape yet, so use a conservatively large placeholder.
+            // The trie uses this only for a saved-memory log message — it does not gate eviction.
+            long bytesPerBlockEstimate = resolvedBlockSize * 4096L;
+            prefixBlockPool = new KvPrefixBlockPool(
+                    resolvedBlockSize, resolvedMaxBytes, bytesPerBlockEstimate,
+                    KvPrefixBlockPool.DEFAULT_MAX_CACHE_ENTRIES);
+            log.info("KvPrefixBlockPool created: blockSize={} maxBytes={}MB",
+                    resolvedBlockSize, resolvedMaxBytes / (1024 * 1024));
+        }
+
         GenerationPipeline pipeline = new GenerationPipeline(
                 decoder, ownsDecoder,
                 embedTokens, ownsEmbedTokens,
@@ -432,7 +575,8 @@ public class GenerationPipeline implements AutoCloseable {
                 resolvedHiddenSize,
                 embedInputName, embedOutputNames,
                 draftDecoder, ownsDraftDecoder,
-                config);
+                config,
+                prefixBlockPool);
 
         BenchmarkConfig benchmarkConfig = config.getBenchmarkConfig();
         if (benchmarkConfig == null) {
@@ -521,32 +665,177 @@ public class GenerationPipeline implements AutoCloseable {
         }
     }
 
-    private GenerationResult generateInternal(String prompt, int maxNewTokens) {
-        // Apply chat template if configured and prompt doesn't already contain template markers
-        String effectivePrompt = prompt;
-        boolean addSpecialTokens = true;
-        boolean promptAlreadyFormatted = prompt.contains("<|im_start|>") || prompt.contains("[INST]");
-        String chatTemplateText = resolveChatTemplate();
-        if (chatTemplateText != null && !chatTemplateText.isEmpty()
-                && !promptAlreadyFormatted) {
-            List<ChatTemplate.Message> messages = new ArrayList<>();
-            messages.add(ChatTemplate.Message.user(prompt));
-            ChatTemplate chatTemplate = new ChatTemplate(
-                    chatTemplateText,
-                    tokenizer.getBosToken(),
-                    tokenizer.getEosToken());
-            effectivePrompt = chatTemplate.apply(messages, true);
-            addSpecialTokens = false;
-            log.debug("Applied chat template, prompt length: {} -> {}", prompt.length(), effectivePrompt.length());
-        } else if (promptAlreadyFormatted) {
-            addSpecialTokens = false;
+    /**
+     * Generate with a one-off sampling configuration, restoring the pipeline's active config afterward.
+     * Equivalent to bracketing a single {@link #generate(String, int)} call with
+     * {@link #setSamplingConfig(SamplingConfig)}, but scoped: the previous active config is restored even on
+     * failure. Reuses the one already-loaded model — no reload, no recompile. Because generation on a pipeline
+     * is single-threaded, this override is observable via {@link #getSamplingConfig()} only for the call's
+     * duration.
+     *
+     * @param prompt        the input text prompt
+     * @param maxNewTokens  maximum number of tokens to generate
+     * @param sampling      sampling configuration for this call only ({@code null} means the default config)
+     * @return generation result
+     */
+    public GenerationResult generate(String prompt, int maxNewTokens, SamplingConfig sampling) {
+        SamplingConfig prev = this.activeSamplingConfig;
+        this.activeSamplingConfig = sampling;
+        try {
+            return generate(prompt, maxNewTokens);
+        } finally {
+            this.activeSamplingConfig = prev;
         }
+    }
 
-        // Tokenize
-        int[] promptTokenIds = tokenizer.encode(effectivePrompt, addSpecialTokens).getIds();
-        if (promptTokenIds == null || promptTokenIds.length == 0) {
-            throw new IllegalArgumentException("Prompt encoding produced no tokens");
+    /**
+     * The sampling configuration currently applied to generation. Never {@code null} — if the active config
+     * was cleared (set to {@code null}), {@link SamplingConfig#defaultConfig()} is returned.
+     */
+    public SamplingConfig getSamplingConfig() {
+        return effectiveSampling();
+    }
+
+    /**
+     * Change the sampling strategy on this already-loaded pipeline. The new config applies to every
+     * subsequent {@link #generate(String)} / {@link #generate(String, int)} / {@link #generate(INDArray, int[])}
+     * and {@link #startSession(String, int)} call — <b>no model reload, no graph re-optimization, no DSP plan
+     * reset</b>. Scalar greedy/sample configs are pure logits post-processing (temperature, top-k, top-p,
+     * repetition penalty, stop tokens) and are forwarded to the native {@code autoregressive_decode} op without
+     * changing graph shapes. Multi-hypothesis strategies (speculative/contrastive/beam) resolve to ADR 0106
+     * masked-substrate dimensions and fail fast until the native B/W substrate is available.
+     *
+     * <p>Passing {@code null} resets to {@link SamplingConfig#defaultConfig()}. A change does NOT affect a
+     * {@link GenerationSession} that is already open — that session keeps the sampler it captured when it was
+     * started. Generation on a pipeline is single-threaded; do not call this concurrently with an in-flight
+     * {@code generate}.</p>
+     *
+     * @param sampling the new active sampling configuration, or {@code null} to reset to the default
+     */
+    public void setSamplingConfig(SamplingConfig sampling) {
+        this.activeSamplingConfig = sampling;
+        log.info("GenerationPipeline sampling config updated to {} — reusing loaded model (no reload/recompile)",
+                sampling != null ? sampling : "default");
+    }
+
+    /** Resolve the sampling config for the current generation: the active override, or a default if unset. */
+    private SamplingConfig effectiveSampling() {
+        return activeSamplingConfig != null ? activeSamplingConfig : SamplingConfig.defaultConfig();
+    }
+
+    /** Resolve the sampling config for a decode call and validate the selected strategy. */
+    private SamplingConfig activeDecodeSampling() {
+        return effectiveSampling();
+    }
+
+    /** Resolve the ADR 0106 decode policy for the current call. */
+    private DecodePolicy activeDecodePolicy() {
+        return resolveDecodePolicy(effectiveSampling(), config);
+    }
+
+    private static DecodePolicy resolveDecodePolicy(SamplingConfig sampling, GenerationPipelineConfig pipelineConfig) {
+        if (sampling == null) sampling = SamplingConfig.defaultConfig();
+        SamplingConfig.DecodeStrategy strategy = sampling.getDecodeStrategy();
+        if (strategy == null) strategy = SamplingConfig.DecodeStrategy.AUTO;
+
+        switch (strategy) {
+            case GREEDY:
+                return new DecodePolicy(DecodePolicyKind.GREEDY, 1, 1, false);
+            case SAMPLE:
+                if (sampling.getTemperature() <= 0.0) {
+                    throw new IllegalArgumentException("SamplingConfig.decodeStrategy=SAMPLE requires temperature > 0");
+                }
+                return new DecodePolicy(DecodePolicyKind.SAMPLE, 1, 1, false);
+            case SPECULATIVE: {
+                int width = pipelineConfig != null ? pipelineConfig.getMaxSpeculativeTokens() : 0;
+                if (width <= 0) {
+                    throw new IllegalArgumentException("SamplingConfig.decodeStrategy=SPECULATIVE requires "
+                            + "GenerationPipelineConfig.maxSpeculativeTokens > 0");
+                }
+                return new DecodePolicy(DecodePolicyKind.SPECULATIVE, 1, width, false);
+            }
+            case CONTRASTIVE:
+                if (!sampling.isContrastive()) {
+                    throw new IllegalArgumentException("SamplingConfig.decodeStrategy=CONTRASTIVE requires "
+                            + "penaltyAlpha > 0 and contrastiveTopK > 1");
+                }
+                return new DecodePolicy(DecodePolicyKind.CONTRASTIVE, 1, sampling.getContrastiveTopK(), true);
+            case BEAM:
+                if (!sampling.isBeam()) {
+                    throw new IllegalArgumentException("SamplingConfig.decodeStrategy=BEAM requires numBeams > 1");
+                }
+                if (sampling.getNumReturnSequences() > sampling.getNumBeams()) {
+                    throw new IllegalArgumentException("SamplingConfig.numReturnSequences cannot exceed numBeams");
+                }
+                if (sampling.getNumBeamGroups() > 1) {
+                    if (sampling.getNumBeams() % sampling.getNumBeamGroups() != 0) {
+                        throw new IllegalArgumentException("SamplingConfig.numBeams must be divisible by numBeamGroups");
+                    }
+                    if (sampling.getDiversityPenalty() <= 0.0) {
+                        throw new IllegalArgumentException("SamplingConfig.numBeamGroups > 1 requires diversityPenalty > 0");
+                    }
+                }
+                return new DecodePolicy(DecodePolicyKind.BEAM, sampling.getNumBeams(), 1, false);
+            case AUTO:
+            default:
+                return sampling.isGreedy()
+                        ? new DecodePolicy(DecodePolicyKind.GREEDY, 1, 1, false)
+                        : new DecodePolicy(DecodePolicyKind.SAMPLE, 1, 1, false);
         }
+    }
+
+    private static void requireNativeSubstrateAvailable(DecodePolicy policy, SamplingConfig sampling) {
+        if (sampling != null && sampling.getNumReturnSequences() > 1 && policy.kind != DecodePolicyKind.BEAM) {
+            throw new UnsupportedOperationException("SamplingConfig.numReturnSequences > 1 requires BEAM "
+                    + "decode; scalar greedy/sample can only return one sequence. Config=" + sampling);
+        }
+        if (policy.isScalarNativePolicy()) {
+            return;
+        }
+        throw new UnsupportedOperationException(
+                "Decode strategy " + policy.kind + " resolves to masked substrate B=" + policy.batchMax
+                + ", W=" + policy.windowMax + " (hidden=" + policy.needsHiddenState + "), but the current "
+                + "native autoregressive_decode op still exposes only the scalar B=1,W=1 contract. "
+                + "Do not route through StaticKvCacheDecodeLoop, SpeculativeDecodeLoop, or TextGenerator; "
+                + "finish ADR 0106 by extending the native masked multi-position substrate first. Config="
+                + sampling);
+    }
+
+    private static int nativeDecodeStrategy(DecodePolicyKind kind) {
+        switch (kind) {
+            case GREEDY:
+                return AutoregressiveDecode.DECODE_STRATEGY_GREEDY;
+            case SAMPLE:
+                return AutoregressiveDecode.DECODE_STRATEGY_SAMPLE;
+            case SPECULATIVE:
+                return AutoregressiveDecode.DECODE_STRATEGY_SPECULATIVE;
+            case CONTRASTIVE:
+                return AutoregressiveDecode.DECODE_STRATEGY_CONTRASTIVE;
+            case BEAM:
+                return AutoregressiveDecode.DECODE_STRATEGY_BEAM;
+            default:
+                return AutoregressiveDecode.DECODE_STRATEGY_AUTO;
+        }
+    }
+
+    private static AutoregressiveDecode applyNativePolicy(AutoregressiveDecode op, DecodePolicy policy,
+                                                          SamplingConfig sampling,
+                                                          int generatedTokenOffset) {
+        if (sampling == null) sampling = SamplingConfig.defaultConfig();
+        long seed = sampling.getSeed() != null ? sampling.getSeed() : 0L;
+        return op.withDecodePolicy(nativeDecodeStrategy(policy.kind),
+                        policy.batchMax, policy.windowMax, policy.batchMax, policy.windowMax,
+                        -1, sampling.getNumBeams(), sampling.getLengthPenalty(),
+                        sampling.getPenaltyAlpha(), sampling.getContrastiveTopK())
+                .withSamplingPolicy(sampling.getMinP(), sampling.getFrequencyPenalty(),
+                        sampling.getPresencePenalty(), sampling.getMinNewTokens(),
+                        generatedTokenOffset, seed)
+                .withTypicalPAndXtc(sampling.getTypicalP(), sampling.getXtcProbability(),
+                        sampling.getXtcThreshold());
+    }
+
+    private GenerationResult generateInternal(String prompt, int maxNewTokens) {
+        int[] promptTokenIds = encodePromptToIds(prompt);
 
         // Single-model mode: no separate embedTokens model was provided.
         // The decoder handles its own embedding lookup internally
@@ -563,13 +852,6 @@ public class GenerationPipeline implements AutoCloseable {
         return generate(embeddings, promptTokenIds, maxNewTokens);
     }
 
-    private String resolveChatTemplate() {
-        if (config.getChatTemplate() != null && !config.getChatTemplate().isBlank()) {
-            return config.getChatTemplate();
-        }
-        return tokenizer.getChatTemplate();
-    }
-
     /**
      * Simple autoregressive generation for single-model GGUF models.
      *
@@ -584,6 +866,10 @@ public class GenerationPipeline implements AutoCloseable {
      * </ol>
      */
     private GenerationResult generateSimple(int[] promptTokenIds, int maxNewTokens) {
+        SamplingConfig sampling = activeDecodeSampling();
+        DecodePolicy decodePolicy = activeDecodePolicy();
+        requireNativeSubstrateAvailable(decodePolicy, sampling);
+
         // Check for in-graph KV cache (GGUF pattern: KV inputs, no present outputs)
         if (ModelIOConfig.isInGraphKvCache(decoder)) {
             ModelIOConfig.KVCacheNames kvInputNames = ModelIOConfig.findKVCacheInputNames(decoder);
@@ -615,26 +901,101 @@ public class GenerationPipeline implements AutoCloseable {
      *   <li>AutoregressiveDecode native op: full decode loop in C++</li>
      * </ol>
      */
-    private GenerationResult generateSimpleWithInGraphKvCache(int[] promptTokenIds, int maxNewTokens,
-                                                                ModelIOConfig.KVCacheNames kvInputNames) {
-        long startTime = System.currentTimeMillis();
+    /**
+     * Prefill the prompt, run one warmup decode step, and freeze the DSP plan — producing an
+     * {@link InGraphKvState} that retains the static KV / recurrent buffers, decode-step tensors,
+     * frozen plan handles, and resolved external-input indices so decoding can later be
+     * <em>resumed</em> (see {@link #runInGraphNativeDecode}) without a reset or re-prefill.
+     *
+     * <p>Shared by the one-shot {@link #generateSimpleWithInGraphKvCache} path and by
+     * {@link #startSession(String, int)}. {@code maxNewTokens} here sizes the KV buffer
+     * ({@code maxKvLen = prefillLen + maxNewTokens}, capped by {@code maxKvCacheLength}); for a session
+     * this is the total continuation capacity.</p>
+     *
+     * <p>On the terminal prefill/warmup outcomes (first token is EOS, or no native plan handle) the
+     * returned state carries a {@link InGraphKvState#terminalResult} and is already closed — callers
+     * return that result directly.</p>
+     */
+    private InGraphKvState prefillWarmupAndFreeze(int[] promptTokenIds, int maxNewTokens,
+                                                  ModelIOConfig.KVCacheNames kvInputNames,
+                                                  long startTime, InGraphKvState reuseState) {
+
+        // ADR 0107 V2 INLINE-SCALE: when INT8 KV quantization is requested, declare the KV cache
+        // placeholders as INT8 before any plan is built. A runtime INT8 buffer bound to a FLOAT
+        // placeholder is dtype-invisible to the plan — shape/segment cache keys, Triton kernel
+        // selection and dot_product_attention_v2's quantised-path detection all see FLOAT — so the
+        // quantised decode would reuse the FLOAT attention kernel and skip the quantised write.
+        // dot_product_attention_v2 accepts an INT8 keyCache/valueCache (inputs 5/6); with an INT8
+        // placeholder the decode takes the quantised-on-write + inline-scale read path and gets a
+        // distinct compiled kernel from the float KV plan.
+        if (config.getKvCacheStrategy() == KvCacheStrategy.QUANTIZED && config.getKvQuantFormat() > 0) {
+            Map<String, DataType> kvInt8 = new LinkedHashMap<>();
+            for (String kn : kvInputNames.keyNames) {
+                if (decoder.hasVariable(kn) && decoder.getVariable(kn).dataType() != DataType.INT8) {
+                    kvInt8.put(kn, DataType.INT8);
+                }
+            }
+            for (String vn : kvInputNames.valueNames) {
+                if (decoder.hasVariable(vn) && decoder.getVariable(vn).dataType() != DataType.INT8) {
+                    kvInt8.put(vn, DataType.INT8);
+                }
+            }
+            if (!kvInt8.isEmpty()) {
+                // The decoder SameDiff may be shared across pipelines (and with future STATIC
+                // pipelines) — record the original dtype/shape ONCE so close() can restore them.
+                // Without the restore, a later non-quantised pipeline on the same decoder would
+                // allocate INT8 KV buffers against the mutated placeholders and take the
+                // quantised attention path with a float-sized cache.
+                if (kvPlaceholderOriginalDtypes == null) {
+                    kvPlaceholderOriginalDtypes = new LinkedHashMap<>();
+                    kvPlaceholderOriginalShapes = new LinkedHashMap<>();
+                    for (String kvn : kvInt8.keySet()) {
+                        kvPlaceholderOriginalDtypes.put(kvn, decoder.getVariable(kvn).dataType());
+                        long[] declared = decoder.getVariable(kvn).getShape();
+                        kvPlaceholderOriginalShapes.put(kvn, declared != null ? declared.clone() : null);
+                    }
+                }
+                decoder.convertDataTypes(kvInt8);
+                // ROW-INLINE: the fed INT8 caches are [batch, maxKvLen, kvHeads, headDim+4]
+                // (per-row float32 scale inside the tensor) — relax the declared trailing dim
+                // so placeholder validation accepts the widened rows.
+                for (String kvn : kvInt8.keySet()) {
+                    long[] declared = decoder.getVariable(kvn).getShape();
+                    if (declared != null && declared.length == 4) {
+                        decoder.getVariable(kvn).setShape(declared[0], declared[1], declared[2], -1);
+                    }
+                }
+                log.info("[GGUF-KV] Declared {} KV cache placeholders as INT8 (row-inline scale) for quantised decode",
+                        kvInt8.size());
+            }
+        }
 
         int maxPrefill = config.getMaxPrefillLength();
         boolean fixedBuffers = maxPrefill > 0;
 
         if (fixedBuffers) {
-            // Fixed-size buffers: skip DSP reset — reuse the frozen plan.
-            // Shapes are identical across calls since everything is pre-allocated
-            // at maxPrefillLength. Only reset session state (KV caches, recurrent
-            // states) — the plan itself stays intact.
-            InferenceSession existSession = decoder.getOrCreateSession();
-            if (existSession != null) {
-                DynamicShapePlanExecutor existExecutor = existSession.getDynamicShapePlanExecutor();
-                if (existExecutor != null && existExecutor.isShapesFrozen()) {
-                    log.info("[Lifecycle] Reusing frozen DSP plan (fixedBuffers=true, maxPrefill={})", maxPrefill);
-                    // Clear node outputs but keep the plan — we need fresh KV/state
-                    // buffers but the compiled execution plan is shape-stable.
-                    existSession.clearNodeOutputsOnly();
+            if (reuseState != null) {
+                // FORWARD-FIX reuse: keep the plan AND its node-output buffers. Do NOT call
+                // clearNodeOutputsOnly() — it closes+nulls the session DynamicShapePlan
+                // (InferenceSession.java:455), which frees the native plan handle → the next
+                // dispatch is a NEW BORROWER → #52 external-view invalidation → segment reset →
+                // full re-warm (~130s). The frozen plan + captured graphs are reused as-is; STEP 1
+                // re-prefills in place into the retained (stable-address) buffers.
+                log.info("[Lifecycle] Reusing cached fixed-buffer state — keep plan, in-place re-prefill (maxPrefill={})", maxPrefill);
+            } else {
+                // Fixed-size buffers: skip DSP reset — reuse the frozen plan.
+                // Shapes are identical across calls since everything is pre-allocated
+                // at maxPrefillLength. Only reset session state (KV caches, recurrent
+                // states) — the plan itself stays intact.
+                InferenceSession existSession = decoder.getOrCreateSession();
+                if (existSession != null) {
+                    DynamicShapePlanExecutor existExecutor = existSession.getDynamicShapePlanExecutor();
+                    if (existExecutor != null && existExecutor.isShapesFrozen()) {
+                        log.info("[Lifecycle] Reusing frozen DSP plan (fixedBuffers=true, maxPrefill={})", maxPrefill);
+                        // Clear node outputs but keep the plan — we need fresh KV/state
+                        // buffers but the compiled execution plan is shape-stable.
+                        existSession.clearNodeOutputsOnly();
+                    }
                 }
             }
         } else {
@@ -658,8 +1019,9 @@ public class GenerationPipeline implements AutoCloseable {
         int eosTokenId = tokenizer.getEosTokenId();
         Set<Integer> stopTokenIds = buildStopTokenIds();
 
-        SamplingConfig sampling = config.getSamplingConfig() != null
-                ? config.getSamplingConfig() : SamplingConfig.defaultConfig();
+        SamplingConfig sampling = activeDecodeSampling();
+        DecodePolicy decodePolicy = activeDecodePolicy();
+        requireNativeSubstrateAvailable(decodePolicy, sampling);
         Random rng = sampling.getSeed() != null ? new Random(sampling.getSeed()) : new Random();
 
         String inputIdsName = ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids";
@@ -720,61 +1082,129 @@ public class GenerationPipeline implements AutoCloseable {
         // DSP stays enabled throughout — never disable it.
         // ══════════════════════════════════════════════════════════════════════
 
-        INDArray prefillInputIds = Nd4j.createFromArray(effectiveTokenIds)
-                .reshape(1, prefillSeqLen).castTo(DataType.INT64);
-
-        Map<String, INDArray> prefillInputMap = new HashMap<>();
-        prefillInputMap.put(inputIdsName, prefillInputIds);
-
-        if (posOffsetName != null && decoder.hasVariable(posOffsetName)) {
-            prefillInputMap.put(posOffsetName, Nd4j.scalar(DataType.INT64, 0));
-        }
-        if (cachePosName != null && decoder.hasVariable(cachePosName)) {
-            prefillInputMap.put(cachePosName, Nd4j.scalar(DataType.INT64, 0));
-        }
+        // ── PREFILL EXTERNAL INPUTS ──────────────────────────────────────────────────────────────
+        // Forward-fix (Design A): on reuse the prefill plan is already frozen/captured (frozen
+        // multi-plan switch freezes it too), so its external inputs MUST keep STABLE device addresses
+        // or the captured prefill graph replays against a dangling/stale address → silent gen-3+
+        // degeneration. So REUSE the cached prefill tensors and overwrite the VARYING ones in place
+        // (input_ids = new prompt, causal mask = new actual length); the CONSTANT ones (zero position /
+        // cache-position scalars, empty-KV sentinels, zero recurrent state) are reused as-is and
+        // re-zeroed defensively. A fresh tensor per generate is only correct on the non-reused path.
         DataType maskDtype = DataType.FLOAT;
         if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
             maskDtype = decoder.getVariable(causalMaskName).dataType();
-            if (fixedBuffers) {
-                // Build causal mask that only attends to actual token positions,
-                // masking out the padding region even though the buffer is full-size.
-                prefillInputMap.put(causalMaskName,
-                        buildPaddedPrefillCausalMask(actualPrefillLen, prefillSeqLen, maxKvLen, maskDtype));
-            } else {
-                prefillInputMap.put(causalMaskName,
-                        DecoderInputBuilder.buildInGraphCausalMask(prefillSeqLen, maxKvLen, maskDtype));
-            }
         }
+        Map<String, INDArray> prefillInputMap;
+        INDArray prefillInputIds;
+        if (reuseState != null && reuseState.prefillInputMap != null) {
+            // Reuse path: overwrite in place, keep every address stable.
+            prefillInputMap = reuseState.prefillInputMap;
+            prefillInputIds = prefillInputMap.get(inputIdsName);
+            try (INDArray freshIds = Nd4j.createFromArray(effectiveTokenIds)
+                    .reshape(1, prefillSeqLen).castTo(DataType.INT64)) {
+                prefillInputIds.assign(freshIds);
+            }
+            if (posOffsetName != null && prefillInputMap.containsKey(posOffsetName)) {
+                prefillInputMap.get(posOffsetName).assign(0);
+            }
+            if (cachePosName != null && prefillInputMap.containsKey(cachePosName)) {
+                prefillInputMap.get(cachePosName).assign(0);
+            }
+            if (prefillInputMap.containsKey(ACTUAL_SEQUENCE_LENGTH_NAME)) {
+                prefillInputMap.get(ACTUAL_SEQUENCE_LENGTH_NAME).assign(actualPrefillLen);
+            }
+            if (causalMaskName != null && prefillInputMap.containsKey(causalMaskName)) {
+                INDArray freshMask = fixedBuffers
+                        ? buildPaddedPrefillCausalMask(actualPrefillLen, prefillSeqLen, maxKvLen, maskDtype)
+                        : DecoderInputBuilder.buildInGraphCausalMask(prefillSeqLen, maxKvLen, maskDtype);
+                prefillInputMap.get(causalMaskName).assign(freshMask);
+                freshMask.close();
+            }
+            // Empty-KV sentinels reused as-is (no content). Re-zero recurrent state inputs (no history).
+            for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+                INDArray st = prefillInputMap.get(pair.inputName);
+                if (st != null) st.assign(0);
+            }
+            Nd4j.getExecutioner().commit();
+            for (INDArray arr : prefillInputMap.values()) {
+                if (arr != null && !arr.isEmpty()) arr.syncToDevice();
+            }
+        } else {
+            prefillInputIds = Nd4j.createFromArray(effectiveTokenIds)
+                    .reshape(1, prefillSeqLen).castTo(DataType.INT64);
 
-        // Empty KV cache inputs — signals attention op to skip in-place scatter
-        for (String keyName : kvInputNames.keyNames) {
-            if (decoder.hasVariable(keyName)) {
-                prefillInputMap.put(keyName, Nd4j.empty(decoder.getVariable(keyName).dataType()));
-            }
-        }
-        for (String valName : kvInputNames.valueNames) {
-            if (decoder.hasVariable(valName)) {
-                prefillInputMap.put(valName, Nd4j.empty(decoder.getVariable(valName).dataType()));
-            }
-        }
+            prefillInputMap = new HashMap<>();
+            prefillInputMap.put(inputIdsName, prefillInputIds);
 
-        // Zero-filled recurrent state inputs for prefill (zeros = no prior history)
-        // Shapes are derived from the ops that consume each state placeholder.
-        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
-            if (decoder.hasVariable(pair.inputName)) {
-                DataType dt = decoder.getVariable(pair.inputName).dataType();
-                long[] stateShape = deriveRecurrentStateShape(decoder, pair.inputName);
-                if (stateShape != null) {
-                    prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, stateShape));
+            if (posOffsetName != null && decoder.hasVariable(posOffsetName)) {
+                prefillInputMap.put(posOffsetName, Nd4j.scalar(DataType.INT64, 0));
+            }
+            if (cachePosName != null && decoder.hasVariable(cachePosName)) {
+                prefillInputMap.put(cachePosName, Nd4j.scalar(DataType.INT64, 0));
+            }
+            if (decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME)) {
+                prefillInputMap.put(ACTUAL_SEQUENCE_LENGTH_NAME,
+                        Nd4j.scalar(DataType.INT64, actualPrefillLen));
+            }
+            if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
+                if (fixedBuffers) {
+                    // Build causal mask that only attends to actual token positions,
+                    // masking out the padding region even though the buffer is full-size.
+                    prefillInputMap.put(causalMaskName,
+                            buildPaddedPrefillCausalMask(actualPrefillLen, prefillSeqLen, maxKvLen, maskDtype));
                 } else {
-                    log.warn("[GGUF-KV] Cannot derive state shape for '{}' from graph", pair.inputName);
+                    prefillInputMap.put(causalMaskName,
+                            DecoderInputBuilder.buildInGraphCausalMask(prefillSeqLen, maxKvLen, maskDtype));
+                }
+            }
+
+            // Empty KV cache inputs — signals attention op to skip in-place scatter
+            for (String keyName : kvInputNames.keyNames) {
+                if (decoder.hasVariable(keyName)) {
+                    prefillInputMap.put(keyName, Nd4j.empty(decoder.getVariable(keyName).dataType()));
+                }
+            }
+            for (String valName : kvInputNames.valueNames) {
+                if (decoder.hasVariable(valName)) {
+                    prefillInputMap.put(valName, Nd4j.empty(decoder.getVariable(valName).dataType()));
+                }
+            }
+
+            // Zero-filled recurrent state inputs for prefill (zeros = no prior history)
+            // Shapes are derived from the ops that consume each state placeholder.
+            for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+                if (decoder.hasVariable(pair.inputName)) {
+                    DataType dt = decoder.getVariable(pair.inputName).dataType();
+                    long[] stateShape = deriveRecurrentStateShape(decoder, pair.inputName);
+                    if (stateShape != null) {
+                        prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, stateShape));
+                    } else {
+                        log.warn("[GGUF-KV] Cannot derive state shape for '{}' from graph", pair.inputName);
+                    }
                 }
             }
         }
 
+        // ── Prefill last-position logits optimisation ─────────────────────────────────────────────
+        // When enabled AND the model exposes "lm_logits_last" (slice of hidden at S-1 before
+        // lm_head), request that output instead of full "lm_logits". DSP will then compile a plan
+        // that skips the all-positions vocab projection and only computes the last-pos result —
+        // a TTFT win proportional to (S-1) for large S. Decode (S=1) is unchanged.
+        // Imported GGUF graphs that do NOT have "lm_logits_last" fall back silently.
+        // Fixed-buffer path (S=prefillSeqLen, padded): the lm_logits_last slice is at
+        // position prefillSeqLen-1 (the last padded position); since the causal mask zeros out
+        // padding contributions this is still the correct last-real-token distribution.
+        final String LAST_POS_LOGITS_NAME = "lm_logits_last";
+        boolean usePrefillLastPos = config.isEffectivePrefillLastPositionLogitsEnabled()
+                && prefillSeqLen > 1
+                && decoder.hasVariable(LAST_POS_LOGITS_NAME)
+                && decoder.outputs().contains(LAST_POS_LOGITS_NAME);
+        // The effective logits output name for prefill: either "lm_logits_last" or the full one.
+        String prefillLogitsRequestName = usePrefillLastPos ? LAST_POS_LOGITS_NAME : logitsName;
+
         // Request outputs: logits + per-layer KV outputs + recurrent state outputs
         List<String> prefillOutputNames = new ArrayList<>();
-        prefillOutputNames.add(logitsName);
+        prefillOutputNames.add(prefillLogitsRequestName);
         for (int i = 0; i < numLayers; i++) {
             int layerIdx = extractLayerIndex(kvInputNames.keyNames.get(i));
             prefillOutputNames.add("k_rope_" + layerIdx);
@@ -793,21 +1223,29 @@ public class GenerationPipeline implements AutoCloseable {
             throw e;
         }
 
-        log.info("[GGUF-KV] Prefill returned {} outputs: {}", prefillOutputs.size(), prefillOutputs.keySet());
+        log.info("[GGUF-KV] Prefill returned {} outputs: {} (prefillLastPos={})",
+                prefillOutputs.size(), prefillOutputs.keySet(), usePrefillLastPos);
 
         // Sample first token from prefill logits.
         // When fixedBuffers is active, the logits tensor has shape [1, prefillSeqLen, vocab]
         // where prefillSeqLen includes padding. The real last token is at actualPrefillLen-1.
-        INDArray prefillLogits = prefillOutputs.get(logitsName);
+        // When usePrefillLastPos=true, the shape is [B, 1, vocab] and the only valid index is 0.
+        INDArray prefillLogits = prefillOutputs.get(prefillLogitsRequestName);
         if (prefillLogits == null) {
-            throw new RuntimeException("[GGUF-KV] Prefill logits '" + logitsName + "' not found in outputs: " + prefillOutputs.keySet());
+            throw new RuntimeException("[GGUF-KV] Prefill logits '" + prefillLogitsRequestName
+                    + "' not found in outputs: " + prefillOutputs.keySet());
         }
         // Clamp to the actual logits seq dim (see generateNative): no-op for the padded
         // [1, prefillSeqLen, vocab] case here, but guards an UNCHECKED OOB read if a model
         // ever exports last-position-only [1, 1, vocab] logits on this path too.
+        // When usePrefillLastPos=true, shape is [1, 1, vocab] → samplePos=0 always.
         int logitsSamplePos = Math.min(actualPrefillLen - 1, (int) prefillLogits.shape()[1] - 1);
-        log.info("[GGUF-KV] Prefill logits shape: {} samplePos={} (actualPrefillLen={})",
-                Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen);
+        if (usePrefillLastPos) {
+            // lm_logits_last is already last-position only — always sample from index 0
+            logitsSamplePos = 0;
+        }
+        log.info("[GGUF-KV] Prefill logits shape: {} samplePos={} (actualPrefillLen={} lastPosOpt={})",
+                Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen, usePrefillLastPos);
         {
             INDArray lastPosLogits = prefillLogits.get(
                     NDArrayIndex.point(0),
@@ -819,28 +1257,70 @@ public class GenerationPipeline implements AutoCloseable {
             lastPosLogits.close();
         }
         List<Integer> generatedSoFar = new ArrayList<>();
+        suppressStopsUnderFloor(prefillLogits, logitsSamplePos, sampling, generatedSoFar.size(), stopTokenIds);
         int firstTokenId = sampleToken(prefillLogits, logitsSamplePos, sampling, generatedSoFar, rng);
         generatedSoFar.add(firstTokenId);
         prefillLogits.close();
-        prefillInputIds.close();
+        // prefillInputIds is retained in prefillInputMap (cached in the InGraphKvState) for the
+        // fixed-buffer reuse path so the frozen prefill plan replays against a stable address —
+        // freed via state.close(), not here. The two early-return terminals below close it inline.
 
         long firstTokenMs = System.currentTimeMillis() - startTime;
 
         log.info("[GGUF-KV] First token: {} (eos={})", firstTokenId, stopTokenIds.contains(firstTokenId));
 
         if (stopTokenIds.contains(firstTokenId)) {
-            closePrefillOutputs(prefillOutputs, logitsName);
+            closePrefillOutputs(prefillOutputs, prefillLogitsRequestName);
+            // Non-reuse owns prefillInputMap and frees it here; on reuse it is the retained state's own
+            // field and is freed by the caller via reuseState.close() (the caller drops the cache).
+            if (reuseState == null) {
+                for (INDArray v : prefillInputMap.values()) { if (v != null && !v.wasClosed()) v.close(); }
+            }
             List<Integer> tokens = new ArrayList<>();
             tokens.add(firstTokenId);
-            return buildResult(tokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+            InGraphKvState terminal = new InGraphKvState();
+            terminal.terminalResult = buildResult(tokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+            terminal.generatedSoFar = tokens;
+            terminal.eosReached = true;
+            terminal.closed = true;
+            terminal.actualPrefillLen = actualPrefillLen;
+            terminal.promptTokenCount = prefillSeqLen;
+            terminal.maxKvLen = maxKvLen;
+            return terminal;
         }
 
         // ══════════════════════════════════════════════════════════════════════
         // STEP 2: Initialize static KV buffers from prefill K/V outputs
         // Shape: [batch, maxKvLen, numKVHeads, headDim] (BSHD layout)
         // ══════════════════════════════════════════════════════════════════════
-        log.info("[GGUF-KV] STEP 2: numLayers={} keyNames.size={}", numLayers, kvInputNames.keyNames.size());
-        Map<String, INDArray> staticKvBuffers = new LinkedHashMap<>();
+
+        // QUANTIZED strategy validation: reject combination with rotating KV.
+        // Rotating KV changes physical write slots per step; the quantize-archive step (which
+        // runs between generate calls, not per-decode-step) would need to track eviction order.
+        // Defer support for this combination to v2.
+        boolean isQuantizedKv = config.getKvCacheStrategy() == KvCacheStrategy.QUANTIZED
+                && config.getKvQuantFormat() > 0;
+        if (isQuantizedKv && config.isRotatingKvEnabled()) {
+            throw new IllegalStateException(
+                    "KvCacheStrategy.QUANTIZED is not compatible with rotatingKvEnabled=true. "
+                    + "Use STATIC strategy with rotating KV, or QUANTIZED without rotating KV.");
+        }
+        int kvQuantFormat = isQuantizedKv ? config.getKvQuantFormat() : 0;
+
+        log.info("[GGUF-KV] STEP 2: numLayers={} keyNames.size={} quantized={} format={}",
+                numLayers, kvInputNames.keyNames.size(), isQuantizedKv, kvQuantFormat);
+        Map<String, INDArray> staticKvBuffers = reuseState != null && reuseState.staticKvBuffers != null
+                ? reuseState.staticKvBuffers : new LinkedHashMap<>();
+        // QUANTIZED: separate INT8-compressed buffers + scales, sized only to the active
+        // prefill region (maxKvLen float elements → maxKvLen INT8 elements, 4x smaller).
+        Map<String, INDArray> quantizedKvBuffers = isQuantizedKv
+                ? (reuseState != null && reuseState.quantizedKvBuffers != null
+                        ? reuseState.quantizedKvBuffers : new LinkedHashMap<>())
+                : null;
+        Map<String, INDArray> kvScaleBuffers = isQuantizedKv
+                ? (reuseState != null && reuseState.kvScaleBuffers != null
+                        ? reuseState.kvScaleBuffers : new LinkedHashMap<>())
+                : null;
         DataType kvDtype = null;
         for (int i = 0; i < numLayers; i++) {
             int layerIdx = extractLayerIndex(kvInputNames.keyNames.get(i));
@@ -869,16 +1349,66 @@ public class GenerationPipeline implements AutoCloseable {
                 vHeads = vHeads.reshape(batch, prefillSeqLen, numKVHeads, headDim);
             }
 
-            // Create full-size zero buffer and write prefill data at positions 0..prefillLen-1
-            INDArray keyBuf = Nd4j.zeros(kvDtype, batch, maxKvLen, numKVHeads, headDim);
+            // Full-size buffer; write prefill data at positions 0..prefillLen-1. On reuse, zero the
+            // RETAINED buffer (stable address — the frozen decode plan baked it) and re-write in place;
+            // otherwise allocate fresh. Padding positions [prefillLen..maxKvLen) stay zero.
+            String keyName = kvInputNames.keyNames.get(i);
+            INDArray keyBuf;
+            if (reuseState != null && staticKvBuffers.containsKey(keyName)) {
+                keyBuf = staticKvBuffers.get(keyName);
+                keyBuf.assign(0);
+            } else {
+                keyBuf = Nd4j.zeros(kvDtype, batch, maxKvLen, numKVHeads, headDim);
+            }
             keyBuf.get(NDArrayIndex.all(), NDArrayIndex.interval(0, prefillSeqLen),
                     NDArrayIndex.all(), NDArrayIndex.all()).assign(kRoped);
-            staticKvBuffers.put(kvInputNames.keyNames.get(i), keyBuf);
+            staticKvBuffers.put(keyName, keyBuf);
 
-            INDArray valBuf = Nd4j.zeros(kvDtype, batch, maxKvLen, numKVHeads, headDim);
+            String valName = kvInputNames.valueNames.get(i);
+            INDArray valBuf;
+            if (reuseState != null && staticKvBuffers.containsKey(valName)) {
+                valBuf = staticKvBuffers.get(valName);
+                valBuf.assign(0);
+            } else {
+                valBuf = Nd4j.zeros(kvDtype, batch, maxKvLen, numKVHeads, headDim);
+            }
             valBuf.get(NDArrayIndex.all(), NDArrayIndex.interval(0, prefillSeqLen),
                     NDArrayIndex.all(), NDArrayIndex.all()).assign(vHeads);
-            staticKvBuffers.put(kvInputNames.valueNames.get(i), valBuf);
+            staticKvBuffers.put(valName, valBuf);
+
+            if (isQuantizedKv) {
+                // Quantize the full KV buffer (prefill region + zero padding) into INT8.
+                // We quantize the full staticKvBuffer (not just the prefill slice) so
+                // scale indices match the flat-row layout of the full [B,maxKvLen,kvH,headDim] tensor.
+                // Scale shape: [batch, maxKvLen, numKVHeads] — one scale per token-head row.
+                // ADR 0107 V2 ROW-INLINE: quantize into row-inline INT8 tensors
+                // [batch, maxKvLen, numKVHeads, headDim+4] — each row holds headDim int8 values
+                // followed by that row's float32 scale. The scales live INSIDE the logical tensor,
+                // so DSP ext-input staging, H2D re-stage, CUDA-graph capture and device migration
+                // all preserve them by construction. No separate scale graph input, no registry.
+                INDArray keyCacheInt8 = Nd4j.getExecutioner().exec(
+                        new KVCacheQuantize(keyBuf.castTo(DataType.FLOAT), kvQuantFormat, true))[0];
+                INDArray valCacheInt8 = Nd4j.getExecutioner().exec(
+                        new KVCacheQuantize(valBuf.castTo(DataType.FLOAT), kvQuantFormat, true))[0];
+                // Quantize ran on device — sync to HOST so any forced placeholder H2D re-stages
+                // the same bytes (values + in-row scales) instead of stale host zeros.
+                Nd4j.getExecutioner().commit();
+                keyCacheInt8.syncToHost();
+                valCacheInt8.syncToHost();
+
+                String keyQName = keyName + "_q";
+                String valQName = valName + "_q";
+
+                // Reuse or replace existing quantized buffers on reuse path
+                replaceQuantizedBuffer(quantizedKvBuffers, keyQName, keyCacheInt8);
+                replaceQuantizedBuffer(quantizedKvBuffers, valQName, valCacheInt8);
+                // kvScaleBuffers intentionally NOT populated in V2 row-inline mode — the scale
+                // lives inside each KV row, so the native-op scale side-channel is disabled.
+
+                log.info("[GGUF-KV] Layer {} quantized (row-inline scale): keyCache={} ({}x compression vs float)",
+                        layerIdx, Arrays.toString(keyCacheInt8.shape()),
+                        DataType.FLOAT.width() / DataType.INT8.width());
+            }
 
             log.info("[GGUF-KV] Layer {} KV: kRoped shape={} min={} max={}, keyBuf shape={} min={} max={}",
                     layerIdx, Arrays.toString(kRoped.shape()), kRoped.minNumber(), kRoped.maxNumber(),
@@ -887,13 +1417,83 @@ public class GenerationPipeline implements AutoCloseable {
             vHeads.close();
         }
 
-        // Create recurrent state buffers from prefill outputs (keyed by input name)
-        Map<String, INDArray> recurrentStateBuffers = new LinkedHashMap<>();
+        // ── V2 QUANTIZED: free float KV after prefill quantize ────────────────────────────────────
+        // ADR 0107 §prefill, §Migration Decision 8: after quantizing the full prefill region into
+        // INT8, free the float staticKvBuffers immediately. The quantizedKvBuffers (INT8) + kvScaleBuffers
+        // (float scales) become the ONLY live KV storage for the decode phase.
+        //
+        // V2 wiring: re-index quantizedKvBuffers under the ORIGINAL KV variable names
+        // (same as staticKvBuffers keys) so the frozen decode plan's ext-input indices remain valid
+        // — the plan sees the same slot index, now pointing to an INT8 buffer.
+        boolean isQuantizedV2 = isQuantizedKv && (quantizedKvBuffers != null && !quantizedKvBuffers.isEmpty());
+        if (isQuantizedV2) {
+            // Build a new INT8 map under ORIGINAL key names (not _q suffixed)
+            Map<String, INDArray> int8KvByOrigName = new LinkedHashMap<>();
+            for (int i = 0; i < numLayers; i++) {
+                String keyName = kvInputNames.keyNames.get(i);
+                String valName = kvInputNames.valueNames.get(i);
+                INDArray keyQ = quantizedKvBuffers.get(keyName + "_q");
+                INDArray valQ = quantizedKvBuffers.get(valName + "_q");
+                if (keyQ != null && valQ != null) {
+                    int8KvByOrigName.put(keyName, keyQ);
+                    int8KvByOrigName.put(valName, valQ);
+                }
+            }
+
+            // Free the float staticKvBuffers — this is the live-memory reduction.
+            // After this point, staticKvBuffers entries are closed and the map is cleared.
+            if (reuseState == null) {
+                // Fresh session: close all float buffers and release the map.
+                for (INDArray arr : staticKvBuffers.values()) {
+                    if (arr != null && !arr.wasClosed()) {
+                        try { arr.close(); } catch (Exception e) {
+                            log.warn("[GGUF-KV-V2] Error closing float KV buffer: {}", e.getMessage());
+                        }
+                    }
+                }
+                staticKvBuffers.clear();
+                staticKvBuffers = null;
+            } else {
+                // Reuse path: the retained state's staticKvBuffers already ARE the float buffers
+                // (reused in-place above). Close and null them on the retained state.
+                if (reuseState.staticKvBuffers != null) {
+                    for (INDArray arr : reuseState.staticKvBuffers.values()) {
+                        if (arr != null && !arr.wasClosed()) {
+                            try { arr.close(); } catch (Exception e) {
+                                log.warn("[GGUF-KV-V2] Error closing reuse float KV buffer: {}", e.getMessage());
+                            }
+                        }
+                    }
+                    reuseState.staticKvBuffers.clear();
+                    reuseState.staticKvBuffers = null;
+                }
+                staticKvBuffers = null;
+            }
+
+            // Replace quantizedKvBuffers with the original-name-keyed INT8 map.
+            // The _q and _scale entries remain in kvScaleBuffers / quantizedKvBuffers under
+            // original names for scale lookup in the native decode.
+            quantizedKvBuffers = int8KvByOrigName;
+
+            log.info("[GGUF-KV-V2] V2 quantized path active: float KV freed, {} INT8 buffers live",
+                    int8KvByOrigName.size());
+        }
+
+        // Create recurrent state buffers from prefill outputs (keyed by input name). On reuse, assign
+        // the new prefill state into the RETAINED buffer in place (stable address); else dup fresh.
+        Map<String, INDArray> recurrentStateBuffers = reuseState != null && reuseState.recurrentStateBuffers != null
+                ? reuseState.recurrentStateBuffers : new LinkedHashMap<>();
         for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
             INDArray stateOut = prefillOutputs.get(pair.outputName);
             if (stateOut != null) {
-                recurrentStateBuffers.put(pair.inputName, stateOut.dup());
-                stateOut.close();
+                INDArray existing = recurrentStateBuffers.get(pair.inputName);
+                if (reuseState != null && existing != null) {
+                    existing.assign(stateOut);
+                    stateOut.close();
+                } else {
+                    recurrentStateBuffers.put(pair.inputName, stateOut.dup());
+                    stateOut.close();
+                }
                 log.info("[GGUF-KV] Recurrent state {} → {} shape={}", pair.inputName, pair.outputName,
                         Arrays.toString(recurrentStateBuffers.get(pair.inputName).shape()));
             } else {
@@ -915,14 +1515,29 @@ public class GenerationPipeline implements AutoCloseable {
         // are real content. We write the first decode token at actualPrefillLen.
         int firstDecodePos = actualPrefillLen;
 
-        INDArray decodeInputIds = Nd4j.createFromArray(new int[]{firstTokenId})
-                .reshape(1, 1).castTo(DataType.INT64);
+        // Decode-step ext inputs. On reuse, reuse the RETAINED decode tensors (stable addresses the
+        // captured [1,1] decode graph baked) and overwrite content in place; else allocate fresh.
+        INDArray decodeInputIds;
+        if (reuseState != null && reuseState.decodeInputIds != null) {
+            decodeInputIds = reuseState.decodeInputIds;
+            decodeInputIds.putScalar(new long[]{0, 0}, firstTokenId);
+        } else {
+            decodeInputIds = Nd4j.createFromArray(new int[]{firstTokenId})
+                    .reshape(1, 1).castTo(DataType.INT64);
+        }
 
         INDArray decodeCausalMask = null;
         if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
             // Decode mask attends to positions 0..firstDecodePos (inclusive of current).
             // Shape [1,1,1,maxKvLen] is FIXED regardless of actual prompt length.
-            decodeCausalMask = DecoderInputBuilder.buildInGraphDecodeMask(firstDecodePos, maxKvLen, maskDtype);
+            if (reuseState != null && reuseState.decodeCausalMask != null) {
+                decodeCausalMask = reuseState.decodeCausalMask;
+                try (INDArray freshMask = DecoderInputBuilder.buildInGraphDecodeMask(firstDecodePos, maxKvLen, maskDtype)) {
+                    decodeCausalMask.assign(freshMask);
+                }
+            } else {
+                decodeCausalMask = DecoderInputBuilder.buildInGraphDecodeMask(firstDecodePos, maxKvLen, maskDtype);
+            }
             log.info("[GGUF-KV] Decode mask shape={} dtype={} firstDecodePos={} min={} max={} hasNaN={}",
                     Arrays.toString(decodeCausalMask.shape()), decodeCausalMask.dataType(),
                     firstDecodePos,
@@ -931,11 +1546,30 @@ public class GenerationPipeline implements AutoCloseable {
         }
         INDArray decodePositionOffset = null;
         if (posOffsetName != null && decoder.hasVariable(posOffsetName)) {
-            decodePositionOffset = Nd4j.scalar(DataType.INT64, firstDecodePos);
+            if (reuseState != null && reuseState.decodePositionOffset != null) {
+                decodePositionOffset = reuseState.decodePositionOffset;
+                decodePositionOffset.putScalar(new long[]{}, (long) firstDecodePos);
+            } else {
+                decodePositionOffset = Nd4j.scalar(DataType.INT64, firstDecodePos);
+            }
         }
         INDArray decodeCachePosition = null;
         if (cachePosName != null && decoder.hasVariable(cachePosName)) {
-            decodeCachePosition = Nd4j.scalar(DataType.INT64, firstDecodePos);
+            if (reuseState != null && reuseState.decodeCachePosition != null) {
+                decodeCachePosition = reuseState.decodeCachePosition;
+                decodeCachePosition.putScalar(new long[]{}, (long) firstDecodePos);
+            } else {
+                decodeCachePosition = Nd4j.scalar(DataType.INT64, firstDecodePos);
+            }
+        }
+        INDArray decodeActualSequenceLength = null;
+        if (decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME)) {
+            if (reuseState != null && reuseState.decodeActualSequenceLength != null) {
+                decodeActualSequenceLength = reuseState.decodeActualSequenceLength;
+                decodeActualSequenceLength.putScalar(new long[]{}, 1L);
+            } else {
+                decodeActualSequenceLength = Nd4j.scalar(DataType.INT64, 1L);
+            }
         }
 
         Map<String, INDArray> decodeInputMap = new HashMap<>();
@@ -943,15 +1577,30 @@ public class GenerationPipeline implements AutoCloseable {
         if (decodeCausalMask != null) decodeInputMap.put(causalMaskName, decodeCausalMask);
         if (decodePositionOffset != null) decodeInputMap.put(posOffsetName, decodePositionOffset);
         if (decodeCachePosition != null) decodeInputMap.put(cachePosName, decodeCachePosition);
-        for (Map.Entry<String, INDArray> entry : staticKvBuffers.entrySet()) {
-            if (decoder.hasVariable(entry.getKey())) {
-                decodeInputMap.put(entry.getKey(), entry.getValue());
+        if (decodeActualSequenceLength != null) {
+            decodeInputMap.put(ACTUAL_SEQUENCE_LENGTH_NAME, decodeActualSequenceLength);
+        }
+        // V2 QUANTIZED: use INT8 quantizedKvBuffers as KV ext inputs (float freed).
+        // V1 / non-quantized: use float staticKvBuffers as before.
+        Map<String, INDArray> kvSourceMap = (isQuantizedV2 && quantizedKvBuffers != null)
+                ? quantizedKvBuffers : staticKvBuffers;
+        if (kvSourceMap != null) {
+            for (Map.Entry<String, INDArray> entry : kvSourceMap.entrySet()) {
+                if (decoder.hasVariable(entry.getKey())) {
+                    decodeInputMap.put(entry.getKey(), entry.getValue());
+                }
             }
         }
         // Add GDN/conv state buffers to decode input map
         for (Map.Entry<String, INDArray> entry : recurrentStateBuffers.entrySet()) {
             if (decoder.hasVariable(entry.getKey())) {
                 decodeInputMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+        if (reuseState != null) {
+            Nd4j.getExecutioner().commit();
+            for (INDArray arr : decodeInputMap.values()) {
+                if (arr != null && !arr.isEmpty()) arr.syncToDevice();
             }
         }
 
@@ -961,8 +1610,10 @@ public class GenerationPipeline implements AutoCloseable {
             decodeOutputNames.add(pair.outputName);
         }
 
-        log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers, {} recurrent state buffers, {} inputs",
-                staticKvBuffers.size(), recurrentStateBuffers.size(), decodeInputMap.size());
+        int kvBufCount = (isQuantizedV2 && quantizedKvBuffers != null) ? quantizedKvBuffers.size()
+                : (staticKvBuffers != null ? staticKvBuffers.size() : 0);
+        log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers (V2={}), {} recurrent state buffers, {} inputs",
+                kvBufCount, isQuantizedV2, recurrentStateBuffers.size(), decodeInputMap.size());
 
         Map<String, INDArray> decodeOutputs;
         try {
@@ -974,6 +1625,7 @@ public class GenerationPipeline implements AutoCloseable {
         }
 
         INDArray decodeLogits = decodeOutputs.get(logitsName);
+        suppressStopsUnderFloor(decodeLogits, 0, sampling, generatedSoFar.size(), stopTokenIds);
         int secondTokenId = sampleToken(decodeLogits, 0, sampling, generatedSoFar, rng);
         generatedSoFar.add(secondTokenId);
         log.info("[GGUF-KV] STEP 3 second token: {}", secondTokenId);
@@ -998,20 +1650,35 @@ public class GenerationPipeline implements AutoCloseable {
 
         if (planHandle == null || planHandle.isNull()) {
             log.warn("Native plan handle not available for GGUF -- returning partial result");
-            decodeInputIds.close();
-            if (decodeCausalMask != null) decodeCausalMask.close();
-            if (decodePositionOffset != null) decodePositionOffset.close();
-            if (decodeCachePosition != null) decodeCachePosition.close();
-            for (INDArray kv : staticKvBuffers.values()) kv.close();
-            for (INDArray rs : recurrentStateBuffers.values()) rs.close();
+            // On reuse these buffers are the retained state's own — leave them for the caller to free
+            // via reuseState.close(); only the non-reuse path owns and frees them inline here.
+            if (reuseState == null) {
+                decodeInputIds.close();
+                if (decodeCausalMask != null) decodeCausalMask.close();
+                if (decodePositionOffset != null) decodePositionOffset.close();
+                if (decodeCachePosition != null) decodeCachePosition.close();
+                if (decodeActualSequenceLength != null) decodeActualSequenceLength.close();
+                for (INDArray kv : staticKvBuffers.values()) kv.close();
+                for (INDArray rs : recurrentStateBuffers.values()) rs.close();
+                for (INDArray v : prefillInputMap.values()) { if (v != null && !v.wasClosed()) v.close(); }
+            }
 
             List<Integer> tokens = new ArrayList<>();
             tokens.add(firstTokenId);
             if (!stopTokenIds.contains(firstTokenId)) tokens.add(secondTokenId);
-            return buildResult(tokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+            InGraphKvState terminal = new InGraphKvState();
+            terminal.terminalResult = buildResult(tokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+            terminal.generatedSoFar = tokens;
+            terminal.closed = true;
+            terminal.actualPrefillLen = actualPrefillLen;
+            terminal.promptTokenCount = prefillSeqLen;
+            terminal.maxKvLen = maxKvLen;
+            return terminal;
         }
 
-        if (executor.getCurrentPlan() != null) {
+        if (reuseState == null && executor.getCurrentPlan() != null) {
+            // Reuse: the plan is already frozen + KV-cache-configured from the first generate; a second
+            // setShapesFrozen(true) / configureMaxAllocation would perturb the live captured plan. Skip.
             executor.setMaxKvCacheLength((int) maxKvLen);
             executor.configureMaxAllocationForKvCache(decodeOutputs);
             log.info("[Perf] GGUF configured KV cache max-allocation: maxKvLen={}", maxKvLen);
@@ -1075,36 +1742,676 @@ public class GenerationPipeline implements AutoCloseable {
         int[] convStateOutputIndices = convOutList.stream().mapToInt(Integer::intValue).toArray();
 
         // ══════════════════════════════════════════════════════════════════════
-        // STEP 5: Execute native AutoregressiveDecode op
+        // Build the retained decode state. The native decode loop (former STEP 5) now lives in
+        // runInGraphNativeDecode(), shared by the one-shot path and by continuation. cachePosition
+        // starts at firstDecodePos+1 (== actualPrefillLen+1): the position where the warmup's
+        // secondToken (the last unwritten token) will be written when it is fed.
         // ══════════════════════════════════════════════════════════════════════
-        int remainingTokens = maxNewTokens - 2;
+        Pointer contextHandle = executor.getCachedOpContext();
+        int numPlanExternalInputs = executor.getCurrentPlan() != null
+                ? executor.getCurrentPlan().getExternalInputKeys().length : 0;
+        int numPlanOutputs = decodeOutputNames.size();
 
-        decodeInputIds.putScalar(new long[]{0, 0}, secondTokenId);
-        if (decodeCausalMask != null) {
-            decodeCausalMask.putScalar(new long[]{0, 0, 0, firstDecodePos}, 0.0f);
+        // On reuse, write back into the SAME retained state object (its buffers ARE the ones just
+        // refilled in place) so no buffer is aliased by two states → no double-free. The index / handle
+        // / running-state fields are refreshed below; the buffer fields are identity assignments.
+        InGraphKvState state = (reuseState != null) ? reuseState : new InGraphKvState();
+        // V2 QUANTIZED: float staticKvBuffers are freed; quantizedKvBuffers holds INT8 live storage.
+        // V1 / STATIC: staticKvBuffers holds float live storage; quantizedKvBuffers is archive or null.
+        state.staticKvBuffers = isQuantizedV2 ? null : staticKvBuffers;
+        state.recurrentStateBuffers = recurrentStateBuffers;
+        // QUANTIZED KV buffers: in V2, this is the INT8 live store under original variable names.
+        state.quantizedKvBuffers = quantizedKvBuffers;
+        state.kvScaleBuffers = kvScaleBuffers;
+        state.kvQuantFormat = kvQuantFormat;
+        state.isQuantizedV2 = isQuantizedV2;
+        state.decodeInputIds = decodeInputIds;
+        state.decodeCausalMask = decodeCausalMask;
+        state.decodePositionOffset = decodePositionOffset;
+        state.decodeCachePosition = decodeCachePosition;
+        state.decodeActualSequenceLength = decodeActualSequenceLength;
+        state.executor = executor;
+        state.planHandle = planHandle;
+        state.contextHandle = contextHandle;
+        state.inputIdsExtIdx = inputIdsExtIdx;
+        state.causalMaskExtIdx = causalMaskExtIdx;
+        state.posOffsetExtIdx = posOffsetExtIdx;
+        state.cachePosExtIdx = cachePosExtIdx;
+        state.logitsOutputIdx = logitsOutputIdx;
+        state.embeddingsExtIdx = embeddingsExtIdx;
+        state.maskExtIdx = maskExtIdx;
+        state.posIdsExtIdx = posIdsExtIdx;
+        state.kvInputExtIndices = kvInputExtIndices;
+        state.kvOutputIndices = kvOutputIndices;
+        state.gdnStateExtIndices = gdnStateExtIndices;
+        state.gdnStateOutputIndices = gdnStateOutputIndices;
+        state.convStateExtIndices = convStateExtIndices;
+        state.convStateOutputIndices = convStateOutputIndices;
+        state.numPlanExternalInputs = numPlanExternalInputs;
+        state.numPlanOutputs = numPlanOutputs;
+        state.numKvPairs = numKvPairs;
+        state.kvInputNames = kvInputNames;
+        state.recurrentStates = recurrentStates;
+        state.decodeOutputNames = decodeOutputNames;
+        state.cachePosition = firstDecodePos + 1;
+        state.lastGeneratedToken = secondTokenId;
+        state.generatedSoFar = generatedSoFar;   // holds [firstToken, secondToken] at this point
+        state.rng = rng;
+        state.sampling = sampling;
+        state.stopTokenIds = stopTokenIds;
+        state.eosTokenId = eosTokenId;
+        state.maxKvLen = maxKvLen;
+        state.actualPrefillLen = actualPrefillLen;
+        state.prefillSeqLen = prefillSeqLen;
+        state.promptTokenCount = prefillSeqLen;
+        state.maskDtype = maskDtype;
+        // ── Rotating KV cache wiring ──────────────────────────────────────────────────────────────
+        // Only initialise when the config requests it AND when reuse is null (fresh state) — on the
+        // fixed-buffer reuse path the slot map is already set on the retained state object.
+        if (config.isRotatingKvEnabled() && reuseState == null) {
+            int effectiveSinkCount = RotatingKvSlotMap.resolveSinkCount(config.getRotatingKvSinkCount());
+            state.rotatingSlotMap = new RotatingKvSlotMap((int) maxKvLen, effectiveSinkCount);
+            log.info("[RotatingKV] enabled: maxKvLen={} sinkCount={} ringSize={}",
+                    maxKvLen, effectiveSinkCount, state.rotatingSlotMap.getRingSize());
+        } else if (reuseState != null) {
+            // reuse path: keep whatever was on the state (set during first create)
+            state.rotatingSlotMap = reuseState.rotatingSlotMap;
         }
-        if (decodePositionOffset != null) {
-            decodePositionOffset.putScalar(new long[]{}, (long)(firstDecodePos + 1));
+        // else: rotating disabled — rotatingSlotMap stays null (default); all existing paths unchanged.
+        state.inputIdsName = inputIdsName;
+        state.logitsName = logitsName;
+        state.causalMaskName = causalMaskName;
+        state.posOffsetName = posOffsetName;
+        state.cachePosName = cachePosName;
+        state.actualSeqLenName = decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME) ? ACTUAL_SEQUENCE_LENGTH_NAME : null;
+        state.prefillInputMap = prefillInputMap;
+        if (reuseState != null) {
+            // Clear transient per-generate flags carried over from the previous generate.
+            state.eosReached = false;
+            state.cancelRequested = false;
+            state.terminalResult = null;
+            state.closed = false;
         }
-        if (decodeCachePosition != null) {
-            decodeCachePosition.putScalar(new long[]{}, (long)(firstDecodePos + 1));
+        return state;
+    }
+
+    /**
+     * Tokenize a prompt using the tokenizer-owned chat-template handling.
+     * Shared by generation, streaming, and continuation sessions.
+     */
+    private int[] encodePromptToIds(String prompt) {
+        int[] promptTokenIds = tokenizer.encodePrompt(prompt, config.getChatTemplate()).getIds();
+        if (promptTokenIds == null || promptTokenIds.length == 0) {
+            throw new IllegalArgumentException("Prompt encoding produced no tokens");
+        }
+        return promptTokenIds;
+    }
+
+    // ==================== Cross-request KV Prefix Cache ====================
+
+    /**
+     * Container returned by {@link #attemptPrefixCacheHit} when the prefix cache
+     * has a match and blocks have been restored into pre-allocated static KV buffers.
+     */
+    private static final class PrefixHitContext {
+        /** Number of tokens restored from cache. Always a positive multiple of blockSize. */
+        final int matchedTokenCount;
+        /** Pre-allocated static KV buffers with blocks 0..matchedTokenCount/blockSize-1 filled. */
+        final Map<String, INDArray> restoredKvBuffers;
+        /**
+         * Recurrent state snapshot from the cached prefix, or null.
+         * Non-null only on exact-block-boundary hits where a snapshot was stored.
+         * When null, the suffix prefill must use zero recurrent state (correct for non-recurrent
+         * models; for GDN models this triggers a full fallback — see attemptPrefixCacheHit docs).
+         */
+        final Map<String, INDArray> recurrentSnapshot;
+
+        PrefixHitContext(int matchedTokenCount, Map<String, INDArray> restoredKvBuffers,
+                         Map<String, INDArray> recurrentSnapshot) {
+            this.matchedTokenCount = matchedTokenCount;
+            this.restoredKvBuffers = restoredKvBuffers;
+            this.recurrentSnapshot = recurrentSnapshot;
+        }
+    }
+
+    /**
+     * Attempt a prefix cache lookup and restore KV blocks.
+     *
+     * <p>Returns a {@link PrefixHitContext} if the cache has a usable hit, otherwise {@code null}.
+     * On a hit, device-resident KV blocks are D2D-copied into freshly allocated static KV buffers
+     * (shaped {@code [1, maxKvLen, kvH, headDim]}) and the context carries the number of tokens
+     * that were restored.</p>
+     *
+     * <p><strong>Recurrent-state policy:</strong> a recurrent-state snapshot is included in the
+     * context only if the match is an exact block-boundary hit AND a snapshot was registered for
+     * that boundary. Callers must check {@code context.recurrentSnapshot != null}:</p>
+     * <ul>
+     *   <li>Non-null: GDN/recurrent models can reuse the snapshot for the suffix prefill.</li>
+     *   <li>Null: the suffix prefill uses zero recurrent state. For non-recurrent models (most
+     *       transformers) this is correct. For GDN models on a partial-boundary hit this is
+     *       INCORRECT — the caller must fall back to full prefill by ignoring the hit context.</li>
+     * </ul>
+     *
+     * @param promptTokenIds  full prompt token sequence
+     * @param kvInputNames    KV cache layer names (keys then values)
+     * @param maxKvLen        total KV buffer length (for buffer allocation)
+     * @param recurrentStates the recurrent state pairs discovered from the model graph
+     * @return hit context or null
+     */
+    private PrefixHitContext attemptPrefixCacheHit(int[] promptTokenIds,
+                                                    ModelIOConfig.KVCacheNames kvInputNames,
+                                                    long maxKvLen,
+                                                    List<ModelIOConfig.RecurrentStatePair> recurrentStates) {
+        if (prefixBlockPool == null) return null;
+
+        PrefixLookupResult lookup = prefixBlockPool.getRadixCache().lookup(promptTokenIds);
+        if (!lookup.hasMatch()) return null;
+
+        int matchedTokenCount = lookup.getMatchedTokenCount();
+        if (matchedTokenCount <= 0) return null;
+
+        log.info("[PrefixCache] HIT: {} tokens matched ({} blocks saved), prompt={} tokens",
+                matchedTokenCount, lookup.getSharedBlockIds().length, promptTokenIds.length);
+
+        // --- GDN guard: if the model has recurrent state and we do NOT have an exact-boundary
+        // snapshot, fall back to full prefill to avoid producing wrong recurrent state.
+        boolean hasRecurrentState = recurrentStates != null && !recurrentStates.isEmpty();
+        Map<String, INDArray> recurrentSnapshot = null;
+        if (hasRecurrentState) {
+            recurrentSnapshot = prefixBlockPool.getRecurrentSnapshot(matchedTokenCount);
+            if (recurrentSnapshot == null) {
+                // No exact-boundary snapshot — we cannot safely continue with partial hit for GDN.
+                log.warn("[PrefixCache] GDN model with partial-boundary prefix hit (matched={} tokens, "
+                        + "no recurrent snapshot) — falling back to full prefill. "
+                        + "To get prefix reuse for this model, ensure the cached prefix is exactly "
+                        + "block-aligned AND the previous prefill stored a recurrent snapshot.",
+                        matchedTokenCount);
+                return null;
+            }
         }
 
+        // Allocate fresh static KV buffers (zero-initialized) and restore the cached blocks.
+        // Buffer shape is inferred from the decoder variable shapes (same as in prefillWarmupAndFreeze).
+        int numLayers = kvInputNames.keyNames.size();
+        List<String> allLayerNames = new ArrayList<>();
+        allLayerNames.addAll(kvInputNames.keyNames);
+        allLayerNames.addAll(kvInputNames.valueNames);
+
+        Map<String, INDArray> restoredKvBuffers = new LinkedHashMap<>();
+        boolean allocFailed = false;
+        for (String layerName : allLayerNames) {
+            if (!decoder.hasVariable(layerName)) continue;
+            long[] varShape = decoder.getVariable(layerName).getShape();
+            if (varShape == null || varShape.length < 4) {
+                log.warn("[PrefixCache] Cannot determine shape for KV layer '{}' — skipping cache hit", layerName);
+                allocFailed = true;
+                break;
+            }
+            // varShape is [batch, maxKvLen (placeholder), kvH, headDim] from the model variable
+            // The actual maxKvLen is our computed value.
+            long batch = varShape[0] > 0 ? varShape[0] : 1L;
+            long kvH = varShape[2];
+            long headDim = varShape[3];
+            org.nd4j.linalg.api.buffer.DataType kvDtype = decoder.getVariable(layerName).dataType();
+            restoredKvBuffers.put(layerName, Nd4j.zeros(kvDtype, batch, maxKvLen, kvH, headDim));
+        }
+
+        if (allocFailed) {
+            // Clean up partially allocated buffers
+            for (INDArray buf : restoredKvBuffers.values()) {
+                if (buf != null && !buf.wasClosed()) buf.close();
+            }
+            return null;
+        }
+
+        // Restore blocks from the pool into the allocated buffers
+        int restoredTokens = prefixBlockPool.restoreBlocks(promptTokenIds, restoredKvBuffers, allLayerNames);
+        if (restoredTokens <= 0) {
+            log.warn("[PrefixCache] restoreBlocks returned 0 (eviction race?) — falling back to full prefill");
+            for (INDArray buf : restoredKvBuffers.values()) {
+                if (buf != null && !buf.wasClosed()) buf.close();
+            }
+            return null;
+        }
+
+        // Sync restored buffers to device
         Nd4j.getExecutioner().commit();
-        decodeInputIds.syncToDevice();
-        if (decodeCausalMask != null) decodeCausalMask.syncToDevice();
-        if (decodePositionOffset != null) decodePositionOffset.syncToDevice();
-        if (decodeCachePosition != null) decodeCachePosition.syncToDevice();
-        for (INDArray kvBuf : staticKvBuffers.values()) kvBuf.syncToDevice();
-        for (INDArray rsBuf : recurrentStateBuffers.values()) rsBuf.syncToDevice();
+        for (INDArray buf : restoredKvBuffers.values()) {
+            if (buf != null && !buf.isEmpty()) buf.syncToDevice();
+        }
 
-        INDArray[] staticKvArray = new INDArray[2 * numKvPairs];
-        int idx = 0;
+        log.info("[PrefixCache] restored {} tokens into {} KV buffers (recurrentSnapshot={})",
+                restoredTokens, restoredKvBuffers.size(), recurrentSnapshot != null ? "yes" : "no");
+        return new PrefixHitContext(restoredTokens, restoredKvBuffers, recurrentSnapshot);
+    }
+
+    /**
+     * Run suffix-only prefill for a prefix cache hit, then complete warmup and freeze.
+     *
+     * <p>Called when a prefix cache lookup found a hit covering tokens 0..M-1 where M =
+     * {@code hit.matchedTokenCount}. The caller provides pre-filled static KV buffers for the
+     * prefix region; this method fills positions M..P-1 (the suffix) by running the decoder on
+     * suffix tokens with position offset M, then proceeds with the warmup decode and plan freeze
+     * exactly as in {@link #prefillWarmupAndFreeze}.</p>
+     *
+     * @param promptTokenIds  full original prompt token IDs (not just the suffix)
+     * @param maxNewTokens    decode budget (used to size the KV buffer)
+     * @param kvInputNames    KV cache layer names
+     * @param startTime       wall-clock start time for TTFT calculation
+     * @param hit             the prefix hit context from {@link #attemptPrefixCacheHit}
+     * @return an {@link InGraphKvState} ready for native decode, identical in contract to
+     *         {@link #prefillWarmupAndFreeze}'s return value
+     */
+    private InGraphKvState prefillSuffixOnlyAndFreeze(int[] promptTokenIds, int maxNewTokens,
+                                                       ModelIOConfig.KVCacheNames kvInputNames,
+                                                       long startTime,
+                                                       PrefixHitContext hit) {
+        int matchedLen = hit.matchedTokenCount;
+        int fullLen = promptTokenIds.length;
+        int suffixLen = fullLen - matchedLen;
+
+        // If the entire prompt is cached (suffix is empty), skip suffix prefill entirely —
+        // the next token is sampled from a decode step on the last cached token's logits.
+        // We still need warmup + freeze, so we treat the last cached position as the "prefill" result.
+        // For simplicity, if suffixLen == 0, treat it as matchedLen-1 suffix of length 1 (the last token).
+        // This is unusual (exact full-prompt hit), but handle gracefully.
+        if (suffixLen <= 0) {
+            // Fall back to full prefill — the prompt exactly matches a cached prefix (all P tokens).
+            // The warmup step will re-sample, but we still save P-1 tokens of prefill time.
+            // We do the warmup on just the last token (position P-1) rather than full prefill.
+            // Simplest correct approach: just run full prefill (cache hit saves nothing if suffix=0,
+            // but this is an edge case; correctness trumps optimization here).
+            log.info("[PrefixCache] Exact full-prompt cache hit (suffixLen=0) — using full prefill for warmup correctness");
+            for (INDArray buf : hit.restoredKvBuffers.values()) {
+                if (buf != null && !buf.wasClosed()) buf.close();
+            }
+            return prefillWarmupAndFreeze(promptTokenIds, maxNewTokens, kvInputNames, startTime, null);
+        }
+
+        int[] suffixTokenIds = new int[suffixLen];
+        System.arraycopy(promptTokenIds, matchedLen, suffixTokenIds, 0, suffixLen);
+
+        // Compute the KV buffer length (same logic as in prefillWarmupAndFreeze)
+        int actualPrefillLen = fullLen;  // the full prompt is the "prefill" from the model's perspective
+        int prefillSeqLen = fullLen;
+        long maxKvLen = prefillSeqLen + maxNewTokens;
+        int kvCap = config.getMaxKvCacheLength();
+        if (kvCap > 0 && maxKvLen > kvCap) {
+            maxKvLen = kvCap;
+            maxNewTokens = (int) (maxKvLen - prefillSeqLen);
+            if (maxNewTokens < 1) maxNewTokens = 1;
+        }
+        int numLayers = kvInputNames.keyNames.size();
+        int eosTokenId = tokenizer.getEosTokenId();
+        Set<Integer> stopTokenIds = buildStopTokenIds();
+        SamplingConfig sampling = activeDecodeSampling();
+        DecodePolicy decodePolicy = activeDecodePolicy();
+        requireNativeSubstrateAvailable(decodePolicy, sampling);
+        java.util.Random rng = sampling.getSeed() != null
+                ? new java.util.Random(sampling.getSeed()) : new java.util.Random();
+
+        String inputIdsName  = ioConfig.getInputIdsName() != null ? ioConfig.getInputIdsName() : "input_ids";
+        String logitsName    = ioConfig.getLogitsOutputName() != null ? ioConfig.getLogitsOutputName() : "lm_logits";
+        String posOffsetName = ioConfig.getPositionOffsetName();
+        String cachePosName  = ioConfig.getCachePositionName();
+        String causalMaskName = ioConfig.getCausalMaskName();
+
+        List<ModelIOConfig.RecurrentStatePair> recurrentStates =
+                ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
+
+        DataType maskDtype = DataType.FLOAT;
+        if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
+            maskDtype = decoder.getVariable(causalMaskName).dataType();
+        }
+
+        // ── SUFFIX PREFILL ─────────────────────────────────────────────────────────────────────────
+        // Run the decoder on suffix tokens M..P-1.  Position offset = M so RoPE is correct.
+        // The causal mask must allow the suffix to attend to ALL of 0..P-1:
+        //   - Lower-left block (0..M-1) is already filled by the cached KV — attention mask = 0 (attend)
+        //   - Causal within the suffix: standard lower-triangular
+        // Shape: [1, suffixLen, P] where P = fullLen.
+        // We represent this as a standard [1,1,suffixLen,P] mask per the model convention.
+        // DecoderInputBuilder.buildInGraphCausalMask builds [1,1,seqLen,kvLen] where the rightmost
+        // kvLen-seqLen columns are masked. We want kvLen=fullLen, seqLen=suffixLen, but positions
+        // within [0..matchedLen-1] must be UN-masked (cached KV present). buildInGraphCausalMask
+        // does NOT do this — it masks columns > seqLen-1. We need a custom mask.
+        INDArray suffixCausalMask = buildSuffixPrefillMask(suffixLen, matchedLen, (int) maxKvLen, maskDtype);
+
+        Map<String, INDArray> suffixInputMap = new HashMap<>();
+        suffixInputMap.put(inputIdsName,
+                Nd4j.createFromArray(suffixTokenIds).reshape(1, suffixLen).castTo(DataType.INT64));
+        if (posOffsetName != null && decoder.hasVariable(posOffsetName)) {
+            suffixInputMap.put(posOffsetName, Nd4j.scalar(DataType.INT64, (long) matchedLen));
+        }
+        if (cachePosName != null && decoder.hasVariable(cachePosName)) {
+            suffixInputMap.put(cachePosName, Nd4j.scalar(DataType.INT64, (long) matchedLen));
+        }
+        if (decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME)) {
+            suffixInputMap.put(ACTUAL_SEQUENCE_LENGTH_NAME, Nd4j.scalar(DataType.INT64, (long) suffixLen));
+        }
+        if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
+            suffixInputMap.put(causalMaskName, suffixCausalMask);
+        }
+
+        // Feed ALREADY-FILLED KV buffers (not empty sentinels) so the attention op can attend to
+        // cached prefix positions.  The in-graph scatter will write the suffix K/V at positions
+        // matchedLen..fullLen-1 in place.
         for (String keyName : kvInputNames.keyNames) {
-            staticKvArray[idx++] = staticKvBuffers.get(keyName);
+            INDArray buf = hit.restoredKvBuffers.get(keyName);
+            if (buf != null && decoder.hasVariable(keyName)) suffixInputMap.put(keyName, buf);
         }
         for (String valName : kvInputNames.valueNames) {
-            staticKvArray[idx++] = staticKvBuffers.get(valName);
+            INDArray buf = hit.restoredKvBuffers.get(valName);
+            if (buf != null && decoder.hasVariable(valName)) suffixInputMap.put(valName, buf);
+        }
+
+        // Recurrent state: use snapshot for exact-boundary hits, zeros otherwise.
+        Map<String, INDArray> recurrentStateBuffers = new LinkedHashMap<>();
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            if (!decoder.hasVariable(pair.inputName)) continue;
+            INDArray initState = null;
+            if (hit.recurrentSnapshot != null) {
+                INDArray snap = hit.recurrentSnapshot.get(pair.inputName);
+                if (snap != null) {
+                    initState = snap.dup();
+                }
+            }
+            if (initState == null) {
+                DataType dt = decoder.getVariable(pair.inputName).dataType();
+                long[] stateShape = GenerationPipeline.deriveRecurrentStateShape(decoder, pair.inputName);
+                if (stateShape != null) {
+                    initState = Nd4j.zeros(dt, stateShape);
+                }
+            }
+            if (initState != null) {
+                suffixInputMap.put(pair.inputName, initState);
+                recurrentStateBuffers.put(pair.inputName, initState);
+            }
+        }
+
+        // Request outputs: logits + per-layer KV outputs (at suffix positions) + recurrent state
+        List<String> suffixOutputNames = new ArrayList<>();
+        suffixOutputNames.add(logitsName);
+        for (int i = 0; i < numLayers; i++) {
+            int layerIdx = extractLayerIndex(kvInputNames.keyNames.get(i));
+            suffixOutputNames.add("k_rope_" + layerIdx);
+            suffixOutputNames.add("v_heads_" + layerIdx);
+        }
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            suffixOutputNames.add(pair.outputName);
+        }
+
+        log.info("[PrefixCache] Suffix prefill: suffixLen={} matchedLen={} maxKvLen={} inputs={}",
+                suffixLen, matchedLen, maxKvLen, suffixInputMap.keySet());
+
+        Map<String, INDArray> suffixOutputs;
+        try {
+            suffixOutputs = decoder.output(suffixInputMap, suffixOutputNames.toArray(new String[0]));
+        } catch (Exception e) {
+            log.error("[PrefixCache] Suffix prefill failed — falling back to full prefill", e);
+            // Clean up and fall back
+            for (INDArray v : suffixInputMap.values()) { if (v != null && !v.wasClosed()) v.close(); }
+            for (INDArray buf : hit.restoredKvBuffers.values()) {
+                if (buf != null && !buf.wasClosed()) buf.close();
+            }
+            suffixCausalMask.close();
+            return prefillWarmupAndFreeze(promptTokenIds, maxNewTokens, kvInputNames, startTime, null);
+        }
+
+        // All per-layer suffix K/V outputs are REQUIRED before we mutate any state. A missing
+        // layer would leave zeros in that layer's KV region past matchedLen and silently corrupt
+        // attention (the zeroed-KV garbage-decode failure class) — abort the suffix path and
+        // recompute the full prefill instead.
+        List<String> missingSuffixKv = new ArrayList<>();
+        for (int i = 0; i < numLayers; i++) {
+            int layerIdx = extractLayerIndex(kvInputNames.keyNames.get(i));
+            if (suffixOutputs.get("k_rope_" + layerIdx) == null) missingSuffixKv.add("k_rope_" + layerIdx);
+            if (suffixOutputs.get("v_heads_" + layerIdx) == null) missingSuffixKv.add("v_heads_" + layerIdx);
+        }
+        if (!missingSuffixKv.isEmpty()) {
+            log.warn("[PrefixCache] Suffix prefill missing required K/V outputs {} — model output naming "
+                    + "does not match k_rope_N/v_heads_N; falling back to full prefill", missingSuffixKv);
+            for (INDArray v : suffixInputMap.values()) { if (v != null && !v.wasClosed()) v.close(); }
+            for (INDArray out : suffixOutputs.values()) { if (out != null && !out.wasClosed()) out.close(); }
+            for (INDArray buf : hit.restoredKvBuffers.values()) {
+                if (buf != null && !buf.wasClosed()) buf.close();
+            }
+            suffixCausalMask.close();
+            return prefillWarmupAndFreeze(promptTokenIds, maxNewTokens, kvInputNames, startTime, null);
+        }
+
+        // ── Sample first token from suffix prefill logits ────────────────────────────────────────────
+        INDArray prefillLogits = suffixOutputs.get(logitsName);
+        if (prefillLogits == null) {
+            log.warn("[PrefixCache] Suffix prefill logits not found — falling back to full prefill");
+            for (INDArray v : suffixInputMap.values()) { if (v != null && !v.wasClosed()) v.close(); }
+            for (INDArray buf : hit.restoredKvBuffers.values()) {
+                if (buf != null && !buf.wasClosed()) buf.close();
+            }
+            suffixCausalMask.close();
+            return prefillWarmupAndFreeze(promptTokenIds, maxNewTokens, kvInputNames, startTime, null);
+        }
+        // Last position in suffix logits corresponds to the last prompt token (index suffixLen-1)
+        int logitsSamplePos = suffixLen - 1;
+        List<Integer> generatedSoFar = new ArrayList<>();
+        suppressStopsUnderFloor(prefillLogits, logitsSamplePos, sampling, 0, stopTokenIds);
+        int firstTokenId = sampleToken(prefillLogits, logitsSamplePos, sampling, generatedSoFar, rng);
+        generatedSoFar.add(firstTokenId);
+        prefillLogits.close();
+
+        long firstTokenMs = System.currentTimeMillis() - startTime;
+        log.info("[PrefixCache] Suffix prefill complete: firstToken={} ({}ms TTFT — prefix was {} tokens)",
+                firstTokenId, firstTokenMs, matchedLen);
+
+        // ── Populate static KV buffers with suffix K/V at positions matchedLen..fullLen-1 ─────────
+        // The restored buffers already have prefix data at 0..matchedLen-1.
+        // The suffix prefill ran the attention ops against those restored buffers AND wrote the
+        // suffix K/V into the same buffers in place (since we passed the restored buffers as inputs).
+        // However, the model outputs k_rope_N / v_heads_N are the suffix K/V values — we must write
+        // them into the static buffers at the correct positions.
+        Map<String, INDArray> staticKvBuffers = hit.restoredKvBuffers;
+        org.nd4j.linalg.api.buffer.DataType kvDtype = null;
+
+        for (int i = 0; i < numLayers; i++) {
+            int layerIdx = extractLayerIndex(kvInputNames.keyNames.get(i));
+            INDArray kSuffix = suffixOutputs.get("k_rope_" + layerIdx);
+            INDArray vSuffix = suffixOutputs.get("v_heads_" + layerIdx);
+            if (kSuffix == null || vSuffix == null) {
+                // Unreachable: the pre-scan above already falls back to full prefill on any
+                // missing layer output. Continuing here would leave zeroed KV — hard-fail.
+                throw new IllegalStateException("[PrefixCache] Suffix K/V for layer " + layerIdx
+                        + " missing after pre-scan — invariant violation");
+            }
+            if (kvDtype == null) kvDtype = kSuffix.dataType();
+            // kSuffix shape: [1, suffixLen, kvH, headDim]
+            // Write into the static buffer at positions matchedLen..matchedLen+suffixLen-1
+            String keyName = kvInputNames.keyNames.get(i);
+            String valName = kvInputNames.valueNames.get(i);
+            INDArray keyBuf = staticKvBuffers.get(keyName);
+            INDArray valBuf = staticKvBuffers.get(valName);
+            if (keyBuf == null) {
+                // Allocate if not present (shouldn't happen given pre-allocation above)
+                long[] bufShape = {1, maxKvLen, kSuffix.shape()[2], kSuffix.shape()[3]};
+                keyBuf = Nd4j.zeros(kvDtype, bufShape);
+                staticKvBuffers.put(keyName, keyBuf);
+            }
+            if (valBuf == null) {
+                long[] bufShape = {1, maxKvLen, vSuffix.shape()[2], vSuffix.shape()[3]};
+                valBuf = Nd4j.zeros(kvDtype, bufShape);
+                staticKvBuffers.put(valName, valBuf);
+            }
+            keyBuf.get(NDArrayIndex.all(), NDArrayIndex.interval(matchedLen, matchedLen + suffixLen),
+                    NDArrayIndex.all(), NDArrayIndex.all()).assign(kSuffix);
+            valBuf.get(NDArrayIndex.all(), NDArrayIndex.interval(matchedLen, matchedLen + suffixLen),
+                    NDArrayIndex.all(), NDArrayIndex.all()).assign(vSuffix);
+            kSuffix.close();
+            vSuffix.close();
+        }
+
+        // Update recurrent state buffers from suffix outputs
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            INDArray updated = suffixOutputs.get(pair.outputName);
+            if (updated != null) {
+                INDArray buf = recurrentStateBuffers.get(pair.inputName);
+                if (buf != null) {
+                    buf.assign(updated);
+                } else {
+                    recurrentStateBuffers.put(pair.inputName, updated.dup());
+                }
+                updated.close();
+            }
+        }
+
+        // Close suffix input scalars (not the KV buffers which are now staticKvBuffers)
+        closeSuffixInputScalars(suffixInputMap, kvInputNames, recurrentStateBuffers);
+        suffixCausalMask.close();
+
+        // Handle EOS on first token
+        if (stopTokenIds.contains(firstTokenId)) {
+            for (INDArray buf : staticKvBuffers.values()) { if (buf != null && !buf.wasClosed()) buf.close(); }
+            for (INDArray buf : recurrentStateBuffers.values()) { if (buf != null && !buf.wasClosed()) buf.close(); }
+            List<Integer> tokens = new ArrayList<>();
+            tokens.add(firstTokenId);
+            InGraphKvState terminal = new InGraphKvState();
+            terminal.terminalResult = buildResult(tokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+            terminal.generatedSoFar = tokens;
+            terminal.eosReached = true;
+            terminal.closed = true;
+            terminal.actualPrefillLen = actualPrefillLen;
+            terminal.promptTokenCount = prefillSeqLen;
+            terminal.maxKvLen = maxKvLen;
+            return terminal;
+        }
+
+        // ── Store the completed prefill in the prefix cache ────────────────────────────────────────
+        // We store the FULL prompt (not just suffix) so future requests with longer shared prefixes
+        // can get a bigger hit. The pool will handle deduplication via the radix trie.
+        storePrefillInPrefixCache(promptTokenIds, actualPrefillLen, staticKvBuffers,
+                kvInputNames, recurrentStateBuffers, recurrentStates);
+
+        // ── Warmup decode step (STEP 3 of prefillWarmupAndFreeze) ────────────────────────────────
+        // Use cachePosition = actualPrefillLen (the slot for the first decode token).
+        int firstDecodePos = actualPrefillLen;
+        INDArray decodeInputIds = Nd4j.createFromArray(new int[]{firstTokenId})
+                .reshape(1, 1).castTo(DataType.INT64);
+        INDArray decodeCausalMask = null;
+        if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
+            decodeCausalMask = DecoderInputBuilder.buildInGraphDecodeMask(firstDecodePos, maxKvLen, maskDtype);
+        }
+        INDArray decodePositionOffset = null;
+        if (posOffsetName != null && decoder.hasVariable(posOffsetName)) {
+            decodePositionOffset = Nd4j.scalar(DataType.INT64, firstDecodePos);
+        }
+        INDArray decodeCachePosition = null;
+        if (cachePosName != null && decoder.hasVariable(cachePosName)) {
+            decodeCachePosition = Nd4j.scalar(DataType.INT64, firstDecodePos);
+        }
+        INDArray decodeActualSequenceLength = null;
+        if (decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME)) {
+            decodeActualSequenceLength = Nd4j.scalar(DataType.INT64, 1L);
+        }
+
+        Map<String, INDArray> decodeInputMap = new HashMap<>();
+        decodeInputMap.put(inputIdsName, decodeInputIds);
+        if (decodeCausalMask != null) decodeInputMap.put(causalMaskName, decodeCausalMask);
+        if (decodePositionOffset != null) decodeInputMap.put(posOffsetName, decodePositionOffset);
+        if (decodeCachePosition != null) decodeInputMap.put(cachePosName, decodeCachePosition);
+        if (decodeActualSequenceLength != null) decodeInputMap.put(ACTUAL_SEQUENCE_LENGTH_NAME, decodeActualSequenceLength);
+        for (Map.Entry<String, INDArray> e : staticKvBuffers.entrySet()) {
+            if (decoder.hasVariable(e.getKey())) decodeInputMap.put(e.getKey(), e.getValue());
+        }
+        for (Map.Entry<String, INDArray> e : recurrentStateBuffers.entrySet()) {
+            if (decoder.hasVariable(e.getKey())) decodeInputMap.put(e.getKey(), e.getValue());
+        }
+
+        List<String> decodeOutputNames = new ArrayList<>();
+        decodeOutputNames.add(logitsName);
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            decodeOutputNames.add(pair.outputName);
+        }
+
+        Map<String, INDArray> decodeOutputs;
+        try {
+            decodeOutputs = decoder.output(decodeInputMap, decodeOutputNames.toArray(new String[0]));
+        } catch (Exception e) {
+            log.error("[PrefixCache] Warmup decode failed after suffix prefill", e);
+            throw new RuntimeException("Warmup decode failed after prefix-cache suffix prefill", e);
+        }
+
+        INDArray decodeLogits = decodeOutputs.get(logitsName);
+        suppressStopsUnderFloor(decodeLogits, 0, sampling, generatedSoFar.size(), stopTokenIds);
+        int secondTokenId = sampleToken(decodeLogits, 0, sampling, generatedSoFar, rng);
+        generatedSoFar.add(secondTokenId);
+        decodeLogits.close();
+
+        // Update recurrent state with warmup decode output
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            INDArray updated = decodeOutputs.get(pair.outputName);
+            if (updated != null) {
+                INDArray buf = recurrentStateBuffers.get(pair.inputName);
+                if (buf != null) buf.assign(updated);
+                updated.close();
+            }
+        }
+
+        // ── Freeze plan (STEP 4) — same as in prefillWarmupAndFreeze ────────────────────────────
+        InferenceSession session = decoder.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session != null ? session.getDynamicShapePlanExecutor() : null;
+        Pointer planHandle = executor != null ? executor.getNativePlanHandle() : null;
+
+        if (planHandle == null || planHandle.isNull()) {
+            log.warn("[PrefixCache] Native plan handle not available after suffix prefill warmup");
+            decodeInputIds.close();
+            if (decodeCausalMask != null) decodeCausalMask.close();
+            if (decodePositionOffset != null) decodePositionOffset.close();
+            if (decodeCachePosition != null) decodeCachePosition.close();
+            if (decodeActualSequenceLength != null) decodeActualSequenceLength.close();
+            for (INDArray kv : staticKvBuffers.values()) kv.close();
+            for (INDArray rs : recurrentStateBuffers.values()) rs.close();
+            List<Integer> tokens = new ArrayList<>();
+            tokens.add(firstTokenId);
+            if (!stopTokenIds.contains(firstTokenId)) tokens.add(secondTokenId);
+            InGraphKvState terminal = new InGraphKvState();
+            terminal.terminalResult = buildResult(tokens, promptTokenIds, stopTokenIds, startTime, firstTokenMs);
+            terminal.generatedSoFar = tokens;
+            terminal.closed = true;
+            terminal.actualPrefillLen = actualPrefillLen;
+            terminal.promptTokenCount = prefillSeqLen;
+            terminal.maxKvLen = maxKvLen;
+            return terminal;
+        }
+
+        if (executor.getCurrentPlan() != null) {
+            executor.setMaxKvCacheLength((int) maxKvLen);
+            executor.configureMaxAllocationForKvCache(decodeOutputs);
+            boolean forcedSlotBySlot = decoder.getGraphExecutionMode() == GraphExecutionMode.SLOT_BY_SLOT
+                    || Nd4j.getEnvironment().tritonSkipKernels();
+            if (!forcedSlotBySlot) {
+                executor.setShapesFrozen(true);
+                log.info("[PrefixCache] Shapes frozen after suffix prefill warmup (planPhase={} pointersStable={})",
+                        executor.getPlanPhase(), executor.arePointersStable());
+            }
+        }
+
+        // Build InGraphKvState (mirrors the tail of prefillWarmupAndFreeze)
+        int inputIdsExtIdx = resolveExtInputIdx(executor, inputIdsName);
+        int causalMaskExtIdx = causalMaskName != null ? resolveExtInputIdx(executor, causalMaskName) : -1;
+        int posOffsetExtIdx = posOffsetName != null ? resolveExtInputIdx(executor, posOffsetName) : -1;
+        int cachePosExtIdx = cachePosName != null ? resolveExtInputIdx(executor, cachePosName) : -1;
+        int logitsOutputIdx = resolveOutputIdx(executor, logitsName);
+        int numKvPairs = numLayers;
+        int[] kvInputExtIndices = new int[2 * numKvPairs];
+        int ki = 0;
+        for (String keyName : kvInputNames.keyNames) kvInputExtIndices[ki++] = resolveExtInputIdx(executor, keyName);
+        for (String valName : kvInputNames.valueNames) kvInputExtIndices[ki++] = resolveExtInputIdx(executor, valName);
+
+        List<Integer> gdnExtList = new ArrayList<>(), gdnOutList = new ArrayList<>();
+        List<Integer> convExtList = new ArrayList<>(), convOutList = new ArrayList<>();
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            int extIdx = resolveExtInputIdx(executor, pair.inputName);
+            int outIdx = resolveOutputIdx(executor, pair.outputName);
+            if (pair.isGdn()) { gdnExtList.add(extIdx); gdnOutList.add(outIdx); }
+            else { convExtList.add(extIdx); convOutList.add(outIdx); }
         }
 
         Pointer contextHandle = executor.getCachedOpContext();
@@ -1112,108 +2419,1088 @@ public class GenerationPipeline implements AutoCloseable {
                 ? executor.getCurrentPlan().getExternalInputKeys().length : 0;
         int numPlanOutputs = decodeOutputNames.size();
 
-        if (remainingTokens > 0) {
-            // GGUF models handle their own embedding lookup internally
-            INDArray dummyEmbeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
-            INDArray dummyEmbTable = Nd4j.zeros(DataType.FLOAT, 1, 1);
+        // Build a fresh prefillInputMap (the suffix-prefill path didn't use a retained one)
+        Map<String, INDArray> prefillInputMap = new HashMap<>();
+        prefillInputMap.put(inputIdsName,
+                Nd4j.createFromArray(promptTokenIds).reshape(1, fullLen).castTo(DataType.INT64));
+        if (posOffsetName != null && decoder.hasVariable(posOffsetName))
+            prefillInputMap.put(posOffsetName, Nd4j.scalar(DataType.INT64, 0L));
+        if (cachePosName != null && decoder.hasVariable(cachePosName))
+            prefillInputMap.put(cachePosName, Nd4j.scalar(DataType.INT64, 0L));
+        if (decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME))
+            prefillInputMap.put(ACTUAL_SEQUENCE_LENGTH_NAME, Nd4j.scalar(DataType.INT64, (long) actualPrefillLen));
+        if (causalMaskName != null && decoder.hasVariable(causalMaskName))
+            prefillInputMap.put(causalMaskName,
+                    DecoderInputBuilder.buildInGraphCausalMask(fullLen, (int) maxKvLen, maskDtype));
+        for (String keyName : kvInputNames.keyNames) {
+            if (decoder.hasVariable(keyName))
+                prefillInputMap.put(keyName, Nd4j.empty(decoder.getVariable(keyName).dataType()));
+        }
+        for (String valName : kvInputNames.valueNames) {
+            if (decoder.hasVariable(valName))
+                prefillInputMap.put(valName, Nd4j.empty(decoder.getVariable(valName).dataType()));
+        }
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            if (decoder.hasVariable(pair.inputName)) {
+                DataType dt = decoder.getVariable(pair.inputName).dataType();
+                long[] sh = deriveRecurrentStateShape(decoder, pair.inputName);
+                if (sh != null) prefillInputMap.put(pair.inputName, Nd4j.zeros(dt, sh));
+            }
+        }
 
-            AutoregressiveDecode op = new AutoregressiveDecode(
-                    dummyEmbeddings, dummyEmbTable, decodeInputIds,
-                    decodeCausalMask, null, staticKvArray,
-                    planHandle, contextHandle,
-                    numPlanExternalInputs, numPlanOutputs,
-                    embeddingsExtIdx, maskExtIdx, causalMaskExtIdx,
-                    posIdsExtIdx, inputIdsExtIdx, logitsOutputIdx,
-                    -1,                 // attnMaskReformatExtIdx
-                    posOffsetExtIdx,    // position_offset ext index
-                    cachePosExtIdx,     // cache_position ext index
-                    kvInputExtIndices, kvOutputIndices,
-                    gdnStateExtIndices, gdnStateOutputIndices,
-                    convStateExtIndices, convStateOutputIndices,
-                    remainingTokens, eosTokenId, numKvPairs,
-                    firstDecodePos + 1,
-                    sampling.isGreedy() ? 0.0 : sampling.getTemperature(),
-                    sampling.isGreedy() ? 0 : sampling.getTopK(),
-                    sampling.isGreedy() ? 0.0 : sampling.getTopP(),
-                    sampling.getRepetitionPenalty(),
-                    stopTokenIds);
+        InGraphKvState state = new InGraphKvState();
+        state.staticKvBuffers = staticKvBuffers;
+        state.recurrentStateBuffers = recurrentStateBuffers;
+        state.quantizedKvBuffers = null;
+        state.kvScaleBuffers = null;
+        state.kvQuantFormat = 0;
+        state.decodeInputIds = decodeInputIds;
+        state.decodeCausalMask = decodeCausalMask;
+        state.decodePositionOffset = decodePositionOffset;
+        state.decodeCachePosition = decodeCachePosition;
+        state.decodeActualSequenceLength = decodeActualSequenceLength;
+        state.executor = executor;
+        state.planHandle = planHandle;
+        state.contextHandle = contextHandle;
+        state.inputIdsExtIdx = inputIdsExtIdx;
+        state.causalMaskExtIdx = causalMaskExtIdx;
+        state.posOffsetExtIdx = posOffsetExtIdx;
+        state.cachePosExtIdx = cachePosExtIdx;
+        state.logitsOutputIdx = logitsOutputIdx;
+        state.embeddingsExtIdx = -1;
+        state.maskExtIdx = -1;
+        state.posIdsExtIdx = -1;
+        state.kvInputExtIndices = kvInputExtIndices;
+        state.kvOutputIndices = new int[0];
+        state.gdnStateExtIndices = gdnExtList.stream().mapToInt(Integer::intValue).toArray();
+        state.gdnStateOutputIndices = gdnOutList.stream().mapToInt(Integer::intValue).toArray();
+        state.convStateExtIndices = convExtList.stream().mapToInt(Integer::intValue).toArray();
+        state.convStateOutputIndices = convOutList.stream().mapToInt(Integer::intValue).toArray();
+        state.numPlanExternalInputs = numPlanExternalInputs;
+        state.numPlanOutputs = numPlanOutputs;
+        state.numKvPairs = numKvPairs;
+        state.kvInputNames = kvInputNames;
+        state.recurrentStates = recurrentStates;
+        state.decodeOutputNames = decodeOutputNames;
+        state.cachePosition = firstDecodePos + 1;
+        state.lastGeneratedToken = secondTokenId;
+        state.generatedSoFar = generatedSoFar;
+        state.rng = rng;
+        state.sampling = sampling;
+        state.stopTokenIds = stopTokenIds;
+        state.eosTokenId = eosTokenId;
+        state.maxKvLen = maxKvLen;
+        state.actualPrefillLen = actualPrefillLen;
+        state.prefillSeqLen = prefillSeqLen;
+        state.promptTokenCount = prefillSeqLen;
+        state.maskDtype = maskDtype;
+        state.rotatingSlotMap = null;   // prefix cache + rotating KV is rejected at config creation time
+        state.inputIdsName = inputIdsName;
+        state.logitsName = logitsName;
+        state.causalMaskName = causalMaskName;
+        state.posOffsetName = posOffsetName;
+        state.cachePosName = cachePosName;
+        state.actualSeqLenName = decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME) ? ACTUAL_SEQUENCE_LENGTH_NAME : null;
+        state.prefillInputMap = prefillInputMap;
+        state.eosReached = false;
+        state.cancelRequested = false;
+        state.terminalResult = null;
+        state.closed = false;
+        return state;
+    }
 
-            INDArray[] results = Nd4j.getExecutioner().exec(op);
-            INDArray nativeTokenIds = results[0];
-            INDArray nativeTokenCount = results[1];
-            INDArray nativeTimingInfo = results[2];
-            int nativeCount = nativeTokenCount.getInt(0);
+    /**
+     * Build a causal mask for suffix-only prefill of tokens at positions [matchedLen..matchedLen+suffixLen-1].
+     *
+     * <p>Shape: {@code [1, 1, suffixLen, maxKvLen]}.
+     * - Columns 0..matchedLen-1: all 0.0 (prefix KV is present — attend freely)
+     * - Columns matchedLen..matchedLen+suffixLen-1: standard lower-triangular causal within suffix
+     * - Columns matchedLen+suffixLen..maxKvLen-1: masked (-1e9)
+     */
+    private static INDArray buildSuffixPrefillMask(int suffixLen, int matchedLen, int maxKvLen, DataType dtype) {
+        float maskVal = (dtype == DataType.HALF || dtype == DataType.FLOAT16) ? -65504.0f : -1e9f;
+        float[] data = new float[suffixLen * maxKvLen];
+        // Default: all masked
+        java.util.Arrays.fill(data, maskVal);
+        for (int row = 0; row < suffixLen; row++) {
+            int absPos = matchedLen + row;   // absolute position of this suffix token
+            // Attend to all prefix positions (0..matchedLen-1)
+            for (int col = 0; col < matchedLen; col++) {
+                data[row * maxKvLen + col] = 0.0f;
+            }
+            // Causal within suffix: attend to suffix tokens at positions <= absPos
+            for (int col = matchedLen; col <= absPos && col < maxKvLen; col++) {
+                data[row * maxKvLen + col] = 0.0f;
+            }
+        }
+        INDArray mask = Nd4j.create(data, new long[]{1, 1, suffixLen, maxKvLen}, 'c');
+        if (dtype != DataType.FLOAT) {
+            INDArray cast = mask.castTo(dtype);
+            mask.close();
+            return cast;
+        }
+        return mask;
+    }
 
-            List<Integer> allTokens = new ArrayList<>();
-            allTokens.add(firstTokenId);
-            if (!stopTokenIds.contains(firstTokenId)) {
-                allTokens.add(secondTokenId);
-                if (!stopTokenIds.contains(secondTokenId)) {
-                    for (int i = 0; i < nativeCount; i++) {
-                        int tok = (int) nativeTokenIds.getLong(i);
-                        allTokens.add(tok);
-                        if (stopTokenIds.contains(tok)) break;
-                    }
+    /**
+     * Close suffix-prefill input scalars without closing the KV buffers or recurrent state buffers
+     * that are now owned by the InGraphKvState.
+     */
+    private static void closeSuffixInputScalars(Map<String, INDArray> inputMap,
+                                                 ModelIOConfig.KVCacheNames kvInputNames,
+                                                 Map<String, INDArray> recurrentStateBuffers) {
+        java.util.Set<INDArray> keepAlive = new java.util.HashSet<>();
+        // KV buffers are now owned by static KV state — do NOT close
+        // Recurrent state inputs were moved to recurrentStateBuffers — do NOT close
+        if (recurrentStateBuffers != null) keepAlive.addAll(recurrentStateBuffers.values());
+
+        java.util.Set<String> kvKeys = new java.util.HashSet<>();
+        if (kvInputNames != null) {
+            kvKeys.addAll(kvInputNames.keyNames);
+            kvKeys.addAll(kvInputNames.valueNames);
+        }
+
+        for (Map.Entry<String, INDArray> e : inputMap.entrySet()) {
+            if (kvKeys.contains(e.getKey())) continue;   // KV buffer — skip
+            INDArray v = e.getValue();
+            if (v != null && keepAlive.contains(v)) continue;
+            if (v != null && !v.wasClosed()) {
+                try { v.close(); } catch (Exception ignore) {}
+            }
+        }
+    }
+
+    /**
+     * Store completed prefill KV data into the cross-request prefix block pool.
+     *
+     * <p>Called after a successful prefill (both full and suffix paths) when
+     * {@code prefixBlockPool != null}. Extracts block-aligned slices from the static KV
+     * buffers and registers them in the radix trie for future prefix lookups.</p>
+     */
+    private void storePrefillInPrefixCache(int[] promptTokenIds, int prefillLen,
+                                            Map<String, INDArray> staticKvBuffers,
+                                            ModelIOConfig.KVCacheNames kvInputNames,
+                                            Map<String, INDArray> recurrentStateBuffers,
+                                            List<ModelIOConfig.RecurrentStatePair> recurrentStates) {
+        if (prefixBlockPool == null) return;
+        List<String> allLayerNames = new ArrayList<>();
+        allLayerNames.addAll(kvInputNames.keyNames);
+        allLayerNames.addAll(kvInputNames.valueNames);
+        // Build recurrent snapshot map (input-name → state INDArray)
+        Map<String, INDArray> recurrentSnapshot = null;
+        if (recurrentStates != null && !recurrentStates.isEmpty() && recurrentStateBuffers != null) {
+            recurrentSnapshot = new LinkedHashMap<>(recurrentStateBuffers);
+        }
+        prefixBlockPool.storeCompletedPrefill(
+                promptTokenIds, prefillLen, staticKvBuffers, allLayerNames, recurrentSnapshot);
+    }
+
+    /**
+     * One-shot in-graph-KV generation: prefill + warmup + freeze, then run the native decode loop
+     * once and free everything. Behaviorally identical to the pre-refactor implementation.
+     * For resumable ("continue generation") decoding, use {@link #startSession(String, int)}.
+     */
+    private GenerationResult generateSimpleWithInGraphKvCache(int[] promptTokenIds, int maxNewTokens,
+                                                              ModelIOConfig.KVCacheNames kvInputNames) {
+        long startTime = System.currentTimeMillis();
+        if (activeSession.get() != null) {
+            throw new IllegalStateException(
+                    "A GenerationSession is active on this pipeline; close it before calling generate(). "
+                    + "While a session is open, decode through the session's generate()/continueGeneration().");
+        }
+
+        // ── Prefix cache lookup ──────────────────────────────────────────────────────────────────
+        if (prefixBlockPool != null) {
+            // A prefix-cache hit builds a fresh suffix-prefill (or GDN-fallback full prefill) with its
+            // own executor freeze. Any retained one-shot fixed-buffer state from a PRIOR generate still
+            // holds that prior prompt's frozen CUDA-graph plan/buffers; leaving it live lets the prior
+            // captured decode alias this generate and replay the prior prompt's tokens (observed:
+            // promptB-with-cache reproduced promptA's continuation). Drop it here so the hit path
+            // starts from a clean executor — mirrors the session path (see startSession).
+            if (cachedFixedBufferState != null) {
+                cachedFixedBufferState.close();
+                cachedFixedBufferState = null;
+            }
+            // Discover recurrent state pairs for the GDN guard in attemptPrefixCacheHit
+            List<ModelIOConfig.RecurrentStatePair> recurrentStates =
+                    ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
+            // Rough maxKvLen estimate for buffer allocation (will be refined in the suffix path)
+            long roughMaxKvLen = promptTokenIds.length + maxNewTokens;
+            int kvCap = config.getMaxKvCacheLength();
+            if (kvCap > 0 && roughMaxKvLen > kvCap) roughMaxKvLen = kvCap;
+            PrefixHitContext hit = attemptPrefixCacheHit(promptTokenIds, kvInputNames, roughMaxKvLen, recurrentStates);
+            if (hit != null) {
+                InGraphKvState state = prefillSuffixOnlyAndFreeze(promptTokenIds, maxNewTokens,
+                        kvInputNames, startTime, hit);
+                if (state.terminalResult != null) return state.terminalResult;
+                try {
+                    return runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+                } finally {
+                    state.close();
                 }
             }
+        }
 
-            int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
-            String text = tokenizer.decode(tokenIds, false);
-            log.info("[GGUF-KV] STEP 5 complete: nativeCount={} allTokens={} text='{}'",
-                    nativeCount, allTokens, text.length() > 200 ? text.substring(0, 200) : text);
-            long endTime = System.currentTimeMillis();
-            long timeMs = endTime - startTime;
-            float tokPerSec = nativeTimingInfo.getFloat(2);
-            float lateSteadyTokPerSec = nativeTimingInfo.length() > 5 ? nativeTimingInfo.getFloat(5) : tokPerSec;
-            boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
+        // FORWARD-FIX: on the fixed-buffer path, reuse the cached frozen state across generates so the
+        // captured decode plan replays (no per-generate re-warm). The reuse path keeps the plan, refills
+        // the retained (stable-address) buffers in place, and skips the re-freeze. Fresh path otherwise.
+        boolean fixedBuffers = config.getMaxPrefillLength() > 0;
+        InGraphKvState reuse = (fixedBuffers && cachedFixedBufferState != null && !cachedFixedBufferState.closed)
+                ? cachedFixedBufferState : null;
+        InGraphKvState state = prefillWarmupAndFreeze(promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse);
+        if (state.terminalResult != null) {
+            // Terminal (early-EOS / no plan handle): the reused state is spent — close it and drop the
+            // cache so the next generate rebuilds from scratch. (state is a fresh terminal, != reuse.)
+            if (reuse != null) reuse.close();
+            cachedFixedBufferState = null;
+            return state.terminalResult;
+        }
+        if (fixedBuffers) {
+            // Store the completed prefill in the prefix cache before returning
+            if (prefixBlockPool != null && state.staticKvBuffers != null) {
+                List<ModelIOConfig.RecurrentStatePair> recurrentStates =
+                        ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
+                storePrefillInPrefixCache(promptTokenIds, state.actualPrefillLen,
+                        state.staticKvBuffers, kvInputNames, state.recurrentStateBuffers, recurrentStates);
+            }
+            // Retain for the next generate; do NOT close here — the buffers/plan are reused in place.
+            cachedFixedBufferState = state;
+            return runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+        }
+        // Store the completed prefill in the prefix cache
+        if (prefixBlockPool != null && state.staticKvBuffers != null) {
+            List<ModelIOConfig.RecurrentStatePair> recurrentStates =
+                    ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
+            storePrefillInPrefixCache(promptTokenIds, state.actualPrefillLen,
+                    state.staticKvBuffers, kvInputNames, state.recurrentStateBuffers, recurrentStates);
+        }
+        try {
+            return runInGraphNativeDecode(state, maxNewTokens, false, startTime);
+        } finally {
+            state.close();
+        }
+    }
 
-            dummyEmbeddings.close();
-            dummyEmbTable.close();
-            decodeInputIds.close();
-            if (decodeCausalMask != null) decodeCausalMask.close();
-            if (decodePositionOffset != null) decodePositionOffset.close();
-            if (decodeCachePosition != null) decodeCachePosition.close();
-            for (INDArray kv : staticKvBuffers.values()) kv.close();
-            for (INDArray rs : recurrentStateBuffers.values()) rs.close();
+    /**
+     * Execute the native {@code autoregressive_decode} loop against a retained {@link InGraphKvState},
+     * WITHOUT freeing the retained buffers (the caller / session owns their lifecycle).
+     *
+     * <p>On the first (non-continuation) call this reproduces the original decode handoff exactly: the
+     * two tokens already sampled in Java (prefill + warmup) prefix the native tokens and
+     * {@code remainingTokens = maxNewTokens - 2}. On a continuation call there is no Java prefill/warmup,
+     * so the result carries only the native tokens, {@code remainingTokens = maxNewTokens}, and decode
+     * resumes by feeding {@code state.lastGeneratedToken} at {@code state.cachePosition}.</p>
+     *
+     * <p>Advances {@code state.cachePosition}, {@code state.lastGeneratedToken},
+     * {@code state.generatedSoFar} and {@code state.eosReached} in place.</p>
+     */
+    private GenerationResult runInGraphNativeDecode(InGraphKvState state, int maxNewTokens,
+                                                    boolean isContinuation, long startTime) {
+        int remainingTokens = isContinuation ? maxNewTokens : (maxNewTokens - 2);
 
-            return GenerationResult.builder()
-                    .text(text).tokenIds(tokenIds)
-                    .generatedTokenCount(tokenIds.length).promptTokenCount(prefillSeqLen)
-                    .totalTokenCount(prefillSeqLen + tokenIds.length)
-                    .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
-                    .generationTimeMs(timeMs)
-                    .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
-                    .steadyStateTokensPerSecond(tokPerSec)
-                    .lateSteadyStateTokensPerSecond(lateSteadyTokPerSec)
-                    .build();
+        // ── Prepare the current decode-step inputs: feed the last generated token at cachePosition ──
+        state.decodeInputIds.putScalar(new long[]{0, 0}, state.lastGeneratedToken);
+        if (state.decodeCausalMask != null) {
+            if (state.rotatingSlotMap != null) {
+                // ── Rotating KV mask: build per-step based on which physical slots are live ──────
+                // Always rebuild from scratch (the ring may have wrapped since the last step).
+                // CUDA-graph safe: same buffer address, only values change via D2D staging.
+                float maskVal = (state.maskDtype == DataType.HALF || state.maskDtype == DataType.FLOAT16)
+                        ? -65504.0f : -1e9f;
+                float[] maskData = state.rotatingSlotMap.buildRotatingDecodeMask(
+                        state.cachePosition, maskVal);
+                INDArray fresh = Nd4j.create(maskData, new long[]{1, 1, 1, state.maxKvLen}, 'c');
+                if (state.maskDtype != DataType.FLOAT) {
+                    INDArray cast = fresh.castTo(state.maskDtype);
+                    fresh.close();
+                    fresh = cast;
+                }
+                state.decodeCausalMask.assign(fresh);
+                fresh.close();
+            } else if (isContinuation) {
+                // Standard (non-rotating) resume: rebuild the mask fresh to unmask exactly
+                // 0..cachePosition-1 (all committed K/V), independent of whatever the prior native op
+                // left it in. Reuse the SAME buffer (assign, not realloc) to keep the frozen-plan
+                // ext-input pointer stable.
+                INDArray fresh = DecoderInputBuilder.buildInGraphDecodeMask(
+                        state.cachePosition - 1, state.maxKvLen, state.maskDtype);
+                state.decodeCausalMask.assign(fresh);
+                fresh.close();
+            } else {
+                // Standard first call: the warmup already built the decode mask; unmask the firstToken
+                // position (== cachePosition-1) so the second token attends to it.
+                state.decodeCausalMask.putScalar(new long[]{0, 0, 0, state.cachePosition - 1}, 0.0f);
+            }
+        }
+        if (state.decodePositionOffset != null) {
+            // positionOffset drives RoPE on the NEW token being fed — always the global position.
+            state.decodePositionOffset.putScalar(new long[]{}, (long) state.cachePosition);
+        }
+        if (state.decodeCachePosition != null) {
+            // cachePosition fed to the C++ op is the PHYSICAL slot where the current token's K/V will
+            // be written. In non-rotating mode this equals the global position. In rotating mode it may
+            // be a recycled slot (ring wrap). The fixed KV buffer shape is unchanged — only the write
+            // target changes.
+            long physicalWriteSlot = (state.rotatingSlotMap != null)
+                    ? state.rotatingSlotMap.physicalSlot(state.cachePosition)
+                    : state.cachePosition;
+            state.decodeCachePosition.putScalar(new long[]{}, physicalWriteSlot);
+        }
+        if (state.decodeActualSequenceLength != null) {
+            state.decodeActualSequenceLength.putScalar(new long[]{}, 1L);
+        }
+
+        Nd4j.getExecutioner().commit();
+        state.decodeInputIds.syncToDevice();
+        if (state.decodeCausalMask != null) state.decodeCausalMask.syncToDevice();
+        if (state.decodePositionOffset != null) state.decodePositionOffset.syncToDevice();
+        if (state.decodeCachePosition != null) state.decodeCachePosition.syncToDevice();
+        if (state.decodeActualSequenceLength != null) state.decodeActualSequenceLength.syncToDevice();
+        // V2 QUANTIZED: sync INT8 live buffers (and their scales); float staticKvBuffers are null.
+        if (state.isQuantizedV2 && state.quantizedKvBuffers != null) {
+            for (INDArray kvBuf : state.quantizedKvBuffers.values()) {
+                if (kvBuf != null && !kvBuf.isEmpty()) kvBuf.syncToDevice();
+            }
+            if (state.kvScaleBuffers != null) {
+                for (INDArray scBuf : state.kvScaleBuffers.values()) {
+                    if (scBuf != null && !scBuf.isEmpty()) scBuf.syncToDevice();
+                }
+            }
+        } else if (state.staticKvBuffers != null) {
+            for (INDArray kvBuf : state.staticKvBuffers.values()) kvBuf.syncToDevice();
+        }
+        for (INDArray rsBuf : state.recurrentStateBuffers.values()) rsBuf.syncToDevice();
+
+        int firstTokenId = !state.generatedSoFar.isEmpty() ? state.generatedSoFar.get(0) : state.lastGeneratedToken;
+        int secondTokenId = state.generatedSoFar.size() > 1 ? state.generatedSoFar.get(1) : state.lastGeneratedToken;
+
+        // Assemble the KV buffer array in (all keys, then all values) order — same object refs as the
+        // frozen plan's ext inputs, so the device pointers stay stable across calls.
+        // V2 QUANTIZED: use INT8 quantizedKvBuffers (under original variable names).
+        // V1 / STATIC: use float staticKvBuffers.
+        Map<String, INDArray> kvLiveMap = state.isQuantizedV2 ? state.quantizedKvBuffers : state.staticKvBuffers;
+        INDArray[] staticKvArray = new INDArray[2 * state.numKvPairs];
+        int idx = 0;
+        for (String keyName : state.kvInputNames.keyNames) {
+            staticKvArray[idx++] = kvLiveMap != null ? kvLiveMap.get(keyName) : null;
+        }
+        for (String valName : state.kvInputNames.valueNames) {
+            staticKvArray[idx++] = kvLiveMap != null ? kvLiveMap.get(valName) : null;
+        }
+
+        // ADR 0107 V2: assemble scale buffer array (key scales then value scales).
+        // Scale arrays are FLOAT32 [batch, maxKvLen, kvHeads] — one float per (token, kv_head).
+        // Null when not in V2 quantized mode.
+        INDArray[] kvScaleArray = null;
+        if (state.isQuantizedV2 && state.kvScaleBuffers != null && !state.kvScaleBuffers.isEmpty()) {
+            kvScaleArray = new INDArray[2 * state.numKvPairs];
+            int si = 0;
+            for (String keyName : state.kvInputNames.keyNames) {
+                kvScaleArray[si++] = state.kvScaleBuffers.get(keyName + "_scale");
+            }
+            for (String valName : state.kvInputNames.valueNames) {
+                kvScaleArray[si++] = state.kvScaleBuffers.get(valName + "_scale");
+            }
+        }
+
+        List<Integer> nativeTokens = new ArrayList<>();   // tokens produced by the native op this call
+        int nativeCount = 0;
+        float tokPerSec = 0f, lateSteadyTokPerSec = 0f;
+
+        if (remainingTokens > 0) {
+            if (state.rotatingSlotMap != null) {
+                // ── Rotating KV: single-step Java loop ──────────────────────────────────────────
+                // The C++ inner loop increments currentPosition monotonically. With rotating KV the
+                // physical write slot wraps modulo ringSize, so we cannot pass remainingTokens > 1 to
+                // the native op — it would use global positions beyond maxKvLen as physical write
+                // offsets and corrupt the attention mask. Instead we call the op one step at a time
+                // from Java, recalculating the physical slot and rotating mask before each step.
+                // CUDA-graph safety: each single-step exec is a replay of the same frozen graph (the
+                // plan shape is fixed: 1 input token, 1 output token). No shape change occurs.
+                DecodePolicy decodePolicy = resolveDecodePolicy(state.sampling, config);
+                int generatedTokenOffset = state.generatedSoFar != null ? state.generatedSoFar.size() : 0;
+
+                for (int step = 0; step < remainingTokens; step++) {
+                    INDArray dummyEmbeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
+                    INDArray dummyEmbTable = Nd4j.zeros(DataType.FLOAT, 1, 1);
+
+                    // The physical write slot for this step — passed as startingCachePosition.
+                    // The C++ op runs exactly 1 step (maxNewTokens=1) so it uses this position once.
+                    int physSlot = state.rotatingSlotMap.physicalSlot(state.cachePosition);
+
+                    AutoregressiveDecode op = new AutoregressiveDecode(
+                            dummyEmbeddings, dummyEmbTable, state.decodeInputIds,
+                            state.decodeCausalMask, null, staticKvArray,
+                            state.planHandle, state.contextHandle,
+                            state.numPlanExternalInputs, state.numPlanOutputs,
+                            state.embeddingsExtIdx, state.maskExtIdx, state.causalMaskExtIdx,
+                            state.posIdsExtIdx, state.inputIdsExtIdx, state.logitsOutputIdx,
+                            -1,                       // attnMaskReformatExtIdx
+                            state.posOffsetExtIdx,    // position_offset ext index
+                            state.cachePosExtIdx,     // cache_position ext index
+                            state.kvInputExtIndices, state.kvOutputIndices,
+                            state.gdnStateExtIndices, state.gdnStateOutputIndices,
+                            state.convStateExtIndices, state.convStateOutputIndices,
+                            1 /* single step */, state.eosTokenId, state.numKvPairs,
+                            physSlot,    // starting physical slot for this one step
+                            state.sampling.isGreedy() ? 0.0 : state.sampling.getTemperature(),
+                            state.sampling.isGreedy() ? 0 : state.sampling.getTopK(),
+                            state.sampling.isGreedy() ? 0.0 : state.sampling.getTopP(),
+                            state.sampling.getRepetitionPenalty(),
+                            state.stopTokenIds);
+                    // ADR 0107 V2: append scale buffers and set bit 7 in optionalMask.
+                    if (kvScaleArray != null) op.withQuantisedKvScales(kvScaleArray);
+                    applyNativePolicy(op, decodePolicy, state.sampling, generatedTokenOffset + step);
+
+                    INDArray[] results = Nd4j.getExecutioner().exec(op);
+                    INDArray nativeTokenIds = results[0];
+                    INDArray nativeTokenCount = results[1];
+                    INDArray nativeTimingInfo = results[2];
+                    int stepCount = nativeTokenCount.getInt(0);
+                    tokPerSec = nativeTimingInfo.getFloat(2);
+                    lateSteadyTokPerSec = nativeTimingInfo.length() > 5 ? nativeTimingInfo.getFloat(5) : tokPerSec;
+
+                    dummyEmbeddings.close();
+                    dummyEmbTable.close();
+
+                    if (stepCount <= 0) break;
+                    int tok = (int) nativeTokenIds.getLong(0);
+                    nativeTokens.add(tok);
+                    nativeCount++;
+                    state.cachePosition++;
+
+                    if (state.stopTokenIds.contains(tok)) break;
+
+                    // Update inputs for next step: new token, rotating mask, physical slot.
+                    state.decodeInputIds.putScalar(new long[]{0, 0}, tok);
+                    if (state.decodeCausalMask != null) {
+                        float maskVal = (state.maskDtype == DataType.HALF || state.maskDtype == DataType.FLOAT16)
+                                ? -65504.0f : -1e9f;
+                        float[] maskData = state.rotatingSlotMap.buildRotatingDecodeMask(
+                                state.cachePosition, maskVal);
+                        INDArray fresh = Nd4j.create(maskData, new long[]{1, 1, 1, state.maxKvLen}, 'c');
+                        if (state.maskDtype != DataType.FLOAT) {
+                            INDArray cast = fresh.castTo(state.maskDtype);
+                            fresh.close();
+                            fresh = cast;
+                        }
+                        state.decodeCausalMask.assign(fresh);
+                        fresh.close();
+                    }
+                    if (state.decodePositionOffset != null)
+                        state.decodePositionOffset.putScalar(new long[]{}, (long) state.cachePosition);
+                    if (state.decodeCachePosition != null) {
+                        long nextPhysSlot = state.rotatingSlotMap.physicalSlot(state.cachePosition);
+                        state.decodeCachePosition.putScalar(new long[]{}, nextPhysSlot);
+                    }
+                    Nd4j.getExecutioner().commit();
+                    state.decodeInputIds.syncToDevice();
+                    if (state.decodeCausalMask != null) state.decodeCausalMask.syncToDevice();
+                    if (state.decodePositionOffset != null) state.decodePositionOffset.syncToDevice();
+                    if (state.decodeCachePosition != null) state.decodeCachePosition.syncToDevice();
+                }
+                // cachePosition already advanced inside the loop — don't advance again below.
+                // Adjust nativeCount already counted; set nativeCountForAdvance = 0 so the advance
+                // below (state.cachePosition += nativeCount) is a no-op.
+                nativeCount = 0;   // suppress the post-loop advance; done per-step above
+            } else {
+                // ── Standard (non-rotating) multi-step native op ─────────────────────────────────
+                INDArray dummyEmbeddings = Nd4j.zeros(DataType.FLOAT, 1, 1, 1);
+                INDArray dummyEmbTable = Nd4j.zeros(DataType.FLOAT, 1, 1);
+
+                AutoregressiveDecode op = new AutoregressiveDecode(
+                        dummyEmbeddings, dummyEmbTable, state.decodeInputIds,
+                        state.decodeCausalMask, null, staticKvArray,
+                        state.planHandle, state.contextHandle,
+                        state.numPlanExternalInputs, state.numPlanOutputs,
+                        state.embeddingsExtIdx, state.maskExtIdx, state.causalMaskExtIdx,
+                        state.posIdsExtIdx, state.inputIdsExtIdx, state.logitsOutputIdx,
+                        -1,                       // attnMaskReformatExtIdx
+                        state.posOffsetExtIdx,    // position_offset ext index
+                        state.cachePosExtIdx,     // cache_position ext index
+                        state.kvInputExtIndices, state.kvOutputIndices,
+                        state.gdnStateExtIndices, state.gdnStateOutputIndices,
+                        state.convStateExtIndices, state.convStateOutputIndices,
+                        remainingTokens, state.eosTokenId, state.numKvPairs,
+                        state.cachePosition,      // starting cachePosition for the C++ decode loop
+                        state.sampling.isGreedy() ? 0.0 : state.sampling.getTemperature(),
+                        state.sampling.isGreedy() ? 0 : state.sampling.getTopK(),
+                        state.sampling.isGreedy() ? 0.0 : state.sampling.getTopP(),
+                        state.sampling.getRepetitionPenalty(),
+                        state.stopTokenIds);
+                // ADR 0107 V2: append scale buffers and set bit 7 in optionalMask.
+                if (kvScaleArray != null) op.withQuantisedKvScales(kvScaleArray);
+                int generatedTokenOffset = state.generatedSoFar != null ? state.generatedSoFar.size() : 0;
+                DecodePolicy decodePolicy = resolveDecodePolicy(state.sampling, config);
+                applyNativePolicy(op, decodePolicy, state.sampling, generatedTokenOffset);
+
+                INDArray[] results = Nd4j.getExecutioner().exec(op);
+                INDArray nativeTokenIds = results[0];
+                INDArray nativeTokenCount = results[1];
+                INDArray nativeTimingInfo = results[2];
+                nativeCount = nativeTokenCount.getInt(0);
+                for (int i = 0; i < nativeCount; i++) {
+                    int tok = (int) nativeTokenIds.getLong(i);
+                    nativeTokens.add(tok);
+                    if (state.stopTokenIds.contains(tok)) break;
+                }
+                tokPerSec = nativeTimingInfo.getFloat(2);
+                lateSteadyTokPerSec = nativeTimingInfo.length() > 5 ? nativeTimingInfo.getFloat(5) : tokPerSec;
+
+                dummyEmbeddings.close();
+                dummyEmbTable.close();
+            }
+        }
+
+        // ── Assemble this call's returned tokens + advance the session state ──
+        List<Integer> callTokens = new ArrayList<>();
+        if (!isContinuation) {
+            // First call: prefix with the two Java-sampled tokens, honoring early stops (matches original).
+            callTokens.add(firstTokenId);
+            if (!state.stopTokenIds.contains(firstTokenId)) {
+                callTokens.add(secondTokenId);
+                if (!state.stopTokenIds.contains(secondTokenId)) {
+                    callTokens.addAll(nativeTokens);
+                }
+            }
+            state.generatedSoFar = new ArrayList<>(callTokens);
         } else {
-            decodeInputIds.close();
-            if (decodeCausalMask != null) decodeCausalMask.close();
-            if (decodePositionOffset != null) decodePositionOffset.close();
-            if (decodeCachePosition != null) decodeCachePosition.close();
+            callTokens.addAll(nativeTokens);
+            state.generatedSoFar.addAll(nativeTokens);
+        }
+        // Each native step advances the write position by one; the last sampled token stays unwritten.
+        state.cachePosition += nativeCount;
+        if (!nativeTokens.isEmpty()) {
+            state.lastGeneratedToken = nativeTokens.get(nativeTokens.size() - 1);
+        }
 
-            List<Integer> allTokens = new ArrayList<>();
-            if (maxNewTokens >= 1) allTokens.add(firstTokenId);
-            if (maxNewTokens >= 2 && !stopTokenIds.contains(firstTokenId)) allTokens.add(secondTokenId);
+        int[] tokenIds = callTokens.stream().mapToInt(Integer::intValue).toArray();
+        boolean hitEos = tokenIds.length > 0 && state.stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
+        state.eosReached = state.eosReached || hitEos;
 
-            int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
-            String text = tokenizer.decode(tokenIds, false);
-            long endTime = System.currentTimeMillis();
-            long timeMs = endTime - startTime;
-            boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
+        String text = tokenizer.decode(tokenIds, false);
+        long timeMs = System.currentTimeMillis() - startTime;
+        log.info("[GGUF-KV] decode complete (continuation={}): nativeCount={} callTokens={} cachePosition={} eos={}",
+                isContinuation, nativeCount, callTokens.size(), state.cachePosition, hitEos);
 
-            for (INDArray kv : staticKvBuffers.values()) kv.close();
-            for (INDArray rs : recurrentStateBuffers.values()) rs.close();
+        return GenerationResult.builder()
+                .text(text).tokenIds(tokenIds)
+                .generatedTokenCount(tokenIds.length)
+                .promptTokenCount(state.promptTokenCount)
+                .totalTokenCount(state.promptTokenCount + state.generatedSoFar.size())
+                .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
+                .generationTimeMs(timeMs)
+                .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
+                .steadyStateTokensPerSecond(tokPerSec)
+                .lateSteadyStateTokensPerSecond(lateSteadyTokPerSec)
+                .sessionId(state.sessionId)   // 0 for one-shot state; the real id for any session call
+                .build();
+    }
 
+    // ==================== Continue-generation session API ====================
+
+    /**
+     * Start a resumable {@link GenerationSession}, sized to the pipeline's context ceiling.
+     * Capacity is resolved as (first non-zero): {@code config.sessionCapacity}, then
+     * {@code config.maxKvCacheLength - promptLen}, then {@code config.maxNewTokens}. To use the model's
+     * full context window as the ceiling, set {@code maxKvCacheLength} to the context window (e.g. 512).
+     *
+     * @see #startSession(String, int)
+     */
+    public GenerationSession startSession(String prompt) {
+        return startSession(prompt, -1);
+    }
+
+    /**
+     * Start a resumable generation session with an explicit total continuation capacity (in new tokens).
+     *
+     * <p>The session prefills the prompt ONCE and pre-sizes its STATIC KV buffer to
+     * {@code promptLen + capacity}. Subsequent {@link GenerationSession#continueGeneration(int)} calls
+     * resume autoregressive decoding from the retained in-graph KV cache and current cache position —
+     * no session reset, no re-prefill. Decoding is hard-bounded by the buffer: once it fills, continue
+     * returns {@link GenerationResult.FinishReason#MAX_TOKENS} ("context full").</p>
+     *
+     * <p><b>Continuation contract.</b> For greedy decoding with the default repetition penalty, one
+     * logical generation spread over K session calls is <em>numerically identical</em> to a single
+     * {@code generate()} of the summed budget — {@code generate(N)} then {@code continueGeneration(M)}
+     * equals {@code generate(N+M)}, token-for-token. With sampling ({@code temperature>0}) or a
+     * repetition penalty {@code != 1.0} the continuation is valid but not bit-identical to a single call
+     * (the Java/C++ RNG and the per-invocation penalty history do not carry across the seam).</p>
+     *
+     * <p><b>Threading.</b> A session is thread-confined: it must be driven from the thread that created
+     * it (the decoder's {@code InferenceSession} and frozen plan are thread-affine). Only one session may
+     * be active on a pipeline at a time; opening a second, or calling {@code generate(String,int)} while a
+     * session is open, throws. Coordination is lock-free — no monitor is held across a native decode, so
+     * misuse fails fast rather than deadlocking.</p>
+     *
+     * @param prompt   the input text prompt (chat template applied if configured)
+     * @param capacity total new-token capacity for the session's lifetime; {@code <= 0} resolves from config
+     * @return an open {@link GenerationSession}; call {@code generate(...)} to produce the first tokens
+     */
+    public GenerationSession startSession(String prompt, int capacity) {
+        int restoreDevice = switchToDecoderDevice("start-session");
+        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
+        try {
+            if (embedTokens != null || !ModelIOConfig.isInGraphKvCache(decoder)) {
+                throw new UnsupportedOperationException(
+                        "GenerationSession continuation is currently supported only for single-model "
+                        + "in-graph-KV (GGUF) decoders.");
+            }
+            if (config.getKvContinuationMode() == KvContinuationMode.GROWABLE) {
+                throw new UnsupportedOperationException(
+                        "KvContinuationMode.GROWABLE is not yet implemented (follow-up ADR). Use "
+                        + "STATIC_CONTEXT_CEILING and size maxKvCacheLength to the model's context window.");
+            }
+            if (activeSession.get() != null) {
+                throw new IllegalStateException("A GenerationSession is already active on this pipeline; close it first.");
+            }
+            // A session takes over the decoder's executor + frozen plan; drop any cached one-shot
+            // fixed-buffer state so it cannot alias the session's plan/buffers.
+            if (cachedFixedBufferState != null) {
+                cachedFixedBufferState.close();
+                cachedFixedBufferState = null;
+            }
+
+            int[] promptTokenIds = encodePromptToIds(prompt);
+            int resolvedCapacity = resolveSessionCapacity(capacity, promptTokenIds.length);
+            long startTime = System.currentTimeMillis();
+            ModelIOConfig.KVCacheNames kvInputNames = ModelIOConfig.findKVCacheInputNames(decoder);
+
+            // ── Prefix cache lookup for session start ──────────────────────────────────────────
+            InGraphKvState state = null;
+            if (prefixBlockPool != null) {
+                List<ModelIOConfig.RecurrentStatePair> recurrentStates =
+                        ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
+                long roughMaxKvLen = (long) promptTokenIds.length + resolvedCapacity;
+                int kvCap = config.getMaxKvCacheLength();
+                if (kvCap > 0 && roughMaxKvLen > kvCap) roughMaxKvLen = kvCap;
+                PrefixHitContext hit = attemptPrefixCacheHit(
+                        promptTokenIds, kvInputNames, roughMaxKvLen, recurrentStates);
+                if (hit != null) {
+                    state = prefillSuffixOnlyAndFreeze(promptTokenIds, resolvedCapacity, kvInputNames, startTime, hit);
+                }
+            }
+            if (state == null) {
+                state = prefillWarmupAndFreeze(promptTokenIds, resolvedCapacity, kvInputNames, startTime, null);
+                // Store completed prefill in prefix cache for future reuse
+                if (prefixBlockPool != null && state.staticKvBuffers != null && state.terminalResult == null) {
+                    List<ModelIOConfig.RecurrentStatePair> recurrentStates =
+                            ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
+                    storePrefillInPrefixCache(promptTokenIds, state.actualPrefillLen,
+                            state.staticKvBuffers, kvInputNames, state.recurrentStateBuffers, recurrentStates);
+                }
+            }
+            state.sessionId = SESSION_ID_COUNTER.incrementAndGet();
+            state.ownerThreadId = Thread.currentThread().getId();
+
+            GenerationSession session = new GenerationSession(this, state, startTime);
+            if (!activeSession.compareAndSet(null, session)) {
+                state.close();
+                throw new IllegalStateException("A GenerationSession opened concurrently on this pipeline.");
+            }
+            log.info("[GenerationSession] started id={} promptLen={} capacity={} maxKvLen={}",
+                    state.sessionId, promptTokenIds.length, resolvedCapacity, state.maxKvLen);
+            return session;
+        } finally {
+            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
+            restoreDevice(restoreDevice, "start-session");
+        }
+    }
+
+    /**
+     * Continue decoding from the pipeline's active session — a result-threaded convenience over
+     * {@link GenerationSession#continueGeneration(int)}. The downstream self-heal loop calls this while
+     * {@code prior.isTruncated()} and there is remaining context budget.
+     *
+     * @param prior         the previous result from the active session (its {@code sessionId} is validated)
+     * @param maxNewTokens  up to this many additional tokens
+     */
+    public GenerationResult continueFrom(GenerationResult prior, int maxNewTokens) {
+        GenerationSession session = activeSession.get();
+        if (session == null) {
+            throw new IllegalStateException("No active GenerationSession on this pipeline; call startSession() first.");
+        }
+        if (prior != null && prior.getSessionId() != 0L && prior.getSessionId() != session.getSessionId()) {
+            throw new IllegalArgumentException("prior GenerationResult does not belong to the active session (id "
+                    + prior.getSessionId() + " != " + session.getSessionId() + ").");
+        }
+        return session.continueGeneration(maxNewTokens);
+    }
+
+    private int resolveSessionCapacity(int capacityArg, int prefillLen) {
+        if (capacityArg > 0) return capacityArg;
+        if (config.getSessionCapacity() > 0) return config.getSessionCapacity();
+        int kvCap = config.getMaxKvCacheLength();
+        if (kvCap > 0) return Math.max(1, kvCap - prefillLen);
+        return config.getMaxNewTokens();
+    }
+
+    /**
+     * Resolve the default byte budget for the cross-request KV prefix block pool.
+     * Heuristic: 10% of the device's total memory, capped at 512 MB, minimum 64 MB.
+     */
+    private static long resolvePrefixCacheDefaultBytes() {
+        try {
+            DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+            var dev = mgr.getDefaultDevice();
+            long totalDeviceBytes = (dev != null) ? dev.getTotalMemory() : 0L;
+            if (totalDeviceBytes <= 0) return 256L * 1024 * 1024; // 256 MB fallback
+            long tenPercent = totalDeviceBytes / 10;
+            long cap = 512L * 1024 * 1024; // 512 MB
+            long floor = 64L * 1024 * 1024; // 64 MB
+            return Math.max(floor, Math.min(cap, tenPercent));
+        } catch (Exception e) {
+            return 256L * 1024 * 1024; // 256 MB fallback
+        }
+    }
+
+    /** Device-guarded native decode step for a session (with capacity clamp for continuation). */
+    GenerationResult decodeInSession(InGraphKvState state, int maxNewTokens, boolean isContinuation) {
+        int restoreDevice = switchToDecoderDevice("session-decode");
+        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
+        try {
+            if (isContinuation) {
+                int available = state.remainingCapacity();
+                if (available <= 0 || maxNewTokens <= 0) {
+                    return GenerationResult.builder()
+                            .text("").tokenIds(new int[0]).generatedTokenCount(0)
+                            .promptTokenCount(state.promptTokenCount)
+                            .totalTokenCount(state.promptTokenCount + state.generatedSoFar.size())
+                            .finishReason(GenerationResult.FinishReason.MAX_TOKENS)
+                            .sessionId(state.sessionId)
+                            .build();
+                }
+                maxNewTokens = Math.min(maxNewTokens, available);
+            }
+            return runInGraphNativeDecode(state, maxNewTokens, isContinuation, System.currentTimeMillis());
+        } finally {
+            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
+            restoreDevice(restoreDevice, "session-decode");
+        }
+    }
+
+    /**
+     * Feed tokens into the frozen decode graph WITHOUT sampling (a "continue:" nudge), writing their
+     * K/V and advancing the cache position so the next continueGeneration() resumes after them.
+     *
+     * <p>To keep the resume invariant ("the last token is unwritten"), this writes the current
+     * last-generated token plus all but the final appended token, and designates the final appended
+     * token as the new unwritten last.</p>
+     */
+    void appendInSession(InGraphKvState state, int[] tokens) {
+        if (tokens == null || tokens.length == 0) return;
+        int restoreDevice = switchToDecoderDevice("session-append");
+        OpaqueDataBuffer.suppressCrossDeviceRouting(true);
+        try {
+            // Tokens whose K/V must be committed now: [oldLast, tokens[0..k-2]]. tokens[k-1] becomes the
+            // new unwritten last.
+            List<Integer> toFeed = new ArrayList<>();
+            toFeed.add(state.lastGeneratedToken);
+            for (int i = 0; i < tokens.length - 1; i++) toFeed.add(tokens[i]);
+
+            for (int feed : toFeed) {
+                if (state.remainingCapacity() <= 0) {
+                    log.warn("[GenerationSession] append hit KV capacity at cachePosition={}", state.cachePosition);
+                    break;
+                }
+                state.decodeInputIds.putScalar(new long[]{0, 0}, feed);
+                if (state.decodeCausalMask != null) {
+                    if (state.rotatingSlotMap != null) {
+                        float maskVal = (state.maskDtype == DataType.HALF || state.maskDtype == DataType.FLOAT16)
+                                ? -65504.0f : -1e9f;
+                        float[] maskData = state.rotatingSlotMap.buildRotatingDecodeMask(
+                                state.cachePosition, maskVal);
+                        INDArray fresh = Nd4j.create(maskData, new long[]{1, 1, 1, state.maxKvLen}, 'c');
+                        if (state.maskDtype != DataType.FLOAT) {
+                            INDArray cast = fresh.castTo(state.maskDtype);
+                            fresh.close();
+                            fresh = cast;
+                        }
+                        state.decodeCausalMask.assign(fresh);
+                        fresh.close();
+                    } else {
+                        INDArray fresh = DecoderInputBuilder.buildInGraphDecodeMask(
+                                state.cachePosition - 1, state.maxKvLen, state.maskDtype);
+                        state.decodeCausalMask.assign(fresh);
+                        fresh.close();
+                    }
+                }
+                if (state.decodePositionOffset != null) state.decodePositionOffset.putScalar(new long[]{}, (long) state.cachePosition);
+                if (state.decodeCachePosition != null) {
+                    long physSlot = (state.rotatingSlotMap != null)
+                            ? state.rotatingSlotMap.physicalSlot(state.cachePosition)
+                            : state.cachePosition;
+                    state.decodeCachePosition.putScalar(new long[]{}, physSlot);
+                }
+                if (state.decodeActualSequenceLength != null) state.decodeActualSequenceLength.putScalar(new long[]{}, 1L);
+                Nd4j.getExecutioner().commit();
+                state.decodeInputIds.syncToDevice();
+                if (state.decodeCausalMask != null) state.decodeCausalMask.syncToDevice();
+                if (state.decodePositionOffset != null) state.decodePositionOffset.syncToDevice();
+                if (state.decodeCachePosition != null) state.decodeCachePosition.syncToDevice();
+                if (state.decodeActualSequenceLength != null) state.decodeActualSequenceLength.syncToDevice();
+                for (INDArray kv : state.staticKvBuffers.values()) kv.syncToDevice();
+                for (INDArray rs : state.recurrentStateBuffers.values()) rs.syncToDevice();
+
+                Map<String, INDArray> decodeInputMap = new HashMap<>();
+                decodeInputMap.put(state.inputIdsName, state.decodeInputIds);
+                if (state.causalMaskName != null && state.decodeCausalMask != null) decodeInputMap.put(state.causalMaskName, state.decodeCausalMask);
+                if (state.posOffsetName != null && state.decodePositionOffset != null) decodeInputMap.put(state.posOffsetName, state.decodePositionOffset);
+                if (state.cachePosName != null && state.decodeCachePosition != null) decodeInputMap.put(state.cachePosName, state.decodeCachePosition);
+                if (state.actualSeqLenName != null && state.decodeActualSequenceLength != null) {
+                    decodeInputMap.put(state.actualSeqLenName, state.decodeActualSequenceLength);
+                }
+                for (Map.Entry<String, INDArray> e : state.staticKvBuffers.entrySet()) {
+                    if (decoder.hasVariable(e.getKey())) decodeInputMap.put(e.getKey(), e.getValue());
+                }
+                for (Map.Entry<String, INDArray> e : state.recurrentStateBuffers.entrySet()) {
+                    if (decoder.hasVariable(e.getKey())) decodeInputMap.put(e.getKey(), e.getValue());
+                }
+
+                // outputDirect stays on the frozen plan (plain output() may clear session caches).
+                Map<String, INDArray> outputs = decoder.outputDirect(
+                        decodeInputMap, state.decodeOutputNames.toArray(new String[0]));
+                INDArray logits = outputs.get(state.logitsName);
+                if (logits != null) logits.close();   // appended tokens are given, not sampled
+                for (ModelIOConfig.RecurrentStatePair pair : state.recurrentStates) {
+                    INDArray updated = outputs.get(pair.outputName);
+                    if (updated != null) {
+                        INDArray buf = state.recurrentStateBuffers.get(pair.inputName);
+                        if (buf != null) buf.assign(updated);
+                        updated.close();
+                    }
+                }
+                state.cachePosition += 1;
+            }
+            for (int t : tokens) state.generatedSoFar.add(t);
+            state.lastGeneratedToken = tokens[tokens.length - 1];
+            if (state.stopTokenIds.contains(state.lastGeneratedToken)) state.eosReached = true;
+        } finally {
+            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
+            restoreDevice(restoreDevice, "session-append");
+        }
+    }
+
+    /** Device-guarded teardown of a session's retained buffers. */
+    void closeSession(GenerationSession session, InGraphKvState state) {
+        clearActiveSession(session);
+        int restoreDevice = switchToDecoderDevice("session-close");
+        try {
+            state.close();
+        } finally {
+            restoreDevice(restoreDevice, "session-close");
+        }
+    }
+
+    /** Lock-free clear of the active session (only if {@code session} is still the current one). */
+    void clearActiveSession(GenerationSession session) {
+        activeSession.compareAndSet(session, null);
+    }
+
+    /**
+     * A resumable text-generation session that owns the retained in-graph KV cache and cache position,
+     * so decoding can be continued across multiple calls without a session reset or re-prefill.
+     *
+     * <p>Obtain one via {@link GenerationPipeline#startSession(String, int)}. The first
+     * {@link #generate(int)} runs the initial decode (prefill + warmup happened at start); subsequent
+     * {@link #generate(int)} / {@link #continueGeneration(int)} continue from the retained cache. See the
+     * continuation contract and threading notes on {@code startSession}. Always {@link #close()} the
+     * session (try-with-resources) to release native buffers.</p>
+     */
+    public static final class GenerationSession implements AutoCloseable {
+        private final GenerationPipeline pipeline;
+        private final InGraphKvState state;
+        private boolean firstGenerateDone;
+
+        GenerationSession(GenerationPipeline pipeline, InGraphKvState state, long createTime) {
+            this.pipeline = pipeline;
+            this.state = state;
+        }
+
+        /** Opaque id used by {@link GenerationPipeline#continueFrom(GenerationResult, int)}. */
+        public long getSessionId() { return state.sessionId; }
+        /** True once a real EOS / stop token has been produced — continuation is then refused. */
+        public boolean isEosReached() { return state.eosReached; }
+        /** Absolute position of the next-fed token in the KV buffer. */
+        public int getCachePosition() { return state.cachePosition; }
+        /** New-token capacity remaining before the KV buffer is full. */
+        public int getRemainingCapacity() { return Math.max(0, state.remainingCapacity()); }
+        /** All tokens generated so far across every call in this session (prompt excluded). */
+        public int[] getAllTokens() {
+            return state.generatedSoFar == null ? new int[0]
+                    : state.generatedSoFar.stream().mapToInt(Integer::intValue).toArray();
+        }
+        /** The clean cumulative text of the whole session (decoded from all tokens at once). */
+        public String getFullText() { return pipeline.tokenizer.decode(getAllTokens(), false); }
+        /** Cooperatively stop a running {@link #continueToCompletion(int)} loop at the next boundary. */
+        public void cancel() { state.cancelRequested = true; }
+
+        private void checkThread() {
+            if (Thread.currentThread().getId() != state.ownerThreadId) {
+                throw new IllegalStateException("GenerationSession is thread-confined: created on thread "
+                        + state.ownerThreadId + " but used on thread " + Thread.currentThread().getId()
+                        + ". Drive the session from its creating thread.");
+            }
+        }
+
+        /**
+         * Generate up to {@code maxNewTokens} tokens. The FIRST call runs the initial decode (prefill and
+         * warmup were done at {@code startSession}); subsequent calls continue from the retained KV cache
+         * (equivalent to {@link #continueGeneration(int)}).
+         */
+        public GenerationResult generate(int maxNewTokens) {
+            checkThread();
+            if (state.closed) throw new IllegalStateException("GenerationSession is closed.");
+            if (!firstGenerateDone) {
+                firstGenerateDone = true;
+                if (state.terminalResult != null) {
+                    state.eosReached = true;
+                    return state.terminalResult;   // prefill produced EOS / no plan handle
+                }
+                return pipeline.decodeInSession(state, maxNewTokens, false);
+            }
+            return continueGeneration(maxNewTokens);
+        }
+
+        /**
+         * Continue decoding from the retained KV cache; up to {@code maxNewTokens} more tokens. The
+         * returned result's {@code tokenIds} are only this call's new tokens (concatenate across calls to
+         * reconstruct a single-shot sequence). Throws if the session has reached EOS.
+         */
+        public GenerationResult continueGeneration(int maxNewTokens) {
+            checkThread();
+            if (state.closed) throw new IllegalStateException("GenerationSession is closed.");
+            if (!firstGenerateDone) {
+                throw new IllegalStateException("Call generate() first to run the initial decode.");
+            }
+            if (state.eosReached) {
+                throw new IllegalStateException("Session reached EOS/stop; cannot continue past end-of-sequence.");
+            }
+            return pipeline.decodeInSession(state, maxNewTokens, true);
+        }
+
+        /**
+         * Continue in fixed-size steps until EOS, buffer-full, degenerate repetition, or {@link #cancel()}.
+         * Returns a single combined result whose {@code tokenIds} are all tokens produced by this loop's
+         * continuation calls. Uses the pipeline's configured {@link RepetitionGuard}.
+         */
+        public GenerationResult continueToCompletion(int stepTokens) {
+            return continueToCompletion(stepTokens, pipeline.config.getRepetitionGuard());
+        }
+
+        /** As {@link #continueToCompletion(int)} but with an explicit degenerate-loop guard. */
+        public GenerationResult continueToCompletion(int stepTokens, RepetitionGuard guard) {
+            checkThread();
+            if (state.closed) throw new IllegalStateException("GenerationSession is closed.");
+            if (stepTokens <= 0) stepTokens = 1;
+            List<Integer> loopTokens = new ArrayList<>();
+            long start = System.currentTimeMillis();
+            while (!state.eosReached && !state.cancelRequested && getRemainingCapacity() > 0) {
+                GenerationResult step = continueGeneration(stepTokens);
+                for (int t : step.getTokenIds()) loopTokens.add(t);
+                if (step.getTokenIds().length == 0) break;   // nothing produced (capacity exhausted)
+                if (guard != null && guard.isDegenerate(state.generatedSoFar)) {
+                    return buildLoopResult(loopTokens, GenerationResult.FinishReason.REPETITION, start);
+                }
+            }
+            GenerationResult.FinishReason reason =
+                    state.eosReached ? GenerationResult.FinishReason.EOS
+                    : state.cancelRequested ? GenerationResult.FinishReason.CANCELLED
+                    : GenerationResult.FinishReason.MAX_TOKENS;
+            return buildLoopResult(loopTokens, reason, start);
+        }
+
+        private GenerationResult buildLoopResult(List<Integer> loopTokens,
+                                                 GenerationResult.FinishReason reason, long start) {
+            int[] ids = loopTokens.stream().mapToInt(Integer::intValue).toArray();
+            long timeMs = System.currentTimeMillis() - start;
             return GenerationResult.builder()
-                    .text(text).tokenIds(tokenIds)
-                    .generatedTokenCount(tokenIds.length).promptTokenCount(prefillSeqLen)
-                    .totalTokenCount(prefillSeqLen + tokenIds.length)
-                    .finishReason(hitEos ? GenerationResult.FinishReason.EOS : GenerationResult.FinishReason.MAX_TOKENS)
+                    .text(pipeline.tokenizer.decode(ids, false))
+                    .tokenIds(ids).generatedTokenCount(ids.length)
+                    .promptTokenCount(state.promptTokenCount)
+                    .totalTokenCount(state.promptTokenCount + state.generatedSoFar.size())
+                    .finishReason(reason)
                     .generationTimeMs(timeMs)
-                    .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
-                    .steadyStateTokensPerSecond(0)
+                    .tokensPerSecond(timeMs > 0 ? (ids.length * 1000.0 / timeMs) : 0)
+                    .sessionId(state.sessionId)
                     .build();
+        }
+
+        /**
+         * Feed {@code tokens} into the model WITHOUT sampling (a "continue:" nudge), writing their K/V and
+         * advancing the cache position so the next {@link #continueGeneration(int)} resumes after them.
+         * Must be called after the first {@link #generate(int)}.
+         */
+        public void append(int[] tokens) {
+            checkThread();
+            if (state.closed) throw new IllegalStateException("GenerationSession is closed.");
+            if (!firstGenerateDone) throw new IllegalStateException("Call generate() before append().");
+            if (state.eosReached) throw new IllegalStateException("Session reached EOS; cannot append.");
+            pipeline.appendInSession(state, tokens);
+        }
+
+        /**
+         * Total byte count of the static (float) KV buffers retained for this session.
+         * Returns 0 if no buffers have been allocated yet.
+         */
+        public long getStaticKvTotalBytes() {
+            if (state.staticKvBuffers == null) return 0L;
+            long total = 0L;
+            for (INDArray a : state.staticKvBuffers.values()) {
+                if (a != null && !a.wasClosed()) total += a.length() * a.dataType().width();
+            }
+            return total;
+        }
+
+        /**
+         * Total byte count of the INT8/FP8-compressed quantized KV buffers for this session.
+         * Returns 0 when {@code kvCacheStrategy != QUANTIZED} or before prefill completes.
+         */
+        public long getQuantizedKvTotalBytes() {
+            if (state.quantizedKvBuffers == null) return 0L;
+            long total = 0L;
+            for (INDArray a : state.quantizedKvBuffers.values()) {
+                if (a != null && !a.wasClosed()) total += a.length() * a.dataType().width();
+            }
+            return total;
+        }
+
+        /**
+         * The KV quantization format active for this session (0 = not quantized, 1 = INT8, etc.).
+         */
+        public int getKvQuantFormat() {
+            return state.kvQuantFormat;
+        }
+
+        /**
+         * Whether this session is running with V2 live-quantized KV (float buffers freed, INT8 is live).
+         * Returns true when {@link KvCacheStrategy#QUANTIZED} is active with {@code kvQuantFormat > 0}
+         * and the float {@code staticKvBuffers} have been freed after prefill.
+         * ADR 0107: when true, {@code getStaticKvTotalBytes()} returns 0 and the live KV footprint
+         * is measurably smaller than an equivalent STATIC session.
+         */
+        public boolean isQuantizedV2() {
+            return state.isQuantizedV2;
+        }
+
+        /**
+         * Total byte count of the KV scale buffers (float32 per-token-per-head scales for V2 INT8).
+         * Returns 0 when not in V2 mode.
+         */
+        public long getKvScaleTotalBytes() {
+            if (state.kvScaleBuffers == null) return 0L;
+            long total = 0L;
+            for (INDArray a : state.kvScaleBuffers.values()) {
+                if (a != null && !a.wasClosed()) total += a.length() * a.dataType().width();
+            }
+            return total;
+        }
+
+        /** Release all retained native buffers. Idempotent. Must be called on the creating thread. */
+        @Override
+        public void close() {
+            checkThread();
+            pipeline.closeSession(this, state);
         }
     }
 
@@ -1442,12 +3729,36 @@ public class GenerationPipeline implements AutoCloseable {
             return token;
         }
 
-        // Apply repetition penalty
-        if (sampling.hasRepetitionPenalty() && generatedSoFar != null && !generatedSoFar.isEmpty()) {
+        // Apply seen-token penalties
+        if (sampling.hasTokenPenalties() && generatedSoFar != null && !generatedSoFar.isEmpty()) {
             int[] prev = generatedSoFar.stream().mapToInt(Integer::intValue).toArray();
-            INDArray penalized = SamplerUtils.applyRepetitionPenalty(slice, prev, sampling.getRepetitionPenalty());
+            INDArray penalized = SamplerUtils.applyTokenPenalties(slice, prev,
+                    sampling.getRepetitionPenalty(), sampling.getFrequencyPenalty(), sampling.getPresencePenalty());
             if (penalized != slice) slice.close();
             slice = penalized;
+        }
+
+        // Apply min-p filtering
+        if (sampling.hasMinP()) {
+            INDArray filtered = SamplerUtils.minPFilter(slice, sampling.getMinP());
+            if (filtered != slice) slice.close();
+            slice = filtered;
+        }
+
+        // Apply typical-p filtering (same placement as the native token_sample pipeline:
+        // after penalties and min-p, before temperature)
+        if (sampling.hasTypicalP()) {
+            INDArray filtered = SamplerUtils.typicalPFilter(slice, sampling.getTypicalP());
+            if (filtered != slice) slice.close();
+            slice = filtered;
+        }
+
+        // Apply XTC (exclude top choices) filtering
+        if (sampling.hasXtc()) {
+            INDArray filtered = SamplerUtils.xtcFilter(slice, sampling.getXtcProbability(),
+                    sampling.getXtcThreshold(), rng);
+            if (filtered != slice) slice.close();
+            slice = filtered;
         }
 
         // Apply temperature
@@ -1877,9 +4188,12 @@ public class GenerationPipeline implements AutoCloseable {
             stopTokenIds.addAll(config.getAdditionalStopTokenIds());
         }
 
-        // Resolve sampling config
-        SamplingConfig sampling = config.getSamplingConfig() != null
-                ? config.getSamplingConfig() : SamplingConfig.defaultConfig();
+        // Resolve decode policy and sampling config. Greedy/sample use the current scalar native op;
+        // speculative/contrastive/beam require the ADR 0106 masked multi-position native substrate.
+        SamplingConfig sampling = activeDecodeSampling();
+        DecodePolicy decodePolicy = activeDecodePolicy();
+        requireNativeSubstrateAvailable(decodePolicy, sampling);
+        Random rng = sampling.getSeed() != null ? new Random(sampling.getSeed()) : new Random();
 
         // Discover KV output names from decoder
         ModelIOConfig.KVCacheNames kvNames = ioConfig.getKvCacheNames();
@@ -2073,7 +4387,7 @@ public class GenerationPipeline implements AutoCloseable {
         }
         Nd4j.getExecutioner().commit();
 
-        // Sample first token from prefill logits — Java-side argmax.
+        // Sample first token from prefill logits using the active SamplingConfig.
         // When fixedBuffers is active, sample from actualPrefillLen-1, not the end.
         INDArray prefillLogits = prefillOutputs.get(ioConfig.getLogitsOutputName());
         // Sample the LAST-token logits. The decoder may export full/padded logits
@@ -2082,24 +4396,14 @@ public class GenerationPipeline implements AutoCloseable {
         // exports — the only valid index is 0). Clamp to the actual logits seq dim: without it,
         // point(actualPrefillLen-1) on a size-1 dim is an UNCHECKED OOB read (BaseNDArray.get
         // has no bounds check) → reads position-0-adjacent GPU memory → garbage first-token
-        // logits → argmax = token 11126 "User", making the model ignore the image.
+        // logits → token 11126 "User", making the model ignore the image.
         int logitsSamplePos = Math.min(actualPrefillLen - 1, (int) prefillLogits.shape()[1] - 1);
-        INDArray firstLogitsSlice = prefillLogits.get(NDArrayIndex.point(0),
-                NDArrayIndex.point(logitsSamplePos),
-                NDArrayIndex.all()).dup();
-        float[] firstLogitValues = firstLogitsSlice.data().asFloat();
-        int firstTokenId = 0;
-        float firstMaxVal = firstLogitValues[0];
-        for (int j = 1; j < firstLogitValues.length; j++) {
-            if (firstLogitValues[j] > firstMaxVal) {
-                firstMaxVal = firstLogitValues[j];
-                firstTokenId = j;
-            }
-        }
-        firstLogitsSlice.close();
-        log.info("[Native] Prefill firstTokenId={} maxVal={} logitsShape={} samplePos={} (actualPrefillLen={})",
-                firstTokenId, firstMaxVal,
-                Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen);
+        List<Integer> warmupGeneratedTokens = new ArrayList<>();
+        suppressStopsUnderFloor(prefillLogits, logitsSamplePos, sampling, warmupGeneratedTokens.size(), stopTokenIds);
+        int firstTokenId = sampleToken(prefillLogits, logitsSamplePos, sampling, warmupGeneratedTokens, rng);
+        warmupGeneratedTokens.add(firstTokenId);
+        log.info("[Native] Prefill firstTokenId={} logitsShape={} samplePos={} (actualPrefillLen={})",
+                firstTokenId, Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen);
         prefillLogits.close();
 
         // ══════════════════════════════════════════════════════════════════════
@@ -2296,23 +4600,13 @@ public class GenerationPipeline implements AutoCloseable {
         Map<String, INDArray> decodeOutputs = decoder.output(
                 decodeInputMap, allOutputNames.toArray(new String[0]));
 
-        // Sample second token — Java-side argmax
+        // Sample second token using the active SamplingConfig.
         INDArray decodeLogits = decodeOutputs.get(ioConfig.getLogitsOutputName());
-        INDArray secondLogitsSlice = decodeLogits.get(NDArrayIndex.point(0),
-                NDArrayIndex.point(0),
-                NDArrayIndex.all()).dup();
-        float[] secondLogitValues = secondLogitsSlice.data().asFloat();
-        int secondTokenId = 0;
-        float secondMaxVal = secondLogitValues[0];
-        for (int j = 1; j < secondLogitValues.length; j++) {
-            if (secondLogitValues[j] > secondMaxVal) {
-                secondMaxVal = secondLogitValues[j];
-                secondTokenId = j;
-            }
+        suppressStopsUnderFloor(decodeLogits, 0, sampling, warmupGeneratedTokens.size(), stopTokenIds);
+        int secondTokenId = sampleToken(decodeLogits, 0, sampling, warmupGeneratedTokens, rng);
+        if (maxNewTokens >= 2 && !stopTokenIds.contains(firstTokenId)) {
+            warmupGeneratedTokens.add(secondTokenId);
         }
-
-
-        secondLogitsSlice.close();
         decodeLogits.close();
 
         // Scatter decode step KV into static buffers (position = prefillSeqLen)
@@ -2536,6 +4830,7 @@ public class GenerationPipeline implements AutoCloseable {
                     sampling.isGreedy() ? 0.0 : sampling.getTopP(),
                     sampling.getRepetitionPenalty(),
                     stopTokenIds);
+            applyNativePolicy(op, decodePolicy, sampling, allTokens.size());
 
             INDArray[] results = Nd4j.getExecutioner().exec(op);
             INDArray nativeTokenIds = results[0];
@@ -2714,6 +5009,18 @@ public class GenerationPipeline implements AutoCloseable {
     /**
      * Pad a KV cache tensor from [batch, heads, seqLen, dim] to [batch, heads, maxKvLen, dim].
      */
+    /**
+     * Replace an entry in a quantized-buffer map. When an existing buffer occupies the slot,
+     * close it first to release native memory, then insert the new array.
+     * Used in the QUANTIZED KV path (STEP 2) to update the INT8 / scale archives.
+     */
+    private static void replaceQuantizedBuffer(Map<String, INDArray> map, String key, INDArray newBuf) {
+        INDArray old = map.put(key, newBuf);
+        if (old != null && !old.wasClosed()) {
+            try { old.close(); } catch (Exception e) { /* best-effort close */ }
+        }
+    }
+
     private static INDArray padKvToStaticSize(INDArray presentKv, long maxKvLen) {
         long[] shape = presentKv.shape();
         long batch = shape[0], heads = shape[1], seqLen = shape[2], dim = shape[3];
@@ -2775,26 +5082,7 @@ public class GenerationPipeline implements AutoCloseable {
      */
     public void generateStream(String prompt, int maxNewTokens, Consumer<String> tokenCallback,
                                DecodeOptions options) {
-        // Tokenize and embed
-        String effectivePrompt = prompt;
-        boolean addSpecialTokens = true;
-        boolean promptAlreadyFormatted = prompt.contains("<|im_start|>") || prompt.contains("[INST]");
-        String chatTemplateText = resolveChatTemplate();
-        if (chatTemplateText != null && !chatTemplateText.isEmpty() && !promptAlreadyFormatted) {
-            List<ChatTemplate.Message> messages = new ArrayList<>();
-            messages.add(ChatTemplate.Message.user(prompt));
-            effectivePrompt = new ChatTemplate(chatTemplateText, tokenizer.getBosToken(), tokenizer.getEosToken())
-                    .apply(messages, true);
-            addSpecialTokens = false;
-        } else if (promptAlreadyFormatted) {
-            addSpecialTokens = false;
-        }
-
-        int[] promptTokenIds = tokenizer.encode(effectivePrompt, addSpecialTokens).getIds();
-        if (promptTokenIds == null || promptTokenIds.length == 0) {
-            throw new IllegalArgumentException("Prompt encoding produced no tokens");
-        }
-
+        int[] promptTokenIds = encodePromptToIds(prompt);
         INDArray embeddings = embedTokens(promptTokenIds);
 
         // Run the full native decode, then stream the result token by token.
@@ -2820,6 +5108,55 @@ public class GenerationPipeline implements AutoCloseable {
      */
     @Override
     public void close() {
+        // Close any open continuation session first — it holds retained KV buffers and a plan handle
+        // into the decoder's native plan; freeing the decoder first would leave those dangling. Free the
+        // retained state directly (bypassing the session's thread-affinity check) since close() may run on
+        // a shutdown thread.
+        GenerationSession openSession = activeSession.getAndSet(null);
+        if (openSession != null) {
+            try {
+                openSession.state.close();
+            } catch (Exception e) {
+                log.warn("Error closing active GenerationSession state: {}", e.getMessage());
+            }
+        }
+        // Free any retained one-shot fixed-buffer decode state (the forward-fix cache).
+        InGraphKvState cachedOneShot = cachedFixedBufferState;
+        cachedFixedBufferState = null;
+        if (cachedOneShot != null) {
+            try {
+                cachedOneShot.close();
+            } catch (Exception e) {
+                log.warn("Error closing cached fixed-buffer state: {}", e.getMessage());
+            }
+        }
+        // ADR 0107 V2: restore the KV placeholders' original dtype/shape (mutated to INT8
+        // row-inline for quantised decode). The decoder SameDiff may be shared with later
+        // pipelines using a non-quantised strategy — without the restore they would allocate
+        // INT8 KV buffers and take the quantised attention path with a float-sized cache.
+        if (kvPlaceholderOriginalDtypes != null && decoder != null) {
+            try {
+                Map<String, DataType> restore = new LinkedHashMap<>();
+                for (Map.Entry<String, DataType> e : kvPlaceholderOriginalDtypes.entrySet()) {
+                    if (decoder.hasVariable(e.getKey())
+                            && decoder.getVariable(e.getKey()).dataType() != e.getValue()) {
+                        restore.put(e.getKey(), e.getValue());
+                    }
+                }
+                if (!restore.isEmpty()) decoder.convertDataTypes(restore);
+                for (Map.Entry<String, long[]> e : kvPlaceholderOriginalShapes.entrySet()) {
+                    if (e.getValue() != null && decoder.hasVariable(e.getKey())) {
+                        decoder.getVariable(e.getKey()).setShape(e.getValue());
+                    }
+                }
+                log.info("[GGUF-KV] Restored {} KV cache placeholders to original dtype/shape on close",
+                        kvPlaceholderOriginalDtypes.size());
+            } catch (Exception e) {
+                log.warn("Error restoring KV placeholder dtypes on close: {}", e.getMessage());
+            }
+            kvPlaceholderOriginalDtypes = null;
+            kvPlaceholderOriginalShapes = null;
+        }
         // Order matters: close() first, THEN freeModelArrays(). The native DSP plan
         // teardown inside close() (releaseGpuIntermediates) walks slot NDArrays that
         // reference the model's DataBuffers — freeing those buffers first leaves the
@@ -2848,6 +5185,14 @@ public class GenerationPipeline implements AutoCloseable {
                 SameDiffMemoryUtils.freeModelArrays(draftDecoder);
             } catch (Exception e) {
                 log.warn("Error closing draftDecoder: {}", e.getMessage());
+            }
+        }
+        // Free the cross-request KV prefix block pool (device buffers).
+        if (prefixBlockPool != null) {
+            try {
+                prefixBlockPool.close();
+            } catch (Exception e) {
+                log.warn("Error closing prefix block pool: {}", e.getMessage());
             }
         }
     }

@@ -23,6 +23,7 @@
 
 #include <system/op_boilerplate.h>
 #include <array/NDArray.h>
+#include <ops/declarable/helpers/token_sample.h>
 
 #include <vector>
 
@@ -87,6 +88,56 @@ struct AutoregressiveDecodeConfig {
     int* convStateExtIndices = nullptr;    // ext input indices for past_conv_state.{layer}
     int* convStateOutputIndices = nullptr; // plan output indices for conv_state_out_{layer}
     int numConvStatePairs = 0;
+
+    // ─── ADR 0107 V2: Quantised KV cache side-channel ────────────────────────
+    //
+    // When kvQuantFormat > 0 (INT8_KV mode), the KV buffers in planExternalInputs
+    // (at indices kvInputExtIndices[i]) are INT8 arrays. The corresponding float
+    // per-token-per-head scale arrays are passed here as a side channel — they are
+    // NOT registered as plan ext inputs (the SameDiff model graph has no scale vars),
+    // but are passed directly to the attention helper (kvInPlaceWriteQuantisedBSHD /
+    // fusedGQADecodeQuantisedCuda) by the native decode op.
+    //
+    // Layout: kvScaleBuffers[0..numKvPairs-1] = key scales per layer
+    //         kvScaleBuffers[numKvPairs..2*numKvPairs-1] = value scales per layer
+    // Shape of each: [batch, maxKvLen, kvHeads] float32.
+    // Null when kvQuantFormat == 0 (standard float KV path).
+    NDArray** kvScaleBuffers = nullptr;    // 2*numKvPairs scale arrays (null = float KV)
+    int kvQuantFormat = 0;                 // 0=float, 1=INT8_KV, 5=FP16K_INT8V
+
+    // ─── ADR 0106 Phase 1: fixed W_max window substrate ──────────────────────
+    //
+    // When activeWindow > 1, the per-step forward runs over a fixed [1,1,W_max,past+W_max]
+    // masked attention window and a fixed [1,W_max] position grid. Both tensors are
+    // pre-allocated at W_max size and never reallocated — device addresses stay stable
+    // for CUDA-graph capture (ADR 0105 pointer-stability contract). Positions are
+    // activated via mask bits, not by reallocation or reshape.
+    //
+    // When activeWindow == 1 (the default), windowGridMask and windowPositionGrid are
+    // nullptr and the existing single-token path runs unchanged (bit-identical).
+    //
+    // Layout of windowGridMask: [1, 1, W_max, past + W_max] FLOAT
+    //   Row w (query position w): mask[past_len + w] = 0 (attend to self)
+    //                             mask[past_len + j] = MASK_FILL for j != w  (causal)
+    //                             mask[0..past_len-1] = 0  (attend to all past KV)
+    //   Inactive rows (w >= activeWindow): mask[*] = MASK_FILL (all masked)
+    //
+    // Layout of windowPositionGrid: [1, W_max] INT64
+    //   grid[w] = currentPosition + w  for w < activeWindow
+    //   grid[w] = currentPosition      for w >= activeWindow (doesn't matter; masked)
+    //
+    // The decode loop selects the token at position 0 (the first window slot) for
+    // the next input — exactly the greedy W=1 behaviour. Phase 2 (speculative) will
+    // inspect all W position-logits and apply its accept/rollback policy.
+
+    NDArray* windowGridMask = nullptr;       // [1,1,W_max,past+W_max] FLOAT — null when W=1
+    NDArray* windowPositionGrid = nullptr;   // [1,W_max] INT64           — null when W=1
+    int windowMax = 1;                       // maximum number of candidate window positions
+    int activeWindow = 1;                    // active positions this step (<=windowMax)
+
+    // Unified token-selection policy. Scalar greedy/sample are supported today; wider policies are
+    // parsed and validated by tokenSamplePolicy so they cannot silently run as greedy.
+    TokenSampleConfig sampleConfig;
 };
 
 /**

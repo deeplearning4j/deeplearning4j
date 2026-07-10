@@ -113,6 +113,16 @@ public abstract class RLAlignmentConfig implements Serializable {
     protected String inputVariable = "input";
 
     /**
+     * Whether the policy's logit variable is 2D [batch, vocab] — a single distribution
+     * per example (bandit-style / classification policies) — rather than the LM-style
+     * 3D [batch, seq, vocab]. Trainers cannot reliably infer the rank of an op-produced
+     * variable at graph-build time (its static shape is unknown), so 2D policies must
+     * declare it here. Default: false (LM-style 3D logits).
+     */
+    @lombok.Builder.Default
+    protected boolean logits2D = false;
+
+    /**
      * Learning rate for the optimizer.
      * Default: 5e-5
      */

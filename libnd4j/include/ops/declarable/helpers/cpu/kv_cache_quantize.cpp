@@ -34,19 +34,24 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////////
 // INT8 quantization: scale = max(abs(row)) / 127.0
 //////////////////////////////////////////////////////////////////////////////
+// ADR 0107 V2 ROW-INLINE: when `scales` is null the output is a row-inline tensor whose rows are
+// rowLen+4 int8 elements — rowLen quantized values followed by that row's float32 scale (inside
+// the logical tensor, so staging/copies preserve it). Non-null scales = legacy separate mode.
 template <typename T>
 static void kvCacheQuantizeInt8Cpu_(NDArray* input, NDArray* quantized, NDArray* scales) {
     const LongType numRows = input->lengthOf() / input->sizeAt(-1);
     const LongType rowLen = input->sizeAt(-1);
+    const bool inlineScale = (scales == nullptr);
+    const LongType outRowPitch = inlineScale ? rowLen + 4 : rowLen;
 
     const T* x = input->bufferAsT<T>();
     int8_t* q = reinterpret_cast<int8_t*>(quantized->buffer());
-    T* s = scales->bufferAsT<T>();
+    T* s = inlineScale ? nullptr : scales->bufferAsT<T>();
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto row = start; row < stop; ++row) {
             const T* xRow = x + row * rowLen;
-            int8_t* qRow = q + row * rowLen;
+            int8_t* qRow = q + row * outRowPitch;
 
             // Pass 1: find absmax
             T absMax = static_cast<T>(0);
@@ -58,7 +63,11 @@ static void kvCacheQuantizeInt8Cpu_(NDArray* input, NDArray* quantized, NDArray*
             // Compute scale
             T scale = absMax / static_cast<T>(127);
             if (scale == static_cast<T>(0)) scale = static_cast<T>(1);
-            s[row] = scale;
+            if (inlineScale) {
+                *reinterpret_cast<float*>(qRow + rowLen) = static_cast<float>(scale);
+            } else {
+                s[row] = scale;
+            }
 
             T invScale = static_cast<T>(1) / scale;
 
@@ -218,6 +227,12 @@ void kvCacheQuantize(NDArray* input, NDArray* quantized, NDArray* scales, int qu
                      LaunchContext* /*context*/) {
     auto format = static_cast<KVQuantFormat>(quantFormat);
 
+    // ADR 0107 V2 ROW-INLINE: null scales = row-inline mode (INT8 only) — the per-row float32
+    // scale is written inside each rowLen+4 output row by kvCacheQuantizeInt8Cpu_.
+    if (scales == nullptr && format != KVQuantFormat::INT8) {
+        THROW_EXCEPTION("kvCacheQuantize: row-inline scale mode supports INT8 only");
+    }
+
     switch (format) {
         case KVQuantFormat::INT8:
             BUILD_SINGLE_SELECTOR(input->dataType(), kvCacheQuantizeInt8Cpu_, (input, quantized, scales), SD_FLOAT_TYPES);
@@ -235,8 +250,10 @@ void kvCacheQuantize(NDArray* input, NDArray* quantized, NDArray* scales, int qu
 
     quantized->tickWriteHost();
     quantized->syncToDevice();
-    scales->tickWriteHost();
-    scales->syncToDevice();
+    if (scales != nullptr) {
+        scales->tickWriteHost();
+        scales->syncToDevice();
+    }
 }
 
 void kvCacheDequantize(NDArray* quantized, NDArray* scales, NDArray* output, int quantFormat,
@@ -262,7 +279,229 @@ void kvCacheDequantize(NDArray* quantized, NDArray* scales, NDArray* output, int
     output->syncToDevice();
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// V2: kvInPlaceWriteQuantisedBSHD (CPU)
+// Append one decode-step float K or V tensor into a pre-allocated INT8 cache
+// buffer and write the per-token-per-head scale.
+//
+// Layout (INT8_KV):
+//   newKv      : float  [batch, 1,        kvHeads, headDim]
+//   quantCache : INT8   [batch, maxKvLen,  kvHeads, headDim]
+//   scaleCache : float  [batch, maxKvLen,  kvHeads]
+//   cachePosPtr: pointer to int64 write position (host ptr on CPU)
+//
+// Per-row (per KV head) absmax INT8 quantize + scatter into quantCache + scaleCache.
+//////////////////////////////////////////////////////////////////////////////
+void kvInPlaceWriteQuantisedBSHD(
+    NDArray* quantCache,
+    NDArray* scaleCache,
+    NDArray* newKv,
+    const void* cachePosPtr,
+    LaunchContext* /*context*/) {
+
+    // Read the cache position from the host pointer
+    const LongType cachePos = *reinterpret_cast<const LongType*>(cachePosPtr);
+
+    // newKv shape: [batch, 1, kvHeads, headDim]
+    const LongType batch    = newKv->sizeAt(0);
+    const LongType kvHeads  = newKv->sizeAt(2);
+    const LongType headDim  = newKv->sizeAt(3);
+    const LongType maxKvLen = quantCache->sizeAt(1);
+
+    if (cachePos < 0 || cachePos >= maxKvLen) return;
+
+    // ADR 0107 V2 ROW-INLINE: null scaleCache → cache last dim is headDim+4 and each row's
+    // float32 scale sits at qRow+headDim (inside the logical tensor). Non-null = legacy separate.
+    const bool inlineScale = (scaleCache == nullptr);
+    const LongType rowPitch = quantCache->sizeAt(3);
+    if (inlineScale && rowPitch != headDim + 4) {
+        THROW_EXCEPTION("kvInPlaceWriteQuantisedBSHD: row-inline cache last dim must equal headDim+4");
+    }
+    if (!inlineScale && rowPitch != headDim) {
+        THROW_EXCEPTION("kvInPlaceWriteQuantisedBSHD: separate-scale cache last dim must equal headDim");
+    }
+
+    const float* srcBuf  = newKv->bufferAsT<float>();
+    int8_t* qBuf         = reinterpret_cast<int8_t*>(quantCache->buffer());
+    float* scaleBuf      = inlineScale ? nullptr : scaleCache->bufferAsT<float>();
+
+    // Strides for quantCache [batch, maxKvLen, kvHeads, rowPitch]
+    const LongType qcStride0 = maxKvLen * kvHeads * rowPitch;
+    const LongType qcStride1 = kvHeads * rowPitch;
+    const LongType qcStride2 = rowPitch;
+
+    // Strides for scaleCache [batch, maxKvLen, kvHeads]
+    const LongType scStride0 = maxKvLen * kvHeads;
+    const LongType scStride1 = kvHeads;
+
+    // Strides for newKv [batch, 1, kvHeads, headDim] — contiguous
+    const LongType nkStride0 = kvHeads * headDim;
+    const LongType nkStride2 = headDim;
+
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto bh = start; bh < stop; ++bh) {
+            const LongType b  = bh / kvHeads;
+            const LongType h  = bh % kvHeads;
+
+            const float* srcRow = srcBuf + b * nkStride0 + h * nkStride2;
+            int8_t* qRow = qBuf + b * qcStride0 + cachePos * qcStride1 + h * qcStride2;
+            float* sPtr  = inlineScale
+                ? reinterpret_cast<float*>(qRow + headDim)
+                : scaleBuf + b * scStride0 + cachePos * scStride1 + h;
+
+            // Pass 1: absmax
+            float absMax = 0.0f;
+            for (LongType d = 0; d < headDim; ++d) {
+                float v = srcRow[d];
+                float av = v < 0.0f ? -v : v;
+                if (av > absMax) absMax = av;
+            }
+
+            float scale = absMax / 127.0f;
+            if (scale == 0.0f) scale = 1.0f;
+            *sPtr = scale;
+            float invScale = 1.0f / scale;
+
+            // Pass 2: quantize + scatter
+            for (LongType d = 0; d < headDim; ++d) {
+                float v = srcRow[d] * invScale;
+                if (v > 127.0f) v = 127.0f;
+                if (v < -127.0f) v = -127.0f;
+                qRow[d] = static_cast<int8_t>(v + (v >= 0.0f ? 0.5f : -0.5f));
+            }
+        }
+    };
+    samediff::Threads::parallel_tad(func, 0, batch * kvHeads);
+
+    quantCache->tickWriteHost();
+    if (scaleCache != nullptr) scaleCache->tickWriteHost();
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// V2: fusedGQADecodeQuantisedCpu — CPU reference GQA decode with INT8 K/V
+// Dequantises on-the-fly: float(int8) * scale, then standard Q@K^T+softmax+V.
+// Used as correctness reference; not the performance path (no SIMD optimisation).
+//////////////////////////////////////////////////////////////////////////////
+void fusedGQADecodeQuantisedCpu(
+    NDArray* query,
+    NDArray* quantKeyCache,
+    NDArray* keyScaleCache,
+    NDArray* quantValCache,
+    NDArray* valScaleCache,
+    NDArray* output,
+    double scale,
+    NDArray* attentionBias,
+    LaunchContext* /*context*/) {
+
+    // query   : float [batch, 1, qHeads, headDim]
+    // quantKC : INT8  [batch, seqKV, kvHeads, headDim]
+    // keyScale: float [batch, seqKV, kvHeads]
+    // quantVC : INT8  [batch, seqKV, kvHeads, headDim]
+    // valScale: float [batch, seqKV, kvHeads]
+    // output  : float [batch, 1, qHeads, headDim]
+
+    const LongType batch       = query->sizeAt(0);
+    const LongType qHeads      = query->sizeAt(2);
+    const LongType headDim     = query->sizeAt(3);
+    const LongType seqKV       = quantKeyCache->sizeAt(1);
+    const LongType kvHeads     = quantKeyCache->sizeAt(2);
+    const LongType headsPerKvH = qHeads / kvHeads;
+
+    // ADR 0107 V2 ROW-INLINE: null scale caches → the INT8 caches are [batch,seqKV,kvHeads,headDim+4]
+    // with each row's float32 scale at row+headDim (inside the logical tensor). Non-null = legacy.
+    const bool inlineScales = (keyScaleCache == nullptr);
+    const LongType rowPitch = quantKeyCache->sizeAt(3);
+    if (inlineScales && rowPitch != headDim + 4) {
+        THROW_EXCEPTION("fusedGQADecodeQuantisedCpu: row-inline cache last dim must equal headDim+4");
+    }
+
+    const float*  qBuf    = query->bufferAsT<float>();
+    const int8_t* kBuf    = reinterpret_cast<const int8_t*>(quantKeyCache->buffer());
+    const float*  kScale  = inlineScales ? nullptr : keyScaleCache->bufferAsT<float>();
+    const int8_t* vBuf    = reinterpret_cast<const int8_t*>(quantValCache->buffer());
+    const float*  vScale  = inlineScales ? nullptr : valScaleCache->bufferAsT<float>();
+    float*        oBuf    = output->bufferAsT<float>();
+    const float*  biasBuf = (attentionBias != nullptr && !attentionBias->isEmpty())
+                            ? attentionBias->bufferAsT<float>() : nullptr;
+
+    // strides (K/V rows are rowPitch elements apart; values occupy [0, headDim) of each row)
+    const LongType qS0 = qHeads * headDim,  qS2 = headDim;
+    const LongType kS0 = seqKV * kvHeads * rowPitch, kS1 = kvHeads * rowPitch, kS2 = rowPitch;
+    const LongType ksS0 = seqKV * kvHeads, ksS1 = kvHeads;
+    const LongType oS0 = qHeads * headDim,  oS2 = headDim;
+
+    // bias strides [batch, 1_or_qH, 1_or_seqKV_unused, seqKV]
+    LongType biasS0 = 0, biasS1 = 0, biasS3 = 1;
+    if (biasBuf != nullptr) {
+        biasS0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+        biasS1 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
+        biasS3 = attentionBias->strideAt(attentionBias->rankOf() - 1);
+    }
+
+    // Temporary buffers for scores
+    std::vector<float> scores(seqKV);
+
+    for (LongType b = 0; b < batch; ++b) {
+        for (LongType qh = 0; qh < qHeads; ++qh) {
+            const LongType kvh = qh / headsPerKvH;
+
+            const float* Q  = qBuf + b * qS0 + qh * qS2;
+            float*       O  = oBuf + b * oS0 + qh * oS2;
+            const float* biasRow = biasBuf ? (biasBuf + b * biasS0 + qh * biasS1) : nullptr;
+
+            // Compute Q @ K^T scores
+            float maxScore = -1e38f;
+            for (LongType t = 0; t < seqKV; ++t) {
+                const int8_t* Krow  = kBuf   + b * kS0 + t * kS1 + kvh * kS2;
+                const float   ksc   = kScale != nullptr
+                    ? kScale[b * ksS0 + t * ksS1 + kvh]
+                    : *reinterpret_cast<const float*>(Krow + headDim);
+                float dot = 0.0f;
+                for (LongType d = 0; d < headDim; ++d) {
+                    float kval = static_cast<float>(Krow[d]) * ksc;
+                    dot += Q[d] * kval;
+                }
+                dot *= static_cast<float>(scale);
+                if (biasRow != nullptr) dot += biasRow[t * biasS3];
+                scores[t] = dot;
+                if (dot > maxScore) maxScore = dot;
+            }
+
+            // Softmax
+            float sumExp = 0.0f;
+            for (LongType t = 0; t < seqKV; ++t) {
+                float e = expf(scores[t] - maxScore);
+                scores[t] = e;
+                sumExp += e;
+            }
+            float invSum = sumExp > 0.0f ? 1.0f / sumExp : 0.0f;
+
+            // Weighted sum over V
+            for (LongType d = 0; d < headDim; ++d) O[d] = 0.0f;
+            for (LongType t = 0; t < seqKV; ++t) {
+                float w = scores[t] * invSum;
+                const int8_t* Vrow = vBuf   + b * kS0 + t * kS1 + kvh * kS2;
+                const float   vsc  = vScale != nullptr
+                    ? vScale[b * ksS0 + t * ksS1 + kvh]
+                    : *reinterpret_cast<const float*>(Vrow + headDim);
+                for (LongType d = 0; d < headDim; ++d) {
+                    float vval = static_cast<float>(Vrow[d]) * vsc;
+                    O[d] += w * vval;
+                }
+            }
+        }
+    }
+
+    output->tickWriteHost();
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
-#endif
+#endif  // NOT_EXCLUDED(OP_kv_cache_quantize)
+
+// NOTE: the KvScaleRegistry (setKvScaleRegistry / clearKvScaleRegistry /
+// lookupKvScaleByCache + tl_kvScaleRegistry) is defined INLINE in
+// helpers/kv_cache_quantize.h so it links into both the CPU and CUDA backends.
+// It previously lived here (CPU-only TU), which left the CUDA link with undefined
+// references from autoregressive_decode.cu / dot_product_attention_v2.cpp.

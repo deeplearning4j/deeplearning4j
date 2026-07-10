@@ -524,6 +524,55 @@ public class CudaMemoryAllocationFailoverTest extends BaseNd4jTestWithBackends {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Test: Host-resident native failover does not inflate device MemoryCounter")
+    @Timeout(60)
+    void testNativeFailoverHostResidentMemoryNotChargedToDeviceCounter(Nd4jBackend backend) {
+        assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+
+        int numDevices = getNumDevices();
+        assumeTrue(numDevices > 0, "Test requires at least 1 CUDA device");
+
+        DeviceMemoryManager.getInstance().switchDevice(0, "CudaMemoryAllocationFailoverTest", "native-counter-failover");
+        memoryManager.clearAllMemorySimulation();
+
+        INDArray warmup = Nd4j.create(DataType.FLOAT, 1024);
+        warmup.close();
+        reclaimGpuMemory();
+
+        long beforeDeviceCounter = Nd4j.getEnvironment().getDeviceCounter(0);
+        long allocationBytes = 64L * 1024 * 1024;
+        long elements = allocationBytes / 4;
+        long maxAllowedDeviceDelta = Math.max(16L * 1024 * 1024, allocationBytes / 4);
+        INDArray arr = null;
+        try {
+            Nd4j.getEnvironment().setMaxDeviceMemory(1L);
+            arr = Nd4j.createUninitialized(DataType.FLOAT, elements);
+            assertNotNull(arr, "Budget failover allocation should succeed");
+            arr.assign(1.0f);
+            assertEquals(1.0f, arr.getFloat(0), 1e-6f, "Host-resident failover buffer should be usable");
+
+            long afterDeviceCounter = Nd4j.getEnvironment().getDeviceCounter(0);
+            long deviceDelta = Math.max(0L, afterDeviceCounter - beforeDeviceCounter);
+            log.info("Native budget failover counter delta: before={} MB, after={} MB, delta={} MB, allocation={} MB",
+                    beforeDeviceCounter / (1024 * 1024), afterDeviceCounter / (1024 * 1024),
+                    deviceDelta / (1024 * 1024), allocationBytes / (1024 * 1024));
+
+            assertTrue(deviceDelta <= maxAllowedDeviceDelta,
+                    "Host-resident budget failover must not charge the full allocation to device 0 MemoryCounter. "
+                            + "delta=" + (deviceDelta / (1024 * 1024)) + " MB, allocation="
+                            + (allocationBytes / (1024 * 1024)) + " MB, allowed="
+                            + (maxAllowedDeviceDelta / (1024 * 1024)) + " MB");
+        } finally {
+            if (arr != null) {
+                arr.close();
+            }
+            Nd4j.getEnvironment().setMaxDeviceMemory(-1L);
+            reclaimGpuMemory();
+        }
+    }
+
     // =========================================================================
     // Pool Recovery and Lifecycle Tests
     // =========================================================================

@@ -130,7 +130,7 @@ public class GptOssArchitecture implements ModelArchitecture {
             outputWeight = tokenEmbedWeight;
         }
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
-        sd.mmul("logits", hidden, lmHead.permute(1, 0));
+        QuantizedLinear.matMul(sd, "logits", hidden, lmHead, weights, "output.weight", dtype);
 
         return sd;
     }
@@ -202,9 +202,9 @@ public class GptOssArchitecture implements ModelArchitecture {
         SDVariable wv = sd.var(attnPrefix + "v_proj.weight", vWeight);
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
-        SDVariable q = sd.mmul("q_" + layerIdx, input, wq.permute(1, 0));
-        SDVariable k = sd.mmul("k_" + layerIdx, input, wk.permute(1, 0));
-        SDVariable v = sd.mmul("v_" + layerIdx, input, wv.permute(1, 0));
+        SDVariable q = QuantizedLinear.matMul(sd, "q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
+        SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, prefix + ".attn_k.weight", dtype);
+        SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, prefix + ".attn_v.weight", dtype);
 
         SDVariable batchDim = sd.sizeAt(input, 0);
         SDVariable seqDim = sd.sizeAt(input, 1);
@@ -250,7 +250,7 @@ public class GptOssArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShapeVar);
 
-        return sd.mmul("attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", dtype);
     }
 
     // ========================================================================
@@ -274,13 +274,13 @@ public class GptOssArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
-        SDVariable gate = sd.mmul("gate_" + layerIdx, input, wGate.permute(1, 0));
-        SDVariable up = sd.mmul("up_" + layerIdx, input, wUp.permute(1, 0));
+        SDVariable gate = QuantizedLinear.matMul(sd, "gate_" + layerIdx, input, wGate, weights, prefix + ".ffn_gate.weight", dtype);
+        SDVariable up = QuantizedLinear.matMul(sd, "up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", dtype);
 
         SDVariable silu = sd.nn.swish(gate);
         SDVariable gated = silu.mul("swiglu_" + layerIdx, up);
 
-        return sd.mmul("down_" + layerIdx, gated, wDown.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "down_" + layerIdx, gated, wDown, weights, prefix + ".ffn_down.weight", dtype);
     }
 
     /**
@@ -318,7 +318,7 @@ public class GptOssArchitecture implements ModelArchitecture {
         SDVariable routerWeights;
         if (routerWeight != null) {
             SDVariable gate = sd.var(mlpPrefix + "gate.weight", routerWeight);
-            SDVariable routerLogits = sd.mmul("router_logits_" + layerIdx, input, gate.permute(1, 0));
+            SDVariable routerLogits = QuantizedLinear.matMul(sd, "router_logits_" + layerIdx, input, gate, weights, prefix + ".ffn_gate_inp.weight", dtype);
             routerWeights = sd.nn.softmax("router_weights_" + layerIdx, routerLogits, -1);
         } else {
             // Uniform routing fallback
@@ -364,7 +364,7 @@ public class GptOssArchitecture implements ModelArchitecture {
 
         INDArray routerWeight = weights.get(prefix + ".ffn_gate_inp.weight");
         SDVariable gate = sd.var(mlpPrefix + "gate.weight", routerWeight);
-        SDVariable routerLogits = sd.mmul("router_logits_" + layerIdx, input, gate.permute(1, 0));
+        SDVariable routerLogits = QuantizedLinear.matMul(sd, "router_logits_" + layerIdx, input, gate, weights, prefix + ".ffn_gate_inp.weight", dtype);
         SDVariable routerWeights = sd.nn.softmax("router_weights_" + layerIdx, routerLogits, -1);
 
         int numExperts = 0;
@@ -393,12 +393,12 @@ public class GptOssArchitecture implements ModelArchitecture {
             SDVariable wUp = sd.var(mlpPrefix + "expert_" + e + ".up_proj.weight", upW);
             SDVariable wDown = sd.var(mlpPrefix + "expert_" + e + ".down_proj.weight", downW);
 
-            SDVariable g = sd.mmul("gate" + nameSuffix, input, wGate.permute(1, 0));
-            SDVariable u = sd.mmul("up" + nameSuffix, input, wUp.permute(1, 0));
+            SDVariable g = QuantizedLinear.matMul(sd, "gate" + nameSuffix, input, wGate, weights, prefix + ".ffn_gate." + e + ".weight", dtype);
+            SDVariable u = QuantizedLinear.matMul(sd, "up" + nameSuffix, input, wUp, weights, prefix + ".ffn_up." + e + ".weight", dtype);
 
             SDVariable silu = sd.nn.swish(g);
             SDVariable h = silu.mul("swiglu" + nameSuffix, u);
-            SDVariable expertOut = sd.mmul("down" + nameSuffix, h, wDown.permute(1, 0));
+            SDVariable expertOut = QuantizedLinear.matMul(sd, "down" + nameSuffix, h, wDown, weights, prefix + ".ffn_down." + e + ".weight", dtype);
 
             SDVariable expertWeight = routerWeights.get(SDIndex.all(), SDIndex.all(), SDIndex.point(e));
             SDVariable weighted = expertOut.mul("weighted_e" + e + "_" + layerIdx, expertWeight);

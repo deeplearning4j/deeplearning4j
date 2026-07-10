@@ -300,7 +300,7 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
 
         // Logits: upcast to FP32 before the large vocab matmul to prevent FP16 overflow
-        SDVariable logits = fp32Mmul(sd, "lm_logits", hidden, lmHead.permute(1, 0), dtype);
+        SDVariable logits = QuantizedLinear.matMul(sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
         outputNames.add("lm_logits");
 
         sd.setOutputs(outputNames);
@@ -807,9 +807,9 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         SDVariable wv = sd.var(attnPrefix + "v_proj.weight", vWeight);
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
-        SDVariable q = fp32Mmul(sd, "llm_q_" + layerIdx, input, wq.permute(1, 0), dtype);
-        SDVariable k = fp32Mmul(sd, "llm_k_" + layerIdx, input, wk.permute(1, 0), dtype);
-        SDVariable v = fp32Mmul(sd, "llm_v_" + layerIdx, input, wv.permute(1, 0), dtype);
+        SDVariable q = QuantizedLinear.matMul(sd, "llm_q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
+        SDVariable k = QuantizedLinear.matMul(sd, "llm_k_" + layerIdx, input, wk, weights, prefix + ".attn_k.weight", dtype);
+        SDVariable v = QuantizedLinear.matMul(sd, "llm_v_" + layerIdx, input, wv, weights, prefix + ".attn_v.weight", dtype);
 
         // Optional Q/K biases (Qwen models typically don't use them, but check anyway)
         INDArray qBias = weights.get(prefix + ".attn_q.bias");
@@ -878,7 +878,7 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("llm_attn_flat_" + layerIdx, attnOut, outShape);
 
-        return fp32Mmul(sd, "llm_attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "llm_attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", dtype);
     }
 
     /**
@@ -901,13 +901,13 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         SDVariable wUp   = sd.var(mlpPrefix + "up_proj.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
-        SDVariable gate = fp32Mmul(sd, "llm_gate_" + layerIdx, input, wGate.permute(1, 0), dtype);
-        SDVariable up   = fp32Mmul(sd, "llm_up_" + layerIdx, input, wUp.permute(1, 0), dtype);
+        SDVariable gate = QuantizedLinear.matMul(sd, "llm_gate_" + layerIdx, input, wGate, weights, prefix + ".ffn_gate.weight", dtype);
+        SDVariable up   = QuantizedLinear.matMul(sd, "llm_up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", dtype);
 
         SDVariable silu   = sd.nn.swish(gate);
         SDVariable hidden = silu.mul("llm_swiglu_" + layerIdx, up);
 
-        return fp32Mmul(sd, "llm_down_" + layerIdx, hidden, wDown.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "llm_down_" + layerIdx, hidden, wDown, weights, prefix + ".ffn_down.weight", dtype);
     }
 
     // ========================================================================

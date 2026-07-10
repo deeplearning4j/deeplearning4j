@@ -39,6 +39,14 @@ namespace simdOps {
     SD_HOST_DEVICE SD_INLINE static  X merge_logic(X old, X opOutput, X* extraParams) { return MERGE_OP; }       \
     SD_HOST_DEVICE SD_INLINE static  X update_logic(X old, X opOutput, X* extraParams) { return UPDATE_OP; }     \
     SD_HOST_DEVICE SD_INLINE static  X postProcess_logic(X reduction, sd::LongType n, X* extraParams) { return POST_PROCESS; } \
+    /* Accumulator-typed logic: for X=HALF/BF16 the reduce kernels accumulate in   */ \
+    /* InterType (float) — Sum/Prod otherwise saturate the fp16 mantissa and       */ \
+    /* overflow at 65504. Bodies that hardcode X (e.g. sd_max<X>) narrow-and-widen */ \
+    /* exactly (halfs are exact floats), so Max/Min semantics are unchanged.       */ \
+    template <typename A>                                                                         \
+    SD_HOST_DEVICE SD_INLINE static A mergeInter_logic(A old, A opOutput, X* extraParams) { return MERGE_OP; } \
+    template <typename A>                                                                         \
+    SD_HOST_DEVICE SD_INLINE static A updateInter_logic(A old, A opOutput, X* extraParams) { return UPDATE_OP; } \
     static SD_HOST_DEVICE X op_simd(X d1, X* extraParams) { return op_logic(d1, extraParams); }                 \
     static SD_HOST_DEVICE X merge_simd(X old, X opOutput, X* extraParams) { return merge_logic(old, opOutput, extraParams); } \
     static SD_HOST_DEVICE X update_simd(X old, X opOutput, X* extraParams) { return update_logic(old, opOutput, extraParams); } \
@@ -74,6 +82,24 @@ namespace simdOps {
         return postProcess_logic(reduction, n, extraParams);                                    \
       else                                                                                       \
         return postProcess_simd(reduction, n, extraParams);                                     \
+    }                                                                                            \
+    /* InterType-accumulating variants used by the reduce_same kernels so that   */ \
+    /* HALF/BF16 reductions accumulate in float. For X=float/double these are    */ \
+    /* identical to the X-typed API (InterType == X).                            */ \
+    static SD_HOST_DEVICE InterType startingValueInter(const X* input) {                        \
+      return static_cast<InterType>(startingValue(input));                                      \
+    }                                                                                            \
+    static SD_HOST_DEVICE InterType opInter(X d1, X* extraParams) {                             \
+      return static_cast<InterType>(op(d1, extraParams));                                       \
+    }                                                                                            \
+    static SD_HOST_DEVICE InterType updateInter(InterType old, InterType opOutput, X* extraParams) { \
+      return updateInter_logic<InterType>(old, opOutput, extraParams);                          \
+    }                                                                                            \
+    static SD_HOST_DEVICE InterType mergeInter(InterType old, InterType opOutput, X* extraParams) { \
+      return mergeInter_logic<InterType>(old, opOutput, extraParams);                           \
+    }                                                                                            \
+    static SD_HOST_DEVICE X postProcessInter(InterType reduction, sd::LongType n, X* extraParams) { \
+      return static_cast<X>(POST_PROCESS);                                                       \
     }                                                                                            \
   };
 
@@ -620,6 +646,24 @@ namespace simdOps {
         return postProcess_logic(reduction, n, extraParams);                                   \
       else                                                                                      \
         return postProcess_simd(reduction, n, extraParams);                                    \
+    }                                                                                           \
+    /* InterType-typed API required by the reduce_same kernels. These ops' bodies  */ \
+    /* hardcode X math (abs/max/min chains), so delegate through the X-typed logic */ \
+    /* — bit-identical to the historical behavior for ASum/AMax/AMin.              */ \
+    static SD_HOST_DEVICE InterType startingValueInter(const X* input) {                        \
+      return static_cast<InterType>(startingValue(input));                                      \
+    }                                                                                           \
+    static SD_HOST_DEVICE InterType opInter(X d1, X* extraParams) {                             \
+      return static_cast<InterType>(op(d1, extraParams));                                       \
+    }                                                                                           \
+    static SD_HOST_DEVICE InterType updateInter(InterType old, InterType opOutput, X* extraParams) { \
+      return static_cast<InterType>(update(static_cast<X>(old), static_cast<X>(opOutput), extraParams)); \
+    }                                                                                           \
+    static SD_HOST_DEVICE InterType mergeInter(InterType old, InterType opOutput, X* extraParams) { \
+      return static_cast<InterType>(merge(static_cast<X>(old), static_cast<X>(opOutput), extraParams)); \
+    }                                                                                           \
+    static SD_HOST_DEVICE X postProcessInter(InterType reduction, sd::LongType n, X* extraParams) { \
+      return postProcess(static_cast<X>(reduction), n, extraParams);                            \
     }                                                                                           \
   };
 

@@ -168,6 +168,24 @@ public class GraphOptimizer {
             }
         }
 
+        // Register the caller's requiredOutputs as graph outputs. The removal guards
+        // (OptimizationUtils.removeOp/removeVariable) and the passes' output-redirect
+        // logic all key off sd.outputs() — without this, passes running on ad-hoc
+        // graphs (where outputs() was never set) can eliminate the very variables the
+        // caller asked to keep addressable.
+        if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
+            List<String> merged = new ArrayList<>(sd.outputs());
+            for (String r : requiredOutputs) {
+                if (sd.hasVariable(r) && !merged.contains(r)) {
+                    merged.add(r);
+                }
+            }
+            sd.setOutputs(merged);
+        }
+        // Passes redirect outputs() entries in place (list.set(i, replacement)), so index
+        // i of this snapshot records which surviving variable replaced each seeded output.
+        List<String> outputSeedSnapshot = new ArrayList<>(sd.outputs());
+
         ArrayHolder cArr = sd.getConstantArrays();
         ArrayHolder vArr = sd.getVariablesArrays();
 
@@ -330,6 +348,11 @@ public class GraphOptimizer {
 
         log.debug("Skipped {} op checks due to type filtering", totalSkipped);
 
+        // A pass may have replaced a required output with another variable (redirecting
+        // the outputs() entry in place and removing the original). The caller's contract
+        // is that requiredOutputs stay addressable by name — restore those names now.
+        restoreRequiredOutputNames(sd, requiredOutputs, outputSeedSnapshot);
+
         long elapsed = System.currentTimeMillis() - startTime;
 
         // Count variable types for logging
@@ -396,6 +419,68 @@ public class GraphOptimizer {
         }
 
         return sd;
+    }
+
+    /**
+     * Restore required output names that optimization passes replaced with other variables.
+     *
+     * <p>Passes that fold an op away (e.g. {@code add(x, 0) -> x}) redirect the matching
+     * {@code outputs()} entry in place and remove the original variable. This walks those
+     * positional redirections and, for every required output that no longer exists, either
+     * renames the replacement back to the requested name (internal ARRAY variables that were
+     * not themselves outputs) or inserts an identity op (placeholders, constants, trainable
+     * variables, or replacements that must keep their own name).</p>
+     */
+    private static void restoreRequiredOutputNames(SameDiff sd, List<String> requiredOutputs, List<String> seedSnapshot) {
+        if (requiredOutputs == null || requiredOutputs.isEmpty()) {
+            return;
+        }
+        List<String> current = sd.outputs();
+        Set<String> required = new LinkedHashSet<>(requiredOutputs);
+        for (String name : required) {
+            if (sd.hasVariable(name)) {
+                continue; // survived intact
+            }
+            int idx = seedSnapshot.indexOf(name);
+            if (idx < 0) {
+                continue; // never existed in the input graph — let the caller's request fail naturally
+            }
+            String replacement = null;
+            if (current != null && current.size() == seedSnapshot.size() && idx < current.size()) {
+                String cand = current.get(idx);
+                if (!name.equals(cand) && sd.hasVariable(cand)) {
+                    replacement = cand;
+                }
+            }
+            if (replacement == null) {
+                throw new IllegalStateException("Graph optimization eliminated required output '" + name
+                        + "' without a traceable replacement — outputs before: " + seedSnapshot
+                        + ", after: " + current);
+            }
+            SDVariable rv = sd.getVariable(replacement);
+            if (rv.getVariableType() == VariableType.ARRAY && !seedSnapshot.contains(replacement)) {
+                // Private intermediate: reclaim the requested name outright.
+                sd.renameVariable(replacement, name);
+                // renameVariable does not touch outputs(); update every entry that pointed
+                // at the replacement so no output name dangles after the physical rename.
+                for (int i = 0; i < current.size(); i++) {
+                    if (current.get(i).equals(replacement)) {
+                        current.set(i, name);
+                    }
+                }
+            } else {
+                // Replacement must keep its own name (placeholder/constant/variable, or it
+                // is itself an output) — preserve the requested name via an identity view.
+                sd.identity(name, rv);
+                for (int i = 0; i < current.size(); i++) {
+                    if (current.get(i).equals(replacement) && name.equals(seedSnapshot.get(i))) {
+                        current.set(i, name);
+                    }
+                }
+            }
+            log.info("Restored required output '{}' eliminated during optimization (redirected to '{}')",
+                    name, replacement);
+        }
     }
 
     /**

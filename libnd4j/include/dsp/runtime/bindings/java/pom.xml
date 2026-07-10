@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Standalone build of the staged SDX Java wrapper.
+
+  In the staged SDK package (wrappers/java/), src/main/java/ is populated from
+  the canonical nd4j-sdx module source at packaging time. In the libnd4j source
+  tree this directory intentionally carries no source — build the nd4j-sdx
+  Maven module instead (mvn -Psdx install -pl :nd4j-sdx).
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.nd4j</groupId>
+    <artifactId>sdx-runtime-java</artifactId>
+    <version>0.0.1</version>
+    <packaging>jar</packaging>
+
+    <name>sdx-runtime-java</name>
+    <description>JNA wrapper for the SDX runtime C ABI (staged SDK package)</description>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.14.0</version>
+        </dependency>
+    </dependencies>
+
+</project>

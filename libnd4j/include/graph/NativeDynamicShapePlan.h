@@ -2043,6 +2043,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void markExternalInputPlaceholder(int extIdx);
 
   /**
+   * Register an external input whose device buffer is mutated by native decode
+   * infrastructure between plan executions. Such inputs are variable, but the
+   * live device buffer is the source of truth and must not be replaced by a
+   * generic staging buffer during CUDA graph capture/replay.
+   */
+  void registerDeviceManagedExternalInput(NDArray* input);
+  bool isDeviceManagedExternalInput(NDArray* input) const;
+
+  /**
    * Enable/disable shape-only dry-run mode.
    *
    * When enabled, executeSlot() runs the full DSP dispatch machinery —
@@ -2162,19 +2171,17 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void writeOutputSlot(int slotIdx, NDArray* value, const char* tag);
 
   /**
-   * Invalidate output-slot VIEW wrappers that alias EXTERNAL input buffers.
-   * Called by dispatchNativePlan ONLY on a new-borrower acquire (first dispatch
-   * from a Java executor instance): views minted over the PREVIOUS borrower's
-   * external arrays dangle once that borrower closed its inputs. Touching them
-   * later — view-install old-read, cast input resolve, exec bind — is a
-   * use-after-free surfacing as flaky "Op [cast] execution failed" /
-   * "Invalid argument" / "Owner died" / Workspace::allocateBytes SIGSEGV.
-   * NEVER call on same-borrower re-dispatch: clearing views whose device
-   * addresses are baked into live captured graphs breaks replay (observed:
-   * 67-failure gate regression when triggered on every cache hit).
-   * Plan-owned intermediates are untouched — stable-address replay contract.
+   * Mark output-slot VIEW wrappers that alias EXTERNAL input buffers for
+   * reacquire validation. dispatchNativePlan does not receive the current
+   * NDArray* inputs, so the actual decision is deferred until execute(): views
+   * whose external DataBuffer is unchanged stay live and preserve replay;
+   * views over replaced or invalid external buffers are nulled and their
+   * segment captures are rebuilt.
    */
   void invalidateExternalViewSlotsOnReacquire();
+
+  /** Resolve a pending external-view reacquire once current inputs are known. */
+  void processPendingExternalViewReacquire(NDArray** externalInputs, int numExternalInputs);
 
   /**
    * Clear an output slot to nullptr with proper cleanup.
@@ -2670,6 +2677,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int numExternalInputs_;
   std::vector<NDArray*> lastExternalInputsCopy_;  // owned copy of ext input pointer array
   NDArray** lastExternalInputs_ = nullptr;       // points to lastExternalInputsCopy_.data() (stable after execute)
+  bool externalViewReacquirePending_ = false;    // validate external-fed views at next execute()
   // Buffer addresses of the ext inputs, recorded at execute time while the Java-owned
   // NDArrays are guaranteed live. JNI queries (getLastExternalInputAddress) read THESE —
   // dereferencing lastExternalInputsCopy_ after execute() returns is a use-after-free
@@ -3446,6 +3454,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     LongType dim;
   };
   std::vector<NativeKvScatterEntry> kvScatterEntries_;
+  std::vector<void*> deviceManagedExternalInputAddrs_;
   DataType kvScatterDtype_ = DataType::FLOAT32;
   LongType* kvPositionDevice_ = nullptr;  // Device-accessible int64 position scalar (owned)
   bool kvScatterConfigured_ = false;

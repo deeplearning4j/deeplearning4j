@@ -21,12 +21,20 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
 import org.junit.jupiter.api.Test;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
  * Tests for the gated_delta_rule op (arXiv:2412.06464).
@@ -275,6 +283,152 @@ public class TestGatedDeltaRule {
         assertEquals(0.0f, s01, 1e-3f, "final state[0,1]");
         assertEquals(20.0f, s10, 1e-3f, "final state[1,0]");
         assertEquals(24.0f, s11, 1e-3f, "final state[1,1]");
+    }
+
+    @Test
+    public void testActualLengthStopsStateUpdates() {
+        int B = 1, L = 4, H = 1, Dk = 2, Dv = 2;
+        INDArray qPadded = Nd4j.createFromArray(new float[]{
+                1, 2, 1, 0, 9, 9, 8, 8
+        }).reshape(B, L, H, Dk);
+        INDArray kPadded = Nd4j.createFromArray(new float[]{
+                3, 4, 1, 0, 7, 7, 6, 6
+        }).reshape(B, L, H, Dk);
+        INDArray vPadded = Nd4j.createFromArray(new float[]{
+                5, 6, 0, 0, 5, 5, 4, 4
+        }).reshape(B, L, H, Dv);
+        INDArray betaPadded = Nd4j.ones(DataType.FLOAT, B, L, H);
+        INDArray gatePadded = Nd4j.zeros(DataType.FLOAT, B, L, H);
+        INDArray actualLen = Nd4j.scalar(DataType.INT64, 2L);
+
+        INDArray[] padded = Nd4j.exec(new GatedDeltaRule(qPadded, kPadded, vPadded, betaPadded, gatePadded, null, actualLen));
+
+        INDArray qShort = qPadded.get(point(0), interval(0, 2), all(), all()).dup().reshape(B, 2, H, Dk);
+        INDArray kShort = kPadded.get(point(0), interval(0, 2), all(), all()).dup().reshape(B, 2, H, Dk);
+        INDArray vShort = vPadded.get(point(0), interval(0, 2), all(), all()).dup().reshape(B, 2, H, Dv);
+        INDArray betaShort = betaPadded.get(point(0), interval(0, 2), all()).dup().reshape(B, 2, H);
+        INDArray gateShort = gatePadded.get(point(0), interval(0, 2), all()).dup().reshape(B, 2, H);
+        INDArray[] shortRun = Nd4j.exec(new GatedDeltaRule(qShort, kShort, vShort, betaShort, gateShort));
+
+        assertEquals(0.0, padded[1].sub(shortRun[1]).amaxNumber().doubleValue(), 1e-5, "state should ignore padded timesteps");
+        assertEquals(0.0, padded[0].get(point(0), interval(0, 2), all(), all()).sub(shortRun[0]).amaxNumber().doubleValue(), 1e-5,
+                "real prefix outputs should match an unpadded run");
+    }
+
+    @Test
+    public void testActualLengthStopsStateUpdatesWithDsp() {
+        System.setProperty(ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED, "true");
+        InferenceSession.setDynamicShapePlanEnabled(true);
+
+        int B = 1, L = 4, H = 1, Dk = 2, Dv = 2;
+        INDArray qPadded = Nd4j.createFromArray(new float[]{
+                1, 2, 1, 0, 9, 9, 8, 8
+        }).reshape(B, L, H, Dk);
+        INDArray kPadded = Nd4j.createFromArray(new float[]{
+                3, 4, 1, 0, 7, 7, 6, 6
+        }).reshape(B, L, H, Dk);
+        INDArray vPadded = Nd4j.createFromArray(new float[]{
+                5, 6, 0, 0, 5, 5, 4, 4
+        }).reshape(B, L, H, Dv);
+        INDArray betaPadded = Nd4j.ones(DataType.FLOAT, B, L, H);
+        INDArray gatePadded = Nd4j.zeros(DataType.FLOAT, B, L, H);
+        INDArray actualLen = Nd4j.scalar(DataType.INT64, 2L);
+
+        INDArray qShort = qPadded.get(point(0), interval(0, 2), all(), all()).dup().reshape(B, 2, H, Dk);
+        INDArray kShort = kPadded.get(point(0), interval(0, 2), all(), all()).dup().reshape(B, 2, H, Dk);
+        INDArray vShort = vPadded.get(point(0), interval(0, 2), all(), all()).dup().reshape(B, 2, H, Dv);
+        INDArray betaShort = betaPadded.get(point(0), interval(0, 2), all()).dup().reshape(B, 2, H);
+        INDArray gateShort = gatePadded.get(point(0), interval(0, 2), all()).dup().reshape(B, 2, H);
+        INDArray[] shortRun = Nd4j.exec(new GatedDeltaRule(qShort, kShort, vShort, betaShort, gateShort));
+
+        SameDiff sd = SameDiff.create();
+        try {
+            sd.setDspAutoCompileEnabled(true);
+            sd.setDspNativeAutoCompileEnabled(true);
+            SDVariable q = sd.placeHolder("q", DataType.FLOAT, B, L, H, Dk);
+            SDVariable k = sd.placeHolder("k", DataType.FLOAT, B, L, H, Dk);
+            SDVariable v = sd.placeHolder("v", DataType.FLOAT, B, L, H, Dv);
+            SDVariable beta = sd.placeHolder("beta", DataType.FLOAT, B, L, H);
+            SDVariable gate = sd.placeHolder("gate", DataType.FLOAT, B, L, H);
+            SDVariable len = sd.placeHolder("actual_sequence_length", DataType.INT64);
+            SDVariable[] result = new GatedDeltaRule(sd, q, k, v, beta, gate, null, len).outputVariables();
+            sd.updateVariableNameAndReference(result[0], "gdr_out");
+            sd.updateVariableNameAndReference(result[1], "gdr_state");
+            sd.setOutputs("gdr_out", "gdr_state");
+
+            Map<String, INDArray> inputs = new LinkedHashMap<>();
+            inputs.put("q", qPadded);
+            inputs.put("k", kPadded);
+            inputs.put("v", vPadded);
+            inputs.put("beta", betaPadded);
+            inputs.put("gate", gatePadded);
+            inputs.put("actual_sequence_length", actualLen);
+            Map<String, INDArray> out = sd.output(inputs, "gdr_out", "gdr_state");
+
+            assertEquals(0.0, out.get("gdr_state").sub(shortRun[1]).amaxNumber().doubleValue(), 1e-5,
+                    "DSP state should ignore padded timesteps");
+            assertEquals(0.0, out.get("gdr_out").get(point(0), interval(0, 2), all(), all()).sub(shortRun[0]).amaxNumber().doubleValue(), 1e-5,
+                    "DSP real prefix outputs should match an unpadded run");
+        } finally {
+            sd.close();
+        }
+    }
+
+    @Test
+    public void testModelRealisticActualLengthWithDsp() {
+        System.setProperty(ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED, "true");
+        InferenceSession.setDynamicShapePlanEnabled(true);
+
+        int B = 1, L = 64, actual = 17, H = 16, Dk = 128, Dv = 128;
+        Nd4j.getRandom().setSeed(123);
+        INDArray qPadded = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.02);
+        INDArray kPadded = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.02);
+        INDArray vPadded = Nd4j.randn(DataType.FLOAT, B, L, H, Dv).muli(0.1);
+        INDArray betaPadded = Nd4j.rand(DataType.FLOAT, B, L, H).muli(0.5);
+        INDArray gatePadded = Nd4j.randn(DataType.FLOAT, B, L, H).muli(0.3);
+        INDArray stateIn = Nd4j.randn(DataType.FLOAT, B, H, Dk, Dv).muli(0.01);
+        INDArray actualLen = Nd4j.scalar(DataType.INT64, (long) actual);
+
+        INDArray qShort = qPadded.get(point(0), interval(0, actual), all(), all()).dup().reshape(B, actual, H, Dk);
+        INDArray kShort = kPadded.get(point(0), interval(0, actual), all(), all()).dup().reshape(B, actual, H, Dk);
+        INDArray vShort = vPadded.get(point(0), interval(0, actual), all(), all()).dup().reshape(B, actual, H, Dv);
+        INDArray betaShort = betaPadded.get(point(0), interval(0, actual), all()).dup().reshape(B, actual, H);
+        INDArray gateShort = gatePadded.get(point(0), interval(0, actual), all()).dup().reshape(B, actual, H);
+        INDArray[] shortRun = Nd4j.exec(new GatedDeltaRule(qShort, kShort, vShort, betaShort, gateShort, stateIn));
+
+        SameDiff sd = SameDiff.create();
+        try {
+            sd.setDspAutoCompileEnabled(true);
+            sd.setDspNativeAutoCompileEnabled(true);
+            SDVariable q = sd.placeHolder("q", DataType.FLOAT, B, L, H, Dk);
+            SDVariable k = sd.placeHolder("k", DataType.FLOAT, B, L, H, Dk);
+            SDVariable v = sd.placeHolder("v", DataType.FLOAT, B, L, H, Dv);
+            SDVariable beta = sd.placeHolder("beta", DataType.FLOAT, B, L, H);
+            SDVariable gate = sd.placeHolder("gate", DataType.FLOAT, B, L, H);
+            SDVariable state = sd.placeHolder("state_in", DataType.FLOAT, B, H, Dk, Dv);
+            SDVariable len = sd.placeHolder("actual_sequence_length", DataType.INT64);
+            SDVariable[] result = new GatedDeltaRule(sd, q, k, v, beta, gate, state, len).outputVariables();
+            sd.updateVariableNameAndReference(result[0], "gdr_out_realistic");
+            sd.updateVariableNameAndReference(result[1], "gdr_state_realistic");
+            sd.setOutputs("gdr_out_realistic", "gdr_state_realistic");
+
+            Map<String, INDArray> inputs = new LinkedHashMap<>();
+            inputs.put("q", qPadded);
+            inputs.put("k", kPadded);
+            inputs.put("v", vPadded);
+            inputs.put("beta", betaPadded);
+            inputs.put("gate", gatePadded);
+            inputs.put("state_in", stateIn);
+            inputs.put("actual_sequence_length", actualLen);
+            Map<String, INDArray> out = sd.output(inputs, "gdr_out_realistic", "gdr_state_realistic");
+
+            assertEquals(0.0, out.get("gdr_state_realistic").sub(shortRun[1]).amaxNumber().doubleValue(), 1e-4,
+                    "model-realistic DSP state should ignore padded timesteps");
+            assertEquals(0.0, out.get("gdr_out_realistic").get(point(0), interval(0, actual), all(), all()).sub(shortRun[0]).amaxNumber().doubleValue(), 1e-4,
+                    "model-realistic DSP real prefix outputs should match an unpadded run");
+        } finally {
+            sd.close();
+        }
     }
 
     /**

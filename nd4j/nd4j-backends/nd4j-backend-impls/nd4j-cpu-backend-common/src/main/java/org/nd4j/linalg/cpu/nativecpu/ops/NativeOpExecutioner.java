@@ -714,7 +714,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray xArr = getX(op, oc);
         INDArray zArr = getZ(op, oc);
         val x = OpaqueNDArray.fromINDArray(xArr);
-        val scalar = OpaqueNDArray.fromINDArray(op.scalar());
+        // Native execScalar reinterprets the scalar buffer through x's dtype: a mismatched
+        // scalar (e.g. a DOUBLE 1.0 against FLOAT x) is silently read as garbage (~0.0),
+        // turning ops like x+1 into a no-op copy. Align the scalar dtype explicitly.
+        INDArray scalarArr = op.scalar();
+        if (scalarArr != null && xArr != null && scalarArr.dataType() != xArr.dataType()) {
+            scalarArr = scalarArr.castTo(xArr.dataType());
+        }
+        val scalar = OpaqueNDArray.fromINDArray(scalarArr);
         // When x == z (in-place op like muli), reuse x to avoid a second
         // fromINDArray call on the same buffer which may trigger stale H→D sync.
         val z = (xArr == zArr) ? x : OpaqueNDArray.fromINDArray(zArr);

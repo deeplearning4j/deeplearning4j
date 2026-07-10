@@ -201,7 +201,7 @@ public class GemmaArchitecture implements ModelArchitecture {
             INDArray oWeight = weights.get("blk." + layer + ".attn_output.weight");
             if (oWeight != null) {
                 SDVariable wo = sd.var("model.layers." + layer + ".self_attn.o_proj.weight", oWeight);
-                attnOut = sd.mmul("attn_proj_" + layer, attnOut, wo.permute(1, 0));
+                attnOut = QuantizedLinear.matMul(sd, "attn_proj_" + layer, attnOut, wo, weights, "blk." + layer + ".attn_output.weight", dtype);
             }
 
             // Post-attention residual
@@ -231,7 +231,7 @@ public class GemmaArchitecture implements ModelArchitecture {
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
 
         // Logits: [batch, seq_len, vocab_size]
-        sd.mmul("logits", hidden, lmHead.permute(1, 0));
+        QuantizedLinear.matMul(sd, "logits", hidden, lmHead, weights, "output.weight", dtype);
 
         return sd;
     }
@@ -281,9 +281,9 @@ public class GemmaArchitecture implements ModelArchitecture {
         SDVariable wv = sd.var(attnPrefix + "v_proj.weight", vWeight);
 
         // Project: [batch, seq, hidden] -> [batch, seq, proj_dim]
-        SDVariable q = sd.mmul("q_" + layerIdx, input, wq.permute(1, 0));
-        SDVariable k = sd.mmul("k_" + layerIdx, input, wk.permute(1, 0));
-        SDVariable v = sd.mmul("v_" + layerIdx, input, wv.permute(1, 0));
+        SDVariable q = QuantizedLinear.matMul(sd, "q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
+        SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, prefix + ".attn_k.weight", dtype);
+        SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, prefix + ".attn_v.weight", dtype);
 
         // Add biases if present
         INDArray qBias = weights.get(prefix + ".attn_q.bias");
@@ -375,7 +375,7 @@ public class GemmaArchitecture implements ModelArchitecture {
         String attnPrefix = "model.layers." + layerIdx + ".self_attn.";
         SDVariable wq = sd.var(attnPrefix + "q_proj.weight", qWeight);
 
-        SDVariable q = sd.mmul("q_" + layerIdx, input, wq.permute(1, 0));
+        SDVariable q = QuantizedLinear.matMul(sd, "q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
 
         // Reshape Q to multi-head
         SDVariable batchDim = sd.sizeAt(input, 0);
@@ -455,13 +455,13 @@ public class GemmaArchitecture implements ModelArchitecture {
         SDVariable wUp = sd.var(mlpPrefix + "up_proj.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "down_proj.weight", downWeight);
 
-        SDVariable gate = sd.mmul("gate_" + layerIdx, input, wGate.permute(1, 0));
-        SDVariable up = sd.mmul("up_" + layerIdx, input, wUp.permute(1, 0));
+        SDVariable gate = QuantizedLinear.matMul(sd, "gate_" + layerIdx, input, wGate, weights, prefix + ".ffn_gate.weight", dtype);
+        SDVariable up = QuantizedLinear.matMul(sd, "up_" + layerIdx, input, wUp, weights, prefix + ".ffn_up.weight", dtype);
 
         SDVariable silu = sd.nn.swish(gate);
         SDVariable gelu = silu.mul("swiglu_" + layerIdx, up);
 
-        return sd.mmul("down_" + layerIdx, gelu, wDown.permute(1, 0));
+        return QuantizedLinear.matMul(sd, "down_" + layerIdx, gelu, wDown, weights, prefix + ".ffn_down.weight", dtype);
     }
 
     // ========================================================================

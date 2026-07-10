@@ -36,6 +36,7 @@
 #include <graph/gpu/TritonGraphBackend.h>
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspHashUtils.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
@@ -149,6 +150,86 @@ bool TritonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   }
 
   return false;  // No mappable ops at all
+}
+
+// ─── Segment-internal dtype hash ────────────────────────────────────────────
+//
+// Hash the DataType of every output slot owned by the segment [startSlot,
+// endSlot].  These are segment-INTERNAL arrays produced by ops within the
+// segment.  computeSegmentShapeKey() in NativeDynamicShapePlan_segments.cpp
+// hashes dtype only for CROSS-SEGMENT (external) inputs; it skips internal
+// outputs because those are not visible at the shapeKey-computation callsites.
+//
+// Problem this fixes: if the same slots compile once with FLOAT32 K/V and once
+// with INT8 K/V (e.g. INT8-V2 KV-cache path), both runs compute an identical
+// segShapeKey (shapes match, only internal intermediates differ in dtype).
+// They collide in the singleton TritonGraphBackend cache_, causing the second
+// compile to get a cache HIT and reuse the FLOAT32 kernel — reading INT8 bytes
+// as float, producing garbage outputs.
+//
+// The hash is FNV-1a over the sequence:
+//   for each slot s in [startSlot, endSlot]:
+//     for each output o of slot s:
+//       mix(outputSlots[wiring.outputSlotIndices[o]]->dataType())
+//
+// Slots whose output slot index is out of range or whose array is null are
+// skipped (contributes nothing — safe for partially-materialised plans).
+// The hash value 0 (empty/all-null segment) is a valid sentinel meaning "no
+// internal dtype information"; lookup sites that cannot compute the hash (e.g.
+// copyConsolidatedArgTableToDevice which lacks outputSlots) pass 0 and will
+// get a cache miss — which is benign (they return early without error).
+
+/*static*/
+size_t TritonGraphBackend::computeSegInternalDtypeHash(NativeSlot* slots,
+                                                        int startSlot, int endSlot,
+                                                        NDArray** externalInputs,
+                                                        int numExternalInputs,
+                                                        NDArray** outputSlots,
+                                                        int totalOutputSlots) {
+  if (slots == nullptr) return 0;
+  uint64_t hash = dsp::FNV1A64_OFFSET_BASIS;
+
+  // Output slot indices produced INSIDE the segment — consumers of these are
+  // segment-internal, not cross-segment inputs.
+  std::unordered_set<int> segOutputSlots;
+  for (int s = startSlot; s <= endSlot; s++) {
+    const NativeSlot& slot = slots[s];
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      segOutputSlots.insert(slot.wiring.outputSlotIndices[o]);
+    }
+  }
+
+  // Mix the dtype of every cross-segment input: external input arrays (srcIdx < 0)
+  // and slot-outputs produced outside the segment. Mirrors computeSegmentShapeKey()'s
+  // input traversal so an INT8 vs FLOAT32 KV cache of identical shape yields distinct
+  // cache entries.
+  bool sawInt8 = false;
+  for (int s = startSlot; s <= endSlot; s++) {
+    const NativeSlot& slot = slots[s];
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      int srcIdx = slot.wiring.inputSourceIndices[i];
+      NDArray* arr = nullptr;
+      if (srcIdx < 0) {
+        int extIdx = -(srcIdx + 1);
+        if (externalInputs != nullptr && extIdx >= 0 && extIdx < numExternalInputs)
+          arr = externalInputs[extIdx];
+      } else if (segOutputSlots.find(srcIdx) == segOutputSlots.end()) {
+        if (outputSlots != nullptr && srcIdx >= 0 && srcIdx < totalOutputSlots)
+          arr = outputSlots[srcIdx];
+      }
+      if (arr != nullptr) {
+        DataType dt = arr->dataType();
+        if (dt == DataType::INT8) sawInt8 = true;
+        dsp::fnv1aMixValue(hash, static_cast<uint64_t>(dt));
+      }
+    }
+  }
+
+  if (sawInt8) {
+    DSP_DIAG(JIT, "computeSegInternalDtypeHash: seg[%d-%d] INT8 cross-input -> dtypeHash=%zu",
+             startSlot, endSlot, static_cast<size_t>(hash));
+  }
+  return static_cast<size_t>(hash);
 }
 
 }  // namespace graph

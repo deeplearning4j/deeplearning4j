@@ -331,6 +331,14 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
     // Step 4: Copy result back to attentionLogits
     attentionLogits->assign(&tempResult);
 
+    // maskScaled/tempResult (stack) and numericMask die at this block's end, but the
+    // applyScalar/broadcast/assign kernels above read them ASYNCHRONOUSLY. Their
+    // DataBuffers are freed via cudaFreeAsync on the DSP free-stream, so the pool can
+    // recycle the blocks while those kernels are still in flight — later ops overwrite
+    // them mid-read → garbage/NaN logits (BGE attention NaN root). Flush the exec
+    // stream before they die; capture-aware, CPU no-op.
+    attentionLogits->synchronizeExecStream("applyAttentionScores mask temps");
+
     if(needsDeleteMask) {
       delete numericMask;
     }
@@ -632,13 +640,18 @@ void AttentionHelper::doAttention(std::vector<NDArray *> &inputs, std::vector<ND
     auto casted = qMaskInternal->cast(attentionScores->dataType());
     // Use applyTrueBroadcast to handle potentially different shapes safely
     attentionScores->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), casted, attentionScores, false);
-    // Clean up casted array if it's different from qMaskInternal
+    // Clean up casted array if it's different from qMaskInternal — the broadcast
+    // above reads it asynchronously; flush the exec stream before freeing (see
+    // applyAttentionScores mask-temps comment for the free-under-read hazard).
     if(casted != qMaskInternal) {
+      attentionScores->synchronizeExecStream("doAttention qMask temp");
       delete casted;
     }
   }
 
-  // Clean up squeezed mask if we created one
+  // Clean up squeezed mask if we created one — read asynchronously by the mask-add
+  // kernels in applyAttentionScores; the synchronizeExecStream there already fenced
+  // those reads, so freeing here is ordered-safe.
   if(squeezedVMask != nullptr) {
     delete squeezedVMask;
   }

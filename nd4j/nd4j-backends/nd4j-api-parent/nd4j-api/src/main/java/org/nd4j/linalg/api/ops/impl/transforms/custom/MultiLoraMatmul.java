@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -119,6 +120,51 @@ public class MultiLoraMatmul extends DynamicCustomOp {
     @Override
     public String opName() {
         return "multi_lora_matmul";
+    }
+
+    /**
+     * Backprop for multi_lora_matmul.
+     *
+     * <p>Inputs:
+     * <ul>
+     *   <li>0: input       [B, I]</li>
+     *   <li>1: baseWeight  [I, O]  (frozen)</li>
+     *   <li>2: loraA       [A, I, R]</li>
+     *   <li>3: loraB       [A, R, O]</li>
+     *   <li>4: adapterIds  [B] INT64</li>
+     * </ul>
+     *
+     * <p>Returns 5 gradients (one per input).  baseWeight and adapterIds are
+     * frozen/discrete — their slots receive zeros.  The fused native bp op
+     * {@code multi_lora_matmul_bp} computes dInput, dLoraA, dLoraB.
+     */
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> gradients) {
+        SDVariable gradOut    = gradients.get(0);  // [B, O]
+        SDVariable input      = arg(0);  // [B, I]
+        SDVariable baseWeight = arg(1);  // [I, O]
+        SDVariable loraA      = arg(2);  // [A, I, R]
+        SDVariable loraB      = arg(3);  // [A, R, O]
+        SDVariable adapterIds = arg(4);  // [B] INT64
+
+        double[] tArgsArr = tArgs();
+        double sc = (tArgsArr != null && tArgsArr.length > 0)
+            ? tArgsArr[0] : (double) alpha;
+
+        MultiLoraMatmulBp bpOp = new MultiLoraMatmulBp(
+            sameDiff, input, baseWeight, loraA, loraB, adapterIds, gradOut, (float) sc);
+        SDVariable[] bpOuts = bpOp.outputVariables();
+
+        // bpOuts[0]=dInput, bpOuts[1]=dLoraA, bpOuts[2]=dLoraB
+        SDVariable dInput  = bpOuts[0];
+        SDVariable dLoraA  = bpOuts[1];
+        SDVariable dLoraB  = bpOuts[2];
+
+        // baseWeight frozen; adapterIds is INT64 (no float gradient)
+        SDVariable dBase       = sameDiff.zerosLike(baseWeight);
+        SDVariable dAdapterIds = sameDiff.zerosLike(adapterIds);
+
+        return Arrays.asList(dInput, dBase, dLoraA, dLoraB, dAdapterIds);
     }
 
     @Override

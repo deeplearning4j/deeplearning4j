@@ -30,6 +30,8 @@
 #include <ops/declarable/helpers/reverse.h>
 #include <graph/gpu/DspCudaDispatch.h>
 #include <ops/declarable/helpers/kv_scatter.h>
+#include <ops/declarable/helpers/kv_cache_quantize.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/AttentionHelper.h>
 #include <helpers/FlashAttentionHelper.h>
 #include <cmath>
@@ -198,22 +200,79 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     useInPlaceKv = (cachePosInput != nullptr);
   }
 
+  // V2 QUANTIZED path: detect INT8 key cache → quantised-on-write + quantised attention read.
+  // The quantised scale caches are threaded through input[9] (keyScale) and input[10] (valScale).
+  // When keyCache is INT8, the float K/V tensors (keys, values) are quantised into the INT8
+  // caches at cachePosition, then the quantised GQA decode kernel is used for attention.
+  NDArray* keyScaleCache = block.width() > 9 ? INPUT_VARIABLE(9) : nullptr;
+  NDArray* valScaleCache = block.width() > 10 ? INPUT_VARIABLE(10) : nullptr;
+  if (keyScaleCache != nullptr && keyScaleCache->isEmpty()) keyScaleCache = nullptr;
+  if (valScaleCache != nullptr && valScaleCache->isEmpty()) valScaleCache = nullptr;
+
+  // Determine if this is a V2 quantised call: keyCache is INT8.
+  // ADR 0107 V2 INLINE-SCALE: the per-token-per-head scale rides in the INT8 cache's own
+  // DataBuffer tail (over-allocated combined buffer), so a separate scale cache is NOT required.
+  // When keyScaleCache/valScaleCache are null the write/read launchers derive the scale pointer
+  // from the cache buffer tail (scalePtr = cache.specialBuffer() + cache.lengthOf()). Inputs 9/10
+  // and the registry remain supported for the eager/op-level path (non-null → used directly).
+  bool useQuantisedKv = (keyCache != nullptr && keyCache->dataType() == DataType::INT8);
+
+  // ADR 0107 V2 diagnosis: record whether the quantised-KV path is taken at each call.
+  // At CUDA-graph capture the taken branch is baked into the replayed graph, so a capture-time
+  // useQuant=0 on an INT8 cache means the frozen plan will forever run the float-on-INT8 path.
+  if (DSP_DIAG_ENABLED(KV_CACHE)) {
+    int kcDt = keyCache != nullptr ? (int)keyCache->dataType() : -1;
+    int in9 = block.width() > 9 ? (INPUT_VARIABLE(9)->isEmpty() ? 0 : 1) : -1;
+    int in10 = block.width() > 10 ? (INPUT_VARIABLE(10)->isEmpty() ? 0 : 1) : -1;
+    DSP_DIAG(KV_CACHE,
+             "dpa_v2 width=%d keyCacheDt=%d in9=%d in10=%d keyScale=%s valScale=%s useQuant=%d",
+             (int)block.width(), kcDt, in9, in10,
+             keyScaleCache ? "set" : "null", valScaleCache ? "set" : "null",
+             useQuantisedKv ? 1 : 0);
+  }
+
   if (useInPlaceKv) {
-    // CUDA graph compatible: kvInPlaceWriteBSHD reads cache_position from a
-    // device-side pointer. The pointer ADDRESS is baked into the graph at capture
-    // time; only the VALUE changes between replays (updated via D2D staging).
-    // The old code used cachePosInput->e<LongType>(0) which bakes the HOST VALUE
-    // into the graph — broken on replay (every step writes to the same position).
+    // CUDA graph compatible: kvInPlaceWriteBSHD / kvInPlaceWriteQuantisedBSHD reads
+    // cache_position from a device-side pointer. The pointer ADDRESS is baked into the
+    // graph at capture time; only the VALUE changes between replays (updated via D2D staging).
     const void* cachePosPtr = sd::graph::dspBufferConst(cachePosInput);
 
-    // Write current K/V at cache_position in the buffers (in-place).
-    // kvInPlaceWriteBSHD handles both rank-4 BSHD and rank-3 BSF layouts.
-    helpers::kvInPlaceWriteBSHD(keyCache, keys, cachePosPtr, block.launchContext());
-    helpers::kvInPlaceWriteBSHD(valueCache, values, cachePosPtr, block.launchContext());
+    if (useQuantisedKv) {
+      // V2 QUANTIZED: quantise current K/V into the INT8 cache at cachePosition.
+      // newKv (keys/values) are float [batch,1,kvHeads,headDim]; cast to float if needed.
+      NDArray* keysF = keys;
+      NDArray* valuesF = values;
+      NDArray* keysCastForQuant = nullptr;
+      NDArray* valuesCastForQuant = nullptr;
+      if (keysF->dataType() != DataType::FLOAT32) {
+        keysCastForQuant = keysF->cast(DataType::FLOAT32);
+        keysF = keysCastForQuant;
+      }
+      if (valuesF->dataType() != DataType::FLOAT32) {
+        valuesCastForQuant = valuesF->cast(DataType::FLOAT32);
+        valuesF = valuesCastForQuant;
+      }
+      helpers::kvInPlaceWriteQuantisedBSHD(
+          keyCache, keyScaleCache, keysF, cachePosPtr, block.launchContext());
+      helpers::kvInPlaceWriteQuantisedBSHD(
+          valueCache, valScaleCache, valuesF, cachePosPtr, block.launchContext());
+      if (keysCastForQuant) delete keysCastForQuant;
+      if (valuesCastForQuant) delete valuesCastForQuant;
+      // Note: keys/values remain float for the non-quantised path below (but we
+      // override the attention call to use the quantised kernel; see below).
+    } else {
+      // Float path (unchanged)
+      // Write current K/V at cache_position in the buffers (in-place).
+      // kvInPlaceWriteBSHD handles both rank-4 BSHD and rank-3 BSF layouts.
+      helpers::kvInPlaceWriteBSHD(keyCache, keys, cachePosPtr, block.launchContext());
+      helpers::kvInPlaceWriteBSHD(valueCache, values, cachePosPtr, block.launchContext());
+    }
 
-    // Use full cache buffers as K/V for attention
-    keys = keyCache;
-    values = valueCache;
+    // Use full cache buffers as K/V for attention (float path only; quantised handled below)
+    if (!useQuantisedKv) {
+      keys = keyCache;
+      values = valueCache;
+    }
 
     // Check for attention bias at input[8] when KV cache is active.
     // This is separate from the input[5] bias path (which is skipped when input[5] is keyCache).
@@ -338,6 +397,67 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   if (values->dataType() != queries->dataType()) {
     valuesCastOwner = values->cast(queries->dataType());
     values = valuesCastOwner;
+  }
+
+  // V2 QUANTIZED decode: quantised caches have been written; read via fused quantised kernel.
+  // This takes priority over all other attention paths when useQuantisedKv is active.
+  if (useQuantisedKv && useInPlaceKv && isRank4) {
+    // Cast bias to float if needed (quantised kernel is always float32)
+    NDArray* biasForQuant = attentionBias;
+    std::unique_ptr<NDArray> biasQuantCastOwner;
+    if (biasForQuant != nullptr && !biasForQuant->isEmpty()
+        && biasForQuant->dataType() != DataType::FLOAT32) {
+      biasQuantCastOwner.reset(biasForQuant->cast(DataType::FLOAT32));
+      biasForQuant = biasQuantCastOwner.get();
+    }
+
+    // Cast queries to float if needed
+    NDArray* queriesF = queries;
+    std::unique_ptr<NDArray> queriesQuantCastOwner;
+    if (queriesF->dataType() != DataType::FLOAT32) {
+      queriesQuantCastOwner.reset(queriesF->cast(DataType::FLOAT32));
+      queriesF = queriesQuantCastOwner.get();
+    }
+
+    // Cast output to float staging if needed
+    bool needOutCast = (applyScoresOut->dataType() != DataType::FLOAT32);
+    NDArray* outF = applyScoresOut;
+    std::unique_ptr<NDArray> outQuantCastOwner;
+    if (needOutCast) {
+      std::vector<sd::LongType> outShape(applyScoresOut->shapeOf(),
+                                         applyScoresOut->shapeOf() + applyScoresOut->rankOf());
+      outQuantCastOwner.reset(new NDArray('c', outShape, DataType::FLOAT32, block.launchContext()));
+      outF = outQuantCastOwner.get();
+    }
+
+    // CPU path: use CPU reference implementation
+    // CUDA path: use fused quantised CUDA kernel
+#if defined(__CUDACC__) || defined(SD_CUDA)
+    fusedGQADecodeQuantisedCuda(
+        queriesF, keyCache, keyScaleCache, valueCache, valScaleCache,
+        outF, scale, block.launchContext(),
+        (biasForQuant != nullptr && !biasForQuant->isEmpty()) ? biasForQuant : nullptr);
+#else
+    sd::ops::helpers::fusedGQADecodeQuantisedCpu(
+        queriesF, keyCache, keyScaleCache, valueCache, valScaleCache,
+        outF, scale,
+        (biasForQuant != nullptr && !biasForQuant->isEmpty()) ? biasForQuant : nullptr,
+        block.launchContext());
+#endif
+
+    if (needOutCast) {
+      applyScoresOut->assign(outF->cast(applyScoresOut->dataType()));
+    }
+
+    // Cleanup
+    if (keysCastOwner) delete keysCastOwner;
+    if (valuesCastOwner) delete valuesCastOwner;
+    if (reshapedQ) {
+      delete keysPreCast;
+      delete valuesPreCast;
+    }
+    if (slicedBiasOwner) delete slicedBiasOwner;
+    return sd::Status::OK;
   }
 
   // Fast flash path: explicitly enabled + no masks + no dropout
@@ -469,11 +589,28 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
         dropoutMask->reshapei({batch4d, numHeads4d, seqQ4d, seqKV4d});
       }
 
-      // Permute applyScoresOut from BHSD back to BSHD
+      // Permute applyScoresOut from BHSD back to BSHD.
+      // outPerm is a strided VIEW over applyScoresOut's own buffer — assigning it
+      // directly back is an in-place transpose (aliased read+write through different
+      // index maps) and races on CUDA: nondeterministic corruption/NaN per run.
+      // Materialize the permuted order into a fresh buffer first.
       std::vector<sd::LongType> permBack = {0, 2, 1, 3};
       auto outPerm = applyScoresOut->permute(permBack, false, false);
-      applyScoresOut->assign(outPerm);
+      auto outPermDup = outPerm->dup('c');
       delete outPerm;
+      applyScoresOut->assign(outPermDup);
+
+      // The kernels doAttention enqueued (QK matmul, softmax, PV matmul, and the
+      // assign above) read q3d/k3d/v3d/outPermDup ASYNCHRONOUSLY. Deleting these
+      // temps before those reads complete frees their DataBuffers (cudaFreeAsync on
+      // the DSP free-stream) → the pool recycles the blocks and later ops overwrite
+      // them mid-kernel → nondeterministic garbage/NaN attention rows (BGE NaN root).
+      // Flush the exec streams first; capture-aware (no-op during capture, where the
+      // recorded kernels have not run yet; no-op on CPU). q3d covers the QK/PV GEMM
+      // stream (input-lineage context), applyScoresOut covers the output assign.
+      q3d->synchronizeExecStream("dpa_v2 BSHD temp free (inputs)");
+      applyScoresOut->synchronizeExecStream("dpa_v2 BSHD temp free (output)");
+      delete outPermDup;
 
       // Cleanup temporary arrays — reshape() creates new NDArray objects that must be freed
       delete q3d;   // reshape of qPerm
@@ -530,9 +667,12 @@ DECLARE_TYPES(dot_product_attention_v2) {
       ->setAllowedInputTypes(2, {ALL_FLOATS})                  // keys
       ->setAllowedInputTypes(3, {ALL_FLOATS, ALL_INTS, BOOL})  // queryMask (optional)
       ->setAllowedInputTypes(4, {ALL_FLOATS, ALL_INTS, BOOL})  // valueMask (optional)
-      ->setAllowedInputTypes(5, {ALL_FLOATS, ALL_INTS, BOOL})  // attentionBias/keyCache (optional)
-      ->setAllowedInputTypes(6, {ALL_FLOATS, ALL_INTS, BOOL})  // valueCache (optional)
+      ->setAllowedInputTypes(5, {ALL_FLOATS, ALL_INTS, BOOL, INT8})  // attentionBias/keyCache (V2: INT8)
+      ->setAllowedInputTypes(6, {ALL_FLOATS, ALL_INTS, BOOL, INT8})  // valueCache (V2: INT8)
       ->setAllowedInputTypes(7, {ALL_INTS})                    // cache_position (optional)
+      ->setAllowedInputTypes(8, {ALL_FLOATS, ALL_INTS, BOOL})  // attention bias with KV cache (optional)
+      ->setAllowedInputTypes(9, {ALL_FLOATS})                  // V2: key scale cache (optional)
+      ->setAllowedInputTypes(10, {ALL_FLOATS})                 // V2: value scale cache (optional)
       ->setAllowedOutputTypes({ALL_FLOATS})
       ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }

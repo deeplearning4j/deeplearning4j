@@ -75,6 +75,10 @@ message ExecutionReport {
   uint64 execution_time_ns = 5;
   int32 requested_gpu_target = 6;
   int32 applied_gpu_target = 7;
+  // Plan phase after execution: 0=SLOT_BY_SLOT (warmup), 1=SHAPES_FROZEN, 2=REPLAYING, 3=REPLAY_BLOCKED
+  int32 plan_phase = 8;
+  // Number of executions completed on this context
+  int32 execution_count = 9;
 }
 
 message RunResponse {

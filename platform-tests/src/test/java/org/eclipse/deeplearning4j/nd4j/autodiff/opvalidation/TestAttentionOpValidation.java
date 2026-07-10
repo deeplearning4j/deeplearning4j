@@ -689,6 +689,46 @@ public class TestAttentionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("DotProductAttentionV2 - Rank 4 GQA Single KV Token")
+    public void testDotProductAttentionV2Rank4GqaSingleKvToken(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 1;
+        int seqLen = 1;
+        int numHeads = 4;
+        int numKvHeads = 2;
+        int headDim = 8;
+        int headsPerKvHead = numHeads / numKvHeads;
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqLen, numKvHeads, headDim);
+        INDArray value = Nd4j.linspace(DataType.FLOAT, -0.5, 0.125, numKvHeads * headDim)
+                .reshape(batch, seqLen, numKvHeads, headDim);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(query, value, key)
+                .addFloatingPointArguments(0.0, 0.0)
+                .addBooleanArguments(false, false, true)
+                .build();
+
+        INDArray output = Nd4j.exec(op)[0];
+
+        assertNotNull(output);
+        assertArrayEquals(new long[]{batch, seqLen, numHeads, headDim}, output.shape());
+        assertFalse(output.isNaN().any(), "GQA singleton output must not contain NaN");
+        assertFalse(output.isInfinite().any(), "GQA singleton output must not contain Inf");
+
+        for (int h = 0; h < numHeads; h++) {
+            int kvHead = h / headsPerKvHead;
+            for (int d = 0; d < headDim; d++) {
+                assertEquals(value.getDouble(0, 0, kvHead, d), output.getDouble(0, 0, h, d), 1e-5,
+                        "seqKV=1 attention should copy value head " + kvHead + " to query head " + h + " dim " + d);
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("ONNX MHA - With Attention Bias Uses Fused Kernel")
     public void testOnnxMhaWithBiasUsesFusedKernel(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -1376,56 +1416,62 @@ public class TestAttentionOpValidation extends BaseOpValidation {
     }
 
     /**
-     * Tests dot_product_attention_v2 with KV cache where the cache is HALF
-     * but the incoming K/V are FLOAT (simulates FusedRoPE type promotion).
-     * Verifies that kvInPlaceWriteBSHD auto-casts instead of throwing.
+     * Tests dot_product_attention_v2 with the same KV-cache contract used by GGUF decode:
+     * Q/K/V arrive as FLOAT, persistent K/V caches are HALF, query heads outnumber KV heads,
+     * and an additive cache mask hides unwritten cache slots.
      */
-    @DisplayName("testKvCacheMixedDtype")
+    @DisplayName("DotProductAttentionV2 - KV cache mixed dtype GQA single token")
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testKvCacheMixedDtype(Nd4jBackend backend) {
-        int batch = 1, seqQ = 1, seqKV = 1, numHeads = 2, headDim = 4;
+        int batch = 1;
+        int seqQ = 1;
+        int seqKV = 1;
+        int numHeads = 32;
+        int numKvHeads = 8;
+        int headDim = 128;
         int maxSeqLen = 16;
+        int headsPerKvHead = numHeads / numKvHeads;
 
-        // Queries are FLOAT (as after FusedRoPE promotion)
-        INDArray queries = Nd4j.rand(DataType.FLOAT, batch, seqQ, numHeads, headDim);
-        // Keys and values are FLOAT (FusedRoPE promoted from HALF)
-        INDArray keys = Nd4j.rand(DataType.FLOAT, batch, seqKV, numHeads, headDim);
-        INDArray values = Nd4j.rand(DataType.FLOAT, batch, seqKV, numHeads, headDim);
+        INDArray queries = Nd4j.linspace(DataType.FLOAT, -0.25, 0.25, batch * seqQ * numHeads * headDim)
+                .reshape(batch, seqQ, numHeads, headDim);
+        INDArray keys = Nd4j.linspace(DataType.FLOAT, 0.125, -0.125, batch * seqKV * numKvHeads * headDim)
+                .reshape(batch, seqKV, numKvHeads, headDim);
+        INDArray values = Nd4j.linspace(DataType.FLOAT, -0.5, 0.5, batch * seqKV * numKvHeads * headDim)
+                .reshape(batch, seqKV, numKvHeads, headDim);
 
-        // KV caches are HALF (model's persistent storage format from DEQUANTIZE_TO_FLOAT16)
-        INDArray keyCache = Nd4j.zeros(DataType.HALF, batch, maxSeqLen, numHeads, headDim);
-        INDArray valueCache = Nd4j.zeros(DataType.HALF, batch, maxSeqLen, numHeads, headDim);
-
-        // cache_position = 0 (first token)
+        INDArray keyCache = Nd4j.zeros(DataType.HALF, batch, maxSeqLen, numKvHeads, headDim);
+        INDArray valueCache = Nd4j.zeros(DataType.HALF, batch, maxSeqLen, numKvHeads, headDim);
         INDArray cachePos = Nd4j.createFromArray(new long[]{0});
+        INDArray emptyMask = Nd4j.empty(DataType.FLOAT);
+        INDArray cacheMask = Nd4j.valueArrayOf(new long[]{batch, 1, seqQ, maxSeqLen}, -1.0e9f, DataType.FLOAT);
+        cacheMask.putScalar(new long[]{0, 0, 0, 0}, 0.0f);
 
-        // Build the op: inputs are [Q, K, V, qMask, vMask, keyCache, valueCache, cachePos]
         DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention_v2")
-                .addInputs(queries, keys, values,
-                        Nd4j.empty(DataType.FLOAT),  // qMask
-                        Nd4j.empty(DataType.FLOAT),  // vMask
-                        keyCache, valueCache, cachePos)
-                .addOutputs(Nd4j.create(DataType.FLOAT, batch, seqQ, numHeads, headDim))
-                .addIntegerArguments(1, 0, 0, 0)  // scaled=1, withWeights=0, useCausal=0, flash=0
-                .addFloatingPointArguments(0.0)    // dropout=0
+                .addInputs(queries, values, keys,
+                        emptyMask, emptyMask,
+                        keyCache, valueCache, cachePos, cacheMask)
+                .addFloatingPointArguments(0.0, 0.0)
+                .addBooleanArguments(false, false, true)
                 .build();
 
-        // This should NOT throw "kvInPlaceWriteBSHD: cache dtype 3 must match newKv dtype 5"
-        Nd4j.exec(op);
+        INDArray output = Nd4j.exec(op)[0];
 
-        INDArray output = op.outputArguments().get(0);
         assertNotNull(output);
+        assertEquals(DataType.FLOAT, output.dataType());
+        assertArrayEquals(new long[]{batch, seqQ, numHeads, headDim}, output.shape());
         assertFalse(output.isNaN().any(), "Output should not contain NaN with mixed KV cache dtypes");
-
-        // Verify the cache was actually written (not still all zeros at position 0)
-        // Extract the first seq position from the HALF cache
-        INDArray keyCacheSlice = keyCache.get(
-                org.nd4j.linalg.indexing.NDArrayIndex.all(),
-                org.nd4j.linalg.indexing.NDArrayIndex.point(0),
-                org.nd4j.linalg.indexing.NDArrayIndex.all(),
-                org.nd4j.linalg.indexing.NDArrayIndex.all());
-        assertFalse(keyCacheSlice.eq(0).all(),
+        assertFalse(output.isInfinite().any(), "Output should not contain Inf with mixed KV cache dtypes");
+        assertFalse(keyCache.getDouble(0, 0, 0, 0) == 0.0 && keyCache.getDouble(0, 0, 0, 1) == 0.0,
                 "KV cache at position 0 should have been written");
+
+        for (int h = 0; h < numHeads; h++) {
+            int kvHead = h / headsPerKvHead;
+            for (int d = 0; d < headDim; d++) {
+                assertEquals(valueCache.getDouble(0, 0, kvHead, d), output.getDouble(0, 0, h, d), 1e-3,
+                        "seqKV=1 cache attention should copy value cache head " + kvHead
+                                + " to query head " + h + " dim " + d);
+            }
+        }
     }
 }

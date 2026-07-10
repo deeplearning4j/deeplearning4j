@@ -308,7 +308,7 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
             outputWeight = tokenEmbedWeight;
         }
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
-        SDVariable logits = fp32Mmul(sd, "lm_logits", hidden, lmHead.permute(1, 0), dtype);
+        SDVariable logits = QuantizedLinear.matMul(sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
 
         outputNames.add("lm_logits");
         outputNames.add("vision_out");
@@ -646,10 +646,9 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
             return input;
         }
 
-        // Derive actual head counts from weight shapes (resilient to config mismatches)
-        int kOutDim      = (int) kW.shape()[0];
+        int kOutDim      = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_k.weight", kW);
+        int qOutDim      = QuantizedLinear.logicalOutputDim(weights, prefix + ".attn_q.weight", qW);
         int actualKHeads = (headDim > 0) ? kOutDim / headDim : numKVHeads;
-        int qOutDim      = (int) qW.shape()[0];
         int actualQHeads = (headDim > 0) ? qOutDim / headDim : numHeads;
         if (headDim <= 0) headDim = kOutDim / numKVHeads;
 
@@ -659,9 +658,9 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oW);
 
         // Q/K/V projections (FP32 upcast to prevent overflow at large hidden sizes)
-        SDVariable q = fp32Mmul(sd, "q_" + layerIdx, input, wq.permute(1, 0), dtype);
-        SDVariable k = fp32Mmul(sd, "k_" + layerIdx, input, wk.permute(1, 0), dtype);
-        SDVariable v = fp32Mmul(sd, "v_" + layerIdx, input, wv.permute(1, 0), dtype);
+        SDVariable q = QuantizedLinear.matMul(sd, "q_" + layerIdx, input, wq, weights, prefix + ".attn_q.weight", dtype);
+        SDVariable k = QuantizedLinear.matMul(sd, "k_" + layerIdx, input, wk, weights, prefix + ".attn_k.weight", dtype);
+        SDVariable v = QuantizedLinear.matMul(sd, "v_" + layerIdx, input, wv, weights, prefix + ".attn_v.weight", dtype);
 
         // Optional biases
         INDArray qb = weights.get(prefix + ".attn_q.bias");
@@ -726,7 +725,7 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
                 sd.constant(Nd4j.scalar((long) attnOutDim)));
         SDVariable attnFlat = sd.reshape("attn_flat_" + layerIdx, attnOut, outShape);
 
-        return fp32Mmul(sd, "attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "attn_proj_" + layerIdx, attnFlat, wo, weights, prefix + ".attn_output.weight", dtype);
     }
 
     /**
@@ -753,12 +752,12 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
         SDVariable wUp   = sd.var(mlpPfx + "up_proj.weight",   upW);
         SDVariable wDown = sd.var(mlpPfx + "down_proj.weight", downW);
 
-        SDVariable gate    = fp32Mmul(sd, "gate_" + layerIdx, input, wGate.permute(1, 0), dtype);
-        SDVariable up      = fp32Mmul(sd, "up_" + layerIdx,   input, wUp.permute(1, 0),   dtype);
+        SDVariable gate    = QuantizedLinear.matMul(sd, "gate_" + layerIdx, input, wGate, weights, prefix + ".ffn_gate.weight", dtype);
+        SDVariable up      = QuantizedLinear.matMul(sd, "up_" + layerIdx,   input, wUp,   weights, prefix + ".ffn_up.weight",   dtype);
         SDVariable silu    = sd.nn.swish(gate);
         SDVariable gated   = silu.mul("swiglu_" + layerIdx, up);
 
-        return fp32Mmul(sd, "down_" + layerIdx, gated, wDown.permute(1, 0), dtype);
+        return QuantizedLinear.matMul(sd, "down_" + layerIdx, gated, wDown, weights, prefix + ".ffn_down.weight", dtype);
     }
 
     // ========================================================================

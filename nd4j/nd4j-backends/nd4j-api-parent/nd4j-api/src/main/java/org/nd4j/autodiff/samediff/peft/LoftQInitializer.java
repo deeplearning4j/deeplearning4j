@@ -72,8 +72,16 @@ public class LoftQInitializer {
      * @param config LoftQ configuration (quantType, quantBits, blockSize, numIterations)
      * @return Pair of (B [outDim, rank], A [rank, inDim])
      */
-    public static Pair<INDArray, INDArray> initialize(INDArray weight, int rank, LoftQConfig config) {
+    public static LoftQResult initializeFull(INDArray weight, int rank, LoftQConfig config) {
         Preconditions.checkArgument(weight != null, "weight must not be null");
+        // P1-F: guard against feeding raw GGML-packed INT8 bytes to SVD.
+        // A packed weight looks rank-1 and has INT8 dtype — both are invalid for LoftQ.
+        if (weight.dataType() == DataType.INT8 || weight.dataType() == DataType.UINT8) {
+            throw new IllegalArgumentException(
+                "LoftQInitializer.initialize() received a packed/quantized INT8 weight. " +
+                "GGUF-packed weights must be dequantized to FP32 before LoftQ initialisation. " +
+                "Use GgmlQMatMul's dequantize helper or skip LoftQ for quantized bases.");
+        }
         Preconditions.checkArgument(weight.rank() == 2, "weight must be a 2D matrix, got rank %s", weight.rank());
         Preconditions.checkArgument(rank > 0, "rank must be > 0, got %s", rank);
 
@@ -89,6 +97,8 @@ public class LoftQInitializer {
         // B and A will be updated each iteration
         INDArray B = Nd4j.zeros(DataType.FLOAT, outDim, rank);
         INDArray A = Nd4j.zeros(DataType.FLOAT, rank, inDim);
+        // Q_n: the quantized weight from the LAST iteration, retained as the LoftQ base.
+        INDArray quantizedBase = null;
 
         int numIterations = config.getNumIterations();
         String quantType  = config.getQuantType();
@@ -129,7 +139,12 @@ public class LoftQInitializer {
 
             // Step 2: residual R = W - Q (full residual of original W vs quantized approximation)
             INDArray R = W.sub(Q);
-            Q.close();
+            // Retain the latest quantized weight as the LoftQ base Q_n and release the prior
+            // one. The adapters (B, A) below are fit to (W - Q_n), so a correct reconstruction
+            // is Q_n + B@A ≈ W: the caller MUST freeze Q_n (not quantize(W)) as the base, or
+            // multi-iteration LoftQ ends up worse than a single iteration.
+            if (quantizedBase != null) quantizedBase.close();
+            quantizedBase = Q;
 
             // Step 3: Economy SVD of R (only rank-r singular values needed)
             //   Returns: [S, U, Vt] when calcUV=true, fullUV=false
@@ -178,7 +193,34 @@ public class LoftQInitializer {
             log.debug("LoftQ iter {}/{}: B={}, A={}", iter + 1, numIterations, B.shapeInfoToString(), A.shapeInfoToString());
         }
 
-        return Pair.of(B, A);
+        return new LoftQResult(quantizedBase, B, A);
+    }
+
+    /**
+     * Legacy entry point returning only the LoRA adapters (B, A). Prefer
+     * {@link #initializeFull} which also returns the iterated quantized base Q_n —
+     * required for a correct reconstruction W ≈ Q_n + B@A when numIterations &gt; 1.
+     */
+    public static Pair<INDArray, INDArray> initialize(INDArray weight, int rank, LoftQConfig config) {
+        LoftQResult r = initializeFull(weight, rank, config);
+        if (r.quantizedBase != null) r.quantizedBase.close();
+        return Pair.of(r.loraB, r.loraA);
+    }
+
+    /**
+     * Result of LoftQ initialization: the iterated quantized base weight {@code Q_n} plus
+     * the low-rank adapters. Freeze {@code quantizedBase} as the base weight so that
+     * {@code quantizedBase + loraB @ loraA ≈ W} holds for any number of iterations.
+     */
+    public static final class LoftQResult {
+        public final INDArray quantizedBase; // Q_n [outDim, inDim]
+        public final INDArray loraB;         // [outDim, rank]
+        public final INDArray loraA;         // [rank, inDim]
+        public LoftQResult(INDArray quantizedBase, INDArray loraB, INDArray loraA) {
+            this.quantizedBase = quantizedBase;
+            this.loraB = loraB;
+            this.loraA = loraA;
+        }
     }
 
     /**

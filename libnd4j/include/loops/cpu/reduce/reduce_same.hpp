@@ -61,9 +61,12 @@ void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongTyp
     return;
   }
 
-  auto startingValue = OpType::startingValue(x);
+  // Accumulate in InterType (float for X=HALF/BF16): HALF-typed accumulation
+  // saturates the fp16 mantissa and overflows at 65504. Matches the CUDA kernels.
+  using InterType = typename OpType::InterType;
+  auto startingValue = OpType::startingValueInter(x);
   int maxThreads = sd::math::sd_min<int>(64, sd::env_maxThreads());
-  X intermediate[64];
+  InterType intermediate[64];
 
   PRAGMA_OMP_SIMD
   for (auto e = 0; e < maxThreads; e++) {
@@ -80,29 +83,29 @@ void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongTyp
         INDEX2COORDS(i, xRank, xShape, coords);
         sd::LongType indexOffset;
         COORDS2INDEX(xRank, xStride, coords, indexOffset);
-        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[indexOffset], extraParams), extraParams);
+        intermediate[thread_id] = OpType::updateInter(intermediate[thread_id], OpType::opInter(x[indexOffset], extraParams), extraParams);
       }
     };
     maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
     PRAGMA_OMP_SIMD
     for (int e = 1; e < maxThreads; e++) {
-      intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+      intermediate[0] = OpType::updateInter(intermediate[0], intermediate[e], extraParams);
     }
 
-    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+    z[0] = OpType::postProcessInter(intermediate[0], length, extraParams);
   } else {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], extraParams), extraParams);
+        intermediate[thread_id] = OpType::updateInter(intermediate[thread_id], OpType::opInter(x[i], extraParams), extraParams);
       }
     };
     maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
     PRAGMA_OMP_SIMD
     for (int e = 1; e < maxThreads; e++) {
-      intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+      intermediate[0] = OpType::updateInter(intermediate[0], intermediate[e], extraParams);
     }
 
-    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+    z[0] = OpType::postProcessInter(intermediate[0], length, extraParams);
   }
 
 }
@@ -119,7 +122,7 @@ X SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongType *
     return OpType::startingValue(x);
   }
 
-  auto startingValue = OpType::startingValue(x);
+  auto startingValue = OpType::startingValueInter(x);
   sd::LongType xRank = shape::rank(xShapeInfo);
   sd::LongType* xShape = shape::shapeOf(xShapeInfo);
   sd::LongType* xStride = shape::stride(xShapeInfo);
@@ -129,9 +132,9 @@ X SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongType *
     INDEX2COORDS(i, xRank, xShape, coords);
     sd::LongType indexOffset;
     COORDS2INDEX(xRank, xStride, coords, indexOffset);
-    startingValue = OpType::update(startingValue, OpType::op(x[indexOffset], extraParams), extraParams);
+    startingValue = OpType::updateInter(startingValue, OpType::opInter(x[indexOffset], extraParams), extraParams);
   }
-  return OpType::postProcess(startingValue, length, extraParams);
+  return OpType::postProcessInter(startingValue, length, extraParams);
 }
 
 template <typename X>

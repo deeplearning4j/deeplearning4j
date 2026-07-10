@@ -31,6 +31,10 @@ We standardize on a dual-protocol serving contract:
   - `repeated int64 shape`
   - SDX dtype code (`int32 dtype`)
 - `RunRequest` requires explicit output specs (`TensorSpec`) so server can allocate outputs before `sdxRun(...)`.
+- `ExecutionReport` mirrors the full `sdx_execution_report_t`, including
+  `plan_phase` (0=SLOT_BY_SLOT/warmup, 1=SHAPES_FROZEN, 2=REPLAYING,
+  3=REPLAY_BLOCKED) and `execution_count`; the same fields appear in the REST
+  `X-SDX-Execution-Report` header.
 - Default gRPC max message size must be raised beyond the common 4 MiB default for ndarray workloads.
 
 ### 2) REST with binary-first NPZ payloads and JSON control plane

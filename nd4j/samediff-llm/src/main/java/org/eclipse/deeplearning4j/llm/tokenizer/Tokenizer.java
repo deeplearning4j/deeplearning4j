@@ -67,6 +67,36 @@ public interface Tokenizer extends AutoCloseable {
     }
 
     /**
+     * Encode a user prompt for generation, applying the configured chat template when available.
+     *
+     * @param prompt raw user prompt or an already formatted chat prompt
+     * @return encoded prompt
+     */
+    default Encoding encodePrompt(String prompt) {
+        return encodePrompt(prompt, null);
+    }
+
+    /**
+     * Encode a user prompt for generation with an optional chat-template override.
+     *
+     * @param prompt raw user prompt or an already formatted chat prompt
+     * @param chatTemplateOverride template to use instead of the tokenizer configuration, or null
+     * @return encoded prompt
+     */
+    default Encoding encodePrompt(String prompt, String chatTemplateOverride) {
+        String template = chatTemplateOverride == null || chatTemplateOverride.isBlank()
+                ? getChatTemplate()
+                : chatTemplateOverride;
+        boolean alreadyFormatted = prompt.contains("<|im_start|>") || prompt.contains("[INST]");
+        if (template != null && !template.isBlank() && !alreadyFormatted) {
+            String formatted = new ChatTemplate(template, getBosToken(), getEosToken())
+                    .apply(java.util.Collections.singletonList(ChatTemplate.Message.user(prompt)), true);
+            return encode(formatted, false);
+        }
+        return encode(prompt, !alreadyFormatted);
+    }
+
+    /**
      * Encode multiple texts in batch.
      *
      * @param texts the list of texts to encode

@@ -244,7 +244,16 @@ public abstract class RLAlignmentTrainer<C extends RLAlignmentConfig> {
      */
     protected SDVariable computeLogProbOps(SameDiff sd, String prefix, SDVariable logits,
                                            SDVariable tokenIds, int vocabSize) {
-        return computeLogProbOps(sd, prefix, logits, tokenIds, vocabSize, false);
+        // 2D [batch, vocab] policies (single distribution per example) must go through
+        // the logitsAre2D reshape. Trust the config declaration first — an op-produced
+        // logit variable has no static shape at graph-build time — and fall back to
+        // static rank detection for graphs where the shape IS known.
+        boolean logitsAre2D = config != null && config.isLogits2D();
+        if (!logitsAre2D) {
+            long[] logitShape = logits.getShape();
+            logitsAre2D = logitShape != null && logitShape.length == 2;
+        }
+        return computeLogProbOps(sd, prefix, logits, tokenIds, vocabSize, logitsAre2D);
     }
 
     /**

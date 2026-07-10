@@ -24,6 +24,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_multiply)
 
+#include <array/DataTypeUtils.h>
+#include <helpers/ConstantShapeHelper.h>
 #include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/helpers/broadcastableFused.h>
@@ -199,6 +201,13 @@ DECLARE_TYPES(multiply_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
+static DataType multiplyBpGradientType(DataType xType, DataType yType, DataType dLdzType) {
+  auto type = DataTypeUtils::pickPairwiseResultType(xType, yType);
+  type = DataTypeUtils::pickPairwiseResultType(type, dLdzType);
+  if (DataTypeUtils::isR(type) && type != DataType::DOUBLE && type != DataType::FLOAT32) return DataType::FLOAT32;
+  return type;
+}
+
 ///////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
@@ -207,6 +216,35 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
 
   auto dLdx = OUTPUT_VARIABLE(0);
   auto dLdy = OUTPUT_VARIABLE(1);
+
+  NDArray *xCastForDLdy = nullptr, *yCastForDLdx = nullptr;
+  NDArray *dLdzCastForDLdx = nullptr, *dLdzCastForDLdy = nullptr;
+  NDArray* xForDLdy = x;
+  NDArray* yForDLdx = y;
+  NDArray* dLdzForDLdx = dLdz;
+  NDArray* dLdzForDLdy = dLdz;
+  if (x->dataType() != dLdy->dataType()) {
+    xCastForDLdy = x->cast(dLdy->dataType());
+    xForDLdy = xCastForDLdy;
+  }
+  if (y->dataType() != dLdx->dataType()) {
+    yCastForDLdx = y->cast(dLdx->dataType());
+    yForDLdx = yCastForDLdx;
+  }
+  if (dLdz->dataType() != dLdx->dataType()) {
+    dLdzCastForDLdx = dLdz->cast(dLdx->dataType());
+    dLdzForDLdx = dLdzCastForDLdx;
+  }
+  if (dLdz->dataType() != dLdy->dataType()) {
+    dLdzCastForDLdy = dLdz->cast(dLdy->dataType());
+    dLdzForDLdy = dLdzCastForDLdy;
+  }
+  auto cleanupBpCasts = [&]() {
+    delete xCastForDLdy;
+    delete yCastForDLdx;
+    delete dLdzCastForDLdx;
+    delete dLdzCastForDLdy;
+  };
 
    LongType* dLdzShapeInfo = nullptr;
   const bool areShapesBroadcastable =
@@ -220,86 +258,85 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
   const LongType yLen = y->lengthOf();
 
   if (x->isScalar() && y->isScalar()) {  // both are scalars
-    y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
-    x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
+    yForDLdx->applyPairwiseTransform(pairwise::Multiply, dLdzForDLdx, dLdx);
+    xForDLdy->applyPairwiseTransform(pairwise::Multiply, dLdzForDLdy, dLdy);
 
-  }else if (x->isScalar()) {  // x is scalar and y is not
-    NDArray *yMulDldz = (*y) * (*dLdz);
+  } else if (x->isScalar()) {  // x is scalar and y is not
+    NDArray *yMulDldz = (*yForDLdx) * (*dLdzForDLdx);
     NDArray *dLdxTemp = yMulDldz->reduceNumber(reduce::Sum);
     dLdx->assign(dLdxTemp);
     delete yMulDldz;
     delete dLdxTemp;
-    dLdz->applyScalarArr(scalar::Multiply, x, dLdy);
+    dLdzForDLdy->applyScalarArr(scalar::Multiply, xForDLdy, dLdy);
   } else if (y->isScalar()) {  // y is scalar and x is not
-    NDArray *xMulDldz = (*x) * (*dLdz);
+    NDArray *xMulDldz = (*xForDLdy) * (*dLdzForDLdy);
     NDArray *dLdyTemp = xMulDldz->reduceNumber(reduce::Sum);
     dLdy->assign(dLdyTemp);
     delete xMulDldz;
     delete dLdyTemp;
-    dLdz->applyScalarArr(scalar::Multiply, y, dLdx);
+    dLdzForDLdx->applyScalarArr(scalar::Multiply, yForDLdx, dLdx);
   } else if (x->isSameShape(y)) {
-    x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
-    y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
+    xForDLdy->applyPairwiseTransform(pairwise::Multiply, dLdzForDLdy, dLdy);
+    yForDLdx->applyPairwiseTransform(pairwise::Multiply, dLdzForDLdx, dLdx);
   } else if (x->isSameShape(dLdz)) {
     // Allocate a fresh buffer — NDArray(other, copyStrides, ctx) shares the raw data pointer
     // with `other`, so tiling into it would corrupt dLdz.
     std::vector<LongType> tileShape(dLdz->shapeOf(), dLdz->shapeOf() + dLdz->rankOf());
-    NDArray yTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
-    y->tile(yTiled);
+    NDArray yTiled(dLdz->ordering(), tileShape, dLdx->dataType(), block.launchContext());
+    yForDLdx->tile(yTiled);
     std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
-    NDArray *xMulDldz = (*x) * (*dLdz);
+    NDArray *xMulDldz = (*xForDLdy) * (*dLdzForDLdy);
     NDArray *dLdyTemp = xMulDldz->reduceAlongDimension(reduce::Sum, &axesForY);
     dLdy->assign(dLdyTemp);
     delete xMulDldz;
     delete dLdyTemp;
-    yTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
+    yTiled.applyPairwiseTransform(pairwise::Multiply, dLdzForDLdx, dLdx);
   } else if (y->isSameShape(dLdz)) {
     // Allocate a fresh buffer — NDArray(other, copyStrides, ctx) shares the raw data pointer
     // with `other`, so tiling into it would corrupt dLdz.
     std::vector<LongType> tileShape(dLdz->shapeOf(), dLdz->shapeOf() + dLdz->rankOf());
-    NDArray xTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
-    x->tile(xTiled);
+    NDArray xTiled(dLdz->ordering(), tileShape, dLdy->dataType(), block.launchContext());
+    xForDLdy->tile(xTiled);
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
-    NDArray *yMulDldz = (*y) * (*dLdz);
+    NDArray *yMulDldz = (*yForDLdx) * (*dLdzForDLdx);
     NDArray *dLdxTemp = yMulDldz->reduceAlongDimension(reduce::Sum, &axesForX);
     dLdx->assign(dLdxTemp);
     delete yMulDldz;
     delete dLdxTemp;
-    xTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
+    xTiled.applyPairwiseTransform(pairwise::Multiply, dLdzForDLdy, dLdy);
   } else {
-    // Allocate fresh buffers — NDArray(other, copyStrides, ctx) shares the raw data pointer
-    // with `other`, so tiling into either array would corrupt dLdz (and each other).
-    std::vector<LongType> tileShape(dLdz->shapeOf(), dLdz->shapeOf() + dLdz->rankOf());
-    NDArray xTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
-    NDArray yTiled(dLdz->ordering(), tileShape, dLdz->dataType(), block.launchContext());
-    x->tile(xTiled);
-    y->tile(yTiled);
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
     std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
     // For dLdx
-    NDArray *yMulDldz = (*y) * (*dLdz);
+    NDArray *yMulDldz = (*yForDLdx) * (*dLdzForDLdx);
     NDArray *dLdxTemp = yMulDldz->reduceAlongDimension(reduce::Sum, &axesForX);
     dLdx->assign(dLdxTemp);
     delete yMulDldz;
     delete dLdxTemp;
 
     // For dLdy
-    NDArray *xMulDldz = (*x) * (*dLdz);
+    NDArray *xMulDldz = (*xForDLdy) * (*dLdzForDLdy);
     NDArray *dLdyTemp = xMulDldz->reduceAlongDimension(reduce::Sum, &axesForY);
     dLdy->assign(dLdyTemp);
     delete xMulDldz;
     delete dLdyTemp;
   }
 
+  cleanupBpCasts();
   return Status::OK;
 }
 
 DECLARE_SHAPE_FN(multiply_bp) {
   auto xShapeInfo = inputShape->at(0);
   auto yShapeInfo = inputShape->at(1);
-  return SHAPELIST(CONSTANT(xShapeInfo), CONSTANT(yShapeInfo));
+  auto dLdzShapeInfo = inputShape->at(2);
+  auto gradType = multiplyBpGradientType(ArrayOptions::dataType(xShapeInfo), ArrayOptions::dataType(yShapeInfo),
+                                         ArrayOptions::dataType(dLdzShapeInfo));
+  auto dLdxShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(gradType, const_cast<LongType*>(xShapeInfo));
+  auto dLdyShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(gradType, const_cast<LongType*>(yShapeInfo));
+  return SHAPELIST(dLdxShapeInfo, dLdyShapeInfo);
 }
 
 }  // namespace ops

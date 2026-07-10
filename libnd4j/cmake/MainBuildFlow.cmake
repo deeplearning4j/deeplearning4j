@@ -1610,6 +1610,10 @@ set(SDX_RUNTIME_README "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/README.m
 set(SDX_RUNTIME_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/../resources/dsp/manifest.schema.json")
 set(SDX_RUNTIME_BINDINGS_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SdxRuntimePackage.cmake")
 set(SDX_RUNTIME_LANGUAGE_BINDINGS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/bindings")
+# Canonical Java wrapper source (nd4j-sdx module). Copied into wrappers/java/
+# at staging time so the exported SDK is self-contained without duplicating
+# the source in the libnd4j tree.
+set(SDX_RUNTIME_JAVA_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx/src/main/java")
 set(SDX_RUNTIME_SDK_DIR "${CMAKE_BINARY_DIR}/sdx-runtime-sdk" CACHE PATH
     "Output directory for staged SDX C runtime SDK artifacts")
 
@@ -1634,6 +1638,10 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         list(APPEND _sdx_wrapper_stage_cmds
             COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_wrappers_dir}"
             COMMAND ${CMAKE_COMMAND} -E copy_directory "${SDX_RUNTIME_LANGUAGE_BINDINGS_DIR}" "${_sdx_sdk_wrappers_dir}")
+    endif()
+    if(EXISTS "${SDX_RUNTIME_JAVA_SRC_DIR}")
+        list(APPEND _sdx_wrapper_stage_cmds
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${SDX_RUNTIME_JAVA_SRC_DIR}" "${_sdx_sdk_wrappers_dir}/java/src/main/java")
     endif()
 
     # Use standalone SDX library when available, otherwise fall back to monolithic
@@ -1769,6 +1777,16 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     endif()
     list(REMOVE_DUPLICATES _sdx_runtime_variants)
 
+    set(_sdx_standalone 0)
+    if(SD_BUILD_SDX_STANDALONE AND DEFINED SDX_STANDALONE_TARGET AND TARGET ${SDX_STANDALONE_TARGET})
+        set(_sdx_standalone 1)
+    endif()
+
+    set(_sdx_strip_tool "")
+    if(CMAKE_STRIP AND NOT APPLE)
+        set(_sdx_strip_tool "${CMAKE_STRIP}")
+    endif()
+
     set(_sdx_binding_package_cmds "")
     foreach(_sdx_variant IN LISTS _sdx_runtime_variants)
         set(_sdx_default_gpu_target "AUTO")
@@ -1787,12 +1805,15 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
                 "-DSDX_ANDROID_ABI=${_sdx_android_abi}"
                 "-DSDX_VARIANT=${_sdx_variant}"
                 "-DSDX_DEFAULT_GPU_TARGET=${_sdx_default_gpu_target}"
-                "-DSDX_LIBRARY_FILE=$<TARGET_FILE:${SD_LIBRARY_NAME}>"
-                "-DSDX_LINKER_FILE=$<TARGET_LINKER_FILE:${SD_LIBRARY_NAME}>"
+                "-DSDX_LIBRARY_FILE=$<TARGET_FILE:${_sdx_sdk_target}>"
+                "-DSDX_LINKER_FILE=$<TARGET_LINKER_FILE:${_sdx_sdk_target}>"
                 "-DSDX_HEADER_FILE=${SDX_RUNTIME_HEADER}"
                 "-DSDX_README_FILE=${SDX_RUNTIME_README}"
                 "-DSDX_SCHEMA_FILE=${SDX_RUNTIME_SCHEMA}"
                 "-DSDX_BINDINGS_TEMPLATE_DIR=${SDX_RUNTIME_LANGUAGE_BINDINGS_DIR}"
+                "-DSDX_JAVA_SRC_DIR=${SDX_RUNTIME_JAVA_SRC_DIR}"
+                "-DSDX_STANDALONE=${_sdx_standalone}"
+                "-DSDX_STRIP_TOOL=${_sdx_strip_tool}"
                 "-DSDX_RUNTIME_ABI=1"
                 "-DSDX_HAVE_CUDA=${_sdx_have_cuda}"
                 "-DSDX_HAVE_ZLUDA=${_sdx_have_zluda}"

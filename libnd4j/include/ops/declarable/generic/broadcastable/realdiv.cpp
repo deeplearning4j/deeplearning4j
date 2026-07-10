@@ -23,6 +23,8 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_realdiv)
 
+#include <array/DataTypeUtils.h>
+#include <helpers/ConstantShapeHelper.h>
 #include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
@@ -70,6 +72,13 @@ DECLARE_TYPES(realdiv_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
+static DataType realDivBpGradientType(DataType xType, DataType yType, DataType epsType) {
+  auto type = DataTypeUtils::pickPairwiseResultType(xType, yType);
+  type = DataTypeUtils::pickPairwiseResultType(type, epsType);
+  if (DataTypeUtils::isR(type) && type != DataType::DOUBLE && type != DataType::FLOAT32) return DataType::FLOAT32;
+  return type;
+}
+
 CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
@@ -78,18 +87,37 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
   auto gradX = OUTPUT_VARIABLE(0);
   auto gradY = OUTPUT_VARIABLE(1);
 
+  NDArray *xCast = nullptr, *yCast = nullptr, *epsCast = nullptr;
+  NDArray* xWork = x;
+  NDArray* yWork = y;
+  NDArray* epsWork = epsNext;
+  auto gradType = gradX->dataType();
+  if (x->dataType() != gradType) {
+    xCast = x->cast(gradType);
+    xWork = xCast;
+  }
+  if (y->dataType() != gradType) {
+    yCast = y->cast(gradType);
+    yWork = yCast;
+  }
+  if (epsNext->dataType() != gradType) {
+    epsCast = epsNext->cast(gradType);
+    epsWork = epsCast;
+  }
+  auto cleanupCasts = [&]() { delete xCast; delete yCast; delete epsCast; };
+
   if (x->isSameShape(y)) {
     // PWT case case
 
     // X gradient
-    epsNext->applyPairwiseTransform(pairwise::Divide, y, gradX);
+    epsWork->applyPairwiseTransform(pairwise::Divide, yWork, gradX);
 
     // Y gradient
 
     // First case
-    NDArray negX = -(*x);
-    NDArray *epsNextMulNegX = (*epsNext) * negX;
-    NDArray *ySquared = (*y) * (*y);
+    NDArray negX = -(*xWork);
+    NDArray *epsNextMulNegX = (*epsWork) * negX;
+    NDArray *ySquared = (*yWork) * (*yWork);
     NDArray *gradYTemp = (*epsNextMulNegX) / (*ySquared);
     gradY->assign(gradYTemp);
     delete epsNextMulNegX;
@@ -99,29 +127,29 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
   } else if (y->isScalar()) {
     // scalar case
     NDArray tmp(gradY->dataType(), block.launchContext());
-    epsNext->reduceNumber(reduce::Sum, &tmp);
+    epsWork->reduceNumber(reduce::Sum, &tmp);
     NDArray tmpX(gradY->dataType(), block.launchContext());
-    x->reduceNumber(reduce::Sum, &tmpX);
+    xWork->reduceNumber(reduce::Sum, &tmpX);
 
     double tmpVal = tmp.e<double>(0);
     double tmpXVal = tmpX.e<double>(0);
-    double yVal = y->e<double>(0);
+    double yVal = yWork->e<double>(0);
     double gradYVal = -(tmpVal * tmpXVal) / (yVal * yVal);
     gradY->assign(gradYVal);
 
-    epsNext->applyScalarArr(scalar::Divide, y, gradX);
+    epsWork->applyScalarArr(scalar::Divide, yWork, gradX);
   } else {
     // broadcast case
 
-    auto preX = *epsNext / *y;
+    auto preX = *epsWork / *yWork;
 
     // Use dup() for a deep copy — NDArray copy constructor creates a VIEW (shares buffer).
     // Writing into a view of x would permanently negate the input variable in-place.
-    NDArray *negX = x->dup();
+    NDArray *negX = xWork->dup();
     negX->applyTransform(transform::Neg, negX);
-    NDArray *epsNextMulNegX = (*epsNext) * (*negX);
+    NDArray *epsNextMulNegX = (*epsWork) * (*negX);
     delete negX;
-    NDArray *ySquared = (*y) * (*y);
+    NDArray *ySquared = (*yWork) * (*yWork);
     NDArray *preY = (*epsNextMulNegX) / (*ySquared);
     delete epsNextMulNegX;
     delete ySquared;
@@ -150,6 +178,7 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
     delete preY;
   }
 
+  cleanupCasts();
   return Status::OK;
 }
 
@@ -158,12 +187,10 @@ DECLARE_SHAPE_FN(realdiv_bp) {
   auto y = inputShape->at(1);
   auto e = inputShape->at(2);
 
-  // eps always has shape of x
-  // grad always has shape of y
-
-  auto shapeList = SHAPELIST(CONSTANT(x), CONSTANT(y));
-
-  return shapeList;
+  auto gradType = realDivBpGradientType(ArrayOptions::dataType(x), ArrayOptions::dataType(y), ArrayOptions::dataType(e));
+  auto gradXShape = ConstantShapeHelper::getInstance().createShapeInfo(gradType, const_cast<LongType*>(x));
+  auto gradYShape = ConstantShapeHelper::getInstance().createShapeInfo(gradType, const_cast<LongType*>(y));
+  return SHAPELIST(gradXShape, gradYShape);
 }
 }  // namespace ops
 }  // namespace sd

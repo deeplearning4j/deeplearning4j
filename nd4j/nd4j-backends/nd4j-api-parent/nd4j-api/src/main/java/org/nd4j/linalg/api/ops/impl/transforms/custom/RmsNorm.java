@@ -60,9 +60,10 @@ public class RmsNorm extends DynamicCustomOp {
 
     /**
      * Create RmsNorm with input and gamma (scale weights).
+     * When gamma is null the op runs without a scale parameter.
      */
     public RmsNorm(SameDiff sameDiff, SDVariable input, SDVariable gamma, double epsilon) {
-        super(null, sameDiff, new SDVariable[]{input, gamma}, false);
+        super(null, sameDiff, gamma != null ? new SDVariable[]{input, gamma} : new SDVariable[]{input}, false);
         this.epsilon = epsilon;
         addTArgument(epsilon);
     }
