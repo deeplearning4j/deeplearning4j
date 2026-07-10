@@ -1274,7 +1274,12 @@ public class TestLLMBenchmarkSuite {
      * Uses a generic JSON extraction system prompt that works across input types.
      */
     private String formatExtractionPrompt(String inputText) {
-        return "<|im_start|>system\n" +
+        // LFM2 REQUIRES the leading <|startoftext|> BOS token: the model card's chat
+        // template begins with {{- bos_token -}} and llama.cpp injects it from GGUF
+        // add_bos_token metadata. Our pre-formatted-prompt encode path adds no specials,
+        // so it must appear literally. Without it the model degenerates into repetition
+        // loops (this exact test failing its quality gate).
+        return "<|startoftext|><|im_start|>system\n" +
                 "Return data as a JSON object. Extract all key entities, attributes, and values from the input text.\n" +
                 "<|im_end|>\n" +
                 "<|im_start|>user\n" +

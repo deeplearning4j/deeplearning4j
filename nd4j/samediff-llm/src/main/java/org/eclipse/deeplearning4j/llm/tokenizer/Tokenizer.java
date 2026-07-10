@@ -91,9 +91,71 @@ public interface Tokenizer extends AutoCloseable {
         if (template != null && !template.isBlank() && !alreadyFormatted) {
             String formatted = new ChatTemplate(template, getBosToken(), getEosToken())
                     .apply(java.util.Collections.singletonList(ChatTemplate.Message.user(prompt)), true);
-            return encode(formatted, false);
+            return ensureLeadingBos(encode(formatted, false));
         }
-        return encode(prompt, !alreadyFormatted);
+        if (alreadyFormatted) {
+            // Pre-formatted chat markup is encoded without the tokenizer's special-token
+            // post-processor (it would wrap the whole conversation). That also drops the
+            // leading BOS for models whose convention requires one (e.g. LFM2's template
+            // starts with {{- bos_token -}}; Qwen's does not). Re-apply it per the
+            // tokenizer's own convention.
+            return ensureLeadingBos(encode(prompt, false));
+        }
+        return encode(prompt, true);
+    }
+
+    /**
+     * Whether this tokenizer's own post-processor emits a leading BOS token when encoding
+     * with special tokens (e.g. LFM2/Llama-family single-sequence templates do; Qwen's does not).
+     * Determined empirically from a one-token probe so no per-model hardcoding is needed.
+     */
+    default boolean addsLeadingBos() {
+        int bosId = getBosTokenId();
+        if (bosId < 0) return false;
+        Encoding probe = encode("a", true);
+        int[] ids = probe.getIds();
+        return ids != null && ids.length > 0 && ids[0] == bosId;
+    }
+
+    /**
+     * Prepend the BOS token to an encoding when this tokenizer's convention requires a
+     * leading BOS and the encoding does not already start with one (a BOS literal present
+     * in the prompt text encodes to its id and is detected here, so no double-BOS).
+     */
+    default Encoding ensureLeadingBos(Encoding enc) {
+        int bosId = getBosTokenId();
+        if (bosId < 0 || !addsLeadingBos()) return enc;
+        int[] ids = enc.getIds();
+        if (ids == null || (ids.length > 0 && ids[0] == bosId)) return enc;
+
+        int[] newIds = new int[ids.length + 1];
+        newIds[0] = bosId;
+        System.arraycopy(ids, 0, newIds, 1, ids.length);
+
+        int[] mask = enc.getAttentionMask();
+        int[] newMask = new int[newIds.length];
+        newMask[0] = 1;
+        if (mask != null) System.arraycopy(mask, 0, newMask, 1, mask.length);
+        else java.util.Arrays.fill(newMask, 1);
+
+        String[] tokens = enc.getTokens();
+        String[] newTokens = new String[newIds.length];
+        newTokens[0] = getBosToken();
+        if (tokens != null) System.arraycopy(tokens, 0, newTokens, 1, tokens.length);
+
+        int[] typeIds = enc.getTypeIds();
+        int[] newTypeIds = null;
+        if (typeIds != null) {
+            newTypeIds = new int[newIds.length];
+            System.arraycopy(typeIds, 0, newTypeIds, 1, typeIds.length);
+        }
+
+        return Encoding.builder()
+                .ids(newIds)
+                .tokens(newTokens)
+                .attentionMask(newMask)
+                .typeIds(newTypeIds)
+                .build();
     }
 
     /**
