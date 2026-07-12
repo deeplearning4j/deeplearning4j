@@ -10,9 +10,9 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/eclipse/deeplearning4j)
 
 
-The **[Eclipse Deeplearning4J](https://deeplearning4j.konduit.ai/)** (DL4J) ecosystem is a set of projects intended to support all the needs of a JVM based deep learning application. This means starting with the raw data, loading and preprocessing it from wherever and whatever format it is in to building and tuning a wide variety of simple and complex deep learning networks. 
+The **[Eclipse Deeplearning4J](https://deeplearning4j.konduit.ai/)** (DL4J) ecosystem is a set of projects intended to support all the needs of a JVM based deep learning application. This means starting with the raw data, loading and preprocessing it from wherever and whatever format it is in to building and tuning a wide variety of simple and complex deep learning networks.
 
-Because Deeplearning4J runs on the JVM you can use it with a wide variety of JVM based languages other than Java, like Scala, Kotlin, Clojure and many more. 
+Because Deeplearning4J runs on the JVM you can use it with a wide variety of JVM based languages other than Java, like Scala, Kotlin, Clojure and many more.
 
 The DL4J stack comprises of:
 - **DL4J**: High level API to build MultiLayerNetworks and ComputationGraphs with a variety of layers, including custom ones. Supports importing Keras models from h5, including tf.keras models (as of 1.0.0-beta7) and also supports distributed training on Apache Spark
@@ -105,6 +105,6 @@ https://github.com/deeplearning4j/deeplearning4j/blob/c1bf8717e4839c8930e9c43183
 
 
 ## Commercial Support
-Deeplearning4J is actively developed by the team at [Konduit K.K.](https://konduit.ai). 
+Deeplearning4J is actively developed by the team at [Konduit K.K.](https://konduit.ai).
 
-[If you need any commercial support feel free to reach out to us. at [support@konduit.ai](mailto:support@konduit.ai)  
+[If you need any commercial support feel free to reach out to us. at [support@konduit.ai](mailto:support@konduit.ai)

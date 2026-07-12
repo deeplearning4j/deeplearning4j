@@ -2,14 +2,14 @@
 # Libnd4j NdArray padded buffers, strides for Arm_Compute Library wrapper
 
 ## Status
-Implemented 
+Implemented
 
 Proposed by: Abdelrauf (23/09/2020)
 
-Discussed with: 
+Discussed with:
 
 ## Context
-During the integration process of our library with arm_compute, I faced that our NdArray strides are not flexible. (i.e it cant be set properly without **special and manual handling**). 
+During the integration process of our library with arm_compute, I faced that our NdArray strides are not flexible. (i.e it cant be set properly without **special and manual handling**).
 Let's say our Nd Array shapes are `[3,4,2]` and the last index is moving faster (i.e C order). Then our strides will be  `[ 8, 2, 1 ]`.
 As far as I know, our last index stride can be different (called as ews), but overall strides should follow the cyclic strict rule of dependency.:
 
@@ -35,40 +35,40 @@ Add **generic method for the padded buffer** ( we can simulate arm_compute 2d pa
     int paddingOffsets[rank] = {...}; //offset indices of the first element
 
 This could be used to padd ndArray shapes and calculate strides based on it while keeping original shape, paddOffsets could be used to determine the beginning of the first element. Though this interface ismore generic its drawback is that on armcompute its possible to padd 1d into 2D while keeping rank but on this one we should supply 2d with one of its dimensions being 1.
-   
 
-## Consequences 
+
+## Consequences
 
  1. All tests that were not tested **against subArray** could break. So they will require a fix
- 2. Writing additional test cases 
+ 2. Writing additional test cases
 
 ### Advantages
 - alignment possibility for CPUs where alignment is required for speed and vectorization.
 - easier integration with libraries. in the case of arm_compute, the last two dimensions are sometimes padded.
 
-  
+
 ### Disadvantages
 - its advantage is not so big for modern CPUs where unaligned vector loads possible
 - exposing it for users is not desirable: (excessive usage creates unnecessary memory spaces and performance problems)
 - could result in unnecessary complications for some function implementations
-- possibility of requiring additional tests and fixes 
+- possibility of requiring additional tests and fixes
 
 
 ### Technical details about the addition of this functionality into  NdArray
-A little investigation showed that the current NdArray actually has constructors to specify strides. 
+A little investigation showed that the current NdArray actually has constructors to specify strides.
 Here is the constructor that could be used
 [ShapeDescriptor.h](https://github.com/KonduitAI/deeplearning4j/blob/qwr_armcompute/libnd4j/include/array/ShapeDescriptor.h)
 Here are additions into ShapeDescriptor:
 - validate()   //it willbe used for validation of strides and et cetera. This way we can  create NdArray by just using ShapeDescriptor alone. And it will be more flexible with correctness
 - allocLength() //returns minimal buffer size for the given strides and shapes. (this was missing on libnd4j side)
-- paddedBufferDescriptor(..) //helper method for returning ShapeDescriptor for padded buffer. 
+- paddedBufferDescriptor(..) //helper method for returning ShapeDescriptor for padded buffer.
 
 
 
 ####  [NdArrayFactory](https://github.com/KonduitAI/deeplearning4j/blob/qwr_armcompute/libnd4j/include/array/impl/NDArrayFactory.cpp#L39-L80)
 The method that is using ShapeDescriptor validation, and ShapeDescriptor paddedBuffer .
 
-Furthermore to indicate that shape of the NdArray is using paddedBuffer we will flag with `ARRAY_HAS_PADDED_BUFFER` . so it will be possible to know if NdArray  is padded. 
+Furthermore to indicate that shape of the NdArray is using paddedBuffer we will flag with `ARRAY_HAS_PADDED_BUFFER` . so it will be possible to know if NdArray  is padded.
 
 Furthermore, it is still possible to recover Paddings from the allocation size of the padded NdArray. But its not an easy task to get PaddingOffsets from offset and recovered full shape. Thats why it requires storing them. Fortunately, for arm_compute tensors **manual padding** we just need to know **total size and the offset** of the first element. So we dont need to change internals that much
 
@@ -83,7 +83,7 @@ pseudo code for C order:
     }
     shapesAfterPadding[0] = buffer.AllocSize / strides[0]
     //Paddings for index in 0..rank-1
-    paddings[index] = shapesAfterPadding[index] - shape[index] 
+    paddings[index] = shapesAfterPadding[index] - shape[index]
 
 
 
@@ -92,33 +92,33 @@ pseudo code for C order:
 ### Technical notes on arm_compute library
 
 The main drive for the above proposal to avoid unnecessary performance and memory allocation. And also we should keep on mind :
-- in each newer version of arm_compute there are new implementations in which the padding requirements were removed. 
+- in each newer version of arm_compute there are new implementations in which the padding requirements were removed.
 
-This **can diminish the necessity for the proposed changes** if such versions of the desired functions are implemented. 
+This **can diminish the necessity for the proposed changes** if such versions of the desired functions are implemented.
 
 ##### Notes on  arm_compute tensors
-Arm_compute tensors are mostly 3d 4d with max 6d dimensions. 
-So lets show  C order NdArray({2,2,5,5},) 
+Arm_compute tensors are mostly 3d 4d with max 6d dimensions.
+So lets show  C order NdArray({2,2,5,5},)
 
     shapeInfo shapeInfo: [4,  2,2,5,5,  50,25,5,1,  8192,1,99]
 
 of float type and its arm_compute tensor equivalent :
 - first of all, we map NdArray dataTypes into arm_compute [armcomputeUtils.cpp#L35-L75](https://github.com/KonduitAI/deeplearning4j/blob/qwr_armcompute/libnd4j/include/ops/declarable/platform/armcompute/armcomputeUtils.cpp#L35-L75)
-- it will be with the reversed shape. **`NdArray{n,z,y,x} -> TensorShape{x,y,z,n}`** 
-- 
+- it will be with the reversed shape. **`NdArray{n,z,y,x} -> TensorShape{x,y,z,n}`**
+-
 
     total length in bytes: 400
     shapes: 5,5,2,2,1,1,
-    strides in bytes: 4,20,100,200,0,0,  
+    strides in bytes: 4,20,100,200,0,0,
     strides as elements: (1,5,25,50)
 
 Paddings in arm_compute Tensors. `Padding{left,right, top, bottom}`
 As both OpenCL and NEON use vector loads and stores instructions to access the data in buffers, so in order to avoid having special cases to handle for the borders all the images and tensors used in this library must be padded
 There are different ways padding can be calculated:
 
--   Accurate padding. 
- in this case it is importan to configure and then after that to  allocate  
--  auto padding. 
+-   Accurate padding.
+ in this case it is importan to configure and then after that to  allocate
+-  auto padding.
   It guarantees that the allocation will have enough padding to run any of the provided functions
 - no padding
 - manual padding
@@ -138,16 +138,16 @@ Lets show it with the picture:
           ----------------------
         /       bottom           \
        /                          \
-         
-Here is the stride calculation pseudo code for Tensor {x,y,z}  
+
+Here is the stride calculation pseudo code for Tensor {x,y,z}
 
     stride_x = element_size(); //float will be 4
     stride_y = (padding.left + _tensor_shape[0] + padding.right) * stride_x;
     stride_z = (padding.top + _tensor_shape[1] + padding.bottom) * stride_y;
-    
+
     required_offset_first_element = padding.left * stride_x + padding.top * stride_y;
 
-  
+
 For example: if arm_tensor had `padding: left 0, right 1, top 0, bottom 1` :
 
     total: 576
@@ -168,7 +168,7 @@ From above we could see :
 - its desired to call configure and run  separately to avoid multiple configure calls ( this is not discussed here, for now)
 
 
-## arm_compute wrapper proposal   
+## arm_compute wrapper proposal
 
 
 So from above we can conclude that we have two options:
@@ -183,7 +183,7 @@ Here is auto padding:
     extra_pad_x = _tensor_shape.num_dimensions() < 1 ? 0 : 32;
     pad_x       = _tensor_shape.num_dimensions() < 1 ? 0 : 4;
     pad_y       = _tensor_shape.num_dimensions() < 2 ? 0 : 4;
-    
+
     PaddingSize(pad_y, pad_x + extra_pad_x, pad_y, pad_x);
 
 ## Discussion

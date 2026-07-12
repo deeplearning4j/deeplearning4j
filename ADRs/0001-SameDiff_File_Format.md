@@ -22,7 +22,7 @@ We will transition from a pure FlatBuffers to a Zip + FlatBuffers model format.
 FlatBuffers will be used for the graph structure only. Parameters will be stored separately to the graph structure, also within the zip.
 
 We will introduce the ability to support multiple versions of a graph in the model files.
-This will enable the model file to support storing 
+This will enable the model file to support storing
 * Multiple data types (for example, a FP32 version and a quantized INT8 version)
 * Multiple different checkpoints (parameters after 1000 iterations, after 5000, and so on)
 * Multiple versions of a given model (English vs. Chinese, or cased/uncased, etc)

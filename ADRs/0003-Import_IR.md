@@ -99,7 +99,7 @@ This attribute based format is an Intermediary Representation that we then
 "compile" to the equivalent calls in libnd4j.
 
 
-The format definitions for the IR can be found [here](./src/main/proto/nd4j/nd4j.proto) 
+The format definitions for the IR can be found [here](./src/main/proto/nd4j/nd4j.proto)
 
 ## Consequences
 
@@ -125,8 +125,8 @@ learning frameworks easier in the future.
 5. Protobuf allows easy code generation for other languages.
 6. Industry standard conventions being used over proprietary tooling reducing
    friction for adoption for people coming from other frameworks
-7. Straightforward mapping of arguments for import  
-8. Provide an easy bridge to existing libnd4j  
+7. Straightforward mapping of arguments for import
+8. Provide an easy bridge to existing libnd4j
 9. Allow automation of op descriptors  in any language that would understand how
    to pass data to the  c++ library.
 

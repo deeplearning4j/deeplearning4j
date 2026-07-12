@@ -5,7 +5,7 @@ Thanks for your interest in DL4J. Our goal is to bring fast, open-source deep le
 
 ## Getting Started
 
-Deeplearning4j's [open issues are here](https://github.com/eclipse/deeplearning4j/issues). In time, we'll tag issues that would make a good first pull request for new contributors. An easy way to get started helping the project is to *file an issue*. You can do that on the Deeplearning4j issues page by clicking on the green button at the right. Issues can include bugs to fix, features to add, or documentation that looks outdated. 
+Deeplearning4j's [open issues are here](https://github.com/eclipse/deeplearning4j/issues). In time, we'll tag issues that would make a good first pull request for new contributors. An easy way to get started helping the project is to *file an issue*. You can do that on the Deeplearning4j issues page by clicking on the green button at the right. Issues can include bugs to fix, features to add, or documentation that looks outdated.
 
 Note that you will need to [build dl4j from source](https://deeplearning4j.konduit.ai/multi-project/how-to-guides/build-from-source)
 
@@ -26,7 +26,7 @@ main tree or given feedback for changes that would be required.
   master you may be asked to rebase your changes.
 
 - Commits should be as small as possible, while ensuring that each commit is
-  correct independently (i.e., each commit should compile and pass tests). 
+  correct independently (i.e., each commit should compile and pass tests).
 
 - Don't put submodule updates in your pull request unless they are to landed
   commits.
@@ -37,13 +37,13 @@ main tree or given feedback for changes that would be required.
 
 - Work-in-progress pull requests are welcome. Please prefix them with `[WIP]` to tell the continuous integration (CI) backend not to run tests/checks on them (until that tag is removed and another commit is pushed up).
 
-- Add tests relevant to the fixed bug or new feature.  
+- Add tests relevant to the fixed bug or new feature.
 
 ## Conduct & License
 
 We follow the [Rust Code of Conduct](http://www.rust-lang.org/conduct.html).
 
-All code in this repository is released under the Apache Software Foundation License, 2.0, and by contributing to this repository, you agree to release that contribution under that same license. 
+All code in this repository is released under the Apache Software Foundation License, 2.0, and by contributing to this repository, you agree to release that contribution under that same license.
 
 
 ## Eclipse Contributor Agreement and Commit Signing
