@@ -19,6 +19,7 @@
  */
 
 #include <ops/declarable/helpers/sampling_penalties.h>
+#include <array/DataTypeUtils.h>
 #include <execution/Threads.h>
 #include <math/templatemath.h>
 #include <system/openmp_pragmas.h>
@@ -218,7 +219,7 @@ static void applyMinPFilter_(NDArray* logits, float minPF) {
                 float val = static_cast<float>(buf[offset]);
                 float expVal = sd::math::sd_exp<float, float>(val - maxLogit);
                 if (expVal < threshold) {
-                    buf[offset] = static_cast<T>(-FLT_MAX);
+                    buf[offset] = static_cast<T>(-sd::DataTypeUtils::infOrMax<T>());
                 }
             }
         }
@@ -348,7 +349,7 @@ static void applyTypicalPFilter_(NDArray* logits, float typicalPF) {
             // Pass 5: mask all tokens beyond the cutoff
             for (LongType k = cutoff; k < vocabSize; k++) {
                 LongType v = devs[k].second;
-                buf[base + v * elemStride] = static_cast<T>(-FLT_MAX);
+                buf[base + v * elemStride] = static_cast<T>(-sd::DataTypeUtils::infOrMax<T>());
             }
         }
     };
@@ -472,7 +473,7 @@ static void applyXtcFilter_(NDArray* logits, float xtcProbF, float xtcThrF,
                     static_cast<float>(buf[base + v * elemStride]) - maxLogit);
                 float p = expVal / sumExp;
                 if (p >= xtcThrF) {
-                    buf[base + v * elemStride] = static_cast<T>(-FLT_MAX);
+                    buf[base + v * elemStride] = static_cast<T>(-sd::DataTypeUtils::infOrMax<T>());
                 }
             }
         }

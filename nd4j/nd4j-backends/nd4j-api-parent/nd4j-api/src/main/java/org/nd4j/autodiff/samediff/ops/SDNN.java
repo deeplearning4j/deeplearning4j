@@ -6801,6 +6801,40 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Typical-p (entropy-deviation) logit filter.<br>
+   * <br>
+   * Masks tokens whose information content -log(p) deviates most from the distribution<br>
+   * entropy H, keeping the most typical tokens (smallest |-log(p) - H|) until their<br>
+   * cumulative probability mass reaches typicalP. Masked positions are set to -inf.<br>
+   *
+   * @param logits Logits tensor. Shape: [vocabSize] or [batch, vocabSize] (NUMERIC type)
+   * @param typicalP Cumulative mass of the most-typical tokens to keep. 1.0 = off (no-op)
+   * @return output Filtered logits (masked positions set to -inf). Same shape and type as input. (NUMERIC type)
+   */
+  public SDVariable typicalPFilter(SDVariable logits, double typicalP) {
+    SDValidation.validateNumerical("typicalPFilter", "logits", logits);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.TypicalPFilter(sd,logits, typicalP).outputVariable();
+  }
+
+  /**
+   * Typical-p (entropy-deviation) logit filter.<br>
+   * <br>
+   * Masks tokens whose information content -log(p) deviates most from the distribution<br>
+   * entropy H, keeping the most typical tokens (smallest |-log(p) - H|) until their<br>
+   * cumulative probability mass reaches typicalP. Masked positions are set to -inf.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param logits Logits tensor. Shape: [vocabSize] or [batch, vocabSize] (NUMERIC type)
+   * @param typicalP Cumulative mass of the most-typical tokens to keep. 1.0 = off (no-op)
+   * @return output Filtered logits (masked positions set to -inf). Same shape and type as input. (NUMERIC type)
+   */
+  public SDVariable typicalPFilter(String name, SDVariable logits, double typicalP) {
+    SDValidation.validateNumerical("typicalPFilter", "logits", logits);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.TypicalPFilter(sd,logits, typicalP).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Scatter vision embeddings into text embeddings at target token positions.<br>
    * <br>
    * Replaces positions in the text embedding sequence where the token ID<br>
@@ -7009,6 +7043,46 @@ public class SDNN extends SDOps {
       SDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
     }
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(sd,query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Exclude Top Choices (XTC) logit filter.<br>
+   * <br>
+   * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,<br>
+   * if at least two qualify, mask all EXCEPT the lowest-probability one — encouraging<br>
+   * diversity. Otherwise the logits are unchanged. Stochastic; seeded by seed.<br>
+   *
+   * @param logits Logits tensor. Shape: [vocabSize] or [batch, vocabSize] (NUMERIC type)
+   * @param xtcProbability Probability of applying XTC. 0.0 = off
+   * @param xtcThreshold Per-token probability threshold to qualify for exclusion. Must be < 0.5
+   * @param seed Random seed for the stochastic apply/skip draw
+   * @return output Filtered logits (masked positions set to -inf). Same shape and type as input. (NUMERIC type)
+   */
+  public SDVariable xtcFilter(SDVariable logits, double xtcProbability, double xtcThreshold,
+      long seed) {
+    SDValidation.validateNumerical("xtcFilter", "logits", logits);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.XtcFilter(sd,logits, xtcProbability, xtcThreshold, seed).outputVariable();
+  }
+
+  /**
+   * Exclude Top Choices (XTC) logit filter.<br>
+   * <br>
+   * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,<br>
+   * if at least two qualify, mask all EXCEPT the lowest-probability one — encouraging<br>
+   * diversity. Otherwise the logits are unchanged. Stochastic; seeded by seed.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param logits Logits tensor. Shape: [vocabSize] or [batch, vocabSize] (NUMERIC type)
+   * @param xtcProbability Probability of applying XTC. 0.0 = off
+   * @param xtcThreshold Per-token probability threshold to qualify for exclusion. Must be < 0.5
+   * @param seed Random seed for the stochastic apply/skip draw
+   * @return output Filtered logits (masked positions set to -inf). Same shape and type as input. (NUMERIC type)
+   */
+  public SDVariable xtcFilter(String name, SDVariable logits, double xtcProbability,
+      double xtcThreshold, long seed) {
+    SDValidation.validateNumerical("xtcFilter", "logits", logits);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.XtcFilter(sd,logits, xtcProbability, xtcThreshold, seed).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 }

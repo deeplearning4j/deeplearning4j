@@ -83,12 +83,90 @@ CUSTOM_OP_IMPL(sampling_penalties, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(sampling_penalties) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
     getOpDescriptor()->setAllowedInputTypes(1, {INT64, INT32});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(sampling_penalties) {
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+}
+
+/**
+ * typical_p_filter - Typical-p (entropy-deviation) logit filter. Masks tokens whose
+ * information content -log(p) deviates most from the distribution entropy, keeping the
+ * tokens with smallest deviation until their cumulative mass >= typicalP. Modifies logits
+ * in place (masked positions set to -inf). typicalP in (0,1) enables; 1.0 = no-op.
+ * Float args: 0: typicalP (1.0 = off)
+ */
+CUSTOM_OP_IMPL(typical_p_filter, 1, 1, false, 1, 0) {
+    auto logits = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
+
+    auto logitsRank = logits->rankOf();
+    REQUIRE_TRUE(logitsRank == 1 || logitsRank == 2, 0,
+                 "typical_p_filter: logits must be rank 1 or 2, got %lld", (long long)logitsRank);
+
+    double typicalP = block.getTArguments()->size() > 0 ? T_ARG(0) : 1.0;
+
+    if (logits != output) output->assign(logits);
+
+    if (typicalP > 0.0 && typicalP < 1.0) {
+        helpers::applyTypicalPFilter(output, typicalP, block.launchContext());
+    }
+    return sd::Status::OK;
+}
+
+DECLARE_TYPES(typical_p_filter) {
+    getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_FULLY_WRITING);
+    getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+DECLARE_SHAPE_FN(typical_p_filter) {
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+}
+
+/**
+ * xtc_filter - Exclude Top Choices (XTC) logit filter. With probability xtcProbability,
+ * among tokens whose softmax probability >= xtcThreshold, mask all EXCEPT the
+ * lowest-probability surviving one; otherwise leave logits unchanged. Stochastic (seeded).
+ * Float args: 0: xtcProbability (0.0 = off), 1: xtcThreshold (must be < 0.5)
+ * Int args:   0: seed
+ */
+CUSTOM_OP_IMPL(xtc_filter, 1, 1, false, 2, 1) {
+    auto logits = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
+
+    auto logitsRank = logits->rankOf();
+    REQUIRE_TRUE(logitsRank == 1 || logitsRank == 2, 0,
+                 "xtc_filter: logits must be rank 1 or 2, got %lld", (long long)logitsRank);
+
+    double xtcProbability = block.getTArguments()->size() > 0 ? T_ARG(0) : 0.0;
+    double xtcThreshold   = block.getTArguments()->size() > 1 ? T_ARG(1) : 0.1;
+    sd::LongType seed     = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
+
+    // No threshold rejection: xtcThreshold >= 0.5 is a graceful no-op (at most one token can
+    // have p >= 0.5, so fewer than two qualify and the kernel leaves logits unchanged).
+
+    if (logits != output) output->assign(logits);
+
+    if (xtcProbability > 0.0) {
+        helpers::applyXtcFilter(output, xtcProbability, xtcThreshold, seed, block.launchContext());
+    }
+    return sd::Status::OK;
+}
+
+DECLARE_TYPES(xtc_filter) {
+    getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_FULLY_WRITING);
+    getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+DECLARE_SHAPE_FN(xtc_filter) {
     auto inShape = inputShape->at(0);
     return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
 }

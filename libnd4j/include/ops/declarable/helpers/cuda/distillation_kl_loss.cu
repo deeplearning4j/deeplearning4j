@@ -17,12 +17,14 @@
  ******************************************************************************/
 
 #include <ops/declarable/helpers/distillation_kl_loss.h>
+#include <ops/declarable/helpers/activations.h>
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
 #include <helpers/DebugHelper.h>
 #include <math/templatemath.h>
 #include <cuda_runtime.h>
 #include <cfloat>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -30,79 +32,72 @@ namespace helpers {
 
 static constexpr int DKL_WARP_SIZE = 32;
 
+// Accumulator/scratch type: double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
+
 // Kernel: Compute softmax with temperature for each row, store log-softmax
 template <typename T>
 SD_KERNEL void klSoftmaxKernel(
     const T* __restrict__ logits,
-    float* __restrict__ logSoftmax,
-    float* __restrict__ softmax,
+    typename AccType<T>::type* __restrict__ logSoftmax,
+    typename AccType<T>::type* __restrict__ softmax,
     const LongType batch,
     const LongType classes,
     const float temperature) {
+
+    using AccT = typename AccType<T>::type;
 
     const int b = blockIdx.x;
     if (b >= batch) return;
 
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int lane = threadIdx.x % DKL_WARP_SIZE;
     const int wid = threadIdx.x / DKL_WARP_SIZE;
     const int numWarps = (blockDim.x + DKL_WARP_SIZE - 1) / DKL_WARP_SIZE;
 
-    // Find max
-    float threadMax = -FLT_MAX;
+    // Find max (broadcast to all threads for numerically stable softmax)
+    AccT threadMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType c = threadIdx.x; c < classes; c += blockDim.x) {
-        float v = static_cast<float>(logits[b * classes + c]) / temperature;
-        threadMax = sd::math::sd_max<float>(threadMax, v);
+        AccT v = static_cast<AccT>(logits[b * classes + c]) / static_cast<AccT>(temperature);
+        threadMax = sd::math::sd_max<AccT>(threadMax, v);
     }
-    for (int offset = DKL_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadMax = sd::math::sd_max<float>(threadMax, __shfl_down_sync(0xffffffff, threadMax, offset));
-    if (lane == 0) warpBuf[wid] = threadMax;
-    __syncthreads();
 
-    float rowMax = -FLT_MAX;
-    if (threadIdx.x < numWarps) rowMax = warpBuf[threadIdx.x];
-    for (int offset = DKL_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowMax = sd::math::sd_max<float>(rowMax, __shfl_down_sync(0xffffffff, rowMax, offset));
-    __shared__ float sharedMax;
-    if (threadIdx.x == 0) sharedMax = rowMax;
-    __syncthreads();
-    rowMax = sharedMax;
+    AccT rowMax = sd::device::blockAllReduceMax(threadMax, warpBuf);
 
     // Compute sum of exp
-    float threadSum = 0.0f;
+    AccT threadSum = static_cast<AccT>(0);
     for (LongType c = threadIdx.x; c < classes; c += blockDim.x) {
-        float v = static_cast<float>(logits[b * classes + c]) / temperature - rowMax;
-        threadSum += sd::math::sd_exp<float, float>(v);
+        AccT v = static_cast<AccT>(logits[b * classes + c]) / static_cast<AccT>(temperature) - rowMax;
+        threadSum += sd::math::sd_exp<AccT, AccT>(v);
     }
-    for (int offset = DKL_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadSum += __shfl_down_sync(0xffffffff, threadSum, offset);
-    if (lane == 0) warpBuf[wid] = threadSum;
-    __syncthreads();
 
-    float rowSum = 0.0f;
-    if (threadIdx.x < numWarps) rowSum = warpBuf[threadIdx.x];
-    for (int offset = DKL_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowSum += __shfl_down_sync(0xffffffff, rowSum, offset);
-    __shared__ float sharedLogSum;
-    if (threadIdx.x == 0) sharedLogSum = logf(rowSum);
-    __syncthreads();
+    // blockReduceSum is sufficient here because only thread 0 uses rowSum (to write sharedLogSum)
+    // but we need sharedLogSum visible to ALL threads for the final write loop.
+    // Use blockAllReduceSum so every thread gets the total.
+    AccT rowSum = sd::device::blockAllReduceSum(threadSum, warpBuf);
+    AccT logSum = sd::math::sd_log<AccT, AccT>(rowSum);
 
     // Write log-softmax and softmax
     for (LongType c = threadIdx.x; c < classes; c += blockDim.x) {
-        float ls = static_cast<float>(logits[b * classes + c]) / temperature - rowMax - sharedLogSum;
+        AccT ls = static_cast<AccT>(logits[b * classes + c]) / static_cast<AccT>(temperature) - rowMax - logSum;
         logSoftmax[b * classes + c] = ls;
-        softmax[b * classes + c] = sd::math::sd_exp<float, float>(ls);
+        softmax[b * classes + c] = sd::math::sd_exp<AccT, AccT>(ls);
     }
 }
 
 // Kernel: Compute KL divergence sum per sample
+// Templated on AccT since all inputs are already AccT scratch buffers.
+template <typename AccT>
 SD_KERNEL void klDivergenceKernel(
-    const float* __restrict__ teacherSoftmax,
-    const float* __restrict__ teacherLogSoftmax,
-    const float* __restrict__ studentLogSoftmax,
-    float* __restrict__ sampleLosses,
+    const AccT* __restrict__ teacherSoftmax,
+    const AccT* __restrict__ teacherLogSoftmax,
+    const AccT* __restrict__ studentLogSoftmax,
+    AccT* __restrict__ sampleLosses,
     const LongType batch,
     const LongType classes) {
 
@@ -110,29 +105,22 @@ SD_KERNEL void klDivergenceKernel(
     if (b >= batch) return;
 
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int lane = threadIdx.x % DKL_WARP_SIZE;
     const int wid = threadIdx.x / DKL_WARP_SIZE;
     const int numWarps = (blockDim.x + DKL_WARP_SIZE - 1) / DKL_WARP_SIZE;
 
-    float threadKL = 0.0f;
+    AccT threadKL = static_cast<AccT>(0);
     for (LongType c = threadIdx.x; c < classes; c += blockDim.x) {
-        float pt = teacherSoftmax[b * classes + c];
-        float logPt = teacherLogSoftmax[b * classes + c];
-        float logPs = studentLogSoftmax[b * classes + c];
+        AccT pt = teacherSoftmax[b * classes + c];
+        AccT logPt = teacherLogSoftmax[b * classes + c];
+        AccT logPs = studentLogSoftmax[b * classes + c];
         threadKL += pt * (logPt - logPs);
     }
 
-    for (int offset = DKL_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadKL += __shfl_down_sync(0xffffffff, threadKL, offset);
-    if (lane == 0) warpBuf[wid] = threadKL;
-    __syncthreads();
-
-    float totalKL = 0.0f;
-    if (threadIdx.x < numWarps) totalKL = warpBuf[threadIdx.x];
-    for (int offset = DKL_WARP_SIZE / 2; offset > 0; offset /= 2)
-        totalKL += __shfl_down_sync(0xffffffff, totalKL, offset);
+    // Result only needed by thread 0 to write sampleLosses[b]
+    AccT totalKL = sd::device::blockReduceSum(threadKL, warpBuf);
 
     if (threadIdx.x == 0)
         sampleLosses[b] = totalKL;
@@ -141,21 +129,23 @@ SD_KERNEL void klDivergenceKernel(
 // Kernel: Sum sample losses to scalar
 template <typename T>
 SD_KERNEL void klSumLossKernel(
-    const float* __restrict__ klLosses,
+    const typename AccType<T>::type* __restrict__ klLosses,
     T* __restrict__ output,
     const LongType batch,
     const float tempSq,
     const float alpha) {
 
-    float total = 0.0f;
+    using AccT = typename AccType<T>::type;
+
+    AccT total = static_cast<AccT>(0);
     for (LongType i = threadIdx.x; i < batch; i += blockDim.x)
         total += klLosses[i];
 
-    for (int offset = DKL_WARP_SIZE / 2; offset > 0; offset /= 2)
-        total += __shfl_down_sync(0xffffffff, total, offset);
+    // Single-warp kernel — warpReduceSum is sufficient
+    total = sd::device::warpReduceSum(total);
 
     if (threadIdx.x == 0)
-        output[0] = static_cast<T>(alpha * tempSq * total / batch);
+        output[0] = static_cast<T>(static_cast<AccT>(alpha) * static_cast<AccT>(tempSq) * total / static_cast<AccT>(batch));
 }
 
 template <typename T>
@@ -170,11 +160,12 @@ void distillationKLLossCudaLauncher(const cudaStream_t* stream,
     auto studentLogits = reinterpret_cast<const T*>(vStudentLogits);
     auto teacherLogits = reinterpret_cast<const T*>(vTeacherLogits);
     auto output = reinterpret_cast<T*>(vOutput);
-    auto studentLogSm = reinterpret_cast<float*>(vStudentLogSm);
-    auto studentSm = reinterpret_cast<float*>(vStudentSm);
-    auto teacherLogSm = reinterpret_cast<float*>(vTeacherLogSm);
-    auto teacherSm = reinterpret_cast<float*>(vTeacherSm);
-    auto klLosses = reinterpret_cast<float*>(vKlLosses);
+    using AccT = typename AccType<T>::type;
+    auto studentLogSm = reinterpret_cast<AccT*>(vStudentLogSm);
+    auto studentSm = reinterpret_cast<AccT*>(vStudentSm);
+    auto teacherLogSm = reinterpret_cast<AccT*>(vTeacherLogSm);
+    auto teacherSm = reinterpret_cast<AccT*>(vTeacherSm);
+    auto klLosses = reinterpret_cast<AccT*>(vKlLosses);
 
     int smThreads = 256;
     if (classes < 256) {
@@ -182,7 +173,7 @@ void distillationKLLossCudaLauncher(const cudaStream_t* stream,
         if (smThreads < DKL_WARP_SIZE) smThreads = DKL_WARP_SIZE;
     }
     int numWarps = (smThreads + DKL_WARP_SIZE - 1) / DKL_WARP_SIZE;
-    size_t sharedSize = numWarps * sizeof(float);
+    size_t sharedSize = numWarps * sizeof(AccT);
 
     // Compute softmax for student and teacher
     klSoftmaxKernel<T><<<batch, smThreads, sharedSize, *stream>>>(
@@ -194,7 +185,7 @@ void distillationKLLossCudaLauncher(const cudaStream_t* stream,
     DebugHelper::checkGlobalErrorCode("klSoftmaxKernel teacher failed");
 
     // KL divergence per sample
-    klDivergenceKernel<<<batch, smThreads, sharedSize, *stream>>>(
+    klDivergenceKernel<AccT><<<batch, smThreads, sharedSize, *stream>>>(
         teacherSm, teacherLogSm, studentLogSm, klLosses, batch, classes);
     DebugHelper::checkGlobalErrorCode("klDivergenceKernel failed");
 
@@ -219,15 +210,23 @@ void distillationKLLoss(NDArray* studentLogits, NDArray* teacherLogits,
                          NDArray* hardLabels, NDArray* output,
                          double temperature, double alpha,
                          LaunchContext* context) {
-    auto batch = studentLogits->sizeAt(0);
-    auto classes = studentLogits->sizeAt(1);
+    // Flatten leading dims for rank-3 [B,S,V] -> batch=B*S, classes=V so a rank-3
+    // input gives the same per-sample-averaged loss as its reshaped rank-2 form
+    // (matches the CPU helper distillation_kl_loss.cpp). Contiguous layout means the
+    // kernels' logits[b*classes + c] indexing is already correct after flattening.
+    const int rank = studentLogits->rankOf();
+    auto batch = (rank == 3) ? studentLogits->sizeAt(0) * studentLogits->sizeAt(1)
+                             : studentLogits->sizeAt(0);
+    auto classes = (rank == 3) ? studentLogits->sizeAt(2)
+                               : studentLogits->sizeAt(1);
     auto stream = context->getCudaStream();
 
-    auto studentLogSm = NDArrayFactory::create('c', {batch, classes}, DataType::FLOAT32, context);
-    auto studentSm = NDArrayFactory::create('c', {batch, classes}, DataType::FLOAT32, context);
-    auto teacherLogSm = NDArrayFactory::create('c', {batch, classes}, DataType::FLOAT32, context);
-    auto teacherSm = NDArrayFactory::create('c', {batch, classes}, DataType::FLOAT32, context);
-    auto klLosses = NDArrayFactory::create('c', {batch}, DataType::FLOAT32, context);
+    auto accDtype = studentLogits->dataType() == DataType::DOUBLE ? DataType::DOUBLE : DataType::FLOAT32;
+    auto studentLogSm = NDArrayFactory::create('c', {batch, classes}, accDtype, context);
+    auto studentSm = NDArrayFactory::create('c', {batch, classes}, accDtype, context);
+    auto teacherLogSm = NDArrayFactory::create('c', {batch, classes}, accDtype, context);
+    auto teacherSm = NDArrayFactory::create('c', {batch, classes}, accDtype, context);
+    auto klLosses = NDArrayFactory::create('c', {batch}, accDtype, context);
 
     NDArray::prepareSpecialUse({output}, {studentLogits, teacherLogits});
 
@@ -256,47 +255,30 @@ void distillationKLLossBp(NDArray* studentLogits, NDArray* teacherLogits,
                             NDArray* dLdStudent, NDArray* dLdTeacher,
                             double temperature, double alpha,
                             LaunchContext* context) {
-    auto batch = studentLogits->sizeAt(0);
-    auto classes = studentLogits->sizeAt(1);
+    // dLdStudent = (softmax(student/T) - softmax(teacher/T)) * (alpha*T / N), where softmax is
+    // taken over the classes axis (the last dimension) and N is the number of distributions
+    // (product of the leading dims). helpers::softmax reduces along a TAD over that axis, so it
+    // is rank-invariant: rank-2 [B*S,V] and rank-3 [B,S,V] give identical per-element gradients
+    // with no reshape/broadcast handling here.
+    const int rank = studentLogits->rankOf();
+    const int softmaxDim = rank - 1;
+    const sd::LongType batch = studentLogits->lengthOf() / studentLogits->sizeAt(rank - 1);
 
     NDArray::prepareSpecialUse({dLdStudent, dLdTeacher}, {studentLogits, teacherLogits});
 
-    // sScaled = studentLogits / temperature
+    // Scaled logits, then softmax over the classes axis.
     NDArray sScaled(studentLogits->shapeInfo(), false, context);
     studentLogits->applyScalar<double>(scalar::Divide, temperature, &sScaled);
-
-    // tScaled = teacherLogits / temperature
     NDArray tScaled(teacherLogits->shapeInfo(), false, context);
     teacherLogits->applyScalar<double>(scalar::Divide, temperature, &tScaled);
 
-    // Softmax via exp(x - max) / sum(exp(x - max))
-    std::vector<sd::LongType> axes = {1};
-    NDArray* sMax = sScaled.reduceAlongDimension(reduce::SameOps::Max, &axes, true);
-    NDArray* tMax = tScaled.reduceAlongDimension(reduce::SameOps::Max, &axes, true);
-
-    // sExp = exp(sScaled - sMax)
-    NDArray sShifted(sScaled.shapeInfo(), false, context);
-    sScaled.applyPairwiseTransform(pairwise::Subtract, sMax, &sShifted);
-    NDArray sExp(sScaled.shapeInfo(), false, context);
-    sShifted.applyTransform(transform::Exp, &sExp);
-
-    // tExp = exp(tScaled - tMax)
-    NDArray tShifted(tScaled.shapeInfo(), false, context);
-    tScaled.applyPairwiseTransform(pairwise::Subtract, tMax, &tShifted);
-    NDArray tExp(tScaled.shapeInfo(), false, context);
-    tShifted.applyTransform(transform::Exp, &tExp);
-
-    NDArray* sSum = sExp.reduceAlongDimension(reduce::SameOps::Sum, &axes, true);
-    NDArray* tSum = tExp.reduceAlongDimension(reduce::SameOps::Sum, &axes, true);
-
-    // sSoftmax = sExp / sSum, tSoftmax = tExp / tSum
     NDArray sSoftmax(sScaled.shapeInfo(), false, context);
-    sExp.applyPairwiseTransform(pairwise::Divide, sSum, &sSoftmax);
+    softmax(context, &sScaled, &sSoftmax, softmaxDim);
     NDArray tSoftmax(tScaled.shapeInfo(), false, context);
-    tExp.applyPairwiseTransform(pairwise::Divide, tSum, &tSoftmax);
+    softmax(context, &tScaled, &tSoftmax, softmaxDim);
 
-    // dLdStudent = (sSoftmax - tSoftmax) * scale
-    double scale = alpha * temperature / static_cast<double>(batch);
+    // dLdStudent = (sSoftmax - tSoftmax) * scale   (elementwise, same shape as the logits)
+    const double scale = alpha * temperature / static_cast<double>(batch);
     NDArray diff(sScaled.shapeInfo(), false, context);
     sSoftmax.applyPairwiseTransform(pairwise::Subtract, &tSoftmax, &diff);
     diff.applyScalar<double>(scalar::Multiply, scale, dLdStudent);
@@ -305,11 +287,6 @@ void distillationKLLossBp(NDArray* studentLogits, NDArray* teacherLogits,
     NDArray* zeroArr = NDArrayFactory::create_<float>(0.0f, context);
     dLdTeacher->assign(zeroArr);
     delete zeroArr;
-
-    delete sMax;
-    delete tMax;
-    delete sSum;
-    delete tSum;
 
     NDArray::registerSpecialUse({dLdStudent, dLdTeacher}, {studentLogits, teacherLogits});
 }

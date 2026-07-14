@@ -228,71 +228,11 @@ public final class SamplerUtils {
 
         boolean was1D = logits.rank() == 1;
         INDArray input = was1D ? logits.reshape(1, logits.length()) : logits;
-        INDArray result = input.dup();
-
-        long batchSize = result.size(0);
-        for (int b = 0; b < batchSize; b++) {
-            INDArray row = result.getRow(b);
-            float[] vals = row.toFloatVector();
-            int V = vals.length;
-
-            // Softmax
-            float maxLogit = Float.NEGATIVE_INFINITY;
-            for (float v : vals) if (v > maxLogit) maxLogit = v;
-            float sumExp = 0.0f;
-            float[] exps = new float[V];
-            for (int i = 0; i < V; i++) {
-                exps[i] = (float) Math.exp(vals[i] - maxLogit);
-                sumExp += exps[i];
-            }
-            float[] probs = new float[V];
-            for (int i = 0; i < V; i++) probs[i] = exps[i] / sumExp;
-
-            // Entropy H
-            double H = 0.0;
-            for (float p : probs) {
-                if (p > 0.0f) H -= p * Math.log(p);
-            }
-
-            // Deviation and sort
-            float[] devs = new float[V];
-            Integer[] idx = new Integer[V];
-            for (int i = 0; i < V; i++) {
-                devs[i] = (float) Math.abs(-Math.log(Math.max(probs[i], 1e-10)) - H);
-                idx[i] = i;
-            }
-            java.util.Arrays.sort(idx, (a, c) -> Float.compare(devs[a], devs[c]));
-
-            // Accumulate until typicalP
-            double cumProb = 0.0;
-            int cutoff = V;
-            for (int k = 0; k < V; k++) {
-                cumProb += probs[idx[k]];
-                if (cumProb >= typicalP) {
-                    cutoff = k + 1;
-                    break;
-                }
-            }
-
-            // Tie-inclusive cutoff: tokens whose deviation matches the last included
-            // token's (within float noise) are equally typical — keep the whole class.
-            // Matches the native CPU sort filter and the CUDA threshold kernel, which
-            // always include entire deviation classes.
-            if (cutoff > 0 && cutoff < V) {
-                float cutDev = devs[idx[cutoff - 1]];
-                while (cutoff < V && devs[idx[cutoff]] <= cutDev + 1e-6f) cutoff++;
-            }
-
-            // Mask beyond cutoff
-            boolean[] keep = new boolean[V];
-            for (int k = 0; k < cutoff; k++) keep[idx[k]] = true;
-            for (int i = 0; i < V; i++) {
-                if (!keep[i]) vals[i] = (float) NEG_INF;
-            }
-            row.assign(Nd4j.createFromArray(vals));
-        }
-
-        return was1D ? result.reshape(result.length()) : result;
+        // Route to the generated NN op. Dtype-preserving: double stays double, float stays float —
+        // the op's AccType kernels accumulate in the element type. Replaces the former hardcoded-float
+        // toFloatVector() reimplementation (single source of truth).
+        INDArray output = Nd4j.nn().typicalPFilter(input, typicalP);
+        return was1D ? output.reshape(output.length()) : output;
     }
 
     /**
@@ -316,56 +256,12 @@ public final class SamplerUtils {
 
         boolean was1D = logits.rank() == 1;
         INDArray input = was1D ? logits.reshape(1, logits.length()) : logits;
-        INDArray result = input.dup();
-
-        long batchSize = result.size(0);
-        for (int b = 0; b < batchSize; b++) {
-            // Apply/skip decision per batch element
-            if (random.nextDouble() > xtcProbability) continue;
-
-            INDArray row = result.getRow(b);
-            float[] vals = row.toFloatVector();
-            int V = vals.length;
-
-            // Softmax
-            float maxLogit = Float.NEGATIVE_INFINITY;
-            for (float v : vals) if (v > maxLogit) maxLogit = v;
-            float sumExp = 0.0f;
-            float[] exps = new float[V];
-            for (int i = 0; i < V; i++) {
-                exps[i] = (float) Math.exp(vals[i] - maxLogit);
-                sumExp += exps[i];
-            }
-
-            // Find above-threshold tokens and their argmin
-            float minP = Float.MAX_VALUE;
-            int minIdx = -1;
-            int countAbove = 0;
-            for (int i = 0; i < V; i++) {
-                float p = exps[i] / sumExp;
-                if (p >= xtcThreshold) {
-                    countAbove++;
-                    if (p < minP) {
-                        minP = p;
-                        minIdx = i;
-                    }
-                }
-            }
-
-            if (countAbove < 2) continue;  // No diversity gain if < 2 qualify
-
-            // Mask all qualifying tokens except the lowest-probability one
-            for (int i = 0; i < V; i++) {
-                if (i == minIdx) continue;
-                float p = exps[i] / sumExp;
-                if (p >= xtcThreshold) {
-                    vals[i] = (float) NEG_INF;
-                }
-            }
-            row.assign(Nd4j.createFromArray(vals));
-        }
-
-        return was1D ? result.reshape(result.length()) : result;
+        // Route to the generated NN op. Dtype-preserving. The op does the per-batch apply/skip draw
+        // with its own (native curand) RNG; we derive a reproducible seed from the caller's Random so
+        // that same-Random-state -> same output. Replaces the hardcoded-float reimplementation.
+        long seed = random.nextLong();
+        INDArray output = Nd4j.nn().xtcFilter(input, xtcProbability, xtcThreshold, seed);
+        return was1D ? output.reshape(output.length()) : output;
     }
 
     /**

@@ -966,6 +966,8 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Dequantize.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.TopKRenorm.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.TopPRenorm.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.TypicalPFilter.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.XtcFilter.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.LightningAttention.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.CascadeAttention.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.SegmentGemm.class,
@@ -1346,6 +1348,26 @@ public class DifferentialFunctionClassHolder {
 
     public static synchronized DifferentialFunctionClassHolder getInstance() {
         log.trace("Returning class holder instance");
+        if (INSTANCE == null && !initialized.get()) {
+            // Deserialization can reach the op registry before anything has touched Nd4j
+            // (e.g. SameDiff.load of an SDZ/SDNB as a process's first ND4J call). The
+            // registry is only built at the tail of Nd4j's backend init (initInstance()),
+            // so bootstrap through the canonical path. Re-entrant callers during that
+            // init still observe null and are handled by the existing circular-init
+            // guards in DifferentialFunction.
+            try {
+                Nd4j.getExecutioner();
+            } catch (Throwable t) {
+                log.warn("Nd4j bootstrap for op-registry initialization failed; initializing registry directly", t);
+            }
+            if (INSTANCE == null && !initialized.get()) {
+                try {
+                    initInstance();
+                } catch (IOException e) {
+                    throw new IllegalStateException("Failed to initialize the op registry", e);
+                }
+            }
+        }
         return INSTANCE;
     }
 

@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.llm.generation.sampling;
 
 import lombok.Builder;
 import lombok.Data;
+import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintConfig;
 
 /**
  * Configuration for text generation sampling strategies.
@@ -402,6 +403,7 @@ public class SamplingConfig {
      */
     public boolean isGreedy() {
         return decodeStrategy == DecodeStrategy.GREEDY
+                || decodeStrategy == DecodeStrategy.SPECULATIVE
                 || (decodeStrategy == DecodeStrategy.AUTO && (!doSample || temperature <= 0));
     }
 
@@ -542,5 +544,39 @@ public class SamplingConfig {
      */
     public boolean isContrastive() {
         return decodeStrategy == DecodeStrategy.CONTRASTIVE && penaltyAlpha > 0.0 && contrastiveTopK > 1;
+    }
+
+    // ---- Constrained decoding ----
+
+    /**
+     * Optional constraint configuration for structured-output / constrained decoding.
+     *
+     * <p>When set, every token selection step runs through the Java sampling branch
+     * (bypassing the native {@code autoregressive_decode} C++ loop) so the
+     * {@link org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintMasker}
+     * can apply per-step logit masking. This has a modest throughput cost compared to
+     * the native loop ({@code ~0.5–1×} tok/s on CPU vs. unconstrained; see ADR 0111)
+     * but guarantees structurally valid output.
+     *
+     * <p>Null (default) = unconstrained; zero behavior change.
+     *
+     * <p>Use the factory methods on {@link ConstraintConfig} to build a config:</p>
+     * <pre>{@code
+     * SamplingConfig constrained = SamplingConfig.builder()
+     *     .temperature(0.7)
+     *     .constraintConfig(ConstraintConfig.toolCall(
+     *         "ask_graph_verify", "graph_reasoning_query", "ask_graph_query"))
+     *     .build();
+     * }</pre>
+     */
+    private ConstraintConfig constraintConfig;
+
+    /**
+     * Returns {@code true} if a constraint is configured for this sampling run.
+     *
+     * @return true when constrained decoding is active
+     */
+    public boolean hasConstraint() {
+        return constraintConfig != null;
     }
 }

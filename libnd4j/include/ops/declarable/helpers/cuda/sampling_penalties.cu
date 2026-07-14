@@ -20,6 +20,8 @@
 
 #include <ops/declarable/helpers/sampling_penalties.h>
 #include <array/NDArray.h>
+#include <array/DataTypeUtils.h>
+#include <math/templatemath.h>
 #include <helpers/DebugHelper.h>
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
@@ -30,6 +32,13 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+
+// Accumulator type: double when T=double for precision, float otherwise.
+// Token-count reductions stay int (sdata is reinterpreted as int* — fits).
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
 // ────────────────────────────────────────────────────────────────────────────
 // Repetition / frequency / presence penalty kernel
@@ -71,6 +80,8 @@ static SD_KERNEL __launch_bounds__(256, 2) void applyPenaltiesKernel(void* vLogi
                                             const float repPenalty,
                                             const float freqPenalty,
                                             const float presPenalty) {
+    using AccT = typename AccType<T>::type;
+
     extern __shared__ char sharedMem[];
     auto sKeys = reinterpret_cast<LongType*>(sharedMem);
     auto sCounts = reinterpret_cast<int*>(sKeys + PENALTY_HASH_SIZE);
@@ -112,6 +123,11 @@ static SD_KERNEL __launch_bounds__(256, 2) void applyPenaltiesKernel(void* vLogi
     }
     __syncthreads();
 
+    // Widen scalar penalty params once to AccT
+    AccT repP  = static_cast<AccT>(repPenalty);
+    AccT freqP = static_cast<AccT>(freqPenalty);
+    AccT presP = static_cast<AccT>(presPenalty);
+
     // All threads cooperate to apply penalties from the hash table.
     // logitsRowOffset offsets into the last sequence position for rank-3 logits.
     LongType logitsBase = b * logitsRowStride + logitsRowOffset;
@@ -122,21 +138,21 @@ static SD_KERNEL __launch_bounds__(256, 2) void applyPenaltiesKernel(void* vLogi
         int count = sCounts[i];
         LongType offset = logitsBase + tokenId * logitsElemStride;
 
-        float logit = static_cast<float>(logits[offset]);
+        AccT logit = static_cast<AccT>(logits[offset]);
 
         // Repetition penalty: multiplicative, direction-aware
-        if (repPenalty != 1.0f) {
-            logit = logit > 0.0f ? logit / repPenalty : logit * repPenalty;
+        if (repP != static_cast<AccT>(1.0)) {
+            logit = logit > static_cast<AccT>(0.0) ? logit / repP : logit * repP;
         }
 
         // Frequency penalty: proportional to count
-        if (freqPenalty != 0.0f) {
-            logit -= static_cast<float>(count) * freqPenalty;
+        if (freqP != static_cast<AccT>(0.0)) {
+            logit -= static_cast<AccT>(count) * freqP;
         }
 
         // Presence penalty: flat penalty if token appeared at all
-        if (presPenalty != 0.0f) {
-            logit -= presPenalty;
+        if (presP != static_cast<AccT>(0.0)) {
+            logit -= presP;
         }
 
         logits[offset] = static_cast<T>(logit);
@@ -247,17 +263,21 @@ static SD_KERNEL __launch_bounds__(256, 2) void minPFilterKernel(void* vLogits,
                                         const LongType rowStride,
                                         const LongType elemStride,
                                         const float minP) {
+    using AccT = typename AccType<T>::type;
+
     extern __shared__ char sharedMem[];
-    float* sdata = reinterpret_cast<float*>(sharedMem);
+    AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
 
     auto logits = reinterpret_cast<T*>(vLogits);
     LongType b = blockIdx.x;
     LongType base = b * rowStride;
 
+    AccT minPAcc = static_cast<AccT>(minP);
+
     // Pass 1a: find max logit (parallel reduction)
-    float localMax = -FLT_MAX;
+    AccT localMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float val = static_cast<float>(logits[base + v * elemStride]);
+        AccT val = static_cast<AccT>(logits[base + v * elemStride]);
         if (val > localMax) localMax = val;
     }
     sdata[threadIdx.x] = localMax;
@@ -265,17 +285,17 @@ static SD_KERNEL __launch_bounds__(256, 2) void minPFilterKernel(void* vLogits,
 
     for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
         if (threadIdx.x < stride)
-            sdata[threadIdx.x] = fmaxf(sdata[threadIdx.x], sdata[threadIdx.x + stride]);
+            sdata[threadIdx.x] = sd::math::sd_max<AccT>(sdata[threadIdx.x], sdata[threadIdx.x + stride]);
         __syncthreads();
     }
-    float rowMax = sdata[0];
+    AccT rowMax = sdata[0];
     __syncthreads();
 
     // Pass 1b: compute sum of exp (parallel reduction)
-    float localSum = 0.0f;
+    AccT localSum = static_cast<AccT>(0.0);
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float val = static_cast<float>(logits[base + v * elemStride]);
-        localSum += __expf(val - rowMax);
+        AccT val = static_cast<AccT>(logits[base + v * elemStride]);
+        localSum += sd::math::sd_exp<AccT, AccT>(val - rowMax);
     }
     sdata[threadIdx.x] = localSum;
     __syncthreads();
@@ -285,7 +305,7 @@ static SD_KERNEL __launch_bounds__(256, 2) void minPFilterKernel(void* vLogits,
             sdata[threadIdx.x] += sdata[threadIdx.x + stride];
         __syncthreads();
     }
-    float sumExp = sdata[0];
+    AccT sumExp = sdata[0];
     __syncthreads();
 
     // Pass 1c: find max probability (parallel reduction)
@@ -293,16 +313,16 @@ static SD_KERNEL __launch_bounds__(256, 2) void minPFilterKernel(void* vLogits,
     // Actually we need the max softmax probability which is the token with highest logit:
     // max_prob = exp(maxLogit - rowMax) / sumExp = 1.0 / sumExp
     // since rowMax IS the max logit. So threshold = minP / sumExp in exp space.
-    float threshold = minP / sumExp;
+    AccT threshold = minPAcc / sumExp;
 
     // Pass 2: mask logits where exp(logit - rowMax) / sumExp < threshold
     // i.e. exp(logit - rowMax) < minP
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
         LongType offset = base + v * elemStride;
-        float val = static_cast<float>(logits[offset]);
-        float expVal = __expf(val - rowMax);
+        AccT val = static_cast<AccT>(logits[offset]);
+        AccT expVal = sd::math::sd_exp<AccT, AccT>(val - rowMax);
         if (expVal < threshold * sumExp) {
-            logits[offset] = static_cast<T>(-FLT_MAX);
+            logits[offset] = static_cast<T>(-sd::DataTypeUtils::infOrMax<T>());
         }
     }
 }
@@ -352,7 +372,7 @@ static void minPFilterLauncher(NDArray* logits, double minP, LaunchContext* cont
     }
 
     dim3 launchDims = getLaunchDims("token_sample");
-    size_t sharedSize = launchDims.y * sizeof(float);
+    size_t sharedSize = launchDims.y * sizeof(typename AccType<T>::type);
 
     minPFilterKernel<T><<<batch, launchDims.y, sharedSize, *stream>>>(
         bufferPtr,
@@ -398,33 +418,37 @@ static SD_KERNEL __launch_bounds__(256, 2) void typicalPFilterKernel(void* vLogi
                                            const LongType elemStride,
                                            const LongType rowOffset,
                                            const float typicalP) {
+    using AccT = typename AccType<T>::type;
+
     extern __shared__ char sharedMem[];
-    float* sdata = reinterpret_cast<float*>(sharedMem);
+    AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
 
     auto logits = reinterpret_cast<T*>(vLogits);
     LongType b = blockIdx.x;
     LongType base = b * rowStride + rowOffset;
 
+    AccT typicalPAcc = static_cast<AccT>(typicalP);
+
     // Phase 1a: row max (numerical stability)
-    float localMax = -FLT_MAX;
+    AccT localMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float val = static_cast<float>(logits[base + v * elemStride]);
+        AccT val = static_cast<AccT>(logits[base + v * elemStride]);
         if (val > localMax) localMax = val;
     }
     sdata[threadIdx.x] = localMax;
     __syncthreads();
     for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
         if (threadIdx.x < stride)
-            sdata[threadIdx.x] = fmaxf(sdata[threadIdx.x], sdata[threadIdx.x + stride]);
+            sdata[threadIdx.x] = sd::math::sd_max<AccT>(sdata[threadIdx.x], sdata[threadIdx.x + stride]);
         __syncthreads();
     }
-    float rowMax = sdata[0];
+    AccT rowMax = sdata[0];
     __syncthreads();
 
     // Phase 1b: sum-exp for softmax denominator
-    float localSum = 0.0f;
+    AccT localSum = static_cast<AccT>(0.0);
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        localSum += __expf(static_cast<float>(logits[base + v * elemStride]) - rowMax);
+        localSum += sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[base + v * elemStride]) - rowMax);
     }
     sdata[threadIdx.x] = localSum;
     __syncthreads();
@@ -433,15 +457,15 @@ static SD_KERNEL __launch_bounds__(256, 2) void typicalPFilterKernel(void* vLogi
             sdata[threadIdx.x] += sdata[threadIdx.x + stride];
         __syncthreads();
     }
-    float sumExp = sdata[0];
+    AccT sumExp = sdata[0];
     __syncthreads();
 
     // Phase 2: compute entropy H = -sum p_i log(p_i)
-    float localH = 0.0f;
+    AccT localH = static_cast<AccT>(0.0);
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float w = __expf(static_cast<float>(logits[base + v * elemStride]) - rowMax);
-        float p = w / sumExp;
-        if (p > 0.0f) localH -= p * __logf(p);
+        AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[base + v * elemStride]) - rowMax);
+        AccT p = w / sumExp;
+        if (p > static_cast<AccT>(0.0)) localH -= p * sd::math::sd_log<AccT, AccT>(p);
     }
     sdata[threadIdx.x] = localH;
     __syncthreads();
@@ -450,24 +474,25 @@ static SD_KERNEL __launch_bounds__(256, 2) void typicalPFilterKernel(void* vLogi
             sdata[threadIdx.x] += sdata[threadIdx.x + stride];
         __syncthreads();
     }
-    float entropy = sdata[0];
+    AccT entropy = sdata[0];
     __syncthreads();
 
     // Phase 3: binary search on deviation threshold τ
     // kept(τ) = sum_i { p_i : |(-log p_i) - H| <= τ }
     // We want the smallest τ such that kept(τ) >= typicalP.
     // Deviation range: [0, log(vocabSize) + 2] (generous upper bound).
-    float lo = 0.0f, hi = __logf(static_cast<float>(vocabSize)) + 2.0f;
-    float deviationThr = hi;
+    AccT lo = static_cast<AccT>(0.0);
+    AccT hi = sd::math::sd_log<AccT, AccT>(static_cast<AccT>(vocabSize)) + static_cast<AccT>(2.0);
+    AccT deviationThr = hi;
 
     for (int iter = 0; iter < 48; iter++) {
-        float mid = (lo + hi) * 0.5f;
-        float localKept = 0.0f;
+        AccT mid = (lo + hi) * static_cast<AccT>(0.5);
+        AccT localKept = static_cast<AccT>(0.0);
         for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-            float w = __expf(static_cast<float>(logits[base + v * elemStride]) - rowMax);
-            float p = w / sumExp;
-            float negLogP = (p > 0.0f) ? -__logf(p) : FLT_MAX;
-            float dev = fabsf(negLogP - entropy);
+            AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[base + v * elemStride]) - rowMax);
+            AccT p = w / sumExp;
+            AccT negLogP = (p > static_cast<AccT>(0.0)) ? -sd::math::sd_log<AccT, AccT>(p) : sd::DataTypeUtils::max<AccT>();
+            AccT dev = sd::math::sd_abs<AccT, AccT>(negLogP - entropy);
             if (dev <= mid) localKept += p;
         }
         sdata[threadIdx.x] = localKept;
@@ -477,10 +502,10 @@ static SD_KERNEL __launch_bounds__(256, 2) void typicalPFilterKernel(void* vLogi
                 sdata[threadIdx.x] += sdata[threadIdx.x + stride];
             __syncthreads();
         }
-        float kept = sdata[0];
+        AccT kept = sdata[0];
         __syncthreads();
 
-        if (kept >= typicalP) {
+        if (kept >= typicalPAcc) {
             deviationThr = mid;
             hi = mid;
         } else {
@@ -494,12 +519,12 @@ static SD_KERNEL __launch_bounds__(256, 2) void typicalPFilterKernel(void* vLogi
     // path (sort-based, same epsilon) must agree with this kernel on which
     // deviation class survives the cutoff.
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float w = __expf(static_cast<float>(logits[base + v * elemStride]) - rowMax);
-        float p = w / sumExp;
-        float negLogP = (p > 0.0f) ? -__logf(p) : FLT_MAX;
-        float dev = fabsf(negLogP - entropy);
-        if (dev > deviationThr + 1e-6f) {
-            logits[base + v * elemStride] = static_cast<T>(-FLT_MAX);
+        AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[base + v * elemStride]) - rowMax);
+        AccT p = w / sumExp;
+        AccT negLogP = (p > static_cast<AccT>(0.0)) ? -sd::math::sd_log<AccT, AccT>(p) : sd::DataTypeUtils::max<AccT>();
+        AccT dev = sd::math::sd_abs<AccT, AccT>(negLogP - entropy);
+        if (dev > deviationThr + static_cast<AccT>(1e-6)) {
+            logits[base + v * elemStride] = static_cast<T>(-sd::DataTypeUtils::infOrMax<T>());
         }
     }
 }
@@ -541,7 +566,7 @@ static void typicalPFilterLauncher(NDArray* logits, double typicalP, LaunchConte
     }
 
     dim3 launchDims = getLaunchDims("token_sample");
-    size_t sharedSize = launchDims.y * sizeof(float);
+    size_t sharedSize = launchDims.y * sizeof(typename AccType<T>::type);
 
     typicalPFilterKernel<T><<<batch, launchDims.y, sharedSize, *stream>>>(
         logits->specialBuffer(),
@@ -581,48 +606,52 @@ static SD_KERNEL __launch_bounds__(256, 2) void xtcFilterKernel(void* vLogits,
                                         const float xtcProbability,
                                         const float xtcThreshold,
                                         const LongType seed) {
+    using AccT = typename AccType<T>::type;
+
     extern __shared__ char sharedMem[];
-    float* sdata = reinterpret_cast<float*>(sharedMem);
-    int*   sidata = reinterpret_cast<int*>(sharedMem);
+    AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
+    int*  sidata = reinterpret_cast<int*>(sharedMem);  // phase-exclusive alias (int count phase)
 
     auto logits = reinterpret_cast<T*>(vLogits);
     LongType b = blockIdx.x;
     LongType base = b * rowStride + rowOffset;
 
-    // Thread 0: curand uniform to decide apply/skip
+    AccT xtcThr = static_cast<AccT>(xtcThreshold);
+
+    // Thread 0: curand uniform to decide apply/skip (curand stays float by API design)
     __shared__ bool doApply;
-    __shared__ float sumExpShared;
-    __shared__ float rowMaxShared;
+    __shared__ AccT sumExpShared;
+    __shared__ AccT rowMaxShared;
     if (threadIdx.x == 0) {
         curandState state;
         curand_init(static_cast<unsigned long long>(seed + b * 1000007ULL), 0ULL, 0ULL, &state);
         float u = curand_uniform(&state);
-        doApply = (u <= xtcProbability);
+        doApply = (u <= xtcProbability);  // xtcProbability stays float (RNG gate)
     }
     __syncthreads();
     if (!doApply) return;
 
     // Phase 1a: row max
-    float localMax = -FLT_MAX;
+    AccT localMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float val = static_cast<float>(logits[base + v * elemStride]);
+        AccT val = static_cast<AccT>(logits[base + v * elemStride]);
         if (val > localMax) localMax = val;
     }
     sdata[threadIdx.x] = localMax;
     __syncthreads();
     for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
         if (threadIdx.x < stride)
-            sdata[threadIdx.x] = fmaxf(sdata[threadIdx.x], sdata[threadIdx.x + stride]);
+            sdata[threadIdx.x] = sd::math::sd_max<AccT>(sdata[threadIdx.x], sdata[threadIdx.x + stride]);
         __syncthreads();
     }
     if (threadIdx.x == 0) rowMaxShared = sdata[0];
     __syncthreads();
-    float rowMax = rowMaxShared;
+    AccT rowMax = rowMaxShared;
 
     // Phase 1b: sum-exp
-    float localSum = 0.0f;
+    AccT localSum = static_cast<AccT>(0.0);
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        localSum += __expf(static_cast<float>(logits[base + v * elemStride]) - rowMax);
+        localSum += sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[base + v * elemStride]) - rowMax);
     }
     sdata[threadIdx.x] = localSum;
     __syncthreads();
@@ -633,14 +662,14 @@ static SD_KERNEL __launch_bounds__(256, 2) void xtcFilterKernel(void* vLogits,
     }
     if (threadIdx.x == 0) sumExpShared = sdata[0];
     __syncthreads();
-    float sumExp = sumExpShared;
+    AccT sumExp = sumExpShared;
 
-    // Phase 2: count above-threshold tokens
+    // Phase 2: count above-threshold tokens (int count, sidata aliases sharedMem base)
     int localCount = 0;
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float w = __expf(static_cast<float>(logits[base + v * elemStride]) - rowMax);
-        float p = w / sumExp;
-        if (p >= xtcThreshold) localCount++;
+        AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[base + v * elemStride]) - rowMax);
+        AccT p = w / sumExp;
+        if (p >= xtcThr) localCount++;
     }
     sidata[threadIdx.x] = localCount;
     __syncthreads();
@@ -657,16 +686,16 @@ static SD_KERNEL __launch_bounds__(256, 2) void xtcFilterKernel(void* vLogits,
 
     // Phase 3: find argmin-probability above threshold
     // Each thread tracks its local (minP, minIdx); then we reduce to global min.
-    // Use float* sdata again for (minP, minIdx) encoded as two arrays.
-    float* sMinP = reinterpret_cast<float*>(sharedMem);
-    int*   sMinI = reinterpret_cast<int*>(sharedMem + blockDim.x * sizeof(float));
+    // Use AccT* sdata for minP values, int* sMinI for indices (offset by blockDim.x AccT slots).
+    AccT* sMinP = reinterpret_cast<AccT*>(sharedMem);
+    int*  sMinI = reinterpret_cast<int*>(sharedMem + blockDim.x * sizeof(AccT));
 
-    float localMinP = FLT_MAX;
-    int   localMinI = -1;
+    AccT localMinP = sd::DataTypeUtils::max<AccT>();
+    int  localMinI = -1;
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float w = __expf(static_cast<float>(logits[base + v * elemStride]) - rowMax);
-        float p = w / sumExp;
-        if (p >= xtcThreshold && p < localMinP) {
+        AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[base + v * elemStride]) - rowMax);
+        AccT p = w / sumExp;
+        if (p >= xtcThr && p < localMinP) {
             localMinP = p;
             localMinI = static_cast<int>(v);
         }
@@ -689,10 +718,10 @@ static SD_KERNEL __launch_bounds__(256, 2) void xtcFilterKernel(void* vLogits,
     // Phase 4: mask all above-threshold tokens except keepIdx
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
         if (static_cast<int>(v) == keepIdx) continue;
-        float w = __expf(static_cast<float>(logits[base + v * elemStride]) - rowMax);
-        float p = w / sumExp;
-        if (p >= xtcThreshold) {
-            logits[base + v * elemStride] = static_cast<T>(-FLT_MAX);
+        AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[base + v * elemStride]) - rowMax);
+        AccT p = w / sumExp;
+        if (p >= xtcThr) {
+            logits[base + v * elemStride] = static_cast<T>(-sd::DataTypeUtils::infOrMax<T>());
         }
     }
 }
@@ -735,8 +764,8 @@ static void xtcFilterLauncher(NDArray* logits, double xtcProbability, double xtc
     }
 
     dim3 launchDims = getLaunchDims("token_sample");
-    // Shared mem: blockDim.x * (sizeof(float) + sizeof(int)) for minP/minI reduction
-    size_t sharedSize = launchDims.y * (sizeof(float) + sizeof(int));
+    // Shared mem: blockDim.x * (sizeof(AccT) + sizeof(int)) for minP/minI reduction
+    size_t sharedSize = launchDims.y * (sizeof(typename AccType<T>::type) + sizeof(int));
 
     xtcFilterKernel<T><<<batch, launchDims.y, sharedSize, *stream>>>(
         logits->specialBuffer(),

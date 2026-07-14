@@ -1108,6 +1108,44 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("typicalPFilter") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "TypicalPFilter"
+        val logits = Input(NUMERIC, "logits") { description = "Logits tensor. Shape: [vocabSize] or [batch, vocabSize]" }
+        val typicalP = Arg(FLOATING_POINT, "typicalP") { defaultValue = 1.0; description = "Cumulative mass of the most-typical tokens to keep. 1.0 = off (no-op)" }
+        Output(NUMERIC, "output") { description = "Filtered logits (masked positions set to -inf). Same shape and type as input." }
+        Signature(logits, typicalP)
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Typical-p (entropy-deviation) logit filter.
+
+             Masks tokens whose information content -log(p) deviates most from the distribution
+             entropy H, keeping the most typical tokens (smallest |-log(p) - H|) until their
+             cumulative probability mass reaches typicalP. Masked positions are set to -inf.
+            """.trimIndent()
+        }
+    }
+
+    Op("xtcFilter") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "XtcFilter"
+        val logits = Input(NUMERIC, "logits") { description = "Logits tensor. Shape: [vocabSize] or [batch, vocabSize]" }
+        val xtcProbability = Arg(FLOATING_POINT, "xtcProbability") { defaultValue = 0.0; description = "Probability of applying XTC. 0.0 = off" }
+        val xtcThreshold = Arg(FLOATING_POINT, "xtcThreshold") { defaultValue = 0.1; description = "Per-token probability threshold to qualify for exclusion. Must be < 0.5" }
+        val seed = Arg(LONG, "seed") { defaultValue = 0; description = "Random seed for the stochastic apply/skip draw" }
+        Output(NUMERIC, "output") { description = "Filtered logits (masked positions set to -inf). Same shape and type as input." }
+        Signature(logits, xtcProbability, xtcThreshold, seed)
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Exclude Top Choices (XTC) logit filter.
+
+             With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,
+             if at least two qualify, mask all EXCEPT the lowest-probability one — encouraging
+             diversity. Otherwise the logits are unchanged. Stochastic; seeded by seed.
+            """.trimIndent()
+        }
+    }
+
     Op("kvScatter") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "KvScatter"

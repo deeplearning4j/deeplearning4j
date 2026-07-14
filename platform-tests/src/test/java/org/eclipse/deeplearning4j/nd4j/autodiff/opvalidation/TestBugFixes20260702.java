@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Map;
 
@@ -354,6 +355,46 @@ public class TestBugFixes20260702 extends BaseOpValidation {
         log.info("rank-3 loss={} rank-2-reshaped loss={}", loss3d, loss2d);
         assertEquals(loss2d, loss3d, 1e-9,
                 "rank-3 and reshaped rank-2 must give same loss (diff=" + Math.abs(loss3d - loss2d) + ")");
+    }
+
+    @Test
+    public void testDistillationKLLossGradRank2MatchesRank3Reshaped() {
+        // Invariant: the per-element student gradient of distillation_kl_loss_grad must be
+        // layout-invariant to leading-dim flattening, i.e.
+        //   grad([B,S,V]).dLdStudent.reshape(B*S,V)  ==  grad([B*S,V]).dLdStudent
+        // Gates the CUDA distillation_kl_loss_grad rank-3 handling (softmax must reduce over V,
+        // the last axis, for both ranks — not over S for the rank-3 case).
+        int B = 2, S = 3, V = 5;
+        double T = 2.0, alpha = 1.0;  // alpha=1 isolates the KD term
+
+        INDArray student3d = Nd4j.randn(DataType.DOUBLE, B, S, V);
+        INDArray teacher3d = Nd4j.randn(DataType.DOUBLE, B, S, V);
+
+        INDArray student2d = student3d.reshape(B * S, V);
+        INDArray teacher2d = teacher3d.reshape(B * S, V);
+
+        INDArray dS3d = Nd4j.create(DataType.DOUBLE, B, S, V);
+        INDArray dT3d = Nd4j.create(DataType.DOUBLE, B, S, V);
+        INDArray dS2d = Nd4j.create(DataType.DOUBLE, B * S, V);
+        INDArray dT2d = Nd4j.create(DataType.DOUBLE, B * S, V);
+
+        Nd4j.exec(DynamicCustomOp.builder("distillation_kl_loss_grad")
+                .addInputs(student3d, teacher3d)
+                .addOutputs(dS3d, dT3d)
+                .addFloatingPointArguments(T, alpha)
+                .build());
+
+        Nd4j.exec(DynamicCustomOp.builder("distillation_kl_loss_grad")
+                .addInputs(student2d, teacher2d)
+                .addOutputs(dS2d, dT2d)
+                .addFloatingPointArguments(T, alpha)
+                .build());
+
+        INDArray dS3dFlat = dS3d.reshape(B * S, V);
+        double maxDiff = Transforms.abs(dS3dFlat.sub(dS2d)).maxNumber().doubleValue();
+        log.info("distillation grad rank-3-reshaped vs rank-2 maxDiff={}", maxDiff);
+        assertTrue(maxDiff < 1e-9,
+                "rank-3 and reshaped rank-2 student gradients must match (maxDiff=" + maxDiff + ")");
     }
 
     @Test

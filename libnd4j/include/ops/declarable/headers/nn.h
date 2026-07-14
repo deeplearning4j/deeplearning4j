@@ -646,6 +646,23 @@ DECLARE_CUSTOM_OP(sampling_penalties, 2, 1, false, 0, 0);
 #endif
 
 /**
+ * typical_p_filter - Typical-p (entropy-deviation) logit filter (masks to -inf).
+ * Float args: 0: typicalP (1.0 = off)
+ */
+#if NOT_EXCLUDED(OP_typical_p_filter)
+DECLARE_CUSTOM_OP(typical_p_filter, 1, 1, false, 1, 0);
+#endif
+
+/**
+ * xtc_filter - Exclude Top Choices (XTC) logit filter (stochastic; masks to -inf).
+ * Float args: 0: xtcProbability (0.0 = off), 1: xtcThreshold (< 0.5)
+ * Int args:   0: seed
+ */
+#if NOT_EXCLUDED(OP_xtc_filter)
+DECLARE_CUSTOM_OP(xtc_filter, 1, 1, false, 2, 1);
+#endif
+
+/**
  * fp8_quantize - Quantize float tensor to FP8 E4M3 representation.
  *
  * Input:  0: [numTokens, hiddenDim] float

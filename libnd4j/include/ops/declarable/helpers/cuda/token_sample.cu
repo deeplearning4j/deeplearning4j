@@ -20,6 +20,8 @@
 #include <ops/declarable/helpers/sampling_penalties.h>
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
+#include <array/DataTypeUtils.h>
+#include <math/templatemath.h>
 #include <helpers/DebugHelper.h>
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
@@ -31,6 +33,13 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+// Accumulator type: double when T=double for precision, float otherwise.
+// Token indices and int counts are unaffected.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
+
 // Kernel: greedy argmax — one block per batch element, threads cooperate via shared mem reduction
 template <typename T>
 static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* vlogits,
@@ -39,8 +48,10 @@ static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* v
                                           const LongType rowStride,
                                           const LongType elemStride,
                                           const LongType rowOffset) {
+    using AccT = typename AccType<T>::type;
+
     extern __shared__ char sharedMem[];
-    auto sMaxVal = reinterpret_cast<float*>(sharedMem);
+    auto sMaxVal = reinterpret_cast<AccT*>(sharedMem);
     auto sMaxIdx = reinterpret_cast<LongType*>(sMaxVal + blockDim.x);
 
     auto logits = reinterpret_cast<const T*>(vlogits);
@@ -49,11 +60,11 @@ static SD_KERNEL __launch_bounds__(256, 2) void greedyArgmaxKernel(const void* v
     LongType batchIdx = blockIdx.x;
     LongType baseOffset = batchIdx * rowStride + rowOffset;
 
-    float localMax = -FLT_MAX;
+    AccT localMax = -sd::DataTypeUtils::max<AccT>();
     LongType localIdx = 0;
 
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float val = static_cast<float>(logits[baseOffset + v * elemStride]);
+        AccT val = static_cast<AccT>(logits[baseOffset + v * elemStride]);
         if (val > localMax) {
             localMax = val;
             localIdx = v;
@@ -95,9 +106,11 @@ static SD_KERNEL __launch_bounds__(256, 2) void tempTopKTopPSampleKernel(const v
                                                const int topK,
                                                const float topP,
                                                const LongType seed) {
+    using AccT = typename AccType<T>::type;
+
     extern __shared__ char sharedMem[];
-    float* sdata = reinterpret_cast<float*>(sharedMem);
-    int* sidata = reinterpret_cast<int*>(sharedMem);
+    AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
+    int* sidata = reinterpret_cast<int*>(sharedMem);  // phase-exclusive alias (int count phase)
 
     auto logits = reinterpret_cast<const T*>(vlogits);
     auto output = reinterpret_cast<LongType*>(voutput);
@@ -105,32 +118,36 @@ static SD_KERNEL __launch_bounds__(256, 2) void tempTopKTopPSampleKernel(const v
     LongType b = blockIdx.x;
     LongType baseOffset = b * rowStride + rowOffset;
 
+    // Widen scalar params once
+    AccT invTempAcc = static_cast<AccT>(invTemp);
+    AccT topPAcc    = static_cast<AccT>(topP);
+
     // Phase 1: rowMax of temperature-scaled logits (numerical stability)
-    float localMax = -FLT_MAX;
+    AccT localMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float tv = static_cast<float>(logits[baseOffset + v * elemStride]) * invTemp;
+        AccT tv = static_cast<AccT>(logits[baseOffset + v * elemStride]) * invTempAcc;
         if (tv > localMax) localMax = tv;
     }
     sdata[threadIdx.x] = localMax;
     __syncthreads();
     for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
         if (threadIdx.x < stride)
-            sdata[threadIdx.x] = fmaxf(sdata[threadIdx.x], sdata[threadIdx.x + stride]);
+            sdata[threadIdx.x] = sd::math::sd_max<AccT>(sdata[threadIdx.x], sdata[threadIdx.x + stride]);
         __syncthreads();
     }
-    float rowMax = sdata[0];
+    AccT rowMax = sdata[0];
     __syncthreads();
 
     // Phase 2: top-k weight threshold wKthr (keep w >= wKthr) via binary search on count >= k.
     // w(v) = exp(tv - rowMax) lies in (0, 1].
-    float wKthr = 0.0f;
+    AccT wKthr = static_cast<AccT>(0.0);
     if (topK > 0 && topK < vocabSize) {
-        float lo = 0.0f, hi = 1.0f;
+        AccT lo = static_cast<AccT>(0.0), hi = static_cast<AccT>(1.0);
         for (int iter = 0; iter < 32; iter++) {
-            float mid = (lo + hi) * 0.5f;
+            AccT mid = (lo + hi) * static_cast<AccT>(0.5);
             int localCount = 0;
             for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-                float w = __expf(static_cast<float>(logits[baseOffset + v * elemStride]) * invTemp - rowMax);
+                AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[baseOffset + v * elemStride]) * invTempAcc - rowMax);
                 if (w >= mid) localCount++;
             }
             sidata[threadIdx.x] = localCount;
@@ -147,9 +164,9 @@ static SD_KERNEL __launch_bounds__(256, 2) void tempTopKTopPSampleKernel(const v
     }
 
     // sumK = total weight kept by top-k (renormalization base for top-p)
-    float localSumK = 0.0f;
+    AccT localSumK = static_cast<AccT>(0.0);
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float w = __expf(static_cast<float>(logits[baseOffset + v * elemStride]) * invTemp - rowMax);
+        AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[baseOffset + v * elemStride]) * invTempAcc - rowMax);
         if (w >= wKthr) localSumK += w;
     }
     sdata[threadIdx.x] = localSumK;
@@ -159,19 +176,19 @@ static SD_KERNEL __launch_bounds__(256, 2) void tempTopKTopPSampleKernel(const v
             sdata[threadIdx.x] += sdata[threadIdx.x + stride];
         __syncthreads();
     }
-    float sumK = sdata[0];
+    AccT sumK = sdata[0];
     __syncthreads();
 
     // Phase 3: top-p (nucleus) weight threshold over the top-k-renormalized distribution.
-    float pThr = 0.0f;
-    if (topP > 0.0f && topP < 1.0f && sumK > 0.0f) {
-        float lo = 0.0f, hi = 1.0f;
+    AccT pThr = static_cast<AccT>(0.0);
+    if (topPAcc > static_cast<AccT>(0.0) && topPAcc < static_cast<AccT>(1.0) && sumK > static_cast<AccT>(0.0)) {
+        AccT lo = static_cast<AccT>(0.0), hi = static_cast<AccT>(1.0);
         for (int iter = 0; iter < 32; iter++) {
-            float mid = (lo + hi) * 0.5f;
-            float thr = fmaxf(mid, wKthr);
-            float localKept = 0.0f;
+            AccT mid = (lo + hi) * static_cast<AccT>(0.5);
+            AccT thr = sd::math::sd_max<AccT>(mid, wKthr);
+            AccT localKept = static_cast<AccT>(0.0);
             for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-                float w = __expf(static_cast<float>(logits[baseOffset + v * elemStride]) * invTemp - rowMax);
+                AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[baseOffset + v * elemStride]) * invTempAcc - rowMax);
                 if (w >= thr) localKept += w;
             }
             sdata[threadIdx.x] = localKept;
@@ -181,18 +198,18 @@ static SD_KERNEL __launch_bounds__(256, 2) void tempTopKTopPSampleKernel(const v
                     sdata[threadIdx.x] += sdata[threadIdx.x + stride];
                 __syncthreads();
             }
-            float kept = sdata[0];
+            AccT kept = sdata[0];
             __syncthreads();
-            if (kept >= topP * sumK) { pThr = mid; lo = mid; } else { hi = mid; }
+            if (kept >= topPAcc * sumK) { pThr = mid; lo = mid; } else { hi = mid; }
         }
     }
 
-    float finalThr = fmaxf(wKthr, pThr);
+    AccT finalThr = sd::math::sd_max<AccT>(wKthr, pThr);
 
     // sumFinal = renormalization mass over the kept (top-k ∩ top-p) set
-    float localFinal = 0.0f;
+    AccT localFinal = static_cast<AccT>(0.0);
     for (LongType v = threadIdx.x; v < vocabSize; v += blockDim.x) {
-        float w = __expf(static_cast<float>(logits[baseOffset + v * elemStride]) * invTemp - rowMax);
+        AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[baseOffset + v * elemStride]) * invTempAcc - rowMax);
         if (w >= finalThr) localFinal += w;
     }
     sdata[threadIdx.x] = localFinal;
@@ -202,19 +219,20 @@ static SD_KERNEL __launch_bounds__(256, 2) void tempTopKTopPSampleKernel(const v
             sdata[threadIdx.x] += sdata[threadIdx.x + stride];
         __syncthreads();
     }
-    float sumFinal = sdata[0];
+    AccT sumFinal = sdata[0];
     __syncthreads();
 
     // Phase 4: thread 0 samples from the kept, renormalized distribution via CDF scan.
     if (threadIdx.x == 0) {
         curandState state;
         curand_init(static_cast<unsigned long long>(seed + b), 0ULL, 0ULL, &state);
-        float target = curand_uniform(&state) * sumFinal;
+        // curand_uniform returns float by API design; product widens to AccT
+        AccT target = static_cast<AccT>(curand_uniform(&state)) * sumFinal;
 
-        float cumSum = 0.0f;
+        AccT cumSum = static_cast<AccT>(0.0);
         LongType sampled = -1;
         for (LongType v = 0; v < vocabSize; v++) {
-            float w = __expf(static_cast<float>(logits[baseOffset + v * elemStride]) * invTemp - rowMax);
+            AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[baseOffset + v * elemStride]) * invTempAcc - rowMax);
             if (w >= finalThr) {
                 cumSum += w;
                 if (cumSum >= target) { sampled = v; break; }
@@ -222,9 +240,9 @@ static SD_KERNEL __launch_bounds__(256, 2) void tempTopKTopPSampleKernel(const v
         }
         if (sampled < 0) {
             // Numerical guard: fall back to the argmax of the kept set.
-            float bestW = -1.0f;
+            AccT bestW = static_cast<AccT>(-1.0);
             for (LongType v = 0; v < vocabSize; v++) {
-                float w = __expf(static_cast<float>(logits[baseOffset + v * elemStride]) * invTemp - rowMax);
+                AccT w = sd::math::sd_exp<AccT, AccT>(static_cast<AccT>(logits[baseOffset + v * elemStride]) * invTempAcc - rowMax);
                 if (w >= finalThr && w > bestW) { bestW = w; sampled = v; }
             }
             if (sampled < 0) sampled = 0;
@@ -274,7 +292,7 @@ static void tokenSampleLauncher(NDArray* logits, NDArray* output,
     bool greedy = (temperature <= 0.0 && topK <= 0 && topP <= 0.0);
 
     dim3 launchDims = getLaunchDims("token_sample");
-    size_t sharedSize = launchDims.y * (sizeof(float) + sizeof(LongType));
+    size_t sharedSize = launchDims.y * (sizeof(typename AccType<T>::type) + sizeof(LongType));
 
     if (greedy) {
         greedyArgmaxKernel<T><<<batch, launchDims.y, sharedSize, *stream>>>(
@@ -284,7 +302,7 @@ static void tokenSampleLauncher(NDArray* logits, NDArray* output,
     } else {
         float invTemp = (temperature > 0.0) ? static_cast<float>(1.0 / temperature) : 1.0f;
         LongType actualSeed = (seed > 0) ? seed : static_cast<LongType>(clock());
-        size_t smShared = launchDims.y * sizeof(float);
+        size_t smShared = launchDims.y * sizeof(typename AccType<T>::type);
 
         // Full pipeline: temperature + top-k + top-p (nucleus) filtered multinomial sampling,
         // matching CPU token_sample. (top-k / top-p were previously ignored on the CUDA path.)
@@ -366,7 +384,9 @@ static SD_KERNEL void suppressOneStopTokenKernel(void* vlogits,
     LongType b = blockIdx.x * blockDim.x + threadIdx.x;
     if (b >= batch) return;
     LongType base = b * rowStride + rowOffset;
-    logits[base + static_cast<LongType>(stopId) * elemStride] = static_cast<T>(-FLT_MAX);
+    // -inf sentinel (infOrMax = +inf for float/double, +max for half/bf16) to match the
+    // generation subsystem's -infinity masking convention.
+    logits[base + static_cast<LongType>(stopId) * elemStride] = static_cast<T>(-sd::DataTypeUtils::infOrMax<T>());
 }
 
 template <typename T>

@@ -108,8 +108,10 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.TopK;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.TypicalPFilter;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.VisionEmbeddingMerge;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.XtcFilter;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
@@ -4452,6 +4454,33 @@ public class NDNN {
   }
 
   /**
+   * Typical-p (entropy-deviation) logit filter.<br>
+   * <br>
+   * Masks tokens whose information content -log(p) deviates most from the distribution<br>
+   * entropy H, keeping the most typical tokens (smallest |-log(p) - H|) until their<br>
+   * cumulative probability mass reaches typicalP. Masked positions are set to -inf.<br>
+   *
+   * @param logits Logits tensor. Shape: [vocabSize] or [batch, vocabSize] (NUMERIC type)
+   * @param typicalP Cumulative mass of the most-typical tokens to keep. 1.0 = off (no-op)
+   * @return output Filtered logits (masked positions set to -inf). Same shape and type as input. (NUMERIC type)
+   */
+  public INDArray typicalPFilter(INDArray logits, double typicalP) {
+    NDValidation.validateNumerical("typicalPFilter", "logits", logits);
+    INDArray[] __tmp = Nd4j.exec(new TypicalPFilter(logits, typicalP));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Scatter vision embeddings into text embeddings at target token positions.<br>
    * <br>
    * Replaces positions in the text embedding sequence where the token ID<br>
@@ -4574,6 +4603,36 @@ public class NDNN {
       NDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
     }
     INDArray[] __tmp = Nd4j.exec(new WindowedAttention(query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Exclude Top Choices (XTC) logit filter.<br>
+   * <br>
+   * With probability xtcProbability: among tokens whose softmax probability >= xtcThreshold,<br>
+   * if at least two qualify, mask all EXCEPT the lowest-probability one — encouraging<br>
+   * diversity. Otherwise the logits are unchanged. Stochastic; seeded by seed.<br>
+   *
+   * @param logits Logits tensor. Shape: [vocabSize] or [batch, vocabSize] (NUMERIC type)
+   * @param xtcProbability Probability of applying XTC. 0.0 = off
+   * @param xtcThreshold Per-token probability threshold to qualify for exclusion. Must be < 0.5
+   * @param seed Random seed for the stochastic apply/skip draw
+   * @return output Filtered logits (masked positions set to -inf). Same shape and type as input. (NUMERIC type)
+   */
+  public INDArray xtcFilter(INDArray logits, double xtcProbability, double xtcThreshold,
+      long seed) {
+    NDValidation.validateNumerical("xtcFilter", "logits", logits);
+    INDArray[] __tmp = Nd4j.exec(new XtcFilter(logits, xtcProbability, xtcThreshold, seed));
     try {
       return __tmp[0];
     } finally {
