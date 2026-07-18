@@ -49,6 +49,7 @@ CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
 
 DECLARE_TYPES(parallel_stack) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_STACK);
 }
 
 DECLARE_SHAPE_FN(parallel_stack) {

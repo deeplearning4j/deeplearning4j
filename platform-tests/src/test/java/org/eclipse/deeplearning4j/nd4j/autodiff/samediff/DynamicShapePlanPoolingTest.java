@@ -250,6 +250,54 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
     }
 
     /**
+     * Clearing the model-level plan cache must first close every live session. Native
+     * executors hold cache-owned raw plan handles; deleting the cache first leaves a
+     * dangling handle that is dereferenced by releaseGpuIntermediates during close.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testClearPlanCacheClosesLiveSessionsBeforeNativePlans(Nd4jBackend backend) {
+        String prevDynamicProp = System.getProperty(DYNAMIC_SHAPE_PROP);
+        boolean prevDynamicEnabled = InferenceSession.isDynamicShapePlanEnabled();
+        SameDiff sd = null;
+        INDArray input = null;
+
+        try {
+            System.setProperty(DYNAMIC_SHAPE_PROP, "true");
+            InferenceSession.setDynamicShapePlanEnabled(true);
+
+            sd = SameDiff.create();
+            sd.setDspAutoCompileEnabled(true);
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 4);
+            x.add("y", 1.0);
+
+            input = Nd4j.ones(DataType.FLOAT, 1, 4);
+            Map<String, INDArray> placeholders = new LinkedHashMap<>();
+            placeholders.put("x", input);
+
+            Map<String, INDArray> first = sd.output(placeholders, "y");
+            assertEquals(2.0f, first.get("y").getFloat(0), 0.0f);
+            assertFalse(sd.getSessions().isEmpty(), "Expected a live inference session after output");
+
+            sd.clearDynamicShapePlanCache();
+            assertTrue(sd.getSessions().isEmpty(),
+                    "Plan-cache clear must close sessions before deleting native plans");
+
+            Map<String, INDArray> second = sd.output(placeholders, "y");
+            assertEquals(2.0f, second.get("y").getFloat(0), 0.0f);
+        } finally {
+            if (sd != null) {
+                sd.close();
+            }
+            if (input != null && !input.wasClosed()) {
+                input.close();
+            }
+            restoreProperty(DYNAMIC_SHAPE_PROP, prevDynamicProp);
+            InferenceSession.setDynamicShapePlanEnabled(prevDynamicEnabled);
+        }
+    }
+
+    /**
      * Test that the pool handles growing input shapes gracefully, simulating
      * autoregressive decode where KV cache grows each step. The LocalBufferPool
      * eviction should prevent unbounded memory accumulation.

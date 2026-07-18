@@ -321,6 +321,11 @@ void kvInPlaceWriteQuantisedBSHD(
         THROW_EXCEPTION("kvInPlaceWriteQuantisedBSHD: separate-scale cache last dim must equal headDim");
     }
 
+    if (newKv->dataType() != DataType::FLOAT32) {
+        THROW_EXCEPTION("kvInPlaceWriteQuantisedBSHD: newKv must be FLOAT32 — got a different dtype; "
+                        "caller must cast before invoking this function");
+    }
+
     const float* srcBuf  = newKv->bufferAsT<float>();
     int8_t* qBuf         = reinterpret_cast<int8_t*>(quantCache->buffer());
     float* scaleBuf      = inlineScale ? nullptr : scaleCache->bufferAsT<float>();
@@ -413,6 +418,20 @@ void fusedGQADecodeQuantisedCpu(
     const LongType rowPitch = quantKeyCache->sizeAt(3);
     if (inlineScales && rowPitch != headDim + 4) {
         THROW_EXCEPTION("fusedGQADecodeQuantisedCpu: row-inline cache last dim must equal headDim+4");
+    }
+
+    if (query->dataType() != DataType::FLOAT32) {
+        THROW_EXCEPTION("fusedGQADecodeQuantisedCpu: query must be FLOAT32 — got a different dtype; "
+                        "caller must cast before invoking this function");
+    }
+    if (output->dataType() != DataType::FLOAT32) {
+        THROW_EXCEPTION("fusedGQADecodeQuantisedCpu: output must be FLOAT32 — got a different dtype; "
+                        "caller must cast a staging buffer and copy back");
+    }
+    if (attentionBias != nullptr && !attentionBias->isEmpty()
+            && attentionBias->dataType() != DataType::FLOAT32) {
+        THROW_EXCEPTION("fusedGQADecodeQuantisedCpu: attentionBias must be FLOAT32 — got a different dtype; "
+                        "caller must cast before invoking this function");
     }
 
     const float*  qBuf    = query->bufferAsT<float>();

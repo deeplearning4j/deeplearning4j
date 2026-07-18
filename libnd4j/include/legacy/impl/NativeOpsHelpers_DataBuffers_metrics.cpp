@@ -25,6 +25,7 @@
 #include <helpers/TransferMetrics.h>
 #include <types/types.h>
 
+
 // =====================================================
 // Transfer Metrics API Implementation
 // =====================================================
@@ -101,4 +102,5 @@ void transferMetricsReset() {
 void transferMetricsPrintSummary() {
   sd::TransferMetrics::getInstance().printSummary();
 }
+
 

@@ -24,11 +24,60 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
 
+#include <cstdint>
 #include <cstring>
+#include <fstream>
+#include <iomanip>
 #include <mutex>
+#include <sstream>
 
 namespace sd {
 namespace graph {
+namespace {
+
+thread_local bool gAllowRuntimeCompilation = true;
+thread_local std::string gRuntimeArtifactDirectory;
+
+std::string artifactPathForSegment(int startSlot, int endSlot,
+                                   LongType shapeKey) {
+  std::ostringstream name;
+  if (!gRuntimeArtifactDirectory.empty()) {
+    name << gRuntimeArtifactDirectory;
+    const char last = gRuntimeArtifactDirectory.back();
+    if (last != '/' && last != '\\') name << '/';
+  }
+  name << "hexagon_" << startSlot << '_' << endSlot << '_'
+       << std::hex << std::setw(16) << std::setfill('0')
+       << static_cast<uint64_t>(shapeKey) << ".bin";
+  return name.str();
+}
+
+bool readBinaryArtifact(const std::string& path, std::vector<uint8_t>* bytes) {
+  if (bytes == nullptr || path.empty()) return false;
+  std::ifstream input(path, std::ios::binary | std::ios::ate);
+  if (!input.is_open()) return false;
+  const std::streamoff size = input.tellg();
+  if (size <= 0) return false;
+  input.seekg(0, std::ios::beg);
+  bytes->resize(static_cast<size_t>(size));
+  input.read(reinterpret_cast<char*>(bytes->data()), size);
+  return input.gcount() == size;
+}
+
+}  // namespace
+
+HexagonGraphBackend::ScopedCompilationPolicy::ScopedCompilationPolicy(
+    bool allowRuntimeCompilation, const std::string& artifactDirectory)
+    : previousAllowRuntimeCompilation_(gAllowRuntimeCompilation),
+      previousArtifactDirectory_(gRuntimeArtifactDirectory) {
+  gAllowRuntimeCompilation = allowRuntimeCompilation;
+  gRuntimeArtifactDirectory = artifactDirectory;
+}
+
+HexagonGraphBackend::ScopedCompilationPolicy::~ScopedCompilationPolicy() {
+  gAllowRuntimeCompilation = previousAllowRuntimeCompilation_;
+  gRuntimeArtifactDirectory = previousArtifactDirectory_;
+}
 
 // ── Singleton ────────────────────────────────────────────────────────────────
 
@@ -81,21 +130,24 @@ bool HexagonGraphBackend::isAvailable() const {
 // ── Segment Fusion Check ─────────────────────────────────────────────────────
 
 bool HexagonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
-  if (slots == nullptr || start >= end) return false;
+  if (slots == nullptr || start > end) return false;
 
-  int totalOps = end - start;
+  int totalOps = end - start + 1;
   int mappableOps = 0;
 
-  for (int i = start; i < end; i++) {
+  for (int i = start; i <= end; i++) {
     if (HexagonIRBuilder::isHexagonMappable(slots[i].ident.opName.c_str())) {
       mappableOps++;
     }
   }
 
-  // Check minimum mappable fraction
+  // Check minimum mappable fraction. A vendor AOT segment is authoritative
+  // for op coverage; the exact shape-keyed artifact is verified during compile.
   float fraction = static_cast<float>(mappableOps) / static_cast<float>(totalOps);
-  if (fraction < MIN_MAPPABLE_FRACTION) {
-    DSP_DIAG(SEGMENT, "HexagonGraphBackend::canFuseSegment: [%d, %d) only %.0f%% "
+  const bool strictAot =
+      !gAllowRuntimeCompilation && !gRuntimeArtifactDirectory.empty();
+  if (!strictAot && fraction < MIN_MAPPABLE_FRACTION) {
+    DSP_DIAG(SEGMENT, "HexagonGraphBackend::canFuseSegment: [%d, %d] only %.0f%% "
              "mappable (%d/%d), need %.0f%%",
              start, end, fraction * 100, mappableOps, totalOps,
              MIN_MAPPABLE_FRACTION * 100);
@@ -115,13 +167,13 @@ bool HexagonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) 
   }
 
   if (estimatedTcm > tcmCapacity) {
-    DSP_DIAG(SEGMENT, "HexagonGraphBackend::canFuseSegment: [%d, %d) estimated TCM "
+    DSP_DIAG(SEGMENT, "HexagonGraphBackend::canFuseSegment: [%d, %d] estimated TCM "
              "%zuKB > capacity %zuKB",
              start, end, estimatedTcm / 1024, tcmCapacity / 1024);
     return false;
   }
 
-  DSP_DIAG(SEGMENT, "HexagonGraphBackend::canFuseSegment: [%d, %d) fusible "
+  DSP_DIAG(SEGMENT, "HexagonGraphBackend::canFuseSegment: [%d, %d] fusible "
            "(%d/%d mappable, %zuKB TCM est.)",
            start, end, mappableOps, totalOps, estimatedTcm / 1024);
   return true;
@@ -140,11 +192,12 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                           int numRequestedOutputs) {
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey,
+                      gAllowRuntimeCompilation, gRuntimeArtifactDirectory};
 
   // Check negative cache
   if (failedCache_.find(key) != failedCache_.end()) {
-    DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d) in failed cache, "
+    DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d] in failed cache, "
              "skipping", seg.def.startSlot, seg.def.endSlot);
     return false;
   }
@@ -152,7 +205,7 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   // Check positive cache
   auto it = cache_.find(key);
   if (it != cache_.end() && it->second.kernelHandle != nullptr) {
-    DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d) cache hit",
+    DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d] cache hit",
              seg.def.startSlot, seg.def.endSlot);
     lastCompilationAudit_ = it->second.audit;
     return true;
@@ -165,37 +218,73 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return false;
   }
 
-  // Build MLIR bytecode from the slot range
-  std::vector<uint8_t> mlirBytecode = HexagonIRBuilder::buildModule(
-      slots, seg.def.startSlot, seg.def.endSlot, externalInputs, numExternalInputs);
+  auto& runtime = HexagonRuntimeManager::getInstance();
+  void* kernelHandle = nullptr;
+  bool loadedFromAot = false;
 
-  if (mlirBytecode.empty()) {
-    DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d) MLIR build failed",
-             seg.def.startSlot, seg.def.endSlot);
+  // Production/mobile sessions import deterministic vendor AOT kernels before
+  // considering runtime compilation. The artifact name is part of the public
+  // SDX bundle contract and includes segment range plus the canonical shape key.
+  const std::string artifactPath = artifactPathForSegment(
+      seg.def.startSlot, seg.def.endSlot, shapeKey);
+  std::vector<uint8_t> aotKernel;
+  if (!gRuntimeArtifactDirectory.empty() &&
+      readBinaryArtifact(artifactPath, &aotKernel)) {
+    kernelHandle = runtime.loadKernel(npuContext_, aotKernel.data(),
+                                      aotKernel.size());
+    if (kernelHandle != nullptr) {
+      loadedFromAot = true;
+      DSP_DIAG(COMPILE,
+               "HexagonGraphBackend::compileSegment: [%d, %d] loaded AOT "
+               "kernel %s",
+               seg.def.startSlot, seg.def.endSlot, artifactPath.c_str());
+    }
+  }
+
+  if (kernelHandle == nullptr && !gAllowRuntimeCompilation) {
+    DSP_DIAG(COMPILE,
+             "HexagonGraphBackend::compileSegment: [%d, %d] strict AOT "
+             "artifact unavailable or rejected: %s",
+             seg.def.startSlot, seg.def.endSlot, artifactPath.c_str());
     failedCache_.insert(key);
     return false;
   }
 
-  // Compile MLIR to NPU kernel
-  auto& runtime = HexagonRuntimeManager::getInstance();
-  void* kernelHandle = runtime.compileKernel(
-      npuContext_, mlirBytecode.data(), mlirBytecode.size());
-
   if (kernelHandle == nullptr) {
-    DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d) kernel "
-             "compilation failed", seg.def.startSlot, seg.def.endSlot);
-    failedCache_.insert(key);
-    return false;
+    // Development path only: build IR and ask the vendor adapter to compile it.
+    std::vector<uint8_t> mlirBytecode = HexagonIRBuilder::buildModule(
+        slots, seg.def.startSlot, seg.def.endSlot, externalInputs,
+        numExternalInputs);
+    if (mlirBytecode.empty()) {
+      DSP_DIAG(COMPILE,
+               "HexagonGraphBackend::compileSegment: [%d, %d] MLIR build failed",
+               seg.def.startSlot, seg.def.endSlot);
+      failedCache_.insert(key);
+      return false;
+    }
+    kernelHandle = runtime.compileKernel(npuContext_, mlirBytecode.data(),
+                                         mlirBytecode.size());
+    if (kernelHandle == nullptr) {
+      DSP_DIAG(COMPILE,
+               "HexagonGraphBackend::compileSegment: [%d, %d] kernel "
+               "compilation failed",
+               seg.def.startSlot, seg.def.endSlot);
+      failedCache_.insert(key);
+      return false;
+    }
   }
 
   // Build compilation audit
   std::vector<CompilationAuditEntry> audit;
-  for (int i = seg.def.startSlot; i < seg.def.endSlot; i++) {
+  for (int i = seg.def.startSlot; i <= seg.def.endSlot; i++) {
     CompilationAuditEntry entry;
     entry.slotIndex = i;
     entry.opName = slots[i].ident.opName.c_str();
-    entry.wasCompiled = HexagonIRBuilder::isHexagonMappable(slots[i].ident.opName.c_str());
-    if (!entry.wasCompiled) {
+    entry.wasCompiled = loadedFromAot ||
+        HexagonIRBuilder::isHexagonMappable(slots[i].ident.opName.c_str());
+    if (loadedFromAot) {
+      entry.reason = "covered by vendor AOT segment";
+    } else if (!entry.wasCompiled) {
       entry.reason = "not HVX-mappable";
     }
     audit.push_back(std::move(entry));
@@ -212,7 +301,7 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   cache_[key] = std::move(compiled);
   lastCompilationAudit_ = audit;
 
-  DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d) compiled "
+  DSP_DIAG(COMPILE, "HexagonGraphBackend::compileSegment: [%d, %d] compiled "
            "successfully, kernel=%p",
            seg.def.startSlot, seg.def.endSlot, kernelHandle);
   return true;
@@ -228,18 +317,17 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                             void* stream) {
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
-  // Find the compiled kernel — search cache for matching segment range
-  CompiledKernel* compiled = nullptr;
-  for (auto& pair : cache_) {
-    if (pair.first.startSlot == seg.def.startSlot &&
-        pair.first.endSlot == seg.def.endSlot) {
-      compiled = &pair.second;
-      break;
-    }
-  }
+  // Resolve the exact kernel domain. A strict AOT context must never reuse a
+  // process-wide entry created by a JIT-enabled context with the same shapes.
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot,
+                      seg.def.shapeKeyState.compiledShapeKey,
+                      gAllowRuntimeCompilation, gRuntimeArtifactDirectory};
+  auto compiledIt = cache_.find(key);
+  CompiledKernel* compiled =
+      compiledIt == cache_.end() ? nullptr : &compiledIt->second;
 
   if (compiled == nullptr || compiled->kernelHandle == nullptr) {
-    DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d) no compiled "
+    DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d] no compiled "
              "kernel found", seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
@@ -252,7 +340,7 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   //   <  0 : external input at -(srcIdx+1) into externalInputs
   std::vector<void*> kernelArgs;
 
-  for (int i = seg.def.startSlot; i < seg.def.endSlot; i++) {
+  for (int i = seg.def.startSlot; i <= seg.def.endSlot; i++) {
     const auto& slot = slots[i];
 
     // Stage inputs
@@ -298,19 +386,19 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   if (!runtime.dispatchKernel(compiled->npuContext, compiled->kernelHandle,
                                kernelArgs.data(),
                                static_cast<int>(kernelArgs.size()))) {
-    DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d) dispatch failed",
+    DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d] dispatch failed",
              seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
   // Wait for NPU completion
   if (!runtime.waitForCompletion(compiled->npuContext)) {
-    DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d) "
+    DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d] "
              "waitForCompletion failed", seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
-  DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d) executed "
+  DSP_DIAG(EXECUTE, "HexagonGraphBackend::executeSegment: [%d, %d] executed "
            "successfully", seg.def.startSlot, seg.def.endSlot);
   return Status::OK;
 }

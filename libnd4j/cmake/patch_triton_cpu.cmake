@@ -341,4 +341,9 @@ if(EXISTS "${_CPU_RUNTIME}")
     endif()
 endif()
 
+# Triton instantiates LLVM/MLIR C++ template statics in libtriton.a, so it must
+# use the same coexistence policy as the downloaded LLVM/MLIR DSOs.
+set(SD_EXTERNAL_PROJECT TRITON)
+include("${CMAKE_CURRENT_LIST_DIR}/patch_external_llvm_coexistence.cmake")
+
 message(STATUS "patch_triton_cpu: done (all patches applied)")

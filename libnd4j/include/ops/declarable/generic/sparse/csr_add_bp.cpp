@@ -115,6 +115,7 @@ DECLARE_SHAPE_FN(csr_add_bp) {
 }
 
 DECLARE_TYPES(csr_add_bp) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS})     // aColIdx
       ->setAllowedInputTypes(1, {ALL_INTS})     // aRowPtr
@@ -125,6 +126,8 @@ DECLARE_TYPES(csr_add_bp) {
       ->setAllowedInputTypes(6, {ALL_FLOATS})   // gradCValues
       ->setAllowedOutputTypes(0, {ALL_FLOATS})  // dAValues
       ->setAllowedOutputTypes(1, {ALL_FLOATS}); // dBValues
+
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

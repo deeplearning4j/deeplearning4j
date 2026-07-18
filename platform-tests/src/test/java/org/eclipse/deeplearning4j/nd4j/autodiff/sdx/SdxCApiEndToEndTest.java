@@ -29,6 +29,7 @@ import com.sun.jna.ptr.PointerByReference;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -64,9 +65,12 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * sdxGetPlanPhase / sdxGetExecutionCount → teardown.
  */
 @Slf4j
+@Tag("vulkan")
 public class SdxCApiEndToEndTest extends BaseND4JTest {
 
     private static final int SDX_STATUS_OK = 0;
+    private static final int SDX_STATUS_MODEL_LOAD_FAILED = 3;
+    private static final int SDX_GPU_TARGET_VULKAN = 3;
     private static final int SDX_DEVICE_HOST = 0;
     /** sd::DataType::FLOAT32 */
     private static final int SDX_DTYPE_FLOAT = 5;
@@ -89,13 +93,19 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
 
         int sdxLoadBundle(Pointer runtime, String bundlePath, ModelOptions options, PointerByReference outModel);
         void sdxUnloadModel(Pointer model);
+        Pointer sdxGetTokenizerPath(Pointer model);
+        Pointer sdxGetTextGenerationConfigPath(Pointer model);
 
         int sdxCreateContext(Pointer model, StringArray requestedOutputs, int numRequestedOutputs,
                              PointerByReference outContext);
+        int sdxCreateContextWithOptions(Pointer model, StringArray requestedOutputs, int numRequestedOutputs,
+                                        ContextOptions options, PointerByReference outContext);
         void sdxDestroyContext(Pointer context);
 
         int sdxRun(Pointer context, TensorView[] inputs, int numInputs,
                    TensorView[] outputs, int numOutputs, RunOptions options);
+        int sdxRunAllocating(Pointer context, TensorView[] inputs, int numInputs,
+                             RunOptions options);
 
         Pointer sdxGetLastError(Pointer runtime);
         int sdxGetExecutionReport(Pointer context, ExecutionReport outReport);
@@ -109,6 +119,9 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
         int sdxGetNumInputs(Pointer context);
         int sdxGetNumOutputs(Pointer context);
         Pointer sdxGetInputName(Pointer context, int inputIndex);
+        Pointer sdxGetOutputName(Pointer context, int outputIndex);
+        int sdxGetOutputTensor(Pointer context, int outputIndex,
+                               TensorView outTensor);
     }
 
     public static class RuntimeOptions extends Structure {
@@ -138,6 +151,20 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
         @Override
         protected List<String> getFieldOrder() {
             return Arrays.asList("struct_size", "backend", "strict_backend", "allow_runtime_jit", "gpu_target");
+        }
+    }
+
+    public static class ContextOptions extends Structure {
+        public int struct_size;
+        public int bind_model_parameters;
+
+        public ContextOptions() {
+            struct_size = size();
+        }
+
+        @Override
+        protected List<String> getFieldOrder() {
+            return Arrays.asList("struct_size", "bind_model_parameters");
         }
     }
 
@@ -210,8 +237,10 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
             return override;
         }
 
-        boolean cpu = Nd4j.getBackend().getClass().getName().toLowerCase().contains("cpu");
-        String libName = cpu ? "libnd4jcpu.so" : "libnd4jcuda.so";
+        String backendName = Nd4j.getBackend().getClass().getName().toLowerCase();
+        boolean cpu = backendName.contains("cpu");
+        boolean vulkan = backendName.contains("vulkan");
+        String libName = vulkan ? "libnd4jvulkan.so" : cpu ? "libnd4jcpu.so" : "libnd4jcuda.so";
 
         try {
             File cacheDir = org.bytedeco.javacpp.Loader.getCacheDir();
@@ -228,10 +257,15 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
             log.warn("JavaCPP cache walk failed", e);
         }
 
-        String chip = cpu ? "cpu" : "cuda";
-        File blasbuild = new File("../libnd4j/blasbuild/" + chip + "/blas/" + libName).getAbsoluteFile();
-        if (blasbuild.exists()) {
-            return blasbuild.getAbsolutePath();
+        String chip = vulkan ? "vulkan" : cpu ? "cpu" : "cuda";
+        File[] candidates = {
+                new File("../libnd4j/blasbuild/" + chip + "/blas/" + libName).getAbsoluteFile(),
+                new File("../libnd4j/blasbuild/" + chip + "/linux-x86_64/" + libName).getAbsoluteFile()
+        };
+        for (File candidate : candidates) {
+            if (candidate.exists()) {
+                return candidate.getAbsolutePath();
+            }
         }
         return null;
     }
@@ -336,6 +370,9 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
         try {
             PointerByReference outModel = new PointerByReference();
             ModelOptions modelOptions = new ModelOptions();
+            // These positive execution tests load a raw .sdz without a precompiled
+            // artifact bundle, so the development runtime must be allowed to compile.
+            modelOptions.allow_runtime_jit = 1;
             modelOptions.write();
             int loadStatus = api.sdxLoadBundle(runtime, sdzFile.getAbsolutePath(), modelOptions, outModel);
             assertEquals(SDX_STATUS_OK, loadStatus, "sdxLoadBundle failed: " + lastError(runtime));
@@ -402,6 +439,104 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
         }
     }
 
+    /** Mobile inference contexts bind bundle-owned weights and expose only live inputs. */
+    @Test
+    public void testParameterBoundContextHidesWeightsAndRuns() throws Exception {
+        INDArray w = Nd4j.createFromArray(1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f).reshape(4, 2);
+        File sdzFile = saveSdz(buildMatmulModel(w), "sdx-capi-bound-");
+
+        PointerByReference outRuntime = new PointerByReference();
+        RuntimeOptions runtimeOptions = new RuntimeOptions();
+        runtimeOptions.write();
+        assertEquals(SDX_STATUS_OK, api.sdxCreateRuntime(runtimeOptions, outRuntime));
+        Pointer runtime = outRuntime.getValue();
+
+        try {
+            PointerByReference outModel = new PointerByReference();
+            ModelOptions modelOptions = new ModelOptions();
+            // The mobile production path is no-JIT and bundle-backed. This focused
+            // lifecycle test intentionally uses a raw .sdz while exercising weight binding.
+            modelOptions.allow_runtime_jit = 1;
+            modelOptions.write();
+            assertEquals(SDX_STATUS_OK,
+                    api.sdxLoadBundle(runtime, sdzFile.getAbsolutePath(), modelOptions, outModel),
+                    "sdxLoadBundle failed: " + lastError(runtime));
+            Pointer model = outModel.getValue();
+
+            try {
+                ContextOptions contextOptions = new ContextOptions();
+                contextOptions.bind_model_parameters = 1;
+                contextOptions.write();
+                PointerByReference outContext = new PointerByReference();
+                assertEquals(SDX_STATUS_OK,
+                        api.sdxCreateContextWithOptions(model,
+                                new StringArray(new String[]{"output"}), 1,
+                                contextOptions, outContext),
+                        "sdxCreateContextWithOptions failed: " + lastError(runtime));
+                Pointer context = outContext.getValue();
+
+                try {
+                    assertEquals(1, api.sdxGetNumInputs(context),
+                            "bundle-owned w must not be a public mobile input");
+                    assertEquals("x", api.sdxGetInputName(context, 0).getString(0));
+                    assertNull(api.sdxGetInputName(context, 1));
+
+                    float[] x = {1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f};
+                    Memory inputData = floatsToMemory(x);
+                    Memory outputData = new Memory(4L * Float.BYTES);
+                    Memory[] inputShapeOwners = new Memory[1];
+                    Memory[] outputShapeOwners = new Memory[1];
+                    TensorView[] inputs = hostTensorArray(
+                            new Memory[]{inputData}, new long[][]{{2, 4}}, inputShapeOwners);
+                    TensorView[] outputs = hostTensorArray(
+                            new Memory[]{outputData}, new long[][]{{2, 2}}, outputShapeOwners);
+                    RunOptions runOptions = new RunOptions();
+                    runOptions.write();
+
+                    assertEquals(SDX_STATUS_OK,
+                            api.sdxRun(context, inputs, 1, outputs, 1, runOptions),
+                            "parameter-bound sdxRun failed: " + lastError(runtime));
+                    float[] actual = new float[4];
+                    outputData.read(0, actual, 0, actual.length);
+                    float[] expected = {50f, 60f, 114f, 140f};
+                    assertArrayEquals(expected, actual, 1e-4f);
+
+                    Pointer outputName = api.sdxGetOutputName(context, 0);
+                    assertNotNull(outputName);
+                    assertEquals("output", outputName.getString(0));
+                    assertNull(api.sdxGetOutputName(context, 1));
+                    assertNull(api.sdxGetTokenizerPath(model));
+                    assertNull(api.sdxGetTextGenerationConfigPath(model));
+
+                    assertEquals(SDX_STATUS_OK,
+                            api.sdxRunAllocating(context, inputs, 1, runOptions),
+                            "sdxRunAllocating failed: " + lastError(runtime));
+                    TensorView dynamicOutput = new TensorView();
+                    dynamicOutput.write();
+                    assertEquals(SDX_STATUS_OK,
+                            api.sdxGetOutputTensor(context, 0, dynamicOutput),
+                            "sdxGetOutputTensor failed: " + lastError(runtime));
+                    dynamicOutput.read();
+                    assertEquals(2, dynamicOutput.rank);
+                    assertArrayEquals(new long[]{2, 2},
+                            dynamicOutput.shape.getLongArray(0, dynamicOutput.rank));
+                    assertEquals(SDX_DTYPE_FLOAT, dynamicOutput.dtype);
+                    assertEquals(4L * Float.BYTES, dynamicOutput.bytes);
+                    assertEquals(SDX_DEVICE_HOST, dynamicOutput.device_type);
+                    assertArrayEquals(expected,
+                            dynamicOutput.data.getFloatArray(0, expected.length),
+                            1e-4f);
+                } finally {
+                    api.sdxDestroyContext(context);
+                }
+            } finally {
+                api.sdxUnloadModel(model);
+            }
+        } finally {
+            api.sdxDestroyRuntime(runtime);
+        }
+    }
+
     private void runAndVerify(Pointer context, Pointer runtime, File sdzFile, INDArray w,
                               String[] inputNames, int seedScale, int expectedExecutionCount) throws Exception {
         INDArray x = Nd4j.linspace(1, 8, 8, DataType.FLOAT).reshape('c', 2, 4).mul(seedScale);
@@ -444,7 +579,7 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
     /** Input marking is part of the public ABI — must accept valid indices and reject bad ones. */
     @Test
     public void testInputMarkingApis() throws Exception {
-        SameDiff sd = buildMatmulModel(Nd4j.ones(DataType.FLOAT, 4, 2));
+        SameDiff sd = buildMatmulModel(Nd4j.createFromArray(1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f).reshape(4, 2));
         File sdzFile = saveSdz(sd, "sdx-capi-mark-");
 
         PointerByReference outRuntime = new PointerByReference();
@@ -478,6 +613,37 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
             } finally {
                 api.sdxUnloadModel(model);
             }
+        } finally {
+            api.sdxDestroyRuntime(runtime);
+        }
+    }
+
+    /** Mobile Vulkan bundles must never silently lower kernels when runtime JIT is disabled. */
+    @Test
+    public void testPrecompiledOnlyVulkanRejectsBundleWithoutSpirvArtifacts() throws Exception {
+        SameDiff sd = buildMatmulModel(Nd4j.createFromArray(1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f).reshape(4, 2));
+        File sdzFile = saveSdz(sd, "sdx-capi-vulkan-aot-");
+
+        PointerByReference outRuntime = new PointerByReference();
+        RuntimeOptions runtimeOptions = new RuntimeOptions();
+        runtimeOptions.write();
+        assertEquals(SDX_STATUS_OK, api.sdxCreateRuntime(runtimeOptions, outRuntime));
+        Pointer runtime = outRuntime.getValue();
+
+        try {
+            ModelOptions modelOptions = new ModelOptions();
+            modelOptions.allow_runtime_jit = 0;
+            modelOptions.gpu_target = SDX_GPU_TARGET_VULKAN;
+            modelOptions.write();
+
+            PointerByReference outModel = new PointerByReference();
+            int status = api.sdxLoadBundle(
+                    runtime, sdzFile.getAbsolutePath(), modelOptions, outModel);
+            assertEquals(SDX_STATUS_MODEL_LOAD_FAILED, status,
+                    "precompiled-only Vulkan load must fail without bundle SPIR-V");
+            assertTrue(lastError(runtime).contains("compiledArtifacts.vulkanSpirv"),
+                    "error should identify the missing mobile artifact: " + lastError(runtime));
+            assertNull(outModel.getValue());
         } finally {
             api.sdxDestroyRuntime(runtime);
         }

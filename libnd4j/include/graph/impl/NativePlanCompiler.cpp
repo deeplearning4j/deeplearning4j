@@ -23,7 +23,6 @@
 #include <graph/generated/graph_generated.h>
 #include <helpers/helper_hash.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <ops/OpTraitTable.h>
 
 #include <algorithm>
 #include <cctype>
@@ -46,8 +45,7 @@ std::string normalizeOpName(const std::string& opName) {
 }
 }  // namespace
 
-// Op classification is driven by OpDescriptor traits (see OpTraitTable.h).
-// For ops not in OpRegistrator (e.g., control flow), fall back to name lookup.
+// Op classification is owned by each operation's OpDescriptor.
 
 static bool hasOpTrait(sd::ops::DeclarableOp* op, uint32_t trait) {
   if (op && op->getOpDescriptor()) {
@@ -62,9 +60,6 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     const ::graph::FlatGraph* graph,
     const std::unordered_map<std::string, NDArray*>& variables,
     const std::vector<std::string>& requestedOutputs) {
-
-  // Ensure all op traits are populated from the centralized table
-  sd::ops::initOpTraits();
 
   if (!graph) return nullptr;
 
@@ -228,7 +223,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         delete plan;
         return nullptr;
       }
-      slot.ident.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.ident.opName);
+      slot.ident.opHash = slot.ident.op->getOpDescriptor()->getHash();
     } else {
       // CF ops don't need an op pointer or hash — they're pure data routing.
       slot.ident.opHash = 0;
@@ -248,23 +243,10 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     auto* inputPaired = node->inputPaired();
     int numInputs = inputPaired ? inputPaired->size() : 0;
 
-    // Set the trait bitmask — ALWAYS merge BOTH op descriptor AND OpTraitTable.
-    // Query methods on NativeSlot derive isDataDependent, isIdentityOp,
-    // isViewCapableOp, isFullyWriting, needsZeroedOutput from this mask.
-    //
-    // IMPORTANT: OP_TRAIT_DYNAMIC_OUTPUT_SIZE and similar DSP-specific traits
-    // live ONLY in OpTraitTable — they are never added via addTraits() in op
-    // .cpp DECLARE_TYPES blocks.  Using the table as a fallback when opTraits_==0
-    // silently drops those traits for any op that already has descriptor traits
-    // (e.g. 1-arg where has DATA_DEPENDENT → opTraits_ != 0 → fallback never
-    // fires → DYNAMIC_OUTPUT_SIZE lost → pre-pass runs where with zero-init
-    // inputs → wrong [0,1] shape → rank<2 for downstream reduce_sum).
+    // Copy intrinsic classification from the resolved operation. The descriptor
+    // is the single source of truth; opName remains diagnostics-only.
     if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
       slot.opTraits_ = slot.ident.op->getOpDescriptor()->getTraits();
-    }
-    // Always OR in table traits (complementary, not alternative).
-    if (!slot.ident.opName.empty()) {
-      slot.opTraits_ |= sd::ops::getOpTraitsByName(slot.ident.opName);
     }
     // A ternary-elementwise op with exactly 3 inputs (e.g. select cond?x:y) has a fixed
     // broadcast output shape — not data-dependent / dynamic-output. Resolve by TRAIT + arity,
@@ -425,8 +407,11 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       auto* extraInteger = node->extraInteger();
       if (extraInteger && extraInteger->size() > 0) {
         int numToUse = extraInteger->size();
-        // Set structural iArg count from centralized OpTraitTable
-        slot.flags.structuralIArgCount = sd::ops::getStructuralIArgCount(slot.ident.opName);
+        // Structural argument metadata belongs to the resolved operation.
+        slot.flags.structuralIArgCount =
+            slot.ident.op != nullptr
+                ? slot.ident.op->getOpDescriptor()->getNumberOfStructuralIArgs()
+                : -1;
 
         // Cap iArgs to structural-only when data comes from input tensors.
         // Ops like strided_slice have structural iArgs (masks, flags) followed by
@@ -484,32 +469,31 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
 
     slot.targetDeviceId = node->device();
 
-    // Per-instance refinement of outputShapeDependsOnInputValues.
-    // Some ops are marked VALUE_DEPENDENT_SHAPE in the trait table because they
-    // CAN read shape from input tensors, but specific instances may use iArgs
-    // instead. Refine after args are built so numInputs/iArgs/bArgs are available.
+    // Resolve the intrinsic value-dependent-shape trait for this concrete
+    // invocation using descriptor traits, operand arity, and frozen arguments.
+    // Operation names are diagnostic-only and never participate in semantics.
     if (slot.flags.outputShapeDependsOnInputValues) {
-      const std::string& name = slot.ident.opName;
-      if (name == "concat") {
-        // DATA_DEPENDENT only when isAxisInLastArr (bArgs[0]==true): axis read
-        // from last input array. Otherwise axis comes from iArgs — no value dep.
-        bool isAxisInLastArr = slot.args.numBArgs > 0 && slot.args.bArgs[0];
-        if (!isAxisInLastArr) {
-          slot.flags.outputShapeDependsOnInputValues = false;
-        }
-      } else if (name == "reshape" || name == "reshape_no_copy") {
-        // DATA_DEPENDENT only when numInputs > 1: shape read from input[1].
-        // Single-input reshape reads target shape from iArgs — no value dep.
-        if (numInputs <= 1) {
-          slot.flags.outputShapeDependsOnInputValues = false;
-        }
-      } else if (name == "expand_dims") {
-        // DATA_DEPENDENT only when axis comes from input[1] (no iArgs).
-        // When iArgs is non-empty, axis is in iArgs[0] — no value dep.
-        if (slot.args.numIArgs > 0) {
-          slot.flags.outputShapeDependsOnInputValues = false;
-        }
+      const bool hasNoRuntimeInputs = slot.wiring.numInputs == 0;
+      const bool argumentShapedView =
+          slot.isViewCapableOp() && slot.wiring.numInputs <= 1 &&
+          slot.args.numIArgs > 0;
+      if (hasNoRuntimeInputs || argumentShapedView) {
+        slot.flags.outputShapeDependsOnInputValues = false;
       }
+    }
+    if (!slot.flags.outputShapeDependsOnInputValues) {
+      const bool tensorAxisConcat =
+          slot.hasOpTrait(sd::ops::OP_TRAIT_CONCAT) &&
+          slot.args.numBArgs > 0 && slot.args.bArgs[0];
+      const bool tensorControlledView =
+          slot.isViewCapableOp() && slot.isDataDependent() &&
+          slot.wiring.numInputs > 1 && slot.args.numIArgs == 0;
+      const bool tensorControlledReduction =
+          slot.hasOpTrait(sd::ops::OP_TRAIT_REDUCTION) &&
+          slot.isDataDependent() && slot.wiring.numInputs > 1;
+      slot.flags.outputShapeDependsOnInputValues =
+          tensorAxisConcat || tensorControlledView ||
+          tensorControlledReduction;
     }
 
     // Ops with OP_TRAIT_DYNAMIC_OUTPUT_SIZE (e.g., 1-arg where, unique, NMS)

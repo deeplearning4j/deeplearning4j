@@ -28,6 +28,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyScalarBoolOp::LegacyScalarBoolOp() : LegacyOp(1) {
   // no-op
 }
@@ -118,5 +119,6 @@ Status LegacyScalarBoolOp::validateAndExecute(Context &block) {
 
   return Status::OK;
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

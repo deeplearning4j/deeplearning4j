@@ -27,15 +27,25 @@
 
 namespace sd {
 namespace ops {
-LegacyScalarOp::LegacyScalarOp() : LegacyOp(1) { this->getOpDescriptor()->allowInplace(true); }
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+LegacyScalarOp::LegacyScalarOp() : LegacyOp(1) {
+  this->getOpDescriptor()->allowInplace(true);
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+}
 
 LegacyScalarOp::LegacyScalarOp(int opNum) : LegacyOp(1, opNum) {
   this->getOpDescriptor()->allowInplace(true);
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyScalarOp::clone() { return new LegacyScalarOp(this->_opNum, *this->_scalar); }
 
 LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar) : LegacyOp(1, opNum) {
+  this->getOpDescriptor()->allowInplace(true);
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
   _scalar = scalar.dup(scalar.ordering(), false);
 }
 
@@ -110,5 +120,6 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
 
   return Status::OK;
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

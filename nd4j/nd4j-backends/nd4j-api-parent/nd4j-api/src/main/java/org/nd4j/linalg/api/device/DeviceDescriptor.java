@@ -214,6 +214,14 @@ public interface DeviceDescriptor {
     }
 
     /**
+     * Create a generic accelerator descriptor when the backend does not expose
+     * richer hardware metadata through a specialized descriptor.
+     */
+    static DeviceDescriptor accelerator(String backendId, DeviceType deviceType, int deviceIndex) {
+        return new GenericAcceleratorDeviceDescriptor(backendId, deviceType, deviceIndex);
+    }
+
+    /**
      * Create a device descriptor from a device ID string.
      *
      * @param deviceId the device ID (e.g., "cuda:gpu:0", "native:cpu:0")
@@ -229,14 +237,15 @@ public interface DeviceDescriptor {
             return cpu();
         }
 
-        String type = parts.length >= 2 ? parts[1].toLowerCase() : "cpu";
+        String backendId = parts[0].toLowerCase();
         int index = parts.length >= 3 ? Integer.parseInt(parts[2]) : 0;
-
-        if (type.equals("gpu") || type.contains("cuda")) {
-            return cuda(index);
-        } else {
+        if ("native".equals(backendId) || "cpu".equals(parts[1])) {
             return cpu(index);
         }
+        if ("cuda".equals(backendId)) {
+            return cuda(index);
+        }
+        return accelerator(backendId, DeviceType.fromIdentifier(backendId), index);
     }
 
     /**
@@ -246,5 +255,48 @@ public interface DeviceDescriptor {
      */
     static DeviceDescriptor defaultDevice() {
         return cpu();
+    }
+}
+
+/**
+ * Descriptor for accelerators whose backend currently exposes identity and
+ * device count, but not detailed hardware telemetry.
+ */
+final class GenericAcceleratorDeviceDescriptor extends BaseDeviceDescriptor {
+
+    GenericAcceleratorDeviceDescriptor(String backendId, DeviceType deviceType, int deviceIndex) {
+        super(backendId, deviceType, deviceIndex,
+                deviceType.getIdentifier().toUpperCase() + " device " + deviceIndex,
+                deviceIndex == 0);
+    }
+
+    @Override
+    public long getTotalMemory() {
+        return 0;
+    }
+
+    @Override
+    public long getAvailableMemory() {
+        return 0;
+    }
+
+    @Override
+    public long getMemoryBandwidth() {
+        return 0;
+    }
+
+    @Override
+    public double getComputeCapability() {
+        return 0;
+    }
+
+    @Override
+    public int getComputeUnits() {
+        return 0;
+    }
+
+    @Override
+    public long getEstimatedFlops() {
+        return 0;
     }
 }

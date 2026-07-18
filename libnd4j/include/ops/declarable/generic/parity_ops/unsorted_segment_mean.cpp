@@ -58,6 +58,7 @@ CUSTOM_OP_IMPL(unsorted_segment_mean, 2, 1, false, 0, 0) {
   return Status::OK;
 }
 DECLARE_TYPES(unsorted_segment_mean) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedOutputTypes({ALL_FLOATS})
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
@@ -95,6 +96,7 @@ CUSTOM_OP_IMPL(unsorted_segment_mean_bp, 3, 2, false, 0, 1) {
 }
 
 DECLARE_TYPES(unsorted_segment_mean_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(1, {ALL_INTS})

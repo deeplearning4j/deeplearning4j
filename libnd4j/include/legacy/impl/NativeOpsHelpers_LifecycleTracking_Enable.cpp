@@ -33,6 +33,7 @@
 
 using namespace sd::array;
 
+
 /**
  * Enables NDArray lifecycle tracking.
  */
@@ -216,3 +217,4 @@ SD_LIB_EXPORT sd::LongType getDeallocatorServiceBytesInUse() {
     return static_cast<sd::LongType>(
         DeallocatorServiceLifecycleTracker::getInstance().getCurrentBytesInUse());
 }
+

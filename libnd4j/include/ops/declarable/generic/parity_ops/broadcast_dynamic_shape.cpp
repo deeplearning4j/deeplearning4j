@@ -81,6 +81,7 @@ CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(broadcast_dynamic_shape) {
+  getOpDescriptor()->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()->setAllowedOutputTypes({ALL_INTS})->setAllowedInputTypes({ALL_INTS});
 }
 

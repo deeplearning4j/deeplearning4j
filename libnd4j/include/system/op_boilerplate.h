@@ -2308,6 +2308,7 @@
 #define REGISTER_H(NAME)
 #else
 #define REGISTER_H(NAME)                                   \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                    \
   template <typename OpName>                               \
   struct __registrator_##NAME {                            \
     __registrator_##NAME() {                               \
@@ -2315,13 +2316,15 @@
       OpRegistrator::getInstance().registerOperation(ptr); \
     }                                                      \
   };                                                       \
-  static sd::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
+  static __registrator_##NAME<NAME> zzz_register_opd_##NAME; \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END
 #endif
 
 #if defined(__JAVACPP_HACK__)
 #define REGISTER_C(NAME)
 #elif defined(SD_ALL_OPS)
 #define REGISTER_C(NAME)                                   \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                    \
   template <typename OpName>                               \
   struct __registrator_##NAME {                            \
     __registrator_##NAME() {                               \
@@ -2329,12 +2332,37 @@
       OpRegistrator::getInstance().registerOperation(ptr); \
     }                                                      \
   };                                                       \
-  static sd::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
+  static __registrator_##NAME<NAME> zzz_register_opd_##NAME; \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END
 #else
 #define REGISTER_C(NAME)
 #endif
 
+// Vulkan keeps the canonical op class, registration, shape function, type
+// constraints, and per-op traits, but executes tensors through its descriptor
+// dispatcher.  Preserve the source-authored host body as an uninstantiated
+// member template so it is still parsed while no CPU/CUDA helper code is
+// emitted into the Vulkan shared library.
+#if defined(SD_VULKAN) && !defined(__JAVACPP_HACK__)
+#define SD_DECLARABLE_OP_EXECUTION_METHODS                                      \
+  sd::Status validateAndExecute(sd::graph::Context& block);                    \
+  template <typename HostImplementation>                                       \
+  sd::Status hostValidateAndExecute(sd::graph::Context& block);
+#define SD_DECLARABLE_OP_EXECUTION_IMPL(NAME)                                  \
+  sd::Status SD_BACKEND_OPS_CLASS(NAME)::validateAndExecute(sd::graph::Context&) {          \
+    return sd::Status::KERNEL_FAILURE;                                          \
+  }                                                                             \
+  template <typename HostImplementation>                                       \
+  sd::Status SD_BACKEND_OPS_CLASS(NAME)::hostValidateAndExecute(sd::graph::Context& block)
+#else
+#define SD_DECLARABLE_OP_EXECUTION_METHODS \
+  sd::Status validateAndExecute(sd::graph::Context& block);
+#define SD_DECLARABLE_OP_EXECUTION_IMPL(NAME) \
+  sd::Status SD_BACKEND_OPS_CLASS(NAME)::validateAndExecute(sd::graph::Context& block)
+#endif
+
 #define DECLARE_OP(NAME, NIN, NOUT, INPLACEABLE)                                               \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                  \
   class SD_LIB_EXPORT NAME : public sd::ops::DeclarableOp {                                    \
    public:                                                                                     \
     NAME();                                                                                    \
@@ -2342,76 +2370,84 @@
                                                                                                \
    protected:                                                                                  \
     void registerTypes();                                                                      \
-    sd::Status validateAndExecute(sd::graph::Context& block);                                  \
+    SD_DECLARABLE_OP_EXECUTION_METHODS                                  \
   };                                                                                           \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END \
   REGISTER_H(NAME)
 
 #define DECLARE_BOOLEAN_OP(NAME, NIN, SCALAR)                 \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                  \
   class SD_LIB_EXPORT NAME : public sd::ops::BooleanOp {      \
    public:                                                    \
     NAME();                                                   \
                                                               \
    protected:                                                 \
     void registerTypes();                                     \
-    sd::Status validateAndExecute(sd::graph::Context& block); \
+    SD_DECLARABLE_OP_EXECUTION_METHODS \
   };                                                          \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END \
   REGISTER_H(NAME)
 
 #define BOOLEAN_OP_IMPL(NAME, NIN, SCALAR)                 \
-  NAME::NAME() : sd::ops::BooleanOp(#NAME, NIN, SCALAR){}; \
+  SD_BACKEND_OPS_CLASS(NAME)::NAME() : sd::ops::BooleanOp(#NAME, NIN, SCALAR){}; \
   REGISTER_C(NAME)                                         \
-  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+  SD_DECLARABLE_OP_EXECUTION_IMPL(NAME)
 
 #define DECLARE_LIST_OP(NAME, NIN, NOUT, TARGS, IARGS)          \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                  \
   class SD_LIB_EXPORT NAME : public sd::ops::DeclarableListOp { \
    public:                                                      \
     NAME();                                                     \
                                                                 \
    protected:                                                   \
-    sd::Status validateAndExecute(sd::graph::Context& block);   \
+    SD_DECLARABLE_OP_EXECUTION_METHODS   \
   };                                                            \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END \
   REGISTER_H(NAME)
 
 #define LIST_OP_IMPL(NAME, NIN, NOUT, TARGS, IARGS)                           \
-  NAME::NAME() : sd::ops::DeclarableListOp(NIN, NOUT, #NAME, TARGS, IARGS){}; \
+  SD_BACKEND_OPS_CLASS(NAME)::NAME() : sd::ops::DeclarableListOp(NIN, NOUT, #NAME, TARGS, IARGS){}; \
   REGISTER_C(NAME)                                                            \
-  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+  SD_DECLARABLE_OP_EXECUTION_IMPL(NAME)
 
 #define DECLARE_LOGIC_OP(NAME)                                \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                  \
   class SD_LIB_EXPORT NAME : public sd::ops::LogicOp {        \
    public:                                                    \
     NAME();                                                   \
                                                               \
    protected:                                                 \
-    sd::Status validateAndExecute(sd::graph::Context& block); \
+    SD_DECLARABLE_OP_EXECUTION_METHODS \
   };                                                          \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END \
   REGISTER_H(NAME)
 
 #define LOGIC_OP_IMPL(NAME)                                                 \
-  NAME::NAME() : sd::ops::LogicOp(#NAME){};                                 \
+  SD_BACKEND_OPS_CLASS(NAME)::NAME() : sd::ops::LogicOp(#NAME){};                                 \
   REGISTER_C(NAME)                                                          \
-  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block) { \
+  SD_DECLARABLE_OP_EXECUTION_IMPL(NAME) { \
     return sd::ops::LogicOp::validateAndExecute(block);                     \
   };
 
 #define OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)                                                                         \
-  NAME::NAME() : sd::ops::DeclarableOp(NIN, NOUT, #NAME, INPLACEABLE){};                                              \
+  SD_BACKEND_OPS_CLASS(NAME)::NAME() : sd::ops::DeclarableOp(NIN, NOUT, #NAME, INPLACEABLE){};                                              \
   REGISTER_C(NAME)                                                                                                    \
-  sd::ShapeList* sd::ops::NAME::calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block) {          \
+  sd::ShapeList* SD_BACKEND_OPS_CLASS(NAME)::calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block) {          \
     auto shapeList = SHAPELIST();                                                                                     \
     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width()                                  \
                                                                      : this->getOpDescriptor()->getNumberOfOutputs(); \
     for (size_t e = 0; e < opLimit; e++) {                                                                               \
       auto newshape = ConstantShapeHelper::getInstance().createShapeInfo(                                             \
-          ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), \
+          (block.numD() > static_cast<int>(e) ? block.getDArguments()->at(e) : ArrayOptions::dataType(inputShape->at(e))), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), \
           shape::shapeOf(inputShape->at(e)),shape::extra(inputShape->at(e)));                                                                         \
       shapeList->push_back(newshape);                                                                                 \
     }                                                                                                                 \
     return shapeList;                                                                                                 \
   }                                                                                                                   \
-  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+  SD_DECLARABLE_OP_EXECUTION_IMPL(NAME)
 
 #define DECLARE_SYN(NAME, ORIGINAL)                                                                                \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                                                           \
   template <typename OpName>                                                                                       \
   struct __registratorSynonym_##NAME {                                                                             \
     __registratorSynonym_##NAME(const char* name, const char* oname) {                                             \
@@ -2425,23 +2461,26 @@
       OpRegistrator::getInstance().registerOperation(name, ptr);                                                   \
     }                                                                                                              \
   };                                                                                                               \
-  static sd::ops::__registratorSynonym_##NAME<ORIGINAL> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
+  static __registratorSynonym_##NAME<ORIGINAL> zzz_register_opd_##NAME(#NAME, #ORIGINAL);                         \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END
 
 #define DECLARE_DIVERGENT_OP(NAME, NIN, NOUT, INPLACEABLE)                                     \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                  \
   class SD_LIB_EXPORT NAME : public sd::ops::DeclarableOp {                                    \
    public:                                                                                     \
     NAME();                                                                                    \
     sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block); \
                                                                                                \
    protected:                                                                                  \
-    sd::Status validateAndExecute(sd::graph::Context& block);                                  \
+    SD_DECLARABLE_OP_EXECUTION_METHODS                                  \
   };                                                                                           \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END \
   REGISTER_H(NAME)
 
 #define DIVERGENT_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE)                                                               \
-  NAME::NAME() : sd::ops::DeclarableOp(NIN, NOUT, #NAME, INPLACEABLE, true){};                                        \
+  SD_BACKEND_OPS_CLASS(NAME)::NAME() : sd::ops::DeclarableOp(NIN, NOUT, #NAME, INPLACEABLE, true){};                                        \
   REGISTER_C(NAME)                                                                                                    \
-  sd::ShapeList* sd::ops::NAME::calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block) {          \
+  sd::ShapeList* SD_BACKEND_OPS_CLASS(NAME)::calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block) {          \
     auto shapeList = SHAPELIST();                                                                                     \
     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width()                                  \
                                                                      : this->getOpDescriptor()->getNumberOfOutputs(); \
@@ -2450,9 +2489,10 @@
     }                                                                                                                 \
     return shapeList;                                                                                                 \
   }                                                                                                                   \
-  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+  SD_DECLARABLE_OP_EXECUTION_IMPL(NAME)
 
 #define DECLARE_CONFIGURABLE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)                    \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                  \
   class SD_LIB_EXPORT NAME : public sd::ops::DeclarableOp {                                    \
    public:                                                                                     \
     NAME();                                                                                    \
@@ -2460,14 +2500,15 @@
                                                                                                \
    protected:                                                                                  \
     void registerTypes();                                                                      \
-    sd::Status validateAndExecute(sd::graph::Context& block);                                  \
+    SD_DECLARABLE_OP_EXECUTION_METHODS                                  \
   };                                                                                           \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END \
   REGISTER_H(NAME)
 
 #define CONFIGURABLE_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)                                              \
-  NAME::NAME() : sd::ops::DeclarableOp(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS){};                                \
+  SD_BACKEND_OPS_CLASS(NAME)::NAME() : sd::ops::DeclarableOp(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS){};                                \
   REGISTER_C(NAME)                                                                                                    \
-  sd::ShapeList* sd::ops::NAME::calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block) {          \
+  sd::ShapeList* SD_BACKEND_OPS_CLASS(NAME)::calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block) {          \
     auto shapeList = SHAPELIST();                                                                                     \
     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width()                                  \
                                                                      : this->getOpDescriptor()->getNumberOfOutputs(); \
@@ -2498,81 +2539,89 @@
     }                                                                                                                 \
     return shapeList;                                                                                                 \
   }                                                                                                                   \
-  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+  SD_DECLARABLE_OP_EXECUTION_IMPL(NAME)
 
 #define DECLARE_REDUCTION_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS) \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                  \
   class SD_LIB_EXPORT NAME : public sd::ops::DeclarableReductionOp {     \
    public:                                                               \
     NAME();                                                              \
                                                                          \
    protected:                                                            \
     void registerTypes();                                                \
-    sd::Status validateAndExecute(sd::graph::Context& block);                       \
+    SD_DECLARABLE_OP_EXECUTION_METHODS                       \
   };                                                                     \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END \
   REGISTER_H(NAME)
 
 #define REDUCTION_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)                           \
-  NAME::NAME() : sd::ops::DeclarableReductionOp(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS){}; \
+  SD_BACKEND_OPS_CLASS(NAME)::NAME() : sd::ops::DeclarableReductionOp(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS){}; \
   REGISTER_C(NAME)                                                                              \
-  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+  SD_DECLARABLE_OP_EXECUTION_IMPL(NAME)
 
 #define DECLARE_CUSTOM_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)                          \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                  \
   class SD_LIB_EXPORT NAME : public sd::ops::DeclarableCustomOp {                              \
    protected:                                                                                  \
     void registerTypes();                                                                      \
-    sd::Status validateAndExecute(sd::graph::Context& block);                                             \
+    SD_DECLARABLE_OP_EXECUTION_METHODS                                             \
                                                                                                \
    public:                                                                                     \
     NAME();                                                                                    \
     sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block); \
   };                                                                                           \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END \
   REGISTER_H(NAME)
 
 #define CUSTOM_OP_IMPL(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)                           \
-  NAME::NAME() : sd::ops::DeclarableCustomOp(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS){}; \
+  SD_BACKEND_OPS_CLASS(NAME)::NAME() : sd::ops::DeclarableCustomOp(NIN, NOUT, #NAME, INPLACEABLE, TARGS, IARGS){}; \
   REGISTER_C(NAME)                                                                           \
-  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+  SD_DECLARABLE_OP_EXECUTION_IMPL(NAME)
 
 // this declaration MUST follow DECLARE_CUSTOM_OP
 #define DECLARE_SHAPE_FN(NAME) \
-  sd::ShapeList* sd::ops::NAME::calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block)
+  sd::ShapeList* SD_BACKEND_OPS_CLASS(NAME)::calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block)
 
 #define DECLARE_SAME_TYPE(NAME) \
-  void sd::ops::NAME::registerTypes() { this->getOpDescriptor()->setSameMode(true); }
+  void SD_BACKEND_OPS_CLASS(NAME)::registerTypes() { this->getOpDescriptor()->setSameMode(true); }
 
-#define DECLARE_TYPES(NAME) void sd::ops::NAME::registerTypes()
+#define DECLARE_TYPES(NAME) void SD_BACKEND_OPS_CLASS(NAME)::registerTypes()
 
 #define DECLARE_BROADCASTABLE_OP(NAME, TARGS, IARGS)           \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                  \
   class SD_LIB_EXPORT NAME : public sd::ops::BroadcastableOp { \
    protected:                                                  \
     void registerTypes();                                      \
-    sd::Status validateAndExecute(sd::graph::Context& block);             \
+    SD_DECLARABLE_OP_EXECUTION_METHODS             \
                                                                \
    public:                                                     \
     NAME();                                                    \
   };                                                           \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END \
   REGISTER_H(NAME)
 
 #define DECLARE_BROADCASTABLE_BOOL_OP(NAME, TARGS, IARGS)          \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN                                  \
   class SD_LIB_EXPORT NAME : public sd::ops::BroadcastableBoolOp { \
    protected:                                                      \
     void registerTypes();                                          \
-    sd::Status validateAndExecute(sd::graph::Context& block);                 \
+    SD_DECLARABLE_OP_EXECUTION_METHODS                 \
                                                                    \
    public:                                                         \
     NAME();                                                        \
   };                                                               \
+  SD_BACKEND_OPS_INLINE_NAMESPACE_END \
   REGISTER_H(NAME)
 
 #define BROADCASTABLE_OP_IMPL(NAME, TARGS, IARGS)                 \
-  NAME::NAME() : sd::ops::BroadcastableOp(#NAME, TARGS, IARGS){}; \
+  SD_BACKEND_OPS_CLASS(NAME)::NAME() : sd::ops::BroadcastableOp(#NAME, TARGS, IARGS){}; \
   REGISTER_C(NAME)                                                \
-  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+  SD_DECLARABLE_OP_EXECUTION_IMPL(NAME)
 
 #define BROADCASTABLE_BOOL_OP_IMPL(NAME, TARGS, IARGS)                \
-  NAME::NAME() : sd::ops::BroadcastableBoolOp(#NAME, TARGS, IARGS){}; \
+  SD_BACKEND_OPS_CLASS(NAME)::NAME() : sd::ops::BroadcastableBoolOp(#NAME, TARGS, IARGS){}; \
   REGISTER_C(NAME)                                                    \
-  sd::Status sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+  SD_DECLARABLE_OP_EXECUTION_IMPL(NAME)
 
 #define DECLARE_DEVICE_OP(NAME, NIN, NOUT, INPLACEABLE, TARGS, IARGS)
 

@@ -20,6 +20,7 @@
 // Created by george@skymind.io on 6/4/2018.
 //
 
+#include <array/DataTypeUtils.h>
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/axis.h>
 
@@ -88,14 +89,20 @@ DECLARE_SHAPE_FN(reduce_sqnorm) {
         "REDUCE_SQNORM OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), &dimensions, inputShape->at(0),
-                                                      keepDims, false, block.getWorkspace());
+  const auto outputType =
+      block.numD() > 0
+          ? D_ARG(0)
+          : DataTypeUtils::pickFloatingType(ArrayOptions::dataType(inputShape->at(0)));
+  auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(
+      shape::order(inputShape->at(0)), &dimensions, inputShape->at(0),
+      outputType, keepDims, false, block.getWorkspace());
 
   return SHAPELIST(outShapeInfo);
 }
 
 DECLARE_TYPES(reduce_sqnorm) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -190,6 +197,7 @@ DECLARE_SHAPE_FN(reduce_sqnorm_bp) {
 
 DECLARE_TYPES(reduce_sqnorm_bp) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 

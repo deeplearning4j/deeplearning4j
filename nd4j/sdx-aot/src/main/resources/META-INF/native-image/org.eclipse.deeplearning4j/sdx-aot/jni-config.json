@@ -1,0 +1,1045 @@
+[
+  {
+    "name": "[Lsun.java2d.loops.GraphicsPrimitive;"
+  },
+  {
+    "name": "java.awt.AlphaComposite",
+    "fields": [
+      {
+        "name": "extraAlpha"
+      },
+      {
+        "name": "rule"
+      }
+    ]
+  },
+  {
+    "name": "java.awt.Color",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ],
+    "methods": [
+      {
+        "name": "getRGB",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.awt.GraphicsEnvironment",
+    "methods": [
+      {
+        "name": "isHeadless",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.awt.Rectangle",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "int",
+          "int",
+          "int",
+          "int"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.awt.geom.AffineTransform",
+    "fields": [
+      {
+        "name": "m00"
+      },
+      {
+        "name": "m01"
+      },
+      {
+        "name": "m02"
+      },
+      {
+        "name": "m10"
+      },
+      {
+        "name": "m11"
+      },
+      {
+        "name": "m12"
+      }
+    ]
+  },
+  {
+    "name": "java.awt.geom.Path2D",
+    "fields": [
+      {
+        "name": "numTypes"
+      },
+      {
+        "name": "pointTypes"
+      },
+      {
+        "name": "windingRule"
+      }
+    ]
+  },
+  {
+    "name": "java.awt.geom.Path2D$Float",
+    "fields": [
+      {
+        "name": "floatCoords"
+      }
+    ]
+  },
+  {
+    "name": "java.awt.image.BufferedImage",
+    "fields": [
+      {
+        "name": "colorModel"
+      },
+      {
+        "name": "imageType"
+      },
+      {
+        "name": "raster"
+      }
+    ],
+    "methods": [
+      {
+        "name": "getRGB",
+        "parameterTypes": [
+          "int",
+          "int",
+          "int",
+          "int",
+          "int[]",
+          "int",
+          "int"
+        ]
+      },
+      {
+        "name": "setRGB",
+        "parameterTypes": [
+          "int",
+          "int",
+          "int",
+          "int",
+          "int[]",
+          "int",
+          "int"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.awt.image.ColorModel",
+    "fields": [
+      {
+        "name": "colorSpace"
+      },
+      {
+        "name": "colorSpaceType"
+      },
+      {
+        "name": "isAlphaPremultiplied"
+      },
+      {
+        "name": "is_sRGB"
+      },
+      {
+        "name": "nBits"
+      },
+      {
+        "name": "numComponents"
+      },
+      {
+        "name": "supportsAlpha"
+      },
+      {
+        "name": "transparency"
+      }
+    ],
+    "methods": [
+      {
+        "name": "getRGBdefault",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.awt.image.IndexColorModel",
+    "fields": [
+      {
+        "name": "allgrayopaque"
+      },
+      {
+        "name": "colorData"
+      },
+      {
+        "name": "map_size"
+      },
+      {
+        "name": "rgb"
+      },
+      {
+        "name": "transparent_index"
+      }
+    ]
+  },
+  {
+    "name": "java.awt.image.Raster",
+    "fields": [
+      {
+        "name": "dataBuffer"
+      },
+      {
+        "name": "height"
+      },
+      {
+        "name": "minX"
+      },
+      {
+        "name": "minY"
+      },
+      {
+        "name": "numBands"
+      },
+      {
+        "name": "numDataElements"
+      },
+      {
+        "name": "sampleModel"
+      },
+      {
+        "name": "sampleModelTranslateX"
+      },
+      {
+        "name": "sampleModelTranslateY"
+      },
+      {
+        "name": "width"
+      }
+    ]
+  },
+  {
+    "name": "java.awt.image.SampleModel",
+    "fields": [
+      {
+        "name": "height"
+      },
+      {
+        "name": "width"
+      }
+    ],
+    "methods": [
+      {
+        "name": "getPixels",
+        "parameterTypes": [
+          "int",
+          "int",
+          "int",
+          "int",
+          "int[]",
+          "java.awt.image.DataBuffer"
+        ]
+      },
+      {
+        "name": "setPixels",
+        "parameterTypes": [
+          "int",
+          "int",
+          "int",
+          "int",
+          "int[]",
+          "java.awt.image.DataBuffer"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.awt.image.SinglePixelPackedSampleModel",
+    "fields": [
+      {
+        "name": "bitMasks"
+      },
+      {
+        "name": "bitOffsets"
+      },
+      {
+        "name": "bitSizes"
+      },
+      {
+        "name": "maxBitSize"
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Boolean",
+    "methods": [
+      {
+        "name": "getBoolean",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.lang.Object",
+    "methods": [
+      {
+        "name": "toString",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.SecurityManager",
+    "fields": [
+      {
+        "name": "initialized"
+      }
+    ]
+  },
+  {
+    "name": "java.lang.String",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "byte[]"
+        ]
+      },
+      {
+        "name": "getBytes",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.lang.System",
+    "methods": [
+      {
+        "name": "load",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.nio.Buffer",
+    "fields": [
+      {
+        "name": "capacity"
+      },
+      {
+        "name": "limit"
+      },
+      {
+        "name": "position"
+      }
+    ],
+    "methods": [
+      {
+        "name": "array",
+        "parameterTypes": []
+      },
+      {
+        "name": "arrayOffset",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "org.bytedeco.javacpp.Loader",
+    "methods": [
+      {
+        "name": "putMemberOffset",
+        "parameterTypes": [
+          "java.lang.String",
+          "java.lang.String",
+          "int"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.bytedeco.javacpp.Pointer",
+    "fields": [
+      {
+        "name": "address"
+      },
+      {
+        "name": "capacity"
+      },
+      {
+        "name": "deallocator"
+      },
+      {
+        "name": "limit"
+      },
+      {
+        "name": "position"
+      }
+    ],
+    "methods": [
+      {
+        "name": "init",
+        "parameterTypes": [
+          "long",
+          "long",
+          "long",
+          "long"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.bytedeco.javacpp.Pointer$NativeDeallocator",
+    "fields": [
+      {
+        "name": "ownerAddress"
+      }
+    ]
+  },
+  {
+    "name": "sun.awt.SunHints",
+    "fields": [
+      {
+        "name": "INTVAL_STROKE_PURE"
+      }
+    ]
+  },
+  {
+    "name": "sun.awt.SunToolkit",
+    "methods": [
+      {
+        "name": "awtLock",
+        "parameterTypes": []
+      },
+      {
+        "name": "awtLockNotify",
+        "parameterTypes": []
+      },
+      {
+        "name": "awtLockNotifyAll",
+        "parameterTypes": []
+      },
+      {
+        "name": "awtLockWait",
+        "parameterTypes": [
+          "long"
+        ]
+      },
+      {
+        "name": "awtUnlock",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.awt.X11.XErrorHandlerUtil",
+    "methods": [
+      {
+        "name": "init",
+        "parameterTypes": [
+          "long"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.awt.image.BufImgSurfaceData$ICMColorData",
+    "fields": [
+      {
+        "name": "pData"
+      }
+    ],
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.awt.image.ByteComponentRaster",
+    "fields": [
+      {
+        "name": "data"
+      },
+      {
+        "name": "dataOffsets"
+      },
+      {
+        "name": "pixelStride"
+      },
+      {
+        "name": "scanlineStride"
+      },
+      {
+        "name": "type"
+      }
+    ]
+  },
+  {
+    "name": "sun.awt.image.IntegerComponentRaster",
+    "fields": [
+      {
+        "name": "data"
+      },
+      {
+        "name": "dataOffsets"
+      },
+      {
+        "name": "pixelStride"
+      },
+      {
+        "name": "scanlineStride"
+      },
+      {
+        "name": "type"
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.Disposer",
+    "methods": [
+      {
+        "name": "addRecord",
+        "parameterTypes": [
+          "java.lang.Object",
+          "long",
+          "long"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.InvalidPipeException"
+  },
+  {
+    "name": "sun.java2d.NullSurfaceData"
+  },
+  {
+    "name": "sun.java2d.SunGraphics2D",
+    "fields": [
+      {
+        "name": "clipRegion"
+      },
+      {
+        "name": "composite"
+      },
+      {
+        "name": "eargb"
+      },
+      {
+        "name": "lcdTextContrast"
+      },
+      {
+        "name": "pixel"
+      },
+      {
+        "name": "strokeHint"
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.SurfaceData",
+    "fields": [
+      {
+        "name": "pData"
+      },
+      {
+        "name": "valid"
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.Blit",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.BlitBg",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.CompositeType",
+    "fields": [
+      {
+        "name": "AnyAlpha"
+      },
+      {
+        "name": "Src"
+      },
+      {
+        "name": "SrcNoEa"
+      },
+      {
+        "name": "SrcOver"
+      },
+      {
+        "name": "SrcOverNoEa"
+      },
+      {
+        "name": "Xor"
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.DrawGlyphList",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.DrawGlyphListAA",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.DrawGlyphListLCD",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.DrawLine",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.DrawParallelogram",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.DrawPath",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.DrawPolygons",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.DrawRect",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.FillParallelogram",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.FillPath",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.FillRect",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.FillSpans",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.GraphicsPrimitive",
+    "fields": [
+      {
+        "name": "pNativePrim"
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.GraphicsPrimitiveMgr",
+    "methods": [
+      {
+        "name": "register",
+        "parameterTypes": [
+          "sun.java2d.loops.GraphicsPrimitive[]"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.MaskBlit",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.MaskFill",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.ScaledBlit",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.SurfaceType",
+    "fields": [
+      {
+        "name": "Any3Byte"
+      },
+      {
+        "name": "Any4Byte"
+      },
+      {
+        "name": "AnyByte"
+      },
+      {
+        "name": "AnyColor"
+      },
+      {
+        "name": "AnyInt"
+      },
+      {
+        "name": "AnyShort"
+      },
+      {
+        "name": "ByteBinary1Bit"
+      },
+      {
+        "name": "ByteBinary2Bit"
+      },
+      {
+        "name": "ByteBinary4Bit"
+      },
+      {
+        "name": "ByteGray"
+      },
+      {
+        "name": "ByteIndexed"
+      },
+      {
+        "name": "ByteIndexedBm"
+      },
+      {
+        "name": "FourByteAbgr"
+      },
+      {
+        "name": "FourByteAbgrPre"
+      },
+      {
+        "name": "Index12Gray"
+      },
+      {
+        "name": "Index8Gray"
+      },
+      {
+        "name": "IntArgb"
+      },
+      {
+        "name": "IntArgbBm"
+      },
+      {
+        "name": "IntArgbPre"
+      },
+      {
+        "name": "IntBgr"
+      },
+      {
+        "name": "IntRgb"
+      },
+      {
+        "name": "IntRgbx"
+      },
+      {
+        "name": "OpaqueColor"
+      },
+      {
+        "name": "ThreeByteBgr"
+      },
+      {
+        "name": "Ushort4444Argb"
+      },
+      {
+        "name": "Ushort555Rgb"
+      },
+      {
+        "name": "Ushort555Rgbx"
+      },
+      {
+        "name": "Ushort565Rgb"
+      },
+      {
+        "name": "UshortGray"
+      },
+      {
+        "name": "UshortIndexed"
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.TransformHelper",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "long",
+          "sun.java2d.loops.SurfaceType",
+          "sun.java2d.loops.CompositeType",
+          "sun.java2d.loops.SurfaceType"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.loops.XORComposite",
+    "fields": [
+      {
+        "name": "alphaMask"
+      },
+      {
+        "name": "xorColor"
+      },
+      {
+        "name": "xorPixel"
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.pipe.Region",
+    "fields": [
+      {
+        "name": "bands"
+      },
+      {
+        "name": "endIndex"
+      },
+      {
+        "name": "hix"
+      },
+      {
+        "name": "hiy"
+      },
+      {
+        "name": "lox"
+      },
+      {
+        "name": "loy"
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.pipe.RegionIterator",
+    "fields": [
+      {
+        "name": "curIndex"
+      },
+      {
+        "name": "numXbands"
+      },
+      {
+        "name": "region"
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.xr.XRSurfaceData",
+    "fields": [
+      {
+        "name": "picture"
+      },
+      {
+        "name": "xid"
+      }
+    ]
+  },
+  {
+    "name": "sun.management.VMManagementImpl",
+    "fields": [
+      {
+        "name": "compTimeMonitoringSupport"
+      },
+      {
+        "name": "currentThreadCpuTimeSupport"
+      },
+      {
+        "name": "objectMonitorUsageSupport"
+      },
+      {
+        "name": "otherThreadCpuTimeSupport"
+      },
+      {
+        "name": "remoteDiagnosticCommandsSupport"
+      },
+      {
+        "name": "synchronizerUsageSupport"
+      },
+      {
+        "name": "threadAllocatedMemorySupport"
+      },
+      {
+        "name": "threadContentionMonitoringSupport"
+      }
+    ]
+  }
+]

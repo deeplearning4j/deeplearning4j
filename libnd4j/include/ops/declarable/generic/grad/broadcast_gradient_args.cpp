@@ -37,7 +37,11 @@ OP_IMPL(broadcastgradientargs, 2, 2, true) {
 }
 DECLARE_SYN(BroadcastGradientArgs, broadcastgradientargs);
 
-DECLARE_TYPES(broadcastgradientargs) { getOpDescriptor()->setAllowedInputTypes(ANY); }
+DECLARE_TYPES(broadcastgradientargs) {
+  getOpDescriptor()->setAllowedInputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION |
+                               OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
+}
 }  // namespace ops
 }  // namespace sd
 

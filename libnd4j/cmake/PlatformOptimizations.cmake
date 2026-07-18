@@ -259,7 +259,7 @@ function(apply_compiler_specific_flags ARCH_TUNE)
 
             # Removed -finstrument-functions to reduce binary size, keep frame pointers for stack traces
             # Changed -ggdb3 to -g1 for minimal debug info (consistent with CompilerFlags.cmake)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0 -gno-record-gcc-switches -ftrack-macro-expansion=0 -fstack-protector -fstack-protector-all -Wall -Wextra -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -g1 -pthread -MT -Bsymbolic -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fPIC" PARENT_SCOPE)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-backtrace-limit=0 -gno-record-gcc-switches -ftrack-macro-expansion=0 -fstack-protector -fstack-protector-all -Wall -Wextra -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -g1 -pthread -MT -rdynamic -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fPIC" PARENT_SCOPE)
 
             # Session #1045 FIX: Removed -lunwind - conflicts with JVM's libgcc_s causing _Unwind_SetGR crashes
             # Use system libgcc_s for exception handling (JVM compatible)

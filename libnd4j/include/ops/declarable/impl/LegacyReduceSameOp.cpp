@@ -30,11 +30,15 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyReduceSameOp::LegacyReduceSameOp() : LegacyOp(1) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyReduceSameOp::LegacyReduceSameOp(int opNum) : LegacyOp(1, opNum) {
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp* LegacyReduceSameOp::clone() { return new LegacyReduceSameOp(this->_opNum); }
@@ -168,5 +172,6 @@ ShapeList* LegacyReduceSameOp::calculateOutputShape(ShapeList* inputShape, Conte
 
   return SHAPELIST(newShape);
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

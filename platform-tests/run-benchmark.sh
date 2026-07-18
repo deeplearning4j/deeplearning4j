@@ -105,7 +105,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-MVN="/home/agibsonccc/dev-apps/mvn/bin/mvn"
+MVN="${MVN:-mvn}"
 VALIDATION_CLASS="TestDspValidation"
 VALIDATION_METHOD="testOutputAccuracy+testDecodeStepValidation"
 TEST_CLASS="TestSmolDoclingOptimizedPipeline"
@@ -116,7 +116,7 @@ SUREFIRE_OUT="$SCRIPT_DIR/target/surefire-reports/org.eclipse.deeplearning4j.vlm
 SUREFIRE_XML="$SCRIPT_DIR/target/surefire-reports/TEST-org.eclipse.deeplearning4j.vlm.${TEST_CLASS}.xml"
 MODEL_CACHE="$HOME/.cache/dl4j-vlm-models"
 
-# Backend: cuda (default) or cpu
+# Backend: cuda (default), vulkan, or cpu
 BACKEND="cuda"
 
 # Defaults
@@ -151,6 +151,7 @@ DSP_TIMING=false
 DIAG_REPLAY=false
 DIAG_STREAM=false
 DIAG_DEVICE=false
+DIAG_SHAPE=false
 DIAG_ALL=false
 DIAG_DETAILED=false
 DIAG_JSON=""
@@ -333,6 +334,10 @@ while [[ $# -gt 0 ]]; do
             DIAG_DEVICE=true
             shift
             ;;
+        --diag-shape)
+            DIAG_SHAPE=true
+            shift
+            ;;
         --diag-all)
             DIAG_ALL=true
             shift
@@ -472,6 +477,7 @@ $DISABLE_CAST_HWM     && echo "  ISOLATION: cast cache HWM DISABLED (reset to 0)
 $DISABLE_WS_SKIP      && echo "  ISOLATION: workspace skip DISABLED (live gaps use workspace)"
 $DIAG_REPLAY  && echo "  Diag:     GRAPH_REPLAY (capture/instantiate/launch phases)"
 $DIAG_STREAM  && echo "  Diag:     STREAM_SYNC (stream ordering, event waits)"
+$DIAG_SHAPE   && echo "  Diag:     SHAPE (shape inference, view minting, value-shape traces)"
 $DIAG_DEVICE  && echo "  Diag:     MULTI_DEVICE (device selection, P2P, migrations)"
 $DIAG_ALL     && echo "  Diag:     ALL categories at FULL level"
 $DIAG_STEP    && echo "  Diag:     Per-step StepSnapshot introspection"
@@ -631,6 +637,9 @@ else
     if $DIAG_DEVICE; then
         DIAG_CATS="${DIAG_CATS:+$DIAG_CATS,}MULTI_DEVICE,TRANSFER,BACKEND,MEMORY"
     fi
+    if $DIAG_SHAPE; then
+        DIAG_CATS="${DIAG_CATS:+$DIAG_CATS,}SHAPE,TRANSFER,EXECUTE"
+    fi
     if [ -n "$DIAG_CATS" ]; then
         EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=$DIAG_CATS"
         EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics.level=full"
@@ -724,8 +733,16 @@ elif [ "$BACKEND" = "cuda" ]; then
     BACKEND_ARTIFACT="nd4j-cuda-12.9"
     TRITON_FLAG="-Dlibnd4j.triton=ON"
     echo "[backend] CUDA mode: artifact=$BACKEND_ARTIFACT"
+elif [ "$BACKEND" = "vulkan" ]; then
+    # The Vulkan profile adds Vulkan alongside the default CUDA artifact. This
+    # preserves a true multi-backend classpath while Vulkan's higher backend
+    # priority selects it for the benchmark.
+    BACKEND_ARTIFACT="nd4j-cuda-12.9"
+    TRITON_FLAG="-Dlibnd4j.triton=ON"
+    EXTRA_ARGS="$EXTRA_ARGS -Ptest-vulkan,test-cuda-vulkan-coexistence"
+    echo "[backend] Vulkan mode: CUDA + Vulkan classpath, shared Triton/DSP enabled"
 else
-    echo "ERROR: Unknown backend '$BACKEND'. Use 'cuda' or 'cpu'."
+    echo "ERROR: Unknown backend '$BACKEND'. Use 'cuda', 'vulkan', or 'cpu'."
     exit 1
 fi
 

@@ -234,9 +234,13 @@ DECLARE_TYPES(add) {
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
       ->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
-DECLARE_TYPES(add_bp) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(add_bp) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
+}
 
 static DataType addBpGradientType(DataType xType, DataType yType, DataType epsType) {
   auto type = DataTypeUtils::pickPairwiseResultType(xType, yType);

@@ -60,7 +60,7 @@ DECLARE_SYN(addn, mergeadd);
 DECLARE_SYN(accumulaten, mergeadd);
 DECLARE_SYN(accumulate_n, mergeadd);
 
-DECLARE_TYPES(mergeadd) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY); }
+DECLARE_TYPES(mergeadd) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING); }
 
 CUSTOM_OP_IMPL(mergeadd_bp, 2, 1, false, 0, 0) {
   auto inSize = block.width() - 1;
@@ -79,7 +79,7 @@ CUSTOM_OP_IMPL(mergeadd_bp, 2, 1, false, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(mergeadd_bp) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY); }
+DECLARE_TYPES(mergeadd_bp) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD); }
 DECLARE_SHAPE_FN(mergeadd_bp) {
   const int numOfInArrs = block.width() - 1;
 

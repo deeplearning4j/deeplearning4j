@@ -40,7 +40,7 @@
 #include <graph/DspSegmentLifecycle.h>
 #include <graph/DspSegmentHelpers.h>
 #include <helpers/DebugHelper.h>
-#include <ops/OpTraitTable.h>
+#include <ops/declarable/OpDescriptor.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/MmulHelper.h>
@@ -96,10 +96,18 @@ static size_t CAPTURE_HOST_WORKSPACE_SIZE = []() -> size_t {
 // ─── Sync-free buffer fingerprint ring — kernel + API ────────────────────────
 //
 // Runs entirely on the capture/replay stream; no host sync.
-// One uint64 per (step, trackIdx): XOR of all 64-bit words in the buffer.
-// Two-pass: all threads XOR into a per-warp partial (shared mem), then
-// atomicXOR into the ring slot.  Works on any buffer size including odd ones.
+// One uint64 per (step, trackIdx): XOR of index-salted SplitMix64 words.
+// The index salt makes the aggregate sensitive to element order while retaining
+// deterministic parallel reduction. Two-pass: all threads XOR into a per-warp
+// partial (shared mem), then atomicXOR into the ring slot.
 //
+__device__ __forceinline__ uint64_t mixFingerprintWord(uint64_t value, uint64_t index) {
+  uint64_t z = value ^ (0x9e3779b97f4a7c15ULL * (index + 1ULL));
+  z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+  z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+  return z ^ (z >> 31);
+}
+
 __global__ void bufXorFingerprintKernel(const uint64_t* __restrict__ src,
                                         int numWords,
                                         uint64_t* __restrict__ dst) {
@@ -112,7 +120,7 @@ __global__ void bufXorFingerprintKernel(const uint64_t* __restrict__ src,
   uint64_t acc = 0;
   for (int i = blockIdx.x * blockDim.x + tid; i < numWords;
        i += gridDim.x * blockDim.x) {
-    acc ^= src[i];
+    acc ^= mixFingerprintWord(src[i], static_cast<uint64_t>(i));
   }
   // warp reduce
   for (int mask = 16; mask > 0; mask >>= 1)
@@ -154,12 +162,13 @@ void NativeDynamicShapePlan::recordBufFingerprintPublic(cudaStream_t stream, int
   if (!fpRingEnabled_ || d_fpRing_ == nullptr || devPtr == nullptr) return;
   if (trackIdx < 0 || trackIdx >= BUF_FP_MAX_TRACKED) return;
   if (numBytes == 0) return;
+  // A cache-owned plan can be drained when its donor closes and then reused by a
+  // borrower. Any new record starts another reportable generation.
+  fpRingDrained_ = false;
   // Skip fingerprinting during CUDA graph capture — the kernel+memset would be
-  // baked into the graph and would corrupt the ring on every replay.
-  // We only want steady-state values (step >= 4), never capture-time values.
+  // baked into the graph and would corrupt the ring on every replay. Warmup values
+  // are intentionally retained so a later replay can be compared to its fresh run.
   if (DebugHelper::inGraphCapture(stream != nullptr ? &stream : nullptr)) return;
-  // Only track steady-state steps (4+); warmup/capture steps don't show the freeze.
-  if (step < 4) return;
   int clampedStep = (step >= BUF_FP_MAX_STEPS ? BUF_FP_MAX_STEPS - 1 : step);
   // Zero the ring slot first (atomicXOR accumulates; we need a fresh start per step)
   uint64_t* ringSlot = d_fpRing_ + clampedStep * BUF_FP_MAX_TRACKED + trackIdx;
@@ -175,10 +184,49 @@ void NativeDynamicShapePlan::recordBufFingerprintPublic(cudaStream_t stream, int
 
 void NativeDynamicShapePlan::drainFingerprintRingPublic() {
   if (!fpRingEnabled_ || d_fpRing_ == nullptr || fpRingDrained_) return;
-  cudaDeviceSynchronize();
+  // Callers drain only after generation's existing completion boundary. Do not add
+  // a diagnostic stream/device synchronization here; the one post-loop D2H merely
+  // copies the already-completed device ring for reporting.
   size_t ringBytes = sizeof(uint64_t) * BUF_FP_MAX_STEPS * BUF_FP_MAX_TRACKED;
   cudaMemcpy(h_fpRing_, d_fpRing_, ringBytes, cudaMemcpyDeviceToHost);
   fpRingDrained_ = true;
+
+  // Report the ring inline (chunked to fit DSP_DIAG_MSG_LEN). One group of
+  // lines per step that has any data; only labeled tracks are printed. This
+  // lets a failing exec's per-slot fingerprints be diffed against a passing
+  // exec's directly from the test log (labels: e<i>=external, s<i>=slot).
+  if (DSP_DIAG_ENABLED(MEMORY)) {
+    for (int s = 0; s < BUF_FP_MAX_STEPS; s++) {
+      bool hasData = false;
+      for (int t = 0; t < BUF_FP_MAX_TRACKED; t++) {
+        if (fpLabels_[t].tag[0] != '\0' && h_fpRing_[s * BUF_FP_MAX_TRACKED + t] != 0) {
+          hasData = true;
+          break;
+        }
+      }
+      if (!hasData) continue;
+      char line[DSP_DIAG_MSG_LEN];
+      int used = 0, inLine = 0, part = 0;
+      for (int t = 0; t < BUF_FP_MAX_TRACKED; t++) {
+        if (fpLabels_[t].tag[0] == '\0') continue;
+        uint64_t fp = h_fpRing_[s * BUF_FP_MAX_TRACKED + t];
+        if (fp == 0) continue;
+        if (inLine == 0) used = 0;
+        used += snprintf(line + used, sizeof(line) - used, "%s%s=%016llx",
+                         inLine > 0 ? " " : "", fpLabels_[t].tag,
+                         (unsigned long long)fp);
+        inLine++;
+        if (inLine == 12 || used > (int)sizeof(line) - 48) {
+          DSP_DIAG(MEMORY, "BUF_FP plan=%p step=%d part=%d: %s", this, s, part, line);
+          part++;
+          inLine = 0;
+        }
+      }
+      if (inLine > 0) {
+        DSP_DIAG(MEMORY, "BUF_FP plan=%p step=%d part=%d: %s", this, s, part, line);
+      }
+    }
+  }
 }
 
 const char* NativeDynamicShapePlan::getFingerprintJson() {
@@ -188,8 +236,12 @@ const char* NativeDynamicShapePlan::getFingerprintJson() {
   // Build two sorted lists so the JSON is ordered and trackIdx is explicit.
   std::vector<int> activeTrackIdxs;
   for (int t = 0; t < fpRingStagingCount_; t++) activeTrackIdxs.push_back(t);
-  for (int t = BUF_FP_MAX_STAGING; t < BUF_FP_MAX_STAGING + fpRingGemmCount_; t++)
+  for (int t = BUF_FP_MAX_STAGING;
+       t < BUF_FP_MAX_STAGING + fpRingGemmCount_ && t < BUF_FP_TRACE_TRACK; t++)
     activeTrackIdxs.push_back(t);
+  if (fpLabels_[BUF_FP_TRACE_TRACK].tag[0] != '\0') {
+    activeTrackIdxs.push_back(BUF_FP_TRACE_TRACK);
+  }
 
   fpJsonBuffer_.clear();
   fpJsonBuffer_ += "{\"labels\":[";
@@ -780,7 +832,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
-  auto& scheduler = cuda::CudaGraphScheduler::getInstance();
+  auto& scheduler = ::sd::cuda::CudaGraphScheduler::getInstance();
 
   int currentDevice = 0;
   cudaError_t currentDeviceErr = cudaGetDevice(&currentDevice);
@@ -833,7 +885,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
 
-  seg.exec.replayHandle = GraphReplayFactory::create(currentDevice);
+  seg.exec.replayHandle = GraphReplayFactory::create(ReplayBackend::CUDA, currentDevice);
   auto* cudaReplay = static_cast<CudaGraphReplayHandle*>(seg.exec.replayHandle.get());
   auto* handle = cudaReplay->getNativeHandle();
 
@@ -1209,7 +1261,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       size_t nodesContributed = (nodesAfter > nodesBefore) ? (nodesAfter - nodesBefore) : 0;
       bool isHostOnlyOp = (nodesContributed == 0);
       {
-        cuda::CaptureAuditEntry entry;
+        ::sd::cuda::CaptureAuditEntry entry;
         entry.slotIndex = stepIdx;
         entry.opName = slots_[stepIdx].ident.opName;
         entry.nodesBefore = nodesBefore;
@@ -1961,7 +2013,7 @@ Status NativeDynamicShapePlan::postReplayFixupRange(
   // host-only re-exec → host reads D2H'd never-written device memory
   // (initcheck: uninit cudaMemcpy-source via DataBuffer::syncToPrimary) →
   // oscillating ~4% divergence (bgeEncoder NVRTC/PTX).
-  const std::vector<sd::cuda::CaptureAuditEntry>* audit = nullptr;
+  const std::vector<::sd::cuda::CaptureAuditEntry>* audit = nullptr;
   if (replayHandle != nullptr) {
     auto* cudaReplay = dynamic_cast<CudaGraphReplayHandle*>(replayHandle);
     if (cudaReplay != nullptr && cudaReplay->getNativeHandle() != nullptr &&

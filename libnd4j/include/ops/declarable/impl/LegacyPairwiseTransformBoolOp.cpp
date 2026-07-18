@@ -25,6 +25,7 @@
 #include <legacy/NativeOpExecutioner.h>
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp() : LegacyOp(2) {
   // just a no-op
 }
@@ -79,5 +80,6 @@ ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputS
   auto ret = SHAPELIST(ConstantShapeHelper::getInstance().castToDataType(inShape, BOOL));
   return ret;
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

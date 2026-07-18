@@ -433,8 +433,8 @@ public class JCublasNDArray extends BaseNDArray {
         super(longShapeDescriptor);
     }
 
-    public JCublasNDArray(DataType dataType, long[] shape, long[] strides, int i, char ordering, MemoryWorkspace currentWorkspace) {
-        super(dataType,shape,strides,currentWorkspace);
+    public JCublasNDArray(DataType dataType, long[] shape, long[] strides, int offset, char ordering, MemoryWorkspace currentWorkspace) {
+        super(dataType, shape, strides, offset, ordering, false, currentWorkspace);
     }
 
     @Override

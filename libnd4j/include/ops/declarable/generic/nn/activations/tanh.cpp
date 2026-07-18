@@ -56,6 +56,7 @@ CONFIGURABLE_OP_IMPL(tanh_bp, 2, 1, true, 0, 0) {
 DECLARE_SYN(TanhGrad, tanh_bp);
 
 DECLARE_TYPES(tanh_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})

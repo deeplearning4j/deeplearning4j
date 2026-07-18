@@ -73,6 +73,7 @@ DECLARE_SHAPE_FN(segment_mean) {
 }
 
 DECLARE_TYPES(segment_mean) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INTS})
@@ -95,6 +96,7 @@ DECLARE_SHAPE_FN(segment_mean_bp) {
   return SHAPELIST(CONSTANT(in), CONSTANT(inIdx));
 }
 DECLARE_TYPES(segment_mean_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, {ALL_FLOATS})

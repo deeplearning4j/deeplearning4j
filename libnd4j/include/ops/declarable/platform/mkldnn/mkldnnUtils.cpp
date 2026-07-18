@@ -21,6 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include "mkldnnUtils.h"
+#include "mkldnnEltwise.h"
 
 #include <dnnl_types.h>
 #include <mutex>
@@ -28,7 +29,10 @@
 
 using namespace dnnl;
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
+SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN
 namespace onednnUtils {
 
 //////////////////////////////////////////////////////////////////////
@@ -487,6 +491,119 @@ void checkPoolingONEDNN(Requirements& reqs, sd::graph::Context& block, sd::NDArr
   return;
 }
 
+//////////////////////////////////////////////////////////////////////
+// Map an sd DataType to the OneDNN memory data_type (f32/bf16/f16; f32 fallback).
+dnnl::memory::data_type toDnnlDataType(sd::DataType dt) {
+  switch (dt) {
+    case sd::DataType::FLOAT32:
+      return dnnl::memory::data_type::f32;
+    case sd::DataType::BFLOAT16:
+      return dnnl::memory::data_type::bf16;
+    case sd::DataType::HALF:
+      return dnnl::memory::data_type::f16;
+    default:
+      return dnnl::memory::data_type::f32;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////
+// ISA-aware support gate: f32 always; bf16 needs AVX512_CORE_BF16; f16 needs
+// AVX512_CORE_AMX_FP16. Mirrors conv2d/batchnorm's isSupported*Type so that
+// unsupported dtypes fall back to the generic kernel instead of crashing.
+bool isSupportedEltwiseType(sd::DataType dt) {
+  if (dt == sd::DataType::FLOAT32) return true;
+  // f64/DOUBLE is intentionally excluded: verified empirically that the oneDNN CPU eltwise
+  // primitive cannot create an f64 primitive descriptor (it throws), so DOUBLE must fall back
+  // to the generic kernel. (oneDNN reorder/matmul do support f64; the eltwise primitive on CPU
+  // does not.) This exclusion is a real library limitation, not an arbitrary narrowing.
+  if (dt == sd::DataType::BFLOAT16) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_bf16);
+  }
+  if (dt == sd::DataType::HALF) {
+    dnnl_cpu_isa_t isa = dnnl_get_effective_cpu_isa();
+    return (isa >= dnnl_cpu_isa_avx512_core_amx_fp16);
+  }
+  return false;
+}
+
+//////////////////////////////////////////////////////////////////////
+// Generic OneDNN eltwise forward: z = alg(x; alpha, beta).
+void eltwiseFwdMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, float alpha, float beta) {
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
+
+  dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
+
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, toDnnlDataType(x->dataType()), getFormat(*x));
+  setBlockStrides(*x, x_user_md);
+
+  z_user_md = z_mkl_md = dnnl::memory::desc(shape, toDnnlDataType(z->dataType()), getFormat(*z));
+  setBlockStrides(*z, z_user_md);
+
+  auto engine = getEngine(LaunchContext::defaultContext()->engine());
+
+  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference, alg, x_mkl_md,
+                                                     z_mkl_md, alpha, beta);
+
+  std::unordered_map<int, dnnl::memory> args;
+  dnnl::stream stream(engine);
+
+  loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+  auto z_user_mem =
+      loadDataToMklStream(*z, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
+
+  dnnl::eltwise_forward(op_prim_desc).execute(stream, args);
+
+  if (op_prim_desc.dst_desc() != z_user_mem.get_desc())
+    dnnl::reorder(args[DNNL_ARG_DST], z_user_mem).execute(stream, args[DNNL_ARG_DST], z_user_mem);
+
+  stream.wait();
+}
+
+//////////////////////////////////////////////////////////////////////
+// Generic OneDNN eltwise backward: dLdx = alg'(x) * dLdz.
+void eltwiseBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, dnnl::algorithm alg, float alpha, float beta) {
+  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
+
+  dnnl::memory::desc x_mkl_md, x_user_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
+
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, toDnnlDataType(x->dataType()), getFormat(*x));
+  setBlockStrides(*x, x_user_md);
+
+  dLdz_user_md = dLdz_mkl_md = dnnl::memory::desc(shape, toDnnlDataType(dLdz->dataType()), getFormat(*dLdz));
+  setBlockStrides(*dLdz, dLdz_user_md);
+
+  dLdx_user_md = dLdx_mkl_md = dnnl::memory::desc(shape, toDnnlDataType(dLdx->dataType()), getFormat(*dLdx));
+  setBlockStrides(*dLdx, dLdx_user_md);
+
+  auto engine = getEngine(LaunchContext::defaultContext()->engine());
+
+  std::unordered_map<int, dnnl::memory> args;
+  dnnl::stream stream(engine);
+
+  // forward hint (OneDNN 3.x): primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training, alg, x_mkl_md,
+                                                        x_mkl_md, alpha, beta);
+
+  // backward (OneDNN 3.x): primitive_desc(engine, algorithm, diff_src_md, diff_dst_md, data_md, alpha, beta, hint)
+  dnnl::eltwise_backward::primitive_desc op_prim_desc(engine, alg, dLdx_mkl_md, dLdz_mkl_md, x_mkl_md, alpha, beta,
+                                                      op_ff_prim_desc);
+
+  loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+  loadDataToMklStream(*dLdz, engine, stream, dLdz_user_md, op_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
+  auto dLdx_user_mem =
+      loadDataToMklStream(*dLdx, engine, stream, dLdx_user_md, op_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
+
+  dnnl::eltwise_backward(op_prim_desc).execute(stream, args);
+
+  if (op_prim_desc.diff_src_desc() != dLdx_user_mem.get_desc())
+    dnnl::reorder(args[DNNL_ARG_DIFF_SRC], dLdx_user_mem).execute(stream, args[DNNL_ARG_DIFF_SRC], dLdx_user_mem);
+
+  stream.wait();
+}
+
 
 }  // namespace onednnUtils
+SD_BACKEND_ROOT_INLINE_NAMESPACE_END
 }  // namespace sd

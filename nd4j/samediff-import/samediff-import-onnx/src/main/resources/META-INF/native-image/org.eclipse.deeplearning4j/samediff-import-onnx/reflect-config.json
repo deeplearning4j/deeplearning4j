@@ -1,0 +1,2130 @@
+[
+  {
+    "comment": "OnnxFrameworkImporter \u2014 top-level entry point for ONNX import; instantiated by OnnxModelCache via direct new().",
+    "name": "org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "OnnxImportGraph \u2014 registered as a service in META-INF/services; loaded via ServiceLoader (reflection).",
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxImportGraph",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "OnnxOpDescriptorLoader \u2014 registered as a service; loads onnx-mapping-ruleset.pbtxt at runtime.",
+    "name": "org.nd4j.samediff.frameworkimport.onnx.opdefs.OnnxOpDescriptorLoader",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "onnx.Onnx top-level protobuf generated class. Its inner message classes are referenced by samediff-import-onnx Kotlin IR wrappers. parseFrom(InputStream) called at runtime \u2014 proto reflection on builder/parser fields required.",
+    "name": "onnx.Onnx",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$ModelProto \u2014 ONNX model top-level message; parsed by OnnxFrameworkImporter.runImport.",
+    "name": "onnx.Onnx$ModelProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$ModelProto$Builder \u2014 protobuf builder; accessed via GeneratedMessageV3 newBuilder().",
+    "name": "onnx.Onnx$ModelProto$Builder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$GraphProto \u2014 ONNX graph message; iterated for nodes and initializers.",
+    "name": "onnx.Onnx$GraphProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$GraphProto$Builder",
+    "name": "onnx.Onnx$GraphProto$Builder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$NodeProto \u2014 individual ONNX op node.",
+    "name": "onnx.Onnx$NodeProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$NodeProto$Builder",
+    "name": "onnx.Onnx$NodeProto$Builder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$TensorProto \u2014 weight/initializer tensor.",
+    "name": "onnx.Onnx$TensorProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$TensorProto$Builder",
+    "name": "onnx.Onnx$TensorProto$Builder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$TensorProto$DataType \u2014 enum used in type-mapping conversions.",
+    "name": "onnx.Onnx$TensorProto$DataType",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$AttributeProto \u2014 op attributes (float, int, string, tensor, graph).",
+    "name": "onnx.Onnx$AttributeProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$AttributeProto$Builder",
+    "name": "onnx.Onnx$AttributeProto$Builder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$AttributeProto$AttributeType \u2014 attribute type enum.",
+    "name": "onnx.Onnx$AttributeProto$AttributeType",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$TypeProto \u2014 ONNX type descriptor for graph inputs/outputs.",
+    "name": "onnx.Onnx$TypeProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$TypeProto$Builder",
+    "name": "onnx.Onnx$TypeProto$Builder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$TypeProto$Tensor \u2014 tensor type inside TypeProto.",
+    "name": "onnx.Onnx$TypeProto$Tensor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$ValueInfoProto \u2014 graph input/output/value_info entries.",
+    "name": "onnx.Onnx$ValueInfoProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$TensorShapeProto \u2014 shape descriptor with dims.",
+    "name": "onnx.Onnx$TensorShapeProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$TensorShapeProto$Dimension \u2014 individual shape dimension (dim_value or dim_param).",
+    "name": "onnx.Onnx$TensorShapeProto$Dimension",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$OperatorSetIdProto \u2014 opset version record in ModelProto.",
+    "name": "onnx.Onnx$OperatorSetIdProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.Onnx$SparseTensorProto \u2014 sparse initializers.",
+    "name": "onnx.Onnx$SparseTensorProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.OnnxMl top-level \u2014 OnnxML (ML extensions) protobuf generated class.",
+    "name": "onnx.OnnxMl",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.OnnxMl$ModelProto \u2014 OnnxML model message.",
+    "name": "onnx.OnnxMl$ModelProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.OnnxMl$NodeProto \u2014 OnnxML node.",
+    "name": "onnx.OnnxMl$NodeProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.OnnxMl$TensorProto \u2014 OnnxML tensor.",
+    "name": "onnx.OnnxMl$TensorProto",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.OnnxOperators \u2014 operator registry generated class used by the importer.",
+    "name": "onnx.OnnxOperators",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "onnx.OnnxDescriptor \u2014 op descriptor class loaded by DifferentialFunctionClassHolder.",
+    "name": "onnx.OnnxDescriptor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "onnx.OnnxDescriptorParser \u2014 parses the onnx-op-def.pbtxt / onnxops.json resources.",
+    "name": "onnx.OnnxDescriptorParser",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.GraphPreProcessRunner",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxConverter",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxIRKt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxIRKt$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxIRKt$convertToOnnxTensor$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxIRKt$prepareGraphForExecAndExport$modelProto$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxIRKt$prepareGraphForExecAndExport$modelProto$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxImportGraphHolder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxProtobufExtensionsKt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxProtobufExtensionsKt$OnnxShape$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxProtobufExtensionsKt$createValueInfoFromTensor$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$booleanConstant$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$conditionalFieldValueIntIndexArrayRule$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$conditionalFieldValueIntIndexArrayRule$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$conditionalFieldValueIntIndexArrayRule$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$conditionalFieldValueIntIndexNDArrayRule$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$conditionalFieldValueIntIndexNDArrayRule$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$conditionalFieldValueIntIndexNDArrayRule$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$doubleConstant$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$flattenDims$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$intConstant$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$listAttributeValueLookup$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$listAttributeValueLookup$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$mapStringToInt$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$mapStringToInt$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$ndarrayExtractScalarValue$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$sizeAtRule$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$sizeThreshold$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$sizeThreshold$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$sizeThreshold$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$stringContainsRule$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$stringEqualsRule$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$stringNotEqualsRule$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.OnnxRuleDeclarationsKt$stringToIndex$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.context.OnnxMappingContext",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.MicrosoftOnnxExtensions",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.MicrosoftOnnxExtensionsKt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxInputTensors",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarations",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarations$init$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$avgPool$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$avgPool$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$avgPool$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$avgPool$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$avgPool$5",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$conv2d$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$conv2d$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$conv2d$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$conv2d$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$conv2d$5",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$conv2d$6",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$maxPool$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$maxPool$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$maxPool$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$maxPool$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$maxPool$5",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$maxPool$6",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$maxPool$7",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.OnnxOpDeclarationsKt$spaceToDepth$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.AdaptiveAvgPool",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.AdaptiveMaxPool",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.AffineGrid",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.AliasWithName",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ArrayFeatureExtractor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Attention",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.BatchNormalization",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.BiasAdd",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.BiasGelu",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.BiasSoftmax",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Binarizer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Bitshift",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.BlackmanWindow",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.CTCGreedyDecoder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Cast",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Cast$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.CastMap",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.CategoryMapper",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Celu",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.CenterCropPad",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Clip",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Col2Im",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Compress",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Concat",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ConcatFromSequence",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ConstantOfShape",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Conv",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ConvInteger",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ConvTranspose",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Crop",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.CumSum",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.DFT",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.DeformableConv",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.DepthToSpace",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.DequantizeLinear",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.DictVectorizer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Dropout",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.DynamicQuantizeLinear",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Einsum",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.EmbedLayerNormalization",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Equal",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Expand",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.EyeLike",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.FastGelu",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.FeatureVectorizer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.FusedConv",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.FusedGemm",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.FusedMatMul",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GRU",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Gather",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GatherElements",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GatherND",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Gelu",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Gemm",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GenerateProposals",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GlobalAveragePooling",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GlobalLpPool",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GlobalMaxPooling",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Greater",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GreaterOrEqual",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GridSample",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GroupNormalization",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.GroupQueryAttention",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.HammingWindow",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.HannWindow",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.HardSwish",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Hardmax",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.If",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.If$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Im2Col",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ImageScaler",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Imputer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.InstanceNormalization",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.LSTM",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.LabelEncoder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.LayerNormalization",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Less",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.LessOrEqual",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.LinearClassifier",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.LinearRegressor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.LogSoftmax",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Loop",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.LpNormalization",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.LpPool",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.MatMul",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.MatMulInteger",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.MatMulNBits",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.MaxRoiPool",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.MaxUnpool",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Maximum",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Mean",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.MeanVarianceNormalization",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Minimum",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Mish",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.MixtureOfExperts",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.MultiHeadAttention",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Multinomial",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.NegativeLogLikelihoodLoss",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.NhwcConv",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.NonMaxSuppression",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.NonZero",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Normalizer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.OneHot",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.OneHotEncoder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Optional",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.OptionalGetElement",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.OptionalHasElement",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.PRelu",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Pad",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ParametricSoftplus",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Pow",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.QLinearConv",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.QLinearMatMul",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.QuantizeLinear",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.QuantizeLinear$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.QuickGelu",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.RNN",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.RandomNormalLike",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.RandomUniformLike",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ReduceLogSum",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ReduceLogSumExp",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ReduceMax",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ReduceMean",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ReduceMin",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ReduceProd",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ReduceSum",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ReduceSumSquare",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.RelativePositionBias",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Reshape",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Resize",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ResizeNearest",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ReverseSequence",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.RoiAlign",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.RotaryEmbedding",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.STFT",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SVMClassifier",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SVMRegressor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ScaledTanh",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Scaler",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Scan",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ScatterElements",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ScatterND",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SequenceAt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SequenceConstruct",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SequenceEmpty",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SequenceErase",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SequenceInsert",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SequenceLength",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Shape",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Shrink",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SimplifiedLayerNormalization",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SkipLayerNormalization",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SkipSimplifiedLayerNormalization",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Slice",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Softmax",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SoftmaxCrossEntropyLoss",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SpaceToDepth",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Split",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.SplitToSequence",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.StringNormalizer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Sum",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.TfIdfVectorizer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ThresholdedRelu",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Transpose",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.TreeEnsembleClassifier",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.TreeEnsembleRegressor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Trilu",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Unique",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Unsqueeze",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Upsample",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.Where",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.WindowedAttention",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.definitions.implementations.ZipMap",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.ExportHookRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExportConfig",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExportConfig$Builder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExportConfig$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter$buildNode$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter$createValueInfoProto$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter$createValueInfoProto$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter$createValueInfoProto$1$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter$createValueInfoProto$1$1$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter$toModelProto$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter$toModelProto$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.PostExportHook",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.PostExportHook$DefaultImpls",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.PostExportHookRegistry",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.PostExportHookRegistry$register$$inlined$sortByDescending$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.SameDiffToOnnxOpMapper",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.SameDiffToOnnxOpMapper$createAttributes$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.SameDiffToOnnxOpMapper$createAttributes$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.SameDiffToOnnxOpMapper$createAttributes$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.SameDiffToOnnxOpMapper$createAttributes$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.SameDiffToOnnxOpMapper$createAttributes$5",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.SameDiffToOnnxOpMapper$createAttributes$6",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.TrainingStateExporter",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.TrainingStateMetadata",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.hooks.BatchNormExportHook",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.hooks.BatchNormExportHook$export$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.hooks.BatchNormExportHook$export$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.hooks.ConvExportHook",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.hooks.ConvExportHook$export$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.hooks.ConvExportHook$export$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.hooks.ConvExportHook$export$5",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.hooks.ConvExportHook$export$6",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.hooks.ConvExportHook$export$7",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.export.hooks.ConvExportHook$export$8",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter$Companion",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRArgDef",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRAttr",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRAttr$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRDataType",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRDataType$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph$addConstantNode$newValueInfo$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph$addConstantNode$tensorShapeInfo$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph$addConstantNode$tensorShapeInfo$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph$addConstantNode$valueType$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph$nodeList$2$nodeToAdd$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRGraph$preProcessDuplicateNodeNames$occurrence$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRNode",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIROp",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRTensor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRTensor$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.opdefs.OnnxOpDescriptorLoader$nd4jOpList$$inlined$sortBy$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.optimize.OnnxOptimizer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.process.OnnxMappingProcess",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.process.OnnxMappingProcessLoader",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxArgDescriptorConstant",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxAttributeNDArrayToScalarAttribute",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxAttributeNumberListNDArray",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxAttributeScalarNDArrayAttribute",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxConditionalFieldValueIntIndexArrayRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxConditionalFieldValueIntIndexNDArrayRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxDataTypeToInt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxFlattenDims",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxInvertBooleanNumber",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxListAttributeValueLookupToIndex",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxListNumberToListNumber",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxListNumberToNDArray",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxMapStringToInt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxNDArrayAttributeToNDArrayInput",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxNDArrayExtractScalarValue",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxNDArrayInputToNumericalAttribute",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxNDArraySizeAt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxNDArrayToIntAttributeValue",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxSizeThresholdIntArrayIntIndexRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxStringAttributeToNDArray",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxStringContainsAdapterRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxStringEqualsAdapterRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxStringNotEqualsAdapterRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxStringToIndex",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.attribute.OnnxValueMapping",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.tensor.NDArrayMappingRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.tensor.OnnxMultiInputIndexMappingRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.onnx.rule.tensor.OnnxPassThroughMultiInputTensorMapping",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  }
+]

@@ -116,7 +116,9 @@ DECLARE_SHAPE_FN(lstsq) {
 }
 
 DECLARE_TYPES(lstsq) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(false);
+
 }
 DECLARE_SHAPE_FN(solve_ls) {
   auto in0 = inputShape->at(0);
@@ -136,7 +138,9 @@ DECLARE_SHAPE_FN(solve_ls) {
 }
 
 DECLARE_TYPES(solve_ls) {
+
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(false);
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

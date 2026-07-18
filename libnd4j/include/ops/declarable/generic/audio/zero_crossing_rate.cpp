@@ -76,6 +76,7 @@ DECLARE_SHAPE_FN(zero_crossing_rate) {
 }
 
 DECLARE_TYPES(zero_crossing_rate) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

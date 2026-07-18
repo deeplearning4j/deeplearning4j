@@ -103,6 +103,7 @@ CUSTOM_OP_IMPL(mixture_of_experts, 3, -1, false, 0, 3) {
 }
 
 DECLARE_TYPES(mixture_of_experts) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

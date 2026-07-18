@@ -32,6 +32,7 @@
 
 using sd::graph::NativeDynamicShapePlan;
 
+
 int isPlanCompilationSealed(sd::Pointer planHandle) {
   if (planHandle == nullptr) return -1;
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
@@ -49,3 +50,4 @@ void resetPlanMidExecutionCompileCount(sd::Pointer planHandle) {
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   plan->resetMidExecutionCompileCount();
 }
+

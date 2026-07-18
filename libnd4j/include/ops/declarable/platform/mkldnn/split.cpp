@@ -92,7 +92,7 @@ static void splitMKLDNN(NDArray* input, std::vector<NDArray*>& outputs, int axis
   if (inContig != nullptr) delete inContig;
 }
 
-PLATFORM_IMPL(split, ENGINE_CPU) {
+PLATFORM_IMPL(split, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
 
   // iArgs layout: INT_ARG(0) = numSplit, INT_ARG(1) = axis
@@ -116,7 +116,7 @@ PLATFORM_IMPL(split, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(split, ENGINE_CPU) {
+PLATFORM_CHECK(split, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
 
   Requirements req("ONEDNN SPLIT OP");
@@ -130,7 +130,7 @@ PLATFORM_CHECK(split, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // SPLIT_V: Split tensor with variable sizes along an axis
-PLATFORM_IMPL(split_v, ENGINE_CPU) {
+PLATFORM_IMPL(split_v, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto sizeSplits = INPUT_VARIABLE(1);
 
@@ -153,7 +153,7 @@ PLATFORM_IMPL(split_v, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(split_v, ENGINE_CPU) {
+PLATFORM_CHECK(split_v, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
 
   Requirements req("ONEDNN SPLIT_V OP");

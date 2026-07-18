@@ -21,7 +21,6 @@
 package org.nd4j.linalg.api.memory.abstracts;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
@@ -41,6 +40,7 @@ import org.nd4j.nativeblas.NativeOps;
  *   <li>1 = CUDA GPU</li>
  *   <li>2 = ROCm GPU</li>
  *   <li>3 = TPU</li>
+ *   <li>4 = Vulkan GPU</li>
  * </ul>
  *
  * <h3>Coherence States:</h3>
@@ -51,11 +51,13 @@ import org.nd4j.nativeblas.NativeOps;
  *   <li>3 = MODIFIED (modified, only valid copy)</li>
  * </ul>
  */
-@Slf4j
 public class NativeMultiBackendWorkspace implements AutoCloseable {
 
     public static final int DEVICE_TYPE_CPU = 0;
     public static final int DEVICE_TYPE_CUDA = 1;
+    public static final int DEVICE_TYPE_ROCM = 2;
+    public static final int DEVICE_TYPE_TPU = 3;
+    public static final int DEVICE_TYPE_VULKAN = 4;
 
     public static final int COHERENCE_INVALID = 0;
     public static final int COHERENCE_SHARED = 1;
@@ -71,12 +73,33 @@ public class NativeMultiBackendWorkspace implements AutoCloseable {
      * Create a multi-backend workspace.
      *
      * @param initialSize        initial allocation size in bytes
-     * @param primaryDeviceType  device type (0=CPU, 1=CUDA)
-     * @param primaryDeviceIndex device index (e.g., GPU 0, GPU 1)
+     * @param primaryDeviceType  native workspace device type (see {@code DEVICE_TYPE_*} constants)
+     * @param primaryDeviceIndex device index within the selected backend
      */
     public NativeMultiBackendWorkspace(long initialSize, int primaryDeviceType, int primaryDeviceIndex) {
-        this.nativeOps = Nd4j.getNativeOps();
-        this.nativeHandle = nativeOps.createNativeMultiBackendWorkspace(initialSize, primaryDeviceType, primaryDeviceIndex);
+        this(initialSize, primaryDeviceType, primaryDeviceIndex, Nd4j.getNativeOps());
+    }
+
+    /**
+     * Create a multi-backend workspace owned by an exact native backend.
+     *
+     * <p>The supplied {@link NativeOps} instance is retained for every operation on the
+     * resulting handle, including destruction. This is required when several native
+     * backends are loaded in one JVM: a handle must never cross its creating ABI.</p>
+     *
+     * @param initialSize        initial allocation size in bytes
+     * @param primaryDeviceType  native workspace device type
+     * @param primaryDeviceIndex device index within the selected backend
+     * @param nativeOps          exact backend that owns the native handle
+     */
+    public NativeMultiBackendWorkspace(long initialSize, int primaryDeviceType,
+                                       int primaryDeviceIndex, NativeOps nativeOps) {
+        if (nativeOps == null) {
+            throw new IllegalArgumentException("NativeOps owner cannot be null");
+        }
+        this.nativeOps = nativeOps;
+        this.nativeHandle = nativeOps.createNativeMultiBackendWorkspace(
+                initialSize, primaryDeviceType, primaryDeviceIndex);
         if (nativeHandle == null || nativeHandle.isNull()) {
             throw new IllegalStateException("Failed to create native multi-backend workspace");
         }
@@ -138,7 +161,7 @@ public class NativeMultiBackendWorkspace implements AutoCloseable {
      * Allocate bytes on a specific device.
      *
      * @param numBytes   bytes to allocate
-     * @param deviceType device type (0=CPU, 1=CUDA)
+     * @param deviceType device type (see {@code DEVICE_TYPE_*} constants)
      * @param deviceIndex device index
      * @return pointer to allocated memory
      */
@@ -148,7 +171,7 @@ public class NativeMultiBackendWorkspace implements AutoCloseable {
     }
 
     /**
-     * Synchronize a specific device (e.g., cudaDeviceSynchronize for CUDA).
+     * Synchronize a specific device through its native backend.
      */
     public void syncDevice(int deviceType, int deviceIndex) {
         checkNotClosed();
@@ -186,11 +209,14 @@ public class NativeMultiBackendWorkspace implements AutoCloseable {
     }
 
     @Override
-    public void close() {
-        if (!closed && nativeHandle != null && !nativeHandle.isNull()) {
-            closed = true;
+    public synchronized void close() {
+        if (closed) {
+            return;
+        }
+        if (nativeHandle != null && !nativeHandle.isNull()) {
             nativeOps.destroyNativeMultiBackendWorkspace(nativeHandle);
             nativeHandle = null;
         }
+        closed = true;
     }
 }

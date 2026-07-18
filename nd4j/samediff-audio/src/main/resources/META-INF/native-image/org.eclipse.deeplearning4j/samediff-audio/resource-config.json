@@ -1,0 +1,12 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "javax\\.sound\\.sampled\\.spi\\..*"
+      },
+      {
+        "pattern": "com\\.sun\\.media\\.sound\\..*\\.properties"
+      }
+    ]
+  }
+}

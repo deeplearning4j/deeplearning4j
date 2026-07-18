@@ -58,7 +58,7 @@ class SD_LIB_EXPORT HexagonIRBuilder {
    *
    * @param slots          Full slot array
    * @param start          Start index (inclusive) in the slot array
-   * @param end            End index (exclusive) in the slot array
+   * @param end            End index (inclusive) in the slot array
    * @param externalInputs External input arrays (constants, variables, placeholders)
    * @param numExt         Number of external inputs
    * @return MLIR bytecode as a byte vector, or empty vector on failure
@@ -83,7 +83,7 @@ class SD_LIB_EXPORT HexagonIRBuilder {
    *
    * @param slots  Full slot array
    * @param start  Start index (inclusive)
-   * @param end    End index (exclusive)
+   * @param end    End index (inclusive)
    * @return Estimated TCM usage in bytes
    */
   static size_t estimateTcmUsage(NativeSlot* slots, int start, int end);

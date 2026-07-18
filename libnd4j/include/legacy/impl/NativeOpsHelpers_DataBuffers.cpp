@@ -31,8 +31,6 @@
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
 
-#include <legacy/cuda/NativeOpsHelpers_DataBuffers_cuda.h>
-
 #include "execution/Threads.h"
 #include "helpers/OpTracker.h"
 
@@ -85,6 +83,7 @@ extern std::mutex g_dataBufferMutex;
 extern std::unordered_map<sd::TadPack*, std::shared_ptr<sd::TadPack>> g_tadPackRegistry;
 extern std::mutex g_tadPackMutex;
 
+
 #include <execution/Threads.h>
 #include <graph/Context.h>
 #include <helpers/ConstantTadHelper.h>
@@ -123,6 +122,7 @@ FILE* instrumentFile = nullptr;
 }
 
 #endif
+
 
 void ctxAllowHelpers(OpaqueContext *ptr, bool reallyAllow) { ptr->allowHelpers(reallyAllow); }
 
@@ -656,26 +656,8 @@ void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) {
   dataBuffer->expand(elements);
 }
 
-// dbClose is implemented in cpu/NativeOpsHelpers_DataBuffers_close.cpp
-// and cuda/NativeOpsHelpers_DataBuffers_close.cu for platform-specific handling
-
-int dbDeviceId(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbDeviceId: dataBuffer is null");
-  // Verify actual device of the GPU pointer. The DataBuffer._deviceId metadata can
-  // get out of sync with the real pointer location during cross-device execution
-  // (e.g., Java-side DeviceMemoryManager routing allocates on a different device than
-  // expected, or allocateFailover moves data across GPUs). Using _deviceId alone causes
-  // DSP to skip necessary input migrations, leading to illegal memory access on non-P2P GPUs.
-  auto db = dataBuffer->dataBuffer();
-  if (db != nullptr) {
-    int actualDevice = -1;
-    if (dbDeviceId_cudaQuery(db->special(), actualDevice)) {
-      return actualDevice;
-    }
-  }
-  return dataBuffer->deviceId();
-}
+// dbClose and dbDeviceId are backend-owned because release ordering and
+// special-allocation ownership differ between CPU, CUDA, and Vulkan.
 
 void dbSetDeviceId(OpaqueDataBuffer *dataBuffer, int deviceId) {
   if(dataBuffer == nullptr)
@@ -706,3 +688,4 @@ int dbLocality(OpaqueDataBuffer *dataBuffer) {
 }
 
 // Transfer Metrics API moved to NativeOpsHelpers_DataBuffers_metrics.cpp
+

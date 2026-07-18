@@ -29,6 +29,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
@@ -114,5 +115,6 @@ ShapeList *LegacyBroadcastBoolOp::calculateOutputShape(ShapeList *inputShape, Co
   auto ret = SHAPELIST(ConstantShapeHelper::getInstance().castToDataType(inShape, BOOL));
   return ret;
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

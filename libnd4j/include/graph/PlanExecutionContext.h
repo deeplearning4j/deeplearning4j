@@ -136,6 +136,7 @@ struct PlanExecutionContext {
   void* dspStream = nullptr;        // The DSP execution stream (from caller)
   void* lcDefaultStream = nullptr;  // LaunchContext default exec stream
   void* streamGuard = nullptr;      // Owned, explicit delete in platformEndExecution
+  void* previousAttentionWorkspaceScope = nullptr;  // Restored at platformEndExecution
   int deviceId = 0;                 // CUDA device captured at platformBeginExecution
 
   /**
@@ -164,6 +165,7 @@ struct PlanExecutionContext {
   // rather than the live plan fields which may advance mid-execution.
   // ══════════════════════════════════════════════════════════════════════
   int execCount = 0;          // executeCount_ at start of this execute()
+  int fpStep = 0;             // BUF_FP_RING per-plan invocation ordinal (diagnostic only)
   bool frozen = false;        // planLifecycle_.isShapesFrozen() at start of this execute()
 
   // ══════════════════════════════════════════════════════════════════════

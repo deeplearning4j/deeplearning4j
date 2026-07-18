@@ -217,11 +217,11 @@ DECLARE_SHAPE_FN(matmul) {
 
 //////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(matmul) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS});
-  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -379,6 +379,7 @@ DECLARE_TYPES(matmul_bp) {
       ->setAllowedInputTypes(2, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(1, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

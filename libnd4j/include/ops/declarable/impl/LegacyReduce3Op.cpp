@@ -29,6 +29,7 @@
 #include <legacy/NativeOpExecutioner.h>
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 Status LegacyReduce3Op::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
@@ -124,5 +125,6 @@ ShapeList *LegacyReduce3Op::calculateOutputShape(ShapeList *inputShape, Context 
       ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), xShape, keepDims, false);
   return SHAPELIST(xShape2);
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

@@ -23,6 +23,7 @@
 #include <math/templatemath.h>
 #include <cuda_runtime.h>
 #include <cfloat>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -30,49 +31,50 @@ namespace helpers {
 
 static constexpr int TWA_WARP_SIZE = 32;
 
+// Accumulator/scratch type: double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
+
 // Kernel: Compute attention logits: logits[i][j] = sum_k(Q[i][k] * K[j][k]) * scale
 template <typename T>
 SD_KERNEL void crossAttnLogitsKernel(
     const T* __restrict__ Q,
     const T* __restrict__ K,
-    float* __restrict__ logits,
+    typename AccType<T>::type* __restrict__ logits,
     const LongType qLen,
     const LongType kLen,
     const LongType dim,
     const float scale) {
+
+    using AccT = typename AccType<T>::type;
 
     const int i = blockIdx.y;
     const int j = blockIdx.x;
     if (i >= qLen || j >= kLen) return;
 
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int lane = threadIdx.x % TWA_WARP_SIZE;
     const int wid = threadIdx.x / TWA_WARP_SIZE;
     const int numWarps = (blockDim.x + TWA_WARP_SIZE - 1) / TWA_WARP_SIZE;
 
-    float threadDot = 0.0f;
+    AccT threadDot = static_cast<AccT>(0);
     for (LongType k = threadIdx.x; k < dim; k += blockDim.x)
-        threadDot += static_cast<float>(Q[i * dim + k]) * static_cast<float>(K[j * dim + k]);
+        threadDot += static_cast<AccT>(Q[i * dim + k]) * static_cast<AccT>(K[j * dim + k]);
 
-    for (int offset = TWA_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadDot += __shfl_down_sync(0xffffffff, threadDot, offset);
-    if (lane == 0) warpBuf[wid] = threadDot;
-    __syncthreads();
-
-    float dot = 0.0f;
-    if (threadIdx.x < numWarps) dot = warpBuf[threadIdx.x];
-    for (int offset = TWA_WARP_SIZE / 2; offset > 0; offset /= 2)
-        dot += __shfl_down_sync(0xffffffff, dot, offset);
+    AccT dot = sd::device::blockReduceSum(threadDot, warpBuf);
 
     if (threadIdx.x == 0)
-        logits[i * kLen + j] = dot * scale;
+        logits[i * kLen + j] = dot * static_cast<AccT>(scale);
 }
 
 // Kernel: Row-wise softmax on logits matrix
+template <typename AccT>
 SD_KERNEL void crossAttnSoftmaxKernel(
-    float* __restrict__ logits,
+    AccT* __restrict__ logits,
     const LongType rows,
     const LongType cols) {
 
@@ -80,49 +82,27 @@ SD_KERNEL void crossAttnSoftmaxKernel(
     if (i >= rows) return;
 
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int lane = threadIdx.x % TWA_WARP_SIZE;
     const int wid = threadIdx.x / TWA_WARP_SIZE;
     const int numWarps = (blockDim.x + TWA_WARP_SIZE - 1) / TWA_WARP_SIZE;
 
-    float threadMax = -FLT_MAX;
+    AccT threadMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType j = threadIdx.x; j < cols; j += blockDim.x)
-        threadMax = sd::math::sd_max<float>(threadMax, logits[i * cols + j]);
+        threadMax = sd::math::sd_max<AccT>(threadMax, logits[i * cols + j]);
 
-    for (int offset = TWA_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadMax = sd::math::sd_max<float>(threadMax, __shfl_down_sync(0xffffffff, threadMax, offset));
-    if (lane == 0) warpBuf[wid] = threadMax;
-    __syncthreads();
+    AccT rowMax = sd::device::blockAllReduceMax(threadMax, warpBuf);
 
-    float rowMax = -FLT_MAX;
-    if (threadIdx.x < numWarps) rowMax = warpBuf[threadIdx.x];
-    for (int offset = TWA_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowMax = sd::math::sd_max<float>(rowMax, __shfl_down_sync(0xffffffff, rowMax, offset));
-    __shared__ float sharedMax;
-    if (threadIdx.x == 0) sharedMax = rowMax;
-    __syncthreads();
-    rowMax = sharedMax;
-
-    float threadSum = 0.0f;
+    AccT threadSum = static_cast<AccT>(0);
     for (LongType j = threadIdx.x; j < cols; j += blockDim.x) {
-        float val = sd::math::sd_exp<float, float>(logits[i * cols + j] - rowMax);
+        AccT val = sd::math::sd_exp<AccT, AccT>(logits[i * cols + j] - rowMax);
         logits[i * cols + j] = val;
         threadSum += val;
     }
 
-    for (int offset = TWA_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadSum += __shfl_down_sync(0xffffffff, threadSum, offset);
-    if (lane == 0) warpBuf[wid] = threadSum;
-    __syncthreads();
-
-    float rowSum = 0.0f;
-    if (threadIdx.x < numWarps) rowSum = warpBuf[threadIdx.x];
-    for (int offset = TWA_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowSum += __shfl_down_sync(0xffffffff, rowSum, offset);
-    __shared__ float sharedInvSum;
-    if (threadIdx.x == 0) sharedInvSum = 1.0f / rowSum;
-    __syncthreads();
+    AccT rowSum = sd::device::blockAllReduceSum(threadSum, warpBuf);
+    AccT sharedInvSum = static_cast<AccT>(1) / rowSum;
 
     for (LongType j = threadIdx.x; j < cols; j += blockDim.x)
         logits[i * cols + j] *= sharedInvSum;
@@ -132,12 +112,14 @@ SD_KERNEL void crossAttnSoftmaxKernel(
 // output[i][d] = sum_j(attnWeights[i][j] * V[j][d])
 template <typename T>
 SD_KERNEL void crossAttnOutputKernel(
-    const float* __restrict__ attnWeights,
+    const typename AccType<T>::type* __restrict__ attnWeights,
     const T* __restrict__ V,
     T* __restrict__ output,
     const LongType qLen,
     const LongType kLen,
     const LongType dim) {
+
+    using AccT = typename AccType<T>::type;
 
     const LongType total = qLen * dim;
     for (LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -145,9 +127,9 @@ SD_KERNEL void crossAttnOutputKernel(
         const int i = idx / dim;
         const int d = idx % dim;
 
-        float acc = 0.0f;
+        AccT acc = static_cast<AccT>(0);
         for (LongType j = 0; j < kLen; j++) {
-            acc += attnWeights[i * kLen + j] * static_cast<float>(V[j * dim + d]);
+            acc += attnWeights[i * kLen + j] * static_cast<AccT>(V[j * dim + d]);
         }
         output[i * dim + d] = static_cast<T>(acc);
     }
@@ -169,8 +151,9 @@ void twoWayCrossAttentionCudaLauncher(const cudaStream_t* stream,
     auto imageV = reinterpret_cast<const T*>(vImageV);
     auto tokenOut = reinterpret_cast<T*>(vTokenOut);
     auto imageOut = reinterpret_cast<T*>(vImageOut);
-    auto logits1 = reinterpret_cast<float*>(vLogits1);
-    auto logits2 = reinterpret_cast<float*>(vLogits2);
+    using AccT = typename AccType<T>::type;
+    auto logits1 = reinterpret_cast<AccT*>(vLogits1);
+    auto logits2 = reinterpret_cast<AccT*>(vLogits2);
 
     int dotThreads = 256;
     if (dim < 256) {
@@ -178,7 +161,7 @@ void twoWayCrossAttentionCudaLauncher(const cudaStream_t* stream,
         if (dotThreads < TWA_WARP_SIZE) dotThreads = TWA_WARP_SIZE;
     }
     int numWarps = (dotThreads + TWA_WARP_SIZE - 1) / TWA_WARP_SIZE;
-    size_t sharedSize = numWarps * sizeof(float);
+    size_t sharedSize = numWarps * sizeof(AccT);
 
     // Direction 1: token attends to image
     // logits1 = tokenQ @ imageK^T * scale
@@ -194,7 +177,7 @@ void twoWayCrossAttentionCudaLauncher(const cudaStream_t* stream,
             if (smThreads < TWA_WARP_SIZE) smThreads = TWA_WARP_SIZE;
         }
         int smWarps = (smThreads + TWA_WARP_SIZE - 1) / TWA_WARP_SIZE;
-        crossAttnSoftmaxKernel<<<tokenLen, smThreads, smWarps * sizeof(float), *stream>>>(
+        crossAttnSoftmaxKernel<AccT><<<tokenLen, smThreads, smWarps * sizeof(AccT), *stream>>>(
             logits1, tokenLen, imageLen);
         DebugHelper::checkGlobalErrorCode("crossAttnSoftmax1 failed");
 
@@ -220,7 +203,7 @@ void twoWayCrossAttentionCudaLauncher(const cudaStream_t* stream,
             if (smThreads < TWA_WARP_SIZE) smThreads = TWA_WARP_SIZE;
         }
         int smWarps = (smThreads + TWA_WARP_SIZE - 1) / TWA_WARP_SIZE;
-        crossAttnSoftmaxKernel<<<imageLen, smThreads, smWarps * sizeof(float), *stream>>>(
+        crossAttnSoftmaxKernel<AccT><<<imageLen, smThreads, smWarps * sizeof(AccT), *stream>>>(
             logits2, imageLen, tokenLen);
         DebugHelper::checkGlobalErrorCode("crossAttnSoftmax2 failed");
 
@@ -254,13 +237,15 @@ void twoWayCrossAttention(NDArray* tokenQuery, NDArray* tokenKey,
                                {tokenQuery, tokenKey, tokenValue,
                                 imageQuery, imageKey, imageValue});
 
+    auto accDtype = tokenQuery->dataType() == DataType::DOUBLE ? DataType::DOUBLE : DataType::FLOAT32;
+
     if (rank == 2) {
         auto tokenLen = tokenQuery->sizeAt(0);
         auto imageLen = imageQuery->sizeAt(0);
         auto dim = tokenQuery->sizeAt(1);
 
-        auto logits1 = NDArrayFactory::create('c', {tokenLen, imageLen}, DataType::FLOAT32, context);
-        auto logits2 = NDArrayFactory::create('c', {imageLen, tokenLen}, DataType::FLOAT32, context);
+        auto logits1 = NDArrayFactory::create('c', {tokenLen, imageLen}, accDtype, context);
+        auto logits2 = NDArrayFactory::create('c', {imageLen, tokenLen}, accDtype, context);
 
         BUILD_SINGLE_SELECTOR(tokenQuery->dataType(), twoWayCrossAttentionCudaLauncher,
                               (stream,
@@ -293,8 +278,8 @@ void twoWayCrossAttention(NDArray* tokenQuery, NDArray* tokenKey,
             LongType imgOff = b * imageSliceSize * elemSize;
 
             // Allocate temp logits inside loop so each batch gets fresh buffers
-            auto logits1 = NDArrayFactory::create('c', {tokenLen, imageLen}, DataType::FLOAT32, context);
-            auto logits2 = NDArrayFactory::create('c', {imageLen, tokenLen}, DataType::FLOAT32, context);
+            auto logits1 = NDArrayFactory::create('c', {tokenLen, imageLen}, accDtype, context);
+            auto logits2 = NDArrayFactory::create('c', {imageLen, tokenLen}, accDtype, context);
 
             const void* tQBuf = static_cast<const int8_t*>(tokenQuery->specialBuffer()) + tokOff;
             const void* tKBuf = static_cast<const int8_t*>(tokenKey->specialBuffer()) + tokOff;

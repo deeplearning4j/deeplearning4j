@@ -56,7 +56,14 @@ public class NoOpMemoryMgr extends AbstractMemoryMgr implements SessionMemMgr {
 
     @Override
     public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer) {
-       return Nd4j.createFromDescriptor(dataBuffer);
+        return allocateFromDescriptor(detached, dataBuffer, false);
+    }
+
+    @Override
+    public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer, boolean requiresZeroed) {
+        INDArray ret = Nd4j.createFromDescriptor(dataBuffer);
+        if (requiresZeroed && !ret.isEmpty()) ret.assign(0);
+        return ret;
     }
 
 }

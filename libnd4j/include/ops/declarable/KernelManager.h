@@ -30,6 +30,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 
 /**
  * Information about a kernel implementation
@@ -408,6 +409,7 @@ SD_LIB_EXPORT void kmFreeString(const char* str);
 
 }  // extern "C"
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

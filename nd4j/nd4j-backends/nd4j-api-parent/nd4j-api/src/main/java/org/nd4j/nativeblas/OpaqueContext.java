@@ -27,5 +27,62 @@ import org.bytedeco.javacpp.Pointer;
  * @author saudet
  */
 public class OpaqueContext extends Pointer {
-    public OpaqueContext(Pointer p) { super(p); }
+    private NativeBufferOwner backendOwner;
+    private volatile boolean closed;
+
+    public OpaqueContext(Pointer p) {
+        super(p);
+    }
+
+    /** Creates a graph context through the selected backend authority. */
+    public static OpaqueContext create(NativeBufferOwner owner, int nodeId) {
+        if (owner == null) {
+            throw new IllegalArgumentException("NativeBufferOwner cannot be null");
+        }
+        OpaqueContext context = owner.nativeOps().createGraphContext(nodeId);
+        if (context == null || context.isNull()) {
+            throw new IllegalStateException("Backend failed to create graph context for node " + nodeId);
+        }
+        return context.attachOwner(owner);
+    }
+
+    /** Attaches the backend that created this native context. */
+    public OpaqueContext attachOwner(NativeBufferOwner owner) {
+        if (owner == null) {
+            throw new IllegalArgumentException("NativeBufferOwner cannot be null");
+        }
+        if (closed) {
+            throw new IllegalStateException("Cannot attach an owner to a closed graph context");
+        }
+        if (backendOwner != null && backendOwner.nativeOps() != owner.nativeOps()) {
+            throw new IllegalStateException("OpaqueContext already belongs to a different backend");
+        }
+        backendOwner = owner;
+        return this;
+    }
+
+    public NativeBufferOwner backendOwner() {
+        if (backendOwner == null) {
+            throw new IllegalStateException(
+                    "OpaqueContext has no backend owner; create it with OpaqueContext.create(owner, nodeId)");
+        }
+        return backendOwner;
+    }
+
+    @Override
+    public void close() {
+        if (closed) {
+            return;
+        }
+        synchronized (this) {
+            if (closed) {
+                return;
+            }
+            if (!isNull()) {
+                backendOwner().nativeOps().deleteGraphContext(this);
+                setNull();
+            }
+            closed = true;
+        }
+    }
 }

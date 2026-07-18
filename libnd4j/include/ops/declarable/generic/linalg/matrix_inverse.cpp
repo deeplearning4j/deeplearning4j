@@ -40,7 +40,10 @@ OP_IMPL(matrix_inverse, 1, 1, false) {
   return helpers::inverse(block.launchContext(), input, output);
 }
 
-DECLARE_TYPES(matrix_inverse) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(matrix_inverse) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
+}
 }  // namespace ops
 }  // namespace sd
 

@@ -90,6 +90,7 @@ DECLARE_SHAPE_FN(non_max_suppression_overlaps) {
   return SHAPELIST(outputShape);
 }
 DECLARE_TYPES(non_max_suppression_overlaps) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})

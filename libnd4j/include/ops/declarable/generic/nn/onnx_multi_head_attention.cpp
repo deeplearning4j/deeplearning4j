@@ -31,7 +31,7 @@
 #include <helpers/AttentionWorkspace.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <ops/declarable/headers/nn.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 #include <cmath>
 
 namespace sd {
@@ -416,6 +416,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
 }
 
 DECLARE_TYPES(onnx_multi_head_attention) {
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})   // query
       ->setAllowedInputTypes(1, {ALL_FLOATS})   // key
@@ -425,7 +426,7 @@ DECLARE_TYPES(onnx_multi_head_attention) {
       ->setAllowedInputTypes(5, {ALL_FLOATS})   // past_value (optional)
       ->setAllowedInputTypes(6, {ALL_INTS})     // cache_position (optional, INT64 scalar)
       ->setAllowedOutputTypes({ALL_FLOATS})
-      ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
+      ;
 }
 
 DECLARE_SHAPE_FN(onnx_multi_head_attention) {

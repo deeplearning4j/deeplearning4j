@@ -69,6 +69,7 @@ DECLARE_SHAPE_FN(biasadd) {
 }
 
 DECLARE_TYPES(biasadd) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -103,6 +104,7 @@ DECLARE_SHAPE_FN(biasadd_bp) {
 }
 
 DECLARE_TYPES(biasadd_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

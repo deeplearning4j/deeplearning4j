@@ -93,6 +93,9 @@ DECLARE_SHAPE_FN(fused_elementwise_chain) {
 DECLARE_TYPES(fused_elementwise_chain) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+    // Variadic fused chain (1..9 inputs). No arity-accurate elementwise trait
+    // exists; UNARY_ELEMENTWISE keeps it in the elementwise family for
+    // classification while wiring/arity checks gate chaining decisions.
     getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 

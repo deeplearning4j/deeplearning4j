@@ -38,6 +38,19 @@ namespace ops {
 namespace helpers {
 
 /**
+ * Host-side token notification emitted by the canonical native decode loop.
+ * The callback runs synchronously after a token has been committed to the
+ * generated-token output. It must not retain pointers owned by the decoder.
+ */
+using AutoregressiveTokenCallback = void (*)(LongType tokenId, void* userData);
+
+/**
+ * Cooperative cancellation probe. The decoder polls it between complete
+ * decode steps, preserving KV/recurrent state at a resumable boundary.
+ */
+using AutoregressiveCancelCallback = bool (*)(void* userData);
+
+/**
  * Configuration for the autoregressive decode loop.
  * Passed from the op to the platform-specific helper.
  */
@@ -66,8 +79,9 @@ struct AutoregressiveDecodeConfig {
     // In-graph KV cache (GGUF pattern): the attention op writes K/V in-place
     // at cachePosition. These ext input indices point to the scalar position
     // tensors updated per step. -1 means not used (ONNX/non-GGUF path).
-    int positionOffsetExtIdx = -1;  // position_offset scalar (RoPE position)
-    int cachePositionExtIdx = -1;   // cache_position scalar (KV write position)
+    int positionOffsetExtIdx = -1;      // position_offset scalar (RoPE position)
+    int cachePositionExtIdx = -1;       // cache_position scalar (KV write position)
+    int actualSequenceLengthExtIdx = -1; // actual_sequence_length scalar (live recurrent timesteps)
 
     // KV scatter ownership: when true, the plan's native KV scatter
     // (configureKvScatter / executeKvScatterPostExec) handles KV cache
@@ -135,9 +149,59 @@ struct AutoregressiveDecodeConfig {
     int windowMax = 1;                       // maximum number of candidate window positions
     int activeWindow = 1;                    // active positions this step (<=windowMax)
 
+    // ─── ADR 0106 Phase 2: n-gram speculative decoding ────────────────────────
+    //
+    // When speculativeK > 0 and windowMax >= speculativeK+1, the decode loop
+    // proposes up to speculativeK draft tokens per step using a bigram (n-gram)
+    // proposer. The forward pass runs over activeWindow = 1+proposed positions
+    // (filling only those slots in the W_max mask). All accepted tokens are
+    // emitted at once — the lossless accept rule guarantees token-by-token
+    // greedy equivalence.
+    //
+    // speculativeK == 0 (default) disables speculation — the W=1 path runs
+    // completely unchanged (bit-identical to ADR 0106 Phase 1).
+    //
+    // speculatorType: 0=none, 1=NGRAM, 2=Qwen3.5 bundled MTP predictor.
+    int speculativeK = 0;            // max draft tokens per step (0 = off)
+    int speculatorType = 0;          // 0=none, 1=NGRAM, 2=MTP
+
+    // ─── Qwen3.5 bundled MTP predictor ─────────────────────────────────────────
+    // The predictor is a second plan over the same immutable SameDiff weights. It owns an
+    // independent context and KV cache, and always executes scalar [1,1] steps. The target plan
+    // remains W-wide and verifies all proposed tokens in one replay.
+    graph::NativeDynamicShapePlan* mtpPlanHandle = nullptr;
+    void* mtpExtInputContext = nullptr;
+    int mtpNumPlanExternalInputs = 0;
+    int mtpNumPlanOutputs = 0;
+    int mtpInputIdsExtIdx = -1;
+    int mtpTargetHiddenExtIdx = -1;
+    int mtpCausalMaskExtIdx = -1;
+    int mtpPositionOffsetExtIdx = -1;
+    int mtpCachePositionExtIdx = -1;
+    int mtpKvInputExtIndices[2] = {-1, -1};
+    int mtpLogitsOutputIdx = -1;
+    int mtpHiddenOutputIdx = -1;
+    int targetHiddenOutputIdx = -1;  // pre-final-norm target hidden rows
+
+    // Stable-address arrays also passed as op inputs to retain lifetime and make native updates
+    // explicit. The same NDArray objects are registered in mtpExtInputContext.
+    NDArray* mtpInputIds = nullptr;
+    NDArray* mtpTargetHidden = nullptr;
+    NDArray* mtpCausalMask = nullptr;
+    NDArray* mtpPositionOffset = nullptr;
+    NDArray* mtpCachePosition = nullptr;
+    NDArray* mtpKvBuffers[2] = {nullptr, nullptr};
+
     // Unified token-selection policy. Scalar greedy/sample are supported today; wider policies are
     // parsed and validated by tokenSamplePolicy so they cannot silently run as greedy.
     TokenSampleConfig sampleConfig;
+
+    // Portable streaming/cancellation hooks used by SDX generation sessions.
+    // tokenCallback is notification-only. cancelCallback is polled between
+    // complete decode steps so a cancelled session retains coherent KV state.
+    AutoregressiveTokenCallback tokenCallback = nullptr;
+    AutoregressiveCancelCallback cancelCallback = nullptr;
+    void* callbackUserData = nullptr;
 };
 
 /**
@@ -159,7 +223,7 @@ SD_LIB_HIDDEN void autoregressiveDecode(
     int numKvPairs,
     NDArray* generatedTokenIds,    // [maxNewTokens] INT64 output
     NDArray* tokenCount,           // [1] INT64 output
-    NDArray* timingInfo,           // [5] FLOAT output
+    NDArray* timingInfo,           // [10] FLOAT output
     int maxNewTokens,
     int prefillSeqLen,
     const std::vector<int>& stopTokenIds,

@@ -1,0 +1,122 @@
+name: Build SDX AOT artifacts
+
+description: >
+  Build the GraalVM native-image AOT export of the Java LLM stack (sdx-llm CLI +
+  libsdx_llm shared library, ADR 0109), package it as sdx-llm-aot-<platform>-<variant>.zip,
+  and upload it as a workflow artifact and optionally to the SDK GitHub Release.
+  Requires the repository's Java modules (samediff-llm, nd4j-ggml, backend + platform
+  classifier, tokenizers-native) to already be installed into the local Maven repo by
+  earlier steps of the calling workflow.
+
+inputs:
+  platform:
+    description: 'SDX platform id: linux-x86_64, linux-arm64, windows-x86_64, macos-x86_64, macos-arm64'
+    required: true
+  variant:
+    description: 'Backend variant the image links against: "cpu" or "cuda"'
+    required: false
+    default: cpu
+  platform-extension:
+    description: >
+      Optimized-math spin as a javacpp.platform.extension composite with leading
+      dash (e.g. -avx2, -onednn-avx2, -armcompute, -cudnn). The matching
+      backend classifier jar must have been built/installed by the calling
+      workflow's matrix combo. Empty = base spin.
+    required: false
+    default: ""
+  graalvm-version:
+    description: 'GraalVM Java version for setup-graalvm'
+    required: false
+    default: '21'
+  release-version:
+    description: 'When set, upload the zip to the GitHub Release tagged sdk-v<version>.'
+    required: false
+    default: ''
+  retention-days:
+    description: Artifact retention in days.
+    required: false
+    default: '14'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up GraalVM
+      uses: graalvm/setup-graalvm@v1
+      with:
+        java-version: ${{ inputs.graalvm-version }}
+        distribution: graalvm
+        set-java-home: true
+
+    - name: Build AOT images and SDK zip
+      shell: bash
+      run: |
+        set -euo pipefail
+        PLATFORM="${{ inputs.platform }}"
+        VARIANT="${{ inputs.variant }}"
+
+        # SDX platform id -> JavaCPP classifier (macos-* -> macosx-*)
+        case "${PLATFORM}" in
+          macos-arm64)  JAVACPP_PLATFORM="macosx-arm64" ;;
+          macos-x86_64) JAVACPP_PLATFORM="macosx-x86_64" ;;
+          *)            JAVACPP_PLATFORM="${PLATFORM}" ;;
+        esac
+
+        # The cuda variant composes with the repo-wide cuda profile id.
+        PROFILES="sdx-aot,native"
+        if [ "${VARIANT}" == "cuda" ]; then
+          PROFILES="${PROFILES},cuda"
+        fi
+
+        echo "native-image version:"
+        native-image --version
+
+        # Dependencies (samediff-llm/-vlm/-audio, nd4j-ggml, backend + classifier,
+        # tokenizers) come from the local Maven repo populated by earlier workflow
+        # steps. `package` builds the images, stages the SDK layout, and attaches
+        # target/sdx-aot-*-<javacpp.platform><extension>-<variant>-aot.zip. The
+        # extension picks the optimized-math backend spin this matrix combo built.
+        EXTENSION="${{ inputs.platform-extension }}"
+        mvn -B -P"${PROFILES}" -pl :sdx-aot -DskipTests \
+          -Djavacpp.platform="${JAVACPP_PLATFORM}" \
+          -Djavacpp.platform.extension="${EXTENSION}" \
+          package 2>&1 | tee sdx-aot-build.log
+
+    - name: Smoke test CLI
+      shell: bash
+      run: |
+        set -euo pipefail
+        CLI="nd4j/sdx-aot/target/native/${{ inputs.variant }}${{ inputs.platform-extension }}/sdx-llm"
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          CLI="${CLI}.exe"
+        fi
+        if [ -f "${CLI}" ]; then
+          "${CLI}" --help
+          "${CLI}" version
+        else
+          echo "WARNING: CLI image not found at ${CLI}"
+        fi
+
+    - name: Upload workflow artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sdx-llm-aot-${{ inputs.platform }}${{ inputs.platform-extension }}-${{ inputs.variant }}
+        path: nd4j/sdx-aot/target/sdx-aot-*-aot.zip
+        if-no-files-found: warn
+        retention-days: ${{ inputs.retention-days }}
+
+    - name: Upload to GitHub Release
+      if: inputs.release-version != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RELEASE_TAG: sdk-v${{ inputs.release-version }}
+      run: |
+        set -euo pipefail
+        for zip in nd4j/sdx-aot/target/sdx-aot-*-aot.zip; do
+          [ -f "${zip}" ] || continue
+          echo "Uploading $(basename "${zip}") to release ${RELEASE_TAG}"
+          gh release upload "${RELEASE_TAG}" "${zip}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber \
+          || echo "WARNING: Failed to upload $(basename "${zip}")"
+        done

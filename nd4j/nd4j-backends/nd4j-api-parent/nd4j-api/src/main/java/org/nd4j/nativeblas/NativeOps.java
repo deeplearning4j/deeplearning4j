@@ -282,7 +282,7 @@ public interface NativeOps {
   * Trim unused memory from the pool, syncing the specified stream.
   * Use when frees were issued on a specific execution stream.
   * @param deviceId The device whose pool to trim
-  * @param stream The CUDA stream to synchronize before trimming
+  * @param stream The backend execution stream to synchronize before trimming
   */
  void trimMemoryPoolOnStream(int deviceId, org.bytedeco.javacpp.Pointer stream);
 
@@ -738,6 +738,20 @@ public interface NativeOps {
  String lastErrorMessage();
  org.nd4j.nativeblas.OpaqueLaunchContext defaultLaunchContext();
  String buildInfo();
+
+ /**
+  * Single-line canonical form of {@link #buildInfo()} for cache fingerprinting.
+  * buildInfo() is a multi-line human-readable report; line-oriented consumers
+  * (key=value sidecar files such as the DSP plan cache .meta) truncate
+  * multi-line values on read, so fingerprints must use this form.
+  * Default throws for backend bindings generated before this API existed —
+  * callers fall back to flattening {@link #buildInfo()} themselves
+  * (see DspPlanDiskCache.getNativeBuildFingerprint()).
+  */
+ default String buildInfoFingerprint() {
+     throw new UnsupportedOperationException("buildInfoFingerprint not implemented in this backend");
+ }
+
  boolean isFuncTrace();
 
  /**
@@ -1570,7 +1584,7 @@ public interface NativeOps {
   * Execute a compiled native plan.
   * @param planHandle handle from compileDynamicShapePlan()
   * @param opContext OpaqueContext with inputs/outputs set via setGraphContextInputArray/setGraphContextOutputArray
-  * @param stream CUDA stream pointer (null for CPU)
+  * @param stream backend execution stream pointer, or null for the backend default
   * @return 0 on success, non-zero on failure
   */
  default int executeDynamicShapePlan(Pointer planHandle,
@@ -2201,7 +2215,7 @@ public interface NativeOps {
    *
    * @param planHandle handle from dispatchNativePlan() (internally a FrozenPlan*)
    * @param opContext OpaqueContext with inputs/outputs set
-   * @param stream CUDA stream pointer (null for CPU)
+   * @param stream backend execution stream pointer, or null for the backend default
    * @return 0 on success, non-zero on failure
    */
   default int executeFrozenPlan(Pointer planHandle,
@@ -2875,4 +2889,5 @@ public interface NativeOps {
    * @return JSON string or "null"
    */
   default String getPlanFingerprintJson(Pointer planHandle) { return "null"; }
+
 }

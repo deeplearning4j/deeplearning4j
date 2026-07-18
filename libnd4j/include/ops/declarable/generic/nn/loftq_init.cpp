@@ -264,6 +264,7 @@ CUSTOM_OP_IMPL(loftq_init, 1, 2, false, 0, 5) {
 // DECLARE_TYPES
 // ---------------------------------------------------------------------------
 DECLARE_TYPES(loftq_init) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType::DOUBLE, DataType::HALF})
         ->setAllowedOutputTypes(0, {DataType::FLOAT32})

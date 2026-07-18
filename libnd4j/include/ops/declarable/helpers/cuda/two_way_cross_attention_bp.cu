@@ -23,6 +23,7 @@
 #include <math/templatemath.h>
 #include <cuda_runtime.h>
 #include <cfloat>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -30,49 +31,50 @@ namespace helpers {
 
 static constexpr int TWA_BP_WARP_SIZE = 32;
 
+// Accumulator/scratch type: double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
+
 // Reuse logits kernel from forward (recompute attention weights)
 template <typename T>
 SD_KERNEL void bpCrossAttnLogitsKernel(
     const T* __restrict__ Q,
     const T* __restrict__ K,
-    float* __restrict__ logits,
+    typename AccType<T>::type* __restrict__ logits,
     const LongType qLen,
     const LongType kLen,
     const LongType dim,
     const float scale) {
+
+    using AccT = typename AccType<T>::type;
 
     const int i = blockIdx.y;
     const int j = blockIdx.x;
     if (i >= qLen || j >= kLen) return;
 
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int lane = threadIdx.x % TWA_BP_WARP_SIZE;
     const int wid = threadIdx.x / TWA_BP_WARP_SIZE;
     const int numWarps = (blockDim.x + TWA_BP_WARP_SIZE - 1) / TWA_BP_WARP_SIZE;
 
-    float threadDot = 0.0f;
+    AccT threadDot = static_cast<AccT>(0);
     for (LongType k = threadIdx.x; k < dim; k += blockDim.x)
-        threadDot += static_cast<float>(Q[i * dim + k]) * static_cast<float>(K[j * dim + k]);
+        threadDot += static_cast<AccT>(Q[i * dim + k]) * static_cast<AccT>(K[j * dim + k]);
 
-    for (int offset = TWA_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadDot += __shfl_down_sync(0xffffffff, threadDot, offset);
-    if (lane == 0) warpBuf[wid] = threadDot;
-    __syncthreads();
-
-    float dot = 0.0f;
-    if (threadIdx.x < numWarps) dot = warpBuf[threadIdx.x];
-    for (int offset = TWA_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        dot += __shfl_down_sync(0xffffffff, dot, offset);
+    AccT dot = sd::device::blockReduceSum(threadDot, warpBuf);
 
     if (threadIdx.x == 0)
-        logits[i * kLen + j] = dot * scale;
+        logits[i * kLen + j] = dot * static_cast<AccT>(scale);
 }
 
 // Row-wise softmax (in-place)
+template <typename AccT>
 SD_KERNEL void bpCrossAttnSoftmaxKernel(
-    float* __restrict__ logits,
+    AccT* __restrict__ logits,
     const LongType rows,
     const LongType cols) {
 
@@ -80,49 +82,27 @@ SD_KERNEL void bpCrossAttnSoftmaxKernel(
     if (i >= rows) return;
 
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int lane = threadIdx.x % TWA_BP_WARP_SIZE;
     const int wid = threadIdx.x / TWA_BP_WARP_SIZE;
     const int numWarps = (blockDim.x + TWA_BP_WARP_SIZE - 1) / TWA_BP_WARP_SIZE;
 
-    float threadMax = -FLT_MAX;
+    AccT threadMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType j = threadIdx.x; j < cols; j += blockDim.x)
-        threadMax = sd::math::sd_max<float>(threadMax, logits[i * cols + j]);
+        threadMax = sd::math::sd_max<AccT>(threadMax, logits[i * cols + j]);
 
-    for (int offset = TWA_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadMax = sd::math::sd_max<float>(threadMax, __shfl_down_sync(0xffffffff, threadMax, offset));
-    if (lane == 0) warpBuf[wid] = threadMax;
-    __syncthreads();
+    AccT rowMax = sd::device::blockAllReduceMax(threadMax, warpBuf);
 
-    float rowMax = -FLT_MAX;
-    if (threadIdx.x < numWarps) rowMax = warpBuf[threadIdx.x];
-    for (int offset = TWA_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowMax = sd::math::sd_max<float>(rowMax, __shfl_down_sync(0xffffffff, rowMax, offset));
-    __shared__ float sharedMax;
-    if (threadIdx.x == 0) sharedMax = rowMax;
-    __syncthreads();
-    rowMax = sharedMax;
-
-    float threadSum = 0.0f;
+    AccT threadSum = static_cast<AccT>(0);
     for (LongType j = threadIdx.x; j < cols; j += blockDim.x) {
-        float val = sd::math::sd_exp<float, float>(logits[i * cols + j] - rowMax);
+        AccT val = sd::math::sd_exp<AccT, AccT>(logits[i * cols + j] - rowMax);
         logits[i * cols + j] = val;
         threadSum += val;
     }
 
-    for (int offset = TWA_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadSum += __shfl_down_sync(0xffffffff, threadSum, offset);
-    if (lane == 0) warpBuf[wid] = threadSum;
-    __syncthreads();
-
-    float rowSum = 0.0f;
-    if (threadIdx.x < numWarps) rowSum = warpBuf[threadIdx.x];
-    for (int offset = TWA_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowSum += __shfl_down_sync(0xffffffff, rowSum, offset);
-    __shared__ float sharedInvSum;
-    if (threadIdx.x == 0) sharedInvSum = 1.0f / rowSum;
-    __syncthreads();
+    AccT rowSum = sd::device::blockAllReduceSum(threadSum, warpBuf);
+    AccT sharedInvSum = static_cast<AccT>(1) / rowSum;
 
     for (LongType j = threadIdx.x; j < cols; j += blockDim.x)
         logits[i * cols + j] *= sharedInvSum;
@@ -133,35 +113,29 @@ template <typename T>
 SD_KERNEL void bpDLdAttnKernel(
     const T* __restrict__ gradOut,
     const T* __restrict__ V,
-    float* __restrict__ dLdAttn,
+    typename AccType<T>::type* __restrict__ dLdAttn,
     const LongType qLen,
     const LongType kLen,
     const LongType dim) {
+
+    using AccT = typename AccType<T>::type;
 
     const int i = blockIdx.y;
     const int j = blockIdx.x;
     if (i >= qLen || j >= kLen) return;
 
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int lane = threadIdx.x % TWA_BP_WARP_SIZE;
     const int wid = threadIdx.x / TWA_BP_WARP_SIZE;
     const int numWarps = (blockDim.x + TWA_BP_WARP_SIZE - 1) / TWA_BP_WARP_SIZE;
 
-    float threadDot = 0.0f;
+    AccT threadDot = static_cast<AccT>(0);
     for (LongType d = threadIdx.x; d < dim; d += blockDim.x)
-        threadDot += static_cast<float>(gradOut[i * dim + d]) * static_cast<float>(V[j * dim + d]);
+        threadDot += static_cast<AccT>(gradOut[i * dim + d]) * static_cast<AccT>(V[j * dim + d]);
 
-    for (int offset = TWA_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadDot += __shfl_down_sync(0xffffffff, threadDot, offset);
-    if (lane == 0) warpBuf[wid] = threadDot;
-    __syncthreads();
-
-    float dot = 0.0f;
-    if (threadIdx.x < numWarps) dot = warpBuf[threadIdx.x];
-    for (int offset = TWA_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        dot += __shfl_down_sync(0xffffffff, dot, offset);
+    AccT dot = sd::device::blockReduceSum(threadDot, warpBuf);
 
     if (threadIdx.x == 0)
         dLdAttn[i * kLen + j] = dot;
@@ -170,12 +144,14 @@ SD_KERNEL void bpDLdAttnKernel(
 // dL/dV = attnWeights^T @ gradOut => dLdV[j][d] = sum_i(attnWeights[i][j] * gradOut[i][d])
 template <typename T>
 SD_KERNEL void bpDLdVKernel(
-    const float* __restrict__ attnWeights,
+    const typename AccType<T>::type* __restrict__ attnWeights,
     const T* __restrict__ gradOut,
     T* __restrict__ dLdV,
     const LongType qLen,
     const LongType kLen,
     const LongType dim) {
+
+    using AccT = typename AccType<T>::type;
 
     const LongType total = kLen * dim;
     for (LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -183,18 +159,19 @@ SD_KERNEL void bpDLdVKernel(
         const int j = idx / dim;
         const int d = idx % dim;
 
-        float acc = 0.0f;
+        AccT acc = static_cast<AccT>(0);
         for (LongType i = 0; i < qLen; i++) {
-            acc += attnWeights[i * kLen + j] * static_cast<float>(gradOut[i * dim + d]);
+            acc += attnWeights[i * kLen + j] * static_cast<AccT>(gradOut[i * dim + d]);
         }
         dLdV[j * dim + d] = static_cast<T>(acc);
     }
 }
 
 // Softmax backward: dL/dLogits = attnWeights * (dLdAttn - rowwise_dot(dLdAttn, attnWeights))
+template <typename AccT>
 SD_KERNEL void bpSoftmaxBackwardKernel(
-    const float* __restrict__ attnWeights,
-    float* __restrict__ dLdAttn,  // in: dL/dAttnWeights, out: dL/dLogits
+    const AccT* __restrict__ attnWeights,
+    AccT* __restrict__ dLdAttn,  // in: dL/dAttnWeights, out: dL/dLogits
     const LongType rows,
     const LongType cols) {
 
@@ -202,27 +179,25 @@ SD_KERNEL void bpSoftmaxBackwardKernel(
     if (i >= rows) return;
 
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int lane = threadIdx.x % TWA_BP_WARP_SIZE;
     const int wid = threadIdx.x / TWA_BP_WARP_SIZE;
     const int numWarps = (blockDim.x + TWA_BP_WARP_SIZE - 1) / TWA_BP_WARP_SIZE;
 
     // Compute dot(dLdAttn[i], attnWeights[i])
-    float threadDot = 0.0f;
+    AccT threadDot = static_cast<AccT>(0);
     for (LongType j = threadIdx.x; j < cols; j += blockDim.x)
         threadDot += dLdAttn[i * cols + j] * attnWeights[i * cols + j];
 
-    for (int offset = TWA_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadDot += __shfl_down_sync(0xffffffff, threadDot, offset);
+    threadDot = sd::device::warpReduceSum(threadDot);
     if (lane == 0) warpBuf[wid] = threadDot;
     __syncthreads();
 
-    float rowDot = 0.0f;
+    AccT rowDot = static_cast<AccT>(0);
     if (threadIdx.x < numWarps) rowDot = warpBuf[threadIdx.x];
-    for (int offset = TWA_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowDot += __shfl_down_sync(0xffffffff, rowDot, offset);
-    __shared__ float sharedDot;
+    rowDot = sd::device::warpReduceSum(rowDot);
+    __shared__ AccT sharedDot;
     if (threadIdx.x == 0) sharedDot = rowDot;
     __syncthreads();
 
@@ -234,7 +209,7 @@ SD_KERNEL void bpSoftmaxBackwardKernel(
 // dL/dQ = dL/dLogits @ K * scale => dLdQ[i][d] = sum_j(dLdLogits[i][j] * K[j][d]) * scale
 template <typename T>
 SD_KERNEL void bpDLdQKernel(
-    const float* __restrict__ dLdLogits,
+    const typename AccType<T>::type* __restrict__ dLdLogits,
     const T* __restrict__ K,
     T* __restrict__ dLdQ,
     const LongType qLen,
@@ -242,24 +217,26 @@ SD_KERNEL void bpDLdQKernel(
     const LongType dim,
     const float scale) {
 
+    using AccT = typename AccType<T>::type;
+
     const LongType total = qLen * dim;
     for (LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
          idx < total; idx += blockDim.x * gridDim.x) {
         const int i = idx / dim;
         const int d = idx % dim;
 
-        float acc = 0.0f;
+        AccT acc = static_cast<AccT>(0);
         for (LongType j = 0; j < kLen; j++) {
-            acc += dLdLogits[i * kLen + j] * static_cast<float>(K[j * dim + d]);
+            acc += dLdLogits[i * kLen + j] * static_cast<AccT>(K[j * dim + d]);
         }
-        dLdQ[i * dim + d] = static_cast<T>(acc * scale);
+        dLdQ[i * dim + d] = static_cast<T>(acc * static_cast<AccT>(scale));
     }
 }
 
 // dL/dK = dL/dLogits^T @ Q * scale => dLdK[j][d] = sum_i(dLdLogits[i][j] * Q[i][d]) * scale
 template <typename T>
 SD_KERNEL void bpDLdKKernel(
-    const float* __restrict__ dLdLogits,
+    const typename AccType<T>::type* __restrict__ dLdLogits,
     const T* __restrict__ Q,
     T* __restrict__ dLdK,
     const LongType qLen,
@@ -267,17 +244,19 @@ SD_KERNEL void bpDLdKKernel(
     const LongType dim,
     const float scale) {
 
+    using AccT = typename AccType<T>::type;
+
     const LongType total = kLen * dim;
     for (LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
          idx < total; idx += blockDim.x * gridDim.x) {
         const int j = idx / dim;
         const int d = idx % dim;
 
-        float acc = 0.0f;
+        AccT acc = static_cast<AccT>(0);
         for (LongType i = 0; i < qLen; i++) {
-            acc += dLdLogits[i * kLen + j] * static_cast<float>(Q[i * dim + d]);
+            acc += dLdLogits[i * kLen + j] * static_cast<AccT>(Q[i * dim + d]);
         }
-        dLdK[j * dim + d] = static_cast<T>(acc * scale);
+        dLdK[j * dim + d] = static_cast<T>(acc * static_cast<AccT>(scale));
     }
 }
 
@@ -306,8 +285,9 @@ void twoWayCrossAttentionBpCudaLauncher(
     auto dLdImageQ = reinterpret_cast<T*>(vDLdImageQ);
     auto dLdImageK = reinterpret_cast<T*>(vDLdImageK);
     auto dLdImageV = reinterpret_cast<T*>(vDLdImageV);
-    auto attn1 = reinterpret_cast<float*>(vAttn1);  // [tokenLen, imageLen]
-    auto attn2 = reinterpret_cast<float*>(vAttn2);  // [imageLen, tokenLen]
+    using AccT = typename AccType<T>::type;
+    auto attn1 = reinterpret_cast<AccT*>(vAttn1);  // [tokenLen, imageLen]
+    auto attn2 = reinterpret_cast<AccT*>(vAttn2);  // [imageLen, tokenLen]
 
     int dotThreads = 256;
     if (dim < 256) {
@@ -315,7 +295,7 @@ void twoWayCrossAttentionBpCudaLauncher(
         if (dotThreads < TWA_BP_WARP_SIZE) dotThreads = TWA_BP_WARP_SIZE;
     }
     int numWarps = (dotThreads + TWA_BP_WARP_SIZE - 1) / TWA_BP_WARP_SIZE;
-    size_t sharedSize = numWarps * sizeof(float);
+    size_t sharedSize = numWarps * sizeof(AccT);
 
     // ---- Direction 1: tokenOut = softmax(tokenQ @ imageK^T * scale) @ imageV ----
     {
@@ -331,7 +311,7 @@ void twoWayCrossAttentionBpCudaLauncher(
             if (smThreads < TWA_BP_WARP_SIZE) smThreads = TWA_BP_WARP_SIZE;
         }
         int smWarps = (smThreads + TWA_BP_WARP_SIZE - 1) / TWA_BP_WARP_SIZE;
-        bpCrossAttnSoftmaxKernel<<<tokenLen, smThreads, smWarps * sizeof(float), *stream>>>(
+        bpCrossAttnSoftmaxKernel<AccT><<<tokenLen, smThreads, smWarps * sizeof(AccT), *stream>>>(
             attn1, tokenLen, imageLen);
         DebugHelper::checkGlobalErrorCode("bpSoftmax1 failed");
 
@@ -343,16 +323,6 @@ void twoWayCrossAttentionBpCudaLauncher(
             attn1, gradTokenOut, dLdImageV, tokenLen, imageLen, dim);
         DebugHelper::checkGlobalErrorCode("bpDLdImageV failed");
 
-        // dL/dAttn1 = gradTokenOut @ imageV^T (reuse attn1 buffer for dLdLogits after)
-        // First compute dLdAttn into a temp buffer, then softmax backward
-        // We can reuse attn1 space: first compute dLdAttn, store separately
-        // Actually, we need attn1 (the weights) for softmax backward AND dLdAttn
-        // So we need a separate buffer. We'll use attn2 temporarily since Dir2 hasn't started.
-        // Wait - attn2 is needed for Dir2. Let's allocate dLdAttn inline.
-        // Actually, the pattern is: compute dLdAttn into attn2, then softmaxBackward reads attn1+attn2
-        // then overwrites attn2 with dLdLogits. Then we use dLdLogits (in attn2) for Q/K grads.
-        // Then we recompute attn2 for Dir2.
-
         // dL/dAttn1 -> stored in attn2 temporarily
         dim3 gridAttn1(imageLen, tokenLen);
         bpDLdAttnKernel<T><<<gridAttn1, dotThreads, sharedSize, *stream>>>(
@@ -360,7 +330,7 @@ void twoWayCrossAttentionBpCudaLauncher(
         DebugHelper::checkGlobalErrorCode("bpDLdAttn1 failed");
 
         // Softmax backward: attn2 = attn1 * (attn2 - rowDot) => dL/dLogits
-        bpSoftmaxBackwardKernel<<<tokenLen, smThreads, smWarps * sizeof(float), *stream>>>(
+        bpSoftmaxBackwardKernel<AccT><<<tokenLen, smThreads, smWarps * sizeof(AccT), *stream>>>(
             attn1, attn2, tokenLen, imageLen);
         DebugHelper::checkGlobalErrorCode("bpSoftmaxBack1 failed");
 
@@ -395,7 +365,7 @@ void twoWayCrossAttentionBpCudaLauncher(
             if (smThreads < TWA_BP_WARP_SIZE) smThreads = TWA_BP_WARP_SIZE;
         }
         int smWarps = (smThreads + TWA_BP_WARP_SIZE - 1) / TWA_BP_WARP_SIZE;
-        bpCrossAttnSoftmaxKernel<<<imageLen, smThreads, smWarps * sizeof(float), *stream>>>(
+        bpCrossAttnSoftmaxKernel<AccT><<<imageLen, smThreads, smWarps * sizeof(AccT), *stream>>>(
             attn2, imageLen, tokenLen);
         DebugHelper::checkGlobalErrorCode("bpSoftmax2 failed");
 
@@ -414,7 +384,7 @@ void twoWayCrossAttentionBpCudaLauncher(
         DebugHelper::checkGlobalErrorCode("bpDLdAttn2 failed");
 
         // Softmax backward
-        bpSoftmaxBackwardKernel<<<imageLen, smThreads, smWarps * sizeof(float), *stream>>>(
+        bpSoftmaxBackwardKernel<AccT><<<imageLen, smThreads, smWarps * sizeof(AccT), *stream>>>(
             attn2, attn1, imageLen, tokenLen);
         DebugHelper::checkGlobalErrorCode("bpSoftmaxBack2 failed");
 
@@ -465,13 +435,15 @@ void twoWayCrossAttentionBp(
          imageQuery, imageKey, imageValue,
          gradTokenOut, gradImageOut});
 
+    auto accDtype = tokenQuery->dataType() == DataType::DOUBLE ? DataType::DOUBLE : DataType::FLOAT32;
+
     if (rank == 2) {
         auto tokenLen = tokenQuery->sizeAt(0);
         auto imageLen = imageQuery->sizeAt(0);
         auto dim = tokenQuery->sizeAt(1);
 
-        auto attn1 = NDArrayFactory::create('c', {tokenLen, imageLen}, DataType::FLOAT32, context);
-        auto attn2 = NDArrayFactory::create('c', {imageLen, tokenLen}, DataType::FLOAT32, context);
+        auto attn1 = NDArrayFactory::create('c', {tokenLen, imageLen}, accDtype, context);
+        auto attn2 = NDArrayFactory::create('c', {imageLen, tokenLen}, accDtype, context);
 
         BUILD_SINGLE_SELECTOR(tokenQuery->dataType(), twoWayCrossAttentionBpCudaLauncher,
                               (stream,
@@ -507,8 +479,8 @@ void twoWayCrossAttentionBp(
             LongType tokOff = b * tokenSliceSize * elemSize;
             LongType imgOff = b * imageSliceSize * elemSize;
 
-            auto attn1 = NDArrayFactory::create('c', {tokenLen, imageLen}, DataType::FLOAT32, context);
-            auto attn2 = NDArrayFactory::create('c', {imageLen, tokenLen}, DataType::FLOAT32, context);
+            auto attn1 = NDArrayFactory::create('c', {tokenLen, imageLen}, accDtype, context);
+            auto attn2 = NDArrayFactory::create('c', {imageLen, tokenLen}, accDtype, context);
 
             const void* tQBuf = static_cast<const int8_t*>(tokenQuery->specialBuffer()) + tokOff;
             const void* tKBuf = static_cast<const int8_t*>(tokenKey->specialBuffer()) + tokOff;

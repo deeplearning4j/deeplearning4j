@@ -69,6 +69,7 @@ public class TagNames {
     public final static String TPU = "tpu"; //PJRT/libtpu backend tests (PJRT_PATH / TPU_LIBRARY_PATH)
     public final static String HEXAGON = "hexagon"; //Qualcomm Hexagon NPU (hexagon-mlir) backend tests
     public final static String METAL = "metal"; //Apple Metal/MLX backend tests (macOS arm64, -Ptest-metal)
+    public final static String VULKAN = "vulkan"; //Vulkan compute backend tests (cross-vendor GPU, -Ptest-vulkan; lavapipe works)
     public final static String MULTI_BACKEND = "multi-backend"; //tests spanning >1 nd4j backend in one JVM
     public final static String MULTI_DEVICE = "multi-device"; //tests requiring >1 compute device
     public final static String BACKEND_DISCOVERY = "backend-discovery"; //Nd4jBackend SPI discovery/priority tests

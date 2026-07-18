@@ -75,6 +75,7 @@ CUSTOM_OP_IMPL(cascade_attention, 3, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(cascade_attention) {
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }

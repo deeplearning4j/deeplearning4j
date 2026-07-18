@@ -44,7 +44,7 @@ namespace ops {
  * Outputs:
  *   0: generatedTokenIds [maxNewTokens] INT64
  *   1: tokenCount [1] INT64
- *   2: timingInfo [5] FLOAT32
+ *   2: timingInfo [10] FLOAT32
  *
  * iArgs:
  *   0: maxNewTokens
@@ -111,7 +111,7 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
 
   auto generatedTokenIds = OUTPUT_VARIABLE(0);  // [maxNewTokens] INT64
   auto tokenCount = OUTPUT_VARIABLE(1);         // [1] INT64
-  auto timingInfo = OUTPUT_VARIABLE(2);         // [5] FLOAT
+  auto timingInfo = OUTPUT_VARIABLE(2);         // [10] FLOAT
 
   // Integer args: fixed layout
   int maxNewTokens = INT_ARG(0);
@@ -151,6 +151,29 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       kvScaleBuffersVec.push_back(INPUT_VARIABLE(nextInput + i));
     }
     nextInput += 2 * numKvPairs;
+  }
+
+  // Qwen3.5 bundled MTP inputs (bit 8 / 256). These seven stable-address arrays follow
+  // target KV and optional quantised-scale inputs in a fixed order.
+  bool hasMtpPlan = (optionalMask & 256) != 0;
+  NDArray* mtpInputIds = nullptr;
+  NDArray* mtpTargetHidden = nullptr;
+  NDArray* mtpCausalMask = nullptr;
+  NDArray* mtpPositionOffset = nullptr;
+  NDArray* mtpCachePosition = nullptr;
+  NDArray* mtpKeyCache = nullptr;
+  NDArray* mtpValueCache = nullptr;
+  if (hasMtpPlan) {
+    REQUIRE_TRUE(block.width() >= nextInput + 7, 0,
+                 "autoregressive_decode: MTP bit is set but only %d inputs remain (need 7)",
+                 block.width() - nextInput);
+    mtpInputIds = INPUT_VARIABLE(nextInput++);
+    mtpTargetHidden = INPUT_VARIABLE(nextInput++);
+    mtpCausalMask = INPUT_VARIABLE(nextInput++);
+    mtpPositionOffset = INPUT_VARIABLE(nextInput++);
+    mtpCachePosition = INPUT_VARIABLE(nextInput++);
+    mtpKeyCache = INPUT_VARIABLE(nextInput++);
+    mtpValueCache = INPUT_VARIABLE(nextInput++);
   }
 
   // Collect additional stop token IDs (always includes eosTokenId)
@@ -199,6 +222,17 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   if (block.getTArguments()->size() > 21) sampleConfig.typicalP = T_ARG(21);
   if (block.getTArguments()->size() > 22) sampleConfig.xtcProbability = T_ARG(22);
   if (block.getTArguments()->size() > 23) sampleConfig.xtcThreshold = T_ARG(23);
+
+  // ADR 0106 Phase 2: optional speculative decode parameters (tArgs 24 and 25).
+  // Read early so they can be propagated into decodeConfig after the plan config block.
+  int speculativeK_arg = 0;
+  int speculatorType_arg = 0;
+  if (block.getTArguments()->size() > 24) speculativeK_arg = static_cast<int>(T_ARG(24));
+  if (block.getTArguments()->size() > 25) speculatorType_arg = static_cast<int>(T_ARG(25));
+  int actualSequenceLengthExtIdx_arg = -1;
+  if (block.getTArguments()->size() > 26) {
+    actualSequenceLengthExtIdx_arg = static_cast<int>(T_ARG(26));
+  }
 
   // Validate inputs
   REQUIRE_TRUE(prefillEmbeddings->rankOf() == 3, 0,
@@ -249,6 +283,92 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
   // extracting them from the ext input context when activeWindow > 1.
   decodeConfig.windowGridMask = nullptr;
   decodeConfig.windowPositionGrid = nullptr;
+  // ADR 0106 Phase 2: n-gram speculative decoding parameters.
+  // speculativeK=0 (default) leaves Phase 1 path completely unchanged.
+  decodeConfig.speculativeK = speculativeK_arg;
+  decodeConfig.speculatorType = speculatorType_arg;
+  decodeConfig.actualSequenceLengthExtIdx = actualSequenceLengthExtIdx_arg;
+
+  if (hasMtpPlan) {
+    REQUIRE_TRUE(speculatorType_arg == 2, 0,
+                 "autoregressive_decode: MTP inputs require speculatorType=2, got %d",
+                 speculatorType_arg);
+    REQUIRE_TRUE(block.getTArguments()->size() > 42, 0,
+                 "autoregressive_decode: MTP metadata requires tArgs[27..42], got %d tArgs",
+                 static_cast<int>(block.getTArguments()->size()));
+
+    uint64_t mtpPlanAddr =
+        (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(28))) << 32)
+        | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(27)));
+    uint64_t mtpContextAddr =
+        (static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(30))) << 32)
+        | static_cast<uint64_t>(static_cast<uint32_t>(T_ARG(29)));
+
+    decodeConfig.mtpPlanHandle =
+        reinterpret_cast<graph::NativeDynamicShapePlan*>(mtpPlanAddr);
+    decodeConfig.mtpExtInputContext = reinterpret_cast<void*>(mtpContextAddr);
+    decodeConfig.mtpNumPlanExternalInputs = static_cast<int>(T_ARG(31));
+    decodeConfig.mtpNumPlanOutputs = static_cast<int>(T_ARG(32));
+    decodeConfig.mtpInputIdsExtIdx = static_cast<int>(T_ARG(33));
+    decodeConfig.mtpTargetHiddenExtIdx = static_cast<int>(T_ARG(34));
+    decodeConfig.mtpCausalMaskExtIdx = static_cast<int>(T_ARG(35));
+    decodeConfig.mtpPositionOffsetExtIdx = static_cast<int>(T_ARG(36));
+    decodeConfig.mtpCachePositionExtIdx = static_cast<int>(T_ARG(37));
+    decodeConfig.mtpKvInputExtIndices[0] = static_cast<int>(T_ARG(38));
+    decodeConfig.mtpKvInputExtIndices[1] = static_cast<int>(T_ARG(39));
+    decodeConfig.mtpLogitsOutputIdx = static_cast<int>(T_ARG(40));
+    decodeConfig.mtpHiddenOutputIdx = static_cast<int>(T_ARG(41));
+    decodeConfig.targetHiddenOutputIdx = static_cast<int>(T_ARG(42));
+
+    decodeConfig.mtpInputIds = mtpInputIds;
+    decodeConfig.mtpTargetHidden = mtpTargetHidden;
+    decodeConfig.mtpCausalMask = mtpCausalMask;
+    decodeConfig.mtpPositionOffset = mtpPositionOffset;
+    decodeConfig.mtpCachePosition = mtpCachePosition;
+    decodeConfig.mtpKvBuffers[0] = mtpKeyCache;
+    decodeConfig.mtpKvBuffers[1] = mtpValueCache;
+
+    REQUIRE_TRUE(decodeConfig.mtpPlanHandle != nullptr
+                     && decodeConfig.mtpExtInputContext != nullptr,
+                 0, "autoregressive_decode: MTP plan/context handles must be non-null");
+    REQUIRE_TRUE(decodeConfig.mtpNumPlanExternalInputs > 0
+                     && decodeConfig.mtpNumPlanOutputs > 0,
+                 0, "autoregressive_decode: invalid MTP plan dimensions: inputs=%d outputs=%d",
+                 decodeConfig.mtpNumPlanExternalInputs, decodeConfig.mtpNumPlanOutputs);
+    REQUIRE_TRUE(mtpInputIds->rankOf() == 2 && mtpInputIds->lengthOf() == 1, 0,
+                 "autoregressive_decode: mtpInputIds must be scalar-shaped [1,1], got rank=%d length=%lld",
+                 mtpInputIds->rankOf(), mtpInputIds->lengthOf());
+    REQUIRE_TRUE(mtpTargetHidden->rankOf() == 3 && mtpTargetHidden->sizeAt(0) == 1
+                     && mtpTargetHidden->sizeAt(1) == 1,
+                 0, "autoregressive_decode: mtpTargetHidden must be [1,1,hidden]");
+    REQUIRE_TRUE(mtpCausalMask->rankOf() == 4, 0,
+                 "autoregressive_decode: mtpCausalMask must be rank 4, got %d",
+                 mtpCausalMask->rankOf());
+    REQUIRE_TRUE(mtpPositionOffset->lengthOf() == 1 && mtpCachePosition->lengthOf() == 1,
+                 0, "autoregressive_decode: MTP position/cache inputs must be scalar arrays");
+    REQUIRE_TRUE(mtpKeyCache != nullptr && mtpValueCache != nullptr, 0,
+                 "autoregressive_decode: MTP key/value cache arrays must be non-null");
+    REQUIRE_TRUE(decodeConfig.mtpInputIdsExtIdx >= 0
+                     && decodeConfig.mtpInputIdsExtIdx < decodeConfig.mtpNumPlanExternalInputs
+                     && decodeConfig.mtpTargetHiddenExtIdx >= 0
+                     && decodeConfig.mtpTargetHiddenExtIdx < decodeConfig.mtpNumPlanExternalInputs
+                     && decodeConfig.mtpCausalMaskExtIdx >= 0
+                     && decodeConfig.mtpCausalMaskExtIdx < decodeConfig.mtpNumPlanExternalInputs
+                     && decodeConfig.mtpPositionOffsetExtIdx >= 0
+                     && decodeConfig.mtpPositionOffsetExtIdx < decodeConfig.mtpNumPlanExternalInputs
+                     && decodeConfig.mtpCachePositionExtIdx >= 0
+                     && decodeConfig.mtpCachePositionExtIdx < decodeConfig.mtpNumPlanExternalInputs
+                     && decodeConfig.mtpKvInputExtIndices[0] >= 0
+                     && decodeConfig.mtpKvInputExtIndices[0] < decodeConfig.mtpNumPlanExternalInputs
+                     && decodeConfig.mtpKvInputExtIndices[1] >= 0
+                     && decodeConfig.mtpKvInputExtIndices[1] < decodeConfig.mtpNumPlanExternalInputs
+                     && decodeConfig.mtpLogitsOutputIdx >= 0
+                     && decodeConfig.mtpLogitsOutputIdx < decodeConfig.mtpNumPlanOutputs
+                     && decodeConfig.mtpHiddenOutputIdx >= 0
+                     && decodeConfig.mtpHiddenOutputIdx < decodeConfig.mtpNumPlanOutputs
+                     && decodeConfig.targetHiddenOutputIdx >= 0,
+                 0, "autoregressive_decode: unresolved or out-of-range MTP plan index");
+  }
 
   int iArgCount = block.getIArguments()->size();
   bool hasPlanConfig = (iArgCount > 8);  // need at least plan + context pointers
@@ -407,6 +527,18 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
       }
     }
 
+    // GGUF in-graph KV decode reuses the model's fixed W-wide causal-mask input as
+    // the speculative window grid. Position IDs are derived internally from the
+    // scalar position_offset, so no separate position grid is required.
+    if (decodeConfig.planOwnsKvScatter && decodeConfig.windowMax > 1
+        && decodeConfig.windowGridMask == nullptr) {
+      auto* extCtx = reinterpret_cast<graph::Context*>(decodeConfig.extInputContext);
+      if (extCtx != nullptr && decodeConfig.causalMaskExtIdx >= 0
+          && decodeConfig.causalMaskExtIdx < decodeConfig.numPlanExternalInputs) {
+        decodeConfig.windowGridMask = extCtx->array(decodeConfig.causalMaskExtIdx);
+      }
+    }
+
     stopTokenStartIdx = nextIdx;
 
     // ADR 0107 V2: wire scale buffers into decodeConfig when bit 7 was set.
@@ -441,6 +573,8 @@ CUSTOM_OP_IMPL(autoregressive_decode, 3, 3, false, 3, 5) {
 }
 
 DECLARE_TYPES(autoregressive_decode) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT);
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | (OP_TRAIT_DATA_DEPENDENT));
   // Allow INT8 for V2 quantized KV buffers (ADR 0107) and INT64 for token IDs.
   // ALL_FLOATS covers the embedding table, attention mask, and KV scale buffers.
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, INT64, INT8});
@@ -459,10 +593,11 @@ DECLARE_SHAPE_FN(autoregressive_decode) {
   // Output 1: tokenCount [1] INT64 scalar
   auto tokenCountShape = ConstantShapeHelper::getInstance().vectorShapeInfo(1, INT64);
 
-  // Output 2: timingInfo [7] FLOAT32
+  // Output 2: timingInfo [10] FLOAT32
   // [0]=totalMs [1]=avgDecodeMs [2]=tokPerSec [3]=p50Ms [4]=p99Ms
   // [5]=lateSteadyTokPerSec (steps 60+) [6]=lateSteadyAvgMs
-  auto timingShape = ConstantShapeHelper::getInstance().vectorShapeInfo(7, FLOAT32);
+  // [7]=speculativeProposed [8]=speculativeAccepted [9]=speculativeSteps
+  auto timingShape = ConstantShapeHelper::getInstance().vectorShapeInfo(10, FLOAT32);
 
   return SHAPELIST(tokenIdsShape, tokenCountShape, timingShape);
 }

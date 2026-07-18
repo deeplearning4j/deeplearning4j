@@ -20,7 +20,13 @@
 
 //
 // OneDNN implementation of extended eltwise operations:
-// expm1 (exp(x) - 1), log1p (log(1 + x))
+// expm1 (exp(x) - 1), log1p (log(1 + x)), gelu_tanh
+//
+// NOTE: expm1 and log1p are multi-step pipelines using f32 intermediate
+// buffers.  They remain f32-only intentionally — widening would require
+// allocating intermediate bf16/f16 tensors which is significantly more
+// complex and the performance benefit on those paths is marginal.
+// gelu_tanh is a single primitive and uses the dtype-aware macro.
 //
 
 #include <helpers/MKLDNNStream.h>
@@ -29,6 +35,7 @@
 #include <system/platform_boilerplate.h>
 
 #include "mkldnnUtils.h"
+#include "mkldnnEltwise.h"
 
 using namespace dnnl;
 
@@ -37,46 +44,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
-// Generic eltwise operation helper
-static void eltwiseMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, float alpha = 0.0f, float beta = 0.0f) {
-  dnnl::memory::dims shape = *x->getShapeAsFlatVector();
-
-  dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
-
-  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
-  onednnUtils::setBlockStrides(*x, x_user_md);
-
-  z_user_md = z_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
-  onednnUtils::setBlockStrides(*z, z_user_md);
-
-  auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
-
-  dnnl::primitive_attr attr;
-
-  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
-  dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
-                                                      alg, x_mkl_md, z_mkl_md, alpha, beta);
-
-  std::unordered_map<int, dnnl::memory> args;
-
-  dnnl::stream stream(engine);
-
-  onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
-
-  auto z_user_mem =
-      onednnUtils::loadDataToMklStream(*z, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
-
-  dnnl::eltwise_forward(op_prim_desc).execute(stream, args);
-
-  if (op_prim_desc.dst_desc() != z_user_mem.get_desc())
-    dnnl::reorder(args[DNNL_ARG_DST], z_user_mem).execute(stream, args[DNNL_ARG_DST], z_user_mem);
-
-  stream.wait();
-}
-
-//////////////////////////////////////////////////////////////////////
-// EXPM1: exp(x) - 1
-// Implemented as: exp(x) - 1 using two operations
+// EXPM1: exp(x) - 1  (f32 only — multi-pass with f32 intermediate)
 static void expm1MKLDNN(NDArray* x, NDArray* z) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
@@ -89,11 +57,9 @@ static void expm1MKLDNN(NDArray* x, NDArray* z) {
   onednnUtils::setBlockStrides(*z, z_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
-  dnnl::primitive_attr attr;
   dnnl::stream stream(engine);
 
   // Step 1: exp(x)
-  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
   dnnl::eltwise_forward::primitive_desc exp_prim_desc(engine, dnnl::prop_kind::forward_inference,
                                                        algorithm::eltwise_exp, x_mkl_md, x_mkl_md, 0.f, 0.f);
 
@@ -106,7 +72,6 @@ static void expm1MKLDNN(NDArray* x, NDArray* z) {
   dnnl::eltwise_forward(exp_prim_desc).execute(stream, exp_args);
 
   // Step 2: exp(x) - 1 using linear: y = 1*x + (-1)
-  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
   dnnl::eltwise_forward::primitive_desc sub_prim_desc(engine, dnnl::prop_kind::forward_inference,
                                                        algorithm::eltwise_linear, exp_prim_desc.dst_desc(), z_mkl_md, 1.0f, -1.0f);
 
@@ -124,7 +89,7 @@ static void expm1MKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(expm1, ENGINE_CPU) {
+PLATFORM_IMPL(expm1, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -137,7 +102,7 @@ PLATFORM_IMPL(expm1, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(expm1, ENGINE_CPU) {
+PLATFORM_CHECK(expm1, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -152,8 +117,7 @@ PLATFORM_CHECK(expm1, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-// LOG1P: log(1 + x)
-// Implemented as: log(1 + x) using linear then log
+// LOG1P: log(1 + x)  (f32 only — multi-pass with f32 intermediate)
 static void log1pMKLDNN(NDArray* x, NDArray* z) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
@@ -166,11 +130,9 @@ static void log1pMKLDNN(NDArray* x, NDArray* z) {
   onednnUtils::setBlockStrides(*z, z_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
-  dnnl::primitive_attr attr;
   dnnl::stream stream(engine);
 
   // Step 1: 1 + x using linear: y = 1*x + 1
-  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
   dnnl::eltwise_forward::primitive_desc add_prim_desc(engine, dnnl::prop_kind::forward_inference,
                                                        algorithm::eltwise_linear, x_mkl_md, x_mkl_md, 1.0f, 1.0f);
 
@@ -183,7 +145,6 @@ static void log1pMKLDNN(NDArray* x, NDArray* z) {
   dnnl::eltwise_forward(add_prim_desc).execute(stream, add_args);
 
   // Step 2: log(1 + x)
-  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
   dnnl::eltwise_forward::primitive_desc log_prim_desc(engine, dnnl::prop_kind::forward_inference,
                                                        algorithm::eltwise_log, add_prim_desc.dst_desc(), z_mkl_md, 0.f, 0.f);
 
@@ -201,7 +162,7 @@ static void log1pMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(log1p, ENGINE_CPU) {
+PLATFORM_IMPL(log1p, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -214,7 +175,7 @@ PLATFORM_IMPL(log1p, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(log1p, ENGINE_CPU) {
+PLATFORM_CHECK(log1p, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -229,33 +190,8 @@ PLATFORM_CHECK(log1p, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-// GELU_TANH - GELU with tanh approximation
-PLATFORM_IMPL(gelu_tanh, ENGINE_CPU) {
-  auto input = INPUT_VARIABLE(0);
-  auto output = OUTPUT_VARIABLE(0);
-
-  const sd::LongType rank = input->rankOf();
-  REQUIRE_TRUE(rank <= 6, 0, "GELU_TANH_MKLDNN OP: the rank of input must be less or equal 6, but got rank = %i instead !",
-               rank);
-
-  eltwiseMKLDNN(input, output, algorithm::eltwise_gelu_tanh);
-
-  return sd::Status::OK;
-}
-
-PLATFORM_CHECK(gelu_tanh, ENGINE_CPU) {
-  auto x = INPUT_VARIABLE(0);
-  auto z = OUTPUT_VARIABLE(0);
-
-  Requirements req("ONEDNN GELU_TANH OP");
-  req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
-      req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
-      req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
-  req.logTheSuccess();
-  return req;
-}
+// GELU_TANH — single primitive, use dtype-aware macro
+DEFINE_MKLDNN_ELTWISE_FWD(gelu_tanh, "GELU_TANH", dnnl::algorithm::eltwise_gelu_tanh, 0.f, 0.f)
 
 }  // namespace platforms
 }  // namespace ops

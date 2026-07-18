@@ -56,6 +56,7 @@ CUSTOM_OP_IMPL(dynamic_stitch, 2, 1, false, 0, 0) {
 
 DECLARE_TYPES(dynamic_stitch) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 }
 
 DECLARE_SHAPE_FN(dynamic_stitch) {

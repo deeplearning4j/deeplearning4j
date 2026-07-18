@@ -244,7 +244,8 @@ DECLARE_TYPES(Where) {
      ->setAllowedInputTypes(1, ANY)
      ->setAllowedInputTypes(2, ANY)
      ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS,BOOL});
- getOpDescriptor()->addTraits(OP_TRAIT_TERNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
+ getOpDescriptor()->addTraits(OP_TRAIT_TERNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING |
+                              OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
 }
 }  // namespace ops
 }  // namespace sd

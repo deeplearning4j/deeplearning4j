@@ -71,6 +71,7 @@ DECLARE_TYPES(percentile) {
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedOutputTypes(0, INHERIT)
       ->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 }
 
 DECLARE_SHAPE_FN(percentile) {

@@ -57,11 +57,14 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 2, true, 1, 1) {
 }
 
 DECLARE_TYPES(dropout) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS,ALL_INTS})
       ->setAllowedOutputTypes({ALL_FLOATS})
       ->setSameMode(true);
+
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -97,7 +100,10 @@ CONFIGURABLE_OP_IMPL(dropout_bp, 3, 1, false, 1, 1) {
 }
 
 DECLARE_TYPES(dropout_bp) {
+
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setAllowedOutputTypes({ALL_FLOATS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -128,7 +134,10 @@ CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
   return helpers::alphaDropOutFunctorBP(block, input, gradOut, output, reduceShape, seed, probValue, alphaValue,
                                         alpha1Value, betaValue, mask);
 }
-DECLARE_TYPES(alpha_dropout_bp) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(alpha_dropout_bp) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
+}
 }  // namespace ops
 }  // namespace sd
 

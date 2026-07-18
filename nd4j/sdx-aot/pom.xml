@@ -1,0 +1,561 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.eclipse.deeplearning4j</groupId>
+        <artifactId>nd4j</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sdx-aot</artifactId>
+    <packaging>jar</packaging>
+
+    <name>sdx-aot</name>
+    <description>
+        GraalVM native-image AOT export of the Java stack (samediff-llm, samediff-vlm,
+        samediff-audio, nd4j-ggml, tokenizers) for the SDX Runtime SDK: the sdx-llm CLI
+        and the libsdx_llm shared library (C ABI: include/sdx_llm_c.h). Plain builds
+        produce only the jar; add -Pnative on a GraalVM JDK 17+ to build the images and
+        the sdx-llm-aot SDK zip (attached with classifier
+        ${javacpp.platform}-${sdx.aot.variant}-aot). Combine with -Pcuda for the CUDA
+        variant. See ADR 0109.
+    </description>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <graalvm.sdk.version>24.1.1</graalvm.sdk.version>
+        <native.maven.plugin.version>0.10.6</native.maven.plugin.version>
+        <!-- Backend variant the images link against; the cuda profile flips both. -->
+        <sdx.aot.variant>cpu</sdx.aot.variant>
+        <sdx.aot.backend.artifactId>nd4j-native</sdx.aot.backend.artifactId>
+        <!-- Optimized-math spin: the repo-wide javacpp.platform.extension convention
+             (leading-dash composites like -avx2, -onednn-avx2, -armcompute, -cudnn).
+             The backend classifier jar for that spin must exist in the repo — CI's
+             helper/extension matrix builds them. Empty = base spin. The spin is part
+             of the package identity: sdx-aot-<ver>-<platform><extension>-<variant>-aot.zip -->
+        <sdx.aot.spin>${sdx.aot.variant}${javacpp.platform.extension}</sdx.aot.spin>
+        <!-- Per-spin output dirs so any mix of variants/spins coexists in one target/. -->
+        <sdx.aot.image.dir>${project.build.directory}/native/${sdx.aot.spin}</sdx.aot.image.dir>
+        <sdx.aot.native.libs.dir>${project.build.directory}/native-libs/${sdx.aot.spin}</sdx.aot.native.libs.dir>
+        <sdx.aot.stage.dir>${project.build.directory}/aot-sdk/${sdx.aot.spin}</sdx.aot.stage.dir>
+        <!-- Skip flags so CI can build only what it needs. -->
+        <sdx.aot.skip.cli>false</sdx.aot.skip.cli>
+        <sdx.aot.skip.shared>false</sdx.aot.skip.shared>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-llm</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-ggml</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- VLM (SmolDocling document extraction) — pulls samediff-import-onnx and
+             javacv/ffmpeg (natives side-loaded like everything else). -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-vlm</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- Audio (Whisper STT chain). -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-audio</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- PDF page rendering for the vlm subcommand. SdxVlm loads PDFBox
+             reflectively (2.x API: PDDocument.load) so plain image input works
+             without it; compile scope here puts it in the images. -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.31</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>${sdx.aot.backend.artifactId}</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- The classified backend jar carries the native math library that gets
+             side-loaded; the extension selects the optimized spin (avx2/avx512/
+             onednn/armcompute/cudnn composites) built by the CI matrix. -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>${sdx.aot.backend.artifactId}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+        </dependency>
+        <!-- Rust HF tokenizers native bindings (JavaCPP): API jar + platform natives. -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>tokenizers-native</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>tokenizers-native</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform}</classifier>
+        </dependency>
+        <!-- Pinned pair: the parent manages logback 1.5.x (test scope) which is
+             incompatible with the managed slf4j-api 1.7.x; the images need the
+             1.2.x line (StaticLoggerBinder) at compile scope. -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.13</version>
+            <scope>compile</scope>
+        </dependency>
+        <!-- JUnit 5 for the buildBpeTokenizerJson unit tests (no native image needed).
+             Pinned to 5.10.2 to match surefire 3.3.0's requirement (parent's 5.8.0-M1
+             predates the getAncestors() API surefire 3.x uses).
+             junit-platform-engine is overridden to 1.10.2 to win over the 1.8.0-M1
+             copy that arrives transitively on the compile classpath from nd4j modules. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-commons</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.2.13</version>
+            <scope>compile</scope>
+        </dependency>
+        <!-- GraalVM native-image API: @CEntryPoint, ObjectHandles, UnmanagedMemory.
+             Compile-only; the tool ships its own implementation. -->
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <version>${graalvm.sdk.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
+            </plugin>
+            <!-- Override surefire to use the correct JUnit platform launcher version.
+                 The parent manages surefire 3.3.0 which requires junit-platform-launcher
+                 1.10.x — but some nd4j transitive dependencies pull in 1.8.0-M1 onto the
+                 test classpath, causing NoSuchMethodError on getAncestors().  The
+                 junit-platform-launcher dep below (also in <dependencies>) ensures 1.10.2
+                 wins in dependency resolution when running tests. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Djunit.platform.launcher.discovery.listener.default=logging</argLine>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.platform</groupId>
+                        <artifactId>junit-platform-launcher</artifactId>
+                        <version>1.10.2</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <!-- The nd4j parent's default-jar execution whitelists extensions and drops
+                 *.xml (so library jars never ship a logback.xml). This module is a leaf
+                 AOT tool, not a library: its logback.xml IS the image's logging config
+                 and must be packaged. combine.self=override discards the whitelist. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration combine.self="override">
+                            <forceCreation>true</forceCreation>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Image builds are opt-in: plain install just builds/installs the jar so the
+             reactor never requires GraalVM. Activate with -Pnative on a GraalVM JDK. -->
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <!-- Unpack every native library from the dependency jars: the images
+                         EXCLUDE native binaries (buildArgs below) and side-load them at
+                         runtime via SdxNativeLibs — the kompile pattern (ADR 0109). -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>unpack-native-libs</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>unpack-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${sdx.aot.native.libs.dir}</outputDirectory>
+                                    <markersDirectory>${project.build.directory}/dependency-markers/${sdx.aot.variant}</markersDirectory>
+                                    <includeTypes>jar</includeTypes>
+                                    <includes>**/*.so,**/*.so.*,**/*.dylib,**/*.dll</includes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- Bake the ClassGraph scan the samediff importers query — classpath
+                         scanning cannot run inside a native image; ClassGraphHolder loads
+                         this JSON via the org.nd4j...classgraph.scan.json property that
+                         SdxNativeLibs sets in image mode. Written into target/classes so
+                         every image build carries a fresh scan. -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>bake-classgraph-scan</id>
+                                <phase>process-classes</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                                <configuration>
+                                    <mainClass>org.eclipse.deeplearning4j.sdx.aot.SdxClassGraphScanBaker</mainClass>
+                                    <classpathScope>runtime</classpathScope>
+                                    <arguments>
+                                        <argument>${project.build.outputDirectory}/sdx-classgraph-scan.json</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>${native.maven.plugin.version}</version>
+                        <extensions>true</extensions>
+                        <executions>
+                            <!-- CLI executable: bin/sdx-llm -->
+                            <execution>
+                                <id>build-sdx-llm-cli</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <skip>${sdx.aot.skip.cli}</skip>
+                                    <imageName>sdx-llm</imageName>
+                                    <mainClass>org.eclipse.deeplearning4j.sdx.aot.SdxLlmCli</mainClass>
+                                </configuration>
+                            </execution>
+                            <!-- Shared library with the sdxLlm*/sdxVlm*/sdxAudio* C ABI.
+                                 The image is named libsdx_llm so the emitted libjvm.so
+                                 stub's DT_NEEDED entry (which records the image's exact
+                                 file name) matches the shipped file — renaming after the
+                                 fact breaks every JNI library that links the stub. -->
+                            <execution>
+                                <id>build-sdx-llm-shared</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <skip>${sdx.aot.skip.shared}</skip>
+                                    <imageName>libsdx_llm</imageName>
+                                    <sharedLibrary>true</sharedLibrary>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <outputDirectory>${sdx.aot.image.dir}</outputDirectory>
+                            <fallback>false</fallback>
+                            <!-- Flag policy (ADR 0109): runtime-init lists live in each
+                                 module's META-INF/native-image config; resource INCLUSION
+                                 only via resource-config.json (properties-file -H: args do
+                                 not apply); native binaries are side-loaded, so EXCLUDE
+                                 them here (CLI-arg channel beats jar resource-configs). -->
+                            <buildArgs>
+                                <buildArg>-H:ExcludeResources=.*\.so$</buildArg>
+                                <buildArg>-H:ExcludeResources=.*\.so\..*</buildArg>
+                                <buildArg>-H:ExcludeResources=.*\.dylib$</buildArg>
+                                <buildArg>-H:ExcludeResources=.*\.dll$</buildArg>
+                                <buildArg>-H:ExcludeResources=.*\.a$</buildArg>
+                                <buildArg>-H:ExcludeResources=.*\.lib$</buildArg>
+                                <!-- Export-allowlist: inject the ld wrapper that strips
+                                     GraalVM's anonymous version script and substitutes
+                                     sdx_exports.lds (SDX_LLM_1 { global: sdx*; local: *; }).
+                                     This hides graal_*, JNI_*, __svm_* from .dynsym so that
+                                     libsdx_llm.so can be RTLD_LOCAL-loaded alongside other
+                                     GraalVM native-image libraries (e.g. libkompile_reasoning.so)
+                                     without symbol-collision ExceptionInInitializerErrors.
+                                     See nd4j/sdx-aot/src/main/linker/ld for details. -->
+                                <buildArg>-H:NativeLinkerOption=-B${project.basedir}/src/main/linker</buildArg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                    <!-- Stage the SDK layout: bin/ lib/ include/ share/sdx. Native libs
+                         are flattened next to the images (SdxNativeLibs resolves
+                         <binary-dir>/../lib); the AWT/jsound JDK natives come from the
+                         GraalVM this build runs on (${java.home}); the openblas alias
+                         soname JavaCPP normally fabricates at extraction time is
+                         materialized as a copy (zip-safe, unlike symlinks). -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>stage-aot-sdk</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <!-- Fresh stage every build — leftovers from prior
+                                             layouts must never leak into the zip. -->
+                                        <delete dir="${sdx.aot.stage.dir}" quiet="true"/>
+                                        <mkdir dir="${sdx.aot.stage.dir}/bin"/>
+                                        <mkdir dir="${sdx.aot.stage.dir}/lib"/>
+                                        <mkdir dir="${sdx.aot.stage.dir}/include"/>
+                                        <mkdir dir="${sdx.aot.stage.dir}/share/sdx"/>
+                                        <!-- Images -->
+                                        <copy todir="${sdx.aot.stage.dir}/bin" failonerror="false">
+                                            <fileset dir="${sdx.aot.image.dir}" includes="sdx-llm,sdx-llm.exe"/>
+                                        </copy>
+                                        <chmod perm="755" failonerror="false">
+                                            <fileset dir="${sdx.aot.stage.dir}/bin" includes="sdx-llm"/>
+                                        </chmod>
+                                        <!-- Shared library, kept under its build-time name
+                                             (see build-sdx-llm-shared). -->
+                                        <copy todir="${sdx.aot.stage.dir}/lib" failonerror="false">
+                                            <fileset dir="${sdx.aot.image.dir}"
+                                                     includes="libsdx_llm.so,libsdx_llm.dylib,libsdx_llm.dll"/>
+                                        </copy>
+                                        <!-- Headers: stable C ABI + graal-generated -->
+                                        <copy todir="${sdx.aot.stage.dir}/include" failonerror="false">
+                                            <fileset dir="${project.basedir}/include" includes="*.h"/>
+                                            <fileset dir="${sdx.aot.image.dir}" includes="sdx_llm*.h,graal_isolate*.h"/>
+                                        </copy>
+                                        <!-- Side-loaded natives, flattened. The unpacked tree
+                                             contains EVERY platform (javacpp -platform meta-POMs
+                                             arrive transitively, e.g. onnx-platform via the ONNX
+                                             importer) and Ant's default overwrite=false let the
+                                             alphabetically-first (android-arm64!) copy of a
+                                             basename win silently. Take only the current
+                                             javacpp.platform directories plus the platformless
+                                             lib/ layout (tokenizers), overwriting
+                                             deterministically. -->
+                                        <copy todir="${sdx.aot.stage.dir}/lib" flatten="true"
+                                              overwrite="true" failonerror="false">
+                                            <fileset dir="${sdx.aot.native.libs.dir}">
+                                                <include name="**/${javacpp.platform}/**/*.so"/>
+                                                <include name="**/${javacpp.platform}/**/*.so.*"/>
+                                                <include name="**/${javacpp.platform}/**/*.dylib"/>
+                                                <include name="**/${javacpp.platform}/**/*.dll"/>
+                                                <include name="lib/*.so"/>
+                                                <include name="lib/*.so.*"/>
+                                                <include name="lib/*.dylib"/>
+                                                <include name="lib/*.dll"/>
+                                            </fileset>
+                                        </copy>
+                                        <!-- JDK AWT/imaging/sound natives: native-image EMITS
+                                             the required set itself as jdk_library artifacts
+                                             next to the image (libawt*, libjava, libfontmanager,
+                                             libjavajpeg, libjsound, ...). SVM loads them from
+                                             the executable's own directory, so they go into
+                                             bin/ (for sdx-llm) and lib/ (for libsdx_llm hosts). -->
+                                        <!-- (sdx_llm.* excluded as a stale-name guard for dirty
+                                             target dirs from builds preceding the libsdx_llm
+                                             image rename.) -->
+                                        <copy todir="${sdx.aot.stage.dir}/bin" failonerror="false">
+                                            <fileset dir="${sdx.aot.image.dir}"
+                                                     includes="*.so,*.dylib,*.dll"
+                                                     excludes="libsdx_llm.*,sdx_llm.*"/>
+                                        </copy>
+                                        <copy todir="${sdx.aot.stage.dir}/lib" failonerror="false">
+                                            <fileset dir="${sdx.aot.image.dir}"
+                                                     includes="*.so,*.dylib,*.dll"
+                                                     excludes="libsdx_llm.*,sdx_llm.*"/>
+                                        </copy>
+                                        <chmod perm="755" failonerror="false">
+                                            <fileset dir="${sdx.aot.stage.dir}/lib" includes="*.so*"/>
+                                        </chmod>
+                                        <!-- Alias soname JavaCPP fabricates at cache-extraction
+                                             time (libjniopenblas_nolapack's DT_NEEDED). -->
+                                        <copy file="${sdx.aot.stage.dir}/lib/libopenblas.so.0"
+                                              tofile="${sdx.aot.stage.dir}/lib/libopenblas_nolapack.so.0"
+                                              failonerror="false"/>
+                                        <!-- Language wrappers: the same canonical tree the C
+                                             SDK packages stage (bindings/ plus the nd4j-sdx
+                                             java wrapper source), so the AOT package is
+                                             self-contained for every language. -->
+                                        <copy todir="${sdx.aot.stage.dir}/wrappers" failonerror="false">
+                                            <fileset dir="${project.basedir}/../../libnd4j/include/dsp/runtime/bindings">
+                                                <exclude name="**/__pycache__/**"/>
+                                                <exclude name="**/target/**"/>
+                                                <exclude name="**/build/**"/>
+                                                <exclude name="**/.gradle/**"/>
+                                                <exclude name="**/.build/**"/>
+                                            </fileset>
+                                        </copy>
+                                        <copy todir="${sdx.aot.stage.dir}/wrappers/java/src/main/java" failonerror="false">
+                                            <fileset dir="${project.basedir}/../../nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx/src/main/java"/>
+                                        </copy>
+                                        <!-- Manifest + README (filtered templates) -->
+                                        <copy file="${project.basedir}/src/main/assembly/aot-manifest.json"
+                                              tofile="${sdx.aot.stage.dir}/share/sdx/aot-manifest.json">
+                                            <filterset>
+                                                <filter token="VERSION" value="${project.version}"/>
+                                                <filter token="PLATFORM" value="${javacpp.platform}"/>
+                                                <filter token="VARIANT" value="${sdx.aot.variant}"/>
+                                                <filter token="EXTENSION" value="${javacpp.platform.extension}"/>
+                                            </filterset>
+                                        </copy>
+                                        <copy file="${project.basedir}/src/main/assembly/README-aot.md"
+                                              tofile="${sdx.aot.stage.dir}/README.md">
+                                            <filterset>
+                                                <filter token="PLATFORM" value="${javacpp.platform}"/>
+                                                <filter token="VARIANT" value="${sdx.aot.variant}"/>
+                                            </filterset>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- Zip the staged layout as an attached artifact:
+                         sdx-aot-<version>-<javacpp.platform>-<variant>-aot.zip — flows
+                         through install/deploy so CI collects it like the SDK jars. -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>aot-sdk-zip</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/main/assembly/aot-sdk.xml</descriptor>
+                                    </descriptors>
+                                    <tarLongFileMode>posix</tarLongFileMode>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- CUDA variant: same id as the repo-wide cuda profile so `-Pnative -Pcuda`
+             composes the way every other module in this build understands. -->
+        <profile>
+            <id>cuda</id>
+            <properties>
+                <sdx.aot.variant>cuda</sdx.aot.variant>
+                <sdx.aot.backend.artifactId>nd4j-cuda-12.9</sdx.aot.backend.artifactId>
+            </properties>
+        </profile>
+
+        <!-- Toolchain for the image link, following the javacpp.platform.compiler
+             convention used across nd4j-backend-impls / tokenizers-native. Linux-only:
+             native-image on macOS/Windows uses its own default toolchain discovery.
+             IMPORTANT: this must be a distro toolchain — a homebrew/linuxbrew gcc embeds
+             the brew dynamic linker as ELF interpreter, whose ld.so.cache cannot see
+             /usr/lib64 (the CUDA driver then cannot dlopen libnvidia-ptxjitcompiler.so.1,
+             error 221) and the binary only runs where brew glibc exists. On machines
+             where /usr/bin/gcc is a brew symlink, override:
+             -Djavacpp.platform.compiler=/usr/bin/x86_64-redhat-linux-gcc -->
+        <profile>
+            <id>native-linux-toolchain</id>
+            <activation>
+                <os>
+                    <name>Linux</name>
+                </os>
+            </activation>
+            <properties>
+                <javacpp.platform.compiler>/usr/bin/gcc</javacpp.platform.compiler>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <configuration>
+                            <buildArgs combine.children="append">
+                                <buildArg>-H:CCompilerPath=${javacpp.platform.compiler}</buildArg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

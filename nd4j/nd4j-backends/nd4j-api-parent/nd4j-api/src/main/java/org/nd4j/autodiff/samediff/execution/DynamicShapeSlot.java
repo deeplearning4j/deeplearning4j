@@ -95,6 +95,13 @@ public class DynamicShapeSlot {
     /** Frozen string arguments. */
     private final String[] sArgs;
 
+    /**
+     * Full shape-info buffers declared by zero-input ops at plan compilation time.
+     * Empty for slots whose output shapes must be inferred from runtime inputs.
+     */
+    @Builder.Default
+    private final long[][] staticOutputShapeInfos = new long[0][];
+
     /** Per-slot cached shape key for fast comparison. 0 = not yet computed. */
     private long cachedShapeKey;
 
@@ -147,6 +154,8 @@ public class DynamicShapeSlot {
      * 15 = LegacyBroadcastOp
      * 16 = LegacyBroadcastBoolOp
      * 17 = LegacyRandomOp
+     * 18 = LegacyPairwiseTransformBoolOp
+     * 19 = LegacyTransformAnyOp
      */
     @Builder.Default
     private int legacyOpType = 0;
@@ -175,6 +184,7 @@ public class DynamicShapeSlot {
     public static final int LEGACY_BROADCAST_BOOL = 16;
     public static final int LEGACY_RANDOM = 17;
     public static final int LEGACY_PAIRWISE_BOOL = 18;
+    public static final int LEGACY_TRANSFORM_ANY = 19;
 
     /** Control flow type constants. */
     public static final byte CF_NONE = 0;

@@ -37,6 +37,7 @@ CUSTOM_OP_IMPL(compare_and_bitpack, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(compare_and_bitpack) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedInputTypes(1, DataType::ANY)

@@ -180,8 +180,8 @@ DECLARE_SHAPE_FN(lora_matmul) {
 }
 
 DECLARE_TYPES(lora_matmul) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
-  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(lora_matmul_bp, 5, 4, false, 0, 0) {
@@ -341,8 +341,8 @@ DECLARE_SHAPE_FN(lora_matmul_bp) {
 }
 
 DECLARE_TYPES(lora_matmul_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
-  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

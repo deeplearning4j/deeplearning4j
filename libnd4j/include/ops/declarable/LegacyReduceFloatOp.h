@@ -26,6 +26,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT LegacyReduceFloatOp : public LegacyOp {
  protected:
   Status validateAndExecute(sd::graph::Context& block) override;
@@ -37,6 +38,7 @@ class SD_LIB_EXPORT LegacyReduceFloatOp : public LegacyOp {
   ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
   LegacyOp* clone() override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

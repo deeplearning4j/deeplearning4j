@@ -323,7 +323,7 @@ static void deconv3dBackPropMKLDNN(NDArray* input, NDArray* weights, NDArray* gr
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv3d, ENGINE_CPU) {
+PLATFORM_IMPL(deconv3d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
   auto weights = INPUT_VARIABLE(1);  // [kD, kH, kW, oC, iC], [iC, oC, kD, kH, kW], [iC, kD, kH, kW, oC]
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
@@ -382,7 +382,7 @@ PLATFORM_IMPL(deconv3d, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(deconv3d, ENGINE_CPU) {
+PLATFORM_CHECK(deconv3d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto weights = INPUT_VARIABLE(1);
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -419,7 +419,7 @@ PLATFORM_CHECK(deconv3d, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv3d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(deconv3d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
   auto weights = INPUT_VARIABLE(1);  // [kD, kH, kW, oC, iC], [iC, oC, kD, kH, kW], [iC, kD, kH, kW, oC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
@@ -496,7 +496,7 @@ PLATFORM_IMPL(deconv3d_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(deconv3d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(deconv3d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);    // [bS, iD, iH, iW, iC] (NHWC) or [bS, iD, iC, iH, iW] (NCDHW)
   auto weights = INPUT_VARIABLE(1);  // [kD, kH, kW, oC, iC], [iC, oC, kD, kH, kW], [iC, kD, kH, kW, oC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC]

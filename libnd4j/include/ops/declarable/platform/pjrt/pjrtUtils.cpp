@@ -21,9 +21,12 @@
 #include <mutex>
 #include <sstream>
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
 // Utility function implementations
@@ -473,6 +476,7 @@ void HLOExecutableCache::clear() {
 
 #endif  // HAVE_PJRT
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

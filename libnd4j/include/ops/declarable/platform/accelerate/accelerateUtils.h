@@ -34,9 +34,13 @@
 #include <Accelerate/Accelerate.h>
 #endif
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+// No file-level SD_NS wrap: DECLARE_PLATFORM opens it per declaration
+// (platform_boilerplate.h); wrapping the list again nests SD_NS in itself.
 
 /**
  * Platform helper declarations for Apple Accelerate framework
@@ -221,6 +225,7 @@ DECLARE_PLATFORM(batched_gemm, ENGINE_CPU);
 
 }  // namespace platforms
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 namespace accelerateUtils {
 
 /**
@@ -273,6 +278,7 @@ void checkAccelerateRequirements(Requirements& reqs, sd::graph::Context& block,
 bool canUseAccelerateBlas(const NDArray& a, const NDArray* b = nullptr, const NDArray* c = nullptr);
 
 }  // namespace accelerateUtils
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

@@ -21,9 +21,7 @@
 //
 #include "../TadPack.h"
 
-#include <graph/gpu/DspCudaDispatch.h>
 #include <helpers/shape.h>
-#include <system/Environment.h>
 #include <sstream>
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -31,11 +29,13 @@
 #endif
 
 namespace sd {
-TadPack::TadPack( ConstantShapeBuffer *shapes,
-                  ConstantOffsetsBuffer *offets, LongType numTads,
-                 LongType* dimensions, LongType dimLength)
+TadPack::TadPack(ConstantShapeBuffer *shapes,
+                 ConstantOffsetsBuffer *offets, LongType numTads,
+                 LongType *dimensions, LongType dimLength,
+                 TadShapeOwnership shapeOwnership)
     : _tadShape(shapes),
-      _tadOffsets(offets) {
+      _tadOffsets(offets),
+      _shapeOwnership(shapeOwnership) {
   _numTads = numTads;
   _dimensionsLength = dimLength;
   if(dimensions != nullptr) {
@@ -99,20 +99,10 @@ TadPack::~TadPack() {
     _tadOffsets = nullptr;
   }
 
-  // Handle _tadShape cleanup based on platform:
-  // - CUDA: TadCalculator creates NEW (non-cached) shape buffers via CudaShapeBufferCreator;
-  //   TadPack owns them and must delete (not release()) them.
-  // - CPU: Shape buffers come from ConstantShapeHelper cache via bufferForShapeInfo(), which
-  //   calls addRef() for the TadCalculator caller. TadPack takes ownership of that caller-ref
-  //   (TadCalculator transfers it). The TadPack destructor must release() that ref so the
-  //   CSB refcount stays balanced; NOT deleting (since the trie also holds a ref and will
-  //   outlive this TadPack). Previously this release() was missing → permanent refcount leak.
   if (_tadShape != nullptr) {
-    if (sd::graph::dspIsCudaBuild()) {
-      // CUDA: non-cached CSB, TadPack is sole owner — delete directly.
+    if (_shapeOwnership == TadShapeOwnership::Owned) {
       delete _tadShape;
     } else {
-      // CPU: cached CSB from ConstantShapeHelper — release the TadCalculator's caller-ref.
       _tadShape->release();
     }
     _tadShape = nullptr;
@@ -135,13 +125,9 @@ LongType* TadPack::specialOffsets() { return _tadOffsets->special(); }
 
 LongType TadPack::numberOfTads() const { return _numTads; }
 
-LongType* TadPack::platformShapeInfo() {
-  return Environment::getInstance().isCPU() ? primaryShapeInfo() : specialShapeInfo();
-}
+LongType* TadPack::platformShapeInfo() { return _tadShape->platform(); }
 
-LongType* TadPack::platformOffsets() {
-  return Environment::getInstance().isCPU() ? primaryOffsets() : specialOffsets();
-}
+LongType* TadPack::platformOffsets() { return _tadOffsets->platform(); }
 
 
 void TadPack::print(const char* msg) {

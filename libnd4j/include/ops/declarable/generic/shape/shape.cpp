@@ -99,10 +99,12 @@ DECLARE_SHAPE_FN(set_shape) {
 }
 
 DECLARE_TYPES(set_shape) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, INT64)
       ->setAllowedOutputTypes({ANY});
+  getOpDescriptor()->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }
 
 

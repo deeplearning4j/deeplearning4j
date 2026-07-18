@@ -127,7 +127,7 @@ static void deconv2TFdBpMKLDNN(NDArray* weights, NDArray* gradO, NDArray* gradI,
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {
+PLATFORM_IMPL(deconv2d_tf, ENGINE_ONEDNN) {
   auto gradO = INPUT_VARIABLE(2);       // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
   auto weights = INPUT_VARIABLE(1);     // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto gradIShape = INPUT_VARIABLE(0);  // [4] - shape of input of conv2d (that is shape of gradI)
@@ -208,7 +208,7 @@ PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(deconv2d_tf, ENGINE_CPU) {
+PLATFORM_CHECK(deconv2d_tf, ENGINE_ONEDNN) {
   auto weights = INPUT_VARIABLE(1);  // [kH, kW, iC, oC] always
   auto gradO = INPUT_VARIABLE(2);    // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
   auto gradI = OUTPUT_VARIABLE(0);   // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW), gradI

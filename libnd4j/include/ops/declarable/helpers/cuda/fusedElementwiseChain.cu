@@ -26,12 +26,27 @@
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <array/NDArray.h>
 #include <helpers/DebugHelper.h>
-#include <helpers/PointersManager.h>
 #include <math/templatemath.h>
+
+#include <type_traits>
+#include <vector>
 
 namespace sd {
 namespace ops {
 namespace helpers {
+
+namespace {
+constexpr int kMaxFusedOps = 8;
+
+struct FusedOpPack {
+    FusedElemOp values[kMaxFusedOps];
+};
+
+static_assert(std::is_trivially_copyable<FusedOpPack>::value,
+              "FusedOpPack must remain safe to pass as a CUDA kernel argument");
+static_assert(sizeof(FusedOpPack) == kMaxFusedOps * sizeof(FusedElemOp),
+              "FusedOpPack must not contain padding");
+}  // namespace
 
 template <typename T>
 struct FusedChainAccType {
@@ -135,15 +150,15 @@ SD_DEVICE T deviceApplyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T
  * chain length, vs O(N) for N separate kernels.
  *
  * Max 8 secondary input pointers are passed via constant args to avoid
- * extra global memory loads. FusedElemOp codes are stored in shared memory
- * for fast access (they fit in one cache line).
+ * extra global memory loads. FusedElemOp codes arrive by value in the kernel
+ * parameter buffer and are staged in shared memory for fast access.
  */
 template <typename T>
 SD_KERNEL void fusedElemKernel(
         const T* __restrict__ input,
         T* __restrict__ output,
         sd::LongType length,
-        const FusedElemOp* __restrict__ ops,
+        FusedOpPack opPack,
         int numOps,
         const T* __restrict__ sec0, sd::LongType secLen0,
         const T* __restrict__ sec1, sd::LongType secLen1,
@@ -156,15 +171,15 @@ SD_KERNEL void fusedElemKernel(
         T clipMinVal, T clipMaxVal) {
 
     // Load op codes into shared memory for fast access
-    __shared__ FusedElemOp sharedOps[8];
-    if (threadIdx.x < numOps && threadIdx.x < 8) {
-        sharedOps[threadIdx.x] = ops[threadIdx.x];
+    __shared__ FusedElemOp sharedOps[kMaxFusedOps];
+    if (threadIdx.x < numOps && threadIdx.x < kMaxFusedOps) {
+        sharedOps[threadIdx.x] = opPack.values[threadIdx.x];
     }
     __syncthreads();
 
     // Store secondary input pointers and lengths in arrays for indexed access
-    const T* secPtrs[8] = {sec0, sec1, sec2, sec3, sec4, sec5, sec6, sec7};
-    sd::LongType secLens[8] = {secLen0, secLen1, secLen2, secLen3, secLen4, secLen5, secLen6, secLen7};
+    const T* secPtrs[kMaxFusedOps] = {sec0, sec1, sec2, sec3, sec4, sec5, sec6, sec7};
+    sd::LongType secLens[kMaxFusedOps] = {secLen0, secLen1, secLen2, secLen3, secLen4, secLen5, secLen6, secLen7};
 
     auto idx = static_cast<sd::LongType>(blockIdx.x) * blockDim.x + threadIdx.x;
     if (idx >= length) return;
@@ -196,12 +211,12 @@ static void fusedChainCudaImpl(
 
     auto stream = context->getCudaStream();
 
-    // Prepare secondary input pointers (up to 8)
-    const T* secPtrs[8] = {nullptr};
-    sd::LongType secLens[8] = {0};
+    // Prepare secondary input pointers (up to kMaxFusedOps)
+    const T* secPtrs[kMaxFusedOps] = {nullptr};
+    sd::LongType secLens[kMaxFusedOps] = {0};
 
     if (secondaryInputs != nullptr) {
-        for (int i = 0; i < numOps && i < 8; i++) {
+        for (int i = 0; i < numOps && i < kMaxFusedOps; i++) {
             if (secondaryInputs[i] != nullptr) {
                 secPtrs[i] = reinterpret_cast<const T*>(secondaryInputs[i]->specialBuffer());
                 secLens[i] = secondaryInputs[i]->lengthOf();
@@ -212,11 +227,13 @@ static void fusedChainCudaImpl(
     T clipMinVal = clipMin ? static_cast<T>(*clipMin) : T(0);
     T clipMaxVal = clipMax ? static_cast<T>(*clipMax) : T(0);
 
-    // Copy op codes to device via PointersManager (uses capture workspace during graph capture,
-    // eliminating MemAlloc/MemFree graph nodes that cudaMallocAsync would create)
-    PointersManager manager(context, "fusedElemChain");
-    auto deviceOps = reinterpret_cast<const FusedElemOp*>(
-        manager.replicatePointer(ops, numOps * sizeof(FusedElemOp)));
+    // Kernel arguments are copied into the launch parameter buffer. Passing this
+    // fixed-size pack by value avoids transient device allocations and H2D copies,
+    // and CUDA graph capture retains the opcode bytes with the kernel node.
+    FusedOpPack opPack{};
+    for (int i = 0; i < numOps; ++i) {
+        opPack.values[i] = ops[i];
+    }
 
     int blockSize = 256;
     int gridSize = (length + blockSize - 1) / blockSize;
@@ -224,14 +241,12 @@ static void fusedChainCudaImpl(
     fusedElemKernel<T><<<gridSize, blockSize, 0, *stream>>>(
             reinterpret_cast<const T*>(input->specialBuffer()),
             reinterpret_cast<T*>(output->specialBuffer()),
-            length, deviceOps, numOps,
+            length, opPack, numOps,
             secPtrs[0], secLens[0], secPtrs[1], secLens[1],
             secPtrs[2], secLens[2], secPtrs[3], secLens[3],
             secPtrs[4], secLens[4], secPtrs[5], secLens[5],
             secPtrs[6], secLens[6], secPtrs[7], secLens[7],
             clipMinVal, clipMaxVal);
-
-    // PointersManager frees device memory on destruction (no-op for capture workspace)
 }
 
 void fusedElementwiseChain(
@@ -248,10 +263,21 @@ void fusedElementwiseChain(
     // Hard cap: the fused kernel materializes at most 8 ops (the DSP caller caps chains at
     // MAX_FUSED_CHAIN=8). A longer chain must be split by the caller — fail loudly rather than
     // silently dropping the tail ops and returning a wrong result.
-    if (numOps > 8) {
+    if (numOps > kMaxFusedOps) {
         THROW_EXCEPTION("fusedElementwiseChain: chain length exceeds the fused-kernel maximum of "
                         "8 ops; the caller must split the chain into multiple fused calls.");
     }
+
+    std::vector<NDArray*> inputs;
+    inputs.reserve(static_cast<size_t>(numOps) + 1);
+    inputs.push_back(input);
+    if (secondaryInputs != nullptr) {
+        for (int i = 0; i < numOps; i++) {
+            if (secondaryInputs[i] != nullptr) inputs.push_back(secondaryInputs[i]);
+        }
+    }
+    std::vector<NDArray*> outputs{output};
+    NDArray::prepareSpecialUse(outputs, inputs);
 
     auto xType = input->dataType();
 
@@ -268,6 +294,8 @@ void fusedElementwiseChain(
         // Unsupported dtype: producing no output would be a silent wrong result — fail loudly.
         THROW_EXCEPTION("fusedElementwiseChain: unsupported input dtype for fused element-wise chain");
     }
+
+    NDArray::registerSpecialUse(outputs, inputs);
 }
 
 }  // namespace helpers

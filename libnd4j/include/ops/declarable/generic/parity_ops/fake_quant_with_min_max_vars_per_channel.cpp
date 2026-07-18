@@ -67,6 +67,7 @@ CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars_per_channel, 3, 1, true, 0, 0)
 }
 
 DECLARE_TYPES(fake_quant_with_min_max_vars_per_channel) {
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS})->setAllowedInputTypes({ALL_INTS, ALL_FLOATS});
 }
 

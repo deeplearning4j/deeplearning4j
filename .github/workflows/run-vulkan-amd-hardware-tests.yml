@@ -1,0 +1,115 @@
+name: AMD Vulkan Hardware Replay Tests
+
+# Vulkan kernels and native artifacts remain vendor-neutral. This lane verifies the
+# linux-x86_64 artifact against a real AMD ICD and physical device.
+on:
+  workflow_dispatch:
+    inputs:
+      buildThreads:
+        description: Native build parallelism
+        required: false
+        default: '12'
+      testFilter:
+        description: Surefire filter for the AMD hardware lane
+        required: false
+        default: VulkanBackendSmokeTest,VulkanDeviceManagementTest,VulkanDeviceContextTest,VulkanMemoryPoolTest,VulkanDataBufferSyncTest,VulkanDataBufferFactoryTest,VulkanMultiDeviceTest,VulkanReplayEquivalenceTest
+
+env:
+  MAVEN_OPTS: -Xmx4g
+
+jobs:
+  amd-vulkan-hardware:
+    runs-on: [self-hosted, linux, x64, amd-gpu, vulkan]
+    timeout-minutes: 240
+    name: linux-x86_64 Vulkan on AMD hardware
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: temurin
+          cache: maven
+
+      - name: Require an AMD Vulkan device
+        shell: bash
+        run: |
+          set -o pipefail
+          if ! command -v vulkaninfo >/dev/null 2>&1; then
+            echo '::error::vulkaninfo is required on the AMD Vulkan runner.'
+            exit 1
+          fi
+          vulkaninfo --summary 2>&1 | tee amd-vulkaninfo.log
+          if ! grep -Eiq 'vendorID[[:space:]]*=[[:space:]]*0x1002' amd-vulkaninfo.log; then
+            echo '::error::This lane requires an AMD Vulkan physical device (PCI vendor 0x1002).'
+            exit 1
+          fi
+
+      - name: Build the vendor-neutral Vulkan backend
+        shell: bash
+        run: |
+          set -o pipefail
+          mvn -Pvulkan \
+            -Dlibnd4j.vulkan \
+            -Dlibnd4j.triton=ON \
+            -Dlibnd4j.mlir=ON \
+            -Dlibnd4j.buildthreads=${{ inputs.buildThreads }} \
+            -Dlibnd4j.log=libnd4j-build-vulkan-amd.log \
+            -Djavacpp.platform=linux-x86_64 \
+            -pl libnd4j,:nd4j-vulkan-preset,:nd4j-vulkan \
+            install -DskipTests --no-transfer-progress --batch-mode \
+            2>&1 | tee amd-vulkan-build.log
+
+      - name: Run real AMD Vulkan device and replay tests
+        working-directory: platform-tests
+        shell: bash
+        run: |
+          set -o pipefail
+          mvn test \
+            -Ptest-vulkan \
+            -Dtest=${{ inputs.testFilter }} \
+            -Djavacpp.platform=linux-x86_64 \
+            -Dplatform.classifier=linux-x86_64 \
+            -Dnd4j.dsp.graphExecutionMode=VULKAN \
+            -Dnd4j.dsp.diagnostics=GRAPH_REPLAY,MEMORY \
+            -Dnd4j.dsp.diagnostics.level=full \
+            -Dnd4j.vulkan.test.requireHardware=true \
+            -Dnd4j.vulkan.test.requireTriton=true \
+            '-Dnd4j.vulkan.test.deviceNameRegex=(?i)(amd|radeon)' \
+            -Dtest.heap.size=4g \
+            -Dtest.offheap.size=8g \
+            -DskipTestResourceEnforcement=true \
+            --no-transfer-progress --batch-mode \
+            2>&1 | tee amd-vulkan-tests.log
+
+          if ! grep -Eq 'VulkanDeviceManager: initialized with [1-9][0-9]* device' amd-vulkan-tests.log; then
+            echo '::error::ND4J did not initialize a compute-capable Vulkan device.'
+            exit 1
+          fi
+          if ! grep -Eiq 'VulkanDeviceManager: device\[[0-9]+\].*vendor=0x1002' amd-vulkan-tests.log; then
+            echo '::error::ND4J did not enumerate the AMD Vulkan adapter.'
+            exit 1
+          fi
+          if ! grep -Eiq "Selected Vulkan replay device: id=[0-9]+ name='.*(amd|radeon)" amd-vulkan-tests.log; then
+            echo '::error::The replay test did not select the AMD adapter through setDevice().'
+            exit 1
+          fi
+          if ! grep -Fq 'Real Vulkan replay proven:' amd-vulkan-tests.log; then
+            echo '::error::The AMD lane did not prove a real compiled Vulkan replay dispatch.'
+            exit 1
+          fi
+
+      - name: Upload AMD Vulkan logs and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: amd-vulkan-hardware
+          path: |
+            amd-vulkaninfo.log
+            amd-vulkan-build.log
+            libnd4j/blasbuild/vulkan/**/*.log
+            platform-tests/amd-vulkan-tests.log
+            platform-tests/target/surefire-reports/
+          retention-days: 14

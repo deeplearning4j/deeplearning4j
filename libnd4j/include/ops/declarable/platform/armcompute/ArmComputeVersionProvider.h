@@ -31,9 +31,12 @@
 #include <arm_compute/core/Version.h>
 #endif
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 namespace armcompute {
 
 // ============================================================================
@@ -288,6 +291,7 @@ class SD_LIB_EXPORT ArmComputeVersionProvider {
 };
 
 }  // namespace armcompute
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

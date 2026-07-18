@@ -88,6 +88,7 @@ CUSTOM_OP_IMPL(turbo_quant_attention, 7, 1, false, 1, 2) {
 }
 
 DECLARE_TYPES(turbo_quant_attention) {
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})         // Q
       ->setAllowedInputTypes(1, {ALL_FLOATS})         // K_mse
@@ -96,8 +97,7 @@ DECLARE_TYPES(turbo_quant_attention) {
       ->setAllowedInputTypes(4, {ALL_FLOATS})         // QJL_matrix
       ->setAllowedInputTypes(5, {ALL_FLOATS})         // V
       ->setAllowedInputTypes(6, {ALL_FLOATS})         // attention_mask
-      ->setAllowedOutputTypes(0, {ALL_FLOATS})
-      ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(turbo_quant_attention) {

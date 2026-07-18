@@ -88,6 +88,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- GGUF/GGML model loading — test-scope only; keeps samediff-llm core decoupled -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-ggml</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>

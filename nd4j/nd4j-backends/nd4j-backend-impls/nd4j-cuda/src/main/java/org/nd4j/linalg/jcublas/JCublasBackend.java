@@ -25,7 +25,6 @@ import org.bytedeco.javacpp.Loader;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.device.CudaDeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
-import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryManager;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -181,49 +180,42 @@ public class JCublasBackend extends Nd4jBackend {
         List<DeviceDescriptor> devices = new ArrayList<>();
 
         try {
-            int nGPUs = Nd4jEnvironment.getEnvironment().getNumGpus();
-            Properties props = Nd4j.getExecutioner().getEnvironmentInformation();
-            List<Map<String, Object>> devicesList = (List<Map<String, Object>>) props.get(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY);
-
-            // Determine which GPU should be the default (largest total memory)
-            int bestGpu = DeviceMemoryManager.getInstance().selectBestGpu();
+            // Backend discovery must use CUDA's own NativeOps authority instead of
+            // whichever backend is currently primary in the process.
+            Nd4jCuda nativeOps = new Nd4jCuda();
+            nativeOps.initializeDevicesAndFunctions();
+            int nGPUs = nativeOps.getAvailableDevices();
+            long[] totalMemory = new long[nGPUs];
+            int bestGpu = 0;
+            for (int i = 0; i < nGPUs; i++) {
+                totalMemory[i] = nativeOps.getDeviceTotalMemory(i);
+                if (totalMemory[i] > totalMemory[bestGpu]) {
+                    bestGpu = i;
+                }
+            }
 
             for (int i = 0; i < nGPUs; i++) {
-                Map<String, Object> dev = devicesList.get(i);
-                String name = (String) dev.get(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY);
-                int major = ((Number) dev.get(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY)).intValue();
-                int minor = ((Number) dev.get(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY)).intValue();
-                long totalMem = ((Number) dev.get(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY)).longValue();
-
-                // Get SM count if available
-                int smCount = 0;
-                Object smCountObj = dev.get("cuda.smCount");
-                if (smCountObj instanceof Number) {
-                    smCount = ((Number) smCountObj).intValue();
-                } else {
-                    // Estimate SM count based on compute capability
-                    smCount = estimateSmCount(major, minor, totalMem);
-                }
-
-                // Estimate memory bandwidth based on device class
+                String name = nativeOps.getDeviceName(i);
+                int major = nativeOps.getDeviceMajor(i);
+                int minor = nativeOps.getDeviceMinor(i);
+                long totalMem = totalMemory[i];
+                int smCount = estimateSmCount(major, minor, totalMem);
                 long memoryBandwidth = estimateMemoryBandwidth(major, minor, totalMem);
 
-                CudaDeviceDescriptor descriptor = new CudaDeviceDescriptor(
+                devices.add(new CudaDeviceDescriptor(
                         getBackendId(),
                         i,
                         name,
-                        i == bestGpu,  // GPU with most total memory is default
+                        i == bestGpu,
                         major,
                         minor,
                         smCount,
                         totalMem,
                         memoryBandwidth
-                );
-
-                devices.add(descriptor);
+                ));
             }
         } catch (Exception e) {
-            log.warn("Failed to discover CUDA devices", e);
+            log.warn("Failed to discover CUDA devices from CUDA NativeOps", e);
         }
 
         return devices;

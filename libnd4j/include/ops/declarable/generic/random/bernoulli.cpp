@@ -49,7 +49,10 @@ DECLARE_SHAPE_FN(random_bernoulli) {
 }
 
 DECLARE_TYPES(random_bernoulli) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_STATEFUL);
 }
 }  // namespace ops
 }  // namespace sd

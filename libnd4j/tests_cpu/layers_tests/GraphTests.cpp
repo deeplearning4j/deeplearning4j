@@ -24,9 +24,15 @@
 #include <graph/Graph.h>
 #include <graph/GraphUtils.h>
 #include <graph/Node.h>
+#include <graph/cpu/FunctionalReplayHandle.h>
 #include <graph/scheme/graph_generated.h>
 #include <graph/scheme/node_generated.h>
+#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/DeclarableOp.h>
+
+#include <cstdint>
+#include <utility>
+#include <vector>
 
 #include <ops/declarable/generic/parity_ops.cpp>
 
@@ -40,6 +46,311 @@ class GraphTests : public NDArrayTests {
   GraphTests() {
   }
 };
+
+namespace {
+
+struct FunctionalReplayTestState {
+  std::vector<int> slots;
+  std::vector<FunctionalReplayCommandType> types;
+  int failSlot = -1;
+};
+
+Status executeRecordedCommand(
+    void* userData, const FunctionalReplayCommand& command) {
+  auto* state = static_cast<FunctionalReplayTestState*>(userData);
+  state->slots.push_back(command.slotIndex);
+  state->types.push_back(command.type);
+  return command.slotIndex == state->failSlot
+             ? Status::KERNEL_FAILURE
+             : Status::OK;
+}
+
+FunctionalReplayExecutionContext contextFor(
+    FunctionalReplayTestState* state) {
+  FunctionalReplayExecutionContext context;
+  context.userData = state;
+  context.execute = executeRecordedCommand;
+  return context;
+}
+
+FunctionalReplayPointerBinding pointerBinding(
+    FunctionalReplayPointerRole role, int index, int sourceType,
+    bool requiredAtEntry, uintptr_t identitySeed, LongType offset = 0,
+    bool live = true) {
+  FunctionalReplayPointerBinding binding;
+  binding.role = role;
+  binding.index = index;
+  binding.sourceType = sourceType;
+  binding.requiredAtEntry = requiredAtEntry;
+  binding.array = reinterpret_cast<const void*>(identitySeed + 0x10);
+  binding.dataBuffer = reinterpret_cast<const void*>(identitySeed + 0x20);
+  binding.primaryBuffer = reinterpret_cast<const void*>(identitySeed + 0x30);
+  binding.specialBuffer = reinterpret_cast<const void*>(identitySeed + 0x40);
+  binding.shapeInfo = reinterpret_cast<const void*>(identitySeed + 0x50);
+  binding.offset = offset;
+  binding.length = 4;
+  binding.dataType = 5;
+  binding.live = live;
+  return binding;
+}
+
+}  // namespace
+
+TEST_F(GraphTests, FunctionalReplayExplicitFactoryCreatesFunctionalBackend) {
+  auto handle = GraphReplayFactory::createFunctional();
+
+  ASSERT_NE(nullptr, handle.get());
+  ASSERT_STREQ("Functional", handle->backendName());
+  ASSERT_EQ(ReplayState::EMPTY, handle->getState());
+}
+
+TEST_F(GraphTests, ReplayCapabilityMatrixRequiresBothHandleAndRecorder) {
+  ReplayCapabilityMatrix matrix;
+  matrix.functional = {true, true};
+  matrix.hip = {true, false};
+
+  ASSERT_TRUE(matrix.canCreate(ReplayBackend::HIP));
+  ASSERT_FALSE(matrix.canExecute(ReplayBackend::HIP));
+  ASSERT_FALSE(matrix.hasExecutableHardwareReplay());
+  ASSERT_EQ(ReplayBackend::FUNCTIONAL, matrix.preferredExecutable());
+
+  matrix.hip.recorderAvailable = true;
+  ASSERT_TRUE(matrix.canExecute(ReplayBackend::HIP));
+  ASSERT_TRUE(matrix.hasExecutableHardwareReplay());
+  ASSERT_EQ(ReplayBackend::HIP, matrix.preferredExecutable());
+}
+
+TEST_F(GraphTests, ReplayCapabilityMatrixUsesStablePortablePriority) {
+  ReplayCapabilityMatrix matrix;
+  matrix.functional = {true, true};
+  matrix.metal = {true, true};
+  matrix.vulkan = {true, true};
+  matrix.cuda = {true, true};
+
+  ASSERT_EQ(ReplayBackend::CUDA, matrix.preferredExecutable());
+  matrix.cuda.recorderAvailable = false;
+  ASSERT_EQ(ReplayBackend::VULKAN, matrix.preferredExecutable());
+  matrix.vulkan.recorderAvailable = false;
+  ASSERT_EQ(ReplayBackend::METAL, matrix.preferredExecutable());
+  matrix.metal.recorderAvailable = false;
+  ASSERT_EQ(ReplayBackend::FUNCTIONAL, matrix.preferredExecutable());
+}
+
+TEST_F(GraphTests, CurrentReplayFactoryNeverSelectsHandleOnlyScaffolds) {
+  auto matrix = GraphReplayFactory::capabilities();
+  auto preferred = matrix.preferredExecutable();
+
+  ASSERT_TRUE(preferred == ReplayBackend::NONE ||
+              matrix.canExecute(preferred));
+  if (matrix.hip.handleAvailable && !matrix.hip.recorderAvailable) {
+    ASSERT_NE(ReplayBackend::HIP, preferred);
+  }
+  if (matrix.levelZero.handleAvailable &&
+      !matrix.levelZero.recorderAvailable) {
+    ASSERT_NE(ReplayBackend::LEVEL_ZERO, preferred);
+  }
+  if (matrix.metal.handleAvailable && !matrix.metal.recorderAvailable) {
+    ASSERT_NE(ReplayBackend::METAL, preferred);
+  }
+  if (matrix.tpu.handleAvailable && !matrix.tpu.recorderAvailable) {
+    ASSERT_NE(ReplayBackend::TPU, preferred);
+  }
+  if (matrix.hexagon.handleAvailable && !matrix.hexagon.recorderAvailable) {
+    ASSERT_NE(ReplayBackend::HEXAGON, preferred);
+  }
+}
+
+TEST_F(GraphTests, FunctionalReplayRecordsAndExecutesSemanticProgramInOrder) {
+  FunctionalReplayHandle handle;
+  sd::ops::identity executeOp;
+  sd::ops::identity identityOp;
+  sd::ops::identity batchedOp;
+
+  ASSERT_TRUE(handle.beginCapture(nullptr));
+  ASSERT_TRUE(handle.recordOp(&executeOp, 2));
+  ASSERT_TRUE(handle.recordIdentity(&identityOp, 3));
+  ASSERT_TRUE(handle.recordBatchedGemm(&batchedOp, 7, 4));
+  ASSERT_TRUE(handle.endCapture(nullptr));
+  ASSERT_TRUE(handle.finalize());
+  ASSERT_TRUE(handle.hasReplayProgram());
+  ASSERT_FALSE(handle.hasPointerSnapshot());
+
+  FunctionalReplayTestState state;
+  auto context = contextFor(&state);
+  GraphReplayHandle* genericHandle = &handle;
+  ASSERT_FALSE(genericHandle->replay(nullptr));
+  ASSERT_EQ(Status::OK, handle.replayWithContext(context));
+
+  ASSERT_EQ((std::vector<int>{2, 3, 7}), state.slots);
+  ASSERT_EQ(3, static_cast<int>(state.types.size()));
+  ASSERT_EQ(FunctionalReplayCommandType::EXECUTE_SLOT, state.types[0]);
+  ASSERT_EQ(FunctionalReplayCommandType::FORWARD_IDENTITY, state.types[1]);
+  ASSERT_EQ(FunctionalReplayCommandType::EXECUTE_BATCHED_GEMM, state.types[2]);
+
+  auto stats = handle.getStatistics();
+  ASSERT_EQ(3, stats.numOperations);
+  ASSERT_EQ(1, stats.replayCount);
+  ASSERT_GE(stats.captureTimeMs, 0.0);
+  ASSERT_GE(stats.lastReplayTimeMs, 0.0);
+}
+
+TEST_F(GraphTests, FunctionalReplayRejectsInvalidRecordingWithoutPublishingIt) {
+  FunctionalReplayHandle handle;
+  sd::ops::identity firstOp;
+  sd::ops::identity duplicateOp;
+
+  ASSERT_TRUE(handle.beginCapture(nullptr));
+  ASSERT_TRUE(handle.recordOp(&firstOp, 4));
+  ASSERT_FALSE(handle.recordOp(&duplicateOp, 4));
+  ASSERT_EQ(ReplayState::ERRORED, handle.getState());
+  ASSERT_FALSE(handle.endCapture(nullptr));
+  ASSERT_FALSE(handle.hasReplayProgram());
+  ASSERT_EQ(0, handle.getStatistics().numOperations);
+
+  handle.abortCapture();
+  ASSERT_EQ(ReplayState::EMPTY, handle.getState());
+}
+
+TEST_F(GraphTests, FunctionalReplayFailedReplayDoesNotCommitStatistics) {
+  FunctionalReplayHandle handle;
+  sd::ops::identity firstOp;
+  sd::ops::identity failingOp;
+
+  ASSERT_TRUE(handle.beginCapture(nullptr));
+  ASSERT_TRUE(handle.recordOp(&firstOp, 1));
+  ASSERT_TRUE(handle.recordOp(&failingOp, 5));
+  ASSERT_TRUE(handle.endCapture(nullptr));
+  ASSERT_TRUE(handle.finalize());
+
+  FunctionalReplayTestState state;
+  state.failSlot = 5;
+  auto context = contextFor(&state);
+  ASSERT_EQ(Status::KERNEL_FAILURE, handle.replayWithContext(context));
+  ASSERT_EQ((std::vector<int>{1, 5}), state.slots);
+  ASSERT_EQ(0, handle.getStatistics().replayCount);
+  ASSERT_EQ(ReplayState::READY, handle.getState());
+}
+
+TEST_F(GraphTests, FunctionalReplayAbortRestoresPreviouslyPublishedProgram) {
+  FunctionalReplayHandle handle;
+  sd::ops::identity publishedOp;
+  sd::ops::identity replacementOp;
+  sd::ops::identity outOfOrderOp;
+
+  ASSERT_TRUE(handle.beginCapture(nullptr));
+  ASSERT_TRUE(handle.recordOp(&publishedOp, 1));
+  ASSERT_TRUE(handle.endCapture(nullptr));
+  ASSERT_TRUE(handle.finalize());
+  double publishedCaptureTime = handle.getStatistics().captureTimeMs;
+
+  ASSERT_TRUE(handle.beginCapture(nullptr));
+  ASSERT_TRUE(handle.recordOp(&replacementOp, 8));
+  ASSERT_FALSE(handle.recordOp(&outOfOrderOp, 7));
+  handle.abortCapture();
+
+  ASSERT_EQ(ReplayState::READY, handle.getState());
+  ASSERT_EQ(publishedCaptureTime, handle.getStatistics().captureTimeMs);
+  FunctionalReplayTestState state;
+  auto context = contextFor(&state);
+  ASSERT_EQ(Status::OK, handle.replayWithContext(context));
+  ASSERT_EQ((std::vector<int>{1}), state.slots);
+}
+
+TEST_F(GraphTests, FunctionalReplayFinalizedZeroCommandProgramIsReplayable) {
+  FunctionalReplayHandle handle;
+
+  ASSERT_TRUE(handle.beginCapture(nullptr));
+  ASSERT_TRUE(handle.endCapture(nullptr));
+  ASSERT_TRUE(handle.finalize());
+  ASSERT_TRUE(handle.hasReplayProgram());
+  ASSERT_TRUE(handle.getProgram().empty());
+
+  FunctionalReplayExecutionContext context;
+  ASSERT_EQ(Status::OK, handle.replayWithContext(context));
+  ASSERT_EQ(1, handle.getStatistics().replayCount);
+}
+
+TEST_F(GraphTests, FunctionalReplayPointerTrackerAcceptsCompleteLateBoundChurn) {
+  FunctionalReplayPointerTracker tracker;
+  std::vector<FunctionalReplayPointerBinding> captured = {
+      pointerBinding(FunctionalReplayPointerRole::EXTERNAL_INPUT, 0, 2, true, 0x100),
+      pointerBinding(FunctionalReplayPointerRole::CROSS_SEGMENT_INPUT, 5, 0, true, 0x200),
+      pointerBinding(FunctionalReplayPointerRole::SEGMENT_OUTPUT, 6, 0, false, 0x300),
+      pointerBinding(FunctionalReplayPointerRole::SEGMENT_OUTPUT, 9, 0, false, 0x400)};
+
+  ASSERT_EQ(Status::OK, tracker.publish(captured));
+  ASSERT_TRUE(tracker.hasSnapshot());
+
+  std::vector<FunctionalReplayPointerBinding> replayed = {
+      pointerBinding(FunctionalReplayPointerRole::EXTERNAL_INPUT, 0, 2, true, 0x500),
+      pointerBinding(FunctionalReplayPointerRole::CROSS_SEGMENT_INPUT, 5, 0, true, 0x600),
+      pointerBinding(FunctionalReplayPointerRole::SEGMENT_OUTPUT, 6, 0, false, 0x700, 2),
+      pointerBinding(FunctionalReplayPointerRole::SEGMENT_OUTPUT, 9, 0, false, 0x800)};
+
+  ASSERT_EQ(Status::OK, tracker.validateEntry(replayed));
+  ASSERT_EQ(Status::OK, tracker.commit(replayed));
+
+  const auto& changes = tracker.lastChanges();
+  ASSERT_EQ(4, changes.bindingCount);
+  ASSERT_EQ(4, changes.changedBindings);
+  ASSERT_EQ(4, changes.arrayChanges);
+  ASSERT_EQ(4, changes.dataBufferChanges);
+  ASSERT_EQ(4, changes.primaryBufferChanges);
+  ASSERT_EQ(4, changes.specialBufferChanges);
+  ASSERT_EQ(4, changes.shapeInfoChanges);
+  ASSERT_EQ(1, changes.offsetChanges);
+  ASSERT_EQ(0, changes.metadataChanges);
+  ASSERT_EQ(0, changes.invalidBindings);
+  ASSERT_EQ(1, tracker.comparisonCount());
+  ASSERT_EQ(4, tracker.totalChangedBindings());
+  ASSERT_NE(tracker.capturedBindings()[0].array,
+            tracker.currentBindings()[0].array);
+
+  ASSERT_EQ(Status::OK, tracker.commit(replayed));
+  ASSERT_EQ(0, tracker.lastChanges().changedBindings);
+  ASSERT_EQ(2, tracker.comparisonCount());
+  ASSERT_EQ(4, tracker.totalChangedBindings());
+}
+
+TEST_F(GraphTests, FunctionalReplayPointerTrackerRejectsInvalidBindingsAndTopologyDrift) {
+  FunctionalReplayPointerTracker tracker;
+  std::vector<FunctionalReplayPointerBinding> captured = {
+      pointerBinding(FunctionalReplayPointerRole::EXTERNAL_INPUT, 0, 2, true, 0x100),
+      pointerBinding(FunctionalReplayPointerRole::CROSS_SEGMENT_INPUT, 1, 0, true, 0x200),
+      pointerBinding(FunctionalReplayPointerRole::SEGMENT_OUTPUT, 2, 0, false, 0x300)};
+
+  ASSERT_EQ(Status::OK, tracker.publish(captured));
+
+  auto staleOutputAtEntry = captured;
+  staleOutputAtEntry[2].live = false;
+  ASSERT_EQ(Status::OK, tracker.validateEntry(staleOutputAtEntry));
+
+  auto missingRequiredInput = captured;
+  missingRequiredInput[0].live = false;
+  ASSERT_EQ(Status::BAD_INPUT, tracker.validateEntry(missingRequiredInput));
+
+  auto topologyDrift = captured;
+  topologyDrift[2].index = 3;
+  ASSERT_EQ(Status::BAD_GRAPH, tracker.validateEntry(topologyDrift));
+
+  auto invalidRoleContract = captured;
+  invalidRoleContract[2].requiredAtEntry = true;
+  ASSERT_EQ(Status::BAD_GRAPH, tracker.validateEntry(invalidRoleContract));
+
+  auto pointerlessLiveInput = captured;
+  pointerlessLiveInput[0].primaryBuffer = nullptr;
+  pointerlessLiveInput[0].specialBuffer = nullptr;
+  ASSERT_EQ(Status::BAD_INPUT, tracker.validateEntry(pointerlessLiveInput));
+
+  auto invalidPostExecutionOutput = captured;
+  invalidPostExecutionOutput[2].live = false;
+  ASSERT_EQ(Status::BAD_INPUT, tracker.commit(invalidPostExecutionOutput));
+  ASSERT_EQ(0, tracker.comparisonCount());
+
+  auto nonCanonical = captured;
+  std::swap(nonCanonical[0], nonCanonical[1]);
+  ASSERT_EQ(Status::BAD_GRAPH, tracker.validateEntry(nonCanonical));
+}
 
 TEST_F(GraphTests, SingleInput1) {
   auto graph = new Graph();

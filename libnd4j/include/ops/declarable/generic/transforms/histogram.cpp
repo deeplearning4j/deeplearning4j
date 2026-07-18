@@ -50,6 +50,7 @@ DECLARE_SHAPE_FN(histogram) {
 
 DECLARE_TYPES(histogram) {
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})->setAllowedOutputTypes({ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 };
 }  // namespace ops
 }  // namespace sd

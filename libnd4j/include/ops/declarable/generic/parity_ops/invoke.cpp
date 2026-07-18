@@ -38,6 +38,7 @@ DECLARE_SHAPE_FN(invoke) {
 }
 
 DECLARE_TYPES(invoke) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(ANY);

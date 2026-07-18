@@ -58,6 +58,7 @@ CUSTOM_OP_IMPL(checkpoint_offload_d2h, 1, 1, false, 0, 2) {
 }
 
 DECLARE_TYPES(checkpoint_offload_d2h) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS, {DataType::BOOL}});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS, {DataType::BOOL}});
 }
@@ -109,6 +110,7 @@ CUSTOM_OP_IMPL(checkpoint_prefetch_h2d, 1, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(checkpoint_prefetch_h2d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS, {DataType::BOOL}});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS, {DataType::BOOL}});
 }

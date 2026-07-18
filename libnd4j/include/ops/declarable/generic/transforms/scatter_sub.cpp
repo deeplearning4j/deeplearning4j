@@ -108,6 +108,7 @@ DECLARE_TYPES(scatter_sub) {
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT);
 }
 }  // namespace ops
 }  // namespace sd

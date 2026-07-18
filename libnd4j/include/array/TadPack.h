@@ -36,6 +36,12 @@
 #endif
 #ifndef __JAVACPP_HACK__
 namespace sd {
+
+enum class TadShapeOwnership : uint8_t {
+  CachedReference,
+  Owned
+};
+
 class SD_LIB_EXPORT TadPack {
  private:
   ConstantShapeBuffer *_tadShape;
@@ -45,6 +51,7 @@ class SD_LIB_EXPORT TadPack {
   LongType* _dimensions = nullptr;
   LongType _dimensionsLength = 0;
   size_t _packHash = 0;  // Cache the hash for quick comparison
+  TadShapeOwnership _shapeOwnership = TadShapeOwnership::CachedReference;
 
 #ifndef  __JAVACPP_HACK__
 #if defined(SD_GCC_FUNCTRACE)
@@ -53,9 +60,10 @@ class SD_LIB_EXPORT TadPack {
 #endif
 
  public:
-  explicit TadPack( ConstantShapeBuffer *shapes,
-                    ConstantOffsetsBuffer *offets, LongType numTads,
-                   LongType* dimensions = nullptr, LongType dimLength = 0);
+  explicit TadPack(ConstantShapeBuffer* shapes,
+                   ConstantOffsetsBuffer* offsets, LongType numTads,
+                   LongType* dimensions = nullptr, LongType dimLength = 0,
+                   TadShapeOwnership shapeOwnership = TadShapeOwnership::CachedReference);
   TadPack() = default;
   ~TadPack();
 

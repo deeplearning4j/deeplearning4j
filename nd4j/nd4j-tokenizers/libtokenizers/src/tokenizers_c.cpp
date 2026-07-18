@@ -1,10 +1,21 @@
 #include "tokenizers_c.h"
+#include "tokenizers_ffi.h"
 #include "tokenizer_wrapper.h"
 #include "model_manager.h"
 #include <cstring>
 #include <memory>
+#include <string>
 #include <thread>
 #include <iostream>
+
+namespace {
+
+struct DecodeStreamState {
+    DecodeStreamHandle* rust_handle = nullptr;
+    std::string chunk;
+};
+
+}  // namespace
 
 // Thread-local error storage
 thread_local TokenizerResult last_error = {TOKENIZER_SUCCESS, nullptr};
@@ -277,6 +288,66 @@ char* decode_ids(OpaqueTokenizer* tokenizer, const uint32_t* ids, size_t num_ids
         set_error(TOKENIZER_ERROR_UNKNOWN, e.what());
         return nullptr;
     }
+}
+
+OpaqueDecodeStream* create_decode_stream(OpaqueTokenizer* tokenizer, bool skip_special_tokens) {
+    if (!tokenizer) {
+        set_error(TOKENIZER_ERROR_INVALID_INPUT, "Tokenizer cannot be null");
+        return nullptr;
+    }
+
+    clear_error();
+    auto* wrapper = reinterpret_cast<tokenizers::TokenizerWrapper*>(tokenizer);
+    auto* rust_handle = ffi_tokenizer_decode_stream_create(
+            reinterpret_cast<const TokenizerHandle*>(wrapper->get_handle()),
+            skip_special_tokens);
+    if (!rust_handle) {
+        const char* error = ffi_tokenizer_get_last_error();
+        set_error(TOKENIZER_ERROR_UNKNOWN,
+                  error ? error : "Failed to create tokenizer decode stream");
+        return nullptr;
+    }
+
+    auto* state = new (std::nothrow) DecodeStreamState();
+    if (!state) {
+        ffi_tokenizer_decode_stream_free(rust_handle);
+        set_error(TOKENIZER_ERROR_MEMORY_ALLOCATION,
+                  "Failed to allocate tokenizer decode stream");
+        return nullptr;
+    }
+    state->rust_handle = rust_handle;
+    return reinterpret_cast<OpaqueDecodeStream*>(state);
+}
+
+const char* decode_stream_step(OpaqueDecodeStream* stream, uint32_t token_id) {
+    if (!stream) {
+        set_error(TOKENIZER_ERROR_INVALID_INPUT, "Decode stream cannot be null");
+        return nullptr;
+    }
+
+    clear_error();
+    auto* state = reinterpret_cast<DecodeStreamState*>(stream);
+    char* raw_chunk = ffi_tokenizer_decode_stream_step(state->rust_handle, token_id);
+    if (!raw_chunk) {
+        const char* error = ffi_tokenizer_get_last_error();
+        set_error(TOKENIZER_ERROR_UNKNOWN,
+                  error ? error : "Failed to decode token stream");
+        return nullptr;
+    }
+
+    state->chunk.assign(raw_chunk);
+    ffi_tokenizer_free_string(raw_chunk);
+    return state->chunk.c_str();
+}
+
+void free_decode_stream(OpaqueDecodeStream* stream) {
+    if (!stream) {
+        return;
+    }
+    auto* state = reinterpret_cast<DecodeStreamState*>(stream);
+    ffi_tokenizer_decode_stream_free(state->rust_handle);
+    state->rust_handle = nullptr;
+    delete state;
 }
 
 void free_string(char* str) {

@@ -51,6 +51,16 @@ on:
         required: false
         default: 12
 
+      buildAot:
+        description: 'Build the GraalVM AOT export (sdx-llm CLI + libsdx_llm) on the base cpu variant (ADR 0109). 1 = on, 0 = off.'
+        required: false
+        default: 1
+
+      aotAllSpins:
+        description: 'Also build the AOT export for every optimized-math matrix combo (onednn/avx2/avx512 spins) instead of only the base variant. Each spin adds a full native-image build (~30 min). 1 = on, 0 = off.'
+        required: false
+        default: 0
+
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   linux-x86_64:
@@ -355,6 +365,20 @@ jobs:
           artifact-name: sdk-jars-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
           backend: cpu
           platform: linux-x86_64
+          platform-extension: ${{ matrix.helper != '' && matrix.extension != '' && format('-{0}-{1}', matrix.helper, matrix.extension) || matrix.helper != '' && format('-{0}', matrix.helper) || matrix.extension != '' && format('-{0}', matrix.extension) || '' }}
+          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
+
+      # GraalVM AOT export of the Java LLM stack (ADR 0109). Base variant by
+      # default; aotAllSpins=1 additionally builds one AOT package per
+      # optimized-math combo (the spin's backend classifier jar was just built
+      # and installed by this matrix job).
+      - name: Build SDX AOT artifacts (GraalVM)
+        if: github.event.inputs.buildAot != '0' && (github.event.inputs.aotAllSpins == '1' || (matrix.helper == '' && matrix.extension == ''))
+        continue-on-error: true
+        uses: ./.github/actions/build-sdx-aot
+        with:
+          platform: linux-x86_64
+          variant: cpu
           platform-extension: ${{ matrix.helper != '' && matrix.extension != '' && format('-{0}-{1}', matrix.helper, matrix.extension) || matrix.helper != '' && format('-{0}', matrix.helper) || matrix.extension != '' && format('-{0}', matrix.extension) || '' }}
           release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
 

@@ -25,14 +25,15 @@
  * @file BackendNamespace.h
  * @brief Backend-specific namespace isolation for multi-backend support
  *
- * When multiple backends (CPU, CUDA, TPU) need to coexist in the same process,
- * they must use different namespace names to avoid symbol conflicts. This header
- * provides macros to configure the namespace based on the backend being built.
+ * Backend DSOs coexist in the same process and use distinct internal C++
+ * namespaces while retaining the shared exported C ABI and ordinary dynamic
+ * linkage. This header configures that namespace from the selected chip.
  *
  * Build Configuration:
- * - CPU build:  -DSD_BACKEND_NAMESPACE=sd_cpu  (CMake auto-sets this)
- * - CUDA build: -DSD_BACKEND_NAMESPACE=sd_cuda
- * - TPU build:  -DSD_BACKEND_NAMESPACE=sd_tpu
+ * - CPU build:    -DSD_BACKEND_NAMESPACE=sd_cpu  (CMake auto-sets this)
+ * - CUDA build:   -DSD_BACKEND_NAMESPACE=sd_cuda
+ * - TPU build:    -DSD_BACKEND_NAMESPACE=sd_tpu
+ * - Vulkan build: -DSD_BACKEND_NAMESPACE=sd_vulkan
  *
  * Usage in code:
  * @code
@@ -51,7 +52,12 @@
 #define SD_CONCAT_IMPL(a, b) a##b
 #define SD_CONCAT(a, b) SD_CONCAT_IMPL(a, b)
 
-// SD_BACKEND_NAMESPACE is set by CMake based on the backend being built
+// SD_BACKEND_NAMESPACE is set by CMake based on the backend being built.
+// Remember whether the build supplied it before installing the IDE/parser default.
+#if defined(SD_BACKEND_NAMESPACE) && !defined(SD_BACKEND_NAMESPACE_CONFIGURED)
+#define SD_BACKEND_NAMESPACE_CONFIGURED 1
+#endif
+
 // Default to 'sd' for backward compatibility if not defined (e.g., IDE code completion)
 #ifndef SD_BACKEND_NAMESPACE
     // In production builds, CMake always sets this. This default is for:
@@ -95,6 +101,70 @@
  * @brief End the backend-specific namespace block
  */
 #define SD_END_NAMESPACE }
+
+/**
+ * Backend-varying implementation types live in a nested ABI namespace while
+ * remaining source-compatible through a selective sd:: alias. Unlike the
+ * historical whole-namespace alias, this keeps shared framework types in sd
+ * and isolates only state or behavior that genuinely differs by backend.
+ */
+#if defined(SD_BACKEND_NAMESPACE_CONFIGURED)
+#define SD_BACKEND_ABI_NAMESPACE_BEGIN namespace sd { namespace SD_NS {
+#define SD_BACKEND_ABI_NAMESPACE_END } }
+#define SD_BACKEND_ABI_ALIAS(symbol) namespace sd { using symbol = SD_NS::symbol; }
+#else
+#define SD_BACKEND_ABI_NAMESPACE_BEGIN namespace sd {
+#define SD_BACKEND_ABI_NAMESPACE_END }
+#define SD_BACKEND_ABI_ALIAS(symbol)
+#endif
+
+// These macros are used from an existing parent namespace block. Configured
+// native builds place ABI-varying classes and state in an inline child, so the
+// public source spelling remains unchanged while ELF symbols carry sd_cpu,
+// sd_cuda, or sd_vulkan. JavaCPP defines __JAVACPP_HACK__ only while parsing;
+// keep that metadata surface flat. Generated JNI C++ is a configured native
+// build and therefore binds to the same backend-qualified ABI as its library.
+#if defined(SD_BACKEND_NAMESPACE_CONFIGURED) && !defined(__JAVACPP_HACK__)
+// C++ requires a namespace's initial declaration to carry `inline` if any
+// later declaration in the TU does ([namespace.def]). Headers open sd::SD_NS
+// through both SD_BACKEND_ABI_NAMESPACE_BEGIN (non-inline spelling) and the
+// inline macros below in arbitrary include order, so declare the backend child
+// inline here, ahead of every use. Mangling is unaffected: inline and plain
+// nested namespace members mangle identically, so this cannot skew the ABI.
+namespace sd {
+inline namespace SD_NS {}
+}  // namespace sd
+#define SD_BACKEND_INLINE_NAMESPACE_BEGIN inline namespace SD_NS {
+#define SD_BACKEND_INLINE_NAMESPACE_END }
+#define SD_BACKEND_INLINE_CLASS(symbol) SD_NS::symbol
+#else
+#define SD_BACKEND_INLINE_NAMESPACE_BEGIN
+#define SD_BACKEND_INLINE_NAMESPACE_END
+#define SD_BACKEND_INLINE_CLASS(symbol) symbol
+#endif
+
+#if defined(__JAVACPP_HACK__)
+#define SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN
+#define SD_BACKEND_ROOT_INLINE_NAMESPACE_END
+#define SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+#define SD_BACKEND_OPS_INLINE_NAMESPACE_END
+#define SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
+#define SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
+#define SD_BACKEND_PLATFORMS_CLASS(symbol) symbol
+#else
+#define SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN SD_BACKEND_INLINE_NAMESPACE_BEGIN
+#define SD_BACKEND_ROOT_INLINE_NAMESPACE_END SD_BACKEND_INLINE_NAMESPACE_END
+#define SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN SD_BACKEND_INLINE_NAMESPACE_BEGIN
+#define SD_BACKEND_OPS_INLINE_NAMESPACE_END SD_BACKEND_INLINE_NAMESPACE_END
+#define SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN SD_BACKEND_INLINE_NAMESPACE_BEGIN
+#define SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END SD_BACKEND_INLINE_NAMESPACE_END
+#define SD_BACKEND_PLATFORMS_CLASS(symbol) SD_BACKEND_INLINE_CLASS(symbol)
+#endif
+
+// Out-of-line op definitions deliberately use the public spelling. In a
+// configured native build inline-namespace lookup binds it to the backend
+// child; in JavaCPP and unconfigured parser builds it stays directly in sd::ops.
+#define SD_BACKEND_OPS_CLASS(symbol) sd::ops::symbol
 
 /**
  * @def SD_NAMESPACE_USE
@@ -150,17 +220,26 @@
     #define SD_IS_CUDA_BACKEND 1
     #define SD_IS_CPU_BACKEND 0
     #define SD_IS_TPU_BACKEND 0
+    #define SD_IS_VULKAN_BACKEND 0
     #define SD_BACKEND_NAME "CUDA"
 #elif defined(SD_BACKEND_TYPE_TPU)
     #define SD_IS_CUDA_BACKEND 0
     #define SD_IS_CPU_BACKEND 0
     #define SD_IS_TPU_BACKEND 1
+    #define SD_IS_VULKAN_BACKEND 0
     #define SD_BACKEND_NAME "TPU"
+#elif defined(SD_BACKEND_TYPE_VULKAN)
+    #define SD_IS_CUDA_BACKEND 0
+    #define SD_IS_CPU_BACKEND 0
+    #define SD_IS_TPU_BACKEND 0
+    #define SD_IS_VULKAN_BACKEND 1
+    #define SD_BACKEND_NAME "VULKAN"
 #else
     // Default to CPU
     #define SD_IS_CUDA_BACKEND 0
     #define SD_IS_CPU_BACKEND 1
     #define SD_IS_TPU_BACKEND 0
+    #define SD_IS_VULKAN_BACKEND 0
     #define SD_BACKEND_NAME "CPU"
 #endif
 

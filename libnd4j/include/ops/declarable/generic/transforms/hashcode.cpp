@@ -51,6 +51,7 @@ DECLARE_TYPES(hashcode) {
       ->setAllowedInputTypes(0, {ANY})
       ->setAllowedInputTypes(1, {ANY})
       ->setAllowedOutputTypes({sd::DataType::INT64});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 };
 }  // namespace ops
 }  // namespace sd

@@ -43,6 +43,9 @@
 #ifdef HAVE_HEXAGON_MLIR
 #include <graph/hexagon/HexagonGraphBackend.h>
 #endif
+#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
+#include <graph/hip/HipGraphBackend.h>
+#endif
 
 #include <algorithm>
 #include <cstdio>
@@ -276,6 +279,35 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
   }
 #endif
 
+#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_HIP_GRAPHS ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+    // isAvailable() dlopens libamdhip64.so — false on non-AMD hosts, so AUTO
+    // on NVIDIA hardware falls through untouched. Under ZLUDA+AMD the plan
+    // stream is a hipStream_t underneath, so island capture records both
+    // ZLUDA-translated launches and directly-launched HIP Triton kernels.
+    auto& hip = HipGraphBackend::getInstance();
+    if (hip.isAvailable()) {
+      gpuGraphBackend_ = &hip;
+      DSP_DIAG(BACKEND, "using HIP (ROCm) graph capture backend");
+      return gpuGraphBackend_;
+    }
+    if (graphExecutionMode_ == GraphExecutionMode::GEM_HIP_GRAPHS) {
+      DSP_DIAG(BACKEND, "HIP graphs backend requested but not available "
+               "(libamdhip64.so not loadable)");
+      gpuGraphBackend_ = nullptr;
+      return nullptr;
+    }
+  }
+#else
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_HIP_GRAPHS) {
+    DSP_DIAG(BACKEND, "HIP graphs backend requested but not compiled "
+             "(needs SD_HIP or ZLUDA_TARGET_AMD/HAVE_MIOPEN build)");
+    gpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
+#endif
+
   gpuGraphBackend_ = nullptr;
   return nullptr;
 }
@@ -473,7 +505,8 @@ Status NativeDynamicShapePlan::segDispatchCompile(
     DSP_SEG_EVENT(seg, COMPILE_START, "backend=%s", backendName);
     if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
                                  outputSlots_, totalOutputSlots_, segShapeKey,
-                                 numSlots_)) {
+                                 numSlots_, requestedOutputSlotIndices_,
+                                 numRequestedOutputs_)) {
       // Fetch audit even on failure — it contains per-op detail about what failed
       auto failAudit = backend->getLastCompilationAudit();
       lastCompilationAudit_ = failAudit;

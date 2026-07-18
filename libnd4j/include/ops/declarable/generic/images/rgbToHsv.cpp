@@ -51,7 +51,9 @@ CONFIGURABLE_OP_IMPL(rgb_to_hsv, 1, 1, true, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(rgb_to_hsv) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(rgb_to_hsv) {
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
 }  // namespace ops
 }  // namespace sd

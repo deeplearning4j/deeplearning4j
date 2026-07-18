@@ -73,12 +73,13 @@ DECLARE_SHAPE_FN(lin_space) {
 }
 
 DECLARE_TYPES(lin_space) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
-  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT);
 }
 }  // namespace ops
 }  // namespace sd

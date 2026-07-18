@@ -84,9 +84,10 @@ DECLARE_SHAPE_FN(dynamic_partition) {
 
 DECLARE_TYPES(dynamic_partition) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_SPLIT | OP_TRAIT_DATA_DEPENDENT);
 }
 
-DECLARE_TYPES(dynamic_partition_bp) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(dynamic_partition_bp) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true);  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_SPLIT | OP_TRAIT_BACKWARD | OP_TRAIT_DATA_DEPENDENT); }
 
 CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 1, false, 0, 1) {
   auto input = INPUT_VARIABLE(0);

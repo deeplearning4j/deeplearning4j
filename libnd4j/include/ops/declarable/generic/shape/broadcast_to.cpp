@@ -79,7 +79,10 @@ CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {
 
 DECLARE_TYPES(broadcast_to) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
-  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT |
+                               OP_TRAIT_FULLY_WRITING |
+                               OP_TRAIT_VALUE_DEPENDENT_SHAPE |
+                               OP_TRAIT_TILE);
 }
 
 //////////////////////////////////////////////////////////////////////////

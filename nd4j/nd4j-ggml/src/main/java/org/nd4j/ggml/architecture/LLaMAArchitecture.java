@@ -102,9 +102,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
         ArchitectureConfig config = getConfig(metadata);
 
         DataType dtype = options.getTargetDataType();
-        log.info("Building LLaMA graph: {} layers, hidden={}, heads={}, kv_heads={}, headDim={}, " +
+        log.info("Building LLaMA graph: {} target layers, {} MTP layers, hidden={}, heads={}, kv_heads={}, headDim={}, " +
                 "ropeFreqBase={}, ropeNDim={}, layerNormEps={}, fullAttnInterval={}, dtype={}",
-                config.getNumLayers(), config.getHiddenSize(),
+                config.getNumLayers(), config.getNumMtpLayers(), config.getHiddenSize(),
                 config.getNumAttentionHeads(), config.getNumKVHeads(), config.getHeadDimension(),
                 config.getRopeFreqBase(), config.getRopeDimensionCount(),
                 config.getLayerNormEpsilon(), config.getFullAttentionInterval(), dtype);
@@ -185,6 +185,13 @@ public class LLaMAArchitecture implements ModelArchitecture {
             }
         }
 
+        // MTP consumes the target trunk hidden state before the final output norm.
+        // Keep it as an explicit output only for GGUFs that bundle a predictor.
+        if (config.getNumMtpLayers() > 0) {
+            hidden = sd.identity("target_hidden_states", hidden);
+            outputNames.add("target_hidden_states");
+        }
+
         // Final RMS normalization
         hidden = buildRMSNorm(sd, hidden, "model.norm", weights, config, dtype);
 
@@ -226,9 +233,110 @@ public class LLaMAArchitecture implements ModelArchitecture {
             outputNames.add("lm_logits_last");
         }
 
+        if (config.getNumMtpLayers() > 0) {
+            buildMtpBranch(sd, config, weights, dtype, tokenEmbed, lmHead, outputNames);
+        }
+
         sd.setOutputs(outputNames);
 
         return sd;
+    }
+
+    /**
+     * Build the bundled Qwen3.5 NextN predictor as a separate branch in the same
+     * SameDiff instance. The target and MTP branches share immutable weights, but
+     * use independent placeholders and therefore independent DSP plans/KV caches.
+     *
+     * <p>The predictor contract follows the upstream Qwen3.5 implementation:
+     * token x_t is paired with the target trunk's pre-final-norm hidden state
+     * h_(t-1). The caller is responsible for the one-position shift during
+     * prefill and for carrying the accepted target row between decode windows.</p>
+     */
+    private void buildMtpBranch(SameDiff sd, ArchitectureConfig config,
+            Map<String, INDArray> weights, DataType dtype,
+            SDVariable tokenEmbed, SDVariable lmHead, List<String> outputNames) {
+
+        if (config.getNumMtpLayers() != 1) {
+            throw new IllegalStateException("Qwen3.5 native MTP currently requires exactly one predictor layer, found "
+                    + config.getNumMtpLayers());
+        }
+
+        int layerIdx = config.getNumLayers();
+        String prefix = "blk." + layerIdx;
+        String nextnPrefix = prefix + ".nextn";
+        String[] requiredWeights = {
+                nextnPrefix + ".eh_proj.weight",
+                nextnPrefix + ".enorm.weight",
+                nextnPrefix + ".hnorm.weight",
+                nextnPrefix + ".shared_head_norm.weight",
+                prefix + ".attn_norm.weight",
+                prefix + ".attn_q.weight",
+                prefix + ".attn_k.weight",
+                prefix + ".attn_v.weight",
+                prefix + ".attn_output.weight",
+                prefix + ".attn_q_norm.weight",
+                prefix + ".attn_k_norm.weight",
+                prefix + ".ffn_gate.weight",
+                prefix + ".ffn_up.weight",
+                prefix + ".ffn_down.weight"
+        };
+        for (String weightName : requiredWeights) {
+            if (!weights.containsKey(weightName)) {
+                throw new IllegalStateException("Bundled MTP payload is missing required tensor: " + weightName);
+            }
+        }
+        if (!weights.containsKey(prefix + ".post_attention_norm.weight")
+                && !weights.containsKey(prefix + ".ffn_norm.weight")) {
+            throw new IllegalStateException("Bundled MTP payload is missing the predictor post-attention norm");
+        }
+
+        SDVariable inputIds = sd.placeHolder("mtp_input_ids", DataType.INT64, -1, -1);
+        SDVariable targetHidden = sd.placeHolder("mtp_target_hidden_states", dtype, -1, -1, config.getHiddenSize());
+        SDVariable positionOffset = sd.placeHolder("mtp_position_offset", DataType.INT64);
+        SDVariable cachePosition = sd.placeHolder("mtp_cache_position", DataType.INT64);
+        SDVariable causalMask = sd.placeHolder("mtp_causal_mask", DataType.FLOAT, -1, -1, -1, -1);
+        SDVariable keyCache = sd.placeHolder("mtp_past_key_values.0.key", dtype,
+                -1, -1, config.getNumKVHeads(), config.getHeadDimension());
+        SDVariable valueCache = sd.placeHolder("mtp_past_key_values.0.value", dtype,
+                -1, -1, config.getNumKVHeads(), config.getHeadDimension());
+
+        SDVariable tokenHidden = sd.gather("mtp_embedded", tokenEmbed, inputIds, 0);
+        SDVariable normalizedToken = buildRMSNorm(sd, tokenHidden, "mtp.enorm",
+                nextnPrefix + ".enorm", weights, config, dtype);
+        SDVariable normalizedTarget = buildRMSNorm(sd, targetHidden, "mtp.hnorm",
+                nextnPrefix + ".hnorm", weights, config, dtype);
+        SDVariable fusedInput = sd.concat("mtp_embedding_hidden_concat", -1,
+                normalizedToken, normalizedTarget);
+
+        INDArray projectionWeight = weights.get(nextnPrefix + ".eh_proj.weight");
+        SDVariable projection = sd.var("mtp.eh_proj.weight", projectionWeight);
+        SDVariable predictorInput = QuantizedLinear.matMul(sd, "mtp_eh_projected",
+                fusedInput, projection, weights, nextnPrefix + ".eh_proj.weight", dtype);
+
+        SDVariable predictorHidden = buildTransformerBlock(sd, predictorInput, layerIdx,
+                config, weights, dtype, positionOffset, cachePosition, null, causalMask,
+                keyCache, valueCache, null, null);
+        predictorHidden = sd.identity("mtp_hidden_states", predictorHidden);
+
+        SDVariable normalizedPredictor = buildRMSNorm(sd, predictorHidden,
+                "mtp.shared_head.norm", nextnPrefix + ".shared_head_norm", weights, config, dtype);
+        String lmHeadWeightName = weights.containsKey("output.weight")
+                ? "output.weight" : "token_embd.weight";
+        QuantizedLinear.matMulFloatOutput(sd, "mtp_logits", normalizedPredictor,
+                lmHead, weights, lmHeadWeightName, dtype);
+
+        SDVariable keyStates = sd.getVariable("k_rope_" + layerIdx);
+        SDVariable valueStates = sd.getVariable("v_heads_" + layerIdx);
+        if (keyStates == null || valueStates == null) {
+            throw new IllegalStateException("MTP predictor did not produce full-attention K/V states");
+        }
+        sd.identity("mtp_key_states", keyStates);
+        sd.identity("mtp_value_states", valueStates);
+
+        outputNames.add("mtp_key_states");
+        outputNames.add("mtp_value_states");
+        outputNames.add("mtp_hidden_states");
+        outputNames.add("mtp_logits");
     }
 
     private SDVariable buildTransformerBlock(SameDiff sd, SDVariable input, int layerIdx,
@@ -311,6 +419,13 @@ public class LLaMAArchitecture implements ModelArchitecture {
      * </ol>
      */
     private String getLayerType(ArchitectureConfig config, int layerIdx) {
+        // Bundled Qwen3.5 NextN blocks are trained as full-attention decoder layers,
+        // independent of the target trunk's hybrid full-attention interval.
+        if (layerIdx >= config.getNumLayers()
+                && layerIdx < config.getNumLayers() + config.getNumMtpLayers()) {
+            return "full_attention";
+        }
+
         // 1. Explicit layer_types array
         List<String> layerTypes = config.getLayerTypes();
         if (layerTypes != null && layerIdx < layerTypes.size()) {

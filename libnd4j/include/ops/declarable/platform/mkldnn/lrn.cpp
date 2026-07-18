@@ -33,7 +33,7 @@ using namespace dnnl;
 namespace sd {
 namespace ops {
 namespace platforms {
-PLATFORM_IMPL(lrn, ENGINE_CPU) {
+PLATFORM_IMPL(lrn, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -82,7 +82,7 @@ PLATFORM_IMPL(lrn, ENGINE_CPU) {
   return sd::Status::OK;
 };
 
-PLATFORM_CHECK(lrn, ENGINE_CPU) {
+PLATFORM_CHECK(lrn, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 

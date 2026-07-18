@@ -109,10 +109,10 @@ CUSTOM_OP_IMPL(windowed_attention, 3, -1, false, 1, 3) {
 }
 
 DECLARE_TYPES(windowed_attention) {
+    getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
-        ->setAllowedOutputTypes({ALL_FLOATS})
-        ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
+        ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(windowed_attention) {

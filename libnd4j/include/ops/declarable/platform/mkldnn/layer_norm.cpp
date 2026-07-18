@@ -157,7 +157,7 @@ static void layerNormMKLDNN(NDArray* x, NDArray* gain, NDArray* bias, NDArray* z
   }
 }
 
-PLATFORM_IMPL(layer_norm, ENGINE_CPU) {
+PLATFORM_IMPL(layer_norm, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto gain = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
@@ -191,7 +191,7 @@ PLATFORM_IMPL(layer_norm, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(layer_norm, ENGINE_CPU) {
+PLATFORM_CHECK(layer_norm, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto gain = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);

@@ -51,7 +51,9 @@ DECLARE_SHAPE_FN(shapes_of) {
 };
 
 DECLARE_TYPES(shapes_of) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

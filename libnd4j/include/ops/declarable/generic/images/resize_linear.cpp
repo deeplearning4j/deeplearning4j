@@ -141,6 +141,7 @@ DECLARE_SHAPE_FN(resize_bilinear) {
   return shapeList;
 }
 DECLARE_TYPES(resize_bilinear) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

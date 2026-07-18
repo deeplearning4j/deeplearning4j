@@ -23,7 +23,7 @@
 #include <graph/cpu/OneDnnGraphBackend.h>
 #include <graph/DspDiagnostics.h>
 #include <helpers/shape.h>
-#include <ops/OpTraitTable.h>
+#include <ops/declarable/OpDescriptor.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/platform/mkldnn/OnednnVersionProvider.h>
 #include <system/Environment.h>

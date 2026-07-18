@@ -37,7 +37,9 @@ CUSTOM_OP_IMPL(order, 1, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(order) {
+
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes({ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(order) {

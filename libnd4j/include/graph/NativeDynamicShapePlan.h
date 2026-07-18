@@ -67,6 +67,10 @@
 namespace sd {
 namespace graph {
 
+#if defined(SD_VULKAN)
+class VulkanExecutionStream;
+#endif
+
 // Forward declaration for NVRTC JIT kernel handle (defined in NvrtcKernelCache.h)
 #ifdef SD_CUDA
 struct NvrtcKernelHandle;
@@ -106,7 +110,8 @@ enum class GraphExecutionMode : int {
   GEM_OPENVINO = 15,    // Force OpenVINO CPU graph backend (Intel x86, broad op coverage)
   GEM_TVM = 16,         // Deprecated: TVM removed, use triton-cpu instead
   GEM_EMULATED_REPLAY = 17,  // Emulated graph replay: slot-by-slot with replay lifecycle diagnostics
-  GEM_SHAPE_INFERENCE_ONLY = 18  // Shape inference only: calculates output shapes without executing ops
+  GEM_SHAPE_INFERENCE_ONLY = 18, // Shape inference only: calculates output shapes without executing ops
+  GEM_PORTABLE_REPLAY = 19       // Best executable replay recorder; never selects Triton/NVRTC/PTX
 };
 
 // Close namespace before including ModeContract.h — it opens its own sd::graph namespace.
@@ -127,10 +132,11 @@ namespace graph {
  */
 enum class SelectedBackend : uint8_t {
   SLOT_BY_SLOT = 0,    // Execute each op individually (no fusion, no graphs)
-  CUDA_GRAPHS = 1,     // CUDA graph capture/replay
+  DEVICE_REPLAY = 1,   // Platform-native device replay (CUDA graphs, HIP graphs, etc.)
   GPU_COMPILER = 2,    // Triton/NVRTC/PTX/TPU/Hexagon compiler backend
   CPU_GRAPH = 3,       // CPU graph backend (oneDNN/ACL/MLIR/MLX/NNAPI/ARM)
   EMULATED_REPLAY = 4, // Emulated graph replay: slot-by-slot with replay lifecycle tracking
+  VULKAN_REPLAY = 5,   // Vulkan command-buffer capture/replay with real compute dispatches
 };
 
 /**
@@ -386,6 +392,9 @@ struct LegacyOpInfo {
 struct ShapeCache {
   LongType cachedShapeKey = 0;
   std::vector<const LongType*> cachedOutputShapes;   // Cached shape infos (not owned)
+  // Full shape-info buffers declared by zero-input ops in the Java graph.
+  // Owned by the slot so native shape propagation never depends on a Java buffer lifetime.
+  std::vector<std::vector<LongType>> staticOutputShapeInfos;
   bool shapeStatic = false;  // True if output shape never changes between executions
 };
 
@@ -518,25 +527,17 @@ struct NativeSlot {
   bool needsZeroedOutput() const { return !aliasesInput() && !isFullyWriting(); }
 
   /** Shape function reads input tensor VALUES (not just shapes).
-   *  These ops need host-synced inputs for shape inference and block the
-   *  shape pre-pass. This does NOT affect capturability or segmentation.
+   *  The compiler initializes outputShapeDependsOnInputValues from the
+   *  descriptor's OP_TRAIT_VALUE_DEPENDENT_SHAPE bit and then resolves
+   *  argument- versus tensor-driven forms for this concrete slot. Consumers
+   *  must use that resolved value; re-reading the intrinsic bit here would undo
+   *  the per-instance resolution.
    *
-   *  Uses OP_TRAIT_VALUE_DEPENDENT_SHAPE (carried by reshape, fill, range,
-   *  slice, etc.) and the Java-serialized outputShapeDependsOnInputValues flag.
-   *  DATA_DEPENDENT is NOT included — it means the op's result depends on data,
-   *  not that the output SHAPE depends on data. argmax/argmin are data-dependent
-   *  but have shapes determined by input shapes + axis iArgs.
-   *
-   *  OP_TRAIT_DYNAMIC_OUTPUT_SIZE IS included: ops whose output SIZE is
-   *  determined at runtime (1-arg where/where_np, unique, NMS, listdiff, etc.)
-   *  have their output shape depend on input values by definition — counting
-   *  non-zero/matching elements is value-dependent.  The shape pre-pass cannot
-   *  compute a correct shape for these ops using zero-initialised arrays; skip
-   *  them and let the null propagate to all downstream slots. */
+   *  OP_TRAIT_DYNAMIC_OUTPUT_SIZE remains unconditional because the number of
+   *  output elements itself is determined from runtime data. */
   bool hasValueDependentShape() const {
-    return hasOpTrait(sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE) ||
-           hasOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE) ||
-           flags.outputShapeDependsOnInputValues;
+    return flags.outputShapeDependsOnInputValues ||
+           hasOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
   }
 
   // ── In-place fusion state management ────────────────────────────────
@@ -718,8 +719,8 @@ struct ShapeKeyState {
 };
 
 struct GraphSegmentDef {
-  int startSlot = 0;
-  int endSlot = 0;
+  int startSlot = 0;  // Inclusive slot index.
+  int endSlot = 0;    // Inclusive slot index.
   bool isCapturable = false;
   bool hasValueDepOps = false;         // True if any slot has outputShapeDependsOnInputValues
   /// Structured shape key lifecycle. All shape key reads/writes go through this.
@@ -1997,6 +1998,42 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   }
   JitMode getJitMode() const { return jitMode_; }
 
+  /**
+   * Control whether backend code generation may run while executing this plan.
+   * Portable SDX bundles set this to false for hermetic mobile inference.
+   */
+  void setRuntimeCompilationAllowed(bool allowed) {
+    if (!planLifecycle_.isSlotBySlot()) {
+      DSP_DIAG(EXECUTE,
+               "DSP PHASE VIOLATION: setRuntimeCompilationAllowed called in phase %s",
+               planLifecycle_.displayName());
+      assert(false && "DSP phase violation: setRuntimeCompilationAllowed");
+      return;
+    }
+    runtimeCompilationAllowed_ = allowed;
+  }
+  bool isRuntimeCompilationAllowed() const {
+    return runtimeCompilationAllowed_;
+  }
+
+  /**
+   * Set the bundle-owned directory containing validated backend artifacts.
+   * For Vulkan this directory contains spv_<cache-key>.spv/.meta pairs.
+   */
+  void setRuntimeArtifactDirectory(const std::string& directory) {
+    if (!planLifecycle_.isSlotBySlot()) {
+      DSP_DIAG(EXECUTE,
+               "DSP PHASE VIOLATION: setRuntimeArtifactDirectory called in phase %s",
+               planLifecycle_.displayName());
+      assert(false && "DSP phase violation: setRuntimeArtifactDirectory");
+      return;
+    }
+    runtimeArtifactDirectory_ = directory;
+  }
+  const std::string& getRuntimeArtifactDirectory() const {
+    return runtimeArtifactDirectory_;
+  }
+
   void setGraphExecutionMode(GraphExecutionMode mode);
   GraphExecutionMode getGraphExecutionMode() const { return graphExecutionMode_; }
 
@@ -2192,18 +2229,19 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void clearOutputSlot(int slotIdx, const char* tag, bool deferDelete = false);
 
   /**
-   * Mark a slot as a view producer. This is a STRUCTURAL property of the op
-   * (permute/reshape always produce views) — distinct from phase transitions.
-   * The flag persists across reset()/unseal() since it describes the op, not the phase.
+   * Mark an operation slot as a view producer. This is a STRUCTURAL property of
+   * the producing op (permute/reshape always produce views), not of its output-slot
+   * index. The flag persists across reset()/unseal().
    */
-  void markViewProducer(int slotIdx, const char* tag);
+  void markViewProducer(int producerSlotIdx, const char* tag);
 
   /**
-   * Demote a slot from view producer. Called when a view can no longer be maintained
-   * (e.g., input DataBuffer freed). Self-contained: inspects the slot's DataBuffer
-   * validity and nulls the output if the buffer is stale/freed/invalid.
+   * Demote an operation slot from view producer and clear the specific output
+   * slot whose wrapper can no longer be maintained. Operation-slot and output-slot
+   * indices are separate domains whenever an op has multiple outputs.
    */
-  void demoteViewProducer(int slotIdx, const char* tag, bool unused = false);
+  void demoteViewProducer(
+      int producerSlotIdx, int outputSlotIdx, const char* tag, bool forceClear = true);
 
   /**
    * Materialize a view-producer slot: replace the zero-copy view with an
@@ -2326,19 +2364,18 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     return db->isPrimaryActual() ? 0 : 1;  // device-authoritative = special is actual, primary is NOT
   }
 
-  /** Get the CUDA execution stream (or nullptr on CPU).
-   *  Each plan owns its own CUDA stream to avoid cross-thread capture
-   *  poisoning: Java-side syncToDevice() on the shared default stream
-   *  would conflict with CUDA graph capture on another thread if both
-   *  used the same stream. Plan-owned streams isolate captures. */
+  /** Get this plan's backend-owned execution stream.
+   *  GPU plans own a stream so capture/replay is isolated from unrelated work
+   *  submitted through a process-wide default stream. */
   void* getExecutionStream() const {
 #ifdef SD_CUDA
     if (ownedStream_ != nullptr) {
       return reinterpret_cast<void*>(ownedStream_);
     }
-    // Fallback: use the default LaunchContext stream (pre-owned-stream plans)
     auto lc = sd::LaunchContext::defaultContext();
     return lc != nullptr ? reinterpret_cast<void*>(lc->getCudaStream()) : nullptr;
+#elif defined(SD_VULKAN)
+    return platformGetExecutionStream();
 #else
     return nullptr;
 #endif
@@ -2801,6 +2838,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // NVRTC JIT mode
   JitMode jitMode_;
 
+  // Portable runtime compilation policy. Direct JVM/native plan users retain
+  // the historical compile-on-miss behavior; the SDX C runtime overrides it.
+  bool runtimeCompilationAllowed_ = true;
+  std::string runtimeArtifactDirectory_;
+
   // Graph execution mode (controls which backend to use)
   GraphExecutionMode graphExecutionMode_;
 
@@ -2929,11 +2971,21 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   //
   // Layout: d_fpRing_[step * BUF_FP_MAX_TRACKED + trackIdx] = XOR fingerprint.
   // step = executeCount_ when fingerprint was recorded (clamped to BUF_FP_MAX_STEPS-1).
-  // trackIdx: first BUF_FP_MAX_STAGING slots = staging inputs (ext index order),
-  //           remaining = gap-matmul group inputs (groupIdx * 2 + 0/1 for A/B).
-  static constexpr int BUF_FP_MAX_STEPS   = 16;
-  static constexpr int BUF_FP_MAX_TRACKED = 64;
-  static constexpr int BUF_FP_MAX_STAGING = 32;  // first 32 track slots = staging
+  // trackIdx: [0, BUF_FP_TRACE_TRACK) = staging/slot/gap tracks;
+  //           BUF_FP_TRACE_TRACK = configured trace-slot output;
+  //           requested output 0 is followed across the writer, DSP completion,
+  //           LC handoff, and each merged-capture validation replay.
+  // step + BUF_FP_POST_CAPTURE_STEP_OFFSET holds post-validation slot values.
+  static constexpr int BUF_FP_MAX_STEPS                = 64;
+  static constexpr int BUF_FP_MAX_TRACKED              = 128;
+  static constexpr int BUF_FP_MAX_STAGING              = 32;
+  static constexpr int BUF_FP_TRACE_TRACK              = 96;
+  static constexpr int BUF_FP_REQUESTED_OUTPUT_TRACK   = 97;
+  static constexpr int BUF_FP_END_DSP_TRACK            = 98;
+  static constexpr int BUF_FP_END_LC_TRACK             = 99;
+  static constexpr int BUF_FP_CAPTURE_GROUP_BASE       = 100;
+  static constexpr int BUF_FP_CAPTURE_GROUP_COUNT      = 28;
+  static constexpr int BUF_FP_POST_CAPTURE_STEP_OFFSET = 32;
 
   // Label table (host-side): describes what each trackIdx covers.
   struct BufFpLabel {
@@ -2947,6 +2999,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool         fpRingDrained_       = false;  // true after drainFingerprintRingPublic()
   int          fpRingStagingCount_  = 0;      // how many staging track slots were filled
   int          fpRingGemmCount_     = 0;      // how many gemm track slots were filled
+  std::atomic<int> fpInvocationCount_{0};     // unique diagnostic step even when executeCount_ resets/stalls
   BufFpLabel   fpLabels_[BUF_FP_MAX_TRACKED] = {};  // label for each trackIdx
   std::string  fpJsonBuffer_;                 // backing storage for getFingerprintJson()
 
@@ -3250,6 +3303,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void platformMaybeSplitIfEnabled();
 
   // ── Additional platform dispatch (extracted from NativeDynamicShapePlan.cpp) ──
+#if defined(SD_VULKAN)
+  void* platformGetExecutionStream() const;
+#endif
   void* platformBeginExecution(void* stream, bool frozen, int execCount);
   void platformEndExecution(void* executionState, void* stream, bool frozen, int execCount);
   void platformDumpExternalInputDiagnostics(NDArray** ext, int numExt, int execCount);
@@ -3267,6 +3323,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void platformPostReplayPoolManagement(size_t poolUsedPre, bool frozen, int execCount);
   void platformTraceSlotValues(const GraphSegment& seg, void* stream, int execCount);
   SelectedBackend platformResolveBackend(bool isGraphCapture) const;
+  SelectedBackend platformResolvePortableReplayBackend() const;
   bool platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const;
   size_t platformEstimateCaptureBudget() const;
   /** Estimated capture-workspace bytes a segment needs: aligned sum of its slots' output
@@ -3306,8 +3363,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                                  int numExt, bool pinOwnedOutputs);
 
   // ── Slot execution platform dispatch (NativeDynamicShapePlan_slotexec_cuda.cu / _cuda_stubs.cpp) ──
-  // These abstract CUDA-specific slot execution behavior (prezero, actuality,
-  // buffer validation, cublasLt epilogue, verify logging).
+  // These abstract backend-specific slot execution behavior (typed dispatch,
+  // prezero, actuality, buffer validation, epilogue state, verify logging).
+  Status platformExecuteSlot(const NativeSlot& slot, Context& context);
   void platformPrezeroSegmentOutputs(const GraphSegment& seg, void* stream);
   void platformReconcileOutputActuality(const char* stage, int stepIdx,
                                          const NativeSlot& slot, NDArray* output);
@@ -3418,6 +3476,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                     cudaStream_t prevCaptureStream,
                     const std::vector<SlotPhase>& savedSlotPhases,
                     void* stream);
+#endif
+
+#if defined(SD_VULKAN)
+  // Plan-owned Vulkan stream: the Vulkan analogue of ownedStream_ above.
+  // Mutable so getExecutionStream() can create it before the first execution.
+  mutable VulkanExecutionStream* ownedVulkanStream_ = nullptr;
 #endif
 
   // Cross-device input migration: tracks arrays copied to a different device

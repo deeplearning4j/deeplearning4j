@@ -253,12 +253,20 @@ static void kvInPlaceWriteBSHD_(NDArray* cache, NDArray* newKv,
                                  const void* cachePosPtr, LaunchContext* context) {
     auto batch = newKv->sizeAt(0);
     auto seqKV = newKv->sizeAt(1);
-    // innerSize = everything after seq dim (heads*dim for rank4, features for rank3)
-    LongType innerSize = 1;
-    for (int d = 2; d < newKv->rankOf(); d++) {
-        innerSize *= newKv->sizeAt(d);
-    }
+    bool rank4 = newKv->rankOf() == 4;
+    LongType outerDim = newKv->sizeAt(2);
+    LongType innerDim = rank4 ? newKv->sizeAt(3) : 1;
+    LongType innerSize = outerDim * innerDim;
     auto cacheMaxSeqLen = cache->sizeAt(1);
+
+    LongType srcStride0 = newKv->strideAt(0);
+    LongType srcStride1 = newKv->strideAt(1);
+    LongType srcStride2 = newKv->strideAt(2);
+    LongType srcStride3 = rank4 ? newKv->strideAt(3) : 0;
+    LongType dstStride0 = cache->strideAt(0);
+    LongType dstStride1 = cache->strideAt(1);
+    LongType dstStride2 = cache->strideAt(2);
+    LongType dstStride3 = rank4 ? cache->strideAt(3) : 0;
 
     LongType cachePos = *reinterpret_cast<const LongType*>(cachePosPtr);
 
@@ -271,16 +279,18 @@ static void kvInPlaceWriteBSHD_(NDArray* cache, NDArray* newKv,
         for (auto slice = start; slice < stop; slice++) {
             auto s = slice % seqKV;
             auto b = slice / seqKV;
-
-            auto srcOffset = b * seqKV * innerSize + s * innerSize;
-            auto dstOffset = b * cacheMaxSeqLen * innerSize + (cachePos + s) * innerSize;
-
-            const T* __restrict src = srcBuf + srcOffset;
-            T* __restrict dst = dstBuf + dstOffset;
+            auto dstSeq = cachePos + s;
+            if (dstSeq < 0 || dstSeq >= cacheMaxSeqLen) continue;
 
             PRAGMA_OMP_SIMD
             for (LongType i = 0; i < innerSize; i++) {
-                dst[i] = src[i];
+                LongType outer = i / innerDim;
+                LongType inner = i - outer * innerDim;
+                LongType srcOffset = b * srcStride0 + s * srcStride1
+                                    + outer * srcStride2 + inner * srcStride3;
+                LongType dstOffset = b * dstStride0 + dstSeq * dstStride1
+                                    + outer * dstStride2 + inner * dstStride3;
+                dstBuf[dstOffset] = srcBuf[srcOffset];
             }
         }
     };

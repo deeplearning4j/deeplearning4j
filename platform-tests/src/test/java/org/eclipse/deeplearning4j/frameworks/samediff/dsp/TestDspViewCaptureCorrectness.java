@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DspPlanAssertions;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -167,6 +169,74 @@ public class TestDspViewCaptureCorrectness {
             Nd4j.getEnvironment().setTritonGraphCapture(true);
             Nd4j.getEnvironment().setTritonMergedCaptureThroughViews(true);
             Nd4j.getEnvironment().setTritonSectionFusion(true);
+        }
+    }
+
+    private static SameDiff buildStaticSiblingSliceGraph() {
+        SameDiff g = SameDiff.create();
+        SDVariable x = g.placeHolder("x", DataType.FLOAT, 1, 2, 12);
+        g.stridedSlice("q", x,
+                new long[]{0, 0, 0}, new long[]{1, 2, 4}, new long[]{1, 1, 1},
+                0, 0, 0, 0, 0);
+        g.stridedSlice("k", x,
+                new long[]{0, 0, 4}, new long[]{1, 2, 8}, new long[]{1, 1, 1},
+                0, 0, 0, 0, 0);
+        g.stridedSlice("v", x,
+                new long[]{0, 0, 8}, new long[]{1, 2, 12}, new long[]{1, 1, 1},
+                0, 0, 0, 0, 0);
+        g.setOutputs("q", "k", "v");
+        return g;
+    }
+
+    @Test
+    @DisplayName("three static strided slices remain exact after Triton capture and replay")
+    void testStaticSiblingStridedSlicesFrozenReplay() {
+        SameDiff compiled = null;
+        SameDiff reference = null;
+        try {
+            Nd4j.getEnvironment().setTritonCompileAll(true);
+            Nd4j.getEnvironment().setTritonGraphCapture(true);
+            Nd4j.getEnvironment().setTritonMergedCaptureThroughViews(true);
+            Nd4j.getEnvironment().setTritonSectionFusion(true);
+            Nd4j.getEnvironment().setDspFreezeMergeSegments(true);
+
+            compiled = buildStaticSiblingSliceGraph();
+            compiled.setDspAutoCompileEnabled(true);
+            compiled.setDspNativeAutoCompileEnabled(true);
+            compiled.setGraphExecutionMode(GraphExecutionMode.AUTO);
+
+            reference = buildStaticSiblingSliceGraph();
+            reference.setGraphExecutionMode(GraphExecutionMode.SLOT_BY_SLOT);
+
+            String[] outputs = {"q", "k", "v"};
+            for (int step = 0; step < STEPS; step++) {
+                INDArray input = Nd4j.arange(24).castTo(DataType.FLOAT)
+                        .reshape(1, 2, 12).addi(step * 100.0);
+                Map<String, INDArray> actual = compiled.output(
+                        Collections.singletonMap("x", input.dup()), outputs);
+                Map<String, INDArray> expected = reference.output(
+                        Collections.singletonMap("x", input.dup()), outputs);
+
+                for (String output : outputs) {
+                    double maxDiff = Transforms.abs(
+                            actual.get(output).sub(expected.get(output))).maxNumber().doubleValue();
+                    assertTrue(maxDiff <= 1e-6,
+                            String.format("step=%d output=%s maxDiff=%g", step, output, maxDiff));
+                }
+            }
+
+            DspPlanAssertions.assertPhaseReached(compiled, PlanPhase.SHAPES_FROZEN,
+                    "static sibling slices should reach frozen replay");
+            assertNotEquals(DspPlanAssertions.REPLAY_MODE_NONE,
+                    DspPlanAssertions.getSegmentReplayMode(compiled, 0),
+                    "static sibling slices must exercise a replay handle");
+            DspPlanAssertions.assertNoCaptureFailures(compiled,
+                    "static sibling slices after " + STEPS + " executions");
+            DspPlanAssertions.assertNoPhaseContractViolations(compiled,
+                    "static sibling slices after " + STEPS + " executions");
+        } finally {
+            if (compiled != null) compiled.close();
+            if (reference != null) reference.close();
         }
     }
 }

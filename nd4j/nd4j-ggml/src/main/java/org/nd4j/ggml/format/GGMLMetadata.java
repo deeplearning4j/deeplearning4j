@@ -273,6 +273,19 @@ public class GGMLMetadata {
     }
 
     /**
+     * Number of bundled NextN/MTP predictor layers declared by the GGUF.
+     * llama.cpp includes these appended predictor blocks in {@code block_count},
+     * so callers must subtract this value when constructing the target trunk.
+     */
+    public int getNumMtpLayers() {
+        if (architecture == null || rawMetadata == null) {
+            return 0;
+        }
+        Object value = rawMetadata.get(architecture + ".nextn_predict_layers");
+        return value instanceof Number ? Math.max(0, ((Number) value).intValue()) : 0;
+    }
+
+    /**
      * Get the head dimension (hidden_size / num_heads)
      */
     public int getHeadDimension() {

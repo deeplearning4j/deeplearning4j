@@ -88,14 +88,14 @@ CUSTOM_OP_IMPL(paged_attention_forward, 5, 1, false, 1, 4) {
 }
 
 DECLARE_TYPES(paged_attention_forward) {
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_FLOATS})
       ->setAllowedInputTypes(3, {INT32})
       ->setAllowedInputTypes(4, {INT32})
-      ->setAllowedOutputTypes(0, {ALL_FLOATS})
-      ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(paged_attention_forward) {
@@ -170,6 +170,7 @@ CUSTOM_OP_IMPL(paged_kv_append, 6, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(paged_kv_append) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
@@ -177,8 +178,7 @@ DECLARE_TYPES(paged_kv_append) {
       ->setAllowedInputTypes(3, {ALL_FLOATS})
       ->setAllowedInputTypes(4, {INT32})
       ->setAllowedInputTypes(5, {INT32})
-      ->setAllowedOutputTypes(0, {ALL_FLOATS})
-      ->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(paged_kv_append) {

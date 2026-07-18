@@ -28,12 +28,13 @@
 #include <math/templatemath.h>
 #include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/reverse.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <ops/declarable/helpers/kv_cache_quantize.h>
 #include <graph/DspDiagnostics.h>
 #include <helpers/AttentionHelper.h>
 #include <helpers/FlashAttentionHelper.h>
+#include <helpers/AttentionWorkspace.h>
 #include <cmath>
 #include <memory>
 
@@ -192,6 +193,9 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   bool useInPlaceKv = false;
   NDArray* keyCache = nullptr;
   NDArray* valueCache = nullptr;
+  NDArray* currentKeyWindow = nullptr;
+  NDArray* currentValueWindow = nullptr;
+  const void* currentKvPosition = nullptr;
 
   if (extraInput != nullptr && !extraInput->isEmpty() && extraInput->rankOf() >= 2 &&
       extraInput2 != nullptr && !extraInput2->isEmpty() && extraInput2->rankOf() >= 2) {
@@ -235,7 +239,35 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     // CUDA graph compatible: kvInPlaceWriteBSHD / kvInPlaceWriteQuantisedBSHD reads
     // cache_position from a device-side pointer. The pointer ADDRESS is baked into the
     // graph at capture time; only the VALUE changes between replays (updated via D2D staging).
-    const void* cachePosPtr = sd::graph::dspBufferConst(cachePosInput);
+    currentKvPosition = sd::graph::dspBufferConst(cachePosInput);
+    const void* cachePosPtr = currentKvPosition;
+
+    // Keep the producer tensors available to the direct GQA attention kernel.
+    // The cache scatter remains the write-back for future invocations, while this
+    // invocation reads its own current window without a read-after-write dependency.
+    if (!useQuantisedKv && isRank4 && keys->rankOf() == 4 && values->rankOf() == 4) {
+      currentKeyWindow = keys;
+      currentValueWindow = values;
+    }
+    if (DSP_DIAG_ENABLED(KV_CACHE)) {
+      DSP_DIAG(KV_CACHE,
+               "dpa_current_window inPlace=%d rank4=%d quant=%d pos=%d "
+               "qSeq=%lld currentKRank=%d currentKSeq=%lld currentKHeads=%lld currentKDim=%lld "
+               "cacheSeq=%lld cacheHeads=%lld cacheDim=%lld",
+               useInPlaceKv ? 1 : 0, isRank4 ? 1 : 0, useQuantisedKv ? 1 : 0,
+               currentKvPosition != nullptr ? 1 : 0,
+               (long long)queries->sizeAt(1),
+               currentKeyWindow != nullptr ? currentKeyWindow->rankOf() : -1,
+               currentKeyWindow != nullptr && currentKeyWindow->rankOf() > 1
+                   ? (long long)currentKeyWindow->sizeAt(1) : -1LL,
+               currentKeyWindow != nullptr && currentKeyWindow->rankOf() > 2
+                   ? (long long)currentKeyWindow->sizeAt(2) : -1LL,
+               currentKeyWindow != nullptr && currentKeyWindow->rankOf() > 3
+                   ? (long long)currentKeyWindow->sizeAt(3) : -1LL,
+               (long long)keyCache->sizeAt(1),
+               keyCache->rankOf() > 2 ? (long long)keyCache->sizeAt(2) : -1LL,
+               keyCache->rankOf() > 3 ? (long long)keyCache->sizeAt(3) : -1LL);
+    }
 
     if (useQuantisedKv) {
       // V2 QUANTIZED: quantise current K/V into the INT8 cache at cachePosition.
@@ -358,6 +390,9 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     config.numHeads = 1;
     config.numKvHeads = 1;
   }
+  config.currentKeyWindow = currentKeyWindow;
+  config.currentValueWindow = currentValueWindow;
+  config.currentKvPosition = currentKvPosition;
 
   // Treat empty or scalar arrays as no mask
   // SameDiff may create empty placeholders or rank-0 scalar arrays for null inputs
@@ -370,13 +405,21 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
   bool hasInputMasks = (qMask != nullptr) || (vMask != nullptr);
   bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
-  std::unique_ptr<NDArray> attentionBiasCastOwner;
 
-  // Additive bias/mask can arrive as BOOL/INT from importer graphs.
-  // Cast once to query dtype for arithmetic in the helper path.
+  // CAPTURE SAFETY: Additive bias/mask can arrive as BOOL/INT from importer graphs and must
+  // be cast to query dtype for arithmetic in the helper path. A call-local unique_ptr would
+  // be freed after this block, but CUDA graph capture records the device address. On every
+  // replay that address would be stale (freed memory). Use a persistent AttentionWorkspace
+  // buffer instead — its device address is stable across capture/replay cycles. The buffer is
+  // only reallocated when the shape or dtype changes (workspace internally checks shape-key).
   if (hasAttentionBias && attentionBias->dataType() != queries->dataType()) {
-    attentionBiasCastOwner.reset(attentionBias->cast(queries->dataType()));
-    attentionBias = attentionBiasCastOwner.get();
+    auto* workspace = AttentionWorkspace::getInstance();
+    std::vector<sd::LongType> biasShapeVec(
+        attentionBias->shapeOf(), attentionBias->shapeOf() + attentionBias->rankOf());
+    NDArray* biasCastBuf = workspace->getBuffer(
+        "dpa_v2_biasCast", biasShapeVec, queries->dataType(), block.launchContext());
+    biasCastBuf->assign(attentionBias);
+    attentionBias = biasCastBuf;
   }
 
   // Auto-cast K/V to match Q dtype when they differ (e.g. FusedRoPE promotes
@@ -661,6 +704,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 }
 
 DECLARE_TYPES(dot_product_attention_v2) {
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})                  // queries
       ->setAllowedInputTypes(1, {ALL_FLOATS})                  // values
@@ -674,7 +718,7 @@ DECLARE_TYPES(dot_product_attention_v2) {
       ->setAllowedInputTypes(9, {ALL_FLOATS})                  // V2: key scale cache (optional)
       ->setAllowedInputTypes(10, {ALL_FLOATS})                 // V2: value scale cache (optional)
       ->setAllowedOutputTypes({ALL_FLOATS})
-      ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
+      ;
 }
 
 DECLARE_SHAPE_FN(dot_product_attention_v2) {

@@ -42,6 +42,7 @@ CUSTOM_OP_IMPL(print_affinity, 1, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(print_affinity) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_STRINGS})

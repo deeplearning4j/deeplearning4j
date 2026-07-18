@@ -38,13 +38,13 @@ std::vector<int> AffinityManager::_availableDevices = {INTERNAL_CPU_DEVICE_ID};
 thread_local int cpuThreadDevice = INTERNAL_CPU_DEVICE_ID;
 
 // Implementation of isCpuDevice from header
-bool isCpuDevice(int deviceId) {
+bool SD_NS::isCpuDevice(int deviceId) {
   // Accept both the interface CPU_DEVICE_ID (-1) and internal device 0
   return deviceId == CPU_DEVICE_ID || deviceId == INTERNAL_CPU_DEVICE_ID;
 }
 
 // Implementation of getCpuDeviceId from header
-int getCpuDeviceId() {
+int SD_NS::getCpuDeviceId() {
   return CPU_DEVICE_ID;
 }
 

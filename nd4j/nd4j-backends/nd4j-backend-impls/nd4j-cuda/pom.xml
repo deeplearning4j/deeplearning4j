@@ -47,6 +47,7 @@
         <libnd4j.functrace>OFF</libnd4j.functrace>
 
         <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cuda</libnd4j.outputPath>
+        <shared.runtime.manifest>shared-runtime-manifest.txt</shared.runtime.manifest>
 
     </properties>
 
@@ -189,6 +190,34 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-shared-runtime-manifest</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${javacpp.build.output.path}</outputDirectory>
+                            <overwrite>true</overwrite>
+                            <resources>
+                                <resource>
+                                    <directory>${libnd4j.outputPath}</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>${shared.runtime.manifest}</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <!-- ISO-8859-1: JavaCPP-generated bindings may contain non-ASCII from
@@ -298,7 +327,10 @@
                                 <configuration>
                                     <skip>${javacpp.compiler.skip}</skip>
                                     <classOrPackageName>org.nd4j.linalg.jcublas.bindings.Nd4jCuda</classOrPackageName>
-                                    <copyLibs>true</copyLibs> <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
+                                    <clean>true</clean>
+                                    <copyLibs>true</copyLibs>
+                                    <copyResources>false</copyResources>
+                                    <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
                                     <outputDirectory>${javacpp.build.output.path}</outputDirectory> </configuration>
                             </execution>
                         </executions>
@@ -384,7 +416,7 @@
                             <linkPaths>
                                 <linkPath>${libnd4jhome}/blasbuild/cuda/</linkPath> </linkPaths>
                             <compilerOptions>
-                                <compilerOption>${javacpp.compiler.options}</compilerOption> <compilerOption>-finstrument-functions</compilerOption> <compilerOption>-rdynamic</compilerOption> <compilerOption>-ldl</compilerOption> <compilerOption>-lbfd</compilerOption> <compilerOption>-O0</compilerOption> <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption> <compilerOption>-v</compilerOption> <compilerOption>-lunwind</compilerOption> <compilerOption>-ldw</compilerOption> <compilerOption>-Bsymbolic</compilerOption>
+                                <compilerOption>${javacpp.compiler.options}</compilerOption> <compilerOption>-finstrument-functions</compilerOption> <compilerOption>-rdynamic</compilerOption> <compilerOption>-ldl</compilerOption> <compilerOption>-lbfd</compilerOption> <compilerOption>-O0</compilerOption> <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption> <compilerOption>-v</compilerOption> <compilerOption>-lunwind</compilerOption> <compilerOption>-ldw</compilerOption>
                                 <compilerOption>-fno-omit-frame-pointer</compilerOption>
                                 <compilerOption>-fno-optimize-sibling-calls</compilerOption>
                                 <compilerOption>-g</compilerOption> <compilerOption>-fPIC</compilerOption> <compilerOption>-std=c++17</compilerOption>
@@ -414,12 +446,39 @@
                                 <configuration>
                                     <skip>${javacpp.compiler.skip}</skip>
                                     <classOrPackageName>org.nd4j.linalg.jcublas.bindings.Nd4jCuda</classOrPackageName>
+                                    <clean>true</clean>
                                     <copyLibs>true</copyLibs>
+                                    <copyResources>false</copyResources>
                                     <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
                                     <outputDirectory>${javacpp.build.output.path}</outputDirectory>
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>linux-dynamic-shared-libraries</id>
+            <activation>
+                <os>
+                    <name>Linux</name>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <propertyKeysAndValues combine.children="append">
+                                <property>
+                                    <name>platform.compiler.output</name>
+                                    <value>-Wl,-rpath,$ORIGIN/ -Wl,-z,noexecstack -Wall -fPIC -pthread -shared -o </value>
+                                </property>
+                            </propertyKeysAndValues>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

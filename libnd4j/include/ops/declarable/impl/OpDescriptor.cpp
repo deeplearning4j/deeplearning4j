@@ -23,6 +23,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 
 OpDescriptor::OpDescriptor(const char* opName, bool isLogic) {
   _logic = isLogic;
@@ -288,8 +289,46 @@ bool OpDescriptor::hasAnyTrait(uint32_t traits) const {
 }
 
 uint32_t OpDescriptor::getTraits() const {
+  return static_cast<uint32_t>(_traits);
+}
+
+OpDescriptor* OpDescriptor::setTraits(uint64_t traits) {
+  _traits = traits;
+  return this;
+}
+
+OpDescriptor* OpDescriptor::addTraits(uint64_t traits) {
+  _traits |= traits;
+  return this;
+}
+
+bool OpDescriptor::hasAllTraits(uint64_t traits) const {
+  return (_traits & traits) == traits;
+}
+
+bool OpDescriptor::hasAnyTrait(uint64_t traits) const {
+  return (_traits & traits) != 0;
+}
+
+uint64_t OpDescriptor::getTraits64() const {
   return _traits;
 }
 
+OpDescriptor* OpDescriptor::setNumberOfStructuralIArgs(int count) {
+  _numStructuralIArgs = count;
+  return this;
+}
+
+int OpDescriptor::getNumberOfStructuralIArgs() const {
+  return _numStructuralIArgs;
+}
+
+int OpDescriptor::getNumberOfOrdinaryIArgs() const {
+  if (_iArgs < 0) return _iArgs;
+  if (_numStructuralIArgs < 0) return 0;
+  return _iArgs > _numStructuralIArgs ? _iArgs - _numStructuralIArgs : 0;
+}
+
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

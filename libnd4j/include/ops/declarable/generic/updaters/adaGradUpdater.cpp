@@ -72,7 +72,8 @@ CONFIGURABLE_OP_IMPL(ada_grad_updater, 2, 2, true, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(ada_grad_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(ada_grad_updater) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
 }  // namespace ops
 }  // namespace sd

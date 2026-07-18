@@ -3,6 +3,10 @@
 #include <graph/DspConstants.h>
 #include <system/env_functions.h>
 
+#if defined(SD_VULKAN) && defined(HAVE_VULKAN) && HAVE_VULKAN
+#include <graph/vulkan/VulkanDeviceManager.h>
+#endif
+
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -51,6 +55,26 @@ ReplayCacheDeviceKey ReplayCacheDeviceKey::fromDeviceManager(DeviceType type, in
   key.type = type;
   key.localIndex = localIndex;
 
+#if defined(SD_VULKAN)
+#if defined(HAVE_VULKAN) && HAVE_VULKAN
+  if (type == DeviceType::VULKAN_GPU) {
+    auto& manager = VulkanDeviceManager::getInstance();
+    if (manager.initialize()) {
+      const auto* info = manager.getDeviceInfo(localIndex);
+      if (info != nullptr) {
+        std::ostringstream arch;
+        arch << "vendor_" << std::hex << info->vendorId << std::dec
+             << "_api_" << info->vkMajor << "_" << info->vkMinor
+             << "_" << info->name;
+        key.archId = arch.str();
+        return key;
+      }
+    }
+  }
+#endif
+  key.archId = "unknown";
+  return key;
+#else
   auto& dm = DeviceManager::getInstance();
   if (dm.isDeviceAvailable(type, localIndex)) {
     auto info = dm.getDeviceInfo(type, localIndex);
@@ -72,6 +96,7 @@ ReplayCacheDeviceKey ReplayCacheDeviceKey::fromDeviceManager(DeviceType type, in
     key.archId = "unknown";
   }
   return key;
+#endif
 }
 
 std::string ReplayCacheDeviceKey::toString() const {
@@ -303,6 +328,17 @@ int ReplayCacheManager::pruneStaleDevices() {
 std::vector<ReplayCacheDeviceKey> ReplayCacheManager::discoverCurrentDevices() const {
   std::vector<ReplayCacheDeviceKey> result;
 
+#if defined(SD_VULKAN)
+#if defined(HAVE_VULKAN) && HAVE_VULKAN
+  auto& vulkanManager = VulkanDeviceManager::getInstance();
+  if (vulkanManager.initialize()) {
+    for (int i = 0; i < vulkanManager.deviceCount(); ++i) {
+      result.push_back(
+          ReplayCacheDeviceKey::fromDeviceManager(DeviceType::VULKAN_GPU, i));
+    }
+  }
+#endif
+#else
   // Always add CPU
   result.push_back(ReplayCacheDeviceKey::fromDeviceManager(DeviceType::CPU, 0));
 
@@ -312,6 +348,7 @@ std::vector<ReplayCacheDeviceKey> ReplayCacheManager::discoverCurrentDevices() c
   for (int i = 0; i < cudaCount; ++i) {
     result.push_back(ReplayCacheDeviceKey::fromDeviceManager(DeviceType::CUDA_GPU, i));
   }
+#endif
 
   return result;
 }

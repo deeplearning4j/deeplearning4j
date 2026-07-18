@@ -134,6 +134,130 @@ public class TestGatedDeltaRule {
     }
 
     @Test
+    public void testTwoTokenWindowMatchesChainedSingleTokenSteps() {
+        Nd4j.getRandom().setSeed(12345);
+        int B = 1, L = 2, H = 2, Dk = 8, Dv = 8;
+        INDArray q = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.1);
+        INDArray k = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.1);
+        INDArray v = Nd4j.randn(DataType.FLOAT, B, L, H, Dv).muli(0.1);
+        INDArray beta = Nd4j.rand(DataType.FLOAT, B, L, H);
+        INDArray gate = Nd4j.randn(DataType.FLOAT, B, L, H).muli(0.3);
+        INDArray stateIn = Nd4j.randn(DataType.FLOAT, B, H, Dk, Dv).muli(0.01);
+
+        INDArray[] window = Nd4j.exec(new GatedDeltaRule(
+                q, k, v, beta, gate, stateIn, Nd4j.scalar(DataType.INT64, 2L)));
+
+        INDArray[] first = Nd4j.exec(new GatedDeltaRule(
+                q.get(all(), interval(0, 1), all(), all()).dup(),
+                k.get(all(), interval(0, 1), all(), all()).dup(),
+                v.get(all(), interval(0, 1), all(), all()).dup(),
+                beta.get(all(), interval(0, 1), all()).dup(),
+                gate.get(all(), interval(0, 1), all()).dup(),
+                stateIn.dup(), Nd4j.scalar(DataType.INT64, 1L)));
+        INDArray[] second = Nd4j.exec(new GatedDeltaRule(
+                q.get(all(), interval(1, 2), all(), all()).dup(),
+                k.get(all(), interval(1, 2), all(), all()).dup(),
+                v.get(all(), interval(1, 2), all(), all()).dup(),
+                beta.get(all(), interval(1, 2), all()).dup(),
+                gate.get(all(), interval(1, 2), all()).dup(),
+                first[1], Nd4j.scalar(DataType.INT64, 1L)));
+
+        assertEquals(0.0, window[0].get(all(), interval(0, 1), all(), all())
+                .sub(first[0]).amaxNumber().doubleValue(), 1e-5,
+                "W=2 row 0 must match the first W=1 call");
+        assertEquals(0.0, window[0].get(all(), interval(1, 2), all(), all())
+                .sub(second[0]).amaxNumber().doubleValue(), 1e-5,
+                "W=2 row 1 must match the chained W=1 call");
+        assertEquals(0.0, window[1].sub(second[1]).amaxNumber().doubleValue(), 1e-5,
+                "W=2 final state must match two chained W=1 calls");
+    }
+
+    @Test
+    public void testFiveTokenWindowExactlyMatchesChainedSingleTokenStepsAtQwenDimensions() {
+        Nd4j.getRandom().setSeed(34567);
+        int B = 1, L = 5, H = 16, Dk = 128, Dv = 128;
+        INDArray q = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.1);
+        INDArray k = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.1);
+        INDArray v = Nd4j.randn(DataType.FLOAT, B, L, H, Dv).muli(0.1);
+        INDArray beta = Nd4j.rand(DataType.FLOAT, B, L, H);
+        INDArray gate = Nd4j.randn(DataType.FLOAT, B, L, H).muli(0.3);
+        INDArray stateIn = Nd4j.randn(DataType.FLOAT, B, H, Dk, Dv).muli(0.01);
+
+        INDArray[] window = Nd4j.exec(new GatedDeltaRule(
+                q, k, v, beta, gate, stateIn.dup(), Nd4j.scalar(DataType.INT64, L)));
+
+        INDArray chainedState = stateIn.dup();
+        for (int t = 0; t < L; t++) {
+            INDArray[] scalar = Nd4j.exec(new GatedDeltaRule(
+                    q.get(all(), interval(t, t + 1), all(), all()).dup(),
+                    k.get(all(), interval(t, t + 1), all(), all()).dup(),
+                    v.get(all(), interval(t, t + 1), all(), all()).dup(),
+                    beta.get(all(), interval(t, t + 1), all()).dup(),
+                    gate.get(all(), interval(t, t + 1), all()).dup(),
+                    chainedState, Nd4j.scalar(DataType.INT64, 1L)));
+            INDArray windowRow = window[0].get(
+                    all(), interval(t, t + 1), all(), all()).dup();
+            double maxDiff = windowRow.sub(scalar[0]).amaxNumber().doubleValue();
+            double l1Diff = windowRow.sub(scalar[0]).norm1Number().doubleValue();
+            assertEquals(0.0, maxDiff, 0.0,
+                    "W=5 GDN row " + t + " differs from chained W=1: maxDiff="
+                            + maxDiff + ", l1Diff=" + l1Diff);
+            chainedState = scalar[1];
+        }
+
+        double stateMaxDiff = window[1].sub(chainedState).amaxNumber().doubleValue();
+        double stateL1Diff = window[1].sub(chainedState).norm1Number().doubleValue();
+        assertEquals(0.0, stateMaxDiff, 0.0,
+                "W=5 GDN final state differs from chained W=1: maxDiff="
+                        + stateMaxDiff + ", l1Diff=" + stateL1Diff);
+    }
+
+    @Test
+    public void testFrozenFiveTokenBufferActivePrefixExactlyMatchesChainedStepsAtQwenDimensions() {
+        Nd4j.getRandom().setSeed(56789);
+        int B = 1, L = 5, H = 16, Dk = 128, Dv = 128;
+        INDArray q = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.1);
+        INDArray k = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.1);
+        INDArray v = Nd4j.randn(DataType.FLOAT, B, L, H, Dv).muli(0.1);
+        INDArray beta = Nd4j.rand(DataType.FLOAT, B, L, H);
+        INDArray gate = Nd4j.randn(DataType.FLOAT, B, L, H).muli(0.3);
+        INDArray stateIn = Nd4j.randn(DataType.FLOAT, B, H, Dk, Dv).muli(0.01);
+
+        for (int activeLength : new int[]{1, 2}) {
+            INDArray[] window = Nd4j.exec(new GatedDeltaRule(
+                    q, k, v, beta, gate, stateIn.dup(),
+                    Nd4j.scalar(DataType.INT64, activeLength)));
+
+            INDArray chainedState = stateIn.dup();
+            for (int t = 0; t < activeLength; t++) {
+                INDArray[] scalar = Nd4j.exec(new GatedDeltaRule(
+                        q.get(all(), interval(t, t + 1), all(), all()).dup(),
+                        k.get(all(), interval(t, t + 1), all(), all()).dup(),
+                        v.get(all(), interval(t, t + 1), all(), all()).dup(),
+                        beta.get(all(), interval(t, t + 1), all()).dup(),
+                        gate.get(all(), interval(t, t + 1), all()).dup(),
+                        chainedState, Nd4j.scalar(DataType.INT64, 1L)));
+                INDArray windowRow = window[0].get(
+                        all(), interval(t, t + 1), all(), all()).dup();
+                double maxDiff = windowRow.sub(scalar[0]).amaxNumber().doubleValue();
+                double l1Diff = windowRow.sub(scalar[0]).norm1Number().doubleValue();
+                assertEquals(0.0, maxDiff, 0.0,
+                        "Frozen W=5 GDN activeLength=" + activeLength + " row=" + t
+                                + " differs from chained W=1: maxDiff=" + maxDiff
+                                + ", l1Diff=" + l1Diff);
+                chainedState = scalar[1];
+            }
+
+            double stateMaxDiff = window[1].sub(chainedState).amaxNumber().doubleValue();
+            double stateL1Diff = window[1].sub(chainedState).norm1Number().doubleValue();
+            assertEquals(0.0, stateMaxDiff, 0.0,
+                    "Frozen W=5 GDN activeLength=" + activeLength
+                            + " final state differs from chained W=1: maxDiff="
+                            + stateMaxDiff + ", l1Diff=" + stateL1Diff);
+        }
+    }
+
+    @Test
     public void testAsymmetricDimensions() {
         // D_k != D_v
         int B = 1, L = 3, H = 2, Dk = 8, Dv = 16;
@@ -369,6 +493,80 @@ public class TestGatedDeltaRule {
                     "DSP state should ignore padded timesteps");
             assertEquals(0.0, out.get("gdr_out").get(point(0), interval(0, 2), all(), all()).sub(shortRun[0]).amaxNumber().doubleValue(), 1e-5,
                     "DSP real prefix outputs should match an unpadded run");
+        } finally {
+            sd.close();
+        }
+    }
+
+    @Test
+    public void testFrozenDspRerunRefreshesChangedActualLength() {
+        System.setProperty(ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED, "true");
+        InferenceSession.setDynamicShapePlanEnabled(true);
+
+        int B = 1, L = 5, active = 2, H = 16, Dk = 128, Dv = 128;
+        Nd4j.getRandom().setSeed(12345L);
+        INDArray q = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.02);
+        INDArray k = Nd4j.randn(DataType.FLOAT, B, L, H, Dk).muli(0.02);
+        INDArray v = Nd4j.randn(DataType.FLOAT, B, L, H, Dv).muli(0.1);
+        INDArray beta = Nd4j.rand(DataType.FLOAT, B, L, H).muli(0.5);
+        INDArray gate = Nd4j.randn(DataType.FLOAT, B, L, H).muli(0.3);
+        INDArray stateIn = Nd4j.randn(DataType.FLOAT, B, H, Dk, Dv).muli(0.01);
+
+        INDArray qActive = q.get(point(0), interval(0, active), all(), all())
+                .dup().reshape(B, active, H, Dk);
+        INDArray kActive = k.get(point(0), interval(0, active), all(), all())
+                .dup().reshape(B, active, H, Dk);
+        INDArray vActive = v.get(point(0), interval(0, active), all(), all())
+                .dup().reshape(B, active, H, Dv);
+        INDArray betaActive = beta.get(point(0), interval(0, active), all())
+                .dup().reshape(B, active, H);
+        INDArray gateActive = gate.get(point(0), interval(0, active), all())
+                .dup().reshape(B, active, H);
+        INDArray expectedState = Nd4j.exec(new GatedDeltaRule(
+                qActive, kActive, vActive, betaActive, gateActive, stateIn))[1];
+
+        SameDiff sd = SameDiff.create();
+        try {
+            sd.setDspAutoCompileEnabled(true);
+            sd.setDspNativeAutoCompileEnabled(true);
+            SDVariable qVar = sd.placeHolder("q", DataType.FLOAT, B, L, H, Dk);
+            SDVariable kVar = sd.placeHolder("k", DataType.FLOAT, B, L, H, Dk);
+            SDVariable vVar = sd.placeHolder("v", DataType.FLOAT, B, L, H, Dv);
+            SDVariable betaVar = sd.placeHolder("beta", DataType.FLOAT, B, L, H);
+            SDVariable gateVar = sd.placeHolder("gate", DataType.FLOAT, B, L, H);
+            SDVariable stateVar = sd.placeHolder("state_in", DataType.FLOAT, B, H, Dk, Dv);
+            SDVariable lenVar = sd.placeHolder("actual_sequence_length", DataType.INT64);
+            SDVariable[] result = new GatedDeltaRule(
+                    sd, qVar, kVar, vVar, betaVar, gateVar, stateVar, lenVar).outputVariables();
+            sd.updateVariableNameAndReference(result[0], "gdr_rerun_out");
+            sd.updateVariableNameAndReference(result[1], "gdr_rerun_state");
+            sd.setOutputs("gdr_rerun_out", "gdr_rerun_state");
+
+            INDArray actualLength = Nd4j.scalar(DataType.INT64, (long) L);
+            Map<String, INDArray> inputs = new LinkedHashMap<>();
+            inputs.put("q", q);
+            inputs.put("k", k);
+            inputs.put("v", v);
+            inputs.put("beta", beta);
+            inputs.put("gate", gate);
+            inputs.put("state_in", stateIn);
+            inputs.put("actual_sequence_length", actualLength);
+
+            INDArray fullState = sd.output(inputs, "gdr_rerun_state")
+                    .get("gdr_rerun_state").dup();
+            InferenceSession session = sd.getOrCreateSession();
+            assertNotNull(session.getDynamicShapePlanExecutor());
+            session.getDynamicShapePlanExecutor().setShapesFrozen(true);
+
+            actualLength.assign(active);
+            INDArray rerunState = sd.output(inputs, "gdr_rerun_state")
+                    .get("gdr_rerun_state");
+
+            assertTrue(fullState.sub(expectedState).amaxNumber().doubleValue() > 1e-5,
+                    "Discriminator must observe a different full-window state");
+            assertEquals(0.0,
+                    rerunState.sub(expectedState).amaxNumber().doubleValue(), 1e-5,
+                    "Frozen DSP rerun must consume the updated active length");
         } finally {
             sd.close();
         }

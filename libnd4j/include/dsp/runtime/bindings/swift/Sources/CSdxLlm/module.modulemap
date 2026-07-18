@@ -1,0 +1,5 @@
+module CSdxLlm [system] {
+    header "shim.h"
+    link "sdx_llm"
+    export *
+}

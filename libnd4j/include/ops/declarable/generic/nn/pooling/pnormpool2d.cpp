@@ -86,6 +86,7 @@ DECLARE_SYN(PnormPool, pnormpool2d);
 DECLARE_SYN(pnormpool, pnormpool2d);
 
 DECLARE_TYPES(pnormpool2d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -140,6 +141,7 @@ DECLARE_SHAPE_FN(pnormpool2d) {
 }
 
 DECLARE_TYPES(pnormpool2d_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

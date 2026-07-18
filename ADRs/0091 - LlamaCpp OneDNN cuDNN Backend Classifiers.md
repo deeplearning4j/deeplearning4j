@@ -1,7 +1,10 @@
 # ADR: LlamaCpp, OneDNN, and cuDNN Backend Classifiers
 
 ## Status
-Accepted
+Partially superseded by ADR-0112 (LlamaCpp Platform Removal and Native Parity).
+The `llamacpp` classifier and `platform/llamacpp` helper introduced here were
+removed once every op they provided gained a native CPU+CUDA implementation.
+The OneDNN and cuDNN classifier scheme this ADR established remains in effect.
 
 ## Date
 2025-12-30

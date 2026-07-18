@@ -63,11 +63,13 @@ CUSTOM_OP_IMPL(sufficient_statistics, 2, 3, false, 0, 0) {
 }
 
 DECLARE_TYPES(sufficient_statistics) {
+
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS});
   getOpDescriptor()->setAllowedInputTypes(1, {INT32, INT64});
   getOpDescriptor()->setAllowedOutputTypes(0, INHERIT);
   getOpDescriptor()->setAllowedOutputTypes(1, INHERIT);
   getOpDescriptor()->setAllowedOutputTypes(2, INHERIT);
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(sufficient_statistics) {

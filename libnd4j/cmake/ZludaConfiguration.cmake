@@ -174,12 +174,19 @@ function(setup_zluda_intel)
         NO_DEFAULT_PATH
     )
 
-    # Also check for Level Zero directly
+    # Also check for Level Zero directly. The replay handle needs both the
+    # headers and loader; a header-only detection must not advertise executable
+    # Level Zero support in the portable replay matrix.
+    set(HAVE_LEVELZERO FALSE CACHE BOOL "Level Zero replay handle available" FORCE)
     find_path(LEVEL_ZERO_INCLUDE
         NAMES level_zero/ze_api.h
-        HINTS ${ONEAPI_SEARCH_PATHS}
+        HINTS ${ONEAPI_SEARCH_PATHS} /usr /usr/local
         PATH_SUFFIXES include
-        NO_DEFAULT_PATH
+    )
+    find_library(LEVEL_ZERO_LIBRARY
+        NAMES ze_loader
+        HINTS ${ONEAPI_SEARCH_PATHS} /usr /usr/local
+        PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu compiler/latest/lib
     )
 
     if(ONEAPI_PATH OR LEVEL_ZERO_INCLUDE)
@@ -187,8 +194,13 @@ function(setup_zluda_intel)
             message(STATUS "Found oneAPI: ${ONEAPI_PATH}")
             set(ONEAPI_PATH "${ONEAPI_PATH}" PARENT_SCOPE)
         endif()
-        if(LEVEL_ZERO_INCLUDE)
-            message(STATUS "Found Level Zero: ${LEVEL_ZERO_INCLUDE}")
+        if(LEVEL_ZERO_INCLUDE AND LEVEL_ZERO_LIBRARY)
+            message(STATUS "Found Level Zero headers: ${LEVEL_ZERO_INCLUDE}")
+            message(STATUS "Found Level Zero loader: ${LEVEL_ZERO_LIBRARY}")
+            set(HAVE_LEVELZERO TRUE CACHE BOOL "Level Zero replay handle available" FORCE)
+            add_compile_definitions(HAVE_LEVELZERO=1)
+        elseif(LEVEL_ZERO_INCLUDE)
+            print_status_colored("WARNING" "Level Zero headers found but ze_loader is missing; native replay handle disabled.")
         endif()
 
         # For Intel ZLUDA, use oneDNN which has native Intel GPU support
@@ -452,6 +464,12 @@ function(configure_zluda_linking target_name)
         endif()
 
     elseif(ZLUDA_TARGET_BACKEND STREQUAL "INTEL")
+        if(HAVE_LEVELZERO AND LEVEL_ZERO_LIBRARY)
+            target_include_directories(${target_name} PUBLIC ${LEVEL_ZERO_INCLUDE})
+            target_link_libraries(${target_name} PUBLIC ${LEVEL_ZERO_LIBRARY})
+            message(STATUS "   Linked Level Zero loader: ${LEVEL_ZERO_LIBRARY}")
+        endif()
+
         # Link against the project's existing oneDNN (onednn_interface target)
         # This target is created by setup_onednn() in Dependencies.cmake
         if(TARGET onednn_interface)

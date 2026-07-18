@@ -25,6 +25,7 @@
 #include <legacy/NativeOpExecutioner.h>
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyPairwiseTransformOp::LegacyPairwiseTransformOp() : LegacyOp(2) {
   this->getOpDescriptor()->allowInplace(true);
 }
@@ -74,5 +75,6 @@ ShapeList *LegacyPairwiseTransformOp::calculateOutputShape(ShapeList *inputShape
 
   return SHAPELIST(CONSTANT(newShape));
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

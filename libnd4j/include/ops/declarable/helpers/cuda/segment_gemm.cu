@@ -25,10 +25,17 @@
 #include <cfloat>
 
 #include "execution/cuda/LaunchDims.h"
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
 namespace helpers {
+
+// Accumulator type: double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
 /**
  * Segmented GEMM CUDA kernel.
@@ -56,6 +63,8 @@ static SD_KERNEL void segmentGemmKernel(const void* vInput,
                                          const LongType weightsColStride,
                                          const LongType outputRowStride,
                                          const LongType outputElemStride) {
+    using AccT = typename AccType<T>::type;
+
     auto input = reinterpret_cast<const T*>(vInput);
     auto weights = reinterpret_cast<const T*>(vWeights);
     auto offsets = reinterpret_cast<const LongType*>(vSegmentOffsets);
@@ -79,13 +88,13 @@ static SD_KERNEL void segmentGemmKernel(const void* vInput,
 
     // Each thread computes one output element
     for (LongType j = threadIdx.x; j < outDim; j += blockDim.x) {
-        float sum = 0.0f;
+        AccT sum = static_cast<AccT>(0);
         LongType inputBase = tokenIdx * inputRowStride;
         LongType weightBase = expertIdx * weightsExpertStride;
 
         for (LongType k = 0; k < inDim; k++) {
-            float inVal = static_cast<float>(input[inputBase + k * inputElemStride]);
-            float wVal = static_cast<float>(weights[weightBase + k * weightsRowStride + j * weightsColStride]);
+            AccT inVal = static_cast<AccT>(input[inputBase + k * inputElemStride]);
+            AccT wVal = static_cast<AccT>(weights[weightBase + k * weightsRowStride + j * weightsColStride]);
             sum += inVal * wVal;
         }
         output[tokenIdx * outputRowStride + j * outputElemStride] = static_cast<T>(sum);

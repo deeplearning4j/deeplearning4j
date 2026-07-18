@@ -24,35 +24,43 @@
 #define SD_PLATFORM_BOILERPLATE_H
 #include <ConstMessages.h>
 #include <execution/Engine.h>
+#include <system/BackendNamespace.h>
 
 #define CONCATP(A, B) A##_##B
 
-#define DECLARE_PLATFORM_F(NAME, ENGINE, CNAME)                             \
-  class SD_LIB_EXPORT PLATFORM_##CNAME : public PlatformHelper {            \
-   public:                                                                  \
-    PLATFORM_##CNAME() : PlatformHelper(#NAME, samediff::Engine::ENGINE) {} \
-    bool isUsable(graph::Context &context) override;                        \
-    sd::Status invokeHelper(graph::Context &context) override;              \
-  };
+#define DECLARE_PLATFORM_F(NAME, ENGINE, CNAME)                                 \
+  SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN                                  \
+  class SD_LIB_EXPORT PLATFORM_##CNAME : public PlatformHelper {                \
+   public:                                                                      \
+    PLATFORM_##CNAME() : PlatformHelper(#NAME, samediff::Engine::ENGINE) {}     \
+    bool isUsable(graph::Context &context) override;                            \
+    sd::Status invokeHelper(graph::Context &context) override;                  \
+  };                                                                            \
+  SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 
 #define DECLARE_PLATFORM(NAME, ENGINE) DECLARE_PLATFORM_F(NAME, ENGINE, NAME##_##ENGINE)
 
-#define PLATFORM_IMPL_F(NAME, ENGINE, CNAME)                         \
-  struct SD_LIB_EXPORT __registratorPlatformHelper_##CNAME {         \
-    __registratorPlatformHelper_##CNAME() {                          \
-      auto helper = new PLATFORM_##CNAME();                          \
-      OpRegistrator::getInstance().registerHelper(helper);           \
-    }                                                                \
-  };                                                                 \
-  static __registratorPlatformHelper_##CNAME platformHelper_##CNAME; \
-  sd::Status PLATFORM_##CNAME::invokeHelper(sd::graph::Context &block)
+#define PLATFORM_IMPL_F(NAME, ENGINE, CNAME)                                    \
+  SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN                                  \
+  struct SD_LIB_EXPORT __registratorPlatformHelper_##CNAME {                    \
+    __registratorPlatformHelper_##CNAME() {                                     \
+      auto helper = new PLATFORM_##CNAME();                                     \
+      OpRegistrator::getInstance().registerHelper(helper);                      \
+    }                                                                           \
+  };                                                                            \
+  static __registratorPlatformHelper_##CNAME platformHelper_##CNAME;            \
+  SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END                                    \
+  sd::Status SD_BACKEND_PLATFORMS_CLASS(PLATFORM_##CNAME)::invokeHelper(        \
+      sd::graph::Context &block)
 
 #define PLATFORM_IMPL(NAME, ENGINE) PLATFORM_IMPL_F(NAME, ENGINE, NAME##_##ENGINE)
 
-#define PLATFORM_CHECK_F(NAME, ENGINE, CNAME) bool PLATFORM_##CNAME::isUsable(graph::Context &block)
+#define PLATFORM_CHECK_F(NAME, ENGINE, CNAME)                                   \
+  bool SD_BACKEND_PLATFORMS_CLASS(PLATFORM_##CNAME)::isUsable(graph::Context &block)
 #define PLATFORM_CHECK(NAME, ENGINE) PLATFORM_CHECK_F(NAME, ENGINE, NAME##_##ENGINE)
 
 #define DECLARE_PLATFORM_LEGACY_F(PREFIX, OPNUM, ENGINE, CNAME)                                                       \
+  SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN                                                                       \
   class SD_LIB_EXPORT PLATFORM_LEGACY_##CNAME : public PlatformHelperLegacy {                                         \
    public:                                                                                                            \
     PLATFORM_LEGACY_##CNAME() : PlatformHelperLegacy(PREFIX, OPNUM, samediff::Engine::ENGINE) {}                      \
@@ -61,9 +69,11 @@
     sd::Status invokeHelper(void *extraParams, const sd::LongType *outShapeInfo, sd::InteropDataBuffer *outputBuffer, \
                             const sd::LongType *inArg0ShapeInfo, const sd::InteropDataBuffer *inArg0Buffer,           \
                             const sd::LongType *inArg1ShapeInfo, const sd::InteropDataBuffer *inArg1Buffer) override; \
-  };
+  };                                                                                                                  \
+  SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 
 #define PLATFORM_LEGACY_IMPL_F(CNAME)                                                           \
+  SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN                                                  \
   struct SD_LIB_EXPORT __registratorPlatformHelper_##CNAME {                                    \
     __registratorPlatformHelper_##CNAME() {                                                     \
       auto helper = new PLATFORM_LEGACY_##CNAME();                                              \
@@ -71,14 +81,16 @@
     }                                                                                           \
   };                                                                                            \
   static __registratorPlatformHelper_##CNAME platformHelper_##CNAME;                            \
-  sd::Status PLATFORM_LEGACY_##CNAME::invokeHelper(                                             \
+  SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END                                                    \
+  sd::Status SD_BACKEND_PLATFORMS_CLASS(PLATFORM_LEGACY_##CNAME)::invokeHelper(                 \
       void *extraParams, const sd::LongType *outShapeInfo, sd::InteropDataBuffer *outputBuffer, \
       const sd::LongType *inArg0ShapeInfo, const sd::InteropDataBuffer *inArg0Buffer,           \
       const sd::LongType *inArg1ShapeInfo, const sd::InteropDataBuffer *inArg1Buffer)
 
 #define PLATFORM_LEGACY_CHECK_F(CNAME)                                                        \
-  bool PLATFORM_LEGACY_##CNAME::isUsable(void *extraParams, const sd::LongType *outShapeInfo, \
-                                         const sd::LongType *inArg0ShapeInfo, const sd::LongType *inArg1ShapeInfo)
+  bool SD_BACKEND_PLATFORMS_CLASS(PLATFORM_LEGACY_##CNAME)::isUsable(                        \
+      void *extraParams, const sd::LongType *outShapeInfo,                                    \
+      const sd::LongType *inArg0ShapeInfo, const sd::LongType *inArg1ShapeInfo)
 
 #define DECLARE_PLATFORM_TRANSFORM_STRICT(OP_ENUM_ENTRY, ENGINE)                                         \
   DECLARE_PLATFORM_LEGACY_F(UNIQUE_TRANSFORM_STRICT_PREFIX, transform::StrictOps::OP_ENUM_ENTRY, ENGINE, \

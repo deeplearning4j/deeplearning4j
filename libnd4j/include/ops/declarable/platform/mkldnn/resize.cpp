@@ -102,7 +102,7 @@ static void resampleBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, dnnl::alg
 
 //////////////////////////////////////////////////////////////////////
 // RESIZE_BILINEAR
-PLATFORM_IMPL(resize_bilinear, ENGINE_CPU) {
+PLATFORM_IMPL(resize_bilinear, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -114,7 +114,7 @@ PLATFORM_IMPL(resize_bilinear, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(resize_bilinear, ENGINE_CPU) {
+PLATFORM_CHECK(resize_bilinear, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -139,7 +139,7 @@ PLATFORM_CHECK(resize_bilinear, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // RESIZE_NEAREST_NEIGHBOR
-PLATFORM_IMPL(resize_nearest_neighbor, ENGINE_CPU) {
+PLATFORM_IMPL(resize_nearest_neighbor, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -151,7 +151,7 @@ PLATFORM_IMPL(resize_nearest_neighbor, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(resize_nearest_neighbor, ENGINE_CPU) {
+PLATFORM_CHECK(resize_nearest_neighbor, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 

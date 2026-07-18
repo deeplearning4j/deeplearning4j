@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include <cstring>
 
+
 namespace {
     // Operation counter for automatic cache cleanup
     std::atomic<uint64_t> g_operation_counter_cache{0};
@@ -206,3 +207,4 @@ SD_LIB_EXPORT void freeString(const char* ptr) {
         delete[] ptr;
     }
 }
+

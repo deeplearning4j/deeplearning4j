@@ -158,6 +158,9 @@ DECLARE_TYPES(gather) {
   getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_GATHER);
 }
 
+// llama.cpp-compat name: ggml get_rows(weights, indices) == gather(weights, indices) with default axis 0
+DECLARE_SYN(get_rows, gather);
+
 DECLARE_SHAPE_FN(gather) {
   // check shape of paddings
   auto inputShapeInfo = inputShape->at(0);

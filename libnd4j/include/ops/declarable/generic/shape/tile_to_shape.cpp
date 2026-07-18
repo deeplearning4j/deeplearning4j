@@ -55,10 +55,15 @@ DECLARE_SHAPE_FN(tile_to_shape) {
   return SHAPELIST(newShape);
 }
 
-DECLARE_TYPES(tile_to_shape) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(tile_to_shape) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+}
 
 DECLARE_TYPES(tile_to_shape_bp) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_BACKWARD);
 }
 
 CUSTOM_OP_IMPL(tile_to_shape_bp, 2, 1, true, 0, -1) {

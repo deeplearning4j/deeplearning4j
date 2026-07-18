@@ -86,6 +86,7 @@ DECLARE_SHAPE_FN(mfcc) {
 }
 
 DECLARE_TYPES(mfcc) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

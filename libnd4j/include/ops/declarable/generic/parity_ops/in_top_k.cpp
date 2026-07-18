@@ -58,6 +58,7 @@ DECLARE_SHAPE_FN(in_top_k) {
 }
 
 DECLARE_TYPES(in_top_k) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_COMPARISON | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INTS})

@@ -41,6 +41,7 @@ CUSTOM_OP_IMPL(contrastive_loss, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(contrastive_loss) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -68,6 +69,7 @@ CUSTOM_OP_IMPL(contrastive_loss_grad, 2, 2, false, 0, 0) {
 }
 
 DECLARE_TYPES(contrastive_loss_grad) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }

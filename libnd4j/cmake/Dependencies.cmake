@@ -216,7 +216,11 @@ function(setup_android_arm_openblas)
         # Define search patterns based on platform
         set(LIB_SEARCH_PATTERNS
                 "${OPENBLAS_PATH}/lib/libopenblas.so"
+                "${OPENBLAS_PATH}/lib/libopenblas.so.0"
                 "${OPENBLAS_PATH}/lib/libopenblas.a"
+                "${OPENBLAS_PATH}/libopenblas.so"
+                "${OPENBLAS_PATH}/libopenblas.so.0"
+                "${OPENBLAS_PATH}/libopenblas.a"
         )
 
         # Add platform-specific patterns
@@ -283,6 +287,21 @@ endfunction()
 
 function(setup_blas)
     if(SD_CUDA)
+        return()
+    endif()
+    if(SD_VULKAN OR SD_HEXAGON OR SD_TPU OR SD_GOOGLE_TENSOR_TPU)
+        # Primary accelerator builds are device-only. Host BLAS would create a
+        # second execution path, enlarge mobile packages, and make unsupported
+        # device segments look successful through CPU fallback. Force the cache
+        # clean as well so a reused build directory cannot retain an ambient
+        # OpenBLAS configuration.
+        set(BLAS FALSE CACHE BOOL
+            "Host BLAS is disabled for device-only accelerator builds" FORCE)
+        unset(OPENBLAS_PATH CACHE)
+        unset(BLAS_IMPL CACHE)
+        set(HAVE_OPENBLAS FALSE PARENT_SCOPE)
+        set(OPENBLAS_LIBRARIES "" PARENT_SCOPE)
+        set(OPENBLAS_PATH "" PARENT_SCOPE)
         return()
     endif()
 
@@ -359,7 +378,9 @@ function(setup_blas)
     set(OPENBLAS_LIB_FOUND "")
     foreach(lib_candidate
             "${OPENBLAS_PATH}/lib/libopenblas.so"
+            "${OPENBLAS_PATH}/lib/libopenblas.so.0"
             "${OPENBLAS_PATH}/libopenblas.so"
+            "${OPENBLAS_PATH}/libopenblas.so.0"
             "${OPENBLAS_PATH}/lib/libopenblas.dylib"
             "${OPENBLAS_PATH}/libopenblas.dylib"
             "${OPENBLAS_PATH}/lib/libopenblas.a"
@@ -378,6 +399,32 @@ function(setup_blas)
         endif()
         link_directories(${OPENBLAS_PATH})
         set(OPENBLAS_LIB_FOUND "openblas")
+    endif()
+
+    # A same-architecture Linux ELF can satisfy the Android link but will
+    # fail on-device because it references glibc and the Linux program loader.
+    # Fail closed here so packaging can never turn that into a plausible AAR.
+    if((ANDROID OR SD_ANDROID_BUILD) AND OPENBLAS_LIB_FOUND MATCHES "\\.so(\\.[0-9]+)*$")
+        if(NOT CMAKE_READELF)
+            message(FATAL_ERROR
+                "Android OpenBLAS validation requires CMAKE_READELF from the NDK toolchain")
+        endif()
+        execute_process(
+            COMMAND "${CMAKE_READELF}" -d "${OPENBLAS_LIB_FOUND}"
+            RESULT_VARIABLE _sd_openblas_readelf_status
+            OUTPUT_VARIABLE _sd_openblas_dynamic
+            ERROR_VARIABLE _sd_openblas_readelf_error)
+        if(NOT _sd_openblas_readelf_status EQUAL 0)
+            message(FATAL_ERROR
+                "Could not inspect Android OpenBLAS ${OPENBLAS_LIB_FOUND}: "
+                "${_sd_openblas_readelf_error}")
+        endif()
+        if(_sd_openblas_dynamic MATCHES
+                "libc\\.so\\.6|libpthread\\.so\\.0|libgfortran|ld-linux")
+            message(FATAL_ERROR
+                "Resolved OpenBLAS is a Linux/glibc binary, not Android: "
+                "${OPENBLAS_LIB_FOUND}")
+        endif()
     endif()
 
     add_compile_definitions(HAVE_OPENBLAS=1)
@@ -662,6 +709,39 @@ function(setup_flatbuffers)
             list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER})
         elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
             list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH})
+        endif()
+
+        # Cross-compilation without flatc generation still needs the target
+        # toolchain. Passing only clang/clang++ loses the NDK target triple and
+        # silently produces a host archive that cannot be linked into an AAR.
+        if(CMAKE_CROSSCOMPILING)
+            if(CMAKE_TOOLCHAIN_FILE)
+                list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE})
+            endif()
+            if(CMAKE_SYSTEM_NAME)
+                list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})
+            endif()
+            if(CMAKE_SYSTEM_VERSION)
+                list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION})
+            endif()
+            if(CMAKE_ANDROID_ARCH_ABI)
+                list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_ANDROID_ARCH_ABI=${CMAKE_ANDROID_ARCH_ABI})
+            endif()
+            if(CMAKE_ANDROID_NDK)
+                list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_ANDROID_NDK=${CMAKE_ANDROID_NDK})
+            endif()
+            if(CMAKE_ANDROID_STL_TYPE)
+                list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_ANDROID_STL_TYPE=${CMAKE_ANDROID_STL_TYPE})
+            endif()
+            if(ANDROID_ABI)
+                list(APPEND NATIVE_CMAKE_ARGS -DANDROID_ABI=${ANDROID_ABI})
+            endif()
+            if(ANDROID_PLATFORM)
+                list(APPEND NATIVE_CMAKE_ARGS -DANDROID_PLATFORM=${ANDROID_PLATFORM})
+            endif()
+            if(ANDROID_STL)
+                list(APPEND NATIVE_CMAKE_ARGS -DANDROID_STL=${ANDROID_STL})
+            endif()
         endif()
 
         ExternalProject_Add(flatbuffers_external
@@ -1105,24 +1185,30 @@ function(setup_mlir)
     include(${CMAKE_CURRENT_LIST_DIR}/FindMLIR.cmake)
 
     if(NOT MLIR_FOUND)
-        message(WARNING "MLIR/LLVM ${MLIR_VERSION}+ not found. MLIR support will be disabled.")
-        message(WARNING "To enable MLIR support:")
-        message(WARNING "  1. Install LLVM ${MLIR_VERSION}+ with MLIR enabled")
-        message(WARNING "  2. Set LLVM_DIR or LLVM_ROOT to your LLVM installation")
-        set(HAVE_MLIR FALSE PARENT_SCOPE)
-        set(MLIR "" PARENT_SCOPE)
-        return()
+        message(FATAL_ERROR
+            "MLIR support was requested, but LLVM/MLIR ${MLIR_VERSION}+ was not found. "
+            "Set LLVM_DIR, MLIR_DIR, LLVM_ROOT, or CMAKE_PREFIX_PATH to a matching shared installation.")
     endif()
 
     set(HAVE_MLIR TRUE PARENT_SCOPE)
-    set(MLIR MLIR::MLIR PARENT_SCOPE)
+    if(MLIR_ENABLE_VULKAN)
+        if(NOT TARGET MLIR::SPIRV)
+            message(FATAL_ERROR
+                "MLIR Vulkan support was requested, but the validated MLIR::SPIRV target is unavailable.")
+        endif()
+        # MLIR::SPIRV carries the same shared MLIR/LLVM libraries as CUDA's
+        # MLIR::MLIR target after enforcing the Vulkan lowering contract.
+        set(MLIR MLIR::SPIRV PARENT_SCOPE)
+    else()
+        set(MLIR MLIR::MLIR PARENT_SCOPE)
+    endif()
 
     # Configure GPU support if requested and CUDA is enabled
     if(MLIR_ENABLE_GPU AND SD_CUDA)
         if(TARGET MLIR::GPU)
             message(STATUS "   MLIR GPU dialect: enabled")
         else()
-            message(WARNING "   MLIR GPU libraries not found. GPU dialect will not be available.")
+            message(FATAL_ERROR "MLIR GPU support was requested, but the MLIR::GPU target is unavailable.")
         endif()
     endif()
 
@@ -1410,76 +1496,191 @@ function(setup_mps)
 endfunction()
 
 # =============================================================================
-# TRITON GPU COMPILER (Optional)
+# MANAGED LLVM/MLIR + TRITON DSP COMPILER (Optional)
 # =============================================================================
 function(setup_triton)
-    # Triton is OFF by default.
-    # Enable explicitly with -DSD_TRITON=ON (or SD_TRITON=ON env var).
-    # NVRTC and PTX backends are also available on CUDA builds.
+    # Triton is controlled only by explicit CMake options. Environment and
+    # hardware discovery never change whether it is enabled.
     set(_triton_requested OFF)
-    # Legacy opt-in path via helper flag (kept for backward compatibility).
+    # Legacy explicit CMake opt-in path (kept for backward compatibility).
     if(HELPERS_triton)
         set(_triton_requested ON)
     endif()
-    # Preferred explicit opt-in flags.
-    if(DEFINED SD_TRITON AND SD_TRITON)
-        set(_triton_requested ON)
-    endif()
-    if(DEFINED ENV{SD_TRITON} AND "$ENV{SD_TRITON}" STREQUAL "ON")
-        set(_triton_requested ON)
-    endif()
-    # Explicit opt-out overrides
-    if(DEFINED SD_TRITON AND NOT SD_TRITON)
-        set(_triton_requested OFF)
-    endif()
-    if(DEFINED ENV{SD_TRITON} AND "$ENV{SD_TRITON}" STREQUAL "OFF")
-        set(_triton_requested OFF)
-    endif()
-    if(NOT _triton_requested)
-        message(STATUS "Triton disabled (use -DSD_TRITON=ON to enable)")
-        set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
-        set(TRITON "" PARENT_SCOPE)
-        return()
-    endif()
-    # Triton JIT compilation requires LLVM headers that are incompatible with
-    # MSVC's STL (constexpr string_view::substr in TypeName.h).  The Triton
-    # runtime also needs a Linux-only PTX/NVRTC toolchain, so skip on Windows.
-    if(WIN32)
-        message(STATUS "Triton disabled on Windows (LLVM headers incompatible with MSVC)")
-        set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
-        set(TRITON "" PARENT_SCOPE)
-        return()
-    endif()
-    # Triton supports both GPU (CUDA/HIP/Level-Zero) and CPU backends.
-    # On CPU builds, triton-cpu provides LLVM-based CPU codegen.
-    # SD_TRITON=ON is valid for all build types.
-    set(_TRITON_CPU_ONLY FALSE)
-    if(NOT SD_CUDA AND NOT SD_HIP AND NOT SD_LEVEL_ZERO)
-        set(_TRITON_CPU_ONLY TRUE)
+    if(DEFINED SD_TRITON)
+        set(_triton_requested ${SD_TRITON})
     endif()
 
-    # Check if Triton and LLVM are already built from a previous run.
-    # After CMake cache clean, targets don't persist but install dirs do.
-    # Use different install dirs for CPU vs GPU triton to avoid conflicts.
-    if(_TRITON_CPU_ONLY)
+    # Vulkan replay consumes the pinned shared LLVM/MLIR package for native
+    # MLIR-to-SPIR-V lowering, but it does not consume or enable the Triton DSP
+    # compiler. Keep that infrastructure request independent of SD_TRITON.
+    set(_managed_llvm_requested ${_triton_requested})
+    if(SD_VULKAN AND HELPERS_mlir STREQUAL "ON" AND MLIR_ENABLE_VULKAN)
+        set(_managed_llvm_requested ON)
+    endif()
+
+    if(NOT _managed_llvm_requested)
+        message(STATUS "Triton disabled (use -DSD_TRITON=ON to enable)")
+        set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
+        set(HAVE_TRITON OFF PARENT_SCOPE)
+        set(HAVE_MANAGED_LLVM_MLIR OFF CACHE BOOL
+            "Project-managed shared LLVM/MLIR availability" FORCE)
+        set(HAVE_MANAGED_LLVM_MLIR OFF PARENT_SCOPE)
+        set(HAVE_TRITON_CPU OFF CACHE BOOL "Triton CPU backend" FORCE)
+        set(HAVE_TRITON_CPU OFF PARENT_SCOPE)
+        set(SD_TRITON_CONSUMER_KIND "" CACHE INTERNAL
+            "Compiler package consumer selected by setup_triton" FORCE)
+        set(SD_TRITON_MANAGED_LLVM_ROOT "" CACHE INTERNAL
+            "Project-managed LLVM/MLIR package root selected by setup_triton" FORCE)
+        set(TRITON "" PARENT_SCOPE)
+        return()
+    endif()
+    if(SD_VULKAN AND NOT _triton_requested)
+        message(STATUS
+            "Triton DSP compiler disabled; provisioning managed LLVM/MLIR for Vulkan replay")
+    endif()
+
+    # The pinned LLVM sources currently require headers that are incompatible
+    # with MSVC's STL (constexpr string_view::substr in TypeName.h).
+    if(WIN32)
+        message(FATAL_ERROR
+            "The project-managed LLVM/MLIR stack is unsupported on Windows because "
+            "its LLVM headers are incompatible with MSVC.")
+    endif()
+    # Select the compiler package from the backend that consumes it. This is
+    # deliberately not a GPU-vs-non-GPU shortcut: Vulkan consumes the same
+    # project-managed shared LLVM/MLIR package as the GPU emitter stack, but it
+    # lowers through MLIR/SPIR-V and therefore must not build either libtriton
+    # implementation or select Triton CPU code generation.
+    if(SD_VULKAN)
+        set(_TRITON_CONSUMER_KIND "VULKAN_SPIRV")
+        set(_TRITON_BUILDS_COMPILER FALSE)
+    elseif(SD_CUDA OR SD_HIP OR SD_LEVEL_ZERO)
+        set(_TRITON_CONSUMER_KIND "GPU_EMITTER")
+        set(_TRITON_BUILDS_COMPILER TRUE)
+    elseif(SD_CPU)
+        set(_TRITON_CONSUMER_KIND "CPU_COMPILER")
+        set(_TRITON_BUILDS_COMPILER TRUE)
+    else()
+        message(FATAL_ERROR
+            "SD_TRITON=ON has no compiler-package routing for the selected backend. "
+            "Expected SD_CPU, SD_CUDA/SD_HIP/SD_LEVEL_ZERO, or SD_VULKAN.")
+    endif()
+    set(SD_TRITON_CONSUMER_KIND "${_TRITON_CONSUMER_KIND}" CACHE INTERNAL
+        "Compiler package consumer selected by setup_triton" FORCE)
+    set(HAVE_TRITON_CPU OFF CACHE BOOL "Triton CPU backend" FORCE)
+    set(HAVE_TRITON_CPU OFF PARENT_SCOPE)
+
+    # External target builds must receive the same canonical toolchain contract
+    # as libnd4j itself. Host-only generators are handled separately below.
+    set(_TRITON_TARGET_CMAKE_ARGS "")
+    if(CMAKE_CROSSCOMPILING)
+        foreach(_triton_target_var
+                CMAKE_TOOLCHAIN_FILE
+                CMAKE_SYSTEM_NAME
+                CMAKE_SYSTEM_VERSION
+                CMAKE_SYSTEM_PROCESSOR
+                CMAKE_SYSROOT
+                CMAKE_ANDROID_NDK
+                CMAKE_ANDROID_NDK_VERSION
+                CMAKE_ANDROID_ARCH_ABI
+                CMAKE_ANDROID_API
+                CMAKE_ANDROID_STL_TYPE
+                ANDROID_ABI
+                ANDROID_PLATFORM
+                ANDROID_STL
+                CMAKE_C_COMPILER_TARGET
+                CMAKE_CXX_COMPILER_TARGET)
+            if(DEFINED ${_triton_target_var} AND
+               NOT "${${_triton_target_var}}" STREQUAL "")
+                list(APPEND _TRITON_TARGET_CMAKE_ARGS
+                    "-D${_triton_target_var}=${${_triton_target_var}}")
+            endif()
+        endforeach()
+        message(STATUS
+            "Triton target toolchain: system=${CMAKE_SYSTEM_NAME} "
+            "processor=${CMAKE_SYSTEM_PROCESSOR} androidAbi=${CMAKE_ANDROID_ARCH_ABI} "
+            "api=${CMAKE_SYSTEM_VERSION}")
+    endif()
+
+    # Check if the selected compiler package is already built from a previous
+    # run. CPU Triton has its own LLVM ABI. GPU emitters and Vulkan SPIR-V use
+    # the same patched shared LLVM/MLIR package and revision.
+    if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
         set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_cpu_install")
         set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_cpu_llvm_install")
-    else()
+    elseif(_TRITON_CONSUMER_KIND STREQUAL "GPU_EMITTER")
         set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
         set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
+    else()
+        set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
+    endif()
+    set(SD_TRITON_MANAGED_LLVM_ROOT "${TRITON_LLVM_INSTALL_DIR}" CACHE INTERNAL
+        "Project-managed LLVM/MLIR package root selected by setup_triton" FORCE)
+
+    # Revision of the project-managed LLVM/Triton source patch recipe. The
+    # marker prevents the fast path from accepting installs without the required
+    # dynamic-linking and MLIR correctness patches and partitions dependency caches.
+    set(_TRITON_MANAGED_RECIPE_REVISION "managed-llvm-patches-v5")
+    set(_TRITON_LLVM_INSTALL_MARKER
+        "${TRITON_LLVM_INSTALL_DIR}/.sd-${_TRITON_MANAGED_RECIPE_REVISION}")
+    if(_TRITON_BUILDS_COMPILER)
+        set(_TRITON_INSTALL_MARKER
+            "${TRITON_INSTALL_DIR}/.sd-${_TRITON_MANAGED_RECIPE_REVISION}")
+    endif()
+
+    # A generated MLIRConfig.cmake alone does not make a reusable install.
+    # Dependency caches from the former static-link configuration contain the
+    # package metadata and archives but not the monolithic LLVM/MLIR DSOs. If
+    # that partial install is accepted, CMake creates imported shared targets
+    # with no producer and the final link fails with "No rule to make target".
+    if(WIN32)
+        set(_TRITON_LLVM_DSO_DIR "${TRITON_LLVM_INSTALL_DIR}/bin")
+    else()
+        set(_TRITON_LLVM_DSO_DIR "${TRITON_LLVM_INSTALL_DIR}/lib")
+    endif()
+    set(_TRITON_LLVM_SHARED_LIBRARY
+        "${_TRITON_LLVM_DSO_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}LLVM${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    set(_TRITON_MLIR_SHARED_LIBRARY
+        "${_TRITON_LLVM_DSO_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}MLIR${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    set(_TRITON_MLIR_EXECUTION_ENGINE_SHARED_LIBRARY
+        "${_TRITON_LLVM_DSO_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}MLIRExecutionEngineShared${CMAKE_SHARED_LIBRARY_SUFFIX}")
+    set(_TRITON_LLVM_INSTALL_COMPLETE FALSE)
+    if(EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake" AND
+       EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake" AND
+       EXISTS "${_TRITON_LLVM_SHARED_LIBRARY}" AND
+       EXISTS "${_TRITON_MLIR_SHARED_LIBRARY}" AND
+       EXISTS "${_TRITON_MLIR_EXECUTION_ENGINE_SHARED_LIBRARY}" AND
+       EXISTS "${_TRITON_LLVM_INSTALL_MARKER}")
+        set(_TRITON_LLVM_INSTALL_COMPLETE TRUE)
     endif()
 
     set(_TRITON_LIB_EXISTS FALSE)
-    if(EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" OR
-       EXISTS "${TRITON_INSTALL_DIR}/lib/triton.lib")
-        set(_TRITON_LIB_EXISTS TRUE)
+    if(_TRITON_BUILDS_COMPILER)
+        if((EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" OR
+            EXISTS "${TRITON_INSTALL_DIR}/lib/triton.lib") AND
+           EXISTS "${_TRITON_INSTALL_MARKER}")
+            set(_TRITON_LIB_EXISTS TRUE)
+        endif()
     endif()
-    if(_TRITON_LIB_EXISTS AND
-       EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
-        message(STATUS "Triton helper: reusing existing install at ${TRITON_INSTALL_DIR}")
-        set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
-        set(HAVE_TRITON ON PARENT_SCOPE)
-        if(_TRITON_CPU_ONLY)
+    set(_TRITON_PACKAGE_INSTALL_COMPLETE ${_TRITON_LLVM_INSTALL_COMPLETE})
+    if(_TRITON_BUILDS_COMPILER AND NOT _TRITON_LIB_EXISTS)
+        set(_TRITON_PACKAGE_INSTALL_COMPLETE FALSE)
+    endif()
+    if(_TRITON_PACKAGE_INSTALL_COMPLETE)
+        if(_TRITON_BUILDS_COMPILER)
+            message(STATUS
+                "Triton ${_TRITON_CONSUMER_KIND}: reusing compiler install at ${TRITON_INSTALL_DIR}")
+        else()
+            message(STATUS
+                "Triton ${_TRITON_CONSUMER_KIND}: reusing shared LLVM/MLIR at ${TRITON_LLVM_INSTALL_DIR}")
+        endif()
+        set(HAVE_MANAGED_LLVM_MLIR ON CACHE BOOL
+            "Project-managed shared LLVM/MLIR availability" FORCE)
+        set(HAVE_MANAGED_LLVM_MLIR ON PARENT_SCOPE)
+        set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} CACHE BOOL
+            "Triton availability" FORCE)
+        set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} PARENT_SCOPE)
+        if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
             set(HAVE_TRITON_CPU ON CACHE BOOL "Triton CPU backend" FORCE)
             set(HAVE_TRITON_CPU ON PARENT_SCOPE)
         endif()
@@ -1489,159 +1690,185 @@ function(setup_triton)
         endif()
         if(NOT TARGET triton_interface)
             add_library(triton_interface INTERFACE)
-            # Use SYSTEM to prevent Triton/LLVM headers from conflicting
-            # with libnd4j's DataType enum names (BOOL, INT8, FLOAT32 etc.)
-            target_include_directories(triton_interface SYSTEM INTERFACE
-                "${TRITON_INSTALL_DIR}/include"
+            # These headers and the shared libraries below are one versioned
+            # package. Keep their include roots ahead of ambient compiler search paths.
+            target_include_directories(triton_interface INTERFACE
                 "${TRITON_LLVM_INSTALL_DIR}/include"
             )
-            if(WIN32)
-                target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/triton.lib")
-            else()
-                target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
-            endif()
-            # Glob ALL MLIR and LLVM static libraries — avoids missing transitive deps
-            if(WIN32)
-                file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/MLIR*.lib")
-                file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/LLVM*.lib")
-                file(GLOB _TRITON_MLIR_CAPI_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/MLIRCAPI*.lib")
-            else()
-                file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR*.a")
-                file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM*.a")
-                file(GLOB _TRITON_MLIR_CAPI_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRCAPI*.a")
-            endif()
-            list(SORT _TRITON_MLIR_LIBS)
-            list(SORT _TRITON_LLVM_LIBS)
-            # Separate critical MLIR libraries that need --whole-archive
-            # to prevent GNU ld from demoting STB_GNU_UNIQUE TypeID symbols to STB_LOCAL
-            set(_MLIR_WHOLE_ARCHIVE_LIBS "")
-            set(_MLIR_NORMAL_LIBS "")
-            foreach(_lib ${_TRITON_MLIR_LIBS})
-                get_filename_component(_name "${_lib}" NAME)
-                if(_name MATCHES "^libMLIRIR\\.a$|^libMLIRSupport\\.a$")
-                    list(APPEND _MLIR_WHOLE_ARCHIVE_LIBS "${_lib}")
+            if(_TRITON_BUILDS_COMPILER)
+                target_include_directories(triton_interface INTERFACE
+                    "${TRITON_INSTALL_DIR}/include")
+                if(WIN32)
+                    target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/triton.lib")
                 else()
-                    list(APPEND _MLIR_NORMAL_LIBS "${_lib}")
+                    target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
                 endif()
+            endif()
+            # Consume the monolithic shared libraries exported by the pinned
+            # LLVM/MLIR install. This preserves LLVM/MLIR's DSO boundaries and lets
+            # independent LLVM/MLIR versions coexist in the same process.
+            set(LLVM_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm" CACHE PATH
+                "Project-managed target LLVM package" FORCE)
+            set(MLIR_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir" CACHE PATH
+                "Project-managed target MLIR package" FORCE)
+            set(LLVM_LINK_LLVM_DYLIB ON)
+            set(MLIR_LINK_MLIR_DYLIB ON)
+            find_package(LLVM CONFIG REQUIRED PATHS "${LLVM_DIR}" NO_DEFAULT_PATH)
+            find_package(MLIR CONFIG REQUIRED PATHS "${MLIR_DIR}" NO_DEFAULT_PATH)
+
+            foreach(_triton_shared_target MLIR LLVM)
+                if(NOT TARGET ${_triton_shared_target})
+                    message(FATAL_ERROR
+                        "Triton LLVM install at ${TRITON_LLVM_INSTALL_DIR} does not export "
+                        "the required shared target '${_triton_shared_target}'. Remove that "
+                        "install and reconfigure so it is rebuilt with LLVM_BUILD_LLVM_DYLIB, "
+                        "LLVM_LINK_LLVM_DYLIB, MLIR_BUILD_MLIR_DYLIB, and "
+                        "MLIR_LINK_MLIR_DYLIB enabled.")
+                endif()
+                get_target_property(_triton_shared_type ${_triton_shared_target} TYPE)
+                get_target_property(_triton_shared_location ${_triton_shared_target} IMPORTED_LOCATION_RELEASE)
+                if(NOT _triton_shared_location)
+                    get_target_property(_triton_shared_location ${_triton_shared_target} IMPORTED_LOCATION)
+                endif()
+                if(NOT _triton_shared_type STREQUAL "SHARED_LIBRARY" OR
+                   NOT _triton_shared_location OR
+                   NOT EXISTS "${_triton_shared_location}")
+                    message(FATAL_ERROR
+                        "Triton requires an installed shared ${_triton_shared_target} target; "
+                        "got type='${_triton_shared_type}', location='${_triton_shared_location}'.")
+                endif()
+                message(STATUS
+                    "Triton shared ${_triton_shared_target}: ${_triton_shared_location}")
             endforeach()
-            if(WIN32)
-                # MSVC linker handles circular deps automatically (no --start-group needed)
-                target_link_libraries(triton_interface INTERFACE
-                    ${_TRITON_MLIR_LIBS}
-                    ${_TRITON_LLVM_LIBS}
-                    ${_TRITON_MLIR_CAPI_LIBS}
-                    zlib.lib zstd.lib
-                )
-                if(NOT _TRITON_CPU_ONLY)
-                    # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
-                    target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
-                endif()
-            else()
-                # Apple ld and Android lld resolve circular deps automatically (like MSVC).
-                # --start-group/--end-group is GNU ld only.
-                if(APPLE OR ANDROID)
-                    target_link_libraries(triton_interface INTERFACE
-                        ${_TRITON_MLIR_LIBS}
-                        ${_TRITON_LLVM_LIBS}
-                        ${_TRITON_MLIR_CAPI_LIBS}
-                    )
-                else()
-                    target_link_libraries(triton_interface INTERFACE
-                        -Wl,--whole-archive
-                        ${_MLIR_WHOLE_ARCHIVE_LIBS}
-                        -Wl,--no-whole-archive
-                        -Wl,--start-group
-                        ${_MLIR_NORMAL_LIBS}
-                        ${_TRITON_LLVM_LIBS}
-                        ${_TRITON_MLIR_CAPI_LIBS}
-                        -Wl,--end-group
-                    )
-                endif()
-                # Platform-appropriate system libs
+
+            # Normalize package-exported MLIR/LLVM targets to the same project-owned
+            # imported target names used by the fresh/cache-restored path. Downstream
+            # linking and runtime packaging must not depend on which setup path ran.
+            if(NOT TARGET triton_llvm_shared)
+                add_library(triton_llvm_shared SHARED IMPORTED GLOBAL)
+                set_target_properties(triton_llvm_shared PROPERTIES
+                    IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}")
+            endif()
+            if(NOT TARGET triton_mlir_shared)
+                add_library(triton_mlir_shared SHARED IMPORTED GLOBAL)
+                set_target_properties(triton_mlir_shared PROPERTIES
+                    IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
+                    INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+            endif()
+
+            target_link_libraries(triton_interface INTERFACE
+                triton_mlir_shared
+                triton_llvm_shared)
+            if(NOT WIN32)
                 target_link_libraries(triton_interface INTERFACE -lz -lm)
                 if(NOT APPLE AND NOT ANDROID)
                     target_link_libraries(triton_interface INTERFACE -lzstd -lrt -ldl -lpthread)
                 elseif(APPLE)
                     target_link_libraries(triton_interface INTERFACE -lzstd -ldl -lpthread)
                 else()
-                    # Android: no -lrt, -lpthread, or -lzstd
                     target_link_libraries(triton_interface INTERFACE -ldl)
                 endif()
-                if(NOT _TRITON_CPU_ONLY)
-                    # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
+            endif()
+            if(SD_CUDA)
+                if(WIN32)
+                    target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
+                else()
                     target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
                 endif()
             endif()
-            list(LENGTH _TRITON_MLIR_LIBS _mlir_count)
-            list(LENGTH _TRITON_LLVM_LIBS _llvm_count)
-            message(STATUS "Triton interface: ${_mlir_count} MLIR + ${_llvm_count} LLVM static libs (from existing install)")
+            message(STATUS
+                "Triton interface: shared MLIR ${MLIR_PACKAGE_VERSION}, LLVM ${LLVM_PACKAGE_VERSION} "
+                "(reused install)")
         endif()
         set(TRITON triton_interface PARENT_SCOPE)
         return()
     endif()
     if(TARGET triton_external)
-        message(STATUS "Triton helper is enabled (target already exists)")
-        set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
+        message(STATUS
+            "Managed LLVM/MLIR helper is enabled for ${_TRITON_CONSUMER_KIND} (target already exists)")
+        set(HAVE_MANAGED_LLVM_MLIR ON CACHE BOOL
+            "Project-managed shared LLVM/MLIR availability" FORCE)
+        set(HAVE_MANAGED_LLVM_MLIR ON PARENT_SCOPE)
+        set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} CACHE BOOL
+            "Triton availability" FORCE)
+        set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} PARENT_SCOPE)
+        if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+            set(HAVE_TRITON_CPU ON CACHE BOOL "Triton CPU backend" FORCE)
+            set(HAVE_TRITON_CPU ON PARENT_SCOPE)
+        endif()
         set(TRITON triton_interface PARENT_SCOPE)
         return()
     endif()
 
-    message(STATUS "Triton helper is enabled (CPU_ONLY=${_TRITON_CPU_ONLY})")
-    set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
-    set(HAVE_TRITON ON PARENT_SCOPE)
-    if(_TRITON_CPU_ONLY)
+    message(STATUS "Managed LLVM/MLIR helper is enabled (consumer=${_TRITON_CONSUMER_KIND})")
+    set(HAVE_MANAGED_LLVM_MLIR ON CACHE BOOL
+        "Project-managed shared LLVM/MLIR availability" FORCE)
+    set(HAVE_MANAGED_LLVM_MLIR ON PARENT_SCOPE)
+    set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} CACHE BOOL
+        "Triton availability" FORCE)
+    set(HAVE_TRITON ${_TRITON_BUILDS_COMPILER} PARENT_SCOPE)
+    if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
         set(HAVE_TRITON_CPU ON CACHE BOOL "Triton CPU backend" FORCE)
         set(HAVE_TRITON_CPU ON PARENT_SCOPE)
     endif()
-    set(HELPERS_triton ON PARENT_SCOPE)
-
-    # triton-cpu pinned commit (declared early so TRITON_VERSION can reference it)
-    set(TRITON_CPU_COMMIT "c4ccb98970bfe0fa17548b5b32def8d0de2bdc53")
-
-    if(_TRITON_CPU_ONLY)
-        # triton-cpu: experimental CPU backend from triton-lang/triton-cpu
-        # Uses a different LLVM pin and adds third_party/cpu backend
-        set(TRITON_PREFIX "${CMAKE_BINARY_DIR}/triton_cpu_external")
-        set(TRITON_VERSION "cpu-${TRITON_CPU_COMMIT}")  # Pinned commit, no tagged releases
-    else()
-        set(TRITON_PREFIX "${CMAKE_BINARY_DIR}/triton_external")
-        set(TRITON_VERSION "3.6.0")
-    endif()
-    set(TRITON_STAMP_DIR "${TRITON_PREFIX}/stamp")
-
-    # Ensure directories exist
-    file(MAKE_DIRECTORY "${TRITON_STAMP_DIR}")
-    file(MAKE_DIRECTORY "${TRITON_PREFIX}/src")
-    file(MAKE_DIRECTORY "${TRITON_PREFIX}/build")
-    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/downloads")
-
-    # Clean stale stamp files
-    if(EXISTS "${TRITON_STAMP_DIR}")
-        file(GLOB STALE_STAMPS "${TRITON_STAMP_DIR}/*-lastrun.txt" "${TRITON_STAMP_DIR}/*.txt")
-        foreach(stamp ${STALE_STAMPS})
-            message(STATUS "Cleaning stale Triton stamp file: ${stamp}")
-            file(REMOVE "${stamp}")
-        endforeach()
+    if(_TRITON_BUILDS_COMPILER)
+        set(HELPERS_triton ON PARENT_SCOPE)
     endif()
 
-    if(_TRITON_CPU_ONLY)
-        # triton-cpu pinned to a specific commit for reproducibility (commit set above)
-        set(TRITON_URL "https://github.com/triton-lang/triton-cpu/archive/${TRITON_CPU_COMMIT}.tar.gz")
-        set(TRITON_URL_HASH "SHA256=29bbed27580d8785605216fe628759165b195cfcf81ee7bc2a3ef681c4f161b3")
-    elseif(WIN32)
-        set(TRITON_URL "https://github.com/triton-lang/triton-windows/archive/refs/heads/release/3.6.x-windows.tar.gz")
-    else()
-        set(TRITON_URL "https://github.com/triton-lang/triton/archive/refs/tags/v${TRITON_VERSION}.tar.gz")
-        set(TRITON_URL_HASH "SHA256=be270ed11ca5a8fbd9d7941c5bbe9a23a9f6e2ffd372c8398346928bee464774")
+    if(_TRITON_BUILDS_COMPILER)
+        # The CPU and GPU emitter compilers have independent source identities.
+        # Vulkan intentionally skips this entire source/build path.
+        set(TRITON_CPU_COMMIT "c4ccb98970bfe0fa17548b5b32def8d0de2bdc53")
+        if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+            set(TRITON_PREFIX
+                "${CMAKE_BINARY_DIR}/triton_cpu_external_${_TRITON_MANAGED_RECIPE_REVISION}")
+            set(TRITON_VERSION "cpu-${TRITON_CPU_COMMIT}")
+        else()
+            set(TRITON_PREFIX
+                "${CMAKE_BINARY_DIR}/triton_external_${_TRITON_MANAGED_RECIPE_REVISION}")
+            set(TRITON_VERSION "3.6.0")
+        endif()
+        set(TRITON_STAMP_DIR "${TRITON_PREFIX}/stamp")
+
+        file(MAKE_DIRECTORY "${TRITON_STAMP_DIR}")
+        file(MAKE_DIRECTORY "${TRITON_PREFIX}/src")
+        file(MAKE_DIRECTORY "${TRITON_PREFIX}/build")
+        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/downloads")
+
+        if(EXISTS "${TRITON_STAMP_DIR}")
+            file(GLOB STALE_STAMPS
+                "${TRITON_STAMP_DIR}/*-lastrun.txt" "${TRITON_STAMP_DIR}/*.txt")
+            foreach(stamp ${STALE_STAMPS})
+                message(STATUS "Cleaning stale Triton stamp file: ${stamp}")
+                file(REMOVE "${stamp}")
+            endforeach()
+        endif()
+
+        if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+            set(TRITON_URL
+                "https://github.com/triton-lang/triton-cpu/archive/${TRITON_CPU_COMMIT}.tar.gz")
+            set(TRITON_URL_HASH
+                "SHA256=29bbed27580d8785605216fe628759165b195cfcf81ee7bc2a3ef681c4f161b3")
+        elseif(WIN32)
+            set(TRITON_URL
+                "https://github.com/triton-lang/triton-windows/archive/refs/heads/release/3.6.x-windows.tar.gz")
+        else()
+            set(TRITON_URL
+                "https://github.com/triton-lang/triton/archive/refs/tags/v${TRITON_VERSION}.tar.gz")
+            set(TRITON_URL_HASH
+                "SHA256=be270ed11ca5a8fbd9d7941c5bbe9a23a9f6e2ffd372c8398346928bee464774")
+        endif()
     endif()
 
     # Determine codegen backends based on TRITON_GPU_TARGET and build config.
     # This MUST be done before the LLVM build so LLVM_TARGETS_TO_BUILD can be set correctly.
     set(TRITON_CODEGEN_BACKENDS "")
 
-    if(_TRITON_CPU_ONLY)
-        # CPU-only build: use triton-cpu's CPU backend
+    if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
         set(TRITON_CODEGEN_BACKENDS "cpu")
+    elseif(_TRITON_CONSUMER_KIND STREQUAL "VULKAN_SPIRV")
+        # Vulkan lowering is MLIR-to-SPIR-V; no Triton codegen backend applies.
+        message(STATUS "   Triton codegen backends: none (Vulkan MLIR/SPIR-V)")
     elseif(TRITON_GPU_TARGET STREQUAL "AUTO")
         # NVIDIA backend: always for CUDA builds (pure or ZLUDA)
         if(SD_CUDA)
@@ -1655,9 +1882,10 @@ function(setup_triton)
         if(SD_LEVEL_ZERO OR (SD_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "INTEL"))
             list(APPEND TRITON_CODEGEN_BACKENDS "intel")
         endif()
-        # Fallback
         if(NOT TRITON_CODEGEN_BACKENDS)
-            list(APPEND TRITON_CODEGEN_BACKENDS "nvidia")
+            message(FATAL_ERROR
+                "TRITON_GPU_TARGET=AUTO could not infer a codegen backend from the enabled hardware backend. "
+                "Enable CUDA/HIP/Level Zero or set TRITON_GPU_TARGET explicitly.")
         endif()
         list(REMOVE_DUPLICATES TRITON_CODEGEN_BACKENDS)
     elseif(TRITON_GPU_TARGET STREQUAL "NVIDIA")
@@ -1669,32 +1897,75 @@ function(setup_triton)
     endif()
 
     string(REPLACE ";" "\\;" TRITON_BACKENDS_STR "${TRITON_CODEGEN_BACKENDS}")
-    message(STATUS "   Triton codegen backends: ${TRITON_CODEGEN_BACKENDS}")
+    if(NOT _TRITON_CONSUMER_KIND STREQUAL "VULKAN_SPIRV")
+        message(STATUS "   Triton codegen backends: ${TRITON_CODEGEN_BACKENDS}")
+    endif()
 
     # Each Triton variant pins a specific LLVM commit for ABI compatibility.
     # We build LLVM/MLIR from source at that commit.
-    if(_TRITON_CPU_ONLY)
+    if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
         # triton-cpu pins a different LLVM commit than GPU triton
         set(TRITON_LLVM_COMMIT "20902f0b721ba6cf2fb134362d27144bd8584d53")
         set(TRITON_LLVM_URL_HASH "SHA256=1736af3127e73eab0f2a2f489275c9509d5b60f80c050c42be3a1f85843993e2")
-        set(TRITON_LLVM_PREFIX "${CMAKE_BINARY_DIR}/triton_cpu_llvm")
-        # CPU-only: just need host target for LLVM CPU codegen
-        set(TRITON_LLVM_TARGETS "host")
-        message(STATUS "   LLVM targets: host (CPU-only triton-cpu)")
+        set(TRITON_LLVM_PREFIX
+            "${CMAKE_BINARY_DIR}/triton_cpu_llvm_${_TRITON_MANAGED_RECIPE_REVISION}")
+        set(_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP OFF)
     else()
-        # GPU triton v3.6.0 pins f6ded0be
+        # GPU Triton v3.6.0 pins f6ded0be. Vulkan deliberately consumes this
+        # exact shared LLVM/MLIR package and the same download-time patch flow,
+        # without consuming Triton emitter code.
         set(TRITON_LLVM_COMMIT "f6ded0be897e2878612dd903f7e8bb85448269e5")
         set(TRITON_LLVM_URL_HASH "SHA256=f63c624aa63eda73508b9df2be2a6945ea4fddbee58615fbe1cd747b6884dd5e")
-        set(TRITON_LLVM_PREFIX "${CMAKE_BINARY_DIR}/triton_llvm")
-        # Determine LLVM targets based on which Triton codegen backends are needed.
-        # Always include host and NVPTX (for CUDA). Only add AMDGPU if "amd" backend is selected.
-        set(TRITON_LLVM_TARGETS "host$<SEMICOLON>NVPTX")
+        set(TRITON_LLVM_PREFIX
+            "${CMAKE_BINARY_DIR}/triton_llvm_${_TRITON_MANAGED_RECIPE_REVISION}")
+        set(_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP ON)
+    endif()
+
+    if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER" OR
+       _TRITON_CONSUMER_KIND STREQUAL "VULKAN_SPIRV")
+        if(CMAKE_CROSSCOMPILING)
+            if(CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a" OR
+               CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|AARCH64|ARM64)$")
+                set(TRITON_LLVM_TARGETS "AArch64")
+            elseif(CMAKE_ANDROID_ARCH_ABI STREQUAL "x86_64" OR
+                   CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|X86_64|AMD64)$")
+                set(TRITON_LLVM_TARGETS "X86")
+            else()
+                message(FATAL_ERROR
+                    "No explicit LLVM target mapping for cross target "
+                    "system='${CMAKE_SYSTEM_NAME}' processor='${CMAKE_SYSTEM_PROCESSOR}' "
+                    "androidAbi='${CMAKE_ANDROID_ARCH_ABI}'.")
+            endif()
+            message(STATUS
+                "   LLVM target: ${TRITON_LLVM_TARGETS} (cross target, host tools separate)")
+        else()
+            set(TRITON_LLVM_TARGETS "host")
+            message(STATUS
+                "   LLVM target: host (${_TRITON_CONSUMER_KIND} native package)")
+        endif()
+    else()
+        # Emitter packages carry only the LLVM targets selected by their
+        # configured codegen backends.
+        set(TRITON_LLVM_TARGETS "host")
+        if("nvidia" IN_LIST TRITON_CODEGEN_BACKENDS)
+            set(TRITON_LLVM_TARGETS "${TRITON_LLVM_TARGETS}$<SEMICOLON>NVPTX")
+        endif()
         if("amd" IN_LIST TRITON_CODEGEN_BACKENDS)
             set(TRITON_LLVM_TARGETS "${TRITON_LLVM_TARGETS}$<SEMICOLON>AMDGPU")
-            message(STATUS "   LLVM targets: host, NVPTX, AMDGPU (AMD backend requested)")
-        else()
-            message(STATUS "   LLVM targets: host, NVPTX (no AMD backend)")
         endif()
+        message(STATUS
+            "   LLVM targets: ${TRITON_LLVM_TARGETS} (GPU emitter package)")
+    endif()
+
+    # Cross-target identity is part of every managed compiler cache key. Never
+    # restore host, AArch64, or x86_64 Android libraries into another target.
+    set(_TRITON_TARGET_CACHE_CONFIG "")
+    if(CMAKE_CROSSCOMPILING)
+        set(_TRITON_TARGET_CACHE_CONFIG
+            "targetSystem=${CMAKE_SYSTEM_NAME};targetProcessor=${CMAKE_SYSTEM_PROCESSOR};"
+            "androidAbi=${CMAKE_ANDROID_ARCH_ABI};androidApi=${CMAKE_SYSTEM_VERSION};"
+            "ndkVersion=${CMAKE_ANDROID_NDK_VERSION};"
+            "cTarget=${CMAKE_C_COMPILER_TARGET};cxxTarget=${CMAKE_CXX_COMPILER_TARGET}")
     endif()
 
     # --- Dependency cache: restore Triton LLVM and Triton into build dirs ---
@@ -1703,44 +1974,134 @@ function(setup_triton)
     if(SD_DEP_CACHE)
         # Check Triton LLVM cache
         string(SUBSTRING "${TRITON_LLVM_COMMIT}" 0 8 TRITON_LLVM_COMMIT_SHORT)
-        sd_dep_cache_key("triton_llvm" "${TRITON_LLVM_COMMIT_SHORT}" "TARGETS=${TRITON_LLVM_TARGETS}" _tllvm_cache_key)
+        sd_dep_cache_key("triton_llvm" "${TRITON_LLVM_COMMIT_SHORT}"
+            "TARGETS=${TRITON_LLVM_TARGETS};llvm_mlir_dylib=1;recipe=${_TRITON_MANAGED_RECIPE_REVISION};${_TRITON_TARGET_CACHE_CONFIG}"
+            _tllvm_cache_key)
         sd_dep_cache_check("triton_llvm" "${_tllvm_cache_key}" _tllvm_hit _tllvm_cache_path)
-        if(_tllvm_hit AND NOT EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
+        if(_tllvm_hit AND NOT _TRITON_LLVM_INSTALL_COMPLETE)
             sd_dep_cache_restore("triton_llvm" "${_tllvm_cache_path}" "${TRITON_LLVM_INSTALL_DIR}")
+            if(EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake" AND
+               EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake" AND
+               EXISTS "${_TRITON_LLVM_SHARED_LIBRARY}" AND
+               EXISTS "${_TRITON_MLIR_SHARED_LIBRARY}" AND
+               EXISTS "${_TRITON_MLIR_EXECUTION_ENGINE_SHARED_LIBRARY}" AND
+               EXISTS "${_TRITON_LLVM_INSTALL_MARKER}")
+                set(_TRITON_LLVM_INSTALL_COMPLETE TRUE)
+            endif()
         endif()
 
-        # Check Triton cache
-        set(_triton_ver "${TRITON_VERSION}")
-        string(REPLACE ";" "_" _triton_backends_str "${TRITON_CODEGEN_BACKENDS}")
-        # vis=default: cache-busting marker for the patch_triton.cmake visibility fix
-        # (libtriton.a rebuilt with -fvisibility=default to keep the MLIR
-        # IsIsolatedFromAbove TypeID a single STB_GNU_UNIQUE symbol; see patch_triton.cmake Part 7).
-        sd_dep_cache_key("triton" "${_triton_ver}" "BACKENDS=${_triton_backends_str};vis=default" _triton_cache_key)
-        sd_dep_cache_check("triton" "${_triton_cache_key}" _triton_hit _triton_cache_path)
-        if(_triton_hit)
-            set(_need_triton_restore TRUE)
-            if(EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" OR EXISTS "${TRITON_INSTALL_DIR}/lib/triton.lib")
-                set(_need_triton_restore FALSE)
-            endif()
-            if(_need_triton_restore)
-                sd_dep_cache_restore("triton" "${_triton_cache_path}" "${TRITON_INSTALL_DIR}")
+        if(_TRITON_BUILDS_COMPILER)
+            # Cache shape includes the shared LLVM/MLIR ABI so installs created
+            # by the former static-archive linkage are never reused.
+            set(_triton_ver "${TRITON_VERSION}")
+            string(REPLACE ";" "_" _triton_backends_str "${TRITON_CODEGEN_BACKENDS}")
+            sd_dep_cache_key("triton" "${_triton_ver}"
+                "BACKENDS=${_triton_backends_str};llvm_mlir_dylib=1;recipe=${_TRITON_MANAGED_RECIPE_REVISION};${_TRITON_TARGET_CACHE_CONFIG}"
+                _triton_cache_key)
+            sd_dep_cache_check("triton" "${_triton_cache_key}" _triton_hit _triton_cache_path)
+            if(_triton_hit)
+                set(_need_triton_restore TRUE)
+                if((EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" OR
+                    EXISTS "${TRITON_INSTALL_DIR}/lib/triton.lib") AND
+                   EXISTS "${_TRITON_INSTALL_MARKER}")
+                    set(_need_triton_restore FALSE)
+                endif()
+                if(_need_triton_restore)
+                    sd_dep_cache_restore("triton" "${_triton_cache_path}" "${TRITON_INSTALL_DIR}")
+                endif()
             endif()
         endif()
     endif()
 
     # Build-time-only SmartCcache partition key for Triton LLVM external build.
     # This stays in CMake/source-tree scope; runtime extraction infra is separate.
-    set(_TRITON_LLVM_SHAPE_KEY_RAW "${TRITON_LLVM_COMMIT}-${TRITON_LLVM_TARGETS}-Release")
+    set(_TRITON_LLVM_SHAPE_KEY_RAW
+        "${TRITON_LLVM_COMMIT}-${TRITON_LLVM_TARGETS}-Release-${_TRITON_MANAGED_RECIPE_REVISION}-${_TRITON_TARGET_CACHE_CONFIG}")
     string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" TRITON_LLVM_SHAPE_KEY "${_TRITON_LLVM_SHAPE_KEY_RAW}")
     set(TRITON_LLVM_BUILD_COMMAND
-            ${CMAKE_COMMAND} -E env
-            "SD_SMART_CCACHE_SEGMENT=triton_llvm"
-            "SD_SMART_CCACHE_SHAPE_KEY=${TRITON_LLVM_SHAPE_KEY}"
-            ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel ${DEP_PARALLEL_JOBS}
+            ${CMAKE_COMMAND}
+                "-DBUILD_DIR=<BINARY_DIR>"
+                -P "${CMAKE_SOURCE_DIR}/cmake/ValidateCmakeDependencyFiles.cmake"
+            COMMAND ${CMAKE_COMMAND} -E env
+                "SD_SMART_CCACHE_SEGMENT=triton_llvm"
+                "SD_SMART_CCACHE_SHAPE_KEY=${TRITON_LLVM_SHAPE_KEY}"
+                ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel ${DEP_PARALLEL_JOBS}
     )
     message(STATUS "   Triton LLVM smart ccache segment=triton_llvm shape=${TRITON_LLVM_SHAPE_KEY}")
 
-    if(NOT EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
+    set(TRITON_LLVM_URL
+        "https://github.com/llvm/llvm-project/archive/${TRITON_LLVM_COMMIT}.tar.gz")
+    set(_TRITON_LLVM_NATIVE_TOOL_DIR "${TRITON_LLVM_INSTALL_DIR}/bin")
+
+    if(CMAKE_CROSSCOMPILING)
+        # LLVM and MLIR tablegen executables run on the build host; the shared
+        # LLVM/MLIR libraries below run on the target. Mirror the repository's
+        # FlatBuffers host-generator/target-library split instead of allowing
+        # target executables or ambient host packages to cross that boundary.
+        find_program(_TRITON_HOST_C_COMPILER
+            NAMES clang gcc cc NO_CMAKE_FIND_ROOT_PATH)
+        find_program(_TRITON_HOST_CXX_COMPILER
+            NAMES clang++ g++ c++ NO_CMAKE_FIND_ROOT_PATH)
+        if(NOT _TRITON_HOST_C_COMPILER OR NOT _TRITON_HOST_CXX_COMPILER)
+            message(FATAL_ERROR
+                "Cross-building Triton LLVM requires host C and C++ compilers for "
+                "llvm-tblgen/mlir-tblgen.")
+        endif()
+
+        set(_TRITON_LLVM_HOST_PREFIX
+            "${CMAKE_BINARY_DIR}/triton_llvm_host_tools_${_TRITON_MANAGED_RECIPE_REVISION}")
+        set(_TRITON_LLVM_HOST_BUILD_DIR "${_TRITON_LLVM_HOST_PREFIX}/build")
+        set(_TRITON_LLVM_NATIVE_TOOL_DIR "${_TRITON_LLVM_HOST_BUILD_DIR}/bin")
+        set(_TRITON_HOST_EXE_SUFFIX "")
+        if(CMAKE_HOST_WIN32)
+            set(_TRITON_HOST_EXE_SUFFIX ".exe")
+        endif()
+
+        ExternalProject_Add(triton_llvm_host_tools_external
+            PREFIX            "${_TRITON_LLVM_HOST_PREFIX}"
+            URL               "${TRITON_LLVM_URL}"
+            URL_HASH          "${TRITON_LLVM_URL_HASH}"
+            DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            PATCH_COMMAND     ${CMAKE_COMMAND}
+                -DSOURCE_DIR=<SOURCE_DIR>
+                -DSD_EXTERNAL_PROJECT=LLVM
+                -DSD_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP=${_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP}
+                -P "${CMAKE_SOURCE_DIR}/cmake/patch_external_llvm_coexistence.cmake"
+            SOURCE_SUBDIR     llvm
+            BINARY_DIR        "${_TRITON_LLVM_HOST_BUILD_DIR}"
+            CMAKE_ARGS
+                -DCMAKE_BUILD_TYPE=Release
+                -DLLVM_ENABLE_PROJECTS=mlir
+                -DLLVM_TARGETS_TO_BUILD=host
+                -DLLVM_ENABLE_ASSERTIONS=ON
+                -DLLVM_ENABLE_RTTI=ON
+                -DLLVM_INCLUDE_TESTS=OFF
+                -DLLVM_INCLUDE_BENCHMARKS=OFF
+                -DLLVM_BUILD_EXAMPLES=OFF
+                -DLLVM_INCLUDE_EXAMPLES=OFF
+                -DMLIR_INCLUDE_TESTS=OFF
+                -DMLIR_ENABLE_BINDINGS_PYTHON=OFF
+                -DCMAKE_C_COMPILER=${_TRITON_HOST_C_COMPILER}
+                -DCMAKE_CXX_COMPILER=${_TRITON_HOST_CXX_COMPILER}
+            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR>
+                --config Release --target llvm-tblgen mlir-tblgen llvm-config
+                --parallel ${DEP_PARALLEL_JOBS}
+            INSTALL_COMMAND   ""
+            BUILD_BYPRODUCTS
+                "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}"
+                "${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX}"
+                "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-config${_TRITON_HOST_EXE_SUFFIX}"
+            TIMEOUT           7200
+            LOG_DOWNLOAD      OFF
+            LOG_CONFIGURE     OFF
+            LOG_BUILD         OFF
+            LOG_INSTALL       OFF)
+        message(STATUS
+            "   LLVM host tools: ${_TRITON_LLVM_NATIVE_TOOL_DIR}")
+    endif()
+
+    if(NOT _TRITON_LLVM_INSTALL_COMPLETE)
         message(STATUS "   Building LLVM/MLIR from Triton-pinned commit ${TRITON_LLVM_COMMIT}...")
         message(STATUS "   This is a one-time build (~15-30 min). Install dir: ${TRITON_LLVM_INSTALL_DIR}")
 
@@ -1754,6 +2115,14 @@ function(setup_triton)
                 -DLLVM_TARGETS_TO_BUILD=${TRITON_LLVM_TARGETS}
                 -DLLVM_ENABLE_ASSERTIONS=ON
                 -DLLVM_ENABLE_RTTI=ON
+                # Upstream-supported monolithic DSOs. Triton and libnd4j consume
+                # the exported LLVM and MLIR shared targets instead of embedding
+                # private copies from component archives.
+                -DLLVM_BUILD_LLVM_DYLIB=ON
+                -DLLVM_LINK_LLVM_DYLIB=ON
+                -DLLVM_DYLIB_COMPONENTS=all
+                -DMLIR_BUILD_MLIR_DYLIB=ON
+                -DMLIR_LINK_MLIR_DYLIB=ON
                 -DMLIR_ENABLE_BINDINGS_PYTHON=OFF
                 # Disable tests — mlir-translate/mlir-query link against test dialect
                 # libraries (TestDialect, SymbolOp) that fail to build.
@@ -1766,6 +2135,13 @@ function(setup_triton)
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         )
+        if(CMAKE_CROSSCOMPILING)
+            list(APPEND TRITON_LLVM_CMAKE_ARGS
+                ${_TRITON_TARGET_CMAKE_ARGS}
+                -DLLVM_NATIVE_TOOL_DIR=${_TRITON_LLVM_NATIVE_TOOL_DIR}
+                -DLLVM_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}
+                -DMLIR_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX})
+        endif()
 
         # MSVC-specific flags for LLVM build
         if(MSVC)
@@ -1776,18 +2152,6 @@ function(setup_triton)
             )
         endif()
 
-        # Match critical compiler flags with libnd4j to prevent TypeID ODR violations.
-        # When MLIR .a files and libnd4j .o files are compiled with different flags
-        # (especially -fno-plt and -ffunction-sections), the linker may demote
-        # STB_GNU_UNIQUE template statics to STB_LOCAL, breaking MLIR's
-        # hasTrait<IsIsolatedFromAbove>() pointer comparison and causing 100%
-        # Triton kernel compilation failure.
-        if(NOT MSVC)
-            list(APPEND TRITON_LLVM_CMAKE_ARGS
-                "-DCMAKE_C_FLAGS=-fPIC -fno-plt -ffunction-sections -fdata-sections -ftls-model=global-dynamic"
-                "-DCMAKE_CXX_FLAGS=-fPIC -fno-plt -ffunction-sections -fdata-sections -ftls-model=global-dynamic"
-            )
-        endif()
 
         # Pass SmartCcache / compiler launcher to LLVM build
         # Smart ccache multi-element lists can't be passed as FILEPATH; fall back to plain ccache.
@@ -1804,83 +2168,39 @@ function(setup_triton)
             list(APPEND TRITON_LLVM_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
         endif()
 
-        set(TRITON_LLVM_URL "https://github.com/llvm/llvm-project/archive/${TRITON_LLVM_COMMIT}.tar.gz")
-
         ExternalProject_Add(triton_llvm_external
                 PREFIX            "${TRITON_LLVM_PREFIX}"
                 URL               "${TRITON_LLVM_URL}"
                 URL_HASH          "${TRITON_LLVM_URL_HASH}"
                 DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
                 DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                PATCH_COMMAND     ${CMAKE_COMMAND}
+                    -DSOURCE_DIR=<SOURCE_DIR>
+                    -DSD_EXTERNAL_PROJECT=LLVM
+                    -DSD_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP=${_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP}
+                    -P "${CMAKE_SOURCE_DIR}/cmake/patch_external_llvm_coexistence.cmake"
                 SOURCE_SUBDIR     llvm
                 BINARY_DIR        "${TRITON_LLVM_PREFIX}/build"
                 STAMP_DIR         "${TRITON_LLVM_PREFIX}/stamp"
                 CMAKE_ARGS        ${TRITON_LLVM_CMAKE_ARGS}
                 BUILD_COMMAND     ${TRITON_LLVM_BUILD_COMMAND}
-                INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config Release
+                # BUILD_COMMAND already establishes the complete dependency graph.
+                # Install from that finished tree directly instead of re-entering
+                # GNU Make's dependency scanner from a nested ExternalProject recipe.
+                INSTALL_COMMAND   ${CMAKE_COMMAND} --install <BINARY_DIR> --config Release
+                    COMMAND ${CMAKE_COMMAND} -E touch "${_TRITON_LLVM_INSTALL_MARKER}"
                 BUILD_BYPRODUCTS
+                    "${_TRITON_LLVM_INSTALL_MARKER}"
                     "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake"
                     "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake"
+                    "${_TRITON_MLIR_EXECUTION_ENGINE_SHARED_LIBRARY}"
+                    "${_TRITON_MLIR_SHARED_LIBRARY}"
+                    "${_TRITON_LLVM_SHARED_LIBRARY}"
                 TIMEOUT           7200
                 LOG_DOWNLOAD      OFF
                 LOG_CONFIGURE     OFF
                 LOG_BUILD         OFF
                 LOG_INSTALL       OFF
-        )
-
-        # Patch MLIRConfig.cmake after install: replace bare "mlir-tblgen" with absolute path.
-        # The installed MLIRConfig.cmake sets MLIR_TABLEGEN_EXE to just "mlir-tblgen" (bare name).
-        # When LLVM is consumed as an external project, there is no imported target for mlir-tblgen,
-        # so cmake's tablegen() function creates broken file-level dependencies.
-        set(_PATCH_MLIR_SCRIPT "${CMAKE_BINARY_DIR}/patch_mlir_config.cmake")
-        file(WRITE "${_PATCH_MLIR_SCRIPT}" "
-            set(F \"${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake\")
-            file(READ \"\${F}\" C)
-            string(REPLACE
-                \"set(MLIR_TABLEGEN_EXE \\\"mlir-tblgen\\\")\"
-                \"set(MLIR_TABLEGEN_EXE \\\"${TRITON_LLVM_INSTALL_DIR}/bin/mlir-tblgen\\\")\"
-                C \"\${C}\")
-            string(REPLACE
-                \"set(MLIR_PDLL_TABLEGEN_EXE \\\"mlir-pdll\\\")\"
-                \"set(MLIR_PDLL_TABLEGEN_EXE \\\"${TRITON_LLVM_INSTALL_DIR}/bin/mlir-pdll\\\")\"
-                C \"\${C}\")
-            file(WRITE \"\${F}\" \"\${C}\")
-            message(STATUS \"Patched MLIRConfig.cmake with absolute tablegen paths\")
-        ")
-        ExternalProject_Add_Step(triton_llvm_external patch_mlir_config
-            COMMAND ${CMAKE_COMMAND} -P "${_PATCH_MLIR_SCRIPT}"
-            DEPENDEES install
-            COMMENT "Patching MLIRConfig.cmake with absolute tablegen executable paths"
-        )
-
-        # Patch Matchers.h for NVCC compatibility: NVCC cannot handle lambda-to-function-pointer
-        # conversion inside aggregate initialization. Guard the affected functions with __CUDACC__.
-        set(_PATCH_MATCHERS_SCRIPT "${CMAKE_BINARY_DIR}/patch_matchers.cmake")
-        file(WRITE "${_PATCH_MATCHERS_SCRIPT}" "
-            set(F \"${TRITON_LLVM_INSTALL_DIR}/include/mlir/IR/Matchers.h\")
-            if(EXISTS \"\${F}\")
-                file(READ \"\${F}\" C)
-                string(FIND \"\${C}\" \"__CUDACC__\" _HAS_GUARD)
-                if(_HAS_GUARD EQUAL -1)
-                    string(REPLACE
-                        \"/// Matches a constant scalar / vector splat / tensor splat float (both positive\"
-                        \"#ifndef __CUDACC__\\n/// Matches a constant scalar / vector splat / tensor splat float (both positive\"
-                        C \"\${C}\")
-                    string(REPLACE
-                        \"/// Matches the given OpClass.\"
-                        \"#endif // __CUDACC__\\n\\n/// Matches the given OpClass.\"
-                        C \"\${C}\")
-                    file(WRITE \"\${F}\" \"\${C}\")
-                    message(STATUS \"Patched Matchers.h with __CUDACC__ guard for NVCC compatibility\")
-                else()
-                    message(STATUS \"Matchers.h already has __CUDACC__ guard\")
-                endif()
-            endif()
-        ")
-        ExternalProject_Add_Step(triton_llvm_external patch_matchers
-            COMMAND ${CMAKE_COMMAND} -P "${_PATCH_MATCHERS_SCRIPT}"
-            DEPENDEES patch_mlir_config
-            COMMENT "Patching Matchers.h for NVCC compatibility"
         )
 
         # --- Cache store for Triton LLVM ---
@@ -1892,48 +2212,21 @@ function(setup_triton)
         # Create a dummy target so triton_external can depend on it
         add_custom_target(triton_llvm_external)
 
-        # Patch MLIRConfig.cmake if it has bare tablegen names (idempotent)
-        set(_MLIR_CONFIG_FILE "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
-        if(EXISTS "${_MLIR_CONFIG_FILE}")
-            file(READ "${_MLIR_CONFIG_FILE}" _MLIR_CFG)
-            string(FIND "${_MLIR_CFG}" "set(MLIR_TABLEGEN_EXE \"mlir-tblgen\")" _NEEDS_PATCH)
-            if(NOT _NEEDS_PATCH EQUAL -1)
-                string(REPLACE
-                    "set(MLIR_TABLEGEN_EXE \"mlir-tblgen\")"
-                    "set(MLIR_TABLEGEN_EXE \"${TRITON_LLVM_INSTALL_DIR}/bin/mlir-tblgen\")"
-                    _MLIR_CFG "${_MLIR_CFG}")
-                string(REPLACE
-                    "set(MLIR_PDLL_TABLEGEN_EXE \"mlir-pdll\")"
-                    "set(MLIR_PDLL_TABLEGEN_EXE \"${TRITON_LLVM_INSTALL_DIR}/bin/mlir-pdll\")"
-                    _MLIR_CFG "${_MLIR_CFG}")
-                file(WRITE "${_MLIR_CONFIG_FILE}" "${_MLIR_CFG}")
-                message(STATUS "   Patched MLIRConfig.cmake with absolute tablegen paths")
-            endif()
-        endif()
-
-        # Patch Matchers.h for NVCC compatibility (idempotent)
-        set(_MATCHERS_FILE "${TRITON_LLVM_INSTALL_DIR}/include/mlir/IR/Matchers.h")
-        if(EXISTS "${_MATCHERS_FILE}")
-            file(READ "${_MATCHERS_FILE}" _MATCHERS_CONTENT)
-            string(FIND "${_MATCHERS_CONTENT}" "__CUDACC__" _HAS_GUARD)
-            if(_HAS_GUARD EQUAL -1)
-                string(REPLACE
-                    "/// Matches a constant scalar / vector splat / tensor splat float (both positive"
-                    "#ifndef __CUDACC__\n/// Matches a constant scalar / vector splat / tensor splat float (both positive"
-                    _MATCHERS_CONTENT "${_MATCHERS_CONTENT}")
-                string(REPLACE
-                    "/// Matches the given OpClass."
-                    "#endif // __CUDACC__\n\n/// Matches the given OpClass."
-                    _MATCHERS_CONTENT "${_MATCHERS_CONTENT}")
-                file(WRITE "${_MATCHERS_FILE}" "${_MATCHERS_CONTENT}")
-                message(STATUS "   Patched Matchers.h with __CUDACC__ guard for NVCC compatibility")
-            endif()
-        endif()
+    endif()
+    if(TARGET triton_llvm_host_tools_external)
+        add_dependencies(triton_llvm_external triton_llvm_host_tools_external)
     endif()
 
     set(TRITON_MLIR_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir")
     set(TRITON_LLVM_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm")
+    # Publish one target package identity for both Triton and the standalone
+    # MLIR consumer. Cross builds must never rediscover host package files.
+    set(LLVM_DIR "${TRITON_LLVM_DIR}" CACHE PATH
+        "Project-managed target LLVM package" FORCE)
+    set(MLIR_DIR "${TRITON_MLIR_DIR}" CACHE PATH
+        "Project-managed target MLIR package" FORCE)
 
+    if(_TRITON_BUILDS_COMPILER)
     set(TRITON_CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${TRITON_INSTALL_DIR}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -1947,9 +2240,13 @@ function(setup_triton)
             -DTRITON_CACHE_PATH=${CMAKE_BINARY_DIR}/.triton_cache
             -DMLIR_DIR=${TRITON_MLIR_DIR}
             -DLLVM_DIR=${TRITON_LLVM_DIR}
+            -DLLVM_NATIVE_TOOL_DIR=${_TRITON_LLVM_NATIVE_TOOL_DIR}
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     )
+    if(CMAKE_CROSSCOMPILING)
+        list(APPEND TRITON_CMAKE_ARGS ${_TRITON_TARGET_CMAKE_ARGS})
+    endif()
 
     # MSVC-specific flags for Triton build
     if(MSVC)
@@ -1975,7 +2272,8 @@ function(setup_triton)
     # Build-time-only SmartCcache partition key for Triton external build.
     # Runtime key extraction/caching infrastructure will be layered separately.
     string(REPLACE ";" "_" _TRITON_BACKENDS_KEY "${TRITON_CODEGEN_BACKENDS}")
-    set(_TRITON_SHAPE_KEY_RAW "${TRITON_VERSION}-${_TRITON_BACKENDS_KEY}-${CMAKE_BUILD_TYPE}")
+    set(_TRITON_SHAPE_KEY_RAW
+        "${TRITON_VERSION}-${_TRITON_BACKENDS_KEY}-${CMAKE_BUILD_TYPE}-${_TRITON_MANAGED_RECIPE_REVISION}-${_TRITON_TARGET_CACHE_CONFIG}")
     string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" TRITON_SHAPE_KEY "${_TRITON_SHAPE_KEY_RAW}")
     # Use DEP_PARALLEL_JOBS (memory-based) instead of hardcoded 8.
     # Higher parallelism can cause race conditions between TableGen-generated
@@ -1989,7 +2287,7 @@ function(setup_triton)
     message(STATUS "   Triton smart ccache segment=triton shape=${TRITON_SHAPE_KEY}")
 
     # Source dir name depends on variant (GitHub tarball extraction naming)
-    if(_TRITON_CPU_ONLY)
+    if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
         set(TRITON_SOURCE_DIR "${TRITON_PREFIX}/src/triton-cpu-${TRITON_CPU_COMMIT}")
     else()
         set(TRITON_SOURCE_DIR "${TRITON_PREFIX}/src/triton-${TRITON_VERSION}")
@@ -2002,7 +2300,7 @@ function(setup_triton)
     # compilation failures. The CMake patch script removes AMD-specific code and adds
     # NegFOp/TanhOp patterns needed by our IR.
     # For CPU triton-cpu builds, the source tree is different — skip GPU-specific patches.
-    if(_TRITON_CPU_ONLY)
+    if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
         # triton-cpu has its own dialect structure; no GPU-specific patching needed
         set(_TRITON_PATCH_COMMAND "")
     else()
@@ -2032,7 +2330,7 @@ function(setup_triton)
     # triton-cpu unconditionally calls find_package(Python3 REQUIRED) to run build_helpers.py
     # which generates LLVM/JSON cmake vars. We pre-generate this file and patch CMakeLists.txt
     # to skip the Python-dependent block entirely.
-    if(_TRITON_CPU_ONLY)
+    if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
         set(_TRITON_CPU_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/patch_triton_cpu.cmake")
         set(_TRITON_EP_PATCH_CMD ${CMAKE_COMMAND}
             -DSOURCE_DIR=<SOURCE_DIR>
@@ -2063,7 +2361,9 @@ function(setup_triton)
             CMAKE_ARGS        ${TRITON_CMAKE_ARGS}
             BUILD_COMMAND     ${TRITON_BUILD_COMMAND}
             INSTALL_COMMAND   ${CMAKE_COMMAND} -DBINARY_DIR=<BINARY_DIR> -DSOURCE_DIR=<SOURCE_DIR> -DINSTALL_DIR=${TRITON_INSTALL_DIR} -P "${TRITON_INSTALL_SCRIPT}"
+                COMMAND ${CMAKE_COMMAND} -E touch "${_TRITON_INSTALL_MARKER}"
             BUILD_BYPRODUCTS
+                "${_TRITON_INSTALL_MARKER}"
                 "${TRITON_INSTALL_DIR}/include/triton/Compiler/Compiler.h"
                 "${_TRITON_LIB_BYPRODUCT}"
             TIMEOUT           1800
@@ -2073,258 +2373,72 @@ function(setup_triton)
             LOG_INSTALL       OFF
             DEPENDS           triton_llvm_external
     )
+    else()
+        # MainBuildFlow depends on this stable compiler-package target. Vulkan
+        # has no Triton emitter build; its target represents only the managed
+        # shared LLVM/MLIR producer.
+        add_custom_target(triton_external)
+        add_dependencies(triton_external triton_llvm_external)
+    endif()
 
     add_library(triton_interface INTERFACE)
-    # Use SYSTEM to prevent Triton/LLVM headers from conflicting
-    # with libnd4j's DataType enum names (BOOL, INT8, FLOAT32 etc.)
-    target_include_directories(triton_interface SYSTEM INTERFACE
-        "${TRITON_INSTALL_DIR}/include"
+    # These headers and the shared libraries below are one versioned
+    # package. Keep their include roots ahead of ambient compiler search paths.
+    target_include_directories(triton_interface INTERFACE
         "${TRITON_LLVM_INSTALL_DIR}/include"
     )
 
-    if(WIN32)
-        target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/triton.lib")
-    else()
-        target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
-    endif()
-
-    # Link MLIR/LLVM static libraries from our built LLVM.
-    # On first build, LLVM hasn't been built yet at configure time so we use -l flags
-    # (resolved at link time). On subsequent builds, the early-return path above handles it.
-    target_link_directories(triton_interface INTERFACE "${TRITON_LLVM_INSTALL_DIR}/lib")
-
-    # Try glob first (works when LLVM already built from previous run)
-    if(WIN32)
-        file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/MLIR*.lib")
-        file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/LLVM*.lib")
-    else()
-        file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR*.a")
-        file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM*.a")
-    endif()
-    list(LENGTH _TRITON_MLIR_LIBS _mlir_count)
-    list(LENGTH _TRITON_LLVM_LIBS _llvm_count)
-
-    if(_mlir_count GREATER 0 AND _llvm_count GREATER 0)
-        # Libraries exist — use full paths (most reliable)
-        list(SORT _TRITON_MLIR_LIBS)
-        list(SORT _TRITON_LLVM_LIBS)
-        # Separate critical MLIR libraries that need --whole-archive
-        # to prevent GNU ld from demoting STB_GNU_UNIQUE TypeID symbols to STB_LOCAL
-        set(_MLIR_WHOLE_ARCHIVE_LIBS "")
-        set(_MLIR_NORMAL_LIBS "")
-        foreach(_lib ${_TRITON_MLIR_LIBS})
-            get_filename_component(_name "${_lib}" NAME)
-            if(_name MATCHES "^libMLIRIR\\.a$|^libMLIRSupport\\.a$")
-                list(APPEND _MLIR_WHOLE_ARCHIVE_LIBS "${_lib}")
-            else()
-                list(APPEND _MLIR_NORMAL_LIBS "${_lib}")
-            endif()
-        endforeach()
+    if(_TRITON_BUILDS_COMPILER)
+        target_include_directories(triton_interface INTERFACE
+            "${TRITON_INSTALL_DIR}/include")
         if(WIN32)
-            target_link_libraries(triton_interface INTERFACE
-                ${_TRITON_MLIR_LIBS}
-                ${_TRITON_LLVM_LIBS}
-                zlib.lib zstd.lib
-            )
-            if(NOT _TRITON_CPU_ONLY)
-                target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
-            endif()
+            target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/triton.lib")
         else()
-            if(APPLE OR ANDROID)
-                target_link_libraries(triton_interface INTERFACE
-                    ${_TRITON_MLIR_LIBS}
-                    ${_TRITON_LLVM_LIBS}
-                )
-            else()
-                target_link_libraries(triton_interface INTERFACE
-                    -Wl,--whole-archive
-                    ${_MLIR_WHOLE_ARCHIVE_LIBS}
-                    -Wl,--no-whole-archive
-                    -Wl,--start-group
-                    ${_MLIR_NORMAL_LIBS}
-                    ${_TRITON_LLVM_LIBS}
-                    -Wl,--end-group
-                )
-            endif()
-            target_link_libraries(triton_interface INTERFACE -lz -lm)
-            if(NOT APPLE AND NOT ANDROID)
-                target_link_libraries(triton_interface INTERFACE -lzstd -lrt -ldl -lpthread)
-            elseif(APPLE)
-                target_link_libraries(triton_interface INTERFACE -lzstd -ldl -lpthread)
-            else()
-                target_link_libraries(triton_interface INTERFACE -ldl)
-            endif()
-            if(NOT _TRITON_CPU_ONLY)
-                target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
-            endif()
-        endif()
-        message(STATUS "Triton linking ${_mlir_count} MLIR + ${_llvm_count} LLVM static libraries (globbed)")
-    else()
-        # Fresh build — LLVM not built yet, use -l flags resolved at link time.
-        # COMPLETE list of all MLIR + LLVM libraries from Triton's LLVM fork.
-        # --start-group/--end-group handles circular dependencies.
-        # Unused libraries won't increase binary size (linker only pulls needed objects).
-        if(WIN32)
-            # On Windows (MSVC), deferred linking uses .lib names directly.
-            # MSVC linker resolves circular deps automatically.
-            message(STATUS "Triton: LLVM not yet built, using deferred linking (Windows)")
-            # Will be resolved at link time via target_link_directories above.
-            # The glob path above will handle this on rebuild.
-        else()
-            message(STATUS "Triton: LLVM not yet built, using -l flags for deferred linking")
-            # Collect all MLIR/LLVM -l flags into a list, then wrap with
-            # --start-group/--end-group only on platforms that need it (GNU ld).
-            # Apple ld and Android lld resolve circular deps automatically.
-            set(_TRITON_DEFERRED_LIBS
-                # === ALL MLIR libraries (Triton 3.6.0 LLVM pin: f6ded0be) ===
-                # AUTO-GENERATED from triton_llvm_install/lib/libMLIR*.a (357 libraries)
-                -lMLIRAffineAnalysis -lMLIRAffineDialect -lMLIRAffineToStandard -lMLIRAffineTransformOps
-                -lMLIRAffineTransforms -lMLIRAffineUtils -lMLIRAMDGPUDialect -lMLIRAMDGPUToROCDL
-                -lMLIRAMDGPUTransforms -lMLIRAMDGPUUtils -lMLIRAMXDialect -lMLIRAMXTransforms -lMLIRAnalysis
-                -lMLIRArithAttrToLLVMConversion -lMLIRArithDialect -lMLIRArithToAMDGPU -lMLIRArithToArmSME
-                -lMLIRArithToEmitC -lMLIRArithToLLVM -lMLIRArithToSPIRV -lMLIRArithTransforms -lMLIRArithUtils
-                -lMLIRArithValueBoundsOpInterfaceImpl -lMLIRArmNeon2dToIntr -lMLIRArmNeonDialect
-                -lMLIRArmNeonToLLVMIRTranslation -lMLIRArmNeonTransforms -lMLIRArmNeonVectorTransformOps
-                -lMLIRArmSMEDialect -lMLIRArmSMEToLLVM -lMLIRArmSMEToLLVMIRTranslation -lMLIRArmSMEToSCF
-                -lMLIRArmSMETransforms -lMLIRArmSVEDialect -lMLIRArmSVEToLLVMIRTranslation -lMLIRArmSVETransforms
-                -lMLIRArmSVEVectorTransformOps -lMLIRAsmParser -lMLIRAsyncDialect -lMLIRAsyncToLLVM
-                -lMLIRAsyncTransforms -lMLIRBufferizationDialect -lMLIRBufferizationPipelines
-                -lMLIRBufferizationToMemRef -lMLIRBufferizationTransformOps -lMLIRBufferizationTransforms
-                -lMLIRBuiltinToLLVMIRTranslation -lMLIRBytecodeOpInterface -lMLIRBytecodeReader
-                -lMLIRBytecodeWriter -lMLIRCallInterfaces -lMLIRCAPIAMDGPU -lMLIRCAPIArith -lMLIRCAPIAsync
-                -lMLIRCAPIControlFlow -lMLIRCAPIConversion -lMLIRCAPIDebug -lMLIRCAPIEmitC
-                -lMLIRCAPIExecutionEngine -lMLIRCAPIExportSMTLIB -lMLIRCAPIFunc -lMLIRCAPIGPU -lMLIRCAPIIndex
-                -lMLIRCAPIInterfaces -lMLIRCAPIIR -lMLIRCAPIIRDL -lMLIRCAPILinalg -lMLIRCAPILLVM -lMLIRCAPIMath
-                -lMLIRCAPIMemRef -lMLIRCAPIMLProgram -lMLIRCAPINVGPU -lMLIRCAPINVVM -lMLIRCAPIOpenMP -lMLIRCAPIPDL
-                -lMLIRCAPIQuant -lMLIRCAPIRegisterEverything -lMLIRCAPIROCDL -lMLIRCAPISCF -lMLIRCAPIShape
-                -lMLIRCAPISMT -lMLIRCAPISparseTensor -lMLIRCAPISPIRV -lMLIRCAPITarget -lMLIRCAPITensor
-                -lMLIRCAPITransformDialect -lMLIRCAPITransformDialectTransforms -lMLIRCAPITransforms
-                -lMLIRCAPIVector -lMLIRCastInterfaces -lMLIRComplexDialect -lMLIRComplexDivisionConversion
-                -lMLIRComplexToLibm -lMLIRComplexToLLVM -lMLIRComplexToROCDLLibraryCalls -lMLIRComplexToSPIRV
-                -lMLIRComplexToStandard -lMLIRControlFlowDialect -lMLIRControlFlowInterfaces
-                -lMLIRControlFlowToLLVM -lMLIRControlFlowToSCF -lMLIRControlFlowToSPIRV -lMLIRControlFlowTransforms
-                -lMLIRConvertToEmitC -lMLIRConvertToLLVMInterface -lMLIRConvertToLLVMPass
-                -lMLIRDataLayoutInterfaces -lMLIRDebug -lMLIRDerivedAttributeOpInterface
-                -lMLIRDestinationStyleOpInterface -lMLIRDialect -lMLIRDialectUtils -lMLIRDLTIDialect
-                -lMLIRDLTITransformOps -lMLIREmitCDialect -lMLIREmitCTransforms -lMLIRExecutionEngine
-                -lMLIRExecutionEngineUtils -lMLIRExportSMTLIB -lMLIRFromLLVMIRTranslationRegistration
-                -lMLIRFuncAllExtensions -lMLIRFuncDialect -lMLIRFuncInlinerExtension -lMLIRFuncShardingExtensions
-                -lMLIRFunctionInterfaces -lMLIRFuncToEmitC -lMLIRFuncToLLVM -lMLIRFuncToSPIRV
-                -lMLIRFuncTransformOps -lMLIRFuncTransforms -lMLIRFuncUtils -lMLIRGPUDialect -lMLIRGPUPipelines
-                -lMLIRGPUToGPURuntimeTransforms -lMLIRGPUToLLVMIRTranslation -lMLIRGPUToLLVMSPV
-                -lMLIRGPUToNVVMTransforms -lMLIRGPUToROCDLTransforms -lMLIRGPUToSPIRV -lMLIRGPUTransformOps
-                -lMLIRGPUTransforms -lMLIRGPUUtils -lMLIRIndexDialect -lMLIRIndexingMapOpInterface
-                -lMLIRIndexToLLVM -lMLIRIndexToSPIRV -lMLIRInferIntRangeCommon -lMLIRInferIntRangeInterface
-                -lMLIRInferTypeOpInterface -lMLIRIR -lMLIRIRDL -lMLIRJitRunner -lMLIRLinalgDialect
-                -lMLIRLinalgToStandard -lMLIRLinalgTransformOps -lMLIRLinalgTransforms -lMLIRLinalgUtils
-                -lMLIRLLVMCommonConversion -lMLIRLLVMDialect -lMLIRLLVMIRToLLVMTranslation
-                -lMLIRLLVMIRToNVVMTranslation -lMLIRLLVMIRTransforms -lMLIRLLVMToLLVMIRTranslation
-                -lMLIRLoopLikeInterface -lMLIRLspServerLib -lMLIRLspServerSupportLib -lMLIRMaskableOpInterface
-                -lMLIRMaskingOpInterface -lMLIRMathDialect -lMLIRMathToEmitC -lMLIRMathToFuncs -lMLIRMathToLibm
-                -lMLIRMathToLLVM -lMLIRMathToROCDL -lMLIRMathToSPIRV -lMLIRMathTransforms -lMLIRMemOpInterfaces
-                -lMLIRMemorySlotInterfaces -lMLIRMemRefDialect -lMLIRMemRefToEmitC -lMLIRMemRefToLLVM
-                -lMLIRMemRefToSPIRV -lMLIRMemRefTransformOps -lMLIRMemRefTransforms -lMLIRMemRefUtils
-                -lMLIRMlirOptMain -lMLIRMLProgramDialect -lMLIRMLProgramTransforms -lMLIRMPIDialect -lMLIRMPIToLLVM
-                -lMLIRNVGPUDialect -lMLIRNVGPUToNVVM -lMLIRNVGPUTransformOps -lMLIRNVGPUTransforms -lMLIRNVGPUUtils
-                -lMLIRNVVMDialect -lMLIRNVVMTarget -lMLIRNVVMToLLVM -lMLIRNVVMToLLVMIRTranslation -lMLIRObservers
-                -lMLIROpenACCDialect -lMLIROpenACCMPCommon -lMLIROpenACCToLLVMIRTranslation -lMLIROpenACCToSCF
-                -lMLIROpenACCTransforms -lMLIROpenMPDialect -lMLIROpenMPToLLVM -lMLIROpenMPToLLVMIRTranslation
-                -lMLIROptLib -lMLIRParallelCombiningOpInterface -lMLIRParser -lMLIRPass -lMLIRPDLDialect
-                -lMLIRPDLInterpDialect -lMLIRPDLLAST -lMLIRPDLLCodeGen -lMLIRPDLLODS -lMLIRPDLToPDLInterp
-                -lMLIRPluginsLib -lMLIRPresburger -lMLIRPtrDialect -lMLIRPtrMemorySpaceInterfaces -lMLIRPtrToLLVM
-                -lMLIRPtrToLLVMIRTranslation -lMLIRQuantDialect -lMLIRQuantTransforms -lMLIRQuantUtils -lMLIRQuery
-                -lMLIRQueryLib -lMLIRQueryMatcher -lMLIRReconcileUnrealizedCasts -lMLIRReduce -lMLIRReduceLib
-                -lMLIRRegisterAllDialects -lMLIRRegisterAllExtensions -lMLIRRegisterAllPasses -lMLIRRemarkStreamer
-                -lMLIRRewrite -lMLIRRewritePDL -lMLIRROCDLDialect -lMLIRROCDLTarget -lMLIRROCDLToLLVMIRTranslation
-                -lMLIRRuntimeVerifiableOpInterface -lMLIRSCFDialect -lMLIRSCFToControlFlow -lMLIRSCFToEmitC
-                -lMLIRSCFToGPU -lMLIRSCFToOpenMP -lMLIRSCFToSPIRV -lMLIRSCFTransformOps -lMLIRSCFTransforms
-                -lMLIRSCFUtils -lMLIRShapeDialect -lMLIRShapedOpInterfaces -lMLIRShapeOpsTransforms
-                -lMLIRShapeToStandard -lMLIRShardDialect -lMLIRShardingInterface -lMLIRShardToMPI
-                -lMLIRShardTransforms -lMLIRSideEffectInterfaces -lMLIRSMT -lMLIRSparseTensorDialect
-                -lMLIRSparseTensorPipelines -lMLIRSparseTensorRuntime -lMLIRSparseTensorTransformOps
-                -lMLIRSparseTensorTransforms -lMLIRSparseTensorUtils -lMLIRSPIRVAttrToLLVMConversion
-                -lMLIRSPIRVBinaryUtils -lMLIRSPIRVConversion -lMLIRSPIRVDeserialization -lMLIRSPIRVDialect
-                -lMLIRSPIRVImageInterfaces -lMLIRSPIRVModuleCombiner -lMLIRSPIRVSerialization -lMLIRSPIRVTarget
-                -lMLIRSPIRVToLLVM -lMLIRSPIRVToLLVMIRTranslation -lMLIRSPIRVTransforms
-                -lMLIRSPIRVTranslateRegistration -lMLIRSPIRVUtils -lMLIRSubsetOpInterface -lMLIRSupport
-                -lMLIRTableGen -lMLIRTargetCpp -lMLIRTargetIRDLToCpp -lMLIRTargetLLVM -lMLIRTargetLLVMIRExport
-                -lMLIRTargetLLVMIRImport -lMLIRTargetLLVMIRTransforms -lMLIRTargetWasmImport -lMLIRTblgenLib
-                -lMLIRTensorAllExtensions -lMLIRTensorDialect -lMLIRTensorInferTypeOpInterfaceImpl
-                -lMLIRTensorShardingExtensions -lMLIRTensorTilingInterfaceImpl -lMLIRTensorToLinalg
-                -lMLIRTensorToSPIRV -lMLIRTensorTransformOps -lMLIRTensorTransforms -lMLIRTensorUtils
-                -lMLIRTilingInterface -lMLIRToLLVMIRTranslationRegistration -lMLIRTosaDialect
-                -lMLIRTosaShardingInterfaceImpl -lMLIRTosaToArith -lMLIRTosaToLinalg -lMLIRTosaToMLProgram
-                -lMLIRTosaToSCF -lMLIRTosaToTensor -lMLIRTosaTransforms -lMLIRTransformDebugExtension
-                -lMLIRTransformDialect -lMLIRTransformDialectInterfaces -lMLIRTransformDialectIRDLExtension
-                -lMLIRTransformDialectTransforms -lMLIRTransformDialectUtils -lMLIRTransformLoopExtension
-                -lMLIRTransformPDLExtension -lMLIRTransforms -lMLIRTransformSMTExtension
-                -lMLIRTransformTuneExtension -lMLIRTransformUtils -lMLIRTranslateLib -lMLIRUBDialect -lMLIRUBToLLVM
-                -lMLIRUBToSPIRV -lMLIRValueBoundsOpInterface -lMLIRVCIXDialect -lMLIRVCIXToLLVMIRTranslation
-                -lMLIRVectorDialect -lMLIRVectorInterfaces -lMLIRVectorToAMX -lMLIRVectorToArmSME -lMLIRVectorToGPU
-                -lMLIRVectorToLLVM -lMLIRVectorToLLVMPass -lMLIRVectorToSCF -lMLIRVectorToSPIRV -lMLIRVectorToXeGPU
-                -lMLIRVectorTransformOps -lMLIRVectorTransforms -lMLIRVectorUtils -lMLIRViewLikeInterface
-                -lMLIRWasmSSADialect -lMLIRX86VectorDialect -lMLIRX86VectorTransforms -lMLIRXeGPUDialect
-                -lMLIRXeGPUToXeVM -lMLIRXeGPUTransforms -lMLIRXeGPUUtils -lMLIRXeVMDialect -lMLIRXeVMTarget
-                -lMLIRXeVMToLLVM -lMLIRXeVMToLLVMIRTranslation
-                # === ALL LLVM libraries (Triton 3.6.0 LLVM pin: f6ded0be) ===
-                # AUTO-GENERATED from triton_llvm_install/lib/libLLVM*.a (110 libraries)
-                -lLLVMAggressiveInstCombine -lLLVMAnalysis -lLLVMAsmParser
-                -lLLVMAsmPrinter -lLLVMBinaryFormat -lLLVMBitReader
-                -lLLVMBitstreamReader -lLLVMBitWriter -lLLVMCAS
-                -lLLVMCFGuard -lLLVMCFIVerify -lLLVMCGData -lLLVMCodeGen
-                -lLLVMCodeGenTypes -lLLVMCore -lLLVMCoroutines
-                -lLLVMCoverage -lLLVMDebugInfoBTF -lLLVMDebugInfoCodeView
-                -lLLVMDebuginfod -lLLVMDebugInfoDWARF -lLLVMDebugInfoDWARFLowLevel
-                -lLLVMDebugInfoGSYM -lLLVMDebugInfoLogicalView -lLLVMDebugInfoMSF
-                -lLLVMDebugInfoPDB -lLLVMDemangle -lLLVMDiff -lLLVMDlltoolDriver
-                -lLLVMDWARFCFIChecker -lLLVMDWARFLinker -lLLVMDWARFLinkerClassic
-                -lLLVMDWARFLinkerParallel -lLLVMDWP -lLLVMExecutionEngine
-                -lLLVMExegesis -lLLVMExegesisX86 -lLLVMExtensions -lLLVMFileCheck
-                -lLLVMFrontendAtomic -lLLVMFrontendDirective -lLLVMFrontendDriver
-                -lLLVMFrontendHLSL -lLLVMFrontendOffloading -lLLVMFrontendOpenACC
-                -lLLVMFrontendOpenMP -lLLVMFuzzerCLI -lLLVMFuzzMutate -lLLVMGlobalISel
-                -lLLVMHipStdPar -lLLVMInstCombine -lLLVMInstrumentation
-                -lLLVMInterfaceStub -lLLVMInterpreter -lLLVMipo
-                -lLLVMIRPrinter -lLLVMIRReader -lLLVMJITLink
-                -lLLVMLibDriver -lLLVMLineEditor -lLLVMLinker
-                -lLLVMLTO -lLLVMMC -lLLVMMCA
-                -lLLVMMCDisassembler -lLLVMMCJIT -lLLVMMCParser
-                -lLLVMMIRParser -lLLVMNVPTXCodeGen -lLLVMNVPTXDesc
-                -lLLVMNVPTXInfo -lLLVMObjCARCOpts -lLLVMObjCopy
-                -lLLVMObject -lLLVMObjectYAML -lLLVMOptDriver
-                -lLLVMOption -lLLVMOrcDebugging -lLLVMOrcJIT
-                -lLLVMOrcShared -lLLVMOrcTargetProcess -lLLVMPasses
-                -lLLVMProfileData -lLLVMRemarks -lLLVMRuntimeDyld
-                -lLLVMSandboxIR -lLLVMScalarOpts -lLLVMSelectionDAG
-                -lLLVMSupport -lLLVMSupportLSP -lLLVMSymbolize -lLLVMTableGen
-                -lLLVMTableGenBasic -lLLVMTableGenCommon -lLLVMTarget
-                -lLLVMTargetParser -lLLVMTelemetry -lLLVMTextAPI -lLLVMTextAPIBinaryReader
-                -lLLVMTransformUtils -lLLVMVectorize -lLLVMWindowsDriver
-                -lLLVMWindowsManifest -lLLVMX86AsmParser -lLLVMX86CodeGen
-                -lLLVMX86Desc -lLLVMX86Disassembler -lLLVMX86Info
-                -lLLVMX86TargetMCA -lLLVMXRay
-            )
-            if(APPLE OR ANDROID)
-                target_link_libraries(triton_interface INTERFACE ${_TRITON_DEFERRED_LIBS})
-            else()
-                # --whole-archive for MLIRIR and MLIRSupport to preserve STB_GNU_UNIQUE TypeID symbols
-                target_link_libraries(triton_interface INTERFACE
-                    -Wl,--whole-archive -lMLIRIR -lMLIRSupport -Wl,--no-whole-archive
-                    -Wl,--start-group ${_TRITON_DEFERRED_LIBS} -Wl,--end-group)
-            endif()
-            target_link_libraries(triton_interface INTERFACE -lz -lm)
-            if(NOT APPLE AND NOT ANDROID)
-                target_link_libraries(triton_interface INTERFACE -lzstd -lrt -ldl -lpthread)
-            elseif(APPLE)
-                target_link_libraries(triton_interface INTERFACE -lzstd -ldl -lpthread)
-            else()
-                target_link_libraries(triton_interface INTERFACE -ldl)
-            endif()
+            target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
         endif()
     endif()
 
-    # Link nvrtc and cuda driver for NVRTC JIT and PTX backends (GPU only)
-    if(NOT _TRITON_CPU_ONLY)
+    # The pinned LLVM build produces the upstream monolithic LLVM and MLIR
+    # shared libraries. For a fresh build their package exports do not exist at
+    # configure time, so model the known build byproducts as imported targets.
+    if(APPLE)
+        set(_TRITON_LLVM_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM.dylib")
+        set(_TRITON_MLIR_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR.dylib")
+    else()
+        set(_TRITON_LLVM_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM.so")
+        set(_TRITON_MLIR_SHARED_LIBRARY "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR.so")
+    endif()
+
+    add_library(triton_llvm_shared SHARED IMPORTED GLOBAL)
+    set_target_properties(triton_llvm_shared PROPERTIES
+        IMPORTED_LOCATION "${_TRITON_LLVM_SHARED_LIBRARY}")
+    add_dependencies(triton_llvm_shared triton_llvm_external)
+
+    add_library(triton_mlir_shared SHARED IMPORTED GLOBAL)
+    set_target_properties(triton_mlir_shared PROPERTIES
+        IMPORTED_LOCATION "${_TRITON_MLIR_SHARED_LIBRARY}"
+        INTERFACE_LINK_LIBRARIES triton_llvm_shared)
+    add_dependencies(triton_mlir_shared triton_llvm_external)
+
+    target_link_libraries(triton_interface INTERFACE
+        triton_mlir_shared
+        triton_llvm_shared)
+    if(NOT WIN32)
+        target_link_libraries(triton_interface INTERFACE -lz -lm)
+        if(NOT APPLE AND NOT ANDROID)
+            target_link_libraries(triton_interface INTERFACE -lzstd -lrt -ldl -lpthread)
+        elseif(APPLE)
+            target_link_libraries(triton_interface INTERFACE -lzstd -ldl -lpthread)
+        else()
+            target_link_libraries(triton_interface INTERFACE -ldl)
+        endif()
+    endif()
+    message(STATUS
+        "Triton interface: shared MLIR=${_TRITON_MLIR_SHARED_LIBRARY}, "
+        "LLVM=${_TRITON_LLVM_SHARED_LIBRARY} (fresh build)")
+
+    # NVRTC and the CUDA driver belong only to the CUDA emitter consumer.
+    if(SD_CUDA)
         if(WIN32)
             target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
         else()
@@ -2336,11 +2450,17 @@ function(setup_triton)
     set(TRITON triton_interface PARENT_SCOPE)
 
     # --- Cache store for Triton ---
-    if(SD_DEP_CACHE AND DEFINED _triton_cache_key)
+    if(_TRITON_BUILDS_COMPILER AND SD_DEP_CACHE AND DEFINED _triton_cache_key)
         sd_dep_cache_store("triton" "${_triton_cache_key}" "${TRITON_INSTALL_DIR}" "triton_external")
     endif()
 
-    message(STATUS "Triton ${TRITON_VERSION} setup complete (target: ${TRITON_GPU_TARGET})")
+    if(_TRITON_BUILDS_COMPILER)
+        message(STATUS
+            "Triton ${TRITON_VERSION} setup complete (${_TRITON_CONSUMER_KIND}, target: ${TRITON_GPU_TARGET})")
+    else()
+        message(STATUS
+            "Triton DSP compiler package setup complete (${_TRITON_CONSUMER_KIND}, shared LLVM/MLIR only)")
+    endif()
 endfunction()
 
 # =============================================================================
@@ -3063,3 +3183,249 @@ function(_openvino_create_interface_from_install _install_dir)
     endforeach()
 endfunction()
 
+# =============================================================================
+# VULKAN (standalone SD_VULKAN device backend)
+# This is distinct from MLIR_ENABLE_VULKAN (MLIR Vulkan/SPIR-V dialect).
+# Discovery and bootstrap are legal only for the Vulkan chip build; CPU and
+# CUDA builds never probe, download, or link Vulkan through this function.
+# =============================================================================
+function(setup_vulkan)
+    if(NOT SD_VULKAN)
+        message(FATAL_ERROR
+            "setup_vulkan() is valid only for an SD_VULKAN chip build")
+    endif()
+
+    if(NOT LIBND4J_ENABLE_VULKAN)
+        message(STATUS "Vulkan compute backend disabled (LIBND4J_ENABLE_VULKAN=OFF)")
+        set(HAVE_VULKAN FALSE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Search for vulkan/vulkan.h in standard locations and common SDK paths.
+    # The bootstrap install dir is first so a previously downloaded copy is
+    # found even if the cache variable was cleared.
+    find_path(VULKAN_INCLUDE_DIR
+        NAMES vulkan/vulkan.h
+        HINTS
+            "${CMAKE_BINARY_DIR}/vulkan_headers_install/include"
+            "$ENV{VULKAN_SDK}/include"
+            "$ENV{VULKAN_SDK}/../include"
+            "/home/linuxbrew/.linuxbrew/include"
+            "/usr/local/include"
+            "/opt/homebrew/include"
+        PATHS
+            "/usr/include"
+    )
+
+    if(NOT VULKAN_INCLUDE_DIR)
+        message(STATUS "Vulkan headers not found locally — bootstrapping from Khronos repository")
+
+        # Download Vulkan headers from Khronos if not found
+        set(VULKAN_HEADERS_VERSION "1.3.268")
+        set(VULKAN_INSTALL_DIR "${CMAKE_BINARY_DIR}/vulkan_headers_install")
+
+        # --- Dependency cache check ---
+        if(SD_DEP_CACHE)
+            sd_dep_cache_key("vulkan-headers" "${VULKAN_HEADERS_VERSION}" "" _vulkan_cache_key)
+            sd_dep_cache_check("vulkan-headers" "${_vulkan_cache_key}" _vulkan_hit _vulkan_cache_path)
+            if(_vulkan_hit)
+                sd_dep_cache_restore("vulkan-headers" "${_vulkan_cache_path}" "${VULKAN_INSTALL_DIR}")
+                message(STATUS "✅ Vulkan headers restored from cache")
+            endif()
+        endif()
+
+        if(NOT EXISTS "${VULKAN_INSTALL_DIR}/include/vulkan/vulkan.h")
+            # The headers are needed at configure time (find_path + the
+            # include_directories call below), so download and extract them
+            # here rather than via ExternalProject_Add, whose steps only run
+            # at build time — too late for this function's own existence check.
+            set(VULKAN_URL "https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v${VULKAN_HEADERS_VERSION}.tar.gz")
+            set(_vulkan_tarball "${CMAKE_BINARY_DIR}/downloads/vulkan-headers-v${VULKAN_HEADERS_VERSION}.tar.gz")
+            message(STATUS "Downloading Vulkan ${VULKAN_HEADERS_VERSION} headers from ${VULKAN_URL}")
+            file(DOWNLOAD "${VULKAN_URL}" "${_vulkan_tarball}"
+                 STATUS _vulkan_dl_status
+                 TIMEOUT 300)
+            list(GET _vulkan_dl_status 0 _vulkan_dl_code)
+            if(NOT _vulkan_dl_code EQUAL 0)
+                list(GET _vulkan_dl_status 1 _vulkan_dl_msg)
+                message(FATAL_ERROR "Failed to download Vulkan headers from ${VULKAN_URL}: ${_vulkan_dl_msg}")
+            endif()
+
+            set(_vulkan_extract_dir "${CMAKE_BINARY_DIR}/vulkan_headers_src")
+            file(REMOVE_RECURSE "${_vulkan_extract_dir}")
+            file(ARCHIVE_EXTRACT INPUT "${_vulkan_tarball}" DESTINATION "${_vulkan_extract_dir}")
+
+            # The tarball extracts to Vulkan-Headers-<version>/
+            file(GLOB _vulkan_src_root "${_vulkan_extract_dir}/Vulkan-Headers-*")
+            list(LENGTH _vulkan_src_root _vulkan_src_root_count)
+            if(NOT _vulkan_src_root_count EQUAL 1)
+                message(FATAL_ERROR "Unexpected Vulkan headers archive layout under ${_vulkan_extract_dir}")
+            endif()
+            list(GET _vulkan_src_root 0 _vulkan_src_root)
+
+            file(MAKE_DIRECTORY "${VULKAN_INSTALL_DIR}/include")
+            file(COPY "${_vulkan_src_root}/include/vulkan" DESTINATION "${VULKAN_INSTALL_DIR}/include")
+            # vulkan_core.h includes vk_video headers since 1.2.x
+            if(EXISTS "${_vulkan_src_root}/include/vk_video")
+                file(COPY "${_vulkan_src_root}/include/vk_video" DESTINATION "${VULKAN_INSTALL_DIR}/include")
+            endif()
+        endif()
+
+        if(NOT EXISTS "${VULKAN_INSTALL_DIR}/include/vulkan/vulkan.h")
+            message(FATAL_ERROR "Failed to bootstrap Vulkan headers into ${VULKAN_INSTALL_DIR}")
+        endif()
+
+        set(VULKAN_INCLUDE_DIR "${VULKAN_INSTALL_DIR}/include")
+
+        # --- Cache store (configure-time; mirrors sd_dep_cache_store's
+        #     install/ + .cache_complete marker layout) ---
+        if(SD_DEP_CACHE AND DEFINED _vulkan_cache_key AND NOT _vulkan_hit)
+            set(_vulkan_cache_dir "${SD_DEP_CACHE_DIR}/vulkan-headers/${_vulkan_cache_key}")
+            set(_vulkan_cache_marker "${_vulkan_cache_dir}/.cache_complete")
+            if(NOT EXISTS "${_vulkan_cache_marker}")
+                file(MAKE_DIRECTORY "${_vulkan_cache_dir}/install")
+                execute_process(
+                    COMMAND ${CMAKE_COMMAND} -E copy_directory "${VULKAN_INSTALL_DIR}" "${_vulkan_cache_dir}/install"
+                    RESULT_VARIABLE _vulkan_store_result
+                )
+                if(_vulkan_store_result EQUAL 0)
+                    file(WRITE "${_vulkan_cache_marker}" "cached by libnd4j at configure time")
+                    message(STATUS "DEP-CACHE [vulkan-headers] Cache stored successfully")
+                else()
+                    message(WARNING "DEP-CACHE [vulkan-headers] Failed to store cache (exit code ${_vulkan_store_result})")
+                    file(REMOVE_RECURSE "${_vulkan_cache_dir}")
+                endif()
+            endif()
+        endif()
+    endif()
+
+    # Link the platform Vulkan loader; the loader's normal ICD discovery chooses
+    # AMD, NVIDIA, Intel, or another conforming implementation at runtime.
+    # Cross-target searches must never admit a host loader.
+    if(ANDROID)
+        # The NDK toolchain resolves this in the target sysroot. Android Vulkan
+        # starts at API 24, which verify_vulkan_chip_requirements() enforces.
+        find_library(VULKAN_LIBRARY NAMES vulkan)
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" _vulkan_target_processor)
+        set(_vulkan_linux_library_paths "")
+
+        # Prefer the toolchain's canonical target multiarch tuple when available.
+        if(CMAKE_LIBRARY_ARCHITECTURE)
+            list(APPEND _vulkan_linux_library_paths
+                "/usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}"
+                "/lib/${CMAKE_LIBRARY_ARCHITECTURE}")
+        endif()
+
+        # Keep architecture-specific paths disjoint: an ARM64 target must not
+        # probe x86-64 loader directories, and vice versa.
+        if(_vulkan_target_processor MATCHES "^(x86_64|amd64)$")
+            list(APPEND _vulkan_linux_library_paths
+                "/usr/lib/x86_64-linux-gnu"
+                "/lib/x86_64-linux-gnu"
+                "/usr/lib64"
+                "/lib64"
+                "/usr/lib"
+                "/lib")
+            set(_vulkan_expected_machine_regex "x86-64")
+        elseif(_vulkan_target_processor MATCHES "^(aarch64|arm64)$")
+            list(APPEND _vulkan_linux_library_paths
+                "/usr/lib/aarch64-linux-gnu"
+                "/lib/aarch64-linux-gnu"
+                "/usr/lib64"
+                "/lib64"
+                "/usr/lib"
+                "/lib")
+            set(_vulkan_expected_machine_regex "(ARM aarch64|aarch64)")
+        else()
+            list(APPEND _vulkan_linux_library_paths
+                "/usr/lib64"
+                "/lib64"
+                "/usr/lib"
+                "/lib")
+            set(_vulkan_expected_machine_regex "")
+        endif()
+
+        # A host Vulkan SDK is valid only for a native build. Cross builds must
+        # resolve exclusively through the target sysroot/toolchain.
+        if(NOT CMAKE_CROSSCOMPILING AND DEFINED ENV{VULKAN_SDK})
+            list(PREPEND _vulkan_linux_library_paths "$ENV{VULKAN_SDK}/lib")
+        endif()
+        list(REMOVE_DUPLICATES _vulkan_linux_library_paths)
+
+        if(CMAKE_CROSSCOMPILING)
+            find_library(VULKAN_LIBRARY
+                NAMES vulkan vulkan-1 vulkan.so.1 libvulkan.so.1
+                PATHS ${_vulkan_linux_library_paths}
+                NO_DEFAULT_PATH
+                ONLY_CMAKE_FIND_ROOT_PATH)
+        else()
+            find_library(VULKAN_LIBRARY
+                NAMES vulkan vulkan-1 vulkan.so.1 libvulkan.so.1
+                PATHS ${_vulkan_linux_library_paths}
+                NO_DEFAULT_PATH)
+        endif()
+    else()
+        # Windows (MSYS2/mingw: vulkan-loader provides libvulkan-1.dll.a) and
+        # macOS (LunarG SDK or MoltenVK) still link the vendor-neutral loader.
+        find_library(VULKAN_LIBRARY
+            NAMES vulkan vulkan-1
+            HINTS
+                "$ENV{VULKAN_SDK}/lib"
+                "$ENV{MSYSTEM_PREFIX}/lib"
+                "/home/linuxbrew/.linuxbrew/lib"
+                "/usr/local/lib"
+                "/opt/homebrew/lib"
+            PATHS
+                "/usr/lib64"
+                "/usr/lib/x86_64-linux-gnu"
+                "/usr/lib")
+    endif()
+
+    if(NOT VULKAN_LIBRARY)
+        message(STATUS "Vulkan loader library not found — Vulkan compute backend disabled")
+        message(STATUS "  Install vulkan-loader (Fedora: dnf install vulkan-loader)")
+        set(HAVE_VULKAN FALSE PARENT_SCOPE)
+        return()
+    endif()
+
+    # Verify both ELF class and target machine. Bitness alone cannot distinguish
+    # an x86-64 host loader from an AArch64 target loader.
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        execute_process(
+            COMMAND file -L "${VULKAN_LIBRARY}"
+            OUTPUT_VARIABLE _vulkan_file_output
+            ERROR_QUIET
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        set(_vulkan_library_architecture_valid TRUE)
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT _vulkan_file_output MATCHES "ELF 64-bit")
+            set(_vulkan_library_architecture_valid FALSE)
+        elseif(CMAKE_SIZEOF_VOID_P EQUAL 4 AND NOT _vulkan_file_output MATCHES "ELF 32-bit")
+            set(_vulkan_library_architecture_valid FALSE)
+        endif()
+        if(_vulkan_expected_machine_regex
+                AND NOT _vulkan_file_output MATCHES "${_vulkan_expected_machine_regex}")
+            set(_vulkan_library_architecture_valid FALSE)
+        endif()
+
+        if(NOT _vulkan_library_architecture_valid)
+            message(STATUS
+                "Vulkan loader target mismatch for ${CMAKE_SYSTEM_PROCESSOR}: "
+                "${VULKAN_LIBRARY} resolves as '${_vulkan_file_output}'")
+            unset(VULKAN_LIBRARY CACHE)
+            set(HAVE_VULKAN FALSE PARENT_SCOPE)
+            return()
+        endif()
+    endif()
+
+    message(STATUS "✅ Vulkan headers found: ${VULKAN_INCLUDE_DIR}")
+    message(STATUS "✅ Vulkan loader found:  ${VULKAN_LIBRARY}")
+    set(HAVE_VULKAN TRUE CACHE BOOL "Vulkan availability" FORCE)
+    set(HAVE_VULKAN TRUE PARENT_SCOPE)
+    set(VULKAN_INCLUDE_DIR "${VULKAN_INCLUDE_DIR}" CACHE PATH "Vulkan include directory" FORCE)
+    set(VULKAN_LIBRARY "${VULKAN_LIBRARY}" CACHE FILEPATH "Vulkan loader library" FORCE)
+    set(VULKAN_LIBRARY "${VULKAN_LIBRARY}" PARENT_SCOPE)
+    add_compile_definitions(HAVE_VULKAN=1)
+    include_directories(SYSTEM "${VULKAN_INCLUDE_DIR}")
+    message(STATUS "Vulkan compute backend ENABLED (HAVE_VULKAN=1)")
+endfunction()

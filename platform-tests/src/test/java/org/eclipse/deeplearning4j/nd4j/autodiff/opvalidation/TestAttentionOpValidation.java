@@ -729,6 +729,97 @@ public class TestAttentionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("DotProductAttentionV2 - Rank 4 GQA prefill materializes scores and logits")
+    public void testDotProductAttentionV2Rank4GqaPrefillWithBias(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 1;
+        int seqQ = 4;
+        int seqKV = 4;
+        int numHeads = 4;
+        int numKvHeads = 2;
+        int headDim = 8;
+        int headsPerKvHead = numHeads / numKvHeads;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqQ, numHeads, headDim).muli(0.1f);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqKV, numKvHeads, headDim).muli(0.1f);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqKV, numKvHeads, headDim).muli(0.1f);
+        INDArray bias = Nd4j.zeros(DataType.FLOAT, batch, 1, seqQ, seqKV);
+        for (int q = 0; q < seqQ; q++) {
+            for (int k = q + 1; k < seqKV; k++) {
+                bias.putScalar(new long[]{0, 0, q, k}, -1.0e9f);
+            }
+        }
+
+        INDArray emptyMask = Nd4j.empty(DataType.FLOAT);
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(query, value, key, emptyMask, emptyMask, bias)
+                .addFloatingPointArguments(scale, 0.0)
+                .addBooleanArguments(false, false, true)
+                .build();
+
+        INDArray[] outputs = Nd4j.exec(op);
+        INDArray expectedOutput =
+                Nd4j.zeros(DataType.FLOAT, batch, seqQ, numHeads, headDim);
+        INDArray expectedScores =
+                Nd4j.zeros(DataType.FLOAT, batch, numHeads, seqQ, seqKV);
+        INDArray expectedLogits =
+                Nd4j.zeros(DataType.FLOAT, batch, numHeads, seqQ, seqKV);
+
+        for (int h = 0; h < numHeads; h++) {
+            int kvHead = h / headsPerKvHead;
+            for (int q = 0; q < seqQ; q++) {
+                double[] logits = new double[seqKV];
+                double max = -Double.MAX_VALUE;
+                for (int k = 0; k < seqKV; k++) {
+                    double dot = 0.0;
+                    for (int d = 0; d < headDim; d++) {
+                        dot += query.getDouble(0, q, h, d)
+                                * key.getDouble(0, k, kvHead, d);
+                    }
+                    logits[k] = dot * scale + bias.getDouble(0, 0, q, k);
+                    max = Math.max(max, logits[k]);
+                    expectedLogits.putScalar(new long[]{0, h, q, k}, logits[k]);
+                }
+
+                double sum = 0.0;
+                double[] probabilities = new double[seqKV];
+                for (int k = 0; k < seqKV; k++) {
+                    probabilities[k] = Math.exp(logits[k] - max);
+                    sum += probabilities[k];
+                }
+                for (int k = 0; k < seqKV; k++) {
+                    probabilities[k] /= sum;
+                    expectedScores.putScalar(new long[]{0, h, q, k}, probabilities[k]);
+                }
+                for (int d = 0; d < headDim; d++) {
+                    double weighted = 0.0;
+                    for (int k = 0; k < seqKV; k++) {
+                        weighted += probabilities[k] * value.getDouble(0, k, kvHead, d);
+                    }
+                    expectedOutput.putScalar(new long[]{0, q, h, d}, weighted);
+                }
+            }
+        }
+
+        assertArrayEquals(expectedOutput.shape(), outputs[0].shape());
+        assertArrayEquals(expectedScores.shape(), outputs[1].shape());
+        assertArrayEquals(expectedLogits.shape(), outputs[2].shape());
+
+        double outputMaxDiff = outputs[0].sub(expectedOutput).amaxNumber().doubleValue();
+        double scoresMaxDiff = outputs[1].sub(expectedScores).amaxNumber().doubleValue();
+        double logitsMaxDiff = outputs[2].sub(expectedLogits).amaxNumber().doubleValue();
+        assertTrue(outputMaxDiff < 1e-4,
+                "GQA prefill output maxDiff=" + outputMaxDiff);
+        assertTrue(scoresMaxDiff < 1e-4,
+                "GQA prefill scores maxDiff=" + scoresMaxDiff);
+        assertTrue(logitsMaxDiff < 1e-4,
+                "GQA prefill logits maxDiff=" + logitsMaxDiff);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("ONNX MHA - With Attention Bias Uses Fused Kernel")
     public void testOnnxMhaWithBiasUsesFusedKernel(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);

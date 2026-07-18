@@ -97,7 +97,7 @@ static void seluMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(selu, ENGINE_CPU) {
+PLATFORM_IMPL(selu, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -110,7 +110,7 @@ PLATFORM_IMPL(selu, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(selu, ENGINE_CPU) {
+PLATFORM_CHECK(selu, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -189,7 +189,7 @@ static void seluBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
   stream.wait();
 }
 
-PLATFORM_IMPL(selu_bp, ENGINE_CPU) {
+PLATFORM_IMPL(selu_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -205,7 +205,7 @@ PLATFORM_IMPL(selu_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(selu_bp, ENGINE_CPU) {
+PLATFORM_CHECK(selu_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);

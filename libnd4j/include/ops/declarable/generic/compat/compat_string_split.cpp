@@ -139,6 +139,7 @@ DECLARE_SHAPE_FN(compat_string_split) {
 }
 
 DECLARE_TYPES(compat_string_split) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_STRINGS})
       ->setAllowedOutputTypes(0, {ALL_INDICES})

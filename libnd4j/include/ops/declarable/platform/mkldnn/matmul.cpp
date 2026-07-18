@@ -236,7 +236,7 @@ static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(matmul, ENGINE_CPU) {
+PLATFORM_IMPL(matmul, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -316,7 +316,7 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
   return sd::Status::OK;
 }
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(matmul, ENGINE_CPU) {
+PLATFORM_CHECK(matmul, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);

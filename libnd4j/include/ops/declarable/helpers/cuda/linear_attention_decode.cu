@@ -49,10 +49,19 @@
 #include <memory/cuda/CudaMemoryPool.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/linear_attention_decode.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
 namespace helpers {
+
+// Accumulator type: double when T=double for precision, float otherwise.
+// The state buffer is always float32 by design; AccT is used for the q·state
+// dot product so that double-precision inputs yield double-precision output.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -67,39 +76,9 @@ static constexpr int LA_WARP_SIZE = 32;
 static constexpr int LA_BLOCK_SIZE = 128;
 
 // ---------------------------------------------------------------------------
-// Warp butterfly shuffle — sums val across all lanes in the warp.
-// Lane 0 of each warp holds the final sum on return; all other lanes
-// also receive the value (full reduce, not just lane 0).
+// Warp/block sum reductions come from device_primitives.cuh
+// (sd::device::warpReduceSum / sd::device::blockReduceSum).
 // ---------------------------------------------------------------------------
-SD_DEVICE SD_INLINE float laWarpReduceSum(float val) {
-    for (int offset = LA_WARP_SIZE / 2; offset > 0; offset >>= 1) {
-        val += __shfl_down_sync(0xffffffff, val, offset);
-    }
-    return val;
-}
-
-// ---------------------------------------------------------------------------
-// Block-level reduce: accumulates partial warp sums via shared memory.
-// sharedMem must have at least (blockDim.x / LA_WARP_SIZE) floats.
-// Returns the total sum on thread 0 of the block.
-// ---------------------------------------------------------------------------
-SD_DEVICE SD_INLINE float laBlockReduceSum(float val, float* sharedMem) {
-    const int lane    = threadIdx.x % LA_WARP_SIZE;
-    const int warpId  = threadIdx.x / LA_WARP_SIZE;
-    const int numWarps = (blockDim.x + LA_WARP_SIZE - 1) / LA_WARP_SIZE;
-
-    // Each warp reduces internally.
-    val = laWarpReduceSum(val);
-
-    // Warp leaders write their sum to shared memory.
-    if (lane == 0) sharedMem[warpId] = val;
-    __syncthreads();
-
-    // First warp reduces across warp sums.
-    val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : 0.0f;
-    if (warpId == 0) val = laWarpReduceSum(val);
-    return val;
-}
 
 // ---------------------------------------------------------------------------
 // Main decode kernel
@@ -151,16 +130,21 @@ SD_KERNEL __launch_bounds__(LA_BLOCK_SIZE, 2) void linearAttentionDecodeKernel(
     const LongType b = bh / numHeads;
     const LongType h = bh % numHeads;
 
+    using AccT = typename AccType<T>::type;
+
     // -----------------------------------------------------------------
     // Per-head decay scalar: decay = exp(-decayRates[h]).
     // Using __expf for the fast hardware path (~4 ULP, ~5x faster).
+    // State is always float32 by design; decay stays float.
     // -----------------------------------------------------------------
     const float decay = __expf(-decayRates[h]);
 
     // -----------------------------------------------------------------
     // Shared memory for warp-leader partial sums during block reduction.
+    // AccT (double for T=double, float otherwise) for the dot product reduction.
     // -----------------------------------------------------------------
-    extern __shared__ float sharedMem[];  // LA_BLOCK_SIZE / LA_WARP_SIZE floats
+    extern __shared__ char sharedMemBuf[];
+    AccT* sharedMem = reinterpret_cast<AccT*>(sharedMemBuf);
 
     // -----------------------------------------------------------------
     // Base pointers for this (batch, head) pair.
@@ -180,37 +164,38 @@ SD_KERNEL __launch_bounds__(LA_BLOCK_SIZE, 2) void linearAttentionDecodeKernel(
     // Main loop over the V-dimension (one row of the state matrix per iter).
     // Each iteration:
     //   a) Update the state row:  state[dv, :] = decay * state[dv, :] + v_val * k[:]
+    //      (state stays float32 by design to prevent quantization drift)
     //   b) Accumulate the output: out[dv] = q[:] · state[dv, :]
-    //      using a warp/block butterfly reduction over the K-dimension.
+    //      in AccT precision (double for T=double) using warp/block reduction.
     // -----------------------------------------------------------------
     for (LongType dv = 0; dv < headDimV; ++dv) {
-        // Float32 v-value for this row.
+        // Float32 v-value for this row (state accumulation stays float32).
         const float v_val = static_cast<float>(vBase[dv * vS3]);
 
         // Pointer to state row [dv, :] — headDimK elements.
         float* sRow = sBase + dv * headDimK;
 
-        // Accumulate the dot product q · state[dv, :] in float32.
+        // Accumulate the dot product q · state[dv, :] in AccT.
         // Threads are strided over the K-dimension.
-        float dot = 0.0f;
+        AccT dot = static_cast<AccT>(0);
 
         for (LongType dk = static_cast<LongType>(threadIdx.x);
              dk < headDimK;
              dk += static_cast<LongType>(blockDim.x)) {
 
             const float k_val = static_cast<float>(kBase[dk * kS3]);
-            const float q_val = static_cast<float>(qBase[dk * qS3]);
+            const AccT q_val = static_cast<AccT>(qBase[dk * qS3]);
 
-            // State update (in-place): decay * s + v * k
+            // State update (in-place, float32): decay * s + v * k
             float s_new = decay * sRow[dk] + v_val * k_val;
             sRow[dk] = s_new;
 
-            // Accumulate q · s_new into the dot product.
-            dot += q_val * s_new;
+            // Accumulate q · s_new into the dot product in AccT.
+            dot += q_val * static_cast<AccT>(s_new);
         }
 
         // Block-wide reduction of dot products from all threads.
-        dot = laBlockReduceSum(dot, sharedMem);
+        dot = sd::device::blockReduceSum(dot, sharedMem);
 
         // Thread 0 writes the output for this v-row.
         if (threadIdx.x == 0) {
@@ -244,9 +229,10 @@ static void launchLinearAttentionDecode(
 
     const int numBlocks = static_cast<int>(batch * numHeads);
 
-    // Shared memory: one float per warp for block-level reduction.
+    // Shared memory: one AccT per warp for block-level reduction.
+    // AccT is double for T=double, float otherwise.
     const int numWarps   = (LA_BLOCK_SIZE + LA_WARP_SIZE - 1) / LA_WARP_SIZE;
-    const int sharedBytes = numWarps * static_cast<int>(sizeof(float));
+    const int sharedBytes = numWarps * static_cast<int>(sizeof(typename AccType<T>::type));
 
     linearAttentionDecodeKernel<T><<<numBlocks, LA_BLOCK_SIZE, sharedBytes, stream>>>(
         query, key, value, decayRates, state, output,

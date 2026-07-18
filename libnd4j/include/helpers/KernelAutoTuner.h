@@ -18,6 +18,8 @@
 #ifndef SD_KERNEL_AUTO_TUNER_H
 #define SD_KERNEL_AUTO_TUNER_H
 
+#include <system/BackendNamespace.h>
+
 #include <execution/Engine.h>
 #include <graph/Context.h>
 #include <helpers/KernelPerformanceRegistry.h>
@@ -34,9 +36,12 @@ namespace sd {
 namespace ops {
 
 // Forward declaration
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class DeclarableOp;
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 /**
  * Result of a benchmark run
@@ -191,6 +196,7 @@ class SD_LIB_EXPORT KernelAutoTuner {
   std::unique_ptr<graph::Context> cloneContext(graph::Context& original);
 };
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

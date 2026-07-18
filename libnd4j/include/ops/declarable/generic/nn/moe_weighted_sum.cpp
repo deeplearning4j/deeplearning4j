@@ -98,6 +98,7 @@ CUSTOM_OP_IMPL(moe_weighted_sum, 2, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(moe_weighted_sum) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS})
         ->setAllowedInputTypes(1, {ALL_FLOATS})

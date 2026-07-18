@@ -45,8 +45,8 @@ namespace op_detection {
 // ─── Op classification ─────────────────────────────────────────────────────
 
 // Check if an op is a matmul-family op via OpDescriptor traits.
-// Uses the centralized OpTraitTable — the DeclarableOp pointer is resolved at
-// compile time and stored on every NativeSlot, so no string fallback is needed.
+// The DeclarableOp pointer and its locally initialized descriptor are stored on
+// every NativeSlot, so no string fallback is needed.
 SD_INLINE bool isMatmulOp(sd::ops::DeclarableOp* op) {
   return op && op->getOpDescriptor() &&
          op->getOpDescriptor()->hasAnyTrait(sd::ops::OP_TRAIT_MATMUL);

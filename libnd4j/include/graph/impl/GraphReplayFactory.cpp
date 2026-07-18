@@ -19,22 +19,20 @@
 #include <graph/GraphReplayHandle.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 
-// ZLUDA: check native targets before SD_CUDA to select the correct replay handle.
-#if defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_AMD)
-#include <graph/hip/HipGraphReplayHandle.h>
-#elif defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_INTEL)
-#include <graph/levelzero/LevelZeroReplayHandle.h>
-#elif defined(SD_CUDA)
+// Include every compiled handle independently. Selection happens through the
+// capability matrix below; macro ordering must never choose a handle that the
+// active plan recorder cannot populate.
+#if defined(SD_CUDA)
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #endif
 
-#if defined(SD_HIP) && !defined(HAVE_ZLUDA)
+#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
 #include <graph/hip/HipGraphReplayHandle.h>
 #endif
 
-#if defined(HAVE_LEVELZERO) && !defined(HAVE_ZLUDA)
+#if defined(HAVE_LEVELZERO)
 #include <graph/levelzero/LevelZeroReplayHandle.h>
 #endif
 
@@ -150,56 +148,162 @@ void GraphReplayHandle::freeHostPointers() {
 // GraphReplayFactory
 // ═══════════════════════════════════════════════════════════════════════════════
 
-std::unique_ptr<GraphReplayHandle> GraphReplayFactory::create(int deviceId) {
-  DSP_DIAG_DEV(BACKEND, deviceId,
-               "GraphReplayFactory::create: deviceId=%d hwReplay=%d",
-               deviceId, hasHardwareReplay() ? 1 : 0);
-  // ZLUDA defines SD_CUDA but targets AMD (HIP) or Intel (Level Zero) GPUs.
-  // ZLUDA's CUDA graph translation is incomplete — use native graph APIs.
-#if defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_AMD)
-  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating HipGraphReplayHandle (ZLUDA AMD)");
-  return std::make_unique<HipGraphReplayHandle>(deviceId);
-#elif defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_INTEL)
-  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating LevelZeroReplayHandle (ZLUDA Intel)");
-  return std::make_unique<LevelZeroReplayHandle>(deviceId);
+ReplayCapabilityMatrix GraphReplayFactory::capabilities() {
+  ReplayCapabilityMatrix matrix;
 
-  // ── Native builds: use the platform's own graph replay API ────────────
-#elif defined(SD_CUDA)
-  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating CudaGraphReplayHandle");
-  return std::make_unique<CudaGraphReplayHandle>(deviceId);
-#elif defined(SD_HIP)
-  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating HipGraphReplayHandle");
-  return std::make_unique<HipGraphReplayHandle>(deviceId);
-#elif defined(SD_METAL)
-  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating MetalReplayHandle");
-  return std::make_unique<MetalReplayHandle>(deviceId);
-#elif defined(HAVE_LEVELZERO)
-  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating LevelZeroReplayHandle");
-  return std::make_unique<LevelZeroReplayHandle>(deviceId);
-#elif defined(HAVE_VULKAN)
-  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating VulkanReplayHandle");
-  return std::make_unique<VulkanReplayHandle>(deviceId);
-#elif defined(SD_TPU)
-  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating TpuReplayHandle");
-  return std::make_unique<TpuReplayHandle>(deviceId);
-#elif defined(HAVE_HEXAGON_MLIR)
-  DSP_DIAG_DEV(GRAPH_REPLAY, deviceId, "GraphReplayFactory: creating HexagonReplayHandle");
-  return std::make_unique<HexagonReplayHandle>(deviceId);
+#if !defined(SD_VULKAN)
+  matrix.functional = {true, true};
+#endif
+
+#if defined(SD_CUDA)
+  matrix.cuda.handleAvailable = true;
+  // The monolithic DSP recorder is CUDA-native. ZLUDA builds compile this
+  // handle too, but their translated graph path is not yet a supported recorder.
+#if !defined(HAVE_ZLUDA)
+  matrix.cuda.recorderAvailable = true;
+#endif
+#endif
+
+#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
+  matrix.hip.handleAvailable = true;
+  // HipGraphReplayHandle is complete, but NativeDynamicShapePlan does not yet
+  // inject slot execution into a HIP capture stream.
+#endif
+
+#if defined(HAVE_LEVELZERO)
+  matrix.levelZero.handleAvailable = true;
+  // LevelZeroReplayHandle requires explicit native kernel recording; the plan
+  // does not yet expose Level Zero kernel handles to that recorder.
+#endif
+
+#if defined(HAVE_VULKAN)
+  matrix.vulkan = {true, true};
+#endif
+
+#if defined(SD_METAL)
+  matrix.metal.handleAvailable = true;
+  // MetalReplayHandle requires explicit MTL pipeline/argument recording.
+#endif
+
+#if defined(SD_TPU)
+  matrix.tpu.handleAvailable = true;
+  // TPU execution is populated by TpuGraphBackend's HLO compiler path, not by
+  // the portable replay recorder.
+#endif
+
+#if defined(HAVE_HEXAGON_MLIR)
+  matrix.hexagon.handleAvailable = true;
+  // Hexagon execution is populated by its compiler backend; no replay-only
+  // NativeDynamicShapePlan recorder is wired for portable mode.
+#endif
+
+  return matrix;
+}
+
+std::unique_ptr<GraphReplayHandle> GraphReplayFactory::create(int deviceId) {
+  auto matrix = capabilities();
+  auto backend = matrix.preferredExecutable();
+  DSP_DIAG_DEV(BACKEND, deviceId,
+               "GraphReplayFactory::create: deviceId=%d backend=%d hwReplay=%d",
+               deviceId, static_cast<int>(backend),
+               matrix.hasExecutableHardwareReplay() ? 1 : 0);
+  return create(backend, deviceId);
+}
+
+std::unique_ptr<GraphReplayHandle> GraphReplayFactory::create(
+    ReplayBackend backend, int deviceId) {
+  switch (backend) {
+    case ReplayBackend::FUNCTIONAL:
+      return createFunctional();
+
+    case ReplayBackend::CUDA:
+#if defined(SD_CUDA)
+      DSP_DIAG_DEV(GRAPH_REPLAY, deviceId,
+                   "GraphReplayFactory: creating CudaGraphReplayHandle");
+      return std::make_unique<CudaGraphReplayHandle>(deviceId);
 #else
-  DSP_DIAG(GRAPH_REPLAY, "GraphReplayFactory: creating FunctionalReplayHandle (CPU fallback)");
+      break;
+#endif
+
+    case ReplayBackend::HIP:
+#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
+      DSP_DIAG_DEV(GRAPH_REPLAY, deviceId,
+                   "GraphReplayFactory: creating HipGraphReplayHandle");
+      return std::make_unique<HipGraphReplayHandle>(deviceId);
+#else
+      break;
+#endif
+
+    case ReplayBackend::LEVEL_ZERO:
+#if defined(HAVE_LEVELZERO)
+      DSP_DIAG_DEV(GRAPH_REPLAY, deviceId,
+                   "GraphReplayFactory: creating LevelZeroReplayHandle");
+      return std::make_unique<LevelZeroReplayHandle>(deviceId);
+#else
+      break;
+#endif
+
+    case ReplayBackend::VULKAN:
+#if defined(HAVE_VULKAN)
+      DSP_DIAG_DEV(GRAPH_REPLAY, deviceId,
+                   "GraphReplayFactory: creating VulkanReplayHandle");
+      return std::make_unique<VulkanReplayHandle>(deviceId);
+#else
+      break;
+#endif
+
+    case ReplayBackend::METAL:
+#if defined(SD_METAL)
+      DSP_DIAG_DEV(GRAPH_REPLAY, deviceId,
+                   "GraphReplayFactory: creating MetalReplayHandle");
+      return std::make_unique<MetalReplayHandle>(deviceId);
+#else
+      break;
+#endif
+
+    case ReplayBackend::TPU:
+#if defined(SD_TPU)
+      DSP_DIAG_DEV(GRAPH_REPLAY, deviceId,
+                   "GraphReplayFactory: creating TpuReplayHandle");
+      return std::make_unique<TpuReplayHandle>(deviceId);
+#else
+      break;
+#endif
+
+    case ReplayBackend::HEXAGON:
+#if defined(HAVE_HEXAGON_MLIR)
+      DSP_DIAG_DEV(GRAPH_REPLAY, deviceId,
+                   "GraphReplayFactory: creating HexagonReplayHandle");
+      return std::make_unique<HexagonReplayHandle>(deviceId);
+#else
+      break;
+#endif
+
+    case ReplayBackend::NONE:
+    default:
+      break;
+  }
+
+  DSP_DIAG_DEV(FALLBACK, deviceId,
+               "GraphReplayFactory: requested replay backend %d is unavailable",
+               static_cast<int>(backend));
+  return nullptr;
+}
+
+std::unique_ptr<GraphReplayHandle> GraphReplayFactory::createFunctional() {
+#if defined(SD_VULKAN)
+  DSP_DIAG(GRAPH_REPLAY,
+           "GraphReplayFactory::createFunctional: unavailable in Vulkan-only builds");
+  return nullptr;
+#else
+  DSP_DIAG(GRAPH_REPLAY,
+           "GraphReplayFactory::createFunctional: creating FunctionalReplayHandle");
   return std::make_unique<FunctionalReplayHandle>();
 #endif
 }
 
 bool GraphReplayFactory::hasHardwareReplay() {
-  if (sd::graph::dspIsCudaBuild()) return true;
-#if defined(SD_HIP) || defined(SD_METAL) || \
-    defined(HAVE_LEVELZERO) || defined(HAVE_VULKAN) || \
-    defined(SD_TPU) || defined(HAVE_HEXAGON_MLIR)
-  return true;
-#else
-  return false;
-#endif
+  return capabilities().hasExecutableHardwareReplay();
 }
 
 }  // namespace graph

@@ -40,7 +40,9 @@ OP_IMPL(stop_gradient, 1, 1, true) {
 }
 DECLARE_SYN(StopGradient, stop_gradient);
 
-DECLARE_TYPES(stop_gradient) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(stop_gradient) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
+   getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

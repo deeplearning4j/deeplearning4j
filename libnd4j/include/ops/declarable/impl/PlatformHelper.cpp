@@ -26,6 +26,7 @@
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 PlatformHelper::PlatformHelper(const char* name, samediff::Engine engine) {
   // we just store name/hash of target operation
   _name = std::string(name);
@@ -107,6 +108,7 @@ samediff::Engine PlatformHelper::engine() { return _engine; }
 std::string PlatformHelper::name() { return _name; }
 
 LongType PlatformHelper::hash() { return _hash; }
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

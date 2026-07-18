@@ -56,6 +56,7 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
 
 DECLARE_TYPES(meshgrid) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(INHERIT)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 
 DECLARE_SHAPE_FN(meshgrid) {

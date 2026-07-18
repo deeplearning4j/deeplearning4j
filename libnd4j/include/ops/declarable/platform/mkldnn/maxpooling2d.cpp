@@ -36,7 +36,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
+PLATFORM_IMPL(maxpool2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -74,7 +74,7 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
+PLATFORM_CHECK(maxpool2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -86,7 +86,7 @@ PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(maxpool2d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);   // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   auto gradO = INPUT_VARIABLE(1);   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
   auto gradI = OUTPUT_VARIABLE(0);  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
@@ -129,7 +129,7 @@ PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(maxpool2d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(maxpool2d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);

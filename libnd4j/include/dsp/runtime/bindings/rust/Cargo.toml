@@ -19,6 +19,11 @@ standalone = []
 # Enable zero-copy ndarray interop: exposes Context::run_named() which accepts
 # ArrayViewD<f32> inputs and returns Vec<ArrayD<f32>> outputs.
 ndarray = ["dep:ndarray"]
+# Enable the LLM/VLM/STT surface (sdx_runtime::llm module).
+# Links libsdx_llm.  Plain graph-ABI users should NOT enable this feature
+# to avoid the link dependency.  Build.rs emits the link search path only
+# when this feature is active.
+llm = []
 
 [dependencies]
 ndarray = { version = "0.16", optional = true }

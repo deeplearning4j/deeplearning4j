@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.tags.TagNames;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -188,6 +189,44 @@ public class DspSlotLifecycleAuditTest {
         Nd4j.getRandom().setSeed(FIXTURE_SEED);
     }
 
+    @Test
+    @DisplayName("A view after a multi-output op keeps producer-slot and output-slot indices separate")
+    public void testMultiOutputBeforeViewUsesProducerSlotIndex() {
+        sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 8);
+        SDVariable[] topK = sd.nn().topK(x, 4, false);
+        topK[0].rename("top_values");
+        topK[1].rename("top_indices");
+        sd.reshape("view", topK[0], 1, 2, 2);
+        configureDsp(sd, GraphExecutionMode.AUTO);
+
+        String[] outputNames = {"top_values", "top_indices", "view"};
+        Map<String, INDArray> inputs = new LinkedHashMap<>();
+        inputs.put("x", Nd4j.create(
+                new float[]{8.0f, 1.0f, 7.0f, 2.0f, 6.0f, 3.0f, 5.0f, 4.0f},
+                new long[]{1, 8}));
+
+        INDArray[] reference = null;
+        try {
+            for (int replay = 0; replay < REPLAYS; replay++) {
+                Map<String, INDArray> actual = sd.output(inputs, outputNames);
+                if (reference == null) {
+                    reference = new INDArray[outputNames.length];
+                    for (int i = 0; i < outputNames.length; i++) {
+                        reference[i] = actual.get(outputNames[i]).dup();
+                    }
+                } else {
+                    assertOutputsMatch(
+                            reference, actual, outputNames, new double[]{0.0, 0.0},
+                            "multi-output-before-view#" + replay);
+                }
+            }
+        } finally {
+            closeAll(reference);
+            closeAll(inputs);
+        }
+    }
+
     /** Build a graph with deterministic weights. Resets the
      *  {@link #WEIGHT_CALL_IDX} counter so that every fixture builder sees
      *  the exact same sequence of {@code randFloat} results on every call —
@@ -206,7 +245,6 @@ public class DspSlotLifecycleAuditTest {
             try { sd.close(); } catch (Throwable t) { log.warn("sd.close() in tearDown", t); }
             sd = null;
         }
-        Nd4j.getExecutioner().commit();
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -304,8 +342,10 @@ public class DspSlotLifecycleAuditTest {
         // [index] filters don't match these display names. Lists exist to
         // bisect ORDER-dependent failures: run a suspected contaminator mode
         // together with the victim mode in one JVM.
-        Set<String> onlyFixtures = csvProperty("audit.fixture");
-        Set<String> onlyModes = csvProperty("audit.mode");
+        Set<String> onlyFixtures = csvProperty(
+                ND4JSystemProperties.DSP_SLOT_LIFECYCLE_AUDIT_FIXTURE);
+        Set<String> onlyModes = csvProperty(
+                ND4JSystemProperties.DSP_SLOT_LIFECYCLE_AUDIT_MODE);
         List<Fixture> fs = fixtures();
         List<GraphExecutionMode> modes = executionModes();
         List<Arguments> args = new ArrayList<>(fs.size() * modes.size());
@@ -440,7 +480,6 @@ public class DspSlotLifecycleAuditTest {
                     closeAll(inputs);          // free the input immediately so any
                                                // cached slot pointer is invalidated
                                                // before the next call.
-                    Nd4j.getExecutioner().commit();
                 }
             }
         } finally {
@@ -474,7 +513,6 @@ public class DspSlotLifecycleAuditTest {
                 if (prev != null) {
                     closeAll(prev);
                     prev = null;
-                    Nd4j.getExecutioner().commit();
                 }
                 Map<String, INDArray> inputs = fix.inputBuilder.get();
                 try {
@@ -544,7 +582,6 @@ public class DspSlotLifecycleAuditTest {
                 for (int i = 0; i < 128; i++) poison.add(Nd4j.valueArrayOf(new long[]{64}, 777.777f));
                 for (int i = 0; i < 32; i++) poison.add(Nd4j.valueArrayOf(new long[]{256}, 777.777f));
                 for (int i = 0; i < 16; i++) poison.add(Nd4j.valueArrayOf(new long[]{1024}, 777.777f));
-                Nd4j.getExecutioner().commit();
 
                 // Borrower: identical graph/shapes → plan-cache checkout.
                 sd = buildGraph(fix.graphBuilder);
@@ -695,14 +732,11 @@ public class DspSlotLifecycleAuditTest {
                 // unpoisoning above — not a fail, we still want to run the
                 // second call.
             }
-            Nd4j.getExecutioner().commit();
 
-            // 3) Second call — library must still match reference. If it
-            //    throws, the exception must be a diagnosable lifecycle
-            //    violation, not an opaque NPE or segfault. Note: silent
-            //    corruption (returning zeros / stale constants from the
-            //    freed buffer) is worse than a clean exception and will
-            //    fail the assertOutputsMatch call below.
+            // 3) Second call — the valid rebind must execute and still match
+            //    reference. Any exception is a contract failure; accepting a
+            //    lifecycle diagnostic here would mask the stale frozen-slot
+            //    ownership bug this isolation test exists to catch.
             double[] tol = tolerances(mode);
             Map<String, INDArray> inputs = fix.inputBuilder.get();
             try {
@@ -710,19 +744,9 @@ public class DspSlotLifecycleAuditTest {
                 try {
                     raw = sd.output(inputs, fix.outputNames);
                 } catch (Throwable t) {
-                    String msg = String.valueOf(t.getMessage()).toLowerCase();
-                    boolean isLifecycleDiag =
-                            msg.contains("closed")
-                                    || msg.contains("lifecycle")
-                                    || msg.contains("databuffer")
-                                    || msg.contains("freed")
-                                    || msg.contains("execution failed");
-                    if (!isLifecycleDiag) {
-                        fail(fix.name + " / " + mode
-                                + " second call threw non-diagnostic exception: "
-                                + t.getMessage(), t);
-                    }
-                    // Diagnostic caught cleanly — path is exercised, no crash.
+                    fail(fix.name + " / " + mode
+                            + " second call threw after a valid variable rebind: "
+                            + t.getMessage(), t);
                     return;
                 }
                 assertOutputsMatch(reference, raw, fix.outputNames, tol,
@@ -775,7 +799,6 @@ public class DspSlotLifecycleAuditTest {
                 // the library re-snapshots on every call.
                 INDArray fresh = originalValues.dup();
                 sd.associateArrayWithVariable(fresh, targetVar);
-                Nd4j.getExecutioner().commit();
 
                 Map<String, INDArray> inputs = fix.inputBuilder.get();
                 try {

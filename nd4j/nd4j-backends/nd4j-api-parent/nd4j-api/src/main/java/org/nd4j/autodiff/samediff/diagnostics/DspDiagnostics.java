@@ -182,10 +182,24 @@ public class DspDiagnostics {
 
     /**
      * Set enabled categories (replaces current mask).
+     *
+     * <p>When {@code mask} is {@link #NONE}, the {@code initialized} flag is reset so that
+     * the next call to {@link #isEnabled(int)} re-applies the environment-variable-configured
+     * categories (ND4J_DSP_DIAGNOSTICS / nd4j.dsp.diagnostics). This ensures that test
+     * cleanup code that calls {@code setCategories(NONE)} does not permanently silence
+     * diagnostics configured via env vars for the remainder of the JVM lifetime.</p>
+     *
+     * <p>Env vars are re-read once on the next {@code isEnabled()} call, NOT per event,
+     * so the hot-path overhead is a single atomic load per event.</p>
      */
-    public static void setCategories(int mask) {
+    public static synchronized void setCategories(int mask) {
         Nd4j.getNativeOps().dspDiagSetCategories(mask);
         cachedMask = mask;
+        // If diagnostics are being fully disabled, reset the initialization guard so
+        // the env-var-configured mask is re-applied on the next isEnabled() call.
+        if (mask == NONE) {
+            initialized = false;
+        }
     }
 
     /**

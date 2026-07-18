@@ -47,7 +47,10 @@ CUSTOM_OP_IMPL(diag, 1, 1, false, 0, 0) {
 
 DECLARE_SYN(MatrixDiag, diag);
 
-DECLARE_TYPES(diag) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(diag) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
+}
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(diag) {

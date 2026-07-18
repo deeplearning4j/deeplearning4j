@@ -22,12 +22,19 @@
 #include <math/templatemath.h>
 #include <cuda_runtime.h>
 #include <cfloat>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 static constexpr int CS_WARP_SIZE = 32;
+
+// Accumulator type: double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
 // Phase 1: Center and scale: output[b][f] = (input[b][f] - center[f]) / temperature
 // Phase 2: Row-wise softmax
@@ -38,8 +45,10 @@ SD_KERNEL void centerAndSharpenKernel(const T* __restrict__ input,
                                         const LongType batch,
                                         const LongType dim,
                                         const T invTemp) {
+    using AccT = typename AccType<T>::type;
+
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int b = blockIdx.x;
     if (b >= batch) return;
@@ -47,54 +56,28 @@ SD_KERNEL void centerAndSharpenKernel(const T* __restrict__ input,
     const T* inRow = input + b * dim;
     T* outRow = output + b * dim;
 
-    const int lane = threadIdx.x % CS_WARP_SIZE;
-    const int wid = threadIdx.x / CS_WARP_SIZE;
-    const int numWarps = (blockDim.x + CS_WARP_SIZE - 1) / CS_WARP_SIZE;
-
     // Step 1: Center and scale, find max for numerical stability
-    float threadMax = -FLT_MAX;
+    AccT threadMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType f = threadIdx.x; f < dim; f += blockDim.x) {
         T val = (inRow[f] - center[f]) * invTemp;
         outRow[f] = val;
-        threadMax = sd::math::sd_max<float>(threadMax, static_cast<float>(val));
+        threadMax = sd::math::sd_max<AccT>(threadMax, static_cast<AccT>(val));
     }
 
-    // Warp reduction for max
-    for (int offset = CS_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadMax = sd::math::sd_max<float>(threadMax, __shfl_down_sync(0xffffffff, threadMax, offset));
-    if (lane == 0) warpBuf[wid] = threadMax;
-    __syncthreads();
-
-    float rowMax = -FLT_MAX;
-    if (threadIdx.x < numWarps) rowMax = warpBuf[threadIdx.x];
-    for (int offset = CS_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowMax = sd::math::sd_max<float>(rowMax, __shfl_down_sync(0xffffffff, rowMax, offset));
-    __shared__ float sharedMax;
-    if (threadIdx.x == 0) sharedMax = rowMax;
-    __syncthreads();
-    rowMax = sharedMax;
+    // Block-reduce max (result broadcast to all threads) for numerical stability
+    AccT rowMax = sd::device::blockAllReduceMax(threadMax, warpBuf);
 
     // Step 2: exp(val - max) and sum
-    float threadSum = 0.0f;
+    AccT threadSum = static_cast<AccT>(0);
     for (LongType f = threadIdx.x; f < dim; f += blockDim.x) {
         T val = sd::math::sd_exp<T, T>(outRow[f] - static_cast<T>(rowMax));
         outRow[f] = val;
-        threadSum += static_cast<float>(val);
+        threadSum += static_cast<AccT>(val);
     }
 
-    // Warp reduction for sum
-    for (int offset = CS_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadSum += __shfl_down_sync(0xffffffff, threadSum, offset);
-    if (lane == 0) warpBuf[wid] = threadSum;
-    __syncthreads();
-
-    float rowSum = 0.0f;
-    if (threadIdx.x < numWarps) rowSum = warpBuf[threadIdx.x];
-    for (int offset = CS_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowSum += __shfl_down_sync(0xffffffff, rowSum, offset);
-    __shared__ float sharedInvSum;
-    if (threadIdx.x == 0) sharedInvSum = 1.0f / rowSum;
-    __syncthreads();
+    // Block-reduce sum (result broadcast to all threads)
+    AccT rowSum = sd::device::blockAllReduceSum(threadSum, warpBuf);
+    AccT sharedInvSum = static_cast<AccT>(1) / rowSum;
 
     // Step 3: Normalize
     for (LongType f = threadIdx.x; f < dim; f += blockDim.x) {
@@ -112,6 +95,7 @@ void centerAndSharpenCudaLauncher(const cudaStream_t* stream,
     auto center = reinterpret_cast<const T*>(vCenter);
     auto output = reinterpret_cast<T*>(vOutput);
 
+    using AccT = typename AccType<T>::type;
     T invTemp = static_cast<T>(1.0 / temperature);
 
     int threads = 256;
@@ -120,7 +104,7 @@ void centerAndSharpenCudaLauncher(const cudaStream_t* stream,
         if (threads < CS_WARP_SIZE) threads = CS_WARP_SIZE;
     }
     int numWarps = (threads + CS_WARP_SIZE - 1) / CS_WARP_SIZE;
-    size_t sharedSize = numWarps * sizeof(float);
+    size_t sharedSize = numWarps * sizeof(AccT);
 
     centerAndSharpenKernel<T><<<batch, threads, sharedSize, *stream>>>(
         input, center, output, batch, dim, invTemp);

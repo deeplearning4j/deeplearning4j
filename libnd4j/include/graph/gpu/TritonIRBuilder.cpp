@@ -47,8 +47,6 @@
 #include <graph/gpu/TritonIRBuilder_internal.h>
 #include <graph/gpu/OpCategoryTable.h>
 #include <helpers/logger.h>
-#include <ops/declarable/OpDescriptor.h>
-#include <ops/declarable/OpRegistrator.h>
 #include <system/Environment.h>
 #include <system/common.h>
 
@@ -295,6 +293,9 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["Argmin"]        = {"Argmin",        TritonOpCategory::REDUCTION, "custom.argmin",  true};
   table["norm_max"]      = {"norm_max",      TritonOpCategory::REDUCTION, "tt.reduce max",  false};
   table["NormMax"]       = {"NormMax",       TritonOpCategory::REDUCTION, "tt.reduce max",  false};
+  // SameDiff's normmax lowers to the declarable op literally named
+  // "reduce_normmax" (no second underscore) — cover that spelling too.
+  table["reduce_normmax"] = {"reduce_normmax", TritonOpCategory::REDUCTION, "tt.reduce max", false};
   table["reduce_variance"]= {"reduce_variance",TritonOpCategory::REDUCTION, "custom.variance", true};
   table["reduce_stdev"]  = {"reduce_stdev",  TritonOpCategory::REDUCTION, "custom.stdev",   true};
 
@@ -323,8 +324,11 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["FusedTwoLayerMlp"]     = {"FusedTwoLayerMlp",     TritonOpCategory::MATMUL,        "custom.fused_two_layer_mlp", true};
   table["batch_norm"]           = {"batch_norm",           TritonOpCategory::NORMALIZATION, "custom.batch_norm",   true};
   table["BatchNorm"]            = {"BatchNorm",            TritonOpCategory::NORMALIZATION, "custom.batch_norm",   true};
-  table["normalize_moments"]    = {"normalize_moments",    TritonOpCategory::NORMALIZATION, "custom.normalize_moments", true};
-  table["NormalizeMoments"]     = {"NormalizeMoments",     TritonOpCategory::NORMALIZATION, "custom.normalize_moments", true};
+  // normalize_moments intentionally absent: it produces two outputs (mean,
+  // variance) which the single-output normalization emitters cannot express —
+  // the previous entries here shadowed OpCategoryTable.h's UNSUPPORTED and
+  // routed it into normalization sections whose emitter throws. It executes
+  // natively until a two-output emitter exists.
 
   // Normalization backward ops — multi-output (dx + dgamma [+ dbeta])
   // These use emitNormalizationBackwardSection which writes outputs directly via tt.store.
@@ -409,15 +413,19 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   // Convolution ops
   table["conv2d"]              = {"conv2d",              TritonOpCategory::CONVOLUTION, "custom.conv2d", true};
   table["Conv2d"]              = {"Conv2d",              TritonOpCategory::CONVOLUTION, "custom.conv2d", true};
-  table["conv2d_bp"]           = {"conv2d_bp",           TritonOpCategory::CONVOLUTION, "custom.conv2d_bp", true};
-  table["deconv2d"]            = {"deconv2d",            TritonOpCategory::CONVOLUTION, "custom.deconv2d", true};
-  table["deconv2d_bp"]         = {"deconv2d_bp",         TritonOpCategory::CONVOLUTION, "custom.deconv2d_bp", true};
+  // conv2d_bp / deconv2d / deconv2d_bp / col2im_bp intentionally absent: the
+  // CONVOLUTION section emitter only implements forward conv2d, im2col,
+  // col2im and im2col_bp (which lowers to col2im). The previous entries here
+  // claimed emitters that never existed, routing these ops into compiled conv
+  // sections that either skipped them or mis-emitted the forward-conv2d
+  // kernel over their inputs. They execute natively until real emitters
+  // exist; the CONVOLUTION section guard in TritonIRBuilder_module.cpp also
+  // invalidates any conv-family stragglers from OpCategoryTable.h.
   table["im2col"]              = {"im2col",              TritonOpCategory::CONVOLUTION, "custom.im2col", true};
   table["Im2col"]              = {"Im2col",              TritonOpCategory::CONVOLUTION, "custom.im2col", true};
   table["im2col_bp"]           = {"im2col_bp",           TritonOpCategory::CONVOLUTION, "custom.im2col_bp", true};
   table["col2im"]              = {"col2im",              TritonOpCategory::CONVOLUTION, "custom.col2im", true};
   table["Col2im"]              = {"Col2im",              TritonOpCategory::CONVOLUTION, "custom.col2im", true};
-  table["col2im_bp"]           = {"col2im_bp",           TritonOpCategory::CONVOLUTION, "custom.col2im_bp", true};
 
   return table;
 }
@@ -455,58 +463,13 @@ void TritonIRBuilder::clearSectionedBlockSizeOverride() {
 // getSectionedCooperativeTargetBlocks() moved to TritonIRBuilder_cuda.cu
 // (requires NVCC for CUDA device queries, kept separate from MLIR code)
 
-// Derive a TritonOpCategory from the op trait bitfield stored on OpDescriptor.
-// This is the trait-first fallback path so that newly-added ops don't need manual
-// entries in OpCategoryTable.h / buildOpTable() to be recognized — as long as
-// OpTraitTable.cpp is populated (the single source of truth), routing works.
-static TritonOpCategory categoryFromTraits(uint32_t traits) {
-  using sd::ops::OpTraits;
-  if (traits == 0) return TritonOpCategory::UNSUPPORTED;
-  // Specific / fused traits first — they override generic elementwise classification.
-  if (traits & OpTraits::OP_TRAIT_ATTENTION)          return TritonOpCategory::FUSED_ATTENTION;
-  if (traits & OpTraits::OP_TRAIT_MATMUL)             return TritonOpCategory::MATMUL;
-  if (traits & OpTraits::OP_TRAIT_NORMALIZATION)      return TritonOpCategory::NORMALIZATION;
-  if (traits & OpTraits::OP_TRAIT_REDUCTION)          return TritonOpCategory::REDUCTION;
-  if (traits & OpTraits::OP_TRAIT_IDENTITY)           return TritonOpCategory::IDENTITY;
-  if (traits & OpTraits::OP_TRAIT_CAST)               return TritonOpCategory::CAST;
-  if (traits & OpTraits::OP_TRAIT_COMPARISON)         return TritonOpCategory::COMPARISON;
-  if (traits & OpTraits::OP_TRAIT_LOGICAL)            return TritonOpCategory::LOGICAL;
-  if (traits & OpTraits::OP_TRAIT_TERNARY_ELEMENTWISE) return TritonOpCategory::TERNARY;
-  if (traits & OpTraits::OP_TRAIT_VIEW_PRODUCING)     return TritonOpCategory::SHAPE_MANIPULATION;
-  if (traits & OpTraits::OP_TRAIT_SHAPE_ONLY_OUTPUT)  return TritonOpCategory::CONSTANT_GENERATION;
-  if (traits & OpTraits::OP_TRAIT_CONSTANT_GENERATION) return TritonOpCategory::CONSTANT_GENERATION;
-  if (traits & (OpTraits::OP_TRAIT_GATHER | OpTraits::OP_TRAIT_GATHER_ND |
-                OpTraits::OP_TRAIT_CONCAT | OpTraits::OP_TRAIT_SPLIT |
-                OpTraits::OP_TRAIT_SPLIT_V | OpTraits::OP_TRAIT_STACK |
-                OpTraits::OP_TRAIT_SLICE | OpTraits::OP_TRAIT_TILE |
-                OpTraits::OP_TRAIT_SCATTER_ND | OpTraits::OP_TRAIT_SCATTER_ND_UPDATE |
-                OpTraits::OP_TRAIT_DATA_MOVEMENT))
-    return TritonOpCategory::DATA_MOVEMENT;
-  // Generic elementwise classifications (activation is a subtype of unary).
-  if (traits & OpTraits::OP_TRAIT_UNARY_ELEMENTWISE)  return TritonOpCategory::UNARY_ELEMENTWISE;
-  if (traits & OpTraits::OP_TRAIT_BINARY_ELEMENTWISE) return TritonOpCategory::BINARY_ELEMENTWISE;
-  // Data-dependent ops can't be reliably mapped — stay UNSUPPORTED so the segment
-  // falls back to slot-by-slot execution.
-  return TritonOpCategory::UNSUPPORTED;
-}
-
-// Look up op traits from the live op registry (OpRegistrator → OpDescriptor).
-// Returns 0 if op isn't registered or has no traits set. This lets the Triton
-// layer consult the same trait bitfield that FusionPass / NativePlanCompiler use.
-static uint32_t lookupRegistryTraits(const std::string& opName) {
-  auto* op = sd::ops::OpRegistrator::getInstance().getOperation(opName.c_str());
-  if (op == nullptr) return 0;
-  auto* desc = op->getOpDescriptor();
-  return desc != nullptr ? desc->getTraits() : 0;
-}
-
 bool TritonIRBuilder::isTritonMappable(const std::string& opName) {
   const auto& table = getOpTable();
   if (table.find(opName) != table.end()) return true;
   // Fall back to OpCategoryTable.h (shared category-only table with broader coverage)
   const auto& catTable = getOpCategoryTable();
   if (catTable.find(opName) != catTable.end()) return true;
-  // OpTraitTable.cpp traits are NOT sufficient for mappability. An op having traits
+  // OpDescriptor traits are NOT sufficient for mappability. An op having traits
   // means it's classified for DSP segmentation, but that does NOT mean the Triton IR
   // builder can emit MLIR code for it. Only ops explicitly listed in getOpTable() or
   // OpCategoryTable.h have corresponding IR emission logic. The trait-based fallback
@@ -528,7 +491,7 @@ TritonOpCategory TritonIRBuilder::getOpCategory(const std::string& opName) {
   const auto& catTable = getOpCategoryTable();
   auto catIt = catTable.find(opName);
   if (catIt != catTable.end()) return catIt->second;
-  // Do NOT use OpTraitTable.cpp trait-based fallback here. OpTraitTable traits classify
+  // Do NOT use an OpDescriptor trait-based fallback here. Descriptor traits classify
   // ops for DSP segmentation, but the Triton IR builder can only emit code for ops
   // explicitly listed in getOpTable() or OpCategoryTable.h. Using trait fallback causes
   // ops to be placed in ELEMENTWISE sections without IR emission support, leading to

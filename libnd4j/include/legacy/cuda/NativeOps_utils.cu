@@ -22,6 +22,8 @@
  */
 
 #include <cuda.h>
+#include <mutex>
+#include <stdexcept>
 #include <system/env_functions.h>
 #include <system/buffer.h>
 #include <legacy/NativeOpExecutioner.h>
@@ -50,25 +52,42 @@ void enableP2P(bool enable);
 ////////////////////////////////////////////////////////////////////////
 void initializeDevicesAndFunctions() {
   try {
-    int devCnt = 0;
-    cudaGetDeviceCount(&devCnt);
-    deviceProperties = new cudaDeviceProp[devCnt];
-    for (int i = 0; i < devCnt; i++) {
-      auto propertiesResult = cudaGetDeviceProperties(&deviceProperties[i], i);
-      if (propertiesResult != cudaSuccess) {
-        sd_printf("initializeDevicesAndFunctions: WARNING - cudaGetDeviceProperties(%d) failed: %s\n",
-                  i, cudaGetErrorString(propertiesResult));
+    // NativeOpsHolder, MultiBackendNativeOpsHolder, and backend-local discovery
+    // may all enter through this public initialization point. Initialize the
+    // process-wide CUDA metadata exactly once so every backend observes the same
+    // fully populated table without leaking replacement allocations.
+    static std::once_flag initializationFlag;
+    std::call_once(initializationFlag, []() {
+      int devCnt = 0;
+      auto deviceCountResult = cudaGetDeviceCount(&devCnt);
+      if (deviceCountResult != cudaSuccess) {
+        auto message = std::string("initializeDevicesAndFunctions: cudaGetDeviceCount failed: ") +
+                       cudaGetErrorString(deviceCountResult);
         cudaGetLastError();
-        continue;
+        throw std::runtime_error(message);
       }
 
-      // Keep this phase metadata-only. Forcing context creation or whole-device
-      // synchronization here can fail before Java has selected usable devices.
-      cudaGetLastError();
-    }
+      auto properties = new cudaDeviceProp[devCnt];
+      for (int i = 0; i < devCnt; i++) {
+        auto propertiesResult = cudaGetDeviceProperties(&properties[i], i);
+        if (propertiesResult != cudaSuccess) {
+          auto message = std::string("initializeDevicesAndFunctions: cudaGetDeviceProperties(") +
+                         std::to_string(i) + ") failed: " + cudaGetErrorString(propertiesResult);
+          cudaGetLastError();
+          delete[] properties;
+          throw std::runtime_error(message);
+        }
 
-    // Cross-device setup is applied later from AtomicAllocator after Java has
-    // detected the usable device list. Startup stays metadata-only here.
+        // Keep this phase metadata-only. Forcing context creation or whole-device
+        // synchronization here can fail before Java has selected usable devices.
+        cudaGetLastError();
+      }
+
+      deviceProperties = properties;
+
+      // Cross-device setup is applied later from AtomicAllocator after Java has
+      // detected the usable device list. Startup stays metadata-only here.
+    });
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

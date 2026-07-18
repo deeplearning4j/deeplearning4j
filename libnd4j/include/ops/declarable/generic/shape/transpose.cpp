@@ -83,7 +83,11 @@ CUSTOM_OP_IMPL(transpose, 1, 1, false, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(transpose) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(transpose) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_DATA_MOVEMENT |
+                               OP_TRAIT_FULLY_WRITING);
+}
 
 DECLARE_SHAPE_FN(transpose) {
   auto x = INPUT_VARIABLE(0);
@@ -100,7 +104,8 @@ DECLARE_SHAPE_FN(transpose) {
   }
 
   if (permutationVector.size() == 0) {
-    auto temp = ShapeUtils::evalTransposeShapeInfo(*x, nullptr, true);
+    auto temp = ShapeUtils::evalTransposeShapeInfo(*x, nullptr, false);
+    ArrayOptions::setPropertyBit(temp, ARRAY_COPY_OFFSET_INPUT_0);
     auto ret = ConstantShapeHelper::getInstance().createFromExisting(temp);
     RELEASE(temp, nullptr);
     return SHAPELIST(ret);
@@ -133,8 +138,10 @@ DECLARE_SHAPE_FN(transpose) {
     return SHAPELIST(ret);
   }
 
-  // Non-empty case: use cached shape directly
-  auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, true);
+  // Non-empty case: preserve the exact zero-copy view layout.
+  auto permEvalShapeInfo =
+      ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, false);
+  ArrayOptions::setPropertyBit(permEvalShapeInfo, ARRAY_COPY_OFFSET_INPUT_0);
   auto ret = ConstantShapeHelper::getInstance().createFromExisting(permEvalShapeInfo);
   RELEASE(permEvalShapeInfo, nullptr);
   return SHAPELIST(ret);

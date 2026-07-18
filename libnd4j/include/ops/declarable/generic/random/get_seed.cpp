@@ -42,7 +42,10 @@ DECLARE_SHAPE_FN(get_seed) {
 }
 
 DECLARE_TYPES(get_seed) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(INT64);
+
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_STATEFUL);
 }
 }  // namespace ops
 }  // namespace sd

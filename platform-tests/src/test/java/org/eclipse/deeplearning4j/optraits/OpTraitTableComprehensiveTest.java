@@ -19,6 +19,7 @@
  */
 package org.eclipse.deeplearning4j.optraits;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -84,6 +85,15 @@ public class OpTraitTableComprehensiveTest {
     private static final int OP_TRAIT_CAST                  = 1 << 28;
 
     // ── Native-op trait query ────────────────────────────────────────────────────
+
+    @BeforeAll
+    static void initNd4jBackend() {
+        // NativeOpsHolder reads native.ops from the backend properties, which
+        // are only loaded once Nd4j backend discovery has run. Force it so
+        // this class also passes when run standalone in a fresh JVM.
+        org.nd4j.linalg.factory.Nd4j.getBackend();
+    }
+
     private static int traits(String opName) {
         return NativeOpsHolder.getInstance().getDeviceNativeOps().getOpTraits(opName);
     }
@@ -181,7 +191,8 @@ public class OpTraitTableComprehensiveTest {
         final int SLICE             = DATA_MOVE_VALDEP | OP_TRAIT_SLICE;
         final int TILE              = DATA_MOVE_VALDEP | OP_TRAIT_TILE;
         final int SCATTER_PARTIAL   = OP_TRAIT_DATA_MOVEMENT;
-        final int SCATTER_ND        = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND;
+        // scatter_nd zero-fills the whole output before scattering → full writer
+        final int SCATTER_ND        = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND | OP_TRAIT_FULLY_WRITING;
         // scatter_nd_update does output->assign(input) → full writer, not partial
         final int SCATTER_ND_UPDATE = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND_UPDATE | OP_TRAIT_FULLY_WRITING;
 
@@ -334,7 +345,6 @@ public class OpTraitTableComprehensiveTest {
                 Arguments.of("rms_norm", NORM),
                 Arguments.of("rms_norm_linear", NORM),
                 Arguments.of("normalize_moments", NORM),
-                Arguments.of("fused_rope", NORM),
 
                 // ── Attention ──────────────────────────────────────────
                 Arguments.of("onnx_multi_head_attention", ATTN),
@@ -422,10 +432,14 @@ public class OpTraitTableComprehensiveTest {
                 Arguments.of("paged_kv_append", DATA_MOVE_VALDEP),
 
                 // ── Rotary / positional embedding ─────────────────────
-                Arguments.of("rope", NORM),
-                Arguments.of("rope_bp", NORM),
-                Arguments.of("fused_rope_bp", NORM),
-                Arguments.of("dual_rope", NORM),
+                // Rotary embeddings are pairwise data transforms, not
+                // normalizations (no statistics reduced) — DATA_MOVEMENT
+                // family, consistent across the whole rope family.
+                Arguments.of("rope", DATA_MOVE),
+                Arguments.of("rope_bp", DATA_MOVE),
+                Arguments.of("fused_rope", DATA_MOVE),
+                Arguments.of("fused_rope_bp", DATA_MOVE),
+                Arguments.of("dual_rope", DATA_MOVE),
 
                 // ── Normalization backprop / fused variants ───────────
                 Arguments.of("rms_norm_bp", NORM),
@@ -451,7 +465,7 @@ public class OpTraitTableComprehensiveTest {
                 Arguments.of("causal_conv1d", UNARY_EW),
 
                 // ── Fused training kernels ────────────────────────────
-                Arguments.of("fused_bias_dropout_residual", UNARY_EW),
+                Arguments.of("fused_bias_dropout_residual", TERNARY_EW),
                 Arguments.of("fused_elementwise_chain", UNARY_EW),
                 Arguments.of("swish_mul_bp", BINARY_EW),
                 Arguments.of("center_and_sharpen", UNARY_EW),
@@ -656,9 +670,12 @@ public class OpTraitTableComprehensiveTest {
         // before scattering updates. This makes prezero redundant.
         assertTrue(has(b, OP_TRAIT_FULLY_WRITING),
                 "scatter_nd_update should have FULLY_WRITING (assign copies entire input to output)");
-        // scatter_nd zeroes output then scatters — it is a true partial writer, no FULLY_WRITING.
-        assertFalse(has(a, OP_TRAIT_FULLY_WRITING),
-                "scatter_nd should NOT have FULLY_WRITING (true partial writer)");
+        // scatter_nd zeroes the whole output then scatters — every element is
+        // written, so it IS a full writer (and the Vulkan indexed-accumulation
+        // schedule requires the trait). The true partial writers are the
+        // in-place scatter_add/scatter_upd family.
+        assertTrue(has(a, OP_TRAIT_FULLY_WRITING),
+                "scatter_nd should have FULLY_WRITING (zero-fill + scatter writes every element)");
     }
 
     @Test

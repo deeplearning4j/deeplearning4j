@@ -58,6 +58,7 @@ CUSTOM_OP_IMPL(kl_divergence_per_layer, 2, 1, false, 1, 0) {
 }
 
 DECLARE_TYPES(kl_divergence_per_layer) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }

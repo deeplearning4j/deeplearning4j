@@ -66,7 +66,7 @@ static void scalarAddMKLDNN(NDArray* x, float scalar, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(add_scalar, ENGINE_CPU) {
+PLATFORM_IMPL(add_scalar, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -80,7 +80,7 @@ PLATFORM_IMPL(add_scalar, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(add_scalar, ENGINE_CPU) {
+PLATFORM_CHECK(add_scalar, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -124,7 +124,7 @@ static void scalarMulMKLDNN(NDArray* x, float scalar, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(multiply_scalar, ENGINE_CPU) {
+PLATFORM_IMPL(multiply_scalar, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -138,7 +138,7 @@ PLATFORM_IMPL(multiply_scalar, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(multiply_scalar, ENGINE_CPU) {
+PLATFORM_CHECK(multiply_scalar, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -197,7 +197,7 @@ static void axpyMKLDNN(NDArray* x, NDArray* y, float alpha, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(axpy, ENGINE_CPU) {
+PLATFORM_IMPL(axpy, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -212,7 +212,7 @@ PLATFORM_IMPL(axpy, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(axpy, ENGINE_CPU) {
+PLATFORM_CHECK(axpy, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);

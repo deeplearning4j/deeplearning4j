@@ -54,17 +54,17 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     // Execute via MLIR JIT
     auto status = executeMlir("matmul", block, inputs, outputs);
 
-    if (status != Status::OK()) {
+    if (status != Status::OK) {
         // Fall back to native implementation if MLIR fails
         // This shouldn't happen in normal operation, but provides safety
         sd_printf("MLIR matmul execution failed, falling back to native\n", "");
 
         // Native fallback using MmulHelper
         // MmulHelper::matmul(a, b, c, transposeA, transposeB, alpha, beta);
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR matmul failed and no fallback available");
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(matmul, ENGINE_CPU) {
@@ -78,16 +78,13 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
 
     // Check supported data types
     req.expectIn(a->dataType(),
-                 {FLOAT32, DOUBLE, HALF, BFLOAT16},
-                 "Input A dtype supported by MLIR") &&
+                 {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
 
     req.expectIn(b->dataType(),
-                 {FLOAT32, DOUBLE, HALF, BFLOAT16},
-                 "Input B dtype supported by MLIR") &&
+                 {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
 
     // Check matching types
-    req.expectEq(a->dataType(), b->dataType(),
-                 "Matching input dtypes") &&
+    req.expectEq(a->dataType(), b->dataType()) &&
 
     // Check minimum size threshold (JIT overhead vs benefit)
     req.expectTrue(a->lengthOf() * b->lengthOf() >= MLIR_MIN_TENSOR_SIZE * MLIR_MIN_TENSOR_SIZE,

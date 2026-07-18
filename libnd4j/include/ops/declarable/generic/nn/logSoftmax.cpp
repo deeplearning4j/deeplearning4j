@@ -29,7 +29,8 @@
 namespace sd {
 namespace ops {
 
-DECLARE_TYPES(log_softmax) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true)->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING); }
+DECLARE_TYPES(log_softmax) {
+  getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
 CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
@@ -51,6 +52,7 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(log_softmax_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})

@@ -63,6 +63,7 @@ DECLARE_SHAPE_FN(compat_sparse_to_dense) {
 }
 
 DECLARE_TYPES(compat_sparse_to_dense) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS})         // indices
       ->setAllowedInputTypes(1, {ALL_INTS})         // shape

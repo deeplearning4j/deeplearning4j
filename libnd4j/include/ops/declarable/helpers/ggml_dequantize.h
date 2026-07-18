@@ -67,8 +67,8 @@ enum GgmlDequantOutputType {
 /**
  * Dequantize raw GGML quantized bytes to the target floating-point type.
  *
- * This is the standalone baseline kernel — no external dependencies.
- * When llamacpp is available, the platform impl overrides this.
+ * This is the native implementation — no external dependencies. (The former
+ * llamacpp platform override was removed once native parity landed; see ADR-0112.)
  *
  * @param context     Launch context (for CUDA streams, etc.)
  * @param input       INT8 flat 1D array containing raw quantized bytes

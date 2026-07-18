@@ -26,9 +26,12 @@
 
 #include "cudnnUtils.h"
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // Activation descriptor RAII wrapper
 struct ActivationDesc {
@@ -130,6 +133,10 @@ static void activationBpCUDNN(const LaunchContext* context, NDArray* input, NDAr
 
   NDArray::registerSpecialUse({gradI}, {input, output, gradO});
 }
+
+// Op macros below open SD_NS themselves (platform_boilerplate.h) — the
+// file-level wrap must end before them or SD_NS nests inside itself.
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 
 //////////////////////////////////////////////////////////////////////////
 // RELU

@@ -23,6 +23,11 @@
 
 #if HAVE_TRITON
 
+// Triton's generated CallOp/FuncOp declarations use this interface directly.
+// Include it before the ND4J header stack so no transitive MLIR include can
+// suppress the generated declarations through include-order interactions.
+#include <mlir/Interfaces/CallInterfaces.h>
+
 #include <array/NDArray.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/SegmentAnalysisTypes.h>
@@ -226,6 +231,26 @@ class TritonIRBuilder {
   std::string generateKernelName(NativeSlot* slots, int startSlot, int endSlot);
 
   // ── Op emitters (TritonIRBuilder_emitters.cpp) ──
+
+  // Emit CUDA-native math and rounded-arithmetic semantics for replay paths
+  // that must remain raw-bit identical to native slot-by-slot execution.
+  static mlir::Value emitNativeCudaExp(mlir::OpBuilder& builder, mlir::Location loc,
+                                       mlir::Value input);
+  static mlir::Value emitNativeCudaLog(mlir::OpBuilder& builder, mlir::Location loc,
+                                       mlir::Value input);
+  static mlir::Value emitNativeCudaPow(mlir::OpBuilder& builder, mlir::Location loc,
+                                       mlir::Value base, mlir::Value exponent);
+  static mlir::Value emitNativeCudaCos(mlir::OpBuilder& builder, mlir::Location loc,
+                                       mlir::Value input);
+  static mlir::Value emitNativeCudaSin(mlir::OpBuilder& builder, mlir::Location loc,
+                                       mlir::Value input);
+  static mlir::Value emitNativeCudaMulRn(mlir::OpBuilder& builder, mlir::Location loc,
+                                         mlir::Value lhs, mlir::Value rhs);
+  static mlir::Value emitNativeCudaFmaRn(mlir::OpBuilder& builder, mlir::Location loc,
+                                         mlir::Value lhs, mlir::Value rhs,
+                                         mlir::Value addend);
+  static mlir::Value emitNativeCudaDiv(mlir::OpBuilder& builder, mlir::Location loc,
+                                       mlir::Value lhs, mlir::Value rhs);
 
   // Emit a binary element-wise op (add, sub, mul, div, min, max, activation backward)
   static mlir::Value emitBinaryElementwise(mlir::OpBuilder& builder, mlir::Location loc,
@@ -501,24 +526,27 @@ class TritonIRBuilder {
                                   int nElements);
 
   // RoPE SSA with position-offset: computes cos/sin inline from position scalar.
-  // For fused_rope with <=2 inputs (no precomputed cos/sin tensors).
-  // posPtr is a pointer to a scalar position offset (ext input).
+  // Handles full and partial rotary prefixes plus both split-half and NeoX layouts,
+  // gathering each pair directly from the register tensor. posPtr addresses the
+  // scalar position offset; the data input remains an SSA value.
   static mlir::Value emitRoPEPositionSSA(mlir::OpBuilder& builder, mlir::Location loc,
                                           mlir::Value inputSSA,
                                           mlir::Value posPtr,
                                           mlir::Value pid, int blockSize,
                                           int headDim, int numHeads,
                                           float freqBase, float freqScale,
-                                          int ropeType, int nElements);
+                                          int ropeType, int rotateDims,
+                                          int nElements);
 
-  // Pointer-based RoPE with position-offset: store/reload path for when SSA constraints fail.
-  // Reads input from inPtr, computes RoPE with position from posPtr, writes to outPtr.
+  // Pointer-based RoPE with position-offset: store/reload path for when SSA constraints fail
+  // or only a prefix of each head is rotary. Preserves dimensions [rotateDims, headDim).
   static void emitRoPEPositionSection(mlir::OpBuilder& builder, mlir::Location loc,
                                        mlir::Value pid, int blockSize,
                                        mlir::Value inPtr, mlir::Value posPtr,
                                        mlir::Value outPtr,
                                        const std::vector<LongType>& inShape,
-                                       int ropeType, float freqBase, float freqScale,
+                                       int ropeType, int rotateDims,
+                                       float freqBase, float freqScale,
                                        int nElements);
 
   // Per-element fallback: matmul/attention via scalar K-loop (no tt.dot, no grid sync)

@@ -87,11 +87,11 @@ bool HexagonIRBuilder::isHexagonMappable(const char* opName) {
 // ---- TCM Usage Estimation ----
 
 size_t HexagonIRBuilder::estimateTcmUsage(NativeSlot* slots, int start, int end) {
-  if (slots == nullptr || start >= end) return 0;
+  if (slots == nullptr || start > end) return 0;
 
   size_t totalBytes = 0;
 
-  for (int i = start; i < end; i++) {
+  for (int i = start; i <= end; i++) {
     const auto& slot = slots[i];
 
     // Sum input buffer sizes.
@@ -216,8 +216,8 @@ void HexagonIRBuilder::emitDmaOps(std::string& mlirBuffer,
 
 std::vector<uint8_t> HexagonIRBuilder::buildModule(NativeSlot* slots, int start, int end,
                                                      NDArray** externalInputs, int numExt) {
-  if (slots == nullptr || start >= end) {
-    DSP_DIAG(COMPILE, "HexagonIRBuilder::buildModule: invalid range [%d, %d)",
+  if (slots == nullptr || start > end) {
+    DSP_DIAG(COMPILE, "HexagonIRBuilder::buildModule: invalid range [%d, %d]",
              start, end);
     return {};
   }
@@ -232,7 +232,7 @@ std::vector<uint8_t> HexagonIRBuilder::buildModule(NativeSlot* slots, int start,
   int mappedOps = 0;
   int skippedOps = 0;
 
-  for (int i = start; i < end; i++) {
+  for (int i = start; i <= end; i++) {
     const auto& slot = slots[i];
     const std::string& opNameStr = slot.ident.opName;
     const char* opName = opNameStr.c_str();
@@ -260,7 +260,7 @@ std::vector<uint8_t> HexagonIRBuilder::buildModule(NativeSlot* slots, int start,
   mlirText += "}\n";
   mlirText += "}\n";
 
-  DSP_DIAG(COMPILE, "HexagonIRBuilder::buildModule: [%d, %d) -> %d mapped, %d skipped, "
+  DSP_DIAG(COMPILE, "HexagonIRBuilder::buildModule: [%d, %d] -> %d mapped, %d skipped, "
            "%zu bytes MLIR text", start, end, mappedOps, skippedOps, mlirText.size());
 
   if (mappedOps == 0) {

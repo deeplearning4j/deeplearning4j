@@ -32,7 +32,10 @@
 #include <cuda_runtime.h>
 #include <mutex>
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
+SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN
 namespace vlmUtils {
 
 // Static backend cache for VLM CUDA operations
@@ -195,6 +198,7 @@ GgmlCudaContextGuard::~GgmlCudaContextGuard() {
 }
 
 }  // namespace vlmUtils
+SD_BACKEND_ROOT_INLINE_NAMESPACE_END
 }  // namespace sd
 
 #endif  // HAVE_VLM && GGML_USE_CUDA

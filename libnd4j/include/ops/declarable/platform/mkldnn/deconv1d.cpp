@@ -122,7 +122,7 @@ static void deconv1dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDAr
   stream.wait();
 }
 
-PLATFORM_IMPL(deconv1d, ENGINE_CPU) {
+PLATFORM_IMPL(deconv1d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto weights = INPUT_VARIABLE(1);
   NDArray* bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -144,7 +144,7 @@ PLATFORM_IMPL(deconv1d, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(deconv1d, ENGINE_CPU) {
+PLATFORM_CHECK(deconv1d, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto w = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);

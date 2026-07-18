@@ -293,6 +293,17 @@ SD_LIB_EXPORT int getSegmentExecutorPhase(sd::Pointer planHandle, int segIdx);
 SD_LIB_EXPORT sd::Pointer loadModelFromFile(const char* filePath);
 
 /**
+ * Look up a constant or variable owned by a loaded model.
+ *
+ * @param modelHandle  Handle from loadModelFromFile()
+ * @param variableName Exact FlatGraph variable name
+ * @return Borrowed NDArray pointer, or nullptr when the model does not own it.
+ *         The pointer is valid only while modelHandle remains loaded.
+ */
+SD_LIB_EXPORT OpaqueNDArray getLoadedModelVariable(
+    sd::Pointer modelHandle, const char* variableName);
+
+/**
  * Compile a loaded model into a native execution plan.
  *
  * @param modelHandle  Handle from loadModelFromFile()
@@ -335,7 +346,7 @@ SD_LIB_EXPORT const char* getPlanExternalInputName(sd::Pointer planHandle, int i
  * clamping/resolution — mirror of setPlanGraphExecutionMode).
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
- * @return GraphExecutionMode as int (GEM_AUTO=0 .. GEM_NNAPI=8), -1 if invalid
+ * @return GraphExecutionMode as int (GEM_AUTO=0 .. GEM_PORTABLE_REPLAY=19), -1 if invalid
  */
 SD_LIB_EXPORT int getPlanGraphExecutionMode(sd::Pointer planHandle);
 
@@ -422,11 +433,27 @@ SD_LIB_EXPORT void setPlanExecutionTimingEnabled(sd::Pointer planHandle, bool en
 SD_LIB_EXPORT void setPlanJitMode(sd::Pointer planHandle, int mode);
 
 /**
+ * Allow or forbid backend code generation while executing this plan.
+ * When disabled, backend artifact misses are hard failures.
+ */
+SD_LIB_EXPORT void setPlanRuntimeCompilationAllowed(sd::Pointer planHandle,
+                                                    bool allowed);
+
+/**
+ * Set the bundle-owned directory containing precompiled backend artifacts.
+ * The path is copied by the plan.
+ */
+SD_LIB_EXPORT void setPlanRuntimeArtifactDirectory(sd::Pointer planHandle,
+                                                   const char* directory);
+
+/**
  * Set the graph execution mode for DSP execution.
  * Controls which backend is used for segment execution.
  * @param planHandle  Handle from compileDynamicShapePlan()
  * @param mode  0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON,
- *              6=MLX, 7=ARM_HYBRID, 8=NNAPI
+ *              6=MLX, 7=ARM_HYBRID, 8=NNAPI, 9=HIP_GRAPHS, 10=LEVEL_ZERO, 11=VULKAN,
+ *              12=METAL, 13=TPU, 14=HEXAGON, 15=OPENVINO, 16=TVM (deprecated),
+ *              17=EMULATED_REPLAY, 18=SHAPE_INFERENCE_ONLY, 19=PORTABLE_REPLAY
  */
 SD_LIB_EXPORT void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode);
 

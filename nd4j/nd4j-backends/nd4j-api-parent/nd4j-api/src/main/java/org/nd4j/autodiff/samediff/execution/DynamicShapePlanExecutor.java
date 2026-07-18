@@ -44,6 +44,8 @@ import org.nd4j.linalg.framework.device.TransferEvent;
 import org.nd4j.linalg.framework.device.TransferSubsystem;
 import org.nd4j.linalg.framework.device.ReplicaLeakDetector;
 import org.nd4j.linalg.framework.device.PointerStabilityGuard;
+import org.nd4j.nativeblas.MultiBackendNativeOpsHolder;
+import org.nd4j.nativeblas.NativeBufferOwner;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
@@ -1515,26 +1517,10 @@ public class DynamicShapePlanExecutor implements Closeable {
 
         GraphExecutionMode resolvedMode = resolveRequestedGraphExecutionMode(requestedMode);
         boolean tritonAvailable = isTritonAvailable(nativeOps);
-        GraphExecutionMode effectiveMode = resolvedMode;
-        if (effectiveMode == GraphExecutionMode.TRITON &&
-                fallbackToAutoIfTritonUnavailable &&
-                !tritonAvailable) {
+        GraphExecutionMode effectiveMode = resolveEffectiveGraphExecutionMode(
+                resolvedMode, tritonAvailable, fallbackToAutoIfTritonUnavailable);
+        if (resolvedMode == GraphExecutionMode.TRITON && effectiveMode == GraphExecutionMode.AUTO) {
             log.warn("Native executor: TRITON mode requested but Triton is unavailable; falling back to AUTO");
-            effectiveMode = GraphExecutionMode.AUTO;
-        }
-
-        // Platform-aware mode remapping: on platforms without a GPU graph backend
-        // (plain CPU), modes that require graph capture (CUDA_GRAPHS, TRITON, AUTO,
-        // etc.) cannot be honored. Remap to EMULATED_REPLAY which uses slot-by-slot
-        // execution with replay lifecycle tracking. This mirrors the C++ ModeContract
-        // check in NativeDynamicShapePlan::setGraphExecutionMode().
-        boolean hasGraphBackend = Nd4j.backends().isCudaAvailable();
-        if (!hasGraphBackend && effectiveMode.requiresGraphBackend()) {
-            log.info("Native executor: remapping {} -> EMULATED_REPLAY (no GPU graph backend on this platform)",
-                    effectiveMode);
-            effectiveMode = GraphExecutionMode.EMULATED_REPLAY;
-            // Also disable CUDA graph capture since there is no GPU
-            cachedCudaGraphsEnabled = false;
         }
 
         cachedEffectiveGraphModeCode = effectiveMode.getNativeCode();
@@ -1571,6 +1557,23 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
         }
         return gem;
+    }
+
+    /**
+     * Resolve only policy owned by the Java layer. NativeDynamicShapePlan is the
+     * authority for backend capability selection because it can discover both GPU
+     * and CPU graph backends (oneDNN, OpenVINO, Arm Compute, MLIR, NNAPI, MLX).
+     */
+    static GraphExecutionMode resolveEffectiveGraphExecutionMode(
+            GraphExecutionMode resolvedMode,
+            boolean tritonAvailable,
+            boolean fallbackToAutoIfTritonUnavailable) {
+        if (resolvedMode == GraphExecutionMode.TRITON &&
+                fallbackToAutoIfTritonUnavailable &&
+                !tritonAvailable) {
+            return GraphExecutionMode.AUTO;
+        }
+        return resolvedMode;
     }
 
     private boolean isTritonAvailable(NativeOps nativeOps) {
@@ -1691,6 +1694,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                 SDVariable v = sd.getVariable(phKey);
                 arr = v != null ? v.getArr() : null;
             }
+            // NOTE: closed arrays are safe to shape-key here — shape-info buffers are
+            // ConstantShapeHelper-owned and outlive the array's DataBuffer, and the key
+            // must stay stable across a borrower's close/reopen of same-shaped inputs
+            // (rerouting closed arrays to the any-shape sentinel changed plan cache
+            // keys and regressed lifecycle/staleness gates).
             if (arr == null || arr.shapeInfoDataBuffer() == null) {
                 // Empty constants (e.g., scalar placeholders compiled as EMPTY_CONSTANT)
                 // may have no backing array at execute time. Use a Pointer(0) as the
@@ -2237,20 +2245,18 @@ public class DynamicShapePlanExecutor implements Closeable {
                 throw new RuntimeException("Native DSP executor compilation previously failed. " +
                         "No fallback to Java permitted. Fix the native compilation issue.");
             }
-            // Detect mode changes after initial compilation.
-            // If sd.setGraphExecutionMode() was called after the native plan was compiled,
-            // the C++ plan still has the old mode. Recompile with the new mode so that
-            // e.g. SLOT_BY_SLOT is not silently ignored in favour of the initial AUTO.
-            // Note: compileNativePlan() remaps modes on platforms without a GPU graph
-            // backend (e.g. AUTO → EMULATED_REPLAY on CPU). Compare using the effective
-            // mode that *would* result from compilation, not the raw SD-stored mode,
-            // to avoid spurious recompiles on every executeNative() call.
-            GraphExecutionMode currentSdMode = sd.getGraphExecutionMode();
-            GraphExecutionMode effectiveCurrentMode = currentSdMode;
-            boolean hasGraphBackend = Nd4j.backends().isCudaAvailable();
-            if (!hasGraphBackend && effectiveCurrentMode.requiresGraphBackend()) {
-                effectiveCurrentMode = GraphExecutionMode.EMULATED_REPLAY;
-            }
+            // Detect mode changes after initial compilation. Resolve through the same
+            // SameDiff/system-property path and Triton fallback used by compileNativePlan()
+            // so mode comparison stays stable throughout the plan lifetime. Native code
+            // remains responsible for selecting the available GPU or CPU graph backend.
+            GraphExecutionMode currentSdMode = resolveRequestedGraphExecutionMode(null);
+            boolean tritonAvailableForCurrentMode =
+                    currentSdMode != GraphExecutionMode.TRITON ||
+                    isTritonAvailable(NativeOpsHolder.getInstance().getDeviceNativeOps());
+            GraphExecutionMode effectiveCurrentMode = resolveEffectiveGraphExecutionMode(
+                    currentSdMode,
+                    tritonAvailableForCurrentMode,
+                    sd.isDspFallbackToAutoIfTritonUnavailable());
             if (isNativePlanCompiled(plan) && effectiveCurrentMode != configuredGraphExecutionMode) {
                 log.info("Native executor: mode change detected ({} -> {} effective={}), recompiling native plan",
                         configuredGraphExecutionMode, currentSdMode, effectiveCurrentMode);
@@ -2574,6 +2580,72 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Returns an output wrapper owned by the exact backend that created the graph context.
+     */
+    private static OpaqueNDArray getOwnedOutput(OpaqueContext context, int outputIndex) {
+        NativeBufferOwner owner = context.backendOwner();
+        OpaqueNDArray output = owner.nativeOps().getOutputArrayNative(context, outputIndex);
+        if (output != null && !output.isNull()) {
+            output.attachOwner(owner);
+        }
+        return output;
+    }
+
+    /**
+     * Resolve a flat native output-slot index back to its Java plan producer.
+     * Native lifecycle validation reports flat slots because it intentionally does
+     * not retain Java variable names; appending this context turns an otherwise
+     * opaque ownership failure into an actionable op/output diagnosis.
+     */
+    private static String describePlanOutputSlot(DynamicShapePlan plan, String errorMessage) {
+        if (plan == null || errorMessage == null) {
+            return "";
+        }
+
+        int marker = errorMessage.indexOf("slot ");
+        if (marker < 0) {
+            return "";
+        }
+        int start = marker + "slot ".length();
+        int end = start;
+        while (end < errorMessage.length() && Character.isDigit(errorMessage.charAt(end))) {
+            end++;
+        }
+        if (end == start) {
+            return "";
+        }
+
+        final int outputSlot;
+        try {
+            outputSlot = Integer.parseInt(errorMessage.substring(start, end));
+        } catch (NumberFormatException ignored) {
+            return "";
+        }
+
+        DynamicShapeSlot[] planSlots = plan.getSlots();
+        if (planSlots == null) {
+            return " [flat output slot " + outputSlot + ", Java plan has no slots]";
+        }
+        for (int step = 0; step < planSlots.length; step++) {
+            DynamicShapeSlot slot = planSlots[step];
+            if (slot == null || slot.getOutputSlotIndices() == null) {
+                continue;
+            }
+            int[] indices = slot.getOutputSlotIndices();
+            String[] names = slot.getOutputVarNames();
+            for (int output = 0; output < indices.length; output++) {
+                if (indices[output] == outputSlot) {
+                    String variable = names != null && output < names.length
+                            ? names[output] : "<unnamed>";
+                    return " [plan step " + step + ", op='" + slot.getOpName()
+                            + "', output=" + output + ", variable='" + variable + "']";
+                }
+            }
+        }
+        return " [flat output slot " + outputSlot + " has no Java plan producer]";
+    }
+
+    /**
      * Execute the plan entirely in C++ via a single JNI call.
      *
      * <p>Requires a previously compiled native plan handle (via {@link #compileNativePlan(DynamicShapePlan, GraphExecutionMode, boolean)}
@@ -2586,6 +2658,8 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     private Map<String, INDArray> executeNative(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        NativeBufferOwner backendOwner =
+                MultiBackendNativeOpsHolder.getInstance().getOwnerForNativeOps(nativeOps);
 
         // Pin thread to the plan's execution device at the VERY START, before any
         // input resolution or array allocation. Without this, ops that ran between
@@ -3246,7 +3320,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (cachedOpContext != null) {
                 nativeOps.deleteGraphContext(cachedOpContext);
             }
-            cachedOpContext = nativeOps.createGraphContext(1);
+            cachedOpContext = OpaqueContext.create(backendOwner, 1);
             cachedOpContextInputCount = numInputs;
             cachedOpContextOutputCount = numOutputs;
         }
@@ -3720,18 +3794,19 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (status != 0) {
                 String errMsg = nativeOps.lastErrorMessage();
                 nativeOps.clearLastError();
+                String planSlotContext = describePlanOutputSlot(plan, errMsg);
                 DspDiagnostics.recordTimed(DspDiagnostics.FALLBACK, -1, -1, "executeNative",
                         execMs * 1000, "Java: native execution FAILED status=" + status +
-                        " msg=" + errMsg + " executionCount=" + executionCount);
+                        " msg=" + errMsg + planSlotContext + " executionCount=" + executionCount);
                 if (status == NATIVE_STATUS_STALE_BUFFER) {
                     // C++ detected a closed/destroyed DataBuffer. This means a constant or
                     // variable was GC'd between Java's input resolution and C++ execution.
                     // Throw a specific exception so callers can re-resolve and retry.
                     throw new IllegalStateException("Stale buffer detected by C++ during DSP execution: " +
-                            (errMsg != null ? errMsg : "unknown input"));
+                            (errMsg != null ? errMsg : "unknown input") + planSlotContext);
                 }
                 throw new RuntimeException("Native plan execution failed with status " + status +
-                        ": " + (errMsg != null ? errMsg : "unknown error"));
+                        ": " + (errMsg != null ? errMsg : "unknown error") + planSlotContext);
             }
 
             executionCount++;
@@ -3792,7 +3867,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // invalid (null OpaqueDataBuffer, closed buffer, wrong device). Catch
             // these NOW rather than when getFloat()/toFloatVector() crashes later.
             for (int i = 0; i < numOutputs; i++) {
-                OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
+                OpaqueNDArray opaqueOut = getOwnedOutput(opContext, i);
                 if (opaqueOut == null || opaqueOut.isNull()) {
                     throw new IllegalStateException(
                         "ARRAY_INVALID: C++ returned null OpaqueNDArray for output " + i +
@@ -3860,7 +3935,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 for (int i = 0; i < numOutputs; i++) {
                     String outputName = requestedOutputs.get(i);
 
-                    OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
+                    OpaqueNDArray opaqueOut = getOwnedOutput(opContext, i);
                     if (opaqueOut == null || opaqueOut.isNull()) continue;
 
                     INDArray cached = zeroCopyOutputCache.get(outputName);
@@ -4007,7 +4082,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                 }
 
-                OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
+                OpaqueNDArray opaqueOut = getOwnedOutput(opContext, i);
                 if (opaqueOut == null || opaqueOut.isNull()) {
                     throw new RuntimeException("Native executor: null output at index " + i + " for '" + outputName + "'");
                 }
@@ -4019,6 +4094,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                 DataType dtype = ArrayOptionsHelper.dataType(shapeInfo);
                 long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
                 char ordering = Shape.order(shapeInfo);
+                if (DspDiagnostics.isEnabled(DspDiagnostics.SHAPE)) {
+                    DspDiagnostics.record(DspDiagnostics.SHAPE,
+                            "Java: native output '" + outputName + "' shape=" + Arrays.toString(shape)
+                                    + " strides=" + Arrays.toString(strides) + " order=" + ordering);
+                }
 
                 // Empty-tensor short-circuit: when the C++ output is empty (ARRAY_EMPTY bit set
                 // in shapeInfo, or zero-element shape), create a Java empty array with the
@@ -4051,13 +4131,24 @@ public class DynamicShapePlanExecutor implements Closeable {
                 Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueOut);
                 Pointer nativePrimary = (nativeSpecial == null || nativeSpecial.isNull())
                         ? nativeOps.getOpaqueNDArrayBuffer(opaqueOut) : null;
-
                 OpaqueDataBuffer srcOdb = nativeOps.dbCreateExternalDataBuffer(
                         length, dtype.toInt(), nativePrimary, nativeSpecial);
                 if (srcOdb != null) {
                     try {
                         OpaqueDataBuffer dstOdb = result.data().opaqueBuffer();
                         if (dstOdb != null) {
+                            if (READBACK_TRACE) {
+                                Pointer dstSpecial = nativeOps.dbSpecialBuffer(dstOdb);
+                                Pointer dstPrimary = nativeOps.dbPrimaryBuffer(dstOdb);
+                                log.info("READBACK_TRACE FRESH out='{}' i={} len={} opaque=0x{} srcSpecial=0x{} "
+                                                + "srcPrimary=0x{} dstSpecial=0x{} dstPrimary=0x{} dstArrId={}",
+                                        outputName, i, length, Long.toHexString(opaqueOut.address()),
+                                        Long.toHexString(nativeSpecial != null ? nativeSpecial.address() : 0L),
+                                        Long.toHexString(nativePrimary != null ? nativePrimary.address() : 0L),
+                                        Long.toHexString(dstSpecial != null ? dstSpecial.address() : 0L),
+                                        Long.toHexString(dstPrimary != null ? dstPrimary.address() : 0L),
+                                        System.identityHashCode(result));
+                            }
                             nativeOps.copyBuffer(dstOdb, length, srcOdb, 0, 0);
                         }
                     } finally {
@@ -4088,6 +4179,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                         INDArray contiguous = result.dup(ordering);
                         result = contiguous;
                     }
+                }
+
+                if (DspDiagnostics.isEnabled(DspDiagnostics.SHAPE)) {
+                    DspDiagnostics.record(DspDiagnostics.SHAPE,
+                            "Java: readback output '" + outputName + "' strides="
+                                    + Arrays.toString(result.stride()) + " order=" + result.ordering());
                 }
 
                 if (Nd4j.getEnvironment().isDebugAndVerbose() && result.rank() >= 2 && result.length() > 0) {

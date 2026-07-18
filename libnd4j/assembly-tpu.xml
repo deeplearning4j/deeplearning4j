@@ -32,8 +32,12 @@
             <useDefaultExcludes>true</useDefaultExcludes>
             <excludes>
                 <exclude>**/target/**</exclude>
+                <!-- Atomic writers and compiler scratch are volatile build metadata, not release artifacts. -->
+                <exclude>**/*.tmp.*</exclude>
+                <exclude>**/compiler_tmp/**</exclude>
                 <exclude>**/CMakeFiles/**</exclude>
                 <exclude>**/CMakeCache.txt</exclude>
+                <exclude>**/.ccache_hashes/**</exclude>
                 <exclude>%regex[(?!.*tpu/).*blasbuild.*]</exclude>
                 <exclude>%regex[.*/lib/googletest.*]</exclude>
             </excludes>

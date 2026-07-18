@@ -17,8 +17,11 @@
 
 #include <system/config/CoreConfig.h>
 #include <system/config/EnvHelper.h>
-#include <helpers/BlasHelper.h>
 #include <helpers/logger.h>
+
+#if !defined(SD_VULKAN)
+#include <helpers/BlasHelper.h>
+#endif
 
 #include <cstdlib>
 #include <stdexcept>
@@ -61,11 +64,13 @@ void CoreConfig::setDefaultFloatDataType(sd::DataType dtype) {
   _dataType.store(dtype);
 }
 
+#if !defined(SD_VULKAN)
 bool CoreConfig::isSerializeBlasCalls() {
   return BlasHelper::getInstance().isSerializeBlasCalls();
 }
 
 void CoreConfig::setSerializeBlasCalls(bool serialize) {
+  _serializeBlasCalls.store(serialize);
   _serializeBlasCallsSet.store(true);
   BlasHelper::getInstance().setSerializeBlasCalls(serialize);
 }
@@ -78,6 +83,7 @@ void CoreConfig::setOpenBlasThreads(int threads) {
   _openBlasThreads.store(threads);
   BlasHelper::getInstance().setOpenblasThreads(threads);
 }
+#endif
 
 std::string CoreConfig::homeDirectory() const {
 #ifdef _WIN32

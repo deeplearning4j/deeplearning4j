@@ -64,7 +64,8 @@ namespace ops {
         getOpDescriptor()
                 ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setSameMode(true);
-    }
+      getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
+}
     
 
     DECLARE_SHAPE_FN(depth_to_space) {

@@ -60,11 +60,11 @@ PLATFORM_IMPL(reduce_sum, ENGINE_CPU) {
 
     auto status = executeMlir("reduce_sum", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR reduce_sum failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(reduce_sum, ENGINE_CPU) {
@@ -73,7 +73,7 @@ PLATFORM_CHECK(reduce_sum, ENGINE_CPU) {
     Requirements req("MLIR REDUCE_SUM");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
@@ -109,11 +109,11 @@ PLATFORM_IMPL(reduce_mean, ENGINE_CPU) {
 
     auto status = executeMlir("reduce_mean", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR reduce_mean failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(reduce_mean, ENGINE_CPU) {
@@ -122,7 +122,7 @@ PLATFORM_CHECK(reduce_mean, ENGINE_CPU) {
     Requirements req("MLIR REDUCE_MEAN");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
@@ -158,11 +158,11 @@ PLATFORM_IMPL(reduce_max, ENGINE_CPU) {
 
     auto status = executeMlir("reduce_max", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR reduce_max failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(reduce_max, ENGINE_CPU) {
@@ -171,7 +171,7 @@ PLATFORM_CHECK(reduce_max, ENGINE_CPU) {
     Requirements req("MLIR REDUCE_MAX");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
@@ -207,11 +207,11 @@ PLATFORM_IMPL(reduce_min, ENGINE_CPU) {
 
     auto status = executeMlir("reduce_min", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR reduce_min failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(reduce_min, ENGINE_CPU) {
@@ -220,7 +220,7 @@ PLATFORM_CHECK(reduce_min, ENGINE_CPU) {
     Requirements req("MLIR REDUCE_MIN");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
@@ -256,11 +256,11 @@ PLATFORM_IMPL(reduce_prod, ENGINE_CPU) {
 
     auto status = executeMlir("reduce_prod", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR reduce_prod failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(reduce_prod, ENGINE_CPU) {
@@ -269,7 +269,7 @@ PLATFORM_CHECK(reduce_prod, ENGINE_CPU) {
     Requirements req("MLIR REDUCE_PROD");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
@@ -306,11 +306,11 @@ PLATFORM_IMPL(reduce_variance, ENGINE_CPU) {
 
     auto status = executeMlir("reduce_variance", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR reduce_variance failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(reduce_variance, ENGINE_CPU) {
@@ -319,7 +319,7 @@ PLATFORM_CHECK(reduce_variance, ENGINE_CPU) {
     Requirements req("MLIR REDUCE_VARIANCE");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
@@ -356,11 +356,11 @@ PLATFORM_IMPL(reduce_stdev, ENGINE_CPU) {
 
     auto status = executeMlir("reduce_stdev", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR reduce_stdev failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(reduce_stdev, ENGINE_CPU) {
@@ -369,7 +369,7 @@ PLATFORM_CHECK(reduce_stdev, ENGINE_CPU) {
     Requirements req("MLIR REDUCE_STDEV");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
@@ -405,11 +405,11 @@ PLATFORM_IMPL(reduce_norm2, ENGINE_CPU) {
 
     auto status = executeMlir("reduce_norm2", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR reduce_norm2 failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(reduce_norm2, ENGINE_CPU) {
@@ -418,7 +418,7 @@ PLATFORM_CHECK(reduce_norm2, ENGINE_CPU) {
     Requirements req("MLIR REDUCE_NORM2");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 
@@ -454,11 +454,11 @@ PLATFORM_IMPL(reduce_logsumexp, ENGINE_CPU) {
 
     auto status = executeMlir("reduce_logsumexp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR reduce_logsumexp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(reduce_logsumexp, ENGINE_CPU) {
@@ -467,7 +467,7 @@ PLATFORM_CHECK(reduce_logsumexp, ENGINE_CPU) {
     Requirements req("MLIR REDUCE_LOGSUMEXP");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(input->shapeInfo()), "Contiguous memory");
 

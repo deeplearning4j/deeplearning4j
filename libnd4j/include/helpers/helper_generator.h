@@ -87,6 +87,13 @@ class SD_LIB_EXPORT RandomBuffer {
   curandGenerator_t gen;
 #endif
 
+ protected:
+  // Backends with distinct host/device storage initialize the common device
+  // state without adding backend-specific ownership to this class.
+  SD_INLINE SD_HOST_DEVICE void setDeviceBuffer(uint64_t *ptr) {
+    this->devBuffer = ptr;
+  }
+
  public:
   /**
    * This method allocates buffer of size * sizeof(sd::LongType)
@@ -128,6 +135,7 @@ class SD_LIB_EXPORT RandomBuffer {
 
   SD_HOST_DEVICE
 #endif
+
   RandomBuffer(sd::LongType seed, sd::LongType size, uint64_t *buffer) {
     this->buffer = buffer;
     this->seed = seed;

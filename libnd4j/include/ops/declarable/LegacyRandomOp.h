@@ -28,6 +28,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 /**
  *   This class provides wrapper for Random operations (i.e. linspace or Uniform)
  */
@@ -54,6 +55,7 @@ class SD_LIB_EXPORT LegacyRandomOp : public LegacyOp {
   ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
   LegacyOp* clone() override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

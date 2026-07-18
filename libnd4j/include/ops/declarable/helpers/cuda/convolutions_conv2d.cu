@@ -113,7 +113,7 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
                     *zeroVal);
   }
 
-  delete zeroVal;
+  MmulHelper::deleteTemporary(zeroVal);
   block.pushIntermediateResult(colP);
 
   // Reshape col to [bS*oH*oW, kH*kW*iC] in C-order.
@@ -141,21 +141,22 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
     weightsKWIO = wp->dup('c');
     delete wp;
   }
+  // The packed weights feed an asynchronous GEMM. Keep the owning buffer under
+  // the op context instead of retiring it while the device may still read it.
+  block.pushIntermediateResult(weightsKWIO);
   NDArray *reshapedW = weightsKWIO->reshape('c', wShape, false);
 
   // Matmul: [bS*oH*oW, kH*kW*iC] x [kH*kW*iC, oC] -> [bS*oH*oW, oC]
   std::vector<sd::LongType> mmulResultShape = {bS * oH * oW, oC};
-  NDArray mmulResult('c', mmulResultShape, output->dataType(), output->getContext());
-  MmulHelper::matmul(colReshaped, reshapedW, &mmulResult, false, false, 1.0, 0.0);
+  NDArray *mmulResult = new NDArray('c', mmulResultShape, output->dataType(), output->getContext());
+  MmulHelper::matmul(colReshaped, reshapedW, mmulResult, false, false, 1.0, 0.0);
 
-  // Clean up matmul intermediates
   delete colReshaped;
   delete reshapedW;
-  delete weightsKWIO;
 
   // Reshape mmulResult to [bS, oH, oW, oC] (NHWC layout) in C-order.
   std::vector<sd::LongType> nhwcShape = {bS, oH, oW, oC};
-  NDArray *outputNHWC = mmulResult.reshape('c', nhwcShape, false);
+  NDArray *outputNHWC = mmulResult->reshape('c', nhwcShape, false);
 
   if (isNCHW) {
     // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
@@ -167,11 +168,7 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
     output->assign(outputNHWC);
   }
   delete outputNHWC;
-
-  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-    cudaStreamSynchronize(*ctx->getCudaStream());
-  }
+  MmulHelper::deleteTemporary(mmulResult);
 
   // Clean up NHWC input permutation if created
   if (inputNchw != nullptr) {

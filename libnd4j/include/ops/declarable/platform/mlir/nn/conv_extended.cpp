@@ -55,11 +55,11 @@ PLATFORM_IMPL(conv1d, ENGINE_CPU) {
 
     auto status = executeMlirEx("conv1d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR conv1d failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(conv1d, ENGINE_CPU) {
@@ -69,7 +69,7 @@ PLATFORM_CHECK(conv1d, ENGINE_CPU) {
     Requirements req("MLIR CONV1D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -96,11 +96,11 @@ PLATFORM_IMPL(conv1d_bp, ENGINE_CPU) {
 
     auto status = executeMlir("conv1d_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR conv1d_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(conv1d_bp, ENGINE_CPU) {
@@ -147,11 +147,11 @@ PLATFORM_IMPL(conv3dnew, ENGINE_CPU) {
 
     auto status = executeMlirEx("conv3d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR conv3d failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(conv3dnew, ENGINE_CPU) {
@@ -161,7 +161,7 @@ PLATFORM_CHECK(conv3dnew, ENGINE_CPU) {
     Requirements req("MLIR CONV3D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -188,11 +188,11 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CPU) {
 
     auto status = executeMlir("conv3d_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR conv3d_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(conv3dnew_bp, ENGINE_CPU) {
@@ -235,11 +235,11 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
 
     auto status = executeMlirEx("depthwise_conv2d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR depthwise_conv2d failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
@@ -249,7 +249,7 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
     Requirements req("MLIR DEPTHWISE_CONV2D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -276,11 +276,11 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CPU) {
 
     auto status = executeMlir("depthwise_conv2d_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR depthwise_conv2d_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
@@ -313,11 +313,11 @@ PLATFORM_IMPL(sconv2d, ENGINE_CPU) {
 
     auto status = executeMlirEx("separable_conv2d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR separable_conv2d failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(sconv2d, ENGINE_CPU) {
@@ -326,7 +326,7 @@ PLATFORM_CHECK(sconv2d, ENGINE_CPU) {
     Requirements req("MLIR SEPARABLE_CONV2D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -350,11 +350,11 @@ PLATFORM_IMPL(deconv2d, ENGINE_CPU) {
 
     auto status = executeMlirEx("deconv2d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR deconv2d failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
@@ -363,7 +363,7 @@ PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
     Requirements req("MLIR DECONV2D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -387,11 +387,11 @@ PLATFORM_IMPL(deconv3d, ENGINE_CPU) {
 
     auto status = executeMlirEx("deconv3d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR deconv3d failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(deconv3d, ENGINE_CPU) {
@@ -400,7 +400,7 @@ PLATFORM_CHECK(deconv3d, ENGINE_CPU) {
     Requirements req("MLIR DECONV3D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;

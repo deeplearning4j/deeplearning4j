@@ -145,6 +145,8 @@ DECLARE_TYPES(tile_bp) {
   getOpDescriptor()->setAllowedInputTypes(2, {ALL_FLOATS});
 
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING |
+                               OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_TILE | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(tile_bp) {

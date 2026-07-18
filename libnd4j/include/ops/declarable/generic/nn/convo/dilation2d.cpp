@@ -82,6 +82,7 @@ CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(dilation2d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

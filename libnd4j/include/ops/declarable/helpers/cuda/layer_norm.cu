@@ -27,6 +27,7 @@
 #include <execution/cuda/LaunchDims.h>
 #include <system/common.h>
 #include <types/float16.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -34,16 +35,8 @@ namespace helpers {
 
 constexpr int WARP_SIZE = 32;
 
-//////////////////////////////////////////////////////////////////////////////
-// Warp-level reduction for sum
-//////////////////////////////////////////////////////////////////////////////
-template <typename T>
-SD_DEVICE SD_INLINE T warpReduceSum(T val) {
-  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
-    val += __shfl_down_sync(0xffffffff, val, offset);
-  }
-  return val;
-}
+// Warp/block sum reductions come from device_primitives.cuh
+// (sd::device::warpReduceSum / sd::device::blockReduceSum).
 
 // Load a parameter as AccT precision (double when AccT=double, float otherwise)
 template <typename AccT>
@@ -61,33 +54,6 @@ SD_DEVICE SD_INLINE AccT loadParamAs(const void* ptr, int dtype, LongType index)
     return static_cast<AccT>(static_cast<float>(reinterpret_cast<const float16*>(ptr)[index]));
   }
   return static_cast<AccT>(0);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Block-level reduction for sum using shared memory
-//////////////////////////////////////////////////////////////////////////////
-template <typename T>
-SD_DEVICE T blockReduceSum(T val, T* sharedMem) {
-  const int lane = threadIdx.x % WARP_SIZE;
-  const int wid = threadIdx.x / WARP_SIZE;
-  const int numWarps = (blockDim.x + WARP_SIZE - 1) / WARP_SIZE;
-
-  // Warp-level reduction
-  val = warpReduceSum(val);
-
-  // Write reduced value from each warp to shared memory
-  if (lane == 0) {
-    sharedMem[wid] = val;
-  }
-  __syncthreads();
-
-  // First warp reduces across all warps
-  val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : static_cast<T>(0);
-  if (wid == 0) {
-    val = warpReduceSum(val);
-  }
-
-  return val;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -135,11 +101,11 @@ SD_KERNEL void layerNormKernel(
   }
 
   // Block-level reduction for sum
-  AccT totalSum = blockReduceSum(threadSum, sdata);
+  AccT totalSum = sd::device::blockReduceSum(threadSum, sdata);
   __syncthreads();
 
   // Block-level reduction for sum of squares
-  AccT totalSumSq = blockReduceSum(threadSumSq, sdata);
+  AccT totalSumSq = sd::device::blockReduceSum(threadSumSq, sdata);
 
   // Compute mean and inverse standard deviation
   __shared__ AccT mean;

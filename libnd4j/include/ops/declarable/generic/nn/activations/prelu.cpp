@@ -74,6 +74,8 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(prelu) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING |
+                               OP_TRAIT_ACTIVATION);
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
@@ -153,6 +155,10 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
 }
 
 DECLARE_TYPES(prelu_bp) {
+  // dAlpha is a reduction over the input dimensions, so this is not a unary
+  // or binary elementwise descriptor even though dX is elementwise.
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION |
+                               OP_TRAIT_BACKWARD);
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})

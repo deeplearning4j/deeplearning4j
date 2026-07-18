@@ -94,11 +94,14 @@ DECLARE_SHAPE_FN(csr_to_dense_bp) {
 }
 
 DECLARE_TYPES(csr_to_dense_bp) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS})     // colIdx
       ->setAllowedInputTypes(1, {ALL_INTS})     // rowPtr
       ->setAllowedInputTypes(2, {ALL_FLOATS})   // gradDense
       ->setAllowedOutputTypes(0, {ALL_FLOATS}); // dValues
+
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

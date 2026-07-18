@@ -46,7 +46,8 @@ public interface OpExecutioner {
         CUDA,
         MULTI_BACKEND,
         TPU,
-        HEXAGON
+        HEXAGON,
+        VULKAN
     }
 
     enum ProfilingMode {

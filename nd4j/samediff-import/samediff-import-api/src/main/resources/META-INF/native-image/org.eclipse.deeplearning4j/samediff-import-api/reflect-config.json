@@ -1,0 +1,752 @@
+[
+  {
+    "name": "org.nd4j.samediff.frameworkimport.hooks.NodePreProcessorHook",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.hooks.PostImportHook",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.hooks.PreImportHook",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.hooks.PreImportHook$DefaultImpls",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.hooks.PreImportHook$preProcess$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.hooks.annotations.NodePreProcessor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.hooks.annotations.PostHookRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.process.AbstractMappingProcess",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.process.AbstractMappingProcessLoader",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.process.MappingProcess",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.process.MappingProcessLoader",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.process.PreImportHookMappingProcess",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.registry.OpRegistryHolder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.MappingRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ArgDescriptorConstant",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ArgDescriptorConstant$convertAttributes$1$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeMappingRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNDArrayToScalarAttribute",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNDArrayToScalarAttribute$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNDArrayToScalarAttribute$convertAttributes$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNDArrayToScalarAttribute$convertAttributes$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNDArrayToScalarAttribute$convertAttributes$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNDArrayToScalarAttribute$convertAttributes$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNumberListNDArray",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNumberListNDArray$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNumberListNDArray$convertAttributes$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNumberListNDArray$convertAttributes$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNumberListNDArray$convertAttributes$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeNumberListNDArray$convertAttributes$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeScalarNDArrayAttribute",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeScalarNDArrayAttribute$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeScalarNDArrayAttribute$convertAttributes$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeScalarNDArrayAttribute$convertAttributes$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.AttributeValueType",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.BaseAttributeExtractionRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.BaseAttributeExtractionRule$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.BaseAttributeExtractionRule$serialize$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.BaseAttributeExtractionRule$serialize$2$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ConditionalFieldValueIntIndexArrayRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ConditionalFieldValueIntIndexArrayRule$convertAttributes$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ConditionalFieldValueIntIndexNDArrayRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ConditionalFieldValueIntIndexNDArrayRule$convertAttributes$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.DataTypeToInt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.DataTypeToInt$convertAttributes$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.FlattenDims",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.FlattenDims$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.FlattenDims$addToList$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.FlattenDims$addToList$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.IRMappingFunctionsKt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.IRMappingFunctionsKt$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.InvertBooleanNumber",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.InvertBooleanNumber$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListAttributeValueLookupToIndex",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListAttributeValueLookupToIndex$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListAttributeValueLookupToIndex$convertAttributes$argDescriptor$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListAttributeValueLookupToIndex$convertAttributes$argDescriptor$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListAttributeValueLookupToIndex$convertAttributes$argDescriptor$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListAttributeValueLookupToIndex$convertAttributes$argDescriptor$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListAttributeValueLookupToIndex$convertAttributes$argDescriptor$5",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToListNumber",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToListNumber$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToListNumber$convertAttributes$1$argDescriptor$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToListNumber$convertAttributes$2$argDescriptor$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToNDArray",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToNDArray$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToNDArray$convertAttributes$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToNDArray$convertAttributes$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToNDArray$convertAttributes$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToNDArray$convertAttributes$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ListNumberToNDArray$convertAttributes$5",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.MapStringToInt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.MapStringToInt$convertAttributes$argDescriptor$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayAttributeToNDArrayInput",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayAttributeToNDArrayInput$convertAttributes$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayExtractScalarValue",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayExtractScalarValue$convertAttributes$1$argDescriptor$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayInputToNumericalAttribute",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayInputToNumericalAttribute$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayInputToNumericalAttribute$convertAttributes$2$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayInputToNumericalAttribute$convertAttributes$2$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayInputToNumericalAttribute$convertAttributes$2$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayInputToNumericalAttribute$convertAttributes$2$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArraySizeAtRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArraySizeAtRule$convertAttributes$1$argDescriptor$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayToIntAttributeValue",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NDArrayToIntAttributeValue$convertAttributes$argDescriptor$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NumberToBoolean",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.NumberToBoolean$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.SizeThresholdIntArrayIntIndexRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringAttributeToNDArray",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringAttributeToNDArray$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringAttributeToNDArray$convertAttributes$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringContainsAdapterRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringContainsAdapterRule$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringEqualsAdapterRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringEqualsAdapterRule$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringNotEqualsAdapterRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringNotEqualsAdapterRule$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringNotEqualsAdapterRule$convertAttributes$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringNotEqualsAdapterRule$convertAttributes$1$2",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringNotEqualsAdapterRule$convertAttributes$1$3",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringNotEqualsAdapterRule$convertAttributes$1$4",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringNotEqualsAdapterRule$convertAttributes$1$5",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringNotEqualsAdapterRule$convertAttributes$1$6",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringNotEqualsAdapterRule$convertAttributes$1$7",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringToInt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.StringToInt$convertAttributes$argDescriptor$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ValueMapping",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.attribute.ValueMapping$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.BaseNDArrayMappingRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.BaseNDArrayMappingRule$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.BaseNDArrayMappingRule$convertInput$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.BaseNDArrayMappingRule$serialize$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.MultiInputIndexMappingRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.MultiInputIndexMappingRule$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.MultiInputIndexMappingRule$convertInput$1$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.MultiInputIndexMappingRule$serialize$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.PassThroughMultiTensorMapping",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.PassThroughMultiTensorMapping$WhenMappings",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.PassThroughMultiTensorMapping$convertInput$1$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.PassThroughMultiTensorMapping$serialize$1",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.nd4j.samediff.frameworkimport.rule.tensor.TensorMappingRule",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  }
+]

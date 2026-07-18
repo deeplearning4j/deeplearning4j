@@ -25,7 +25,7 @@
 # BUILD MODE OPTIONS:
 #   --cmake-only ON        Run CMake configuration only, skip build
 #   --link-only ON         Skip compilation, only relink (requires prior build)
-#   --triton ON|OFF        Enable/disable Triton GPU compiler integration (default: OFF)
+#   --triton ON|OFF        Enable/disable the universal DSP/compiler stack (default: OFF)
 #
 # OOM KILLER OPTIONS (cross-platform: Linux, macOS, Windows/MSYS2):
 #   --oom-killer ON|OFF              Enable/disable OOM killer (default: ON)
@@ -500,28 +500,40 @@ setwindows_msys() {
 
 setandroid_defaults() {
   if [[ -z ${ANDROID_NDK:-} ]]; then
-    export ANDROID_NDK=$HOME/Android/android-ndk/
-    echo "No ANDROID_NDK variable set. Setting to default of $ANDROID_NDK"
-  else
-    echo "USING ANDROID NDK $ANDROID_NDK"
+    ANDROID_NDK="${ANDROID_NDK_ROOT:-${ANDROID_NDK_HOME:-}}"
   fi
+  if [[ -z "$ANDROID_NDK" ]]; then
+    echo "Android target requires ANDROID_NDK, ANDROID_NDK_ROOT, or ANDROID_NDK_HOME" >&2
+    exit 1
+  fi
+  if [[ ! -f "$ANDROID_NDK/build/cmake/android.toolchain.cmake" ]]; then
+    echo "Android NDK toolchain not found under '$ANDROID_NDK'" >&2
+    exit 1
+  fi
+  export ANDROID_NDK
+  echo "USING ANDROID NDK $ANDROID_NDK"
 
-  if [[ -z ${ANDROID_VERSION:-} ]]; then
-    export ANDROID_VERSION=21
-    echo "No ANDROID_VERSION variable set. Setting to default of $ANDROID_VERSION"
-  else
-    echo "USING ANDROID VERSION $ANDROID_VERSION"
+  if [[ -z ${ANDROID_API:-} ]]; then
+    ANDROID_API="${ANDROID_VERSION:-24}"
   fi
+  if ! [[ "$ANDROID_API" =~ ^[0-9]+$ ]] || [[ "$ANDROID_API" -lt 21 ]]; then
+    echo "Invalid Android API level '$ANDROID_API' (must be an integer >= 21)" >&2
+    exit 1
+  fi
+  export ANDROID_VERSION="$ANDROID_API"
+  echo "USING ANDROID API $ANDROID_VERSION"
 }
 
 # =============================================================================
 # VARIABLE INITIALIZATION
 # =============================================================================
 
-export CMAKE_COMMAND="cmake"
-if which cmake3 &> /dev/null; then
-    export CMAKE_COMMAND="cmake3"
+CMAKE_EXECUTABLE="cmake"
+if command -v cmake3 >/dev/null 2>&1; then
+    CMAKE_EXECUTABLE="cmake3"
 fi
+export CMAKE_EXECUTABLE
+export CMAKE_COMMAND="$CMAKE_EXECUTABLE"
 
 if [[ -z ${MAKEJ:-} ]]; then MAKEJ=4; SD_MAKEJ_AUTO=1; else SD_MAKEJ_AUTO=0; fi
 
@@ -567,6 +579,9 @@ CHIP="${CHIP:-}"
 BUILD="${BUILD:-}"
 COMPUTE="${COMPUTE:-}"
 ARCH="${ARCH:-}"
+ANDROID_ABI="${ANDROID_ABI:-}"
+ANDROID_API="${ANDROID_API:-}"
+OUTPUT_PATH="${OUTPUT_PATH:-}"
 LIBTYPE="${LIBTYPE:-}"
 PACKAGING="${PACKAGING:-}"
 CHIP_EXTENSION="${CHIP_EXTENSION:-}"
@@ -615,10 +630,14 @@ CMAKE_ARGUMENTS="${CMAKE_ARGUMENTS:-}"
 PTXAS_INFO="${PTXAS_INFO:-OFF}"
 BUILD_PPSTEP="${BUILD_PPSTEP:-OFF}"
 EXTRACT_INSTANTIATIONS="${EXTRACT_INSTANTIATIONS:-OFF}"
+GENERATE_FLATC="${GENERATE_FLATC:-OFF}"
+DRY_RUN="${DRY_RUN:-OFF}"
 CMAKE_ONLY="${CMAKE_ONLY:-OFF}"
 LINK_ONLY="${LINK_ONLY:-OFF}"
 COMPILER="${COMPILER:-}"
 BUILD_WITH_JAVA="${BUILD_WITH_JAVA:-ON}"
+# Hermetic mobile builds set this to ON to prohibit FetchContent network access.
+SDX_OFFLINE="${SDX_OFFLINE:-OFF}"
 
 
 # Type validation specific variables
@@ -633,6 +652,7 @@ SD_VALIDATED_TYPES="${SD_VALIDATED_TYPES:-}"
 MLIR="${MLIR:-OFF}"
 MLIR_VERSION="${MLIR_VERSION:-18}"
 MLIR_GPU="${MLIR_GPU:-OFF}"
+LLVM_ROOT="${LLVM_ROOT:-}"
 TRITON="${TRITON:-OFF}"
 BUILD_SDX_STANDALONE="${BUILD_SDX_STANDALONE:-OFF}"
 SDX_INCLUDE_TRITON="${SDX_INCLUDE_TRITON:-}"
@@ -1234,18 +1254,17 @@ start_oom_monitor() {
 # Stop the OOM monitor
 stop_oom_monitor() {
     if [[ -n "$OOM_MONITOR_PID" ]]; then
+        # The monitor exits by itself as soon as it observes that the build PID
+        # is gone. Give it two polling intervals to do so; killing its active
+        # sleep child creates a misleading "Terminated" diagnostic.
+        local wait_count=0
+        while is_process_running "$OOM_MONITOR_PID" && [[ $wait_count -lt 20 ]]; do
+            sleep 0.1 2>/dev/null || sleep 1
+            wait_count=$((wait_count + 1))
+        done
+
         if is_process_running "$OOM_MONITOR_PID"; then
-            kill_process_tree "$OOM_MONITOR_PID" "TERM"
-            # Wait for the monitor to exit (with timeout for Windows compatibility)
-            local wait_count=0
-            while is_process_running "$OOM_MONITOR_PID" && [[ $wait_count -lt 10 ]]; do
-                sleep 0.1 2>/dev/null || sleep 1
-                wait_count=$((wait_count + 1))
-            done
-            # Force kill if still running
-            if is_process_running "$OOM_MONITOR_PID"; then
-                kill_process_tree "$OOM_MONITOR_PID" "KILL"
-            fi
+            kill -TERM "$OOM_MONITOR_PID" 2>/dev/null || true
         fi
         wait "$OOM_MONITOR_PID" 2>/dev/null || true
         OOM_MONITOR_PID=""
@@ -1478,6 +1497,13 @@ do
             fi
             shift # past argument
             ;;
+        --llvm-root)
+            LLVM_ROOT="$value"
+            if [[ -n "$value" ]]; then
+                print_colored "blue" "✓ LLVM/MLIR install prefix: $value"
+            fi
+            shift # past argument
+            ;;
         --triton)
             TRITON="$value"
             case "$value" in
@@ -1547,8 +1573,20 @@ do
             DEP_CACHE_CLEAR_DEP="$value"
             shift # past argument
             ;;
+        --output-path)
+            OUTPUT_PATH="$value"
+            shift # past argument
+            ;;
         -o|-platform|--platform)
             OS="$value"
+            shift # past argument
+            ;;
+        --android-abi)
+            ANDROID_ABI="$value"
+            shift # past argument
+            ;;
+        --android-api)
+            ANDROID_API="$value"
             shift # past argument
             ;;
         -ft|-functrace|--functrace)
@@ -2041,10 +2079,6 @@ if [ -z "$OS" ]; then
     OS="$HOST"
 fi
 
-if [[ -z ${ANDROID_NDK:-} ]]; then
-    export ANDROID_NDK=$HOME/Android/android-ndk/
-fi
-
 case "$OS" in
     linux-armhf)
         if [ -z "$ARCH" ]; then
@@ -2087,12 +2121,13 @@ case "$OS" in
 
         setandroid_defaults
 
-        echo "BUILDING ANDROID ARM with KERNEL $KERNEL"
-        export ANDROID_BIN="$ANDROID_NDK/toolchains/aarch64-linux-android-4.9/prebuilt/$KERNEL/"
-        export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-        export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-        export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm64/"
-        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DSD_ANDROID_BUILD=true"
+        echo "BUILDING ANDROID ARM64 with the NDK toolchain"
+        if [[ -n "$ANDROID_ABI" && "$ANDROID_ABI" != "arm64-v8a" ]]; then
+            echo "Android platform '$OS' requires ABI 'arm64-v8a', got '$ANDROID_ABI'" >&2
+            exit 1
+        fi
+        ANDROID_ABI="arm64-v8a"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI=$ANDROID_ABI -DANDROID_PLATFORM=android-$ANDROID_VERSION -DSD_ANDROID_BUILD=true"
         setwindows_msys
         ;;
     android-x86)
@@ -2113,16 +2148,16 @@ case "$OS" in
         if [ -z "$ARCH" ]; then
             ARCH="x86-64"
         fi
-        echo "BUILDING ANDROID x86_64"
+        echo "BUILDING ANDROID x86_64 with the NDK toolchain"
 
         setandroid_defaults
 
-
-        export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
-        export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-        export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-        export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-x86_64/"
-        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake -DSD_ANDROID_BUILD=true"
+        if [[ -n "$ANDROID_ABI" && "$ANDROID_ABI" != "x86_64" ]]; then
+            echo "Android platform '$OS' requires ABI 'x86_64', got '$ANDROID_ABI'" >&2
+            exit 1
+        fi
+        ANDROID_ABI="x86_64"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake -DANDROID_ABI=$ANDROID_ABI -DANDROID_PLATFORM=android-$ANDROID_VERSION -DSD_ANDROID_BUILD=true"
         setwindows_msys
         ;;
 
@@ -2189,6 +2224,15 @@ case "$OS" in
         ;;
 
     linux*)
+        # CMake owns native compiler selection. If the caller explicitly chooses
+        # a compiler pair, require the pair to be complete; otherwise retain or
+        # discover the CMake toolchain and let JavaCPP consume that exact result.
+        if [ -z "$COMPILER" ] &&
+           { [ -n "${CC:-}" ] || [ -n "${CXX:-}" ]; } &&
+           { [ -z "${CC:-}" ] || [ -z "${CXX:-}" ]; }; then
+            print_colored "red" "❌ ERROR: Linux compiler selection requires both CC and CXX"
+            exit 1
+        fi
         ;;
 
     macosx*)
@@ -2264,11 +2308,52 @@ case "$OS" in
         ;;
 esac
 
-if [ -v OPENBLAS_PATH ]; then
-  echo "OPENBLAS_PATH is set."
-else
+# Device accelerator builds must not acquire a host BLAS execution path.
+# google-tpu is reserved for the Android Tensor variant added alongside NNAPI.
+DEVICE_ONLY_ACCELERATOR=false
+case "$CHIP" in
+  vulkan|hexagon|tpu|google-tpu) DEVICE_ONLY_ACCELERATOR=true ;;
+esac
+
+if [ "$CHIP" == "vulkan" ]; then
+  VULKAN_HELPER_LIST="${HELPERS:-},${HELPER:-}"
+  for VULKAN_HELPER in ${VULKAN_HELPER_LIST//,/ }; do
+    case "$VULKAN_HELPER" in
+      onednn|mps|mlx)
+        print_colored "red" "ERROR: Helper '$VULKAN_HELPER' is not compatible with the Vulkan backend; use Vulkan or device-neutral helpers only"
+        exit 1
+        ;;
+    esac
+  done
+
+  if [ "${SD_MLX:-}" == "ON" ]; then
+    print_colored "red" "ERROR: SD_MLX=ON is not compatible with the Vulkan backend"
+    exit 1
+  fi
+
+  if [ -n "${BLAS_IMPL:-}" ]; then
+    print_colored "red" "ERROR: --blas is not compatible with the Vulkan backend; Vulkan math must execute through Vulkan device emitters"
+    exit 1
+  fi
+
+  # Host BLAS paths may be ambient in a multi-backend build. They are unrelated
+  # to Vulkan and must neither affect nor prevent the Vulkan configuration.
   OPENBLAS_PATH=""
-fi
+  MKL_PATH=""
+elif [ "$DEVICE_ONLY_ACCELERATOR" == "true" ]; then
+  if [ -n "${BLAS_IMPL:-}" ]; then
+    print_colored "red" "ERROR: --blas is not compatible with the $CHIP backend; accelerator graphs must remain device-only"
+    exit 1
+  fi
+  # Ignore ambient host paths so they cannot alter the target or its package.
+  OPENBLAS_PATH=""
+  MKL_PATH=""
+else
+  if [ -v OPENBLAS_PATH ]; then
+    echo "OPENBLAS_PATH is set."
+  else
+    OPENBLAS_PATH=""
+  fi
 
 # Fixed auto-detection for Android and ARM platforms
 if [[ -z "$OPENBLAS_PATH" ]]; then
@@ -2277,12 +2362,17 @@ if [[ -z "$OPENBLAS_PATH" ]]; then
     # fallback below can use them.
     case "$OS" in
         android-x86_64)
-            JAR_PATTERNS=("openblas-*-android-x86_64.jar" "openblas-*-linux-x86_64.jar")
-            OPENBLAS_SUBPATHS=("android-x86_64" "linux-x86_64")
+            # Android must never fall back to a same-architecture Linux/glibc
+            # artifact. Modern JavaCPP jars use Android's ABI directory layout;
+            # older jars use the classifier name under org/bytedeco/openblas.
+            JAR_PATTERNS=("openblas-*-android-x86_64.jar")
+            OPENBLAS_SUBPATHS=("lib/x86_64" "android-x86_64")
             ;;
         android-arm64)
-            JAR_PATTERNS=("openblas-*-android-arm64.jar" "openblas-*-linux-arm64.jar" "openblas-*-android-aarch64.jar" "openblas-*-linux-aarch64.jar")
-            OPENBLAS_SUBPATHS=("android-arm64" "linux-arm64" "android-aarch64" "linux-aarch64")
+            # A Linux arm64 .so links successfully but cannot load on Android
+            # (libc.so.6/ld-linux dependencies), so keep this list Android-only.
+            JAR_PATTERNS=("openblas-*-android-arm64.jar" "openblas-*-android-aarch64.jar")
+            OPENBLAS_SUBPATHS=("lib/arm64-v8a" "android-arm64" "android-aarch64")
             ;;
         linux-arm64)
             JAR_PATTERNS=("openblas-*-linux-arm64.jar" "openblas-*-linux-aarch64.jar")
@@ -2308,13 +2398,17 @@ if [[ -z "$OPENBLAS_PATH" ]]; then
         for pattern in "${JAR_PATTERNS[@]}"; do
             OPENBLAS_JAR=$(find "$JAVACPP_CACHE" -name "$pattern" | head -1)
             if [[ -n "$OPENBLAS_JAR" ]]; then
-                # Try each subpath until we find cblas.h
+                # Support modern JavaCPP ABI roots and the legacy preset root.
                 for subpath in "${OPENBLAS_SUBPATHS[@]}"; do
-                    if [[ -f "$OPENBLAS_JAR/org/bytedeco/openblas/$subpath/include/cblas.h" ]]; then
-                        export OPENBLAS_PATH="$OPENBLAS_JAR/org/bytedeco/openblas/$subpath"
-                        echo "✅ Auto-detected OPENBLAS_PATH for $OS: $OPENBLAS_PATH"
-                        break 2
-                    fi
+                    for candidate in \
+                        "$OPENBLAS_JAR/$subpath" \
+                        "$OPENBLAS_JAR/org/bytedeco/openblas/$subpath"; do
+                        if [[ -f "$candidate/include/cblas.h" && -f "$candidate/libopenblas.so" ]]; then
+                            export OPENBLAS_PATH="$candidate"
+                            echo "✅ Auto-detected OPENBLAS_PATH for $OS: $OPENBLAS_PATH"
+                            break 3
+                        fi
+                    done
                 done
             fi
         done
@@ -2333,16 +2427,22 @@ if [[ -z "$OPENBLAS_PATH" ]]; then
             for pattern in "${JAR_PATTERNS[@]}"; do
                 M2_JAR=$(find "$M2_OPENBLAS_DIR" -name "$pattern" 2>/dev/null | head -1)
                 if [[ -n "$M2_JAR" ]]; then
-                    EXTRACT_DIR="${TMPDIR:-/tmp}/nd4j-openblas-extract"
+                    # Keep each classifier/version in its own extraction root so
+                    # stale files from another platform can never win detection.
+                    M2_JAR_BASENAME=$(basename "$M2_JAR" .jar)
+                    EXTRACT_DIR="${TMPDIR:-/tmp}/nd4j-openblas-extract/$M2_JAR_BASENAME"
                     mkdir -p "$EXTRACT_DIR"
-                    unzip -o -q "$M2_JAR" "org/bytedeco/openblas/*" -d "$EXTRACT_DIR" 2>/dev/null \
-                        || unzip -o -q "$M2_JAR" -d "$EXTRACT_DIR" 2>/dev/null || true
+                    unzip -o -q "$M2_JAR" -d "$EXTRACT_DIR" 2>/dev/null || true
                     for subpath in "${OPENBLAS_SUBPATHS[@]}"; do
-                        if [[ -f "$EXTRACT_DIR/org/bytedeco/openblas/$subpath/include/cblas.h" ]]; then
-                            export OPENBLAS_PATH="$EXTRACT_DIR/org/bytedeco/openblas/$subpath"
-                            echo "✅ Auto-detected OPENBLAS_PATH from ~/.m2 for $OS: $OPENBLAS_PATH"
-                            break 2
-                        fi
+                        for candidate in \
+                            "$EXTRACT_DIR/$subpath" \
+                            "$EXTRACT_DIR/org/bytedeco/openblas/$subpath"; do
+                            if [[ -f "$candidate/include/cblas.h" && -f "$candidate/libopenblas.so" ]]; then
+                                export OPENBLAS_PATH="$candidate"
+                                echo "✅ Auto-detected OPENBLAS_PATH from ~/.m2 for $OS: $OPENBLAS_PATH"
+                                break 3
+                            fi
+                        done
                     done
                 fi
             done
@@ -2352,6 +2452,13 @@ if [[ -z "$OPENBLAS_PATH" ]]; then
     if [[ -z "$OPENBLAS_PATH" ]]; then
         echo "⚠️  Could not auto-detect OpenBLAS for $OS platform"
     fi
+  fi
+fi
+
+# An explicitly supplied path is subject to the same cross-OS safety rule.
+if [[ "$OS" == android-* && -n "$OPENBLAS_PATH" && "$OPENBLAS_PATH" == *linux-* ]]; then
+    echo "❌ Refusing Linux OpenBLAS for Android target: $OPENBLAS_PATH"
+    exit 1
 fi
 
 # ============================================================================
@@ -2364,6 +2471,13 @@ fi
 #   - "mkl": Force MKL (will error if not found)
 #   - "" or "auto": Auto-detect (prefer MKL if available, fallback to OpenBLAS)
 
+if [ "$DEVICE_ONLY_ACCELERATOR" == "true" ]; then
+  MKL_PATH=""
+  MKL_CMAKE=""
+  MKL_MULTI_THREADED_CMAKE=""
+  BLAS_CMAKE=""
+else
+MKL_MULTI_THREADED_CMAKE="-DMKL_MULTI_THREADED=TRUE"
 if [ -v MKL_PATH ]; then
   echo "MKL_PATH is set: $MKL_PATH"
 else
@@ -2487,13 +2601,12 @@ if [[ -n "$BLAS_IMPL" ]]; then
 else
     BLAS_CMAKE=""
 fi
-
-if [ ! -d "include/generated" ]; then
-    mkdir -p "include/generated"
 fi
 
-if [ -f "$OP_OUTPUT_FILE" ]; then
-    rm -f "${OP_OUTPUT_FILE}"
+if [ "$DEVICE_ONLY_ACCELERATOR" == "true" ]; then
+    OPENBLAS_CMAKE=""
+else
+    OPENBLAS_CMAKE="-DOPENBLAS_PATH=\"$OPENBLAS_PATH\""
 fi
 
 if [ -z "$BUILD" ]; then
@@ -2513,7 +2626,13 @@ if [ -z "$PACKAGING" ]; then
 fi
 
 SOURCE_PATH="$DIR"
-BUILD_DIR="$DIR/blasbuild/$CHIP"
+if [ -n "$OUTPUT_PATH" ]; then
+    BUILD_DIR="$OUTPUT_PATH"
+elif [ "$CHIP" == "vulkan" ]; then
+    BUILD_DIR="$DIR/blasbuild/vulkan${OS:+/$OS}"
+else
+    BUILD_DIR="$DIR/blasbuild/$CHIP"
+fi
 
 # =============================================================================
 # TMPDIR Configuration - Use build directory instead of /tmp (tmpfs)
@@ -2572,20 +2691,51 @@ if [ -z "$EXPERIMENTAL" ]; then
     EXPERIMENTAL="no"
 fi
 
-if [ "$CHIP" == "cpu" ]; then
-    BLAS_ARG="-DSD_CPU=true -DBLAS=TRUE"
-elif [ "$CHIP" == "aurora" ]; then
-    BLAS_ARG="-DSD_AURORA=true -DBLAS=TRUE"
-elif [ "$CHIP" == "cuda" ]; then
-    BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
-elif [ "$CHIP" == "tpu" ]; then
-    BLAS_ARG="-DSD_TPU=true -DBLAS=TRUE"
-elif [ "$CHIP" == "hexagon" ]; then
-    BLAS_ARG="-DSD_HEXAGON=true -DBLAS=TRUE"
-else
-    # Handle CUDA version numbers like "12.9" - treat as CUDA build
-    BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
-fi
+configure_primary_backend() {
+    local backend="$1"
+    local disabled_backends="-DSD_CPU=OFF -DSD_CUDA=OFF -DSD_TPU=OFF -DSD_HEXAGON=OFF -DSD_VULKAN=OFF -DSD_AURORA=OFF"
+
+    case "$backend" in
+        cpu)
+            BLAS_ARG="$disabled_backends -DSD_CPU=ON -DBLAS=TRUE"
+            ;;
+        aurora)
+            # Aurora is a CPU-family specialization, not a separate device DSO.
+            BLAS_ARG="$disabled_backends -DSD_CPU=ON -DSD_AURORA=ON -DBLAS=TRUE"
+            ;;
+        cuda|[0-9]*)
+            # Numeric chip values are configured CUDA versions such as 12.9.
+            BLAS_ARG="$disabled_backends -DSD_CUDA=ON -DBLAS=TRUE"
+            ;;
+        tpu)
+            BLAS_ARG="$disabled_backends -DSD_TPU=ON -DBLAS=FALSE"
+            ;;
+        hexagon)
+            BLAS_ARG="$disabled_backends -DSD_HEXAGON=ON -DBLAS=FALSE"
+            ;;
+        vulkan)
+            BLAS_ARG="$disabled_backends -DSD_VULKAN=ON -DBLAS=FALSE"
+            ;;
+        *)
+            print_colored "red" "❌ ERROR: Unsupported backend chip '$backend'"
+            exit 1
+            ;;
+    esac
+}
+
+configure_primary_backend "$CHIP"
+
+case "${SDX_OFFLINE^^}" in
+    ON|TRUE|1)
+        BLAS_ARG="$BLAS_ARG -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON"
+        ;;
+    OFF|FALSE|0|"")
+        ;;
+    *)
+        print_colored "red" "❌ ERROR: SDX_OFFLINE must be ON or OFF, got '$SDX_OFFLINE'"
+        exit 1
+        ;;
+esac
 
 if [ -z "$NAME" ]; then
     if [ "$CHIP" == "cpu" ]; then
@@ -2598,6 +2748,8 @@ if [ -z "$NAME" ]; then
         NAME="nd4jtpu"
     elif [ "$CHIP" == "hexagon" ]; then
         NAME="nd4jhexagon"
+    elif [ "$CHIP" == "vulkan" ]; then
+        NAME="nd4jvulkan"
     else
         # Handle CUDA version numbers like "12.9" - treat as CUDA build
         NAME="nd4jcuda"
@@ -2635,8 +2787,15 @@ if [ "$PACKAGING" == "msi" ]; then
     PACKAGING_ARG="-DPACKAGING=msi"
 fi
 
-# Use parent of output file to mean source include directory
-OP_OUTPUT_FILE_ARG="-DOP_OUTPUT_FILE=../${OP_OUTPUT_FILE}"
+# Resolve relative parser-header paths against this chip's build directory.
+# Keeping the header build-local lets independent CPU, CUDA, Vulkan, and cross builds
+# configure concurrently without deleting or replacing one another's parser input.
+if [[ "$OP_OUTPUT_FILE" = /* ]]; then
+    OP_OUTPUT_FILE_PATH="$OP_OUTPUT_FILE"
+else
+    OP_OUTPUT_FILE_PATH="${BUILD_DIR}/${OP_OUTPUT_FILE}"
+fi
+OP_OUTPUT_FILE_ARG="-DOP_OUTPUT_FILE=${OP_OUTPUT_FILE_PATH}"
 
 EXPERIMENTAL_ARG=""
 MINIFIER_ARG="-DSD_BUILD_MINIFIER=false"
@@ -2684,8 +2843,8 @@ mkbuilddir() {
             echo "Removing ALL blasbuild directories (clean-all)"
             rm -Rf "$DIR/blasbuild"
         else
-            echo "Removing blasbuild for $CHIP only (use 'clean-all' to clean all backends)"
-            rm -Rf "$DIR/blasbuild/$CHIP"
+            echo "Removing build directory for $CHIP target: $BUILD_DIR"
+            rm -Rf "$BUILD_DIR"
         fi
     fi
 
@@ -2740,7 +2899,7 @@ SD_MLX="${SD_MLX:-}"
 # Auto-enable oneDNN when Triton is ON and we're on x86 (x86_64/amd64) for CPU builds only.
 # oneDNN provides the CPU graph backend for DSP and optimized math kernels.
 # CUDA builds must NOT use oneDNN — it causes linker errors (undefined dnnl_* symbols).
-if [ "$TRITON" == "ON" ] && [ "$CHIP" != "cuda" ]; then
+if [ "$TRITON" == "ON" ] && [ "$CHIP" == "cpu" ]; then
     MACHINE=$(uname -m)
     if [[ "$MACHINE" == "x86_64" ]] || [[ "$MACHINE" == "amd64" ]]; then
         if [[ -z "$HELPERS" ]] && [[ -z "$HELPER" ]]; then
@@ -2763,7 +2922,7 @@ fi
 # (the MLX graph backend). Mirrors the x86 oneDNN auto-enable — on Apple Silicon
 # these aren't optional accelerators, they ARE the platform's compute path.
 # The base CPU build (no --triton) stays lean and dependency-light.
-if [ "$TRITON" == "ON" ] && [ "$CHIP" != "cuda" ] && [ "$(uname -s)" == "Darwin" ] && [ "$(uname -m)" == "arm64" ]; then
+if [ "$TRITON" == "ON" ] && [ "$CHIP" == "cpu" ] && [ "$(uname -s)" == "Darwin" ] && [ "$(uname -m)" == "arm64" ]; then
     if [[ ",$HELPERS," != *",mps,"* ]] && [[ ",$HELPER," != *",mps,"* ]]; then
         if [[ -n "$HELPERS" ]]; then
             HELPERS="${HELPERS},mps"
@@ -2859,6 +3018,9 @@ fi
 MLIR_ARG=""
 if [ "$MLIR" == "ON" ]; then
     MLIR_ARG="-DHELPERS_mlir=ON -DMLIR_VERSION=${MLIR_VERSION}"
+    if [ -n "$LLVM_ROOT" ]; then
+        MLIR_ARG="${MLIR_ARG} -DLLVM_ROOT=${LLVM_ROOT}"
+    fi
     if [ "$MLIR_GPU" == "ON" ]; then
         MLIR_ARG="${MLIR_ARG} -DMLIR_ENABLE_GPU=ON"
     fi
@@ -2925,6 +3087,7 @@ echo HELPER_PRIORITY     = "$HELPER_PRIORITY"
 echo MLIR                = "$MLIR"
 echo MLIR_VERSION        = "$MLIR_VERSION"
 echo MLIR_GPU            = "$MLIR_GPU"
+echo LLVM_ROOT           = "$LLVM_ROOT"
 echo TRITON              = "$TRITON"
 echo SDX_STANDALONE      = "$BUILD_SDX_STANDALONE"
 echo SDX_INCLUDE_TRITON  = "$SDX_INCLUDE_TRITON"
@@ -2965,10 +3128,13 @@ if [ -n "$COMPILER" ]; then
             print_colored "cyan" "Using custom compiler: $COMPILER"
             ;;
     esac
+elif [ -n "${CC:-}" ] && [ -n "${CXX:-}" ]; then
+    COMPILER_ARG="-DCMAKE_C_COMPILER=\"${CC}\" -DCMAKE_CXX_COMPILER=\"${CXX}\""
+    print_colored "cyan" "Using explicit CC/CXX compiler pair"
 fi
 
 # Configure CMake
-echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $MLIR_ARG $TRITON_CMAKE $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE $COMPILER_ARG $SOURCE_PATH"
+echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $MLIR_ARG $TRITON_CMAKE $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE $OPENBLAS_CMAKE $MKL_CMAKE $BLAS_CMAKE -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES $MKL_MULTI_THREADED_CMAKE $COMPILER_ARG $SOURCE_PATH"
 
 # Handle the PREPROCESS flag first - before any build
 if [ "$PREPROCESS" == "ON" ]; then
@@ -3003,12 +3169,12 @@ if [ "$PREPROCESS" == "ON" ]; then
             "$BUILD_TYPE" \
             "$PACKAGING_ARG" \
             "$CUDA_COMPUTE" \
-            -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $OPENBLAS_CMAKE \
             $MKL_CMAKE \
             $BLAS_CMAKE \
             -DDEV=FALSE \
             -DCMAKE_NEED_RESPONSE=YES \
-            -DMKL_MULTI_THREADED=TRUE \
+            $MKL_MULTI_THREADED_CMAKE \
             $COMPILER_ARG \
             "$SOURCE_PATH"
     else
@@ -3041,12 +3207,12 @@ if [ "$PREPROCESS" == "ON" ]; then
             "$BUILD_TYPE" \
             "$PACKAGING_ARG" \
             "$CUDA_COMPUTE" \
-            -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $OPENBLAS_CMAKE \
             $MKL_CMAKE \
             $BLAS_CMAKE \
             -DDEV=FALSE \
             -DCMAKE_NEED_RESPONSE=YES \
-            -DMKL_MULTI_THREADED=TRUE \
+            $MKL_MULTI_THREADED_CMAKE \
             $COMPILER_ARG \
             "$SOURCE_PATH" >> "$LOG_OUTPUT" 2>&1
     fi
@@ -3062,7 +3228,7 @@ if [ "$DRY_RUN" == "ON" ]; then
     echo
 
     # Clear CMake cache to ensure fresh configuration
-    BLASBUILD_DIR="$DIR/blasbuild/${CHIP}"
+    BLASBUILD_DIR="$BUILD_DIR"
     if [ -d "$BLASBUILD_DIR" ]; then
         print_colored "yellow" "Clearing CMake cache for fresh configuration..."
         rm -rf "$BLASBUILD_DIR/CMakeCache.txt" "$BLASBUILD_DIR/CMakeFiles"
@@ -3076,9 +3242,12 @@ if [ "$DRY_RUN" == "ON" ]; then
     # Set CMAKE_ONLY to exit after CMake completes (and run validation then)
     CMAKE_ONLY="ON"
 fi
-# Normal build path
-if [ "$LOG_OUTPUT" == "none" ]; then
+# Keep a single canonical configure command so the dependency bootstrap and
+# final build cannot diverge in target, toolchain, helper, or cache settings.
+run_cmake_configure() {
+    local dependency_bootstrap_only="$1"
     eval "$CMAKE_COMMAND" \
+        -DSD_DEPENDENCY_BOOTSTRAP_ONLY="$dependency_bootstrap_only" \
         -DPRINT_MATH="$PRINT_MATH" \
         -DPRINT_INDICES="$PRINT_INDICES" \
         -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
@@ -3113,58 +3282,48 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         "$PACKAGING_ARG" \
         "$TESTS_ARG" \
         "$CUDA_COMPUTE" \
-        -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+        $OPENBLAS_CMAKE \
         $MKL_CMAKE \
         $BLAS_CMAKE \
         -DDEV=FALSE \
         -DCMAKE_NEED_RESPONSE=YES \
-        -DMKL_MULTI_THREADED=TRUE \
+        $MKL_MULTI_THREADED_CMAKE \
         $COMPILER_ARG \
         "$SOURCE_PATH"
+}
+
+run_cmake_configure_logged() {
+    local dependency_bootstrap_only="$1"
+    if [ "$LOG_OUTPUT" == "none" ]; then
+        run_cmake_configure "$dependency_bootstrap_only"
+    else
+        run_cmake_configure "$dependency_bootstrap_only" >> "$LOG_OUTPUT" 2>&1
+    fi
+}
+
+run_compiler_dependency_bootstrap() {
+    local bootstrap_command
+    bootstrap_command="\"$CMAKE_EXECUTABLE\" --build \"$BUILD_DIR\" --target sd_compiler_dependencies_bootstrap --parallel \"$MAKEJ\""
+    if [ "$LOG_OUTPUT" != "none" ]; then
+        bootstrap_command="$bootstrap_command >> \"$LOG_OUTPUT\" 2>&1"
+    fi
+    run_with_oom_monitor "$bootstrap_command"
+}
+
+# MLIR package discovery consumes exports produced by the managed, patched
+# Triton LLVM build. Bootstrap that graph first on every Triton+MLIR build;
+# a warm dependency cache makes this a no-op, while a fresh build is now
+# deterministic on native and cross-compiled targets alike.
+if [ "$TRITON" == "ON" ] && [ "$MLIR" == "ON" ]; then
+    print_colored "cyan" "Configuring project-managed Triton/LLVM/MLIR dependency bootstrap..."
+    run_cmake_configure_logged "ON"
+    if [ "$CMAKE_ONLY" != "ON" ]; then
+        run_compiler_dependency_bootstrap
+        print_colored "cyan" "Reconfiguring the complete build against the managed compiler stack..."
+        run_cmake_configure_logged "OFF"
+    fi
 else
-    eval "$CMAKE_COMMAND" \
-        -DPRINT_MATH="$PRINT_MATH" \
-        -DPRINT_INDICES="$PRINT_INDICES" \
-        -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
-        -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
-        -DSD_PTXAS="$PTXAS_INFO" \
-        -DSD_EXTRACT_INSTANTIATIONS="$EXTRACT_INSTANTIATIONS" \
-        -DSD_PARALLEL_COMPILE_JOBS="${MAKEJ}" \
-        "$BLAS_ARG" \
-        "$ARCH_ARG" \
-        "$NAME_ARG" \
-        "$OP_OUTPUT_FILE_ARG" \
-        -DSD_SANITIZE="${SANITIZE}" \
-        -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
-        -DSD_BUILD_WITH_JAVA="${BUILD_WITH_JAVA}" \
-        "$USE_LTO" \
-        -DSD_CUDA_DEVICE_LTO="${CUDA_LTO}" \
-        -DSD_CUDA_THREADS="${CUDA_THREADS}" \
-        -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
-        $HELPERS_CMAKE \
-        $MLX_CMAKE \
-        $KERNEL_CMAKE \
-        $DEP_CACHE_CMAKE \
-        $MLIR_ARG \
-        $TRITON_CMAKE \
-        $SDX_STANDALONE_CMAKE \
-        $UNITY_BUILD_CMAKE \
-        "$SHARED_LIBS_ARG" \
-        "$MINIFIER_ARG" \
-        "$OPERATIONS_ARG" \
-        "$DATATYPES_ARG" \
-        "$BUILD_TYPE" \
-        "$PACKAGING_ARG" \
-        "$TESTS_ARG" \
-        "$CUDA_COMPUTE" \
-        -DOPENBLAS_PATH="$OPENBLAS_PATH" \
-        $MKL_CMAKE \
-        $BLAS_CMAKE \
-        -DDEV=FALSE \
-        -DCMAKE_NEED_RESPONSE=YES \
-        -DMKL_MULTI_THREADED=TRUE \
-        $COMPILER_ARG \
-        "$SOURCE_PATH" >> "$LOG_OUTPUT" 2>&1
+    run_cmake_configure_logged "OFF"
 fi
 
 
@@ -3344,7 +3503,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             $SDX_STANDALONE_CMAKE \
         $UNITY_BUILD_CMAKE \
             $UNITY_BUILD_CMAKE \
-            -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $OPENBLAS_CMAKE \
             $MKL_CMAKE \
             $BLAS_CMAKE \
             $COMPILER_ARG \
@@ -3359,7 +3518,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             $SDX_STANDALONE_CMAKE \
         $UNITY_BUILD_CMAKE \
             $UNITY_BUILD_CMAKE \
-            -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+            $OPENBLAS_CMAKE \
             $MKL_CMAKE \
             $BLAS_CMAKE \
             $COMPILER_ARG \
@@ -3528,34 +3687,50 @@ else
         # Start OOM monitor with all parameters
         start_oom_monitor "$OOM_MEMORY_THRESHOLD" "$OOM_MONITOR_INTERVAL" "$BUILD_PID" "$OOM_PROCESS_MAX_MB" "$OOM_VELOCITY_THRESHOLD" "$OOM_CRITICAL_THRESHOLD"
 
-        # Wait for build to complete
-        wait "$BUILD_PID"
-        BUILD_EXIT_CODE=$?
+        # Wait for build to complete without letting set -e skip monitor cleanup.
+        if wait "$BUILD_PID"; then
+            BUILD_EXIT_CODE=0
+        else
+            BUILD_EXIT_CODE=$?
+        fi
 
         # Stop OOM monitor
         stop_oom_monitor
 
-        if [ $BUILD_EXIT_CODE -eq 137 ]; then
+        # Return to the script directory explicitly. Relative traversal is fragile
+        # when a build tool changes or wraps the working directory.
+        builtin cd "$DIR" || exit 1
+
+        if [ "$BUILD_EXIT_CODE" -eq 137 ]; then
             print_colored "red" "═══════════════════════════════════════════════════════════"
             print_colored "red" "❌ BUILD KILLED BY OOM KILLER"
             print_colored "red" "═══════════════════════════════════════════════════════════"
-            builtin cd ../../..
             exit 137
-        elif [ $BUILD_EXIT_CODE -ne 0 ]; then
+        elif [ "$BUILD_EXIT_CODE" -ne 0 ]; then
             print_colored "red" "❌ BUILD FAILED (exit code: $BUILD_EXIT_CODE)"
-            builtin cd ../../..
-            exit $BUILD_EXIT_CODE
+            exit "$BUILD_EXIT_CODE"
         fi
-
-        builtin cd ../../..
     else
         # Normal build without OOM monitoring
         if [ "$LOG_OUTPUT" == "none" ]; then
-            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && builtin cd ../../..
+            if eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS"; then
+                BUILD_EXIT_CODE=0
+            else
+                BUILD_EXIT_CODE=$?
+            fi
         else
-            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && builtin cd ../../..
+            if eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1; then
+                BUILD_EXIT_CODE=0
+            else
+                BUILD_EXIT_CODE=$?
+            fi
         fi
-        BUILD_EXIT_CODE=$?
+
+        builtin cd "$DIR" || exit 1
+        if [ "$BUILD_EXIT_CODE" -ne 0 ]; then
+            print_colored "red" "❌ BUILD FAILED (exit code: $BUILD_EXIT_CODE)"
+            exit "$BUILD_EXIT_CODE"
+        fi
     fi
 fi
 

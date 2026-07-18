@@ -45,6 +45,7 @@ DECLARE_TYPES(mirror_pad) {
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
   getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});  // to conform with TF
   getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 }
 
 DECLARE_SHAPE_FN(mirror_pad) {

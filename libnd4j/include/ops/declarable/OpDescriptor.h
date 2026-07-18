@@ -44,11 +44,11 @@ namespace ops {
 /**
  * Op trait flags — intrinsic properties of ops that replace scattered hardcoded lists.
  *
- * Set once at op registration time (auto-derived from class hierarchy or from the
- * centralized OpTraitTable). Consumers query traits via OpDescriptor instead of
- * maintaining their own brittle op name sets.
+ * Set once at op registration time by the op's class hierarchy and DECLARE_TYPES
+ * metadata. Consumers query traits via OpDescriptor instead of maintaining their
+ * own brittle op-name sets.
  */
-enum OpTraits : uint32_t {
+enum OpTraits : uint64_t {
   OP_TRAIT_NONE                   = 0,
   OP_TRAIT_UNARY_ELEMENTWISE      = 1 << 0,
   OP_TRAIT_BINARY_ELEMENTWISE     = 1 << 1,
@@ -81,7 +81,8 @@ enum OpTraits : uint32_t {
   OP_TRAIT_CAST                  = 1 << 28,
   OP_TRAIT_BACKWARD              = 1 << 29,  // marks backprop / gradient ops (_bp suffix)
   OP_TRAIT_EXTERNAL_WORKSPACE    = 1 << 30,  // op uses external library workspace (cuBLAS, etc.) — capture-unsafe by default
-  OP_TRAIT_DYNAMIC_OUTPUT_SIZE   = 1u << 31, // output size depends on runtime data (Where, NonZero) — non-capturable in CUDA graphs
+  OP_TRAIT_DYNAMIC_OUTPUT_SIZE   = 1ULL << 31, // output size depends on runtime data (Where, NonZero) — non-capturable in CUDA graphs
+  OP_TRAIT_STATEFUL              = 1ULL << 32, // observes or mutates implicit execution state — never constant-fold
 };
 #endif
 
@@ -182,6 +183,7 @@ class SD_LIB_EXPORT OpExecTrace {
  *   This class is very basic info holder for ops. bean/pojo pretty much.
  *
  */
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT OpDescriptor {
  protected:
   // opType for legacy XYZ ops
@@ -231,8 +233,13 @@ class SD_LIB_EXPORT OpDescriptor {
   // field for ops that allow data type override at runtime
   bool _dtypeOverride = false;
 
-  // Op trait flags (see OpTraits enum)
-  uint32_t _traits = 0;
+  // Op trait flags (see OpTraits enum). Native storage is 64-bit; the existing
+  // 32-bit accessors remain for JavaCPP ABI compatibility.
+  uint64_t _traits = 0;
+
+  // Leading iArgs that remain structural when later arguments are supplied as
+  // tensor inputs. -1 means every iArg is structural.
+  int _numStructuralIArgs = -1;
 
   bool checkDataTypesMatch(DataType needle, std::vector<DataType>& haystack) const;
 
@@ -336,9 +343,23 @@ class SD_LIB_EXPORT OpDescriptor {
   bool hasAllTraits(uint32_t traits) const;
   bool hasAnyTrait(uint32_t traits) const;
   uint32_t getTraits() const;
+#ifndef __JAVACPP_HACK__
+  // Native-only 64-bit overloads preserve the JavaCPP-facing ABI while allowing
+  // intrinsic execution-state traits beyond the original 32-bit mask.
+  OpDescriptor* setTraits(uint64_t traits);
+  OpDescriptor* addTraits(uint64_t traits);
+  bool hasAllTraits(uint64_t traits) const;
+  bool hasAnyTrait(uint64_t traits) const;
+  uint64_t getTraits64() const;
+#endif
+
+  OpDescriptor* setNumberOfStructuralIArgs(int count);
+  int getNumberOfStructuralIArgs() const;
+  int getNumberOfOrdinaryIArgs() const;
 
 
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

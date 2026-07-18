@@ -62,6 +62,7 @@ DECLARE_TYPES(reverse) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY);
   getOpDescriptor()->setAllowedInputTypes(1, {INT32, INT64});
   getOpDescriptor()->setAllowedOutputTypes(0, INHERIT);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(reverse_bp, 2, 1, false, 0, -2) {
@@ -90,6 +91,7 @@ CUSTOM_OP_IMPL(reverse_bp, 2, 1, false, 0, -2) {
 
 DECLARE_TYPES(reverse_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(reverse_bp) {

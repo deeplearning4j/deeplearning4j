@@ -91,7 +91,7 @@ static void concatMKLDNN(const std::vector<NDArray*>& inArrs, NDArray& output, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(concat, ENGINE_CPU) {
+PLATFORM_IMPL(concat, ENGINE_ONEDNN) {
   REQUIRE_TRUE(block.width() > 0, 0, "CONCAT MKLDNN op: No input arrays were provided");
 
   const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
@@ -172,7 +172,7 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(concat, ENGINE_CPU) {
+PLATFORM_CHECK(concat, ENGINE_ONEDNN) {
   auto z = OUTPUT_VARIABLE(0);
 
   const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);

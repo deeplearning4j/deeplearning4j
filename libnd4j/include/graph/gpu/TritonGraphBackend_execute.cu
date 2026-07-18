@@ -305,7 +305,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                       execEnv.tritonCompileAll(),
                       std::hash<std::string>()(execEnv.tritonExcludeOps()),
                       std::hash<std::string>()(execEnv.tritonIncludeTypes()),
-                      execEnv.tritonGraphCapture()};
+                      execEnv.tritonGraphCapture(), &seg};
   // Must match the dtype hash used at compileSegment time so INT8 and FLOAT32
   // kernels for the same shapes map to distinct cache entries.
   key.segInternalDtypeHash = computeSegInternalDtypeHash(slots, seg.def.startSlot, seg.def.endSlot,
@@ -321,7 +321,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       for (const auto& entry : cache_) {
         if (entry.first.startSlot == seg.def.startSlot &&
             entry.first.endSlot == seg.def.endSlot &&
-            entry.first.shapeKey == seg.def.shapeKeyState.compiledShapeKey) {
+            entry.first.shapeKey == seg.def.shapeKeyState.compiledShapeKey &&
+            entry.first.segmentInstance == &seg) {
           cachedDeviceId = entry.first.deviceId;
           break;
         }
@@ -1428,24 +1429,52 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       auto presentBuf = presentArr->dataBuffer();
       if (!currentBuf || !presentBuf || !currentBuf->special() || !presentBuf->special()) return;
 
+      // present is [B, H, S, D] (BHSD layout, rank-4 required)
       if (presentArr->rankOf() != 4) return;
       int numHeads = static_cast<int>(presentArr->sizeAt(1));
-      int seqLen = static_cast<int>(presentArr->sizeAt(2));
-      int headDim = static_cast<int>(presentArr->sizeAt(3));
-      int lastPos = seqLen - 1;
+      int seqLen   = static_cast<int>(presentArr->sizeAt(2));
+      int headDim  = static_cast<int>(presentArr->sizeAt(3));
+
+      // current is [B, W, H, D] (BWHD layout) where W is the decode window width.
+      // W=1 for standard single-token decode; W>1 for speculative / multi-token decode.
+      // Derive curSeq from the current tensor's shape so W>1 scatters all live rows.
+      int curSeq = 1;
+      if (currentArr->rankOf() == 4) {
+        // Verify numHeads and headDim are consistent before using current's seq dim.
+        int curNumHeads = static_cast<int>(currentArr->sizeAt(2));
+        int curHeadDim  = static_cast<int>(currentArr->sizeAt(3));
+        if (curNumHeads != numHeads || curHeadDim != headDim) {
+          // Shape mismatch — skip scatter to avoid silent corruption.
+          DSP_DIAG(EXECUTE, "composePresentKv %s: SKIP — shape mismatch "
+                   "cur[H=%d,D=%d] vs present[H=%d,D=%d]",
+                   label, curNumHeads, curHeadDim, numHeads, headDim);
+          return;
+        }
+        curSeq = static_cast<int>(currentArr->sizeAt(1));
+      }
+      // Guard: curSeq must not exceed the present cache capacity.
+      if (curSeq <= 0 || curSeq > seqLen) return;
 
       size_t elemSize = presentArr->sizeOfT();
-      char* dstBase = static_cast<char*>(presentBuf->special());
-      char* srcBase = static_cast<char*>(currentBuf->special());
+      char* dstBase   = static_cast<char*>(presentBuf->special());
+      char* srcBase   = static_cast<char*>(currentBuf->special());
 
-      for (int h = 0; h < numHeads; h++) {
-        size_t dstOffset = static_cast<size_t>(h * seqLen + lastPos) * headDim * elemSize;
-        size_t srcOffset = static_cast<size_t>(h) * headDim * elemSize;
-        cudaMemcpyAsync(dstBase + dstOffset, srcBase + srcOffset, headDim * elemSize,
-                        cudaMemcpyDeviceToDevice, reinterpret_cast<cudaStream_t>(actualStream));
+      // Copy each (token, head) row of current into the tail of present.
+      // dst layout [B,H,S,D]: row (h, p) starts at (h*seqLen + p) * headDim
+      // src layout [B,W,H,D]: row (s, h) starts at (s*numHeads + h) * headDim
+      // Destination positions: seqLen-curSeq .. seqLen-1 (preserve "current at tail" convention)
+      for (int s = 0; s < curSeq; s++) {
+        int dstPos = seqLen - curSeq + s;
+        for (int h = 0; h < numHeads; h++) {
+          size_t dstOffset = static_cast<size_t>(h * seqLen + dstPos) * headDim * elemSize;
+          size_t srcOffset = static_cast<size_t>(s * numHeads + h)    * headDim * elemSize;
+          cudaMemcpyAsync(dstBase + dstOffset, srcBase + srcOffset, headDim * elemSize,
+                          cudaMemcpyDeviceToDevice, reinterpret_cast<cudaStream_t>(actualStream));
+        }
       }
-      DSP_DIAG(EXECUTE, "composePresentKv %s: scatter %d heads x %d headDim at lastPos=%d",
-               label, numHeads, headDim, lastPos);
+      DSP_DIAG(EXECUTE, "composePresentKv %s: scatter curSeq=%d heads=%d headDim=%d "
+               "dstPos=[%d..%d]",
+               label, curSeq, numHeads, headDim, seqLen - curSeq, seqLen - 1);
     };
 
     scatterCurrentToPresent(currentKeySrc, presentKeyOut, "KEY");
@@ -1495,12 +1524,16 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
   size_t excludeOpsHash = std::hash<std::string>()(gapEnv.tritonExcludeOps());
   size_t includeTypesHash = std::hash<std::string>()(gapEnv.tritonIncludeTypes());
   bool graphCapture = gapEnv.tritonGraphCapture();
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, seg.def.shapeKeyState.compiledShapeKey, activeDevice, compileAll, excludeOpsHash, includeTypesHash, graphCapture};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot,
+                      seg.def.shapeKeyState.compiledShapeKey, activeDevice,
+                      compileAll, excludeOpsHash, includeTypesHash, graphCapture,
+                      &seg};
 
   std::lock_guard<std::mutex> lock(cacheMtx_);
   // Recover segInternalDtypeHash via secondary index (no outputSlots here).
   key.segInternalDtypeHash = lookupDtypeHash(seg.def.startSlot, seg.def.endSlot,
-                                              seg.def.shapeKeyState.compiledShapeKey, activeDevice);
+                                              seg.def.shapeKeyState.compiledShapeKey,
+                                              activeDevice, &seg);
   auto it = cache_.find(key);
   const CompiledSegment* gapCompiledSeg = (it != cache_.end()) ? &it->second : nullptr;
   if (gapCompiledSeg == nullptr) {
@@ -1515,8 +1548,62 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
     return gapSlots;
   }
 
+  // A Triton subkernel is compiled for the warmup-time tensor shapes. If it
+  // contains a dynamic-shape producer, or directly consumes a tensor whose shape
+  // changes at runtime, pointer-table refresh alone is insufficient: the static
+  // kernel extent remains stale. Keep the entire subkernel live as a composite
+  // gap. Demoting the whole subkernel is required because section kernels cannot
+  // be partially replayed.
+  std::unordered_set<int> dynamicShapeOutputSlots;
+  std::unordered_set<int> dynamicShapeHazardSlots;
+  for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+    const auto& slot = slots[s];
+    bool consumesDynamicShape = false;
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      const int srcIdx = slot.wiring.inputSourceIndices[i];
+      if (srcIdx >= 0 && dynamicShapeOutputSlots.count(srcIdx) != 0) {
+        consumesDynamicShape = true;
+        break;
+      }
+    }
+
+    const bool producesDynamicShape =
+        slot.flags.isDynamicShape ||
+        slot.flags.outputShapeDependsOnInputValues ||
+        slot.hasOpTrait(sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
+    if (producesDynamicShape || consumesDynamicShape) {
+      dynamicShapeHazardSlots.insert(s);
+    }
+    if (producesDynamicShape) {
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        if (outputSlot >= 0) dynamicShapeOutputSlots.insert(outputSlot);
+      }
+    }
+  }
+
   std::unordered_set<int> coveredSlots;
   for (const auto& sk : gapCompiledSeg->subKernels) {
+    bool dynamicShapeHazard = false;
+    for (int s = sk.startSlot_; s <= sk.endSlot_; s++) {
+      if (dynamicShapeHazardSlots.count(s) != 0) {
+        dynamicShapeHazard = true;
+        break;
+      }
+    }
+
+    if (dynamicShapeHazard) {
+      for (int s = sk.startSlot_; s <= sk.endSlot_; s++) {
+        gapSlots.insert(s);
+      }
+      DSP_DIAG_SEG(SHAPE, seg.def.startSlot,
+          "DYNAMIC_SHAPE_SUBKERNEL_GAP: seg[%d-%d] subK[%d-%d] "
+          "contains a dynamic-shape producer/consumer; executing the whole "
+          "subkernel live",
+          seg.def.startSlot, seg.def.endSlot, sk.startSlot_, sk.endSlot_);
+      continue;
+    }
+
     for (int s = sk.startSlot_; s <= sk.endSlot_; s++) {
       coveredSlots.insert(s);
     }
@@ -1664,21 +1751,17 @@ void TritonGraphBackend::invalidateCache() {
   lastCompilationAudit_.clear();
 }
 
-void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<int,int>>& segmentRanges) {
+void TritonGraphBackend::invalidateCacheForSegments(
+    const std::vector<const GraphSegment*>& segmentInstances) {
   std::lock_guard<std::mutex> lock(cacheMtx_);
   int freedEntries = 0;
   int freedModules = 0;
+  const std::unordered_set<const GraphSegment*> owners(segmentInstances.begin(),
+                                                       segmentInstances.end());
 
   auto it = cache_.begin();
   while (it != cache_.end()) {
-    bool overlaps = false;
-    for (auto& [segStart, segEnd] : segmentRanges) {
-      if (it->first.startSlot >= segStart && it->first.endSlot <= segEnd) {
-        overlaps = true;
-        break;
-      }
-    }
-    if (!overlaps) {
+    if (owners.count(it->first.segmentInstance) == 0) {
       ++it;
       continue;
     }
@@ -1772,7 +1855,8 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
     // Remove from secondary dtype index.
     {
       const auto& k = it->first;
-      dtypeIndex_.erase(DtypeIndexKey{k.startSlot, k.endSlot, k.shapeKey, k.deviceId});
+      dtypeIndex_.erase(DtypeIndexKey{k.startSlot, k.endSlot, k.shapeKey,
+                                      k.deviceId, k.segmentInstance});
     }
     freedEntries++;
     it = cache_.erase(it);
@@ -1781,14 +1865,7 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
   // Also remove matching failed cache entries
   auto fit = failedCache_.begin();
   while (fit != failedCache_.end()) {
-    bool overlaps = false;
-    for (auto& [segStart, segEnd] : segmentRanges) {
-      if (fit->startSlot >= segStart && fit->endSlot <= segEnd) {
-        overlaps = true;
-        break;
-      }
-    }
-    if (overlaps) {
+    if (owners.count(fit->segmentInstance) != 0) {
       fit = failedCache_.erase(fit);
     } else {
       ++fit;
@@ -1797,8 +1874,8 @@ void TritonGraphBackend::invalidateCacheForSegments(const std::vector<std::pair<
 
   if (freedEntries > 0) {
     DSP_DIAG(MEMORY, "TritonGraphBackend::invalidateCacheForSegments: freed %d cache entries (%d GPU modules) "
-             "for %d segment ranges",
-             freedEntries, freedModules, static_cast<int>(segmentRanges.size()));
+             "for %d segment instances",
+             freedEntries, freedModules, static_cast<int>(segmentInstances.size()));
   }
 }
 

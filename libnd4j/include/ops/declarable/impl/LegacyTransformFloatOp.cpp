@@ -25,12 +25,15 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyTransformFloatOp::LegacyTransformFloatOp() : LegacyOp(1) {
-  // just a no-op
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyTransformFloatOp::LegacyTransformFloatOp(int opNum) : LegacyOp(1, opNum) {
-  // just a no-op
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyTransformFloatOp::clone() { return new LegacyTransformFloatOp(this->_opNum); }
@@ -67,5 +70,6 @@ ShapeList *LegacyTransformFloatOp::calculateOutputShape(ShapeList *inputShape, C
   auto inShape = inputShape->at(0);
   return SHAPELIST(CONSTANT(inShape));
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

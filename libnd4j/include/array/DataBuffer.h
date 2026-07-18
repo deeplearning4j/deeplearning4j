@@ -136,9 +136,9 @@ class SD_LIB_EXPORT DataBuffer {
   mutable std::atomic<LongType> _readPrimary;
   mutable std::atomic<LongType> _readSpecial;
 
-  // Event to track the last write to special (device) buffer.
-  // On CUDA: stores cudaEvent_t as void* to avoid cuda_runtime.h in header.
-  // On CPU: unused but present so .cpp code compiles unconditionally.
+  // Backend event tracking the last write to the special (device) buffer.
+  // CUDA stores cudaEvent_t; Vulkan stores VulkanExecutionEvent. The opaque
+  // field keeps vendor headers out of this shared ABI header.
   mutable void* _writeEvent = nullptr;
   mutable std::atomic<int> _writeEventDeviceId{-1};
   mutable std::atomic<bool> _writeEventRecorded{false};

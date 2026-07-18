@@ -34,6 +34,7 @@ CUSTOM_OP_IMPL(feature_distillation_loss, 2, 1, false, 0, 0) {
   return sd::Status::OK;
 }
 DECLARE_TYPES(feature_distillation_loss) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -55,6 +56,7 @@ CUSTOM_OP_IMPL(feature_distillation_loss_grad, 2, 2, false, 0, 0) {
   return sd::Status::OK;
 }
 DECLARE_TYPES(feature_distillation_loss_grad) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }

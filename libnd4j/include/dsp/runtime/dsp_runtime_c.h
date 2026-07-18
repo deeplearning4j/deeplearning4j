@@ -43,6 +43,7 @@ extern "C" {
 typedef struct sdx_runtime sdx_runtime_t;
 typedef struct sdx_model sdx_model_t;
 typedef struct sdx_context sdx_context_t;
+typedef struct sdx_generation_session sdx_generation_session_t;
 
 enum {
   SDX_RUNTIME_ABI_VERSION = 1
@@ -60,6 +61,14 @@ typedef enum {
 } sdx_status_t;
 
 typedef enum {
+  SDX_GENERATION_FINISH_NONE = 0,
+  SDX_GENERATION_FINISH_MAX_TOKENS = 1,
+  SDX_GENERATION_FINISH_EOS = 2,
+  SDX_GENERATION_FINISH_CANCELLED = 3,
+  SDX_GENERATION_FINISH_CONTEXT_LIMIT = 4
+} sdx_generation_finish_reason_t;
+
+typedef enum {
   SDX_BACKEND_AUTO = 0,
   SDX_BACKEND_SLOT_BY_SLOT = 1,
   SDX_BACKEND_CUDA_GRAPHS = 2,
@@ -68,7 +77,13 @@ typedef enum {
   SDX_BACKEND_TRITON = 5,
   SDX_BACKEND_MLX = 6,
   SDX_BACKEND_ARM_HYBRID = 7,
-  SDX_BACKEND_NNAPI = 8
+  SDX_BACKEND_NNAPI = 8,
+  SDX_BACKEND_HIP_GRAPHS = 9,
+  SDX_BACKEND_LEVEL_ZERO = 10,
+  SDX_BACKEND_VULKAN = 11,
+  SDX_BACKEND_METAL = 12,
+  SDX_BACKEND_TPU = 13,
+  SDX_BACKEND_HEXAGON = 14
 } sdx_backend_t;
 
 typedef enum {
@@ -80,7 +95,9 @@ typedef enum {
 typedef enum {
   SDX_GPU_TARGET_AUTO = 0,
   SDX_GPU_TARGET_CUDA = 1,
-  SDX_GPU_TARGET_AMD = 2
+  SDX_GPU_TARGET_AMD = 2,
+  SDX_GPU_TARGET_VULKAN = 3,
+  SDX_GPU_TARGET_METAL = 4
 } sdx_gpu_target_t;
 
 typedef struct {
@@ -91,9 +108,21 @@ typedef struct {
   uint32_t struct_size;
   int32_t backend;
   int32_t strict_backend;
+  /* 0 forbids all backend code generation. Hardware backends must then carry
+   * their validated bundle assets (for example compiledArtifacts.vulkanSpirv
+   * or compiledArtifacts.hexagonKernels); an artifact miss is a hard failure. */
   int32_t allow_runtime_jit;
   int32_t gpu_target;
 } sdx_model_options_t;
+
+typedef struct {
+  uint32_t struct_size;
+  /** When non-zero, constants and variables loaded from the model bundle are
+   * bound by the runtime and omitted from the public context input list.
+   * This is the inference/mobile mode: sdxGetNumInputs() then reports only
+   * placeholders or other values not present in the bundle. */
+  int32_t bind_model_parameters;
+} sdx_context_options_t;
 
 typedef struct {
   uint32_t struct_size;
@@ -101,6 +130,65 @@ typedef struct {
   int32_t strict_signature;
   int32_t gpu_target;
 } sdx_run_options_t;
+
+/**
+ * Options for the reusable token-generation session. The session reads its
+ * explicit I/O names, KV layout, token IDs, and fixed mobile shape envelope
+ * from the bundle's text-generation metadata. Runtime discovery heuristics are
+ * deliberately not part of this API.
+ */
+typedef struct {
+  uint32_t struct_size;
+} sdx_generation_session_options_t;
+
+/**
+ * Scalar generation policy consumed by the shared TokenSampleConfig primitive.
+ * Zero-initialize, set struct_size, then override fields as required. A
+ * temperature <= 0 selects greedy decoding. top_p <= 0 or >= 1 disables
+ * nucleus filtering; repetition_penalty <= 0 is normalized to 1.
+ */
+typedef struct {
+  uint32_t struct_size;
+  int32_t max_new_tokens;
+  int32_t min_new_tokens;
+  double temperature;
+  int32_t top_k;
+  double top_p;
+  double min_p;
+  double repetition_penalty;
+  double frequency_penalty;
+  double presence_penalty;
+  double typical_p;
+  double xtc_probability;
+  double xtc_threshold;
+  int64_t seed;
+} sdx_generation_options_t;
+
+/** Called synchronously after a token has been committed to session state. */
+typedef void (*sdx_token_callback_t)(int64_t token_id, void* user_data);
+
+/** Return non-zero to request cancellation at the next coherent token boundary. */
+typedef int32_t (*sdx_cancel_callback_t)(void* user_data);
+
+typedef struct {
+  uint32_t struct_size;
+  sdx_token_callback_t on_token;
+  sdx_cancel_callback_t should_cancel;
+  void* user_data;
+} sdx_generation_callbacks_t;
+
+typedef struct {
+  uint32_t struct_size;
+  int32_t finish_reason;
+  int32_t prompt_token_count;
+  int32_t generated_token_count;
+  int32_t total_generated_token_count;
+  int32_t context_position;
+  uint64_t elapsed_time_ns;
+  uint64_t prefill_time_ns;
+  uint64_t decode_time_ns;
+  double decode_tokens_per_second;
+} sdx_generation_report_t;
 
 typedef struct {
   void* data;
@@ -147,10 +235,96 @@ SDX_API sdx_status_t sdxLoadBundle(
     sdx_model_t** out_model);
 SDX_API void sdxUnloadModel(sdx_model_t* model);
 
+/**
+ * Resolved offline text-generation asset paths from the loaded bundle. The
+ * returned pointers are owned by the model and stay valid until
+ * sdxUnloadModel(). NULL means the manifest did not declare that asset.
+ */
+SDX_API const char* sdxGetTokenizerPath(const sdx_model_t* model);
+SDX_API const char* sdxGetTextGenerationConfigPath(const sdx_model_t* model);
+
+/**
+ * Create a reusable, metadata-driven generation session over a loaded model.
+ * The model must outlive the session. The first supported mobile profile is
+ * causal-lm-in-graph-kv-v1: batch 1, fixed prefill/decode envelopes, BSHD KV,
+ * and plan-owned in-graph KV writes. Unsupported profiles fail explicitly.
+ */
+SDX_API sdx_status_t sdxCreateGenerationSession(
+    sdx_model_t* model,
+    const sdx_generation_session_options_t* options,
+    sdx_generation_session_t** out_session);
+SDX_API void sdxDestroyGenerationSession(sdx_generation_session_t* session);
+
+/**
+ * Clear prompt/KV/decode state while retaining parsed metadata and the model.
+ * Contexts are rebuilt lazily on the next generation call.
+ */
+SDX_API sdx_status_t sdxResetGenerationSession(
+    sdx_generation_session_t* session);
+
+/**
+ * Cooperatively cancel an in-flight generation from another thread. The native
+ * decode loop observes cancellation between complete token commits, leaving the
+ * session safe to continue.
+ */
+SDX_API void sdxCancelGeneration(sdx_generation_session_t* session);
+
+/**
+ * Reset the session, prefill prompt_token_ids, warm/freeze the fixed decode
+ * plan, and generate up to options.max_new_tokens. Tokens are returned in
+ * out_token_ids and optionally streamed through callbacks on the calling
+ * thread. out_capacity must be at least max_new_tokens when out_token_ids is
+ * non-NULL; out_count is always required.
+ */
+SDX_API sdx_status_t sdxGenerationGenerate(
+    sdx_generation_session_t* session,
+    const int64_t* prompt_token_ids,
+    int32_t num_prompt_tokens,
+    const sdx_generation_options_t* options,
+    const sdx_generation_callbacks_t* callbacks,
+    int64_t* out_token_ids,
+    int32_t out_capacity,
+    int32_t* out_count,
+    sdx_generation_report_t* out_report);
+
+/**
+ * Continue from the last coherent token/KV boundary without re-prefill. The
+ * same output, callback, cancellation, and reporting contract as
+ * sdxGenerationGenerate applies.
+ */
+SDX_API sdx_status_t sdxGenerationContinue(
+    sdx_generation_session_t* session,
+    const sdx_generation_options_t* options,
+    const sdx_generation_callbacks_t* callbacks,
+    int64_t* out_token_ids,
+    int32_t out_capacity,
+    int32_t* out_count,
+    sdx_generation_report_t* out_report);
+
+/**
+ * Create a context using the legacy all-external-input contract. The model
+ * must outlive every context created from it.
+ */
 SDX_API sdx_status_t sdxCreateContext(
     sdx_model_t* model,
     const char* const* requested_output_names,
     int32_t num_requested_outputs,
+    sdx_context_t** out_context);
+
+/**
+ * Create a context with explicit input-binding behavior. Setting
+ * bind_model_parameters=1 binds constants and variables owned by the loaded
+ * bundle internally, leaving only runtime placeholders as public inputs. This
+ * is the recommended inference API for mobile and offline applications.
+ *
+ * This is additive to ABI v1: sdxCreateContext() retains its original behavior.
+ * The model must outlive every context created from it.
+ */
+SDX_API sdx_status_t sdxCreateContextWithOptions(
+    sdx_model_t* model,
+    const char* const* requested_output_names,
+    int32_t num_requested_outputs,
+    const sdx_context_options_t* options,
     sdx_context_t** out_context);
 SDX_API void sdxDestroyContext(sdx_context_t* context);
 
@@ -160,6 +334,17 @@ SDX_API sdx_status_t sdxRun(
     int32_t num_inputs,
     const sdx_tensor_view_t* outputs,
     int32_t num_outputs,
+    const sdx_run_options_t* options);
+
+/**
+ * Execute without caller-allocated output buffers. This is the recommended
+ * path for dynamic-shape inference such as autoregressive logits. After a
+ * successful call, use sdxGetOutputTensor() to obtain each output.
+ */
+SDX_API sdx_status_t sdxRunAllocating(
+    sdx_context_t* context,
+    const sdx_tensor_view_t* inputs,
+    int32_t num_inputs,
     const sdx_run_options_t* options);
 
 SDX_API const char* sdxGetLastError(const sdx_runtime_t* runtime);
@@ -196,15 +381,27 @@ SDX_API sdx_status_t sdxFreezeShapes(sdx_context_t* context);
 SDX_API int32_t sdxGetPlanPhase(const sdx_context_t* context);
 
 /**
+ * Return a JSON array describing the functional-replay segments owned by this
+ * context's compiled plan. Each entry includes its inclusive start/end op
+ * indices, shape key, capture/replay status, execution counts, and op counts.
+ *
+ * The returned pointer is thread-local and remains valid until the next call
+ * to this function on the same thread. Returns NULL for an invalid context or
+ * a context without a compiled plan.
+ */
+SDX_API const char* sdxGetPlanSegmentsSummaryJson(
+    const sdx_context_t* context);
+
+/**
  * Get the number of executions completed on this context.
  */
 SDX_API int32_t sdxGetExecutionCount(const sdx_context_t* context);
 
 /**
- * Number of external inputs the plan expects per sdxRun() call. External
- * inputs cover the model's constants, variables, AND placeholders — callers
- * must bind a tensor for every one of them, positionally in plan order.
- * Returns -1 on error.
+ * Number of public inputs this context expects per sdxRun() call. For a
+ * legacy context this covers constants, variables, and placeholders. For a
+ * parameter-bound context it excludes values owned by the loaded bundle and
+ * normally contains only placeholders. Returns -1 on error.
  */
 SDX_API int32_t sdxGetNumInputs(const sdx_context_t* context);
 
@@ -215,12 +412,31 @@ SDX_API int32_t sdxGetNumInputs(const sdx_context_t* context);
 SDX_API int32_t sdxGetNumOutputs(const sdx_context_t* context);
 
 /**
- * Name of the external input at the given plan index. Use together with
- * sdxGetNumInputs() to discover the required input binding order for a
- * loaded model. The returned pointer stays valid for the context lifetime.
+ * Name of the public input at the given context index. Use together with
+ * sdxGetNumInputs() to discover the required input binding order. In a
+ * parameter-bound context, bundle-owned weights are not present. The returned
+ * pointer stays valid for the context lifetime.
  * Returns NULL for invalid arguments or out-of-range indices.
  */
 SDX_API const char* sdxGetInputName(const sdx_context_t* context, int32_t input_index);
+
+/**
+ * Requested output name at the given context index. The returned pointer stays
+ * valid for the context lifetime. Returns NULL when the output was not created
+ * from an explicit requested name, or for an invalid index.
+ */
+SDX_API const char* sdxGetOutputName(const sdx_context_t* context, int32_t output_index);
+
+/**
+ * Borrow a host-readable, C-contiguous output produced by the most recent
+ * successful sdxRunAllocating() or sdxRun(). The runtime fills out_tensor;
+ * its data and shape pointers remain valid until the next run on this context
+ * or until the context is destroyed. Callers must not free either pointer.
+ */
+SDX_API sdx_status_t sdxGetOutputTensor(
+    sdx_context_t* context,
+    int32_t output_index,
+    sdx_tensor_view_t* out_tensor);
 
 #ifdef __cplusplus
 }

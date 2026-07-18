@@ -65,7 +65,7 @@ class SD_LIB_EXPORT ContextPrototype {
   bool _useONEDNN = sd::env_isUseONEDNN();
 
   // target engine for execution
-  samediff::Engine _engine = DEFAULT_ENGINE;
+  samediff::Engine _engine = samediff::ENGINE_ANY;
 
   samediff::ExecutionMode _execMode = samediff::ExecutionMode::MODE_UNDEFINED;
 
@@ -97,7 +97,9 @@ class SD_LIB_EXPORT ContextPrototype {
 
   std::vector<double>* getTArguments();
   std::vector<LongType>* getIArguments();
+  const std::vector<LongType>* getIArguments() const;
   std::vector<bool>* getBArguments();
+  const std::vector<bool>* getBArguments() const;
   std::vector<DataType>* getDArguments();
 #ifndef __JAVACPP_HACK__
   std::vector<std::string>* getSArguments();

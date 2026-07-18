@@ -23,12 +23,19 @@
 #include <math/templatemath.h>
 #include <cuda_runtime.h>
 #include <cfloat>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 static constexpr int CS_BP_WARP_SIZE = 32;
+
+// Accumulator type: double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
 // Phase 1: Compute softmax output (same as forward)
 template <typename T>
@@ -38,8 +45,10 @@ SD_KERNEL void csBpSoftmaxKernel(const T* __restrict__ input,
                                    const LongType batch,
                                    const LongType dim,
                                    const T invTemp) {
+    using AccT = typename AccType<T>::type;
+
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int b = blockIdx.x;
     if (b >= batch) return;
@@ -47,52 +56,26 @@ SD_KERNEL void csBpSoftmaxKernel(const T* __restrict__ input,
     const T* inRow = input + b * dim;
     T* outRow = softmaxOut + b * dim;
 
-    const int lane = threadIdx.x % CS_BP_WARP_SIZE;
-    const int wid = threadIdx.x / CS_BP_WARP_SIZE;
-    const int numWarps = (blockDim.x + CS_BP_WARP_SIZE - 1) / CS_BP_WARP_SIZE;
-
     // Center, scale, find max
-    float threadMax = -FLT_MAX;
+    AccT threadMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType f = threadIdx.x; f < dim; f += blockDim.x) {
         T val = (inRow[f] - center[f]) * invTemp;
         outRow[f] = val;
-        threadMax = sd::math::sd_max<float>(threadMax, static_cast<float>(val));
+        threadMax = sd::math::sd_max<AccT>(threadMax, static_cast<AccT>(val));
     }
 
-    for (int offset = CS_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadMax = sd::math::sd_max<float>(threadMax, __shfl_down_sync(0xffffffff, threadMax, offset));
-    if (lane == 0) warpBuf[wid] = threadMax;
-    __syncthreads();
-
-    float rowMax = -FLT_MAX;
-    if (threadIdx.x < numWarps) rowMax = warpBuf[threadIdx.x];
-    for (int offset = CS_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowMax = sd::math::sd_max<float>(rowMax, __shfl_down_sync(0xffffffff, rowMax, offset));
-    __shared__ float sharedMax;
-    if (threadIdx.x == 0) sharedMax = rowMax;
-    __syncthreads();
-    rowMax = sharedMax;
+    AccT rowMax = sd::device::blockAllReduceMax(threadMax, warpBuf);
 
     // exp and sum
-    float threadSum = 0.0f;
+    AccT threadSum = static_cast<AccT>(0);
     for (LongType f = threadIdx.x; f < dim; f += blockDim.x) {
         T val = sd::math::sd_exp<T, T>(outRow[f] - static_cast<T>(rowMax));
         outRow[f] = val;
-        threadSum += static_cast<float>(val);
+        threadSum += static_cast<AccT>(val);
     }
 
-    for (int offset = CS_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadSum += __shfl_down_sync(0xffffffff, threadSum, offset);
-    if (lane == 0) warpBuf[wid] = threadSum;
-    __syncthreads();
-
-    float rowSum = 0.0f;
-    if (threadIdx.x < numWarps) rowSum = warpBuf[threadIdx.x];
-    for (int offset = CS_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        rowSum += __shfl_down_sync(0xffffffff, rowSum, offset);
-    __shared__ float sharedInvSum;
-    if (threadIdx.x == 0) sharedInvSum = 1.0f / rowSum;
-    __syncthreads();
+    AccT rowSum = sd::device::blockAllReduceSum(threadSum, warpBuf);
+    AccT sharedInvSum = static_cast<AccT>(1) / rowSum;
 
     for (LongType f = threadIdx.x; f < dim; f += blockDim.x) {
         outRow[f] = outRow[f] * static_cast<T>(sharedInvSum);
@@ -107,12 +90,14 @@ template <typename T>
 SD_KERNEL void csBpGradKernel(const T* __restrict__ softmaxOut,
                                 const T* __restrict__ gradOutput,
                                 T* __restrict__ dLdInput,
-                                float* __restrict__ dLdCenterAcc,
+                                typename AccType<T>::type* __restrict__ dLdCenterAcc,
                                 const LongType batch,
                                 const LongType dim,
                                 const T invTemp) {
+    using AccT = typename AccType<T>::type;
+
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
     const int b = blockIdx.x;
     if (b >= batch) return;
@@ -121,29 +106,14 @@ SD_KERNEL void csBpGradKernel(const T* __restrict__ softmaxOut,
     const T* gRow = gradOutput + b * dim;
     T* dRow = dLdInput + b * dim;
 
-    const int lane = threadIdx.x % CS_BP_WARP_SIZE;
-    const int wid = threadIdx.x / CS_BP_WARP_SIZE;
-    const int numWarps = (blockDim.x + CS_BP_WARP_SIZE - 1) / CS_BP_WARP_SIZE;
-
     // Compute dot(gradOutput, softmax) for this row
-    float threadDot = 0.0f;
+    AccT threadDot = static_cast<AccT>(0);
     for (LongType f = threadIdx.x; f < dim; f += blockDim.x) {
-        threadDot += static_cast<float>(gRow[f]) * static_cast<float>(sRow[f]);
+        threadDot += static_cast<AccT>(gRow[f]) * static_cast<AccT>(sRow[f]);
     }
 
-    for (int offset = CS_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        threadDot += __shfl_down_sync(0xffffffff, threadDot, offset);
-    if (lane == 0) warpBuf[wid] = threadDot;
-    __syncthreads();
-
-    float dotYG = 0.0f;
-    if (threadIdx.x < numWarps) dotYG = warpBuf[threadIdx.x];
-    for (int offset = CS_BP_WARP_SIZE / 2; offset > 0; offset /= 2)
-        dotYG += __shfl_down_sync(0xffffffff, dotYG, offset);
-    __shared__ float sharedDot;
-    if (threadIdx.x == 0) sharedDot = dotYG;
-    __syncthreads();
-    T dotYG_T = static_cast<T>(sharedDot);
+    AccT dotYG = sd::device::blockAllReduceSum(threadDot, warpBuf);
+    T dotYG_T = static_cast<T>(dotYG);
 
     // Compute gradient: s * (grad - dot) / temp
     for (LongType f = threadIdx.x; f < dim; f += blockDim.x) {
@@ -151,13 +121,13 @@ SD_KERNEL void csBpGradKernel(const T* __restrict__ softmaxOut,
         T dLdz = y * (gRow[f] - dotYG_T);
         T dLdx = dLdz * invTemp;
         dRow[f] = dLdx;
-        atomicAdd(&dLdCenterAcc[f], -static_cast<float>(dLdx));
+        atomicAdd(&dLdCenterAcc[f], -static_cast<AccT>(dLdx));
     }
 }
 
 // Phase 3: Convert accumulated float center gradient to output type
 template <typename T>
-SD_KERNEL void convertCenterGradKernel(const float* __restrict__ dLdCenterAcc,
+SD_KERNEL void convertCenterGradKernel(const typename AccType<T>::type* __restrict__ dLdCenterAcc,
                                          T* __restrict__ dLdCenter,
                                          const LongType dim) {
     for (LongType f = blockIdx.x * blockDim.x + threadIdx.x;
@@ -180,8 +150,9 @@ void centerAndSharpenBpCudaLauncher(const cudaStream_t* stream,
     auto dLdInput = reinterpret_cast<T*>(vDLdInput);
     auto dLdCenter = reinterpret_cast<T*>(vDLdCenter);
     auto softmaxOut = reinterpret_cast<T*>(vSoftmaxOut);
-    auto dLdCenterAcc = reinterpret_cast<float*>(vDLdCenterAcc);
+    auto dLdCenterAcc = reinterpret_cast<typename AccType<T>::type*>(vDLdCenterAcc);
 
+    using AccT = typename AccType<T>::type;
     T invTemp = static_cast<T>(1.0 / temperature);
 
     int threads = 256;
@@ -190,10 +161,10 @@ void centerAndSharpenBpCudaLauncher(const cudaStream_t* stream,
         if (threads < CS_BP_WARP_SIZE) threads = CS_BP_WARP_SIZE;
     }
     int numWarps = (threads + CS_BP_WARP_SIZE - 1) / CS_BP_WARP_SIZE;
-    size_t sharedSize = numWarps * sizeof(float);
+    size_t sharedSize = numWarps * sizeof(AccT);
 
     // Zero accumulator
-    cudaMemsetAsync(dLdCenterAcc, 0, dim * sizeof(float), *stream);
+    cudaMemsetAsync(dLdCenterAcc, 0, dim * sizeof(typename AccType<T>::type), *stream);
 
     // Recompute softmax
     csBpSoftmaxKernel<T><<<batch, threads, sharedSize, *stream>>>(
@@ -229,9 +200,12 @@ void centerAndSharpenBp(NDArray* input, NDArray* center, NDArray* gradOutput,
     auto dim = input->sizeAt(1);
     auto stream = context->getCudaStream();
 
-    // Temp arrays
+    // Temp arrays. dLdCenterAcc holds the AccT accumulator (double when T=double,
+    // float otherwise) — its dtype MUST match AccType<T>::type or the launcher's
+    // reinterpret_cast + cudaMemsetAsync(sizeof(AccT)) overruns the buffer.
+    auto accDtype = input->dataType() == DataType::DOUBLE ? DataType::DOUBLE : DataType::FLOAT32;
     auto softmaxOut = NDArrayFactory::create('c', {batch, dim}, input->dataType(), context);
-    auto dLdCenterAcc = NDArrayFactory::create('c', {dim}, DataType::FLOAT32, context);
+    auto dLdCenterAcc = NDArrayFactory::create('c', {dim}, accDtype, context);
 
     NDArray::prepareSpecialUse({dLdInput, dLdCenter}, {input, center, gradOutput});
 

@@ -78,11 +78,13 @@ DECLARE_SHAPE_FN(lu) {
 }
 
 DECLARE_TYPES(lu) {
+
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(1, {INT32, INT64})
       ->setSameMode(false);
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

@@ -26,102 +26,12 @@
 #include <algorithm>
 #include <map>
 #include <set>
-#include <sstream>
 #include <stdexcept>
 #include <vector>
 
 namespace sd {
 namespace ops {
 namespace helpers {
-
-// ==================== Equation Parsing ====================
-
-struct EinsumEquation {
-  std::vector<std::string> inputSubs;
-  std::string outputSub;
-  bool hasExplicitOutput;
-};
-
-static EinsumEquation parseEquation(const std::string& equation) {
-  EinsumEquation eq;
-
-  std::string normalized;
-  for (char c : equation) {
-    if (c != ' ') normalized += c;
-  }
-
-  auto arrowPos = normalized.find("->");
-  std::string inputPart;
-  if (arrowPos != std::string::npos) {
-    inputPart = normalized.substr(0, arrowPos);
-    eq.outputSub = normalized.substr(arrowPos + 2);
-    eq.hasExplicitOutput = true;
-  } else {
-    inputPart = normalized;
-    eq.hasExplicitOutput = false;
-  }
-
-  std::istringstream iss(inputPart);
-  std::string token;
-  while (std::getline(iss, token, ',')) {
-    eq.inputSubs.push_back(token);
-  }
-
-  if (!eq.hasExplicitOutput) {
-    std::map<char, int> labelCount;
-    for (auto& sub : eq.inputSubs) {
-      for (char c : sub) {
-        labelCount[c]++;
-      }
-    }
-    for (auto& kv : labelCount) {
-      if (kv.second == 1) {
-        eq.outputSub += kv.first;
-      }
-    }
-    eq.hasExplicitOutput = true;
-  }
-
-  return eq;
-}
-
-// ==================== Shape Computation ====================
-
-std::vector<LongType> einsumOutputShape(const std::string& equation,
-                                         const std::vector<const LongType*>& inputShapeInfos) {
-  auto eq = parseEquation(equation);
-
-  if (eq.inputSubs.size() != inputShapeInfos.size())
-    THROW_EXCEPTION("EINSUM: equation input count does not match number of arrays provided");
-
-  std::map<char, LongType> labelSizes;
-  for (size_t i = 0; i < eq.inputSubs.size(); i++) {
-    const auto& sub = eq.inputSubs[i];
-    int rank = shape::rank(inputShapeInfos[i]);
-    if ((int)sub.size() != rank)
-      THROW_EXCEPTION("EINSUM: input rank does not match subscript length");
-
-    for (size_t j = 0; j < sub.size(); j++) {
-      char label = sub[j];
-      LongType dimSize = shape::shapeOf(inputShapeInfos[i])[j];
-      if (labelSizes.count(label)) {
-        if (labelSizes[label] != dimSize)
-          THROW_EXCEPTION("EINSUM: label has inconsistent dimension sizes across inputs");
-      } else {
-        labelSizes[label] = dimSize;
-      }
-    }
-  }
-
-  std::vector<LongType> outShape;
-  for (char c : eq.outputSub) {
-    if (!labelSizes.count(c))
-      THROW_EXCEPTION("EINSUM: output label not found in any input");
-    outShape.push_back(labelSizes[c]);
-  }
-
-  return outShape;
-}
 
 // ==================== Single-Input Einsum ====================
 
@@ -342,7 +252,7 @@ static void einsumTwoInputs(LaunchContext* context, const std::string& subA, con
 
 void einsum(LaunchContext* context, const std::string& equation,
             const std::vector<NDArray*>& inputs, NDArray& output) {
-  auto eq = parseEquation(equation);
+  auto eq = parseEinsumEquation(equation);
 
   if (eq.inputSubs.size() != inputs.size())
     THROW_EXCEPTION("EINSUM: equation input count does not match number of arrays provided");

@@ -315,7 +315,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE T *copyOf(sd::LongType length, T const *toCopy, T *
 */
 
 template <typename T>
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void copyTo(sd::LongType length, T  *from, T *to) {
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void copyTo(sd::LongType length, const T *from, T *to) {
   for (sd::LongType i = 0; i < length; i++) {
     to[i] = from[i];
   }

@@ -89,8 +89,70 @@
       "enum": [
         "AUTO",
         "CUDA",
-        "AMD"
+        "AMD",
+        "VULKAN",
+        "METAL"
       ]
+    },
+    "compiledArtifacts": {
+      "type": "object",
+      "properties": {
+        "vulkanSpirv": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metalLibrary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hexagonKernels": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Directory of shape-keyed Qualcomm Hexagon/HTP AOT kernels and metadata sidecars."
+        },
+        "hexagonManifest": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Deterministic manifest for the Hexagon AOT kernel directory."
+        },
+        "tensorG5LiteRtLm": {
+          "type": "object",
+          "description": "Tensor G5 direct-NPU derivative compiled from the canonical SameDiff model.",
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^artifacts/tensor-g5/[^/]+[.]litertlm$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "textGeneration": {
+      "type": "object",
+      "description": "Offline text-generation assets. Paths are relative to the bundle root.",
+      "properties": {
+        "tokenizerPath": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Bundled tokenizer.json used by the portable native chat runtime."
+        },
+        "configPath": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Bundled text-generation IO, KV-cache, token, and sampling metadata."
+        }
+      },
+      "additionalProperties": false
     },
     "compatibility": {
       "type": "object",

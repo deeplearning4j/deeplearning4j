@@ -55,6 +55,7 @@ enum class DeviceType : int {
     CUDA_GPU = 1,
     ROCM_GPU = 2,
     TPU = 3,
+    VULKAN_GPU = 4,
     UNKNOWN = 99
 };
 
@@ -69,7 +70,10 @@ struct SD_LIB_EXPORT DeviceDescriptor {
     DeviceDescriptor() : deviceType(DeviceType::CPU), deviceIndex(0), deviceId("cpu:0") {}
     DeviceDescriptor(DeviceType type, int index)
         : deviceType(type), deviceIndex(index) {
-        deviceId = (type == DeviceType::CPU ? "cpu:" : "gpu:") + std::to_string(index);
+        const char* prefix = type == DeviceType::CPU ? "cpu:" :
+                             type == DeviceType::CUDA_GPU ? "cuda:" :
+                             type == DeviceType::VULKAN_GPU ? "vulkan:" : "device:";
+        deviceId = std::string(prefix) + std::to_string(index);
     }
 
     bool operator==(const DeviceDescriptor& other) const {

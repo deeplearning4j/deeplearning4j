@@ -73,9 +73,29 @@ public class DspPlanDiskCache {
             synchronized (DspPlanDiskCache.class) {
                 if (NATIVE_BUILD_FINGERPRINT == null) {
                     try {
-                        String info = NativeOpsHolder.getInstance()
-                                .getDeviceNativeOps().buildInfo();
-                        NATIVE_BUILD_FINGERPRINT = (info != null) ? info : "unavailable";
+                        // buildInfo() is MULTI-LINE ("Build Info:\nGCC: ...\n...BuildStamp: ...").
+                        // The .meta sidecar is line-oriented key=value and the reader parses a
+                        // single line, so a raw multi-line value truncates on read to
+                        // "Build Info:" and the equality check can never pass — every cached
+                        // plan was rejected as a fingerprint mismatch. Prefer the native
+                        // canonical single-line form; fall back to flattening buildInfo()
+                        // identically for backend bindings generated before that API existed.
+                        String info = null;
+                        try {
+                            info = NativeOpsHolder.getInstance()
+                                    .getDeviceNativeOps().buildInfoFingerprint();
+                        } catch (Throwable olderBindings) {
+                            // pre-buildInfoFingerprint bindings — flatten below
+                        }
+                        if (info == null || info.isEmpty()) {
+                            String raw = NativeOpsHolder.getInstance()
+                                    .getDeviceNativeOps().buildInfo();
+                            info = (raw != null)
+                                    ? raw.replace('\r', ' ').replace('\n', ' ').trim()
+                                    : null;
+                        }
+                        NATIVE_BUILD_FINGERPRINT = (info != null && !info.isEmpty())
+                                ? info : "unavailable";
                     } catch (Exception e) {
                         log.warn("DspPlanDiskCache: could not read native buildInfo(), " +
                                 "disk cache will use fallback fingerprint: {}", e.getMessage());

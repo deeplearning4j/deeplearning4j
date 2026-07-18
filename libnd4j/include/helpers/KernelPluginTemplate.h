@@ -18,6 +18,8 @@
 #ifndef SD_KERNEL_PLUGIN_TEMPLATE_H
 #define SD_KERNEL_PLUGIN_TEMPLATE_H
 
+#include <system/BackendNamespace.h>
+
 /**
  * Example Kernel Plugin Template
  * ==============================
@@ -179,6 +181,7 @@
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 /**
  * Example: A simple plugin that wraps a lambda function.
@@ -220,6 +223,7 @@ inline KernelPlugin* createLambdaPlugin(
                            std::move(isUsable), std::move(invoke));
 }
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

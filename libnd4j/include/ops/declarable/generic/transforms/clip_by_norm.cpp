@@ -75,6 +75,7 @@ DECLARE_SHAPE_FN(clipbynorm_bp) {
 
 DECLARE_TYPES(clipbynorm) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(clipbynorm_bp) {
@@ -82,6 +83,7 @@ DECLARE_TYPES(clipbynorm_bp) {
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
 }
 }  // namespace ops
 }  // namespace sd

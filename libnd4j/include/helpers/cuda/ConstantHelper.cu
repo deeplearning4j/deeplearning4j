@@ -41,7 +41,7 @@
 
 __constant__ char deviceConstantMemory[CONSTANT_LIMIT];
 
-namespace sd {
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
@@ -358,12 +358,15 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
 
 LongType ConstantHelper::getCachedAmount(int deviceId) {
   int numDevices = getNumberOfDevices();
-  if (deviceId > numDevices || deviceId < 0)
+  if (deviceId >= numDevices || deviceId < 0)
     return 0L;
   else
     return _counters[deviceId];
 }
 
+SD_BACKEND_ABI_NAMESPACE_END
+
+namespace sd {
 BUILD_DOUBLE_TEMPLATE(void SpecialTypeConverter::convertGeneric,
                       (sd::Pointer*, void*, sd::LongType, void*),
                       SD_FLOAT_TYPES, SD_COMMON_TYPES);

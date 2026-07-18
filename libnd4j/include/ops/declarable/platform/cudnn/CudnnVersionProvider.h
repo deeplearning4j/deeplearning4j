@@ -32,9 +32,12 @@
 #include <cudnn.h>
 #endif
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 namespace cudnn {
 
 // ============================================================================
@@ -281,6 +284,7 @@ class SD_LIB_EXPORT CudnnVersionProvider {
 };
 
 }  // namespace cudnn
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

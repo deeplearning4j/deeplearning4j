@@ -745,22 +745,115 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
         if (!expected.equalShapes(actual)) {
             throw new IllegalStateException("Shapes do not match for \"" + label + "\": got " + Arrays.toString(expected.shape()) + " vs " + Arrays.toString(actual.shape()));
         }
-        INDArray diff = expected.sub(actual.castTo(expected.dataType()));
+        INDArray actualCast = actual.castTo(expected.dataType());
+        INDArray diff = expected.sub(actualCast);
         double min = diff.minNumber().doubleValue();
         double max = diff.maxNumber().doubleValue();
-        log.info(label + ": " + expected.equalsWithEps(actual, eps) + ", " + min + ", " + max);
+        log.info(label + ": " + expected.equalsWithEps(actualCast, eps) + ", " + min + ", " + max);
         double threshold = 1e-7;
         double aAbsMax = Math.max(Math.abs(expected.minNumber().doubleValue()), Math.abs(expected.maxNumber().doubleValue()));
-        double bAbsMax = Math.max(Math.abs(actual.minNumber().doubleValue()), Math.abs(actual.maxNumber().doubleValue()));
+        double bAbsMax = Math.max(Math.abs(actualCast.minNumber().doubleValue()), Math.abs(actualCast.maxNumber().doubleValue()));
         // skip too small absolute inputs
         if (Math.abs(aAbsMax) > threshold && Math.abs(bAbsMax) > threshold) {
-            boolean eq = expected.equalsWithEps(actual.castTo(expected.dataType()), eps);
+            boolean eq = expected.equalsWithEps(actualCast, eps);
+            String failureMessage = "Output differs: " + label;
             if (!eq) {
-                System.out.println("Expected: " + Arrays.toString(expected.shape()) + ", actual: " + Arrays.toString(actual.shape()));
-                System.out.println("Expected:\n" + expected);
-                System.out.println("Actual: \n" + actual);
+                INDArray absDiff = Nd4j.math().abs(diff);
+                INDArray maxIndex = Nd4j.argMax(absDiff.reshape(new long[]{absDiff.length()}));
+                long flatIndex = maxIndex.getLong(0);
+                long[] coordinates = new long[expected.rank()];
+                long remaining = flatIndex;
+                for (int d = expected.rank() - 1; d >= 0; d--) {
+                    coordinates[d] = remaining % expected.size(d);
+                    remaining /= expected.size(d);
+                }
+                double expectedValue = expected.getDouble(coordinates);
+                double actualValue = actualCast.getDouble(coordinates);
+                double maxAbsDiff = absDiff.maxNumber().doubleValue();
+
+                INDArray mismatchMask = absDiff.gt(eps);
+                INDArray mismatchLong = mismatchMask.castTo(DataType.LONG);
+                long mismatchCount = mismatchLong.sumNumber().longValue();
+
+                INDArray expectedMagnitude = Nd4j.math().abs(expected);
+                INDArray actualMagnitude = Nd4j.math().abs(actualCast);
+                INDArray expectedNonZeroMask = expectedMagnitude.gt(eps);
+                INDArray actualNonZeroMask = actualMagnitude.gt(eps);
+                INDArray expectedNonZeroLong = expectedNonZeroMask.castTo(DataType.LONG);
+                INDArray actualNonZeroLong = actualNonZeroMask.castTo(DataType.LONG);
+                long expectedNonZeroCount = expectedNonZeroLong.sumNumber().longValue();
+                long actualNonZeroCount = actualNonZeroLong.sumNumber().longValue();
+                double expectedL1 = expectedMagnitude.sumNumber().doubleValue();
+                double actualL1 = actualMagnitude.sumNumber().doubleValue();
+                expectedNonZeroLong.close();
+                actualNonZeroLong.close();
+                expectedNonZeroMask.close();
+                actualNonZeroMask.close();
+                expectedMagnitude.close();
+                actualMagnitude.close();
+
+                String lastDimensionSummary = "n/a";
+                if (expected.rank() > 1) {
+                    long[] reductionDimensions = new long[expected.rank() - 1];
+                    for (int d = 0; d < reductionDimensions.length; d++) {
+                        reductionDimensions[d] = d;
+                    }
+                    INDArray mismatchByLastDimension = mismatchLong.sum(reductionDimensions);
+                    INDArray maxDiffByLastDimension = absDiff.max(reductionDimensions);
+                    StringBuilder summary = new StringBuilder();
+                    int affectedDimensions = 0;
+                    int includedDimensions = 0;
+                    for (int i = 0; i < expected.size(expected.rank() - 1); i++) {
+                        long count = mismatchByLastDimension.getLong(i);
+                        if (count > 0) {
+                            affectedDimensions++;
+                            if (includedDimensions < 16) {
+                                if (summary.length() > 0) {
+                                    summary.append(';');
+                                }
+                                summary.append(i).append(':').append(count)
+                                        .append('/').append(maxDiffByLastDimension.getDouble(i));
+                                includedDimensions++;
+                            }
+                        }
+                    }
+                    if (affectedDimensions > includedDimensions) {
+                        summary.append(";...");
+                    }
+                    lastDimensionSummary = summary.toString();
+                    mismatchByLastDimension.close();
+                    maxDiffByLastDimension.close();
+                }
+                mismatchLong.close();
+                mismatchMask.close();
+
+                failureMessage += ", maxAbsDiff=" + maxAbsDiff
+                        + ", flatIndex=" + flatIndex
+                        + ", coordinates=" + Arrays.toString(coordinates)
+                        + ", expectedValue=" + expectedValue
+                        + ", actualValue=" + actualValue
+                        + ", expectedAbsMax=" + aAbsMax
+                        + ", actualAbsMax=" + bAbsMax
+                        + ", absDiffAboveEps=" + mismatchCount
+                        + ", expectedNonZero=" + expectedNonZeroCount
+                        + ", actualNonZero=" + actualNonZeroCount
+                        + ", expectedL1=" + expectedL1
+                        + ", actualL1=" + actualL1
+                        + ", lastDimension[count/maxAbsDiff]=" + lastDimensionSummary;
+                log.error(failureMessage);
+                maxIndex.close();
+                absDiff.close();
             }
-            assertTrue(eq,"Output differs: " + label);
+            diff.close();
+            if (actualCast != actual) {
+                actualCast.close();
+            }
+            assertTrue(eq, failureMessage);
+            return;
+        }
+        diff.close();
+        if (actualCast != actual) {
+            actualCast.close();
         }
     }
 

@@ -26,6 +26,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyTransformBoolOp::LegacyTransformBoolOp() : LegacyOp(1) {
   // just a no-op
 }
@@ -76,5 +77,6 @@ ShapeList *LegacyTransformBoolOp::calculateOutputShape(ShapeList *inputShape, Co
   auto ret = SHAPELIST(ConstantShapeHelper::getInstance().castToDataType(inShape, BOOL));
   return ret;
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

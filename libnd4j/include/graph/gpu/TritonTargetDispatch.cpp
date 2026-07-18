@@ -76,6 +76,82 @@
 #include <level_zero/ze_api.h>
 #endif
 
+// amd_comgr: ROCm's in-process code-object manager. Required on the AMD
+// target to link the relocatable AMDGCN object emitted by LLVM codegen into
+// an executable HSACO — hipModuleLoadData rejects raw objects and assembly.
+// Ships with every ROCm install (native HIP and ZLUDA+AMD builds alike).
+#if defined(TRITON_HAS_HIP) && __has_include(<amd_comgr/amd_comgr.h>)
+#include <amd_comgr/amd_comgr.h>
+#define TRITON_HAS_COMGR 1
+#endif
+
+#if defined(TRITON_HAS_COMGR)
+// Link one relocatable AMDGCN ELF into an executable HSACO code object.
+// gfxArch must be the full gcnArchName including feature suffixes
+// (e.g. "gfx90a:xnack-"), which comgr encodes into the ISA name. Returns
+// false on any comgr failure; the caller emits diagnostics.
+static bool linkAmdgcnObjectToHsaco(const void* objData, size_t objSize,
+                                    const std::string& gfxArch,
+                                    std::string& hsacoOut) {
+  amd_comgr_data_t reloc;
+  if (amd_comgr_create_data(AMD_COMGR_DATA_KIND_RELOCATABLE, &reloc) !=
+      AMD_COMGR_STATUS_SUCCESS)
+    return false;
+
+  amd_comgr_data_set_t inputs{};
+  amd_comgr_data_set_t outputs{};
+  amd_comgr_action_info_t action{};
+  bool haveInputs = false, haveOutputs = false, haveAction = false;
+  bool ok = false;
+
+  do {
+    if (amd_comgr_set_data(reloc, objSize, static_cast<const char*>(objData)) !=
+        AMD_COMGR_STATUS_SUCCESS)
+      break;
+    if (amd_comgr_set_data_name(reloc, "triton_kernel.o") != AMD_COMGR_STATUS_SUCCESS)
+      break;
+    if (amd_comgr_create_data_set(&inputs) != AMD_COMGR_STATUS_SUCCESS) break;
+    haveInputs = true;
+    if (amd_comgr_data_set_add(inputs, reloc) != AMD_COMGR_STATUS_SUCCESS) break;
+    if (amd_comgr_create_data_set(&outputs) != AMD_COMGR_STATUS_SUCCESS) break;
+    haveOutputs = true;
+    if (amd_comgr_create_action_info(&action) != AMD_COMGR_STATUS_SUCCESS) break;
+    haveAction = true;
+    const std::string isaName = "amdgcn-amd-amdhsa--" + gfxArch;
+    if (amd_comgr_action_info_set_isa_name(action, isaName.c_str()) !=
+        AMD_COMGR_STATUS_SUCCESS)
+      break;
+    if (amd_comgr_do_action(AMD_COMGR_ACTION_LINK_RELOCATABLE_TO_EXECUTABLE,
+                            action, inputs, outputs) != AMD_COMGR_STATUS_SUCCESS)
+      break;
+
+    size_t count = 0;
+    if (amd_comgr_action_data_count(outputs, AMD_COMGR_DATA_KIND_EXECUTABLE,
+                                    &count) != AMD_COMGR_STATUS_SUCCESS ||
+        count == 0)
+      break;
+    amd_comgr_data_t exec;
+    if (amd_comgr_action_data_get_data(outputs, AMD_COMGR_DATA_KIND_EXECUTABLE,
+                                       0, &exec) != AMD_COMGR_STATUS_SUCCESS)
+      break;
+    size_t execSize = 0;
+    if (amd_comgr_get_data(exec, &execSize, nullptr) == AMD_COMGR_STATUS_SUCCESS &&
+        execSize > 0) {
+      hsacoOut.resize(execSize);
+      ok = amd_comgr_get_data(exec, &execSize, &hsacoOut[0]) ==
+           AMD_COMGR_STATUS_SUCCESS;
+    }
+    amd_comgr_release_data(exec);
+  } while (false);
+
+  if (haveAction) amd_comgr_destroy_action_info(action);
+  if (haveOutputs) amd_comgr_destroy_data_set(outputs);
+  if (haveInputs) amd_comgr_destroy_data_set(inputs);
+  amd_comgr_release_data(reloc);
+  return ok;
+}
+#endif  // TRITON_HAS_COMGR
+
 // MLIR core infrastructure
 #include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/IR/BuiltinOps.h>
@@ -931,7 +1007,17 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       mlir::triton::ConvertTritonToTritonGPUOptions ttirOpts;
       ttirOpts.target = targetStr;
       ttirOpts.numWarps = numWarps;
-      ttirOpts.threadsPerWarp = 32;
+      // Wavefront width: NVIDIA and AMD RDNA (gfx10/11/12) execute 32-wide;
+      // AMD CDNA/GCN (gfx9xx and older) are 64-wide. Triton's AMD lowering
+      // requires the TTGIR threads-per-warp attribute to match the hardware
+      // wavefront or the generated indexing is wrong.
+      int threadsPerWarp = 32;
+      if (target == TritonGpuTarget::AMD &&
+          !(targetArch.rfind("gfx10", 0) == 0 || targetArch.rfind("gfx11", 0) == 0 ||
+            targetArch.rfind("gfx12", 0) == 0)) {
+        threadsPerWarp = 64;
+      }
+      ttirOpts.threadsPerWarp = threadsPerWarp;
       ttirOpts.numCTAs = numCTAs;
       pm.addPass(mlir::triton::createConvertTritonToTritonGPU(ttirOpts));
     }
@@ -1349,7 +1435,10 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
         break;
       case TritonGpuTarget::AMD:
         triple = "amdgcn-amd-amdhsa";
-        proc = result.targetArch;
+        // gcnArchName may carry feature suffixes ("gfx90a:xnack-"). LLVM's
+        // TargetMachine wants the bare processor; the full featured string
+        // goes to comgr as the ISA name during HSACO linking below.
+        proc = result.targetArch.substr(0, result.targetArch.find(':'));
         break;
       case TritonGpuTarget::INTEL:
         triple = "spir64-unknown-unknown";
@@ -1383,14 +1472,20 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
     llvmModule->setDataLayout(targetMachine->createDataLayout());
 
-    // Emit assembly (PTX text for NVIDIA, assembly for AMD)
+    // Emit target code. NVIDIA: PTX assembly text, which cuModuleLoadDataEx
+    // JIT-compiles directly. AMD: a relocatable AMDGCN object, which must
+    // then be linked into an executable HSACO — hipModuleLoadData rejects
+    // both raw objects and assembly text.
     llvm::SmallString<0> asmBuffer;
     llvm::raw_svector_ostream asmStream(asmBuffer);
     llvm::legacy::PassManager codegenPM;
 
+    const llvm::CodeGenFileType emitFileType =
+        (target == TritonGpuTarget::AMD) ? llvm::CodeGenFileType::ObjectFile
+                                         : llvm::CodeGenFileType::AssemblyFile;
     if (targetMachine->addPassesToEmitFile(codegenPM, asmStream, nullptr,
-                                            llvm::CodeGenFileType::AssemblyFile)) {
-      DSP_DIAG(JIT, "TritonTargetDispatch::compile: TargetMachine can't emit assembly for %s",
+                                            emitFileType)) {
+      DSP_DIAG(JIT, "TritonTargetDispatch::compile: TargetMachine can't emit code for %s",
                 triple.c_str());
       return result;
     }
@@ -1401,6 +1496,25 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     if (asmOutput.empty()) {
       DSP_DIAG(JIT, "TritonTargetDispatch::compile: empty output for %s", result.targetArch.c_str());
       return result;
+    }
+
+    if (target == TritonGpuTarget::AMD) {
+#if defined(TRITON_HAS_COMGR)
+      std::string hsaco;
+      if (!linkAmdgcnObjectToHsaco(asmOutput.data(), asmOutput.size(),
+                                   result.targetArch, hsaco)) {
+        DSP_DIAG(JIT, "TritonTargetDispatch::compile: comgr link of AMDGCN object "
+                  "to HSACO failed for %s (objectBytes=%zu)",
+                  result.targetArch.c_str(), asmOutput.size());
+        return result;
+      }
+      asmOutput.swap(hsaco);
+#else
+      DSP_DIAG(JIT, "TritonTargetDispatch::compile: AMD target requires amd_comgr to "
+                "link AMDGCN objects into HSACO, but <amd_comgr/amd_comgr.h> was not "
+                "found at build time. Install ROCm's comgr and rebuild.");
+      return result;
+#endif
     }
 
     result.size = asmOutput.size();

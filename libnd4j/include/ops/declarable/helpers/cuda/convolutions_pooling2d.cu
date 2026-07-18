@@ -330,7 +330,7 @@ static void maxPooling2dCudaLauncher(LaunchContext &block, const void *vx, const
                                     const LongType dH, const LongType dW, const int extraParam0, const int rank,
                                     const int len) {
  dim3 poolingDims = getPoolingDims(len, rank);
- maxPooling2dCuda<X, Z><<<poolingDims.y, poolingDims.x, poolingDims.z, *block.getCudaStream()>>>(
+ maxPooling2dCuda<X, Z><<<poolingDims.x, poolingDims.y, poolingDims.z, *block.getCudaStream()>>>(
      vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
  DebugHelper::checkErrorCode(block.getCudaStream(), "max pooling 2d failed");
 }
@@ -340,7 +340,7 @@ void ConvolutionUtils::pooling2d(graph::Context &block, NDArray&input, NDArray &
                                 const LongType kW, const LongType sH, const LongType sW, const LongType pH,
                                 const LongType pW, const LongType dH, const LongType dW, const PoolingType poolingMode,
                                 const int extraParam0) {
- if (!input.isActualOnDeviceSide()) input.syncToDevice();
+ NDArray::prepareSpecialUse({&output}, {&input});
 
  switch (poolingMode) {
    case MAX_POOL: {
@@ -369,14 +369,7 @@ void ConvolutionUtils::pooling2d(graph::Context &block, NDArray&input, NDArray &
      THROW_EXCEPTION("Pooling2D: Unknown PoolingType used");
  }
 
- output.tickWriteDevice();
- input.tickReadDevice();
-
- // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
- if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-   auto result = cudaStreamSynchronize(*block.launchContext()->getCudaStream());
-   if (result != 0) { std::string msg = "Pooling2D failed; Error code: [" + std::to_string(result) + "]"; THROW_EXCEPTION(msg.c_str()); }
- }
+ NDArray::registerSpecialUse({&output}, {&input});
 }
 
 }  // namespace ops

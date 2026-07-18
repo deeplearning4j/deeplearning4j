@@ -97,6 +97,7 @@ DECLARE_TYPES(standardize) {
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
   getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
   getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
+  getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(standardize_bp, 2, 1, false, 0, -2) {

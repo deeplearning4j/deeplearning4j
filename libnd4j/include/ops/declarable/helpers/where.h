@@ -44,6 +44,17 @@ SD_LIB_HIDDEN void _whereTad(LaunchContext *context, NDArray &condition, NDArray
 // Count true elements in condition (for shape function, GPU-accelerated)
 SD_LIB_HIDDEN LongType countTrue(LaunchContext *context, NDArray &condition);
 
+// where_np scalar-broadcast path: z[e] = condition[e] ? scalarY : x[e]
+// Used by where_np when y is scalar and condition.isSameShape(x).
+SD_LIB_HIDDEN void _whereNpScalarBroadcast(LaunchContext *context, NDArray &condition,
+                                            NDArray &x, NDArray &scalarY, NDArray &output);
+
+// where_np gather path: advances a match counter only when condition is true.
+// z[e] = condition[e] ? y[numMatches++] : x[e]
+// Used by where_np when y is non-scalar and condition.isSameShape(x).
+SD_LIB_HIDDEN void _whereNpGather(LaunchContext *context, NDArray &condition, NDArray &x,
+                                   NDArray &y, NDArray &output);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

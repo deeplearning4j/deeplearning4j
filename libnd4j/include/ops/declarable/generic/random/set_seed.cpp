@@ -51,7 +51,10 @@ DECLARE_SHAPE_FN(set_seed) {
   return SHAPELIST(newshape);
 }
 
-DECLARE_TYPES(set_seed) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(set_seed) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_STATEFUL);
+}
 }  // namespace ops
 }  // namespace sd
 

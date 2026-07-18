@@ -23,6 +23,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyOp::LegacyOp(int numInputs) : DeclarableOp(numInputs, 1, "LegacyOp", false) {
   _numInputs = numInputs;
 }
@@ -31,5 +32,6 @@ LegacyOp::LegacyOp(int numInputs, int opNum) : DeclarableOp(numInputs, 1, "Legac
   _opNum = opNum;
   _numInputs = numInputs;
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

@@ -1,0 +1,30 @@
+{
+  "formatVersion": 1,
+  "provider": "litert-lm",
+  "providerVersion": "0.14.0",
+  "variant": "google-tensor-g5",
+  "platform": {
+    "id": "android-arm64",
+    "os": "android",
+    "arch": "arm64",
+    "androidAbi": "arm64-v8a",
+    "minimumNdkApi": 28
+  },
+  "hardware": {
+    "vendor": "Google",
+    "accelerator": "Tensor TPU",
+    "soc": "Tensor_G5"
+  },
+  "backend": "npu",
+  "modelFormat": "litertlm",
+  "quantization": "int8-per-channel",
+  "runtimeLibrary": "liblitert-lm.so",
+  "javaCppLibrary": "libjnilitertlm.so",
+  "executionPolicy": {
+    "aotOnly": true,
+    "deviceOnly": true,
+    "hostFallback": false,
+    "blas": false,
+    "jit": false
+  }
+}

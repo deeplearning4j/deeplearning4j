@@ -104,7 +104,7 @@ static void erfImpl(NDArray* x, NDArray* z) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(Erf, ENGINE_CPU) {
+PLATFORM_IMPL(Erf, ENGINE_ONEDNN) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -122,7 +122,7 @@ PLATFORM_IMPL(Erf, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(Erf, ENGINE_CPU) {
+PLATFORM_CHECK(Erf, ENGINE_ONEDNN) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -195,7 +195,7 @@ static void erfcImpl(NDArray* x, NDArray* z) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(Erfc, ENGINE_CPU) {
+PLATFORM_IMPL(Erfc, ENGINE_ONEDNN) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -213,7 +213,7 @@ PLATFORM_IMPL(Erfc, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(Erfc, ENGINE_CPU) {
+PLATFORM_CHECK(Erfc, ENGINE_ONEDNN) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 

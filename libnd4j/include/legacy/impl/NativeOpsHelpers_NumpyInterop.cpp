@@ -70,6 +70,7 @@ extern std::atomic<size_t> g_dataBufferCount;
 extern std::atomic<size_t> g_dataBufferBytes;
 extern std::mutex g_dataBufferMutex;
 
+
 #include <execution/Threads.h>
 #include <graph/Context.h>
 #include <helpers/ConstantTadHelper.h>
@@ -83,8 +84,6 @@ extern std::mutex g_dataBufferMutex;
 #endif
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
-
-
 
 
 /*
@@ -322,4 +321,5 @@ sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray) {
       shapeBuffer));  // TO DO: this can lead to unpleasant crash sometimes
 #endif
 }
+
 

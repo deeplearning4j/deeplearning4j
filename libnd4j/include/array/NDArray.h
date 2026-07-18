@@ -1947,7 +1947,11 @@ T &NDArray::r(LongType i) {
   syncToHost();
   tickWriteHost();
 
-  return *(reinterpret_cast<T *>(bufferWithOffset(getOffset(i))));
+  // getOffset(i) is absolute (includes the view offset) while bufferWithOffset()
+  // starts from the already-shifted buffer() — shift by the RELATIVE offset only,
+  // or the view offset is applied twice. buffer() stays the pointer source (it
+  // lazily allocates/syncs primary on CUDA for device-resident buffers).
+  return *(reinterpret_cast<T *>(bufferWithOffset(getOffset(i) - offset())));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2005,8 +2009,11 @@ T NDArray::t(const LongType i)  {
 
   syncToHost();
 
-
-  return *(reinterpret_cast<const T *>(bufferWithOffset(getOffset(i))));
+  // getOffset(i) is absolute (includes the view offset) while bufferWithOffset()
+  // starts from the already-shifted buffer() — shift by the RELATIVE offset only,
+  // or the view offset is applied twice. buffer() stays the pointer source (it
+  // lazily allocates/syncs primary on CUDA for device-resident buffers).
+  return *(reinterpret_cast<const T *>(bufferWithOffset(getOffset(i) - offset())));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2176,26 +2183,46 @@ DataBuffer NDArray::shapeInfoDataBuffer()   {
 
 ////////////////////////////////////////////////////////////////////////
 SD_INLINE bool NDArray::hasValidShapeInfo() {
-  // Check _shapeInfoBuffer first — it can refresh _shapeInfo
-  if (_shapeInfoBuffer != nullptr) {
-    LongType* p = _shapeInfoBuffer->primary();
-    if (p != nullptr) {
-      LongType rank = p[0];
+  // This is the non-throwing probe used before shapeInfo(). Output-slot
+  // placeholders can contain non-null poison values before their producer runs,
+  // so validate descriptor addresses before invoking any member function.
+  try {
+    auto* shapeBuffer = _shapeInfoBuffer;
+    if (shapeBuffer != nullptr) {
+      if (!isValidPointer(shapeBuffer) ||
+          !isAlignedPointer(shapeBuffer, alignof(ConstantShapeBuffer)) ||
+          !shapeBuffer->isValid()) {
+        return false;
+      }
+
+      LongType* p = shapeBuffer->primary();
+      if (p != nullptr) {
+        LongType rank = p[0];
+        return rank >= 0 && rank <= SD_MAX_RANK;
+      }
+      return false;
+    }
+
+    // No constant buffer — validate the raw shape pointer before dereferencing it.
+    auto* rawShapeInfo = _shapeInfo;
+    if (rawShapeInfo != nullptr) {
+      if (!isValidPointer(rawShapeInfo) ||
+          !isAlignedPointer(rawShapeInfo, alignof(LongType))) {
+        return false;
+      }
+
+      LongType rank = rawShapeInfo[0];
       return rank >= 0 && rank <= SD_MAX_RANK;
     }
+  } catch (...) {
     return false;
-  }
-  // No buffer — check raw _shapeInfo pointer
-  if (_shapeInfo != nullptr) {
-    LongType rank = _shapeInfo[0];
-    return rank >= 0 && rank <= SD_MAX_RANK;
   }
   return false;
 }
 
 ////////////////////////////////////////////////////////////////////////
 SD_INLINE LongType *NDArray::specialShapeInfo()  {
-#ifdef SD_CUDA
+#if defined(SD_CUDA) || defined(SD_VULKAN)
   auto currentDeviceId = AffinityManager::currentDeviceId();
   bool needNewBuffer = (_shapeInfoD == nullptr);
 
@@ -2230,11 +2257,11 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
       } else {
         // bufferForShapeInfo() added a ref we can't use — release it.
         constBuffer->release();
-        THROW_EXCEPTION("NDArray::specialShapeInfo() - CUDA: ConstantShapeHelper returned buffer with nullptr special(). "
-                       "This indicates CUDA memory allocation failure or initialization issue.");
+        THROW_EXCEPTION("NDArray::specialShapeInfo() - device backend: ConstantShapeHelper returned buffer with nullptr special(). "
+                       "This indicates device memory allocation failure or initialization issue.");
       }
     } else {
-      THROW_EXCEPTION("NDArray::specialShapeInfo() - CUDA: Failed to get device shape buffer from ConstantShapeHelper.");
+      THROW_EXCEPTION("NDArray::specialShapeInfo() - device backend: Failed to get device shape buffer from ConstantShapeHelper.");
     }
   }
 #else
@@ -2252,9 +2279,9 @@ SD_INLINE LongType *NDArray::specialShapeInfo()  {
   LongType* shapeInfoToReturn = nullptr;
   if (_shapeInfoD == nullptr) {
     if (_shapeInfo != nullptr) {
-#ifdef SD_CUDA
-      // Should not reach here - handled above
-      THROW_EXCEPTION("NDArray::specialShapeInfo() - CUDA: _shapeInfoD still null after cache lookup.");
+#if defined(SD_CUDA) || defined(SD_VULKAN)
+      // Device backends must never substitute host shape memory.
+      THROW_EXCEPTION("NDArray::specialShapeInfo() - device backend: _shapeInfoD still null after cache lookup.");
 #else
       // On CPU, using host pointer is fine
       shapeInfoToReturn = _shapeInfo;

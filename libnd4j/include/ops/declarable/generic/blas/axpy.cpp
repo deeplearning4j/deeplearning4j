@@ -53,10 +53,13 @@ CONFIGURABLE_OP_IMPL(axpy, 2, 1, false, -2, 0) {
 }
 
 DECLARE_TYPES(axpy) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

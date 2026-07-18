@@ -192,3 +192,57 @@ Follow-up from the sampling-gap audit:
   HF fields. Beam-only extras remain represented but execution is still blocked by the B/W substrate gate.
 
 No DSP changes, no mode forcing, no cache clearing, and no alternate decode loops.
+
+### 2026-07-12 — Constrained decoding v1 (handoff R2, additive Java sampling layer)
+
+New package `org.eclipse.deeplearning4j.llm.generation.constraint`. Scope: **purely additive
+at the Java sampling layer** — no DSP changes, no native-op modifications, no interaction
+with pieces 4-5.
+
+**What landed:**
+
+- `TextConstraint` interface: `canExtend(currentText, piece)`, `isAccepting(currentText)`, `reset()`, `type()`
+- `JsonObjectConstraint`: brace/bracket/string state machine; accepts any syntactically valid
+  single JSON object. `ParseState` tracks `inString`, `escapeNext`, `braceDepth`, `bracketDepth`.
+- `ToolCallConstraint(enumNames)`: 5-phase automaton (PREFIX→TOOL_NAME→AFTER_NAME→ARGS→DONE).
+  Phase detection is stateless (derived from accumulated text alone). DONE detected by calling
+  `JsonObjectConstraint.isAccepting(fullText)` on the whole string — avoids the outer-brace
+  extraction bug where `argsText` extraction incorrectly included the trailing `}`.
+- `ConstraintConfig` (@Data @Builder): `jsonObject()` / `toolCall(String... names)` factories.
+- `ConstraintVocabCache`: cache (cap 512 unique emitted-text keys, clear-all on full) that
+  amortises the full-vocab sweep across decode steps that share the same accumulated prefix.
+- `ConstraintMasker`: stateful per-generation wrapper. Strategy A (some top-evalTopK tokens
+  allowed → keep only those). Strategy B (none in top-K → widen to full vocab, zero disallowed).
+  EOS gated to accepting states.
+
+**Wire-in (GenerationPipeline):**
+
+- `sampleToken` overloaded with 7-arg variant (masker + tokenizer); original 5-arg delegates.
+- `constraintMasker` created before the first warmup `sampleToken` call when `hasConstraint()`.
+- Constrained Java decode loop (step-by-step `decoder.output()`) added as an `if (constraintMasker != null)` branch before the native `AutoregressiveDecode` op. Native op runs unchanged on the `else` path.
+- Zero overhead when `constraintConfig` is null.
+
+**SamplingConfig:** added `private ConstraintConfig constraintConfig` + `hasConstraint()`.
+
+**Tests:**
+
+- `ConstraintAutomatonTest` — 27 unit tests, all green. Covers automaton logic, multi-byte
+  tokens, EOS gating, masker strategies, top-K index sort, config factories.
+- `ConstrainedDecodingIntegrationTest` — 3 tests (tool-call 10/10, JSON-object, perf).
+  Skips gracefully when native tokenizer library or model assets are absent. Asset paths:
+  `~/.kompile/models/chat/qwen2.5-0.5b-instruct-fp16.gguf` and
+  `~/.kompile/models/tokenizers/qwen2.5-0.5b/tokenizer.json`.
+
+**Test results on this machine:** 58 tests total, 0 failures, 0 errors. Integration test
+skipped (native tokenizer JNI library absent in test JVM; assets present on disk).
+
+**options_json contract (finalized):**
+
+```json
+{ "constraint": { "type": "tool_call", "tools": ["ask_graph_verify", ...] } }
+{ "constraint": { "type": "json_object" } }
+```
+
+ADR 0111 written. SDX_MOBILE_LLM_C_API_HANDOFF.md R2 section updated with v1 status + contract.
+
+Pieces 4-5 (masked multi-position substrate) are untouched and remain the next gate.

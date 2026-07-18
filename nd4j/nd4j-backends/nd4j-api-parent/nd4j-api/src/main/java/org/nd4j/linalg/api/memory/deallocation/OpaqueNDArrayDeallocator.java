@@ -22,10 +22,9 @@ package org.nd4j.linalg.api.memory.deallocation;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeBufferOwner;
 import org.nd4j.nativeblas.OpaqueNDArray;
 
 /**
@@ -48,6 +47,7 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
     private OpaqueNDArray array;
     private final long uniqueId;
     private final int targetDevice;
+    private final NativeBufferOwner owner;
     private volatile boolean deallocated = false;
     private volatile boolean constant = false;
 
@@ -59,12 +59,28 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
      * @param targetDevice The device this array is allocated on
      */
     public OpaqueNDArrayDeallocator(OpaqueNDArray array, long uniqueId, int targetDevice) {
+        this(array, uniqueId, targetDevice, requireOwner(array));
+    }
+
+    public OpaqueNDArrayDeallocator(OpaqueNDArray array, long uniqueId, int targetDevice,
+                                    NativeBufferOwner owner) {
         if (array == null) {
             throw new IllegalArgumentException("OpaqueNDArray cannot be null");
+        }
+        if (owner == null) {
+            throw new IllegalArgumentException("NativeBufferOwner cannot be null");
         }
         this.array = array;
         this.uniqueId = uniqueId;
         this.targetDevice = targetDevice;
+        this.owner = owner;
+    }
+
+    private static NativeBufferOwner requireOwner(OpaqueNDArray array) {
+        if (array == null) {
+            throw new IllegalArgumentException("OpaqueNDArray cannot be null");
+        }
+        return array.backendOwner();
     }
 
     @Override
@@ -96,54 +112,26 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
                         log.trace("Deallocating OpaqueNDArray with uniqueId: {}", uniqueId);
                     }
 
-                    int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                    int arrayDevice = targetDevice;
-                    try {
-                        int actualDevice = array.deviceId();
-                        if (actualDevice >= 0) {
-                            arrayDevice = actualDevice;
-                        }
-                    } catch (Exception e) {
-                        // Fall back to targetDevice if native query fails
+                    int deviceCount = owner.deviceCount();
+                    if (targetDevice < 0 || targetDevice >= deviceCount) {
+                        throw new IllegalStateException(
+                                "Invalid allocation device " + targetDevice
+                                        + " for owning backend with " + deviceCount + " devices");
                     }
 
-                    int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
-                    if (deviceCount <= 0 || arrayDevice < 0 || arrayDevice >= deviceCount) {
-                        if (Nd4j.getEnvironment().isDebug()) {
-                            log.debug("OpaqueNDArray deallocator: invalid array deviceId={} (devices={}); using targetDevice={}",
-                                    arrayDevice, deviceCount, targetDevice);
-                        }
-                        arrayDevice = targetDevice;
-                    }
-                    if (deviceCount > 0 && (arrayDevice < 0 || arrayDevice >= deviceCount)) {
-                        if (Nd4j.getEnvironment().isDebug()) {
-                            log.debug("OpaqueNDArray deallocator: invalid targetDevice={} (devices={}); using currentDevice={}",
-                                    targetDevice, deviceCount, currentDevice);
-                        }
-                        arrayDevice = currentDevice;
-                    }
-                    boolean switchedDevice = false;
-
-                    if (currentDevice != arrayDevice) {
-                        // Switch to the actual array device and reset cached context
-                        DeviceMemoryManager.getInstance().switchDevice(arrayDevice, "OpaqueNDArrayDeallocator.deallocate", "dealloc");
-                        switchedDevice = true;
+                    int currentDevice = owner.currentDevice();
+                    boolean switchedDevice = currentDevice != targetDevice;
+                    if (switchedDevice) {
+                        owner.setDevice(targetDevice);
                     }
 
                     try {
-                        // Synchronize the device before deleting to ensure all async ops are complete
-                        Nd4j.getExecutioner().commit();
-
-                        // Call native cleanup
-                        // Note: setNull() is called immediately after to prevent any potential
-                        // double-free from JavaCPP's NativeDeallocator. The retainReference()
-                        // called during creation should prevent automatic deallocation.
-                        Nd4j.getNativeOps().deleteNDArray(array);
+                        owner.commit();
+                        owner.nativeOps().deleteNDArray(array);
                         array.setNull();
                     } finally {
-                        // Restore original device context
                         if (switchedDevice) {
-                            DeviceMemoryManager.getInstance().switchDevice(currentDevice, "OpaqueNDArrayDeallocator.deallocate", "restore-device");
+                            owner.setDevice(currentDevice);
                         }
                     }
                 }
@@ -157,7 +145,7 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
                 // Without this, each model close leaves ~500+ stale OpaqueNDArray entries
                 // that persist until GC enqueues the corresponding PhantomReference.
                 try {
-                    Nd4j.getDeallocatorService().getReferenceMap().remove(uniqueId);
+                    owner.deallocatorService().getReferenceMap().remove(uniqueId);
                 } catch (Exception ignored) {
                     // DeallocatorService may be shut down
                 }
@@ -193,7 +181,7 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
         // never fire (deallocate() returns early when constant=true). Without this,
         // OpaqueNDArrays for constant model weights permanently occupy refMap slots.
         if (constant) {
-            Nd4j.getDeallocatorService().getReferenceMap().remove(uniqueId);
+            owner.deallocatorService().getReferenceMap().remove(uniqueId);
         }
     }
 

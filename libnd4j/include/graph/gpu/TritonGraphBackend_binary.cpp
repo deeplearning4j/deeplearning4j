@@ -123,7 +123,9 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     NativeSlot* slots, int startSlot, int endSlot,
     int totalSlots,
     NDArray** externalInputs, int numExternalInputs,
-    NDArray** outputSlots, int totalOutputSlots) {
+    NDArray** outputSlots, int totalOutputSlots,
+    int* requestedOutputSlotIndices,
+    int numRequestedOutputs) {
   CompiledKernel result;
   auto now = []() { return std::chrono::steady_clock::now(); };
   auto elapsedMs = [&](const std::chrono::steady_clock::time_point& t0) -> long long {
@@ -141,7 +143,9 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     irModule = localBuilder.buildModule(slots, startSlot, endSlot,
                                              totalSlots,
                                              externalInputs, numExternalInputs,
-                                             outputSlots, totalOutputSlots);
+                                             outputSlots, totalOutputSlots,
+                                             requestedOutputSlotIndices,
+                                             numRequestedOutputs);
   } catch (const std::exception& e) {
     DSP_DIAG(COMPILE, "TritonGraphBackend: buildModule EXCEPTION for [%d-%d]: %s",
              startSlot, endSlot, e.what());

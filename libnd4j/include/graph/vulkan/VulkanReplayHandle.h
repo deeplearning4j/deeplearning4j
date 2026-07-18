@@ -21,13 +21,20 @@
 
 #include <system/common.h>
 
-#if defined(HAVE_VULKAN)
+#if defined(HAVE_VULKAN) && HAVE_VULKAN
 
 #include <graph/GraphReplayHandle.h>
+#include <graph/vulkan/VulkanDeviceContext.h>
+#include <graph/vulkan/VulkanPipelineCache.h>
 #include <vulkan/vulkan.h>
 
 #include <memory>
+#include <string>
 #include <vector>
+
+// Include the full recorder header so unique_ptr<VulkanSegmentRecorder> can
+// generate a complete destructor without an incomplete-type error.
+#include <graph/vulkan/VulkanSegmentRecorder.h>
 
 namespace sd {
 namespace graph {
@@ -48,9 +55,9 @@ namespace graph {
  *                       already resubmittable after endCapture)
  *   5. replay()       - submits the command buffer, waits via fence
  *
- * The handle owns its own VkInstance, VkDevice, VkCommandPool, and fence.
- * A single compute queue family is selected at initialization. Workspace
- * memory is allocated as device-local VkBuffer + VkDeviceMemory.
+ * The handle borrows the canonical VkDevice and compute queue from
+ * VulkanDeviceContext. It owns only replay-local command, fence, workspace,
+ * descriptor, and compiled-pipeline state.
  */
 class SD_LIB_EXPORT VulkanReplayHandle : public GraphReplayHandle {
  public:
@@ -94,7 +101,38 @@ class SD_LIB_EXPORT VulkanReplayHandle : public GraphReplayHandle {
   uint32_t getComputeQueueFamily() const { return computeQueueFamily_; }
 
   /** Get device ID this handle was created for. */
-  int getDeviceId() const { return deviceId_; }
+  int getDeviceId() const override { return deviceId_; }
+
+  /** Wait only for this handle's most recent replay submission. */
+  VkResult waitForReplayIdle() const {
+    return device_ != VK_NULL_HANDLE && fence_ != VK_NULL_HANDLE
+               ? vkWaitForFences(device_, 1, &fence_, VK_TRUE, UINT64_MAX)
+               : VK_ERROR_INITIALIZATION_FAILED;
+  }
+
+  /** Capabilities enabled on the exact logical device used for replay. */
+  const VulkanDeviceCaps* getDeviceCaps() const {
+    return deviceContext_ != nullptr ? &deviceContext_->caps() : nullptr;
+  }
+
+  bool isFp16Supported() const {
+    return deviceContext_ != nullptr && deviceContext_->caps().fp16 &&
+           deviceContext_->caps().storage16;
+  }
+
+  /** Get the device's subgroup size (Adreno: 64/128, Mali: 16). */
+  uint32_t getSubgroupSize() const {
+    return deviceContext_ != nullptr ? deviceContext_->caps().subgroupSize : 0;
+  }
+
+  /**
+   * Check if the device supports Unified Memory Architecture (UMA).
+   * UMA means HOST_VISIBLE and DEVICE_LOCAL share the same physical memory,
+   * enabling zero-copy access without staging buffers on mobile GPUs.
+   * Valid only after initVulkan() has been called (i.e., after the first
+   * beginCapture() or allocateWorkspace()).
+   */
+  bool isUmaAvailable() const { return umaDetected_; }
 
   /**
    * Record a compute dispatch into the command buffer during capture.
@@ -115,6 +153,31 @@ class SD_LIB_EXPORT VulkanReplayHandle : public GraphReplayHandle {
                       uint32_t groupCountZ);
 
   /**
+   * Record a compute dispatch by compiling (or retrieving a cached) pipeline
+   * from the given MLIR module string.
+   *
+   * On the first call for a (opName, mlirModuleStr) pair the MLIR module is
+   * lowered to SPIR-V, a VkPipeline is created, and the result is cached in
+   * pipelineCache_. Subsequent calls for the same pair reuse the cached
+   * pipeline without recompilation.
+   *
+   * @param opName         Human-readable op name used for the cache key and
+   *                       diagnostic messages.
+   * @param mlirModuleStr  Textual MLIR module containing the compute kernel.
+   * @param descriptorSet  Descriptor set with buffer bindings (must match the
+   *                       layout created by VulkanPipelineCache).
+   * @param groupCountX    Number of work groups in X dimension.
+   * @param groupCountY    Number of work groups in Y dimension.
+   * @param groupCountZ    Number of work groups in Z dimension.
+   * @return               true on success, false if pipeline compilation fails.
+   */
+  bool recordDispatch(const std::string& opName,
+                      const std::string& mlirModuleStr,
+                      VkDescriptorSet descriptorSet,
+                      uint32_t groupCountX, uint32_t groupCountY,
+                      uint32_t groupCountZ);
+
+  /**
    * Record a memory barrier for compute-to-compute synchronization.
    *
    * Inserts a pipeline barrier between dispatches to ensure writes from
@@ -122,15 +185,69 @@ class SD_LIB_EXPORT VulkanReplayHandle : public GraphReplayHandle {
    */
   void recordComputeBarrier();
 
+  /** Number of dispatches recorded so far (valid after endCapture). */
+  int getNumDispatches() const { return numDispatches_; }
+
+  /**
+   * True when this handle has at least one recorded compute dispatch and
+   * therefore replay() will execute GPU work. A false result is valid for a
+   * captured segment containing only view/identity aliases: replay remains a
+   * zero-compute metadata operation, matching CUDA DSP. Callers must reject an
+   * empty command buffer only when the segment itself contains compute slots.
+   */
+  bool replayDoesCompute() const { return numDispatches_ > 0; }
+
+  /**
+   * Return the MLIR pipeline cache (created lazily in initVulkan()).
+   * Used by VulkanSegmentRecorder to compile and cache op pipelines.
+   */
+  VulkanPipelineCache* getPipelineCache() const { return pipelineCache_.get(); }
+
+  /** Attach a recorder for Vulkan-native segment dispatch. */
+  void setRecorder(std::unique_ptr<VulkanSegmentRecorder> recorder) {
+    recorder_ = std::move(recorder);
+  }
+
+  /** Return the attached recorder, or nullptr if none. */
+  VulkanSegmentRecorder* getRecorder() const { return recorder_.get(); }
+
+  /** Release and return ownership of the recorder (caller takes it). */
+  std::unique_ptr<VulkanSegmentRecorder> releaseRecorder() {
+    return std::move(recorder_);
+  }
+
+  // -- Android lifecycle management -----------------------------------------
+
+  /**
+   * Suspend Vulkan resources on device loss (pause event).
+   * Invalidates command buffers and cleans up device-specific state.
+   */
+  void suspend();
+
+  /**
+   * Resume Vulkan execution after device loss (resume event).
+   * Reinitializes Vulkan if necessary.
+   */
+  void resume();
+
+  /**
+   * Check if device has been lost.
+   * @return true if device loss was detected, false otherwise
+   */
+  bool isDeviceLost() const;
+
  private:
   ReplayState state_;
   int deviceId_;
 
-  // Vulkan handles (owned)
+  // Vulkan handles
+  // instance_, physicalDevice_, and device_ are borrowed from the canonical
+  // VulkanDeviceContext/manager and are never destroyed here.
+  // cmdPool_, cmdBuffer_, and fence_ are replay-local and owned by this handle.
+  VulkanDeviceContext* deviceContext_ = nullptr;
   VkInstance instance_ = VK_NULL_HANDLE;
   VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
   VkDevice device_ = VK_NULL_HANDLE;
-  VkQueue computeQueue_ = VK_NULL_HANDLE;
   uint32_t computeQueueFamily_ = 0;
   VkCommandPool cmdPool_ = VK_NULL_HANDLE;
   VkCommandBuffer cmdBuffer_ = VK_NULL_HANDLE;
@@ -152,7 +269,21 @@ class SD_LIB_EXPORT VulkanReplayHandle : public GraphReplayHandle {
   double captureTimeMs_ = 0.0;
   double lastReplayTimeMs_ = 0.0;
 
+  // Device info for diagnostics
+  std::string deviceName_;
+  uint32_t apiVersion_ = 0;
+
   bool initialized_ = false;
+  bool umaDetected_ = false;
+  bool deviceLost_ = false;
+
+  // Pipeline cache: compiles MLIR→SPIR-V→VkPipeline and caches results.
+  // Created lazily in initVulkan() after the device is ready.
+  std::unique_ptr<VulkanPipelineCache> pipelineCache_;
+
+  // Optional segment recorder: when set, Vulkan commands for each op have
+  // been recorded and replay() will execute them (no slot-by-slot fallback).
+  std::unique_ptr<VulkanSegmentRecorder> recorder_;
 
   /**
    * Initialize the Vulkan instance, device, queue, command pool, command
@@ -162,18 +293,19 @@ class SD_LIB_EXPORT VulkanReplayHandle : public GraphReplayHandle {
   bool initVulkan();
 
   /**
-   * Find a queue family that supports compute operations.
-   * @return Queue family index, or UINT32_MAX if none found
-   */
-  uint32_t findComputeQueueFamily();
-
-  /**
    * Find a memory type matching the given filter and property flags.
    * @param typeFilter  Bitmask from VkMemoryRequirements::memoryTypeBits
    * @param properties  Required memory property flags
    * @return Memory type index, or UINT32_MAX if none found
    */
   uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+  /**
+   * Detect if device supports Unified Memory Architecture (UMA).
+   * UMA means HOST_VISIBLE and DEVICE_LOCAL are in the same memory heap,
+   * avoiding the need for staging buffers on mobile GPUs.
+   */
+  void detectUMA();
 
   /**
    * Destroy all Vulkan objects in reverse creation order.

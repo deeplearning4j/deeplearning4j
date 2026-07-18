@@ -95,11 +95,11 @@ class TritonGraphBackend : public GraphBackend {
   void clearFailedSegmentCache();
 
   /**
-   * Remove cache entries whose slot range overlaps with the given segments.
-   * Called from NativeDynamicShapePlan destructor to free compiled GPU modules
-   * that would otherwise leak in the singleton cache across plan lifetimes.
+   * Remove cache entries owned by the given live-plan segment instances.
+   * Called from NativeDynamicShapePlan teardown to free compiled GPU modules
+   * without invalidating another plan that happens to use the same slot range.
    */
-  void invalidateCacheForSegments(const std::vector<std::pair<int,int>>& segmentRanges);
+  void invalidateCacheForSegments(const std::vector<const GraphSegment*>& segmentInstances);
 
   std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
 
@@ -360,9 +360,10 @@ class TritonGraphBackend : public GraphBackend {
     }
   };
 
-  // Per-segment cache (keyed by segment start/end + shape + runtime device).
-  // GPU driver module handles are device/context-bound and cannot be shared
-  // safely across different CUDA devices.
+  // Per-segment cache (keyed by owning segment instance + shape/config/device).
+  // CompiledKernel contains mutable pinned/device arg tables used as graph
+  // replay mailboxes, so entries must never be shared by distinct live plans.
+  // GPU driver module handles are also device/context-bound.
   struct SegmentCacheKey {
     int startSlot;
     int endSlot;
@@ -372,6 +373,7 @@ class TritonGraphBackend : public GraphBackend {
     size_t excludeOpsHash;            // Hash of tritonExcludeOps string (0 if empty)
     size_t includeTypesHash;          // Hash of tritonIncludeTypes string (0 if empty)
     bool graphCapture;                // Whether tritonGraphCapture was enabled (affects MATMUL handling)
+    const GraphSegment* segmentInstance;  // Runtime owner of mutable compiled-segment state
     // FNV-1a hash of the DataType of every output slot owned by this segment
     // (i.e. segment-internal intermediate arrays).  computeSegmentShapeKey() already
     // hashes dtype for cross-segment (external) inputs; this field covers the
@@ -390,6 +392,7 @@ class TritonGraphBackend : public GraphBackend {
              excludeOpsHash == o.excludeOpsHash &&
              includeTypesHash == o.includeTypesHash &&
              graphCapture == o.graphCapture &&
+             segmentInstance == o.segmentInstance &&
              segInternalDtypeHash == o.segInternalDtypeHash;
     }
   };
@@ -403,7 +406,8 @@ class TritonGraphBackend : public GraphBackend {
       h ^= std::hash<size_t>()(k.excludeOpsHash) << 5;
       h ^= std::hash<size_t>()(k.includeTypesHash) << 6;
       h ^= std::hash<bool>()(k.graphCapture) << 7;
-      h ^= std::hash<size_t>()(k.segInternalDtypeHash) << 8;
+      h ^= std::hash<const GraphSegment*>()(k.segmentInstance) << 8;
+      h ^= std::hash<size_t>()(k.segInternalDtypeHash) << 9;
       return h;
     }
   };
@@ -414,7 +418,7 @@ class TritonGraphBackend : public GraphBackend {
   std::unordered_set<SegmentCacheKey, SegmentCacheHash> failedCache_;
   mutable std::mutex cacheMtx_;
 
-  // Secondary index: (startSlot, endSlot, shapeKey, deviceId) → segInternalDtypeHash.
+  // Secondary index: (segment instance, slots, shapeKey, deviceId) → segInternalDtypeHash.
   // Populated whenever a CompiledSegment is inserted into cache_; used by lookup sites
   // that don't have access to outputSlots (e.g. refreshArgTablesForReplay,
   // copyConsolidatedArgTableToDevice, getGapSlots) to recover the dtype hash needed
@@ -424,9 +428,11 @@ class TritonGraphBackend : public GraphBackend {
     int endSlot;
     LongType shapeKey;
     int deviceId;
+    const GraphSegment* segmentInstance;
     bool operator==(const DtypeIndexKey& o) const {
       return startSlot == o.startSlot && endSlot == o.endSlot &&
-             shapeKey == o.shapeKey && deviceId == o.deviceId;
+             shapeKey == o.shapeKey && deviceId == o.deviceId &&
+             segmentInstance == o.segmentInstance;
     }
   };
   struct DtypeIndexHash {
@@ -435,6 +441,7 @@ class TritonGraphBackend : public GraphBackend {
       h ^= std::hash<int>()(k.endSlot) << 1;
       h ^= std::hash<LongType>()(k.shapeKey) << 2;
       h ^= std::hash<int>()(k.deviceId) << 3;
+      h ^= std::hash<const GraphSegment*>()(k.segmentInstance) << 4;
       return h;
     }
   };
@@ -443,8 +450,10 @@ class TritonGraphBackend : public GraphBackend {
   // Look up the segInternalDtypeHash for a previously-compiled segment.
   // Returns 0 if not found (safe: lookup with 0 will miss cache_ and fall through).
   // MUST be called with cacheMtx_ held.
-  size_t lookupDtypeHash(int startSlot, int endSlot, LongType shapeKey, int deviceId) const {
-    auto it = dtypeIndex_.find(DtypeIndexKey{startSlot, endSlot, shapeKey, deviceId});
+  size_t lookupDtypeHash(int startSlot, int endSlot, LongType shapeKey, int deviceId,
+                         const GraphSegment* segmentInstance) const {
+    auto it = dtypeIndex_.find(
+        DtypeIndexKey{startSlot, endSlot, shapeKey, deviceId, segmentInstance});
     return (it != dtypeIndex_.end()) ? it->second : size_t{0};
   }
 
@@ -463,7 +472,8 @@ class TritonGraphBackend : public GraphBackend {
       if (k.startSlot == partial.startSlot && k.endSlot == partial.endSlot &&
           k.shapeKey == partial.shapeKey && k.deviceId == partial.deviceId &&
           k.compileAll == partial.compileAll && k.excludeOpsHash == partial.excludeOpsHash &&
-          k.includeTypesHash == partial.includeTypesHash && k.graphCapture == partial.graphCapture) {
+          k.includeTypesHash == partial.includeTypesHash && k.graphCapture == partial.graphCapture &&
+          k.segmentInstance == partial.segmentInstance) {
         if (found != nullptr) return nullptr;  // ambiguous — caller keeps its miss path
         found = &e.second;
       }
@@ -633,7 +643,9 @@ class TritonGraphBackend : public GraphBackend {
   CompiledKernel compileToGpuBinary(NativeSlot* slots, int startSlot, int endSlot,
                                     int totalSlots,
                                     NDArray** externalInputs, int numExternalInputs,
-                                    NDArray** outputSlots, int totalOutputSlots);
+                                    NDArray** outputSlots, int totalOutputSlots,
+                                    int* requestedOutputSlotIndices,
+                                    int numRequestedOutputs);
 
   // Disk cache helpers for compiled PTX
   std::string getDiskCacheDir() const;

@@ -241,7 +241,7 @@ public final class DspHandle {
         NativeOps ops = nativeOps();
 
         // Step 1: Get shape info from the staging buffer (read-only, no device memory access)
-        OpaqueNDArray opaque = ops.getPlanStagingBufferArray(handle, extIdx);
+        OpaqueNDArray opaque = owned(ops.getPlanStagingBufferArray(handle, extIdx));
         if (opaque == null || opaque.isNull()) return null;
 
         long[] shapeInfo = OpaqueNDArray.getOpaqueNDArrayShapeInfo(opaque);
@@ -418,7 +418,7 @@ public final class DspHandle {
         Pointer handle = requireHandle();
         NativeOps ops = nativeOps();
 
-        OpaqueNDArray opaqueOut = ops.getPlanSlotOutputArray(handle, slotIdx);
+        OpaqueNDArray opaqueOut = owned(ops.getPlanSlotOutputArray(handle, slotIdx));
         if (opaqueOut == null || opaqueOut.isNull()) return null;
 
         long[] shapeInfo = OpaqueNDArray.getOpaqueNDArrayShapeInfo(opaqueOut);
@@ -499,6 +499,7 @@ public final class DspHandle {
             OpaqueNDArray opaqueOut = ops.getPlanSlotOutputArray(handle, i);
             if (opaqueOut == null || opaqueOut.isNull()) continue;
 
+            owned(opaqueOut);
             String opName = ops.getPlanSlotOpName(handle, i);
             long[] shapeInfo = OpaqueNDArray.getOpaqueNDArrayShapeInfo(opaqueOut);
             if (shapeInfo == null) continue;
@@ -542,7 +543,7 @@ public final class DspHandle {
         int total = ops.getTotalPlanOutputSlots(handle);
 
         for (int i = 0; i < total; i++) {
-            OpaqueNDArray opaqueOut = ops.getPlanSlotOutputArray(handle, i);
+            OpaqueNDArray opaqueOut = owned(ops.getPlanSlotOutputArray(handle, i));
             if (opaqueOut == null || opaqueOut.isNull()) continue;
 
             long[] shapeInfo = OpaqueNDArray.getOpaqueNDArrayShapeInfo(opaqueOut);
@@ -1378,5 +1379,17 @@ public final class DspHandle {
 
     private NativeOps nativeOps() {
         return NativeOpsHolder.getInstance().getDeviceNativeOps();
+    }
+
+    /**
+     * Attach the process-primary backend owner to a natively returned array
+     * wrapper. DspHandle is primary-backend-scoped (see nativeOps()), and raw
+     * wrappers coming back over JNI carry no owner of their own.
+     */
+    private static OpaqueNDArray owned(OpaqueNDArray array) {
+        if (array != null && !array.isNull()) {
+            array.attachOwner(OpaqueDataBuffer.primaryOwner());
+        }
+        return array;
     }
 }

@@ -1,0 +1,14 @@
+{
+  "name": "sdx-llm-aot",
+  "version": "@VERSION@",
+  "platform": "@PLATFORM@",
+  "variant": "@VARIANT@",
+  "extension": "@EXTENSION@",
+  "abiVersion": 1,
+  "artifacts": {
+    "cli": "bin/sdx-llm",
+    "sharedLibrary": "lib/libsdx_llm.so",
+    "header": "include/sdx_llm_c.h"
+  },
+  "capabilities": ["generate", "import-gguf-to-sdz", "tokenize", "info", "vlm", "transcribe"]
+}

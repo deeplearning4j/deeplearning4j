@@ -175,28 +175,18 @@ DECLARE_SHAPE_FN(range) {
     } else if (isZ) {
       LongType start(0), limit, delta(1);
 
-      // FIXED: Clean up allocated casted arrays
+      // NDArray::e<LongType> performs numeric conversion directly. Creating
+      // temporary INT64 arrays here launches device casts during host-side shape
+      // inference, which is invalid while a DSP composite replay guard is active.
       if (numInArrs == 1) {
-        NDArray* casted = INPUT_VARIABLE(0)->cast(INT64);
-        limit = casted->e<LongType>(0);
-        delete casted;
+        limit = INPUT_VARIABLE(0)->e<LongType>(0);
       } else if (numInArrs == 2) {
-        NDArray* casted0 = INPUT_VARIABLE(0)->cast(INT64);
-        NDArray* casted1 = INPUT_VARIABLE(1)->cast(INT64);
-        start = casted0->e<LongType>(0);
-        limit = casted1->e<LongType>(0);
-        delete casted0;
-        delete casted1;
+        start = INPUT_VARIABLE(0)->e<LongType>(0);
+        limit = INPUT_VARIABLE(1)->e<LongType>(0);
       } else {
-        NDArray* casted0 = INPUT_VARIABLE(0)->cast(INT64);
-        NDArray* casted1 = INPUT_VARIABLE(1)->cast(INT64);
-        NDArray* casted2 = INPUT_VARIABLE(2)->cast(INT64);
-        start = casted0->e<LongType>(0);
-        limit = casted1->e<LongType>(0);
-        delta = casted2->e<LongType>(0);
-        delete casted0;
-        delete casted1;
-        delete casted2;
+        start = INPUT_VARIABLE(0)->e<LongType>(0);
+        limit = INPUT_VARIABLE(1)->e<LongType>(0);
+        delta = INPUT_VARIABLE(2)->e<LongType>(0);
       }
 
       if (limit == start) {
@@ -340,8 +330,9 @@ DECLARE_SHAPE_FN(range) {
 }
 
 DECLARE_TYPES(range) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
-  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT);
 }
 }  // namespace ops
 }  // namespace sd

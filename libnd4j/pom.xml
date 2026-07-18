@@ -82,6 +82,11 @@
         <libnd4j.build>release</libnd4j.build>
         <libnd4j.chip>cpu</libnd4j.chip>
         <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
+        <libnd4j.vulkan.output.key>${libnd4j.platform}${javacpp.platform.extension}</libnd4j.vulkan.output.key>
+        <libnd4j.vulkan.assembly.classifier>${libnd4j.vulkan.output.key}-vulkan</libnd4j.vulkan.assembly.classifier>
+        <!-- Android NDK target settings. Vulkan is part of the Android platform API from API 24. -->
+        <libnd4j.android.abi></libnd4j.android.abi>
+        <libnd4j.android.api>24</libnd4j.android.api>
         <libnd4j.extension></libnd4j.extension>
         <libnd4j.cuda></libnd4j.cuda>
         <libnd4j.compute></libnd4j.compute>
@@ -120,9 +125,9 @@
         <!-- MKL configuration for VML (Vector Math Library) support -->
         <mkl.artifactId></mkl.artifactId>
         <mkl.classifier></mkl.classifier>
-        <!-- BLAS implementation selection: 'openblas', 'mkl', or empty for auto-detect -->
-        <!-- When using oneDNN helper, defaults to MKL. Set to 'openblas' to override. -->
-        <!-- Example: -Dlibnd4j.blas=openblas -->
+        <!-- BLAS resource selection for CPU builds. OpenBLAS is provided by -Pcpu;
+             request MKL explicitly with -Pcpu -Dlibnd4j.blas=mkl. Native helper
+             selection remains independent of Maven resource staging. -->
         <libnd4j.blas></libnd4j.blas>
         <libnd4j.calltrace>OFF</libnd4j.calltrace>
         <libnd4j.lto>OFF</libnd4j.lto>
@@ -137,6 +142,7 @@
         <libnd4j.cuda.splitcompile>0</libnd4j.cuda.splitcompile>
         <libnd4j.vectorization>OFF</libnd4j.vectorization>
         <libnd4j.cpu.compile.skip>false</libnd4j.cpu.compile.skip>
+        <libnd4j.native.compile.skip>false</libnd4j.native.compile.skip>
         <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
         <libnd4j.tpu.compile.skip>true</libnd4j.tpu.compile.skip>
         <libnd4j.test.filter>none</libnd4j.test.filter>
@@ -188,6 +194,9 @@
         <libnd4j.mlir>OFF</libnd4j.mlir>
         <libnd4j.mlir.version>18</libnd4j.mlir.version>
         <libnd4j.mlir.gpu>OFF</libnd4j.mlir.gpu>
+        <!-- Optional LLVM/MLIR install prefix. Use the same prefix for every backend
+             that must coexist in one process; no runtime loader paths are required. -->
+        <libnd4j.llvm.root></libnd4j.llvm.root>
 
         <!-- Build Isolation Configuration -->
         <!-- When true, 'mvn clean' removes ALL backends (blasbuild/*) -->
@@ -467,9 +476,9 @@
             </properties>
         </profile>
 
-        <!-- MKL profile - explicitly enabled with -Dlibnd4j.blas=mkl -->
-        <!-- Provides MKL VML (Vector Math Library) for optimized math functions like vsErf/vdErf -->
-        <!-- Use this when you want MKL BLAS and VML functions -->
+        <!-- CPU MKL resources are explicitly enabled with -Pcpu -Dlibnd4j.blas=mkl.
+             This provides MKL VML functions such as vsErf/vdErf without inferring
+             a target backend from the build host. -->
         <profile>
             <id>mkl-explicit</id>
             <activation>
@@ -512,8 +521,7 @@
             </build>
         </profile>
 
-        <!-- OpenBLAS explicit profile - use -Dlibnd4j.blas=openblas to force OpenBLAS even with oneDNN -->
-        <!-- This overrides the default MKL behavior when using oneDNN helper -->
+        <!-- Explicit OpenBLAS selection keeps MKL resource properties empty. -->
         <profile>
             <id>openblas-explicit</id>
             <activation>
@@ -529,309 +537,37 @@
             </properties>
         </profile>
 
-        <!-- MKL default profile for x86_64 Linux - enables MKL VML when oneDNN is likely used -->
-        <!-- This profile activates by default on x86_64 Linux unless libnd4j.blas=openblas -->
-        <!-- MKL provides optimized VML functions (vsErf, vdErf, etc.) for oneDNN platform helpers -->
-        <!-- Note: MKL headers are in the -redist JAR, not the platform JAR -->
-        <profile>
-            <id>mkl-default-linux-x86_64</id>
-            <activation>
-                <os>
-                    <name>Linux</name>
-                    <arch>amd64</arch>
-                </os>
-                <!-- Only activate if libnd4j.blas is not explicitly set -->
-                <property>
-                    <name>!libnd4j.blas</name>
-                </property>
-            </activation>
-            <properties>
-                <mkl.artifactId>mkl</mkl.artifactId>
-                <mkl.classifier>linux-x86_64</mkl.classifier>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>javacpp</artifactId>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>mkl</artifactId>
-                                <version>${mkl.version}-${javacpp-presets.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>mkl</artifactId>
-                                <version>${mkl.version}-${javacpp-presets.version}</version>
-                                <classifier>linux-x86_64</classifier>
-                            </dependency>
-                            <!-- Redist JAR contains the actual headers and libraries -->
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>mkl</artifactId>
-                                <version>${mkl.version}-${javacpp-presets.version}</version>
-                                <classifier>linux-x86_64-redist</classifier>
-                            </dependency>
-                        </dependencies>
-                        <configuration>
-                            <buildResources>
-                                <buildResource>/org/bytedeco/mkl/linux-x86_64/</buildResource>
-                            </buildResources>
-                            <includeResources>
-                                <includeResource>/org/bytedeco/mkl/linux-x86_64/include/</includeResource>
-                            </includeResources>
-                            <linkResources>
-                                <linkResource>/org/bytedeco/mkl/linux-x86_64/</linkResource>
-                                <linkResource>/org/bytedeco/mkl/linux-x86_64/lib/</linkResource>
-                            </linkResources>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <!-- MKL default profile for Windows x86_64 -->
-        <profile>
-            <id>mkl-default-windows-x86_64</id>
-            <activation>
-                <os>
-                    <family>Windows</family>
-                    <arch>amd64</arch>
-                </os>
-                <property>
-                    <name>!libnd4j.blas</name>
-                </property>
-            </activation>
-            <properties>
-                <mkl.artifactId>mkl</mkl.artifactId>
-                <mkl.classifier>windows-x86_64</mkl.classifier>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>javacpp</artifactId>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>mkl</artifactId>
-                                <version>${mkl.version}-${javacpp-presets.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>mkl</artifactId>
-                                <version>${mkl.version}-${javacpp-presets.version}</version>
-                                <classifier>windows-x86_64</classifier>
-                            </dependency>
-                            <!-- Redist JAR contains the actual headers and libraries -->
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>mkl</artifactId>
-                                <version>${mkl.version}-${javacpp-presets.version}</version>
-                                <classifier>windows-x86_64-redist</classifier>
-                            </dependency>
-                        </dependencies>
-                        <configuration>
-                            <buildResources>
-                                <buildResource>/org/bytedeco/mkl/windows-x86_64/</buildResource>
-                            </buildResources>
-                            <includeResources>
-                                <includeResource>/org/bytedeco/mkl/windows-x86_64/include/</includeResource>
-                            </includeResources>
-                            <linkResources>
-                                <linkResource>/org/bytedeco/mkl/windows-x86_64/</linkResource>
-                                <linkResource>/org/bytedeco/mkl/windows-x86_64/lib/</linkResource>
-                            </linkResources>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <!-- MKL default profile for macOS x86_64 -->
-        <profile>
-            <id>mkl-default-macosx-x86_64</id>
-            <activation>
-                <os>
-                    <name>Mac OS X</name>
-                    <arch>x86_64</arch>
-                </os>
-                <property>
-                    <name>!libnd4j.blas</name>
-                </property>
-            </activation>
-            <properties>
-                <mkl.artifactId>mkl</mkl.artifactId>
-                <mkl.classifier>macosx-x86_64</mkl.classifier>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>javacpp</artifactId>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>mkl</artifactId>
-                                <version>${mkl.version}-${javacpp-presets.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>mkl</artifactId>
-                                <version>${mkl.version}-${javacpp-presets.version}</version>
-                                <classifier>macosx-x86_64</classifier>
-                            </dependency>
-                            <!-- Redist JAR contains the actual headers and libraries -->
-                            <dependency>
-                                <groupId>org.bytedeco</groupId>
-                                <artifactId>mkl</artifactId>
-                                <version>${mkl.version}-${javacpp-presets.version}</version>
-                                <classifier>macosx-x86_64-redist</classifier>
-                            </dependency>
-                        </dependencies>
-                        <configuration>
-                            <buildResources>
-                                <buildResource>/org/bytedeco/mkl/macosx-x86_64/</buildResource>
-                            </buildResources>
-                            <includeResources>
-                                <includeResource>/org/bytedeco/mkl/macosx-x86_64/include/</includeResource>
-                            </includeResources>
-                            <linkResources>
-                                <linkResource>/org/bytedeco/mkl/macosx-x86_64/</linkResource>
-                                <linkResource>/org/bytedeco/mkl/macosx-x86_64/lib/</linkResource>
-                            </linkResources>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
+        <!-- MKL is target-selected explicitly with -Dlibnd4j.blas=mkl.
+             Host OS detection must not inject CPU libraries into another backend. -->
 
         <!-- Add these profiles to pom.xml for each platform -->
 
         <!-- Android ARM64 profile -->
         <profile>
-            <id>android-arm64-openblas</id>
+            <id>android-arm64</id>
+            <properties>
+                <libnd4j.android.abi>arm64-v8a</libnd4j.android.abi>
+            </properties>
             <activation>
                 <property>
                     <name>javacpp.platform</name>
                     <value>android-arm64</value>
                 </property>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>javacpp</artifactId>
-                        <configuration>
-                            <buildResources>
-                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
-                                <buildResource>/org/bytedeco/openblas/android-arm64/</buildResource>
-                                <buildResource>/org/bytedeco/openblas/android-aarch64/</buildResource>
-                                <buildResource>/org/bytedeco/openblas/linux-arm64/</buildResource>
-                                <buildResource>/org/bytedeco/openblas/linux-aarch64/</buildResource>
-                            </buildResources>
-                            <includeResources>
-                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
-                                <includeResource>/org/bytedeco/openblas/android-arm64/include/</includeResource>
-                                <includeResource>/org/bytedeco/openblas/android-aarch64/include/</includeResource>
-                                <includeResource>/org/bytedeco/openblas/linux-arm64/include/</includeResource>
-                                <includeResource>/org/bytedeco/openblas/linux-aarch64/include/</includeResource>
-                            </includeResources>
-                            <linkResources>
-                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
-                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/android-arm64/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/android-arm64/lib/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/android-aarch64/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/android-aarch64/lib/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/linux-arm64/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/linux-arm64/lib/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/linux-aarch64/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/linux-aarch64/lib/</linkResource>
-                            </linkResources>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
-        <!-- Linux ARM64 profile -->
+        <!-- Android x86_64 profile -->
         <profile>
-            <id>linux-arm64-openblas</id>
-            <activation>
-                <property>
-                    <name>javacpp.platform</name>
-                    <value>linux-arm64</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>javacpp</artifactId>
-                        <configuration>
-                            <buildResources>
-                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
-                                <buildResource>/org/bytedeco/openblas/linux-arm64/</buildResource>
-                                <buildResource>/org/bytedeco/openblas/linux-aarch64/</buildResource>
-                            </buildResources>
-                            <includeResources>
-                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
-                                <includeResource>/org/bytedeco/openblas/linux-arm64/include/</includeResource>
-                                <includeResource>/org/bytedeco/openblas/linux-aarch64/include/</includeResource>
-                            </includeResources>
-                            <linkResources>
-                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
-                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/linux-arm64/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/linux-arm64/lib/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/linux-aarch64/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/linux-aarch64/lib/</linkResource>
-                            </linkResources>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <!-- Updated Android x86_64 profile -->
-        <profile>
-            <id>android-x86_64-openblas</id>
+            <id>android-x86_64</id>
+            <properties>
+                <libnd4j.android.abi>x86_64</libnd4j.android.abi>
+            </properties>
             <activation>
                 <property>
                     <name>javacpp.platform</name>
                     <value>android-x86_64</value>
                 </property>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>javacpp</artifactId>
-                        <configuration>
-                            <buildResources>
-                                <buildResource>/${javacpp.platform.library.path}/</buildResource>
-                                <buildResource>/org/bytedeco/openblas/android-x86_64/</buildResource>
-                                <buildResource>/org/bytedeco/openblas/linux-x86_64/</buildResource>
-                            </buildResources>
-                            <includeResources>
-                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
-                                <includeResource>/org/bytedeco/openblas/android-x86_64/include/</includeResource>
-                                <includeResource>/org/bytedeco/openblas/linux-x86_64/include/</includeResource>
-                            </includeResources>
-                            <linkResources>
-                                <linkResource>/${javacpp.platform.library.path}/</linkResource>
-                                <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/android-x86_64/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/android-x86_64/lib/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/linux-x86_64/</linkResource>
-                                <linkResource>/org/bytedeco/openblas/linux-x86_64/lib/</linkResource>
-                            </linkResources>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>
@@ -854,7 +590,10 @@
             </activation>
             <properties>
                 <libnd4j.cpu.compile.skip>true</libnd4j.cpu.compile.skip>
+                <libnd4j.native.compile.skip>true</libnd4j.native.compile.skip>
                 <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
+                <libnd4j.chip>cuda</libnd4j.chip>
+                <libnd4j.outputPath>${project.basedir}/blasbuild/cuda</libnd4j.outputPath>
             </properties>
             <build>
                 <plugins>
@@ -890,6 +629,10 @@
                                         <argument>cuda</argument>
                                         <argument>--platform</argument>
                                         <argument>${libnd4j.platform}</argument>
+                                        <argument>--android-abi</argument>
+                                        <argument>${libnd4j.android.abi}</argument>
+                                        <argument>--android-api</argument>
+                                        <argument>${libnd4j.android.api}</argument>
                                         <argument>--chip-extension</argument>
                                         <argument>${libnd4j.extension}</argument>
                                         <argument>--chip-version</argument>
@@ -973,6 +716,8 @@
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
                                         <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--llvm-root</argument>
+                                        <argument>${libnd4j.llvm.root}</argument>
                                         <argument>--mlir-gpu</argument>
                                         <argument>${libnd4j.mlir.gpu}</argument>
                                         <argument>--triton</argument>
@@ -1043,6 +788,7 @@
             </activation>
             <properties>
                 <libnd4j.cpu.compile.skip>true</libnd4j.cpu.compile.skip>
+                <libnd4j.native.compile.skip>true</libnd4j.native.compile.skip>
                 <libnd4j.cuda.compile.skip>true</libnd4j.cuda.compile.skip>
                 <libnd4j.tpu.compile.skip>false</libnd4j.tpu.compile.skip>
                 <libnd4j.chip>tpu</libnd4j.chip>
@@ -1079,6 +825,10 @@
                                         <argument>tpu</argument>
                                         <argument>--platform</argument>
                                         <argument>${libnd4j.platform}</argument>
+                                        <argument>--android-abi</argument>
+                                        <argument>${libnd4j.android.abi}</argument>
+                                        <argument>--android-api</argument>
+                                        <argument>${libnd4j.android.api}</argument>
                                         <argument>--chip-extension</argument>
                                         <argument>${libnd4j.extension}</argument>
                                         <argument>${libnd4j.tests}</argument>
@@ -1140,6 +890,8 @@
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
                                         <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--llvm-root</argument>
+                                        <argument>${libnd4j.llvm.root}</argument>
                                         <argument>--mlir-gpu</argument>
                                         <argument>${libnd4j.mlir.gpu}</argument>
                                         <argument>--triton</argument>
@@ -1208,6 +960,7 @@
             </activation>
             <properties>
                 <libnd4j.cpu.compile.skip>true</libnd4j.cpu.compile.skip>
+                <libnd4j.native.compile.skip>true</libnd4j.native.compile.skip>
                 <libnd4j.cuda.compile.skip>true</libnd4j.cuda.compile.skip>
                 <libnd4j.tpu.compile.skip>true</libnd4j.tpu.compile.skip>
                 <libnd4j.hexagon.compile.skip>false</libnd4j.hexagon.compile.skip>
@@ -1245,6 +998,10 @@
                                         <argument>hexagon</argument>
                                         <argument>--platform</argument>
                                         <argument>${libnd4j.platform}</argument>
+                                        <argument>--android-abi</argument>
+                                        <argument>${libnd4j.android.abi}</argument>
+                                        <argument>--android-api</argument>
+                                        <argument>${libnd4j.android.api}</argument>
                                         <argument>--chip-extension</argument>
                                         <argument>${libnd4j.extension}</argument>
                                         <argument>${libnd4j.tests}</argument>
@@ -1304,6 +1061,8 @@
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
                                         <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--llvm-root</argument>
+                                        <argument>${libnd4j.llvm.root}</argument>
                                         <argument>--mlir-gpu</argument>
                                         <argument>${libnd4j.mlir.gpu}</argument>
                                         <argument>--triton</argument>
@@ -1364,17 +1123,52 @@
         </profile>
 
         <profile>
-            <id>build-cpu</id>
+            <id>vulkan</id>
             <activation>
                 <property>
-                    <name>!libnd4j.cuda</name>
+                    <name>libnd4j.vulkan</name>
                 </property>
             </activation>
             <properties>
+                <libnd4j.cpu.compile.skip>true</libnd4j.cpu.compile.skip>
+                <libnd4j.native.compile.skip>false</libnd4j.native.compile.skip>
                 <libnd4j.cuda.compile.skip>true</libnd4j.cuda.compile.skip>
-                <libnd4j.cpu.compile.skip>false</libnd4j.cpu.compile.skip>
-
+                <libnd4j.tpu.compile.skip>true</libnd4j.tpu.compile.skip>
+                <!-- Vulkan replay uses MLIR/SPIR-V infrastructure, not the Triton compiler. -->
+                <libnd4j.triton>OFF</libnd4j.triton>
+                <libnd4j.mlir>ON</libnd4j.mlir>
+                <libnd4j.chip>vulkan</libnd4j.chip>
+                <libnd4j.outputPath>${project.basedir}/blasbuild/vulkan/${libnd4j.vulkan.output.key}</libnd4j.outputPath>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>libnd4j-package-vulkan</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly-vulkan.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- CPU native dependencies are activated only by the established -Pcpu
+             build profile. Backend-neutral native execution is defined separately. -->
+        <profile>
+            <id>cpu</id>
             <build>
                 <plugins>
                     <plugin>
@@ -1396,10 +1190,8 @@
                                 <buildResource>/org/bytedeco/openblas/${libnd4j.platform}/</buildResource>
                             </buildResources>
                             <includeResources>
-                                <includeResource>/${javacpp.platform.library.path}/include/
-                                </includeResource>
-                                <includeResource>/org/bytedeco/openblas/${libnd4j.platform}/include/
-                                </includeResource>
+                                <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
+                                <includeResource>/org/bytedeco/openblas/${libnd4j.platform}/include/</includeResource>
                             </includeResources>
                             <linkResources>
                                 <linkResource>/${javacpp.platform.library.path}/</linkResource>
@@ -1407,6 +1199,33 @@
                                 <linkResource>/org/bytedeco/openblas/${libnd4j.platform}/</linkResource>
                                 <linkResource>/org/bytedeco/openblas/${libnd4j.platform}/lib/</linkResource>
                             </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>build-native</id>
+            <activation>
+                <property>
+                    <name>!libnd4j.cuda</name>
+                </property>
+            </activation>
+            <!-- No cuda.compile.skip override here: the cuda cppbuild execution
+                 only exists inside the cuda profile, and this later-declared
+                 profile's properties would override -Pcuda's skip=false,
+                 silently skipping the CUDA native build. -->
+            <properties>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <properties>${libnd4j.platform}</properties>
                         </configuration>
                         <executions>
                             <execution>
@@ -1423,7 +1242,7 @@
                                     <goal>build</goal>
                                 </goals>
                                 <configuration>
-                                    <skip>${libnd4j.cpu.compile.skip}</skip>
+                                    <skip>${libnd4j.native.compile.skip}</skip>
                                     <environmentVariables>
                                         <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
                                     </environmentVariables>
@@ -1438,6 +1257,10 @@
                                         <argument>${libnd4j.chip}</argument>
                                         <argument>--platform</argument>
                                         <argument>${libnd4j.platform}</argument>
+                                        <argument>--android-abi</argument>
+                                        <argument>${libnd4j.android.abi}</argument>
+                                        <argument>--android-api</argument>
+                                        <argument>${libnd4j.android.api}</argument>
                                         <argument>--check-vectorization</argument>
                                         <argument>${libnd4j.vectorization}</argument>
                                         <argument>--chip-extension</argument>
@@ -1521,6 +1344,8 @@
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
                                         <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--llvm-root</argument>
+                                        <argument>${libnd4j.llvm.root}</argument>
                                         <argument>--mlir-gpu</argument>
                                         <argument>${libnd4j.mlir.gpu}</argument>
                                         <argument>--triton</argument>

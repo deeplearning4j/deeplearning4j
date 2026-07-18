@@ -80,7 +80,7 @@ static void squaredDifferenceMKLDNN(NDArray* x, NDArray* y, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(squaredsubtract, ENGINE_CPU) {
+PLATFORM_IMPL(squaredsubtract, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -93,7 +93,7 @@ PLATFORM_IMPL(squaredsubtract, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(squaredsubtract, ENGINE_CPU) {
+PLATFORM_CHECK(squaredsubtract, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -153,7 +153,7 @@ static void rsqrtMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(rsqrt, ENGINE_CPU) {
+PLATFORM_IMPL(rsqrt, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -164,7 +164,7 @@ PLATFORM_IMPL(rsqrt, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(rsqrt, ENGINE_CPU) {
+PLATFORM_CHECK(rsqrt, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -207,7 +207,7 @@ static void reciprocalMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(Reciprocal, ENGINE_CPU) {
+PLATFORM_IMPL(Reciprocal, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -218,7 +218,7 @@ PLATFORM_IMPL(Reciprocal, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(Reciprocal, ENGINE_CPU) {
+PLATFORM_CHECK(Reciprocal, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -261,7 +261,7 @@ static void cubeMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(cube, ENGINE_CPU) {
+PLATFORM_IMPL(cube, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -272,7 +272,7 @@ PLATFORM_IMPL(cube, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(cube, ENGINE_CPU) {
+PLATFORM_CHECK(cube, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -306,7 +306,7 @@ static void identityMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(identity, ENGINE_CPU) {
+PLATFORM_IMPL(identity, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -317,7 +317,7 @@ PLATFORM_IMPL(identity, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(identity, ENGINE_CPU) {
+PLATFORM_CHECK(identity, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 

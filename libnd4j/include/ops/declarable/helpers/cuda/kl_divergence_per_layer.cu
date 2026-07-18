@@ -34,12 +34,19 @@
 #include <math/templatemath.h>
 #include <cuda_runtime.h>
 #include <cfloat>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 static constexpr int KL_WARP_SIZE = 32;
+
+// Accumulator/scratch type: double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Kernel: per-row log-softmax + KL divergence accumulation
@@ -48,10 +55,12 @@ template <typename T>
 SD_KERNEL void klPerRowKernel(
     const T* __restrict__ ref,
     const T* __restrict__ quant,
-    float* __restrict__ rowKL,
+    typename AccType<T>::type* __restrict__ rowKL,
     const LongType numRows,
     const LongType dim,
     const float temperature) {
+
+    using AccT = typename AccType<T>::type;
 
     const LongType r = blockIdx.x;
     if (r >= numRows) return;
@@ -59,110 +68,62 @@ SD_KERNEL void klPerRowKernel(
     const LongType rowOffset = r * dim;
 
     extern __shared__ char smem[];
-    float* warpBuf = reinterpret_cast<float*>(smem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(smem);
 
     const int lane    = threadIdx.x % KL_WARP_SIZE;
     const int wid     = threadIdx.x / KL_WARP_SIZE;
     const int numWarps = (blockDim.x + KL_WARP_SIZE - 1) / KL_WARP_SIZE;
 
-    // ── Find row max for reference ──────────────────────────────────────────
-    float refMax = -FLT_MAX;
+    // ── Find row max for reference (broadcast to all threads) ───────────────
+    AccT refMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType c = threadIdx.x; c < dim; c += blockDim.x) {
-        float v = static_cast<float>(ref[rowOffset + c]) / temperature;
-        refMax = sd::math::sd_max<float>(refMax, v);
+        AccT v = static_cast<AccT>(ref[rowOffset + c]) / static_cast<AccT>(temperature);
+        refMax = sd::math::sd_max<AccT>(refMax, v);
     }
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        refMax = sd::math::sd_max<float>(refMax, __shfl_down_sync(0xffffffff, refMax, offset));
-    if (lane == 0) warpBuf[wid] = refMax;
-    __syncthreads();
+    AccT globalRefMax = sd::device::blockAllReduceMax(refMax, warpBuf);
 
-    float globalRefMax = -FLT_MAX;
-    if (threadIdx.x < numWarps) globalRefMax = warpBuf[threadIdx.x];
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        globalRefMax = sd::math::sd_max<float>(globalRefMax, __shfl_down_sync(0xffffffff, globalRefMax, offset));
-    __shared__ float shRefMax;
-    if (threadIdx.x == 0) shRefMax = globalRefMax;
-    __syncthreads();
-
-    // ── Log-sum-exp for reference ────────────────────────────────────────────
-    float refLogSumExp = 0.0f;
+    // ── Log-sum-exp for reference (broadcast to all threads) ─────────────────
+    AccT refLSE = static_cast<AccT>(0);
     for (LongType c = threadIdx.x; c < dim; c += blockDim.x) {
-        float v = static_cast<float>(ref[rowOffset + c]) / temperature - shRefMax;
-        refLogSumExp += sd::math::sd_exp<float, float>(v);
+        AccT v = static_cast<AccT>(ref[rowOffset + c]) / static_cast<AccT>(temperature) - globalRefMax;
+        refLSE += sd::math::sd_exp<AccT, AccT>(v);
     }
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        refLogSumExp += __shfl_down_sync(0xffffffff, refLogSumExp, offset);
-    if (lane == 0) warpBuf[wid] = refLogSumExp;
-    __syncthreads();
+    AccT totalRefLSE = sd::device::blockAllReduceSum(refLSE, warpBuf);
+    AccT shRefLogSum = sd::math::sd_log<AccT, AccT>(totalRefLSE);
 
-    float totalRefLSE = 0.0f;
-    if (threadIdx.x < numWarps) totalRefLSE = warpBuf[threadIdx.x];
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        totalRefLSE += __shfl_down_sync(0xffffffff, totalRefLSE, offset);
-    __shared__ float shRefLogSum;
-    if (threadIdx.x == 0) shRefLogSum = logf(totalRefLSE);
-    __syncthreads();
-
-    // ── Find row max for quantized ──────────────────────────────────────────
-    float qMax = -FLT_MAX;
+    // ── Find row max for quantized (broadcast to all threads) ───────────────
+    AccT qMax = -sd::DataTypeUtils::max<AccT>();
     for (LongType c = threadIdx.x; c < dim; c += blockDim.x) {
-        float v = static_cast<float>(quant[rowOffset + c]) / temperature;
-        qMax = sd::math::sd_max<float>(qMax, v);
+        AccT v = static_cast<AccT>(quant[rowOffset + c]) / static_cast<AccT>(temperature);
+        qMax = sd::math::sd_max<AccT>(qMax, v);
     }
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        qMax = sd::math::sd_max<float>(qMax, __shfl_down_sync(0xffffffff, qMax, offset));
-    if (lane == 0) warpBuf[wid] = qMax;
-    __syncthreads();
+    AccT globalQMax = sd::device::blockAllReduceMax(qMax, warpBuf);
 
-    float globalQMax = -FLT_MAX;
-    if (threadIdx.x < numWarps) globalQMax = warpBuf[threadIdx.x];
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        globalQMax = sd::math::sd_max<float>(globalQMax, __shfl_down_sync(0xffffffff, globalQMax, offset));
-    __shared__ float shQMax;
-    if (threadIdx.x == 0) shQMax = globalQMax;
-    __syncthreads();
-
-    // ── Log-sum-exp for quantized ────────────────────────────────────────────
-    float qLogSumExp = 0.0f;
+    // ── Log-sum-exp for quantized (broadcast to all threads) ─────────────────
+    AccT qLSE = static_cast<AccT>(0);
     for (LongType c = threadIdx.x; c < dim; c += blockDim.x) {
-        float v = static_cast<float>(quant[rowOffset + c]) / temperature - shQMax;
-        qLogSumExp += sd::math::sd_exp<float, float>(v);
+        AccT v = static_cast<AccT>(quant[rowOffset + c]) / static_cast<AccT>(temperature) - globalQMax;
+        qLSE += sd::math::sd_exp<AccT, AccT>(v);
     }
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        qLogSumExp += __shfl_down_sync(0xffffffff, qLogSumExp, offset);
-    if (lane == 0) warpBuf[wid] = qLogSumExp;
-    __syncthreads();
-
-    float totalQLSE = 0.0f;
-    if (threadIdx.x < numWarps) totalQLSE = warpBuf[threadIdx.x];
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        totalQLSE += __shfl_down_sync(0xffffffff, totalQLSE, offset);
-    __shared__ float shQLogSum;
-    if (threadIdx.x == 0) shQLogSum = logf(totalQLSE);
-    __syncthreads();
+    AccT totalQLSE = sd::device::blockAllReduceSum(qLSE, warpBuf);
+    AccT shQLogSum = sd::math::sd_log<AccT, AccT>(totalQLSE);
 
     // ── Accumulate KL(P||Q) for this row ────────────────────────────────────
-    // logP[c] = ref[c]/T - shRefMax - shRefLogSum
-    // logQ[c] = quant[c]/T - shQMax  - shQLogSum
+    // logP[c] = ref[c]/T - globalRefMax - shRefLogSum
+    // logQ[c] = quant[c]/T - globalQMax  - shQLogSum
     // KL contribution: P[c] * (logP[c] - logQ[c])
-    float klThread = 0.0f;
+    AccT klThread = static_cast<AccT>(0);
     for (LongType c = threadIdx.x; c < dim; c += blockDim.x) {
-        float logP = static_cast<float>(ref[rowOffset + c]) / temperature - shRefMax - shRefLogSum;
-        float logQ = static_cast<float>(quant[rowOffset + c]) / temperature - shQMax - shQLogSum;
-        float p = sd::math::sd_exp<float, float>(logP);
-        if (p > 1e-12f) {
+        AccT logP = static_cast<AccT>(ref[rowOffset + c]) / static_cast<AccT>(temperature) - globalRefMax - shRefLogSum;
+        AccT logQ = static_cast<AccT>(quant[rowOffset + c]) / static_cast<AccT>(temperature) - globalQMax - shQLogSum;
+        AccT p = sd::math::sd_exp<AccT, AccT>(logP);
+        if (p > static_cast<AccT>(1e-12)) {
             klThread += p * (logP - logQ);
         }
     }
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        klThread += __shfl_down_sync(0xffffffff, klThread, offset);
-    if (lane == 0) warpBuf[wid] = klThread;
-    __syncthreads();
 
-    float rowKLVal = 0.0f;
-    if (threadIdx.x < numWarps) rowKLVal = warpBuf[threadIdx.x];
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        rowKLVal += __shfl_down_sync(0xffffffff, rowKLVal, offset);
+    // Only thread 0 needs the KL sum to write rowKL[r]
+    AccT rowKLVal = sd::device::blockReduceSum(klThread, warpBuf);
 
     if (threadIdx.x == 0)
         rowKL[r] = rowKLVal;
@@ -173,17 +134,21 @@ SD_KERNEL void klPerRowKernel(
 // ─────────────────────────────────────────────────────────────────────────────
 template <typename T>
 SD_KERNEL void klMeanKernel(
-    const float* __restrict__ rowKL,
+    const typename AccType<T>::type* __restrict__ rowKL,
     T* __restrict__ output,
     const LongType numRows) {
 
-    float sum = 0.0f;
+    using AccT = typename AccType<T>::type;
+
+    AccT sum = static_cast<AccT>(0);
     for (LongType i = threadIdx.x; i < numRows; i += blockDim.x)
         sum += rowKL[i];
-    for (int offset = KL_WARP_SIZE / 2; offset > 0; offset >>= 1)
-        sum += __shfl_down_sync(0xffffffff, sum, offset);
+
+    // Single-warp kernel — warpReduceSum is sufficient
+    sum = sd::device::warpReduceSum(sum);
+
     if (threadIdx.x == 0)
-        output[0] = static_cast<T>(sum / static_cast<float>(numRows));
+        output[0] = static_cast<T>(sum / static_cast<AccT>(numRows));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -197,7 +162,8 @@ static void klLauncher(const cudaStream_t* stream,
     auto ref    = reinterpret_cast<const T*>(vRef);
     auto quant  = reinterpret_cast<const T*>(vQuant);
     auto output = reinterpret_cast<T*>(vOutput);
-    auto rowKL  = reinterpret_cast<float*>(vRowKL);
+    using AccT = typename AccType<T>::type;
+    auto rowKL  = reinterpret_cast<AccT*>(vRowKL);
 
     int blockDim = 256;
     if (dim < 256) {
@@ -205,13 +171,13 @@ static void klLauncher(const cudaStream_t* stream,
         if (blockDim < KL_WARP_SIZE) blockDim = KL_WARP_SIZE;
     }
     int numWarps  = (blockDim + KL_WARP_SIZE - 1) / KL_WARP_SIZE;
-    size_t smSize = numWarps * sizeof(float);
+    size_t smSize = numWarps * sizeof(AccT);
 
     klPerRowKernel<T><<<numRows, blockDim, smSize, *stream>>>(
         ref, quant, rowKL, numRows, dim, temperature);
     DebugHelper::checkGlobalErrorCode("klPerRowKernel failed");
 
-    klMeanKernel<T><<<1, 256, 0, *stream>>>(rowKL, output, numRows);
+    klMeanKernel<T><<<1, KL_WARP_SIZE, 0, *stream>>>(rowKL, output, numRows);
     DebugHelper::checkGlobalErrorCode("klMeanKernel failed");
 }
 
@@ -236,7 +202,8 @@ void klDivergencePerLayer(NDArray* referenceLogits,
 
     auto stream = context->getCudaStream();
 
-    auto rowKL = NDArrayFactory::create('c', {numRows}, DataType::FLOAT32, context);
+    auto accDtype = referenceLogits->dataType() == DataType::DOUBLE ? DataType::DOUBLE : DataType::FLOAT32;
+    auto rowKL = NDArrayFactory::create('c', {numRows}, accDtype, context);
 
     NDArray::prepareSpecialUse({output}, {referenceLogits, quantizedLogits});
 

@@ -65,12 +65,12 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
     // Execute via MLIR JIT with extended params (passes iArgs for stride/padding/dilation)
     auto status = executeMlirEx("conv2d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
+    if (status != Status::OK) {
         sd_printf("MLIR conv2d execution failed\n", "");
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR conv2d failed");
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(conv2d, ENGINE_CPU) {
@@ -80,7 +80,7 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
     Requirements req("MLIR CONV2D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -109,11 +109,11 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
 
     auto status = executeMlir("conv2d_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR conv2d_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {

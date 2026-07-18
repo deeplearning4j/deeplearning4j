@@ -66,11 +66,13 @@ DECLARE_SYN(band_part, matrix_band_part);
 }  // namespace ops
 
 DECLARE_TYPES(matrix_band_part) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace sd
 

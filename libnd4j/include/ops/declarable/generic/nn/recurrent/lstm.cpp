@@ -105,7 +105,8 @@ CUSTOM_OP_IMPL(lstm, 8, 2, false, 3, 2) {
   return Status::OK;
 }
 
-DECLARE_TYPES(lstm) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(lstm) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
 
 DECLARE_SHAPE_FN(lstm) {
   auto xShapeInfo = inputShape->at(0);   // input [time x bS x inSize]

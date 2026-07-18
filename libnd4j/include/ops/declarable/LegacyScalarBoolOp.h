@@ -26,6 +26,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 /**
  *   This class provides wrapper for scalar transform operations, i.e. a + b = c, where either a or b is scalar
  * primitive and other operand is NDArray
@@ -47,6 +48,7 @@ class SD_LIB_EXPORT LegacyScalarBoolOp : public LegacyOp {
   LegacyOp* clone() override;
   void registerTypes() override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

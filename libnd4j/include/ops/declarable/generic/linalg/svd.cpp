@@ -51,7 +51,9 @@ CUSTOM_OP_IMPL(svd, 1, -1, false, 0, 3) {
 }
 
 DECLARE_TYPES(svd) {
+
   getOpDescriptor()->setAllowedInputTypes(0, {FLOAT32, DOUBLE, HALF})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 }
 
 DECLARE_SHAPE_FN(svd) {

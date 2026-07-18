@@ -27,7 +27,9 @@
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
+#if defined(HAVE_MKL)
 #include <helpers/MklBlasHelper.h>
+#endif
 #include <system/Environment.h>
 #include <system/env_functions.h>
 #include <system/openmp_pragmas.h>

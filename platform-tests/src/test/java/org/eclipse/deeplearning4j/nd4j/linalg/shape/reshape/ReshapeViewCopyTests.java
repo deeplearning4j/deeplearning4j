@@ -143,25 +143,52 @@ public class ReshapeViewCopyTests extends BaseNd4jTestWithBackends {
     }
 
     /**
+     * Explicit shape descriptors must retain both their strides and ordering when allocating
+     * uninitialized arrays. DSP output readback depends on this overload to preserve native layout.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCreateUninitializedPreservesExplicitLayout(Nd4jBackend backend) {
+        long[] shape = {3, 4};
+        for (char order : new char[]{'c', 'f'}) {
+            long[] strides = Nd4j.getStrides(shape, order);
+            INDArray array = Nd4j.createUninitialized(DataType.DOUBLE, shape, strides, order);
+            assertArrayEquals(shape, array.shape(), "Explicit allocation shape for order " + order);
+            assertArrayEquals(strides, array.stride(), "Explicit allocation strides for order " + order);
+            assertEquals(order, array.ordering(), "Explicit allocation ordering");
+            array.close();
+        }
+    }
+
+    /**
      * Test ReshapeNoCopy op directly - view case
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testReshapeNoCopyViewCase(Nd4jBackend backend) {
-        INDArray input = Nd4j.linspace(1, 12, 12, DataType.DOUBLE);
+        for (char order : new char[]{'c', 'f'}) {
+            INDArray input = Nd4j.linspace(1, 12, 12, DataType.DOUBLE);
+            ReshapeNoCopy op = new ReshapeNoCopy(input, new long[]{3, 4}, null, order);
+            INDArray[] results = Nd4j.getExecutioner().exec(op);
 
-        ReshapeNoCopy op = new ReshapeNoCopy(input, new long[]{3, 4}, null, 'c');
-        INDArray[] results = Nd4j.getExecutioner().exec(op);
+            assertNotNull(results);
+            assertEquals(1, results.length);
 
-        assertNotNull(results);
-        assertEquals(1, results.length);
+            INDArray result = results[0];
+            assertArrayEquals(new long[]{3, 4}, result.shape());
+            assertArrayEquals(Nd4j.getStrides(new long[]{3, 4}, order), result.stride(),
+                    "Direct reshape_no_copy strides for order " + order);
+            assertEquals(order, result.ordering(), "Direct reshape_no_copy ordering");
 
-        INDArray result = results[0];
-        assertArrayEquals(new long[]{3, 4}, result.shape());
+            INDArray materialized = result.dup(result.ordering());
+            assertArrayEquals(Nd4j.getStrides(new long[]{3, 4}, order), materialized.stride(),
+                    "Materialized reshape_no_copy strides for order " + order);
+            assertEquals(order, materialized.ordering(), "Materialized reshape_no_copy ordering");
 
-        // Verify data integrity
-        assertEquals(1.0, result.getDouble(0, 0), 1e-5);
-        assertEquals(12.0, result.getDouble(2, 3), 1e-5);
+            // Verify data integrity
+            assertEquals(1.0, result.getDouble(0, 0), 1e-5);
+            assertEquals(12.0, result.getDouble(2, 3), 1e-5);
+        }
     }
 
     /**
@@ -205,6 +232,31 @@ public class ReshapeViewCopyTests extends BaseNd4jTestWithBackends {
         // Verify data integrity
         assertEquals(1.0, output.getDouble(0, 0), 1e-5);
         assertEquals(12.0, output.getDouble(2, 3), 1e-5);
+    }
+
+    /**
+     * SameDiff output allocation must read reshape_no_copy's trailing order marker,
+     * not the first target-dimension iArg.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSameDiffReshapeNoCopyOrderMarkerPosition(Nd4jBackend backend) {
+        for (char order : new char[]{'c', 'f'}) {
+            SameDiff sd = SameDiff.create();
+            INDArray inputArr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE);
+            SDVariable input = sd.var("input_" + order, inputArr);
+            SDVariable reshaped = new ReshapeNoCopy(sd, input, new long[]{3, 4}, order).outputVariable();
+
+            Map<String, INDArray> result = sd.output(Map.of(), reshaped.name());
+            INDArray output = result.get(reshaped.name());
+
+            assertNotNull(output, "Missing reshape_no_copy output for order " + order);
+            assertArrayEquals(new long[]{3, 4}, output.shape());
+            assertEquals(order, output.ordering());
+            assertEquals(1.0, output.getDouble(0, 0), 1e-5);
+            assertEquals(12.0, output.getDouble(2, 3), 1e-5);
+            sd.close();
+        }
     }
 
     /**

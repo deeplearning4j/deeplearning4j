@@ -46,11 +46,11 @@ PLATFORM_IMPL(add, ENGINE_CPU) {
 
     auto status = executeMlir("add", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR add failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(add, ENGINE_CPU) {
@@ -60,7 +60,7 @@ PLATFORM_CHECK(add, ENGINE_CPU) {
     Requirements req("MLIR ADD");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}) &&
     req.expectTrue(x->dataType() == y->dataType(), "Same dtype") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(x->shapeInfo()), "X contiguous") &&
@@ -85,11 +85,11 @@ PLATFORM_IMPL(subtract, ENGINE_CPU) {
 
     auto status = executeMlir("subtract", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR subtract failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(subtract, ENGINE_CPU) {
@@ -99,7 +99,7 @@ PLATFORM_CHECK(subtract, ENGINE_CPU) {
     Requirements req("MLIR SUBTRACT");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}) &&
     req.expectTrue(x->dataType() == y->dataType(), "Same dtype") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
@@ -122,11 +122,11 @@ PLATFORM_IMPL(multiply, ENGINE_CPU) {
 
     auto status = executeMlir("multiply", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR multiply failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(multiply, ENGINE_CPU) {
@@ -136,7 +136,7 @@ PLATFORM_CHECK(multiply, ENGINE_CPU) {
     Requirements req("MLIR MULTIPLY");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}) &&
     req.expectTrue(x->dataType() == y->dataType(), "Same dtype") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
     req.expectTrue(shape::strideDescendingCAscendingF(x->shapeInfo()), "X contiguous") &&
@@ -161,11 +161,11 @@ PLATFORM_IMPL(divide, ENGINE_CPU) {
 
     auto status = executeMlir("divide", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR divide failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(divide, ENGINE_CPU) {
@@ -175,7 +175,7 @@ PLATFORM_CHECK(divide, ENGINE_CPU) {
     Requirements req("MLIR DIVIDE");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->dataType() == y->dataType(), "Same dtype") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
@@ -198,11 +198,11 @@ PLATFORM_IMPL(maximum, ENGINE_CPU) {
 
     auto status = executeMlir("maximum", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR maximum failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(maximum, ENGINE_CPU) {
@@ -212,7 +212,7 @@ PLATFORM_CHECK(maximum, ENGINE_CPU) {
     Requirements req("MLIR MAXIMUM");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}) &&
     req.expectTrue(x->dataType() == y->dataType(), "Same dtype") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
@@ -235,11 +235,11 @@ PLATFORM_IMPL(minimum, ENGINE_CPU) {
 
     auto status = executeMlir("minimum", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR minimum failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(minimum, ENGINE_CPU) {
@@ -249,7 +249,7 @@ PLATFORM_CHECK(minimum, ENGINE_CPU) {
     Requirements req("MLIR MINIMUM");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}) &&
     req.expectTrue(x->dataType() == y->dataType(), "Same dtype") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
@@ -272,11 +272,11 @@ PLATFORM_IMPL(Pow, ENGINE_CPU) {
 
     auto status = executeMlir("pow", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR pow failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(Pow, ENGINE_CPU) {
@@ -285,7 +285,7 @@ PLATFORM_CHECK(Pow, ENGINE_CPU) {
     Requirements req("MLIR POW");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -307,11 +307,11 @@ PLATFORM_IMPL(squaredsubtract, ENGINE_CPU) {
 
     auto status = executeMlir("squared_subtract", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR squared_subtract failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(squaredsubtract, ENGINE_CPU) {
@@ -320,7 +320,7 @@ PLATFORM_CHECK(squaredsubtract, ENGINE_CPU) {
     Requirements req("MLIR SQUARED_SUBTRACT");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;

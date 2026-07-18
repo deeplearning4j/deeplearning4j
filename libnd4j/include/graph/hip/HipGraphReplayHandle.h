@@ -21,7 +21,9 @@
 
 #include <system/common.h>
 
-#ifdef SD_HIP
+// Requires real HIP headers (unlike the dlopen-opaque backend/manager), which
+// native HIP builds and ZLUDA+AMD builds (ROCm installed) both provide.
+#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
 
 #include <graph/GraphReplayHandle.h>
 #include <hip/hip_runtime.h>

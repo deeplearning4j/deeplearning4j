@@ -396,8 +396,8 @@ public class DspViewOpFrozenReplayTest {
     /**
      * <b>BGE pattern #2 — {@code permuteOfMmul}.</b>
      * Permute consumes an intermediate produced by a prior compute op, so
-     * the wrapper-swap path fires for permutes as well. Also exercises the
-     * {@code buildPermutedViewShapeInfo} path.
+     * the wrapper-swap path fires for permutes as well and consumes the
+     * exact view layout supplied by the op's shape descriptor.
      *
      * <pre>
      *   x [2,3,4] → add(bias) [2,3,4] → relu → PERMUTE[0,2,1][2,4,3] → mul 2.0 → out

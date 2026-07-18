@@ -41,18 +41,26 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Svd;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -101,6 +109,174 @@ public class NdArrayMmulSvdTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBatchedMmulWithTransposeFlags(Nd4jBackend backend) {
+        INDArray a = Nd4j.createFromArray(new float[]{
+                1, 2, 3, 4, 5, 6,
+                2, 0, 1, 1, 3, 2
+        }).reshape(2, 2, 3);
+        INDArray aTransposedStorage = Nd4j.createFromArray(new float[]{
+                1, 4, 2, 5, 3, 6,
+                2, 1, 0, 3, 1, 2
+        }).reshape(2, 3, 2);
+        INDArray b = Nd4j.createFromArray(new float[]{
+                1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1,
+                1, 0, 2, 1, 2, 1, 0, 1, 0, 2, 1, 0
+        }).reshape(2, 3, 4);
+        INDArray bTransposedStorage = Nd4j.createFromArray(new float[]{
+                1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1,
+                1, 2, 0, 0, 1, 2, 2, 0, 1, 1, 1, 0
+        }).reshape(2, 4, 3);
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                1, 2, 3, 6, 4, 5, 6, 15,
+                2, 2, 5, 2, 7, 7, 4, 4
+        }).reshape(2, 2, 4);
+
+        MMulTranspose transposeB = MMulTranspose.builder().transposeB(true).build();
+        MMulTranspose transposeA = MMulTranspose.builder().transposeA(true).build();
+        MMulTranspose transposeBoth = MMulTranspose.builder()
+                .transposeA(true).transposeB(true).build();
+
+        assertTrue(expected.equalsWithEps(a.mmul(bTransposedStorage, transposeB), 1e-5),
+                getFailureMessage(backend) + " batched transposeB");
+        assertTrue(expected.equalsWithEps(aTransposedStorage.mmul(b, transposeA), 1e-5),
+                getFailureMessage(backend) + " batched transposeA");
+        assertTrue(expected.equalsWithEps(
+                        aTransposedStorage.mmul(bTransposedStorage, transposeBoth), 1e-5),
+                getFailureMessage(backend) + " batched transposeA+transposeB");
+
+        INDArray a4d = a.reshape(1, 2, 2, 3);
+        INDArray aTransposedStorage4d = aTransposedStorage.reshape(1, 2, 3, 2);
+        INDArray b4d = b.reshape(1, 2, 3, 4);
+        INDArray bTransposedStorage4d = bTransposedStorage.reshape(1, 2, 4, 3);
+        INDArray expected4d = expected.reshape(1, 2, 2, 4);
+
+        INDArray transposeB4d = Nd4j.create(DataType.FLOAT, 1, 2, 2, 4);
+        INDArray transposeA4d = Nd4j.create(DataType.FLOAT, 1, 2, 2, 4);
+        INDArray transposeBoth4d = Nd4j.create(DataType.FLOAT, 1, 2, 2, 4);
+        Nd4j.getExecutioner().execAndReturn(
+                new Mmul(a4d, bTransposedStorage4d, transposeB4d, transposeB));
+        Nd4j.getExecutioner().execAndReturn(
+                new Mmul(aTransposedStorage4d, b4d, transposeA4d, transposeA));
+        Nd4j.getExecutioner().execAndReturn(
+                new Mmul(aTransposedStorage4d, bTransposedStorage4d, transposeBoth4d, transposeBoth));
+
+        assertTrue(expected4d.equalsWithEps(transposeB4d, 1e-5),
+                getFailureMessage(backend) + " 4D batched transposeB");
+        assertTrue(expected4d.equalsWithEps(transposeA4d, 1e-5),
+                getFailureMessage(backend) + " 4D batched transposeA");
+        assertTrue(expected4d.equalsWithEps(transposeBoth4d, 1e-5),
+                getFailureMessage(backend) + " 4D batched transposeA+transposeB");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBatchedMmulAlternatingScaleAsyncQueue(Nd4jBackend backend) {
+        int queueDepth = 256;
+        int batch = 8;
+        int rows = 64;
+        int inner = 128;
+        int columns = 64;
+        INDArray a = Nd4j.ones(DataType.FLOAT, batch, rows, inner);
+        INDArray bTransposedStorage = Nd4j.ones(DataType.FLOAT, batch, columns, inner);
+        MMulTranspose transposeB = MMulTranspose.builder().transposeB(true).build();
+        List<INDArray> outputs = new ArrayList<>(queueDepth);
+        double[] alphas = new double[queueDepth];
+
+        // Queue every GEMM before reading an output. Alternating alpha values expose a
+        // shared host-scalar lifetime race without adding a stream synchronization.
+        for (int i = 0; i < queueDepth; i++) {
+            double alpha = i % 3 == 0 ? 0.03125 : i % 3 == 1 ? 0.5 : 2.0;
+            INDArray output = Nd4j.create(DataType.FLOAT, batch, rows, columns);
+            Nd4j.getExecutioner().execAndReturn(
+                    new Mmul(a, bTransposedStorage, output, alpha, 0.0, transposeB));
+            outputs.add(output);
+            alphas[i] = alpha;
+        }
+
+        for (int i = 0; i < queueDepth; i++) {
+            float expected = (float) (inner * alphas[i]);
+            INDArray output = outputs.get(i);
+            assertEquals(expected, output.getFloat(0), 1e-4f,
+                    getFailureMessage(backend) + " queued alpha at index " + i);
+            assertEquals(expected, output.getFloat(output.length() - 1), 1e-4f,
+                    getFailureMessage(backend) + " queued alpha tail at index " + i);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConcurrentBatchedMmulWithTransposeFlags(Nd4jBackend backend) throws Exception {
+        int workers = 4;
+        int queueDepth = 128;
+        int batch = 4;
+        int rows = 32;
+        int inner = 64;
+        int columns = 32;
+        CountDownLatch ready = new CountDownLatch(workers);
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(workers);
+        List<Future<?>> futures = new ArrayList<>(workers);
+
+        try {
+            for (int worker = 0; worker < workers; worker++) {
+                final int workerId = worker;
+                futures.add(executor.submit(() -> {
+                    INDArray a = Nd4j.ones(DataType.FLOAT, batch, rows, inner);
+                    INDArray bTransposedStorage =
+                            Nd4j.ones(DataType.FLOAT, batch, columns, inner);
+                    MMulTranspose transposeB =
+                            MMulTranspose.builder().transposeB(true).build();
+                    List<INDArray> outputs = new ArrayList<>(queueDepth);
+                    double[] alphas = new double[queueDepth];
+
+                    ready.countDown();
+                    assertTrue(start.await(30, TimeUnit.SECONDS),
+                            "Timed out waiting to start concurrent batched mmul workers");
+
+                    for (int i = 0; i < queueDepth; i++) {
+                        double alpha = ((workerId + i) % 5 + 1) * 0.125;
+                        INDArray output =
+                                Nd4j.create(DataType.FLOAT, batch, rows, columns);
+                        Nd4j.getExecutioner().execAndReturn(
+                                new Mmul(a, bTransposedStorage, output,
+                                        alpha, 0.0, transposeB));
+                        outputs.add(output);
+                        alphas[i] = alpha;
+                    }
+
+                    for (int i = 0; i < queueDepth; i++) {
+                        float expected = (float) (inner * alphas[i]);
+                        INDArray output = outputs.get(i);
+                        assertEquals(expected, output.getFloat(0), 1e-4f,
+                                getFailureMessage(backend)
+                                        + " concurrent worker " + workerId
+                                        + " alpha at index " + i);
+                        assertEquals(expected,
+                                output.getFloat(output.length() - 1), 1e-4f,
+                                getFailureMessage(backend)
+                                        + " concurrent worker " + workerId
+                                        + " alpha tail at index " + i);
+                    }
+                    return null;
+                }));
+            }
+
+            assertTrue(ready.await(30, TimeUnit.SECONDS),
+                    "Timed out waiting for concurrent batched mmul workers");
+            start.countDown();
+            for (Future<?> future : futures) {
+                future.get();
+            }
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+            assertTrue(executor.awaitTermination(30, TimeUnit.SECONDS),
+                    "Concurrent batched mmul executor did not terminate");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMMul(Nd4jBackend backend) {
         INDArray arr = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
 
@@ -124,6 +300,28 @@ public class NdArrayMmulSvdTest extends BaseNd4jTestWithBackends {
         Nd4j.getExecutioner().execAndReturn(op);
 
         assertEquals(assertion, z,getFailureMessage(backend));
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testFloatTransposeBGemmBetaZeroIgnoresPoisonedOutput(Nd4jBackend backend) {
+        int m = 4;
+        int n = 3;
+        int k = 32 * 27 * 27;
+
+        INDArray a = Nd4j.valueArrayOf(new long[]{m, k}, 0.25f).dup('c');
+        INDArray b = Nd4j.valueArrayOf(new long[]{n, k}, 0.5f).dup('c');
+        INDArray result = Nd4j.valueArrayOf(new long[]{m, n}, Float.NaN).dup('c');
+
+        MMulTranspose transpose = MMulTranspose.builder()
+                .transposeB(true)
+                .build();
+        DynamicCustomOp op = new Mmul(a, b, result, transpose);
+        Nd4j.getExecutioner().execAndReturn(op);
+
+        INDArray expected = Nd4j.valueArrayOf(new long[]{m, n}, k * 0.125f);
+        assertEquals(expected, result,
+                "FP32 GEMM with beta=0 must overwrite C without propagating its prior NaNs");
     }
 
     @ParameterizedTest
@@ -776,6 +974,275 @@ public class NdArrayMmulSvdTest extends BaseNd4jTestWithBackends {
         exp = a.transpose().mmul(b.transpose()).transpose();
         act = a.mmul(b, MMulTranspose.builder().transposeA(true).transposeB(true).transposeResult(true).build());
         assertEquals(exp, act);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConv2DBackpropOiYxExactGradients(Nd4jBackend backend) {
+        int batch = 32;
+        int inputHeight = 28;
+        int inputWidth = 28;
+        int outputChannels = 3;
+        int kernelHeight = 2;
+        int kernelWidth = 2;
+        int outputHeight = 27;
+        int outputWidth = 27;
+        float expectedGradient = batch * outputHeight * outputWidth;
+
+        INDArray input = Nd4j.ones(DataType.FLOAT, batch, 1, inputHeight, inputWidth);
+        INDArray weights = Nd4j.zeros(DataType.FLOAT, outputChannels, 1, kernelHeight, kernelWidth);
+        INDArray bias = Nd4j.zeros(DataType.FLOAT, outputChannels);
+        INDArray delta = Nd4j.ones(DataType.FLOAT, batch, outputChannels, outputHeight, outputWidth);
+        INDArray gradInput = Nd4j.zerosLike(input);
+        INDArray gradWeights = Nd4j.zerosLike(weights);
+        INDArray gradBias = Nd4j.zerosLike(bias);
+
+        Conv2DConfig config = Conv2DConfig.builder()
+                .kH(kernelHeight).kW(kernelWidth)
+                .sH(1).sW(1)
+                .pH(0).pW(0)
+                .dH(1).dW(1)
+                .paddingMode(PaddingMode.VALID)
+                .dataFormat(Conv2DConfig.NCHW)
+                .weightsFormat(WeightsFormat.OIYX)
+                .build();
+        Conv2DDerivative op = Conv2DDerivative.derivativeBuilder()
+                .config(config)
+                .build();
+        op.addInputArgument(input, weights, bias, delta);
+        op.addOutputArgument(gradInput, gradWeights, gradBias);
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(Nd4j.valueArrayOf(gradBias.shape(), expectedGradient), gradBias,
+                "Every bias gradient must sum the full all-ones minibatch");
+        assertEquals(Nd4j.zerosLike(input), gradInput,
+                "Zero weights must produce a zero input gradient");
+        assertEquals(Nd4j.valueArrayOf(gradWeights.shape(), expectedGradient), gradWeights,
+                "Every OIYX kernel gradient must sum the full all-ones minibatch");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConv2DBackpropOiYxExactGradientsWithoutBias(Nd4jBackend backend) {
+        int batch = 32;
+        int inputHeight = 28;
+        int inputWidth = 28;
+        int outputChannels = 3;
+        int kernelHeight = 2;
+        int kernelWidth = 2;
+        int outputHeight = 27;
+        int outputWidth = 27;
+        float expectedGradient = batch * outputHeight * outputWidth;
+
+        INDArray input = Nd4j.ones(DataType.FLOAT, batch, 1, inputHeight, inputWidth);
+        INDArray weights = Nd4j.zeros(DataType.FLOAT, outputChannels, 1, kernelHeight, kernelWidth);
+        INDArray delta = Nd4j.ones(DataType.FLOAT, batch, outputChannels, outputHeight, outputWidth);
+        INDArray gradInput = Nd4j.zerosLike(input);
+        INDArray gradWeights = Nd4j.zerosLike(weights);
+
+        Conv2DConfig config = Conv2DConfig.builder()
+                .kH(kernelHeight).kW(kernelWidth)
+                .sH(1).sW(1)
+                .pH(0).pW(0)
+                .dH(1).dW(1)
+                .paddingMode(PaddingMode.VALID)
+                .dataFormat(Conv2DConfig.NCHW)
+                .weightsFormat(WeightsFormat.OIYX)
+                .build();
+        Conv2DDerivative op = Conv2DDerivative.derivativeBuilder()
+                .config(config)
+                .build();
+        op.addInputArgument(input, weights, delta);
+        op.addOutputArgument(gradInput, gradWeights);
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(Nd4j.zerosLike(input), gradInput,
+                "Zero weights must produce a zero input gradient without bias");
+        assertEquals(Nd4j.valueArrayOf(gradWeights.shape(), expectedGradient), gradWeights,
+                "Every OIYX kernel gradient must be exact without the optional bias path");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConv2DBackpropAllWeightFormatsExactGradients(Nd4jBackend backend) {
+        int batch = 2;
+        int inputChannels = 2;
+        int outputChannels = 3;
+        int inputHeight = 3;
+        int inputWidth = 4;
+        int kernelHeight = 2;
+        int kernelWidth = 3;
+        int outputHeight = 2;
+        int outputWidth = 2;
+        int sampleCount = batch * outputHeight * outputWidth;
+        float[] inputValues = {1.0f, 2.0f};
+        float[] deltaValues = {3.0f, 5.0f, 7.0f};
+
+        INDArray input = Nd4j.concat(1,
+                Nd4j.valueArrayOf(new long[]{batch, 1, inputHeight, inputWidth}, inputValues[0]),
+                Nd4j.valueArrayOf(new long[]{batch, 1, inputHeight, inputWidth}, inputValues[1]));
+        INDArray delta = Nd4j.concat(1,
+                Nd4j.valueArrayOf(new long[]{batch, 1, outputHeight, outputWidth}, deltaValues[0]),
+                Nd4j.valueArrayOf(new long[]{batch, 1, outputHeight, outputWidth}, deltaValues[1]),
+                Nd4j.valueArrayOf(new long[]{batch, 1, outputHeight, outputWidth}, deltaValues[2]));
+
+        WeightsFormat[] formats = {
+                WeightsFormat.YXIO, WeightsFormat.OIYX, WeightsFormat.OYXI};
+        long[][] weightShapes = {
+                {kernelHeight, kernelWidth, inputChannels, outputChannels},
+                {outputChannels, inputChannels, kernelHeight, kernelWidth},
+                {outputChannels, kernelHeight, kernelWidth, inputChannels}};
+
+        for (int formatIndex = 0; formatIndex < formats.length; formatIndex++) {
+            WeightsFormat format = formats[formatIndex];
+            INDArray weights = Nd4j.zeros(DataType.FLOAT, weightShapes[formatIndex]);
+            INDArray bias = Nd4j.zeros(DataType.FLOAT, outputChannels);
+            INDArray gradInput = Nd4j.zerosLike(input);
+            INDArray gradWeights = Nd4j.zerosLike(weights);
+            INDArray gradBias = Nd4j.zerosLike(bias);
+
+            Conv2DConfig config = Conv2DConfig.builder()
+                    .kH(kernelHeight).kW(kernelWidth)
+                    .sH(1).sW(1)
+                    .pH(0).pW(0)
+                    .dH(1).dW(1)
+                    .paddingMode(PaddingMode.VALID)
+                    .dataFormat(Conv2DConfig.NCHW)
+                    .weightsFormat(format)
+                    .build();
+            Conv2DDerivative op = Conv2DDerivative.derivativeBuilder()
+                    .config(config)
+                    .build();
+            op.addInputArgument(input, weights, bias, delta);
+            op.addOutputArgument(gradInput, gradWeights, gradBias);
+            Nd4j.getExecutioner().exec(op);
+
+            INDArray expectedWeights = Nd4j.zerosLike(weights);
+            for (int outputChannel = 0; outputChannel < outputChannels; outputChannel++) {
+                for (int inputChannel = 0; inputChannel < inputChannels; inputChannel++) {
+                    float expected = sampleCount * inputValues[inputChannel]
+                            * deltaValues[outputChannel];
+                    for (int kernelRow = 0; kernelRow < kernelHeight; kernelRow++) {
+                        for (int kernelColumn = 0; kernelColumn < kernelWidth; kernelColumn++) {
+                            long[] index;
+                            if (format == WeightsFormat.YXIO) {
+                                index = new long[]{kernelRow, kernelColumn, inputChannel, outputChannel};
+                            } else if (format == WeightsFormat.OIYX) {
+                                index = new long[]{outputChannel, inputChannel, kernelRow, kernelColumn};
+                            } else {
+                                index = new long[]{outputChannel, kernelRow, kernelColumn, inputChannel};
+                            }
+                            expectedWeights.putScalar(index, expected);
+                        }
+                    }
+                }
+            }
+            INDArray expectedBias = Nd4j.createFromArray(
+                    sampleCount * deltaValues[0],
+                    sampleCount * deltaValues[1],
+                    sampleCount * deltaValues[2]);
+
+            assertEquals(expectedWeights, gradWeights,
+                    "Weight gradients must preserve " + format + " physical axis order");
+            assertEquals(expectedBias, gradBias,
+                    "Bias gradients must sum every sample for " + format);
+            assertEquals(Nd4j.zerosLike(input), gradInput,
+                    "Zero weights must produce zero input gradients for " + format);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConv2DBackpropColumnOperandPipeline(Nd4jBackend backend) {
+        int batch = 32;
+        int inputHeight = 28;
+        int inputWidth = 28;
+        int outputChannels = 3;
+        int kernelHeight = 2;
+        int kernelWidth = 2;
+        int outputHeight = 27;
+        int outputWidth = 27;
+        int sampleCount = batch * outputHeight * outputWidth;
+        float expectedGradient = sampleCount;
+
+        INDArray input = Nd4j.ones(DataType.FLOAT, batch, 1, inputHeight, inputWidth);
+        INDArray columns = Convolution.im2col(
+                input, kernelHeight, kernelWidth, 1, 1, 0, 0, 1, 1, false);
+        assertEquals(Nd4j.valueArrayOf(columns.shape(), 1.0f), columns,
+                "VALID im2col over an all-ones input must contain only ones");
+
+        INDArray columnView = columns.permute(1, 2, 3, 0, 4, 5);
+        INDArray columnMatrix = columnView.dup('c');
+        columnMatrix = columnMatrix.reshape(
+                'c', kernelHeight * kernelWidth, sampleCount);
+        assertEquals(Nd4j.valueArrayOf(columnMatrix.shape(), 1.0f), columnMatrix,
+                "Permute/dup/reshape must preserve the all-ones im2col operand");
+
+        INDArray delta = Nd4j.ones(
+                DataType.FLOAT, batch, outputChannels, outputHeight, outputWidth);
+        INDArray gradOView = delta.permute(1, 0, 2, 3);
+        INDArray gradOMatrix = gradOView.dup('c');
+        gradOMatrix = gradOMatrix.reshape(
+                'c', outputChannels, sampleCount);
+        INDArray weightGradientMatrix = Nd4j.zeros(
+                DataType.FLOAT, kernelHeight * kernelWidth, outputChannels);
+        MMulTranspose transposeB = MMulTranspose.builder().transposeB(true).build();
+        Nd4j.getExecutioner().execAndReturn(
+                new Mmul(columnMatrix, gradOMatrix, weightGradientMatrix, transposeB));
+
+        assertEquals(
+                Nd4j.valueArrayOf(weightGradientMatrix.shape(), expectedGradient),
+                weightGradientMatrix,
+                "The exact conv2d_bp column operand GEMM must produce 23,328");
+
+        INDArray outputMajorGradientMatrix = Nd4j.zeros(
+                DataType.FLOAT, outputChannels, kernelHeight * kernelWidth);
+        Nd4j.getExecutioner().execAndReturn(
+                new Mmul(gradOMatrix, columnMatrix, outputMajorGradientMatrix, transposeB));
+        assertEquals(
+                Nd4j.valueArrayOf(outputMajorGradientMatrix.shape(), expectedGradient),
+                outputMajorGradientMatrix,
+                "The direct OIYX [oC,S] x [K,S]^T GEMM must produce 23,328");
+
+        INDArray weightGradientOiYx = Nd4j.zeros(
+                DataType.FLOAT, outputChannels, 1, kernelHeight, kernelWidth);
+        INDArray weightGradientView = weightGradientMatrix
+                .reshape('c', 1, kernelHeight, kernelWidth, outputChannels)
+                .permute(3, 0, 1, 2);
+        weightGradientOiYx.assign(weightGradientView);
+        assertEquals(
+                Nd4j.valueArrayOf(weightGradientOiYx.shape(), expectedGradient),
+                weightGradientOiYx,
+                "The final [K,oC] to OIYX assignment must preserve every gradient");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testConv2DForwardNhWCNoBiasChainedExact(Nd4jBackend backend) {
+        int batchSize = 100;
+        Conv2DConfig config = Conv2DConfig.builder()
+                .kH(3).kW(3)
+                .sH(1).sW(1)
+                .pH(0).pW(0)
+                .dH(1).dW(1)
+                .paddingMode(PaddingMode.VALID)
+                .dataFormat(Conv2DConfig.NHWC)
+                .weightsFormat(WeightsFormat.YXIO)
+                .build();
+
+        INDArray input = Nd4j.ones(DataType.FLOAT, batchSize, 28, 28, 1);
+        INDArray weights1 = Nd4j.ones(DataType.FLOAT, 3, 3, 1, 32);
+        INDArray weights2 = Nd4j.ones(DataType.FLOAT, 3, 3, 32, 64);
+
+        INDArray first = Nd4j.exec(new Conv2D(input, weights1, null, config))[0];
+        INDArray second = Nd4j.exec(new Conv2D(first, weights2, null, config))[0];
+
+        double firstMaxAbsError = first.sub(9.0).amaxNumber().doubleValue();
+        double secondMaxAbsError = second.sub(2592.0).amaxNumber().doubleValue();
+        assertEquals(0.0, firstMaxAbsError, 0.0,
+                "The first no-bias NHWC convolution max absolute error was " + firstMaxAbsError);
+        assertEquals(0.0, secondMaxAbsError, 0.0,
+                "The chained no-bias NHWC convolution max absolute error was " + secondMaxAbsError);
     }
 
     @ParameterizedTest

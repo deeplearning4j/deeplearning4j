@@ -46,7 +46,9 @@ CONFIGURABLE_OP_IMPL(sqrtm, 1, 1, false, 0, 0) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(sqrtm) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

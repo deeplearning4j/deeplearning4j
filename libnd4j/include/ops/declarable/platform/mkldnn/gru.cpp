@@ -106,7 +106,7 @@ static void gruMKLDNN(NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh, NDArray
   stream.wait();
 }
 
-PLATFORM_IMPL(gruCell, ENGINE_CPU) {
+PLATFORM_IMPL(gruCell, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);   // input
   auto hI = INPUT_VARIABLE(1);  // initial hidden state
   auto Wx = INPUT_VARIABLE(2);  // input weights
@@ -126,7 +126,7 @@ PLATFORM_IMPL(gruCell, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(gruCell, ENGINE_CPU) {
+PLATFORM_CHECK(gruCell, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto hI = INPUT_VARIABLE(1);
 

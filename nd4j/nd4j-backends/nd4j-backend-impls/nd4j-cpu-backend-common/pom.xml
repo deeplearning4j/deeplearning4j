@@ -37,5 +37,13 @@
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
         </dependency>
+        <!-- Compile the backend-neutral LAPACK delegator here. Runtime backends
+             provide their own OpenBLAS platform artifact and native payload. -->
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 </project>

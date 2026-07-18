@@ -4613,8 +4613,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
     /**
      * Clear all cached DynamicShapePlans. Call when the graph structure changes.
+     *
+     * <p>Live inference sessions borrow raw handles from the native plan cache. Sessions
+     * must therefore be destroyed before cache entries are deleted; reversing that order
+     * leaves each executor with a dangling handle that it dereferences during cleanup.</p>
      */
     public void clearDynamicShapePlanCache() {
+        closeAllSessions();
         for (DynamicShapePlan plan : dynamicShapePlanCache.values()) {
             if (plan != null) {
                 try {

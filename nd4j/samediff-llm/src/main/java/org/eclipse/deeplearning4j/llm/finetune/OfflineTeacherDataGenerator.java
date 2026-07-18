@@ -14,17 +14,35 @@ public class OfflineTeacherDataGenerator {
         String generate(String prompt, int maxNewTokens);
     }
 
+    @FunctionalInterface
+    public interface RequestRenderer {
+        String render(TeacherExampleRequest request);
+    }
+
     private final TeacherGenerator teacher;
-    private final CanonicalContextSerializer serializer;
+    private final RequestRenderer renderer;
     private final List<TeacherOutputValidator> validators;
     private final int maxNewTokens;
 
     public OfflineTeacherDataGenerator(TeacherGenerator teacher, CanonicalContextSerializer serializer,
                                        List<TeacherOutputValidator> validators, int maxNewTokens) {
+        this(teacher, request -> (serializer == null ? new CanonicalContextSerializer() : serializer)
+                .serialize(request.getContext()), validators, maxNewTokens);
+    }
+
+    public static OfflineTeacherDataGenerator withRenderer(
+            TeacherGenerator teacher, RequestRenderer renderer,
+            List<TeacherOutputValidator> validators, int maxNewTokens) {
+        return new OfflineTeacherDataGenerator(teacher, renderer, validators, maxNewTokens);
+    }
+
+    private OfflineTeacherDataGenerator(TeacherGenerator teacher, RequestRenderer renderer,
+                                        List<TeacherOutputValidator> validators, int maxNewTokens) {
         if (teacher == null) throw new IllegalArgumentException("teacher is required");
+        if (renderer == null) throw new IllegalArgumentException("renderer is required");
         if (maxNewTokens < 1) throw new IllegalArgumentException("maxNewTokens must be positive");
         this.teacher = teacher;
-        this.serializer = serializer == null ? new CanonicalContextSerializer() : serializer;
+        this.renderer = renderer;
         this.validators = validators == null ? new ArrayList<>() : new ArrayList<>(validators);
         this.maxNewTokens = maxNewTokens;
     }
@@ -35,7 +53,10 @@ public class OfflineTeacherDataGenerator {
 
     public GeneratedTrainingExample generate(TeacherExampleRequest request) {
         request.validate();
-        String canonicalPrompt = serializer.serialize(request.getContext());
+        String canonicalPrompt = renderer.render(request);
+        if (canonicalPrompt == null || canonicalPrompt.trim().isEmpty()) {
+            throw new IllegalArgumentException("Rendered teacher prompt is empty for " + request.getId());
+        }
         String teacherPrompt = buildTeacherPrompt(request.getSystemPrompt(), canonicalPrompt);
         String response = clean(teacher.generate(teacherPrompt, maxNewTokens));
         if (response.isEmpty()) throw new IllegalArgumentException("Teacher returned an empty response for " + request.getId());

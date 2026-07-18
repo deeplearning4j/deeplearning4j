@@ -122,20 +122,18 @@ public class DequantizerFactory {
      */
     public static INDArray dequantizeToArray(byte[] data, GGMLDataType type, long[] shape, DataType targetType) {
         int nativeType = mapToNativeQuantType(type);
+        // Q5_0 and Q5_1: skip native op path because the GPU kernel currently falls to a
+        // zero-fill branch for these types. Use the correct Java dequantizer directly.
+        // When the native binary is rebuilt with the fixed CUDA kernel, remove this guard.
+        if (type == GGMLDataType.GGML_TYPE_Q5_0 || type == GGMLDataType.GGML_TYPE_Q5_1) {
+            nativeType = -1;
+        }
         if (nativeType >= 0) {
             try {
                 INDArray rawBytes = Nd4j.createFromArray(data).castTo(DataType.INT8);
                 GGMLDequantize op = new GGMLDequantize(rawBytes, nativeType, targetType, shape);
                 INDArray result = Nd4j.exec(op)[0];
                 rawBytes.close();
-
-                // The native dequant op runs on GPU and writes to the device (special) buffer.
-                // The host (primary) buffer remains stale/zeros. We must sync device→host
-                // so that ModelLoadingContext.scheduleTransfer() (which does host→device)
-                // doesn't overwrite the good device data with stale host zeros.
-                Nd4j.getAffinityManager().ensureLocation(result,
-                    org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
-
                 return result;
             } catch (Exception e) {
                 long numElements = 1;

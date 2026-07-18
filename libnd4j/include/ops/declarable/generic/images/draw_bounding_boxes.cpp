@@ -62,6 +62,7 @@ OP_IMPL(draw_bounding_boxes, 3, 1, true) {
 }
 
 DECLARE_TYPES(draw_bounding_boxes) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {HALF, FLOAT32})  // TF allows HALF and FLOAT32 only
       ->setAllowedInputTypes(1, {FLOAT32})        // as TF

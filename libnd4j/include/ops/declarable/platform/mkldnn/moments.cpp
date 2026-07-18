@@ -122,7 +122,7 @@ static bool isVarianceSuitable(NDArray* x, NDArray* z) {
   return x->rankOf() == z->rankOf();
 }
 
-PLATFORM_IMPL(reduce_variance, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_variance, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -146,7 +146,7 @@ PLATFORM_IMPL(reduce_variance, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_variance, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_variance, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -163,7 +163,7 @@ PLATFORM_CHECK(reduce_variance, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // REDUCE_STDEV: sqrt(variance)
-PLATFORM_IMPL(reduce_stdev, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_stdev, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -214,7 +214,7 @@ PLATFORM_IMPL(reduce_stdev, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_stdev, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_stdev, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 

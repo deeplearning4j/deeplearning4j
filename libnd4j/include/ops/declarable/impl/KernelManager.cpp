@@ -42,6 +42,7 @@ const char* getEngineNameInternal(samediff::Engine engine) {
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 
 // Singleton instance
 KernelManager* KernelManager::_instance = nullptr;
@@ -658,5 +659,6 @@ void kmFreeString(const char* str) {
 
 }  // extern "C"
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

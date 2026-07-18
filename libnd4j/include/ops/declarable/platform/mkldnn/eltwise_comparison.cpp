@@ -84,7 +84,7 @@ static bool shapesCompatible(NDArray* x, NDArray* y, NDArray* z) {
 
 //////////////////////////////////////////////////////////////////////
 // GREATER (x > y)
-PLATFORM_IMPL(greater, ENGINE_CPU) {
+PLATFORM_IMPL(greater, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -97,7 +97,7 @@ PLATFORM_IMPL(greater, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(greater, ENGINE_CPU) {
+PLATFORM_CHECK(greater, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -117,7 +117,7 @@ PLATFORM_CHECK(greater, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // GREATER_EQUAL (x >= y)
-PLATFORM_IMPL(greater_equal, ENGINE_CPU) {
+PLATFORM_IMPL(greater_equal, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -130,7 +130,7 @@ PLATFORM_IMPL(greater_equal, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(greater_equal, ENGINE_CPU) {
+PLATFORM_CHECK(greater_equal, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -150,7 +150,7 @@ PLATFORM_CHECK(greater_equal, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // LESS (x < y)
-PLATFORM_IMPL(less, ENGINE_CPU) {
+PLATFORM_IMPL(less, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -163,7 +163,7 @@ PLATFORM_IMPL(less, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(less, ENGINE_CPU) {
+PLATFORM_CHECK(less, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -183,7 +183,7 @@ PLATFORM_CHECK(less, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // LESS_EQUAL (x <= y)
-PLATFORM_IMPL(less_equal, ENGINE_CPU) {
+PLATFORM_IMPL(less_equal, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -196,7 +196,7 @@ PLATFORM_IMPL(less_equal, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(less_equal, ENGINE_CPU) {
+PLATFORM_CHECK(less_equal, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -216,7 +216,7 @@ PLATFORM_CHECK(less_equal, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // EQUALS (x == y)
-PLATFORM_IMPL(equals, ENGINE_CPU) {
+PLATFORM_IMPL(equals, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -229,7 +229,7 @@ PLATFORM_IMPL(equals, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(equals, ENGINE_CPU) {
+PLATFORM_CHECK(equals, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -249,7 +249,7 @@ PLATFORM_CHECK(equals, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // NOT_EQUALS (x != y)
-PLATFORM_IMPL(not_equals, ENGINE_CPU) {
+PLATFORM_IMPL(not_equals, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -262,7 +262,7 @@ PLATFORM_IMPL(not_equals, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(not_equals, ENGINE_CPU) {
+PLATFORM_CHECK(not_equals, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);

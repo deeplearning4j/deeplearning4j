@@ -54,7 +54,7 @@ import java.util.Set;
  * Outputs:
  *   0: generatedTokenIds [maxNewTokens] INT64
  *   1: tokenCount [1] INT64
- *   2: timingInfo [5] FLOAT (totalMs, avgDecodeMs, tokPerSec, p50Ms, p99Ms)
+ *   2: timingInfo [10] FLOAT (timing metrics plus speculative proposed/accepted/step counts)
  *
  * iArgs layout (when plan config is present):
  *   0: maxNewTokens
@@ -103,6 +103,9 @@ import java.util.Set;
  *   21: typicalP (1.0 = off)
  *   22: xtcProbability (0.0 = off)
  *   23: xtcThreshold (default 0.1)
+ *   24: speculativeK (0 = off; ADR 0106 Phase 2 n-gram speculation)
+ *   25: speculatorType (0=none, 1=NGRAM; ADR 0106 Phase 2)
+ *   26: actualSequenceLengthExtIdx (-1 when the target graph has no recurrent-length control)
  */
 @NoArgsConstructor
 public class AutoregressiveDecode extends DynamicCustomOp {
@@ -113,6 +116,9 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     public static final int DECODE_STRATEGY_SPECULATIVE = 3;
     public static final int DECODE_STRATEGY_CONTRASTIVE = 4;
     public static final int DECODE_STRATEGY_BEAM = 5;
+    public static final int SPECULATOR_TYPE_NONE = 0;
+    public static final int SPECULATOR_TYPE_NGRAM = 1;
+    public static final int SPECULATOR_TYPE_MTP = 2;
 
     @Getter private int maxNewTokens;
     @Getter private int eosTokenId;
@@ -142,6 +148,11 @@ public class AutoregressiveDecode extends DynamicCustomOp {
     @Getter private double typicalP = 1.0;
     @Getter private double xtcProbability = 0.0;
     @Getter private double xtcThreshold = 0.1;
+    // ADR 0106 Phase 2: n-gram speculative decoding parameters (tArgs[24/25]).
+    // speculativeK=0 (default) leaves the W=1 path completely unchanged.
+    @Getter private int speculativeK = 0;     // 0=off; >0 enables n-gram speculation
+    @Getter private int speculatorType = 0;   // 0=none, 1=NGRAM
+    @Getter private int actualSequenceLengthExtIdx = -1;
 
     private static int resolveScalarDecodeStrategy(double temperature, int topK, double topP) {
         return (temperature <= 0.0 || (topK <= 1 && topP <= 0.0))
@@ -739,6 +750,155 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         return this;
     }
 
+    /**
+     * Wire ADR 0106 Phase 2 n-gram speculative decoding parameters into tArgs[24/25].
+     *
+     * <p>Must be called AFTER all other tArg-building methods (withDecodePolicy,
+     * withSamplingPolicy, withTypicalPAndXtc) since it appends at fixed offsets 24 and 25.
+     * speculativeK=0 disables speculation and leaves the W=1 path completely unchanged.</p>
+     *
+     * <p>The C++ decode loop reads these optional args with a size() guard so older
+     * callers that do not call this method see speculativeK=0 (off) automatically.</p>
+     *
+     * @param k              max draft tokens per step (0 to disable)
+     * @param speculatorType 0=none, 1=NGRAM (bigram proposer, host-side)
+     * @return this op (for chaining)
+     */
+    public AutoregressiveDecode withSpeculativeDecoding(int k, int speculatorType) {
+        this.speculativeK = k;
+        this.speculatorType = speculatorType;
+        // Ensure tArguments has exactly 24 entries before appending [24] and [25].
+        // The standard sampling path writes 24 args (indices 0..23); we extend to 26.
+        while (tArguments.size() < 24) {
+            tArguments.add(0.0);
+        }
+        if (tArguments.size() == 24) {
+            tArguments.add((double) k);
+            tArguments.add((double) speculatorType);
+        } else if (tArguments.size() == 25) {
+            tArguments.set(24, (double) k);
+            tArguments.add((double) speculatorType);
+        } else {
+            // tArguments.size() >= 26: overwrite in-place
+            tArguments.set(24, (double) k);
+            tArguments.set(25, (double) speculatorType);
+        }
+        return this;
+    }
+
+    /**
+     * Identify the target plan's {@code actual_sequence_length} scalar so the native
+     * speculative loop can set it to the live verification width before each replay.
+     * This argument is appended after the Phase 2 parameters and is ignored by callers
+     * whose target graph has no recurrent sequence-length control.
+     */
+    public AutoregressiveDecode withActualSequenceLengthExtIdx(int extIdx) {
+        this.actualSequenceLengthExtIdx = extIdx;
+        while (tArguments.size() < 26) {
+            tArguments.add(0.0);
+        }
+        if (tArguments.size() == 26) {
+            tArguments.add((double) extIdx);
+        } else {
+            tArguments.set(26, (double) extIdx);
+        }
+        return this;
+    }
+
+    /**
+     * Attach the isolated Qwen3.5 MTP predictor plan to this target decode invocation.
+     *
+     * <p>The seven arrays are appended after the target KV (and optional quantised-scale)
+     * inputs. MTP plan metadata is encoded in tArgs[27..42], preserving every existing
+     * iArg and stop-token offset. All pointer halves are unsigned 32-bit values and are
+     * therefore exactly representable as doubles.</p>
+     */
+    public AutoregressiveDecode withMtpPlan(
+            INDArray mtpInputIds,
+            INDArray mtpTargetHiddenStates,
+            INDArray mtpCausalMask,
+            INDArray mtpPositionOffset,
+            INDArray mtpCachePosition,
+            INDArray[] mtpKvBuffers,
+            Pointer mtpPlanHandle,
+            Pointer mtpContextHandle,
+            int mtpNumPlanExternalInputs,
+            int mtpNumPlanOutputs,
+            int mtpInputIdsExtIdx,
+            int mtpTargetHiddenExtIdx,
+            int mtpCausalMaskExtIdx,
+            int mtpPositionOffsetExtIdx,
+            int mtpCachePositionExtIdx,
+            int[] mtpKvInputExtIndices,
+            int mtpLogitsOutputIdx,
+            int mtpHiddenOutputIdx,
+            int targetHiddenOutputIdx) {
+
+        if (mtpInputIds == null || mtpTargetHiddenStates == null || mtpCausalMask == null
+                || mtpPositionOffset == null || mtpCachePosition == null) {
+            throw new IllegalArgumentException("withMtpPlan requires all five mutable MTP inputs");
+        }
+        if (mtpKvBuffers == null || mtpKvBuffers.length != 2
+                || mtpKvBuffers[0] == null || mtpKvBuffers[1] == null) {
+            throw new IllegalArgumentException("withMtpPlan requires exactly one MTP key/value cache pair");
+        }
+        if (mtpKvInputExtIndices == null || mtpKvInputExtIndices.length != 2) {
+            throw new IllegalArgumentException("withMtpPlan requires exactly two MTP KV external-input indices");
+        }
+        if (mtpPlanHandle == null || mtpPlanHandle.isNull()
+                || mtpContextHandle == null || mtpContextHandle.isNull()) {
+            throw new IllegalArgumentException("withMtpPlan requires non-null native plan and context handles");
+        }
+        if (targetHiddenOutputIdx < 0 || mtpLogitsOutputIdx < 0 || mtpHiddenOutputIdx < 0) {
+            throw new IllegalArgumentException("withMtpPlan requires resolved target/MTP output indices");
+        }
+
+        inputArguments.add(mtpInputIds);
+        inputArguments.add(mtpTargetHiddenStates);
+        inputArguments.add(mtpCausalMask);
+        inputArguments.add(mtpPositionOffset);
+        inputArguments.add(mtpCachePosition);
+        inputArguments.add(mtpKvBuffers[0]);
+        inputArguments.add(mtpKvBuffers[1]);
+
+        long prevMask = iArguments.get(4);
+        iArguments.set(4, prevMask | 256L);
+        this.optionalInputMask = (int) (prevMask | 256L);
+        this.speculatorType = SPECULATOR_TYPE_MTP;
+
+        while (tArguments.size() < 27) {
+            tArguments.add(0.0);
+        }
+        tArguments.set(25, (double) SPECULATOR_TYPE_MTP);
+
+        long planAddr = mtpPlanHandle.address();
+        long contextAddr = mtpContextHandle.address();
+        double[] metadata = {
+                (double) (planAddr & 0xFFFFFFFFL),
+                (double) ((planAddr >>> 32) & 0xFFFFFFFFL),
+                (double) (contextAddr & 0xFFFFFFFFL),
+                (double) ((contextAddr >>> 32) & 0xFFFFFFFFL),
+                (double) mtpNumPlanExternalInputs,
+                (double) mtpNumPlanOutputs,
+                (double) mtpInputIdsExtIdx,
+                (double) mtpTargetHiddenExtIdx,
+                (double) mtpCausalMaskExtIdx,
+                (double) mtpPositionOffsetExtIdx,
+                (double) mtpCachePositionExtIdx,
+                (double) mtpKvInputExtIndices[0],
+                (double) mtpKvInputExtIndices[1],
+                (double) mtpLogitsOutputIdx,
+                (double) mtpHiddenOutputIdx,
+                (double) targetHiddenOutputIdx
+        };
+        for (int i = 0; i < metadata.length; i++) {
+            int index = 27 + i;
+            if (tArguments.size() == index) tArguments.add(metadata[i]);
+            else tArguments.set(index, metadata[i]);
+        }
+        return this;
+    }
+
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();
@@ -770,6 +930,10 @@ public class AutoregressiveDecode extends DynamicCustomOp {
         if (tArguments.size() > 21) this.typicalP = tArguments.get(21);
         if (tArguments.size() > 22) this.xtcProbability = tArguments.get(22);
         if (tArguments.size() > 23) this.xtcThreshold = tArguments.get(23);
+        // ADR 0106 Phase 2: n-gram speculative decoding (tArgs 24/25, optional)
+        if (tArguments.size() > 24) this.speculativeK = tArguments.get(24).intValue();
+        if (tArguments.size() > 25) this.speculatorType = tArguments.get(25).intValue();
+        if (tArguments.size() > 26) this.actualSequenceLengthExtIdx = tArguments.get(26).intValue();
     }
 
     @Override

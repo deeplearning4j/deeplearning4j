@@ -211,6 +211,7 @@ DECLARE_TYPES(where_np) {
       ->setAllowedInputTypes(1, ANY)
       ->setAllowedInputTypes(2, ANY)
       ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
 }
 }  // namespace ops
 }  // namespace sd

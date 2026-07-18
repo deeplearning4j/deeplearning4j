@@ -40,6 +40,7 @@ class Context;
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 
 /**
  * OpExecutionLogger - Singleton class for logging operation executions.
@@ -272,6 +273,7 @@ private:
 // thread_local storage defined in DeclarableOp.cpp (not here - inline thread_local
 // causes multiple TLS init function definitions on MinGW/GCC)
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 } // namespace ops
 } // namespace sd
 

@@ -183,6 +183,7 @@ DECLARE_SHAPE_FN(unpad_input) {
 }
 
 DECLARE_TYPES(unpad_input) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS})
         ->setAllowedInputTypes(1, {DataType::BOOL, DataType::INT32, DataType::INT64})
@@ -269,6 +270,7 @@ DECLARE_SHAPE_FN(pad_input) {
 }
 
 DECLARE_TYPES(pad_input) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS})
         ->setAllowedInputTypes(1, {DataType::INT64})
@@ -342,6 +344,7 @@ DECLARE_SHAPE_FN(pad_input_bp) {
 }
 
 DECLARE_TYPES(pad_input_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_BACKWARD);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS})
         ->setAllowedInputTypes(1, {DataType::INT64})

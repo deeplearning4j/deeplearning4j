@@ -36,9 +36,13 @@
 #include <pjrt_c_api.h>
 #endif
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+// Op macros open SD_NS themselves (platform_boilerplate.h) — the DECLARE list
+// must sit outside the file-level wrap or SD_NS nests inside itself.
 
 //////////////////////////////////////////////////////////////////////////
 // Platform declarations for TPU operations
@@ -104,6 +108,8 @@ DECLARE_PLATFORM(maxpool3dnew, ENGINE_TPU);
 
 // Normalization
 DECLARE_PLATFORM(layer_norm, ENGINE_TPU);
+
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
 // Error handling utilities
@@ -322,6 +328,7 @@ std::string buildConv2dHLO(const std::vector<sd::LongType>& inputShape,
 PjrtClient& getGlobalPjrtClient();
 #endif
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

@@ -26,6 +26,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT DeclarableCustomOp : public DeclarableOp {
  protected:
   /**
@@ -38,6 +39,7 @@ class SD_LIB_EXPORT DeclarableCustomOp : public DeclarableOp {
 
   ShapeList* calculateOutputShape(ShapeList* inputShapes, Context& block) override = 0;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

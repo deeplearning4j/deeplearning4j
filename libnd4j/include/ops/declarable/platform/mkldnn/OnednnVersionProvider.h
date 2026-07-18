@@ -32,9 +32,12 @@
 #include <dnnl_version.h>
 #endif
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 namespace onednn {
 
 // ============================================================================
@@ -267,6 +270,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
 };
 
 }  // namespace onednn
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

@@ -92,7 +92,8 @@ CONFIGURABLE_OP_IMPL(adabelief_updater, 3, 3, true, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(adabelief_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(adabelief_updater) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
 }  // namespace ops
 }  // namespace sd

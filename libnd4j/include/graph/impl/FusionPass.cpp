@@ -24,7 +24,7 @@
 #include <graph/DspDiagnostics.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/DeclarableOp.h>
-#include <ops/OpTraitTable.h>
+#include <ops/declarable/OpDescriptor.h>
 #include <system/Environment.h>
 
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
@@ -39,7 +39,7 @@
 namespace sd {
 namespace graph {
 
-// Op classification is driven by OpDescriptor traits (see OpTraitTable.h).
+// Op classification is driven by each resolved op's OpDescriptor traits.
 
 /**
  * Get the op name for a given op hash by looking it up in the OpRegistrator.

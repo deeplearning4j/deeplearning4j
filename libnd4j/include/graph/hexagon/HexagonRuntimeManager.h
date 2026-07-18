@@ -137,6 +137,16 @@ class SD_LIB_EXPORT HexagonRuntimeManager {
   void* compileKernel(void* npuContext, const uint8_t* mlirBytecode,
                       size_t bytecodeSize);
 
+  /** Return true when the runtime adapter can import vendor AOT kernel blobs. */
+  bool supportsPrecompiledKernels() const;
+
+  /**
+   * Load a vendor-compiled kernel without invoking code generation on device.
+   * The optional adapter symbol is hexmlir_load_kernel.
+   */
+  void* loadKernel(void* npuContext, const uint8_t* kernelBinary,
+                   size_t binarySize);
+
   /**
    * Release a compiled kernel.
    * @param npuContext NPU context
@@ -211,6 +221,13 @@ class SD_LIB_EXPORT HexagonRuntimeManager {
    */
   void unloadRuntime();
 
+  /**
+   * unloadRuntime() implementation. The caller must hold mutex_.
+   * Kept separate so loadRuntime() can clean up failures without recursively
+   * acquiring the non-recursive mutex.
+   */
+  void unloadRuntimeLocked();
+
   // Runtime library handle
   void* libHandle_ = nullptr;
   bool available_ = false;
@@ -246,11 +263,13 @@ class SD_LIB_EXPORT HexagonRuntimeManager {
 
   // Kernel compilation and dispatch
   using FnCompileKernel = void* (*)(void*, const uint8_t*, size_t);
+  using FnLoadKernel = void* (*)(void*, const uint8_t*, size_t);
   using FnReleaseKernel = void (*)(void*, void*);
   using FnDispatchKernel = int (*)(void*, void*, void**, int);
   using FnWaitForCompletion = int (*)(void*);
 
   FnCompileKernel fnCompileKernel_ = nullptr;
+  FnLoadKernel fnLoadKernel_ = nullptr;
   FnReleaseKernel fnReleaseKernel_ = nullptr;
   FnDispatchKernel fnDispatchKernel_ = nullptr;
   FnWaitForCompletion fnWaitForCompletion_ = nullptr;

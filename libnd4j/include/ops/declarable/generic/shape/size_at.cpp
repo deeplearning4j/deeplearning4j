@@ -43,12 +43,15 @@ CUSTOM_OP_IMPL(size_at, 1, 1, false, 0, 1) {
   return Status::OK;
 }
 
-DECLARE_SHAPE_FN(size_at) { return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64)); }
+DECLARE_SHAPE_FN(size_at) {
+  const auto outputType = block.numD() > 0 ? D_ARG(0) : sd::DataType::INT64;
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(outputType));
+}
 
 DECLARE_TYPES(size_at) {
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
-      ->setAllowedOutputTypes(INT64)
+      ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
       ->allowOverride(true)
       ->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }

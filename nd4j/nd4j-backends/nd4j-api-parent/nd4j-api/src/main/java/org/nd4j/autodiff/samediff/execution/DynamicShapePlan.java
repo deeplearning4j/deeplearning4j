@@ -486,8 +486,8 @@ public class DynamicShapePlan implements Closeable {
 
     /** Magic bytes identifying a serialized DSP plan. */
     private static final int DSP_MAGIC = 0x44535031;  // "DSP1" in big-endian
-    /** Serialization format version. V2 adds legacyOpType + legacyOpNum. V3 adds control flow. V4 adds external input names. V5 adds string args. V6 invalidates stale disk cache (bArgs fix). */
-    private static final int DSP_VERSION = 5;
+    /** Serialization format version. V2 adds legacy ops. V3 adds control flow. V4 adds external names. V5 adds string args. V6 adds static zero-input output shapes. */
+    private static final int DSP_VERSION = 6;
 
     /**
      * Serialize this plan into a compact binary format for the native C++ executor.
@@ -507,7 +507,11 @@ public class DynamicShapePlan implements Closeable {
      *             numSArgs(int32), sArgs[](int32 len + UTF-8),
      *             flags: needsZeroedOutput(byte), isDataDependent(byte),
      *                    outputShapeDependsOnInputValues(byte), needsIntLongSync(byte),
-     *                    isCustomOp(byte), targetDeviceId(int32)
+     *                    isCustomOp(byte), targetDeviceId(int32),
+     *             legacyOpType(int32), legacyOpNum(int32),
+     *             controlFlowType(byte), loopBackTarget(int32), loopRegionIndex(int32),
+     *             numStaticOutputShapes(int32),
+     *             staticOutputShapes[numStaticOutputShapes](int32 length + int64[length])
      *   Release schedule: for each step: count(int32) + slotIndices[count](int32)
      *   Requested outputs: for each output: slotIndex(int32)
      * </pre>
@@ -552,6 +556,13 @@ public class DynamicShapePlan implements Closeable {
             size += 5 + 4; // 5 flag bytes + targetDeviceId int
             size += 8; // legacyOpType (int32) + legacyOpNum (int32)
             size += 1 + 4 + 4; // controlFlowType (byte) + loopBackTarget (int32) + loopRegionIndex (int32)
+            long[][] staticOutputShapeInfos = slot.getStaticOutputShapeInfos();
+            size += 4; // numStaticOutputShapes
+            if (staticOutputShapeInfos != null) {
+                for (long[] shapeInfo : staticOutputShapeInfos) {
+                    size += 4 + (shapeInfo != null ? shapeInfo.length : 0) * 8;
+                }
+            }
         }
         // Release schedule
         for (int[] releases : releaseAtStep) {
@@ -639,6 +650,18 @@ public class DynamicShapePlan implements Closeable {
             buf.put(slot.getControlFlowType());
             buf.putInt(slot.getLoopBackTarget());
             buf.putInt(slot.getLoopRegionIndex());
+
+            // V6: full shape-info buffers for zero-input ops with declared static outputs.
+            long[][] staticOutputShapeInfos = slot.getStaticOutputShapeInfos();
+            buf.putInt(staticOutputShapeInfos != null ? staticOutputShapeInfos.length : 0);
+            if (staticOutputShapeInfos != null) {
+                for (long[] shapeInfo : staticOutputShapeInfos) {
+                    buf.putInt(shapeInfo != null ? shapeInfo.length : 0);
+                    if (shapeInfo != null) {
+                        for (long value : shapeInfo) buf.putLong(value);
+                    }
+                }
+            }
         }
 
         // Release schedule

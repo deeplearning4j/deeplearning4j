@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeBufferOwner;
 
 import java.lang.ref.ReferenceQueue;
 import java.time.Duration;
@@ -105,6 +106,15 @@ public class DeallocatorService {
     private static final AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
 
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
+
+    /**
+     * Exact-owner queues are separate from the primary-backend device map. A
+     * device index is meaningful only within its NativeBufferOwner domain.
+     */
+    private final Map<NativeBufferOwner, List<OwnerQueue>> ownerDeviceQueues =
+            Collections.synchronizedMap(new IdentityHashMap<>());
+    private final AtomicLong ownerThreadCounter = new AtomicLong();
+
     private Boolean noPointerGc;
     private  int numThreads =  Integer.parseInt(System.getProperty(ND4JSystemProperties.DEALLOCATOR_SERVICE_GC_THREADS,"1"));
 
@@ -327,7 +337,15 @@ public class DeallocatorService {
         String userThreads = System.getProperty(ND4JSystemProperties.DEALLOCATOR_SERVICE_GC_THREADS);
         if (userThreads == null) {
             numThreads = Math.max(numDevices, 2);
+        } else if (numThreads < 1) {
+            throw new IllegalArgumentException(
+                    ND4JSystemProperties.DEALLOCATOR_SERVICE_GC_THREADS
+                            + " must be at least 1");
         }
+
+        // Every primary-backend device needs an exact device-affine queue.
+        // A smaller user value cannot safely collapse one device onto another.
+        numThreads = Math.max(numThreads, numDevices);
 
         for (int e = 0; e < numDevices; e++)
             deviceMap.add(new ArrayList<>());
@@ -502,14 +520,14 @@ public class DeallocatorService {
             }
             try {
                 ref.deallocate();
+                referenceMap.remove(id, ref);
                 flushed++;
-            } catch (Exception e) {
+            } catch (RuntimeException | Error e) {
                 errors++;
                 if (log.isDebugEnabled()) {
                     log.debug("forceFlushAll: error deallocating id={}: {}", id, e.getMessage());
                 }
             }
-            referenceMap.remove(id);
         }
         if (flushed > 0 || errors > 0 || skippedLive > 0) {
             log.info("DeallocatorService.forceFlushAll: deallocated {} entries ({} errors, {} live skipped), refMap now {}",
@@ -539,28 +557,23 @@ public class DeallocatorService {
                         "Ensure Nd4j is properly initialized before allocating buffers.");
             }
 
-            // Clamp device ID to valid range
             if (desiredDevice < 0 || desiredDevice >= deviceMap.size()) {
-                log.trace("Device {} out of range [0, {}), falling back to device 0",
-                        desiredDevice, deviceMap.size());
-                desiredDevice = 0;
+                throw new IllegalArgumentException(
+                        "Invalid primary-backend device " + desiredDevice
+                                + " for " + deviceMap.size() + " devices");
             }
 
             List<ReferenceQueue<Deallocatable>> queueList = deviceMap.get(desiredDevice);
-
-            // Safety check: if no queues for this device, fall back to device 0's queues
-            // This can happen when numDevices > numThreads
             if (queueList.isEmpty()) {
-                // Fall back to device 0 which is guaranteed to have at least one queue
-                queueList = deviceMap.get(0);
-                if (queueList.isEmpty()) {
-                    log.error("No deallocator queues available - cannot register buffer for deallocation");
-                    throw new IllegalStateException("DeallocatorService has no queues initialized. " +
-                            "Ensure Nd4j is properly initialized before allocating buffers.");
-                }
+                throw new IllegalStateException(
+                        "No deallocator queue exists for primary-backend device "
+                                + desiredDevice);
             }
 
-            val reference = new DeallocatableReference(deallocatable, queueList.get(RandomUtils.nextInt(0, queueList.size())));
+            val reference = new DeallocatableReference(
+                    deallocatable,
+                    queueList.get(RandomUtils.nextInt(0, queueList.size())),
+                    this);
             referenceMap.put(deallocatable.getUniqueId(), reference);
             return deallocatable.getUniqueId();
         }
@@ -568,14 +581,162 @@ public class DeallocatorService {
         return -1;
     }
 
+    /**
+     * Registers an object against an explicit native owner and its exact device.
+     * This path is intentionally independent of the primary ND4J backend topology.
+     */
+    public long pickObject(@NonNull Deallocatable deallocatable, @NonNull NativeBufferOwner owner) {
+        if (noPointerGc) {
+            return -1;
+        }
+
+        int desiredDevice = deallocatable.targetDevice();
+        int deviceCount = owner.deviceCount();
+        if (deviceCount < 1) {
+            throw new IllegalStateException("NativeBufferOwner has no available devices");
+        }
+        if (desiredDevice < 0 || desiredDevice >= deviceCount) {
+            throw new IllegalArgumentException(
+                    "Invalid device " + desiredDevice + " for NativeBufferOwner with "
+                            + deviceCount + " devices");
+        }
+
+        ReferenceQueue<Deallocatable> queue =
+                ownerQueue(owner, desiredDevice);
+        DeallocatableReference reference =
+                new DeallocatableReference(deallocatable, queue, this);
+        referenceMap.put(deallocatable.getUniqueId(), reference);
+        return deallocatable.getUniqueId();
+    }
+
+
+    private ReferenceQueue<Deallocatable> ownerQueue(
+            NativeBufferOwner owner, int deviceId) {
+        synchronized (ownerDeviceQueues) {
+            int deviceCount = owner.deviceCount();
+            if (deviceId < 0 || deviceId >= deviceCount) {
+                throw new IllegalArgumentException(
+                        "Invalid device " + deviceId + " for NativeBufferOwner with "
+                                + deviceCount + " devices");
+            }
+
+            List<OwnerQueue> queues = ownerDeviceQueues.computeIfAbsent(
+                    owner, ignored -> new ArrayList<>());
+            while (queues.size() < deviceCount) {
+                queues.add(null);
+            }
+
+            OwnerQueue ownerQueue = queues.get(deviceId);
+            if (ownerQueue == null) {
+                ownerQueue = new OwnerQueue(owner, deviceId);
+                queues.set(deviceId, ownerQueue);
+                ownerQueue.thread.start();
+            }
+            return ownerQueue.queue;
+        }
+    }
+
+    /**
+     * Executes one cleanup without allowing a failed deallocator to terminate
+     * its worker. The caller retains failed references for a later retry.
+     */
+    private boolean processReference(DeallocatableReference reference) {
+        try {
+            if (listeners.isEmpty()) {
+                reference.deallocate();
+                referenceMap.remove(reference.getId(), reference);
+            } else {
+                for (CustomDeallocatorListener listener : listeners) {
+                    listener.addForDeallocation(reference);
+                }
+            }
+            return true;
+        } catch (RuntimeException | Error failure) {
+            log.error(
+                    "Deallocation failed for reference {}; retaining it for retry",
+                    reference.getId(), failure);
+            return false;
+        }
+    }
+
+    private final class OwnerQueue {
+        private final ReferenceQueue<Deallocatable> queue = new ReferenceQueue<>();
+        private final OwnerDeallocatorServiceThread thread;
+
+        private OwnerQueue(NativeBufferOwner owner, int deviceId) {
+            thread = new OwnerDeallocatorServiceThread(
+                    queue, owner, deviceId, ownerThreadCounter.incrementAndGet());
+            thread.setDaemon(true);
+        }
+    }
+
+    /**
+     * Backend-neutral worker for an exact NativeBufferOwner/device domain.
+     * Device selection is performed by the captured cleanup state, never by the
+     * process-primary DeviceMemoryManager.
+     */
+    private final class OwnerDeallocatorServiceThread extends Thread {
+        private final ReferenceQueue<Deallocatable> queue;
+        private final NativeBufferOwner owner;
+        private final int deviceId;
+        private final Deque<DeallocatableReference> retries =
+                new ConcurrentLinkedDeque<>();
+
+        private OwnerDeallocatorServiceThread(
+                ReferenceQueue<Deallocatable> queue,
+                NativeBufferOwner owner,
+                int deviceId,
+                long threadId) {
+            this.queue = queue;
+            this.owner = owner;
+            this.deviceId = deviceId;
+            setName("OwnerDeallocatorServiceThread_" + threadId
+                    + "_device_" + deviceId);
+            setContextClassLoader(null);
+        }
+
+        @Override
+        public void run() {
+            while (!isInterrupted()) {
+                try {
+                    while (blockDeallocator.get()) {
+                        Thread.sleep(1);
+                    }
+
+                    DeallocatableReference reference =
+                            (DeallocatableReference) queue.remove(
+                                    retries.isEmpty() ? 0L : 1000L);
+                    if (reference == null) {
+                        reference = retries.pollFirst();
+                    }
+                    if (reference != null && !processReference(reference)) {
+                        retries.offerLast(reference);
+                    }
+                } catch (InterruptedException e) {
+                    interrupt();
+                } catch (RuntimeException | Error failure) {
+                    log.error(
+                            "Exact-owner deallocator worker failed for owner {} device {}; "
+                                    + "worker will continue",
+                            owner.getClass().getName(), deviceId, failure);
+                }
+            }
+        }
+    }
 
     private class DeallocatorServiceThread extends Thread implements Runnable {
         private final ReferenceQueue<Deallocatable> queue;
         private final int threadIdx;
-        public static final String DeallocatorThreadNamePrefix = "DeallocatorServiceThread thread ";
+        public static final String DeallocatorThreadNamePrefix =
+                "DeallocatorServiceThread thread ";
         private final int deviceId;
+        private final Deque<DeallocatableReference> retries =
+                new ConcurrentLinkedDeque<>();
 
-        private DeallocatorServiceThread(@NonNull ReferenceQueue<Deallocatable> queue, int threadIdx, int deviceId) {
+        private DeallocatorServiceThread(
+                @NonNull ReferenceQueue<Deallocatable> queue,
+                int threadIdx,
+                int deviceId) {
             this.queue = queue;
             this.threadIdx = threadIdx;
             this.setName(DeallocatorThreadNamePrefix + threadIdx);
@@ -583,78 +744,52 @@ public class DeallocatorService {
             setContextClassLoader(null);
         }
 
-        @SneakyThrows
         @Override
         public void run() {
-            DeviceMemoryManager.getInstance().switchDevice(deviceId, "DeallocatorService", "worker-init");
-            boolean canRun = true;
-            while (canRun) {
-                while(blockDeallocator.get()) {
-                    // Use a short sleep (1ms) instead of 1000ms to avoid massive memory buildup
-                    // During profiling, ops block deallocation briefly (milliseconds) but if the
-                    // deallocator sleeps for 1 second, it misses the unblock window and memory
-                    // accumulates rapidly. With thousands of ops per second, this causes OOM.
-                    Thread.sleep(1);
-                }
-                // if periodicGc is enabled, only first thread will call for it
-                if (threadIdx == 0 && Nd4j.getMemoryManager().getAutoGcWindow() > 0) {
-                    val reference = (DeallocatableReference) queue.poll();
-                    if (reference == null) {
-                        val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
-                        try {
-                            Thread.sleep(timeout);
-                            // Memory-ratio based GC: only invoke System.gc() when Java heap
-                            // usage exceeds 75% of max. This avoids constant Full GC churn
-                            // when there's plenty of heap (e.g., during model loading or DSP
-                            // execution where native memory is managed directly).
-                            Runtime rt = Runtime.getRuntime();
-                            long used = rt.totalMemory() - rt.freeMemory();
-                            long max = rt.maxMemory();
-                            if (used > max * 3 / 4) {
+            DeviceMemoryManager.getInstance().switchDevice(
+                    deviceId, "DeallocatorService", "worker-init");
+            while (!isInterrupted()) {
+                try {
+                    while (blockDeallocator.get()) {
+                        Thread.sleep(1);
+                    }
+
+                    DeallocatableReference reference;
+                    long autoGcWindow =
+                            Nd4j.getMemoryManager().getAutoGcWindow();
+                    if (threadIdx == 0 && autoGcWindow > 0) {
+                        reference = (DeallocatableReference) queue.poll();
+                        if (reference == null) {
+                            reference = retries.pollFirst();
+                        }
+                        if (reference == null) {
+                            Thread.sleep(autoGcWindow);
+                            Runtime runtime = Runtime.getRuntime();
+                            long used =
+                                    runtime.totalMemory() - runtime.freeMemory();
+                            if (used > runtime.maxMemory() * 3 / 4) {
                                 Nd4j.getMemoryManager().invokeGc();
                             }
-                        } catch (InterruptedException e) {
-                            canRun = false;
+                            continue;
                         }
                     } else {
-                        // invoking deallocator
-                        if (reference != null) {
-                            if(listeners.isEmpty()) {
-                                // No listeners, deallocate directly
-                                reference.deallocate();
-                                if(referenceMap.containsKey(reference.getId()))
-                                    referenceMap.remove(reference.getId());
-                            } else {
-                                // Delegate to listeners for custom deallocation timing
-                                for(CustomDeallocatorListener listener : listeners)
-                                    listener.addForDeallocation(reference);
-                            }
-
-
+                        reference = (DeallocatableReference) queue.remove(
+                                retries.isEmpty() ? 0L : 1000L);
+                        if (reference == null) {
+                            reference = retries.pollFirst();
                         }
                     }
-                } else {
-                    try {
-                        val reference = (DeallocatableReference) queue.remove();
-                        if (reference == null)
-                            continue;
 
-                        if(listeners.isEmpty()) {
-                            // No listeners, deallocate directly
-                            reference.deallocate();
-                            if(referenceMap.containsKey(reference.getId()))
-                                referenceMap.remove(reference.getId());
-                        } else {
-                            // Delegate to listeners for custom deallocation timing
-                            for(CustomDeallocatorListener listener : listeners)
-                                listener.addForDeallocation(reference);
-                        }
-
-                    } catch (InterruptedException e) {
-                        canRun = false;
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    if (reference != null && !processReference(reference)) {
+                        retries.offerLast(reference);
                     }
+                } catch (InterruptedException e) {
+                    interrupt();
+                } catch (RuntimeException | Error failure) {
+                    log.error(
+                            "Primary-backend deallocator worker {} failed; "
+                                    + "worker will continue",
+                            threadIdx, failure);
                 }
             }
         }

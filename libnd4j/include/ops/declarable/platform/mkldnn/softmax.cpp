@@ -111,7 +111,7 @@ static void softmaxMKLDNN(NDArray* x, NDArray* z, const sd::LongType axis) {
   stream.wait();
 }
 
-PLATFORM_IMPL(softmax, ENGINE_CPU) {
+PLATFORM_IMPL(softmax, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -153,7 +153,7 @@ static bool isSupportedSoftmaxType(DataType dt) {
   return false;
 }
 
-PLATFORM_CHECK(softmax, ENGINE_CPU) {
+PLATFORM_CHECK(softmax, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -242,7 +242,7 @@ static void softmaxBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, const sd::
   stream.wait();
 }
 
-PLATFORM_IMPL(softmax_bp, ENGINE_CPU) {
+PLATFORM_IMPL(softmax_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto softmaxOutput = INPUT_VARIABLE(2);
@@ -273,7 +273,7 @@ PLATFORM_IMPL(softmax_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(softmax_bp, ENGINE_CPU) {
+PLATFORM_CHECK(softmax_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto softmaxOutput = INPUT_VARIABLE(2);

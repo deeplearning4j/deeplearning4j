@@ -26,6 +26,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT LegacyReduceBoolOp : public LegacyOp {
  protected:
   Status validateAndExecute(sd::graph::Context& block) override;
@@ -38,6 +39,7 @@ class SD_LIB_EXPORT LegacyReduceBoolOp : public LegacyOp {
   LegacyOp* clone() override;
   void registerTypes() override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

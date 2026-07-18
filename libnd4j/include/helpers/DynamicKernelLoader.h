@@ -18,6 +18,8 @@
 #ifndef SD_DYNAMIC_KERNEL_LOADER_H
 #define SD_DYNAMIC_KERNEL_LOADER_H
 
+#include <system/BackendNamespace.h>
+
 #include <execution/Engine.h>
 #include <graph/Context.h>
 #include <ops/declarable/PlatformHelper.h>
@@ -33,6 +35,7 @@
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 /**
  * Version information for plugins
@@ -299,6 +302,7 @@ class SD_LIB_EXPORT DynamicKernelLoader {
     } \
   }
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

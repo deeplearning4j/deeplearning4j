@@ -1,0 +1,17 @@
+[
+  {
+    "name": "java.util.LinkedHashMap"
+  },
+  {
+    "name": "java.util.HashMap"
+  },
+  {
+    "name": "java.lang.Long"
+  },
+  {
+    "name": "java.lang.Number"
+  },
+  {
+    "name": "java.lang.String"
+  }
+]

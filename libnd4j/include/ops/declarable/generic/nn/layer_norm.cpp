@@ -31,7 +31,7 @@
 #include <ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/reverse.h>
 #include <ops/declarable/helpers/layer_norm.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 #include <helpers/ShapeUtils.h>
 #include <execution/Threads.h>
 #include <cmath>
@@ -384,6 +384,7 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
 }
 
 DECLARE_TYPES(layer_norm_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
   getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }

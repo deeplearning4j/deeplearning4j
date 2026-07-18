@@ -96,7 +96,8 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
 
 DECLARE_TYPES(squeeze) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
-  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_DATA_MOVEMENT |
+                               OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(squeeze) {

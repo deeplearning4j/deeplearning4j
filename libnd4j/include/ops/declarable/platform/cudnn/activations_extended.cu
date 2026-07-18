@@ -29,9 +29,12 @@
 
 #include "cudnnUtils.h"
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // Activation descriptor RAII wrapper for extended activations
 struct ActivationDescExt {
@@ -57,6 +60,10 @@ static void createActivationTensorDesc(CudnnTensor& desc, NDArray* arr, cudnnDat
 // cuDNN has CUDNN_ACTIVATION_SOFTPLUS available in some versions
 // Fallback: Use ELU approximation or custom kernel
 //////////////////////////////////////////////////////////////////////////
+// Op macros below open SD_NS themselves (platform_boilerplate.h) — the
+// file-level wrap must end before them or SD_NS nests inside itself.
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
+
 #if CUDNN_VERSION >= 8500
 // cuDNN 8.5+ has proper softplus support
 PLATFORM_IMPL(softplus, ENGINE_CUDA) {

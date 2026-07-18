@@ -27,9 +27,12 @@
 
 #include "cudnnUtils.h"
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // RAII wrapper for cuDNN reduce tensor descriptor
 struct ReduceTensorDesc {
@@ -161,6 +164,10 @@ static bool canUseCudnnReduce(NDArray* input, NDArray* output, const std::vector
 
   return true;
 }
+
+// Op macros below open SD_NS themselves (platform_boilerplate.h) — the
+// file-level wrap must end before them or SD_NS nests inside itself.
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(reduce_sum, ENGINE_CUDA) {

@@ -22,6 +22,8 @@ package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintConfig;
+import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintMasker;
 import org.eclipse.deeplearning4j.llm.generation.sampling.Sampler;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplerUtils;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
@@ -30,10 +32,12 @@ import org.eclipse.deeplearning4j.llm.generation.speculative.DraftModelSpeculato
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig;
 import org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfigApplier;
+import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -66,6 +70,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -240,6 +245,18 @@ public class GenerationPipeline implements AutoCloseable {
     private final AtomicReference<GenerationSession> activeSession = new AtomicReference<>(null);
     private static final AtomicLong SESSION_ID_COUNTER = new AtomicLong(0);
     private static final String ACTUAL_SEQUENCE_LENGTH_NAME = "actual_sequence_length";
+    private static final String TARGET_HIDDEN_STATES_NAME = "target_hidden_states";
+    private static final String MTP_INPUT_IDS_NAME = "mtp_input_ids";
+    private static final String MTP_TARGET_HIDDEN_NAME = "mtp_target_hidden_states";
+    private static final String MTP_POSITION_OFFSET_NAME = "mtp_position_offset";
+    private static final String MTP_CACHE_POSITION_NAME = "mtp_cache_position";
+    private static final String MTP_CAUSAL_MASK_NAME = "mtp_causal_mask";
+    private static final String MTP_KEY_CACHE_NAME = "mtp_past_key_values.0.key";
+    private static final String MTP_VALUE_CACHE_NAME = "mtp_past_key_values.0.value";
+    private static final String MTP_KEY_STATES_NAME = "mtp_key_states";
+    private static final String MTP_VALUE_STATES_NAME = "mtp_value_states";
+    private static final String MTP_HIDDEN_STATES_NAME = "mtp_hidden_states";
+    private static final String MTP_LOGITS_NAME = "mtp_logits";
 
     /**
      * FORWARD-FIX (fixed-buffer decode reuse): the {@link InGraphKvState} from the previous one-shot
@@ -752,7 +769,7 @@ public class GenerationPipeline implements AutoCloseable {
                     throw new IllegalArgumentException("SamplingConfig.decodeStrategy=SPECULATIVE requires "
                             + "GenerationPipelineConfig.maxSpeculativeTokens > 0");
                 }
-                return new DecodePolicy(DecodePolicyKind.SPECULATIVE, 1, width, false);
+                return new DecodePolicy(DecodePolicyKind.SPECULATIVE, 1, width + 1, false);
             }
             case CONTRASTIVE:
                 if (!sampling.isContrastive()) {
@@ -792,6 +809,12 @@ public class GenerationPipeline implements AutoCloseable {
         if (policy.isScalarNativePolicy()) {
             return;
         }
+        // ADR 0106 Phase 2: SPECULATIVE uses the window substrate with W=speculativeK+1.
+        // The n-gram proposer runs inside the C++ decode loop — no separate draft model needed.
+        // windowMax > 1 confirms the substrate has been allocated for the wider window.
+        if (policy.kind == DecodePolicyKind.SPECULATIVE && policy.windowMax > 1) {
+            return;
+        }
         throw new UnsupportedOperationException(
                 "Decode strategy " + policy.kind + " resolves to masked substrate B=" + policy.batchMax
                 + ", W=" + policy.windowMax + " (hidden=" + policy.needsHiddenState + "), but the current "
@@ -821,10 +844,22 @@ public class GenerationPipeline implements AutoCloseable {
     private static AutoregressiveDecode applyNativePolicy(AutoregressiveDecode op, DecodePolicy policy,
                                                           SamplingConfig sampling,
                                                           int generatedTokenOffset) {
+        return applyNativePolicy(op, policy, sampling, generatedTokenOffset, policy.windowMax);
+    }
+
+    private static AutoregressiveDecode applyNativePolicy(AutoregressiveDecode op, DecodePolicy policy,
+                                                          SamplingConfig sampling,
+                                                          int generatedTokenOffset,
+                                                          int windowEnvelope) {
         if (sampling == null) sampling = SamplingConfig.defaultConfig();
+        if (windowEnvelope < policy.windowMax) {
+            throw new IllegalArgumentException("Frozen decode window W=" + windowEnvelope
+                    + " is narrower than requested policy W=" + policy.windowMax);
+        }
         long seed = sampling.getSeed() != null ? sampling.getSeed() : 0L;
+        int activeWindow = policy.kind == DecodePolicyKind.SPECULATIVE ? 1 : policy.windowMax;
         return op.withDecodePolicy(nativeDecodeStrategy(policy.kind),
-                        policy.batchMax, policy.windowMax, policy.batchMax, policy.windowMax,
+                        policy.batchMax, windowEnvelope, policy.batchMax, activeWindow,
                         -1, sampling.getNumBeams(), sampling.getLengthPenalty(),
                         sampling.getPenaltyAlpha(), sampling.getContrastiveTopK())
                 .withSamplingPolicy(sampling.getMinP(), sampling.getFrequencyPenalty(),
@@ -1029,6 +1064,10 @@ public class GenerationPipeline implements AutoCloseable {
         String posOffsetName = ioConfig.getPositionOffsetName();
         String cachePosName = ioConfig.getCachePositionName();
         String causalMaskName = ioConfig.getCausalMaskName();
+        boolean useNativeMtp = config.getMaxSpeculativeTokens() > 0 && hasBundledMtpGraph();
+        if (useNativeMtp) {
+            log.info("[MTP] Bundled Qwen3.5 predictor enabled (K={})", config.getMaxSpeculativeTokens());
+        }
 
         int actualPrefillLen = promptTokenIds.length;
 
@@ -1125,10 +1164,6 @@ public class GenerationPipeline implements AutoCloseable {
                 INDArray st = prefillInputMap.get(pair.inputName);
                 if (st != null) st.assign(0);
             }
-            Nd4j.getExecutioner().commit();
-            for (INDArray arr : prefillInputMap.values()) {
-                if (arr != null && !arr.isEmpty()) arr.syncToDevice();
-            }
         } else {
             prefillInputIds = Nd4j.createFromArray(effectiveTokenIds)
                     .reshape(1, prefillSeqLen).castTo(DataType.INT64);
@@ -1205,6 +1240,7 @@ public class GenerationPipeline implements AutoCloseable {
         // Request outputs: logits + per-layer KV outputs + recurrent state outputs
         List<String> prefillOutputNames = new ArrayList<>();
         prefillOutputNames.add(prefillLogitsRequestName);
+        if (useNativeMtp) prefillOutputNames.add(TARGET_HIDDEN_STATES_NAME);
         for (int i = 0; i < numLayers; i++) {
             int layerIdx = extractLayerIndex(kvInputNames.keyNames.get(i));
             prefillOutputNames.add("k_rope_" + layerIdx);
@@ -1213,7 +1249,6 @@ public class GenerationPipeline implements AutoCloseable {
         for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
             prefillOutputNames.add(pair.outputName);
         }
-
         Map<String, INDArray> prefillOutputs;
         try {
             prefillOutputs = decoder.output(
@@ -1225,6 +1260,11 @@ public class GenerationPipeline implements AutoCloseable {
 
         log.info("[GGUF-KV] Prefill returned {} outputs: {} (prefillLastPos={})",
                 prefillOutputs.size(), prefillOutputs.keySet(), usePrefillLastPos);
+        INDArray targetPrefillHidden = useNativeMtp ? prefillOutputs.get(TARGET_HIDDEN_STATES_NAME) : null;
+        if (useNativeMtp && targetPrefillHidden == null) {
+            throw new IllegalStateException("Bundled MTP graph did not return " + TARGET_HIDDEN_STATES_NAME
+                    + " during target prefill");
+        }
 
         // Sample first token from prefill logits.
         // When fixedBuffers is active, the logits tensor has shape [1, prefillSeqLen, vocab]
@@ -1481,6 +1521,9 @@ public class GenerationPipeline implements AutoCloseable {
 
         // Create recurrent state buffers from prefill outputs (keyed by input name). On reuse, assign
         // the new prefill state into the RETAINED buffer in place (stable address); else dup fresh.
+        // CUDA assign/dup is asynchronous, so retain each source until the warmup's host-visible logits
+        // prove that the dependent decode work has completed.
+        List<INDArray> prefillRecurrentCopyDonors = new ArrayList<>();
         Map<String, INDArray> recurrentStateBuffers = reuseState != null && reuseState.recurrentStateBuffers != null
                 ? reuseState.recurrentStateBuffers : new LinkedHashMap<>();
         for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
@@ -1489,19 +1532,16 @@ public class GenerationPipeline implements AutoCloseable {
                 INDArray existing = recurrentStateBuffers.get(pair.inputName);
                 if (reuseState != null && existing != null) {
                     existing.assign(stateOut);
-                    stateOut.close();
                 } else {
                     recurrentStateBuffers.put(pair.inputName, stateOut.dup());
-                    stateOut.close();
                 }
+                prefillRecurrentCopyDonors.add(stateOut);
                 log.info("[GGUF-KV] Recurrent state {} → {} shape={}", pair.inputName, pair.outputName,
                         Arrays.toString(recurrentStateBuffers.get(pair.inputName).shape()));
             } else {
                 log.warn("[GGUF-KV] Missing prefill output for recurrent state '{}'", pair.outputName);
             }
         }
-
-        Nd4j.getExecutioner().commit();
 
         // ══════════════════════════════════════════════════════════════════════
         // STEP 3: Warmup decode step -- compile DSP plan for decode shapes
@@ -1515,28 +1555,43 @@ public class GenerationPipeline implements AutoCloseable {
         // are real content. We write the first decode token at actualPrefillLen.
         int firstDecodePos = actualPrefillLen;
 
-        // Decode-step ext inputs. On reuse, reuse the RETAINED decode tensors (stable addresses the
-        // captured [1,1] decode graph baked) and overwrite content in place; else allocate fresh.
-        INDArray decodeInputIds;
-        if (reuseState != null && reuseState.decodeInputIds != null) {
-            decodeInputIds = reuseState.decodeInputIds;
-            decodeInputIds.putScalar(new long[]{0, 0}, firstTokenId);
-        } else {
-            decodeInputIds = Nd4j.createFromArray(new int[]{firstTokenId})
-                    .reshape(1, 1).castTo(DataType.INT64);
+        // Freeze the decode graph at the policy's fixed W envelope. Inactive slots remain
+        // allocated and masked, preserving DSP/CUDA-graph pointer and shape stability.
+        DecodePolicy freezePolicy = resolveDecodePolicy(sampling, config);
+        int decodeWidth = Math.max(1, freezePolicy.windowMax);
+        // A frozen pipeline's window envelope is a property of the compiled plan,
+        // not of the per-generation sampling policy: a narrower policy (e.g. greedy
+        // selected at runtime after a speculative freeze) runs as activeWindow=1 on
+        // the SAME W-wide plan — greedy is the 1x1 special case of the substrate
+        // (ADR 0106). Only widening beyond the frozen envelope forces a re-freeze.
+        if (reuseState != null && reuseState.decodeInputIds != null
+                && reuseState.decodeInputIds.size(1) > decodeWidth) {
+            decodeWidth = (int) reuseState.decodeInputIds.size(1);
         }
+        INDArray decodeInputIds;
+        if (reuseState != null && reuseState.decodeInputIds != null
+                && reuseState.decodeInputIds.size(1) == decodeWidth) {
+            decodeInputIds = reuseState.decodeInputIds;
+            decodeInputIds.assign(0);
+        } else {
+            decodeInputIds = Nd4j.zeros(DataType.INT64, 1, decodeWidth);
+        }
+        decodeInputIds.putScalar(new long[]{0, 0}, firstTokenId);
 
         INDArray decodeCausalMask = null;
         if (causalMaskName != null && decoder.hasVariable(causalMaskName)) {
-            // Decode mask attends to positions 0..firstDecodePos (inclusive of current).
-            // Shape [1,1,1,maxKvLen] is FIXED regardless of actual prompt length.
-            if (reuseState != null && reuseState.decodeCausalMask != null) {
+            INDArray freshMask = decodeWidth > 1
+                    ? DecoderInputBuilder.buildInGraphWindowMask(
+                            DecoderInputBuilder.chainParents(1, decodeWidth),
+                            firstDecodePos, 1, decodeWidth, maxKvLen, maskDtype)
+                    : DecoderInputBuilder.buildInGraphDecodeMask(firstDecodePos, maxKvLen, maskDtype);
+            if (reuseState != null && reuseState.decodeCausalMask != null
+                    && Arrays.equals(reuseState.decodeCausalMask.shape(), freshMask.shape())) {
                 decodeCausalMask = reuseState.decodeCausalMask;
-                try (INDArray freshMask = DecoderInputBuilder.buildInGraphDecodeMask(firstDecodePos, maxKvLen, maskDtype)) {
-                    decodeCausalMask.assign(freshMask);
-                }
+                decodeCausalMask.assign(freshMask);
+                freshMask.close();
             } else {
-                decodeCausalMask = DecoderInputBuilder.buildInGraphDecodeMask(firstDecodePos, maxKvLen, maskDtype);
+                decodeCausalMask = freshMask;
             }
             log.info("[GGUF-KV] Decode mask shape={} dtype={} firstDecodePos={} min={} max={} hasNaN={}",
                     Arrays.toString(decodeCausalMask.shape()), decodeCausalMask.dataType(),
@@ -1597,19 +1652,12 @@ public class GenerationPipeline implements AutoCloseable {
                 decodeInputMap.put(entry.getKey(), entry.getValue());
             }
         }
-        if (reuseState != null) {
-            Nd4j.getExecutioner().commit();
-            for (INDArray arr : decodeInputMap.values()) {
-                if (arr != null && !arr.isEmpty()) arr.syncToDevice();
-            }
-        }
-
         List<String> decodeOutputNames = new ArrayList<>();
         decodeOutputNames.add(logitsName);
+        if (useNativeMtp) decodeOutputNames.add(TARGET_HIDDEN_STATES_NAME);
         for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
             decodeOutputNames.add(pair.outputName);
         }
-
         int kvBufCount = (isQuantizedV2 && quantizedKvBuffers != null) ? quantizedKvBuffers.size()
                 : (staticKvBuffers != null ? staticKvBuffers.size() : 0);
         log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers (V2={}), {} recurrent state buffers, {} inputs",
@@ -1617,13 +1665,17 @@ public class GenerationPipeline implements AutoCloseable {
 
         Map<String, INDArray> decodeOutputs;
         try {
-            decodeOutputs = decoder.output(
-                    decodeInputMap, decodeOutputNames.toArray(new String[0]));
+            decodeOutputs = decoder.output(decodeInputMap, decodeOutputNames.toArray(new String[0]));
         } catch (Exception e) {
             log.error("[GGUF-KV] STEP 3 warmup decode failed", e);
             throw e;
         }
 
+        INDArray targetWarmupHidden = useNativeMtp ? decodeOutputs.get(TARGET_HIDDEN_STATES_NAME) : null;
+        if (useNativeMtp && targetWarmupHidden == null) {
+            throw new IllegalStateException("Bundled MTP graph did not return " + TARGET_HIDDEN_STATES_NAME
+                    + " during target warmup");
+        }
         INDArray decodeLogits = decodeOutputs.get(logitsName);
         suppressStopsUnderFloor(decodeLogits, 0, sampling, generatedSoFar.size(), stopTokenIds);
         int secondTokenId = sampleToken(decodeLogits, 0, sampling, generatedSoFar, rng);
@@ -1631,15 +1683,14 @@ public class GenerationPipeline implements AutoCloseable {
         log.info("[GGUF-KV] STEP 3 second token: {}", secondTokenId);
         decodeLogits.close();
 
-        // Update recurrent state buffers with outputs from warmup decode
-        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
-            INDArray updated = decodeOutputs.get(pair.outputName);
-            if (updated != null) {
-                INDArray buf = recurrentStateBuffers.get(pair.inputName);
-                if (buf != null) buf.assign(updated);
-                updated.close();
-            }
+        // Reading the sampled token is the existing host-visible completion boundary for warmup. The
+        // prefill-copy sources (and any prior two-token run's deferred warmup sources) are now safe to
+        // release without introducing a manual device or stream synchronization.
+        for (INDArray donor : prefillRecurrentCopyDonors) {
+            if (donor != null && !donor.wasClosed()) donor.close();
         }
+        prefillRecurrentCopyDonors.clear();
+        if (reuseState != null) reuseState.releaseRecurrentCopyDonors();
 
         // ══════════════════════════════════════════════════════════════════════
         // STEP 4: Get native plan handle, freeze shapes, resolve ext indices
@@ -1647,8 +1698,27 @@ public class GenerationPipeline implements AutoCloseable {
         InferenceSession session = decoder.getOrCreateSession();
         DynamicShapePlanExecutor executor = session != null ? session.getDynamicShapePlanExecutor() : null;
         Pointer planHandle = executor != null ? executor.getNativePlanHandle() : null;
+        boolean nativePlanAvailable = planHandle != null && !planHandle.isNull();
 
-        if (planHandle == null || planHandle.isNull()) {
+        // Update recurrent state buffers with outputs from warmup decode. Keep each CUDA D2D source
+        // alive until the native decode returns host-visible token/timing data.
+        List<INDArray> warmupRecurrentCopyDonors = new ArrayList<>();
+        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+            INDArray updated = decodeOutputs.get(pair.outputName);
+            if (updated != null) {
+                INDArray buf = recurrentStateBuffers.get(pair.inputName);
+                if (nativePlanAvailable && buf != null) {
+                    buf.assign(updated);
+                    warmupRecurrentCopyDonors.add(updated);
+                } else {
+                    updated.close();
+                }
+            }
+        }
+
+        if (!nativePlanAvailable) {
+            if (targetPrefillHidden != null && !targetPrefillHidden.wasClosed()) targetPrefillHidden.close();
+            if (targetWarmupHidden != null && !targetWarmupHidden.wasClosed()) targetWarmupHidden.close();
             log.warn("Native plan handle not available for GGUF -- returning partial result");
             // On reuse these buffers are the retained state's own — leave them for the caller to free
             // via reuseState.close(); only the non-reuse path owns and frees them inline here.
@@ -1703,7 +1773,11 @@ public class GenerationPipeline implements AutoCloseable {
         int causalMaskExtIdx = causalMaskName != null ? resolveExtInputIdx(executor, causalMaskName) : -1;
         int posOffsetExtIdx = posOffsetName != null ? resolveExtInputIdx(executor, posOffsetName) : -1;
         int cachePosExtIdx = cachePosName != null ? resolveExtInputIdx(executor, cachePosName) : -1;
+        int actualSeqLenExtIdx = decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME)
+                ? resolveExtInputIdx(executor, ACTUAL_SEQUENCE_LENGTH_NAME) : -1;
         int logitsOutputIdx = resolveOutputIdx(executor, logitsName);
+        int targetHiddenOutputIdx = useNativeMtp
+                ? resolveOutputIdx(executor, TARGET_HIDDEN_STATES_NAME) : -1;
 
         int embeddingsExtIdx = -1;
         int maskExtIdx = -1;
@@ -1741,6 +1815,24 @@ public class GenerationPipeline implements AutoCloseable {
         int[] convStateExtIndices = convExtList.stream().mapToInt(Integer::intValue).toArray();
         int[] convStateOutputIndices = convOutList.stream().mapToInt(Integer::intValue).toArray();
 
+        MtpPreparedState preparedMtp = null;
+        if (useNativeMtp) {
+            preparedMtp = prepareBundledMtp(
+                    reuseState,
+                    effectiveTokenIds,
+                    prefillSeqLen,
+                    actualPrefillLen,
+                    maxKvLen,
+                    firstDecodePos,
+                    firstTokenId,
+                    secondTokenId,
+                    targetPrefillHidden,
+                    targetWarmupHidden);
+            // This source backs the queued h_P → MTP carry copy. The native decode's returned token
+            // count is the next natural completion boundary, so retain it with the other warmup donors.
+            warmupRecurrentCopyDonors.add(targetWarmupHidden);
+        }
+
         // ══════════════════════════════════════════════════════════════════════
         // Build the retained decode state. The native decode loop (former STEP 5) now lives in
         // runInGraphNativeDecode(), shared by the one-shot path and by continuation. cachePosition
@@ -1777,7 +1869,9 @@ public class GenerationPipeline implements AutoCloseable {
         state.causalMaskExtIdx = causalMaskExtIdx;
         state.posOffsetExtIdx = posOffsetExtIdx;
         state.cachePosExtIdx = cachePosExtIdx;
+        state.actualSeqLenExtIdx = actualSeqLenExtIdx;
         state.logitsOutputIdx = logitsOutputIdx;
+        state.targetHiddenOutputIdx = targetHiddenOutputIdx;
         state.embeddingsExtIdx = embeddingsExtIdx;
         state.maskExtIdx = maskExtIdx;
         state.posIdsExtIdx = posIdsExtIdx;
@@ -1790,6 +1884,29 @@ public class GenerationPipeline implements AutoCloseable {
         state.numPlanExternalInputs = numPlanExternalInputs;
         state.numPlanOutputs = numPlanOutputs;
         state.numKvPairs = numKvPairs;
+        if (preparedMtp != null) {
+            state.mtpKvBuffers = preparedMtp.kvBuffers;
+            state.mtpPrefillInputMap = preparedMtp.prefillInputMap;
+            state.mtpInputIds = preparedMtp.inputIds;
+            state.mtpTargetHiddenStates = preparedMtp.targetHiddenStates;
+            state.mtpCausalMask = preparedMtp.causalMask;
+            state.mtpPositionOffset = preparedMtp.positionOffset;
+            state.mtpCachePosition = preparedMtp.cachePosition;
+            state.mtpSession = preparedMtp.session;
+            state.mtpExecutor = preparedMtp.executor;
+            state.mtpPlanHandle = preparedMtp.planHandle;
+            state.mtpContextHandle = preparedMtp.contextHandle;
+            state.mtpInputIdsExtIdx = preparedMtp.inputIdsExtIdx;
+            state.mtpTargetHiddenExtIdx = preparedMtp.targetHiddenExtIdx;
+            state.mtpCausalMaskExtIdx = preparedMtp.causalMaskExtIdx;
+            state.mtpPosOffsetExtIdx = preparedMtp.positionOffsetExtIdx;
+            state.mtpCachePosExtIdx = preparedMtp.cachePositionExtIdx;
+            state.mtpKvInputExtIndices = preparedMtp.kvInputExtIndices;
+            state.mtpLogitsOutputIdx = preparedMtp.logitsOutputIdx;
+            state.mtpHiddenOutputIdx = preparedMtp.hiddenOutputIdx;
+            state.mtpNumPlanExternalInputs = preparedMtp.numPlanExternalInputs;
+            state.mtpNumPlanOutputs = preparedMtp.numPlanOutputs;
+        }
         state.kvInputNames = kvInputNames;
         state.recurrentStates = recurrentStates;
         state.decodeOutputNames = decodeOutputNames;
@@ -1825,6 +1942,7 @@ public class GenerationPipeline implements AutoCloseable {
         state.cachePosName = cachePosName;
         state.actualSeqLenName = decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME) ? ACTUAL_SEQUENCE_LENGTH_NAME : null;
         state.prefillInputMap = prefillInputMap;
+        state.retainRecurrentCopyDonors(warmupRecurrentCopyDonors);
         if (reuseState != null) {
             // Clear transient per-generate flags carried over from the previous generate.
             state.eosReached = false;
@@ -2398,6 +2516,8 @@ public class GenerationPipeline implements AutoCloseable {
         int causalMaskExtIdx = causalMaskName != null ? resolveExtInputIdx(executor, causalMaskName) : -1;
         int posOffsetExtIdx = posOffsetName != null ? resolveExtInputIdx(executor, posOffsetName) : -1;
         int cachePosExtIdx = cachePosName != null ? resolveExtInputIdx(executor, cachePosName) : -1;
+        int actualSeqLenExtIdx = decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME)
+                ? resolveExtInputIdx(executor, ACTUAL_SEQUENCE_LENGTH_NAME) : -1;
         int logitsOutputIdx = resolveOutputIdx(executor, logitsName);
         int numKvPairs = numLayers;
         int[] kvInputExtIndices = new int[2 * numKvPairs];
@@ -2466,6 +2586,7 @@ public class GenerationPipeline implements AutoCloseable {
         state.causalMaskExtIdx = causalMaskExtIdx;
         state.posOffsetExtIdx = posOffsetExtIdx;
         state.cachePosExtIdx = cachePosExtIdx;
+        state.actualSeqLenExtIdx = actualSeqLenExtIdx;
         state.logitsOutputIdx = logitsOutputIdx;
         state.embeddingsExtIdx = -1;
         state.maskExtIdx = -1;
@@ -2699,6 +2820,7 @@ public class GenerationPipeline implements AutoCloseable {
         int remainingTokens = isContinuation ? maxNewTokens : (maxNewTokens - 2);
 
         // ── Prepare the current decode-step inputs: feed the last generated token at cachePosition ──
+        state.decodeInputIds.assign(0);
         state.decodeInputIds.putScalar(new long[]{0, 0}, state.lastGeneratedToken);
         if (state.decodeCausalMask != null) {
             if (state.rotatingSlotMap != null) {
@@ -2722,8 +2844,14 @@ public class GenerationPipeline implements AutoCloseable {
                 // 0..cachePosition-1 (all committed K/V), independent of whatever the prior native op
                 // left it in. Reuse the SAME buffer (assign, not realloc) to keep the frozen-plan
                 // ext-input pointer stable.
-                INDArray fresh = DecoderInputBuilder.buildInGraphDecodeMask(
-                        state.cachePosition - 1, state.maxKvLen, state.maskDtype);
+                int decodeWidth = (int) state.decodeInputIds.size(1);
+                INDArray fresh = decodeWidth > 1
+                        ? DecoderInputBuilder.buildInGraphWindowMask(
+                                DecoderInputBuilder.chainParents(1, decodeWidth),
+                                state.cachePosition - 1, 1, decodeWidth,
+                                state.maxKvLen, state.maskDtype)
+                        : DecoderInputBuilder.buildInGraphDecodeMask(
+                                state.cachePosition - 1, state.maxKvLen, state.maskDtype);
                 state.decodeCausalMask.assign(fresh);
                 fresh.close();
             } else {
@@ -2802,10 +2930,16 @@ public class GenerationPipeline implements AutoCloseable {
                 kvScaleArray[si++] = state.kvScaleBuffers.get(valName + "_scale");
             }
         }
+        INDArray[] mtpKvArray = state.mtpKvBuffers != null
+                ? new INDArray[]{
+                        state.mtpKvBuffers.get(MTP_KEY_CACHE_NAME),
+                        state.mtpKvBuffers.get(MTP_VALUE_CACHE_NAME)}
+                : null;
 
         List<Integer> nativeTokens = new ArrayList<>();   // tokens produced by the native op this call
         int nativeCount = 0;
         float tokPerSec = 0f, lateSteadyTokPerSec = 0f;
+        int totalSpeculative = 0, totalAccepted = 0, speculativeSteps = 0;
 
         if (remainingTokens > 0) {
             if (state.rotatingSlotMap != null) {
@@ -2818,6 +2952,12 @@ public class GenerationPipeline implements AutoCloseable {
                 // CUDA-graph safety: each single-step exec is a replay of the same frozen graph (the
                 // plan shape is fixed: 1 input token, 1 output token). No shape change occurs.
                 DecodePolicy decodePolicy = resolveDecodePolicy(state.sampling, config);
+                if (decodePolicy.kind == DecodePolicyKind.SPECULATIVE
+                        && state.mtpPlanHandle != null && !state.mtpPlanHandle.isNull()) {
+                    throw new IllegalStateException(
+                            "Bundled MTP requires the standard monotonic KV cache; rotating KV uses "
+                                    + "a per-token physical-slot loop and cannot preserve the MTP cache prefix.");
+                }
                 int generatedTokenOffset = state.generatedSoFar != null ? state.generatedSoFar.size() : 0;
 
                 for (int step = 0; step < remainingTokens; step++) {
@@ -2850,7 +2990,15 @@ public class GenerationPipeline implements AutoCloseable {
                             state.stopTokenIds);
                     // ADR 0107 V2: append scale buffers and set bit 7 in optionalMask.
                     if (kvScaleArray != null) op.withQuantisedKvScales(kvScaleArray);
-                    applyNativePolicy(op, decodePolicy, state.sampling, generatedTokenOffset + step);
+                    applyNativePolicy(op, decodePolicy, state.sampling, generatedTokenOffset + step,
+                            (int) state.decodeInputIds.size(1));
+                    // ADR 0106 Phase 2: wire n-gram speculation when the policy uses the window substrate.
+                    // specK > 0 only when decodePolicy.kind == SPECULATIVE and windowMax = specK+1.
+                    if (decodePolicy.kind == DecodePolicyKind.SPECULATIVE && config != null
+                            && config.getMaxSpeculativeTokens() > 0) {
+                        op.withSpeculativeDecoding(config.getMaxSpeculativeTokens(), 1 /* NGRAM */);
+                        op.withActualSequenceLengthExtIdx(state.actualSeqLenExtIdx);
+                    }
 
                     INDArray[] results = Nd4j.getExecutioner().exec(op);
                     INDArray nativeTokenIds = results[0];
@@ -2859,6 +3007,11 @@ public class GenerationPipeline implements AutoCloseable {
                     int stepCount = nativeTokenCount.getInt(0);
                     tokPerSec = nativeTimingInfo.getFloat(2);
                     lateSteadyTokPerSec = nativeTimingInfo.length() > 5 ? nativeTimingInfo.getFloat(5) : tokPerSec;
+                    if (nativeTimingInfo.length() > 9) {
+                        totalSpeculative += nativeTimingInfo.getInt(7);
+                        totalAccepted += nativeTimingInfo.getInt(8);
+                        speculativeSteps += nativeTimingInfo.getInt(9);
+                    }
 
                     dummyEmbeddings.close();
                     dummyEmbTable.close();
@@ -2932,7 +3085,39 @@ public class GenerationPipeline implements AutoCloseable {
                 if (kvScaleArray != null) op.withQuantisedKvScales(kvScaleArray);
                 int generatedTokenOffset = state.generatedSoFar != null ? state.generatedSoFar.size() : 0;
                 DecodePolicy decodePolicy = resolveDecodePolicy(state.sampling, config);
-                applyNativePolicy(op, decodePolicy, state.sampling, generatedTokenOffset);
+                applyNativePolicy(op, decodePolicy, state.sampling, generatedTokenOffset,
+                        (int) state.decodeInputIds.size(1));
+                if (decodePolicy.kind == DecodePolicyKind.SPECULATIVE && config != null
+                        && config.getMaxSpeculativeTokens() > 0) {
+                    boolean hasMtpPlan = state.mtpPlanHandle != null && !state.mtpPlanHandle.isNull();
+                    op.withSpeculativeDecoding(
+                            config.getMaxSpeculativeTokens(),
+                            hasMtpPlan ? AutoregressiveDecode.SPECULATOR_TYPE_MTP
+                                    : AutoregressiveDecode.SPECULATOR_TYPE_NGRAM);
+                    op.withActualSequenceLengthExtIdx(state.actualSeqLenExtIdx);
+                    if (hasMtpPlan) {
+                        op.withMtpPlan(
+                                state.mtpInputIds,
+                                state.mtpTargetHiddenStates,
+                                state.mtpCausalMask,
+                                state.mtpPositionOffset,
+                                state.mtpCachePosition,
+                                mtpKvArray,
+                                state.mtpPlanHandle,
+                                state.mtpContextHandle,
+                                state.mtpNumPlanExternalInputs,
+                                state.mtpNumPlanOutputs,
+                                state.mtpInputIdsExtIdx,
+                                state.mtpTargetHiddenExtIdx,
+                                state.mtpCausalMaskExtIdx,
+                                state.mtpPosOffsetExtIdx,
+                                state.mtpCachePosExtIdx,
+                                state.mtpKvInputExtIndices,
+                                state.mtpLogitsOutputIdx,
+                                state.mtpHiddenOutputIdx,
+                                state.targetHiddenOutputIdx);
+                    }
+                }
 
                 INDArray[] results = Nd4j.getExecutioner().exec(op);
                 INDArray nativeTokenIds = results[0];
@@ -2946,10 +3131,17 @@ public class GenerationPipeline implements AutoCloseable {
                 }
                 tokPerSec = nativeTimingInfo.getFloat(2);
                 lateSteadyTokPerSec = nativeTimingInfo.length() > 5 ? nativeTimingInfo.getFloat(5) : tokPerSec;
+                if (nativeTimingInfo.length() > 9) {
+                    totalSpeculative = nativeTimingInfo.getInt(7);
+                    totalAccepted = nativeTimingInfo.getInt(8);
+                    speculativeSteps = nativeTimingInfo.getInt(9);
+                }
 
                 dummyEmbeddings.close();
                 dummyEmbTable.close();
             }
+            // Token count/timing reads above are the native op's existing host-visible boundary.
+            state.releaseRecurrentCopyDonors();
         }
 
         // ── Assemble this call's returned tokens + advance the session state ──
@@ -2993,6 +3185,11 @@ public class GenerationPipeline implements AutoCloseable {
                 .tokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0)
                 .steadyStateTokensPerSecond(tokPerSec)
                 .lateSteadyStateTokensPerSecond(lateSteadyTokPerSec)
+                .totalSpeculativeTokens(totalSpeculative)
+                .totalAcceptedTokens(totalAccepted)
+                .speculativeSteps(speculativeSteps)
+                .averageAcceptanceRate(totalSpeculative > 0 ? (double) totalAccepted / totalSpeculative : 0.0)
+                .effectiveTokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0.0)
                 .sessionId(state.sessionId)   // 0 for one-shot state; the real id for any session call
                 .build();
     }
@@ -3695,6 +3892,366 @@ public class GenerationPipeline implements AutoCloseable {
         return mask;
     }
 
+    private boolean hasBundledMtpGraph() {
+        if (!decoder.hasVariable(TARGET_HIDDEN_STATES_NAME)) return false;
+
+        String[] required = {
+                MTP_INPUT_IDS_NAME,
+                MTP_TARGET_HIDDEN_NAME,
+                MTP_POSITION_OFFSET_NAME,
+                MTP_CACHE_POSITION_NAME,
+                MTP_CAUSAL_MASK_NAME,
+                MTP_KEY_CACHE_NAME,
+                MTP_VALUE_CACHE_NAME,
+                MTP_KEY_STATES_NAME,
+                MTP_VALUE_STATES_NAME,
+                MTP_HIDDEN_STATES_NAME,
+                MTP_LOGITS_NAME
+        };
+        for (String name : required) {
+            if (!decoder.hasVariable(name)) {
+                throw new IllegalStateException("Incomplete bundled MTP graph: missing variable '" + name + "'");
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Execute a SameDiff branch through an explicitly supplied session. This is the same inference
+     * contract used by SameDiff.output(), but lets the target and MTP branches own independent DSP
+     * executors while sharing immutable graph weights.
+     */
+    private static Map<String, INDArray> outputWithSession(
+            InferenceSession session, Map<String, INDArray> placeholders, List<String> outputs) {
+        for (INDArray array : placeholders.values()) {
+            if (array != null) array.setCloseable(false);
+        }
+        try {
+            ExecutionResult result = session.output(
+                    outputs,
+                    placeholders,
+                    Collections.emptyMap(),
+                    null,
+                    Collections.emptyList(),
+                    Collections.emptyList(),
+                    At.defaultAt());
+            if (result.getOutputs() != null) {
+                return ExecutionResult.unpack(result.getOutputs());
+            }
+            Map<String, INDArray> unpacked = new LinkedHashMap<>();
+            if (result.getValueOutputs() != null) {
+                result.getValueOutputs().forEach((name, value) ->
+                        unpacked.put(name, value != null ? value.getTensorValue() : null));
+            }
+            return unpacked;
+        } finally {
+            for (INDArray array : placeholders.values()) {
+                if (array != null) {
+                    try {
+                        array.setCloseable(true);
+                    } catch (Exception ignored) {
+                        // Match SameDiff.output(): placeholder ownership always returns to the caller.
+                    }
+                }
+            }
+        }
+    }
+
+    private static final class MtpPreparedState {
+        Map<String, INDArray> kvBuffers;
+        Map<String, INDArray> prefillInputMap;
+        INDArray inputIds;
+        INDArray targetHiddenStates;
+        INDArray causalMask;
+        INDArray positionOffset;
+        INDArray cachePosition;
+        InferenceSession session;
+        DynamicShapePlanExecutor executor;
+        Pointer planHandle;
+        Pointer contextHandle;
+        int inputIdsExtIdx;
+        int targetHiddenExtIdx;
+        int causalMaskExtIdx;
+        int positionOffsetExtIdx;
+        int cachePositionExtIdx;
+        int[] kvInputExtIndices;
+        int logitsOutputIdx;
+        int hiddenOutputIdx;
+        int numPlanExternalInputs;
+        int numPlanOutputs;
+    }
+
+    /**
+     * Build or replay the isolated Qwen3.5 MTP prefill and scalar-decode plans.
+     *
+     * <p>Alignment is intentionally explicit: prefill row {@code t} receives token {@code x_t}
+     * and target hidden {@code h_(t-1)} (row zero is all-zero); scalar warmup then consumes the
+     * first target-sampled token with the final prompt hidden. Before returning, the retained
+     * target-hidden input is advanced to the target warmup hidden so native drafting starts from
+     * the second sampled token.</p>
+     */
+    private MtpPreparedState prepareBundledMtp(
+            InGraphKvState reuseState,
+            int[] effectiveTokenIds,
+            int prefillSeqLen,
+            int actualPrefillLen,
+            long maxKvLen,
+            int firstDecodePos,
+            int firstTokenId,
+            int secondTokenId,
+            INDArray targetPrefillHidden,
+            INDArray targetWarmupHidden) {
+
+        if (targetPrefillHidden.rank() != 3 || targetWarmupHidden.rank() != 3) {
+            throw new IllegalStateException("MTP target hidden outputs must be rank 3, got prefill="
+                    + Arrays.toString(targetPrefillHidden.shape()) + " warmup="
+                    + Arrays.toString(targetWarmupHidden.shape()));
+        }
+        long hidden = targetPrefillHidden.size(2);
+        if (targetWarmupHidden.size(2) != hidden || actualPrefillLen < 1
+                || actualPrefillLen > targetPrefillHidden.size(1)) {
+            throw new IllegalStateException("Invalid MTP hidden alignment: prefill="
+                    + Arrays.toString(targetPrefillHidden.shape()) + " warmup="
+                    + Arrays.toString(targetWarmupHidden.shape()) + " actualPrefillLen="
+                    + actualPrefillLen);
+        }
+
+        MtpPreparedState prepared = new MtpPreparedState();
+        prepared.session = reuseState != null && reuseState.mtpSession != null
+                ? reuseState.mtpSession : decoder.getInferenceFactory().create(decoder);
+        prepared.prefillInputMap = reuseState != null && reuseState.mtpPrefillInputMap != null
+                ? reuseState.mtpPrefillInputMap : new LinkedHashMap<>();
+        prepared.kvBuffers = reuseState != null && reuseState.mtpKvBuffers != null
+                ? reuseState.mtpKvBuffers : new LinkedHashMap<>();
+
+        DataType mtpDtype = decoder.getVariable(MTP_TARGET_HIDDEN_NAME).dataType();
+
+        INDArray prefillIds = prepared.prefillInputMap.get(MTP_INPUT_IDS_NAME);
+        try (INDArray freshIds = Nd4j.createFromArray(effectiveTokenIds)
+                .reshape(1, prefillSeqLen).castTo(DataType.INT64)) {
+            if (prefillIds == null) {
+                prefillIds = freshIds.dup();
+                prepared.prefillInputMap.put(MTP_INPUT_IDS_NAME, prefillIds);
+            } else {
+                prefillIds.assign(freshIds);
+            }
+        }
+
+        INDArray shiftedHidden = prepared.prefillInputMap.get(MTP_TARGET_HIDDEN_NAME);
+        if (shiftedHidden == null) {
+            shiftedHidden = Nd4j.zeros(mtpDtype, 1, prefillSeqLen, hidden);
+            prepared.prefillInputMap.put(MTP_TARGET_HIDDEN_NAME, shiftedHidden);
+        } else {
+            shiftedHidden.assign(0);
+        }
+        if (prefillSeqLen > 1) {
+            shiftedHidden.get(
+                    NDArrayIndex.all(),
+                    NDArrayIndex.interval(1, prefillSeqLen),
+                    NDArrayIndex.all()).assign(
+                    targetPrefillHidden.get(
+                            NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, prefillSeqLen - 1),
+                            NDArrayIndex.all()));
+        }
+
+        INDArray prefillPosition = prepared.prefillInputMap.get(MTP_POSITION_OFFSET_NAME);
+        if (prefillPosition == null) {
+            prefillPosition = Nd4j.scalar(DataType.INT64, 0L);
+            prepared.prefillInputMap.put(MTP_POSITION_OFFSET_NAME, prefillPosition);
+        } else {
+            prefillPosition.assign(0);
+        }
+        INDArray prefillCachePosition = prepared.prefillInputMap.get(MTP_CACHE_POSITION_NAME);
+        if (prefillCachePosition == null) {
+            prefillCachePosition = Nd4j.scalar(DataType.INT64, 0L);
+            prepared.prefillInputMap.put(MTP_CACHE_POSITION_NAME, prefillCachePosition);
+        } else {
+            prefillCachePosition.assign(0);
+        }
+
+        INDArray freshPrefillMask = config.getMaxPrefillLength() > 0
+                ? buildPaddedPrefillCausalMask(
+                        actualPrefillLen, prefillSeqLen, maxKvLen, DataType.FLOAT)
+                : DecoderInputBuilder.buildInGraphCausalMask(
+                        prefillSeqLen, maxKvLen, DataType.FLOAT);
+        INDArray prefillMask = prepared.prefillInputMap.get(MTP_CAUSAL_MASK_NAME);
+        if (prefillMask == null) {
+            prefillMask = freshPrefillMask;
+            prepared.prefillInputMap.put(MTP_CAUSAL_MASK_NAME, prefillMask);
+        } else {
+            prefillMask.assign(freshPrefillMask);
+            freshPrefillMask.close();
+        }
+
+        if (!prepared.prefillInputMap.containsKey(MTP_KEY_CACHE_NAME)) {
+            prepared.prefillInputMap.put(MTP_KEY_CACHE_NAME, Nd4j.empty(mtpDtype));
+        }
+        if (!prepared.prefillInputMap.containsKey(MTP_VALUE_CACHE_NAME)) {
+            prepared.prefillInputMap.put(MTP_VALUE_CACHE_NAME, Nd4j.empty(mtpDtype));
+        }
+
+        List<String> prefillOutputsRequested = Arrays.asList(
+                MTP_KEY_STATES_NAME, MTP_VALUE_STATES_NAME);
+        Map<String, INDArray> mtpPrefillOutputs = outputWithSession(
+                prepared.session, prepared.prefillInputMap, prefillOutputsRequested);
+        INDArray keyStates = mtpPrefillOutputs.get(MTP_KEY_STATES_NAME);
+        INDArray valueStates = mtpPrefillOutputs.get(MTP_VALUE_STATES_NAME);
+        if (keyStates == null || valueStates == null || keyStates.rank() != 4 || valueStates.rank() != 4) {
+            throw new IllegalStateException("MTP prefill did not return rank-4 K/V states: "
+                    + mtpPrefillOutputs.keySet());
+        }
+
+        long kvHeads = keyStates.size(2);
+        long headDim = keyStates.size(3);
+        INDArray keyCache = prepared.kvBuffers.get(MTP_KEY_CACHE_NAME);
+        if (keyCache == null) {
+            keyCache = Nd4j.zeros(keyStates.dataType(), 1, maxKvLen, kvHeads, headDim);
+            prepared.kvBuffers.put(MTP_KEY_CACHE_NAME, keyCache);
+        } else {
+            keyCache.assign(0);
+        }
+        INDArray valueCache = prepared.kvBuffers.get(MTP_VALUE_CACHE_NAME);
+        if (valueCache == null) {
+            valueCache = Nd4j.zeros(valueStates.dataType(), 1, maxKvLen, kvHeads, headDim);
+            prepared.kvBuffers.put(MTP_VALUE_CACHE_NAME, valueCache);
+        } else {
+            valueCache.assign(0);
+        }
+        keyCache.get(
+                NDArrayIndex.all(),
+                NDArrayIndex.interval(0, actualPrefillLen),
+                NDArrayIndex.all(),
+                NDArrayIndex.all()).assign(
+                keyStates.get(
+                        NDArrayIndex.all(),
+                        NDArrayIndex.interval(0, actualPrefillLen),
+                        NDArrayIndex.all(),
+                        NDArrayIndex.all()));
+        valueCache.get(
+                NDArrayIndex.all(),
+                NDArrayIndex.interval(0, actualPrefillLen),
+                NDArrayIndex.all(),
+                NDArrayIndex.all()).assign(
+                valueStates.get(
+                        NDArrayIndex.all(),
+                        NDArrayIndex.interval(0, actualPrefillLen),
+                        NDArrayIndex.all(),
+                        NDArrayIndex.all()));
+
+        prepared.inputIds = reuseState != null ? reuseState.mtpInputIds : null;
+        if (prepared.inputIds == null) prepared.inputIds = Nd4j.zeros(DataType.INT64, 1, 1);
+        prepared.inputIds.putScalar(new long[]{0, 0}, firstTokenId);
+
+        prepared.targetHiddenStates = reuseState != null ? reuseState.mtpTargetHiddenStates : null;
+        if (prepared.targetHiddenStates == null) {
+            prepared.targetHiddenStates = Nd4j.zeros(mtpDtype, 1, 1, hidden);
+        }
+        prepared.targetHiddenStates.assign(
+                targetPrefillHidden.get(
+                        NDArrayIndex.all(),
+                        NDArrayIndex.interval(actualPrefillLen - 1, actualPrefillLen),
+                        NDArrayIndex.all()));
+
+        INDArray freshDecodeMask = DecoderInputBuilder.buildInGraphDecodeMask(
+                firstDecodePos, maxKvLen, DataType.FLOAT);
+        prepared.causalMask = reuseState != null ? reuseState.mtpCausalMask : null;
+        if (prepared.causalMask == null
+                || !Arrays.equals(prepared.causalMask.shape(), freshDecodeMask.shape())) {
+            prepared.causalMask = freshDecodeMask;
+        } else {
+            prepared.causalMask.assign(freshDecodeMask);
+            freshDecodeMask.close();
+        }
+
+        prepared.positionOffset = reuseState != null ? reuseState.mtpPositionOffset : null;
+        if (prepared.positionOffset == null) {
+            prepared.positionOffset = Nd4j.scalar(DataType.INT64, firstDecodePos);
+        } else {
+            prepared.positionOffset.putScalar(new long[]{}, (long) firstDecodePos);
+        }
+        prepared.cachePosition = reuseState != null ? reuseState.mtpCachePosition : null;
+        if (prepared.cachePosition == null) {
+            prepared.cachePosition = Nd4j.scalar(DataType.INT64, firstDecodePos);
+        } else {
+            prepared.cachePosition.putScalar(new long[]{}, (long) firstDecodePos);
+        }
+
+        Map<String, INDArray> decodeInputs = new LinkedHashMap<>();
+        decodeInputs.put(MTP_INPUT_IDS_NAME, prepared.inputIds);
+        decodeInputs.put(MTP_TARGET_HIDDEN_NAME, prepared.targetHiddenStates);
+        decodeInputs.put(MTP_POSITION_OFFSET_NAME, prepared.positionOffset);
+        decodeInputs.put(MTP_CACHE_POSITION_NAME, prepared.cachePosition);
+        decodeInputs.put(MTP_CAUSAL_MASK_NAME, prepared.causalMask);
+        decodeInputs.put(MTP_KEY_CACHE_NAME, keyCache);
+        decodeInputs.put(MTP_VALUE_CACHE_NAME, valueCache);
+
+        List<String> decodeOutputsRequested = Arrays.asList(
+                MTP_LOGITS_NAME, MTP_HIDDEN_STATES_NAME);
+        Map<String, INDArray> mtpDecodeOutputs = outputWithSession(
+                prepared.session, decodeInputs, decodeOutputsRequested);
+        INDArray mtpLogits = mtpDecodeOutputs.get(MTP_LOGITS_NAME);
+        INDArray mtpHidden = mtpDecodeOutputs.get(MTP_HIDDEN_STATES_NAME);
+        if (mtpLogits == null || mtpHidden == null) {
+            throw new IllegalStateException("MTP scalar warmup did not return logits and hidden states: "
+                    + mtpDecodeOutputs.keySet());
+        }
+
+        // Reading one predictor logit is the natural host-visible completion boundary for all
+        // prefill-cache copies consumed by this warmup; no manual stream/device synchronization.
+        double warmupProbe = mtpLogits.getDouble(0);
+        log.info("[MTP] Scalar warmup complete: prefill={} actual={} hidden={} kvHeads={} headDim={} probe={}",
+                prefillSeqLen, actualPrefillLen, hidden, kvHeads, headDim, warmupProbe);
+
+        prepared.executor = prepared.session.getDynamicShapePlanExecutor();
+        prepared.planHandle = prepared.executor != null
+                ? prepared.executor.getNativePlanHandle() : null;
+        if (prepared.executor == null || prepared.planHandle == null || prepared.planHandle.isNull()) {
+            throw new IllegalStateException("Native MTP DSP plan handle is unavailable after scalar warmup");
+        }
+
+        if ((reuseState == null || reuseState.mtpExecutor == null)
+                && prepared.executor.getCurrentPlan() != null) {
+            prepared.executor.setMaxKvCacheLength((int) maxKvLen);
+            prepared.executor.configureMaxAllocationForKvCache(mtpDecodeOutputs);
+            boolean forcedSlotBySlot = decoder.getGraphExecutionMode() == GraphExecutionMode.SLOT_BY_SLOT
+                    || Nd4j.getEnvironment().tritonSkipKernels();
+            if (!forcedSlotBySlot) prepared.executor.setShapesFrozen(true);
+        }
+
+        prepared.contextHandle = prepared.executor.getCachedOpContext();
+        prepared.inputIdsExtIdx = resolveExtInputIdx(prepared.executor, MTP_INPUT_IDS_NAME);
+        prepared.targetHiddenExtIdx = resolveExtInputIdx(prepared.executor, MTP_TARGET_HIDDEN_NAME);
+        prepared.positionOffsetExtIdx = resolveExtInputIdx(prepared.executor, MTP_POSITION_OFFSET_NAME);
+        prepared.cachePositionExtIdx = resolveExtInputIdx(prepared.executor, MTP_CACHE_POSITION_NAME);
+        prepared.causalMaskExtIdx = resolveExtInputIdx(prepared.executor, MTP_CAUSAL_MASK_NAME);
+        prepared.kvInputExtIndices = new int[]{
+                resolveExtInputIdx(prepared.executor, MTP_KEY_CACHE_NAME),
+                resolveExtInputIdx(prepared.executor, MTP_VALUE_CACHE_NAME)
+        };
+        prepared.logitsOutputIdx = resolveOutputIdx(prepared.executor, MTP_LOGITS_NAME);
+        prepared.hiddenOutputIdx = resolveOutputIdx(prepared.executor, MTP_HIDDEN_STATES_NAME);
+        prepared.numPlanExternalInputs = prepared.executor.getCurrentPlan() != null
+                ? prepared.executor.getCurrentPlan().getExternalInputKeys().length : 0;
+        prepared.numPlanOutputs = decodeOutputsRequested.size();
+
+        // Native drafting starts with the second target token and therefore needs h_P, produced by
+        // the target warmup that consumed the first token at position P.
+        prepared.targetHiddenStates.assign(
+                targetWarmupHidden.get(
+                        NDArrayIndex.all(),
+                        NDArrayIndex.interval(0, 1),
+                        NDArrayIndex.all()));
+        prepared.inputIds.putScalar(new long[]{0, 0}, secondTokenId);
+
+        keyStates.close();
+        valueStates.close();
+        targetPrefillHidden.close();
+        mtpLogits.close();
+        mtpHidden.close();
+        return prepared;
+    }
+
     private static void closePrefillOutputs(Map<String, INDArray> outputs, String logitsName) {
         for (Map.Entry<String, INDArray> entry : outputs.entrySet()) {
             if (!entry.getKey().equals(logitsName) && entry.getValue() != null) {
@@ -3709,6 +4266,10 @@ public class GenerationPipeline implements AutoCloseable {
      * <p>When {@code sampling.isGreedy()}, performs argmax. Otherwise applies:
      * repetition penalty → temperature scaling → top-k filtering → top-p filtering → multinomial sampling.</p>
      *
+     * <p>When {@code masker} is non-null, constraint masking is applied first (after extracting the
+     * vocab slice), before any other sampling transforms. The masker also receives the selected token
+     * via {@link ConstraintMasker#tokenEmitted} so it can update its accumulated-text state.</p>
+     *
      * @param logits         logits tensor of shape [1, seqLen, vocab]
      * @param seqPos         sequence position to sample from
      * @param sampling       sampling configuration
@@ -3718,14 +4279,53 @@ public class GenerationPipeline implements AutoCloseable {
      */
     private static int sampleToken(INDArray logits, long seqPos, SamplingConfig sampling,
                                    List<Integer> generatedSoFar, Random rng) {
+        return sampleToken(logits, seqPos, sampling, generatedSoFar, rng, null, null);
+    }
+
+    /**
+     * Sample a token from logits at a specific sequence position using the full sampling pipeline,
+     * optionally applying a {@link ConstraintMasker} for structured-output / constrained decoding.
+     *
+     * <p>Constraint masking (v1 — ADR 0111): when {@code masker} is non-null, the raw logit slice
+     * is converted to a {@code float[]} and passed through {@link ConstraintMasker#maskLogits} before
+     * any other sampling filter. The resulting masked float[] is then wrapped back into an INDArray
+     * for the standard pipeline (penalties → temperature → top-k → top-p → sample). After a token
+     * is selected, {@link ConstraintMasker#tokenEmitted} is called to advance the automaton state.</p>
+     *
+     * <p>Performance note: the float[] round-trip adds a copy per step. On CPU this is negligible
+     * relative to the forward pass. See ADR 0111 for the native-path masking design (Phase 2).</p>
+     *
+     * @param logits         logits tensor of shape [1, seqLen, vocab]
+     * @param seqPos         sequence position to sample from
+     * @param sampling       sampling configuration
+     * @param generatedSoFar previously generated token IDs (for repetition penalty)
+     * @param rng            random number generator (ignored for greedy)
+     * @param masker         optional constraint masker; null = unconstrained (identical behavior)
+     * @param tokenizer      tokenizer, used to decode token pieces for the masker; may be null when masker is null
+     * @return sampled token ID
+     */
+    private static int sampleToken(INDArray logits, long seqPos, SamplingConfig sampling,
+                                   List<Integer> generatedSoFar, Random rng,
+                                   ConstraintMasker masker, Tokenizer tokenizer) {
         INDArray slice = logits.get(
                 NDArrayIndex.point(0),
                 NDArrayIndex.point(seqPos),
                 NDArrayIndex.all()).dup();
 
+        // Apply constraint masking before all other sampling transforms.
+        if (masker != null && tokenizer != null) {
+            float[] rawLogits = slice.toFloatVector();
+            int eosId = sampling.getEosTokenId();
+            float[] masked = masker.maskLogits(rawLogits, eosId, id -> tokenizer.getToken(id));
+            INDArray maskedSlice = Nd4j.create(masked, new long[]{masked.length}, slice.dataType());
+            slice.close();
+            slice = maskedSlice;
+        }
+
         if (sampling.isGreedy()) {
             int token = SamplerUtils.argmax(slice);
             slice.close();
+            if (masker != null && tokenizer != null) masker.tokenEmitted(token, id -> tokenizer.getToken(id));
             return token;
         }
 
@@ -3787,6 +4387,7 @@ public class GenerationPipeline implements AutoCloseable {
         int token = SamplerUtils.multinomialSample(probs, rng);
         probs.close();
         slice.close();
+        if (masker != null && tokenizer != null) masker.tokenEmitted(token, id -> tokenizer.getToken(id));
         return token;
     }
 
@@ -4399,8 +5000,23 @@ public class GenerationPipeline implements AutoCloseable {
         // logits → token 11126 "User", making the model ignore the image.
         int logitsSamplePos = Math.min(actualPrefillLen - 1, (int) prefillLogits.shape()[1] - 1);
         List<Integer> warmupGeneratedTokens = new ArrayList<>();
+
+        // Build constraint masker if a ConstraintConfig was set on the SamplingConfig.
+        // The masker enforces structural validity at each token selection step by masking
+        // disallowed logits before the sampling pipeline runs. When active, all sampleToken
+        // calls below (warmup + constrained Java loop) route through the masker-aware overload.
+        // The native AutoregressiveDecode op is bypassed in favour of the Java decode loop when
+        // the masker is non-null (the native loop cannot call back into Java per step).
+        ConstraintMasker constraintMasker = null;
+        if (sampling.hasConstraint()) {
+            ConstraintConfig cc = sampling.getConstraintConfig();
+            constraintMasker = new ConstraintMasker(cc.buildConstraint(), cc.getEvalTopK());
+            log.info("[Constraint] Constrained decoding active: type={} evalTopK={}", cc.getType(), cc.getEvalTopK());
+        }
+
         suppressStopsUnderFloor(prefillLogits, logitsSamplePos, sampling, warmupGeneratedTokens.size(), stopTokenIds);
-        int firstTokenId = sampleToken(prefillLogits, logitsSamplePos, sampling, warmupGeneratedTokens, rng);
+        int firstTokenId = sampleToken(prefillLogits, logitsSamplePos, sampling, warmupGeneratedTokens, rng,
+                constraintMasker, tokenizer);
         warmupGeneratedTokens.add(firstTokenId);
         log.info("[Native] Prefill firstTokenId={} logitsShape={} samplePos={} (actualPrefillLen={})",
                 firstTokenId, Arrays.toString(prefillLogits.shape()), logitsSamplePos, actualPrefillLen);
@@ -4603,7 +5219,8 @@ public class GenerationPipeline implements AutoCloseable {
         // Sample second token using the active SamplingConfig.
         INDArray decodeLogits = decodeOutputs.get(ioConfig.getLogitsOutputName());
         suppressStopsUnderFloor(decodeLogits, 0, sampling, warmupGeneratedTokens.size(), stopTokenIds);
-        int secondTokenId = sampleToken(decodeLogits, 0, sampling, warmupGeneratedTokens, rng);
+        int secondTokenId = sampleToken(decodeLogits, 0, sampling, warmupGeneratedTokens, rng,
+                constraintMasker, tokenizer);
         if (maxNewTokens >= 2 && !stopTokenIds.contains(firstTokenId)) {
             warmupGeneratedTokens.add(secondTokenId);
         }
@@ -4794,6 +5411,107 @@ public class GenerationPipeline implements AutoCloseable {
 
         INDArray nativeTimingInfo = null;  // Hoisted for late-steady metric access after block
         if (remainingTokens > 0 && !stopTokenIds.contains(firstTokenId) && !stopTokenIds.contains(secondTokenId)) {
+
+            // ── Constrained Java decode loop (ADR 0111) ────────────────────────────
+            // When a ConstraintMasker is active the native AutoregressiveDecode C++ loop
+            // cannot be used — it has no Java callback mechanism for per-step masking.
+            // Instead we run a Java step-by-step loop that mirrors the decode-step update
+            // sequence used above for the warmup: update input arrays → decoder.output() →
+            // sampleToken with masker → scatter KV. Performance is comparable to the
+            // Java slot-by-slot path (~8 tok/s CPU) rather than CUDA-graph-replay; this is
+            // the v1 trade-off documented in the ADR (native path masking = Phase 2).
+            if (constraintMasker != null) {
+                log.info("[Constraint] Entering constrained Java decode loop: remainingTokens={}", remainingTokens);
+                int currentToken = secondTokenId;
+                long currentCachePos = actualPrefillLen + 1; // warmup wrote at actualPrefillLen+0 and +1
+
+                for (int step = 0; step < remainingTokens; step++) {
+                    if (stopTokenIds.contains(currentToken)) break;
+                    if (constraintMasker.isComplete()) {
+                        // Constraint satisfied: allow the model to emit EOS naturally.
+                        log.debug("[Constraint] Constraint satisfied at step {}, emitting final token(s)", step);
+                    }
+
+                    // Build decode input map for this step (reuse existing static arrays).
+                    // Update input values (shapes stay the same — no plan reshaping).
+                    INDArray stepEmbed = embeddingTable.getRow(currentToken).reshape(1, 1, hiddenSize);
+                    decodeEmbeddings.assign(stepEmbed);
+                    stepEmbed.close();
+                    decodeInputIds.putScalar(new long[]{0, 0}, currentToken);
+                    decodeAttentionMask.putScalar(new long[]{0, currentCachePos - 1}, 1);
+                    decodePosIds.putScalar(new long[]{0, 0}, currentCachePos);
+                    decodeCausalMask.putScalar(new long[]{0, 0, 0, currentCachePos - 1}, 0.0f);
+                    if (decodeAttnMaskReformat != null) {
+                        decodeAttnMaskReformat.putScalar(new long[]{0, 0, 0, currentCachePos - 1}, 0.0f);
+                    }
+
+                    // cache_position if the model uses it (GGUF)
+                    String cachePosNameJ = ioConfig.getCachePositionName();
+
+                    Map<String, INDArray> stepInputMap = new LinkedHashMap<>();
+                    String embedsNameJ = ioConfig.getInputEmbeddingsName();
+                    if (embedsNameJ != null && decoder.hasVariable(embedsNameJ)) {
+                        stepInputMap.put(embedsNameJ, decodeEmbeddings);
+                    }
+                    stepInputMap.put(ioConfig.getInputIdsName(), decodeInputIds);
+                    stepInputMap.put(ioConfig.getAttentionMaskName(), decodeAttentionMask);
+                    String posNameJ = ioConfig.getPositionIdsName();
+                    if (posNameJ != null && decoder.hasVariable(posNameJ)) {
+                        stepInputMap.put(posNameJ, decodePosIds);
+                    }
+                    String causalNameJ = ioConfig.getCausalMaskName();
+                    if (causalNameJ != null && decoder.hasVariable(causalNameJ)) {
+                        stepInputMap.put(causalNameJ, decodeCausalMask);
+                    }
+                    if (decodeAttnMaskReformat != null && attnReformatNode != null && decoder.hasVariable(attnReformatNode)) {
+                        stepInputMap.put(attnReformatNode, decodeAttnMaskReformat);
+                    }
+                    if (cachePosNameJ != null && decoder.hasVariable(cachePosNameJ)) {
+                        INDArray cpArr = Nd4j.scalar(DataType.INT64, currentCachePos);
+                        stepInputMap.put(cachePosNameJ, cpArr);
+                    }
+                    for (String kn : kvNames.keyNames) {
+                        stepInputMap.put(ioConfig.presentToInputName(kn), staticKvBuffers.get(ioConfig.presentToInputName(kn)));
+                    }
+                    for (String vn : kvNames.valueNames) {
+                        stepInputMap.put(ioConfig.presentToInputName(vn), staticKvBuffers.get(ioConfig.presentToInputName(vn)));
+                    }
+
+                    Map<String, INDArray> stepOutputs = decoder.output(
+                            stepInputMap, allOutputNames.toArray(new String[0]));
+
+                    INDArray stepLogits = stepOutputs.get(ioConfig.getLogitsOutputName());
+                    suppressStopsUnderFloor(stepLogits, 0, sampling, allTokens.size(), stopTokenIds);
+                    int nextToken = sampleToken(stepLogits, 0, sampling, allTokens, rng,
+                            constraintMasker, tokenizer);
+                    stepLogits.close();
+
+                    // Scatter KV outputs back into static buffers.
+                    for (String kn : kvNames.keyNames) {
+                        INDArray kv = stepOutputs.get(kn);
+                        if (kv != null) scatterKvToStatic(kv, staticKvBuffers.get(ioConfig.presentToInputName(kn)), currentCachePos);
+                    }
+                    for (String vn : kvNames.valueNames) {
+                        INDArray kv = stepOutputs.get(vn);
+                        if (kv != null) scatterKvToStatic(kv, staticKvBuffers.get(ioConfig.presentToInputName(vn)), currentCachePos);
+                    }
+                    for (Map.Entry<String, INDArray> e : stepOutputs.entrySet()) {
+                        if (!e.getKey().equals(ioConfig.getLogitsOutputName())) {
+                            if (e.getValue() != null) e.getValue().close();
+                        }
+                    }
+
+                    allTokens.add(nextToken);
+                    currentToken = nextToken;
+                    currentCachePos++;
+
+                    if (stopTokenIds.contains(nextToken)) break;
+                }
+                log.info("[Constraint] Constrained Java decode loop complete: totalTokens={} emittedText={}",
+                        allTokens.size(), constraintMasker.getEmittedText());
+                // Skip the native op block below — jump to result building.
+            } else {
+
             // Resolve cache_position ext idx if the model has it (GGUF models).
             // VLM/ONNX models typically don't, so this resolves to -1.
             String cachePosName = ioConfig.getCachePositionName();
@@ -4883,7 +5601,8 @@ public class GenerationPipeline implements AutoCloseable {
             } catch (Throwable t) {
                 log.warn("[DSP] Post-loop replay invariant check failed: {}", t.getMessage());
             }
-        }
+            } // end else (native op path — skipped when constraintMasker != null)
+        } // end if (remainingTokens > 0)
 
         long decodeLoopEnd = System.currentTimeMillis();
         long decodeLoopMs = decodeLoopEnd - decodeLoopStart;
@@ -5100,6 +5819,43 @@ public class GenerationPipeline implements AutoCloseable {
     // ==================== Lifecycle ====================
 
     /**
+     * Suspend the pipeline on Android device-lost / pause events.
+     *
+     * <p>This is the Java-side hook for the Android {@code onPause()} / device-lost
+     * lifecycle. It clears the DSP plan cache so that stale compiled plans
+     * (which may hold native device pointers that become invalid after a device
+     * loss) are not replayed after the device is recovered.</p>
+     *
+     * <p>Callers should invoke this method before the Android surface is destroyed
+     * and before calling {@link #close()} (if a full teardown follows). On resume,
+     * the pipeline will recompile plans lazily on the next generation call.</p>
+     *
+     * <p>This method is a no-op if the decoder is null or has already been closed.</p>
+     */
+    public void suspend() {
+        // Close any open continuation session — it holds KV buffers and a plan handle
+        // into native memory that may be invalidated by a device-lost event.
+        GenerationSession openSession = activeSession.getAndSet(null);
+        if (openSession != null) {
+            try {
+                openSession.state.close();
+            } catch (Exception e) {
+                log.warn("[lifecycle] Error closing active GenerationSession during suspend: {}", e.getMessage());
+            }
+        }
+        // Clear DSP plan cache — plans bake device addresses that become stale after
+        // a Vulkan device-lost event.  New plans will be compiled lazily on next use.
+        if (decoder != null) {
+            try {
+                decoder.clearDynamicShapePlanCache();
+                log.info("[lifecycle] DSP plan cache cleared on suspend");
+            } catch (Exception e) {
+                log.warn("[lifecycle] Error clearing DSP plan cache on suspend: {}", e.getMessage());
+            }
+        }
+    }
+
+    /**
      * Release all resources held by this pipeline.
      *
      * <p>Closes models that were loaded from paths (owned by the pipeline).
@@ -5157,6 +5913,9 @@ public class GenerationPipeline implements AutoCloseable {
             kvPlaceholderOriginalDtypes = null;
             kvPlaceholderOriginalShapes = null;
         }
+        // DSP cache ownership follows decoder ownership. SameDiff.close() tears down
+        // live sessions before deleting native cache entries for an owned decoder. A
+        // pre-loaded decoder is shared state and must remain untouched for its owner.
         // Order matters: close() first, THEN freeModelArrays(). The native DSP plan
         // teardown inside close() (releaseGpuIntermediates) walks slot NDArrays that
         // reference the model's DataBuffers — freeing those buffers first leaves the

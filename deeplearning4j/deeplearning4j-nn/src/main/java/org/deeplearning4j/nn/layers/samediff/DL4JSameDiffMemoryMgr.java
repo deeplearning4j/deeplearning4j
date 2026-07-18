@@ -28,8 +28,9 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.function.Supplier;
 
 public class DL4JSameDiffMemoryMgr extends AbstractMemoryMgr {
 
@@ -74,16 +75,16 @@ public class DL4JSameDiffMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public INDArray allocate(boolean detached, LongShapeDescriptor descriptor) {
-        if(descriptor.isEmpty()) {
-            INDArray ret =  Nd4j.create(descriptor);
-            if(detached) {
-                ret = ret.detach();
-            }
+        return allocate(detached, descriptor, false);
+    }
 
-            return ret;
+    @Override
+    public INDArray allocate(boolean detached, LongShapeDescriptor descriptor, boolean requiresZeroed) {
+        INDArray ret = allocateInConfiguredWorkspace(detached, () -> Nd4j.create(descriptor, false));
+        if (requiresZeroed && !ret.isEmpty()) {
+            ret.assign(0);
         }
-
-        return allocate(detached, descriptor.dataType(), descriptor.getShape());
+        return ret;
     }
 
     @Override
@@ -98,29 +99,37 @@ public class DL4JSameDiffMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer) {
-        long[] shapeInfo = dataBuffer.asLong();
-        DataType dataType = Shape.dataType(shapeInfo);
-        long[] shape = Shape.shape(shapeInfo);
+        return allocateFromDescriptor(detached, dataBuffer, false);
+    }
+
+    @Override
+    public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer, boolean requiresZeroed) {
+        INDArray ret = allocateInConfiguredWorkspace(detached, () -> Nd4j.createFromDescriptor(dataBuffer));
+        if (requiresZeroed && !ret.isEmpty()) {
+            ret.assign(0);
+        }
+        return ret;
+    }
+
+    private INDArray allocateInConfiguredWorkspace(boolean detached, Supplier<INDArray> allocator) {
         String wsName = detached ? outputWs : workingMemoryWs;
         WorkspaceConfiguration wsConf = detached ? confOutput : confWorking;
 
-        if(wsName == null) {
-            //Scoped out
-            INDArray ret = Nd4j.createUninitializedDetached(dataType, shape);
-            Preconditions.checkState(!ret.isAttached(), "Returned array should be detached");
-            return ret;
-        } else {
-            MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, wsName);
-            MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
-            if(current != null && current.getId().equals(ws.getId())) {
-                //Workspace is already open (entered by outer network scope) - allocate directly
-                return Nd4j.createUninitialized(dataType, shape);
-            } else {
-                try (MemoryWorkspace borrowed = ws.notifyScopeBorrowed()) {
-                    return Nd4j.createUninitialized(dataType, shape);
-                }
+        if (wsName == null) {
+            try (MemoryWorkspace ignored = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                INDArray ret = allocator.get();
+                Preconditions.checkState(!ret.isAttached(), "Returned array should be detached");
+                return ret;
             }
         }
 
+        MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, wsName);
+        MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
+        if (current != null && current.getId().equals(ws.getId())) {
+            return allocator.get();
+        }
+        try (MemoryWorkspace ignored = ws.notifyScopeBorrowed()) {
+            return allocator.get();
+        }
     }
 }

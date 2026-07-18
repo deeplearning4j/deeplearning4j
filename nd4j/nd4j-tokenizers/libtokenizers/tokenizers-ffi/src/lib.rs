@@ -22,14 +22,28 @@
 //! This crate provides C-compatible functions that wrap the tokenizers library,
 //! allowing it to be called from C/C++/Java via JNI.
 
-use std::ffi::{CStr, CString};
+use std::ffi::{c_void, CStr, CString};
+use std::mem::ManuallyDrop;
 use std::os::raw::c_char;
 use std::ptr;
 use std::slice;
 use std::str::FromStr;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
+use tokenizers::tokenizer::{
+    DecodeStream, DecoderWrapper, ModelWrapper, NormalizerWrapper, PostProcessorWrapper,
+    PreTokenizerWrapper,
+};
 use tokenizers::Tokenizer;
+
+type TokenizerDecodeStream = DecodeStream<
+    'static,
+    ModelWrapper,
+    NormalizerWrapper,
+    PreTokenizerWrapper,
+    PostProcessorWrapper,
+    DecoderWrapper,
+>;
 
 /// Thread-local error storage
 thread_local! {
@@ -50,7 +64,44 @@ fn clear_error() {
 
 /// Opaque tokenizer handle
 pub struct TokenizerHandle {
-    tokenizer: Tokenizer,
+    tokenizer: Arc<Tokenizer>,
+}
+
+/// Stateful decoder backed by Hugging Face tokenizers' DecodeStream.
+///
+/// The stream contains a reference into the Arc allocation retained in
+/// `_tokenizer`. The Arc keeps that allocation stable and alive until after
+/// the stream is dropped, including when the originating TokenizerHandle has
+/// already been freed.
+struct DecodeStreamInner {
+    stream: ManuallyDrop<TokenizerDecodeStream>,
+    _tokenizer: Arc<Tokenizer>,
+}
+
+impl Drop for DecodeStreamInner {
+    fn drop(&mut self) {
+        // Drop the borrowing stream before releasing the Arc that owns the
+        // tokenizer it references.
+        unsafe {
+            ManuallyDrop::drop(&mut self.stream);
+        }
+    }
+}
+
+/// Opaque stateful decoder handle exported through the C ABI.
+pub struct DecodeStreamHandle {
+    inner: *mut c_void,
+}
+
+impl Drop for DecodeStreamHandle {
+    fn drop(&mut self) {
+        if !self.inner.is_null() {
+            unsafe {
+                drop(Box::from_raw(self.inner as *mut DecodeStreamInner));
+            }
+            self.inner = ptr::null_mut();
+        }
+    }
 }
 
 /// Opaque encoding handle
@@ -86,7 +137,9 @@ pub extern "C" fn ffi_tokenizer_from_file(path: *const c_char) -> *mut Tokenizer
     };
 
     match Tokenizer::from_file(path_str) {
-        Ok(tokenizer) => Box::into_raw(Box::new(TokenizerHandle { tokenizer })),
+        Ok(tokenizer) => Box::into_raw(Box::new(TokenizerHandle {
+            tokenizer: Arc::new(tokenizer),
+        })),
         Err(e) => {
             set_error(format!("Failed to load tokenizer from file: {}", e));
             ptr::null_mut()
@@ -113,7 +166,9 @@ pub extern "C" fn ffi_tokenizer_from_json(json: *const c_char) -> *mut Tokenizer
     };
 
     match Tokenizer::from_str(json_str) {
-        Ok(tokenizer) => Box::into_raw(Box::new(TokenizerHandle { tokenizer })),
+        Ok(tokenizer) => Box::into_raw(Box::new(TokenizerHandle {
+            tokenizer: Arc::new(tokenizer),
+        })),
         Err(e) => {
             set_error(format!("Failed to create tokenizer from JSON: {}", e));
             ptr::null_mut()
@@ -285,6 +340,86 @@ pub extern "C" fn ffi_tokenizer_decode(
         Err(e) => {
             set_error(format!("Failed to decode: {}", e));
             ptr::null_mut()
+        }
+    }
+}
+
+/// Create a stateful incremental decoder.
+///
+/// The returned handle owns an Arc reference to the tokenizer, so it remains
+/// valid even if the originating tokenizer handle is released first.
+#[no_mangle]
+pub extern "C" fn ffi_tokenizer_decode_stream_create(
+    handle: *const TokenizerHandle,
+    skip_special_tokens: bool,
+) -> *mut DecodeStreamHandle {
+    clear_error();
+
+    if handle.is_null() {
+        set_error("Tokenizer handle is null".to_string());
+        return ptr::null_mut();
+    }
+
+    let tokenizer = unsafe { Arc::clone(&(*handle).tokenizer) };
+    let tokenizer_ref: &'static Tokenizer = unsafe { &*Arc::as_ptr(&tokenizer) };
+    let stream: TokenizerDecodeStream = tokenizer_ref.decode_stream(skip_special_tokens);
+
+    let inner = Box::new(DecodeStreamInner {
+        stream: ManuallyDrop::new(stream),
+        _tokenizer: tokenizer,
+    });
+    Box::into_raw(Box::new(DecodeStreamHandle {
+        inner: Box::into_raw(inner) as *mut c_void,
+    }))
+}
+
+/// Decode one token ID and return the next complete text chunk.
+///
+/// A successful step that cannot emit text yet returns an allocated empty
+/// string. The returned string must be released with
+/// ffi_tokenizer_free_string.
+#[no_mangle]
+pub extern "C" fn ffi_tokenizer_decode_stream_step(
+    handle: *mut DecodeStreamHandle,
+    token_id: u32,
+) -> *mut c_char {
+    clear_error();
+
+    if handle.is_null() {
+        set_error("Decode stream handle is null".to_string());
+        return ptr::null_mut();
+    }
+
+    let stream_handle = unsafe { &mut *handle };
+    if stream_handle.inner.is_null() {
+        set_error("Decode stream state is null".to_string());
+        return ptr::null_mut();
+    }
+    let stream = unsafe { &mut *(stream_handle.inner as *mut DecodeStreamInner) };
+    match stream.stream.step(token_id) {
+        Ok(chunk) => {
+            let chunk = chunk.unwrap_or_default();
+            match CString::new(chunk) {
+                Ok(cs) => cs.into_raw(),
+                Err(e) => {
+                    set_error(format!("Failed to convert decoded chunk: {}", e));
+                    ptr::null_mut()
+                }
+            }
+        }
+        Err(e) => {
+            set_error(format!("Failed to decode stream token: {}", e));
+            ptr::null_mut()
+        }
+    }
+}
+
+/// Free a stateful incremental decoder.
+#[no_mangle]
+pub extern "C" fn ffi_tokenizer_decode_stream_free(handle: *mut DecodeStreamHandle) {
+    if !handle.is_null() {
+        unsafe {
+            drop(Box::from_raw(handle));
         }
     }
 }

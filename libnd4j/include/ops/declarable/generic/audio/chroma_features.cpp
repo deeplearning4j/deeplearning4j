@@ -61,6 +61,7 @@ DECLARE_SHAPE_FN(chroma_features) {
 }
 
 DECLARE_TYPES(chroma_features) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

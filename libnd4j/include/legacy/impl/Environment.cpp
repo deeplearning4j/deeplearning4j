@@ -25,7 +25,7 @@
 
 #include <system/Environment.h>
 #include <memory/MemoryCounter.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 #include <mutex>
 
 // Lifecycle tracker includes for enabling/disabling via Environment setters
@@ -40,21 +40,25 @@ namespace sd {
 
 Environment::Environment() {
   // Initialize each subsystem from environment variables.
-  // Order matters: core first (threading), then CUDA (device init), then the rest.
+  // Order matters: core first (threading), then the active device backend,
+  // then the backend-neutral runtime configuration.
   _core.initFromEnvironment();
 
+#if defined(SD_CUDA)
   _cuda.initFromEnvironment();
 
   // Sync BLAS version from CUDA subsystem to legacy public fields
   _blasMajorVersion = _cuda.blasMajorVersion();
   _blasMinorVersion = _cuda.blasMinorVersion();
   _blasPatchVersion = _cuda.blasPatchVersion();
+#endif
 
   _memory.initFromEnvironment();
   _lifecycle.initFromEnvironment();
   _print.initFromEnvironment();
 
-  // Triton and DSP are only meaningful on CUDA but their env var parsing is safe on CPU
+  // Triton is the universal DSP/replay configuration knob. Backend-specific
+  // compiler/runtime availability is resolved after this common configuration.
   _triton.initFromEnvironment();
   _dsp.initFromEnvironment();
 }
@@ -73,7 +77,7 @@ Environment &Environment::getInstance() {
 }
 
 bool Environment::isCPU() {
-  return !sd::graph::dspIsCudaBuild();
+  return !sd::graph::dspHasDeviceMemory();
 }
 
 // --- Memory limits/counters (delegate to MemoryCounter singleton) ---

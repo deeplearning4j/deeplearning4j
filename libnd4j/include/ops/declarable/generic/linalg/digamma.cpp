@@ -42,7 +42,10 @@ CONFIGURABLE_OP_IMPL(digamma, 1, 1, false, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(digamma) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setSameMode(true); }
+DECLARE_TYPES(digamma) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+}
 
 }  // namespace ops
 }  // namespace sd

@@ -66,11 +66,14 @@ DECLARE_SHAPE_FN(bsr_to_dense) {
 }
 
 DECLARE_TYPES(bsr_to_dense) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setAllowedOutputTypes({ALL_FLOATS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

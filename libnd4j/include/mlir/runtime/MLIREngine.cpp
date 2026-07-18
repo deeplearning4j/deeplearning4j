@@ -23,27 +23,22 @@
 
 #include <graph/gpu/OpCategoryTable.h>
 
-#if __has_include("mlir/Dialect/Affine/IR/AffineOps.h")
+#ifdef SD_MLIR_HAS_AFFINE_DIALECT
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
-#define SD_MLIR_HAS_AFFINE_DIALECT 1
 #endif
-#if __has_include("mlir/Dialect/Affine/Passes.h")
+#ifdef SD_MLIR_HAS_AFFINE_PASSES
 #include "mlir/Dialect/Affine/Passes.h"
-#define SD_MLIR_HAS_AFFINE_PASSES 1
 #endif
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#if __has_include("mlir/Dialect/ArmNeon/ArmNeonDialect.h")
+#ifdef SD_MLIR_HAS_ARMNEON_DIALECT
 #include "mlir/Dialect/ArmNeon/ArmNeonDialect.h"
-#define SD_MLIR_HAS_ARMNEON_DIALECT 1
 #endif
-#if __has_include("mlir/Dialect/ArmSVE/IR/ArmSVEDialect.h")
+#ifdef SD_MLIR_HAS_ARMSVE_DIALECT
 #include "mlir/Dialect/ArmSVE/IR/ArmSVEDialect.h"
-#define SD_MLIR_HAS_ARMSVE_DIALECT 1
 #endif
-#if __has_include("mlir/Dialect/ArmSME/IR/ArmSME.h")
+#ifdef SD_MLIR_HAS_ARMSME_DIALECT
 #include "mlir/Dialect/ArmSME/IR/ArmSME.h"
-#define SD_MLIR_HAS_ARMSME_DIALECT 1
 #endif
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Bufferization/Transforms/Passes.h"
@@ -51,57 +46,60 @@
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#if __has_include("mlir/Dialect/Math/IR/Math.h")
+#ifdef SD_MLIR_HAS_MATH_DIALECT
 #include "mlir/Dialect/Math/IR/Math.h"
-#define SD_MLIR_HAS_MATH_DIALECT 1
 #endif
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 
-#if __has_include("mlir/Dialect/X86Vector/X86VectorDialect.h")
+#ifdef SD_MLIR_HAS_X86VECTOR_DIALECT
 #include "mlir/Dialect/X86Vector/X86VectorDialect.h"
-#define SD_MLIR_HAS_X86VECTOR_DIALECT 1
 #endif
-#if __has_include("mlir/Dialect/AMX/AMXDialect.h")
+#ifdef SD_MLIR_HAS_AMX_DIALECT
 #include "mlir/Dialect/AMX/AMXDialect.h"
-#define SD_MLIR_HAS_AMX_DIALECT 1
 #endif
-#if __has_include("mlir/Dialect/AMX/Transforms.h")
+#ifdef SD_MLIR_HAS_AMX_TRANSFORMS
 #include "mlir/Dialect/AMX/Transforms.h"
-#define SD_MLIR_HAS_AMX_TRANSFORMS 1
 #endif
 
-#if __has_include("mlir/Conversion/AffineToStandard/AffineToStandard.h")
+#ifdef SD_MLIR_HAS_AFFINE_TO_STANDARD
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
-#define SD_MLIR_HAS_AFFINE_TO_STANDARD 1
 #endif
-#if __has_include("mlir/Conversion/ArmNeon2dToIntr/ArmNeon2dToIntr.h")
+#ifdef SD_MLIR_HAS_ARMNEON2D_TO_INTR_PASS
 #include "mlir/Conversion/ArmNeon2dToIntr/ArmNeon2dToIntr.h"
-#define SD_MLIR_HAS_ARMNEON2D_TO_INTR_PASS 1
 #endif
-#if __has_include("mlir/Conversion/ArmSMEToLLVM/ArmSMEToLLVM.h")
+#ifdef SD_MLIR_HAS_ARMSME_TO_LLVM_PASS
 #include "mlir/Conversion/ArmSMEToLLVM/ArmSMEToLLVM.h"
-#define SD_MLIR_HAS_ARMSME_TO_LLVM_PASS 1
 #endif
+// LinalgToLLVM was removed in MLIR 15+. In MLIR 20 use LinalgToStandard.
+#ifdef SD_MLIR_HAS_LINALG_TO_LLVM_PASS
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
+#elif defined(SD_MLIR_HAS_LINALG_TO_STANDARD_PASS)
+#include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
+#endif
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
-#if __has_include("mlir/Conversion/MathToLLVM/MathToLLVM.h")
+#ifdef SD_MLIR_HAS_MATH_TO_LLVM_PASS
 #include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
-#define SD_MLIR_HAS_MATH_TO_LLVM_PASS 1
 #endif
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
-#if __has_include("mlir/Conversion/VectorToLLVM/ConvertVectorToLLVMPass.h")
-#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVMPass.h"
-#define SD_MLIR_HAS_VECTOR_TO_LLVM_PASS 1
+#include "llvm/Config/llvm-config.h"
+#include "llvm/TargetParser/Triple.h"
+
+#if LLVM_VERSION_MAJOR >= 22
+#define SD_MLIR_CREATE_SCF_TO_CF_PASS() mlir::createSCFToControlFlowPass()
+#else
+#define SD_MLIR_CREATE_SCF_TO_CF_PASS() mlir::createConvertSCFToCFPass()
 #endif
-#if __has_include("mlir/Conversion/VectorToArmSME/VectorToArmSME.h")
+#ifdef SD_MLIR_HAS_VECTOR_TO_LLVM_PASS
+#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVMPass.h"
+#endif
+#ifdef SD_MLIR_HAS_VECTOR_TO_ARMSME_PASS
 #include "mlir/Conversion/VectorToArmSME/VectorToArmSME.h"
-#define SD_MLIR_HAS_VECTOR_TO_ARMSME_PASS 1
 #endif
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
@@ -112,25 +110,20 @@
 #include "mlir/IR/OwningOpRef.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
-#if __has_include("mlir/Target/LLVMIR/Dialect/X86Vector/X86VectorToLLVMIRTranslation.h")
+#ifdef SD_MLIR_HAS_X86VECTOR_TRANSLATION
 #include "mlir/Target/LLVMIR/Dialect/X86Vector/X86VectorToLLVMIRTranslation.h"
-#define SD_MLIR_HAS_X86VECTOR_TRANSLATION 1
 #endif
-#if __has_include("mlir/Target/LLVMIR/Dialect/ArmNeon/ArmNeonToLLVMIRTranslation.h")
+#ifdef SD_MLIR_HAS_ARMNEON_TRANSLATION
 #include "mlir/Target/LLVMIR/Dialect/ArmNeon/ArmNeonToLLVMIRTranslation.h"
-#define SD_MLIR_HAS_ARMNEON_TRANSLATION 1
 #endif
-#if __has_include("mlir/Target/LLVMIR/Dialect/ArmSVE/ArmSVEToLLVMIRTranslation.h")
+#ifdef SD_MLIR_HAS_ARMSVE_TRANSLATION
 #include "mlir/Target/LLVMIR/Dialect/ArmSVE/ArmSVEToLLVMIRTranslation.h"
-#define SD_MLIR_HAS_ARMSVE_TRANSLATION 1
 #endif
-#if __has_include("mlir/Target/LLVMIR/Dialect/ArmSME/ArmSMEToLLVMIRTranslation.h")
+#ifdef SD_MLIR_HAS_ARMSME_TRANSLATION
 #include "mlir/Target/LLVMIR/Dialect/ArmSME/ArmSMEToLLVMIRTranslation.h"
-#define SD_MLIR_HAS_ARMSME_TRANSLATION 1
 #endif
-#if __has_include("mlir/Target/LLVMIR/Dialect/AMX/AMXToLLVMIRTranslation.h")
+#ifdef SD_MLIR_HAS_AMX_TRANSLATION
 #include "mlir/Target/LLVMIR/Dialect/AMX/AMXToLLVMIRTranslation.h"
-#define SD_MLIR_HAS_AMX_TRANSLATION 1
 #endif
 #include "mlir/Transforms/Passes.h"
 
@@ -141,75 +134,92 @@
 #endif
 
 // SPIR-V / Vulkan support (for ARM mobile GPU targets)
-#if __has_include("mlir/Dialect/SPIRV/IR/SPIRVDialect.h")
+#ifdef SD_MLIR_HAS_SPIRV_DIALECT
 #include "mlir/Dialect/SPIRV/IR/SPIRVDialect.h"
-#define SD_MLIR_HAS_SPIRV_DIALECT 1
 #endif
-#if __has_include("mlir/Dialect/SPIRV/IR/SPIRVOps.h")
+#ifdef SD_MLIR_HAS_SPIRV_OPS
 #include "mlir/Dialect/SPIRV/IR/SPIRVOps.h"
 #endif
-#if __has_include("mlir/Dialect/SPIRV/Transforms/Passes.h")
+#ifdef SD_MLIR_HAS_SPIRV_PASSES
 #include "mlir/Dialect/SPIRV/Transforms/Passes.h"
-#define SD_MLIR_HAS_SPIRV_PASSES 1
 #endif
-#if __has_include("mlir/Conversion/GPUToSPIRV/GPUToSPIRV.h")
+// MLIR 20: GPU-to-SPIRV factory is in GPUToSPIRVPass.h (not GPUToSPIRV.h)
+#ifdef SD_MLIR_HAS_GPU_TO_SPIRV_PASS_HEADER
+#include "mlir/Conversion/GPUToSPIRV/GPUToSPIRVPass.h"
+#define SD_MLIR_HAS_GPU_TO_SPIRV 1
+#elif defined(SD_MLIR_HAS_GPU_TO_SPIRV_LEGACY_HEADER)
 #include "mlir/Conversion/GPUToSPIRV/GPUToSPIRV.h"
 #define SD_MLIR_HAS_GPU_TO_SPIRV 1
 #endif
-#if __has_include("mlir/Conversion/ArithToSPIRV/ArithToSPIRV.h")
+// LLVM 22's generated conversion API exports this pass in the mlir namespace;
+// older packages expose the operation pass through mlir::arith.
+#if LLVM_VERSION_MAJOR >= 22
+#include "mlir/Conversion/Passes.h"
+#define SD_MLIR_CREATE_ARITH_TO_SPIRV_PASS() mlir::createConvertArithToSPIRVPass()
+#elif defined(SD_MLIR_HAS_ARITH_TO_SPIRV_HEADER)
 #include "mlir/Conversion/ArithToSPIRV/ArithToSPIRV.h"
-#define SD_MLIR_HAS_ARITH_TO_SPIRV 1
+#define SD_MLIR_CREATE_ARITH_TO_SPIRV_PASS() mlir::arith::createConvertArithToSPIRVPass()
 #endif
-#if __has_include("mlir/Conversion/FuncToSPIRV/FuncToSPIRV.h")
+// MLIR 20: FuncToSPIRV factory moved to FuncToSPIRVPass.h
+#ifdef SD_MLIR_HAS_FUNC_TO_SPIRV_PASS_HEADER
+#include "mlir/Conversion/FuncToSPIRV/FuncToSPIRVPass.h"
+#define SD_MLIR_HAS_FUNC_TO_SPIRV 1
+#elif defined(SD_MLIR_HAS_FUNC_TO_SPIRV_LEGACY_HEADER)
 #include "mlir/Conversion/FuncToSPIRV/FuncToSPIRV.h"
 #define SD_MLIR_HAS_FUNC_TO_SPIRV 1
 #endif
-#if __has_include("mlir/Conversion/MemRefToSPIRV/MemRefToSPIRV.h")
+// MLIR 20: MemRefToSPIRV factory moved to MemRefToSPIRVPass.h
+#ifdef SD_MLIR_HAS_MEMREF_TO_SPIRV_PASS_HEADER
+#include "mlir/Conversion/MemRefToSPIRV/MemRefToSPIRVPass.h"
+#define SD_MLIR_HAS_MEMREF_TO_SPIRV 1
+#elif defined(SD_MLIR_HAS_MEMREF_TO_SPIRV_LEGACY_HEADER)
 #include "mlir/Conversion/MemRefToSPIRV/MemRefToSPIRV.h"
 #define SD_MLIR_HAS_MEMREF_TO_SPIRV 1
 #endif
-#if __has_include("mlir/Conversion/SCFToSPIRV/SCFToSPIRV.h")
+// MLIR 20: SCFToSPIRV factory moved to SCFToSPIRVPass.h
+#ifdef SD_MLIR_HAS_SCF_TO_SPIRV_PASS_HEADER
+#include "mlir/Conversion/SCFToSPIRV/SCFToSPIRVPass.h"
+#define SD_MLIR_HAS_SCF_TO_SPIRV 1
+#elif defined(SD_MLIR_HAS_SCF_TO_SPIRV_LEGACY_HEADER)
 #include "mlir/Conversion/SCFToSPIRV/SCFToSPIRV.h"
 #define SD_MLIR_HAS_SCF_TO_SPIRV 1
 #endif
-#if __has_include("mlir/Conversion/MathToSPIRV/MathToSPIRV.h")
+// MLIR 20: MathToSPIRV factory moved to MathToSPIRVPass.h
+#ifdef SD_MLIR_HAS_MATH_TO_SPIRV_PASS_HEADER
+#include "mlir/Conversion/MathToSPIRV/MathToSPIRVPass.h"
+#define SD_MLIR_HAS_MATH_TO_SPIRV 1
+#elif defined(SD_MLIR_HAS_MATH_TO_SPIRV_LEGACY_HEADER)
 #include "mlir/Conversion/MathToSPIRV/MathToSPIRV.h"
 #define SD_MLIR_HAS_MATH_TO_SPIRV 1
 #endif
-#if __has_include("mlir/Target/SPIRV/Serialization.h")
+#ifdef SD_MLIR_HAS_SPIRV_SERIALIZATION
 #include "mlir/Target/SPIRV/Serialization.h"
-#define SD_MLIR_HAS_SPIRV_SERIALIZATION 1
 #endif
-#if __has_include("mlir/Conversion/GPUToVulkan/ConvertGPUToVulkanPass.h")
+#ifdef SD_MLIR_HAS_GPU_TO_VULKAN
 #include "mlir/Conversion/GPUToVulkan/ConvertGPUToVulkanPass.h"
-#define SD_MLIR_HAS_GPU_TO_VULKAN 1
 #endif
 
 // LLVM Target Machine for AOT compilation
-#if __has_include("llvm/Target/TargetMachine.h")
+#ifdef SD_MLIR_HAS_TARGET_MACHINE
 #include "llvm/Target/TargetMachine.h"
-#define SD_MLIR_HAS_TARGET_MACHINE 1
 #endif
-#if __has_include("llvm/MC/TargetRegistry.h")
+#ifdef SD_MLIR_HAS_TARGET_REGISTRY
 #include "llvm/MC/TargetRegistry.h"
-#define SD_MLIR_HAS_TARGET_REGISTRY 1
 #endif
-#if __has_include("mlir/Target/LLVMIR/Export.h")
+#ifdef SD_MLIR_HAS_LLVMIR_EXPORT
 #include "mlir/Target/LLVMIR/Export.h"
-#define SD_MLIR_HAS_LLVMIR_EXPORT 1
 #endif
-#if __has_include("llvm/IR/LegacyPassManager.h")
+#ifdef SD_MLIR_HAS_LEGACY_PM
 #include "llvm/IR/LegacyPassManager.h"
-#define SD_MLIR_HAS_LEGACY_PM 1
 #endif
-#if __has_include("llvm/Support/FileSystem.h")
+#ifdef SD_MLIR_HAS_LLVM_FILESYSTEM
 #include "llvm/Support/FileSystem.h"
 #endif
 
 // Host triple detection for AOT compilation
-#if __has_include("llvm/TargetParser/Host.h")
+#ifdef SD_MLIR_HAS_HOST_TARGETPARSER
 #include "llvm/TargetParser/Host.h"
-#elif __has_include("llvm/Support/Host.h")
+#elif defined(SD_MLIR_HAS_HOST_SUPPORT)
 #include "llvm/Support/Host.h"
 #endif
 
@@ -523,15 +533,17 @@ std::shared_ptr<CompiledKernel> MLIREngine::compile(
     }
 #endif
 
-    // Create execution engine
+    // Create execution engine — MLIR 20 uses ExecutionEngineOptions struct
     llvm::SmallVector<llvm::StringRef, 0> sharedLibPaths;
     auto optPipeline = mlir::makeOptimizingTransformer(
         options.optLevel, /*sizeLevel=*/0, /*targetMachine=*/nullptr);
 
-    auto maybeEngine = mlir::ExecutionEngine::create(
-        *module, /*llvmModuleBuilder=*/nullptr,
-        optPipeline, llvm::CodeGenOptLevel::Default,
-        sharedLibPaths);
+    mlir::ExecutionEngineOptions engineOptions;
+    engineOptions.transformer = optPipeline;
+    engineOptions.jitCodeGenOptLevel = llvm::CodeGenOptLevel::Default;
+    engineOptions.sharedLibPaths = sharedLibPaths;
+
+    auto maybeEngine = mlir::ExecutionEngine::create(*module, engineOptions);
 
     if (!maybeEngine) {
         return nullptr;
@@ -578,15 +590,17 @@ std::shared_ptr<CompiledKernel> MLIREngine::compile(
         return nullptr;
     }
 
-    // Create execution engine
+    // Create execution engine — MLIR 20 uses ExecutionEngineOptions struct
     llvm::SmallVector<llvm::StringRef, 0> sharedLibPaths;
     auto optPipeline = mlir::makeOptimizingTransformer(
         options.optLevel, /*sizeLevel=*/0, /*targetMachine=*/nullptr);
 
-    auto maybeEngine = mlir::ExecutionEngine::create(
-        *module, /*llvmModuleBuilder=*/nullptr,
-        optPipeline, llvm::CodeGenOptLevel::Default,
-        sharedLibPaths);
+    mlir::ExecutionEngineOptions engineOptions;
+    engineOptions.transformer = optPipeline;
+    engineOptions.jitCodeGenOptLevel = llvm::CodeGenOptLevel::Default;
+    engineOptions.sharedLibPaths = sharedLibPaths;
+
+    auto maybeEngine = mlir::ExecutionEngine::create(*module, engineOptions);
 
     if (!maybeEngine) {
         return nullptr;
@@ -630,15 +644,17 @@ std::shared_ptr<CompiledKernel> MLIREngine::compileModule(
         module->dump();
     }
 
-    // Create execution engine
+    // Create execution engine — MLIR 20 uses ExecutionEngineOptions struct
     llvm::SmallVector<llvm::StringRef, 0> sharedLibPaths;
     auto optPipeline = mlir::makeOptimizingTransformer(
         options.optLevel, /*sizeLevel=*/0, /*targetMachine=*/nullptr);
 
-    auto maybeEngine = mlir::ExecutionEngine::create(
-        *module, /*llvmModuleBuilder=*/nullptr,
-        optPipeline, llvm::CodeGenOptLevel::Default,
-        sharedLibPaths);
+    mlir::ExecutionEngineOptions engineOptions;
+    engineOptions.transformer = optPipeline;
+    engineOptions.jitCodeGenOptLevel = llvm::CodeGenOptLevel::Default;
+    engineOptions.sharedLibPaths = sharedLibPaths;
+
+    auto maybeEngine = mlir::ExecutionEngine::create(*module, engineOptions);
 
     if (!maybeEngine) {
         return nullptr;
@@ -769,7 +785,7 @@ void MLIREngine::buildCPUPipeline(mlir::PassManager& pm,
 #endif
 
     // Lower to LLVM
-    pm.addPass(mlir::createConvertSCFToCFPass());
+    pm.addPass(SD_MLIR_CREATE_SCF_TO_CF_PASS());
 #ifdef SD_MLIR_HAS_ARMNEON2D_TO_INTR_PASS
     if (options.enableVectorization && options.enableArmNeon && isArmHostCompilationTarget()) {
         pm.addPass(mlir::createConvertArmNeon2dToIntrPass());
@@ -781,7 +797,11 @@ void MLIREngine::buildCPUPipeline(mlir::PassManager& pm,
         pm.addPass(mlir::createConvertArmSMEToLLVMPass(/*dumpTileLiveRanges=*/false));
     }
 #endif
+#if defined(SD_MLIR_HAS_LINALG_TO_LLVM_PASS)
     pm.addPass(mlir::createConvertLinalgToLLVMPass());
+#elif defined(SD_MLIR_HAS_LINALG_TO_STANDARD_PASS)
+    pm.addPass(mlir::createConvertLinalgToStandardPass());
+#endif
 #ifdef SD_MLIR_HAS_VECTOR_TO_LLVM_PASS
     if (options.enableVectorization && options.enableX86Vector) {
         pm.addPass(mlir::createConvertVectorToLLVMPass());
@@ -835,7 +855,7 @@ void MLIREngine::buildARMCPUPipeline(mlir::PassManager& pm,
 #endif
 
     // Lower to LLVM with ARM-specific passes
-    pm.addPass(mlir::createConvertSCFToCFPass());
+    pm.addPass(SD_MLIR_CREATE_SCF_TO_CF_PASS());
 
     // ARM NEON: Convert 2D operations to NEON intrinsics
 #ifdef SD_MLIR_HAS_ARMNEON2D_TO_INTR_PASS
@@ -852,7 +872,11 @@ void MLIREngine::buildARMCPUPipeline(mlir::PassManager& pm,
     }
 #endif
 
+#if defined(SD_MLIR_HAS_LINALG_TO_LLVM_PASS)
     pm.addPass(mlir::createConvertLinalgToLLVMPass());
+#elif defined(SD_MLIR_HAS_LINALG_TO_STANDARD_PASS)
+    pm.addPass(mlir::createConvertLinalgToStandardPass());
+#endif
 
     // Vector lowering — ARM doesn't use x86 vector, use generic vector→LLVM
 #ifdef SD_MLIR_HAS_VECTOR_TO_LLVM_PASS
@@ -908,11 +932,11 @@ void MLIREngine::buildVulkanPipeline(mlir::PassManager& pm,
 #endif
 
     // SCF → ControlFlow for structured control flow
-    pm.addPass(mlir::createConvertSCFToCFPass());
+    pm.addPass(SD_MLIR_CREATE_SCF_TO_CF_PASS());
 
     // Convert high-level dialects to SPIR-V
-#ifdef SD_MLIR_HAS_ARITH_TO_SPIRV
-    pm.addPass(mlir::createConvertArithToSPIRVPass());
+#ifdef SD_MLIR_CREATE_ARITH_TO_SPIRV_PASS
+    pm.addPass(SD_MLIR_CREATE_ARITH_TO_SPIRV_PASS());
 #endif
 
 #ifdef SD_MLIR_HAS_MATH_TO_SPIRV
@@ -928,7 +952,8 @@ void MLIREngine::buildVulkanPipeline(mlir::PassManager& pm,
 #endif
 
 #ifdef SD_MLIR_HAS_SCF_TO_SPIRV
-    pm.addPass(mlir::createConvertSCFToSPIRVPass());
+    // MLIR 20: renamed createConvertSCFToSPIRVPass() -> createSCFToSPIRV()
+    pm.addPass(mlir::createSCFToSPIRV());
 #endif
 
     // GPU dialect → SPIR-V conversion
@@ -1010,7 +1035,12 @@ bool MLIREngine::compileToObjectFile(
 
     // Set target triple
     std::string triple = getTargetTriple(options.aotTarget);
+#if LLVM_VERSION_MAJOR >= 22
+    // Match the LLVM 22 API already used by the CUDA/Triton target path.
+    llvmModule->setTargetTriple(llvm::Triple(triple));
+#else
     llvmModule->setTargetTriple(triple);
+#endif
 
     // Look up the target
     std::string error;
@@ -1037,9 +1067,15 @@ bool MLIREngine::compileToObjectFile(
 
     // Create target machine
     llvm::TargetOptions targetOpts;
+#if LLVM_VERSION_MAJOR >= 22
+    auto targetMachine = std::unique_ptr<llvm::TargetMachine>(
+        target->createTargetMachine(llvm::Triple(triple), cpu, features,
+                                    targetOpts, llvm::Reloc::PIC_));
+#else
     auto targetMachine = std::unique_ptr<llvm::TargetMachine>(
         target->createTargetMachine(triple, cpu, features,
                                     targetOpts, llvm::Reloc::PIC_));
+#endif
     if (!targetMachine) {
         llvm::errs() << "MLIREngine: Failed to create target machine for " << triple << "\n";
         return false;
@@ -1179,20 +1215,20 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
     int dtype = (!inputTypes.empty()) ? inputTypes[0] : 0;
     switch (dtype) {
         case 1:  // FLOAT16 / HALF
-            elemType = mlir::FloatType::getF16(_context.get()); break;
+            elemType = mlir::Float16Type::get(_context.get()); break;
         case 2:  // FLOAT32
         case 0:  // default
-            elemType = mlir::FloatType::getF32(_context.get()); break;
+            elemType = mlir::Float32Type::get(_context.get()); break;
         case 3:  // DOUBLE / FLOAT64
-            elemType = mlir::FloatType::getF64(_context.get()); break;
+            elemType = mlir::Float64Type::get(_context.get()); break;
         case 5:  // INT32
             elemType = mlir::IntegerType::get(_context.get(), 32); break;
         case 7:  // INT64
             elemType = mlir::IntegerType::get(_context.get(), 64); break;
         case 17: // BFLOAT16
-            elemType = mlir::FloatType::getBF16(_context.get()); break;
+            elemType = mlir::BFloat16Type::get(_context.get()); break;
         default:
-            elemType = mlir::FloatType::getF32(_context.get()); break;
+            elemType = mlir::Float32Type::get(_context.get()); break;
     }
 
     // Compute total elements for each input (flat 1D view)
@@ -1285,7 +1321,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
     mlir::Value outputMemref = entryBlock->getArgument(argIdx++);
     mlir::Value nElements = entryBlock->getArgument(argIdx++);
 
-    bool isFloatType = elemType.isa<mlir::FloatType>();
+    bool isFloatType = mlir::isa<mlir::FloatType>(elemType);
 
     // ─── Dispatch by category ───────────────────────────────────────────
     switch (category) {
@@ -1296,7 +1332,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             auto loop = builder.create<mlir::scf::ForOp>(loc, zero, nElements, one);
             builder.setInsertionPointToStart(loop.getBody());
             auto iv = loop.getInductionVar();
-            auto inVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+            auto inVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
 
             // Dispatch to specific unary op
             mlir::Value result;
@@ -1420,7 +1456,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 result = inVal;
             }
 
-            builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{iv});
+            builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::SmallVector<mlir::Value,1>{iv});
             builder.setInsertionPointAfter(loop);
             break;
         }
@@ -1432,8 +1468,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             auto loop = builder.create<mlir::scf::ForOp>(loc, zero, nElements, one);
             builder.setInsertionPointToStart(loop.getBody());
             auto iv = loop.getInductionVar();
-            auto lhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
-            auto rhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::ValueRange{iv});
+            auto lhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
+            auto rhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::SmallVector<mlir::Value,1>{iv});
 
             mlir::Value result;
             std::string lowerOp = opName;
@@ -1482,7 +1518,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                     (mlir::Value)builder.create<mlir::arith::AddIOp>(loc, lhs, rhs);
             }
 
-            builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{iv});
+            builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::SmallVector<mlir::Value,1>{iv});
             builder.setInsertionPointAfter(loop);
             break;
         }
@@ -1494,8 +1530,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             auto loop = builder.create<mlir::scf::ForOp>(loc, zero, nElements, one);
             builder.setInsertionPointToStart(loop.getBody());
             auto iv = loop.getInductionVar();
-            auto lhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
-            auto rhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::ValueRange{iv});
+            auto lhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
+            auto rhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::SmallVector<mlir::Value,1>{iv});
 
             std::string lowerOp = opName;
             std::transform(lowerOp.begin(), lowerOp.end(), lowerOp.begin(),
@@ -1516,7 +1552,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             auto zeroConst = builder.create<mlir::arith::ConstantOp>(
                 loc, builder.getFloatAttr(elemType, 0.0));
             auto result = builder.create<mlir::arith::SelectOp>(loc, cmp, oneConst, zeroConst);
-            builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{iv});
+            builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::SmallVector<mlir::Value,1>{iv});
             builder.setInsertionPointAfter(loop);
             break;
         }
@@ -1543,11 +1579,11 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             auto nElemsConst = builder.create<mlir::arith::ConstantIndexOp>(loc, nElems);
 
             auto loop = builder.create<mlir::scf::ForOp>(
-                loc, zero, nElemsConst, one, mlir::ValueRange{initConst.getResult()});
+                loc, zero, nElemsConst, one, mlir::SmallVector<mlir::Value,1>{initConst.getResult()});
             builder.setInsertionPointToStart(loop.getBody());
             auto iv = loop.getInductionVar();
             auto acc = loop.getRegionIterArg(0);
-            auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+            auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
 
             mlir::Value newAcc;
             if (lowerOp.find("sum") != std::string::npos || lowerOp.find("mean") != std::string::npos) {
@@ -1561,7 +1597,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             } else {
                 newAcc = builder.create<mlir::arith::AddFOp>(loc, acc, val);
             }
-            builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+            builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{newAcc});
 
             builder.setInsertionPointAfter(loop);
             mlir::Value finalVal = loop.getResult(0);
@@ -1574,7 +1610,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             }
 
             auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
-            builder.create<mlir::memref::StoreOp>(loc, finalVal, outputMemref, mlir::ValueRange{zeroIdx});
+            builder.create<mlir::memref::StoreOp>(loc, finalVal, outputMemref, mlir::SmallVector<mlir::Value,1>{zeroIdx});
             break;
         }
 
@@ -1595,14 +1631,14 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto negInf = builder.create<mlir::arith::ConstantOp>(
                     loc, builder.getFloatAttr(elemType, -1e38));
                 auto maxLoop = builder.create<mlir::scf::ForOp>(
-                    loc, zero, nElemsConst, one, mlir::ValueRange{negInf.getResult()});
+                    loc, zero, nElemsConst, one, mlir::SmallVector<mlir::Value,1>{negInf.getResult()});
                 {
                     builder.setInsertionPointToStart(maxLoop.getBody());
                     auto iv = maxLoop.getInductionVar();
                     auto acc = maxLoop.getRegionIterArg(0);
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                     auto newMax = builder.create<mlir::arith::MaximumFOp>(loc, acc, val);
-                    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newMax});
+                    builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{newMax});
                 }
                 builder.setInsertionPointAfter(maxLoop);
                 auto maxVal = maxLoop.getResult(0);
@@ -1611,16 +1647,16 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto zeroF = builder.create<mlir::arith::ConstantOp>(
                     loc, builder.getFloatAttr(elemType, 0.0));
                 auto sumLoop = builder.create<mlir::scf::ForOp>(
-                    loc, zero, nElemsConst, one, mlir::ValueRange{zeroF.getResult()});
+                    loc, zero, nElemsConst, one, mlir::SmallVector<mlir::Value,1>{zeroF.getResult()});
                 {
                     builder.setInsertionPointToStart(sumLoop.getBody());
                     auto iv = sumLoop.getInductionVar();
                     auto acc = sumLoop.getRegionIterArg(0);
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                     auto shifted = builder.create<mlir::arith::SubFOp>(loc, val, maxVal);
                     auto expVal = builder.create<mlir::math::ExpOp>(loc, shifted);
                     auto newSum = builder.create<mlir::arith::AddFOp>(loc, acc, expVal);
-                    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newSum});
+                    builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{newSum});
                 }
                 builder.setInsertionPointAfter(sumLoop);
                 auto sumVal = sumLoop.getResult(0);
@@ -1630,7 +1666,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 {
                     builder.setInsertionPointToStart(normLoop.getBody());
                     auto iv = normLoop.getInductionVar();
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                     auto shifted = builder.create<mlir::arith::SubFOp>(loc, val, maxVal);
                     mlir::Value result;
                     if (lowerOp == "log_softmax") {
@@ -1640,7 +1676,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                         auto expVal = builder.create<mlir::math::ExpOp>(loc, shifted);
                         result = builder.create<mlir::arith::DivFOp>(loc, expVal, sumVal);
                     }
-                    builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{iv});
+                    builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::SmallVector<mlir::Value,1>{iv});
                 }
                 builder.setInsertionPointAfter(normLoop);
 
@@ -1649,14 +1685,14 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto zeroF = builder.create<mlir::arith::ConstantOp>(
                     loc, builder.getFloatAttr(elemType, 0.0));
                 auto meanLoop = builder.create<mlir::scf::ForOp>(
-                    loc, zero, nElemsConst, one, mlir::ValueRange{zeroF.getResult()});
+                    loc, zero, nElemsConst, one, mlir::SmallVector<mlir::Value,1>{zeroF.getResult()});
                 {
                     builder.setInsertionPointToStart(meanLoop.getBody());
                     auto iv = meanLoop.getInductionVar();
                     auto acc = meanLoop.getRegionIterArg(0);
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                     auto newSum = builder.create<mlir::arith::AddFOp>(loc, acc, val);
-                    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newSum});
+                    builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{newSum});
                 }
                 builder.setInsertionPointAfter(meanLoop);
                 auto countF = builder.create<mlir::arith::ConstantOp>(
@@ -1665,16 +1701,16 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
 
                 // Pass 2: variance
                 auto varLoop = builder.create<mlir::scf::ForOp>(
-                    loc, zero, nElemsConst, one, mlir::ValueRange{zeroF.getResult()});
+                    loc, zero, nElemsConst, one, mlir::SmallVector<mlir::Value,1>{zeroF.getResult()});
                 {
                     builder.setInsertionPointToStart(varLoop.getBody());
                     auto iv = varLoop.getInductionVar();
                     auto acc = varLoop.getRegionIterArg(0);
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                     auto diff = builder.create<mlir::arith::SubFOp>(loc, val, mean);
                     auto sq = builder.create<mlir::arith::MulFOp>(loc, diff, diff);
                     auto newVar = builder.create<mlir::arith::AddFOp>(loc, acc, sq);
-                    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newVar});
+                    builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{newVar});
                 }
                 builder.setInsertionPointAfter(varLoop);
                 auto variance = builder.create<mlir::arith::DivFOp>(loc, varLoop.getResult(0), countF);
@@ -1688,10 +1724,10 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 {
                     builder.setInsertionPointToStart(normLoop.getBody());
                     auto iv = normLoop.getInductionVar();
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                     auto centered = builder.create<mlir::arith::SubFOp>(loc, val, mean);
                     auto result = builder.create<mlir::arith::MulFOp>(loc, centered, rstd);
-                    builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{iv});
+                    builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::SmallVector<mlir::Value,1>{iv});
                 }
                 builder.setInsertionPointAfter(normLoop);
 
@@ -1700,15 +1736,15 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto zeroF = builder.create<mlir::arith::ConstantOp>(
                     loc, builder.getFloatAttr(elemType, 0.0));
                 auto sqSumLoop = builder.create<mlir::scf::ForOp>(
-                    loc, zero, nElemsConst, one, mlir::ValueRange{zeroF.getResult()});
+                    loc, zero, nElemsConst, one, mlir::SmallVector<mlir::Value,1>{zeroF.getResult()});
                 {
                     builder.setInsertionPointToStart(sqSumLoop.getBody());
                     auto iv = sqSumLoop.getInductionVar();
                     auto acc = sqSumLoop.getRegionIterArg(0);
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                     auto sq = builder.create<mlir::arith::MulFOp>(loc, val, val);
                     auto newSum = builder.create<mlir::arith::AddFOp>(loc, acc, sq);
-                    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newSum});
+                    builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{newSum});
                 }
                 builder.setInsertionPointAfter(sqSumLoop);
                 auto countF = builder.create<mlir::arith::ConstantOp>(
@@ -1723,9 +1759,9 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 {
                     builder.setInsertionPointToStart(normLoop.getBody());
                     auto iv = normLoop.getInductionVar();
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                     auto result = builder.create<mlir::arith::MulFOp>(loc, val, rstd);
-                    builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{iv});
+                    builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::SmallVector<mlir::Value,1>{iv});
                 }
                 builder.setInsertionPointAfter(normLoop);
             }
@@ -1750,7 +1786,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             {
                 builder.setInsertionPointToStart(initLoop.getBody());
                 builder.create<mlir::memref::StoreOp>(loc, zeroF, outputMemref,
-                    mlir::ValueRange{initLoop.getInductionVar()});
+                    mlir::SmallVector<mlir::Value,1>{initLoop.getInductionVar()});
             }
             builder.setInsertionPointAfter(initLoop);
 
@@ -1769,11 +1805,11 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                     auto cIdx = builder.create<mlir::arith::AddIOp>(loc,
                         builder.create<mlir::arith::MulIOp>(loc, i, nConst), j);
                     auto cVal = builder.create<mlir::memref::LoadOp>(loc, outputMemref,
-                        mlir::ValueRange{cIdx});
+                        mlir::SmallVector<mlir::Value,1>{cIdx});
 
                     // Inner accumulation loop over K
                     auto kLoop = builder.create<mlir::scf::ForOp>(
-                        loc, zeroIdx, kConst, oneIdx, mlir::ValueRange{cVal.getResult()});
+                        loc, zeroIdx, kConst, oneIdx, mlir::SmallVector<mlir::Value,1>{cVal.getResult()});
                     {
                         builder.setInsertionPointToStart(kLoop.getBody());
                         auto k = kLoop.getInductionVar();
@@ -1783,17 +1819,17 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                         auto aIdx = builder.create<mlir::arith::AddIOp>(loc,
                             builder.create<mlir::arith::MulIOp>(loc, i, kConst), k);
                         auto aVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0],
-                            mlir::ValueRange{aIdx});
+                            mlir::SmallVector<mlir::Value,1>{aIdx});
 
                         // B[k,j] = B[k*N + j]
                         auto bIdx = builder.create<mlir::arith::AddIOp>(loc,
                             builder.create<mlir::arith::MulIOp>(loc, k, nConst), j);
                         auto bVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1],
-                            mlir::ValueRange{bIdx});
+                            mlir::SmallVector<mlir::Value,1>{bIdx});
 
                         auto prod = builder.create<mlir::arith::MulFOp>(loc, aVal, bVal);
                         auto newAcc = builder.create<mlir::arith::AddFOp>(loc, acc, prod);
-                        builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+                        builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{newAcc});
                     }
                     builder.setInsertionPointAfter(kLoop);
 
@@ -1801,7 +1837,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                     auto finalCIdx = builder.create<mlir::arith::AddIOp>(loc,
                         builder.create<mlir::arith::MulIOp>(loc, i, nConst), j);
                     builder.create<mlir::memref::StoreOp>(loc, kLoop.getResult(0), outputMemref,
-                        mlir::ValueRange{finalCIdx});
+                        mlir::SmallVector<mlir::Value,1>{finalCIdx});
                 }
                 builder.setInsertionPointAfter(jLoop);
             }
@@ -1818,8 +1854,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             auto loop = builder.create<mlir::scf::ForOp>(loc, zero, nElements, one);
             builder.setInsertionPointToStart(loop.getBody());
             auto iv = loop.getInductionVar();
-            auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
-            builder.create<mlir::memref::StoreOp>(loc, val, outputMemref, mlir::ValueRange{iv});
+            auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
+            builder.create<mlir::memref::StoreOp>(loc, val, outputMemref, mlir::SmallVector<mlir::Value,1>{iv});
             builder.setInsertionPointAfter(loop);
             break;
         }
@@ -1832,15 +1868,15 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             auto loop = builder.create<mlir::scf::ForOp>(loc, zero, nElements, one);
             builder.setInsertionPointToStart(loop.getBody());
             auto iv = loop.getInductionVar();
-            auto cond = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
-            auto ifTrue = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::ValueRange{iv});
-            auto ifFalse = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[2], mlir::ValueRange{iv});
+            auto cond = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
+            auto ifTrue = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::SmallVector<mlir::Value,1>{iv});
+            auto ifFalse = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[2], mlir::SmallVector<mlir::Value,1>{iv});
             auto zeroF = builder.create<mlir::arith::ConstantOp>(
                 loc, builder.getFloatAttr(elemType, 0.0));
             auto condBool = builder.create<mlir::arith::CmpFOp>(
                 loc, mlir::arith::CmpFPredicate::ONE, cond, zeroF);
             auto result = builder.create<mlir::arith::SelectOp>(loc, condBool, ifTrue, ifFalse);
-            builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{iv});
+            builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::SmallVector<mlir::Value,1>{iv});
             builder.setInsertionPointAfter(loop);
             break;
         }
@@ -1869,14 +1905,14 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
     mlir::Type elemType;
     int dtype = (!inputTypes.empty()) ? inputTypes[0] : 0;
     switch (dtype) {
-        case 1:  elemType = mlir::FloatType::getF16(_context.get()); break;
+        case 1:  elemType = mlir::Float16Type::get(_context.get()); break;
         case 2:  case 0:
-            elemType = mlir::FloatType::getF32(_context.get()); break;
-        case 3:  elemType = mlir::FloatType::getF64(_context.get()); break;
+            elemType = mlir::Float32Type::get(_context.get()); break;
+        case 3:  elemType = mlir::Float64Type::get(_context.get()); break;
         case 5:  elemType = mlir::IntegerType::get(_context.get(), 32); break;
         case 7:  elemType = mlir::IntegerType::get(_context.get(), 64); break;
-        case 17: elemType = mlir::FloatType::getBF16(_context.get()); break;
-        default: elemType = mlir::FloatType::getF32(_context.get()); break;
+        case 17: elemType = mlir::BFloat16Type::get(_context.get()); break;
+        default: elemType = mlir::Float32Type::get(_context.get()); break;
     }
 
     // Compute total elements for each input (flat 1D view)
@@ -1964,7 +2000,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
     }
     mlir::Value nElements = entryBlock->getArgument(argIdx++);
 
-    bool isFloatType = elemType.isa<mlir::FloatType>();
+    bool isFloatType = mlir::isa<mlir::FloatType>(elemType);
 
     // Lowercase op name for dispatch
     std::string lowerOp = opName;
@@ -2003,7 +2039,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             {
                 builder.setInsertionPointToStart(initLoop.getBody());
                 builder.create<mlir::memref::StoreOp>(loc, zeroF, outputMemrefs[0],
-                    mlir::ValueRange{initLoop.getInductionVar()});
+                    mlir::SmallVector<mlir::Value,1>{initLoop.getInductionVar()});
             }
             builder.setInsertionPointAfter(initLoop);
 
@@ -2062,23 +2098,23 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                                 builder.create<mlir::arith::MulIOp>(loc, n, ocConst2), oc),
                             oHConst2), oh),
                     oWConst2), ow);
-            auto curOut = builder.create<mlir::memref::LoadOp>(loc, outputMemrefs[0], mlir::ValueRange{outIdx});
+            auto curOut = builder.create<mlir::memref::LoadOp>(loc, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{outIdx});
 
             // Inner loops: ic, kh, kw accumulate
             auto icLoop = builder.create<mlir::scf::ForOp>(
-                loc, zeroIdx, icConst, oneIdx, mlir::ValueRange{curOut.getResult()});
+                loc, zeroIdx, icConst, oneIdx, mlir::SmallVector<mlir::Value,1>{curOut.getResult()});
             builder.setInsertionPointToStart(icLoop.getBody());
             auto ic = icLoop.getInductionVar();
             auto acc1 = icLoop.getRegionIterArg(0);
 
             auto khLoop = builder.create<mlir::scf::ForOp>(
-                loc, zeroIdx, khConst, oneIdx, mlir::ValueRange{acc1});
+                loc, zeroIdx, khConst, oneIdx, mlir::SmallVector<mlir::Value,1>{acc1});
             builder.setInsertionPointToStart(khLoop.getBody());
             auto kh = khLoop.getInductionVar();
             auto acc2 = khLoop.getRegionIterArg(0);
 
             auto kwLoop = builder.create<mlir::scf::ForOp>(
-                loc, zeroIdx, kwConst, oneIdx, mlir::ValueRange{acc2});
+                loc, zeroIdx, kwConst, oneIdx, mlir::SmallVector<mlir::Value,1>{acc2});
             builder.setInsertionPointToStart(kwLoop.getBody());
             auto kw = kwLoop.getInductionVar();
             auto acc3 = kwLoop.getRegionIterArg(0);
@@ -2117,7 +2153,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                                 builder.create<mlir::arith::MulIOp>(loc, n, iCConst_idx), ic),
                             iHConst), ih),
                     iWConst), iw);
-            auto inVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{inIdx});
+            auto inVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{inIdx});
 
             // filterIdx = ((oc * iC + ic) * kH + kh) * kW + kw
             auto fIdx = builder.create<mlir::arith::AddIOp>(loc,
@@ -2128,25 +2164,25 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                                 builder.create<mlir::arith::MulIOp>(loc, oc, fIcConst), ic),
                             fKhConst), kh),
                     fKwConst), kw);
-            auto fVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::ValueRange{fIdx});
+            auto fVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::SmallVector<mlir::Value,1>{fIdx});
 
             auto prod = builder.create<mlir::arith::MulFOp>(loc, inVal, fVal);
             auto newAcc = builder.create<mlir::arith::AddFOp>(loc, acc3, prod);
-            builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+            builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{newAcc});
 
             // Else block: out of bounds, yield current accumulator
             builder.setInsertionPointToStart(ifOp.elseBlock());
-            builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{acc3});
+            builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{acc3});
 
             // Close kw loop
             builder.setInsertionPointAfter(ifOp);
-            builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{ifOp.getResult(0)});
+            builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{ifOp.getResult(0)});
             // Close kh loop
             builder.setInsertionPointAfter(kwLoop);
-            builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{kwLoop.getResult(0)});
+            builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{kwLoop.getResult(0)});
             // Close ic loop
             builder.setInsertionPointAfter(khLoop);
-            builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{khLoop.getResult(0)});
+            builder.create<mlir::scf::YieldOp>(loc, mlir::SmallVector<mlir::Value,1>{khLoop.getResult(0)});
 
             // Store final accumulated value
             builder.setInsertionPointAfter(icLoop);
@@ -2159,7 +2195,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                             oHConst2), oh),
                     oWConst2), ow);
             builder.create<mlir::memref::StoreOp>(loc, icLoop.getResult(0), outputMemrefs[0],
-                mlir::ValueRange{finalOutIdx});
+                mlir::SmallVector<mlir::Value,1>{finalOutIdx});
 
             builder.setInsertionPointAfter(owLoop);
             builder.setInsertionPointAfter(ohLoop);
@@ -2216,16 +2252,16 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                         inLinear = builder.create<mlir::arith::AddIOp>(loc, inLinear, contribution);
                     }
 
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{inLinear});
-                    builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{outLinear});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{inLinear});
+                    builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{outLinear});
                     builder.setInsertionPointAfter(loop);
                 } else {
                     // Fallback: identity copy
                     auto loop = builder.create<mlir::scf::ForOp>(loc, zero, nConst, one);
                     builder.setInsertionPointToStart(loop.getBody());
                     auto iv = loop.getInductionVar();
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
-                    builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
+                    builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                     builder.setInsertionPointAfter(loop);
                 }
             } else {
@@ -2236,8 +2272,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto loop = builder.create<mlir::scf::ForOp>(loc, zero, nConst, one);
                 builder.setInsertionPointToStart(loop.getBody());
                 auto iv = loop.getInductionVar();
-                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
-                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{iv});
+                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
+                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                 builder.setInsertionPointAfter(loop);
             }
             break;
@@ -2256,7 +2292,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 builder.setInsertionPointToStart(loop.getBody());
                 auto iv = loop.getInductionVar();
                 // Load index (cast from elemType to index)
-                auto idxVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::ValueRange{iv});
+                auto idxVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::SmallVector<mlir::Value,1>{iv});
                 mlir::Value idx;
                 if (isFloatType) {
                     auto idxI64 = builder.create<mlir::arith::FPToSIOp>(loc, builder.getI64Type(), idxVal);
@@ -2264,8 +2300,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 } else {
                     idx = builder.create<mlir::arith::IndexCastOp>(loc, builder.getIndexType(), idxVal);
                 }
-                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{idx});
-                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{iv});
+                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{idx});
+                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                 builder.setInsertionPointAfter(loop);
 
             } else if (lowerOp == "concat") {
@@ -2278,9 +2314,9 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                     auto loop = builder.create<mlir::scf::ForOp>(loc, zero, inLen, one);
                     builder.setInsertionPointToStart(loop.getBody());
                     auto iv = loop.getInductionVar();
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[i], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[i], mlir::SmallVector<mlir::Value,1>{iv});
                     auto outIdx = builder.create<mlir::arith::AddIOp>(loc, iv, offset);
-                    builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{outIdx});
+                    builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{outIdx});
                     builder.setInsertionPointAfter(loop);
                     offset = builder.create<mlir::arith::AddIOp>(loc, offset, inLen);
                 }
@@ -2296,8 +2332,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 builder.setInsertionPointToStart(loop.getBody());
                 auto iv = loop.getInductionVar();
                 auto srcIdx = builder.create<mlir::arith::RemUIOp>(loc, iv, inLen);
-                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{srcIdx});
-                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{iv});
+                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{srcIdx});
+                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                 builder.setInsertionPointAfter(loop);
 
             } else if (lowerOp == "split" || lowerOp == "split_v" || lowerOp == "unstack") {
@@ -2312,8 +2348,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                     builder.setInsertionPointToStart(loop.getBody());
                     auto iv = loop.getInductionVar();
                     auto srcIdx = builder.create<mlir::arith::AddIOp>(loc, iv, srcOff);
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{srcIdx});
-                    builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[o], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{srcIdx});
+                    builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[o], mlir::SmallVector<mlir::Value,1>{iv});
                     builder.setInsertionPointAfter(loop);
                     srcOffset += outputLengths[o];
                 }
@@ -2329,9 +2365,9 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                     auto loop = builder.create<mlir::scf::ForOp>(loc, zero, inLen, one);
                     builder.setInsertionPointToStart(loop.getBody());
                     auto iv = loop.getInductionVar();
-                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[i], mlir::ValueRange{iv});
+                    auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[i], mlir::SmallVector<mlir::Value,1>{iv});
                     auto dstIdx = builder.create<mlir::arith::AddIOp>(loc, iv, dstOff);
-                    builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{dstIdx});
+                    builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{dstIdx});
                     builder.setInsertionPointAfter(loop);
                     dstOffset += inputLengths[i];
                 }
@@ -2348,8 +2384,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 builder.setInsertionPointToStart(loop.getBody());
                 auto iv = loop.getInductionVar();
                 auto srcIdx = builder.create<mlir::arith::AddIOp>(loc, iv, beginConst);
-                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{srcIdx});
-                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{iv});
+                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{srcIdx});
+                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                 builder.setInsertionPointAfter(loop);
 
             } else if (lowerOp == "scatter_nd_update" || lowerOp == "scatter_nd" || lowerOp == "scatter_update") {
@@ -2362,8 +2398,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto copyLoop = builder.create<mlir::scf::ForOp>(loc, zero, dataLen, one);
                 builder.setInsertionPointToStart(copyLoop.getBody());
                 auto iv = copyLoop.getInductionVar();
-                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
-                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{iv});
+                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
+                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                 builder.setInsertionPointAfter(copyLoop);
 
                 // Then scatter updates
@@ -2371,7 +2407,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto scatterLoop = builder.create<mlir::scf::ForOp>(loc, zero, updateLen, one);
                 builder.setInsertionPointToStart(scatterLoop.getBody());
                 auto si = scatterLoop.getInductionVar();
-                auto idxVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::ValueRange{si});
+                auto idxVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::SmallVector<mlir::Value,1>{si});
                 mlir::Value idx;
                 if (isFloatType) {
                     auto idxI64 = builder.create<mlir::arith::FPToSIOp>(loc, builder.getI64Type(), idxVal);
@@ -2379,8 +2415,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 } else {
                     idx = builder.create<mlir::arith::IndexCastOp>(loc, builder.getIndexType(), idxVal);
                 }
-                auto updateVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[2], mlir::ValueRange{si});
-                builder.create<mlir::memref::StoreOp>(loc, updateVal, outputMemrefs[0], mlir::ValueRange{idx});
+                auto updateVal = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[2], mlir::SmallVector<mlir::Value,1>{si});
+                builder.create<mlir::memref::StoreOp>(loc, updateVal, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{idx});
                 builder.setInsertionPointAfter(scatterLoop);
 
             } else {
@@ -2391,8 +2427,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto loop = builder.create<mlir::scf::ForOp>(loc, zero, outLen, one);
                 builder.setInsertionPointToStart(loop.getBody());
                 auto iv2 = loop.getInductionVar();
-                auto val2 = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv2});
-                builder.create<mlir::memref::StoreOp>(loc, val2, outputMemrefs[0], mlir::ValueRange{iv2});
+                auto val2 = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv2});
+                builder.create<mlir::memref::StoreOp>(loc, val2, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv2});
                 builder.setInsertionPointAfter(loop);
             }
             break;
@@ -2409,7 +2445,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto loop = builder.create<mlir::scf::ForOp>(loc, zero, outLen, one);
                 builder.setInsertionPointToStart(loop.getBody());
                 builder.create<mlir::memref::StoreOp>(loc, zeroF, outputMemrefs[0],
-                    mlir::ValueRange{loop.getInductionVar()});
+                    mlir::SmallVector<mlir::Value,1>{loop.getInductionVar()});
                 builder.setInsertionPointAfter(loop);
 
             } else if (lowerOp == "ones_like" || lowerOp == "oneslike" || lowerOp == "ones_as") {
@@ -2417,7 +2453,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto loop = builder.create<mlir::scf::ForOp>(loc, zero, outLen, one);
                 builder.setInsertionPointToStart(loop.getBody());
                 builder.create<mlir::memref::StoreOp>(loc, oneF, outputMemrefs[0],
-                    mlir::ValueRange{loop.getInductionVar()});
+                    mlir::SmallVector<mlir::Value,1>{loop.getInductionVar()});
                 builder.setInsertionPointAfter(loop);
 
             } else if (lowerOp == "range") {
@@ -2433,7 +2469,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto ivF = builder.create<mlir::arith::SIToFPOp>(loc, elemType, ivIdx);
                 auto val = builder.create<mlir::arith::AddFOp>(loc, startF,
                     builder.create<mlir::arith::MulFOp>(loc, ivF, stepF));
-                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{iv});
+                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                 builder.setInsertionPointAfter(loop);
 
             } else if (lowerOp == "create" || lowerOp == "set_scalar") {
@@ -2443,7 +2479,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto loop = builder.create<mlir::scf::ForOp>(loc, zero, outLen, one);
                 builder.setInsertionPointToStart(loop.getBody());
                 builder.create<mlir::memref::StoreOp>(loc, fillF, outputMemrefs[0],
-                    mlir::ValueRange{loop.getInductionVar()});
+                    mlir::SmallVector<mlir::Value,1>{loop.getInductionVar()});
                 builder.setInsertionPointAfter(loop);
 
             } else {
@@ -2452,7 +2488,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto loop = builder.create<mlir::scf::ForOp>(loc, zero, outLen, one);
                 builder.setInsertionPointToStart(loop.getBody());
                 builder.create<mlir::memref::StoreOp>(loc, zeroF, outputMemrefs[0],
-                    mlir::ValueRange{loop.getInductionVar()});
+                    mlir::SmallVector<mlir::Value,1>{loop.getInductionVar()});
                 builder.setInsertionPointAfter(loop);
             }
             break;
@@ -2471,10 +2507,10 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto loop = builder.create<mlir::scf::ForOp>(loc, zero, nElements, one);
                 builder.setInsertionPointToStart(loop.getBody());
                 auto iv = loop.getInductionVar();
-                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
+                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                 auto isZero = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OEQ, val, zeroF);
                 auto result = builder.create<mlir::arith::SelectOp>(loc, isZero, oneF, zeroF);
-                builder.create<mlir::memref::StoreOp>(loc, result, outputMemrefs[0], mlir::ValueRange{iv});
+                builder.create<mlir::memref::StoreOp>(loc, result, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                 builder.setInsertionPointAfter(loop);
             } else {
                 // Binary: and, or, xor
@@ -2482,8 +2518,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 auto loop = builder.create<mlir::scf::ForOp>(loc, zero, nElements, one);
                 builder.setInsertionPointToStart(loop.getBody());
                 auto iv = loop.getInductionVar();
-                auto lhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
-                auto rhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::ValueRange{iv});
+                auto lhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
+                auto rhs = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[1], mlir::SmallVector<mlir::Value,1>{iv});
                 auto lhsBool = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::ONE, lhs, zeroF);
                 auto rhsBool = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::ONE, rhs, zeroF);
 
@@ -2497,7 +2533,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
                 }
 
                 auto result = builder.create<mlir::arith::SelectOp>(loc, boolResult, oneF, zeroF);
-                builder.create<mlir::memref::StoreOp>(loc, result, outputMemrefs[0], mlir::ValueRange{iv});
+                builder.create<mlir::memref::StoreOp>(loc, result, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
                 builder.setInsertionPointAfter(loop);
             }
             break;
@@ -2532,7 +2568,7 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             {
                 builder.setInsertionPointToStart(initLoop.getBody());
                 builder.create<mlir::memref::StoreOp>(loc, zeroF, outputMemrefs[0],
-                    mlir::ValueRange{initLoop.getInductionVar()});
+                    mlir::SmallVector<mlir::Value,1>{initLoop.getInductionVar()});
             }
             builder.setInsertionPointAfter(initLoop);
 
@@ -2543,8 +2579,8 @@ mlir::OwningOpRef<mlir::ModuleOp> MLIREngine::createModuleForOp(
             {
                 builder.setInsertionPointToStart(copyLoop.getBody());
                 auto iv = copyLoop.getInductionVar();
-                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::ValueRange{iv});
-                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::ValueRange{iv});
+                auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
+                builder.create<mlir::memref::StoreOp>(loc, val, outputMemrefs[0], mlir::SmallVector<mlir::Value,1>{iv});
             }
             builder.setInsertionPointAfter(copyLoop);
             break;

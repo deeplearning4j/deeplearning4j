@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
  * Isolation tests for fused_rope contiguity handling.
@@ -321,6 +323,46 @@ public class FusedRoPEContiguityTest {
         assertEquals(DataType.HALF, output.dataType(), "Output should be HALF when input is HALF");
         log.info("Test 6 PASSED: all-FP16, sum={}", sum);
         sd.close();
+    }
+
+    @Test
+    @DisplayName("Qwen window positions exactly match chained scalar RoPE")
+    void testQwenWindowExactlyMatchesChainedScalarPositions() {
+        int batch = 1, window = 5, headDim = 256, basePosition = 18;
+        double freqBase = 10_000_000.0;
+
+        Nd4j.getRandom().setSeed(12345L);
+        for (int heads : new int[]{8, 2}) {
+            INDArray input = Nd4j.randn(DataType.FLOAT, batch, window, heads, headDim);
+            INDArray windowPosition = Nd4j.scalar(DataType.INT64, (long) basePosition);
+            INDArray windowOutput = Nd4j.exec(new FusedRoPE(
+                    input, null, windowPosition, 0, FusedRoPE.ROPE_TYPE_NEOX,
+                    freqBase, 1.0, headDim))[0];
+
+            for (int row = 0; row < window; row++) {
+                INDArray scalarInput = input.get(
+                        all(), interval(row, row + 1), all(), all()).dup();
+                INDArray scalarPosition = Nd4j.scalar(
+                        DataType.INT64, (long) basePosition + row);
+                INDArray scalarOutput = Nd4j.exec(new FusedRoPE(
+                        scalarInput, null, scalarPosition, 0, FusedRoPE.ROPE_TYPE_NEOX,
+                        freqBase, 1.0, headDim))[0];
+                INDArray windowRow = windowOutput.get(
+                        all(), interval(row, row + 1), all(), all());
+
+                double maxDiff = windowRow.sub(scalarOutput).normmaxNumber().doubleValue();
+                assertEquals(0.0, maxDiff,
+                        "RoPE row " + row + " differed for heads=" + heads);
+
+                scalarOutput.close();
+                scalarPosition.close();
+                scalarInput.close();
+            }
+
+            windowOutput.close();
+            windowPosition.close();
+            input.close();
+        }
     }
 
     private static boolean isContiguous(INDArray arr) {

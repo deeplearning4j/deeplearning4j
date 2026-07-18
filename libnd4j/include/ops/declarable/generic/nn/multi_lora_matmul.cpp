@@ -110,14 +110,14 @@ CUSTOM_OP_IMPL(multi_lora_matmul, 5, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(multi_lora_matmul) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS})    // input
         ->setAllowedInputTypes(1, {ALL_FLOATS})    // base weight
         ->setAllowedInputTypes(2, {ALL_FLOATS})    // lora A
         ->setAllowedInputTypes(3, {ALL_FLOATS})    // lora B
         ->setAllowedInputTypes(4, {INT64, INT32})  // adapter IDs
-        ->setAllowedOutputTypes({ALL_FLOATS})
-        ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
+        ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(multi_lora_matmul) {

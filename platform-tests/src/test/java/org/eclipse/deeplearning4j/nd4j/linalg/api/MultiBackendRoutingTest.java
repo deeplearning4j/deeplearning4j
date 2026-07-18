@@ -65,11 +65,8 @@ public class MultiBackendRoutingTest {
         System.out.println("Primary backend device type: " + deviceType);
 
         // Verify it's a valid device type
-        assertTrue(deviceType == DeviceType.CPU ||
-                   deviceType == DeviceType.CUDA_GPU ||
-                   deviceType == DeviceType.ROCM_GPU ||
-                   deviceType == DeviceType.TPU,
-                   "Device type should be a recognized type");
+        assertTrue(deviceType == DeviceType.CPU || deviceType.isAccelerator(),
+                   "Device type should be CPU or a recognized accelerator");
     }
 
     @Test
@@ -78,16 +75,20 @@ public class MultiBackendRoutingTest {
         boolean hasCpu = Nd4j.isBackendAvailable(DeviceType.CPU);
         boolean hasCudaGpu = Nd4j.isBackendAvailable(DeviceType.CUDA_GPU);
         boolean hasRocmGpu = Nd4j.isBackendAvailable(DeviceType.ROCM_GPU);
+        boolean hasVulkanGpu = Nd4j.isBackendAvailable(DeviceType.VULKAN_GPU);
+        boolean hasMetalGpu = Nd4j.isBackendAvailable(DeviceType.METAL_GPU);
         boolean hasTpu = Nd4j.isBackendAvailable(DeviceType.TPU);
 
         System.out.println("Backend availability:");
         System.out.println("  CPU: " + hasCpu);
         System.out.println("  CUDA_GPU: " + hasCudaGpu);
         System.out.println("  ROCM_GPU: " + hasRocmGpu);
+        System.out.println("  VULKAN_GPU: " + hasVulkanGpu);
+        System.out.println("  METAL_GPU: " + hasMetalGpu);
         System.out.println("  TPU: " + hasTpu);
 
         // At least one should be available
-        assertTrue(hasCpu || hasCudaGpu || hasRocmGpu || hasTpu,
+        assertTrue(hasCpu || hasCudaGpu || hasRocmGpu || hasVulkanGpu || hasMetalGpu || hasTpu,
                    "At least one backend device type should be available");
     }
 

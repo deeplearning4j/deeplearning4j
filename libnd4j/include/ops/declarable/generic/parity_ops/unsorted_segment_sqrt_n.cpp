@@ -81,6 +81,7 @@ DECLARE_SHAPE_FN(unsorted_segment_sqrt_n) {
   return SHAPELIST(CONSTANT(outputShape));
 }
 DECLARE_TYPES(unsorted_segment_sqrt_n) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedOutputTypes({ALL_FLOATS})
       ->setAllowedInputTypes(0, {ALL_FLOATS})
@@ -93,6 +94,7 @@ CUSTOM_OP_IMPL(unsorted_segment_sqrt_n_bp, 3, 2, false, 0, 1) {
                                                 INPUT_VARIABLE(2), INT_ARG(0), OUTPUT_NULLIFIED(0));
 }
 DECLARE_TYPES(unsorted_segment_sqrt_n_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(1, {ALL_INTS})

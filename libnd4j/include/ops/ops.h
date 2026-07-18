@@ -1070,7 +1070,7 @@ DECLARE_UNARY_SIMD_SAFE_OP(GELU,
 
 DECLARE_UNARY_SIMD_SAFE_OP(PreciseGELU,
                            auto sp = sd::math::sd_sqrt<X COMMA X>(static_cast<X>(2) / static_cast<X>(M_PI));
-                               auto xp = d1 + sd::math::sd_pow<X COMMA X COMMA X>(static_cast<X>(0.044715) * d1 COMMA static_cast<X>(3));
+                               auto xp = d1 + static_cast<X>(0.044715) * sd::math::sd_pow<X COMMA X COMMA X>(d1 COMMA static_cast<X>(3));
                                return (d1 / static_cast<X>(2)) * (static_cast<X>(1) + sd::math::sd_tanh<X COMMA X>(sp * xp));
 )
 DECLARE_UNARY_SIMD_SAFE_OP(GELUDerivative,
@@ -1082,11 +1082,9 @@ DECLARE_UNARY_SIMD_SAFE_OP(GELUDerivative,
 )
 DECLARE_UNARY_SIMD_SAFE_OP(PreciseGELUDerivative,
                            auto x79 = static_cast<X>(0.797885) * d1;
-                               auto temp1 = static_cast<X>(0.0356774) * d1;
-                               auto x03 = temp1 * temp1 * temp1;  // cube without sd_pow
+                               auto x03 = static_cast<X>(0.0356774) * d1 * d1 * d1;  // 0.0356774 * x^3 (argument cubic term)
                                auto x39 = static_cast<X>(0.398942) * d1;
-                               auto temp2 = static_cast<X>(0.0535161) * d1;
-                               auto x05 = temp2 * temp2 * temp2;  // cube without sd_pow
+                               auto x05 = static_cast<X>(0.0535161) * d1 * d1 * d1;  // 0.0535161 * x^3 (derivative cubic term)
                                auto scz = sd::math::sd_sech<X COMMA X>(x79 + x03);
                                return static_cast<X>(0.5) + (x39 + x05) * (scz * scz) + static_cast<X>(0.5) * sd::math::sd_tanh<X COMMA X>(x79 + x03);
 )

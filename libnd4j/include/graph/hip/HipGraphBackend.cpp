@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#ifdef SD_HIP
+#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
 
 #include <graph/hip/HipGraphBackend.h>
 #include <graph/hip/HipRuntimeManager.h>

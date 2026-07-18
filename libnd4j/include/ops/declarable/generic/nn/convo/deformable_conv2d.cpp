@@ -161,6 +161,7 @@ CUSTOM_OP_IMPL(deformable_conv2d, 3, 1, false, 0, 11) {
 }
 
 DECLARE_TYPES(deformable_conv2d) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
 }
 

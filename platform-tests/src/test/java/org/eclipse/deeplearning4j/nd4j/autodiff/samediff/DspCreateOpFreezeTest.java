@@ -248,11 +248,16 @@ public class DspCreateOpFreezeTest {
             if (outs.get(i) < outs.get(i - 1) - 1e-3) decreases++;
         }
 
-        log.info("[MONOTONIC] late outputs: {}", outs);
+        long distinctLate = outs.stream()
+                .map(v -> Math.round(v * 1e4))
+                .distinct()
+                .count();
+        log.info("[MONOTONIC] late outputs: {} distinct={}", outs, distinctLate);
+        assertTrue(distinctLate >= 3,
+                "POSITION_SIGNAL_FROZEN: expected at least 3 distinct replay outputs as " +
+                        "stepCount changes, got " + distinctLate + ". outputs=" + outs);
         assertTrue(decreases <= 1,  // Allow 1 for FP rounding
-                "POSITION_SIGNAL_FROZEN: " + decreases + " decreases in position signal " +
-                        "(expected monotonic increase with stepCount). " +
-                        "range op may be frozen at capture-time position. " +
-                        "outputs=" + outs);
+                "POSITION_SIGNAL_NON_MONOTONIC: " + decreases + " decreases in position signal " +
+                        "(expected monotonic increase with stepCount). outputs=" + outs);
     }
 }

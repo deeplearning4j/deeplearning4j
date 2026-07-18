@@ -35,9 +35,12 @@
 
 #include "mkldnnUtils.h"
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 namespace dg = dnnl::graph;
 
@@ -409,8 +412,15 @@ static void executeFlashAttention4D(NDArray* query, NDArray* key, NDArray* value
   delete outFinal;
 }
 
+// Close the file-level backend-namespace wrap here: the op macros below open
+// the backend inline namespace themselves (platform_boilerplate.h); nesting
+// SD_NS inside SD_NS makes every unqualified SD_NS reference ambiguous. The
+// utilities above stay backend-qualified and remain visible to the op bodies
+// through inline-namespace lookup.
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
+
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(flash_attention, ENGINE_CPU) {
+PLATFORM_IMPL(flash_attention, ENGINE_ONEDNN) {
   auto query = INPUT_VARIABLE(0);
   auto key = INPUT_VARIABLE(1);
   auto value = INPUT_VARIABLE(2);
@@ -442,7 +452,7 @@ PLATFORM_IMPL(flash_attention, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(flash_attention, ENGINE_CPU) {
+PLATFORM_CHECK(flash_attention, ENGINE_ONEDNN) {
   auto query = INPUT_VARIABLE(0);
   auto key = INPUT_VARIABLE(1);
   auto value = INPUT_VARIABLE(2);
@@ -479,14 +489,14 @@ PLATFORM_CHECK(flash_attention, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(flash_attention_bp, ENGINE_CPU) {
+PLATFORM_IMPL(flash_attention_bp, ENGINE_ONEDNN) {
   // OneDNN Graph API doesn't provide fused backward for SDPA yet
   // This falls through to the generic CPU implementation
   return sd::Status::KERNEL_FAILURE;
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(flash_attention_bp, ENGINE_CPU) {
+PLATFORM_CHECK(flash_attention_bp, ENGINE_ONEDNN) {
   // Always return false to use the generic CPU implementation for backward
   // OneDNN Graph API doesn't support fused SDPA backward pass yet
   Requirements req("ONEDNN FLASH ATTENTION BP");

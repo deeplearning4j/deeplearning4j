@@ -57,9 +57,8 @@ import static org.junit.jupiter.api.Assertions.fail;
  * <p>Coverage:
  * <ol>
  *   <li>{@link #testOpTraitSanity(String)} — for EVERY registered op, assert that
- *       {@code getOpTraits(name) != 0}. An op returning 0 is missing from
- *       {@code OpTraitTable.cpp} AND has no class-hierarchy-derived traits, which is
- *       a bug (the trait system can no longer reason about it for DSP/fusion/etc.).</li>
+ *       {@code getOpTraits(name) != 0}. An op returning 0 has neither descriptor-local
+ *       traits nor class-hierarchy-derived traits, so DSP and fusion cannot classify it.</li>
  *   <li>{@link #testNonValdepOps(String)} — for the authoritative list of ops whose
  *       output shape is computed from INPUT SHAPES only (no tensor-value read), assert
  *       that {@code VALUE_DEPENDENT_SHAPE} is NOT set. A false positive here causes
@@ -122,12 +121,8 @@ public class AllRegisteredOpsFrozenShapeTest {
             "gather", "gather_nd", "concat", "stack", "split", "split_v",
             "expand_dims", "squeeze", "flatten", "flatten_2d", "permute",
             "repeat", "transpose"
-            // NOTE: `tile` and `reshape_no_copy` are INTENTIONALLY omitted from this
-            // list. Per OpTraitTable.cpp and the shape fn:
-            //   • reshape_no_copy reads a shape tensor → VALDEP is CORRECT.
-            //   • tile is dual-mode (iArgs or tensor multiples) → conservatively
-            //     tagged VALDEP in the table. See the comment near SLICE/TILE in
-            //     OpTraitTable.cpp for the rationale.
+            // `reshape_no_copy` reads a shape tensor, while `tile` also accepts tensor
+            // multiples, so their local descriptors conservatively declare VALDEP.
     )));
 
     // ── Ops whose output shape IS legitimately value-dependent ──────────────
@@ -144,20 +139,15 @@ public class AllRegisteredOpsFrozenShapeTest {
             "strided_slice",
             "tile",
             "range"
-            // NOTE: `linspace` is declared in OpTraitTable.cpp but the
-            // OpRegistrator exposes it as `lin_space` (with an underscore) via the
-            // DECLARE_CUSTOM_OP macro. The trait table entry for "linspace" is
-            // effectively dead code — logged by testRegistryInventory. Until
-            // OpTraitTable.cpp is fixed to spell it `lin_space`, skip the
-            // classification assertion for this one alias.
+            // The registered op is `lin_space`; this list intentionally uses only
+            // canonical OpRegistrator names.
 
     )));
 
     // ── Ops we explicitly allow to return 0 traits (temporarily) ────────────
-    // Empty by design — per user instruction, NO ops may silently be absent from the
-    // trait table. If you need to add an exemption, add a comment explaining why
-    // and fix the root cause on follow-up.
-    private static final Set<String> TRAIT_TABLE_EXEMPTIONS = Collections.emptySet();
+    // Empty by design: every registered op declares its metadata on its own descriptor.
+    // Any exemption must document why the op cannot be classified locally.
+    private static final Set<String> TRAIT_EXEMPTIONS = Collections.emptySet();
 
     // ─────────────────────────────────────────────────────────────────────────
     // Native-op trait query helper
@@ -202,25 +192,24 @@ public class AllRegisteredOpsFrozenShapeTest {
 
     @ParameterizedTest(name = "op={0}")
     @MethodSource("everyRegisteredOp")
-    @DisplayName("every registered op must have non-zero traits (missing = gap in OpTraitTable.cpp)")
+    @DisplayName("every registered op must expose non-zero descriptor-local traits")
     public void testOpTraitSanity(String opName) {
         int actual = traits(opName);
 
-        if (TRAIT_TABLE_EXEMPTIONS.contains(opName)) {
+        if (TRAIT_EXEMPTIONS.contains(opName)) {
             // Explicit allow-list — but force the exemption to actually be needed.
             // If traits are non-zero, the exemption is stale and should be removed.
             assertEquals(0, actual,
-                    "op '" + opName + "' is in TRAIT_TABLE_EXEMPTIONS but now "
+                    "op '" + opName + "' is in TRAIT_EXEMPTIONS but now "
                             + "has traits=0x" + Integer.toHexString(actual)
                             + " — remove it from the exemption set");
             return;
         }
 
         assertNotEquals(0, actual,
-                "op '" + opName + "' missing from OpTraitTable.cpp — "
-                        + "getOpTraits returned 0 and no class-hierarchy-derived traits. "
-                        + "Either add an entry to libnd4j/include/ops/impl/OpTraitTable.cpp "
-                        + "or add the op to TRAIT_TABLE_EXEMPTIONS with a justification.");
+                "op '" + opName + "' has no descriptor-local or class-derived traits. "
+                        + "Declare them with addTraits in the op's DECLARE_TYPES block, "
+                        + "or add a justified TRAIT_EXEMPTIONS entry.");
 
         // Every op that sets a "category" bit must also carry at least one of the
         // shape-classification bits (FULLY_WRITING, VIEW_PRODUCING, VALUE_DEPENDENT_SHAPE,
@@ -257,8 +246,8 @@ public class AllRegisteredOpsFrozenShapeTest {
         int actual = traits(opName);
         assertNotEquals(0, actual,
                 "op '" + opName + "' returned 0 traits — it is on the "
-                        + "MUST_NOT_BE_VALDEP list but is not registered OR is missing from "
-                        + "OpTraitTable.cpp. Either fix the registration or amend the list.");
+                        + "MUST_NOT_BE_VALDEP list but is unregistered or lacks local traits. "
+                        + "Fix the op declaration or amend the list.");
 
         int valdep = actual & OP_TRAIT_VALUE_DEPENDENT_SHAPE;
         if (valdep != 0) {
@@ -266,8 +255,8 @@ public class AllRegisteredOpsFrozenShapeTest {
                     + "(traits=0x" + Integer.toHexString(actual) + ") but its output shape "
                     + "is fully determined by INPUT SHAPES + iArgs. This causes the "
                     + "SHAPES_FROZEN slot executor to report 'value-dependent output shape "
-                    + "changed' on legitimate input-shape changes. Fix the OpTraitTable.cpp "
-                    + "entry for '" + opName + "'.");
+                    + "changed' on legitimate input-shape changes. Fix addTraits in the '"
+                    + opName + "' DECLARE_TYPES block.");
         }
     }
 
@@ -282,7 +271,7 @@ public class AllRegisteredOpsFrozenShapeTest {
         int actual = traits(opName);
         assertNotEquals(0, actual,
                 "op '" + opName + "' returned 0 traits — it is on the MUST_BE_VALDEP "
-                        + "list but is not registered OR is missing from OpTraitTable.cpp.");
+                        + "list but is unregistered or lacks descriptor-local traits.");
 
         int valdep = actual & OP_TRAIT_VALUE_DEPENDENT_SHAPE;
         if (valdep == 0) {
@@ -291,8 +280,8 @@ public class AllRegisteredOpsFrozenShapeTest {
                     + "DOES dereference input tensor data. Without this bit, the "
                     + "SHAPES_FROZEN slot executor will not take the cached-shape "
                     + "recompute branch on input-data changes. Add "
-                    + "OP_TRAIT_VALUE_DEPENDENT_SHAPE to the '" + opName + "' entry in "
-                    + "OpTraitTable.cpp.");
+                    + "OP_TRAIT_VALUE_DEPENDENT_SHAPE in the '" + opName
+                    + "' DECLARE_TYPES block.");
         }
     }
 
@@ -310,13 +299,13 @@ public class AllRegisteredOpsFrozenShapeTest {
         int untraited = 0;
         int valdep = 0;
         int nonValdep = 0;
-        List<String> missingFromTraitTable = new ArrayList<>();
+        List<String> unclassifiedOps = new ArrayList<>();
 
         for (String op : all) {
             int t = traits(op);
             if (t == 0) {
                 untraited++;
-                missingFromTraitTable.add(op);
+                unclassifiedOps.add(op);
             } else {
                 traited++;
                 if ((t & OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0) valdep++;
@@ -331,9 +320,9 @@ public class AllRegisteredOpsFrozenShapeTest {
         log.info("Ops MISSING trait bits:     {}", untraited);
         log.info("  → value-dep classified:   {}", valdep);
         log.info("  → non-value-dep classified: {}", nonValdep);
-        if (!missingFromTraitTable.isEmpty()) {
-            log.warn("Ops with NO trait classification (fix by adding to OpTraitTable.cpp):");
-            for (String m : missingFromTraitTable) {
+        if (!unclassifiedOps.isEmpty()) {
+            log.warn("Ops with NO descriptor-local trait classification:");
+            for (String m : unclassifiedOps) {
                 log.warn("  - {}", m);
             }
         }

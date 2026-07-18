@@ -762,8 +762,8 @@ function(validate_generated_defines_failfast)
             list(APPEND EXPECTED_DEFINES "HAS_${SD_TYPE_UPPERCASE}")
         endforeach()
 
-        # Check the generated file
-        set(INCLUDE_OPS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/generated/include_ops.h")
+        # Check this build tree's generated file.
+        set(INCLUDE_OPS_FILE "${OP_OUTPUT_FILE}")
         if(NOT EXISTS "${INCLUDE_OPS_FILE}")
             if(COMMAND print_status_colored)
                 print_status_colored("WARNING" "Generated defines file will be created: ${INCLUDE_OPS_FILE}")

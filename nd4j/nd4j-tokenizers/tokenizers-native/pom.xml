@@ -43,6 +43,8 @@
         <javacpp.platform.library.path>natives/${javacpp.platform}</javacpp.platform.library.path>
         <!-- JavaCPP build properties file (override to windows-x86_64-mingw for MinGW builds) -->
         <javacpp.platform.build>${javacpp.platform}</javacpp.platform.build>
+        <tokenizers.include.path>${project.basedir}/../libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers/include</tokenizers.include.path>
+        <tokenizers.native.path>${project.basedir}/../libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers/${javacpp.platform}</tokenizers.native.path>
         <module.name>org.eclipse.deeplearning4j.tokenizers</module.name>
     </properties>
 
@@ -66,19 +68,39 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Native library (platform-specific jar with .so/.dll/.dylib) -->
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>libtokenizers</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform}</classifier>
-        </dependency>
+        <!--
+            The generated classifier produced by this module owns its JNI shim
+            and copies the wrapper libraries below. Keeping a second classified
+            libtokenizers dependency here made cross-compilation depend on an
+            artifact that this same build is responsible for packaging.
+        -->
 
-        <!-- Test dependencies -->
+        <!--
+            Surefire 3.3.0 requires a newer, internally aligned JUnit Platform
+            than the repository's legacy managed line.
+        -->
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-commons</artifactId>
+            <version>1.10.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -96,6 +118,17 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.platform</groupId>
+                        <artifactId>junit-platform-launcher</artifactId>
+                        <version>1.10.2</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.3.0</version>
                 <executions>
@@ -108,12 +141,12 @@
                         </goals>
                         <configuration>
                             <excludes>
-                                <exclude>org/eclipse/deeplearning4j/tokenizers/bindings/${javacpp.platform}${javacpp.platform.extension}/*</exclude>
+                                <exclude>org/eclipse/deeplearning4j/tokenizers/bindings/*/*</exclude>
                                 <exclude>lib/**</exclude>
                                 <exclude>*.dll</exclude>
                                 <exclude>*.dylib</exclude>
                                 <exclude>*.so</exclude>
-                                <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
+                                <exclude>META-INF/native-image/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -164,11 +197,16 @@
                             <name>platform.library.path</name>
                             <value>${javacpp.platform.library.path}</value>
                         </property>
+                        <property>
+                            <name>platform.sysroot</name>
+                            <value>${javacpp.platform.sysroot}</value>
+                        </property>
                     </propertyKeysAndValues>
                     <classPaths>
                         <classPath>${project.build.outputDirectory}</classPath>
                     </classPaths>
                     <includePaths>
+                        <includePath>${tokenizers.include.path}</includePath>
                         <includePath>${project.basedir}/../libtokenizers/target/native/include</includePath>
                         <includePath>${project.basedir}/../libtokenizers/target/native/include/tokenizers</includePath>
                         <includePath>${project.basedir}/../libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers/include</includePath>
@@ -179,8 +217,8 @@
                         <includePath>${java.home}/../include/darwin</includePath>
                     </includePaths>
                     <linkPaths>
-                        <!-- Primary JavaCPP structure path -->
-                        <linkPath>${project.basedir}/../libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers/${javacpp.platform}</linkPath>
+                        <!-- Primary path is overridden by mobile profiles. -->
+                        <linkPath>${tokenizers.native.path}</linkPath>
                         <!-- Legacy paths -->
                         <linkPath>${project.basedir}/../libtokenizers/target/native/${javacpp.platform}</linkPath>
                         <linkPath>${project.basedir}/../libtokenizers/target/native/lib64</linkPath>
@@ -188,12 +226,12 @@
                         <linkPath>${project.basedir}/../libtokenizers/build</linkPath>
                         <linkPath>${project.build.directory}/native</linkPath>
                     </linkPaths>
-                    <resourcePath>${project.basedir}/../libtokenizers/target/native/${javacpp.platform}</resourcePath>
+                    <resourcePath>${tokenizers.native.path}</resourcePath>
                     <buildResources>
                         <buildResource>/${javacpp.platform.library.path}/</buildResource>
                         <buildResource>/lib/</buildResource>
                         <buildResource>/</buildResource>
-                        <buildResource>${project.basedir}/../libtokenizers/target/native/${javacpp.platform}</buildResource>
+                        <buildResource>${tokenizers.native.path}</buildResource>
                     </buildResources>
                     <includeResources>
                         <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
@@ -201,7 +239,7 @@
                     <linkResources>
                         <linkResource>/${javacpp.platform.library.path}/</linkResource>
                         <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                        <linkResource>${project.basedir}/../libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers/${javacpp.platform}</linkResource>
+                        <linkResource>${tokenizers.native.path}</linkResource>
                         <linkResource>${project.basedir}/../libtokenizers/target/native/${javacpp.platform}</linkResource>
                     </linkResources>
                 </configuration>
@@ -249,8 +287,8 @@
                         <configuration>
                             <target>
                                 <echo message="Copying native libraries to ${javacpp.build.output.path}"/>
-                                <copy todir="${javacpp.build.output.path}" failonerror="false" overwrite="true">
-                                    <fileset dir="${project.basedir}/../libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers/${javacpp.platform}">
+                                <copy todir="${javacpp.build.output.path}" failonerror="true" overwrite="true">
+                                    <fileset dir="${tokenizers.native.path}">
                                         <include name="libtokenizers_wrapper.so*"/>
                                         <include name="libtokenizers_wrapper.dylib*"/>
                                         <include name="libtokenizers_wrapper.dll*"/>
@@ -259,21 +297,6 @@
                                         <include name="libtokenizers_ffi.dll*"/>
                                     </fileset>
                                 </copy>
-                                <copy todir="${javacpp.build.output.path}" failonerror="false" overwrite="true">
-                                    <fileset dir="${project.basedir}/../libtokenizers/target/native/${javacpp.platform}">
-                                        <include name="libtokenizers_wrapper.so*"/>
-                                        <include name="libtokenizers_wrapper.dylib*"/>
-                                        <include name="libtokenizers_wrapper.dll*"/>
-                                        <include name="libtokenizers_ffi.so*"/>
-                                        <include name="libtokenizers_ffi.dylib*"/>
-                                        <include name="libtokenizers_ffi.dll*"/>
-                                    </fileset>
-                                </copy>
-                                <echo message="Native libraries in output directory:"/>
-                                <exec executable="ls" failonerror="false">
-                                    <arg value="-la"/>
-                                    <arg value="${javacpp.build.output.path}"/>
-                                </exec>
                             </target>
                         </configuration>
                     </execution>
@@ -296,6 +319,19 @@
                 <javacpp.platform>linux-x86_64</javacpp.platform>
                 <javacpp.platform.root>/usr</javacpp.platform.root>
                 <javacpp.platform.compiler>g++</javacpp.platform.compiler>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>android-arm64</id>
+            <properties>
+                <javacpp.platform>android-arm64</javacpp.platform>
+                <javacpp.platform.build>android-arm64</javacpp.platform.build>
+                <javacpp.platform.root>${android.ndk}</javacpp.platform.root>
+                <javacpp.platform.compiler>${android.ndk}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${android.api}-clang++</javacpp.platform.compiler>
+                <javacpp.platform.sysroot>--sysroot=${android.ndk}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
+                <tokenizers.include.path>${project.basedir}/../libtokenizers/target/mobile/android-arm64-v8a/include</tokenizers.include.path>
+                <tokenizers.native.path>${project.basedir}/../libtokenizers/target/mobile/android-arm64-v8a/lib</tokenizers.native.path>
             </properties>
         </profile>
 

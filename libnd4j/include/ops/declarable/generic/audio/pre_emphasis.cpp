@@ -56,6 +56,7 @@ DECLARE_SHAPE_FN(pre_emphasis) {
 }
 
 DECLARE_TYPES(pre_emphasis) {
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

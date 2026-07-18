@@ -58,9 +58,13 @@
 //   CudnnVersionProvider::hasNewRnnApi()
 //   CudnnVersionProvider::isVersionCompatible()
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+// Op macros open SD_NS themselves (platform_boilerplate.h) — the DECLARE list
+// must sit outside the file-level wrap or SD_NS nests inside itself.
 
 DECLARE_PLATFORM(conv2d, ENGINE_CUDA);
 DECLARE_PLATFORM(conv2d_bp, ENGINE_CUDA);
@@ -220,6 +224,8 @@ DECLARE_PLATFORM(grid_sample_bp, ENGINE_CUDA);
 
 // Leaky ReLU
 DECLARE_PLATFORM(leakyrelu, ENGINE_CUDA);
+
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
 // Returns the CUDA graph capture stream when graph capture is active,
@@ -523,6 +529,7 @@ void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
                       const int pH, const int pW, const int dD, const int dH, const int dW, const bool isNCDHW,
                       const cudnnPoolingMode_t mode);
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

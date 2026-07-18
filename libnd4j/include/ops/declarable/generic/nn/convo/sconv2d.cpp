@@ -117,6 +117,7 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
 }
 
 DECLARE_TYPES(sconv2d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -224,6 +225,7 @@ DECLARE_SHAPE_FN(sconv2d) {
 }
 
 DECLARE_TYPES(sconv2d_bp) {
+  getOpDescriptor()->addTraits((OP_TRAIT_BACKWARD));
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

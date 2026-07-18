@@ -33,6 +33,10 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <array/DataTypeUtils.h>
 
+#if defined(SD_VULKAN) && defined(HAVE_VULKAN) && HAVE_VULKAN
+#include <graph/vulkan/VulkanEagerExecutor.h>
+#endif
+
 #if defined(SD_GCC_FUNCTRACE)
 #include <ops/declarable/OpExecutionLogger.h>
 #endif
@@ -54,6 +58,7 @@ thread_local std::string sd::ops::OpExecutionLogger::_currentOpName;
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 
 /**
  * Helper function to dump all stack traces for arrays and shape info in a Context.
@@ -246,6 +251,14 @@ DeclarableOp::~DeclarableOp() {
 }
 
 OpDescriptor *DeclarableOp::getOpDescriptor() { return _descriptor; }
+
+void DeclarableOp::initializeDescriptor() {
+  std::lock_guard<std::mutex> lock(_registrator);
+  if (!_registered) {
+    registerTypes();
+    _registered = true;
+  }
+}
 
 std::string *DeclarableOp::getOpName() { return _descriptor->getOpName(); }
 
@@ -696,12 +709,7 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, std::initializer_list
 }
 
 sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
-  _registrator.lock();
-  if (!_registered) {
-    _registered = true;
-    this->registerTypes();
-  }
-  _registrator.unlock();
+  initializeDescriptor();
 
   // rolling over inputs first
   size_t cnt = 0, inT = 0;
@@ -1077,7 +1085,13 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     if (!hasHelper) {
       // Phase: NATIVE_EXEC
       graph::OpPhaseTimer nativeExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::NATIVE_EXEC);
+#if defined(SD_VULKAN) && defined(HAVE_VULKAN) && HAVE_VULKAN
+      // A Vulkan artifact owns descriptor execution, never the source-authored
+      // CPU/CUDA validateAndExecute body.
+      status = graph::VulkanEagerExecutor::execute(this->getOpHash(), *block);
+#else
       status = this->validateAndExecute(*block);
+#endif
     }
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -1151,7 +1165,11 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   if (!hasHelper) {
     // Phase: NATIVE_EXEC
     graph::OpPhaseTimer nativeExecTimer(doDetailedTiming ? &timingRecord : nullptr, graph::OpPhase::NATIVE_EXEC);
+#if defined(SD_VULKAN) && defined(HAVE_VULKAN) && HAVE_VULKAN
+    status = graph::VulkanEagerExecutor::execute(this->getOpHash(), *block);
+#else
     status = this->validateAndExecute(*block);
+#endif
   }
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -1879,5 +1897,6 @@ samediff::EmptyHandling DeclarableOp::emptyHandling() { return samediff::EmptyHa
 void DeclarableOp::registerTypes() { this->getOpDescriptor()->setSameMode(true); }
 
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

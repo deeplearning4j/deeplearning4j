@@ -44,7 +44,7 @@ DECLARE_SHAPE_FN(unique) {
    LongType* valuesShape;
    LongType* indicesShape;
 
-  int uniqueCount = helpers::uniqueCount(block.launchContext(), source);
+  LongType uniqueCount = helpers::uniqueCount(block.launchContext(), source);
 
   if (uniqueCount == 0) {  // empty value Shape
     valuesShape = ConstantShapeHelper::getInstance().emptyShapeInfo(source->dataType());
@@ -72,7 +72,7 @@ DECLARE_SHAPE_FN(unique_with_counts) {
   auto in = inputShape->at(0);
   auto source = INPUT_VARIABLE(0);
 
-  int uniqueCount = helpers::uniqueCount(block.launchContext(), source);
+  LongType uniqueCount = helpers::uniqueCount(block.launchContext(), source);
   // all output shapes are 1D arrays (vectors)
   // all output shapes are 1D arrays (vectors)
   auto valuesShape = ConstantShapeHelper::getInstance().vectorShapeInfo(uniqueCount, source->dataType());
@@ -87,6 +87,7 @@ DECLARE_SHAPE_FN(unique_with_counts) {
 }
 
 DECLARE_TYPES(unique) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS})
@@ -94,6 +95,7 @@ DECLARE_TYPES(unique) {
 }
 
 DECLARE_TYPES(unique_with_counts) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS})

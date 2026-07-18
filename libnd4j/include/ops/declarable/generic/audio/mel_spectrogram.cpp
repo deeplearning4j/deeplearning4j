@@ -84,6 +84,7 @@ DECLARE_SHAPE_FN(mel_spectrogram) {
 }
 
 DECLARE_TYPES(mel_spectrogram) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

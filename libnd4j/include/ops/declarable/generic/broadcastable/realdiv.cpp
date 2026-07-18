@@ -65,11 +65,13 @@ DECLARE_TYPES(realdiv) {
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
-      ->setAllowedOutputTypes(0, {FLOAT32, HALF, DOUBLE});
+      ->setAllowedOutputTypes(0, {FLOAT32, HALF, DOUBLE})
+      ->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(realdiv_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 static DataType realDivBpGradientType(DataType xType, DataType yType, DataType epsType) {

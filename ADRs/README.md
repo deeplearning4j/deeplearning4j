@@ -109,7 +109,7 @@ its rationale, and its current implementation status.
 
 | # | Title | Status | Description |
 |---|---|---|---|
-| [0071](0071%20-%20Triton%20Graph%20Backend.md) | Triton Graph Backend | Implemented | OpenAI Triton as a kernel fusion backend for DSP. Compiles fusible op segments into single kernels where intermediates stay in registers rather than global memory. OpTraitTable.cpp is SSOT for mappability. |
+| [0071](0071%20-%20Triton%20Graph%20Backend.md) | Triton Graph Backend | Implemented | OpenAI Triton as a kernel fusion backend for DSP. Compiles fusible op segments into single kernels while operation traits remain declared by each op's `addTraits()`; Triton's emitter catalog describes the combinations it can compile. |
 
 ### DSP Deployment & Serving
 

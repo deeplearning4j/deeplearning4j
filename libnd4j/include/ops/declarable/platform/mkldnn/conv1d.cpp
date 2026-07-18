@@ -125,7 +125,7 @@ static void conv1dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDArra
   stream.wait();
 }
 
-PLATFORM_IMPL(conv1d, ENGINE_CPU) {
+PLATFORM_IMPL(conv1d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto weights = INPUT_VARIABLE(1);
   NDArray* bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -149,7 +149,7 @@ PLATFORM_IMPL(conv1d, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(conv1d, ENGINE_CPU) {
+PLATFORM_CHECK(conv1d, ENGINE_ONEDNN) {
   // The generic conv1d op delegates to conv2d (which has its own oneDNN platform
   // impl). This platform implementation has bugs with non-VALID padding modes and
   // weight format handling, so we disable it and let the generic op handle all
@@ -283,7 +283,7 @@ static void conv1dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO,
   stream.wait();
 }
 
-PLATFORM_IMPL(conv1d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(conv1d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto weights = INPUT_VARIABLE(1);
   auto gradO = INPUT_VARIABLE(2);
@@ -308,7 +308,7 @@ PLATFORM_IMPL(conv1d_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(conv1d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(conv1d_bp, ENGINE_ONEDNN) {
   // Disabled for the same reasons as the forward pass: the mkldnn conv1d_bp
   // implementation has bugs with argument ordering and weight format handling.
   // The generic conv1d_bp op delegates to conv2d_bp, which is correct.

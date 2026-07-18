@@ -368,7 +368,7 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   delete dfdm;
 }
 
-PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
+PLATFORM_IMPL(batchnorm, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);     // 2D:nc, 4D:nchw/nhwc, 5D:ncdhw/ndhwc
   auto mean = INPUT_VARIABLE(1);      // [c]
   auto variance = INPUT_VARIABLE(2);  // [c]
@@ -456,7 +456,7 @@ PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
+PLATFORM_CHECK(batchnorm, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);     // 2D:nc, 4D:nchw/nhwc, 5D:ncdhw/ndhwc
   auto mean = INPUT_VARIABLE(1);      // [c]
   auto variance = INPUT_VARIABLE(2);  // [c]
@@ -508,7 +508,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
 
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
+PLATFORM_IMPL(batchnorm_bp, ENGINE_ONEDNN) {
   NDArray* input = INPUT_VARIABLE(0);                 // 2D:nc, 4D:nchw/nhwc, 5D:ncdhw/ndhwc
   NDArray* mean = INPUT_VARIABLE(1);                  // [c]
   NDArray* variance = INPUT_VARIABLE(2);              // [c]
@@ -632,7 +632,7 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
+PLATFORM_CHECK(batchnorm_bp, ENGINE_ONEDNN) {
   NDArray* input = INPUT_VARIABLE(0);     // 2D:nc, 4D:nchw, 5D:ncdhw
   NDArray* mean = INPUT_VARIABLE(1);      // [c]
   NDArray* variance = INPUT_VARIABLE(2);  // [c]

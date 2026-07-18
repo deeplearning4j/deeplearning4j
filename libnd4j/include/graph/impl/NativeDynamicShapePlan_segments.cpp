@@ -32,8 +32,10 @@
 #include <graph/PlanExecutionContext.h>
 #include <graph/DspThreadState.h>
 #include <graph/DspSegmentLifecycle.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
+#if !defined(SD_VULKAN)
 #include <graph/cpu/FunctionalReplayHandle.h>
+#endif
 #include <helpers/MmulHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <system/Environment.h>
@@ -47,6 +49,7 @@ int GraphSegment::retryInterval() { return sd::Environment::getInstance().dspCap
 
 // Include CPU graph backends conditionally
 #include <config.h>
+#if !defined(SD_VULKAN)
 #if HAVE_ONEDNN
 #include <graph/cpu/OneDnnGraphBackend.h>
 #endif
@@ -62,11 +65,15 @@ int GraphSegment::retryInterval() { return sd::Environment::getInstance().dspCap
 #if HAVE_NNAPI
 #include <graph/cpu/NnapiGraphBackend.h>
 #endif
+#ifdef HAVE_HEXAGON_MLIR
+#include <graph/hexagon/HexagonGraphBackend.h>
+#endif
 #if HAVE_MLX
 #include <graph/cpu/MlxGraphBackend.h>
 #endif
 #if HAVE_OPENVINO
 #include <graph/cpu/OpenVinoGraphBackend.h>
+#endif
 #endif
 namespace sd {
 namespace graph {
@@ -180,6 +187,30 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     return seg.exec.cachedShapeKey;
   }
 
+  // Requested outputs are part of compiled-kernel semantics: a value consumed
+  // only inside a fused segment still has to be materialized when the caller
+  // asks for it. Mix the sorted unique slot set into every shape-key variant so
+  // process-wide backend caches cannot reuse a final-only kernel for a plan that
+  // also requests a fused intermediate.
+  auto mixRequestedOutputSet = [this](uint64_t& hash) {
+    std::vector<int> requestedSlots;
+    if (requestedOutputSlotIndices_ != nullptr && numRequestedOutputs_ > 0) {
+      requestedSlots.reserve(static_cast<size_t>(numRequestedOutputs_));
+      for (int i = 0; i < numRequestedOutputs_; i++) {
+        int slot = requestedOutputSlotIndices_[i];
+        if (slot >= 0) requestedSlots.push_back(slot);
+      }
+    }
+    std::sort(requestedSlots.begin(), requestedSlots.end());
+    requestedSlots.erase(std::unique(requestedSlots.begin(), requestedSlots.end()),
+                         requestedSlots.end());
+    dsp::fnv1aMixValue(hash, uint64_t{0x52514f5554505554ULL});  // "RQOUTPUT"
+    dsp::fnv1aMixValue(hash, static_cast<uint64_t>(requestedSlots.size()));
+    for (int slot : requestedSlots) {
+      dsp::fnv1aMixValue(hash, static_cast<uint64_t>(slot));
+    }
+  };
+
   // ── Symbolic shape range path ──────────────────────────────────────────
   // When enabled, collect cross-segment inputs, feed them to the shape
   // profiler, and (after warmup) use range-based hashing that ignores
@@ -261,6 +292,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
         }
         mixRange(static_cast<LongType>(slot.args.numTArgs));
       }
+      mixRequestedOutputSet(rangeKeyU64);
 
       DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] using range-based key=%lld (with-op-mix)",
                seg.def.startSlot, seg.def.endSlot, static_cast<long long>(rangeKeyU64));
@@ -295,6 +327,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
 
   mix(seg.def.startSlot);
   mix(seg.def.endSlot);
+  mixRequestedOutputSet(key);
 
   // Mix op names so different plans with same slot indices + shapes don't collide
   // in singleton backend caches (e.g. OpenVINO, OneDNN Graph)
@@ -365,6 +398,7 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getCpuGraphBackendChai
   cpuGraphBackendChainBuilt_ = true;
   cpuGraphBackendChain_.clear();
 
+#if !defined(SD_VULKAN)
   const auto mode = graphExecutionMode_;
 
   // If mode is explicitly non-CPU-graph, return empty chain
@@ -386,8 +420,10 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getCpuGraphBackendChai
     return cpuGraphBackendChain_;
   }
 
-  const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
-                             (dspGetCurrentDevice() >= 0 && mode == GraphExecutionMode::GEM_CUDA_GRAPHS));
+  const bool autoLikeMode =
+      mode == GraphExecutionMode::GEM_AUTO ||
+      mode == GraphExecutionMode::GEM_PORTABLE_REPLAY ||
+      (dspGetCurrentDevice() >= 0 && mode == GraphExecutionMode::GEM_CUDA_GRAPHS);
 
   // If a specific backend is forced, only return that one
   bool forcedMode = !autoLikeMode;
@@ -473,6 +509,7 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getCpuGraphBackendChai
       DSP_DIAG(BACKEND, "  chain[%d] = %s", (int)i, cpuGraphBackendChain_[i]->name());
     }
   }
+#endif
 
   return cpuGraphBackendChain_;
 }
@@ -482,6 +519,10 @@ const std::vector<GraphBackend*>& NativeDynamicShapePlan::getCpuGraphBackendChai
 Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
   DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentWithCpuGraph");
+#ifdef HAVE_HEXAGON_MLIR
+  HexagonGraphBackend::ScopedCompilationPolicy hexagonPolicy(
+      runtimeCompilationAllowed_, runtimeArtifactDirectory_);
+#endif
 
   // If all backends have been exhausted for this segment, hard fail.
   // Falling back to slot-by-slot is BANNED — fix the compilation failure.
@@ -636,7 +677,8 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   if (needsCompile) {
     if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
                                  outputSlots_, totalOutputSlots_, segShapeKey,
-                                 numSlots_)) {
+                                 numSlots_, requestedOutputSlotIndices_,
+                                 numRequestedOutputs_)) {
       DSP_DIAG(COMPILE, "executeSegmentWithSpecificBackend: backend=%s compile failed for seg[%d-%d]",
                 backendName, seg.def.startSlot, seg.def.endSlot);
       return Status::KERNEL_FAILURE;
@@ -695,6 +737,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
   DSP_DIAG(EXECUTE, "PRE-EXECUTE: seg[%d-%d] backend=%s shapeKey=%lld",
            seg.def.startSlot, seg.def.endSlot, backendName, (long long)segShapeKey);
 
+#if !defined(SD_VULKAN)
   // NativeSlotExecutor callback — shared by OneDNN and OpenVINO backends.
   // Uses persistent GraphSegments per native range so FunctionalReplayHandle
   // accumulates and CPU_FROZEN_REPLAY fires after the first call.
@@ -712,22 +755,78 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
       nativeSeg.def.isCapturable = capturable;
       nativeSeg.exec.executionCount = 1;
     }
-    if (!nativeSeg.exec.replayHandle && nativeSeg.def.isCapturable) {
-      nativeSeg.exec.replayHandle = GraphReplayFactory::create(0);
-      nativeSeg.exec.replayHandle->beginCapture(nullptr);
-      DSP_DIAG(EXECUTE, "%s NativeSlotExecutor: began capture for range [%d-%d]",
-               backendName, nativeStart, nativeEnd);
+
+    FunctionalReplayHandle* functionalHandle = nullptr;
+    if (nativeSeg.def.isCapturable && !hasControlFlow_) {
+      functionalHandle =
+          dynamic_cast<FunctionalReplayHandle*>(nativeSeg.exec.replayHandle.get());
+      if (functionalHandle == nullptr) {
+        nativeSeg.exec.replayHandle = GraphReplayFactory::createFunctional();
+        functionalHandle =
+            dynamic_cast<FunctionalReplayHandle*>(nativeSeg.exec.replayHandle.get());
+      }
+      if (functionalHandle == nullptr) {
+        DSP_DIAG(EXECUTE,
+                 "%s NativeSlotExecutor: functional recorder unavailable for range [%d-%d]",
+                 backendName, nativeStart, nativeEnd);
+        nativeSeg.exec.replayHandle.reset();
+        return Status::BAD_GRAPH;
+      }
+      if (!functionalHandle->hasReplayProgram()) {
+        if (functionalHandle->getState() != ReplayState::EMPTY) {
+          functionalHandle->abortCapture();
+        }
+        if (!functionalHandle->beginCapture(nullptr)) {
+          DSP_DIAG(EXECUTE,
+                   "%s NativeSlotExecutor: failed to begin functional capture for range [%d-%d]",
+                   backendName, nativeStart, nativeEnd);
+          nativeSeg.exec.replayHandle.reset();
+          return Status::BAD_GRAPH;
+        }
+        DSP_DIAG(EXECUTE,
+                 "%s NativeSlotExecutor: began functional capture for range [%d-%d]",
+                 backendName, nativeStart, nativeEnd);
+      }
     }
-    auto status = executeSegmentSlotBySlot(nativeSeg, externalArrays, numExt, stream);
-    if (nativeSeg.exec.replayHandle &&
-        nativeSeg.exec.replayHandle->getState() == ReplayState::CAPTURING &&
-        status == Status::OK) {
-      nativeSeg.exec.replayHandle->endCapture(nullptr);
-      nativeSeg.exec.replayHandle->finalize();
-      DSP_DIAG(EXECUTE, "%s NativeSlotExecutor: capture finalized for range [%d-%d]",
-               backendName, nativeStart, nativeEnd);
+
+    Status status = Status::OK;
+    try {
+      status = executeSegmentSlotBySlot(
+          nativeSeg, externalArrays, numExt, stream);
+    } catch (...) {
+      if (functionalHandle != nullptr &&
+          functionalHandle->getState() == ReplayState::CAPTURING) {
+        functionalHandle->abortCapture();
+      }
+      nativeSeg.exec.replayHandle.reset();
+      throw;
     }
-    nativeSeg.exec.executionCount++;
+
+    if (status != Status::OK) {
+      if (functionalHandle != nullptr &&
+          functionalHandle->getState() == ReplayState::CAPTURING) {
+        functionalHandle->abortCapture();
+      }
+      nativeSeg.exec.replayHandle.reset();
+      return status;
+    }
+
+    if (functionalHandle != nullptr &&
+        functionalHandle->getState() == ReplayState::CAPTURING) {
+      if (!functionalHandle->endCapture(nullptr) ||
+          !functionalHandle->finalize()) {
+        functionalHandle->abortCapture();
+        nativeSeg.exec.replayHandle.reset();
+        DSP_DIAG(EXECUTE,
+                 "%s NativeSlotExecutor: failed to finalize functional capture for range [%d-%d]",
+                 backendName, nativeStart, nativeEnd);
+        return Status::BAD_GRAPH;
+      }
+      DSP_DIAG(EXECUTE,
+               "%s NativeSlotExecutor: functional capture finalized for range [%d-%d] commands=%d",
+               backendName, nativeStart, nativeEnd,
+               functionalHandle->getRecordedOpCount());
+    }
     return status;
   };
 
@@ -763,10 +862,12 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
              seg.def.startSlot, seg.def.endSlot);
   }
 #endif
+#endif
 
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
 
+#if !defined(SD_VULKAN)
   if (installedNativeExecutor) {
 #if HAVE_ONEDNN
     if (seg.resolvedCpuBackendType == GraphSegment::CpuBackendType::ONEDNN) {
@@ -783,6 +884,7 @@ Status NativeDynamicShapePlan::executeSegmentWithSpecificBackend(
     }
 #endif
   }
+#endif
 
   DSP_DIAG(EXECUTE, "POST-EXECUTE: seg[%d-%d] backend=%s status=%d",
            seg.def.startSlot, seg.def.endSlot, backendName, (int)status);
@@ -978,47 +1080,174 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       tl_graphExecutionActive,
       tl_dspReplayActive);
 
+#ifdef SD_CUDA
+  // BUF_FP_RING external-input fingerprints: async XOR fingerprint of each
+  // external's device buffer at segment entry, on the LC stream (the same
+  // stream family the H2D prepare and SBS op kernels ride) — records what
+  // this exec's ops will actually read. Tracks [0..numExt-1], labels "e<i>".
+  if (fpRingEnabled_ && seg.def.startSlot == 0) {
+    auto* fpLc = LaunchContext::defaultContext();
+    auto* fpStreamPtr = fpLc != nullptr ? fpLc->getCudaStream() : nullptr;
+    if (fpStreamPtr != nullptr) {
+      auto* fpExecCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
+      int fpStep = fpExecCtx != nullptr ? fpExecCtx->fpStep : executeCount_;
+      int fpMaxExt = numExt < BUF_FP_MAX_STAGING ? numExt : BUF_FP_MAX_STAGING;
+      for (int fpEi = 0; fpEi < fpMaxExt; fpEi++) {
+        NDArray* fpExt = externalArrays[fpEi];
+        if (fpExt != nullptr && !fpExt->isEmpty() && fpExt->specialBuffer() != nullptr) {
+          recordBufFingerprintPublic(*fpStreamPtr, fpStep, fpEi,
+                                     fpExt->specialBuffer(), dspSafeByteCount(fpExt));
+          if (fpLabels_[fpEi].tag[0] == '\0') {
+            snprintf(fpLabels_[fpEi].tag, sizeof(fpLabels_[fpEi].tag), "e%d", fpEi);
+            fpLabels_[fpEi].extIdx = fpEi;
+            fpLabels_[fpEi].groupIdx = -1;
+            fpLabels_[fpEi].whichAB = -1;
+          }
+        }
+      }
+    }
+  }
+#endif
+
   // Dead-slot flags are reset once per plan execution (in the main execute loop),
   // NOT per segment — dead flags from Switch in seg N must persist to affect
   // ops in seg N+1.
 
   int stepIdx = seg.def.startSlot;
   int loopIterations = 0;
+  bool functionalReplayCompleted = false;
 
-  // ── CPU Frozen Replay Fast Path ────────────────────────────────────────
-  // When shapes are frozen, past warmup, no control flow in this segment,
-  // and a FunctionalReplayHandle is ready with recorded executable slots,
-  // iterate ONLY the recorded slots instead of the full slot range.
-  // This skips: control flow dispatch, dead propagation, batched GEMM checks,
-  // diagnostic logging, and all non-executable slots (frozen constants,
-  // identity ops, fused chain tails) at the outer loop level.
+#if !defined(SD_VULKAN)
+  auto* functionalHandle =
+      dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
+  auto recordFunctionalCommand =
+      [&](FunctionalReplayCommandType type, int slotIndex, int argument = -1) -> bool {
+    if (functionalHandle == nullptr ||
+        functionalHandle->getState() != ReplayState::CAPTURING) {
+      return true;
+    }
+    return functionalHandle->recordCommand(
+        type, slots_[slotIndex].ident.op, slotIndex, argument);
+  };
+
+  // ── Functional Replay Fast Path ────────────────────────────────────────
+  // A finalized program records semantic commands, not just slot numbers.
+  // Replay validates the borrowed op identity and resolves current invocation
+  // inputs before executing each command.
   if (!planLifecycle_.isSlotBySlot() && executeCount_ >= 2 && !hasControlFlow_ &&
-      seg.exec.replayHandle && seg.exec.replayHandle->isReady()) {
-    // dynamic_cast required: on CUDA builds, GraphReplayFactory::create(0) returns
-    // CudaGraphReplayHandle, not FunctionalReplayHandle. static_cast would be UB.
-    auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
-    if (funcHandle && funcHandle->hasExecutableSlotIndices()) {
-      const auto& execSlots = funcHandle->getExecutableSlotIndices();
-      DSP_DIAG(EXECUTE, "CPU_FROZEN_REPLAY: seg[%d-%d] iterating %d/%d executable slots",
-               seg.def.startSlot, seg.def.endSlot,
-               (int)execSlots.size(), seg.def.endSlot - seg.def.startSlot + 1);
+      functionalHandle != nullptr && functionalHandle->hasReplayProgram()) {
+    struct FunctionalReplayInvocation {
+      NativeDynamicShapePlan* plan;
+      GraphSegment* segment;
+      NDArray** externalArrays;
+      int numExternalArrays;
+      void* streamPointer;
+      void* streamValue;
+    } invocation{
+        this, &seg, externalArrays, numExt, stream, segmentStream};
 
-      for (int idx : execSlots) {
-        auto status = executeSlot(idx, externalArrays, numExt, stream);
-        if (status != Status::OK) {
-          DSP_DIAG(EXECUTE, "CPU_FROZEN_REPLAY: slot %d (%s) failed status=%d",
-                   idx, slots_[idx].ident.opName.c_str(), (int)status);
-          return status;
-        }
+    FunctionalReplayExecutionContext replayContext;
+    replayContext.userData = &invocation;
+    replayContext.execute =
+        [](void* userData, const FunctionalReplayCommand& command) -> Status {
+      auto* call = static_cast<FunctionalReplayInvocation*>(userData);
+      auto* plan = call->plan;
+      if (plan == nullptr || call->segment == nullptr) return Status::BAD_INPUT;
+      if (command.slotIndex < call->segment->def.startSlot ||
+          command.slotIndex > call->segment->def.endSlot ||
+          command.slotIndex < 0 || command.slotIndex >= plan->numSlots_) {
+        return Status::BAD_GRAPH;
       }
 
-      seg.exec.executionCount++;
-      funcHandle->replay(nullptr);  // statistics tracking
-      return Status::OK;
-    }
-  }
+      NativeSlot& replaySlot = plan->slots_[command.slotIndex];
+      if (command.op == nullptr || replaySlot.ident.op != command.op) {
+        return Status::BAD_GRAPH;
+      }
 
-  while (stepIdx <= seg.def.endSlot) {
+      switch (command.type) {
+        case FunctionalReplayCommandType::EXECUTE_SLOT:
+          return plan->executeSlot(
+              command.slotIndex, call->externalArrays,
+              call->numExternalArrays, call->streamPointer);
+
+        case FunctionalReplayCommandType::FORWARD_IDENTITY: {
+          if (!replaySlot.isIdentityOp() ||
+              replaySlot.wiring.numInputs != 1 ||
+              replaySlot.wiring.numOutputs < 1) {
+            return Status::BAD_GRAPH;
+          }
+
+          int sourceIndex = replaySlot.wiring.inputSourceIndices[0];
+          NDArray* input = nullptr;
+          if (sourceIndex >= 0) {
+            if (sourceIndex >= plan->totalOutputSlots_) {
+              return Status::BAD_GRAPH;
+            }
+            input = plan->outputSlots_[sourceIndex];
+          } else {
+            int externalIndex = -(sourceIndex + 1);
+            if (externalIndex < 0 ||
+                externalIndex >= call->numExternalArrays ||
+                call->externalArrays == nullptr) {
+              return Status::BAD_INPUT;
+            }
+            input = call->externalArrays[externalIndex];
+          }
+          if (input == nullptr) return Status::BAD_INPUT;
+
+          for (int output = 0; output < replaySlot.wiring.numOutputs; output++) {
+            int outputIndex = replaySlot.wiring.outputSlotIndices[output];
+            if (outputIndex < 0 || outputIndex >= plan->totalOutputSlots_) {
+              return Status::BAD_GRAPH;
+            }
+          }
+          for (int output = 0; output < replaySlot.wiring.numOutputs; output++) {
+            plan->writeOutputSlot(
+                replaySlot.wiring.outputSlotIndices[output],
+                input, "functional-replay-identity");
+          }
+          replaySlot.bumpGeneration();
+          return Status::OK;
+        }
+
+        case FunctionalReplayCommandType::EXECUTE_BATCHED_GEMM: {
+          int groupIndex = command.argument;
+          if (groupIndex < 0 ||
+              groupIndex >= static_cast<int>(plan->batchedGemmGroups_.size()) ||
+              command.slotIndex >=
+                  static_cast<int>(plan->slotToBatchedGemmGroup_.size())) {
+            return Status::BAD_GRAPH;
+          }
+          auto& group = plan->batchedGemmGroups_[groupIndex];
+          if (group.triggerSlot != command.slotIndex ||
+              plan->slotToBatchedGemmGroup_[command.slotIndex] != groupIndex) {
+            return Status::BAD_GRAPH;
+          }
+          return plan->executeBatchedGemmGroup(
+              groupIndex, call->externalArrays,
+              call->numExternalArrays, call->streamValue);
+        }
+      }
+      return Status::BAD_GRAPH;
+    };
+
+    int commandCount = functionalHandle->getProgram().size();
+    DSP_DIAG(EXECUTE,
+             "FUNCTIONAL_REPLAY: seg[%d-%d] executing %d semantic commands",
+             seg.def.startSlot, seg.def.endSlot, commandCount);
+    Status replayStatus = functionalHandle->replayWithContext(replayContext);
+    if (replayStatus != Status::OK) {
+      DSP_DIAG(EXECUTE,
+               "FUNCTIONAL_REPLAY: seg[%d-%d] failed status=%d",
+               seg.def.startSlot, seg.def.endSlot,
+               static_cast<int>(replayStatus));
+      return replayStatus;
+    }
+    functionalReplayCompleted = true;
+  }
+#endif
+
+  while (!functionalReplayCompleted && stepIdx <= seg.def.endSlot) {
     NativeSlot& slot = slots_[stepIdx];
 
     // STEP_ENTER trace: only during warmup to avoid per-slot string formatting
@@ -1183,6 +1412,16 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
           Status batchStatus = executeBatchedGemmGroup(bgIdx, externalArrays, numExt, segmentStream);
 
           if (batchStatus == Status::OK) {
+#if !defined(SD_VULKAN)
+            if (!recordFunctionalCommand(
+                    FunctionalReplayCommandType::EXECUTE_BATCHED_GEMM,
+                    stepIdx, bgIdx)) {
+              DSP_DIAG(EXECUTE,
+                       "FUNCTIONAL_CAPTURE: failed to record batched GEMM group %d at slot %d",
+                       bgIdx, stepIdx);
+              return Status::BAD_GRAPH;
+            }
+#endif
             // Release schedule removed: arrays persist (one array per slot)
             stepIdx++;
             continue;
@@ -1246,6 +1485,16 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
             }
           }
           slot.bumpGeneration();
+#if !defined(SD_VULKAN)
+          if (!recordFunctionalCommand(
+                  FunctionalReplayCommandType::FORWARD_IDENTITY,
+                  stepIdx)) {
+            DSP_DIAG(EXECUTE,
+                     "FUNCTIONAL_CAPTURE: failed to record identity at slot %d",
+                     stepIdx);
+            return Status::BAD_GRAPH;
+          }
+#endif
           stepIdx++;
           continue;
         }
@@ -1499,21 +1748,20 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
     }
 
-    // Record op for FunctionalReplayHandle capture — skip slots that will be
-    // handled by outer-level fast skips in frozen steady-state (executeCount >= 2).
-    // Frozen constants, identity ops, and fused chain tails never need kernel
-    // execution after warmup, so excluding them from executableSlotIndices lets
-    // the CPU_FROZEN_REPLAY path iterate a smaller set.
-    if (seg.exec.replayHandle && seg.exec.replayHandle->getState() == ReplayState::CAPTURING) {
-      bool skipRecord = slot.frozenConstantSlot()
-                     || slot.fusedChain.isFusedChainTail
-                     || (slot.isIdentityOp() && slot.wiring.numInputs == 1);
-      if (!skipRecord) {
-        // dynamic_cast required: on CUDA builds, handle may be CudaGraphReplayHandle.
-        auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
-        if (funcHandle) funcHandle->recordOp(slot.ident.op, stepIdx);
-      }
+#if !defined(SD_VULKAN)
+    // Functional replay is a host backend. Vulkan records complete hardware
+    // segments through VulkanSegmentRecorder and never enters this slot path.
+    bool skipFunctionalRecord =
+        slot.frozenConstantSlot() || slot.fusedChain.isFusedChainTail;
+    if (!skipFunctionalRecord &&
+        !recordFunctionalCommand(
+            FunctionalReplayCommandType::EXECUTE_SLOT, stepIdx)) {
+      DSP_DIAG(EXECUTE,
+               "FUNCTIONAL_CAPTURE: failed to record executable slot %d (%s)",
+               stepIdx, slot.ident.opName.c_str());
+      return Status::BAD_GRAPH;
     }
+#endif
 
     // Release schedule removed: arrays persist (one array per slot, never nullified).
     // Same plan = same shapes. Arrays allocated on first execution, reused forever.
@@ -1595,6 +1843,145 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 // replay failures without needing actual CUDA graph capture.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+#if !defined(SD_VULKAN)
+namespace {
+
+FunctionalReplayPointerBinding snapshotFunctionalReplayPointer(
+    FunctionalReplayPointerRole role, int index, int sourceType,
+    bool requiredAtEntry, NDArray* array) {
+  FunctionalReplayPointerBinding binding;
+  binding.role = role;
+  binding.index = index;
+  binding.sourceType = sourceType;
+  binding.requiredAtEntry = requiredAtEntry;
+  binding.array = array;
+  if (array == nullptr) return binding;
+
+  binding.shapeInfo = array->shapeInfo();
+  if (binding.shapeInfo == nullptr) return binding;
+
+  binding.offset = array->offset();
+  binding.length = array->lengthOf();
+  binding.dataType = static_cast<int>(array->dataType());
+  binding.empty = array->isEmpty();
+
+  auto* dataBuffer = array->dataBuffer();
+  binding.dataBuffer = dataBuffer;
+  if (dataBuffer == nullptr) {
+    binding.live = binding.empty;
+    return binding;
+  }
+  if (!dataBuffer->isValid()) return binding;
+
+  // Use raw DataBuffer identities. NDArray::specialBuffer() can allocate or
+  // migrate; pointer observation must never change residency.
+  binding.primaryBuffer = dataBuffer->primary();
+  binding.specialBuffer = dataBuffer->special();
+  binding.live = binding.empty || binding.primaryBuffer != nullptr ||
+                 binding.specialBuffer != nullptr;
+  return binding;
+}
+
+Status buildFunctionalReplayPointerSnapshot(
+    const GraphSegment& seg, NativeSlot* slots, int numSlots,
+    NDArray** externalArrays, int numExt,
+    NDArray** outputSlots, int totalOutputSlots,
+    std::vector<FunctionalReplayPointerBinding>* bindings) {
+  if (bindings == nullptr || slots == nullptr || numSlots < 0 ||
+      numExt < 0 || totalOutputSlots < 0) {
+    return Status::BAD_INPUT;
+  }
+
+  bindings->clear();
+  std::vector<int> externalIndices;
+  std::vector<int> externalTypes(static_cast<size_t>(numExt), -1);
+  std::vector<int> producedOutputIndices;
+  std::vector<int> crossSegmentIndices;
+
+  for (int slotIndex = seg.def.startSlot;
+       slotIndex <= seg.def.endSlot; slotIndex++) {
+    if (slotIndex < 0 || slotIndex >= numSlots) return Status::BAD_GRAPH;
+    const NativeSlot& slot = slots[slotIndex];
+
+    for (int output = 0; output < slot.wiring.numOutputs; output++) {
+      int outputIndex = slot.wiring.outputSlotIndices[output];
+      if (outputIndex < 0 || outputIndex >= totalOutputSlots) {
+        return Status::BAD_GRAPH;
+      }
+      producedOutputIndices.push_back(outputIndex);
+    }
+  }
+
+  std::sort(producedOutputIndices.begin(), producedOutputIndices.end());
+  producedOutputIndices.erase(
+      std::unique(producedOutputIndices.begin(), producedOutputIndices.end()),
+      producedOutputIndices.end());
+
+  for (int slotIndex = seg.def.startSlot;
+       slotIndex <= seg.def.endSlot; slotIndex++) {
+    const NativeSlot& slot = slots[slotIndex];
+    for (int input = 0; input < slot.wiring.numInputs; input++) {
+      int sourceIndex = slot.wiring.inputSourceIndices[input];
+      if (sourceIndex < 0) {
+        int externalIndex = -(sourceIndex + 1);
+        if (externalIndex < 0 || externalIndex >= numExt ||
+            externalArrays == nullptr ||
+            slot.wiring.inputSourceTypes == nullptr) {
+          return Status::BAD_INPUT;
+        }
+        int sourceType = static_cast<int>(
+            slot.wiring.inputSourceTypes[input]);
+        if (externalTypes[externalIndex] >= 0 &&
+            externalTypes[externalIndex] != sourceType) {
+          return Status::BAD_GRAPH;
+        }
+        if (externalTypes[externalIndex] < 0) {
+          externalTypes[externalIndex] = sourceType;
+          externalIndices.push_back(externalIndex);
+        }
+        continue;
+      }
+
+      if (sourceIndex >= totalOutputSlots) return Status::BAD_GRAPH;
+      if (!std::binary_search(producedOutputIndices.begin(),
+                              producedOutputIndices.end(), sourceIndex)) {
+        crossSegmentIndices.push_back(sourceIndex);
+      }
+    }
+  }
+
+  std::sort(externalIndices.begin(), externalIndices.end());
+  std::sort(crossSegmentIndices.begin(), crossSegmentIndices.end());
+  crossSegmentIndices.erase(
+      std::unique(crossSegmentIndices.begin(), crossSegmentIndices.end()),
+      crossSegmentIndices.end());
+
+  bindings->reserve(externalIndices.size() + crossSegmentIndices.size() +
+                    producedOutputIndices.size());
+  for (int externalIndex : externalIndices) {
+    bindings->push_back(snapshotFunctionalReplayPointer(
+        FunctionalReplayPointerRole::EXTERNAL_INPUT, externalIndex,
+        externalTypes[externalIndex], true,
+        externalArrays[externalIndex]));
+  }
+  for (int outputIndex : crossSegmentIndices) {
+    NDArray* array = outputSlots == nullptr ? nullptr : outputSlots[outputIndex];
+    bindings->push_back(snapshotFunctionalReplayPointer(
+        FunctionalReplayPointerRole::CROSS_SEGMENT_INPUT, outputIndex,
+        SOURCE_OP_OUTPUT, true, array));
+  }
+  for (int outputIndex : producedOutputIndices) {
+    NDArray* array = outputSlots == nullptr ? nullptr : outputSlots[outputIndex];
+    bindings->push_back(snapshotFunctionalReplayPointer(
+        FunctionalReplayPointerRole::SEGMENT_OUTPUT, outputIndex,
+        SOURCE_OP_OUTPUT, false, array));
+  }
+  return Status::OK;
+}
+
+}  // namespace
+#endif
+
 LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
     GraphSegment& seg, NDArray** externalInputs, int numExt) {
   // FNV-1a hash of buffer addresses for all CROSS-SEGMENT inputs plus all
@@ -1668,6 +2055,13 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKeyPortable(
 Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
   DSP_REQUIRE_PLAN_PHASE_AT_LEAST(PlanPhase::SLOT_BY_SLOT, "executeSegmentEmulatedReplay");
+  if (seg.def.selectedBackend != SelectedBackend::EMULATED_REPLAY) {
+    DSP_DIAG(FALLBACK,
+             "FUNCTIONAL_POINTER_TRACKER_SCOPE_VIOLATION: seg[%d-%d] backend=%d",
+             seg.def.startSlot, seg.def.endSlot,
+             static_cast<int>(seg.def.selectedBackend));
+    return Status::BAD_GRAPH;
+  }
 
   int segSize = seg.def.endSlot - seg.def.startSlot + 1;
   int execCount = seg.exec.executionCount;
@@ -2088,19 +2482,127 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   }
   // else: fast path — no key computation, no stability check, just execute
 
-  // ── Execute ops slot-by-slot ────────────────────────────────────────────
-  auto tSlotStart = std::chrono::high_resolution_clock::now();
+  // ── Record or replay a functional command program ─────────────────────
+  bool functionalRecordable = false;
+  bool functionalReplaySucceeded = false;
+  bool functionalProgramReady = false;
+#if !defined(SD_VULKAN)
+  bool functionalCaptureStarted = false;
+  bool functionalReplayExpected = false;
+  int functionalReplayCountBefore = 0;
+  int functionalReplayDelta = 0;
+  std::vector<FunctionalReplayPointerBinding> functionalPointerSnapshot;
+  functionalRecordable = seg.def.isCapturable && !hasControlFlow_;
+  auto* functionalHandle =
+      dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
 
-  auto status = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+  if (functionalRecordable && seg.exec.segPhase.needsCapture()) {
+    if (seg.exec.replayHandle != nullptr && functionalHandle == nullptr) {
+      DSP_DIAG(EMULATED_REPLAY,
+               "  replacing non-functional replay handle backend=%s",
+               seg.exec.replayHandle->backendName());
+      seg.exec.replayHandle.reset();
+    }
+    if (seg.exec.replayHandle == nullptr) {
+      seg.exec.replayHandle = GraphReplayFactory::createFunctional();
+      functionalHandle =
+          dynamic_cast<FunctionalReplayHandle*>(seg.exec.replayHandle.get());
+    }
+    if (functionalHandle == nullptr) {
+      DSP_DIAG(EMULATED_REPLAY,
+               "  ** FUNCTIONAL CAPTURE UNAVAILABLE for recordable seg[%d-%d]",
+               seg.def.startSlot, seg.def.endSlot);
+      SegmentLifecycle::invalidateSegmentCaptures(
+          this, seg, "functional_replay_factory_unavailable");
+      return Status::BAD_GRAPH;
+    }
+
+    if (!functionalHandle->hasReplayProgram()) {
+      if (functionalHandle->getState() != ReplayState::EMPTY) {
+        functionalHandle->abortCapture();
+      }
+      if (!functionalHandle->beginCapture(nullptr)) {
+        DSP_DIAG(EMULATED_REPLAY,
+                 "  ** FUNCTIONAL CAPTURE BEGIN FAILED for seg[%d-%d]",
+                 seg.def.startSlot, seg.def.endSlot);
+        SegmentLifecycle::invalidateSegmentCaptures(
+            this, seg, "functional_replay_begin_failed");
+        return Status::BAD_GRAPH;
+      }
+      functionalCaptureStarted = true;
+      DSP_DIAG(EMULATED_REPLAY,
+               "  FUNCTIONAL CAPTURE: recording seg[%d-%d]",
+               seg.def.startSlot, seg.def.endSlot);
+    }
+  }
+
+  functionalReplayExpected =
+      functionalHandle != nullptr &&
+      functionalHandle->hasReplayProgram() &&
+      !planLifecycle_.isSlotBySlot() &&
+      executeCount_ >= 2 && !hasControlFlow_;
+  if (functionalHandle != nullptr) {
+    functionalReplayCountBefore =
+        functionalHandle->getStatistics().replayCount;
+  }
+
+  if (functionalReplayExpected) {
+    Status pointerStatus = buildFunctionalReplayPointerSnapshot(
+        seg, slots_, numSlots_, externalArrays, numExt,
+        outputSlots_, totalOutputSlots_, &functionalPointerSnapshot);
+    if (pointerStatus == Status::OK) {
+      pointerStatus =
+          functionalHandle->validatePointerSnapshotForReplay(
+              functionalPointerSnapshot);
+    }
+    if (pointerStatus != Status::OK) {
+      DSP_DIAG(EMULATED_REPLAY,
+               "  ** FUNCTIONAL POINTER PREFLIGHT FAILED: seg[%d-%d] "
+               "status=%d bindings=%zu",
+               seg.def.startSlot, seg.def.endSlot,
+               static_cast<int>(pointerStatus),
+               functionalPointerSnapshot.size());
+      SegmentLifecycle::invalidateSegmentCaptures(
+          this, seg, "functional_replay_pointer_preflight_failed");
+      return pointerStatus;
+    }
+  }
+#endif
+
+  auto tSlotStart = std::chrono::high_resolution_clock::now();
+  Status status = Status::OK;
+  try {
+    status = executeSegmentSlotBySlot(
+        seg, externalArrays, numExt, stream);
+  } catch (...) {
+#if !defined(SD_VULKAN)
+    if (functionalCaptureStarted && functionalHandle != nullptr) {
+      functionalHandle->abortCapture();
+    }
+    if (functionalCaptureStarted || functionalReplayExpected) {
+      SegmentLifecycle::invalidateSegmentCaptures(
+          this, seg,
+          functionalCaptureStarted
+              ? "functional_replay_capture_exception"
+              : "functional_replay_execution_exception");
+    }
+#endif
+    throw;
+  }
 
   auto tSlotEnd = std::chrono::high_resolution_clock::now();
-  auto slotUs = std::chrono::duration_cast<std::chrono::microseconds>(tSlotEnd - tSlotStart).count();
+  auto slotUs = std::chrono::duration_cast<std::chrono::microseconds>(
+                    tSlotEnd - tSlotStart)
+                    .count();
 
   // Dispatch overhead estimate: ~15us per effective op (shape inference + dispatch)
   // Identity/fused-tail ops are skipped by executeSlot, so don't count them.
   int estimatedSkippedOps = 0;
   for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
-    if (slots_[s].isIdentityOp() || slots_[s].fusedChain.isFusedChainTail) estimatedSkippedOps++;
+    if (slots_[s].isIdentityOp() ||
+        slots_[s].fusedChain.isFusedChainTail) {
+      estimatedSkippedOps++;
+    }
   }
   int effectiveDispatchOps = segSize - estimatedSkippedOps;
   long long estimatedDispatchUs = effectiveDispatchOps * 15LL;
@@ -2121,61 +2623,149 @@ Status NativeDynamicShapePlan::executeSegmentEmulatedReplay(
   if (status != Status::OK) {
     seg.exec.markArgsStale();
     DSP_DIAG(EMULATED_REPLAY,
-             "  ** EXECUTION FAILED: status=%d — graph capture would also fail here",
+             "  ** EXECUTION FAILED: status=%d",
              (int)status);
+#if !defined(SD_VULKAN)
+    if (functionalCaptureStarted && functionalHandle != nullptr) {
+      functionalHandle->abortCapture();
+    }
+    if (functionalCaptureStarted || functionalReplayExpected) {
+      SegmentLifecycle::invalidateSegmentCaptures(
+          this, seg,
+          functionalCaptureStarted
+              ? "functional_replay_capture_failed"
+              : "functional_replay_execution_failed");
+    }
+#endif
+    return status;
   }
+
+#if !defined(SD_VULKAN)
+  if (functionalCaptureStarted) {
+    if (!functionalHandle->endCapture(nullptr) ||
+        !functionalHandle->finalize()) {
+      functionalHandle->abortCapture();
+      DSP_DIAG(EMULATED_REPLAY,
+               "  ** FUNCTIONAL CAPTURE FINALIZE FAILED for seg[%d-%d]",
+               seg.def.startSlot, seg.def.endSlot);
+      SegmentLifecycle::invalidateSegmentCaptures(
+          this, seg, "functional_replay_finalize_failed");
+      return Status::BAD_GRAPH;
+    }
+    DSP_DIAG(EMULATED_REPLAY,
+             "  FUNCTIONAL CAPTURE READY: seg[%d-%d] commands=%d",
+             seg.def.startSlot, seg.def.endSlot,
+             functionalHandle->getRecordedOpCount());
+  }
+
+  functionalProgramReady =
+      functionalHandle != nullptr &&
+      functionalHandle->hasReplayProgram();
+  if (functionalHandle != nullptr) {
+    int replayCountAfter =
+        functionalHandle->getStatistics().replayCount;
+    functionalReplayDelta =
+        replayCountAfter - functionalReplayCountBefore;
+    functionalReplaySucceeded = functionalReplayDelta > 0;
+  }
+
+  if ((functionalCaptureStarted || functionalReplaySucceeded) &&
+      functionalHandle != nullptr) {
+    functionalPointerSnapshot.clear();
+    Status pointerStatus = buildFunctionalReplayPointerSnapshot(
+        seg, slots_, numSlots_, externalArrays, numExt,
+        outputSlots_, totalOutputSlots_, &functionalPointerSnapshot);
+    if (pointerStatus == Status::OK) {
+      pointerStatus = functionalCaptureStarted
+                          ? functionalHandle->publishPointerSnapshot(
+                                functionalPointerSnapshot)
+                          : functionalHandle->commitPointerSnapshot(
+                                functionalPointerSnapshot);
+    }
+    if (pointerStatus != Status::OK) {
+      DSP_DIAG(EMULATED_REPLAY,
+               "  ** FUNCTIONAL POINTER COMMIT FAILED: seg[%d-%d] "
+               "phase=%s status=%d bindings=%zu",
+               seg.def.startSlot, seg.def.endSlot,
+               functionalCaptureStarted ? "capture" : "replay",
+               static_cast<int>(pointerStatus),
+               functionalPointerSnapshot.size());
+      SegmentLifecycle::invalidateSegmentCaptures(
+          this, seg,
+          functionalCaptureStarted
+              ? "functional_replay_pointer_publish_failed"
+              : "functional_replay_pointer_commit_failed");
+      return pointerStatus;
+    }
+
+    if (functionalCaptureStarted) {
+      DSP_DIAG(EMULATED_REPLAY,
+               "  FUNCTIONAL POINTER SNAPSHOT: seg[%d-%d] bindings=%zu",
+               seg.def.startSlot, seg.def.endSlot,
+               functionalPointerSnapshot.size());
+    } else {
+      const auto& changes = functionalHandle->getLastPointerChanges();
+      DSP_DIAG(EMULATED_REPLAY,
+               "  FUNCTIONAL POINTER CHECK: seg[%d-%d] bindings=%d "
+               "changed=%d array=%d dataBuffer=%d primary=%d special=%d "
+               "shapeInfo=%d offset=%d metadata=%d comparisons=%lld",
+               seg.def.startSlot, seg.def.endSlot,
+               changes.bindingCount, changes.changedBindings,
+               changes.arrayChanges, changes.dataBufferChanges,
+               changes.primaryBufferChanges, changes.specialBufferChanges,
+               changes.shapeInfoChanges, changes.offsetChanges,
+               changes.metadataChanges,
+               functionalHandle->getPointerComparisonCount());
+    }
+  }
+
+  if (functionalReplaySucceeded) {
+    seg.exec.lastReplayExecCount = executeCount_;
+    totalGraphReplays_ += functionalReplayDelta;
+  }
+#endif
 
   // ── EMULATED_REPLAY segPhase lifecycle transitions ─────────────────────
-  // executeSegmentSlotBySlot increments executionCount, so execCount (captured
-  // at entry) is now the count BEFORE this execution completed.
-  //
-  // Lifecycle:
-  //   execCount==0 → warmup done; advance segPhase WARMUP→CAPTURING so that
-  //                  the next call sees segPhase.needsCapture()==true.
-  //   execCount==1 → "capture" step done (for emulated replay there is no
-  //                  real capture, so we stay in CAPTURING after exec 0
-  //                  transitions us there).
-  //   execCount>=2 + args stable → segment is in steady state; seal it so
-  //                  segmentIsFullyReplayingForPlanPhase() returns true and
-  //                  the plan can advance to REPLAYING.
-  //
-  // All transitions are guarded by the current segPhase to be idempotent
-  // (re-entry is safe after invalidation).
-  if (status == Status::OK) {
-    if (execCount == 0 && seg.exec.segPhase.needsWarmup()) {
-      // Warmup complete — advance to CAPTURING (emulated replay skips the
-      // separate COMPILING sub-phase since there is no backend to compile).
-      DSP_DIAG(EMULATED_REPLAY,
-               "  LIFECYCLE: seg[%d-%d] BUILDING:WARMUP -> BUILDING:CAPTURING "
-               "(warmup done, execCount=%d)",
-               seg.def.startSlot, seg.def.endSlot, execCount);
-      SegmentLifecycle::skipToCapturing(seg.exec, "emulated_replay",
-                                       seg.def.startSlot, seg.def.endSlot);
-    } else if (execCount >= 1 && seg.exec.segPhase.needsCapture()) {
-      // EMULATED_REPLAY re-executes every slot fresh (no baked CUDA graph),
-      // so address instability from fresh placeholder allocations does not
-      // affect correctness. Seal after the "capture" step regardless of arg
-      // stability. execCount >= 1 ensures at least 2 total executions have
-      // occurred (one warmup + this one) before we declare steady state.
-      DSP_DIAG(EMULATED_REPLAY,
-               "  LIFECYCLE: seg[%d-%d] BUILDING:CAPTURING -> SEALED "
-               "(execCount=%d, argRefresh=%d)",
-               seg.def.startSlot, seg.def.endSlot, execCount,
-               seg.exec.needsArgRefresh() ? 1 : 0);
-      SegmentLifecycle::markEmulatedSealed(seg.exec, seg.def.startSlot, seg.def.endSlot);
-    }
-
-    // Increment totalGraphReplays_ for EMULATED_REPLAY segments in steady state
-    // (execCount >= 2 means at least warmup + capture + this replay).
-    // This mirrors the real GPU graph replay path which increments
-    // totalGraphReplays_ after each successful cudaGraphLaunch.
-    if (execCount >= 2) {
-      totalGraphReplays_++;
+  // The first pass warms the segment. The second pass records and publishes an
+  // immutable functional program for static capturable segments. Later passes
+  // replay that program. Data-dependent/control-flow segments remain explicit
+  // diagnostic slot-by-slot emulation and never report a replay launch.
+  if (execCount == 0 && seg.exec.segPhase.needsWarmup()) {
+    DSP_DIAG(EMULATED_REPLAY,
+             "  LIFECYCLE: seg[%d-%d] BUILDING:WARMUP -> BUILDING:CAPTURING "
+             "(warmup done, execCount=%d)",
+             seg.def.startSlot, seg.def.endSlot, execCount);
+    SegmentLifecycle::skipToCapturing(
+        seg.exec, "emulated_replay",
+        seg.def.startSlot, seg.def.endSlot);
+  } else if (execCount >= 1 && seg.exec.segPhase.needsCapture()) {
+    if (functionalRecordable) {
+      if (!functionalProgramReady) {
+        DSP_DIAG(EMULATED_REPLAY,
+                 "  ** FUNCTIONAL PROGRAM MISSING for recordable seg[%d-%d]",
+                 seg.def.startSlot, seg.def.endSlot);
+        SegmentLifecycle::invalidateSegmentCaptures(
+            this, seg, "functional_replay_program_missing");
+        return Status::BAD_GRAPH;
+      }
+      SegmentLifecycle::markFunctionalReplaySealed(
+          seg.exec, seg.def.startSlot, seg.def.endSlot);
+    } else {
+      SegmentLifecycle::markEmulatedSealed(
+          seg.exec, seg.def.startSlot, seg.def.endSlot);
     }
   }
 
-  // Note: executeSegmentSlotBySlot already increments seg.exec.executionCount
-  return status;
+  if (functionalReplaySucceeded) {
+    DSP_DIAG(EMULATED_REPLAY,
+             "  FUNCTIONAL REPLAY OK: seg[%d-%d] totalReplays=%lld",
+             seg.def.startSlot, seg.def.endSlot,
+             static_cast<long long>(totalGraphReplays_));
+  }
+
+  // executeSegmentSlotBySlot increments seg.exec.executionCount after either
+  // normal execution or successful functional replay.
+  return Status::OK;
 }
 
 }  // namespace graph

@@ -21,7 +21,7 @@
 #include <graph/ResourceBinder.h>
 #include <graph/SlotArray.h>
 #include <graph/DspDiagnostics.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 #include <graph/NativeDynamicShapePlan.h>
 
 #include <cassert>

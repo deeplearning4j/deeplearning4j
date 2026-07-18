@@ -43,6 +43,7 @@ DECLARE_TYPES(lt_scalar) {
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
       ->setAllowedOutputTypes(0, BOOL);
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_COMPARISON);
 }
 }  // namespace ops
 }  // namespace sd

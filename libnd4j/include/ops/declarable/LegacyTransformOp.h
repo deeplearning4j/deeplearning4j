@@ -27,6 +27,7 @@
 #ifdef ONLY_SAME_TRANSFORM
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 /**
  *   This class provides wrapper for Transform operations (i.e. Pow or OneMinus)
  */
@@ -41,6 +42,7 @@ class SD_LIB_EXPORT LegacyTransformOp : public LegacyOp {
   ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block);
   virtual LegacyOp* clone();
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 #endif

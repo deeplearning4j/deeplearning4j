@@ -1,0 +1,163 @@
+formatVersion: 1
+
+# "ready" means an official hardware-specific AOT artifact is publicly listed.
+# "research" means convert/compile and validate on the named device before use.
+canonicalModel:
+  sourceFormats: [.sdz, .sdnb]
+  bundleFormat: .dspb
+  graphPath: graph/model.sdz
+  targetArtifacts:
+    vulkan: compiledArtifacts.vulkanSpirv
+    hexagon: compiledArtifacts.hexagonKernels
+    tensorG5: compiledArtifacts.tensorG5LiteRtLm
+  policy: One SameDiff graph identity with checksummed, target-specific AOT derivatives; no host fallback.
+
+chatModels:
+  - id: gemma-3-1b-it-google-tensor-g5-int8
+    upstream: google/gemma-3-1b-it
+    status: ready
+    vendor: Google
+    accelerator: Tensor TPU
+    socs: [Tensor_G5]
+    container: litertlm
+    quantization: int8-per-channel
+    contextTokens: 1280
+    approximateBytes: 1786773504
+    licenseGate: gemma
+    provider: litert-lm
+    backend: npu
+    appFlavor: tensorG5
+    modelExtension: .litertlm
+    notes: Official LiteRT-LM Google Tensor G5 AOT package; primary TPU acceptance model.
+
+  - id: gemma-3-1b-it-qualcomm-sm8750-int4
+    upstream: google/gemma-3-1b-it
+    status: ready
+    vendor: Qualcomm
+    accelerator: Hexagon HTP
+    socs: [SM8750]
+    container: litertlm
+    quantization: int4-weight-only
+    licenseGate: gemma
+    provider: litert-lm-npu
+    backend: npu
+    appFlavor: none
+    compatibility: vendor-baseline-only
+    notes: Official Qualcomm-specific package; never substitute it for an SDX Hexagon .dspb kernel bundle.
+
+  - id: gemma-3-1b-it-qualcomm-sm8650-int4
+    upstream: google/gemma-3-1b-it
+    status: ready
+    vendor: Qualcomm
+    accelerator: Hexagon HTP
+    socs: [SM8650]
+    container: litertlm
+    quantization: int4-weight-only
+    licenseGate: gemma
+    provider: litert-lm-npu
+    backend: npu
+    appFlavor: none
+    compatibility: vendor-baseline-only
+    notes: Official Qualcomm-specific research baseline; not an SDX Hexagon .dspb input.
+
+  - id: gemma-3-1b-it-qualcomm-sm8550-int4
+    upstream: google/gemma-3-1b-it
+    status: ready
+    vendor: Qualcomm
+    accelerator: Hexagon HTP
+    socs: [SM8550]
+    container: litertlm
+    quantization: int4-weight-only
+    licenseGate: gemma
+    provider: litert-lm-npu
+    backend: npu
+    appFlavor: none
+    compatibility: vendor-baseline-only
+    notes: Official Qualcomm-specific research baseline; not an SDX Hexagon .dspb input.
+
+  - id: qwen2.5-0.5b-instruct-int8
+    upstream: Qwen/Qwen2.5-0.5B-Instruct
+    status: research
+    targetSocs: [Android_Vulkan_1_1, Tensor_G5, SM8750, SM8650]
+    preferredQuantization: int8-per-channel
+    license: apache-2.0
+    appBuilds:
+      - flavor: tensorG5
+        extensions: [.dspb, .litertlm]
+        bundleArtifact: compiledArtifacts.tensorG5LiteRtLm
+        state: requires-vendor-int8-aot-conversion
+      - flavor: vulkan
+        extension: .dspb
+        state: requires-sdx-vulkan-spirv-aot-compilation
+      - flavor: hexagon
+        extension: .dspb
+        state: requires-sdx-hexagon-aot-compilation
+    notes: Small multilingual/tool-use candidate; requires vendor AOT compilation and parity testing.
+
+  - id: smollm2-360m-instruct-int8
+    upstream: HuggingFaceTB/SmolLM2-360M-Instruct
+    status: research
+    targetSocs: [Android_Vulkan_1_1, Tensor_G5, SM8750, SM8650, SM8550]
+    preferredQuantization: int8-per-channel
+    license: apache-2.0
+    appBuilds:
+      - flavor: tensorG5
+        extensions: [.dspb, .litertlm]
+        bundleArtifact: compiledArtifacts.tensorG5LiteRtLm
+        state: requires-vendor-int8-aot-conversion
+      - flavor: vulkan
+        extension: .dspb
+        state: requires-sdx-vulkan-spirv-aot-compilation
+      - flavor: hexagon
+        extension: .dspb
+        state: requires-sdx-hexagon-aot-compilation
+    notes: Memory-constrained latency baseline; requires vendor AOT compilation and parity testing.
+
+  - id: llama-3.2-1b-instruct-int8
+    upstream: meta-llama/Llama-3.2-1B-Instruct
+    status: research
+    targetSocs: [Android_Vulkan_1_1, Tensor_G5, SM8750]
+    preferredQuantization: int8-per-channel
+    licenseGate: llama-3.2
+    appBuilds:
+      - flavor: tensorG5
+        extensions: [.dspb, .litertlm]
+        bundleArtifact: compiledArtifacts.tensorG5LiteRtLm
+        state: requires-vendor-int8-aot-conversion
+      - flavor: vulkan
+        extension: .dspb
+        state: requires-sdx-vulkan-spirv-aot-compilation
+      - flavor: hexagon
+        extension: .dspb
+        state: requires-sdx-hexagon-aot-compilation
+    notes: Quality baseline; larger KV/cache pressure and a gated license.
+
+embeddingModels:
+  - id: embeddinggemma-300m-int8
+    upstream: google/embeddinggemma-300m
+    status: research
+    targetSocs: [Android_Vulkan_1_1, Tensor_G5, SM8750, SM8650]
+    preferredQuantization: int8-per-channel
+    licenseGate: gemma
+    runtime: sdx-graph
+    notes: Mobile retrieval embedding candidate for offline graph search; compile as an SDX graph, not a chat container.
+
+  - id: all-minilm-l6-v2-int8
+    upstream: sentence-transformers/all-MiniLM-L6-v2
+    status: research
+    targetSocs: [Android_Vulkan_1_1, Tensor_G5, SM8750, SM8650, SM8550]
+    preferredQuantization: int8-per-channel
+    license: apache-2.0
+    runtime: sdx-graph
+    notes: Small retrieval baseline; validate tokenizer and pooling parity before AOT compilation.
+
+acceptance:
+  noHostFallback: true
+  noBlas: true
+  requireAotArtifact: true
+  chatParity:
+    minimumPromptSet: 32
+    minimumTokenMatchRate: 0.95
+  retrievalParity:
+    minimumQuerySet: 100
+    minimumTop10Overlap: 0.9

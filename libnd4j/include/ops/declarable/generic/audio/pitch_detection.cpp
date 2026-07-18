@@ -82,6 +82,7 @@ DECLARE_SHAPE_FN(pitch_detection) {
 }
 
 DECLARE_TYPES(pitch_detection) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

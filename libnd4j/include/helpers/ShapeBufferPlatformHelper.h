@@ -22,9 +22,10 @@
 #define LIBND4J_SHAPEBUFFERPLATFORMHELPER_H
 
 #include <system/common.h>
+#include <system/BackendNamespace.h>
 #include <helpers/ShapeBufferCreatorHelper.h>
 
-namespace sd {
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 
 /**
  * Platform-specific initialization helper
@@ -49,6 +50,7 @@ private:
  ShapeBufferPlatformHelper() = delete;  // Prevent instantiation
 };
 
-} // namespace sd
+SD_BACKEND_ABI_NAMESPACE_END
+SD_BACKEND_ABI_ALIAS(ShapeBufferPlatformHelper)
 
 #endif  // LIBND4J_SHAPEBUFFERPLATFORMHELPER_H

@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(tokenizers-cpp-wrapper VERSION 1.0.0 LANGUAGES C CXX)
 
-# Include ExternalProject module
-include(ExternalProject)
+# Standard installation directories
 include(GNUInstallDirs)
 
 # C++ standard
@@ -68,10 +67,8 @@ find_program(RUSTC_EXECUTABLE rustc REQUIRED)
 message(STATUS "Found Cargo: ${CARGO_EXECUTABLE}")
 message(STATUS "Found Rustc: ${RUSTC_EXECUTABLE}")
 
-# Set external project directories
-set(EXTERNAL_PROJECT_DIR "${CMAKE_CURRENT_BINARY_DIR}/external")
-set(TOKENIZERS_SOURCE_DIR "${EXTERNAL_PROJECT_DIR}/src/tokenizers-external")
-set(TOKENIZERS_LIB_DIR "${TOKENIZERS_SOURCE_DIR}/tokenizers")
+# Local build directory used by the existing desktop build script.
+# Mobile builds normally pass TOKENIZERS_FFI_LIB explicitly.
 set(TOKENIZERS_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/tokenizers-build")
 
 # Platform-specific library names and extensions
@@ -103,34 +100,22 @@ else()
     set(CARGO_BUILD_FLAG "--release")
 endif()
 
-# External project: Clone HuggingFace tokenizers
-ExternalProject_Add(tokenizers-external
-    GIT_REPOSITORY https://github.com/huggingface/tokenizers.git
-    GIT_TAG main
-    GIT_SHALLOW TRUE
-    PREFIX ${EXTERNAL_PROJECT_DIR}
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ""
-    INSTALL_COMMAND ""
-    UPDATE_COMMAND ""
-    PATCH_COMMAND ""
-)
-
-# The tokenizers-ffi crate is built by the build script (buildnativetokenizers.sh)
-# before CMake is invoked. We just need to find and link to it.
-set(TOKENIZERS_FFI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tokenizers-ffi")
+# The Rust tokenizer crate is the single source of HuggingFace tokenizer logic.
+# Its build scripts produce a static archive first; this wrapper only exposes the
+# stable tokenizers_c.h ABI. An explicit path makes Android/iOS cross-builds
+# hermetic and avoids a configure-time network clone.
+set(TOKENIZERS_FFI_LIB "" CACHE FILEPATH "Prebuilt tokenizers Rust static library")
 set(TOKENIZERS_FFI_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/tokenizers-ffi")
-
-# Check if FFI library was pre-built by the build script
-if(EXISTS "${TOKENIZERS_FFI_BINARY_DIR}/release/libtokenizers_ffi${STATIC_LIB_SUFFIX}")
-    message(STATUS "Found pre-built tokenizers-ffi library")
-    set(TOKENIZERS_FFI_LIB "${TOKENIZERS_FFI_BINARY_DIR}/release/libtokenizers_ffi${STATIC_LIB_SUFFIX}")
-else()
-    message(WARNING "tokenizers-ffi library not found at ${TOKENIZERS_FFI_BINARY_DIR}/release/")
-    message(WARNING "Please run the build script (buildnativetokenizers.sh) first")
-    # Set a placeholder path - build will fail if library isn't there
-    set(TOKENIZERS_FFI_LIB "${TOKENIZERS_FFI_BINARY_DIR}/release/libtokenizers_ffi${STATIC_LIB_SUFFIX}")
+if(NOT TOKENIZERS_FFI_LIB)
+    set(TOKENIZERS_FFI_LIB
+        "${TOKENIZERS_FFI_BINARY_DIR}/release/libtokenizers_ffi${STATIC_LIB_SUFFIX}")
 endif()
+if(NOT EXISTS "${TOKENIZERS_FFI_LIB}")
+    message(FATAL_ERROR
+        "Prebuilt tokenizers FFI library not found: ${TOKENIZERS_FFI_LIB}. "
+        "Run buildnativetokenizers.sh or build-mobile-tokenizers.sh first.")
+endif()
+message(STATUS "Using prebuilt tokenizers FFI library: ${TOKENIZERS_FFI_LIB}")
 
 # Check if header was generated
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/tokenizers_ffi.h")
@@ -254,11 +239,11 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tokenizers.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 
-# Custom target for cleaning external projects
+# Preserve the historical target name without configuring any network-backed
+# external project.
 add_custom_target(clean-external
-    COMMAND ${CMAKE_COMMAND} -E remove_directory ${EXTERNAL_PROJECT_DIR}
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${TOKENIZERS_BINARY_DIR}
-    COMMENT "Cleaning external project directories"
+    COMMENT "Cleaning local tokenizer build directories"
 )
 
 # Print build summary
@@ -270,10 +255,8 @@ message(STATUS "JavaCPP Platform: ${JAVACPP_PLATFORM}")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Cargo Build Type: ${CARGO_BUILD_TYPE}")
 message(STATUS "Wrapper Library: ${WRAPPER_LIB_NAME}${LIB_SUFFIX}")
-message(STATUS "Tokenizers Source: ${TOKENIZERS_SOURCE_DIR}")
-message(STATUS "Tokenizers Library: ${TOKENIZERS_LIB_DIR}")
+message(STATUS "Tokenizers FFI Library: ${TOKENIZERS_FFI_LIB}")
 message(STATUS "Tokenizers Binary: ${TOKENIZERS_BINARY_DIR}")
-message(STATUS "Generated Headers: ${TOKENIZERS_BINARY_DIR}/bindings/include")
 message(STATUS "Install Prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "JavaCPP Platform Dir: ${CMAKE_INSTALL_PREFIX}/${JAVACPP_PLATFORM}")
 message(STATUS "===================================")

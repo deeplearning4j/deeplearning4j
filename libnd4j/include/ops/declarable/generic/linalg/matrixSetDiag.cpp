@@ -58,7 +58,10 @@ CONFIGURABLE_OP_IMPL(matrix_set_diag, 2, 1, false, 0, 0) {
 
 DECLARE_SYN(MatrixSetDiag, matrix_set_diag);
 
-DECLARE_TYPES(matrix_set_diag) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(matrix_set_diag) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
+}
 
 }  // namespace ops
 }  // namespace sd

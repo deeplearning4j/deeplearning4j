@@ -19,8 +19,10 @@
 #ifndef LIBND4J_HIP_RUNTIME_MANAGER_H
 #define LIBND4J_HIP_RUNTIME_MANAGER_H
 
-// Guard the entire file behind SD_HIP so it has zero footprint on CUDA/CPU builds.
-#ifdef SD_HIP
+// Zero footprint unless the build can reach an AMD GPU: native HIP builds
+// (SD_HIP) or ZLUDA+AMD builds (ZLUDA_TARGET_AMD / HAVE_MIOPEN). The loader
+// itself is dlopen-opaque, so no HIP headers are needed in any case.
+#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
 
 #include <system/common.h>
 

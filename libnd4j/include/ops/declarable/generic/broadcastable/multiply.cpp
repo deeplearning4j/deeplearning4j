@@ -195,10 +195,12 @@ DECLARE_TYPES(multiply) {
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, ANY)
       ->setAllowedOutputTypes(0, INHERIT);
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(multiply_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 static DataType multiplyBpGradientType(DataType xType, DataType yType, DataType dLdzType) {

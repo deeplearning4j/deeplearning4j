@@ -86,6 +86,7 @@ DECLARE_SHAPE_FN(affine_grid) {
 }
 
 DECLARE_TYPES(affine_grid) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS})
         ->setAllowedInputTypes(1, {ALL_INTS})

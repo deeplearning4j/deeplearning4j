@@ -45,6 +45,7 @@ CUSTOM_OP_IMPL(max_pool_with_argmax, 1, 2, false, 0, 9) {
 }
 
 DECLARE_TYPES(max_pool_with_argmax) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS})

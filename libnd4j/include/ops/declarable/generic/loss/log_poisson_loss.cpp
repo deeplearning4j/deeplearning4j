@@ -139,6 +139,7 @@ CUSTOM_OP_IMPL(log_poisson_loss, 3, 1, true, 0, 1) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(log_poisson_loss) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -417,6 +418,7 @@ CUSTOM_OP_IMPL(log_poisson_loss_grad, 3, 3, false, 0, 1) {
 }
 
 DECLARE_TYPES(log_poisson_loss_grad) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

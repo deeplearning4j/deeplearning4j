@@ -43,7 +43,10 @@ OP_IMPL(random_shuffle, 1, 1, true) {
   return Status::OK;
 }
 
-DECLARE_TYPES(random_shuffle) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(random_shuffle) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_STATEFUL);
+}
 }  // namespace ops
 }  // namespace sd
 

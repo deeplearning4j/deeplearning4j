@@ -61,8 +61,7 @@ class SD_LIB_EXPORT NativePlanCompiler {
       const std::vector<std::string>& requestedOutputs);
 
  private:
-  // Op classification is now driven by OpDescriptor traits (see OpTraitTable.h).
-  // No more private static methods with hardcoded op lists.
+  // Op classification is driven directly by each registered op's OpDescriptor traits.
 };
 
 }  // namespace graph

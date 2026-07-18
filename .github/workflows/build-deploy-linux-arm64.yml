@@ -51,6 +51,16 @@ on:
         required: false
         default: 8
 
+      buildAot:
+        description: 'Build the GraalVM AOT export (sdx-llm CLI + libsdx_llm, ADR 0109). 1 = on, 0 = off.'
+        required: false
+        default: 0
+
+      aotAllSpins:
+        description: 'Also build the AOT export for every optimized-math matrix combo (armcompute/onednn spins). Each spin adds a full native-image build. 1 = on, 0 = off.'
+        required: false
+        default: 0
+
 jobs:
   linux-arm64:
     runs-on: ${{ github.event.inputs.runsOn }}
@@ -260,6 +270,19 @@ jobs:
           backend: cpu
           platform: linux-arm64
           platform-extension: ${{ matrix.helper != '' && matrix.extension != '' && format('-{0}-{1}', matrix.helper, matrix.extension) || matrix.helper != '' && format('-{0}', matrix.helper) || matrix.extension != '' && format('-{0}', matrix.extension) || '' }}
+          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
+
+      # GraalVM AOT export of the Java LLM stack (ADR 0109). Opt-in until validated
+      # on this platform; aotAllSpins=1 also covers the optimized-math combos
+      # (armcompute/onednn — the spin's backend jar was built by this matrix job).
+      - name: Build SDX AOT artifacts (GraalVM)
+        if: github.event.inputs.buildAot == '1' && (github.event.inputs.aotAllSpins == '1' || matrix.helper == '')
+        continue-on-error: true
+        uses: ./.github/actions/build-sdx-aot
+        with:
+          platform: linux-arm64
+          variant: cpu
+          platform-extension: ${{ matrix.helper != '' && format('-{0}', matrix.helper) || '' }}
           release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
 
       - name: Cleanup swap

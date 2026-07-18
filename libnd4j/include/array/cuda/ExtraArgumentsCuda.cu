@@ -36,10 +36,13 @@
 
 namespace sd {
 
-// Forward declarations — definitions follow after extra_args_detail.
+// Forward declarations — definitions follow after the backend-owned provider.
 bool extraArgsCaptureActive();
 void extraArgsCaptureH2D(void* dst, const void* src, size_t bytes);
 
+}  // namespace sd
+
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 namespace extra_args_detail {
 
 void* extraArgsAllocDevice(size_t bytes) {
@@ -58,7 +61,7 @@ void extraArgsFreeDevice(void* ptr) {
 void extraArgsCopyH2DDispatch(void* dst, const void* src, size_t bytes) {
   // extraArgsCaptureActive and extraArgsCaptureH2D are defined in namespace sd
   // (below, in the same TU), not in extra_args_detail.
-  if (tl_graphExecutionActive) {
+  if (::sd::tl_graphExecutionActive) {
     // Inside per-group CUDA graph capture: synchronous cudaMemcpy on the legacy
     // stream poisons the capture stream with error 901. Use the async capture path.
     // Do NOT synchronize — the copy is recorded into the graph, not executed now.
@@ -73,14 +76,16 @@ void extraArgsCopyH2DDispatch(void* dst, const void* src, size_t bytes) {
     // per-group capture: the composite outer stream if set, else the LaunchContext default) —
     // the authority, not an inline re-derivation. The tl_graphExecutionActive gating above
     // keeps this off the per-group capture path; between groups this is the ordering barrier.
-    auto* sp = LaunchContext::defaultContext()->getCudaStream();
+    auto* sp = ::sd::LaunchContext::defaultContext()->getCudaStream();
     cudaStream_t fallback = (sp != nullptr) ? *sp : cudaStreamPerThread;
-    cudaStreamSynchronize(DebugHelper::captureSafeStream(fallback));
+    cudaStreamSynchronize(::sd::DebugHelper::captureSafeStream(fallback));
   }
 }
 
 }  // namespace extra_args_detail
+SD_BACKEND_ABI_NAMESPACE_END
 
+namespace sd {
 
 bool extraArgsCaptureActive() {
   // True during per-group CUDA graph capture.

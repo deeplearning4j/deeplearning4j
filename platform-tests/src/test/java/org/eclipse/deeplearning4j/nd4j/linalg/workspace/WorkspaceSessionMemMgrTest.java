@@ -26,6 +26,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.deeplearning4j.nn.layers.samediff.DL4JSameDiffMemoryMgr;
+import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
+import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
+import org.nd4j.autodiff.samediff.internal.memory.NoOpMemoryMgr;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -208,6 +212,65 @@ public class WorkspaceSessionMemMgrTest extends BaseNd4jTestWithBackends {
             assertNotNull(arr);
             assertEquals(DataType.FLOAT, arr.dataType());
             assertArrayEquals(new long[]{10, 10}, arr.shape());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testWorkspaceDescriptorLayoutPreservation(Nd4jBackend backend) {
+        assertDescriptorLayoutPreservation(new WorkspaceSessionMemMgr(10 * 1024 * 1024));
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testArrayCacheDescriptorLayoutPreservation(Nd4jBackend backend) {
+        assertDescriptorLayoutPreservation(new ArrayCacheMemoryMgr());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testNoOpDescriptorLayoutPreservation(Nd4jBackend backend) {
+        assertDescriptorLayoutPreservation(new NoOpMemoryMgr());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testDl4jDescriptorLayoutPreservation(Nd4jBackend backend) {
+        assertDescriptorLayoutPreservation(new DL4JSameDiffMemoryMgr(null, null, null, null));
+    }
+
+    private static void assertDescriptorLayoutPreservation(SessionMemMgr mgr) {
+        long[] fShape = {3, 4};
+        long[] emptyShape = {2, 0, 3};
+        INDArray fTemplate = Nd4j.createUninitialized(DataType.FLOAT, fShape, 'f');
+        INDArray emptyTemplate = Nd4j.emptyWithShape(emptyShape, DataType.FLOAT);
+
+        mgr.scopeIn();
+        try {
+            INDArray fromLongDescriptor = mgr.allocate(false, fTemplate.shapeDescriptor());
+            assertArrayEquals(fShape, fromLongDescriptor.shape(), "Long descriptor shape");
+            assertArrayEquals(fTemplate.stride(), fromLongDescriptor.stride(), "Long descriptor strides");
+            assertEquals('f', fromLongDescriptor.ordering(), "Long descriptor ordering");
+
+            INDArray fromShapeInfo = mgr.allocateFromDescriptor(false, fTemplate.shapeInfoDataBuffer(), true);
+            assertArrayEquals(fShape, fromShapeInfo.shape(), "Shape-info descriptor shape");
+            assertArrayEquals(fTemplate.stride(), fromShapeInfo.stride(), "Shape-info descriptor strides");
+            assertEquals('f', fromShapeInfo.ordering(), "Shape-info descriptor ordering");
+            assertEquals(0.0, fromShapeInfo.sumNumber().doubleValue(), 0.0,
+                    "requiresZeroed must still apply while preserving layout");
+
+            INDArray emptyFromLongDescriptor = mgr.allocate(false, emptyTemplate.shapeDescriptor());
+            assertTrue(emptyFromLongDescriptor.isEmpty(), "Long descriptor must preserve ARRAY_EMPTY");
+            assertArrayEquals(emptyShape, emptyFromLongDescriptor.shape(), "Empty long descriptor shape");
+
+            INDArray emptyFromShapeInfo = mgr.allocateFromDescriptor(false, emptyTemplate.shapeInfoDataBuffer(), true);
+            assertTrue(emptyFromShapeInfo.isEmpty(), "Shape-info descriptor must preserve ARRAY_EMPTY");
+            assertArrayEquals(emptyShape, emptyFromShapeInfo.shape(), "Empty shape-info descriptor shape");
+        } finally {
+            mgr.scopeOut();
+            mgr.close();
+            fTemplate.close();
+            emptyTemplate.close();
         }
     }
 }

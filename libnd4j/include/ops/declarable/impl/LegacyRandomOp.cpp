@@ -28,19 +28,26 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyRandomOp::LegacyRandomOp() : LegacyOp(1) {
-  // just a no-op
+  this->getOpDescriptor()->addTraits(OP_TRAIT_STATEFUL);
 }
 
 LegacyRandomOp::LegacyRandomOp(int opNum) : LegacyOp(1, opNum) {
-  // just a no-op
+  this->getOpDescriptor()->addTraits(OP_TRAIT_STATEFUL);
+  if (opNum == random::UniformDistribution) {
+    this->getOpDescriptor()->addTraits(
+        OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
+  }
 }
 
 LegacyOp* LegacyRandomOp::clone() { return new LegacyRandomOp(this->_opNum); }
 
 template <typename T>
 Status LegacyRandomOp::validateAndExecute_(Context& block) {
-  auto input = INPUT_VARIABLE(0);
+  // Generator-only random ops have no tensor input; transform-style random ops
+  // still use input[0]. Keep the shared implementation valid for both forms.
+  auto input = block.width() > 0 ? INPUT_VARIABLE(0) : nullptr;
 
   int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
@@ -397,5 +404,6 @@ Status LegacyRandomOp::validateDataTypes(Context& block) {
 }
 
 BUILD_SINGLE_TEMPLATE( sd::Status LegacyRandomOp::validateAndExecute_, (Context&), SD_FLOAT_TYPES);
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

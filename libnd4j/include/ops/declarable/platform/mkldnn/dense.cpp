@@ -117,7 +117,7 @@ static void denseLayerMKLDNN(NDArray* x, NDArray* weights, NDArray* bias, NDArra
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(dense, ENGINE_CPU) {
+PLATFORM_IMPL(dense, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto weights = INPUT_VARIABLE(1);
   NDArray* bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -135,7 +135,7 @@ PLATFORM_IMPL(dense, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(dense, ENGINE_CPU) {
+PLATFORM_CHECK(dense, ENGINE_ONEDNN) {
   // DISABLED: OneDNN inner_product has significant primitive creation overhead
   // that makes it slower than OpenBLAS for typical workloads.
   return Requirements("ONEDNN DENSE OP - DISABLED");

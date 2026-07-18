@@ -398,4 +398,46 @@ public class MultiBackendWorkspaceIntegrationTest extends BaseNd4jTestWithBacken
             log.info("Skipping testMultiBackendWorkspaceSessionMemMgrBasic - native not available: {}", e.getMessage());
         }
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMultiBackendWorkspaceDescriptorLayoutPreservation(Nd4jBackend backend) {
+        if (Nd4j.getExecutioner().type() != OpExecutioner.ExecutionerType.CUDA)
+            return;
+
+        INDArray fTemplate = Nd4j.createUninitialized(DataType.FLOAT, new long[]{3, 4}, 'f');
+        INDArray emptyTemplate = Nd4j.emptyWithShape(new long[]{2, 0, 3}, DataType.FLOAT);
+        MultiBackendWorkspaceSessionMemMgr mgr =
+                new MultiBackendWorkspaceSessionMemMgr(4 * 1024 * 1024, 0);
+        mgr.scopeIn();
+        try {
+            INDArray fromLongDescriptor = mgr.allocate(false, fTemplate.shapeDescriptor());
+            assertArrayEquals(fTemplate.shape(), fromLongDescriptor.shape(), "Long descriptor shape");
+            assertArrayEquals(fTemplate.stride(), fromLongDescriptor.stride(), "Long descriptor strides");
+            assertEquals('f', fromLongDescriptor.ordering(), "Long descriptor ordering");
+
+            INDArray fromShapeInfo = mgr.allocateFromDescriptor(
+                    false, fTemplate.shapeInfoDataBuffer(), true);
+            assertArrayEquals(fTemplate.shape(), fromShapeInfo.shape(), "Shape-info descriptor shape");
+            assertArrayEquals(fTemplate.stride(), fromShapeInfo.stride(), "Shape-info descriptor strides");
+            assertEquals('f', fromShapeInfo.ordering(), "Shape-info descriptor ordering");
+            assertEquals(0.0, fromShapeInfo.sumNumber().doubleValue(), 0.0,
+                    "requiresZeroed must still apply while preserving layout");
+
+            INDArray emptyFromLong = mgr.allocate(false, emptyTemplate.shapeDescriptor());
+            assertTrue(emptyFromLong.isEmpty(), "Long descriptor must preserve ARRAY_EMPTY");
+            assertArrayEquals(emptyTemplate.shape(), emptyFromLong.shape(), "Empty long descriptor shape");
+
+            INDArray emptyFromShapeInfo = mgr.allocateFromDescriptor(
+                    false, emptyTemplate.shapeInfoDataBuffer(), true);
+            assertTrue(emptyFromShapeInfo.isEmpty(), "Shape-info descriptor must preserve ARRAY_EMPTY");
+            assertArrayEquals(emptyTemplate.shape(), emptyFromShapeInfo.shape(),
+                    "Empty shape-info descriptor shape");
+        } finally {
+            mgr.scopeOut();
+            mgr.close();
+            fTemplate.close();
+            emptyTemplate.close();
+        }
+    }
 }

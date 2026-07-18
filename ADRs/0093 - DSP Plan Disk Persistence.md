@@ -33,7 +33,7 @@ A model identity index (`dsp_model_<16-hex>.idx`) maps a hash of `(sorted output
 | File | Contents |
 |------|----------|
 | `.bin` | Raw `DynamicShapePlan.serialize()` output (DSP1 v5 binary). `fromSerializedPlan()` reads this format directly. |
-| `.meta` | Key=value text sidecar: `dspVersion`, `numSlots`, `numExternalInputs`, `numRequestedOutputs`, `outputSet`, `planBytes`, `structureHash`, `createdAt`. |
+| `.meta` | Key=value text sidecar: `dspVersion`, `numSlots`, `numExternalInputs`, `numRequestedOutputs`, `outputSet`, `planBytes`, `structureHash`, `nativeBuildFingerprint`, `createdAt`. |
 | `.idx` | Model identity index: single line containing the 16-hex structure hash. |
 
 ### Cache Directory
@@ -66,7 +66,7 @@ In `DynamicShapePlanExecutor.compileNativePlan()`, before `plan.serialize()`:
 2. If miss, fall through to `plan.serialize()` (fresh compilation)
 3. Override directory is checked before regular cache directory
 
-Validation: `.meta` `dspVersion` must match runtime `DSP_VERSION` (currently 5). `.bin` must pass `DynamicShapePlan.isValidSerializedPlan()` (magic + version check).
+Validation: `.meta` `dspVersion` must match runtime `DSP_VERSION` (currently 5). `.bin` must pass `DynamicShapePlan.isValidSerializedPlan()` (magic + version check). The `.meta` `nativeBuildFingerprint` must equal the current `buildInfo()` — this scopes entries per native `.so` build (and therefore per backend: a Vulkan JVM and a CUDA JVM keep separate valid entries and never reuse each other's). The fingerprint MUST be canonicalized to a single line: `buildInfo()` is multi-line, the sidecar is line-oriented, and an un-flattened value truncates on read so the comparison never passes — a bug that silently made every disk read miss until fixed (July 16, 2026; regression guard: `DspPlanDiskCacheRoundTripTest`). Canonical source: native `buildInfoFingerprint()` (`build_info.h/.cpp` — newlines→spaces, trimmed), exposed on `NativeOps` with a throwing default; `DspPlanDiskCache.getNativeBuildFingerprint()` prefers it and falls back to flattening `buildInfo()` byte-identically on backend bindings generated before the API existed, so the two paths always agree for the same `.so`.
 
 ### Cache Invalidation
 

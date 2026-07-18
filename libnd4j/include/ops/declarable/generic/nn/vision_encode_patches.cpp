@@ -145,6 +145,7 @@ DECLARE_SHAPE_FN(vision_encode_patches) {
 }
 
 DECLARE_TYPES(vision_encode_patches) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes(0, {ALL_FLOATS})

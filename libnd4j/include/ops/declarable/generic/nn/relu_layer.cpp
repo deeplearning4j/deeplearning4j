@@ -67,6 +67,7 @@ DECLARE_SHAPE_FN(relu_layer) {
 }
 
 DECLARE_TYPES(relu_layer) {
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
   getOpDescriptor()
       ->setAllowedInputTypes(sd::DataType::ANY)
       //                  ->setAllowedInputTypes(1, {ALL_FLOATS})

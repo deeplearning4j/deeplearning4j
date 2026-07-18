@@ -81,6 +81,7 @@ DECLARE_SHAPE_FN(unsorted_segment_min) {
 }
 
 DECLARE_TYPES(unsorted_segment_min) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
@@ -94,6 +95,7 @@ CUSTOM_OP_IMPL(unsorted_segment_min_bp, 3, 2, false, 0, 1) {
 }
 
 DECLARE_TYPES(unsorted_segment_min_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedOutputTypes(1, {ALL_INTS})

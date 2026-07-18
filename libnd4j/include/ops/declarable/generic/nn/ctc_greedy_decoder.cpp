@@ -81,6 +81,7 @@ CUSTOM_OP_IMPL(ctc_greedy_decoder, 1, 2, false, 0, 2) {
 }
 
 DECLARE_TYPES(ctc_greedy_decoder) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS})
         ->setAllowedInputTypes(1, {ALL_INTS})

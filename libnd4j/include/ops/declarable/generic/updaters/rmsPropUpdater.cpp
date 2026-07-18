@@ -77,7 +77,8 @@ CONFIGURABLE_OP_IMPL(rms_prop_updater, 2, 2, true, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(rms_prop_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(rms_prop_updater) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
 }  // namespace ops
 }  // namespace sd

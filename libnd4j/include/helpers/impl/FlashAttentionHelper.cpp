@@ -36,7 +36,8 @@
 #include <system/Environment.h>
 #include <system/type_boilerplate.h>
 #include <math/templatemath.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
+#include <graph/DspDiagnostics.h>
 #include <cmath>
 #include <algorithm>
 #include <limits>
@@ -347,9 +348,14 @@ void FlashAttentionHelper::forward3D(
     }
 
     // Common ONNX case for 3D attention bias: [batch,1,seqQ,seqKV] -> [batch,seqQ,seqKV]
+    // MUST be a no-copy VIEW: this helper's kernels are captured into CUDA graphs and
+    // replayed without re-running this host code. A reshape COPY freezes the bias at
+    // capture-time content in a buffer that is freed after this call — replays keep
+    // reading it while per-step mask updates land in the original buffer, silently
+    // diverging decode from the first replayed step.
     if (biasForAdd->rankOf() == 4 && biasForAdd->sizeAt(1) == 1) {
       std::vector<LongType> biasShape3d = {biasForAdd->sizeAt(0), biasForAdd->sizeAt(2), biasForAdd->sizeAt(3)};
-      biasReshapedOwner.reset(biasForAdd->reshape('c', biasShape3d));
+      biasReshapedOwner.reset(biasForAdd->reshape('c', biasShape3d, false));
       biasForAdd = biasReshapedOwner.get();
     }
 
@@ -422,7 +428,10 @@ void FlashAttentionHelper::forward4D(
 
   // Use double for scale computation — critical for DOUBLE inputs.
   double scale = config.scale > 0.0f ? static_cast<double>(config.scale) : 1.0 / sd::math::sd_sqrt<double, double>(static_cast<double>(headDim));
-  int headsPerKvHead = numHeads / numKvHeads;
+  bool validGqaLayout = numKvHeads > 0 && numHeads % numKvHeads == 0;
+  int headsPerKvHead = validGqaLayout
+      ? static_cast<int>(numHeads / numKvHeads)
+      : 0;
 
   auto workspace = AttentionWorkspace::getInstance();
 
@@ -435,17 +444,122 @@ void FlashAttentionHelper::forward4D(
     bool needScores = (attentionScores != nullptr && !attentionScores->isEmpty());
     bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
     bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
+    bool hasCurrentWindow =
+        config.currentKeyWindow != nullptr || config.currentValueWindow != nullptr
+        || config.currentKvPosition != nullptr;
+    bool directCurrentWindowLayout = !hasCurrentWindow;
+    if (config.currentKeyWindow != nullptr && config.currentValueWindow != nullptr
+        && config.currentKvPosition != nullptr
+        && config.currentKeyWindow->rankOf() == 4
+        && config.currentValueWindow->rankOf() == 4) {
+      directCurrentWindowLayout =
+          config.currentKeyWindow->sizeAt(0) == batch
+          && config.currentKeyWindow->sizeAt(1) == seqLenQ
+          && config.currentKeyWindow->sizeAt(2) == numKvHeads
+          && config.currentKeyWindow->sizeAt(3) == headDim
+          && config.currentValueWindow->sizeAt(0) == batch
+          && config.currentValueWindow->sizeAt(1) == seqLenQ
+          && config.currentValueWindow->sizeAt(2) == numKvHeads
+          && config.currentValueWindow->sizeAt(3) == headDim
+          && config.currentKeyWindow->dataType() == query->dataType()
+          && config.currentValueWindow->dataType() == query->dataType();
+    }
 
-    // Decode fast path: fused kernel handles Q@K^T + softmax + attn@V in a single kernel
-    // launch — eliminates 6 extra graph nodes per layer (permute copies, 2 cuBLAS calls,
-    // softmax kernel). Works for both GQA (headsPerKvHead>1) and non-GQA (headsPerKvHead=1)
-    // cases via kvHead = qHead / headsPerKvHead indexing.
-    // For FLOAT32: kernel's FP32 dot products match cuBLAS SGEMV (no TensorCore benefit).
-    // For HALF: single kernel avoids permute D2D copies that dominate decode latency.
+    // Rank-4 GQA prefill fast path with required auxiliary outputs. The op's
+    // training/backward contract materializes both logits and softmax scores, so
+    // use those arrays as the kernel's intermediates and keep Q/K/V in BSHD.
+    // Unusual auxiliary or bias layouts fall through to the general workspace path.
+    bool directAuxLayout =
+        needScores && needLogits
+        && attentionScores->rankOf() == 4
+        && attentionLogits->rankOf() == 4
+        && attentionScores->sizeAt(0) == batch
+        && attentionScores->sizeAt(1) == numHeads
+        && attentionScores->sizeAt(2) == seqLenQ
+        && attentionScores->sizeAt(3) == seqLenKV
+        && attentionLogits->sizeAt(0) == batch
+        && attentionLogits->sizeAt(1) == numHeads
+        && attentionLogits->sizeAt(2) == seqLenQ
+        && attentionLogits->sizeAt(3) == seqLenKV
+        && attentionScores->dataType() == query->dataType()
+        && attentionLogits->dataType() == query->dataType()
+        && output->dataType() == query->dataType()
+        && key->dataType() == query->dataType()
+        && value->dataType() == query->dataType();
+
+    bool directBiasLayout = !hasAttentionBias;
+    if (hasAttentionBias && attentionBias->dataType() == query->dataType()) {
+      const int biasRank = attentionBias->rankOf();
+      if (biasRank == 4) {
+        directBiasLayout =
+            (attentionBias->sizeAt(0) == 1 || attentionBias->sizeAt(0) == batch)
+            && (attentionBias->sizeAt(1) == 1 || attentionBias->sizeAt(1) == numHeads)
+            && (attentionBias->sizeAt(2) == 1 || attentionBias->sizeAt(2) == seqLenQ)
+            && (attentionBias->sizeAt(3) == 1 || attentionBias->sizeAt(3) == seqLenKV);
+      } else if (biasRank == 3) {
+        directBiasLayout =
+            (attentionBias->sizeAt(0) == 1 || attentionBias->sizeAt(0) == batch)
+            && (attentionBias->sizeAt(1) == 1 || attentionBias->sizeAt(1) == seqLenQ)
+            && (attentionBias->sizeAt(2) == 1 || attentionBias->sizeAt(2) == seqLenKV);
+      } else if (biasRank == 2) {
+        directBiasLayout =
+            (attentionBias->sizeAt(0) == 1 || attentionBias->sizeAt(0) == seqLenQ)
+            && (attentionBias->sizeAt(1) == 1 || attentionBias->sizeAt(1) == seqLenKV);
+      }
+    }
+
+    if (DSP_DIAG_ENABLED(KV_CACHE)) {
+      DSP_DIAG(KV_CACHE,
+               "fa4d_gqa_path qSeq=%lld kvSeq=%lld qHeads=%lld kvHeads=%lld hpk=%d "
+               "supported=%d scores=%d logits=%d aux=%d bias=%d hasCurrent=%d currentLayout=%d "
+               "currentKRank=%d currentKSeq=%lld currentKHeads=%lld currentKDim=%lld",
+               (long long)seqLenQ, (long long)seqLenKV,
+               (long long)numHeads, (long long)numKvHeads, headsPerKvHead,
+               supportedType ? 1 : 0, needScores ? 1 : 0, needLogits ? 1 : 0,
+               directAuxLayout ? 1 : 0, directBiasLayout ? 1 : 0,
+               hasCurrentWindow ? 1 : 0, directCurrentWindowLayout ? 1 : 0,
+               config.currentKeyWindow != nullptr ? config.currentKeyWindow->rankOf() : -1,
+               config.currentKeyWindow != nullptr && config.currentKeyWindow->rankOf() > 1
+                   ? (long long)config.currentKeyWindow->sizeAt(1) : -1LL,
+               config.currentKeyWindow != nullptr && config.currentKeyWindow->rankOf() > 2
+                   ? (long long)config.currentKeyWindow->sizeAt(2) : -1LL,
+               config.currentKeyWindow != nullptr && config.currentKeyWindow->rankOf() > 3
+                   ? (long long)config.currentKeyWindow->sizeAt(3) : -1LL);
+    }
+
+    // Keep scalar decode and multi-row target verification on one reduction path.
+    // A distinct scalar fallback introduces small per-layer deltas that can amplify
+    // across a deep recurrent decode and violate speculative losslessness.
+    if (supportedType && validGqaLayout && headsPerKvHead > 1
+        && directAuxLayout && directBiasLayout && directCurrentWindowLayout) {
+      fusedGQAAttentionCudaWithScores(
+          query, key, value, output, attentionLogits, attentionScores,
+          scale, config.isCausal, context,
+          hasAttentionBias ? attentionBias : nullptr,
+          config.currentKeyWindow, config.currentValueWindow,
+          config.currentKvPosition);
+      if (softmaxLse != nullptr) softmaxLse->nullify();
+      return;
+    }
+
+    // Direct online-softmax path: one block per (batch, q-head, query-row).
+    // Decode remains on its existing output-only kernel, while multi-row GQA uses
+    // the same reduction order without materializing repeated K/V heads.
     bool isDecode = (seqLenQ == 1);
-    if (supportedType && isDecode && !needScores && !needLogits) {
-      fusedGQADecodeCuda(query, key, value, output, scale, context,
-                         hasAttentionBias ? attentionBias : nullptr);
+    bool directKernelTypes =
+        output->dataType() == query->dataType()
+        && key->dataType() == query->dataType()
+        && value->dataType() == query->dataType();
+    bool directGqaWindow =
+        seqLenQ > 1 && validGqaLayout && headsPerKvHead > 1
+        && directKernelTypes && directBiasLayout && directCurrentWindowLayout;
+    if (supportedType && ((isDecode && directCurrentWindowLayout) || directGqaWindow)
+        && !needScores && !needLogits) {
+      fusedGQADecodeCuda(
+          query, key, value, output, scale, config.isCausal,
+          context, hasAttentionBias ? attentionBias : nullptr,
+          config.currentKeyWindow, config.currentValueWindow,
+          config.currentKvPosition);
       if (softmaxLse != nullptr) softmaxLse->nullify();
       return;
     }
@@ -490,17 +604,28 @@ void FlashAttentionHelper::forward4D(
       //  The fused CUDA kernel templates on query dtype (float32/float64/half).
       // If the bias is a different dtype (e.g. LONG from ONNX mask), we MUST cast it
       // to match the query type, otherwise the kernel reads raw bytes as wrong type.
+      //
+      // CAPTURE SAFETY: the cast/broadcast intermediates MUST live in the persistent
+      // AttentionWorkspace, never in call-local temporaries. This helper's kernels are
+      // captured into CUDA graphs during warmup and replayed every decode step WITHOUT
+      // re-running this host code — a call-local temp is freed after capture while the
+      // captured broadcast + attention kernels keep reading/writing its address on every
+      // replay. As the freed block gets reused, the effective bias decays to garbage and
+      // masked columns leak into attention (progressive logits corruption from the first
+      // replayed step). Workspace buffers keep a stable address across steps by design.
       NDArray* biasFlat = nullptr;
       std::unique_ptr<NDArray> biasReshapedOwner;
-      std::unique_ptr<NDArray> biasBroadcastOwner;
-      std::unique_ptr<NDArray> biasCastOwner;
       if (hasAttentionBias) {
         NDArray* biasToUse = attentionBias;
 
         // Cast bias to query dtype if mismatched (LONG->FLOAT32 is common for ONNX masks)
         if (attentionBias->dataType() != query->dataType()) {
-          biasCastOwner.reset(attentionBias->cast(query->dataType()));
-          biasToUse = biasCastOwner.get();
+          std::vector<LongType> biasShapeVec(
+              attentionBias->shapeOf(), attentionBias->shapeOf() + attentionBias->rankOf());
+          NDArray* biasCastBuf = workspace->getBuffer(
+              "forward4d_biasCast", biasShapeVec, query->dataType(), context);
+          biasCastBuf->assign(attentionBias);
+          biasToUse = biasCastBuf;
         }
 
         auto biasElements = biasToUse->lengthOf();
@@ -508,17 +633,20 @@ void FlashAttentionHelper::forward4D(
 
         if (biasElements == targetElements) {
           // Direct reshape: [batch, numHeads, seqQ, seqKV] -> [batch*numHeads, seqQ, seqKV]
+          // (view of the live bias buffer — the view object is call-local but the
+          // captured kernels hold the underlying buffer address, which stays live)
           std::vector<LongType> biasShape3D = {batch * numHeads, seqLenQ, seqLenKV};
           biasReshapedOwner.reset(biasToUse->reshape('c', biasShape3D, false));
           biasFlat = biasReshapedOwner.get();
         } else {
           // Bias needs broadcasting (e.g. [1,1,1,seqKV] -> [batch,numHeads,seqQ,seqKV])
           std::vector<LongType> targetShape4D = {batch, numHeads, seqLenQ, seqLenKV};
-          biasBroadcastOwner.reset(new NDArray('c', targetShape4D, query->dataType(), context));
-          biasToUse->applyTrueBroadcast(BroadcastOpsTuple::Assign(), biasBroadcastOwner.get(),
-                                            biasBroadcastOwner.get(), false);
+          NDArray* biasBcastBuf = workspace->getBuffer(
+              "forward4d_biasBcast", targetShape4D, query->dataType(), context);
+          biasToUse->applyTrueBroadcast(BroadcastOpsTuple::Assign(), biasBcastBuf,
+                                            biasBcastBuf, false);
           std::vector<LongType> biasShape3D = {batch * numHeads, seqLenQ, seqLenKV};
-          biasReshapedOwner.reset(biasBroadcastOwner->reshape('c', biasShape3D, false));
+          biasReshapedOwner.reset(biasBcastBuf->reshape('c', biasShape3D, false));
           biasFlat = biasReshapedOwner.get();
         }
       }
@@ -548,7 +676,7 @@ void FlashAttentionHelper::forward4D(
     }
   }
 
-  if (!sd::graph::dspIsCudaBuild() && seqLenQ == 1 && numKvHeads > 0 && numHeads % numKvHeads == 0) {
+  if (sd::graph::dspIsHostBuild() && seqLenQ == 1 && numKvHeads > 0 && numHeads % numKvHeads == 0) {
     BUILD_SINGLE_SELECTOR(query->dataType(), cpuDecode4D_,
                           (query, key, value, output, scale, attentionBias,
                            attentionScores, attentionLogits),

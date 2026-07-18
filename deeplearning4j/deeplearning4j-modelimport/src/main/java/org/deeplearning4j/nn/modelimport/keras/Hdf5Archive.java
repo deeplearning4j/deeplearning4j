@@ -233,27 +233,37 @@ public class Hdf5Archive implements Closeable {
             throws UnsupportedKerasConfigurationException {
         synchronized (Hdf5Archive.LOCK_OBJECT) {
             DataSet dataset = fileGroup.openDataSet(datasetName);
-            DataSpace space = dataset.getSpace();
-            int nbDims = space.getSimpleExtentNdims();
-            long[] dims = new long[nbDims];
-            space.getSimpleExtentDims(dims);
-            if (nbDims < 1 || nbDims > 5) {
-                throw new UnsupportedKerasConfigurationException("Cannot import weights with rank " + nbDims);
+            DataSpace space = null;
+            try {
+                space = dataset.getSpace();
+                int nbDims = space.getSimpleExtentNdims();
+                long[] dims = new long[nbDims];
+                space.getSimpleExtentDims(dims);
+                if (nbDims < 1 || nbDims > 5) {
+                    throw new UnsupportedKerasConfigurationException("Cannot import weights with rank " + nbDims);
+                }
+                int totalLength = 1;
+                int[] intDims = new int[nbDims];
+                for (int i = 0; i < nbDims; i++) {
+                    intDims[i] = (int) dims[i];
+                    totalLength *= intDims[i];
+                }
+                float[] dataBuffer = new float[totalLength];
+                FloatPointer fp = new FloatPointer(dataBuffer);
+                try {
+                    dataset.read(fp, dataType);
+                    fp.get(dataBuffer);
+                } finally {
+                    fp.deallocate();
+                }
+                INDArray data = Nd4j.create(dataBuffer, intDims, 'c');
+                return data;
+            } finally {
+                if (space != null) {
+                    space.deallocate();
+                }
+                dataset.deallocate();
             }
-            int totalLength = 1;
-            int[] intDims = new int[nbDims];
-            for (int i = 0; i < nbDims; i++) {
-                intDims[i] = (int) dims[i];
-                totalLength *= intDims[i];
-            }
-            float[] dataBuffer = new float[totalLength];
-            FloatPointer fp = new FloatPointer(dataBuffer);
-            dataset.read(fp, dataType);
-            fp.get(dataBuffer);
-            INDArray data = Nd4j.create(dataBuffer, intDims, 'c');
-            space.deallocate();
-            dataset.deallocate();
-            return data;
         }
     }
 
@@ -286,39 +296,46 @@ public class Hdf5Archive implements Closeable {
     private String readAttributeAsJson(Attribute attribute) throws UnsupportedKerasConfigurationException {
         synchronized (Hdf5Archive.LOCK_OBJECT) {
             VarLenType vl = attribute.getVarLenType();
-            int currBufferLength = 2048;
-            String s;
-            /* TODO: find a less hacky way to do this.
-             * Reading variable length strings (from attributes) is a giant
-             * pain. There does not appear to be any way to determine the
-             * length of the string in advance, so we use a hack: choose a
-             * buffer size and read the config. If Jackson fails to parse
-             * it, then we must not have read the entire config. Increase
-             * buffer and repeat.
-             */
-            while (true) {
-                byte[] attrBuffer = new byte[currBufferLength];
-                BytePointer attrPointer = new BytePointer(currBufferLength);
-                attribute.read(vl, attrPointer);
-                attrPointer.get(attrBuffer);
-                s = new String(attrBuffer);
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY);
-                try {
-                    mapper.readTree(s);
-                    break;
-                } catch (IOException e) {
-                    //OK - we don't know how long the buffer needs to be, so we'll try again with larger buffer
-                }
+            try {
+                int currBufferLength = 2048;
+                String s;
+                /* TODO: find a less hacky way to do this.
+                 * Reading variable length strings (from attributes) is a giant
+                 * pain. There does not appear to be any way to determine the
+                 * length of the string in advance, so we use a hack: choose a
+                 * buffer size and read the config. If Jackson fails to parse
+                 * it, then we must not have read the entire config. Increase
+                 * buffer and repeat.
+                 */
+                while (true) {
+                    byte[] attrBuffer = new byte[currBufferLength];
+                    BytePointer attrPointer = new BytePointer(currBufferLength);
+                    try {
+                        attribute.read(vl, attrPointer);
+                        attrPointer.get(attrBuffer);
+                    } finally {
+                        attrPointer.deallocate();
+                    }
+                    s = new String(attrBuffer);
+                    ObjectMapper mapper = new ObjectMapper();
+                    mapper.enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY);
+                    try {
+                        mapper.readTree(s);
+                        break;
+                    } catch (IOException e) {
+                        //OK - we don't know how long the buffer needs to be, so we'll try again with larger buffer
+                    }
 
-                if(currBufferLength == MAX_BUFFER_SIZE_BYTES){
-                    throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute: size exceeds " + currBufferLength + " bytes");
-                } else {
-                    currBufferLength = (int)Math.min(MAX_BUFFER_SIZE_BYTES, currBufferLength * 4L);
+                    if(currBufferLength == MAX_BUFFER_SIZE_BYTES){
+                        throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute: size exceeds " + currBufferLength + " bytes");
+                    } else {
+                        currBufferLength = (int)Math.min(MAX_BUFFER_SIZE_BYTES, currBufferLength * 4L);
+                    }
                 }
+                return s;
+            } finally {
+                vl.deallocate();
             }
-            vl.deallocate();
-            return s;
         }
     }
 
@@ -332,34 +349,39 @@ public class Hdf5Archive implements Closeable {
     private String readAttributeAsString(Attribute attribute) throws UnsupportedKerasConfigurationException {
         synchronized (Hdf5Archive.LOCK_OBJECT) {
             VarLenType vl = attribute.getVarLenType();
-            int bufferSizeMult = 1;
-            String s = null;
-            /* TODO: find a less hacky way to do this.
-             * Reading variable length strings (from attributes) is a giant
-             * pain. There does not appear to be any way to determine the
-             * length of the string in advance, so we use a hack: choose a
-             * buffer size and read the config, increase buffer and repeat
-             * until the buffer ends with \u0000
-             */
-            while (true) {
-                byte[] attrBuffer = new byte[bufferSizeMult * 2000];
-                BytePointer attrPointer = new BytePointer(attrBuffer);
-                attribute.read(vl, attrPointer);
-                attrPointer.get(attrBuffer);
-                s = new String(attrBuffer);
+            try {
+                int bufferSizeMult = 1;
+                String s = null;
+                /* TODO: find a less hacky way to do this.
+                 * Reading variable length strings (from attributes) is a giant
+                 * pain. There does not appear to be any way to determine the
+                 * length of the string in advance, so we use a hack: choose a
+                 * buffer size and read the config, increase buffer and repeat
+                 * until the buffer ends with \u0000
+                 */
+                while (true) {
+                    byte[] attrBuffer = new byte[bufferSizeMult * 2000];
+                    BytePointer attrPointer = new BytePointer(attrBuffer);
+                    try {
+                        attribute.read(vl, attrPointer);
+                        attrPointer.get(attrBuffer);
+                    } finally {
+                        attrPointer.deallocate();
+                    }
+                    s = new String(attrBuffer);
 
-                if (s.endsWith("\u0000")) {
-                    s = s.replace("\u0000", "");
-                    break;
-                }
+                    if (s.endsWith("\u0000")) {
+                        return s.replace("\u0000", "");
+                    }
 
-                bufferSizeMult++;
-                if (bufferSizeMult > 1000) {
-                    throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
+                    bufferSizeMult++;
+                    if (bufferSizeMult > 1000) {
+                        throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
+                    }
                 }
+            } finally {
+                vl.deallocate();
             }
-            vl.deallocate();
-            return s;
         }
     }
 
@@ -392,12 +414,19 @@ public class Hdf5Archive implements Closeable {
             throws UnsupportedKerasConfigurationException {
         synchronized (Hdf5Archive.LOCK_OBJECT) {
             VarLenType vl = attribute.getVarLenType();
-            byte[] attrBuffer = new byte[bufferSize];
-            BytePointer attrPointer = new BytePointer(attrBuffer);
-            attribute.read(vl, attrPointer);
-            attrPointer.get(attrBuffer);
-            vl.deallocate();
-            return new String(attrBuffer);
+            try {
+                byte[] attrBuffer = new byte[bufferSize];
+                BytePointer attrPointer = new BytePointer(attrBuffer);
+                try {
+                    attribute.read(vl, attrPointer);
+                    attrPointer.get(attrBuffer);
+                } finally {
+                    attrPointer.deallocate();
+                }
+                return new String(attrBuffer);
+            } finally {
+                vl.deallocate();
+            }
         }
     }
 }

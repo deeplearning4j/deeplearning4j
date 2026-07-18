@@ -30,6 +30,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 Status LegacyBroadcastOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
@@ -118,5 +119,6 @@ ShapeList *LegacyBroadcastOp::calculateOutputShape(ShapeList *inputShape, Contex
 
   return SHAPELIST(CONSTANT(newShape));
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

@@ -23,10 +23,12 @@ package org.eclipse.deeplearning4j.llm.generation;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -58,6 +60,14 @@ class InGraphKvState implements AutoCloseable {
     // ── Retained native buffers (freed only in close()) ──────────────────────────────────────────
     Map<String, INDArray> staticKvBuffers;
     Map<String, INDArray> recurrentStateBuffers;
+
+    /**
+     * Sources of asynchronous recurrent-state copies that must remain alive until a later
+     * host-visible decode result establishes the natural completion boundary. Closing a large donor
+     * immediately after {@code assign()} can let the CUDA allocator recycle its storage while the D2D
+     * copy is still in flight.
+     */
+    private final List<INDArray> recurrentCopyDonors = new ArrayList<>();
 
     /**
      * QUANTIZED-strategy buffers: INT8-compressed KV data.
@@ -111,6 +121,28 @@ class InGraphKvState implements AutoCloseable {
      */
     Map<String, INDArray> prefillInputMap;
 
+    // ── Bundled Qwen3.5 MTP predictor state ─────────────────────────────────────────────────────
+    /** Independent predictor KV cache. The target and predictor never share mutable cache storage. */
+    Map<String, INDArray> mtpKvBuffers;
+    /** Stable-address MTP prefill inputs retained for fixed-buffer plan replay. */
+    Map<String, INDArray> mtpPrefillInputMap;
+    /** Scalar decode inputs retained at stable addresses for the native MTP loop. */
+    INDArray mtpInputIds;
+    INDArray mtpTargetHiddenStates;
+    INDArray mtpCausalMask;
+    INDArray mtpPositionOffset;
+    INDArray mtpCachePosition;
+
+    /**
+     * MTP uses an isolated SameDiff inference session so its scalar plan can coexist with the
+     * target model's W-wide verification plan while both branches share immutable graph weights.
+     * Unlike {@link #executor}, this session is owned by this state and is cleared in {@link #close()}.
+     */
+    InferenceSession mtpSession;
+    DynamicShapePlanExecutor mtpExecutor;
+    Pointer mtpPlanHandle;
+    Pointer mtpContextHandle;
+
     // ── Frozen plan handles (owned by the decoder's InferenceSession — NOT closed here) ──────────
     DynamicShapePlanExecutor executor;
     Pointer planHandle;
@@ -121,6 +153,7 @@ class InGraphKvState implements AutoCloseable {
     int causalMaskExtIdx;
     int posOffsetExtIdx;
     int cachePosExtIdx;
+    int actualSeqLenExtIdx;
     int logitsOutputIdx;
     int embeddingsExtIdx;
     int maskExtIdx;
@@ -134,6 +167,19 @@ class InGraphKvState implements AutoCloseable {
     int numPlanExternalInputs;
     int numPlanOutputs;
     int numKvPairs;
+
+    /** Target-plan output carrying pre-final-norm hidden rows used to refresh the MTP state. */
+    int targetHiddenOutputIdx = -1;
+    int mtpInputIdsExtIdx = -1;
+    int mtpTargetHiddenExtIdx = -1;
+    int mtpCausalMaskExtIdx = -1;
+    int mtpPosOffsetExtIdx = -1;
+    int mtpCachePosExtIdx = -1;
+    int[] mtpKvInputExtIndices;
+    int mtpLogitsOutputIdx = -1;
+    int mtpHiddenOutputIdx = -1;
+    int mtpNumPlanExternalInputs;
+    int mtpNumPlanOutputs;
 
     // ── Running decode state ─────────────────────────────────────────────────────────────────────
     /** Absolute position at which the next-fed token ({@link #lastGeneratedToken}) is written: {@code P + G - 1}. */
@@ -209,6 +255,17 @@ class InGraphKvState implements AutoCloseable {
         return rotatingSlotMap != null;
     }
 
+    /** Retain ownership of queued-copy sources until the next natural decode completion boundary. */
+    void retainRecurrentCopyDonors(List<INDArray> donors) {
+        if (donors != null && !donors.isEmpty()) recurrentCopyDonors.addAll(donors);
+    }
+
+    /** Release queued-copy sources only after their consumer has produced a host-visible result. */
+    void releaseRecurrentCopyDonors() {
+        for (INDArray donor : recurrentCopyDonors) safeClose(donor);
+        recurrentCopyDonors.clear();
+    }
+
     /**
      * Free all retained buffers exactly once. Idempotent. Does NOT touch the frozen-plan handles
      * (owned by the decoder's InferenceSession).
@@ -221,6 +278,19 @@ class InGraphKvState implements AutoCloseable {
     public void close() {
         if (closed) return;
         closed = true;
+        // Destroy the isolated predictor plan before releasing any external inputs it references.
+        if (mtpSession != null) {
+            try {
+                mtpSession.clearAllCaches();
+            } catch (Exception e) {
+                log.warn("[GenerationSession] error clearing isolated MTP session: {}", e.getMessage());
+            } finally {
+                mtpSession = null;
+                mtpExecutor = null;
+                mtpPlanHandle = null;
+                mtpContextHandle = null;
+            }
+        }
         // ADR 0107 §prefill invariant: V2 sessions must have freed float KV before decode.
         if (isQuantizedV2 && staticKvBuffers != null) {
             log.warn("[InGraphKvState] V2 quantized session still has non-null staticKvBuffers at close() "
@@ -231,6 +301,14 @@ class InGraphKvState implements AutoCloseable {
         safeClose(decodeCachePosition);
         safeClose(decodeActualSequenceLength);
         safeClose(decodeCausalMask);
+        safeClose(mtpInputIds);
+        safeClose(mtpTargetHiddenStates);
+        safeClose(mtpCausalMask);
+        safeClose(mtpPositionOffset);
+        safeClose(mtpCachePosition);
+        releaseRecurrentCopyDonors();
+        closeAll(mtpKvBuffers);
+        closeAll(mtpPrefillInputMap);
         closeAll(recurrentStateBuffers);
         closeAll(staticKvBuffers);
         closeAll(quantizedKvBuffers);

@@ -33,30 +33,21 @@
 #include <graph/gpu/TritonGraphBackend.h>
 #endif
 
-// dspBuffer / dspBufferConst are always compiled (both platforms)
+#ifdef SD_CUDA
+
 namespace sd {
 namespace graph {
+namespace cuda {
 
-void* dspBuffer(NDArray* arr) {
-#ifdef SD_CUDA
-  return arr->specialBuffer();
-#else
-  return arr->buffer();
-#endif
-}
+void* dspBuffer(NDArray* arr) { return arr->specialBuffer(); }
 
 const void* dspBufferConst(const NDArray* arr) {
-#ifdef SD_CUDA
   return const_cast<NDArray*>(arr)->specialBuffer();
-#else
-  return const_cast<NDArray*>(arr)->buffer();
-#endif
 }
 
+}  // namespace cuda
 }  // namespace graph
 }  // namespace sd
-
-#ifdef SD_CUDA
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -76,6 +67,13 @@ namespace sd {
 void dspPublishThreadCompletionEvent(void* streamPtr);
 
 namespace graph {
+
+// Defined by the CUDA NativeDynamicShapePlan implementation. Keep this state in
+// the plan's namespace; the backend-specific dispatch namespace only queries it.
+extern std::unordered_map<int, void*> g_globalCaptureWorkspaceByDevice;
+extern std::mutex g_globalCaptureWorkspaceMtx;
+
+namespace cuda {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Error management
@@ -180,9 +178,11 @@ size_t dspGetDeviceTotalMemory() {
   return (err == cudaSuccess) ? totalMem : 0;
 }
 
-bool dspIsCudaBuild() {
-  return true;
-}
+bool dspHasDeviceMemory() { return true; }
+
+bool dspIsCudaBuild() { return true; }
+
+bool dspIsHostBuild() { return false; }
 
 void dspFreeWorkspaceOnPool(void* ptr) {
   if (ptr != nullptr) {
@@ -193,13 +193,10 @@ void dspFreeWorkspaceOnPool(void* ptr) {
 
 // Multi-GPU: the capture workspace is per-device (NativeDynamicShapePlan_gpubackend.cu). A pointer
 // is a "global capture workspace" if it matches ANY device's entry.
-extern std::unordered_map<int, void*> g_globalCaptureWorkspaceByDevice;
-extern std::mutex g_globalCaptureWorkspaceMtx;
-
 bool dspIsGlobalCaptureWorkspace(void* ptr) {
   if (ptr == nullptr) return false;
-  std::lock_guard<std::mutex> lk(g_globalCaptureWorkspaceMtx);
-  for (const auto& kv : g_globalCaptureWorkspaceByDevice) {
+  std::lock_guard<std::mutex> lk(::sd::graph::g_globalCaptureWorkspaceMtx);
+  for (const auto& kv : ::sd::graph::g_globalCaptureWorkspaceByDevice) {
     if (kv.second == ptr) return true;
   }
   return false;
@@ -330,6 +327,7 @@ GraphBackend* dspTritonGetBackendIfAvailable() {
 #endif
 }
 
+}  // namespace cuda
 }  // namespace graph
 }  // namespace sd
 

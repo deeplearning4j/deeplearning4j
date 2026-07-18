@@ -59,6 +59,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.impl.shape.CreateView;
+import org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
@@ -3640,21 +3641,33 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Get input arrays for potential view creation
         List<INDArray> inputArrays = opContext.getInputArrays();
 
-        // Special handling for reshape: check if view is possible
-        boolean isReshapeOp = "reshape".equals(customOp.opName()) || "reshape_no_copy".equals(customOp.opName());
-        boolean reshapeViewPossible = false; // DISABLED: view optimization causes use-after-free on CPU (shared buffer released while view alive)
+        // Special handling for reshape: check if view is possible.
+        // reshape and reshape_no_copy encode their order in different iArg positions.
+        boolean isReshapeNoCopyOp = "reshape_no_copy".equals(customOp.opName());
+        boolean isReshapeOp = "reshape".equals(customOp.opName()) || isReshapeNoCopyOp;
+        boolean reshapeViewPossible = false;
         char reshapeOrder = 'c';
         if (isReshapeOp && inputArrays != null && !inputArrays.isEmpty() && outShape.size() == 1) {
             if (TIMING_ENABLED) timing.reshapeTotal++;
             INDArray reshapeInput = inputArrays.get(0);
             if (reshapeInput != null && !reshapeInput.isEmpty()) {
                 long[] iArgs = customOp.iArgs();
-                // Determine order: from iArgs if available, else default to 'c'
+                // Determine order from the op-specific iArg contract, defaulting to C order
+                // for shape-tensor variants that do not carry an order marker.
                 if (iArgs != null && iArgs.length > 0) {
-                    // First iArg is -order (negative of 'c' or 'f')
-                    reshapeOrder = (char) -iArgs[0];
-                } else {
-                    reshapeOrder = 'c'; // Default to C order for ONNX reshape with shape tensor
+                    if (isReshapeNoCopyOp) {
+                        long marker = iArgs[iArgs.length - 1];
+                        if (marker == ReshapeNoCopy.RESHAPE_NO_COPY_C_ORDER_MARKER) {
+                            reshapeOrder = 'c';
+                        } else if (marker == ReshapeNoCopy.RESHAPE_NO_COPY_F_ORDER_MARKER) {
+                            reshapeOrder = 'f';
+                        } else {
+                            throw new ND4JIllegalStateException("Invalid reshape_no_copy order marker: " + marker);
+                        }
+                    } else {
+                        // reshape stores -order (negative of 'c' or 'f') as its first iArg.
+                        reshapeOrder = (char) -iArgs[0];
+                    }
                 }
                 boolean isFOrder = (reshapeOrder == 'f');
                 long[] targetShape = Shape.shape(outShape.get(0).asLong());
@@ -3691,10 +3704,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
                     // Create output as a view sharing the input's buffer at the input's offset
                     outputArrays[i] = Nd4j.create(input.data(), actualShape, strides, input.offset(), ordering, true);
-                } else if (Shape.isEmpty(shapeInfo)) {
-                    // Empty array case: use allocateFromDescriptor to preserve ARRAY_EMPTY flag
+                } else if (Shape.isEmpty(shapeInfo) || Shape.order(shapeInfo) != 'c') {
+                    // Preserve descriptor-only layout metadata that shape-only allocation drops:
+                    // ARRAY_EMPTY for empty arrays and F-order strides/order for non-C outputs.
                     boolean isOutput = i < outputNames.size() && allRequired.contains(outputNames.get(i));
-                    outputArrays[i] = mmgr.allocateFromDescriptor(isOutput, shapeBuffer);
+                    outputArrays[i] = mmgr.allocateFromDescriptor(isOutput, shapeBuffer, requiresZeroed);
                 } else {
                     // Standard case: allocate new array (including empty arrays with 0 dimensions)
                     DataType dt = Shape.dataType(shapeInfo);

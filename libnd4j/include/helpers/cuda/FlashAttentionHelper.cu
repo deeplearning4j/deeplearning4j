@@ -772,6 +772,264 @@ BUILD_SINGLE_TEMPLATE(void fusedAttention3DWithScoresLauncher,
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////////
+// Fused rank-4 GQA attention with materialized logits and scores.
+//
+// Inputs stay in BSHD layout. Each block owns one (batch, query head,
+// query position) row and maps that query head to its shared KV head via
+// kvHead = qHead / headsPerKvHead. This removes the Q/K/V permute copies and
+// the headsPerKvHead-wide K/V materialization used by the workspace fallback.
+//////////////////////////////////////////////////////////////////////////////
+struct GQAAttentionStrides4D {
+  LongType q[4];
+  LongType k[4];
+  LongType v[4];
+  LongType currentK[4];
+  LongType currentV[4];
+  LongType o[4];
+  LongType logits[4];
+  LongType scores[4];
+  LongType bias[4];
+};
+
+template <typename T>
+SD_KERNEL __launch_bounds__(256, 2) void fusedGQAAttentionWithScores4DKernel(
+    const T* __restrict__ query,
+    const T* __restrict__ key,
+    const T* __restrict__ value,
+    const T* __restrict__ currentKeyWindow,
+    const T* __restrict__ currentValueWindow,
+    const LongType* __restrict__ currentKvPosition,
+    LongType currentSeq,
+    const T* __restrict__ attentionBias,
+    T* __restrict__ output,
+    T* __restrict__ attentionLogits,
+    T* __restrict__ attentionScores,
+    LongType batch,
+    LongType seqQ,
+    LongType seqKV,
+    LongType numQHeads,
+    LongType numKvHeads,
+    LongType headDim,
+    LongType headsPerKvHead,
+    double scale,
+    bool isCausal,
+    GQAAttentionStrides4D strides) {
+  using AccT = typename FlashAccType<T>::type;
+
+  const LongType queryIdx = blockIdx.x;
+  const LongType qHead = blockIdx.y;
+  const LongType batchIdx = blockIdx.z;
+  if (batchIdx >= batch || qHead >= numQHeads || queryIdx >= seqQ) return;
+
+  const LongType kvHead = qHead / headsPerKvHead;
+  if (kvHead >= numKvHeads) return;
+
+  const T* qRow = query
+      + batchIdx * strides.q[0]
+      + queryIdx * strides.q[1]
+      + qHead * strides.q[2];
+  const T* kBase = key
+      + batchIdx * strides.k[0]
+      + kvHead * strides.k[2];
+  const T* vBase = value
+      + batchIdx * strides.v[0]
+      + kvHead * strides.v[2];
+  const bool hasCurrentWindow =
+      currentKeyWindow != nullptr && currentValueWindow != nullptr
+      && currentKvPosition != nullptr && currentSeq > 0;
+  const LongType currentStart = hasCurrentWindow ? currentKvPosition[0] : -1;
+  const bool validCurrentWindow =
+      hasCurrentWindow && currentStart >= 0 && currentStart < seqKV;
+  const T* currentKBase = validCurrentWindow
+      ? currentKeyWindow
+          + batchIdx * strides.currentK[0]
+          + kvHead * strides.currentK[2]
+      : nullptr;
+  const T* currentVBase = validCurrentWindow
+      ? currentValueWindow
+          + batchIdx * strides.currentV[0]
+          + kvHead * strides.currentV[2]
+      : nullptr;
+  T* outRow = output
+      + batchIdx * strides.o[0]
+      + queryIdx * strides.o[1]
+      + qHead * strides.o[2];
+  T* logitsRow = attentionLogits
+      + batchIdx * strides.logits[0]
+      + qHead * strides.logits[1]
+      + queryIdx * strides.logits[2];
+  T* scoresRow = attentionScores
+      + batchIdx * strides.scores[0]
+      + qHead * strides.scores[1]
+      + queryIdx * strides.scores[2];
+
+  __shared__ AccT warpMaxes[32];
+  __shared__ AccT warpSums[32];
+  __shared__ AccT globalMax;
+  __shared__ AccT globalSum;
+
+  const LongType causalOffset = seqKV > seqQ ? seqKV - seqQ : 0;
+  const LongType queryPosition = validCurrentWindow
+      ? currentStart + queryIdx
+      : queryIdx + causalOffset;
+  const LongType maxKV = isCausal ? min(queryPosition + 1, seqKV) : seqKV;
+
+  AccT threadMax = -DataTypeUtils::infOrMax<AccT>();
+  for (LongType kv = threadIdx.x; kv < seqKV; kv += blockDim.x) {
+    AccT logit = -DataTypeUtils::infOrMax<AccT>();
+    if (kv < maxKV) {
+      const LongType currentIndex = kv - currentStart;
+      const bool useCurrent =
+          validCurrentWindow && currentIndex >= 0 && currentIndex < currentSeq;
+      const T* kRow = useCurrent
+          ? currentKBase + currentIndex * strides.currentK[1]
+          : kBase + kv * strides.k[1];
+      const LongType kDimStride =
+          useCurrent ? strides.currentK[3] : strides.k[3];
+      logit = static_cast<AccT>(0);
+      for (LongType d = 0; d < headDim; d++) {
+        logit += static_cast<AccT>(qRow[d * strides.q[3]])
+            * static_cast<AccT>(kRow[d * kDimStride]);
+      }
+      logit *= static_cast<AccT>(scale);
+      if (attentionBias != nullptr) {
+        const LongType biasOffset =
+            batchIdx * strides.bias[0]
+            + qHead * strides.bias[1]
+            + queryIdx * strides.bias[2]
+            + kv * strides.bias[3];
+        logit += static_cast<AccT>(attentionBias[biasOffset]);
+      }
+    }
+    logitsRow[kv * strides.logits[3]] = static_cast<T>(logit);
+    threadMax = sd::math::sd_max<AccT>(threadMax, logit);
+  }
+
+  for (int offset = WARP_SIZE / 2; offset > 0; offset >>= 1) {
+    threadMax = sd::math::sd_max<AccT>(
+        threadMax, __shfl_down_sync(0xffffffff, threadMax, offset));
+  }
+  const int lane = threadIdx.x % WARP_SIZE;
+  const int warp = threadIdx.x / WARP_SIZE;
+  const int warpCount = (blockDim.x + WARP_SIZE - 1) / WARP_SIZE;
+  if (lane == 0) warpMaxes[warp] = threadMax;
+  __syncthreads();
+
+  if (warp == 0) {
+    AccT blockMax = lane < warpCount
+        ? warpMaxes[lane]
+        : -DataTypeUtils::infOrMax<AccT>();
+    for (int offset = WARP_SIZE / 2; offset > 0; offset >>= 1) {
+      blockMax = sd::math::sd_max<AccT>(
+          blockMax, __shfl_down_sync(0xffffffff, blockMax, offset));
+    }
+    if (lane == 0) globalMax = blockMax;
+  }
+  __syncthreads();
+
+  AccT threadSum = static_cast<AccT>(0);
+  for (LongType kv = threadIdx.x; kv < seqKV; kv += blockDim.x) {
+    const AccT logit = static_cast<AccT>(
+        logitsRow[kv * strides.logits[3]]);
+    const AccT probability = kv < maxKV
+        ? flashExp<AccT>(logit - globalMax)
+        : static_cast<AccT>(0);
+    scoresRow[kv * strides.scores[3]] = static_cast<T>(probability);
+    threadSum += probability;
+  }
+
+  for (int offset = WARP_SIZE / 2; offset > 0; offset >>= 1) {
+    threadSum += __shfl_down_sync(0xffffffff, threadSum, offset);
+  }
+  if (lane == 0) warpSums[warp] = threadSum;
+  __syncthreads();
+
+  if (warp == 0) {
+    AccT blockSum = lane < warpCount
+        ? warpSums[lane]
+        : static_cast<AccT>(0);
+    for (int offset = WARP_SIZE / 2; offset > 0; offset >>= 1) {
+      blockSum += __shfl_down_sync(0xffffffff, blockSum, offset);
+    }
+    if (lane == 0) globalSum = blockSum;
+  }
+  __syncthreads();
+
+  const AccT invSum = globalSum > static_cast<AccT>(0)
+      ? static_cast<AccT>(1) / globalSum
+      : static_cast<AccT>(0);
+  for (LongType kv = threadIdx.x; kv < seqKV; kv += blockDim.x) {
+    const LongType scoreOffset = kv * strides.scores[3];
+    scoresRow[scoreOffset] = static_cast<T>(
+        static_cast<AccT>(scoresRow[scoreOffset]) * invSum);
+  }
+  __syncthreads();
+
+  for (LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
+    AccT accumulated = static_cast<AccT>(0);
+    for (LongType kv = 0; kv < seqKV; kv++) {
+      const AccT probability = static_cast<AccT>(
+          scoresRow[kv * strides.scores[3]]);
+      const LongType currentIndex = kv - currentStart;
+      const bool useCurrent =
+          validCurrentWindow && currentIndex >= 0 && currentIndex < currentSeq;
+      const T* vRow = useCurrent
+          ? currentVBase + currentIndex * strides.currentV[1]
+          : vBase + kv * strides.v[1];
+      const LongType vDimStride =
+          useCurrent ? strides.currentV[3] : strides.v[3];
+      accumulated += probability * static_cast<AccT>(vRow[d * vDimStride]);
+    }
+    outRow[d * strides.o[3]] = static_cast<T>(accumulated);
+  }
+}
+
+template <typename T>
+static void fusedGQAAttentionWithScores4DLauncher(
+    const cudaStream_t* stream,
+    const void* query,
+    const void* key,
+    const void* value,
+    const void* currentKeyWindow,
+    const void* currentValueWindow,
+    const void* currentKvPosition,
+    LongType currentSeq,
+    const void* attentionBias,
+    void* output,
+    void* attentionLogits,
+    void* attentionScores,
+    LongType batch,
+    LongType seqQ,
+    LongType seqKV,
+    LongType numQHeads,
+    LongType numKvHeads,
+    LongType headDim,
+    LongType headsPerKvHead,
+    double scale,
+    bool isCausal,
+    GQAAttentionStrides4D strides) {
+  dim3 grid(static_cast<unsigned int>(seqQ),
+            static_cast<unsigned int>(numQHeads),
+            static_cast<unsigned int>(batch));
+  dim3 block(256);
+  fusedGQAAttentionWithScores4DKernel<T><<<grid, block, 0, *stream>>>(
+      reinterpret_cast<const T*>(query),
+      reinterpret_cast<const T*>(key),
+      reinterpret_cast<const T*>(value),
+      reinterpret_cast<const T*>(currentKeyWindow),
+      reinterpret_cast<const T*>(currentValueWindow),
+      reinterpret_cast<const LongType*>(currentKvPosition),
+      currentSeq,
+      reinterpret_cast<const T*>(attentionBias),
+      reinterpret_cast<T*>(output),
+      reinterpret_cast<T*>(attentionLogits),
+      reinterpret_cast<T*>(attentionScores),
+      batch, seqQ, seqKV, numQHeads, numKvHeads, headDim,
+      headsPerKvHead, scale, isCausal, strides);
+  DebugHelper::checkGlobalErrorCode("fusedGQAAttentionWithScores4D failed");
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // Launcher for 3D fused attention with optional attention bias
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -916,35 +1174,48 @@ void fusedAttentionCuda(
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Fused GQA decode attention kernel — 4D BSHD inputs, tiled online softmax.
-// Each block handles one (batch, qHead) pair.
-// K/V indexed via kvHead = qHead / headsPerKvHead for GQA head mapping.
-// Tiles over KV positions with online softmax + rescaling (same pattern as
-// fusedAttention3DKernel). NO atomicAdd — each thread owns output dimensions.
+// Direct GQA attention kernel — 4D BSHD inputs, tiled online softmax.
+// Each block handles one (batch, qHead, queryIdx) tuple.
+// K/V are indexed via kvHead = qHead / headsPerKvHead, so multi-row GQA
+// avoids both K/V head materialization and Q/K/V permutation round-trips.
+// NO atomicAdd — each thread owns output dimensions.
 //////////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
-   const T* __restrict__ query,      // [batch, 1, numQHeads, headDim] BSHD
+   const T* __restrict__ query,      // [batch, seqQ, numQHeads, headDim] BSHD
    const T* __restrict__ key,        // [batch, seqKV, numKvHeads, headDim] BSHD
    const T* __restrict__ value,      // [batch, seqKV, numKvHeads, headDim] BSHD
-   const T* __restrict__ attnBias,   // [batch, numQHeads, 1, seqKV] or nullptr
-   T* __restrict__ output,           // [batch, 1, numQHeads, headDim] BSHD
+   const T* __restrict__ currentKeyWindow,
+   const T* __restrict__ currentValueWindow,
+   const LongType* __restrict__ currentKvPosition,
+   const LongType currentSeq,
+   const T* __restrict__ attnBias,   // [batch, numQHeads, seqQ, seqKV] or nullptr
+   T* __restrict__ output,           // [batch, seqQ, numQHeads, headDim] BSHD
    const LongType batch,
+   const LongType seqQ,
    const LongType seqKV,
    const LongType numQHeads,
    const LongType numKvHeads,
    const LongType headDim,
    const LongType headsPerKvHead,
    const double scale,
-   // Strides for Q [batch, 1, numQHeads, headDim]
-   const LongType qStride0, const LongType qStride2, const LongType qStride3,
+   const bool isCausal,
+   // Strides for Q [batch, seqQ, numQHeads, headDim]
+   const LongType qStride0, const LongType qStride1,
+   const LongType qStride2, const LongType qStride3,
    // Strides for K [batch, seqKV, numKvHeads, headDim]
    const LongType kStride0, const LongType kStride1, const LongType kStride2, const LongType kStride3,
    // Strides for V [batch, seqKV, numKvHeads, headDim]
    const LongType vStride0, const LongType vStride1, const LongType vStride2, const LongType vStride3,
-   // Strides for output [batch, 1, numQHeads, headDim]
-   const LongType oStride0, const LongType oStride2, const LongType oStride3,
-   // Strides for bias
+   // Strides for the current K/V producer window [batch, currentSeq, numKvHeads, headDim]
+   const LongType currentKStride0, const LongType currentKStride1,
+   const LongType currentKStride2, const LongType currentKStride3,
+   const LongType currentVStride0, const LongType currentVStride1,
+   const LongType currentVStride2, const LongType currentVStride3,
+   // Strides for output [batch, seqQ, numQHeads, headDim]
+   const LongType oStride0, const LongType oStride1,
+   const LongType oStride2, const LongType oStride3,
+   // Broadcast-safe strides for bias
    const LongType biasStride0,
    const LongType biasStride1,
    const LongType biasStride2,
@@ -954,9 +1225,11 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
 
  const LongType qHead = blockIdx.x;
  const LongType batchIdx = blockIdx.y;
- if (batchIdx >= batch || qHead >= numQHeads) return;
+ const LongType queryIdx = blockIdx.z;
+ if (batchIdx >= batch || qHead >= numQHeads || queryIdx >= seqQ) return;
 
  const LongType kvHead = qHead / headsPerKvHead;
+ if (kvHead >= numKvHeads) return;
 
  // Shared memory layout: scores tile [TILE_SIZE_KV] + output accumulator [headDim]
  // in accumulator precision.
@@ -964,21 +1237,43 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
  AccT* sharedScores = reinterpret_cast<AccT*>(sharedMem);
  AccT* sharedOutput = sharedScores + TILE_SIZE_KV;
 
- // Q pointer: query[batchIdx, 0, qHead, :] — stride-based indexing
- const T* Q = query + batchIdx * qStride0 + qHead * qStride2;
+ // Q pointer: query[batchIdx, queryIdx, qHead, :] — stride-based indexing
+ const T* Q = query + batchIdx * qStride0 + queryIdx * qStride1 + qHead * qStride2;
 
  // K/V base: key[batchIdx, :, kvHead, :] — stride-based indexing
  const T* Kbase = key + batchIdx * kStride0 + kvHead * kStride2;
  const T* Vbase = value + batchIdx * vStride0 + kvHead * vStride2;
+ const bool hasCurrentWindow =
+     currentKeyWindow != nullptr && currentValueWindow != nullptr
+     && currentKvPosition != nullptr && currentSeq > 0;
+ const LongType currentStart = hasCurrentWindow ? currentKvPosition[0] : -1;
+ const bool validCurrentWindow =
+     hasCurrentWindow && currentStart >= 0 && currentStart < seqKV;
+ const T* currentKBase = validCurrentWindow
+     ? currentKeyWindow + batchIdx * currentKStride0 + kvHead * currentKStride2
+     : nullptr;
+ const T* currentVBase = validCurrentWindow
+     ? currentValueWindow + batchIdx * currentVStride0 + kvHead * currentVStride2
+     : nullptr;
 
- // Output: output[batchIdx, 0, qHead, :]
- T* O = output + batchIdx * oStride0 + qHead * oStride2;
+ // Output: output[batchIdx, queryIdx, qHead, :]
+ T* O = output + batchIdx * oStride0 + queryIdx * oStride1 + qHead * oStride2;
 
- // Bias row: attnBias[batchIdx, qHead, 0, :]
+ // Bias row: attnBias[batchIdx, qHead, queryIdx, :]
  const T* biasRow = nullptr;
  if (attnBias != nullptr) {
-   biasRow = attnBias + batchIdx * biasStride0 + qHead * biasStride1;
+   biasRow = attnBias + batchIdx * biasStride0 + qHead * biasStride1
+       + queryIdx * biasStride2;
  }
+
+ // When a cache-form op supplies the current producer window, query rows are
+ // anchored at that device-resident cache position. Otherwise retain the
+ // right-aligned semantics used by direct non-cache callers.
+ const LongType causalOffset = seqKV > seqQ ? seqKV - seqQ : 0;
+ const LongType queryPosition = validCurrentWindow
+     ? currentStart + queryIdx
+     : queryIdx + causalOffset;
+ const LongType maxKV = isCausal ? min(queryPosition + 1, seqKV) : seqKV;
 
  // Online softmax state (block-wide via shared memory)
  __shared__ AccT globalMax;
@@ -1002,20 +1297,29 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
    const int tileSize = static_cast<int>(kvEnd - kvStart);
    if (tileSize <= 0) continue;
 
-   // Step 1: Compute Q @ K^T scores for this tile + add bias
+   // Step 1: Compute Q @ K^T scores for this tile + add bias.
+   // Positions beyond this query row's causal boundary remain -inf.
    for (int k = threadIdx.x; k < tileSize; k += blockDim.x) {
      const LongType kvIdx = kvStart + k;
-     // K[batchIdx, kvIdx, kvHead, d] — use stride-based offset
-     const T* Krow = Kbase + kvIdx * kStride1;
+     AccT score = -DataTypeUtils::infOrMax<AccT>();
+     if (kvIdx < maxKV) {
+       const LongType currentIndex = kvIdx - currentStart;
+       const bool useCurrent =
+           validCurrentWindow && currentIndex >= 0 && currentIndex < currentSeq;
+       const T* Krow = useCurrent
+           ? currentKBase + currentIndex * currentKStride1
+           : Kbase + kvIdx * kStride1;
+       const LongType kDimStride = useCurrent ? currentKStride3 : kStride3;
+       score = static_cast<AccT>(0);
+       for (LongType d = 0; d < headDim; d++) {
+         score += static_cast<AccT>(Q[d * qStride3])
+             * static_cast<AccT>(Krow[d * kDimStride]);
+       }
+       score *= static_cast<AccT>(scale);
 
-     AccT score = static_cast<AccT>(0);
-     for (LongType d = 0; d < headDim; d++) {
-       score += static_cast<AccT>(Q[d * qStride3]) * static_cast<AccT>(Krow[d * kStride3]);
-     }
-     score *= static_cast<AccT>(scale);
-
-     if (biasRow != nullptr) {
-       score += static_cast<AccT>(biasRow[kvIdx * biasStride3]);
+       if (biasRow != nullptr) {
+         score += static_cast<AccT>(biasRow[kvIdx * biasStride3]);
+       }
      }
 
      sharedScores[k] = score;
@@ -1105,8 +1409,14 @@ SD_KERNEL __launch_bounds__(512, 1) void fusedGQADecodeKernel(
      AccT acc = static_cast<AccT>(0);
      for (int k = 0; k < tileSize; k++) {
        const LongType kvIdx = kvStart + k;
-       // V[batchIdx, kvIdx, kvHead, d] — use stride-based offset
-       acc += sharedScores[k] * static_cast<AccT>(Vbase[kvIdx * vStride1 + d * vStride3]);
+       const LongType currentIndex = kvIdx - currentStart;
+       const bool useCurrent =
+           validCurrentWindow && currentIndex >= 0 && currentIndex < currentSeq;
+       const T* Vrow = useCurrent
+           ? currentVBase + currentIndex * currentVStride1
+           : Vbase + kvIdx * vStride1;
+       const LongType vDimStride = useCurrent ? currentVStride3 : vStride3;
+       acc += sharedScores[k] * static_cast<AccT>(Vrow[d * vDimStride]);
      }
      sharedOutput[d] += acc;
    }
@@ -1129,25 +1439,40 @@ template <typename T>
 static void fusedGQADecodeLauncher(
    const int blocksPerGrid, const int threadsPerBlock,
    const int sharedMem, const cudaStream_t* stream,
-   const void* vQuery, const void* vKey, const void* vValue, const void* vAttnBias,
-   void* vOutput,
-   LongType batch, LongType seqKV, LongType numQHeads, LongType numKvHeads,
-   LongType headDim, LongType headsPerKvHead, double scale,
-   LongType qStride0, LongType qStride2, LongType qStride3,
+   const void* vQuery, const void* vKey, const void* vValue,
+   const void* vCurrentKeyWindow, const void* vCurrentValueWindow,
+   const void* vCurrentKvPosition, LongType currentSeq,
+   const void* vAttnBias, void* vOutput,
+   LongType batch, LongType seqQ, LongType seqKV,
+   LongType numQHeads, LongType numKvHeads,
+   LongType headDim, LongType headsPerKvHead, double scale, bool isCausal,
+   LongType qStride0, LongType qStride1, LongType qStride2, LongType qStride3,
    LongType kStride0, LongType kStride1, LongType kStride2, LongType kStride3,
    LongType vStride0, LongType vStride1, LongType vStride2, LongType vStride3,
-   LongType oStride0, LongType oStride2, LongType oStride3,
+   LongType currentKStride0, LongType currentKStride1,
+   LongType currentKStride2, LongType currentKStride3,
+   LongType currentVStride0, LongType currentVStride1,
+   LongType currentVStride2, LongType currentVStride3,
+   LongType oStride0, LongType oStride1, LongType oStride2, LongType oStride3,
    LongType biasStride0, LongType biasStride1,
    LongType biasStride2, LongType biasStride3) {
 
  auto query = reinterpret_cast<const T*>(vQuery);
  auto key = reinterpret_cast<const T*>(vKey);
  auto value = reinterpret_cast<const T*>(vValue);
+ auto currentKeyWindow = vCurrentKeyWindow != nullptr
+     ? reinterpret_cast<const T*>(vCurrentKeyWindow) : nullptr;
+ auto currentValueWindow = vCurrentValueWindow != nullptr
+     ? reinterpret_cast<const T*>(vCurrentValueWindow) : nullptr;
+ auto currentKvPosition = vCurrentKvPosition != nullptr
+     ? reinterpret_cast<const LongType*>(vCurrentKvPosition) : nullptr;
  auto attnBias = vAttnBias != nullptr ? reinterpret_cast<const T*>(vAttnBias) : nullptr;
  auto output = reinterpret_cast<T*>(vOutput);
 
- // Grid: one block per (qHead, batch) pair
- dim3 grid(numQHeads, batch);
+ // Grid: one block per (qHead, batch, queryIdx) tuple.
+ dim3 grid(static_cast<unsigned int>(numQHeads),
+           static_cast<unsigned int>(batch),
+           static_cast<unsigned int>(seqQ));
  dim3 block(threadsPerBlock);
 
  using AccT = typename FlashAccType<T>::type;
@@ -1156,12 +1481,17 @@ static void fusedGQADecodeLauncher(
      : static_cast<size_t>(TILE_SIZE_KV + headDim) * sizeof(AccT);
 
  fusedGQADecodeKernel<T><<<grid, block, smem, *stream>>>(
-     query, key, value, attnBias, output,
-     batch, seqKV, numQHeads, numKvHeads, headDim, headsPerKvHead, scale,
-     qStride0, qStride2, qStride3,
+     query, key, value,
+     currentKeyWindow, currentValueWindow, currentKvPosition, currentSeq,
+     attnBias, output,
+     batch, seqQ, seqKV, numQHeads, numKvHeads, headDim,
+     headsPerKvHead, scale, isCausal,
+     qStride0, qStride1, qStride2, qStride3,
      kStride0, kStride1, kStride2, kStride3,
      vStride0, vStride1, vStride2, vStride3,
-     oStride0, oStride2, oStride3,
+     currentKStride0, currentKStride1, currentKStride2, currentKStride3,
+     currentVStride0, currentVStride1, currentVStride2, currentVStride3,
+     oStride0, oStride1, oStride2, oStride3,
      biasStride0, biasStride1, biasStride2, biasStride3);
  DebugHelper::checkGlobalErrorCode("fusedGQADecode failed");
 }
@@ -1171,23 +1501,32 @@ static void fusedGQADecodeLauncher(
 //////////////////////////////////////////////////////////////////////////////
 void fusedGQADecodeCuda(
    NDArray* query, NDArray* key, NDArray* value,
-   NDArray* output, double scale,
-   LaunchContext* context, NDArray* attentionBias) {
+   NDArray* output, double scale, bool isCausal,
+   LaunchContext* context, NDArray* attentionBias,
+   NDArray* currentKeyWindow, NDArray* currentValueWindow,
+   const void* currentKvPosition) {
 
  auto stream = context->getCudaStream();
 
  // Input layout: BSHD — [batch, seq, heads, dim]
  const auto batch = query->sizeAt(0);
+ const auto seqQ = query->sizeAt(1);
  const auto numQHeads = query->sizeAt(2);
  const auto headDim = query->sizeAt(3);
  const auto seqKV = key->sizeAt(1);
  const auto numKvHeads = key->sizeAt(2);
  const auto headsPerKvHead = numQHeads / numKvHeads;
+ const bool useCurrentWindow =
+     currentKeyWindow != nullptr && currentValueWindow != nullptr
+     && currentKvPosition != nullptr;
+ const LongType currentSeq =
+     useCurrentWindow ? currentKeyWindow->sizeAt(1) : 0;
 
  // Extract actual strides — kernel uses stride-based indexing so it works
  // correctly with non-contiguous views (e.g. BHSD→BSHD permuted arrays
  // from DSP pre-allocation or KV concat in onnx_mha.cpp).
  const LongType qStride0 = query->strideAt(0);
+ const LongType qStride1 = query->strideAt(1);
  const LongType qStride2 = query->strideAt(2);
  const LongType qStride3 = query->strideAt(3);
 
@@ -1201,25 +1540,58 @@ void fusedGQADecodeCuda(
  const LongType vStride2 = value->strideAt(2);
  const LongType vStride3 = value->strideAt(3);
 
+ LongType currentKStride0 = 0, currentKStride1 = 0;
+ LongType currentKStride2 = 0, currentKStride3 = 0;
+ LongType currentVStride0 = 0, currentVStride1 = 0;
+ LongType currentVStride2 = 0, currentVStride3 = 0;
+ if (useCurrentWindow) {
+   currentKStride0 = currentKeyWindow->strideAt(0);
+   currentKStride1 = currentKeyWindow->strideAt(1);
+   currentKStride2 = currentKeyWindow->strideAt(2);
+   currentKStride3 = currentKeyWindow->strideAt(3);
+   currentVStride0 = currentValueWindow->strideAt(0);
+   currentVStride1 = currentValueWindow->strideAt(1);
+   currentVStride2 = currentValueWindow->strideAt(2);
+   currentVStride3 = currentValueWindow->strideAt(3);
+ }
+
  const LongType oStride0 = output->strideAt(0);
+ const LongType oStride1 = output->strideAt(1);
  const LongType oStride2 = output->strideAt(2);
  const LongType oStride3 = output->strideAt(3);
 
  LongType biasStride0 = 0, biasStride1 = 0, biasStride2 = 0, biasStride3 = 0;
  const void* biasPtr = nullptr;
+ std::vector<NDArray*> inputs = {query, key, value};
+ if (useCurrentWindow) {
+   inputs.push_back(currentKeyWindow);
+   inputs.push_back(currentValueWindow);
+ }
 
  if (attentionBias != nullptr && !attentionBias->isEmpty()) {
-   NDArray::prepareSpecialUse({output}, {query, key, value, attentionBias});
+   inputs.push_back(attentionBias);
    biasPtr = attentionBias->specialBuffer();
-   // Use broadcast-safe strides: zero out stride for dimensions of size 1
-   // so the kernel reuses the same data (broadcast semantics).
-   biasStride0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
-   biasStride1 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
-   biasStride2 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
-   biasStride3 = attentionBias->sizeAt(3) > 1 ? attentionBias->strideAt(3) : 0;
- } else {
-   NDArray::prepareSpecialUse({output}, {query, key, value});
+   // Normalize rank-2/3/4 masks to logical [batch, head, query, key]
+   // broadcast-safe strides. Dimensions of size one intentionally use stride zero.
+   const int biasRank = attentionBias->rankOf();
+   if (biasRank == 4) {
+     biasStride0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+     biasStride1 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
+     biasStride2 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
+     biasStride3 = attentionBias->sizeAt(3) > 1 ? attentionBias->strideAt(3) : 0;
+   } else if (biasRank == 3) {
+     biasStride0 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+     biasStride1 = 0;
+     biasStride2 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
+     biasStride3 = attentionBias->sizeAt(2) > 1 ? attentionBias->strideAt(2) : 0;
+   } else {
+     biasStride0 = 0;
+     biasStride1 = 0;
+     biasStride2 = attentionBias->sizeAt(0) > 1 ? attentionBias->strideAt(0) : 0;
+     biasStride3 = attentionBias->sizeAt(1) > 1 ? attentionBias->strideAt(1) : 0;
+   }
  }
+ NDArray::prepareSpecialUse({output}, inputs);
 
  // Centralized launch dimensions computation
  int dtypeSize = query->sizeOfT();
@@ -1228,22 +1600,25 @@ void fusedGQADecodeCuda(
  BUILD_SINGLE_SELECTOR(query->dataType(), fusedGQADecodeLauncher,
                        (launchDims.x, launchDims.y, launchDims.z, stream,
                         query->specialBuffer(), key->specialBuffer(),
-                        value->specialBuffer(), biasPtr,
-                        output->specialBuffer(),
-                        batch, seqKV, numQHeads, numKvHeads,
-                        headDim, headsPerKvHead, scale,
-                        qStride0, qStride2, qStride3,
+                        value->specialBuffer(),
+                        useCurrentWindow ? currentKeyWindow->specialBuffer() : nullptr,
+                        useCurrentWindow ? currentValueWindow->specialBuffer() : nullptr,
+                        useCurrentWindow ? currentKvPosition : nullptr,
+                        currentSeq, biasPtr, output->specialBuffer(),
+                        batch, seqQ, seqKV, numQHeads, numKvHeads,
+                        headDim, headsPerKvHead, scale, isCausal,
+                        qStride0, qStride1, qStride2, qStride3,
                         kStride0, kStride1, kStride2, kStride3,
                         vStride0, vStride1, vStride2, vStride3,
-                        oStride0, oStride2, oStride3,
+                        currentKStride0, currentKStride1,
+                        currentKStride2, currentKStride3,
+                        currentVStride0, currentVStride1,
+                        currentVStride2, currentVStride3,
+                        oStride0, oStride1, oStride2, oStride3,
                         biasStride0, biasStride1, biasStride2, biasStride3),
                        SD_FLOAT_TYPES);
 
- if (attentionBias != nullptr && !attentionBias->isEmpty()) {
-   NDArray::registerSpecialUse({output}, {query, key, value, attentionBias});
- } else {
-   NDArray::registerSpecialUse({output}, {query, key, value});
- }
+ NDArray::registerSpecialUse({output}, inputs);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1532,20 +1907,6 @@ void fusedGQADecodeQuantisedCuda(
     const void* keyScalePtr = inlineKeyScale ? nullptr : keyScaleCache->specialBuffer();
     const void* valScalePtr = inlineValScale ? nullptr : valScaleCache->specialBuffer();
 
-    // ADR 0107 V2 diagnosis: verify the row-inline scale survived DSP ext-input staging.
-    // Reads 4 bytes D2H — slot-by-slot/warmup context only (gated; never during capture).
-    if (inlineKeyScale && DSP_DIAG_ENABLED(KV_CACHE)
-        && !DebugHelper::inGraphCapture(context->getCudaStream())) {
-        float s0 = 0.0f;
-        const int8_t* row0 = static_cast<const int8_t*>(quantKeyCache->specialBuffer());
-        cudaMemcpyAsync(&s0, row0 + headDim, sizeof(float), cudaMemcpyDeviceToHost,
-                        *context->getCudaStream());
-        cudaStreamSynchronize(*context->getCudaStream());
-        DSP_DIAG(KV_CACHE, "row-inline keyScale[row0]=%g base=%p pitch=%lld",
-                 s0, quantKeyCache->specialBuffer(),
-                 static_cast<long long>(quantKeyCache->sizeAt(3)));
-    }
-
     // Scale strides [batch, seqKV, kvHeads] — unused (0) in row-inline mode.
     const LongType ksS0 = inlineKeyScale ? 0 : keyScaleCache->strideAt(0);
     const LongType ksS1 = inlineKeyScale ? 0 : keyScaleCache->strideAt(1);
@@ -1597,6 +1958,116 @@ void fusedGQADecodeQuantisedCuda(
 
     // inArrs already excludes null (inline) scale caches and includes attentionBias when present.
     NDArray::registerSpecialUse({output}, inArrs);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Public interface for direct rank-4 GQA attention with scores and logits.
+//////////////////////////////////////////////////////////////////////////////
+void fusedGQAAttentionCudaWithScores(
+    NDArray* query,
+    NDArray* key,
+    NDArray* value,
+    NDArray* output,
+    NDArray* attentionLogits,
+    NDArray* attentionScores,
+    double scale,
+    bool isCausal,
+    LaunchContext* context,
+    NDArray* attentionBias,
+    NDArray* currentKeyWindow,
+    NDArray* currentValueWindow,
+    const void* currentKvPosition) {
+  auto stream = context->getCudaStream();
+
+  const LongType batch = query->sizeAt(0);
+  const LongType seqQ = query->sizeAt(1);
+  const LongType numQHeads = query->sizeAt(2);
+  const LongType headDim = query->sizeAt(3);
+  const LongType seqKV = key->sizeAt(1);
+  const LongType numKvHeads = key->sizeAt(2);
+  const LongType headsPerKvHead = numQHeads / numKvHeads;
+  const bool useCurrentWindow =
+      currentKeyWindow != nullptr && currentValueWindow != nullptr
+      && currentKvPosition != nullptr;
+  const LongType currentSeq =
+      useCurrentWindow ? currentKeyWindow->sizeAt(1) : 0;
+
+  GQAAttentionStrides4D strides{};
+  for (int i = 0; i < 4; i++) {
+    strides.q[i] = query->strideAt(i);
+    strides.k[i] = key->strideAt(i);
+    strides.v[i] = value->strideAt(i);
+    strides.o[i] = output->strideAt(i);
+    strides.logits[i] = attentionLogits->strideAt(i);
+    strides.scores[i] = attentionScores->strideAt(i);
+    if (useCurrentWindow) {
+      strides.currentK[i] = currentKeyWindow->strideAt(i);
+      strides.currentV[i] = currentValueWindow->strideAt(i);
+    }
+  }
+
+  const void* biasPtr = nullptr;
+  std::vector<NDArray*> inputs = {query, key, value};
+  if (useCurrentWindow) {
+    inputs.push_back(currentKeyWindow);
+    inputs.push_back(currentValueWindow);
+  }
+  if (attentionBias != nullptr && !attentionBias->isEmpty()) {
+    biasPtr = attentionBias->specialBuffer();
+    inputs.push_back(attentionBias);
+    const int biasRank = attentionBias->rankOf();
+    if (biasRank == 4) {
+      for (int i = 0; i < 4; i++) {
+        strides.bias[i] = attentionBias->sizeAt(i) > 1
+            ? attentionBias->strideAt(i)
+            : 0;
+      }
+    } else if (biasRank == 3) {
+      strides.bias[0] = attentionBias->sizeAt(0) > 1
+          ? attentionBias->strideAt(0)
+          : 0;
+      strides.bias[1] = 0;
+      strides.bias[2] = attentionBias->sizeAt(1) > 1
+          ? attentionBias->strideAt(1)
+          : 0;
+      strides.bias[3] = attentionBias->sizeAt(2) > 1
+          ? attentionBias->strideAt(2)
+          : 0;
+    } else {
+      strides.bias[0] = 0;
+      strides.bias[1] = 0;
+      strides.bias[2] = attentionBias->sizeAt(0) > 1
+          ? attentionBias->strideAt(0)
+          : 0;
+      strides.bias[3] = attentionBias->sizeAt(1) > 1
+          ? attentionBias->strideAt(1)
+          : 0;
+    }
+  }
+
+  std::vector<NDArray*> outputs = {
+      output, attentionLogits, attentionScores};
+  NDArray::prepareSpecialUse(outputs, inputs);
+
+  BUILD_SINGLE_SELECTOR(
+      query->dataType(), fusedGQAAttentionWithScores4DLauncher,
+      (stream,
+       query->specialBuffer(),
+       key->specialBuffer(),
+       value->specialBuffer(),
+       useCurrentWindow ? currentKeyWindow->specialBuffer() : nullptr,
+       useCurrentWindow ? currentValueWindow->specialBuffer() : nullptr,
+       useCurrentWindow ? currentKvPosition : nullptr,
+       currentSeq,
+       biasPtr,
+       output->specialBuffer(),
+       attentionLogits->specialBuffer(),
+       attentionScores->specialBuffer(),
+       batch, seqQ, seqKV, numQHeads, numKvHeads, headDim,
+       headsPerKvHead, scale, isCausal, strides),
+      SD_FLOAT_TYPES);
+
+  NDArray::registerSpecialUse(outputs, inputs);
 }
 
 //////////////////////////////////////////////////////////////////////////////

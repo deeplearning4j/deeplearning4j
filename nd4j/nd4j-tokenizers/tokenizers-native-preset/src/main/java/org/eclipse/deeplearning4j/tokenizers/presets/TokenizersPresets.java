@@ -116,6 +116,7 @@ public class TokenizersPresets implements InfoMapper, BuildEnabled {
                 // Opaque pointer types - these map to the C API opaque handles
                 .put(new Info("OpaqueTokenizer").pointerTypes("OpaqueTokenizer"))
                 .put(new Info("OpaqueEncoding").pointerTypes("OpaqueEncoding"))
+                .put(new Info("OpaqueDecodeStream").pointerTypes("OpaqueDecodeStream"))
                 .put(new Info("OpaqueModelManager").pointerTypes("OpaqueModelManager"))
 
                 // Enum mappings
@@ -151,6 +152,9 @@ public class TokenizersPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("encoding_get_attention_mask").javaNames("encodingGetAttentionMask"))
                 .put(new Info("encoding_get_type_ids").javaNames("encodingGetTypeIds"))
                 .put(new Info("decode_ids").javaNames("decodeIds"))
+                .put(new Info("create_decode_stream").javaNames("createDecodeStream"))
+                .put(new Info("decode_stream_step").javaNames("decodeStreamStep"))
+                .put(new Info("free_decode_stream").javaNames("freeDecodeStream"))
                 .put(new Info("free_string").javaNames("freeString"))
                 .put(new Info("get_token_id").javaNames("getTokenId"))
                 .put(new Info("get_token").javaNames("getToken"))

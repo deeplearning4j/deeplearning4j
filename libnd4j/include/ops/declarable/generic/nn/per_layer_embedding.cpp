@@ -74,12 +74,12 @@ CUSTOM_OP_IMPL(per_layer_embedding, 3, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(per_layer_embedding) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_INTS})
-      ->setAllowedOutputTypes(0, {ALL_FLOATS})
-      ->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+      ->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(per_layer_embedding) {

@@ -94,7 +94,8 @@ CONFIGURABLE_OP_IMPL(adam_updater, 3, 3, true, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(adam_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(adam_updater) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
 }  // namespace ops
 }  // namespace sd

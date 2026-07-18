@@ -54,14 +54,11 @@ Below are the properties you can override:
   This is useful for excluding long or unstable tests. 
   Default: various tags.
 
-- `preload`: Sets LD_PRELOAD for loading a shared library before others.
-  Default: path to jemalloc.
+- `jemalloc.path`: Path to jemalloc for explicit allocator instrumentation.
+  Activate it with `-Pjemalloc -Djemalloc.path=/path/to/libjemalloc.so`.
 
-- `jemalloc.path`: Path to the jemalloc library, a malloc implementation.
-  Default: path to jemalloc.
-
-
-
+Normal CPU, CUDA, Vulkan, and CUDA/Vulkan coexistence tests load platform-classified
+native artifacts through JavaCPP. They do not set `LD_LIBRARY_PATH` or `LD_PRELOAD`.
 
 ## Additional Details About Running Tests 
 

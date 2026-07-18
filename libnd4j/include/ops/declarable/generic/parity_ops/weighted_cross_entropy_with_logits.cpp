@@ -50,6 +50,7 @@ OP_IMPL(weighted_cross_entropy_with_logits, 3, 1, true) {
 }
 
 DECLARE_TYPES(weighted_cross_entropy_with_logits) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops

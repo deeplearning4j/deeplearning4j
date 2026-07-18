@@ -27,6 +27,7 @@
 #include <array/NDArray.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/decoder_masked_mha.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -34,62 +35,15 @@ namespace helpers {
 
 constexpr int MHA_WARP_SIZE = 32;
 
-//////////////////////////////////////////////////////////////////////////////
-// Warp-level reduction: sum
-//////////////////////////////////////////////////////////////////////////////
+// Accumulator type: use double when T=double for full precision, float otherwise.
 template <typename T>
-SD_DEVICE SD_INLINE T mhaWarpReduceSum(T val) {
-    for (int offset = MHA_WARP_SIZE / 2; offset > 0; offset /= 2) {
-        val += __shfl_down_sync(0xffffffff, val, offset);
-    }
-    return val;
-}
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
 //////////////////////////////////////////////////////////////////////////////
-// Warp-level reduction: max
-//////////////////////////////////////////////////////////////////////////////
-template <typename T>
-SD_DEVICE SD_INLINE T mhaWarpReduceMax(T val) {
-    for (int offset = MHA_WARP_SIZE / 2; offset > 0; offset /= 2) {
-        T other = __shfl_down_sync(0xffffffff, val, offset);
-        val = val > other ? val : other;
-    }
-    return val;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Block-level reduction: sum
-//////////////////////////////////////////////////////////////////////////////
-SD_DEVICE float mhaBlockReduceSum(float val, float* sharedMem) {
-    const int lane = threadIdx.x % MHA_WARP_SIZE;
-    const int wid = threadIdx.x / MHA_WARP_SIZE;
-    const int numWarps = (blockDim.x + MHA_WARP_SIZE - 1) / MHA_WARP_SIZE;
-
-    val = mhaWarpReduceSum(val);
-    if (lane == 0) sharedMem[wid] = val;
-    __syncthreads();
-
-    val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : 0.0f;
-    if (wid == 0) val = mhaWarpReduceSum(val);
-    return val;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Block-level reduction: max
-//////////////////////////////////////////////////////////////////////////////
-SD_DEVICE float mhaBlockReduceMax(float val, float* sharedMem) {
-    const int lane = threadIdx.x % MHA_WARP_SIZE;
-    const int wid = threadIdx.x / MHA_WARP_SIZE;
-    const int numWarps = (blockDim.x + MHA_WARP_SIZE - 1) / MHA_WARP_SIZE;
-
-    val = mhaWarpReduceMax(val);
-    if (lane == 0) sharedMem[wid] = val;
-    __syncthreads();
-
-    val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : -1e30f;
-    if (wid == 0) val = mhaWarpReduceMax(val);
-    return val;
-}
+// Warp/block sum+max reductions come from device_primitives.cuh
+// (sd::device::warpReduce* / sd::device::blockReduce*).
 
 //////////////////////////////////////////////////////////////////////////////
 // Main fused decoder MHA kernel
@@ -123,6 +77,8 @@ SD_KERNEL __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
     const float attScale,
     const LongType batch) {
 
+    using AccT = typename AccType<T>::type;
+
     const int blockId = blockIdx.x;
     const int batchIdx = blockId / numHeads;
     const int headIdx = blockId % numHeads;
@@ -133,8 +89,8 @@ SD_KERNEL __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
     const int kvHeadIdx = headIdx * numKvHeads / numHeads;
 
     extern __shared__ char sharedMem[];
-    float* qVec = reinterpret_cast<float*>(sharedMem);
-    float* reductionBuf = qVec + headDim;
+    AccT* qVec = reinterpret_cast<AccT*>(sharedMem);
+    AccT* reductionBuf = qVec + headDim;
 
     const int seqLen = cachePosition + 1;
     const LongType totalQkvDim = 3 * hiddenDim;
@@ -144,10 +100,10 @@ SD_KERNEL __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
     // Q[d] = sum_k hidden[k] * qkvWeight[k, headIdx*headDim + d]
     const T* hRow = hiddenStates + batchIdx * hiddenDim;
     for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-        float sum = 0.0f;
+        AccT sum = static_cast<AccT>(0);
         LongType colIdx = headIdx * headDim + d;
         for (int k = 0; k < hiddenDim; ++k) {
-            sum += static_cast<float>(hRow[k]) * static_cast<float>(qkvWeight[k * totalQkvDim + colIdx]);
+            sum += static_cast<AccT>(hRow[k]) * static_cast<AccT>(qkvWeight[k * totalQkvDim + colIdx]);
         }
         qVec[d] = sum;
     }
@@ -158,17 +114,17 @@ SD_KERNEL __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
     if (headIdx % (numHeads / numKvHeads) == 0) {
         for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
             // K
-            float kSum = 0.0f;
+            AccT kSum = static_cast<AccT>(0);
             LongType kColIdx = qSize + kvHeadIdx * headDim + d;
             for (int k = 0; k < hiddenDim; ++k) {
-                kSum += static_cast<float>(hRow[k]) * static_cast<float>(qkvWeight[k * totalQkvDim + kColIdx]);
+                kSum += static_cast<AccT>(hRow[k]) * static_cast<AccT>(qkvWeight[k * totalQkvDim + kColIdx]);
             }
 
             // V
-            float vSum = 0.0f;
+            AccT vSum = static_cast<AccT>(0);
             LongType vColIdx = qSize + numKvHeads * headDim + kvHeadIdx * headDim + d;
             for (int k = 0; k < hiddenDim; ++k) {
-                vSum += static_cast<float>(hRow[k]) * static_cast<float>(qkvWeight[k * totalQkvDim + vColIdx]);
+                vSum += static_cast<AccT>(hRow[k]) * static_cast<AccT>(qkvWeight[k * totalQkvDim + vColIdx]);
             }
 
             // Apply RoPE to K if enabled
@@ -176,16 +132,15 @@ SD_KERNEL __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
                 int halfDim = headDim / 2;
                 if (ropeType == 1 && d < halfDim) {
                     // Standard RoPE: pair (d, d + halfDim)
-                    // We need the partner value, so we compute both
-                    float kPartner = 0.0f;
+                    AccT kPartner = static_cast<AccT>(0);
                     LongType kPartnerCol = qSize + kvHeadIdx * headDim + d + halfDim;
                     for (int k2 = 0; k2 < hiddenDim; ++k2) {
-                        kPartner += static_cast<float>(hRow[k2]) * static_cast<float>(qkvWeight[k2 * totalQkvDim + kPartnerCol]);
+                        kPartner += static_cast<AccT>(hRow[k2]) * static_cast<AccT>(qkvWeight[k2 * totalQkvDim + kPartnerCol]);
                     }
-                    float c = static_cast<float>(cosBuf[cachePosition * halfDim + d]);
-                    float s = static_cast<float>(sinBuf[cachePosition * halfDim + d]);
-                    float kRotated = kSum * c - kPartner * s;
-                    float kPartnerRotated = kSum * s + kPartner * c;
+                    AccT c = static_cast<AccT>(cosBuf[cachePosition * halfDim + d]);
+                    AccT s = static_cast<AccT>(sinBuf[cachePosition * halfDim + d]);
+                    AccT kRotated = kSum * c - kPartner * s;
+                    AccT kPartnerRotated = kSum * s + kPartner * c;
 
                     // Write to cache
                     LongType cacheOffset = ((batchIdx * numKvHeads + kvHeadIdx) * kvCacheMaxSeq + cachePosition) * headDim;
@@ -196,14 +151,14 @@ SD_KERNEL __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
                 } else if (ropeType == 2) {
                     // NeoX RoPE: pair (2i, 2i+1) - handle even indices only
                     if (d % 2 == 0 && d / 2 < headDim / 2) {
-                        float kPartner = 0.0f;
+                        AccT kPartner = static_cast<AccT>(0);
                         LongType kPartnerCol = qSize + kvHeadIdx * headDim + d + 1;
                         for (int k2 = 0; k2 < hiddenDim; ++k2) {
-                            kPartner += static_cast<float>(hRow[k2]) * static_cast<float>(qkvWeight[k2 * totalQkvDim + kPartnerCol]);
+                            kPartner += static_cast<AccT>(hRow[k2]) * static_cast<AccT>(qkvWeight[k2 * totalQkvDim + kPartnerCol]);
                         }
                         int ri = d / 2;
-                        float c = static_cast<float>(cosBuf[cachePosition * (headDim / 2) + ri]);
-                        float s = static_cast<float>(sinBuf[cachePosition * (headDim / 2) + ri]);
+                        AccT c = static_cast<AccT>(cosBuf[cachePosition * (headDim / 2) + ri]);
+                        AccT s = static_cast<AccT>(sinBuf[cachePosition * (headDim / 2) + ri]);
 
                         LongType cacheOffset = ((batchIdx * numKvHeads + kvHeadIdx) * kvCacheMaxSeq + cachePosition) * headDim;
                         updatedKBuf[cacheOffset + d] = static_cast<T>(kSum * c - kPartner * s);
@@ -228,19 +183,19 @@ SD_KERNEL __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
         int halfDim = headDim / 2;
         if (ropeType == 1) {
             for (int i = threadIdx.x; i < halfDim; i += blockDim.x) {
-                float c = static_cast<float>(cosBuf[cachePosition * halfDim + i]);
-                float s = static_cast<float>(sinBuf[cachePosition * halfDim + i]);
-                float x0 = qVec[i];
-                float x1 = qVec[i + halfDim];
+                AccT c = static_cast<AccT>(cosBuf[cachePosition * halfDim + i]);
+                AccT s = static_cast<AccT>(sinBuf[cachePosition * halfDim + i]);
+                AccT x0 = qVec[i];
+                AccT x1 = qVec[i + halfDim];
                 qVec[i] = x0 * c - x1 * s;
                 qVec[i + halfDim] = x0 * s + x1 * c;
             }
         } else if (ropeType == 2) {
             for (int i = threadIdx.x; i < halfDim; i += blockDim.x) {
-                float c = static_cast<float>(cosBuf[cachePosition * halfDim + i]);
-                float s = static_cast<float>(sinBuf[cachePosition * halfDim + i]);
-                float x0 = qVec[2 * i];
-                float x1 = qVec[2 * i + 1];
+                AccT c = static_cast<AccT>(cosBuf[cachePosition * halfDim + i]);
+                AccT s = static_cast<AccT>(sinBuf[cachePosition * halfDim + i]);
+                AccT x0 = qVec[2 * i];
+                AccT x1 = qVec[2 * i + 1];
                 qVec[2 * i] = x0 * c - x1 * s;
                 qVec[2 * i + 1] = x0 * s + x1 * c;
             }
@@ -249,75 +204,72 @@ SD_KERNEL __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
     }
 
     // Step 4: Compute attention scores Q @ K^T for all positions
-    // Each thread handles a subset of positions
     // First pass: find max score
-    float localMax = -1e30f;
+    AccT localMax = static_cast<AccT>(-1e30);
     for (int pos = threadIdx.x; pos < seqLen; pos += blockDim.x) {
         LongType kOffset = ((batchIdx * numKvHeads + kvHeadIdx) * kvCacheMaxSeq + pos) * headDim;
-        float dot = 0.0f;
+        AccT dot = static_cast<AccT>(0);
         for (int d = 0; d < headDim; ++d) {
-            dot += qVec[d] * static_cast<float>(updatedKBuf[kOffset + d]);
+            dot += qVec[d] * static_cast<AccT>(updatedKBuf[kOffset + d]);
         }
-        dot *= attScale;
+        dot *= static_cast<AccT>(attScale);
 
         if (maskBuf != nullptr) {
-            dot += static_cast<float>(maskBuf[batchIdx * seqLen + pos]);
+            dot += static_cast<AccT>(maskBuf[batchIdx * seqLen + pos]);
         }
 
         if (dot > localMax) localMax = dot;
     }
 
-    __shared__ float globalMax;
-    float reducedMax = mhaBlockReduceMax(localMax, reductionBuf);
+    __shared__ AccT globalMax;
+    AccT reducedMax = sd::device::blockReduceMax(localMax, reductionBuf);
     if (threadIdx.x == 0) globalMax = reducedMax;
     __syncthreads();
 
     // Second pass: compute exp(score - max) and sum
-    float localSum = 0.0f;
+    AccT localSum = static_cast<AccT>(0);
     for (int pos = threadIdx.x; pos < seqLen; pos += blockDim.x) {
         LongType kOffset = ((batchIdx * numKvHeads + kvHeadIdx) * kvCacheMaxSeq + pos) * headDim;
-        float dot = 0.0f;
+        AccT dot = static_cast<AccT>(0);
         for (int d = 0; d < headDim; ++d) {
-            dot += qVec[d] * static_cast<float>(updatedKBuf[kOffset + d]);
+            dot += qVec[d] * static_cast<AccT>(updatedKBuf[kOffset + d]);
         }
-        dot *= attScale;
+        dot *= static_cast<AccT>(attScale);
 
         if (maskBuf != nullptr) {
-            dot += static_cast<float>(maskBuf[batchIdx * seqLen + pos]);
+            dot += static_cast<AccT>(maskBuf[batchIdx * seqLen + pos]);
         }
 
-        float expVal = __expf(dot - globalMax);
+        AccT expVal = sd::math::sd_exp<AccT, AccT>(dot - globalMax);
         localSum += expVal;
     }
 
-    __shared__ float globalSum;
-    float reducedSum = mhaBlockReduceSum(localSum, reductionBuf);
+    __shared__ AccT globalSum;
+    AccT reducedSum = sd::device::blockReduceSum(localSum, reductionBuf);
     if (threadIdx.x == 0) globalSum = reducedSum;
     __syncthreads();
 
-    float invSum = 1.0f / globalSum;
+    AccT invSum = static_cast<AccT>(1) / globalSum;
 
     // Step 5: Compute weighted sum of values
-    // Each thread accumulates partial results for a subset of headDim
-    // We iterate over all positions and accumulate
     for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-        float acc = 0.0f;
+        AccT acc = static_cast<AccT>(0);
         for (int pos = 0; pos < seqLen; ++pos) {
             LongType kOffset = ((batchIdx * numKvHeads + kvHeadIdx) * kvCacheMaxSeq + pos) * headDim;
 
             // Recompute attention weight for this position
-            float dot = 0.0f;
+            AccT dot = static_cast<AccT>(0);
             for (int dd = 0; dd < headDim; ++dd) {
-                dot += qVec[dd] * static_cast<float>(updatedKBuf[kOffset + dd]);
+                dot += qVec[dd] * static_cast<AccT>(updatedKBuf[kOffset + dd]);
             }
-            dot *= attScale;
+            dot *= static_cast<AccT>(attScale);
             if (maskBuf != nullptr) {
-                dot += static_cast<float>(maskBuf[batchIdx * seqLen + pos]);
+                dot += static_cast<AccT>(maskBuf[batchIdx * seqLen + pos]);
             }
-            float weight = __expf(dot - globalMax) * invSum;
+            AccT weight = sd::math::sd_exp<AccT, AccT>(dot - globalMax) * invSum;
 
             LongType vOffset = ((batchIdx * numKvHeads + kvHeadIdx) * kvCacheMaxSeq + pos) * headDim;
-            acc += weight * static_cast<float>(updatedVBuf[vOffset + d]);
+            acc += weight * static_cast<AccT>(updatedVBuf[vOffset + d]);
         }
         // Store in Q shared memory (reuse since Q is no longer needed)
         qVec[d] = acc;
@@ -325,13 +277,11 @@ SD_KERNEL __launch_bounds__(256, 2) void decoderMaskedMhaKernel(
     __syncthreads();
 
     // Step 6: Output projection
-    // output[b, 0, j] += attnHead[d] * oWeight[headIdx*headDim + d, j]
-    // Each thread handles a subset of output dimensions
     for (int j = threadIdx.x; j < hiddenDim; j += blockDim.x) {
-        float sum = 0.0f;
+        AccT sum = static_cast<AccT>(0);
         for (int d = 0; d < headDim; ++d) {
             LongType wRow = headIdx * headDim + d;
-            sum += qVec[d] * static_cast<float>(oWeight[wRow * hiddenDim + j]);
+            sum += qVec[d] * static_cast<AccT>(oWeight[wRow * hiddenDim + j]);
         }
         // Atomically add since multiple heads write to the same output
         sd::math::atomics::sd_atomicAdd<T>(&outputBuf[batchIdx * hiddenDim + j], static_cast<T>(sum));
@@ -413,8 +363,9 @@ static void launchDecoderMaskedMhaKernel(
     if (headDim > 128) threadsPerBlock = 256;
 
     // Shared memory: qVec[headDim] + reductionBuf[numWarps]
+    // Use sizeof AccType<T>::type: double when T=double, float otherwise.
     int numWarps = (threadsPerBlock + MHA_WARP_SIZE - 1) / MHA_WARP_SIZE;
-    size_t sharedMemSize = (headDim + numWarps) * sizeof(float);
+    size_t sharedMemSize = (headDim + numWarps) * sizeof(typename AccType<T>::type);
 
     decoderMaskedMhaKernel<T><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
         hiddenStates, qkvWeight, oWeight,

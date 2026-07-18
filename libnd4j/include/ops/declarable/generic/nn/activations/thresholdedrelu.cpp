@@ -41,7 +41,10 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(thresholdedrelu) { getOpDescriptor()->setAllowedInputTypes(0, ANY)->setSameMode(true); }
+DECLARE_TYPES(thresholdedrelu) {
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setSameMode(true);
+}
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
@@ -57,6 +60,7 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(thresholdedrelu_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})

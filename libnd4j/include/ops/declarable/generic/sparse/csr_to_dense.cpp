@@ -76,11 +76,14 @@ DECLARE_SHAPE_FN(csr_to_dense) {
 }
 
 DECLARE_TYPES(csr_to_dense) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})   // values
       ->setAllowedInputTypes(1, {ALL_INTS})         // colIdx
       ->setAllowedInputTypes(2, {ALL_INTS})         // rowPtr
       ->setAllowedOutputTypes({ALL_FLOATS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

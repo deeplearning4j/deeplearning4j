@@ -33,6 +33,7 @@
 #include <system/op_boilerplate.h>
 #include <system/selective_rendering.h>
 #include <execution/cuda/LaunchDims.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 #include <type_traits>
 
 #if NOT_EXCLUDED(OP_moe_weighted_sum)
@@ -40,6 +41,12 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+
+// Accumulator type: double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dense layout kernel  [T, topK, D]  →  [T, D]
@@ -66,24 +73,26 @@ static void moeWeightedSumDenseKernel(
     const sd::LongType outStrideT,
     const sd::LongType outStrideD) {
 
+    using AccT = typename AccType<T>::type;
+
     const sd::LongType t = blockIdx.x;
     if (t >= T_tokens) return;
 
-    // Load this token's topK weights into shared memory (float for fp32 accumulation)
+    // Load this token's topK weights into shared memory (AccT for accumulation precision)
     extern __shared__ char sharedBuf[];
-    float* sWeights = reinterpret_cast<float*>(sharedBuf);
+    AccT* sWeights = reinterpret_cast<AccT*>(sharedBuf);
 
     if (threadIdx.x < topK) {
-        sWeights[threadIdx.x] = static_cast<float>(weights[t * wStrideT + threadIdx.x * wStrideK]);
+        sWeights[threadIdx.x] = static_cast<AccT>(weights[t * wStrideT + threadIdx.x * wStrideK]);
     }
     __syncthreads();
 
     // Each thread handles a contiguous tile of D elements
     for (sd::LongType d = threadIdx.x; d < D; d += blockDim.x) {
-        float acc = 0.0f;
+        AccT acc = static_cast<AccT>(0);
         for (sd::LongType k = 0; k < topK; k++) {
             const T eoVal = expertOutputs[t * eoStrideT + k * eoStrideK + d * eoStrideD];
-            acc += sWeights[k] * static_cast<float>(eoVal);
+            acc += sWeights[k] * static_cast<AccT>(eoVal);
         }
         output[t * outStrideT + d * outStrideD] = static_cast<T>(acc);
     }
@@ -108,8 +117,8 @@ static void moeWeightedSumDenseCuda_(sd::LaunchContext* context,
 
     const dim3 dims = getLaunchDims("moe_weighted_sum");
     const int  blockSize  = static_cast<int>(dims.y);
-    // Shmem: topK floats for per-token weights; block size must be >= topK for the load above
-    const size_t shmem = static_cast<size_t>(topK) * sizeof(float);
+    // Shmem: topK AccT values for per-token weights; block size must be >= topK for the load above
+    const size_t shmem = static_cast<size_t>(topK) * sizeof(typename AccType<T>::type);
 
     PointersManager pm(context, "moeWeightedSumDense");
 

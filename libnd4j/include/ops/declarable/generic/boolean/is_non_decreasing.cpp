@@ -46,6 +46,7 @@ BOOLEAN_OP_IMPL(is_non_decreasing, 1, true) {
 
 DECLARE_TYPES(is_non_decreasing) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, BOOL);
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_COMPARISON | OP_TRAIT_DATA_DEPENDENT);
 }
 }  // namespace ops
 }  // namespace sd

@@ -28,7 +28,7 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
 
-#include "mkldnnUtils.h"
+#include "mkldnnEltwise.h"
 
 using namespace dnnl;
 
@@ -42,10 +42,10 @@ static void powScalarMKLDNN(NDArray* x, NDArray* z, float alpha, float beta, flo
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
-  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, onednnUtils::toDnnlDataType(x->dataType()), onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
-  z_user_md = z_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
+  z_user_md = z_mkl_md = dnnl::memory::desc(shape, onednnUtils::toDnnlDataType(z->dataType()), onednnUtils::getFormat(*z));
   onednnUtils::setBlockStrides(*z, z_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
@@ -78,7 +78,7 @@ static void powScalarMKLDNN(NDArray* x, NDArray* z, float alpha, float beta, flo
 // Note: Pow is a binary op with two array inputs - OneDNN binary operations handle this differently
 // This implementation is for the scalar power case
 
-PLATFORM_IMPL(Pow, ENGINE_CPU) {
+PLATFORM_IMPL(Pow, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);  // exponent array
   auto z = OUTPUT_VARIABLE(0);
@@ -102,7 +102,7 @@ PLATFORM_IMPL(Pow, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(Pow, ENGINE_CPU) {
+PLATFORM_CHECK(Pow, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -112,8 +112,8 @@ PLATFORM_CHECK(Pow, ENGINE_CPU) {
       req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(x->dataType()), TYPE_MSG_INPUT), EXPECTED_TRUE) &&
+      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), x->dataType());
   req.logTheSuccess();
   return req;
 }

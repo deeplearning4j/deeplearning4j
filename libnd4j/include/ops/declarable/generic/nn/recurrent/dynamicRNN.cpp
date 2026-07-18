@@ -107,6 +107,7 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
 }
 
 DECLARE_TYPES(dynamic_rnn) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})

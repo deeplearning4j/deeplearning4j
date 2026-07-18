@@ -20,7 +20,7 @@
 #include <helpers/cpu/CpuShapeBufferCreator.h>
 #include <mutex>
 
-namespace sd {
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 
 struct ShapeBufferInitializer {
   ShapeBufferInitializer() {
@@ -36,4 +36,4 @@ void ShapeBufferPlatformHelper::initialize() {
   });
 }
 
-}  // namespace sd
+SD_BACKEND_ABI_NAMESPACE_END

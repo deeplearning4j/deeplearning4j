@@ -64,6 +64,7 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
 }
 
 DECLARE_TYPES(sruCell) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

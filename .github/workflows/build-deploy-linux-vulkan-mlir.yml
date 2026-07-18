@@ -1,0 +1,251 @@
+name: Build and Deploy Linux x86_64 Vulkan (MLIR variant)
+
+# MLIR-enabled variant of build-deploy-linux-vulkan.yml (ADR-0112 §3).
+# Builds libnd4jvulkan.so with -Dlibnd4j.triton=ON and -Dlibnd4j.mlir=ON
+# so the universal DSP/replay layer and SPIR-V JIT stack
+# (VulkanPipelineCache, VulkanOpLowerings, VulkanSegmentRecorder) compile IN
+# (HAVE_MLIR=1) — this is the artifact on which the T3 replay-equivalence tier
+# actually executes recorded compute. The plain workflow's artifact carries the
+# device layer but compiles the recorder out (HAVE_MLIR=0).
+# Verify step asserts the recorder symbols are present, not just that the
+# library links.
+
+on:
+  workflow_dispatch:
+    inputs:
+      buildThreads:
+        description: 'Build threads for libnd4j (controls memory usage)'
+        required: true
+        default: 4
+
+      deployToReleaseStaging:
+        description: 'Whether to deploy to release staging or not.'
+        required: false
+        default: 0
+
+      releaseVersion:
+        description: 'Release version target'
+        required: false
+        default: 1.0.0-M3
+
+      snapshotVersion:
+        description: 'Snapshot version target'
+        required: false
+        default: 1.0.0-SNAPSHOT
+
+      serverId:
+        description: 'Server id to publish to'
+        required: false
+        default: central
+
+      mvnFlags:
+        description: 'Extra maven flags'
+        required: false
+        default: ''
+
+      libnd4jUrl:
+        description: 'Pre-built libnd4j download URL (skips native C++ build)'
+        required: false
+        default: ''
+
+      runsOn:
+        description: 'Runner to use'
+        required: false
+        default: ubuntu-22.04
+
+      debug_enabled:
+        description: 'Enable tmate debugging'
+        required: false
+        default: false
+
+      swapSize:
+        description: 'Swap file size in GB'
+        required: false
+        default: 12
+
+jobs:
+  linux-x86_64-vulkan-mlir:
+    runs-on: ${{ github.event.inputs.runsOn }}
+    timeout-minutes: 240
+    name: linux-x86_64-vulkan-mlir (SPIR-V JIT enabled)
+
+    steps:
+      - uses: AutoModality/action-clean@v1
+
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Configure swap space
+        shell: bash
+        run: |
+          if swapon --show | grep -q "/"; then
+            echo "Swap already configured."
+            swapon --show
+          else
+            SWAP_SIZE="${{ github.event.inputs.swapSize }}G"
+            echo "Creating ${SWAP_SIZE} swap file..."
+            sudo fallocate -l ${SWAP_SIZE} /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1G count=${{ github.event.inputs.swapSize }} status=progress
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          fi
+          sudo sysctl vm.swappiness=80
+          free -h
+
+      - uses: ./.github/actions/set-linux-distro-version
+
+      - name: Set mvn build command
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.libnd4jUrl }}" ]; then
+            modules=':nd4j-vulkan,:nd4j-vulkan-preset'
+          else
+            modules=':nd4j-vulkan,:nd4j-vulkan-preset,:libnd4j'
+          fi
+          # -Pvulkan adds nd4j-vulkan/-preset to the reactor; -Dlibnd4j.vulkan
+          # activates the libnd4j chip=vulkan profile. Triton is the universal
+          # DSP/replay gate; MLIR provides the Vulkan SPIR-V compiler path.
+          command="mvn ${{ github.event.inputs.mvnFlags }} \
+            --no-transfer-progress \
+            -Pvulkan \
+            -pl ${modules} \
+            -Dlibnd4j.vulkan \
+            -Dlibnd4j.triton=ON \
+            -Dlibnd4j.mlir=ON \
+            -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \
+            -Dhttp.keepAlive=false \
+            -Dmaven.wagon.http.pool=false \
+            -Dmaven.wagon.http.retryHandler.count=3 \
+            -DskipTestResourceEnforcement=true \
+            -Dmaven.javadoc.failOnError=false \
+            -Djavacpp.platform=linux-x86_64 \
+            -Dplatform.classifier=linux-x86_64 \
+            --also-make --batch-mode deploy -DskipTests"
+          echo "COMMAND=${command}" >> $GITHUB_ENV
+          echo "Build command: ${command}"
+
+      - uses: ./.github/actions/update-deps-linux
+
+      - name: Install DWARF headers
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libdw-dev libelf-dev libdwarf-dev
+
+      - name: Install Vulkan loader and software ICD
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libvulkan-dev libvulkan1 mesa-vulkan-drivers vulkan-tools
+          vulkaninfo --summary 2>/dev/null || echo "vulkaninfo unavailable (fine for building)"
+
+      - name: Setup sccache
+        id: setup-sccache
+        uses: ./.github/actions/setup-sccache-linux
+        with:
+          cache-suffix: linux-x86_64-vulkan-mlir
+
+      - uses: ./.github/actions/install-protobuf-linux
+
+      - uses: ./.github/actions/install-cmake-linux
+
+      - name: Set up Java 11 for publishing
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          server-id: ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Build Vulkan MLIR backend (linux-x86_64)
+        shell: bash
+        env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          DEBIAN_FRONTEND: noninteractive
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_TO: central
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
+          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
+          MAVEN_OPTS: -Xmx2g
+          LIBND4J_FILE_NAME: ${{ github.event.inputs.libnd4jUrl }}
+        run: |
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          mvn --version
+          cmake --version
+          protoc --version
+
+          if [ "$PERFORM_RELEASE" == 1 ]; then
+            bash ${GITHUB_WORKSPACE}/release-specified-component.sh \
+              "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "central" "${COMMAND}"
+          else
+            echo "Deploying Vulkan MLIR backend to snapshots"
+            BACKOFF=(0 60 180 300 420)
+            for attempt in 1 2 3 4 5; do
+              eval "${COMMAND}" && break
+              DELAY=${BACKOFF[$attempt]:-420}
+              echo "::warning::Deploy attempt $attempt failed. Retrying in ${DELAY}s..."
+              sleep $DELAY
+            done
+          fi
+
+      - name: Verify libnd4jvulkan.so has the SPIR-V JIT compiled in
+        if: ${{ github.event.inputs.libnd4jUrl == '' }}
+        shell: bash
+        run: |
+          SO=$(find libnd4j/blasbuild/vulkan -name 'libnd4jvulkan.so' | head -1)
+          if [ -z "$SO" ]; then
+            echo "::error::libnd4jvulkan.so was not produced by the native build"
+            exit 1
+          fi
+          ls -la "$SO"
+          if ! ldd "$SO" | grep -q 'libvulkan'; then
+            echo "::error::libnd4jvulkan.so does not link libvulkan"
+            exit 1
+          fi
+          # The MLIR variant's whole point: the replay recorder must be IN.
+          RECORDER_SYMS=$(nm -D "$SO" | grep -c -E 'VulkanSegmentRecorder|VulkanPipelineCache' || true)
+          if [ "$RECORDER_SYMS" -lt 1 ]; then
+            echo "::error::VulkanSegmentRecorder/VulkanPipelineCache symbols absent — HAVE_MLIR was not enabled"
+            exit 1
+          fi
+          echo "Recorder/pipeline-cache symbols present: $RECORDER_SYMS"
+
+      - name: Show sccache stats
+        if: always()
+        shell: bash
+        run: |
+          sccache --show-stats || true
+          sccache --stop-server || true
+
+      - name: Upload Vulkan MLIR build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vulkan-mlir-build-logs-linux-x86_64
+          path: |
+            libnd4j/blasbuild/vulkan/**/*.log
+          retention-days: 7
+
+      - name: Cleanup swap
+        if: always()
+        shell: bash
+        run: |
+          sudo swapoff /swapfile 2>/dev/null || true
+          sudo rm -f /swapfile 2>/dev/null || true

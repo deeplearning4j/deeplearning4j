@@ -31,7 +31,9 @@
 namespace sd {
 namespace ops {
 
-DECLARE_TYPES(lrn) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(lrn) {
+  getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
+   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
 
 CONFIGURABLE_OP_IMPL(lrn, 1, 1, true, 3, 1) {
   auto input = INPUT_VARIABLE(0);
@@ -48,6 +50,7 @@ CONFIGURABLE_OP_IMPL(lrn, 1, 1, true, 3, 1) {
 }
 
 DECLARE_TYPES(lrn_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

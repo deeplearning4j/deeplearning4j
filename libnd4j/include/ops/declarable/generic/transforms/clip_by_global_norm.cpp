@@ -61,6 +61,7 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
 
 DECLARE_TYPES(clip_by_global_norm) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

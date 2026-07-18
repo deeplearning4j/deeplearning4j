@@ -23,13 +23,13 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
@@ -148,14 +148,10 @@ abstract public class KerasConvolution extends KerasLayer {
                     // 2D conv: (nOut, nIn, kH, kW) -> (kH, kW, nIn, nOut)
                     paramValue = kerasParamValue.permute(2, 3, 1, 0);
                 paramValue = paramValue.dup();
-                for (int i = 0; i < paramValue.tensorsAlongDimension(0, 1); i++) {
-                    INDArray copyFilter = paramValue.tensorAlongDimension(i, 0, 1).dup();
-                    double[] flattenedFilter = copyFilter.ravel().data().asDouble();
-                    ArrayUtils.reverse(flattenedFilter);
-                    INDArray newFilter = Nd4j.create(flattenedFilter, copyFilter.shape());
-                    INDArray inPlaceFilter = paramValue.tensorAlongDimension(i, 0, 1);
-                    inPlaceFilter.muli(0).addi(newFilter.castTo(inPlaceFilter.dataType()));
-                }
+                long[] spatialAxes = paramValue.rank() == 5
+                        ? new long[] {0, 1, 2}
+                        : new long[] {0, 1};
+                paramValue = Nd4j.getExecutioner().exec(new Reverse(paramValue, spatialAxes))[0];
                 break;
             default:
                 throw new InvalidKerasConfigurationException("Unknown keras backend " + this.getDimOrder());

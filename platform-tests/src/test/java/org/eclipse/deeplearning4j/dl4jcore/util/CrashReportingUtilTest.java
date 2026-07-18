@@ -25,7 +25,8 @@ import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -36,19 +37,24 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.CrashReportingUtil;
 import org.junit.jupiter.api.*;
-
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.io.File;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.file.Path;
+import java.util.Map;
 
 @DisplayName("Crash Reporting Util Test")
 @NativeTag
@@ -76,22 +82,115 @@ class CrashReportingUtilTest extends BaseDL4JTest {
         CrashReportingUtil.crashDumpOutputDirectory(null);
     }
 
+    private MultiLayerNetwork newTestNetwork(WorkspaceMode workspaceMode) {
+        int kernel = 2;
+        int stride = 1;
+        int padding = 0;
+        int inputDepth = 1;
+        int height = 28;
+        int width = 28;
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345L)
+                .updater(new Sgd(0.01))
+                .weightInit(WeightInit.XAVIER)
+                .trainingWorkspaceMode(workspaceMode)
+                .inferenceWorkspaceMode(workspaceMode)
+                .list()
+                .layer(0, new ConvolutionLayer.Builder()
+                        .kernelSize(kernel, kernel)
+                        .stride(stride, stride)
+                        .padding(padding, padding)
+                        .nIn(inputDepth)
+                        .nOut(3)
+                        .build())
+                .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
+                        .kernelSize(kernel, kernel)
+                        .stride(stride, stride)
+                        .padding(padding, padding)
+                        .build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .nOut(10)
+                        .build())
+                .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+        net.addListeners(new ScoreIterationListener(1));
+        return net;
+    }
+
+    private DataSetIterator newTrainingIterator() throws Exception {
+        return new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, true, 12345), 5);
+    }
+
+    private static void assertNumericallyHealthy(String stage, Map<String, INDArray> arrays) {
+        long totalNaN = 0;
+        long totalInf = 0;
+        StringBuilder details = new StringBuilder();
+        for (Map.Entry<String, INDArray> entry : arrays.entrySet()) {
+            long nanCount = Nd4j.getExecutioner()
+                    .exec(new MatchCondition(entry.getValue(), Conditions.isNan()))
+                    .getLong(0);
+            long infCount = Nd4j.getExecutioner()
+                    .exec(new MatchCondition(entry.getValue(), Conditions.isInfinite()))
+                    .getLong(0);
+            totalNaN += nanCount;
+            totalInf += infCount;
+            if (nanCount != 0 || infCount != 0) {
+                details.append(entry.getKey())
+                        .append("[NaN=").append(nanCount)
+                        .append(",Inf=").append(infCount).append("] ");
+            }
+        }
+        assertEquals(0, totalNaN, stage + " contains NaNs: " + details);
+        assertEquals(0, totalInf, stage + " contains infinities: " + details);
+    }
+
+    private void trainFixtureWithoutCrashDump(WorkspaceMode workspaceMode) throws Exception {
+        MultiLayerNetwork net = newTestNetwork(workspaceMode);
+        net.fit(newTrainingIterator());
+        assertNotNull(net.params());
+    }
+
+    @Test
+    @DisplayName("First Minibatch Gradients Are Finite Before Update")
+    void testFirstMinibatchGradientsAreFiniteBeforeUpdate() throws Exception {
+        MultiLayerNetwork net = newTestNetwork(WorkspaceMode.NONE);
+        DataSet first = newTrainingIterator().next();
+        net.setInput(first.getFeatures());
+        net.setLabels(first.getLabels());
+        net.computeGradientAndScore();
+        assertNumericallyHealthy("first-minibatch gradients", net.gradient().gradientForVariable());
+    }
+
+    @Test
+    @DisplayName("First Minibatch Parameters Are Finite After Update")
+    void testFirstMinibatchParametersAreFiniteAfterUpdate() throws Exception {
+        MultiLayerNetwork net = newTestNetwork(WorkspaceMode.NONE);
+        DataSet first = newTrainingIterator().next();
+        net.fit(first);
+        assertNumericallyHealthy("parameters after first update", net.paramTable());
+    }
+
+    @Test
+    @DisplayName("Training Fixture Without Crash Dump, Workspaces Enabled")
+    void testTrainingFixtureWithoutCrashDumpWorkspacesEnabled() throws Exception {
+        trainFixtureWithoutCrashDump(WorkspaceMode.ENABLED);
+    }
+
+    @Test
+    @DisplayName("Training Fixture Without Crash Dump, Workspaces Disabled")
+    void testTrainingFixtureWithoutCrashDumpWorkspacesDisabled() throws Exception {
+        trainFixtureWithoutCrashDump(WorkspaceMode.NONE);
+    }
+
     @Test
     @DisplayName("Test")
     void test() throws Exception {
         File dir = testDir.toFile();
         CrashReportingUtil.crashDumpOutputDirectory(dir);
-        int kernel = 2;
-        int stride = 1;
-        int padding = 0;
-        PoolingType poolingType = PoolingType.MAX;
-        int inputDepth = 1;
-        int height = 28;
-        int width = 28;
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp()).dist(new NormalDistribution(0, 1)).list().layer(0, new ConvolutionLayer.Builder().kernelSize(kernel, kernel).stride(stride, stride).padding(padding, padding).nIn(inputDepth).nOut(3).build()).layer(1, new SubsamplingLayer.Builder(poolingType).kernelSize(kernel, kernel).stride(stride, stride).padding(padding, padding).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(10).build()).setInputType(InputType.convolutionalFlat(height, width, inputDepth)).build();
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-        net.addListeners(new ScoreIterationListener(1));
+        MultiLayerNetwork net = newTestNetwork(WorkspaceMode.ENABLED);
         // Test net that hasn't been trained yet
         Exception e = new Exception();
         CrashReportingUtil.writeMemoryCrashDump(net, e);
@@ -105,7 +204,7 @@ class CrashReportingUtilTest extends BaseDL4JTest {
         assertTrue(str.contains("JavaCPP"));
         assertTrue(str.contains("ScoreIterationListener"));
         // Train:
-        DataSetIterator iter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, true, 12345), 5);
+        DataSetIterator iter = newTrainingIterator();
         net.fit(iter);
         dir = testDir.toFile();
         FileUtils.cleanDirectory(dir);

@@ -26,6 +26,7 @@
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // Thread-local tuning guard - now function-local in header (isTuningRef())
 
@@ -262,6 +263,7 @@ std::unique_ptr<graph::Context> KernelAutoTuner::cloneContext(graph::Context& or
   return nullptr;
 }
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

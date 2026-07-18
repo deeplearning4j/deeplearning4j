@@ -83,7 +83,9 @@ DECLARE_SHAPE_FN(triangular_solve) {
 }
 
 DECLARE_TYPES(triangular_solve) {
+
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS})->setSameMode(false);
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

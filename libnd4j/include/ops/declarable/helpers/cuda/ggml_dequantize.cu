@@ -352,24 +352,79 @@ void ggmlDequantize(
                 std::vector<float> hostOut(numElements);
                 // Use CPU dequantization for unsupported GPU types
                 // Import the CPU dispatch function signature
+                // Helper: FP16 bits → float
+                auto fp16bits_to_float = [](uint16_t h) -> float {
+                    union { uint32_t u; float f; } v;
+                    v.u = ((uint32_t)(h & 0x8000) << 16)
+                        | ((uint32_t)((h & 0x7C00) + 0x1C000) << 13)
+                        | ((uint32_t)(h & 0x03FF) << 13);
+                    return v.f;
+                };
+
                 switch (quantType) {
                     case GGML_QUANT_Q4_1: {
-                        // Q4_1: 20 bytes per 32 elements
+                        // Q4_1: 2(d)+2(m)+16(qs) = 20 bytes per 32 elements
                         LongType nBlocks = (numElements + 31) / 32;
                         LongType outIdx = 0;
                         for (LongType bl = 0; bl < nBlocks; bl++) {
                             const uint8_t* blk = hostRaw.data() + bl * 20;
                             uint16_t dR, mR;
                             memcpy(&dR, blk, 2); memcpy(&mR, blk + 2, 2);
-                            // Simple FP16 decode via bit manipulation
-                            union { uint32_t u; float f; } du, mu;
-                            du.u = ((uint32_t)(dR & 0x8000) << 16) | ((uint32_t)((dR & 0x7C00) + 0x1C000) << 13) | ((uint32_t)(dR & 0x03FF) << 13);
-                            mu.u = ((uint32_t)(mR & 0x8000) << 16) | ((uint32_t)((mR & 0x7C00) + 0x1C000) << 13) | ((uint32_t)(mR & 0x03FF) << 13);
-                            float d = du.f, m = mu.f;
+                            float d = fp16bits_to_float(dR);
+                            float m = fp16bits_to_float(mR);
                             const uint8_t* qs = blk + 4;
+                            // Q4_1 element layout: qs[j] low nibble = element j*2, high nibble = element j*2+1
                             for (int j = 0; j < 16 && outIdx < numElements; j++) {
                                 hostOut[outIdx++] = d * (qs[j] & 0x0F) + m;
                                 if (outIdx < numElements) hostOut[outIdx++] = d * ((qs[j] >> 4) & 0x0F) + m;
+                            }
+                        }
+                        break;
+                    }
+                    case GGML_QUANT_Q5_0: {
+                        // Q5_0: 2(d)+4(qh)+16(qs) = 22 bytes per 32 elements
+                        // Element layout: qs[j] low nibble = element j (j=0..15)
+                        //                 qs[j] high nibble = element j+16
+                        //                 qh bit j = 5th bit of element j
+                        //                 qh bit (j+16) = 5th bit of element j+16
+                        LongType nBlocks = (numElements + 31) / 32;
+                        for (LongType bl = 0; bl < nBlocks; bl++) {
+                            const uint8_t* blk = hostRaw.data() + bl * 22;
+                            uint16_t dR; memcpy(&dR, blk, 2);
+                            float d = fp16bits_to_float(dR);
+                            uint32_t qh; memcpy(&qh, blk + 2, 4);
+                            const uint8_t* qs = blk + 6;
+                            LongType base = bl * 32;
+                            for (int j = 0; j < 16; j++) {
+                                int xh0 = ((qh >> j) & 1) << 4;
+                                int xh1 = ((qh >> (j + 16)) & 1) << 4;
+                                int v0 = (qs[j] & 0x0F) | xh0;
+                                int v1 = ((qs[j] >> 4) & 0x0F) | xh1;
+                                if (base + j      < numElements) hostOut[base + j]      = d * (v0 - 16);
+                                if (base + j + 16 < numElements) hostOut[base + j + 16] = d * (v1 - 16);
+                            }
+                        }
+                        break;
+                    }
+                    case GGML_QUANT_Q5_1: {
+                        // Q5_1: 2(d)+2(m)+4(qh)+16(qs) = 24 bytes per 32 elements
+                        // Same element layout as Q5_0 but with min offset (unsigned values)
+                        LongType nBlocks = (numElements + 31) / 32;
+                        for (LongType bl = 0; bl < nBlocks; bl++) {
+                            const uint8_t* blk = hostRaw.data() + bl * 24;
+                            uint16_t dR, mR; memcpy(&dR, blk, 2); memcpy(&mR, blk + 2, 2);
+                            float d = fp16bits_to_float(dR);
+                            float m = fp16bits_to_float(mR);
+                            uint32_t qh; memcpy(&qh, blk + 4, 4);
+                            const uint8_t* qs = blk + 8;
+                            LongType base = bl * 32;
+                            for (int j = 0; j < 16; j++) {
+                                int xh0 = ((qh >> j) & 1) << 4;
+                                int xh1 = ((qh >> (j + 16)) & 1) << 4;
+                                int v0 = (qs[j] & 0x0F) | xh0;
+                                int v1 = ((qs[j] >> 4) & 0x0F) | xh1;
+                                if (base + j      < numElements) hostOut[base + j]      = d * v0 + m;
+                                if (base + j + 16 < numElements) hostOut[base + j + 16] = d * v1 + m;
                             }
                         }
                         break;

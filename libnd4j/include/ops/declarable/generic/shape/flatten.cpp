@@ -51,7 +51,8 @@ CUSTOM_OP_IMPL(flatten, -1, 1, false, 0, 1) {
 DECLARE_TYPES(flatten) {
   getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS, BOOL});
   getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS, BOOL});
-  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING);
+  getOpDescriptor()->addTraits(
+      OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_CONCAT | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(flatten) {

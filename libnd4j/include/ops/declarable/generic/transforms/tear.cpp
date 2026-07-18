@@ -73,7 +73,7 @@ DECLARE_SHAPE_FN(tear) {
   return result;
 }
 
-DECLARE_TYPES(tear) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(tear) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true);  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING); }
 }  // namespace ops
 }  // namespace sd
 

@@ -63,6 +63,7 @@ DECLARE_SHAPE_FN(griffin_lim) {
 }
 
 DECLARE_TYPES(griffin_lim) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

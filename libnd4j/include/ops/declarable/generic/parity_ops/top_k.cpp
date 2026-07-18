@@ -90,7 +90,9 @@ DECLARE_TYPES(top_k) {
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, ANY)
-      ->setAllowedOutputTypes(1, {ALL_INDICES});
+      ->setAllowedOutputTypes(1, {ALL_INDICES})
+      ->setNumberOfStructuralIArgs(1);
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 }
 }  // namespace ops
 }  // namespace sd

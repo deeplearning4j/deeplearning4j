@@ -144,10 +144,15 @@ static void dequantize_q5_0(const uint8_t* data, float* output, LongType numElem
         const uint8_t* qs = block + 6;
         LongType outBase = b * QK5_0;
 
+        // Q5_0 GGML element layout (from dequantize_row_q5_0 reference):
+        //   qs[j] low nibble  → element j      (j = 0..15)
+        //   qs[j] high nibble → element j + 16 (j = 0..15)
+        //   qh bit j          → 5th bit of element j
+        //   qh bit (j + 16)   → 5th bit of element j + 16
         for (int j = 0; j < QK5_0 / 2; j++) {
-            LongType idx0 = outBase + j * 2;
-            LongType idx1 = outBase + j * 2 + 1;
-            int xh0 = ((qh >> (j)) & 1) << 4;
+            LongType idx0 = outBase + j;          // element j (first half)
+            LongType idx1 = outBase + j + 16;     // element j+16 (second half)
+            int xh0 = ((qh >> j) & 1) << 4;
             int xh1 = ((qh >> (j + 16)) & 1) << 4;
             int v0 = (qs[j] & 0x0F) | xh0;
             int v1 = ((qs[j] >> 4) & 0x0F) | xh1;
@@ -179,10 +184,15 @@ static void dequantize_q5_1(const uint8_t* data, float* output, LongType numElem
         const uint8_t* qs = block + 8;
         LongType outBase = b * QK5_1;
 
+        // Q5_1 GGML element layout (same as Q5_0 but unsigned with min offset):
+        //   qs[j] low nibble  → element j      (j = 0..15)
+        //   qs[j] high nibble → element j + 16 (j = 0..15)
+        //   qh bit j          → 5th bit of element j
+        //   qh bit (j + 16)   → 5th bit of element j + 16
         for (int j = 0; j < QK5_1 / 2; j++) {
-            LongType idx0 = outBase + j * 2;
-            LongType idx1 = outBase + j * 2 + 1;
-            int xh0 = ((qh >> (j)) & 1) << 4;
+            LongType idx0 = outBase + j;          // element j (first half)
+            LongType idx1 = outBase + j + 16;     // element j+16 (second half)
+            int xh0 = ((qh >> j) & 1) << 4;
             int xh1 = ((qh >> (j + 16)) & 1) << 4;
             int v0 = (qs[j] & 0x0F) | xh0;
             int v1 = ((qs[j] >> 4) & 0x0F) | xh1;

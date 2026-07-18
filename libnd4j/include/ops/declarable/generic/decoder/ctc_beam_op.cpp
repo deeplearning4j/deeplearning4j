@@ -103,6 +103,7 @@ CUSTOM_OP_IMPL(ctc_beam, 2, 3, false, 0, -2) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(ctc_beam) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INDICES})

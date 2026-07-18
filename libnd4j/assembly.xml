@@ -32,8 +32,15 @@
             <useDefaultExcludes>true</useDefaultExcludes>
             <excludes>
                 <exclude>**/target/**</exclude>
+                <!-- Atomic writers create short-lived <name>.tmp.<pid>.<nonce> files.
+                     Exclude them so the archiver cannot race a rename after scanning. -->
+                <exclude>**/*.tmp.*</exclude>
+                <!-- Compiler scratch files are created and removed while the archive is scanned. -->
+                <exclude>**/compiler_tmp/**</exclude>
                 <exclude>**/CMakeFiles/**</exclude>
                 <exclude>**/CMakeCache.txt</exclude>
+                <!-- Smart-ccache hashes are mutable build metadata, not release artifacts. -->
+                <exclude>**/.ccache_hashes/**</exclude>
                 <exclude>%regex[(?!.*${libnd4j.chip}/).*blasbuild.*]</exclude>
                 <exclude>%regex[.*/lib/googletest.*]</exclude>
             </excludes>

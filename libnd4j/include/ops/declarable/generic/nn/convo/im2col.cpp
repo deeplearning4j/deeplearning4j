@@ -134,6 +134,7 @@ CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
 }
 
 DECLARE_TYPES(im2col) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedOutputTypes(0, DataType::INHERIT)
@@ -142,6 +143,7 @@ DECLARE_TYPES(im2col) {
 }
 
 DECLARE_TYPES(im2col_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | (OP_TRAIT_BACKWARD));
   getOpDescriptor()
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedOutputTypes(0, DataType::INHERIT)

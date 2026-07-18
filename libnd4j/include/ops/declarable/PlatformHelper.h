@@ -22,6 +22,8 @@
 
 #ifndef SD_PLATFORMHELPER_H
 #define SD_PLATFORMHELPER_H
+
+#include <system/BackendNamespace.h>
 #include <execution/Engine.h>
 #include <graph/Context.h>
 #include <helpers/HelperVersionRegistry.h>
@@ -33,6 +35,7 @@
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 /**
  * This abstract class defines methods used by platform-specific helpers implementations
  */
@@ -243,6 +246,7 @@ class SD_LIB_EXPORT PlatformHelper {
     return ss.str();
   }
 };
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

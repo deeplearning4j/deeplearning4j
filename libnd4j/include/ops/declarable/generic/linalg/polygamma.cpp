@@ -56,7 +56,10 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
 DECLARE_SYN(polyGamma, polygamma);
 DECLARE_SYN(PolyGamma, polygamma);
 
-DECLARE_TYPES(polygamma) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(polygamma) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+}
 }  // namespace ops
 }  // namespace sd
 

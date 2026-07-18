@@ -27,6 +27,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 
 /**
  * This class is root abstraction for legacy XYZ ops wrappers.
@@ -53,6 +54,7 @@ class SD_LIB_EXPORT LegacyOp : public DeclarableOp {
   ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override = 0;
   virtual LegacyOp* clone() = 0;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

@@ -54,6 +54,7 @@ DECLARE_SYN(MergeMax, mergemax);
 
 DECLARE_TYPES(mergemax) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(mergemax_bp, 2, 1, false, 0, 0) {
@@ -77,6 +78,7 @@ CUSTOM_OP_IMPL(mergemax_bp, 2, 1, false, 0, 0) {
 
 DECLARE_TYPES(mergemax_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 DECLARE_SHAPE_FN(mergemax_bp) {
   const int numOfInArrs = block.width() - 1;

@@ -201,6 +201,7 @@ DECLARE_SHAPE_FN(conv2d) {
 
 
 DECLARE_TYPES(conv2d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})

@@ -27,9 +27,12 @@
 
 #include "cudnnUtils.h"
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // Simple RNN implementation is designed for 1 physical layer
 constexpr int numLayers = 1;
@@ -431,6 +434,10 @@ void cudnn_simple_rnn_v8(LaunchContext *contextPtr, NDArray *input, NDArray *seq
 }
 
 #endif
+
+// Op macros below open SD_NS themselves (platform_boilerplate.h) — the
+// file-level wrap must end before them or SD_NS nests inside itself.
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(simple_rnn, ENGINE_CUDA) {

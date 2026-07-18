@@ -28,6 +28,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 DeclarableReductionOp::DeclarableReductionOp(int numInputs, int numOutputs, const char* opName, bool allowsInplace,
                                              int tArgs, int iArgs)
     : DeclarableOp(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
@@ -57,5 +58,6 @@ ShapeList* DeclarableReductionOp::calculateOutputShape(ShapeList* inputShape, Co
   auto newShape = ShapeUtils::evalReduceShapeInfo('c', &dims, inputShape->at(0), false, false, block.getWorkspace());
   return SHAPELIST(newShape);
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

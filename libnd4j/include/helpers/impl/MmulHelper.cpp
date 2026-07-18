@@ -26,6 +26,7 @@
 
 #include <array/DataBuffer.h>
 #include <array/NDArrayFactory.h>
+#include <execution/LaunchContext.h>
 #include <execution/Threads.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
@@ -54,9 +55,24 @@
 #if defined(HAVE_MKL)
 #include <helpers/MklBlasHelper.h>
 #endif
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 
 namespace sd {
+
+// CUDA kernels and cuBLAS consume temporary operands asynchronously. Retire an
+// owned temporary on its execution stream so the pool cannot recycle its storage
+// before the last consumer, without introducing a host or device synchronization.
+void MmulHelper::deleteTemporary(NDArray* array) {
+  if (array == nullptr) return;
+#ifdef SD_CUDA
+  auto* dataBuffer = array->dataBuffer();
+  auto* context = array->getContext();
+  if (dataBuffer != nullptr && context != nullptr && !dataBuffer->isClosed()) {
+    dataBuffer->freeGpuOnStream(context->getCudaStream());
+  }
+#endif
+  delete array;
+}
 
 // ============================================================================
 // BATCHED MATMUL BACKEND DISPATCH
@@ -66,6 +82,8 @@ namespace sd {
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::tryOneDnnBatched(NDArray* A, NDArray* B, NDArray* C,
                                    double alpha, double beta) {
+  if (sd::graph::dspHasDeviceMemory()) return false;
+
   const auto aRank = A->rankOf();
   const auto bRank = B->rankOf();
   const auto cRank = C->rankOf();
@@ -214,13 +232,13 @@ bool MmulHelper::tryOneDnnBatched(NDArray* A, NDArray* B, NDArray* C,
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-// tryBlasStridedBatched is defined in cpu/MmulHelper.cpp (CPU/MKL)
-// and cuda/MmulHelper.cu (CUDA/cuBLAS) — platform build selects the right one.
+// tryBlasStridedBatched is provided by each platform MmulHelper
+// implementation; the selected artifact supplies exactly one definition.
 
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::tryBlasBatched(NDArray* A, NDArray* B, NDArray* C,
                                  double alpha, double beta) {
-  if (sd::graph::dspIsCudaBuild()) return false;
+  if (sd::graph::dspHasDeviceMemory()) return false;
   if (!Environment::getInstance().isEnableBlas()) {
     return false;
   }
@@ -365,7 +383,7 @@ bool MmulHelper::tryBlasBatched(NDArray* A, NDArray* B, NDArray* C,
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::tryBlasPerBatch(NDArray* A, NDArray* B, NDArray* C,
                                   double alpha, double beta) {
-  if (sd::graph::dspIsCudaBuild()) return false;
+  if (sd::graph::dspHasDeviceMemory()) return false;
   if (!Environment::getInstance().isEnableBlas()) {
     return false;
   }
@@ -459,6 +477,11 @@ bool MmulHelper::tryBlasPerBatch(NDArray* A, NDArray* B, NDArray* C,
 //////////////////////////////////////////////////////////////////////////
 void MmulHelper::manualBatchedGemm(NDArray* A, NDArray* B, NDArray* C,
                                     double alpha, double beta) {
+  if (sd::graph::dspHasDeviceMemory()) {
+    THROW_EXCEPTION(
+        "MmulHelper host batched kernel cannot consume device-memory arrays");
+  }
+
   const int aRank = A->rankOf();
   const auto xType = A->dataType();
 
@@ -593,7 +616,18 @@ void MmulHelper::manualBatchedGemm(NDArray* A, NDArray* B, NDArray* C,
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::mmulBatched(NDArray* A, NDArray* B, NDArray* C,
                               double alpha, double beta) {
-  // Try backends in order of preference:
+  // Device-memory backends must stay entirely on their backend-owned execution
+  // path. A failed fast path is followed by the backend's general batched
+  // implementation; host BLAS and the manual host kernel are CPU-only.
+  if (sd::graph::dspHasDeviceMemory()) {
+    if (tryBlasStridedBatched(A, B, C, alpha, beta)) {
+      return true;
+    }
+    mmulNxN(A, B, C, alpha, beta, C->ordering());
+    return true;
+  }
+
+  // Try CPU backends in order of preference:
   // 1. OneDNN (single batched primitive - most efficient for bf16/f16)
   if (tryOneDnnBatched(A, B, C, alpha, beta)) {
     return true;
@@ -616,12 +650,6 @@ bool MmulHelper::mmulBatched(NDArray* A, NDArray* B, NDArray* C,
   }
 
   // 5. Manual parallel implementation (CPU only).
-  // On CUDA builds, manualBatchedGemm reads host buffers which are stale/uninitialised
-  // for GPU-resident arrays.  Return false so the caller (mmul()) falls through to
-  // mmulNxN which dispatches to the proper CUDA batched-GEMM kernel.
-  if (sd::graph::dspIsCudaBuild()) {
-    return false;
-  }
   manualBatchedGemm(A, B, C, alpha, beta);
   return true;
 }
@@ -952,82 +980,6 @@ NDArray* MmulHelper::tensorDot(NDArray* a, NDArray* b,
 }
 #endif
 
-// ============================================================================
-// CORE MMUL DISPATCH
-// ============================================================================
-
-//////////////////////////////////////////////////////////////////////////
-NDArray* MmulHelper::mmul(NDArray* A, NDArray* B, NDArray* C, const double alpha,
-                          const double beta, const char outOrder) {
-  LongType lenDim;
-  const LongType aRank = A->rankOf();
-  const LongType bRank = B->rankOf();
-  const bool isAVector = shape::isCommonVector(A->shapeInfo(), lenDim);
-  const bool isBVector = shape::isCommonVector(B->shapeInfo(), lenDim);
-
-  // Dot product of 2 vectors
-  if (A->lengthOf() == B->lengthOf() && isAVector && isBVector &&
-      (aRank != 2 || (aRank == 2 && (A->isSameShape(B) || (bRank == 1 && A->sizeAt(1) == 1))))) {
-    return dot(A, B, C, alpha, beta);
-  }
-
-  // Matrix x matrix
-  if (aRank == 2 && bRank == 2) {
-    return mmulMxM(A, B, C, alpha, beta, outOrder);
-  }
-
-  // Matrix x vector
-  if (aRank == 2 && isBVector) {
-    return mmulMxV(A, B, C, alpha, beta, outOrder);
-  }
-
-  // Vector x matrix
-  if (isAVector && bRank == 2) {
-    std::vector<sd::LongType> aShape = {1, A->lengthOf()};
-    std::vector<sd::LongType> cShape = {1, C->lengthOf()};
-
-    NDArray* A2 = A->reshape(A->ordering(), aShape);
-    NDArray* C2 = C ? C->reshape(C->ordering(), cShape, false) : nullptr;
-    auto result = mmulMxM(A2, B, C2, alpha, beta, outOrder);
-
-    if (A2 != A) delete A2;
-    if (C2 != nullptr && C2 != C) delete C2;
-
-    if (!C) {
-      result->reshapei({result->lengthOf()});
-      return result;
-    }
-    return C;
-  }
-
-  // Batched matrix multiplication - try optimized BLAS/OneDNN path first
-  // For 3D/4D tensors with matching ranks, use mmulBatched for OneDNN/BLAS acceleration
-  if ((aRank == 3 || aRank == 4) && aRank == bRank) {
-    // Create output array if not provided
-    if (C == nullptr) {
-      std::vector<LongType> cShape;
-      if (aRank == 3) {
-        cShape = {A->sizeAt(0), A->sizeAt(1), B->sizeAt(2)};
-      } else {
-        cShape = {A->sizeAt(0), A->sizeAt(1), A->sizeAt(2), B->sizeAt(3)};
-      }
-      C = new NDArray(outOrder, cShape, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
-                      A->getContext());
-    }
-    if (C->isEmpty()) return C;
-
-    // Try optimized batched path (OneDNN -> BLAS batched -> BLAS per-batch -> manual)
-    if (mmulBatched(A, B, C, alpha, beta)) {
-      return C;
-    }
-    // mmulBatched returns false on CUDA (to avoid manualBatchedGemm with CPU buffers),
-    // falling through to mmulNxN which dispatches to the proper CUDA kernel.
-  }
-
-  // Fallback: general N-dimensional batched multiplication
-  return mmulNxN(A, B, C, alpha, beta, outOrder);
-}
-
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::resolveTranspose(sd::NDArray& a, sd::NDArray& b, bool& transA, bool& transB) {
   int rowsA = a.sizeAt(-2);
@@ -1069,8 +1021,23 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
 
   if (z->isEmpty()) return;
 
+  // Let cuBLAS consume transposed batched operands directly before creating any
+  // permute+dup temporaries. Besides avoiding the materialization, this prevents
+  // an unused asynchronous dup from being destroyed while its kernel is in flight.
+  if (sd::graph::dspIsCudaBuild() && (transX || transY) &&
+      tryBlasStridedBatched(x, y, z, alpha, beta, transX, transY)) {
+    if (realFinalResult != nullptr && realFinalResult != z &&
+        (realFinalResult->getDataBuffer() != z->getDataBuffer() ||
+         realFinalResult->offset() != z->offset() ||
+         realFinalResult->lengthOf() != z->lengthOf())) {
+      realFinalResult->assign(z);
+    }
+    return;
+  }
+
   // Fast path for 2D with BLAS transpose flags (CPU only)
-  if (!sd::graph::dspIsCudaBuild() && xRank == 2 && yRank == 2 && Environment::getInstance().isEnableBlas()) {
+  if (!sd::graph::dspHasDeviceMemory() && xRank == 2 && yRank == 2 &&
+      Environment::getInstance().isEnableBlas()) {
     const auto xType = x->dataType();
     const bool sameTypes = (xType == y->dataType()) && (xType == z->dataType());
     const bool isFloat = (xType == DataType::FLOAT32);
@@ -1192,37 +1159,18 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     const int zRankT = zT->rankOf();
 
     if ((xRankT == 3 || xRankT == 4) && xRankT == yRankT && yRankT == zRankT) {
-      if (sd::graph::dspIsCudaBuild()) {
-        // CUDA: First try passing transpose flags directly to tryBlasStridedBatched on the
-        // ORIGINAL arrays (x, y) — not the already-permuted xT/yT. This lets cuBLAS handle
-        // the transpose natively via CUBLAS_OP_T, producing accumulation order identical to
-        // the per-slice 2D path, avoiding floating-point divergence from permute+dup+CUBLAS_OP_N.
-        // The xT/yT permuted copies (from the block above) are only used when this fast path fails.
-        if (tryBlasStridedBatched(const_cast<NDArray*>(x), const_cast<NDArray*>(y), z, alpha, beta, transX, transY)) {
-          // Fast path succeeded; discard the permuted copies (they were allocated above but not needed).
-          if (xT != x && xT != nullptr) { delete xT; xT = const_cast<NDArray*>(x); }
-          if (yT != y && yT != nullptr) { delete yT; yT = const_cast<NDArray*>(y); }
-          // realFinalResult copy handled at end of function via cleanup path.
-        } else if (!tryBlasStridedBatched(xT, yT, zT, alpha, beta)) {
-          // Both paths failed (non-contiguous strides, unsupported type, etc.)
-          // Create contiguous copies and retry cuBLAS before falling back to custom kernel.
+      if (sd::graph::dspHasDeviceMemory()) {
+        // A supported transpose was already handled on the original operands above.
+        // If it was unsupported, use the materialized operands and retain the generic
+        // fallback for non-contiguous layouts and data types.
+        if (!tryBlasStridedBatched(xT, yT, zT, alpha, beta)) {
           NDArray* xDup = xT->dup();
           NDArray* yDup = yT->dup();
           if (!tryBlasStridedBatched(xDup, yDup, zT, alpha, beta)) {
-            // Still failed — fall back to custom CUDA kernel
             mmulNxN(xDup, yDup, zT, alpha, beta, z->ordering());
           }
-          // The batched GEMM reads xDup/yDup ASYNCHRONOUSLY on the arrays' context
-          // stream (cublasSetStream uses A->getContext()). Freeing them before those
-          // reads complete recycles the blocks through the pool; later ops overwrite
-          // them mid-GEMM → garbage/NaN rows in the output (BGE attention NaN root).
-          // dspSyncDefaultStream() synced the WRONG stream (default context) and was
-          // skipped during replay entirely. synchronizeExecStream syncs the dup's own
-          // context stream and is capture-aware (skips only during capture, where the
-          // recorded work has not run yet).
-          xDup->synchronizeExecStream("mmul batched dup free");
-          delete xDup;
-          delete yDup;
+          deleteTemporary(xDup);
+          deleteTemporary(yDup);
         }
       } else {
         // CPU: use mmulBatched for 3D/4D with matching ranks (uses OneDNN/BLAS)
@@ -1234,9 +1182,10 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     }
   }
 
-  // Cleanup
-  if (xT != x && xT != nullptr) delete xT;
-  if (yT != y && yT != nullptr) delete yT;
+  // Cleanup. CUDA temporaries are retired behind their last stream consumer;
+  // CPU temporaries retain ordinary synchronous destruction.
+  if (xT != x && xT != nullptr) deleteTemporary(xT);
+  if (yT != y && yT != nullptr) deleteTemporary(yT);
 
   if (realFinalResult != nullptr && realFinalResult != z) {
     // Skip redundant copy when the result already shares the same buffer.

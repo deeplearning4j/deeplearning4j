@@ -87,11 +87,11 @@ CUSTOM_OP_IMPL(relative_position_bias, 1, 1, false, 0, 3) {
 }
 
 DECLARE_TYPES(relative_position_bias) {
+    getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
         ->setAllowedInputTypes(1, {ALL_INTS})
-        ->setAllowedOutputTypes({ALL_FLOATS})
-        ->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
+        ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(relative_position_bias) {

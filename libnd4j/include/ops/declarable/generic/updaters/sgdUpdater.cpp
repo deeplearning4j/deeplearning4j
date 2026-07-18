@@ -55,7 +55,9 @@ CONFIGURABLE_OP_IMPL(sgd_updater, 1, 1, true, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(sgd_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(sgd_updater) {
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
 }  // namespace ops
 }  // namespace sd

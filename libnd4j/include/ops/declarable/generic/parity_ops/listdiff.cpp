@@ -69,6 +69,7 @@ DECLARE_SHAPE_FN(listdiff) {
 }
 
 DECLARE_TYPES(listdiff) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
       ->setAllowedOutputTypes(0, DataType::INHERIT)

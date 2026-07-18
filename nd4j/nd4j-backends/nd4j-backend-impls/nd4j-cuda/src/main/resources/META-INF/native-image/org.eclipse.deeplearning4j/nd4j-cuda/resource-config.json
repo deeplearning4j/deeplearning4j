@@ -1,0 +1,21 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "nd4j-jcublas\\.properties"
+      },
+      {
+        "pattern": "cudafunctions\\.properties"
+      },
+      {
+        "pattern": "function_threads\\.properties"
+      },
+      {
+        "pattern": "native\\.properties"
+      },
+      {
+        "pattern": "org/nd4j/linalg/jcublas/bindings/.*\\.(so|dll|dylib)"
+      }
+    ]
+  }
+}

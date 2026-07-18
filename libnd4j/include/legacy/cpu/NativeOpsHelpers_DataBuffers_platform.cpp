@@ -26,6 +26,12 @@
 #include <algorithm>
 #include <cstring>
 
+int dbDeviceId(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr)
+    THROW_EXCEPTION("dbDeviceId: dataBuffer is null");
+  return dataBuffer->deviceId();
+}
+
 void clearLastError() {
   sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
   sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");

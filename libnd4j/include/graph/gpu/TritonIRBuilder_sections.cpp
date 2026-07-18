@@ -39,7 +39,6 @@
 #include <helpers/logger.h>
 #include <helpers/shape.h>
 #include <math/templatemath.h>
-#include <ops/OpTraitTable.h>
 #include <system/Environment.h>
 
 #include <algorithm>
@@ -82,32 +81,35 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   int segSize = endSlot - startSlot + 1;
   if (segSize == 0) return sections;
 
-  // Helper: resolve source index to NDArray
+  // Helper: resolve source index to an initialized NDArray. Output-slot tables
+  // legitimately contain allocated placeholders before every producer has run;
+  // a non-null pointer therefore does not imply that shapeInfo() is usable. Keep
+  // those placeholders on the shape-cache path below instead of dereferencing
+  // them during parallel precompilation.
   auto resolveArray = [&](int srcIdx) -> NDArray* {
+    NDArray* resolved = nullptr;
     if (srcIdx < 0) {
       int extIdx = -(srcIdx + 1);
-      if (extIdx < numExternalInputs && externalInputs) return externalInputs[extIdx];
+      if (extIdx < numExternalInputs && externalInputs) resolved = externalInputs[extIdx];
     } else if (srcIdx < totalOutputSlots && outputSlots) {
-      return outputSlots[srcIdx];
+      resolved = outputSlots[srcIdx];
     }
-    return nullptr;
+
+    if (resolved != nullptr && !resolved->hasValidShapeInfo()) {
+      DSP_DIAG(COMPILE,
+               "identifySections: srcIdx=%d resolved to an uninitialized NDArray placeholder; "
+               "using cached shape metadata",
+               srcIdx);
+      return nullptr;
+    }
+    return resolved;
   };
 
   auto resolveSlotTraits = [](const NativeSlot& slot) -> uint32_t {
-    // Try slot.ident.op first (may be set in some code paths)
-    if (slot.ident.op != nullptr && slot.ident.op->getOpDescriptor() != nullptr) {
-      uint32_t traits = slot.ident.op->getOpDescriptor()->getTraits();
-      if (traits != 0) {
-        DSP_DIAG(COMPILE, "resolveSlotTraits: op='%s' via slot.ident.op traits=0x%x",
-                 slot.ident.opName.c_str(), traits);
-        return traits;
-      }
-      // Op descriptor exists but has no traits set — fall through to trait table
-    }
-    // Look up traits by op name from the trait table.
-    // This is the primary path since op descriptors often don't have traits set.
-    uint32_t traits = sd::ops::getOpTraitsByName(slot.ident.opName);
-    DSP_DIAG(COMPILE, "resolveSlotTraits: op='%s' via trait table traits=0x%x",
+    const auto* descriptor =
+        slot.ident.op != nullptr ? slot.ident.op->getOpDescriptor() : nullptr;
+    const uint32_t traits = descriptor != nullptr ? descriptor->getTraits() : 0;
+    DSP_DIAG(COMPILE, "resolveSlotTraits: op='%s' descriptor traits=0x%x",
              slot.ident.opName.c_str(), traits);
     return traits;
   };
@@ -154,14 +156,25 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       return KernelSectionType::SCATTER_ND;
     }
     if (slotHasTrait(slot, sd::ops::OP_TRAIT_SLICE)) {
-      // Dynamically-parameterized strided_slice (tensor-based begin/end/stride,
-      // numInputs >= 3) cannot be safely compiled into a Triton kernel for CUDA
-      // graph replay. emitSliceSection() bakes inputShape, begins, ends,
-      // inStrides, and nElements as IR constants at compile time. When the input
-      // pointer is refreshed on replay, these baked constants produce OOB reads
-      // if the slice position has changed (e.g., KV cache slices in decode).
+      // emitSliceSection() bakes the normalized slice geometry into IR. Dynamic
+      // tensor parameters therefore remain native ordered ranges. Static slices
+      // are compiled only when their mask/stride contract is representable by the
+      // rank-preserving positive-stride emitter.
       if (slot.wiring.numInputs >= 3 || slot.flags.outputShapeDependsOnInputValues) {
         return KernelSectionType::SHAPE_MANIPULATION;
+      }
+
+      if (isTritonStridedSliceOp(slot)) {
+        if (!isTritonStaticStridedSliceSupported(slot)) {
+          return KernelSectionType::SHAPE_MANIPULATION;
+        }
+        const int specRank = (slot.args.numIArgs - 5) / 3;
+        NDArray* input = slot.wiring.inputSourceIndices != nullptr
+                             ? resolveArray(slot.wiring.inputSourceIndices[0])
+                             : nullptr;
+        if (input == nullptr || specRank > input->rankOf()) {
+          return KernelSectionType::SHAPE_MANIPULATION;
+        }
       }
       return KernelSectionType::STRIDED_SLICE;
     }
@@ -2653,112 +2666,187 @@ mlir::Value TritonIRBuilder::emitRoPEPositionSSA(mlir::OpBuilder& builder, mlir:
                                                    mlir::Value pid, int blockSize,
                                                    int headDim, int numHeads,
                                                    float freqBase, float freqScale,
-                                                   int ropeType, int nElements) {
+                                                   int ropeType, int rotateDims,
+                                                   int nElements) {
   auto f32Type = builder.getF32Type();
   auto i32Type = builder.getI32Type();
-  int halfDim = headDim / 2;
-  int numHeadsInBlock = blockSize / headDim;
-
-  // ── 1. Cast input to f32 for computation ──
+  auto inputElemType =
+      mlir::cast<mlir::RankedTensorType>(inputSSA.getType()).getElementType();
   auto inputF32 = castTo(builder, loc, inputSSA, f32Type);
 
-  // ── 2. Reshape: tensor<blockSize x f32> → tensor<numHeadsInBlock x 2 x halfDim x f32> ──
-  auto reshapedType = mlir::RankedTensorType::get(
-      {(int64_t)numHeadsInBlock, 2, (int64_t)halfDim}, f32Type);
-  auto reshaped = builder.create<mlir::triton::ReshapeOp>(
-      loc, reshapedType, inputF32, /*allowReorder=*/false);
+  rotateDims = (rotateDims > 0 && rotateDims < headDim) ? rotateDims : headDim;
+  int halfRotate = rotateDims / 2;
+  if (halfRotate <= 0) {
+    return castTo(builder, loc, inputF32, inputElemType);
+  }
+  int rotaryElements = halfRotate * 2;
 
-  // ── 3. Transpose: [N, 2, H] → [N, H, 2] (move halves-dim to last for split) ──
-  auto transOrder = builder.getDenseI32ArrayAttr({0, 2, 1});
-  auto transposed = builder.create<mlir::triton::TransOp>(loc, reshaped, transOrder);
+  // Pair gathers are block-local. The caller admits either whole-head tiles or
+  // head-aligned sub-tiles whose rotary pairs all remain in this SSA tensor.
+  auto blockRangeType =
+      mlir::RankedTensorType::get({static_cast<int64_t>(blockSize)}, i32Type);
+  auto dataF32Type =
+      mlir::RankedTensorType::get({static_cast<int64_t>(blockSize)}, f32Type);
+  auto blockRange = builder.create<mlir::triton::MakeRangeOp>(
+      loc, blockRangeType, 0, blockSize);
+  auto blockSizeConst =
+      builder.create<mlir::arith::ConstantIntOp>(loc, blockSize, 32);
+  auto blockStart =
+      builder.create<mlir::arith::MulIOp>(loc, pid, blockSizeConst);
+  auto blockStartSplat =
+      builder.create<mlir::triton::SplatOp>(loc, blockRangeType, blockStart);
+  auto globalIdx =
+      builder.create<mlir::arith::AddIOp>(loc, blockStartSplat, blockRange);
 
-  // ── 4. Split along last dim (size 2) → x_first, x_second : tensor<N x halfDim> ──
-  auto splitOp = builder.create<mlir::triton::SplitOp>(loc, transposed);
-  auto xFirst = splitOp.getResult(0);   // tensor<numHeadsInBlock x halfDim x f32>
-  auto xSecond = splitOp.getResult(1);  // tensor<numHeadsInBlock x halfDim x f32>
+  auto headDimConst =
+      builder.create<mlir::arith::ConstantIntOp>(loc, headDim, 32);
+  auto headDimSplat =
+      builder.create<mlir::triton::SplatOp>(loc, blockRangeType, headDimConst);
+  auto localIdx =
+      builder.create<mlir::arith::RemSIOp>(loc, globalIdx, headDimSplat);
 
-  // ── 5. Load position offset from scalar pointer ──
-  auto posScalarLoaded = builder.create<mlir::triton::LoadOp>(loc,
-      posPtr, mlir::triton::CacheModifier::NONE,
+  auto i1Type = builder.getI1Type();
+  auto maskType = mlir::RankedTensorType::get(
+      {static_cast<int64_t>(blockSize)}, i1Type);
+  auto rotaryElementsConst =
+      builder.create<mlir::arith::ConstantIntOp>(loc, rotaryElements, 32);
+  auto rotaryElementsSplat = builder.create<mlir::triton::SplatOp>(
+      loc, blockRangeType, rotaryElementsConst);
+  auto inRotaryRange = builder.create<mlir::arith::CmpIOp>(
+      loc, maskType, mlir::arith::CmpIPredicate::slt,
+      localIdx, rotaryElementsSplat);
+  auto nElementsConst =
+      builder.create<mlir::arith::ConstantIntOp>(loc, nElements, 32);
+  auto nElementsSplat =
+      builder.create<mlir::triton::SplatOp>(loc, blockRangeType, nElementsConst);
+  auto inBounds = builder.create<mlir::arith::CmpIOp>(
+      loc, maskType, mlir::arith::CmpIPredicate::slt,
+      globalIdx, nElementsSplat);
+  auto activeRotary =
+      builder.create<mlir::arith::AndIOp>(loc, inRotaryRange, inBounds);
+
+  mlir::Value isSecondHalf;
+  mlir::Value pairIdx;
+  mlir::Value rotaryPairOffset;
+  if (ropeType == 1) {
+    // NeoX layout uses adjacent pairs: (0,1), (2,3), ...
+    auto twoConst = builder.create<mlir::arith::ConstantIntOp>(loc, 2, 32);
+    auto twoSplat =
+        builder.create<mlir::triton::SplatOp>(loc, blockRangeType, twoConst);
+    auto oneConst = builder.create<mlir::arith::ConstantIntOp>(loc, 1, 32);
+    auto oneSplat =
+        builder.create<mlir::triton::SplatOp>(loc, blockRangeType, oneConst);
+    auto negOneConst = builder.create<mlir::arith::ConstantIntOp>(loc, -1, 32);
+    auto negOneSplat = builder.create<mlir::triton::SplatOp>(
+        loc, blockRangeType, negOneConst);
+    pairIdx =
+        builder.create<mlir::arith::DivSIOp>(loc, localIdx, twoSplat).getResult();
+    auto parity = builder.create<mlir::arith::RemSIOp>(loc, localIdx, twoSplat);
+    isSecondHalf = builder.create<mlir::arith::CmpIOp>(
+        loc, maskType, mlir::arith::CmpIPredicate::eq,
+        parity, oneSplat).getResult();
+    rotaryPairOffset = builder.create<mlir::arith::SelectOp>(
+        loc, isSecondHalf, negOneSplat.getResult(),
+        oneSplat.getResult()).getResult();
+  } else {
+    // LLaMA/GPT-J layout splits the rotary prefix into two equal halves.
+    auto halfRotateConst =
+        builder.create<mlir::arith::ConstantIntOp>(loc, halfRotate, 32);
+    auto halfRotateSplat = builder.create<mlir::triton::SplatOp>(
+        loc, blockRangeType, halfRotateConst);
+    auto negHalfRotateConst =
+        builder.create<mlir::arith::ConstantIntOp>(loc, -halfRotate, 32);
+    auto negHalfRotateSplat = builder.create<mlir::triton::SplatOp>(
+        loc, blockRangeType, negHalfRotateConst);
+    pairIdx = builder.create<mlir::arith::RemSIOp>(
+        loc, localIdx, halfRotateSplat).getResult();
+    isSecondHalf = builder.create<mlir::arith::CmpIOp>(
+        loc, maskType, mlir::arith::CmpIPredicate::sge,
+        localIdx, halfRotateSplat).getResult();
+    rotaryPairOffset = builder.create<mlir::arith::SelectOp>(
+        loc, isSecondHalf, negHalfRotateSplat.getResult(),
+        halfRotateSplat.getResult()).getResult();
+  }
+
+  auto zeroConst = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+  auto zeroSplat =
+      builder.create<mlir::triton::SplatOp>(loc, blockRangeType, zeroConst);
+  auto pairOffset = builder.create<mlir::arith::SelectOp>(
+      loc, activeRotary, rotaryPairOffset, zeroSplat.getResult());
+  auto pairedLocalIdx =
+      builder.create<mlir::arith::AddIOp>(loc, blockRange, pairOffset);
+  auto pairedF32 = builder.create<mlir::triton::GatherOp>(
+      loc, inputF32, pairedLocalIdx, static_cast<uint32_t>(0)).getResult();
+
+  // Position is a scalar input plus the flattened sequence index.
+  auto posScalarLoaded = builder.create<mlir::triton::LoadOp>(
+      loc, posPtr, mlir::triton::CacheModifier::NONE,
       mlir::triton::EvictionPolicy::NORMAL, /*isVolatile=*/false);
   auto posF32 = castTo(builder, loc, posScalarLoaded, f32Type);
-
-  // Add sequence index: pos = positionOffset + seqIdx
-  // seqIdx = (pid * blockSize) / (numHeads * headDim)
   int seqHeadStride = numHeads * headDim;
-  auto blockSizeConst = builder.create<mlir::arith::ConstantIntOp>(loc, blockSize, 32);
-  auto pidTimesBlock = builder.create<mlir::arith::MulIOp>(loc, pid, blockSizeConst);
-  auto seqHeadStrideConst = builder.create<mlir::arith::ConstantIntOp>(loc, seqHeadStride, 32);
-  auto seqIdxI32 = builder.create<mlir::arith::DivSIOp>(loc, pidTimesBlock, seqHeadStrideConst);
-  auto seqIdxF32 = builder.create<mlir::arith::SIToFPOp>(loc, f32Type, seqIdxI32);
-  auto posWithSeq = builder.create<mlir::arith::AddFOp>(loc, posF32, seqIdxF32);
+  auto seqStrideConst =
+      builder.create<mlir::arith::ConstantIntOp>(loc, seqHeadStride, 32);
+  auto seqStrideSplat = builder.create<mlir::triton::SplatOp>(
+      loc, blockRangeType, seqStrideConst);
+  auto seqIdx =
+      builder.create<mlir::arith::DivSIOp>(loc, globalIdx, seqStrideSplat);
+  auto seqIdxF32 =
+      builder.create<mlir::arith::SIToFPOp>(loc, dataF32Type, seqIdx);
+  auto posF32Splat =
+      builder.create<mlir::triton::SplatOp>(loc, dataF32Type, posF32);
+  auto posWithSeq =
+      builder.create<mlir::arith::AddFOp>(loc, posF32Splat, seqIdxF32);
 
-  // ── 6. Compute theta[i] = pos * freqScale / pow(freqBase, 2*i/headDim) for i in [0, halfDim) ──
-  // theta[i] = pos * freqScale * exp(-2*i/headDim * log(freqBase))
-  auto freqScaleConst = builder.create<mlir::arith::ConstantOp>(loc,
-      builder.getFloatAttr(f32Type, freqScale));
-  auto posTimesScale = builder.create<mlir::arith::MulFOp>(loc, posWithSeq, freqScaleConst);
+  // Match the native CUDA operation order exactly:
+  // theta = (pos * freqScale) / powf(freqBase, (2 * pairIdx) / rotateDims)
+  auto freqScaleConst = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(f32Type, freqScale));
+  auto freqScaleSplat = builder.create<mlir::triton::SplatOp>(
+      loc, dataF32Type, freqScaleConst);
+  auto posTimesScale =
+      builder.create<mlir::arith::MulFOp>(loc, posWithSeq, freqScaleSplat);
+  auto pairIdxF32 =
+      builder.create<mlir::arith::SIToFPOp>(loc, dataF32Type, pairIdx);
+  auto twoConst = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(f32Type, 2.0f));
+  auto twoSplat =
+      builder.create<mlir::triton::SplatOp>(loc, dataF32Type, twoConst);
+  auto exponentNumerator =
+      builder.create<mlir::arith::MulFOp>(loc, pairIdxF32, twoSplat);
+  auto rotateDimsConst = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(f32Type, static_cast<float>(rotateDims)));
+  auto rotateDimsSplat = builder.create<mlir::triton::SplatOp>(
+      loc, dataF32Type, rotateDimsConst);
+  auto exponent =
+      emitNativeCudaDiv(builder, loc, exponentNumerator, rotateDimsSplat);
+  auto freqBaseConst = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(f32Type, freqBase));
+  auto freqBaseSplat = builder.create<mlir::triton::SplatOp>(
+      loc, dataF32Type, freqBaseConst);
+  auto denominator = emitNativeCudaPow(builder, loc, freqBaseSplat, exponent);
+  auto theta = emitNativeCudaDiv(builder, loc, posTimesScale, denominator);
+  auto cosTheta = emitNativeCudaCos(builder, loc, theta);
+  auto sinTheta = emitNativeCudaSin(builder, loc, theta);
 
-  // Build frequency vector: exp(-2*i/headDim * log(freqBase)) for i in [0, halfDim)
-  auto halfDimF32Type = mlir::RankedTensorType::get({(int64_t)halfDim}, f32Type);
-  auto halfDimI32Type = mlir::RankedTensorType::get({(int64_t)halfDim}, i32Type);
-  auto halfRange = builder.create<mlir::triton::MakeRangeOp>(loc, halfDimI32Type, 0, halfDim);
-  auto halfRangeF32 = builder.create<mlir::arith::SIToFPOp>(loc, halfDimF32Type, halfRange);
-
-  // exponent = -2 * i / headDim * log(freqBase)
-  float logFreqBase = sd::math::sd_log<float, float>(freqBase);
-  float negTwoOverDim = -2.0f / static_cast<float>(headDim);
-  auto negTwoOverDimConst = builder.create<mlir::arith::ConstantOp>(loc,
-      builder.getFloatAttr(f32Type, negTwoOverDim));
-  auto negTwoOverDimSplat = builder.create<mlir::triton::SplatOp>(loc, halfDimF32Type, negTwoOverDimConst);
-  auto exponentBase = builder.create<mlir::arith::MulFOp>(loc, halfRangeF32, negTwoOverDimSplat);
-
-  auto logFreqBaseConst = builder.create<mlir::arith::ConstantOp>(loc,
-      builder.getFloatAttr(f32Type, logFreqBase));
-  auto logFreqBaseSplat = builder.create<mlir::triton::SplatOp>(loc, halfDimF32Type, logFreqBaseConst);
-  auto exponent = builder.create<mlir::arith::MulFOp>(loc, exponentBase, logFreqBaseSplat);
-
-  // freqInv = exp(exponent) = 1/pow(freqBase, 2*i/headDim)
-  auto freqInv = builder.create<mlir::math::ExpOp>(loc, exponent);
-
-  // theta = pos * freqScale * freqInv
-  auto posScaleSplat = builder.create<mlir::triton::SplatOp>(loc, halfDimF32Type, posTimesScale);
-  auto theta = builder.create<mlir::arith::MulFOp>(loc, posScaleSplat, freqInv);
-
-  // ── 7. Compute cos(theta) and sin(theta) ──
-  auto cosTheta = builder.create<mlir::math::CosOp>(loc, theta);
-  auto sinTheta = builder.create<mlir::math::SinOp>(loc, theta);
-
-  // Broadcast cos/sin from tensor<halfDim> to tensor<numHeadsInBlock x halfDim>
-  auto nhHdF32Type = mlir::RankedTensorType::get(
-      {(int64_t)numHeadsInBlock, (int64_t)halfDim}, f32Type);
-  auto cosExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, cosTheta, 0);
-  auto sinExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, sinTheta, 0);
-  auto cos2D = builder.create<mlir::triton::BroadcastOp>(loc, nhHdF32Type, cosExpanded);
-  auto sin2D = builder.create<mlir::triton::BroadcastOp>(loc, nhHdF32Type, sinExpanded);
-
-  // ── 8. Rotation computation ──
-  // out_first  = x_first * cos - x_second * sin
-  // out_second = x_second * cos + x_first * sin
-  auto firstTimesCos = builder.create<mlir::arith::MulFOp>(loc, xFirst, cos2D);
-  auto secondTimesSin = builder.create<mlir::arith::MulFOp>(loc, xSecond, sin2D);
-  auto outFirst = builder.create<mlir::arith::SubFOp>(loc, firstTimesCos, secondTimesSin);
-
-  auto secondTimesCos = builder.create<mlir::arith::MulFOp>(loc, xSecond, cos2D);
-  auto firstTimesSin = builder.create<mlir::arith::MulFOp>(loc, xFirst, sin2D);
-  auto outSecond = builder.create<mlir::arith::AddFOp>(loc, secondTimesCos, firstTimesSin);
-
-  // ── 9. Reassemble: join → trans → reshape back to 1D ──
-  auto joined = builder.create<mlir::triton::JoinOp>(loc, outFirst, outSecond);
-  auto invTransOrder = builder.getDenseI32ArrayAttr({0, 2, 1});
-  auto invTransposed = builder.create<mlir::triton::TransOp>(loc, joined, invTransOrder);
-  auto result1DType = mlir::RankedTensorType::get({(int64_t)blockSize}, f32Type);
-  auto result1D = builder.create<mlir::triton::ReshapeOp>(
-      loc, result1DType, invTransposed, /*allowReorder=*/false);
-
-  // ── 10. Cast back to original element type ──
-  auto inputElemType = mlir::cast<mlir::RankedTensorType>(inputSSA.getType()).getElementType();
-  return castTo(builder, loc, result1D, inputElemType);
+  auto xFirst = builder.create<mlir::arith::SelectOp>(
+      loc, isSecondHalf, pairedF32, inputF32);
+  auto xSecond = builder.create<mlir::arith::SelectOp>(
+      loc, isSecondHalf, inputF32, pairedF32);
+  auto roundedSecondSin =
+      emitNativeCudaMulRn(builder, loc, xSecond, sinTheta);
+  auto negativeSecondSin =
+      builder.create<mlir::arith::NegFOp>(loc, roundedSecondSin);
+  auto firstHalfResult = emitNativeCudaFmaRn(
+      builder, loc, xFirst, cosTheta, negativeSecondSin);
+  auto roundedSecondCos =
+      emitNativeCudaMulRn(builder, loc, xSecond, cosTheta);
+  auto secondHalfResult = emitNativeCudaFmaRn(
+      builder, loc, xFirst, sinTheta, roundedSecondCos);
+  auto rotatedF32 = builder.create<mlir::arith::SelectOp>(
+      loc, isSecondHalf, secondHalfResult, firstHalfResult);
+  auto resultF32 = builder.create<mlir::arith::SelectOp>(
+      loc, activeRotary, rotatedF32.getResult(), inputF32);
+  return castTo(builder, loc, resultF32, inputElemType);
 }
 
 void TritonIRBuilder::emitRoPEPositionSection(mlir::OpBuilder& builder, mlir::Location loc,
@@ -2766,10 +2854,12 @@ void TritonIRBuilder::emitRoPEPositionSection(mlir::OpBuilder& builder, mlir::Lo
                                                 mlir::Value inPtr, mlir::Value posPtr,
                                                 mlir::Value outPtr,
                                                 const std::vector<LongType>& inShape,
-                                                int ropeType, float freqBase, float freqScale,
+                                                int ropeType, int rotateDims,
+                                                float freqBase, float freqScale,
                                                 int nElements) {
   // Pointer-based position-offset RoPE: loads data from inPtr, computes cos/sin
-  // from position (posPtr), applies rotation, writes to outPtr.
+  // from position (posPtr), applies rotation, writes to outPtr, and preserves
+  // the non-rotary tail of every head.
   // Handles arbitrary blockSize (may exceed numHeads*headDim).
   auto f32Type = builder.getF32Type();
   auto i32Type = builder.getI32Type();
@@ -2777,8 +2867,10 @@ void TritonIRBuilder::emitRoPEPositionSection(mlir::OpBuilder& builder, mlir::Lo
   int inputRank = static_cast<int>(inShape.size());
   int headDim = (inputRank > 0) ? static_cast<int>(inShape[inputRank - 1]) : 0;
   int numHeads = (inputRank >= 3) ? static_cast<int>(inShape[inputRank - 2]) : 1;
-  int halfDim = headDim / 2;
-  if (halfDim <= 0 || headDim <= 0) return;
+  if (headDim <= 0) return;
+  rotateDims = (rotateDims > 0 && rotateDims < headDim) ? rotateDims : headDim;
+  int halfRotate = rotateDims / 2;
+  int rotaryElements = halfRotate * 2;
 
   // Load position offset from scalar pointer
   auto posScalarLoaded = builder.create<mlir::triton::LoadOp>(loc,
@@ -2814,22 +2906,80 @@ void TritonIRBuilder::emitRoPEPositionSection(mlir::OpBuilder& builder, mlir::Lo
   auto dataF32Type = mlir::RankedTensorType::get({(int64_t)blockSize}, f32Type);
   auto dataF32 = castTo(builder, loc, inputData, f32Type);
 
-  // For each element, compute its pair and apply rotation.
-  // Element index within head: localIdx = globalIdx % headDim
-  // Pair index: pairIdx = localIdx % halfDim (for standard RoPE type 0)
+  // Native fusedRoPE treats fewer than two rotary dimensions as a copy.
+  if (halfRotate <= 0) {
+    auto outPtrType = mlir::cast<mlir::triton::PointerType>(outPtr.getType());
+    auto outElemType = outPtrType.getPointeeType();
+    auto copied = castTo(builder, loc, dataF32, outElemType);
+    auto outBlockPtrType = mlir::RankedTensorType::get({(int64_t)blockSize}, outPtrType);
+    auto outPtrSplat = builder.create<mlir::triton::SplatOp>(loc, outBlockPtrType, outPtr);
+    auto outPtrs = builder.create<mlir::triton::AddPtrOp>(
+        loc, outBlockPtrType, outPtrSplat, globalIdx);
+    builder.create<mlir::triton::StoreOp>(loc, outPtrs, copied, inBounds,
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+    return;
+  }
+
+  // For each element, compute its native RoPE pair and apply rotation.
+  // Any unpaired or non-rotary tail elements are copied unchanged.
   // Sequence index: seqIdx = globalIdx / (numHeads * headDim)
   // pos = positionOffset + seqIdx
   auto headDimConst = builder.create<mlir::arith::ConstantIntOp>(loc, headDim, 32);
   auto headDimSplat = builder.create<mlir::triton::SplatOp>(loc, blockRangeType, headDimConst);
   auto localIdx = builder.create<mlir::arith::RemSIOp>(loc, globalIdx, headDimSplat);
 
-  auto halfDimConst = builder.create<mlir::arith::ConstantIntOp>(loc, halfDim, 32);
-  auto halfDimSplat = builder.create<mlir::triton::SplatOp>(loc, blockRangeType, halfDimConst);
+  auto rotaryElementsConst =
+      builder.create<mlir::arith::ConstantIntOp>(loc, rotaryElements, 32);
+  auto rotaryElementsSplat =
+      builder.create<mlir::triton::SplatOp>(loc, blockRangeType, rotaryElementsConst);
+  auto inRotaryRange = builder.create<mlir::arith::CmpIOp>(
+      loc, maskType, mlir::arith::CmpIPredicate::slt, localIdx, rotaryElementsSplat);
 
-  // pairIdx = localIdx for elements in first half, localIdx - halfDim for second half
-  auto isSecondHalf = builder.create<mlir::arith::CmpIOp>(loc, maskType,
-      mlir::arith::CmpIPredicate::sge, localIdx, halfDimSplat);
-  auto pairIdx = builder.create<mlir::arith::RemSIOp>(loc, localIdx, halfDimSplat);
+  mlir::Value isSecondHalf;
+  mlir::Value pairIdx;
+  mlir::Value rotaryPairOffset;
+  if (ropeType == 1) {
+    // NeoX uses adjacent pairs: (0,1), (2,3), ...
+    auto twoConst = builder.create<mlir::arith::ConstantIntOp>(loc, 2, 32);
+    auto twoSplat = builder.create<mlir::triton::SplatOp>(loc, blockRangeType, twoConst);
+    auto oneConst = builder.create<mlir::arith::ConstantIntOp>(loc, 1, 32);
+    auto oneSplat = builder.create<mlir::triton::SplatOp>(loc, blockRangeType, oneConst);
+    auto negOneConst = builder.create<mlir::arith::ConstantIntOp>(loc, -1, 32);
+    auto negOneSplat =
+        builder.create<mlir::triton::SplatOp>(loc, blockRangeType, negOneConst);
+
+    pairIdx = builder.create<mlir::arith::DivSIOp>(loc, localIdx, twoSplat).getResult();
+    auto parity = builder.create<mlir::arith::RemSIOp>(loc, localIdx, twoSplat);
+    isSecondHalf = builder.create<mlir::arith::CmpIOp>(
+        loc, maskType, mlir::arith::CmpIPredicate::eq, parity, oneSplat).getResult();
+    rotaryPairOffset = builder.create<mlir::arith::SelectOp>(
+        loc, isSecondHalf, negOneSplat.getResult(), oneSplat.getResult()).getResult();
+  } else {
+    // Standard LLaMA/GPT-J layout splits the rotary prefix into two halves.
+    auto halfRotateConst =
+        builder.create<mlir::arith::ConstantIntOp>(loc, halfRotate, 32);
+    auto halfRotateSplat =
+        builder.create<mlir::triton::SplatOp>(loc, blockRangeType, halfRotateConst);
+    auto negHalfRotateConst =
+        builder.create<mlir::arith::ConstantIntOp>(loc, -halfRotate, 32);
+    auto negHalfRotateSplat =
+        builder.create<mlir::triton::SplatOp>(loc, blockRangeType, negHalfRotateConst);
+
+    pairIdx =
+        builder.create<mlir::arith::RemSIOp>(loc, localIdx, halfRotateSplat).getResult();
+    isSecondHalf = builder.create<mlir::arith::CmpIOp>(
+        loc, maskType, mlir::arith::CmpIPredicate::sge,
+        localIdx, halfRotateSplat).getResult();
+    rotaryPairOffset = builder.create<mlir::arith::SelectOp>(
+        loc, isSecondHalf, negHalfRotateSplat.getResult(),
+        halfRotateSplat.getResult()).getResult();
+  }
+
+  // Keep paired loads inside the same element for the non-rotary tail.
+  auto zeroConst = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+  auto zeroSplat = builder.create<mlir::triton::SplatOp>(loc, blockRangeType, zeroConst);
+  auto pairOffset = builder.create<mlir::arith::SelectOp>(
+      loc, inRotaryRange, rotaryPairOffset, zeroSplat.getResult());
 
   // seqIdx = globalIdx / (numHeads * headDim)
   int seqHeadStride = numHeads * headDim;
@@ -2842,39 +2992,42 @@ void TritonIRBuilder::emitRoPEPositionSection(mlir::OpBuilder& builder, mlir::Lo
   auto posF32Splat = builder.create<mlir::triton::SplatOp>(loc, dataF32Type, posF32);
   auto posWithSeq = builder.create<mlir::arith::AddFOp>(loc, posF32Splat, seqIdxF32);
 
-  // theta = pos * freqScale * exp(-2*pairIdx/headDim * log(freqBase))
+  // Match the native kernel's FP32 operation order exactly:
+  // theta = (pos * freqScale) / powf(freqBase, (2.0f * pairIdx) / rotateDims)
   auto pairIdxF32 = builder.create<mlir::arith::SIToFPOp>(loc, dataF32Type, pairIdx);
-  float negTwoOverDim = -2.0f / static_cast<float>(headDim);
-  float logFreqBase = sd::math::sd_log<float, float>(freqBase);
-  auto negTwoDimConst = builder.create<mlir::arith::ConstantOp>(loc,
-      builder.getFloatAttr(f32Type, negTwoOverDim));
-  auto negTwoDimSplat = builder.create<mlir::triton::SplatOp>(loc, dataF32Type, negTwoDimConst);
-  auto exponentBase = builder.create<mlir::arith::MulFOp>(loc, pairIdxF32, negTwoDimSplat);
+  auto twoConstF32 = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(f32Type, 2.0f));
+  auto twoSplatF32 =
+      builder.create<mlir::triton::SplatOp>(loc, dataF32Type, twoConstF32);
+  auto exponentNumerator =
+      builder.create<mlir::arith::MulFOp>(loc, pairIdxF32, twoSplatF32);
 
-  auto logFreqConst = builder.create<mlir::arith::ConstantOp>(loc,
-      builder.getFloatAttr(f32Type, logFreqBase));
-  auto logFreqSplat = builder.create<mlir::triton::SplatOp>(loc, dataF32Type, logFreqConst);
-  auto exponent = builder.create<mlir::arith::MulFOp>(loc, exponentBase, logFreqSplat);
-  auto freqInv = builder.create<mlir::math::ExpOp>(loc, exponent);
+  auto rotateDimsConstF32 = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(f32Type, static_cast<float>(rotateDims)));
+  auto rotateDimsSplatF32 =
+      builder.create<mlir::triton::SplatOp>(loc, dataF32Type, rotateDimsConstF32);
+  auto exponent =
+      emitNativeCudaDiv(builder, loc, exponentNumerator, rotateDimsSplatF32);
 
-  auto freqScaleConst = builder.create<mlir::arith::ConstantOp>(loc,
-      builder.getFloatAttr(f32Type, freqScale));
-  auto freqScaleSplat = builder.create<mlir::triton::SplatOp>(loc, dataF32Type, freqScaleConst);
+  auto freqBaseConst = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(f32Type, freqBase));
+  auto freqBaseSplat =
+      builder.create<mlir::triton::SplatOp>(loc, dataF32Type, freqBaseConst);
+  auto denominator = emitNativeCudaPow(builder, loc, freqBaseSplat, exponent);
+
+  auto freqScaleConst = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(f32Type, freqScale));
+  auto freqScaleSplat =
+      builder.create<mlir::triton::SplatOp>(loc, dataF32Type, freqScaleConst);
   auto posTimesScale = builder.create<mlir::arith::MulFOp>(loc, posWithSeq, freqScaleSplat);
-  auto theta = builder.create<mlir::arith::MulFOp>(loc, posTimesScale, freqInv);
+  auto theta = emitNativeCudaDiv(builder, loc, posTimesScale, denominator);
 
-  auto cosTheta = builder.create<mlir::math::CosOp>(loc, theta);
-  auto sinTheta = builder.create<mlir::math::SinOp>(loc, theta);
+  auto cosTheta = emitNativeCudaCos(builder, loc, theta);
+  auto sinTheta = emitNativeCudaSin(builder, loc, theta);
 
-  // Load the paired element: for first-half elements, pair is at +halfDim;
-  // for second-half elements, pair is at -halfDim.
-  auto negHalfDimConst = builder.create<mlir::arith::ConstantIntOp>(loc, -halfDim, 32);
-  auto posHalfDimConst = builder.create<mlir::arith::ConstantIntOp>(loc, halfDim, 32);
-  auto negHalfDimSplat = builder.create<mlir::triton::SplatOp>(loc, blockRangeType, negHalfDimConst);
-  auto posHalfDimSplat = builder.create<mlir::triton::SplatOp>(loc, blockRangeType, posHalfDimConst);
-  auto pairOffset = builder.create<mlir::arith::SelectOp>(loc, isSecondHalf,
-      negHalfDimSplat.getResult(), posHalfDimSplat.getResult());
-  auto pairedGlobalIdx = builder.create<mlir::arith::AddIOp>(loc, globalIdx, pairOffset);
+  // Load the paired element. pairOffset is zero outside the rotary prefix.
+  auto pairedGlobalIdx =
+      builder.create<mlir::arith::AddIOp>(loc, globalIdx, pairOffset);
 
   auto pairedPtrs = builder.create<mlir::triton::AddPtrOp>(loc, blockPtrType, inPtrSplat, pairedGlobalIdx);
   auto pairedData = builder.create<mlir::triton::LoadOp>(loc,
@@ -2882,20 +3035,27 @@ void TritonIRBuilder::emitRoPEPositionSection(mlir::OpBuilder& builder, mlir::Lo
       mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
   auto pairedF32 = castTo(builder, loc, pairedData, f32Type);
 
-  // Apply rotation:
-  // First half:  out = data * cos - paired * sin
-  // Second half: out = paired * sin + data * cos
-  auto dataCos = builder.create<mlir::arith::MulFOp>(loc, dataF32, cosTheta);
-  auto pairedSin = builder.create<mlir::arith::MulFOp>(loc, pairedF32, sinTheta);
-  auto firstHalfResult = builder.create<mlir::arith::SubFOp>(loc, dataCos, pairedSin);
+  // Canonicalize the current/paired loads to native x1/x2, then match nvcc's
+  // two rounded multiplies and two FFMAs. In particular, native out2 rounds
+  // x2*cos and fuses x1*sin + rounded(x2*cos), not the reverse association.
+  auto xFirst = builder.create<mlir::arith::SelectOp>(
+      loc, isSecondHalf, pairedF32, dataF32);
+  auto xSecond = builder.create<mlir::arith::SelectOp>(
+      loc, isSecondHalf, dataF32, pairedF32);
 
-  auto pairedCos = builder.create<mlir::arith::MulFOp>(loc, pairedF32, cosTheta);
-  auto dataSin = builder.create<mlir::arith::MulFOp>(loc, dataF32, sinTheta);
-  auto secondHalfResultRaw = builder.create<mlir::arith::AddFOp>(loc, dataSin, pairedCos);
+  auto roundedSecondSin = emitNativeCudaMulRn(builder, loc, xSecond, sinTheta);
+  auto negativeSecondSin = builder.create<mlir::arith::NegFOp>(loc, roundedSecondSin);
+  auto firstHalfResult = emitNativeCudaFmaRn(
+      builder, loc, xFirst, cosTheta, negativeSecondSin);
 
-  // Select first-half or second-half formula based on element position
-  auto resultF32 = builder.create<mlir::arith::SelectOp>(loc, isSecondHalf,
-      secondHalfResultRaw.getResult(), firstHalfResult.getResult());
+  auto roundedSecondCos = emitNativeCudaMulRn(builder, loc, xSecond, cosTheta);
+  auto secondHalfResult = emitNativeCudaFmaRn(
+      builder, loc, xFirst, sinTheta, roundedSecondCos);
+
+  auto rotatedF32 = builder.create<mlir::arith::SelectOp>(
+      loc, isSecondHalf, secondHalfResult, firstHalfResult);
+  auto resultF32 = builder.create<mlir::arith::SelectOp>(
+      loc, inRotaryRange, rotatedF32.getResult(), dataF32);
 
   // Cast back to output type and store
   auto outPtrType = mlir::cast<mlir::triton::PointerType>(outPtr.getType());

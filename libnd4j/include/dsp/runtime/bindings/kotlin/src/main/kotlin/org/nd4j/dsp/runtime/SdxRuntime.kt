@@ -21,7 +21,13 @@ enum class SdxBackend(val code: Int) {
     TRITON(SdxRuntime.SDX_BACKEND_TRITON),
     MLX(SdxRuntime.SDX_BACKEND_MLX),
     ARM_HYBRID(SdxRuntime.SDX_BACKEND_ARM_HYBRID),
-    NNAPI(SdxRuntime.SDX_BACKEND_NNAPI);
+    NNAPI(SdxRuntime.SDX_BACKEND_NNAPI),
+    HIP_GRAPHS(SdxRuntime.SDX_BACKEND_HIP_GRAPHS),
+    LEVEL_ZERO(SdxRuntime.SDX_BACKEND_LEVEL_ZERO),
+    VULKAN(SdxRuntime.SDX_BACKEND_VULKAN),
+    METAL(SdxRuntime.SDX_BACKEND_METAL),
+    TPU(SdxRuntime.SDX_BACKEND_TPU),
+    HEXAGON(SdxRuntime.SDX_BACKEND_HEXAGON);
 
     companion object {
         /** Returns the enum constant for [code], or null if unrecognised. */
@@ -242,8 +248,9 @@ class KotlinSdxRuntime private constructor(
         /**
          * Creates a runtime using automatic library discovery.
          *
-         * The Java wrapper searches for `sdx_cpu`, `sdx_cuda`, `nd4jcpu`, and
-         * `nd4jcuda` in the JNA library path. Set `-Djna.library.path` or call
+         * The Java wrapper searches standalone and monolithic CPU, CUDA, Vulkan,
+         * and Metal library names in the JNA library path. Set
+         * `-Djna.library.path` or call
          * [create(libraryNameOrPath)] to override.
          */
         @JvmStatic
@@ -326,6 +333,13 @@ class KotlinSdxRuntime private constructor(
         private val delegate: SdxRuntime.SdxModel,
     ) : AutoCloseable {
 
+        /** Resolved offline tokenizer path declared by the bundle, if present. */
+        val tokenizerPath: String? get() = delegate.tokenizerPath()
+
+        /** Resolved text-generation metadata path declared by the bundle. */
+        val textGenerationConfigPath: String?
+            get() = delegate.textGenerationConfigPath()
+
         /**
          * Creates an execution context for this model.
          *
@@ -342,6 +356,23 @@ class KotlinSdxRuntime private constructor(
          */
         fun createContext(outputs: List<String> = emptyList()): KotlinSdxContext =
             KotlinSdxContext(delegate.createContext(outputs.takeIf { it.isNotEmpty() }?.toTypedArray()))
+
+        /**
+         * Creates the recommended mobile inference context with model parameters
+         * bound internally and only placeholders exposed as public inputs.
+         */
+        fun createInferenceContext(vararg outputs: String): KotlinSdxContext =
+            KotlinSdxContext(
+                delegate.createInferenceContext(outputs.takeIf { it.isNotEmpty() })
+            )
+
+        fun createInferenceContext(
+            outputs: List<String> = emptyList(),
+        ): KotlinSdxContext = KotlinSdxContext(
+            delegate.createInferenceContext(
+                outputs.takeIf { it.isNotEmpty() }?.toTypedArray()
+            )
+        )
 
         override fun close(): Unit = delegate.close()
     }
@@ -389,6 +420,16 @@ class KotlinSdxRuntime private constructor(
 
         /** Name of the external input at [index], or `null` if out of range. */
         fun inputName(index: Int): String? = delegate.inputName(index)
+
+        /** Explicit requested output names in plan order. */
+        fun outputNames(): List<String?> = delegate.outputNames().toList()
+
+        /** Explicit requested output name at [index], if one was supplied. */
+        fun outputName(index: Int): String? = delegate.outputName(index)
+
+        /** Borrow the host-readable output from the most recent successful run. */
+        fun outputTensor(index: Int): SdxRuntime.TensorView =
+            delegate.outputTensor(index)
 
         // ── Lifecycle control ─────────────────────────────────────────────────
 
@@ -475,6 +516,37 @@ class KotlinSdxRuntime private constructor(
             }
             delegate.run(inputs, outputs, opts)
         }
+
+        /**
+         * Runs with runtime-owned dynamic outputs. Returned tensor views borrow
+         * native memory and remain valid only until the next run on this context.
+         */
+        fun runAllocating(
+            inputs: Array<SdxRuntime.TensorView>,
+            backend: SdxBackend = SdxBackend.AUTO,
+            strictSignature: Boolean = true,
+            gpuTarget: Int = SdxRuntime.SDX_GPU_TARGET_AUTO,
+        ): Array<SdxRuntime.TensorView> {
+            val opts = SdxRuntime.RunOptions().apply {
+                this.backend = backend.code
+                this.strict_signature = if (strictSignature) 1 else 0
+                this.gpu_target = gpuTarget
+                write()
+            }
+            return delegate.runAllocating(inputs, opts)
+        }
+
+        fun runAllocating(
+            inputs: List<FloatTensor>,
+            backend: SdxBackend = SdxBackend.AUTO,
+            strictSignature: Boolean = true,
+            gpuTarget: Int = SdxRuntime.SDX_GPU_TARGET_AUTO,
+        ): List<SdxRuntime.TensorView> = runAllocating(
+            inputs = inputs.map { it.view }.toTypedArray(),
+            backend = backend,
+            strictSignature = strictSignature,
+            gpuTarget = gpuTarget,
+        ).toList()
 
         /**
          * Runs the plan with [FloatTensor] inputs and outputs.

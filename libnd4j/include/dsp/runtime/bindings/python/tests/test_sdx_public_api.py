@@ -12,6 +12,7 @@ InputMetadata, ExecutionSummary, SdxContext.get_inputs(), SdxContext.run_named()
 These tests exercise pure Python logic only — no native library required.
 """
 
+import ctypes
 import pathlib
 import sys
 import unittest
@@ -25,14 +26,24 @@ if str(_PARENT) not in sys.path:
     sys.path.insert(0, str(_PARENT))
 
 from sdx_runtime import (
+    DynamicOutput,
     ExecutionReport,
     ExecutionSummary,
     InputMetadata,
     RunOptions,
+    SDX_GPU_TARGET_METAL,
+    SDX_GPU_TARGET_VULKAN,
     SdxContext,
+    SdxModel,
     SdxRuntime,
     TensorView,
 )
+
+
+class GpuTargetConstantsTests(unittest.TestCase):
+    def test_mobile_gpu_targets_are_public(self):
+        self.assertEqual(SDX_GPU_TARGET_VULKAN, 3)
+        self.assertEqual(SDX_GPU_TARGET_METAL, 4)
 
 
 # ---------------------------------------------------------------------------
@@ -63,8 +74,9 @@ def _make_mock_context(input_names_list, plan_phase=2, exec_count=3):
     # sdxGetExecutionCount
     mock_lib.sdxGetExecutionCount.return_value = exec_count
 
-    # sdxRun — success
+    # Caller-allocated and runtime-allocated execution — success
     mock_lib.sdxRun.return_value = 0
+    mock_lib.sdxRunAllocating.return_value = 0
 
     # sdxGetExecutionReport — fill in a synthetic report
     def _fill_report(_ctx_handle, report_ptr):
@@ -97,6 +109,98 @@ def _make_mock_context(input_names_list, plan_phase=2, exec_count=3):
     ctx._context_handle = _ct.c_void_p(2)
 
     return runtime, ctx
+
+
+class ParameterBoundContextTests(unittest.TestCase):
+    def test_inference_context_uses_options_and_retains_model(self):
+        mock_lib = MagicMock()
+
+        def _create(_model, _outputs, _count, options_ptr, out_context):
+            self.assertEqual(options_ptr._obj.bind_model_parameters, 1)
+            out_context._obj.value = 4
+            return 0
+
+        mock_lib.sdxCreateContextWithOptions.side_effect = _create
+        mock_lib.sdxGetLastError.return_value = None
+
+        runtime = object.__new__(SdxRuntime)
+        runtime._lib = mock_lib
+        from sdx_runtime import _Handles
+        runtime._handles = _Handles(runtime=ctypes.c_void_p(1))
+
+        model = object.__new__(SdxModel)
+        model._runtime = runtime
+        model._model_handle = ctypes.c_void_p(3)
+
+        context = model.create_inference_context(["output"])
+        self.assertIs(context._model, model)
+        self.assertEqual(context._context_handle.value, 4)
+        mock_lib.sdxCreateContext.assert_not_called()
+
+
+class BundleAssetMetadataTests(unittest.TestCase):
+    def test_model_exposes_resolved_offline_assets(self):
+        mock_lib = MagicMock()
+        mock_lib.sdxGetTokenizerPath.return_value = b"/bundle/tokenizer.json"
+        mock_lib.sdxGetTextGenerationConfigPath.return_value = (
+            b"/bundle/text-generation.json"
+        )
+
+        runtime = object.__new__(SdxRuntime)
+        runtime._lib = mock_lib
+        from sdx_runtime import _Handles
+        runtime._handles = _Handles(runtime=ctypes.c_void_p(1))
+
+        model = object.__new__(SdxModel)
+        model._runtime = runtime
+        model._model_handle = ctypes.c_void_p(3)
+
+        self.assertEqual(model.tokenizer_path, "/bundle/tokenizer.json")
+        self.assertEqual(
+            model.text_generation_config_path, "/bundle/text-generation.json"
+        )
+
+
+class DynamicOutputTests(unittest.TestCase):
+    def test_numpy_converts_owned_bytes(self):
+        expected = np.arange(4, dtype=np.float32).reshape(2, 2)
+        output = DynamicOutput(
+            data=expected.tobytes(), shape=(2, 2), dtype=5, name="logits"
+        )
+        np.testing.assert_array_equal(output.numpy(), expected)
+
+    def test_run_allocating_copies_runtime_output(self):
+        runtime, ctx = _make_mock_context(["input_ids"])
+        runtime._lib.sdxGetOutputName.return_value = b"logits"
+        values = (ctypes.c_float * 4)(1.0, 2.0, 3.0, 4.0)
+        shape = (ctypes.c_int64 * 2)(2, 2)
+
+        def _fill_output(_context, index, output_ptr):
+            self.assertEqual(index, 0)
+            view = output_ptr._obj
+            view.data = ctypes.cast(values, ctypes.c_void_p)
+            view.shape = ctypes.cast(shape, ctypes.POINTER(ctypes.c_int64))
+            view.rank = 2
+            view.dtype = 5
+            view.bytes = ctypes.sizeof(values)
+            view.device_type = 0
+            view.device_id = -1
+            return 0
+
+        runtime._lib.sdxGetOutputTensor.side_effect = _fill_output
+        outputs = ctx.run_allocating(
+            [np.asarray([[7]], dtype=np.int32)],
+            options=RunOptions(gpu_target=SDX_GPU_TARGET_VULKAN),
+        )
+
+        self.assertEqual(len(outputs), 1)
+        self.assertIsInstance(outputs[0], DynamicOutput)
+        self.assertEqual(outputs[0].name, "logits")
+        self.assertEqual(outputs[0].shape, (2, 2))
+        np.testing.assert_array_equal(
+            outputs[0].numpy(), np.asarray([[1.0, 2.0], [3.0, 4.0]])
+        )
+        runtime._lib.sdxRunAllocating.assert_called_once()
 
 
 class InputMetadataTests(unittest.TestCase):
@@ -150,6 +254,9 @@ class ExecutionSummaryTests(unittest.TestCase):
     def test_applied_backend_name_known(self):
         self.assertEqual(self._make_summary(applied_backend=0).applied_backend_name, "AUTO")
         self.assertEqual(self._make_summary(applied_backend=5).applied_backend_name, "TRITON")
+        self.assertEqual(self._make_summary(applied_backend=9).applied_backend_name, "HIP_GRAPHS")
+        self.assertEqual(self._make_summary(applied_backend=11).applied_backend_name, "VULKAN")
+        self.assertEqual(self._make_summary(applied_backend=14).applied_backend_name, "HEXAGON")
 
     def test_applied_backend_name_unknown(self):
         self.assertIn("99", self._make_summary(applied_backend=99).applied_backend_name)

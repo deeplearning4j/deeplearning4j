@@ -55,12 +55,12 @@ PLATFORM_IMPL(xw_plus_b, ENGINE_CPU) {
     // All in a single kernel to minimize memory bandwidth
     auto status = executeMlirEx("xw_plus_b", block, inputs, outputs);
 
-    if (status != Status::OK()) {
+    if (status != Status::OK) {
         sd_printf("MLIR xw_plus_b execution failed\n", "");
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR xw_plus_b failed");
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(xw_plus_b, ENGINE_CPU) {
@@ -71,7 +71,7 @@ PLATFORM_CHECK(xw_plus_b, ENGINE_CPU) {
     Requirements req("MLIR XW_PLUS_B");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;

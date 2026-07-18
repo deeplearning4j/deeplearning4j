@@ -26,6 +26,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 
 /**
  * Logic ops are unique snowflakes in any Graph. They dramatically change Graph Execution process, by introducing loops,
@@ -43,6 +44,7 @@ class SD_LIB_EXPORT LogicOp : public DeclarableOp {
 
   ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

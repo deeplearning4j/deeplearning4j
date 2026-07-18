@@ -130,6 +130,19 @@ void linearAttentionDecode(LaunchContext* context,
                               NDArray* decayRates,
                               NDArray* state,
                               NDArray* output) {
+    const auto headDimK = query->sizeAt(3);
+    const auto headDimV = value->sizeAt(3);
+    if (headDimK > 512) {
+        THROW_EXCEPTION("linearAttentionDecode (CPU): headDimK exceeds the 512-element stack scratch "
+                        "limit — got headDimK > 512; increase the kLocal/qLocal constant if larger "
+                        "heads are needed");
+    }
+    if (headDimV > 512) {
+        THROW_EXCEPTION("linearAttentionDecode (CPU): headDimV exceeds the 512-element stack scratch "
+                        "limit — got headDimV > 512; increase the vLocal constant if larger "
+                        "heads are needed");
+    }
+
     NDArray::preparePrimaryUse({output, state}, {query, key, value, decayRates});
 
     BUILD_SINGLE_SELECTOR(query->dataType(), linearAttentionDecodeCpuImpl_,

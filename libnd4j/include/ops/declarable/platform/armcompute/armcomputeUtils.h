@@ -56,9 +56,12 @@ using namespace samediff;
 #define internal_print_nd_shape(a, b)
 #endif
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 using Arm_DataType = arm_compute::DataType;
 using Arm_Tensor = arm_compute::Tensor;
@@ -69,6 +72,10 @@ using Arm_Strides = arm_compute::Strides;
 using Arm_WeightsInfo = arm_compute::WeightsInfo;
 using Arm_PermutationVector = arm_compute::PermutationVector;
 using Arm_DataLayout = arm_compute::DataLayout;
+
+// Op macros open SD_NS themselves (platform_boilerplate.h) — the DECLARE list
+// must sit outside the file-level wrap or SD_NS nests inside itself.
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 
 /**
  * Here we actually declare our platform helpers
@@ -426,6 +433,8 @@ DECLARE_PLATFORM(truncatediv, ENGINE_CPU);
 DECLARE_PLATFORM(floordiv, ENGINE_CPU);
 DECLARE_PLATFORM(floormod, ENGINE_CPU);
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
+
 // utils
 Arm_DataType getArmType(const sd::DataType& dType);
 
@@ -641,6 +650,7 @@ class ArmFunctionWeighted {
   F armFunction{};
 };
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

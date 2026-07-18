@@ -245,15 +245,18 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
         if (shapeInfo == null || shapeInfo.isNull()) {
             throw new IllegalStateException("Failed to retrieve intermediate result shape info at index " + index + ": returned null");
         }
-        long rank = shapeInfo.get(0);
-        shapeInfo.capacity(Shape.shapeInfoLength(rank));
-        DataBuffer shapeInfoBuffer = Nd4j.createBuffer(shapeInfo, shapeInfo.capacity(),DataType.LONG);
-        long[] convert = shapeInfoBuffer.asLong();
+        int shapeInfoLength = Shape.shapeInfoLength((int) shapeInfo.get(0));
+        long[] convert = new long[shapeInfoLength];
+        shapeInfo.capacity(shapeInfoLength);
+        shapeInfo.get(convert, 0, shapeInfoLength);
+        DataBuffer shapeInfoBuffer = Nd4j.createBuffer(convert);
         OpaqueDataBuffer buffer = nativeOps.intermediateResultDataAt(index,context);
         long numElements = nativeOps.dbBufferLength(buffer);
-        Pointer pointer = buffer.primaryBuffer();
-        pointer.capacity(numElements);
-        DataBuffer firstBuffer = Nd4j.createBuffer(pointer,null,
+        Pointer primaryPointer = buffer.primaryBuffer();
+        Pointer specialPointer = buffer.specialBuffer();
+        primaryPointer.capacity(numElements);
+        specialPointer.capacity(numElements);
+        DataBuffer firstBuffer = Nd4j.createBuffer(primaryPointer, specialPointer,
                 Shape.length(convert), Shape.dataType(convert));
         INDArray result = Nd4j.createArrayFromShapeBuffer(firstBuffer,shapeInfoBuffer);
         return result;

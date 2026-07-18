@@ -37,6 +37,8 @@
  *
  */
 
+SD_BACKEND_ABI_NAMESPACE_BEGIN
+
 class SD_LIB_EXPORT NativeOpExecutioner {
  public:
   /**
@@ -470,5 +472,12 @@ class SD_LIB_EXPORT NativeOpExecutioner {
 
 
 };
+
+SD_BACKEND_ABI_NAMESPACE_END
+SD_BACKEND_ABI_ALIAS(NativeOpExecutioner)
+
+// Preserve the historical unqualified NativeOpExecutioner spelling while the
+// actual class and its backend-varying method symbols use the backend ABI namespace.
+using NativeOpExecutioner = sd::NativeOpExecutioner;
 
 #endif  // NATIVEOPERATIONS_NATIVEOPEXCUTIONER_H

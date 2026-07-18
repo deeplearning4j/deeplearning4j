@@ -120,47 +120,42 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
                    *zero);
   }
 
-  // Calculate gradW
-  // gradW[iC,kH,kW,oC] = sum_{bS,oH,oW} columns[bS,iC,kH,kW,oH,oW] * gradO[bS,oC,oH,oW]
-  // Permute columns to [iC, kH, kW, bS, oH, oW], dup contiguous, reshape to [iC*kH*kW, bS*oH*oW]
-  // Then matmul: [iC*kH*kW, bS*oH*oW] * [bS*oH*oW, oC] = [iC*kH*kW, oC]
-  NDArray* gradW4d = nullptr;
+  // Calculate gradW directly in the output's physical weight format. This avoids
+  // an asynchronous GEMM into an inner-scope owner followed by a queued permute/
+  // assign: the owner's destructor previously returned its device storage to the
+  // pool before the assign kernel consumed it.
+  NDArray* gradW2dView = nullptr;
   if (gradW) {
-    std::vector<sd::LongType> colPerm = {1, 2, 3, 0, 4, 5};
+    const LongType kernelElements = iC * kH * kW;
+    const LongType sampleElements = bS * oH * oW;
+    // Formats 0 and 2 flatten their kernel axis as (kH,kW,iC); format 1 uses
+    // (iC,kH,kW). Match that order before flattening the im2col operand.
+    std::vector<sd::LongType> colPerm = wFormat == 1
+        ? std::vector<sd::LongType>{1, 2, 3, 0, 4, 5}
+        : std::vector<sd::LongType>{2, 3, 1, 0, 4, 5};
     NDArray* colPermuted = columns->permute(colPerm, false, false);
     NDArray* colContig = colPermuted->dup('c');
     delete colPermuted;
-    std::vector<sd::LongType> col2dShape = {iC * kH * kW, bS * oH * oW};
-    colContig->reshapei('c', col2dShape);
+    colContig->reshapei('c', {kernelElements, sampleElements});
 
-    // gradO2d^T = [bS*oH*oW, oC]
-    std::vector<sd::LongType> gradW2dShape = {iC * kH * kW, oC};
-    NDArray gradW2dLocal('c', gradW2dShape, gradW->dataType(), gradW->getContext());
-    MmulHelper::matmul(colContig, gradO2d, &gradW2dLocal, false, true, 1.0, 0.0);
-    delete colContig;
-
-    // Reshape to [iC, kH, kW, oC] then permute to match gradW format
-    std::vector<sd::LongType> gradW4dShape = {iC, kH, kW, oC};
-    gradW4d = gradW2dLocal.reshape('c', gradW4dShape, false);
+    std::vector<sd::LongType> gradW2dShape;
     if (wFormat == 0) {
-      // gradW is [kH, kW, iC, oC] — permute from [iC, kH, kW, oC]
-      std::vector<sd::LongType> perm = {1, 2, 0, 3};
-      NDArray *gradWPermuted = gradW4d->permute(perm, false, false);
-      gradW->assign(gradWPermuted);
-      delete gradWPermuted;
-    } else if (wFormat == 1) {
-      // gradW is [oC, iC, kH, kW] — permute from [iC, kH, kW, oC]
-      std::vector<sd::LongType> perm = {3, 0, 1, 2};
-      NDArray *gradWPermuted = gradW4d->permute(perm, false, false);
-      gradW->assign(gradWPermuted);
-      delete gradWPermuted;
+      // [kH,kW,iC,oC] is physically [K,oC].
+      gradW2dShape = {kernelElements, oC};
     } else {
-      // gradW is [oC, kH, kW, iC] — permute from [iC, kH, kW, oC]
-      std::vector<sd::LongType> perm = {3, 1, 2, 0};
-      NDArray *gradWPermuted = gradW4d->permute(perm, false, false);
-      gradW->assign(gradWPermuted);
-      delete gradWPermuted;
+      // [oC,iC,kH,kW] and [oC,kH,kW,iC] are physically [oC,K].
+      gradW2dShape = {oC, kernelElements};
     }
+    gradW2dView = gradW->reshape('c', gradW2dShape, false);
+
+    if (wFormat == 0) {
+      MmulHelper::matmul(colContig, gradO2d, gradW2dView, false, true, 1.0, 0.0);
+    } else {
+      MmulHelper::matmul(gradO2d, colContig, gradW2dView, false, true, 1.0, 0.0);
+    }
+    // cuBLAS consumes colContig asynchronously. Retire it on the execution
+    // stream so the pool cannot recycle it before the GEMM has read it.
+    MmulHelper::deleteTemporary(colContig);
   }
 
   // Calculate gradB
@@ -195,13 +190,13 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   weightsContig->reshapei('c', wShape2d);
 
   std::vector<sd::LongType> colShape2 = {iC * kH * kW, bS * oH * oW};
-  NDArray columns2d('c', colShape2, columns->dataType(), columns->getContext());
-  MmulHelper::matmul(weightsContig, gradO2d, &columns2d, false, false, 1.0, 0.0);
+  NDArray* columns2d = new NDArray('c', colShape2, columns->dataType(), columns->getContext());
+  MmulHelper::matmul(weightsContig, gradO2d, columns2d, false, false, 1.0, 0.0);
 
   std::vector<sd::LongType> eps6dShape = {iC, kH, kW, bS, oH, oW};
-  columns2d.reshapei('c', eps6dShape);
+  columns2d->reshapei('c', eps6dShape);
   std::vector<sd::LongType> epsPerm = {3, 0, 1, 2, 4, 5};
-  NDArray* permuted = columns2d.permute(epsPerm, false, false);
+  NDArray* permuted = columns2d->permute(epsPerm, false, false);
 
   // Perform col2im
   auto ctx = block.launchContext();
@@ -214,18 +209,15 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     delete permutedGradI;
   }
 
-  // During CUDA graph capture, stream sync is illegal. Stream ordering guarantees correctness.
-  auto cudaCtx = block.launchContext();
-  if (!tl_graphExecutionActive && !tl_dspReplayActive) {
-    cudaStreamSynchronize(*cudaCtx->getCudaStream());
-  }
-
-  // Clean up
+  // Clean up. Queue owned GPU-buffer retirement behind each temporary's final
+  // stream consumer so asynchronous GEMM/reduction/col2im work remains valid
+  // without a host-side stream synchronization.
   delete permuted;
-  delete weightsContig;
-  if (gradW4d) delete gradW4d;
-  delete gradO2d;
-  if (zero) delete zero;
+  MmulHelper::deleteTemporary(columns2d);
+  MmulHelper::deleteTemporary(weightsContig);
+  if (gradW2dView) delete gradW2dView;
+  MmulHelper::deleteTemporary(gradO2d);
+  if (zero) MmulHelper::deleteTemporary(zero);
   if (!isNCHW) {
     delete inputPermuted;
     delete gradOPermuted;
@@ -235,7 +227,7 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   // Only delete columns if we created it fresh (not from intermediate results)
   // When from intermediate results, the framework handles cleanup automatically
   if (!block.hasIntermediateResults()) {
-    delete columns;
+    MmulHelper::deleteTemporary(columns);
   }
   // Note: intermediate results (col owner and colP view) are cleaned up by the framework
 }

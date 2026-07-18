@@ -148,6 +148,11 @@ public class MultiGpuWorkspaceSessionMemMgr implements SessionMemMgr {
     }
 
     @Override
+    public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer, boolean requiresZeroed) {
+        return delegate.allocateFromDescriptor(detached, dataBuffer, requiresZeroed);
+    }
+
+    @Override
     public void close() {
         delegate.close();
     }

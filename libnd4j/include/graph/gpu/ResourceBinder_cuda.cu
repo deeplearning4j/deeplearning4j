@@ -29,6 +29,7 @@
 
 namespace sd {
 namespace graph {
+namespace cuda {
 
 // ── TLS stream management ────────────────────────────────────────────────
 
@@ -126,6 +127,7 @@ void ResourceBinder_memcpyD2HAsync(void* dst, const void* src, size_t bytes, voi
                   cudaMemcpyDeviceToHost, reinterpret_cast<cudaStream_t>(stream));
 }
 
+}  // namespace cuda
 }  // namespace graph
 }  // namespace sd
 

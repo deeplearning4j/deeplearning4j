@@ -25,7 +25,7 @@
 #include <memory/MemoryUtils.h>
 #include <system/Environment.h>
 
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 
 namespace sd {
 namespace graph {
@@ -255,8 +255,8 @@ std::vector<NativeDynamicShapePlan*> NativePlanCache::evictIfOverBudgetLocked() 
 
   auto& dsp = sd::Environment::getInstance().dsp();
 
-  // Select the correct hard cap based on build type
-  const int maxPlans = dspIsCudaBuild() ? dsp.planCacheMaxPlans() : dsp.planCacheMaxPlansCpu();
+  // Device-resident plans share the accelerator cache budget independent of vendor.
+  const int maxPlans = dspHasDeviceMemory() ? dsp.planCacheMaxPlans() : dsp.planCacheMaxPlansCpu();
   const float fraction = dsp.planCacheBudgetFraction();
 
   // Helper lambda: find oldest unpinned, non-passivated plan (LRU end toward MRU front)

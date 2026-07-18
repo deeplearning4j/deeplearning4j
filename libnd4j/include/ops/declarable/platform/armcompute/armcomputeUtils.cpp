@@ -30,9 +30,12 @@
 
 #include <cstdint>
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 Arm_DataType getArmType(const DataType& dType) {
   Arm_DataType ret;
@@ -256,6 +259,7 @@ void print_tensor(Arm_ITensor& tensor, const char* msg) {
 #endif
 }
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

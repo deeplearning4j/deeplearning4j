@@ -89,15 +89,15 @@ SDDataType mlirTypeToSDDataType(Type type) {
 Type sdDataTypeToMLIRType(MLIRContext *ctx, SDDataType dtype) {
     switch (dtype) {
         case SDDataType::FLOAT32:
-            return FloatType::getF32(ctx);
+            return Float32Type::get(ctx);
         case SDDataType::DOUBLE:
-            return FloatType::getF64(ctx);
+            return Float64Type::get(ctx);
         case SDDataType::HALF:
-        case SDDataType::FLOAT16:
-            return FloatType::getF16(ctx);
+            // FLOAT16 = 3 is an alias for HALF — only one case label allowed per value
+            return Float16Type::get(ctx);
         case SDDataType::BHALF:
-        case SDDataType::BFLOAT16:
-            return FloatType::getBF16(ctx);
+            // BFLOAT16 = 4 is an alias for BHALF — only one case label allowed per value
+            return BFloat16Type::get(ctx);
         case SDDataType::INT8:
             return IntegerType::get(ctx, 8);
         case SDDataType::INT16:
@@ -117,7 +117,7 @@ Type sdDataTypeToMLIRType(MLIRContext *ctx, SDDataType dtype) {
         case SDDataType::BOOL:
             return IntegerType::get(ctx, 1);
         default:
-            return FloatType::getF32(ctx);  // Default to float32
+            return Float32Type::get(ctx);  // Default to float32
     }
 }
 

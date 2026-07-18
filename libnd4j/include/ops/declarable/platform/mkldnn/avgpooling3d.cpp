@@ -36,7 +36,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(avgpool3dnew, ENGINE_CPU) {
+PLATFORM_IMPL(avgpool3dnew, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
   auto output = OUTPUT_VARIABLE(0);  // [bS, oD, oH, oW, iC] (NDHWC) or [bS, iC, oD, oH, oW] (NCDHW)
 
@@ -78,7 +78,7 @@ PLATFORM_IMPL(avgpool3dnew, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(avgpool3dnew, ENGINE_CPU) {
+PLATFORM_CHECK(avgpool3dnew, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   Requirements req("ONEDNN AVGPOOL3d OP");
@@ -89,7 +89,7 @@ PLATFORM_CHECK(avgpool3dnew, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(avgpool3dnew_bp, ENGINE_CPU) {
+PLATFORM_IMPL(avgpool3dnew_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);   // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
   auto gradO = INPUT_VARIABLE(1);   // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
   auto gradI = OUTPUT_VARIABLE(0);  // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
@@ -139,7 +139,7 @@ PLATFORM_IMPL(avgpool3dnew_bp, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(avgpool3dnew_bp, ENGINE_CPU) {
+PLATFORM_CHECK(avgpool3dnew_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);

@@ -89,13 +89,13 @@ CUSTOM_OP_IMPL(smooth_quant, 4, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(smooth_quant) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS})           // input
         ->setAllowedInputTypes(1, {INT8, FLOAT32})         // quantized weight
         ->setAllowedInputTypes(2, {FLOAT32})               // smooth scale
         ->setAllowedInputTypes(3, {FLOAT32})               // weight scale
-        ->setAllowedOutputTypes({ALL_FLOATS})
-        ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
+        ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(smooth_quant) {

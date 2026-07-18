@@ -20,10 +20,9 @@
 
 #include <helpers/ShapeBufferCreatorHelper.h>
 #include <helpers/ShapeBufferPlatformHelper.h>
-#include <helpers/cpu/CpuShapeBufferCreator.h>
 #include <stdexcept>
 
-namespace sd {
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 
 // Initialize static member
 ShapeBufferCreator* ShapeBufferCreatorHelper::currentCreator_ = nullptr;
@@ -51,4 +50,4 @@ void ShapeBufferCreatorHelper::setCurrentCreator(ShapeBufferCreator* creator) {
     currentCreator_ = creator;
 }
 
-} // namespace sd
+SD_BACKEND_ABI_NAMESPACE_END

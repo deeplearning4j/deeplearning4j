@@ -1,0 +1,109 @@
+{
+  "targets": [
+    {
+      "model": "Snapdragon 8 Gen 2",
+      "soc": "SM8550",
+      "gpu": "Adreno 8C",
+      "min_tok_s": 28.0,
+      "expected_tok_s": 32.0,
+      "max_tok_s": 36.0,
+      "devices": ["Xiaomi 14", "OnePlus 12", "Samsung Galaxy S24 Ultra", "POCO F7 Pro"]
+    },
+    {
+      "model": "Snapdragon 8 Gen 1",
+      "soc": "SM8450",
+      "gpu": "Adreno 8",
+      "min_tok_s": 20.0,
+      "expected_tok_s": 24.0,
+      "max_tok_s": 28.0,
+      "devices": ["OnePlus 10 Pro", "Xiaomi 12S Ultra"]
+    },
+    {
+      "model": "Snapdragon 8 Gen 3 Leading Version",
+      "soc": "SM8635",
+      "gpu": "Adreno 8 Elite",
+      "min_tok_s": 35.0,
+      "expected_tok_s": 42.0,
+      "max_tok_s": 50.0,
+      "devices": ["Xiaomi 15", "OnePlus 13"]
+    },
+    {
+      "model": "Snapdragon 888",
+      "soc": "SM8350",
+      "gpu": "Adreno 660",
+      "min_tok_s": 12.0,
+      "expected_tok_s": 15.0,
+      "max_tok_s": 18.0,
+      "devices": ["Samsung Galaxy S21", "OnePlus 9 Pro"]
+    },
+    {
+      "model": "Exynos 2400",
+      "soc": "E2400",
+      "gpu": "Mali-G78",
+      "min_tok_s": 18.0,
+      "expected_tok_s": 22.0,
+      "max_tok_s": 26.0,
+      "devices": ["Samsung Galaxy S24"]
+    },
+    {
+      "model": "Exynos 2200",
+      "soc": "E2200",
+      "gpu": "Mali-G78",
+      "min_tok_s": 10.0,
+      "expected_tok_s": 13.0,
+      "max_tok_s": 16.0,
+      "devices": ["Samsung Galaxy S22"]
+    },
+    {
+      "model": "MediaTek Dimensity 9300",
+      "soc": "MT6991",
+      "gpu": "Immortalis-G720",
+      "min_tok_s": 22.0,
+      "expected_tok_s": 26.0,
+      "max_tok_s": 30.0,
+      "devices": ["OnePlus 12", "Oppo Find X7"]
+    },
+    {
+      "model": "Apple A17 Pro",
+      "soc": "A2846",
+      "gpu": "A17 Pro GPU",
+      "min_tok_s": 45.0,
+      "expected_tok_s": 55.0,
+      "max_tok_s": 65.0,
+      "devices": ["iPhone 15 Pro", "iPhone 15 Pro Max"],
+      "note": "ARM64 only, Vulkan not applicable on iOS"
+    },
+    {
+      "model": "Google Tensor G4",
+      "soc": "GT10200",
+      "gpu": "Mali-G715",
+      "min_tok_s": 14.0,
+      "expected_tok_s": 18.0,
+      "max_tok_s": 22.0,
+      "devices": ["Google Pixel 9", "Google Pixel 9 Pro"]
+    },
+    {
+      "model": "Snapdragon 7+ Gen 2",
+      "soc": "SM7475",
+      "gpu": "Adreno 710",
+      "min_tok_s": 8.0,
+      "expected_tok_s": 11.0,
+      "max_tok_s": 14.0,
+      "devices": ["Xiaomi 13", "Motorola Moto X40"]
+    }
+  ],
+  "baselines": {
+    "reference_device": "Snapdragon 8 Gen 2",
+    "reference_tok_s": 32.0,
+    "regress_threshold_percent": 10,
+    "improve_threshold_percent": 5
+  },
+  "measurement_config": {
+    "warmup_tokens": 50,
+    "decode_tokens": 250,
+    "prefill_tokens": "auto",
+    "config": "AUTO",
+    "sampling": false,
+    "note": "Measurements taken with 250 tokens to reach steady state. Lower token counts are development/debug only."
+  }
+}

@@ -29,6 +29,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT BooleanOp : public DeclarableOp {
  protected:
   OpDescriptor* _descriptor;
@@ -46,6 +47,7 @@ class SD_LIB_EXPORT BooleanOp : public DeclarableOp {
 
   ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

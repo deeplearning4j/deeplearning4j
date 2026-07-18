@@ -168,7 +168,8 @@ public interface AffinityManager {
 
     /**
      * Returns the device type for the given device ID.
-     * CPU_DEVICE_ID (-1) returns CPU, GPU device IDs (>= 0) return CUDA_GPU.
+     * CPU_DEVICE_ID (-1) returns CPU. The default accelerator type is CUDA_GPU;
+     * non-CUDA affinity managers must override this method with their backend type.
      *
      * @param deviceId the device ID to query
      * @return the device type
@@ -257,10 +258,14 @@ public interface AffinityManager {
      * @return the device descriptor
      */
     default DeviceDescriptor getDeviceDescriptor(int deviceId) {
-        if (isCpuDevice(deviceId)) {
+        DeviceType deviceType = getDeviceType(deviceId);
+        if (deviceType == DeviceType.CPU) {
             return DeviceDescriptor.cpu();
         }
-        return DeviceDescriptor.cuda(deviceId);
+        if (deviceType == DeviceType.CUDA_GPU || deviceType == DeviceType.GPU) {
+            return DeviceDescriptor.cuda(deviceId);
+        }
+        return DeviceDescriptor.accelerator(deviceType.getIdentifier(), deviceType, deviceId);
     }
 
     /**

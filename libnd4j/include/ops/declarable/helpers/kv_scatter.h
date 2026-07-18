@@ -131,7 +131,8 @@ SD_LIB_HIDDEN void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
  * Unlike kvInPlaceWrite (BHSD pastKv, BSHD newKv), both arrays here are BSHD.
  * This is used by dot_product_attention_v2 where the KV cache is BSHD.
  *
- * Rank-4 BSHD: cache [batch, maxSeqLen, numKvHeads, headDim]
+ * Rank-4 BSHD (including arbitrary strided views):
+ *              cache [batch, maxSeqLen, numKvHeads, headDim]
  *              newKv  [batch, seqKV, numKvHeads, headDim]
  *              Writes newKv[b, s, h, d] → cache[b, cachePos+s, h, d].
  *
@@ -141,6 +142,8 @@ SD_LIB_HIDDEN void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
  *
  * Cache position is read from a device-side pointer (CUDA) or host pointer (CPU),
  * making this CUDA graph compatible.
+ *
+ * Source and cache strides are honored; neither array is required to be C-contiguous.
  *
  * @param cache       BSHD [batch, maxSeqLen, heads, dim] or BSF [batch, maxSeqLen, features] — modified in-place
  * @param newKv       BSHD [batch, seqKV, heads, dim] or BSF [batch, seqKV, features] — source data

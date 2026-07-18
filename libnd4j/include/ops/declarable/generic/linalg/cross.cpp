@@ -29,10 +29,12 @@
 namespace sd {
 namespace ops {
 DECLARE_TYPES(cross) {
+
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
       ->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 OP_IMPL(cross, 2, 1, false) {

@@ -72,6 +72,30 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                         int totalSlots,
                                         int* requestedOutputSlotIndices,
                                         int numRequestedOutputs) {
+  // Compile-time contract: outputSlots entries are either dereferenceable or
+  // null. Requested-output slots can hold uninitialized placeholder NDArrays
+  // (poison shape descriptors) before their producer runs; every consumer below
+  // (dtype hashing, identifySections, IR build) already falls back to cached
+  // slot metadata for null entries, so present placeholders as null here instead
+  // of guarding each dereference site.
+  std::vector<NDArray*> sanitizedOutputSlots;
+  if (outputSlots != nullptr && totalOutputSlots > 0) {
+    sanitizedOutputSlots.assign(outputSlots, outputSlots + totalOutputSlots);
+    int placeholderCount = 0;
+    for (auto& entry : sanitizedOutputSlots) {
+      if (entry != nullptr && !entry->hasValidShapeInfo()) {
+        entry = nullptr;
+        placeholderCount++;
+      }
+    }
+    if (placeholderCount > 0) {
+      DSP_DIAG(COMPILE, "TritonGraphBackend::compileSegment: seg[%d-%d] nulled %d uninitialized "
+               "output-slot placeholder(s); cached slot metadata will be used",
+               seg.def.startSlot, seg.def.endSlot, placeholderCount);
+    }
+    outputSlots = sanitizedOutputSlots.data();
+  }
+
   int activeDevice = -1;
   cudaError_t activeDeviceErr = cudaGetDevice(&activeDevice);
   if (activeDeviceErr != cudaSuccess) {
@@ -134,7 +158,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   size_t cacheDtypeHash = computeSegInternalDtypeHash(slots, seg.def.startSlot, seg.def.endSlot,
                                                        externalInputs, numExternalInputs,
                                                        outputSlots, totalOutputSlots);
-  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice, cacheCompileAll, cacheExcludeHash, cacheIncludeHash, cacheGraphCapture};
+  SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice,
+                      cacheCompileAll, cacheExcludeHash, cacheIncludeHash,
+                      cacheGraphCapture, &seg};
   key.segInternalDtypeHash = cacheDtypeHash;
 
   {
@@ -830,8 +856,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       failedCache_.erase(key);
       cache_[key] = std::move(compiledSeg);
       // Populate secondary dtype index so lookup sites without outputSlots can
-      // find the right dtype hash by (startSlot, endSlot, shapeKey, deviceId).
-      dtypeIndex_[DtypeIndexKey{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice}] = cacheDtypeHash;
+      // find the right dtype hash for this live segment instance.
+      dtypeIndex_[DtypeIndexKey{seg.def.startSlot, seg.def.endSlot, shapeKey,
+                                compileDevice, &seg}] = cacheDtypeHash;
     }
     return true;
   }
@@ -913,7 +940,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     result.compiled = compileToGpuBinary(slots, range.startSlot, range.endSlot,
                                          totalSlots,
                                          externalInputs, numExternalInputs,
-                                         outputSlots, totalOutputSlots);
+                                         outputSlots, totalOutputSlots,
+                                         requestedOutputSlotIndices,
+                                         numRequestedOutputs);
     const bool success = (result.compiled.gpuModule && result.compiled.kernelFunction);
     if (result.compiled.gpuModule && result.compiled.kernelFunction) {
       result.compiled.startSlot_ = range.startSlot;
@@ -1678,8 +1707,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     cache_[key] = std::move(compiledSeg);
     installedSeg = &cache_[key];
     // Populate secondary dtype index so lookup sites without outputSlots can
-    // find the right dtype hash by (startSlot, endSlot, shapeKey, deviceId).
-    dtypeIndex_[DtypeIndexKey{seg.def.startSlot, seg.def.endSlot, shapeKey, compileDevice}] = cacheDtypeHash;
+    // find the right dtype hash for this live segment instance.
+    dtypeIndex_[DtypeIndexKey{seg.def.startSlot, seg.def.endSlot, shapeKey,
+                              compileDevice, &seg}] = cacheDtypeHash;
   }
 
   // Register each freshly-installed sub-kernel with the residency cache.

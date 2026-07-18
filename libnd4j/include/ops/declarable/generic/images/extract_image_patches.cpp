@@ -49,7 +49,8 @@ CUSTOM_OP_IMPL(extract_image_patches, 1, 1, false, 0, 7) {
   return Status::OK;
 }
 
-DECLARE_TYPES(extract_image_patches) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(extract_image_patches) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(extract_image_patches) {
   auto in = inputShape->at(0);

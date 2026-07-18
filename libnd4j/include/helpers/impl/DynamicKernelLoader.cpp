@@ -38,6 +38,7 @@
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // SimpleKernelPlugin implementation
 
@@ -364,6 +365,7 @@ std::string DynamicKernelLoader::getPluginSummary() const {
   return ss.str();
 }
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

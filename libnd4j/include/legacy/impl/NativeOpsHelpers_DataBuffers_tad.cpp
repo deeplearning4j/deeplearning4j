@@ -32,6 +32,7 @@
 #include <memory>
 #include <string>
 
+
 // TadPack lifetime registry - keeps shared_ptr<TadPack> alive for TadPacks returned to Java
 // Without this, when ConstantTadHelper::tadForDimensions() returns shared_ptr<TadPack>,
 // but tadOnlyShapeInfo() returns raw TadPack*, the local shared_ptr goes out of scope
@@ -203,4 +204,5 @@ void clearTadPackRegistry() {
   std::lock_guard<std::mutex> lock(g_tadPackMutex);
   g_tadPackRegistry.clear();
 }
+
 

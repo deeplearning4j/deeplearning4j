@@ -35,90 +35,18 @@
     <packaging>jar</packaging>
 
     <name>nd4j-sdx-preset</name>
-    <description>SDX standalone runtime — platform-specific native library packaging</description>
+    <description>JavaCPP preset for the backend-neutral SDX runtime C ABI</description>
 
     <properties>
         <skipPublishing>false</skipPublishing>
-        <libnd4j.chip>cpu</libnd4j.chip>
-        <sdx.native.lib.dir>${project.basedir}/../../../../libnd4j/blasbuild/${libnd4j.chip}/sdx-runtime-sdk/lib</sdx.native.lib.dir>
+        <module.name>nd4j.sdx.preset</module.name>
     </properties>
 
-    <build>
-        <plugins>
-            <!-- Copy the native SDX library into the classifier JAR -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <!-- Default JAR (metadata only, no native) -->
-                    <execution>
-                        <id>default-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                    <!-- Platform-classified JAR with native library -->
-                    <execution>
-                        <id>platform-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>${javacpp.platform}</classifier>
-                            <classesDirectory>${project.build.directory}/native-staging</classesDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- Stage native library into a directory for the classifier JAR -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>stage-native-lib</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/native-staging/org/nd4j/dsp/runtime/${javacpp.platform}</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${sdx.native.lib.dir}</directory>
-                                    <includes>
-                                        <include>libsdx_cpu.so</include>
-                                        <include>libsdx_cuda.so</include>
-                                        <include>sdx_cpu.dll</include>
-                                        <include>sdx_cuda.dll</include>
-                                        <include>libsdx_cpu.dylib</include>
-                                        <include>libsdx_cuda.dylib</include>
-                                    </includes>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-
-    <profiles>
-        <!-- CUDA builds set libnd4j.chip=cuda, which resolves the default path correctly -->
-        <profile>
-            <id>cuda</id>
-            <activation>
-                <property>
-                    <name>libnd4j.chip</name>
-                    <value>cuda</value>
-                </property>
-            </activation>
-            <properties>
-                <libnd4j.chip>cuda</libnd4j.chip>
-            </properties>
-        </profile>
-    </profiles>
+    <dependencies>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>

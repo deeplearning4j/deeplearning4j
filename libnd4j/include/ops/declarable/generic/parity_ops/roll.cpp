@@ -30,84 +30,62 @@
 namespace sd {
 namespace ops {
 
-CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, 0) {
-  auto output = OUTPUT_VARIABLE(0);
+CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, -2) {
   auto input = INPUT_VARIABLE(0);
-  int inputLen = input->lengthOf();
+  auto output = block.isInplace() ? input : OUTPUT_VARIABLE(0);
 
-  bool shiftIsLinear = block.width() == 1;
   std::vector<LongType> axes;
   std::vector<LongType> shifts;
-  if (block.width() > 1) {
-    REQUIRE_TRUE(block.width() == 3, 0, "roll: 3 arguments required for roll - input, shifts and axes. But %i given.",
-                 block.width());
-    auto axesI = INPUT_VARIABLE(2);
-    auto shiftsI = INPUT_VARIABLE(1);
-    REQUIRE_TRUE(axesI->rankOf() == shiftsI->rankOf(), 0,
-                 "roll: shifts and axes should be the same rank, but %i and %i given.", (int)shiftsI->rankOf(),
-                 (int)axesI->rankOf());
-    REQUIRE_TRUE(axesI->lengthOf() == shiftsI->lengthOf(), 0,
-                 "roll: shifts and axes should be the same length, but %i and %i given.", (int)shiftsI->lengthOf(),
-                 (int)axesI->lengthOf());
-    helpers::adjustAxis(axesI->lengthOf(), axesI, axes);
-    shifts.resize(shiftsI->lengthOf());
-    for (LongType i = 0; i < shiftsI->lengthOf(); i++) {
-      auto shift = shiftsI->e<int>(i);
-      if (shift < 0) {
-        shift -= input->sizeAt(i) * (shift / inputLen - 1);
-      } else if (shift != 0) {
-        shift %= input->sizeAt(i);
+  const auto inputCount = block.width();
+  const bool hasTensorShift = inputCount > 1;
+  const bool hasTensorAxes = inputCount == 3;
+
+  REQUIRE_TRUE(inputCount >= 1 && inputCount <= 3, 0,
+               "roll: expected input with an optional shift and axes, but received %i input arrays.", inputCount);
+
+  if (hasTensorShift) {
+    auto shiftsInput = INPUT_VARIABLE(1);
+    if (!hasTensorAxes) {
+      REQUIRE_TRUE(shiftsInput->lengthOf() == 1, 0,
+                   "roll: an axis-free tensor shift must contain one value, but received %lld.",
+                   static_cast<long long>(shiftsInput->lengthOf()));
+      shifts.push_back(shiftsInput->e<LongType>(0));
+    } else {
+      auto axesInput = INPUT_VARIABLE(2);
+      REQUIRE_TRUE(axesInput->rankOf() == shiftsInput->rankOf(), 0,
+                   "roll: shifts and axes must have the same rank, but received %i and %i.",
+                   static_cast<int>(shiftsInput->rankOf()), static_cast<int>(axesInput->rankOf()));
+      REQUIRE_TRUE(axesInput->lengthOf() == shiftsInput->lengthOf(), 0,
+                   "roll: shifts and axes must have the same length, but received %lld and %lld.",
+                   static_cast<long long>(shiftsInput->lengthOf()), static_cast<long long>(axesInput->lengthOf()));
+
+      helpers::adjustAxis(input->rankOf(), axesInput, axes);
+      shifts.resize(static_cast<size_t>(shiftsInput->lengthOf()));
+      for (LongType i = 0; i < shiftsInput->lengthOf(); ++i) {
+        shifts[static_cast<size_t>(i)] = shiftsInput->e<LongType>(i);
+        const auto axis = axes[static_cast<size_t>(i)];
+        REQUIRE_TRUE(axis >= 0 && axis < input->rankOf(), 0,
+                     "roll: axis must be in the range [-%i, %i), but received %lld.", input->rankOf(),
+                     input->rankOf(), static_cast<long long>(axesInput->e<LongType>(i)));
       }
-
-      shifts[i] = shift;
     }
-
   } else {
-    int shift = INT_ARG(0);
-    if (shift < 0) {
-      // convert shift to positive value between 1 and inputLen - 1
-      shift -= inputLen * (shift / inputLen - 1);
-    } else if (shift != 0)
-      // cut shift to value between 1 and inputLen - 1
-      shift %= inputLen;
+    REQUIRE_TRUE(block.getIArguments() != nullptr && !block.getIArguments()->empty(), 0,
+                 "roll: a shift integer argument is required when shifts and axes tensors are absent.");
+    const LongType shift = INT_ARG(0);
     axes.resize(block.getIArguments()->size() - 1);
-    if (axes.size())
-      shifts.resize(axes.size());  // emplace_back(shift);
-    else
-      shifts.push_back(shift);
+    shifts.resize(axes.empty() ? 1 : axes.size(), shift);
 
-    for (auto& s : shifts) s = shift;
-
-    for (unsigned e = 0; e < axes.size(); ++e) {
-      int axis = INT_ARG(e + 1);
-      REQUIRE_TRUE(axis < input->rankOf() && axis >= -input->rankOf(), 0,
-                   "roll: axe value should be between -%i and %i, but %i was given.", input->rankOf(),
-                   input->rankOf() - 1, axis);
-      axes[e] = (axis < 0 ? (input->rankOf() + axis) : axis);
+    for (size_t i = 0; i < axes.size(); ++i) {
+      const LongType suppliedAxis = INT_ARG(i + 1);
+      REQUIRE_TRUE(suppliedAxis >= -input->rankOf() && suppliedAxis < input->rankOf(), 0,
+                   "roll: axis must be in the range [-%i, %i), but received %lld.", input->rankOf(),
+                   input->rankOf(), static_cast<long long>(suppliedAxis));
+      axes[i] = suppliedAxis < 0 ? suppliedAxis + input->rankOf() : suppliedAxis;
     }
   }
 
-  if (block.isInplace()) output = input;
-
-  shiftIsLinear = (axes.size() == 0) || (input->rankOf() == 1);
-  sd_debug("Roll: Shift is linear %d Shift is %d, first dimension is %d\n", (int)shiftIsLinear, (int)shifts[0],
-           axes.size() > 0 ? axes[0] : 0);
-  bool shiftsSumZero = false;
-  auto shiftSum = 0;
-  for (auto& s : shifts) {
-    shiftSum += s;
-    sd_debug("Roll: Shift  is %d\n", s);
-  }
-  // all zeros is no op
-  if (shiftSum < 1) {
-    sd_debug("Roll: No shift needed. Shift total was %d\n", shiftSum);
-    if (!block.isInplace()) {
-      output->assign(input);
-    }
-    return Status::OK;
-  }
-
-  if (shiftIsLinear) {
+  if (!hasTensorAxes && axes.empty()) {
     helpers::rollFunctorLinear(block.launchContext(), input, output, shifts[0], block.isInplace());
   } else {
     helpers::rollFunctorFull(block.launchContext(), input, output, shifts, axes, block.isInplace());
@@ -117,11 +95,12 @@ CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(roll) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
-      ->setAllowedInputTypes(1, INT32)
-      ->setAllowedInputTypes(2, INT32)
-      ->setAllowedOutputTypes(ANY)
+      ->setAllowedInputTypes(1, {ALL_INDICES})
+      ->setAllowedInputTypes(2, {ALL_INDICES})
+      ->setAllowedOutputTypes(0, INHERIT)
       ->setSameMode(true);
 }
 }  // namespace ops

@@ -223,6 +223,7 @@ DECLARE_SHAPE_FN(reduce_stdev_bp) {
 
 DECLARE_TYPES(reduce_stdev_bp) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

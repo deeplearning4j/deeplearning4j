@@ -51,7 +51,7 @@ OP_IMPL(mergeavg, -1, 1, false) {
   return Status::OK;
 }
 
-DECLARE_TYPES(mergeavg) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(mergeavg) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS});  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING); }
 
 CUSTOM_OP_IMPL(mergeavg_bp, 2, 1, false, 0, 0) {
   auto inSize = block.width() - 1;
@@ -71,6 +71,7 @@ CUSTOM_OP_IMPL(mergeavg_bp, 2, 1, false, 0, 0) {
 
 DECLARE_TYPES(mergeavg_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 DECLARE_SHAPE_FN(mergeavg_bp) {
   const int numOfInArrs = block.width() - 1;

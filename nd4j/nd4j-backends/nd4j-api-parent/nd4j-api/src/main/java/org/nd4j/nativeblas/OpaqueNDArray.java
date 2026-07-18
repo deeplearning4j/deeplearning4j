@@ -6,7 +6,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.memory.deallocation.OpaqueNDArrayDeallocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -59,8 +58,9 @@ public class OpaqueNDArray extends Pointer {
     private static final boolean CAPTURE_STACK_TRACE =
             Boolean.parseBoolean(System.getProperty(ND4JSystemProperties.OPAQUE_STACKTRACE, "false"));
 
-    // Track the deallocator for this instance
+    // Track the deallocator and exact backend owner for this instance.
     private OpaqueNDArrayDeallocator deallocator;
+    private NativeBufferOwner backendOwner;
 
     private OpaqueDataBuffer shapeInfoBufferRef;
     private OpaqueDataBuffer dataBufferRef;
@@ -71,8 +71,34 @@ public class OpaqueNDArray extends Pointer {
      *
      * @param p The Pointer object representing the native memory address.
      */
-    public OpaqueNDArray(Pointer p) { 
-        super(p); 
+    public OpaqueNDArray(Pointer p) {
+        super(p);
+    }
+
+    public OpaqueNDArray attachOwner(NativeBufferOwner owner) {
+        if (owner == null) {
+            throw new IllegalArgumentException("NativeBufferOwner cannot be null");
+        }
+        if (backendOwner != null && backendOwner.nativeOps() != owner.nativeOps()) {
+            if (deallocator != null || shapeInfoBufferRef != null
+                    || dataBufferRef != null || specialBufferRef != null) {
+                throw new IllegalStateException("OpaqueNDArray already belongs to a different backend");
+            }
+        }
+        backendOwner = owner;
+        return this;
+    }
+
+    public NativeBufferOwner backendOwner() {
+        if (backendOwner == null) {
+            throw new IllegalStateException(
+                    "OpaqueNDArray has no backend owner; create it with an owner-scoped factory");
+        }
+        return backendOwner;
+    }
+
+    private NativeOps nativeOps() {
+        return backendOwner().nativeOps();
     }
 
     /**
@@ -98,102 +124,105 @@ public class OpaqueNDArray extends Pointer {
             OpaqueDataBuffer buffer,
             OpaqueDataBuffer specialBuffer,
             long offset) {
+        return create(ownerOf(shapeInfo, buffer, specialBuffer),
+                shapeInfo, buffer, specialBuffer, offset);
+    }
 
-        // Capture Java stack trace BEFORE calling native - this gives us the full call path
-        // Only capture if debugging is enabled (expensive operation)
+    /**
+     * Creates an OpaqueNDArray entirely through the selected backend owner.
+     */
+    public static OpaqueNDArray create(
+            NativeBufferOwner owner,
+            OpaqueDataBuffer shapeInfo,
+            OpaqueDataBuffer buffer,
+            OpaqueDataBuffer specialBuffer,
+            long offset) {
+        if (owner == null) {
+            throw new IllegalArgumentException("NativeBufferOwner cannot be null");
+        }
+        verifyOwner(owner, shapeInfo, "shapeInfo");
+        verifyOwner(owner, buffer, "buffer");
+        verifyOwner(owner, specialBuffer, "specialBuffer");
+
         String javaStackTrace = CAPTURE_STACK_TRACE ? captureJavaStackTrace() : null;
-
-        int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        int targetDevice = currentDevice;
-
-        // Prefer buffer's device, fall back to specialBuffer's device, then shapeInfo's device
-        if (buffer != null && !buffer.isNull()) {
-            try {
-                int bufferDevice = buffer.deviceId();
-                if (bufferDevice >= 0) {
-                    targetDevice = bufferDevice;
-                }
-            } catch (Exception e) {
-                // Ignore - use current device
-            }
-        } else if (specialBuffer != null && !specialBuffer.isNull()) {
-            try {
-                int specialDevice = specialBuffer.deviceId();
-                if (specialDevice >= 0) {
-                    targetDevice = specialDevice;
-                }
-            } catch (Exception e) {
-                // Ignore - use current device
-            }
+        NativeOps ops = owner.nativeOps();
+        int currentDevice = owner.currentDevice();
+        int targetDevice = targetDevice(currentDevice, buffer, specialBuffer, shapeInfo);
+        int deviceCount = owner.deviceCount();
+        if (targetDevice < 0 || targetDevice >= deviceCount) {
+            throw new IllegalArgumentException(
+                    "Invalid target device " + targetDevice + " for owning backend with "
+                            + deviceCount + " devices");
         }
 
-        // Validate target device is in range
-        int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
-        if (deviceCount > 0 && (targetDevice < 0 || targetDevice >= deviceCount)) {
-            targetDevice = currentDevice;
-        }
-
-        boolean switchedDevice = false;
-        if (currentDevice != targetDevice && deviceCount > 1) {
-            DeviceMemoryManager.getInstance().switchDevice(targetDevice, "OpaqueNDArray.create", "target-device");
-            switchedDevice = true;
+        boolean switchedDevice = currentDevice != targetDevice;
+        if (switchedDevice) {
+            owner.setDevice(targetDevice);
         }
 
         OpaqueNDArray array;
         try {
-            array = Nd4j.getNativeOps().create(shapeInfo, buffer, specialBuffer, offset)
-                    .retainReference();
+            array = ops.create(shapeInfo, buffer, specialBuffer, offset);
+            if (array != null) {
+                array.retainReference();
+            }
         } finally {
-            // Restore original device context
             if (switchedDevice) {
-                DeviceMemoryManager.getInstance().switchDevice(currentDevice, "OpaqueNDArray.create", "restore-device");
+                owner.setDevice(currentDevice);
             }
         }
 
-        // Register with DeallocatorService for reliable cleanup
-        if (array != null && !array.isNull()) {
-            try {
-                array.shapeInfoBufferRef = shapeInfo;
-                array.dataBufferRef = buffer;
-                array.specialBufferRef = specialBuffer;
+        if (array == null || array.isNull()) {
+            throw new IllegalStateException("Backend failed to create OpaqueNDArray");
+        }
 
-                registerWithDeallocatorService(array);
+        array.attachOwner(owner);
+        try {
+            array.shapeInfoBufferRef = shapeInfo;
+            array.dataBufferRef = buffer;
+            array.specialBufferRef = specialBuffer;
+            registerWithDeallocatorService(array, owner);
 
-                // Mark the OpaqueNDArray as constant if either data buffer or shape info is constant.
-                // This protects the OpaqueNDArray wrapper from premature GC/deallocation.
-                // IMPORTANT: setConstant on OpaqueNDArray must NOT propagate the constant flag
-                // to the data buffer if the data buffer isn't actually constant - otherwise
-                // intermediate output arrays can never be freed, causing GPU memory leaks.
-                boolean dataIsConstant = buffer != null && buffer.getDeallocator() != null && buffer.getDeallocator().isConstant();
-                boolean shapeIsConstant = shapeInfo != null && shapeInfo.getDeallocator() != null && shapeInfo.getDeallocator().isConstant();
-                if (dataIsConstant || shapeIsConstant) {
-                    // Only mark the deallocator constant (prevents GC from freeing native NDArray wrapper).
-                    // Do NOT call array.setConstant(true) which would propagate to data buffers.
-                    if (array.deallocator != null) {
-                        array.deallocator.setConstant(true);
-                    }
-                    // Only propagate constant to data buffer if it's actually constant
-                    if (dataIsConstant && buffer != null) {
-                        buffer.setConstant(true);
-                    }
-                    // Shape info is already constant, just ensure it stays that way
-                    if (shapeIsConstant && shapeInfo != null) {
-                        shapeInfo.setConstant(true);
-                    }
-                }
 
-                // Update the allocation record with the full Java stack trace captured from Java side
-                if (javaStackTrace != null && !javaStackTrace.isEmpty()) {
-                    Nd4j.getNativeOps().updateAllocationJavaStackTrace(array, javaStackTrace);
-                }
-            } catch (Exception e) {
-                // LEAK FIX: Clean up array if registration fails
-                Nd4j.getNativeOps().deleteNDArray(array);
-                throw e;
+            if (javaStackTrace != null && !javaStackTrace.isEmpty()) {
+                ops.updateAllocationJavaStackTrace(array, javaStackTrace);
             }
+        } catch (Exception e) {
+            ops.deleteNDArray(array);
+            array.setNull();
+            throw e;
         }
 
         return array;
+    }
+
+    private static NativeBufferOwner ownerOf(OpaqueDataBuffer... buffers) {
+        for (OpaqueDataBuffer buffer : buffers) {
+            if (buffer != null && !buffer.isNull()) {
+                return buffer.backendOwner();
+            }
+        }
+        throw new IllegalArgumentException(
+                "At least one live owner-scoped buffer is required to create an OpaqueNDArray");
+    }
+
+    private static void verifyOwner(NativeBufferOwner owner, OpaqueDataBuffer buffer, String role) {
+        if (buffer != null && !buffer.isNull()
+                && buffer.backendOwner().nativeOps() != owner.nativeOps()) {
+            throw new IllegalArgumentException(role + " belongs to a different native backend");
+        }
+    }
+
+    private static int targetDevice(int currentDevice, OpaqueDataBuffer... buffers) {
+        for (OpaqueDataBuffer buffer : buffers) {
+            if (buffer != null && !buffer.isNull()) {
+                int device = buffer.deviceId();
+                if (device >= 0) {
+                    return device;
+                }
+            }
+        }
+        return currentDevice;
     }
 
     /**
@@ -217,30 +246,33 @@ public class OpaqueNDArray extends Pointer {
      * @param array The array to register
      * @throws RuntimeException if registration fails (array must be cleaned up by caller)
      */
-    private static void registerWithDeallocatorService(OpaqueNDArray array) {
+    private static void registerWithDeallocatorService(
+            OpaqueNDArray array, NativeBufferOwner owner) {
         try {
-            DeallocatorService service = Nd4j.getDeallocatorService();
+            DeallocatorService service = owner.deallocatorService();
             long uniqueId = service.nextValue();
-
             int targetDevice = array.deviceId();
             if (targetDevice < 0) {
-                // Fall back to current thread's device if buffer device is unknown
-                targetDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                targetDevice = owner.currentDevice();
+            }
+            int deviceCount = owner.deviceCount();
+            if (targetDevice < 0 || targetDevice >= deviceCount) {
+                throw new IllegalArgumentException(
+                        "Invalid array device " + targetDevice + " for owning backend with "
+                                + deviceCount + " devices");
             }
 
             OpaqueNDArrayDeallocator deallocator = new OpaqueNDArrayDeallocator(
-                array, uniqueId, targetDevice
-            );
-
+                    array, uniqueId, targetDevice, owner);
             array.deallocator = deallocator;
             service.pickObject(deallocator);
 
             if (log.isTraceEnabled()) {
-                log.trace("Registered OpaqueNDArray {} with DeallocatorService on device {}", uniqueId, targetDevice);
+                log.trace("Registered OpaqueNDArray {} with DeallocatorService on device {}",
+                        uniqueId, targetDevice);
             }
         } catch (Exception e) {
-            // LEAK FIX: If registration fails, caller must clean up the array
-            log.error("Failed to register OpaqueNDArray with DeallocatorService - array must be manually cleaned", e);
+            log.error("Failed to register OpaqueNDArray with its backend DeallocatorService", e);
             throw new RuntimeException("Failed to register array with DeallocatorService", e);
         }
     }
@@ -273,7 +305,7 @@ public class OpaqueNDArray extends Pointer {
      * @return The offset value.
      */
     public static long getOpaqueNDArrayOffset(OpaqueNDArray array) {
-        return Nd4j.getNativeOps().getOpaqueNDArrayOffset(array);
+        return array.nativeOps().getOpaqueNDArrayOffset(array);
     }
 
     /**
@@ -284,9 +316,10 @@ public class OpaqueNDArray extends Pointer {
      * @return An array of long values representing the shape information.
      */
     public static long[] getOpaqueNDArrayShapeInfo(OpaqueNDArray array) {
-        LongPointer ret = Nd4j.getNativeOps().getOpaqueNDArrayShapeInfo(array);
+        NativeOps ops = array.nativeOps();
+        LongPointer ret = ops.getOpaqueNDArrayShapeInfo(array);
         if (ret == null || ret.isNull()) return null;
-        long len = Nd4j.getNativeOps().getShapeInfoLength(array);
+        long len = ops.getShapeInfoLength(array);
         if (len <= 0) return null;
         ret.capacity(len);
         long[] retArr = new long[(int) len];
@@ -302,7 +335,7 @@ public class OpaqueNDArray extends Pointer {
      * @return A Pointer to the buffer.
      */
     public static Pointer getOpaqueNDArrayBuffer(OpaqueNDArray array) {
-        return Nd4j.getNativeOps().getOpaqueNDArrayBuffer(array).retainReference();
+        return array.nativeOps().getOpaqueNDArrayBuffer(array).retainReference();
     }
 
     /**
@@ -313,7 +346,7 @@ public class OpaqueNDArray extends Pointer {
      * @return A Pointer to the special buffer.
      */
     public static Pointer getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
-        Pointer ptr = Nd4j.getNativeOps().getOpaqueNDArraySpecialBuffer(array);
+        Pointer ptr = array.nativeOps().getOpaqueNDArraySpecialBuffer(array);
         return ptr != null ? ptr.retainReference() : null;
     }
 
@@ -325,7 +358,7 @@ public class OpaqueNDArray extends Pointer {
      * @return The length of the array.
      */
     public static long getOpaqueNDArrayLength(OpaqueNDArray array) {
-        return Nd4j.getNativeOps().getOpaqueNDArrayLength(array);
+        return array.nativeOps().getOpaqueNDArrayLength(array);
     }
 
     /**
@@ -335,7 +368,7 @@ public class OpaqueNDArray extends Pointer {
      * @param array The OpaqueNDArray to delete.
      */
     public static void deleteNDArray(OpaqueNDArray array) {
-        Nd4j.getNativeOps().deleteNDArray(array);
+        array.nativeOps().deleteNDArray(array);
     }
 
     /**
@@ -427,6 +460,48 @@ public class OpaqueNDArray extends Pointer {
     }
 
     /**
+     * Converts an INDArray without consulting ND4J's primary backend.
+     */
+    public static OpaqueNDArray fromINDArrayUncached(
+            NativeBufferOwner owner, INDArray array) {
+        if (owner == null) {
+            throw new IllegalArgumentException("NativeBufferOwner cannot be null");
+        }
+        if (array == null) {
+            return null;
+        }
+        if (array.wasClosed()) {
+            throw new IllegalStateException("Cannot wrap a closed INDArray");
+        }
+
+        DataBuffer shapeInfo = array.shapeInfoDataBuffer();
+        if (shapeInfo == null || shapeInfo.wasClosed()) {
+            throw new IllegalStateException("Cannot wrap an INDArray without live shape information");
+        }
+
+        DataBuffer buffer = array.data();
+        boolean arrayEmpty = array.isEmpty();
+        if (buffer == null) {
+            if (!arrayEmpty) {
+                throw new IllegalStateException(
+                        "Cannot wrap a non-empty INDArray without a data buffer");
+            }
+        } else {
+            if (buffer.wasClosed()) {
+                throw new IllegalStateException("Cannot wrap an INDArray with a closed data buffer");
+            }
+            if (!arrayEmpty && buffer.length() < 1) {
+                throw new IllegalStateException(
+                        "Cannot wrap a non-empty INDArray with an empty data buffer");
+            }
+        }
+
+        OpaqueDataBuffer shapeOpaque = shapeInfo.opaqueBuffer();
+        OpaqueDataBuffer dataOpaque = arrayEmpty ? null : buffer.opaqueBuffer();
+        return create(owner, shapeOpaque, dataOpaque, dataOpaque, array.offset());
+    }
+
+    /**
      * Converts an INDArray to an OpaqueNDArray.
      * This method uses caching via {@link INDArray#getOrCreateOpaqueNDArray()}.
      *
@@ -450,6 +525,32 @@ public class OpaqueNDArray extends Pointer {
      */
     public static OpaqueNDArray fromINDArrayNoSync(INDArray array) {
         return fromINDArray(array, false);
+    }
+
+    public static OpaqueNDArray fromINDArray(NativeBufferOwner owner, INDArray array) {
+        return fromINDArray(owner, array, true);
+    }
+
+    public static OpaqueNDArray fromINDArrayNoSync(
+            NativeBufferOwner owner, INDArray array) {
+        return fromINDArray(owner, array, false);
+    }
+
+    private static OpaqueNDArray fromINDArray(
+            NativeBufferOwner owner, INDArray array, boolean syncHostToDevice) {
+        if (array == null) {
+            return null;
+        }
+        if (array.wasClosed()) {
+            throw new IllegalStateException("Cannot wrap a closed INDArray");
+        }
+        DataBuffer buffer = array.data();
+        if (buffer != null && !buffer.wasClosed() && syncHostToDevice && !array.isEmpty()) {
+            OpaqueDataBuffer opaqueBuffer = buffer.opaqueBuffer();
+            verifyOwner(owner, opaqueBuffer, "data");
+            opaqueBuffer.syncToSpecial();
+        }
+        return fromINDArrayUncached(owner, array);
     }
 
     private static OpaqueNDArray fromINDArray(INDArray array, boolean syncHostToDevice) {

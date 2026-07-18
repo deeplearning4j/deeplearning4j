@@ -42,9 +42,13 @@
 // defined in ConstMessages.cpp.  The #include <ConstMessages.h> above makes
 // it available to all translation units that include this header.
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+// No file-level SD_NS wrap: DECLARE_PLATFORM opens it per declaration
+// (platform_boilerplate.h); wrapping the list again nests SD_NS in itself.
 
 /**
  * Platform helper declarations for Apple Metal Performance Shaders (MPS)
@@ -392,6 +396,7 @@ DECLARE_PLATFORM(log_loss, ENGINE_CPU);
 
 }  // namespace platforms
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 namespace mpsUtils {
 
 // ============================================================================
@@ -510,6 +515,7 @@ void checkMPSRequirements(sd::Requirements& reqs, sd::graph::Context& block,
 #endif  // HAVE_MPS
 
 }  // namespace mpsUtils
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

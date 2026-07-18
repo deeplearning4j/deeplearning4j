@@ -23,6 +23,7 @@
 #include <system/common.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -52,6 +53,89 @@ struct ReplayStatistics {
   double captureTimeMs = 0.0;
   double lastReplayTimeMs = 0.0;
   int replayCount = 0;
+
+  // Vulkan-specific fields (empty on other backends)
+  std::string deviceName;          // GPU device name (e.g., "Adreno 8 Gen 3")
+  uint32_t apiVersion = 0;         // VK_MAKE_VERSION result (e.g., VK_API_VERSION_1_2)
+  size_t memoryBudgetBytes = 0;    // Allocated workspace size in bytes
+};
+
+/** Replay implementations known to the portable graph replay layer. */
+enum class ReplayBackend : uint8_t {
+  NONE = 0,
+  FUNCTIONAL,
+  CUDA,
+  HIP,
+  LEVEL_ZERO,
+  VULKAN,
+  METAL,
+  TPU,
+  HEXAGON
+};
+
+/**
+ * A handle can exist before the DSP plan has a recorder capable of populating it.
+ * Keeping these capabilities separate prevents a compiled scaffold from being
+ * selected as an executable replay backend.
+ */
+struct ReplayBackendCapability {
+  bool handleAvailable = false;
+  bool recorderAvailable = false;
+
+  bool executable() const { return handleAvailable && recorderAvailable; }
+};
+
+/** Build-time replay capability matrix used by portable replay selection. */
+struct ReplayCapabilityMatrix {
+  ReplayBackendCapability functional;
+  ReplayBackendCapability cuda;
+  ReplayBackendCapability hip;
+  ReplayBackendCapability levelZero;
+  ReplayBackendCapability vulkan;
+  ReplayBackendCapability metal;
+  ReplayBackendCapability tpu;
+  ReplayBackendCapability hexagon;
+
+  ReplayBackendCapability capability(ReplayBackend backend) const {
+    switch (backend) {
+      case ReplayBackend::FUNCTIONAL: return functional;
+      case ReplayBackend::CUDA: return cuda;
+      case ReplayBackend::HIP: return hip;
+      case ReplayBackend::LEVEL_ZERO: return levelZero;
+      case ReplayBackend::VULKAN: return vulkan;
+      case ReplayBackend::METAL: return metal;
+      case ReplayBackend::TPU: return tpu;
+      case ReplayBackend::HEXAGON: return hexagon;
+      case ReplayBackend::NONE:
+      default: return {};
+    }
+  }
+
+  bool canCreate(ReplayBackend backend) const {
+    return capability(backend).handleAvailable;
+  }
+
+  bool canExecute(ReplayBackend backend) const {
+    return capability(backend).executable();
+  }
+
+  bool hasExecutableHardwareReplay() const {
+    return cuda.executable() || hip.executable() || levelZero.executable() ||
+           vulkan.executable() || metal.executable() || tpu.executable() ||
+           hexagon.executable();
+  }
+
+  ReplayBackend preferredExecutable() const {
+    if (cuda.executable()) return ReplayBackend::CUDA;
+    if (hip.executable()) return ReplayBackend::HIP;
+    if (levelZero.executable()) return ReplayBackend::LEVEL_ZERO;
+    if (vulkan.executable()) return ReplayBackend::VULKAN;
+    if (metal.executable()) return ReplayBackend::METAL;
+    if (tpu.executable()) return ReplayBackend::TPU;
+    if (hexagon.executable()) return ReplayBackend::HEXAGON;
+    if (functional.executable()) return ReplayBackend::FUNCTIONAL;
+    return ReplayBackend::NONE;
+  }
 };
 
 /**
@@ -60,8 +144,9 @@ struct ReplayStatistics {
  * Abstracts the warmup -> capture -> replay lifecycle into a portable
  * interface that can be implemented for different hardware backends:
  *   - CUDA: wraps CudaGraphHandle (cudaGraph_t / cudaGraphExec_t)
- *   - CPU: FunctionalReplayHandle (cached op dispatch, skip shape inference)
- *   - Future: Metal command buffer, Vulkan command buffer, ROCm HIP graph
+ *   - Vulkan: records and resubmits native compute command buffers
+ *   - Functional: cached typed op dispatch with late-bound operands
+ *   - Handle scaffolds: HIP, Level Zero, Metal, TPU, and Hexagon
  *
  * The handle owns address snapshots, pinned host pointers, and optional
  * capture workspace that must persist for the graph's lifetime.
@@ -114,6 +199,12 @@ class SD_LIB_EXPORT GraphReplayHandle {
 
   /** Get the backend name (e.g., "CUDA", "CPU", "Metal"). */
   virtual const char* backendName() const = 0;
+
+  /**
+   * Device that owns this replay handle, or -1 for host-only replay.
+   * Teardown must use this identity rather than the caller's current device.
+   */
+  virtual int getDeviceId() const { return -1; }
 
   // ── Address snapshot for graph invalidation ───────────────────────────
   // Captures external input device buffer addresses at graph capture time.
@@ -208,14 +299,36 @@ class SD_LIB_EXPORT GraphReplayHandle {
 class SD_LIB_EXPORT GraphReplayFactory {
  public:
   /**
-   * Create a replay handle for the current platform.
-   * CUDA builds: CudaGraphReplayHandle
-   * CPU builds: FunctionalReplayHandle
+   * Create the highest-priority executable replay handle for this build. A
+   * backend is eligible only when both its handle and plan recorder are present;
+   * otherwise selection continues to functional replay.
    *
-   * @param deviceId GPU device ID (ignored on CPU)
-   * @return Owning pointer to the new handle
+   * @param deviceId GPU device ID (ignored by host-only replay)
+   * @return Owning pointer to the new handle, or nullptr when none is executable
    */
   static std::unique_ptr<GraphReplayHandle> create(int deviceId = 0);
+
+  /**
+   * Create a specific raw replay handle. Returns nullptr only when the handle
+   * implementation is absent; callers that intend to execute it must first
+   * require capabilities().canExecute(backend). The default create(deviceId)
+   * performs that recorder-aware selection automatically.
+   */
+  static std::unique_ptr<GraphReplayHandle> create(
+      ReplayBackend backend, int deviceId = 0);
+
+  /** Return the build's handle/recorder capability matrix. */
+  static ReplayCapabilityMatrix capabilities();
+
+  /**
+   * Create a software functional replay handle explicitly, independent of the
+   * platform's hardware replay support. Used by EMULATED_REPLAY and CPU native
+   * ranges, which record logical slot commands even in CUDA-enabled builds.
+   *
+   * Vulkan-only builds return nullptr because their segment recorder owns a
+   * complete hardware command stream and does not compile the host slot path.
+   */
+  static std::unique_ptr<GraphReplayHandle> createFunctional();
 
   /**
    * Returns true if the current platform supports hardware command replay

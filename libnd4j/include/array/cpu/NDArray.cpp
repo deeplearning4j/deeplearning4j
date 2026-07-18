@@ -401,8 +401,9 @@ void NDArray::tile(const std::vector<LongType>& reps, NDArray& target) {
 
   // Safely calculate source array offset
   for (LongType i = 0; i < targetLen; ++i) {
-    // Calculate target array offset
-    auto xOffset = target.getOffset(i);
+    // Relative target offset: buffer() below is already offset-shifted, while
+    // getOffset() returns the absolute offset (includes the view offset).
+    auto xOffset = target.getOffset(i) - target.offset();
 
     // Calculate source coordinates based on target coordinates
     LongType targetCoords[SD_MAX_RANK];
@@ -440,7 +441,8 @@ void NDArray::tile(NDArray& target)  {
   // looping through _buffer goes automatically by means of getSubArrayIndex applying
   const auto targetLen = target.lengthOf();
   for (sd::LongType i = 0; i < targetLen; ++i) {
-    auto xOffset = target.getOffset(i);
+    // Relative target offset: buffer() is offset-shifted, getOffset() is absolute.
+    auto xOffset = target.getOffset(i) - target.offset();
     auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
     BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
                           (target.buffer(), xOffset, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);

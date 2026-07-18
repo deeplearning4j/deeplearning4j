@@ -31,6 +31,7 @@ using namespace sd::graph;
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT DeclarableListOp : public DeclarableOp {
  protected:
   Status validateAndExecute(sd::graph::Context& block) override = 0;
@@ -51,6 +52,7 @@ class SD_LIB_EXPORT DeclarableListOp : public DeclarableOp {
 
   ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

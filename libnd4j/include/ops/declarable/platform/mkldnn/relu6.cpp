@@ -18,12 +18,17 @@
  *  *****************************************************************************
  */
 
+//
+// OneDNN implementation of ReLU6: clamp(x, cutoff, 6)
+// Uses eltwise_clip with runtime alpha (lower bound) and fixed beta=6.0
+//
+
 #include <helpers/MKLDNNStream.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
 
-#include "mkldnnUtils.h"
+#include "mkldnnEltwise.h"
 
 using namespace dnnl;
 
@@ -35,50 +40,39 @@ namespace platforms {
 static void relu6MKLDNN(NDArray* x, NDArray* z, float cutoff) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
+  auto dataType = onednnUtils::toDnnlDataType(x->dataType());
+
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
-  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
-  // z
-  z_user_md = z_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
+  z_user_md = z_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*z));
   onednnUtils::setBlockStrides(*z, z_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // Create attributes
-  dnnl::primitive_attr attr;
-
-  // operation primitive description - clip between cutoff and 6
-  // For relu6: output = min(max(input, cutoff), 6)
-  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
+  // relu6: clamp(x, cutoff, 6.0)
   dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
                                                       algorithm::eltwise_clip, x_mkl_md, z_mkl_md, cutoff, 6.0f);
 
-  // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
-
   dnnl::stream stream(engine);
 
-  // provide memory buffers and check whether reorder is required
-  // input
   onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
-  // z
   auto z_user_mem =
       onednnUtils::loadDataToMklStream(*z, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
-  // run calculations
   dnnl::eltwise_forward(op_prim_desc).execute(stream, args);
 
-  // reorder outputs if necessary
   if (op_prim_desc.dst_desc() != z_user_mem.get_desc())
     dnnl::reorder(args[DNNL_ARG_DST], z_user_mem).execute(stream, args[DNNL_ARG_DST], z_user_mem);
 
   stream.wait();
 }
 
-PLATFORM_IMPL(relu6, ENGINE_CPU) {
+PLATFORM_IMPL(relu6, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -86,7 +80,6 @@ PLATFORM_IMPL(relu6, ENGINE_CPU) {
   REQUIRE_TRUE(rank <= 6, 0, "RELU6_MKLDNN OP: the rank of input must be less or equal 6, but got rank = %i instead !",
                rank);
 
-  // Get cutoff parameter, default is 0
   float cutoff = block.numT() > 0 ? static_cast<float>(T_ARG(0)) : 0.0f;
 
   relu6MKLDNN(input, output, cutoff);
@@ -94,7 +87,7 @@ PLATFORM_IMPL(relu6, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(relu6, ENGINE_CPU) {
+PLATFORM_CHECK(relu6, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -102,8 +95,12 @@ PLATFORM_CHECK(relu6, ENGINE_CPU) {
   req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(x->dataType()), TYPE_MSG_INPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(z->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT),
+                   makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT));
   req.logTheSuccess();
   return req;
 }
@@ -112,59 +109,47 @@ PLATFORM_CHECK(relu6, ENGINE_CPU) {
 static void relu6BpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, float cutoff) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
+  auto dataType = onednnUtils::toDnnlDataType(x->dataType());
+
   dnnl::memory::desc x_mkl_md, x_user_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
-  // x
-  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
-  // dLdz
-  dLdz_user_md = dLdz_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdz));
+  dLdz_user_md = dLdz_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*dLdz));
   onednnUtils::setBlockStrides(*dLdz, dLdz_user_md);
 
-  // dLdx
-  dLdx_user_md = dLdx_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdx));
+  dLdx_user_md = dLdx_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*dLdx));
   onednnUtils::setBlockStrides(*dLdx, dLdx_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  // arguments (memory buffers) necessary for calculations
   std::unordered_map<int, dnnl::memory> args;
-
   dnnl::stream stream(engine);
 
-  // operation primitive description
-  // OneDNN 3.x API for forward hint: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
   dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training,
                                                          algorithm::eltwise_clip, x_mkl_md, x_mkl_md, cutoff, 6.0f);
 
-  // OneDNN 3.x API for backward: primitive_desc(engine, algorithm, diff_src_md, diff_dst_md, data_md, alpha, beta, hint_fwd_pd)
   dnnl::eltwise_backward::primitive_desc op_prim_desc(engine, algorithm::eltwise_clip,
                                                        dLdx_mkl_md, dLdz_mkl_md, x_mkl_md, cutoff, 6.0f, op_ff_prim_desc);
 
-  // provide memory buffers and check whether reorder is required for forward
-  // input
   onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
-  // dLdz
   onednnUtils::loadDataToMklStream(*dLdz, engine, stream, dLdz_user_md, op_prim_desc.diff_dst_desc(),
                                    args[DNNL_ARG_DIFF_DST]);
 
-  // dLdx
   auto dLdx_user_mem = onednnUtils::loadDataToMklStream(*dLdx, engine, stream, dLdx_user_md,
                                                         op_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
 
-  // run calculations backward
   dnnl::eltwise_backward(op_prim_desc).execute(stream, args);
 
-  // reorder outputs if necessary
   if (op_prim_desc.diff_src_desc() != dLdx_user_mem.get_desc())
     dnnl::reorder(args[DNNL_ARG_DIFF_SRC], dLdx_user_mem).execute(stream, args[DNNL_ARG_DIFF_SRC], dLdx_user_mem);
 
   stream.wait();
 }
 
-PLATFORM_IMPL(relu6_bp, ENGINE_CPU) {
+PLATFORM_IMPL(relu6_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -173,17 +158,16 @@ PLATFORM_IMPL(relu6_bp, ENGINE_CPU) {
   const sd::LongType dLdzRank = dLdz->rankOf();
 
   REQUIRE_TRUE(rank <= 6 && dLdzRank <= 6, 0,
-               "RELU6_BP_MKLDNN OP: the rank of input and dLdz must be less or equal 6, but got input rank = %i and dLdz "
-               "rank = %i instead !",
-               rank, dLdzRank);
+               "RELU6_BP_MKLDNN OP: the rank of input and dLdz must be less or equal 6");
 
-  // relu6_bp doesn't take a cutoff parameter in the standard op, so use 0
-  relu6BpMKLDNN(input, dLdz, dLdx, 0.0f);
+  float cutoff = block.numT() > 0 ? static_cast<float>(T_ARG(0)) : 0.0f;
+
+  relu6BpMKLDNN(input, dLdz, dLdx, cutoff);
 
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(relu6_bp, ENGINE_CPU) {
+PLATFORM_CHECK(relu6_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -193,20 +177,16 @@ PLATFORM_CHECK(relu6_bp, ENGINE_CPU) {
       req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
-      req.expect(
-          makeShapeInfoVariable(x, SHAPE_MSG_INPUT0), makeShapeInfoVariable(dLdz, SHAPE_MSG_INPUT1),
-          [](const decltype(x)& l, const decltype(dLdz)& r) {
-            for (int i = 0; i < l->rankOf(); i++) {
-              if (l->sizeAt(i) != r->sizeAt(i)) {
-                return false;
-              }
-            }
-            return true;
-          },
-          EXPECTED_EQ_MSG);
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(x->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(dLdz->dataType()), TYPE_MSG_INPUT1),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(dLdx->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1)) &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT));
   req.logTheSuccess();
   return req;
 }

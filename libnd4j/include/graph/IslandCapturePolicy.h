@@ -235,12 +235,6 @@ class SD_LIB_EXPORT IslandCapturePolicy {
   static bool isExcluded(const NativeSlot* slots, int i,
                          const IslandCaptureProfile& profile);
 
-  /**
-   * Classify an op name via substring matching as a fallback when the trait
-   * bitmask does not carry the needed information.
-   */
-  static bool nameMatchesAttention(const std::string& name);
-  static bool nameMatchesDynamicIndex(const std::string& name);
 };
 
 }  // namespace graph

@@ -200,6 +200,7 @@ DECLARE_SHAPE_FN(min_max_datatype) {
 
 DECLARE_TYPES(min_max_datatype) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

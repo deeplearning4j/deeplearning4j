@@ -27,6 +27,7 @@
 #include <array/NDArray.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/per_token_quant.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -37,38 +38,8 @@ constexpr int PTQ_WARP_SIZE = 32;
 // FP8 E4M3 max representable value: 448.0
 constexpr float FP8_E4M3_MAX = 448.0f;
 
-//////////////////////////////////////////////////////////////////////////////
-// Warp-level max reduction
-//////////////////////////////////////////////////////////////////////////////
-SD_DEVICE SD_INLINE float ptqWarpReduceMax(float val) {
-    for (int offset = PTQ_WARP_SIZE / 2; offset > 0; offset /= 2) {
-        val = fmaxf(val, __shfl_down_sync(0xffffffff, val, offset));
-    }
-    return val;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Block-level max reduction using shared memory
-//////////////////////////////////////////////////////////////////////////////
-SD_DEVICE float ptqBlockReduceMax(float val, float* sharedMem) {
-    const int lane = threadIdx.x % PTQ_WARP_SIZE;
-    const int wid = threadIdx.x / PTQ_WARP_SIZE;
-    const int numWarps = (blockDim.x + PTQ_WARP_SIZE - 1) / PTQ_WARP_SIZE;
-
-    val = ptqWarpReduceMax(val);
-
-    if (lane == 0) {
-        sharedMem[wid] = val;
-    }
-    __syncthreads();
-
-    val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : 0.0f;
-    if (wid == 0) {
-        val = ptqWarpReduceMax(val);
-    }
-
-    return val;
-}
+// Warp/block max reductions come from device_primitives.cuh
+// (sd::device::warpReduceMax / sd::device::blockReduceMax).
 
 //////////////////////////////////////////////////////////////////////////////
 // Per-token FP8 quantize kernel: one block per token (row)
@@ -98,7 +69,7 @@ SD_KERNEL void perTokenQuantFp8Kernel(
         threadMax = fmaxf(threadMax, val);
     }
 
-    float tokenMax = ptqBlockReduceMax(threadMax, sdata);
+    float tokenMax = sd::device::blockReduceMax(threadMax, sdata);
 
     __shared__ float invScale;
     __shared__ float tokenScale;
@@ -152,7 +123,7 @@ SD_KERNEL void perTokenQuantFp8WarpLocalKernel(
         float val = fabsf(static_cast<float>(tokenInput[i]));
         threadMax = fmaxf(threadMax, val);
     }
-    float tokenMax = ptqWarpReduceMax(threadMax);
+    float tokenMax = sd::device::warpReduceMax(threadMax);
 
     // Broadcast scale from lane 0
     float tokenScale = tokenMax / FP8_E4M3_MAX;

@@ -67,6 +67,7 @@ DECLARE_SHAPE_FN(nth_element) {
   return SHAPELIST(outShape);
 }
 DECLARE_TYPES(nth_element) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
 }
 

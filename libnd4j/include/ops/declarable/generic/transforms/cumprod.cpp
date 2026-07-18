@@ -70,6 +70,7 @@ DECLARE_TYPES(cumprod) {
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedOutputTypes({ALL_FLOATS})
       ->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_TYPES(cumprod_bp) {

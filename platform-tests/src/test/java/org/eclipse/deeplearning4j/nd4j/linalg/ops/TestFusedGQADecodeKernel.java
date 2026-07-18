@@ -22,11 +22,21 @@ package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -445,6 +455,544 @@ public class TestFusedGQADecodeKernel {
         // Outputs should differ
         double diff = result1[0].sub(result2[0]).amaxNumber().doubleValue();
         assertTrue(diff > 1e-4, "Multi-step outputs are identical (diff=" + diff + ") — kernel may not read new KV");
+    }
+
+    /**
+     * Every row of a speculative target window must match the same Q/K/V rows
+     * evaluated as chained scalar target steps. This exercises the exact Qwen3.5
+     * cache-form contract: rank-4 BSHD GQA, a live static KV cache, tensor cache
+     * positions, and rank-4 additive causal masks.
+     */
+    @Test
+    @DisplayName("GQA cache window - all rows match chained scalar target evaluation")
+    public void testGqaCacheWindowMatchesChainedScalar() {
+        int batch = 1;
+        int window = 5;
+        int numQHeads = 8;
+        int numKvHeads = 2;
+        int headDim = 256;
+        int maxKvLength = 91;
+        int basePosition = 18;
+
+        Nd4j.getRandom().setSeed(123456L);
+        INDArray queryWindow = Nd4j.randn(DataType.FLOAT,
+                batch, window, numQHeads, headDim).muli(0.1);
+        INDArray keyWindow = Nd4j.randn(DataType.FLOAT,
+                batch, window, numKvHeads, headDim).muli(0.1);
+        INDArray valueWindow = Nd4j.randn(DataType.FLOAT,
+                batch, window, numKvHeads, headDim).muli(0.1);
+
+        INDArray initialKeyCache = Nd4j.randn(DataType.FLOAT,
+                batch, maxKvLength, numKvHeads, headDim).muli(0.1);
+        INDArray initialValueCache = Nd4j.randn(DataType.FLOAT,
+                batch, maxKvLength, numKvHeads, headDim).muli(0.1);
+        INDArray scalarKeyCache = initialKeyCache.dup();
+        INDArray scalarValueCache = initialValueCache.dup();
+        INDArray windowKeyCache = initialKeyCache.dup();
+        INDArray windowValueCache = initialValueCache.dup();
+
+        float[] windowBiasData = new float[window * maxKvLength];
+        for (int q = 0; q < window; q++) {
+            for (int k = 0; k < maxKvLength; k++) {
+                windowBiasData[q * maxKvLength + k] =
+                        k <= basePosition + q ? 0.0f : -1.0e9f;
+            }
+        }
+        INDArray windowBias = Nd4j.create(windowBiasData,
+                new long[]{1, 1, window, maxKvLength});
+
+        INDArray emptyQueryMask = Nd4j.empty(DataType.FLOAT);
+        INDArray emptyValueMask = Nd4j.empty(DataType.FLOAT);
+        INDArray windowOutput = Nd4j.exec(new DotProductAttentionV2(
+                queryWindow, valueWindow, keyWindow,
+                emptyQueryMask, emptyValueMask, windowKeyCache, windowValueCache,
+                Nd4j.scalar(DataType.INT64, basePosition),
+                windowBias, 0.0, 0.0, false, false))[0];
+
+        for (int q = 0; q < window; q++) {
+            INDArray queryScalar = queryWindow.get(
+                    NDArrayIndex.all(), NDArrayIndex.interval(q, q + 1),
+                    NDArrayIndex.all(), NDArrayIndex.all()).dup();
+            INDArray keyScalar = keyWindow.get(
+                    NDArrayIndex.all(), NDArrayIndex.interval(q, q + 1),
+                    NDArrayIndex.all(), NDArrayIndex.all()).dup();
+            INDArray valueScalar = valueWindow.get(
+                    NDArrayIndex.all(), NDArrayIndex.interval(q, q + 1),
+                    NDArrayIndex.all(), NDArrayIndex.all()).dup();
+
+            float[] scalarBiasData = new float[maxKvLength];
+            for (int k = 0; k < maxKvLength; k++) {
+                scalarBiasData[k] = k <= basePosition + q ? 0.0f : -1.0e9f;
+            }
+            INDArray scalarBias = Nd4j.create(scalarBiasData,
+                    new long[]{1, 1, 1, maxKvLength});
+            INDArray scalarOutput = Nd4j.exec(new DotProductAttentionV2(
+                    queryScalar, valueScalar, keyScalar,
+                    emptyQueryMask, emptyValueMask, scalarKeyCache, scalarValueCache,
+                    Nd4j.scalar(DataType.INT64, basePosition + q),
+                    scalarBias, 0.0, 0.0, false, false))[0];
+            INDArray windowRow = windowOutput.get(
+                    NDArrayIndex.all(), NDArrayIndex.interval(q, q + 1),
+                    NDArrayIndex.all(), NDArrayIndex.all()).dup();
+
+            double maxDiff = scalarOutput.sub(windowRow).amaxNumber().doubleValue();
+            double l1Diff = scalarOutput.sub(windowRow).norm1Number().doubleValue();
+            assertTrue(maxDiff == 0.0,
+                    "Window row " + q + " differs from chained scalar output: maxDiff="
+                            + maxDiff + ", l1Diff=" + l1Diff);
+        }
+    }
+
+    /**
+     * A rejected speculative suffix remains physically present in the static cache until the
+     * next target window overwrites it. Before row 0 of that next window attends to its newly
+     * written position, every overlapping cache row must contain the new window's K/V rather
+     * than the rejected rows from the previous call.
+     */
+    @Test
+    @DisplayName("GQA cache window - overlapping rejected suffix is overwritten")
+    public void testGqaOverlappingWindowOverwritesRejectedSuffix() {
+        int batch = 1;
+        int window = 5;
+        int numQHeads = 8;
+        int numKvHeads = 2;
+        int headDim = 256;
+        int maxKvLength = 91;
+        int firstBasePosition = 18;
+        int secondBasePosition = firstBasePosition + 1;
+
+        Nd4j.getRandom().setSeed(246810L);
+        INDArray firstQuery = Nd4j.randn(DataType.FLOAT,
+                batch, window, numQHeads, headDim).muli(0.1);
+        INDArray firstKey = Nd4j.randn(DataType.FLOAT,
+                        batch, numKvHeads, window, headDim)
+                .permute(0, 2, 1, 3);
+        INDArray firstValue = Nd4j.randn(DataType.FLOAT,
+                        batch, numKvHeads, window, headDim)
+                .permute(0, 2, 1, 3);
+        INDArray secondQuery = Nd4j.randn(DataType.FLOAT,
+                batch, window, numQHeads, headDim).muli(0.1);
+        INDArray secondKey = Nd4j.randn(DataType.FLOAT,
+                        batch, numKvHeads, window, headDim)
+                .permute(0, 2, 1, 3);
+        INDArray secondValue = Nd4j.randn(DataType.FLOAT,
+                        batch, numKvHeads, window, headDim)
+                .permute(0, 2, 1, 3);
+
+        INDArray initialKeyCache = Nd4j.randn(DataType.FLOAT,
+                batch, maxKvLength, numKvHeads, headDim).muli(0.1);
+        INDArray initialValueCache = Nd4j.randn(DataType.FLOAT,
+                batch, maxKvLength, numKvHeads, headDim).muli(0.1);
+        INDArray overlappingKeyCache = initialKeyCache.dup();
+        INDArray overlappingValueCache = initialValueCache.dup();
+        INDArray scalarKeyCache = initialKeyCache.dup();
+        INDArray scalarValueCache = initialValueCache.dup();
+        INDArray emptyQueryMask = Nd4j.empty(DataType.FLOAT);
+        INDArray emptyValueMask = Nd4j.empty(DataType.FLOAT);
+
+        float[] firstBiasData = new float[window * maxKvLength];
+        float[] secondBiasData = new float[window * maxKvLength];
+        for (int q = 0; q < window; q++) {
+            for (int k = 0; k < maxKvLength; k++) {
+                firstBiasData[q * maxKvLength + k] =
+                        k <= firstBasePosition + q ? 0.0f : -1.0e9f;
+                secondBiasData[q * maxKvLength + k] =
+                        k <= secondBasePosition + q ? 0.0f : -1.0e9f;
+            }
+        }
+        INDArray firstBias = Nd4j.create(firstBiasData,
+                new long[]{1, 1, window, maxKvLength});
+        INDArray secondBias = Nd4j.create(secondBiasData,
+                new long[]{1, 1, window, maxKvLength});
+
+        Nd4j.exec(new DotProductAttentionV2(
+                firstQuery, firstValue, firstKey,
+                emptyQueryMask, emptyValueMask,
+                overlappingKeyCache, overlappingValueCache,
+                Nd4j.scalar(DataType.INT64, firstBasePosition),
+                firstBias, 0.0, 0.0, false, false));
+
+        INDArray overlappingOutput = Nd4j.exec(new DotProductAttentionV2(
+                secondQuery, secondValue, secondKey,
+                emptyQueryMask, emptyValueMask,
+                overlappingKeyCache, overlappingValueCache,
+                Nd4j.scalar(DataType.INT64, secondBasePosition),
+                secondBias, 0.0, 0.0, false, false))[0];
+
+        INDArray firstQueryRow = firstQuery.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+        INDArray firstKeyRow = firstKey.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+        INDArray firstValueRow = firstValue.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+        INDArray secondQueryRow = secondQuery.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+        INDArray secondKeyRow = secondKey.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+        INDArray secondValueRow = secondValue.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+
+        INDArray firstScalarBias = firstBias.get(
+                NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all()).dup();
+        INDArray secondScalarBias = secondBias.get(
+                NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all()).dup();
+        Nd4j.exec(new DotProductAttentionV2(
+                firstQueryRow, firstValueRow, firstKeyRow,
+                emptyQueryMask, emptyValueMask,
+                scalarKeyCache, scalarValueCache,
+                Nd4j.scalar(DataType.INT64, firstBasePosition),
+                firstScalarBias, 0.0, 0.0, false, false));
+        INDArray scalarOutput = Nd4j.exec(new DotProductAttentionV2(
+                secondQueryRow, secondValueRow, secondKeyRow,
+                emptyQueryMask, emptyValueMask,
+                scalarKeyCache, scalarValueCache,
+                Nd4j.scalar(DataType.INT64, secondBasePosition),
+                secondScalarBias, 0.0, 0.0, false, false))[0];
+
+        INDArray overlappingRowZero = overlappingOutput.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(0, 1),
+                NDArrayIndex.all(), NDArrayIndex.all()).dup();
+        double maxDiff = scalarOutput.sub(overlappingRowZero).amaxNumber().doubleValue();
+        double l1Diff = scalarOutput.sub(overlappingRowZero).norm1Number().doubleValue();
+        assertEquals(0.0, maxDiff,
+                "Second window row 0 retained rejected K/V from the first window; l1=" + l1Diff);
+    }
+
+    /**
+     * The cache-form op must scatter logical BSHD rows, not flat physical spans. Qwen's
+     * RoPE/reshape chain can supply BSHD views whose sequence and head strides are swapped;
+     * row 1 must still observe row 0's newly-written key during the same target window.
+     */
+    @Test
+    @DisplayName("GQA cache window - non-contiguous KV rows match chained scalar evaluation")
+    public void testGqaCacheWindowNonContiguousKvMatchesChainedScalar() {
+        int batch = 1;
+        int window = 2;
+        int numQHeads = 8;
+        int numKvHeads = 2;
+        int headDim = 256;
+        int maxKvLength = 91;
+        int basePosition = 18;
+
+        Nd4j.getRandom().setSeed(654321L);
+        INDArray queryWindow = Nd4j.randn(DataType.FLOAT,
+                batch, window, numQHeads, headDim).muli(0.1);
+        INDArray keyWindow = Nd4j.randn(DataType.FLOAT,
+                        batch, numKvHeads, window, headDim)
+                .permute(0, 2, 1, 3);
+        INDArray valueWindow = Nd4j.randn(DataType.FLOAT,
+                        batch, numKvHeads, window, headDim)
+                .permute(0, 2, 1, 3);
+        assertEquals(headDim, keyWindow.stride(1),
+                "Fixture must retain the non-contiguous BHSD-to-BSHD sequence stride");
+        assertEquals(window * headDim, keyWindow.stride(2),
+                "Fixture must retain the non-contiguous BHSD-to-BSHD head stride");
+
+        INDArray initialKeyCache = Nd4j.randn(DataType.FLOAT,
+                batch, maxKvLength, numKvHeads, headDim).muli(0.1);
+        INDArray initialValueCache = Nd4j.randn(DataType.FLOAT,
+                batch, maxKvLength, numKvHeads, headDim).muli(0.1);
+        INDArray scalarKeyCache = initialKeyCache.dup();
+        INDArray scalarValueCache = initialValueCache.dup();
+        INDArray windowKeyCache = initialKeyCache.dup();
+        INDArray windowValueCache = initialValueCache.dup();
+
+        float[] windowBiasData = new float[window * maxKvLength];
+        for (int q = 0; q < window; q++) {
+            for (int k = 0; k < maxKvLength; k++) {
+                windowBiasData[q * maxKvLength + k] =
+                        k <= basePosition + q ? 0.0f : -1.0e9f;
+            }
+        }
+        INDArray windowBias = Nd4j.create(windowBiasData,
+                new long[]{1, 1, window, maxKvLength});
+        INDArray emptyQueryMask = Nd4j.empty(DataType.FLOAT);
+        INDArray emptyValueMask = Nd4j.empty(DataType.FLOAT);
+
+        INDArray windowOutput = Nd4j.exec(new DotProductAttentionV2(
+                queryWindow, valueWindow, keyWindow,
+                emptyQueryMask, emptyValueMask, windowKeyCache, windowValueCache,
+                Nd4j.scalar(DataType.INT64, basePosition),
+                windowBias, 0.0, 0.0, false, false))[0];
+        windowOutput.getDouble(0);
+
+        for (int q = 0; q < window; q++) {
+            INDArray queryScalar = queryWindow.get(
+                    NDArrayIndex.all(), NDArrayIndex.interval(q, q + 1),
+                    NDArrayIndex.all(), NDArrayIndex.all()).dup();
+            INDArray keyScalar = keyWindow.get(
+                    NDArrayIndex.all(), NDArrayIndex.interval(q, q + 1),
+                    NDArrayIndex.all(), NDArrayIndex.all()).dup();
+            INDArray valueScalar = valueWindow.get(
+                    NDArrayIndex.all(), NDArrayIndex.interval(q, q + 1),
+                    NDArrayIndex.all(), NDArrayIndex.all()).dup();
+
+            float[] scalarBiasData = new float[maxKvLength];
+            for (int k = 0; k < maxKvLength; k++) {
+                scalarBiasData[k] = k <= basePosition + q ? 0.0f : -1.0e9f;
+            }
+            INDArray scalarBias = Nd4j.create(scalarBiasData,
+                    new long[]{1, 1, 1, maxKvLength});
+            INDArray scalarOutput = Nd4j.exec(new DotProductAttentionV2(
+                    queryScalar, valueScalar, keyScalar,
+                    emptyQueryMask, emptyValueMask, scalarKeyCache, scalarValueCache,
+                    Nd4j.scalar(DataType.INT64, basePosition + q),
+                    scalarBias, 0.0, 0.0, false, false))[0];
+            INDArray windowRow = windowOutput.get(
+                    NDArrayIndex.all(), NDArrayIndex.interval(q, q + 1),
+                    NDArrayIndex.all(), NDArrayIndex.all()).dup();
+
+            double maxDiff = scalarOutput.sub(windowRow).amaxNumber().doubleValue();
+            double l1Diff = scalarOutput.sub(windowRow).norm1Number().doubleValue();
+            assertEquals(0.0, maxDiff,
+                    "Non-contiguous window row " + q + " differs from chained scalar output; l1=" + l1Diff);
+        }
+    }
+
+    @Test
+    @DisplayName("GQA auxiliary outputs - nonzero array offsets match dense inputs")
+    public void testGqaAuxiliaryOutputsHonorArrayOffsets() {
+        int batch = 1;
+        int window = 1;
+        int numQHeads = 8;
+        int numKvHeads = 2;
+        int headDim = 256;
+        int maxKvLength = 91;
+        int basePosition = 18;
+
+        Nd4j.getRandom().setSeed(890123L);
+        INDArray queryBacking = Nd4j.randn(DataType.FLOAT,
+                batch, window + 1, numQHeads, headDim).muli(0.1);
+        INDArray keyBacking = Nd4j.randn(DataType.FLOAT,
+                batch, window + 1, numKvHeads, headDim).muli(0.1);
+        INDArray valueBacking = Nd4j.randn(DataType.FLOAT,
+                batch, window + 1, numKvHeads, headDim).muli(0.1);
+        INDArray keyCacheBacking = Nd4j.randn(DataType.FLOAT,
+                batch, maxKvLength + 1, numKvHeads, headDim).muli(0.1);
+        INDArray valueCacheBacking = Nd4j.randn(DataType.FLOAT,
+                batch, maxKvLength + 1, numKvHeads, headDim).muli(0.1);
+        INDArray biasBacking = Nd4j.valueArrayOf(
+                new long[]{1, 1, window + 1, maxKvLength}, -1.0e9).castTo(DataType.FLOAT);
+
+        INDArray query = queryBacking.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(1, window + 1),
+                NDArrayIndex.all(), NDArrayIndex.all());
+        INDArray key = keyBacking.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(1, window + 1),
+                NDArrayIndex.all(), NDArrayIndex.all());
+        INDArray value = valueBacking.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(1, window + 1),
+                NDArrayIndex.all(), NDArrayIndex.all());
+        INDArray keyCache = keyCacheBacking.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(1, maxKvLength + 1),
+                NDArrayIndex.all(), NDArrayIndex.all());
+        INDArray valueCache = valueCacheBacking.get(
+                NDArrayIndex.all(), NDArrayIndex.interval(1, maxKvLength + 1),
+                NDArrayIndex.all(), NDArrayIndex.all());
+        INDArray bias = biasBacking.get(
+                NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(1, window + 1), NDArrayIndex.all());
+        bias.get(
+                NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(0, basePosition + 1)).assign(0.0);
+
+        INDArray emptyQueryMask = Nd4j.empty(DataType.FLOAT);
+        INDArray emptyValueMask = Nd4j.empty(DataType.FLOAT);
+        INDArray cachePosition = Nd4j.scalar(DataType.INT64, basePosition);
+        INDArray[] expected = Nd4j.exec(new DotProductAttentionV2(
+                query.dup(), value.dup(), key.dup(),
+                emptyQueryMask, emptyValueMask, keyCache.dup(), valueCache.dup(),
+                cachePosition, bias.dup(), 0.0, 0.0, false, false));
+        INDArray[] actual = Nd4j.exec(new DotProductAttentionV2(
+                query, value, key,
+                emptyQueryMask, emptyValueMask, keyCache, valueCache,
+                cachePosition, bias, 0.0, 0.0, false, false));
+
+        assertEquals(3, actual.length);
+        for (int output = 0; output < actual.length; output++) {
+            double maxDiff = expected[output].sub(actual[output]).amaxNumber().doubleValue();
+            double l1Diff = expected[output].sub(actual[output]).norm1Number().doubleValue();
+            assertEquals(0.0, maxDiff,
+                    "Offset view DPA output " + output + " differs from dense input; l1=" + l1Diff);
+        }
+    }
+
+    /**
+     * Combines the two contracts that the eager cache-window test and the generic
+     * DSP attention tests cover separately: a non-contiguous GQA target window and
+     * repeated execution after DSP shape freeze. Fused RoPE produces Q/K immediately
+     * before DPA, reproducing the Triton-island-to-native-gap boundary in Qwen. All
+     * three DPA outputs are fetched so the test follows the same native fallback.
+     */
+    @Test
+    @DisplayName("GQA cache window - fused RoPE frozen DSP all outputs match eager")
+    public void testGqaCacheWindowFusedRopeFrozenDspMatchesEager() {
+        runGqaCacheWindowFusedRopeFrozenDsp(true, false);
+    }
+
+    @Test
+    @DisplayName("GQA cache window - fused RoPE frozen DSP output-only matches eager")
+    public void testGqaCacheWindowFusedRopeFrozenDspOutputOnlyMatchesEager() {
+        runGqaCacheWindowFusedRopeFrozenDsp(false, false);
+    }
+
+    @Test
+    @DisplayName("GQA cache window - frozen DSP consumes current replay K/V")
+    public void testGqaCacheWindowChangingKvFrozenDspMatchesEager() {
+        runGqaCacheWindowFusedRopeFrozenDsp(true, true);
+    }
+
+    private void runGqaCacheWindowFusedRopeFrozenDsp(
+            boolean fetchAuxOutputs, boolean varyKvAcrossReplays) {
+        int batch = 1;
+        int window = 5;
+        int numQHeads = 8;
+        int numKvHeads = 2;
+        int headDim = 256;
+        int maxKvLength = 91;
+        int basePosition = 18;
+        double freqBase = 10_000_000.0;
+
+        Nd4j.getRandom().setSeed(789012L);
+        INDArray queryWindow = Nd4j.randn(DataType.FLOAT,
+                batch, window, numQHeads, headDim).muli(0.1);
+        INDArray keyPhysical = Nd4j.randn(DataType.FLOAT,
+                batch, numKvHeads, window, headDim).muli(0.1);
+        INDArray valuePhysical = Nd4j.randn(DataType.FLOAT,
+                batch, numKvHeads, window, headDim).muli(0.1);
+        INDArray keyWindow = keyPhysical.permute(0, 2, 1, 3);
+        INDArray valueWindow = valuePhysical.permute(0, 2, 1, 3);
+        INDArray initialKeyCache = Nd4j.randn(DataType.FLOAT,
+                batch, maxKvLength, numKvHeads, headDim).muli(0.1);
+        INDArray initialValueCache = Nd4j.randn(DataType.FLOAT,
+                batch, maxKvLength, numKvHeads, headDim).muli(0.1);
+        INDArray cachePosition = Nd4j.scalar(DataType.INT64, basePosition);
+
+        float[] biasData = new float[window * maxKvLength];
+        for (int q = 0; q < window; q++) {
+            for (int k = 0; k < maxKvLength; k++) {
+                biasData[q * maxKvLength + k] =
+                        k <= basePosition + q ? 0.0f : -1.0e9f;
+            }
+        }
+        INDArray attentionBias = Nd4j.create(biasData,
+                new long[]{1, 1, window, maxKvLength});
+        INDArray emptyQueryMask = Nd4j.empty(DataType.FLOAT);
+        INDArray emptyValueMask = Nd4j.empty(DataType.FLOAT);
+
+        String previousDspProperty = System.getProperty(
+                ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED);
+        boolean previousDspEnabled = InferenceSession.isDynamicShapePlanEnabled();
+        SameDiff sd = SameDiff.create();
+        try {
+            System.setProperty(ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED, "true");
+            InferenceSession.setDynamicShapePlanEnabled(true);
+
+            SDVariable query = sd.placeHolder("query", DataType.FLOAT,
+                    batch, window, numQHeads, headDim);
+            SDVariable keyInput = sd.placeHolder("key_physical", DataType.FLOAT,
+                    batch, numKvHeads, window, headDim);
+            SDVariable valueInput = sd.placeHolder("value_physical", DataType.FLOAT,
+                    batch, numKvHeads, window, headDim);
+            SDVariable keyView = keyInput.permute(0, 2, 1, 3);
+            SDVariable value = valueInput.permute(0, 2, 1, 3);
+            SDVariable keyCache = sd.placeHolder("key_cache", DataType.FLOAT,
+                    batch, maxKvLength, numKvHeads, headDim);
+            SDVariable valueCache = sd.placeHolder("value_cache", DataType.FLOAT,
+                    batch, maxKvLength, numKvHeads, headDim);
+            SDVariable position = sd.placeHolder("cache_position", DataType.INT64);
+            SDVariable bias = sd.placeHolder("attention_bias", DataType.FLOAT,
+                    1, 1, window, maxKvLength);
+            SDVariable queryRopeVar = new FusedRoPE(
+                    sd, query, position, FusedRoPE.ROPE_TYPE_NEOX,
+                    freqBase, 1.0, headDim).outputVariable();
+            SDVariable keyRopeVar = new FusedRoPE(
+                    sd, keyView, position, FusedRoPE.ROPE_TYPE_NEOX,
+                    freqBase, 1.0, headDim).outputVariable();
+            DotProductAttentionV2 op = new DotProductAttentionV2(
+                    sd, queryRopeVar, value, keyRopeVar, null, null,
+                    keyCache, valueCache, position, bias,
+                    0.0, 0.0, false, false);
+            SDVariable[] outputVariables = op.outputVariables();
+            String[] outputNames = fetchAuxOutputs
+                    ? new String[]{
+                            outputVariables[0].name(),
+                            outputVariables[1].name(),
+                            outputVariables[2].name(),
+                            queryRopeVar.name(),
+                            keyRopeVar.name()
+                    }
+                    : new String[]{
+                            outputVariables[0].name(),
+                            queryRopeVar.name(),
+                            keyRopeVar.name()
+                    };
+
+            Map<String, INDArray> inputs = new LinkedHashMap<>();
+            inputs.put("query", queryWindow);
+            inputs.put("key_physical", keyPhysical);
+            inputs.put("value_physical", valuePhysical);
+            inputs.put("key_cache", initialKeyCache.dup());
+            inputs.put("value_cache", initialValueCache.dup());
+            inputs.put("cache_position", cachePosition);
+            inputs.put("attention_bias", attentionBias);
+
+            sd.setDspAutoCompileEnabled(true);
+            sd.setDspNativeAutoCompileEnabled(true);
+            sd.setGraphExecutionMode(GraphExecutionMode.AUTO);
+
+            for (int execution = 0; execution < 8; execution++) {
+                if (varyKvAcrossReplays && execution > 0) {
+                    // Keep every shape and cache allocation fixed while making the current
+                    // replay distinguishable from the cache contents left by its predecessor.
+                    // A read of last replay's freshly-scattered window must therefore fail.
+                    keyPhysical.addi(0.03125f);
+                    valuePhysical.muli(0.875f).addi(0.015625f);
+                }
+                Map<String, INDArray> actual = sd.output(inputs, outputNames);
+                INDArray replayQuery = actual.get(queryRopeVar.name());
+                INDArray replayKey = actual.get(keyRopeVar.name());
+                assertNotNull(replayQuery, "Missing replayed fused-RoPE query");
+                assertNotNull(replayKey, "Missing replayed fused-RoPE key");
+                INDArray[] expected = Nd4j.exec(new DotProductAttentionV2(
+                        replayQuery, valueWindow, replayKey,
+                        emptyQueryMask, emptyValueMask,
+                        initialKeyCache.dup(), initialValueCache.dup(),
+                        cachePosition, attentionBias, 0.0, 0.0, false, false));
+                assertEquals(3, expected.length);
+
+                int dpaOutputsToCompare = fetchAuxOutputs ? 3 : 1;
+                for (int output = 0; output < dpaOutputsToCompare; output++) {
+                    INDArray actualOutput = actual.get(outputNames[output]);
+                    assertNotNull(actualOutput,
+                            "Missing DPA output " + output + " at execution " + execution);
+                    double maxDiff = expected[output].sub(actualOutput)
+                            .amaxNumber().doubleValue();
+                    double l1Diff = expected[output].sub(actualOutput)
+                            .norm1Number().doubleValue();
+                    assertEquals(0.0, maxDiff,
+                            "Frozen DSP execution " + execution + " DPA output " + output
+                                    + " differs from eager; l1=" + l1Diff);
+                }
+            }
+        } finally {
+            sd.close();
+            InferenceSession.setDynamicShapePlanEnabled(previousDspEnabled);
+            if (previousDspProperty == null) {
+                System.clearProperty(ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED);
+            } else {
+                System.setProperty(ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED,
+                        previousDspProperty);
+            }
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

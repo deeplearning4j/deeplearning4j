@@ -16,9 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#if defined(HAVE_VULKAN)
+#include <system/common.h>
+
+#if defined(HAVE_VULKAN) && HAVE_VULKAN
 
 #include <graph/vulkan/VulkanReplayHandle.h>
+#include <graph/vulkan/VulkanDeviceManager.h>
+#include <graph/DspDiagnostics.h>
 
 #include <chrono>
 #include <cstring>
@@ -52,79 +56,40 @@ VulkanReplayHandle::~VulkanReplayHandle() {
 bool VulkanReplayHandle::initVulkan() {
   if (initialized_) return true;
 
-  // --- Create VkInstance (no validation layers for production perf) ---
-  VkApplicationInfo appInfo = {};
-  appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  appInfo.pApplicationName = "nd4j-vulkan-replay";
-  appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.pEngineName = "libnd4j";
-  appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.apiVersion = VK_API_VERSION_1_2;
-
-  VkInstanceCreateInfo instanceInfo = {};
-  instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-  instanceInfo.pApplicationInfo = &appInfo;
-  instanceInfo.enabledLayerCount = 0;
-  instanceInfo.enabledExtensionCount = 0;
-
-  VkResult result = vkCreateInstance(&instanceInfo, nullptr, &instance_);
-  if (result != VK_SUCCESS) {
-    sd_printf("VulkanReplayHandle: vkCreateInstance failed (result=%d)\n", static_cast<int>(result));
+  auto& devMgr = VulkanDeviceManager::getInstance();
+  if (!devMgr.initialize()) {
+    sd_printf("VulkanReplayHandle: VulkanDeviceManager::initialize() failed — no Vulkan devices available\n", 0);
     return false;
   }
 
-  // --- Enumerate physical devices and select by deviceId ---
-  uint32_t deviceCount = 0;
-  vkEnumeratePhysicalDevices(instance_, &deviceCount, nullptr);
-  if (deviceCount == 0) {
-    sd_printf("VulkanReplayHandle: no Vulkan-capable physical devices found\n", 0);
-    cleanup();
+  deviceContext_ = VulkanDeviceContext::getContext(deviceId_);
+  if (deviceContext_ == nullptr || deviceContext_->isLost()) {
+    sd_printf("VulkanReplayHandle: no usable VulkanDeviceContext for device %d\n", deviceId_);
+    deviceContext_ = nullptr;
     return false;
   }
 
-  std::vector<VkPhysicalDevice> devices(deviceCount);
-  vkEnumeratePhysicalDevices(instance_, &deviceCount, devices.data());
+  // Borrow the exact logical device whose enabled capabilities are reported by
+  // VulkanDeviceCaps. Replay state must never create a parallel feature-less
+  // VkDevice and then infer support from the physical device.
+  instance_ = devMgr.getInstance_();
+  physicalDevice_ = deviceContext_->physicalDevice();
+  device_ = deviceContext_->device();
+  computeQueueFamily_ = deviceContext_->caps().computeQueueFamily;
 
-  uint32_t selectedIdx = (deviceId_ >= 0 && static_cast<uint32_t>(deviceId_) < deviceCount)
-                             ? static_cast<uint32_t>(deviceId_)
-                             : 0;
-  physicalDevice_ = devices[selectedIdx];
+  const VulkanDeviceInfo* devInfo = devMgr.getDeviceInfo(deviceId_);
+  deviceName_ = devInfo ? devInfo->name : "unknown";
+  apiVersion_ = deviceContext_->caps().apiVersion;
 
-  VkPhysicalDeviceProperties devProps;
-  vkGetPhysicalDeviceProperties(physicalDevice_, &devProps);
-  sd_printf("VulkanReplayHandle: using device %s (index %u)\n", devProps.deviceName, selectedIdx);
+  DSP_DIAG(BACKEND,
+           "VulkanReplayHandle: borrowing device %s (index %d), fp16=%s storage16=%s fp64=%s subgroup=%u",
+           deviceName_.c_str(), deviceId_,
+           deviceContext_->caps().fp16 ? "yes" : "no",
+           deviceContext_->caps().storage16 ? "yes" : "no",
+           deviceContext_->caps().fp64 ? "yes" : "no",
+           deviceContext_->caps().subgroupSize);
 
-  // --- Find a compute queue family ---
-  computeQueueFamily_ = findComputeQueueFamily();
-  if (computeQueueFamily_ == UINT32_MAX) {
-    sd_printf("VulkanReplayHandle: no compute queue family found\n", 0);
-    cleanup();
-    return false;
-  }
-
-  // --- Create logical device with one compute queue ---
-  float queuePriority = 1.0f;
-  VkDeviceQueueCreateInfo queueInfo = {};
-  queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queueInfo.queueFamilyIndex = computeQueueFamily_;
-  queueInfo.queueCount = 1;
-  queueInfo.pQueuePriorities = &queuePriority;
-
-  VkDeviceCreateInfo deviceInfo = {};
-  deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-  deviceInfo.queueCreateInfoCount = 1;
-  deviceInfo.pQueueCreateInfos = &queueInfo;
-  deviceInfo.enabledExtensionCount = 0;
-  deviceInfo.enabledLayerCount = 0;
-
-  result = vkCreateDevice(physicalDevice_, &deviceInfo, nullptr, &device_);
-  if (result != VK_SUCCESS) {
-    sd_printf("VulkanReplayHandle: vkCreateDevice failed (result=%d)\n", static_cast<int>(result));
-    cleanup();
-    return false;
-  }
-
-  vkGetDeviceQueue(device_, computeQueueFamily_, 0, &computeQueue_);
+  VkResult result = VK_SUCCESS;
 
   // --- Create command pool with reset capability ---
   VkCommandPoolCreateInfo poolInfo = {};
@@ -165,34 +130,18 @@ bool VulkanReplayHandle::initVulkan() {
     return false;
   }
 
+  detectUMA();
+
+  // Create the pipeline cache now that device_ and physicalDevice_ are valid.
+  // The cache compiles MLIR modules to SPIR-V and caches the resulting
+  // VkPipeline objects so that each op signature is only compiled once.
+  pipelineCache_ = std::make_unique<VulkanPipelineCache>(
+      device_, physicalDevice_, deviceContext_->caps(),
+      deviceContext_->pipelineCache());
+  DSP_DIAG(BACKEND, "VulkanReplayHandle: VulkanPipelineCache created");
+
   initialized_ = true;
   return true;
-}
-
-uint32_t VulkanReplayHandle::findComputeQueueFamily() {
-  uint32_t queueFamilyCount = 0;
-  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice_, &queueFamilyCount, nullptr);
-
-  std::vector<VkQueueFamilyProperties> families(queueFamilyCount);
-  vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice_, &queueFamilyCount, families.data());
-
-  // Prefer a compute-only queue family (no graphics) for dedicated compute work
-  uint32_t computeOnly = UINT32_MAX;
-  uint32_t computeAny = UINT32_MAX;
-
-  for (uint32_t i = 0; i < queueFamilyCount; ++i) {
-    if (families[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
-      if (computeAny == UINT32_MAX) {
-        computeAny = i;
-      }
-      // Compute-only: has compute but NOT graphics
-      if (!(families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) && computeOnly == UINT32_MAX) {
-        computeOnly = i;
-      }
-    }
-  }
-
-  return (computeOnly != UINT32_MAX) ? computeOnly : computeAny;
 }
 
 uint32_t VulkanReplayHandle::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -206,6 +155,32 @@ uint32_t VulkanReplayHandle::findMemoryType(uint32_t typeFilter, VkMemoryPropert
     }
   }
   return UINT32_MAX;
+}
+
+void VulkanReplayHandle::detectUMA() {
+  VkPhysicalDeviceMemoryProperties memProps;
+  vkGetPhysicalDeviceMemoryProperties(physicalDevice_, &memProps);
+
+  umaDetected_ = false;
+
+  for (uint32_t i = 0; i < memProps.memoryTypeCount; ++i) {
+    VkMemoryPropertyFlags flags = memProps.memoryTypes[i].propertyFlags;
+    if ((flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) &&
+        (flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+      umaDetected_ = true;
+      break;
+    }
+  }
+
+  // Canonical log line checked by the build-verification grep:
+  //   "VulkanReplayHandle: UMA detected=true"  -- mobile/integrated GPU
+  //   "VulkanReplayHandle: UMA detected=false" -- discrete dGPU (staging path)
+  sd_printf("VulkanReplayHandle: UMA detected=%s\n", umaDetected_ ? "true" : "false");
+  if (umaDetected_) {
+    sd_printf("VulkanReplayHandle: host-visible device-local memory available - zero-copy workspace path enabled\n", 0);
+  } else {
+    sd_printf("VulkanReplayHandle: discrete GPU memory model - staging buffers required for workspace\n", 0);
+  }
 }
 
 // ── Capture Lifecycle ────────────────────────────────────────────────────────
@@ -263,6 +238,17 @@ bool VulkanReplayHandle::endCapture(void* /*stream*/) {
 
   captureTimeMs_ = nowMs() - captureStartTimeMs_;
   state_ = ReplayState::CAPTURED;
+
+  // Emit structured GRAPH_REPLAY diagnostic event with Vulkan capture stats.
+  // The message format is intentionally parseable (vulkan_backend key=value pairs)
+  // so generateJsonReport() can extract and surface them in the "vulkan" JSON block.
+  DSP_DIAG(GRAPH_REPLAY,
+      "vulkan_backend CAPTURE_DONE device=\"%s\" api_version=0x%08x"
+      " dispatches=%d capture_ms=%.3f workspace_bytes=%zu uma=%d fp16=%d",
+      deviceName_.c_str(), apiVersion_,
+      numDispatches_, captureTimeMs_,
+      workspaceSize_, umaDetected_ ? 1 : 0, isFp16Supported() ? 1 : 0);
+
   return true;
 }
 
@@ -278,6 +264,13 @@ bool VulkanReplayHandle::finalize() {
   // (unlike CUDA which requires cudaGraphInstantiate). This method
   // exists to satisfy the GraphReplayHandle lifecycle contract.
   state_ = ReplayState::READY;
+
+  // Tier-2 kill-safety flush (ADR 0115): capture just created any new
+  // pipelines, and mobile processes rarely exit cleanly — persist the driver
+  // pipeline-cache blob now rather than only at context destroy. No-op when
+  // the blob size is unchanged.
+  if (deviceContext_ != nullptr) deviceContext_->savePipelineCacheBlob();
+
   return true;
 }
 
@@ -317,7 +310,9 @@ bool VulkanReplayHandle::replay(void* /*stream*/) {
   submitInfo.waitSemaphoreCount = 0;
   submitInfo.signalSemaphoreCount = 0;
 
-  result = vkQueueSubmit(computeQueue_, 1, &submitInfo, fence_);
+  result = deviceContext_ != nullptr
+               ? deviceContext_->submitCompute(1, &submitInfo, fence_)
+               : VK_ERROR_INITIALIZATION_FAILED;
   if (result != VK_SUCCESS) {
     sd_printf("VulkanReplayHandle: vkQueueSubmit failed (result=%d)\n", static_cast<int>(result));
     state_ = ReplayState::ERRORED;
@@ -335,6 +330,16 @@ bool VulkanReplayHandle::replay(void* /*stream*/) {
 
   lastReplayTimeMs_ = nowMs() - replayStart;
   replayCount_++;
+  VulkanPipelineCache::recordKernelLaunches(
+      static_cast<uint64_t>(numDispatches_));
+
+  // Emit structured GRAPH_REPLAY diagnostic event with Vulkan replay stats.
+  DSP_DIAG(GRAPH_REPLAY,
+      "vulkan_backend REPLAY_DONE device=\"%s\" replay_count=%d"
+      " replay_ms=%.3f dispatches=%d",
+      deviceName_.c_str(), replayCount_,
+      lastReplayTimeMs_, numDispatches_);
+
   return true;
 }
 
@@ -355,6 +360,59 @@ void VulkanReplayHandle::recordDispatch(VkPipeline pipeline, VkPipelineLayout la
   vkCmdDispatch(cmdBuffer_, groupCountX, groupCountY, groupCountZ);
 
   numDispatches_++;
+}
+
+bool VulkanReplayHandle::recordDispatch(const std::string& opName,
+                                         const std::string& mlirModuleStr,
+                                         VkDescriptorSet descriptorSet,
+                                         uint32_t groupCountX,
+                                         uint32_t groupCountY,
+                                         uint32_t groupCountZ) {
+  if (state_ != ReplayState::CAPTURING) {
+    sd_printf("VulkanReplayHandle: recordDispatch(MLIR) called outside of capture for op '%s'\n",
+              opName.c_str());
+    return false;
+  }
+
+  if (!pipelineCache_) {
+    sd_printf("VulkanReplayHandle: pipelineCache_ is null — was initVulkan() called?\n", 0);
+    return false;
+  }
+
+  // Obtain (or compile+cache) the VkPipeline for this op.
+  VkPipeline pipeline = pipelineCache_->getOrCompile(opName, mlirModuleStr, device_);
+  if (pipeline == VK_NULL_HANDLE) {
+    sd_printf("VulkanReplayHandle: pipeline compilation failed for op '%s'\n", opName.c_str());
+    return false;
+  }
+
+  // Retrieve the layout that was created alongside the pipeline.
+  // getPipelineLayout() is a cache-read-only lookup (O(log n)) and will never
+  // recompile; it returns VK_NULL_HANDLE only if the key was never compiled,
+  // which cannot happen here because getOrCompile() just succeeded above.
+  VkPipelineLayout layout = pipelineCache_->getPipelineLayout(opName, mlirModuleStr);
+  if (layout == VK_NULL_HANDLE) {
+    // This should never happen: getOrCompile() succeeded, so the entry is
+    // present.  Guard defensively anyway.
+    sd_printf("VulkanReplayHandle: internal error — layout missing after successful "
+              "getOrCompile() for op '%s'\n", opName.c_str());
+    return false;
+  }
+
+  // Bind the compute pipeline, then bind the caller-supplied descriptor set
+  // using the layout obtained from the cache.  vkCmdBindDescriptorSets
+  // requires the same VkPipelineLayout that was used at pipeline creation,
+  // which is exactly what getPipelineLayout() returns.
+  vkCmdBindPipeline(cmdBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+
+  if (descriptorSet != VK_NULL_HANDLE) {
+    vkCmdBindDescriptorSets(cmdBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, layout,
+                            0, 1, &descriptorSet, 0, nullptr);
+  }
+
+  vkCmdDispatch(cmdBuffer_, groupCountX, groupCountY, groupCountZ);
+  numDispatches_++;
+  return true;
 }
 
 void VulkanReplayHandle::recordComputeBarrier() {
@@ -393,6 +451,10 @@ ReplayStatistics VulkanReplayHandle::getStatistics() const {
   stats.captureTimeMs = captureTimeMs_;
   stats.lastReplayTimeMs = lastReplayTimeMs_;
   stats.replayCount = replayCount_;
+  // Vulkan-specific fields (populated after initVulkan())
+  stats.deviceName = deviceName_;
+  stats.apiVersion = apiVersion_;
+  stats.memoryBudgetBytes = workspaceSize_;  // allocated workspace size
   return stats;
 }
 
@@ -404,7 +466,7 @@ bool VulkanReplayHandle::allocateWorkspace(size_t bytes, int /*deviceId*/,
 
   if (!initialized_ && !initVulkan()) return false;
 
-  // Create a device-local storage buffer for workspace
+  // Create a storage buffer for workspace
   VkBufferCreateInfo bufferInfo = {};
   bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   bufferInfo.size = bytes;
@@ -422,11 +484,29 @@ bool VulkanReplayHandle::allocateWorkspace(size_t bytes, int /*deviceId*/,
   VkMemoryRequirements memReqs;
   vkGetBufferMemoryRequirements(device_, workspaceBuffer_, &memReqs);
 
-  // Allocate device-local memory
-  uint32_t memType = findMemoryType(memReqs.memoryTypeBits,
-                                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  uint32_t memType = UINT32_MAX;
+  const char* strategyUsed = nullptr;
+
+  // Try UMA path (HOST_VISIBLE | DEVICE_LOCAL) if available
+  if (umaDetected_) {
+    memType = findMemoryType(memReqs.memoryTypeBits,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if (memType != UINT32_MAX) {
+      strategyUsed = "UMA (host-visible device-local)";
+    }
+  }
+
+  // Fall back to device-local only if UMA allocation failed or not available
   if (memType == UINT32_MAX) {
-    sd_printf("VulkanReplayHandle: no suitable device-local memory type for workspace\n", 0);
+    memType = findMemoryType(memReqs.memoryTypeBits,
+                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if (memType != UINT32_MAX) {
+      strategyUsed = "discrete GPU (device-local with staging)";
+    }
+  }
+
+  if (memType == UINT32_MAX) {
+    sd_printf("VulkanReplayHandle: no suitable memory type for workspace\n", 0);
     vkDestroyBuffer(device_, workspaceBuffer_, nullptr);
     workspaceBuffer_ = VK_NULL_HANDLE;
     return false;
@@ -459,13 +539,10 @@ bool VulkanReplayHandle::allocateWorkspace(size_t bytes, int /*deviceId*/,
 
   workspaceSize_ = bytes;
   // Expose to base class for getWorkspacePtr() / getWorkspaceBytes()
-  // Note: device-local memory is not host-mappable, so captureWorkspacePtr_
-  // stores the VkBuffer handle cast for identification purposes only.
-  // Actual GPU access goes through descriptor set bindings.
   captureWorkspaceBytes_ = bytes;
 
-  sd_printf("VulkanReplayHandle: allocated %zuMB workspace (device-local)\n",
-            bytes / (1024 * 1024));
+  DSP_DIAG(MEMORY, "VulkanReplayHandle: allocated %zuMB workspace (%s)",
+           bytes / (1024 * 1024), strategyUsed);
   return true;
 }
 
@@ -512,38 +589,115 @@ void VulkanReplayHandle::freeHostPointers() {
   capturedHostPtrs_.clear();
 }
 
+// ── Android Lifecycle Management ─────────────────────────────────────────────
+
+void VulkanReplayHandle::suspend() {
+  // On Android pause or device-lost events, invalidate command buffers and
+  // release device-side state.  The Vulkan spec requires all outstanding
+  // submissions to finish before destroying any device objects, so we wait
+  // for idle first and then reset to EMPTY so the next beginCapture() will
+  // reinitialize properly via initVulkan().
+  if (!initialized_) return;
+
+  // Drain any in-flight GPU work before tearing down command buffers.
+  if (device_ != VK_NULL_HANDLE && fence_ != VK_NULL_HANDLE) {
+    VkResult waitResult = waitForReplayIdle();
+    if (waitResult != VK_SUCCESS) {
+      sd_printf("VulkanReplayHandle: suspend fence wait failed "
+                "(result=%d)\n",
+                static_cast<int>(waitResult));
+      state_ = ReplayState::ERRORED;
+      return;
+    }
+  }
+
+  // Invalidate the recorded command buffer — the recorded kernels reference
+  // device addresses that may be invalid after a device-lost event.
+  if (cmdBuffer_ != VK_NULL_HANDLE && cmdPool_ != VK_NULL_HANDLE &&
+      device_ != VK_NULL_HANDLE) {
+    vkResetCommandBuffer(cmdBuffer_, 0);
+  }
+
+  // Mark the handle as device-lost and return to EMPTY so callers know a
+  // fresh capture is required after resume().
+  deviceLost_ = true;
+  state_ = ReplayState::EMPTY;
+
+  DSP_DIAG(GRAPH_REPLAY, "VulkanReplayHandle: suspended (device=%d, deviceLost=true)", deviceId_);
+}
+
+void VulkanReplayHandle::resume() {
+  // Called when the Android activity resumes after a pause/device-lost event.
+  // We destroy and recreate all Vulkan objects so that the handle is ready for
+  // a fresh beginCapture() -> endCapture() -> finalize() -> replay() cycle.
+  if (!deviceLost_ && initialized_) {
+    // Device was not actually lost — nothing to do.
+    return;
+  }
+
+  // Tear down existing (potentially invalid) Vulkan state and reinitialize.
+  cleanup();
+
+  deviceLost_ = false;
+  state_ = ReplayState::EMPTY;
+
+  // Eagerly reinitialize so callers can immediately start a new capture.
+  // On failure we leave the handle in ERRORED so callers can detect the
+  // condition via getState() == ERRORED and isDeviceLost() == false.
+  if (!initVulkan()) {
+    sd_printf("VulkanReplayHandle: resume failed to reinitialize Vulkan (device=%d)\n", deviceId_);
+    state_ = ReplayState::ERRORED;
+    return;
+  }
+
+  DSP_DIAG(GRAPH_REPLAY, "VulkanReplayHandle: resumed successfully (device=%d)", deviceId_);
+}
+
+bool VulkanReplayHandle::isDeviceLost() const {
+  return deviceLost_;
+}
+
 // ── Cleanup ──────────────────────────────────────────────────────────────────
 
 void VulkanReplayHandle::cleanup() {
   if (device_ != VK_NULL_HANDLE) {
-    // Wait for all device work to complete before destroying objects
-    vkDeviceWaitIdle(device_);
+    // The replay-local fence is the ownership proof for every object below.
+    if (fence_ != VK_NULL_HANDLE &&
+        waitForReplayIdle() != VK_SUCCESS) {
+      state_ = ReplayState::ERRORED;
+      return;
+    }
 
-    // Destroy in reverse creation order
+    // The recorder owns descriptor pools and buffers created from this device.
+    // Release it while the borrowed device is still available.
+    recorder_.reset();
+
+    // Destroy the compiled-pipeline cache while device_ is still valid.
+    if (pipelineCache_) {
+      pipelineCache_->clear();
+      pipelineCache_.reset();
+    }
+
+    // Destroy only replay-local objects. The logical device and queue are
+    // borrowed from VulkanDeviceContext and remain valid for other handles.
     if (fence_ != VK_NULL_HANDLE) {
       vkDestroyFence(device_, fence_, nullptr);
       fence_ = VK_NULL_HANDLE;
     }
 
-    // Command buffer is freed implicitly when the pool is destroyed
+    // Command buffer is freed implicitly when the pool is destroyed.
     cmdBuffer_ = VK_NULL_HANDLE;
 
     if (cmdPool_ != VK_NULL_HANDLE) {
       vkDestroyCommandPool(device_, cmdPool_, nullptr);
       cmdPool_ = VK_NULL_HANDLE;
     }
-
-    vkDestroyDevice(device_, nullptr);
-    device_ = VK_NULL_HANDLE;
   }
 
-  if (instance_ != VK_NULL_HANDLE) {
-    vkDestroyInstance(instance_, nullptr);
-    instance_ = VK_NULL_HANDLE;
-  }
-
+  instance_ = VK_NULL_HANDLE;
   physicalDevice_ = VK_NULL_HANDLE;
-  computeQueue_ = VK_NULL_HANDLE;
+  device_ = VK_NULL_HANDLE;
+  deviceContext_ = nullptr;
   initialized_ = false;
   state_ = ReplayState::EMPTY;
 }

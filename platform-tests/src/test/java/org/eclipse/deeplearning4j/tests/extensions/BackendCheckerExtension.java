@@ -86,11 +86,11 @@ public class BackendCheckerExtension implements ExecutionCondition {
         }
 
         // Check for skip flags
-        if (shouldSkipLargeResources() && testTags.contains(TagNames.LARGE_RESOURCES)) {
+        if (testTags.contains(TagNames.LARGE_RESOURCES) && shouldSkipLargeResources()) {
             return ConditionEvaluationResult.disabled("Large resource tests skipped via sd.test.skip.large");
         }
 
-        if (shouldSkipDownloads() && testTags.contains(TagNames.DOWNLOADS)) {
+        if (testTags.contains(TagNames.DOWNLOADS) && shouldSkipDownloads()) {
             return ConditionEvaluationResult.disabled("Download tests skipped via sd.test.skip.downloads");
         }
 

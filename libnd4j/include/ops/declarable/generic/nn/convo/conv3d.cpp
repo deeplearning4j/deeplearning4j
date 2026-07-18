@@ -119,6 +119,7 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
 }
 
 DECLARE_TYPES(conv3dnew) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, sd::DataType::ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
@@ -347,6 +348,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
 }
 
 DECLARE_TYPES(conv3dnew_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | (OP_TRAIT_BACKWARD));
   getOpDescriptor()
       ->setAllowedInputTypes(0, sd::DataType::ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})

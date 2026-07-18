@@ -41,7 +41,10 @@ CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
   return Status::OK;
 }
 
-DECLARE_TYPES(tri) { getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS}); }
+DECLARE_TYPES(tri) {
+  getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT);
+}
 
 DECLARE_SHAPE_FN(tri) {
   const int rows = INT_ARG(0);

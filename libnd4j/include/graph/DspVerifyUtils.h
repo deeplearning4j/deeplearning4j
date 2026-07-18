@@ -24,9 +24,10 @@
 #include <graph/DspDiagnostics.h>
 #include <system/common.h>
 
-// Portable buffer accessor: specialBuffer() on CUDA, buffer() on CPU.
+// Portable buffer accessor: allocation identity on device backends, host
+// address on CPU.
 #ifndef DSP_BUF
-#ifdef SD_CUDA
+#if defined(SD_CUDA) || defined(SD_VULKAN)
 #define DSP_BUF(arr) ((arr)->specialBuffer())
 #else
 #define DSP_BUF(arr) ((arr)->buffer())

@@ -35,7 +35,12 @@ CUSTOM_OP_IMPL(linear_copy, 2, 1, false, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(linear_copy) { getOpDescriptor()->setAllowedInputTypes(ANY); }
+DECLARE_TYPES(linear_copy) {
+  getOpDescriptor()->setAllowedInputTypes(ANY);
+  getOpDescriptor()->addTraits(
+      OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING |
+      OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+}
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(linear_copy) {

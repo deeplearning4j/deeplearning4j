@@ -166,6 +166,13 @@ bool validateOwnershipConsistency(
 const char* bufferOwnershipName(BufferOwnership ownership);
 
 /**
+ * Detach one slot from its tracked parent (if any) and reset its ownership.
+ * Keeps parent viewRefCount consistent when a slot is cleared or reclassified.
+ */
+void resetSlotBufferOwnership(
+    SlotBufferInfo* ownershipArray, int totalSlots, int slotIdx);
+
+/**
  * Classify ownership for a slot that was just executed.
  * This is the single entry point for ownership classification during execution.
  * Called after each slot produces output in executeSlot().

@@ -58,6 +58,7 @@ OP_IMPL(identity_bp, 2, 1, true) {
 DECLARE_SYN(LinearGrad, identity_bp);
 
 DECLARE_TYPES(identity_bp) {
+  getOpDescriptor()->addTraits((OP_TRAIT_IDENTITY | OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING) | (OP_TRAIT_BACKWARD));
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})

@@ -87,6 +87,7 @@ DECLARE_SHAPE_FN(segment_min_bp) {
 }
 
 DECLARE_TYPES(segment_min) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_INTS})
@@ -94,6 +95,7 @@ DECLARE_TYPES(segment_min) {
       ->setSameMode(false);
 }
 DECLARE_TYPES(segment_min_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, {ALL_FLOATS})

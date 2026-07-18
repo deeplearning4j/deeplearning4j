@@ -36,6 +36,7 @@ namespace graph {
     if (!(fnPtr)) {                                                            \
       DSP_DIAG(BACKEND, "HexagonRuntimeManager: failed to resolve '%s': %s",  \
                (symName), dlerror());                                          \
+      unloadRuntimeLocked();                                                   \
       return false;                                                            \
     }                                                                          \
   } while (0)
@@ -93,7 +94,19 @@ bool HexagonRuntimeManager::loadRuntime() {
   RESOLVE_SYM(libHandle_, fnAllocateDdr_,    "hexmlir_allocate_ddr",     FnAllocateDdr);
   RESOLVE_SYM(libHandle_, fnFreeDdr_,        "hexmlir_free_ddr",         FnFreeDdr);
 
-  RESOLVE_SYM(libHandle_, fnCompileKernel_,    "hexmlir_compile_kernel",     FnCompileKernel);
+  // A deployment may be AOT-only (load symbol), development/JIT-only
+  // (compile symbol), or support both. At least one creation path is required.
+  fnCompileKernel_ = reinterpret_cast<FnCompileKernel>(
+      dlsym(libHandle_, "hexmlir_compile_kernel"));
+  fnLoadKernel_ = reinterpret_cast<FnLoadKernel>(
+      dlsym(libHandle_, "hexmlir_load_kernel"));
+  if (fnCompileKernel_ == nullptr && fnLoadKernel_ == nullptr) {
+    DSP_DIAG(BACKEND,
+             "HexagonRuntimeManager: runtime exports neither "
+             "hexmlir_compile_kernel nor hexmlir_load_kernel");
+    unloadRuntimeLocked();
+    return false;
+  }
   RESOLVE_SYM(libHandle_, fnReleaseKernel_,    "hexmlir_release_kernel",     FnReleaseKernel);
   RESOLVE_SYM(libHandle_, fnDispatchKernel_,   "hexmlir_dispatch_kernel",    FnDispatchKernel);
   RESOLVE_SYM(libHandle_, fnWaitForCompletion_,"hexmlir_wait_for_completion", FnWaitForCompletion);
@@ -106,7 +119,7 @@ bool HexagonRuntimeManager::loadRuntime() {
   int deviceCount = fnGetDeviceCount_();
   if (deviceCount <= 0) {
     DSP_DIAG(BACKEND, "HexagonRuntimeManager: runtime loaded but no NPU devices found");
-    unloadRuntime();
+    unloadRuntimeLocked();
     return false;
   }
 
@@ -115,7 +128,10 @@ bool HexagonRuntimeManager::loadRuntime() {
 
 void HexagonRuntimeManager::unloadRuntime() {
   std::lock_guard<std::mutex> lock(mutex_);
+  unloadRuntimeLocked();
+}
 
+void HexagonRuntimeManager::unloadRuntimeLocked() {
   // Null all function pointers
   fnGetDeviceCount_ = nullptr;
   fnInitDevice_ = nullptr;
@@ -126,6 +142,7 @@ void HexagonRuntimeManager::unloadRuntime() {
   fnAllocateDdr_ = nullptr;
   fnFreeDdr_ = nullptr;
   fnCompileKernel_ = nullptr;
+  fnLoadKernel_ = nullptr;
   fnReleaseKernel_ = nullptr;
   fnDispatchKernel_ = nullptr;
   fnWaitForCompletion_ = nullptr;
@@ -259,6 +276,36 @@ void* HexagonRuntimeManager::compileKernel(void* npuContext,
   } else {
     DSP_DIAG(COMPILE, "HexagonRuntimeManager::compileKernel: compiled %zu bytes -> %p",
              bytecodeSize, kernel);
+  }
+  return kernel;
+}
+
+bool HexagonRuntimeManager::supportsPrecompiledKernels() const {
+  return available_ && fnLoadKernel_ != nullptr;
+}
+
+void* HexagonRuntimeManager::loadKernel(void* npuContext,
+                                        const uint8_t* kernelBinary,
+                                        size_t binarySize) {
+  if (!available_ || fnLoadKernel_ == nullptr || npuContext == nullptr) {
+    DSP_DIAG(COMPILE,
+             "HexagonRuntimeManager::loadKernel: AOT import unavailable");
+    return nullptr;
+  }
+  if (kernelBinary == nullptr || binarySize == 0) {
+    DSP_DIAG(COMPILE, "HexagonRuntimeManager::loadKernel: empty binary");
+    return nullptr;
+  }
+
+  void* kernel = fnLoadKernel_(npuContext, kernelBinary, binarySize);
+  if (kernel == nullptr) {
+    DSP_DIAG(COMPILE,
+             "HexagonRuntimeManager::loadKernel: import failed (%zu bytes)",
+             binarySize);
+  } else {
+    DSP_DIAG(COMPILE,
+             "HexagonRuntimeManager::loadKernel: imported %zu AOT bytes -> %p",
+             binarySize, kernel);
   }
   return kernel;
 }

@@ -50,13 +50,6 @@ void adjustAxis(LongType rank, NDArray* axisVector, std::vector<LongType>& outpu
   }
 }
 
-void adjustAxis(LongType rank, std::vector<LongType>& axisVector) {
-  for (int e = 0; e < axisVector.size(); e++) {
-    auto a = axisVector[e];
-    if (a < 0)  // shift vals on rank for negative vals
-      axisVector[e] = a + rank;
-  }
-}
 
 }  // namespace helpers
 }  // namespace ops

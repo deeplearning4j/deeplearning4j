@@ -94,6 +94,7 @@ DECLARE_SHAPE_FN(stft) {
 }
 
 DECLARE_TYPES(stft) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS})
         ->setAllowedInputTypes(1, {ALL_INTS})

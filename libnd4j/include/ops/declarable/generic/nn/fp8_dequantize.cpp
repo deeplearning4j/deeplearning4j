@@ -55,6 +55,7 @@ CUSTOM_OP_IMPL(fp8_dequantize, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(fp8_dequantize) {
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes(0, {INT8});
     getOpDescriptor()->setAllowedInputTypes(1, {FLOAT32});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});

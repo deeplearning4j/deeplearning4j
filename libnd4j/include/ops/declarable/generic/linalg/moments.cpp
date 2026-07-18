@@ -80,7 +80,9 @@ DECLARE_SHAPE_FN(moments) {
 }
 
 DECLARE_TYPES(moments) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 

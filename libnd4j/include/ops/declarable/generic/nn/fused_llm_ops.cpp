@@ -69,7 +69,7 @@ CONFIGURABLE_OP_IMPL(fused_gelu_bp, 2, 1, true, 0, 0) {
 DECLARE_TYPES(fused_gelu_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
+    getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -193,7 +193,7 @@ DECLARE_SHAPE_FN(fused_rope) {
 DECLARE_TYPES(fused_rope) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
+    getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(fused_rope_bp, 2, 1, false, 0, 0) {
@@ -221,7 +221,7 @@ DECLARE_SHAPE_FN(fused_rope_bp) {
 DECLARE_TYPES(fused_rope_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
+    getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -253,7 +253,7 @@ DECLARE_SHAPE_FN(fused_bias_dropout_residual) {
 DECLARE_TYPES(fused_bias_dropout_residual) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+    getOpDescriptor()->addTraits(OP_TRAIT_TERNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -366,9 +366,9 @@ DECLARE_SHAPE_FN(fused_attention_projection) {
 }
 
 DECLARE_TYPES(fused_attention_projection) {
+  getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -414,7 +414,7 @@ DECLARE_SHAPE_FN(fused_mrope) {
 DECLARE_TYPES(fused_mrope) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
+    getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -453,11 +453,11 @@ DECLARE_SHAPE_FN(vision_embedding_merge) {
 }
 
 DECLARE_TYPES(vision_embedding_merge) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
     getOpDescriptor()->setAllowedInputTypes(1, {ALL_FLOATS});
     getOpDescriptor()->setAllowedInputTypes(2, {ALL_INTS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 #endif
 

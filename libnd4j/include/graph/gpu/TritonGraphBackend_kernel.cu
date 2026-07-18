@@ -1046,7 +1046,7 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
                       refreshEnv.tritonCompileAll(),
                       std::hash<std::string>()(refreshEnv.tritonExcludeOps()),
                       std::hash<std::string>()(refreshEnv.tritonIncludeTypes()),
-                      refreshEnv.tritonGraphCapture()};
+                      refreshEnv.tritonGraphCapture(), &seg};
   CompiledSegment* compiledSeg = nullptr;
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -1054,7 +1054,8 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     // compile time) since this function does not receive the slots array needed
     // for computeSegInternalDtypeHash directly.
     key.segInternalDtypeHash = lookupDtypeHash(seg.def.startSlot, seg.def.endSlot,
-                                                seg.def.shapeKeyState.compiledShapeKey, currentDevice);
+                                                seg.def.shapeKeyState.compiledShapeKey,
+                                                currentDevice, &seg);
     auto it = cache_.find(key);
     if (it != cache_.end()) {
       compiledSeg = &it->second;
@@ -1242,7 +1243,7 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
                       refreshEnv.tritonCompileAll(),
                       std::hash<std::string>()(refreshEnv.tritonExcludeOps()),
                       std::hash<std::string>()(refreshEnv.tritonIncludeTypes()),
-                      refreshEnv.tritonGraphCapture()};
+                      refreshEnv.tritonGraphCapture(), &seg};
 
   CompiledSegment* compiledSeg = nullptr;
   {
@@ -1250,7 +1251,8 @@ void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, voi
     // Recover the segInternalDtypeHash via the secondary dtype index since this
     // function does not receive outputSlots (needed for computeSegInternalDtypeHash).
     key.segInternalDtypeHash = lookupDtypeHash(seg.def.startSlot, seg.def.endSlot,
-                                                seg.def.shapeKeyState.compiledShapeKey, currentDevice);
+                                                seg.def.shapeKeyState.compiledShapeKey,
+                                                currentDevice, &seg);
     auto it = cache_.find(key);
     if (it != cache_.end()) {
       compiledSeg = &it->second;

@@ -798,6 +798,41 @@ public class TestMiscOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testBatchMmulBfloat16(Nd4jBackend backend) {
+        int M = 4;
+        int N = 3;
+        int K = 5;
+
+        INDArray A = Nd4j.rand(DataType.FLOAT, M, K).castTo(DataType.BFLOAT16);
+        INDArray B = Nd4j.rand(DataType.FLOAT, K, N).castTo(DataType.BFLOAT16);
+
+        INDArray expected = A.castTo(DataType.FLOAT).mmul(B.castTo(DataType.FLOAT)).castTo(DataType.BFLOAT16);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable A1 = sd.var("A1", A);
+        SDVariable B1 = sd.var("B1", B);
+
+        SDVariable alpha = sd.constant(Nd4j.ones(DataType.BFLOAT16, 1));
+        SDVariable beta  = sd.constant(Nd4j.zeros(DataType.BFLOAT16, 1));
+        SDVariable[] result = sd.batchMmul(alpha, beta,
+                new SDVariable[]{A1}, new SDVariable[]{B1});
+        Map<String, INDArray> out = sd.output(Collections.emptyMap(),
+                Collections.singletonList(result[0].name()));
+
+        INDArray actual = out.get(result[0].name());
+        assertArrayEquals(new long[]{M, N}, actual.shape());
+        assertEquals(DataType.BFLOAT16, actual.dataType());
+
+        INDArray actualF = actual.castTo(DataType.FLOAT);
+        INDArray expectedF = expected.castTo(DataType.FLOAT);
+        double relTol = 0.02;
+        assertTrue(actualF.equalsWithEps(expectedF, relTol),
+                "BFLOAT16 batched gemm result differs from expected by more than " + relTol
+                + "; max abs diff=" + actualF.sub(expectedF).amaxNumber().doubleValue());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
 
     public void testBatchMMul(Nd4jBackend backend) {
         Nd4j.getExecutioner().enableVerboseMode(true);

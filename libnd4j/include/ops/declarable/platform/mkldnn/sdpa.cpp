@@ -52,9 +52,12 @@
 #include <helpers/FlashAttentionHelper.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // Namespace aliases to avoid collision with sd::graph
 namespace dg = dnnl::graph;
@@ -1097,8 +1100,15 @@ static void executeSDPA4D(NDArray* query, NDArray* key, NDArray* value, NDArray*
   strm.wait();
 }
 
+// Close the file-level backend-namespace wrap here: the op macros below open
+// the backend inline namespace themselves (platform_boilerplate.h); nesting
+// SD_NS inside SD_NS makes every unqualified SD_NS reference ambiguous. The
+// utilities above stay backend-qualified and remain visible to the op bodies
+// through inline-namespace lookup.
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
+
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
+PLATFORM_IMPL(dot_product_attention_v2, ENGINE_ONEDNN) {
   auto queries = INPUT_VARIABLE(0);
   auto values = INPUT_VARIABLE(1);
   auto keys = block.width() > 2 ? INPUT_VARIABLE(2) : values;
@@ -1353,7 +1363,7 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(dot_product_attention_v2, ENGINE_CPU) {
+PLATFORM_CHECK(dot_product_attention_v2, ENGINE_ONEDNN) {
   auto query = INPUT_VARIABLE(0);
   auto value = INPUT_VARIABLE(1);
 

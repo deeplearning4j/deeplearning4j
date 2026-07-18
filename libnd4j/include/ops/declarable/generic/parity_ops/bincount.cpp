@@ -30,6 +30,7 @@
 namespace sd {
 namespace ops {
 DECLARE_TYPES(bincount) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_INTS})
       ->setAllowedInputTypes(1, ANY)

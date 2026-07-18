@@ -63,7 +63,10 @@ DECLARE_SHAPE_FN(matrix_diag_part) {
   return SHAPELIST(outShapeInfo);
 }
 
-DECLARE_TYPES(matrix_diag_part) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(matrix_diag_part) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
+}
 }  // namespace ops
 }  // namespace sd
 #endif

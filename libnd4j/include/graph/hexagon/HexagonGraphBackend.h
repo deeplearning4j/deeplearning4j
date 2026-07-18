@@ -70,6 +70,25 @@ class SD_LIB_EXPORT HexagonGraphBackend : public GraphBackend {
    */
   static HexagonGraphBackend& getInstance();
 
+  /**
+   * Thread-scoped compilation policy inherited from NativeDynamicShapePlan.
+   * A strict mobile session sets allowRuntimeCompilation=false and supplies the
+   * bundle's compiledArtifacts.hexagonKernels directory.
+   */
+  class SD_LIB_EXPORT ScopedCompilationPolicy {
+   public:
+    ScopedCompilationPolicy(bool allowRuntimeCompilation,
+                            const std::string& artifactDirectory);
+    ~ScopedCompilationPolicy();
+
+    ScopedCompilationPolicy(const ScopedCompilationPolicy&) = delete;
+    ScopedCompilationPolicy& operator=(const ScopedCompilationPolicy&) = delete;
+
+   private:
+    bool previousAllowRuntimeCompilation_;
+    std::string previousArtifactDirectory_;
+  };
+
   // ── GraphBackend interface ─────────────────────────────────────────────
 
   const char* name() const override { return "Hexagon MLIR"; }
@@ -154,10 +173,14 @@ class SD_LIB_EXPORT HexagonGraphBackend : public GraphBackend {
     int startSlot;
     int endSlot;
     LongType shapeKey;
+    bool allowRuntimeCompilation;
+    std::string artifactDirectory;
     bool operator==(const SegmentCacheKey& o) const {
       return startSlot == o.startSlot &&
              endSlot == o.endSlot &&
-             shapeKey == o.shapeKey;
+             shapeKey == o.shapeKey &&
+             allowRuntimeCompilation == o.allowRuntimeCompilation &&
+             artifactDirectory == o.artifactDirectory;
     }
   };
 
@@ -166,6 +189,8 @@ class SD_LIB_EXPORT HexagonGraphBackend : public GraphBackend {
       size_t h = std::hash<int>()(k.startSlot);
       h ^= std::hash<int>()(k.endSlot) << 1;
       h ^= std::hash<LongType>()(k.shapeKey) << 2;
+      h ^= std::hash<bool>()(k.allowRuntimeCompilation) << 3;
+      h ^= std::hash<std::string>()(k.artifactDirectory) << 4;
       return h;
     }
   };

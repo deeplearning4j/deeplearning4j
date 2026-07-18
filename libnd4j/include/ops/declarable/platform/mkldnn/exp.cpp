@@ -106,7 +106,7 @@ static void expMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(Exp, ENGINE_CPU) {
+PLATFORM_IMPL(Exp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -119,7 +119,7 @@ PLATFORM_IMPL(Exp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(Exp, ENGINE_CPU) {
+PLATFORM_CHECK(Exp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 

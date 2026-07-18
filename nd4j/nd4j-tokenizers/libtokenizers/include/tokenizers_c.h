@@ -20,6 +20,11 @@ typedef struct OpaqueTokenizer OpaqueTokenizer;
 typedef struct OpaqueEncoding OpaqueEncoding;
 
 /**
+ * @brief Opaque handle for a stateful incremental decoder
+ */
+typedef struct OpaqueDecodeStream OpaqueDecodeStream;
+
+/**
  * @brief Opaque handle for model manager
  */
 typedef struct OpaqueModelManager OpaqueModelManager;
@@ -165,6 +170,32 @@ size_t encoding_get_offsets(OpaqueEncoding* encoding, size_t** start_offsets, si
  * @return Decoded text string, or NULL on failure (must be freed with free_string)
  */
 char* decode_ids(OpaqueTokenizer* tokenizer, const uint32_t* ids, size_t num_ids, bool skip_special_tokens);
+
+/**
+ * @brief Create a stateful decoder using the tokenizer's native DecodeStream
+ * @param tokenizer Tokenizer instance
+ * @param skip_special_tokens Whether to omit special tokens
+ * @return Decoder instance, or NULL on failure
+ *
+ * The decoder retains the underlying Rust tokenizer and may outlive
+ * `tokenizer`.
+ */
+OpaqueDecodeStream* create_decode_stream(OpaqueTokenizer* tokenizer, bool skip_special_tokens);
+
+/**
+ * @brief Decode one token and return the next complete text chunk
+ * @param stream Decoder instance
+ * @param token_id Unsigned 32-bit token ID
+ * @return UTF-8 chunk valid until the next call on this stream, or NULL on
+ * failure. An empty string means that more tokens are required before text can
+ * be emitted.
+ */
+const char* decode_stream_step(OpaqueDecodeStream* stream, uint32_t token_id);
+
+/**
+ * @brief Free a stateful decoder
+ */
+void free_decode_stream(OpaqueDecodeStream* stream);
 
 /**
  * @brief Free a string returned by decode operations

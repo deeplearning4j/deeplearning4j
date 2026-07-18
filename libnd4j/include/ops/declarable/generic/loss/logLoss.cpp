@@ -169,7 +169,9 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-DECLARE_TYPES(log_loss) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(log_loss) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
+   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(log_loss) {
@@ -476,6 +478,7 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(log_loss_grad) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

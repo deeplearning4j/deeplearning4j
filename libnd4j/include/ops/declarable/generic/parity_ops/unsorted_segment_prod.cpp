@@ -82,6 +82,7 @@ DECLARE_SHAPE_FN(unsorted_segment_prod) {
   return SHAPELIST(CONSTANT(outputShape));
 }
 DECLARE_TYPES(unsorted_segment_prod) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
@@ -114,6 +115,7 @@ CUSTOM_OP_IMPL(unsorted_segment_prod_bp, 3, 2, false, 0, 1) {
   return helpers::unsortedSegmentProdFunctorBP(block.launchContext(), input, indices, eps, numOfClasses, output);
 }
 DECLARE_TYPES(unsorted_segment_prod_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(1, {ALL_INDICES})

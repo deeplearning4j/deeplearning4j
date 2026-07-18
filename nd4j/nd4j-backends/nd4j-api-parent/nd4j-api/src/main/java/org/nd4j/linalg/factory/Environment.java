@@ -27,6 +27,7 @@ import org.nd4j.linalg.factory.config.LifecycleEnvironmentConfig;
 import org.nd4j.linalg.factory.config.MemoryConfig;
 import org.nd4j.linalg.factory.config.PrintEnvironmentConfig;
 import org.nd4j.linalg.factory.config.TritonEnvironmentConfig;
+import org.nd4j.linalg.factory.config.VulkanEnvironmentConfig;
 
 /**
  * This interface describes environment for ND4J.
@@ -41,6 +42,7 @@ import org.nd4j.linalg.factory.config.TritonEnvironmentConfig;
  *   <li>{@link DspEnvironmentConfig} - DSP optimization flags</li>
  *   <li>{@link LifecycleEnvironmentConfig} - lifecycle tracking</li>
  *   <li>{@link PrintEnvironmentConfig} - NDArray print options</li>
+ *   <li>{@link VulkanEnvironmentConfig} - Vulkan SPIR-V / pipeline disk caches (ADR 0115)</li>
  * </ul>
  *
  * <p>All methods remain on this interface for backward compatibility.
@@ -50,7 +52,7 @@ import org.nd4j.linalg.factory.config.TritonEnvironmentConfig;
  */
 public interface Environment extends CoreEnvironmentConfig, CudaEnvironmentConfig,
     TritonEnvironmentConfig, DspEnvironmentConfig, LifecycleEnvironmentConfig,
-    PrintEnvironmentConfig {
+    PrintEnvironmentConfig, VulkanEnvironmentConfig {
 
     // CUDA limit type definitions
     public static final int

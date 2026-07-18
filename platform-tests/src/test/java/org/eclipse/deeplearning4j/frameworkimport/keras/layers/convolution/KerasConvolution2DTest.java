@@ -42,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.DisplayName;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author Max Pumperla
@@ -96,6 +98,40 @@ class KerasConvolution2DTest extends BaseDL4JTest {
         buildConvolution2DLayer(conf1, keras1, false);
         buildConvolution2DLayer(conf2, keras2, false);
         buildConvolution2DLayer(conf2, keras2, true);
+    }
+
+    @Test
+    @DisplayName("Test Theano Weight Layout Conversion")
+    void testTheanoWeightLayoutConversion() throws Exception {
+        Map<String, Object> layerConfig = new HashMap<>();
+        layerConfig.put(conf1.getLAYER_FIELD_CLASS_NAME(), conf1.getLAYER_CLASS_NAME_CONVOLUTION_2D());
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf1.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
+        config.put(conf1.getLAYER_FIELD_NAME(), "theano_weight_layout");
+        config.put(conf1.getLAYER_FIELD_INIT(), INIT_KERAS);
+        config.put(conf1.getLAYER_FIELD_NB_ROW(), 2);
+        config.put(conf1.getLAYER_FIELD_NB_COL(), 3);
+        config.put(conf1.getLAYER_FIELD_NB_FILTER(), 2);
+        config.put(conf1.getLAYER_FIELD_BORDER_MODE(), BORDER_MODE_VALID);
+        config.put(conf1.getLAYER_FIELD_DIM_ORDERING(), conf1.getDIM_ORDERING_THEANO());
+        List<Long> strides = new ArrayList<>();
+        strides.add(1L);
+        strides.add(1L);
+        config.put(conf1.getLAYER_FIELD_CONVOLUTION_STRIDES(), strides);
+        layerConfig.put(conf1.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf1.getLAYER_FIELD_KERAS_VERSION(), keras1);
+
+        KerasConvolution2D layer = new KerasConvolution2D(layerConfig);
+        INDArray rawWeights = Nd4j.createFromArray(
+                0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f,
+                6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f).reshape(2, 1, 2, 3);
+        INDArray converted = layer.getConvParameterValues(rawWeights);
+        INDArray expected = Nd4j.createFromArray(
+                5.0f, 11.0f, 4.0f, 10.0f, 3.0f, 9.0f,
+                2.0f, 8.0f, 1.0f, 7.0f, 0.0f, 6.0f).reshape(2, 3, 1, 2);
+
+        assertArrayEquals(new long[] {2, 3, 1, 2}, converted.shape());
+        assertEquals(expected, converted);
     }
 
     private void buildConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation) throws Exception {

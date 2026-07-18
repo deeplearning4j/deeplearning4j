@@ -52,6 +52,7 @@ DECLARE_SHAPE_FN(hann_window) {
 }
 
 DECLARE_TYPES(hann_window) {
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS});
@@ -90,6 +91,7 @@ DECLARE_SHAPE_FN(hamming_window) {
 }
 
 DECLARE_TYPES(hamming_window) {
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS});
@@ -128,6 +130,7 @@ DECLARE_SHAPE_FN(blackman_window) {
 }
 
 DECLARE_TYPES(blackman_window) {
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_INTS})
         ->setAllowedOutputTypes({ALL_FLOATS});

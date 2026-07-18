@@ -28,6 +28,26 @@ using namespace ::graph;
 namespace sd {
 namespace graph {
 
+namespace {
+
+uint8_t* prepareWritablePrimary(NDArray* array, size_t bytes) {
+  if (array == nullptr) return nullptr;
+
+  auto* dataBuffer = array->getDataBuffer();
+  if (dataBuffer == nullptr) return nullptr;
+
+  // Device backends may allocate only special/device storage by default. SDNB
+  // payloads are host bytes, so explicitly allocate host staging before copy.
+  dataBuffer->allocatePrimary();
+  auto* primary = static_cast<uint8_t*>(dataBuffer->primary());
+  if (primary == nullptr) return nullptr;
+
+  if (bytes > 0) std::memset(primary, 0, bytes);
+  return primary;
+}
+
+}  // namespace
+
 SdnbReader::SdnbReader()
     : data_(nullptr), size_(0), ownsData_(false),
       flatGraph_(nullptr), flatBufferOffset_(0) {}
@@ -207,7 +227,13 @@ NDArray* SdnbReader::loadFlatArray(const ::graph::FlatArray* fa) const {
     size_t bytesNeeded = arr->lengthOf() * arr->sizeOfT();
     size_t bytesAvailable = buffer->size();
     size_t bytesToCopy = std::min(bytesNeeded, bytesAvailable);
-    std::memcpy(arr->buffer(), buffer->Data(), bytesToCopy);
+    auto* destination = prepareWritablePrimary(arr, bytesNeeded);
+    if (destination == nullptr) {
+      delete arr;
+      return nullptr;
+    }
+    std::memcpy(destination, buffer->Data(), bytesToCopy);
+    arr->tickWriteHost();
     return arr;
   }
 
@@ -215,18 +241,25 @@ NDArray* SdnbReader::loadFlatArray(const ::graph::FlatArray* fa) const {
   auto* chunks = fa->bufferChunks();
   if (chunks && chunks->size() > 0) {
     auto* arr = new NDArray('c', shape, dtype);
+    size_t bytesNeeded = arr->lengthOf() * arr->sizeOfT();
+    auto* destination = prepareWritablePrimary(arr, bytesNeeded);
+    if (destination == nullptr) {
+      delete arr;
+      return nullptr;
+    }
+
     size_t offset = 0;
     for (unsigned int i = 0; i < chunks->size(); i++) {
       auto* chunk = chunks->Get(i);
       if (chunk && chunk->data()) {
         size_t chunkSize = chunk->data()->size();
-        if (offset + chunkSize <= arr->lengthOf() * arr->sizeOfT()) {
-          std::memcpy(static_cast<uint8_t*>(arr->buffer()) + offset,
-                      chunk->data()->Data(), chunkSize);
+        if (offset + chunkSize <= bytesNeeded) {
+          std::memcpy(destination + offset, chunk->data()->Data(), chunkSize);
           offset += chunkSize;
         }
       }
     }
+    arr->tickWriteHost();
     return arr;
   }
 
@@ -238,7 +271,13 @@ NDArray* SdnbReader::loadFlatArray(const ::graph::FlatArray* fa) const {
       auto* arr = new NDArray('c', shape, dtype);
       size_t bytesNeeded = arr->lengthOf() * arr->sizeOfT();
       size_t bytesToCopy = std::min(bytesNeeded, static_cast<size_t>(appendedLength));
-      std::memcpy(arr->buffer(), data_ + appendedOffset, bytesToCopy);
+      auto* destination = prepareWritablePrimary(arr, bytesNeeded);
+      if (destination == nullptr) {
+        delete arr;
+        return nullptr;
+      }
+      std::memcpy(destination, data_ + appendedOffset, bytesToCopy);
+      arr->tickWriteHost();
       return arr;
     }
   }

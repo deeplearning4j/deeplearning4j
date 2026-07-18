@@ -263,7 +263,7 @@ static void xwPlusBiasBp(NDArray* x, NDArray* weights, NDArray* bias, NDArray* d
   stream.wait();
 }
 
-PLATFORM_IMPL(xw_plus_b, ENGINE_CPU) {
+PLATFORM_IMPL(xw_plus_b, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto w = INPUT_VARIABLE(1);
   auto b = INPUT_VARIABLE(2);
@@ -298,7 +298,7 @@ PLATFORM_IMPL(xw_plus_b, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(xw_plus_b, ENGINE_CPU) {
+PLATFORM_CHECK(xw_plus_b, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto w = INPUT_VARIABLE(1);
   auto b = INPUT_VARIABLE(2);
@@ -362,7 +362,7 @@ PLATFORM_CHECK(xw_plus_b, ENGINE_CPU) {
   return req;
 }
 
-PLATFORM_IMPL(xw_plus_b_bp, ENGINE_CPU) {
+PLATFORM_IMPL(xw_plus_b_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto w = INPUT_VARIABLE(1);
   auto b = INPUT_VARIABLE(2);
@@ -399,7 +399,7 @@ PLATFORM_IMPL(xw_plus_b_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(xw_plus_b_bp, ENGINE_CPU) {
+PLATFORM_CHECK(xw_plus_b_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto w = INPUT_VARIABLE(1);
   auto b = INPUT_VARIABLE(2);

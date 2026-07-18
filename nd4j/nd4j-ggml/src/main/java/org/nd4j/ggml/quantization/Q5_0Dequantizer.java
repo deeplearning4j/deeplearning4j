@@ -79,25 +79,37 @@ public class Q5_0Dequantizer implements Dequantizer {
             byte[] lowBytes = new byte[16];
             buffer.get(lowBytes);
 
-            for (int i = 0; i < 16 && outputIdx < totalElements; i++) {
-                byte packed = lowBytes[i];
+            // Q5_0 GGML element layout within a 32-element block:
+            //   qs[j] low nibble  = element j      (j = 0..15)
+            //   qs[j] high nibble = element j + 16 (j = 0..15)
+            //   qh bit j          = 5th bit of element j
+            //   qh bit (j + 16)   = 5th bit of element j + 16
+            //
+            // Reference: llama.cpp dequantize_row_q5_0:
+            //   y[i*qk + j     ] = d * ((qs[j] & 0x0f) | (xh_0 << 4) - 16)
+            //   y[i*qk + j + 16] = d * ((qs[j] >> 4)   | (xh_1 << 4) - 16)
+            for (int j = 0; j < 16; j++) {
+                byte packed = lowBytes[j];
 
-                // First element: low nibble + high bit
+                // Element j (first half of block: positions 0..15)
+                int xh0 = (highBits >> j) & 1;
                 int low0 = packed & 0x0F;
-                int high0 = (highBits >> (i * 2)) & 1;
-                int val0 = (low0 | (high0 << 4)) - 16;
-                if (outputIdx < totalElements) {
-                    result[outputIdx++] = val0 * scale;
+                int val0 = (low0 | (xh0 << 4)) - 16;
+                int idx0 = outputIdx + j;
+                if (idx0 < totalElements) {
+                    result[idx0] = val0 * scale;
                 }
 
-                // Second element: high nibble + high bit
+                // Element j+16 (second half of block: positions 16..31)
+                int xh1 = (highBits >> (j + 16)) & 1;
                 int low1 = (packed >> 4) & 0x0F;
-                int high1 = (highBits >> (i * 2 + 1)) & 1;
-                int val1 = (low1 | (high1 << 4)) - 16;
-                if (outputIdx < totalElements) {
-                    result[outputIdx++] = val1 * scale;
+                int val1 = (low1 | (xh1 << 4)) - 16;
+                int idx1 = outputIdx + j + 16;
+                if (idx1 < totalElements) {
+                    result[idx1] = val1 * scale;
                 }
             }
+            outputIdx += 32;
         }
 
         return result;

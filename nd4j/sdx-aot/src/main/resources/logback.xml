@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging policy for the AOT images (sdx-llm / libsdx_llm): stdout belongs to the
+  generated text and command output, so all logging goes to stderr, WARN by default.
+  Raise with: sdx-llm -Dsdx.llm.log.level=INFO (runtime -D is parsed by the image).
+-->
+<configuration>
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{24} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="${sdx.llm.log.level:-WARN}">
+        <appender-ref ref="STDERR" />
+    </root>
+</configuration>

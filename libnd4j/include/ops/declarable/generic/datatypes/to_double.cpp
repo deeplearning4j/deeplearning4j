@@ -39,7 +39,9 @@ CUSTOM_OP_IMPL(to_double, 1, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(to_double) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(DOUBLE);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_CAST);
 }
 
 DECLARE_SHAPE_FN(to_double) {

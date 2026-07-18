@@ -40,7 +40,8 @@ OP_IMPL(barnes_gains, 3, 1, true) {
   return Status::OK;
 }
 
-DECLARE_TYPES(barnes_gains) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(barnes_gains) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

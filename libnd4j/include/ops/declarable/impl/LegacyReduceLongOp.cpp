@@ -30,6 +30,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyReduceLongOp::LegacyReduceLongOp() : LegacyOp(1) {
   //
 }
@@ -171,5 +172,6 @@ ShapeList* LegacyReduceLongOp::calculateOutputShape(ShapeList* inputShape, Conte
   return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inShape), &axis, inShape, DataType::INT64, keepDims,
                                                    !newFormat, block.workspace()));
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

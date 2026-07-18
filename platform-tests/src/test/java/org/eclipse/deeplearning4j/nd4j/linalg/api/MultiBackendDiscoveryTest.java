@@ -113,27 +113,21 @@ public class MultiBackendDiscoveryTest {
     }
 
     @Test
-    @DisplayName("Should return primary ops for unavailable device types")
+    @DisplayName("Should reject unavailable device types")
     void testGetOpsForUnavailableDeviceTypes() {
         MultiBackendNativeOpsHolder holder = MultiBackendNativeOpsHolder.getInstance();
-        NativeOps primaryOps = holder.getPrimaryOps();
 
-        // Find a device type that isn't available
+        // An explicit backend request must never be routed to a different backend.
         for (DeviceType type : DeviceType.values()) {
             if (!holder.isBackendAvailable(type)) {
-                NativeOps ops = holder.getOpsForDeviceType(type);
-
-                // Should fallback to primary
-                assertSame(primaryOps, ops,
-                    "Unavailable device type " + type + " should fallback to primary ops");
-
-                log.info("Unavailable backend {} falls back to primary", type);
-                return; // Found one, test passes
+                IllegalStateException error = assertThrows(IllegalStateException.class,
+                        () -> holder.getOpsForDeviceType(type));
+                assertTrue(error.getMessage().contains(type.toString()));
+                return;
             }
         }
 
-        // If all device types are available, that's fine too
-        log.info("All device types are available - fallback test skipped");
+        log.info("All device types are available - unavailable-backend test skipped");
     }
 
     @Test

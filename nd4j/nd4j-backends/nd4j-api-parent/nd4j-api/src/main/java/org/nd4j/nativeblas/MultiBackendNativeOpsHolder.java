@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Multi-backend NativeOps holder that can load and manage multiple backend implementations
- * simultaneously (e.g., CPU, CUDA, ZLUDA, TPU, ROCm, Metal).
+ * simultaneously (e.g., CPU, CUDA, Vulkan, ZLUDA, TPU, ROCm, Metal).
  *
  * <p>This enables true multi-device operation where:
  * <ul>
@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <ul>
  *   <li><b>CPU (nd4j-native)</b> - Standard CPU execution with OneDNN/MKL helpers</li>
  *   <li><b>CUDA (nd4j-cuda)</b> - NVIDIA GPU execution with cuDNN helpers</li>
+ *   <li><b>Vulkan (nd4j-vulkan)</b> - Cross-vendor Vulkan compute execution</li>
  *   <li><b>ZLUDA (nd4j-zluda)</b> - AMD/Intel GPU via CUDA API translation</li>
  *   <li><b>TPU (nd4j-tpu)</b> - Google Cloud TPU via PJRT runtime</li>
  *   <li><b>ROCm</b> - Native AMD GPU (future)</li>
@@ -111,10 +112,16 @@ public class MultiBackendNativeOpsHolder {
                 "Metal (nd4j-metal)",
                 85
         ));
+        BACKEND_REGISTRY.put(DeviceType.VULKAN_GPU, new BackendInfo(
+                "org.nd4j.linalg.vulkan.bindings.Nd4jVulkan",
+                "Vulkan (nd4j-vulkan)",
+                120
+        ));
     }
 
-    // Loaded backend implementations by device type
+    // Loaded backend implementations and their exact ownership authorities.
     private final Map<DeviceType, NativeOps> loadedBackends = new ConcurrentHashMap<>();
+    private final Map<DeviceType, NativeBufferOwner> backendOwners = new ConcurrentHashMap<>();
 
     // Device to backend mapping (for specific device instances)
     private final Map<String, NativeOps> deviceOpsMap = new ConcurrentHashMap<>();
@@ -182,6 +189,17 @@ public class MultiBackendNativeOpsHolder {
     }
 
     /**
+     * Return an already initialized backend without triggering discovery.
+     *
+     * <p>This package-private identity lookup lets {@link NativeOpsHolder} reuse
+     * a binding initialized earlier by multi-backend discovery. It deliberately
+     * does not instantiate, select, or initialize a backend.</p>
+     */
+    NativeOps getLoadedBackendIfPresent(DeviceType deviceType) {
+        return deviceType == null ? null : loadedBackends.get(deviceType);
+    }
+
+    /**
      * Check if multi-backend mode is enabled (more than one backend loaded).
      */
     public static boolean isMultiBackendEnabled() {
@@ -207,30 +225,26 @@ public class MultiBackendNativeOpsHolder {
             DeviceType deviceType = entry.getKey();
             BackendInfo info = entry.getValue();
 
-            // Skip if already pre-loaded (e.g., by NativeOpsHolder)
-            if (loadedBackends.containsKey(deviceType)) {
-                NativeOps ops = loadedBackends.get(deviceType);
+            // Reuse a backend preloaded by NativeOpsHolder, otherwise load it now.
+            NativeOps preloadedOps = loadedBackends.get(deviceType);
+            if (preloadedOps != null) {
+                if (!hasUsableDevices(deviceType, preloadedOps, info.displayName)) {
+                    loadedBackends.remove(deviceType, preloadedOps);
+                    if (deviceType == DeviceType.CUDA_GPU && cudaOps == preloadedOps) {
+                        cudaOps = null;
+                    }
+                    continue;
+                }
+
                 loadedCount++;
                 log.debug("Using pre-loaded {} backend", info.displayName);
+                registerDevicesForBackend(deviceType, preloadedOps);
 
-                // Still register devices for pre-loaded backends
-                registerDevicesForBackend(deviceType, ops);
-
-                // Track primary backend (highest priority)
                 if (info.priority > highestPriority) {
                     highestPriority = info.priority;
-                    primaryOps = ops;
+                    primaryOps = preloadedOps;
                     primaryBackendType = deviceType;
                 }
-                continue;
-            }
-
-            // Pre-check: skip GPU/accelerator backends when we can verify the
-            // required native runtime is absent. Loading a JavaCPP class for a
-            // missing backend can call into native code that SIGABRT-kills the JVM
-            // (unrecoverable — no Java exception can catch it).
-            if (deviceType != DeviceType.CPU && !isNativeRuntimeLikelyAvailable(deviceType)) {
-                log.debug("Skipping {} backend: native runtime not detected", info.displayName);
                 continue;
             }
 
@@ -240,31 +254,14 @@ public class MultiBackendNativeOpsHolder {
                     // Initialize the backend
                     try {
                         ops.initializeDevicesAndFunctions();
-                    } catch (Exception e) {
-                        log.warn("Backend {} loaded but initialization failed: {}",
-                                info.displayName, e.getMessage());
+                    } catch (LinkageError | RuntimeException e) {
+                        log.warn("Backend {} is installed but native initialization failed",
+                                info.displayName, e);
+                        continue;
                     }
 
-                    // Device-aware gate: a GPU/accelerator backend whose native runtime is
-                    // present on disk (so isNativeRuntimeLikelyAvailable() passed) may still
-                    // expose ZERO usable devices — e.g. when CUDA_VISIBLE_DEVICES=-1 hides all
-                    // GPUs. Such a backend must NOT be registered, given a fabricated device, or
-                    // made primary: doing so routes ops to a CUDA context that has no device and
-                    // SIGSEGVs in native code (Nd4jCuda.getShape). This mirrors the device-count
-                    // check in JCublasBackend.canRun(), which the class-name load path bypasses.
-                    if (deviceType != DeviceType.CPU) {
-                        int visibleDevices = 0;
-                        try {
-                            visibleDevices = ops.getAvailableDevices();
-                        } catch (Throwable t) {
-                            log.debug("{} backend device probe failed, treating as unavailable: {}",
-                                    info.displayName, t.getMessage());
-                        }
-                        if (visibleDevices <= 0) {
-                            log.info("Skipping {} backend: native runtime present but 0 usable "
-                                    + "devices (e.g. CUDA_VISIBLE_DEVICES=-1)", info.displayName);
-                            continue;
-                        }
+                    if (!hasUsableDevices(deviceType, ops, info.displayName)) {
+                        continue;
                     }
 
                     loadedBackends.put(deviceType, ops);
@@ -288,8 +285,8 @@ public class MultiBackendNativeOpsHolder {
                         cudaOps = ops;
                     }
                 }
-            } catch (Throwable e) {
-                log.debug("{} backend not available: {}", info.displayName, e.getMessage());
+            } catch (LinkageError | RuntimeException e) {
+                log.warn("Backend {} is installed but could not be loaded", info.displayName, e);
             }
         }
 
@@ -318,11 +315,8 @@ public class MultiBackendNativeOpsHolder {
         try {
             int deviceCount = ops.getAvailableDevices();
             if (deviceCount <= 0) {
-                // Only the CPU backend is allowed a synthetic single device. A GPU/accelerator
-                // backend reporting 0 devices (e.g. CUDA_VISIBLE_DEVICES=-1) has none to
-                // register; fabricating a phantom device here would route ops to a deviceless
-                // CUDA context and SIGSEGV in native code. Callers already gate on this, but
-                // guard here too so the invariant holds regardless of entry point.
+                // Only the CPU backend has a synthetic logical device. Accelerators are
+                // registered exclusively from devices reported by their native runtime.
                 if (deviceType != DeviceType.CPU) {
                     log.debug("No devices to register for {} backend (0 available)", deviceType);
                     return;
@@ -338,13 +332,9 @@ public class MultiBackendNativeOpsHolder {
                 }
             }
             log.info("Registered {} devices for {} backend", deviceCount, deviceType);
-        } catch (Exception e) {
-            log.debug("Could not enumerate devices for {}: {}", deviceType, e.getMessage());
-            // Register at least one device
-            DeviceDescriptor device = createDeviceDescriptor(deviceType, 0);
-            if (device != null) {
-                deviceOpsMap.put(device.getDeviceId(), ops);
-            }
+        } catch (LinkageError | RuntimeException e) {
+            throw new IllegalStateException(
+                    "Native device enumeration failed for backend " + deviceType, e);
         }
     }
 
@@ -359,8 +349,8 @@ public class MultiBackendNativeOpsHolder {
                 return DeviceDescriptor.cuda(index);
             case ROCM_GPU:
             case METAL_GPU:
+            case VULKAN_GPU:
             case TPU:
-                // For other types, use the fromId factory if available
                 return DeviceDescriptor.fromId(deviceType.getIdentifier() + ":gpu:" + index);
             default:
                 return null;
@@ -368,48 +358,46 @@ public class MultiBackendNativeOpsHolder {
     }
 
     /**
-     * Quick probe for the native runtime a GPU/accelerator backend needs.
-     * This MUST NOT trigger JavaCPP class loading (which can SIGABRT).
+     * A non-CPU backend is admissible only when its native discovery authority
+     * reports at least one usable device.
      */
-    private boolean isNativeRuntimeLikelyAvailable(DeviceType deviceType) {
-        switch (deviceType) {
-            case CUDA_GPU:
-                // Check for the CUDA runtime library on the library path
-                return new java.io.File("/usr/local/cuda/lib64/libcudart.so").exists()
-                        || System.getenv("CUDA_PATH") != null;
-            case ROCM_GPU:
-                return new java.io.File("/opt/rocm/lib/libamdhip64.so").exists()
-                        || System.getenv("ROCM_PATH") != null;
-            case TPU:
-                return System.getenv("TPU_NAME") != null
-                        || System.getenv("TPU_WORKER_HOSTNAMES") != null;
-            case METAL_GPU:
-                return System.getProperty("os.name", "").toLowerCase().contains("mac");
-            default:
-                return true;
+    private boolean hasUsableDevices(DeviceType deviceType, NativeOps ops, String displayName) {
+        if (deviceType == DeviceType.CPU) {
+            return true;
         }
+
+        try {
+            int deviceCount = ops.getAvailableDevices();
+            if (deviceCount > 0) {
+                return true;
+            }
+            log.info("Skipping {} backend: native discovery reported no usable devices", displayName);
+        } catch (LinkageError | RuntimeException e) {
+            log.warn("Backend {} is installed but native device discovery failed", displayName, e);
+        }
+        return false;
     }
 
     /**
      * Load a backend by class name.
      */
     private NativeOps loadBackend(String className) {
-        try {
-            Class<?> clazz = ND4JClassLoading.loadClassByName(className);
-            if (clazz != null && NativeOps.class.isAssignableFrom(clazz)) {
-                return (NativeOps) ReflectionUtils.newInstance(clazz.asSubclass(NativeOps.class));
-            }
-        } catch (Exception e) {
-            log.trace("Could not load backend {}: {}", className, e.getMessage());
+        Class<?> clazz = ND4JClassLoading.loadClassByName(className);
+        if (clazz == null) {
+            return null;
         }
-        return null;
+        if (!NativeOps.class.isAssignableFrom(clazz)) {
+            throw new IllegalStateException(
+                    "Registered backend class does not implement NativeOps: " + className);
+        }
+        return (NativeOps) ReflectionUtils.newInstance(clazz.asSubclass(NativeOps.class));
     }
 
     /**
      * Get the NativeOps implementation for a specific device.
      *
      * @param device the device descriptor
-     * @return the appropriate NativeOps, or primary if not found
+     * @return the exact backend NativeOps, or the primary backend when device is null
      */
     public NativeOps getOpsForDevice(DeviceDescriptor device) {
         if (!initialized.get()) {
@@ -426,7 +414,8 @@ public class MultiBackendNativeOpsHolder {
             return ops;
         }
 
-        // Fallback to device type
+        // NativeOps instances are backend-scoped, so route an unregistered device index
+        // through its exact backend type.
         return getOpsForDeviceType(device.getDeviceType());
     }
 
@@ -434,7 +423,8 @@ public class MultiBackendNativeOpsHolder {
      * Get the appropriate NativeOps for executing on a target device type.
      *
      * @param deviceType the device type
-     * @return the NativeOps for that device type, or primary if not available
+     * @return the NativeOps for that device type, or the primary backend when deviceType is null
+     * @throws IllegalStateException if the explicitly requested backend is unavailable
      */
     public NativeOps getOpsForDeviceType(DeviceType deviceType) {
         if (!initialized.get()) {
@@ -446,19 +436,80 @@ public class MultiBackendNativeOpsHolder {
         }
 
         NativeOps ops = loadedBackends.get(deviceType);
-        if (ops != null) {
-            return ops;
+        if (ops == null) {
+            throw new IllegalStateException(
+                    "Requested backend " + deviceType + " is not available. Loaded backends: "
+                            + loadedBackends.keySet());
+        }
+        return ops;
+    }
+
+    /**
+     * Get the exact owner for an already registered NativeOps instance.
+     *
+     * <p>Lookup is by object identity and does not initialize, select, or infer a
+     * primary backend. This is the authority to use when a caller already holds
+     * the NativeOps instance that created a native object.</p>
+     */
+    public NativeBufferOwner getOwnerForNativeOps(NativeOps nativeOps) {
+        if (nativeOps == null) {
+            throw new IllegalArgumentException("NativeOps cannot be null");
         }
 
-        // Handle ZLUDA case - ROCm devices can use ZLUDA backend
-        if (deviceType == DeviceType.ROCM_GPU) {
-            ops = loadedBackends.get(DeviceType.CUDA_GPU);
-            if (ops != null) {
-                return ops;
+        for (Map.Entry<DeviceType, NativeOps> entry : loadedBackends.entrySet()) {
+            if (entry.getValue() == nativeOps) {
+                DeviceType type = entry.getKey();
+                return backendOwners.compute(type, (ignored, existing) -> {
+                    if (existing != null && existing.nativeOps() == nativeOps) {
+                        return existing;
+                    }
+                    return new NativeOpsBufferOwner(nativeOps, type);
+                });
             }
         }
 
-        return primaryOps;
+        throw new IllegalStateException(
+                "NativeOps instance is not registered with the multi-backend holder: "
+                        + nativeOps.getClass().getName());
+    }
+
+    /**
+     * Get the exact owner for a selected device. The returned owner retains the
+     * same NativeOps instance and never routes through the primary backend.
+     */
+    public NativeBufferOwner getOwnerForDevice(DeviceDescriptor device) {
+        DeviceType type = device != null ? device.getDeviceType() : primaryBackendType;
+        return getOwnerForDeviceType(type);
+    }
+
+    /**
+     * Get the exact owner for a selected backend type.
+     */
+    public NativeBufferOwner getOwnerForDeviceType(DeviceType deviceType) {
+        DeviceType type = deviceType != null ? deviceType : primaryBackendType;
+        NativeOps ops = getOpsForDeviceType(type);
+        return backendOwners.compute(type, (ignored, existing) -> {
+            if (existing != null && existing.nativeOps() == ops) {
+                return existing;
+            }
+            return new NativeOpsBufferOwner(ops, type);
+        });
+    }
+
+    /**
+     * Registers a richer backend-specific owner for an already loaded NativeOps
+     * instance. The native binding identity must match exactly.
+     */
+    public void registerBackendOwner(DeviceType deviceType, NativeBufferOwner owner) {
+        if (deviceType == null || owner == null) {
+            throw new IllegalArgumentException("Backend type and owner cannot be null");
+        }
+        NativeOps registered = getOpsForDeviceType(deviceType);
+        if (registered != owner.nativeOps()) {
+            throw new IllegalArgumentException(
+                    "Owner NativeOps does not match the registered " + deviceType + " binding");
+        }
+        backendOwners.put(deviceType, owner);
     }
 
     /**
@@ -525,8 +576,9 @@ public class MultiBackendNativeOpsHolder {
 
         try {
             return ops.getAvailableDevices();
-        } catch (Exception e) {
-            return deviceType == DeviceType.CPU ? 1 : 0;
+        } catch (LinkageError | RuntimeException e) {
+            throw new IllegalStateException(
+                    "Could not query device count for loaded backend " + deviceType, e);
         }
     }
 

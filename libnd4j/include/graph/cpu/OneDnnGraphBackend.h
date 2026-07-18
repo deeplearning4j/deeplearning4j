@@ -176,7 +176,7 @@ class OneDnnGraphBackend : public GraphBackend {
   // Minimum absolute count of OneDNN-mappable ops required.
   static constexpr int MIN_MAPPABLE_OPS = 2;
 
-  // Trait-based fallback: check OpTraitTable for mappability when mapOpKind returns LastSymbol.
+  // Trait-based fallback: check OpDescriptor traits for mappability when mapOpKind returns LastSymbol.
   // Maps OpTraits flags to dg::op::kind. Returns LastSymbol if no mapping exists.
   static dg::op::kind mapOpKindFromTraits(const std::string& opName);
 

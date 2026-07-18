@@ -10,8 +10,14 @@ description = "C FFI bindings for HuggingFace tokenizers library"
 name = "tokenizers_ffi"
 crate-type = ["cdylib", "staticlib"]
 
+[features]
+default = ["onig-regex"]
+onig-regex = ["tokenizers/onig"]
+# Pure-Rust regex avoids libonig/clang cross-builds and is suitable for Android/iOS.
+portable-regex = ["tokenizers/fancy-regex"]
+
 [dependencies]
-tokenizers = { version = "0.21", default-features = false, features = ["onig"] }
+tokenizers = { version = "0.21", default-features = false }
 libc = "0.2"
 
 [build-dependencies]

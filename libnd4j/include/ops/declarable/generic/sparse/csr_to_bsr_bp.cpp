@@ -98,6 +98,7 @@ DECLARE_SHAPE_FN(csr_to_bsr_bp) {
 }
 
 DECLARE_TYPES(csr_to_bsr_bp) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS})     // csrColIdx
       ->setAllowedInputTypes(1, {ALL_INTS})     // csrRowPtr
@@ -105,6 +106,8 @@ DECLARE_TYPES(csr_to_bsr_bp) {
       ->setAllowedInputTypes(3, {ALL_INTS})     // bsrRowPtr
       ->setAllowedInputTypes(4, {ALL_FLOATS})   // gradBsrValues
       ->setAllowedOutputTypes(0, {ALL_FLOATS}); // dCsrValues
+
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

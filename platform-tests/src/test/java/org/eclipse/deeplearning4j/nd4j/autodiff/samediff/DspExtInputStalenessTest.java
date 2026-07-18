@@ -7499,6 +7499,7 @@ public class DspExtInputStalenessTest {
                 if (maxDiff > 1e-4) {
                     mismatchCount++;
                     worstDiff = Math.max(worstDiff, maxDiff);
+                    log.warn("[MIXED_GAPS_CONTROL] step {}: maxDiff={}", step, maxDiff);
                 }
             }
 

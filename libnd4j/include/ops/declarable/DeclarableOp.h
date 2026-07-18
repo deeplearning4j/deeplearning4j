@@ -43,13 +43,20 @@ using namespace sd::graph;
 namespace sd {
 namespace ops {
 
-// Forward declaration for friend class
+// Forward declaration for the platform-dispatch family, which is migrated as
+// a separate complete ABI slice.
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 class MultiPlatformDispatcher;
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
+
+#ifndef __JAVACPP_HACK__
 SD_LIB_EXPORT ErrorResult conditionHelper(const char* file, int line, int condition, int argNumber, const char* format,
                                          ...);
+#endif
 
 template <typename T>
 sd::Status resultHelper(T status, const char* func, const char* file, int line) {
@@ -70,7 +77,7 @@ sd::Status resultHelper(T status, const char* func, const char* file, int line) 
  *
  */
 class SD_LIB_EXPORT DeclarableOp {
-  friend class platforms::MultiPlatformDispatcher;
+  friend class ::sd::ops::platforms::MultiPlatformDispatcher;
 
  private:
   std::string _name;
@@ -146,6 +153,13 @@ class SD_LIB_EXPORT DeclarableOp {
 
   // this method returns OpDescriptor, describing this Op instance
   OpDescriptor* getOpDescriptor();
+
+  /**
+   * Populate the descriptor metadata declared by this op exactly once.
+   * Op registration calls this after the derived object is fully constructed so
+   * traits and type constraints are available before first execution.
+   */
+  void initializeDescriptor();
 
   virtual sd::Status validateDataTypes(Context& block);
 
@@ -234,6 +248,7 @@ class SD_LIB_EXPORT DeclarableOp {
   void overwriteResult(Context& block, int outputIdx, NDArray* array, bool remove);
   void traceExecIfNeeded(Context& block);
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

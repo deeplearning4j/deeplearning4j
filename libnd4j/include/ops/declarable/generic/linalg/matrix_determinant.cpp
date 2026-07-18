@@ -59,7 +59,9 @@ DECLARE_SHAPE_FN(matrix_determinant) {
 }
 
 DECLARE_TYPES(matrix_determinant) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+
 }
 }  // namespace ops
 }  // namespace sd
@@ -70,7 +72,9 @@ DECLARE_TYPES(matrix_determinant) {
 namespace sd {
 namespace ops {
 DECLARE_TYPES(log_matrix_determinant) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+
 }
 
 CUSTOM_OP_IMPL(log_matrix_determinant, 1, 1, false, 0, 0) {
@@ -112,7 +116,9 @@ DECLARE_SHAPE_FN(log_matrix_determinant) {
 namespace sd {
 namespace ops {
 DECLARE_TYPES(logdet) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(logdet, 1, 1, false, 0, 0) {

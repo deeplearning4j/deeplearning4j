@@ -240,16 +240,18 @@ DECLARE_CUSTOM_OP(csr_sddmm_sparse, 8, 1, false, 0, 3);
 // unfilled → rowPtr[rows]=0). EMPTY_EXECUTE runs the op so the helper (CPU sorted-merge / CUDA
 // copy-the-non-empty-operand) fills the correct union result. The op-signature counts remain encoded
 // in CUSTOM_OP_IMPL(csr_add, 6, 3, false, 0, 2).
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT csr_add : public sd::ops::DeclarableCustomOp {
  protected:
   void registerTypes();
-  sd::Status validateAndExecute(sd::graph::Context& block);
+  SD_DECLARABLE_OP_EXECUTION_METHODS
 
  public:
   csr_add();
   sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
   samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 REGISTER_H(csr_add)
 #endif
 

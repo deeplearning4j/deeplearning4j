@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deeplearning4j.org/schemas/dsp/text-generation.schema.json",
+  "title": "SDX Text Generation Metadata",
+  "description": "Strict, portable metadata for an offline AOT text-generation session. Every graph binding is bundle-authored; runtime name guessing is prohibited.",
+  "type": "object",
+  "required": [
+    "formatVersion",
+    "profile",
+    "io",
+    "execution",
+    "tokens",
+    "limits"
+  ],
+  "properties": {
+    "formatVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "profile": {
+      "type": "string",
+      "const": "causal-lm-in-graph-kv-v1"
+    },
+    "io": {
+      "type": "object",
+      "required": [
+        "inputIds",
+        "causalMask",
+        "positionOffset",
+        "cachePosition",
+        "actualSequenceLength",
+        "logits",
+        "kvKeyInputs",
+        "kvValueInputs",
+        "prefillKeyOutputs",
+        "prefillValueOutputs"
+      ],
+      "properties": {
+        "inputIds": {
+          "$ref": "#/$defs/tensorName"
+        },
+        "causalMask": {
+          "$ref": "#/$defs/tensorName"
+        },
+        "positionOffset": {
+          "$ref": "#/$defs/tensorName"
+        },
+        "cachePosition": {
+          "$ref": "#/$defs/tensorName"
+        },
+        "actualSequenceLength": {
+          "$ref": "#/$defs/tensorName"
+        },
+        "logits": {
+          "$ref": "#/$defs/tensorName"
+        },
+        "prefillLogits": {
+          "$ref": "#/$defs/tensorName",
+          "description": "Optional prefill logits name. When omitted, io.logits is used."
+        },
+        "kvKeyInputs": {
+          "$ref": "#/$defs/tensorNameArray"
+        },
+        "kvValueInputs": {
+          "$ref": "#/$defs/tensorNameArray"
+        },
+        "prefillKeyOutputs": {
+          "$ref": "#/$defs/tensorNameArray"
+        },
+        "prefillValueOutputs": {
+          "$ref": "#/$defs/tensorNameArray"
+        }
+      },
+      "additionalProperties": false
+    },
+    "execution": {
+      "type": "object",
+      "required": [
+        "kvLayout",
+        "kvDtype",
+        "maskDtype",
+        "planOwnsKvScatter"
+      ],
+      "properties": {
+        "kvLayout": {
+          "type": "string",
+          "const": "BSHD"
+        },
+        "kvDtype": {
+          "type": "string",
+          "enum": [
+            "FLOAT32",
+            "FLOAT16",
+            "BFLOAT16",
+            "INT8"
+          ]
+        },
+        "maskDtype": {
+          "type": "string",
+          "enum": [
+            "FLOAT32",
+            "FLOAT16",
+            "BFLOAT16"
+          ]
+        },
+        "planOwnsKvScatter": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "tokens": {
+      "type": "object",
+      "required": [
+        "padId",
+        "eosIds"
+      ],
+      "properties": {
+        "bosId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "padId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unkId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "eosIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "limits": {
+      "type": "object",
+      "required": [
+        "contextLength",
+        "maxPrefillLength"
+      ],
+      "properties": {
+        "contextLength": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "maxPrefillLength": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Must be smaller than contextLength; enforced by the native loader."
+        },
+        "maxBatchSize": {
+          "type": "integer",
+          "const": 1,
+          "default": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "samplingDefaults": {
+      "type": "object",
+      "properties": {
+        "maxNewTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 128
+        },
+        "minNewTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "default": 0
+        },
+        "topK": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "topP": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+        "minP": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0
+        },
+        "repetitionPenalty": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1
+        },
+        "frequencyPenalty": {
+          "type": "number",
+          "default": 0
+        },
+        "presencePenalty": {
+          "type": "number",
+          "default": 0
+        },
+        "typicalP": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+        "xtcProbability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0
+        },
+        "xtcThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.1
+        },
+        "seed": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "chatTemplatePath": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional bundle-relative chat template. Tokenizer ownership remains in the reusable tokenizer layer."
+    }
+  },
+  "$defs": {
+    "tensorName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tensorNameArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/tensorName"
+      }
+    }
+  },
+  "additionalProperties": false
+}

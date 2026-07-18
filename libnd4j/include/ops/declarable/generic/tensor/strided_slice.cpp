@@ -813,7 +813,9 @@ DECLARE_SHAPE_FN(strided_slice_bp) {
 
 DECLARE_TYPES(strided_slice) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
-  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_SLICE);
+  getOpDescriptor()
+      ->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_SLICE)
+      ->setNumberOfStructuralIArgs(5);
 }
 
 DECLARE_TYPES(strided_slice_bp) {

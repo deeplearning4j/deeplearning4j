@@ -64,16 +64,18 @@ DECLARE_CONFIGURABLE_OP(invert_permutation, 1, 1, false, 0, 0);
 #if NOT_EXCLUDED(OP_concat)
 // Hand-expanded DECLARE_CUSTOM_OP(concat, -1, 1, false, 0, 0) so concat can override emptyHandling()
 // (defined in concat.cpp) -> EMPTY_EXECUTE, since concat(x, empty) == x and must run on empty inputs.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT concat : public sd::ops::DeclarableCustomOp {
  protected:
   void registerTypes();
-  sd::Status validateAndExecute(sd::graph::Context& block);
+  SD_DECLARABLE_OP_EXECUTION_METHODS
 
  public:
   concat();
   sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
   samediff::EmptyHandling emptyHandling() override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 REGISTER_H(concat)
 DECLARE_CUSTOM_OP(concat_bp, -1, -1, false, 0, 0);
 #endif

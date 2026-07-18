@@ -185,7 +185,7 @@ function(validate_generated_files_comprehensive)
 
     set(validation_warnings "")
 
-    set(INCLUDE_OPS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/generated/include_ops.h")
+    set(INCLUDE_OPS_FILE "${OP_OUTPUT_FILE}")
     if(NOT EXISTS "${INCLUDE_OPS_FILE}")
         list(APPEND validation_warnings "Generated include_ops.h not found")
     else()

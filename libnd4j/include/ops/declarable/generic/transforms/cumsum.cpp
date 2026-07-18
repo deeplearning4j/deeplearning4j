@@ -70,6 +70,7 @@ DECLARE_TYPES(cumsum) {
       ->setAllowedInputTypes(1, {ALL_FLOATS,ALL_INTS})
       ->setAllowedOutputTypes({ALL_FLOATS})
       ->setSameMode(false);
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {

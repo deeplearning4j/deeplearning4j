@@ -1,0 +1,23 @@
+{
+  "formatVersion": 1,
+  "scheme": "int8-per-channel",
+  "provider": "litert-lm",
+  "targetSocs": [
+    "Tensor_G5"
+  ],
+  "deviceOnly": true,
+  "allowFloatFallback": false,
+  "requireVendorAot": true,
+  "weights": {
+    "dtype": "INT8",
+    "scaleDtype": "FLOAT32",
+    "granularity": "per-channel",
+    "channelAxis": 0,
+    "symmetric": true,
+    "zeroPoint": 0
+  },
+  "activations": {
+    "dtype": "FLOAT16"
+  },
+  "excludedOps": []
+}

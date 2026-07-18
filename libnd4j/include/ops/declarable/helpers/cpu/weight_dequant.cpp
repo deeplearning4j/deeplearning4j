@@ -173,6 +173,17 @@ void marlinGemm(LaunchContext* context,
     const LongType K = input->sizeAt(1);
     const LongType N = output->sizeAt(1);
 
+    if (input->dataType() != DataType::FLOAT32) {
+        THROW_EXCEPTION("marlinGemm (CPU): input must be FLOAT32 — got a different dtype; "
+                        "the CPU reference path operates in float32 only (CUDA supports FLOAT32 and HALF)");
+    }
+    if (scales->dataType() != DataType::FLOAT32) {
+        THROW_EXCEPTION("marlinGemm (CPU): scales must be FLOAT32 — got a different dtype");
+    }
+    if (output->dataType() != DataType::FLOAT32) {
+        THROW_EXCEPTION("marlinGemm (CPU): output must be FLOAT32 — got a different dtype");
+    }
+
     const uint8_t* packed = reinterpret_cast<const uint8_t*>(marlinWeights->buffer());
     const float* scalesPtr = reinterpret_cast<const float*>(scales->buffer());
     const float* inPtr = input->bufferAsT<float>();

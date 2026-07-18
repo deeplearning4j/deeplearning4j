@@ -2370,22 +2370,11 @@ public class SameDiffSerializer {
             // --- Associate Array with SameDiff Instance ---
             log.debug("Associating loaded array with variable '{}' in target SameDiff instance.", name);
             try {
-                // Associate array with SameDiff
+                // This is the single authoritative association path: it validates the
+                // variable type and dispatches to the correct ArrayHolder. Repeating the
+                // holder assignment would turn initialization into DeviceLocalNDArray.update(),
+                // which creates an unnecessary delayed full-size copy on multi-device backends.
                 targetSD.setArrayForVariable(name, resultArr);
-
-                // Set in the correct ArrayHolder
-                SDVariable varToUpdate = targetSD.getVariable(name);
-                if (varToUpdate == null) {
-                    throw new IllegalStateException("Variable '" + name + "' missing after array load.");
-                }
-
-                if (varToUpdate.isConstant()) {
-                    targetSD.getConstantArrays().setArray(name, resultArr);
-                } else if (varToUpdate.getVariableType() == VariableType.VARIABLE) {
-                    targetSD.getVariablesArrays().setArray(name, resultArr);
-                } else {
-                    targetSD.getEagerArrays().setArray(name, resultArr);
-                }
 
                 // Quick verification (only check for null, skip detailed logging)
                 INDArray checkArr = targetSD.getArrForVarName(name);

@@ -18,6 +18,8 @@
 
 #ifndef SD_PLATFORMHELPERLEGACY_H
 #define SD_PLATFORMHELPERLEGACY_H
+
+#include <system/BackendNamespace.h>
 #include <array/InteropDataBuffer.h>
 #include <execution/Engine.h>
 #include <graph/Context.h>
@@ -30,6 +32,7 @@
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 struct PlatformHelperLegacyEntry {
   // prefix for the legacy. must be constant with global scope
@@ -85,6 +88,7 @@ class SD_LIB_EXPORT PlatformHelperLegacy {
                                   const InteropDataBuffer *inArg0Buffer, const LongType *inArg1ShapeInfo,
                                   const InteropDataBuffer *inArg1Buffer) = 0;
 };
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

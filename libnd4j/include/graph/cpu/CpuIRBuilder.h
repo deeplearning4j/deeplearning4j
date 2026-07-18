@@ -34,15 +34,17 @@
 #include <unordered_set>
 #include <vector>
 
-// Forward declarations for MLIR types
+// Full MLIR type definitions required for OwningOpRef<ModuleOp> in buildModule() signature
+#include "mlir/IR/OwningOpRef.h"
+#include "mlir/IR/BuiltinOps.h"
+
+// Forward declarations for MLIR types not requiring full definition here
 namespace mlir {
 class MLIRContext;
-class ModuleOp;
 class OpBuilder;
 class Value;
 class Location;
 class Type;
-template <typename T> class OwningOpRef;
 }  // namespace mlir
 
 namespace sd {

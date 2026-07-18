@@ -49,6 +49,7 @@ DECLARE_SHAPE_FN(zero_fraction) {
 }
 
 DECLARE_TYPES(zero_fraction) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops

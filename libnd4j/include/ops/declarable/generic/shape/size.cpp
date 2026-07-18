@@ -38,13 +38,18 @@ CUSTOM_OP_IMPL(size, 1, 1, false, 0, 0) {
 
   return Status::OK;
 }
-DECLARE_SHAPE_FN(size) { return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64)); }
+DECLARE_SHAPE_FN(size) {
+  const auto outputType = block.numD() > 0 ? D_ARG(0) : sd::DataType::INT64;
+  return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(outputType));
+}
 
 DECLARE_TYPES(size) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
       ->allowOverride(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

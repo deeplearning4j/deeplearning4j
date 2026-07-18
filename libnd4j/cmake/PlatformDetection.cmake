@@ -1,26 +1,38 @@
 # PlatformDetection.cmake - Platform and architecture detection
 
-# Ensure SD_CPU is TRUE if neither SD_CUDA nor SD_CPU is set
-if(NOT SD_CUDA)
+# Select CPU only when no explicit device/backend chip was requested.
+if(NOT SD_CUDA AND NOT SD_TPU AND NOT SD_HEXAGON AND NOT SD_VULKAN)
     if(NOT SD_CPU)
         set(SD_CUDA FALSE)
+        set(SD_TPU FALSE)
         set(SD_CPU TRUE)
     endif()
 endif()
 
-# Set SD_LIBRARY_NAME Based on Build Type
+# Set SD_LIBRARY_NAME based on the selected chip.
 if(NOT DEFINED SD_LIBRARY_NAME)
     if(SD_CUDA)
         set(SD_LIBRARY_NAME nd4jcuda)
+    elseif(SD_TPU)
+        set(SD_LIBRARY_NAME nd4jtpu)
+    elseif(SD_HEXAGON)
+        set(SD_LIBRARY_NAME nd4jhexagon)
+    elseif(SD_VULKAN)
+        set(SD_LIBRARY_NAME nd4jvulkan)
     else()
         set(SD_LIBRARY_NAME nd4jcpu)
     endif()
 endif()
 
-# Set default engine
+# Preserve the selected chip's execution engine through config generation.
 if(SD_CUDA)
     set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
+elseif(SD_TPU)
+    set(DEFAULT_ENGINE "samediff::ENGINE_TPU")
+elseif(SD_VULKAN)
+    set(DEFAULT_ENGINE "samediff::ENGINE_VULKAN")
 else()
+    # Hexagon is currently a graph-level backend and intentionally uses ENGINE_CPU.
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
 endif()
 

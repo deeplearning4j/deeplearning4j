@@ -29,10 +29,17 @@
 #include <execution/cuda/LaunchDims.h>
 
 #include <cfloat>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
 namespace helpers {
+
+// Accumulator type: double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
 static constexpr int SKV_WARP_SIZE = 32;
 
@@ -87,6 +94,7 @@ SD_KERNEL __launch_bounds__(256, 2) void sharedKvAttentionKernel(
     const sd::LongType oHeadStride,
     const sd::LongType oSeqStride,
     const sd::LongType oDimStride) {
+    using AccT = typename AccType<T>::type;
 
     // Grid-stride: each block handles one (batch, head, queryPos) triple
     const sd::LongType totalPositions = batchSize * numHeads * qSeqLen;
@@ -108,45 +116,43 @@ SD_KERNEL __launch_bounds__(256, 2) void sharedKvAttentionKernel(
 
     // Shared memory layout: warpBuf for reductions
     extern __shared__ char sharedMem[];
-    float* warpBuf = reinterpret_cast<float*>(sharedMem);
+    AccT* warpBuf = reinterpret_cast<AccT*>(sharedMem);
 
-    const int lane = threadIdx.x % SKV_WARP_SIZE;
-    const int wid  = threadIdx.x / SKV_WARP_SIZE;
     const int numWarps = (blockDim.x + SKV_WARP_SIZE - 1) / SKV_WARP_SIZE;
 
     // ===== Pass 1: compute scores and find max =====
     // Each thread handles a subset of kv positions.
     // We do an online max across the thread's positions.
-    float threadMax = -FLT_MAX;
+    AccT threadMax = -sd::DataTypeUtils::max<AccT>();
 
     // We need to store scores somewhere. Use a second region of shared memory
-    // after warpBuf (numWarps floats).  We also need kvSeqLen floats for scores.
-    float* scores = warpBuf + numWarps;
+    // after warpBuf (numWarps AccT).  We also need kvSeqLen AccT for scores.
+    AccT* scores = warpBuf + numWarps;
 
     for (sd::LongType k = threadIdx.x; k < kvSeqLen; k += blockDim.x) {
         const T* keyVec = keyBase + k * kSeqStride;
 
         // Dot product Q . K
-        float dot = 0.0f;
+        AccT dot = static_cast<AccT>(0);
         for (sd::LongType d = 0; d < headDim; d++) {
-            dot += static_cast<float>(queryVec[d * qDimStride]) *
-                   static_cast<float>(keyVec[d * kDimStride]);
+            dot += static_cast<AccT>(queryVec[d * qDimStride]) *
+                   static_cast<AccT>(keyVec[d * kDimStride]);
         }
-        dot *= scale;
+        dot *= static_cast<AccT>(scale);
 
         // Causal mask
         if (causal && k > q) {
-            dot = -FLT_MAX;
+            dot = -sd::DataTypeUtils::max<AccT>();
         }
 
         // Sliding window mask
         if (slidingWindowSize > 0 && (static_cast<sd::LongType>(q) - k) > slidingWindowSize) {
-            dot = -FLT_MAX;
+            dot = -sd::DataTypeUtils::max<AccT>();
         }
 
         // External additive mask
         if (mask != nullptr) {
-            float maskVal = static_cast<float>(
+            AccT maskVal = static_cast<AccT>(
                 mask[b * mBatchStride + q * mSeqStride + k * mKvStride]);
             dot += maskVal;
         }
@@ -156,49 +162,21 @@ SD_KERNEL __launch_bounds__(256, 2) void sharedKvAttentionKernel(
     }
     __syncthreads();
 
-    // Warp-reduce max
-    for (int offset = SKV_WARP_SIZE / 2; offset > 0; offset /= 2) {
-        float other = __shfl_down_sync(0xffffffff, threadMax, offset);
-        if (other > threadMax) threadMax = other;
-    }
-    if (lane == 0) warpBuf[wid] = threadMax;
-    __syncthreads();
-
-    // Final reduce across warps (thread 0)
-    __shared__ float sharedMax;
-    if (threadIdx.x == 0) {
-        float m = warpBuf[0];
-        for (int w = 1; w < numWarps; w++) {
-            if (warpBuf[w] > m) m = warpBuf[w];
-        }
-        sharedMax = m;
-    }
-    __syncthreads();
-    float rowMax = sharedMax;
+    // Block-reduce max (result broadcast to all threads)
+    AccT rowMax = sd::device::blockAllReduceMax(threadMax, warpBuf);
 
     // ===== Pass 2: exp(score - max) and sum =====
-    float threadSum = 0.0f;
+    AccT threadSum = static_cast<AccT>(0);
     for (sd::LongType k = threadIdx.x; k < kvSeqLen; k += blockDim.x) {
-        float val = __expf(scores[k] - rowMax);
+        AccT val = sd::math::sd_exp<AccT, AccT>(scores[k] - rowMax);
         scores[k] = val;
         threadSum += val;
     }
     __syncthreads();
 
-    // Warp-reduce sum
-    for (int offset = SKV_WARP_SIZE / 2; offset > 0; offset /= 2) {
-        threadSum += __shfl_down_sync(0xffffffff, threadSum, offset);
-    }
-    if (lane == 0) warpBuf[wid] = threadSum;
-    __syncthreads();
-
-    __shared__ float sharedInvSum;
-    if (threadIdx.x == 0) {
-        float s = 0.0f;
-        for (int w = 0; w < numWarps; w++) s += warpBuf[w];
-        sharedInvSum = 1.0f / s;
-    }
-    __syncthreads();
+    // Block-reduce sum (result broadcast to all threads)
+    AccT blockSum = sd::device::blockAllReduceSum(threadSum, warpBuf);
+    AccT sharedInvSum = static_cast<AccT>(1) / blockSum;
 
     // Normalize scores
     for (sd::LongType k = threadIdx.x; k < kvSeqLen; k += blockDim.x) {
@@ -209,9 +187,9 @@ SD_KERNEL __launch_bounds__(256, 2) void sharedKvAttentionKernel(
     // ===== Pass 3: weighted sum output = scores @ V =====
     // Threads cooperate over headDim
     for (sd::LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
-        float acc = 0.0f;
+        AccT acc = static_cast<AccT>(0);
         for (sd::LongType k = 0; k < kvSeqLen; k++) {
-            acc += scores[k] * static_cast<float>(valBase[k * vSeqStride + d * vDimStride]);
+            acc += scores[k] * static_cast<AccT>(valBase[k * vSeqStride + d * vDimStride]);
         }
         outputVec[d * oDimStride] = static_cast<T>(acc);
     }
@@ -241,9 +219,10 @@ static void sharedKvAttentionCuda_(LaunchContext* context,
     dim3 defaultDims = getLaunchDims("shared_kv_attention");
     int blockSize = defaultDims.y;  // block size from the map
 
-    // Shared memory: numWarps floats (warpBuf) + kvSeqLen floats (scores)
+    // Shared memory: numWarps AccT (warpBuf) + kvSeqLen AccT (scores)
+    using AccT = typename AccType<T>::type;
     const int numWarps = (blockSize + SKV_WARP_SIZE - 1) / SKV_WARP_SIZE;
-    const size_t sharedMemSize = (numWarps + kvSeqLen) * sizeof(float);
+    const size_t sharedMemSize = (numWarps + kvSeqLen) * sizeof(AccT);
 
     PointersManager manager(context, "sharedKvAttention");
 

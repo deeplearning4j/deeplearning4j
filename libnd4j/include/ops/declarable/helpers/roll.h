@@ -26,7 +26,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void rollFunctorLinear(LaunchContext* context, NDArray* input, NDArray* output, int shift,
+SD_LIB_HIDDEN void rollFunctorLinear(LaunchContext* context, NDArray* input, NDArray* output, LongType shift,
                                      bool inplace = false);
 
 SD_LIB_HIDDEN void rollFunctorFull(LaunchContext* context, NDArray* input, NDArray* output,

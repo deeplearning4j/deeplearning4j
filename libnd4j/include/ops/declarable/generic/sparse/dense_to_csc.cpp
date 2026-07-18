@@ -98,11 +98,14 @@ DECLARE_SHAPE_FN(dense_to_csc) {
 }
 
 DECLARE_TYPES(dense_to_csc) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(1, {ALL_INTS})
       ->setAllowedOutputTypes(2, {ALL_INTS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
 }
 
 }  // namespace ops

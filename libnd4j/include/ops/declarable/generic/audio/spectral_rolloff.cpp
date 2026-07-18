@@ -60,6 +60,7 @@ DECLARE_SHAPE_FN(spectral_rolloff) {
 }
 
 DECLARE_TYPES(spectral_rolloff) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

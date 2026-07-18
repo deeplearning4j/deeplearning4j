@@ -118,13 +118,13 @@ DECLARE_SHAPE_FN(non_max_suppression) {
 }
 DECLARE_TYPES(non_max_suppression) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INDICES});
-  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
 }
 #endif
 #if NOT_EXCLUDED(OP_non_max_suppression_v3)
 DECLARE_TYPES(non_max_suppression_v3) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INDICES});
-  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
 }
 
 CUSTOM_OP_IMPL(non_max_suppression_v3, 2, 1, false, 0, 0) {

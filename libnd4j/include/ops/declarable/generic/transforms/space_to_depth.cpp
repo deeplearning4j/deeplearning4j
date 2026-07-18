@@ -36,7 +36,8 @@ namespace ops {
         getOpDescriptor()
                 ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setSameMode(true);
-    }
+      getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
+}
 
     CUSTOM_OP_IMPL(space_to_depth, 1, 1, false, 0, 2) {
         int block_size = INT_ARG(0);

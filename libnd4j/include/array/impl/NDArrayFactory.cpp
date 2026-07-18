@@ -731,10 +731,13 @@ NDArray NDArrayFactory::fromNpyFile(const char* fileName) {
   auto size = getFileSize(fileName);
   if (size < 0) THROW_EXCEPTION("File doesn't exit");
 
-  auto pNPY = reinterpret_cast<char*>(numpyFromFile(std::string(fileName)));
+  auto pNPY = reinterpret_cast<char*>(
+      numpyFromFile(std::string(fileName)));
 
-  auto nBuffer = reinterpret_cast<void*>(dataPointForNumpy(pNPY));
-  auto shape = reinterpret_cast<LongType*>(shapeBufferForNumpy(pNPY));
+  auto nBuffer =
+      reinterpret_cast<void*>(dataPointForNumpy(pNPY));
+  auto shape =
+      reinterpret_cast<LongType*>(shapeBufferForNumpy(pNPY));
 
   auto length = shape::length(shape);
   int8_t* buffer = nullptr;
@@ -744,7 +747,7 @@ NDArray NDArrayFactory::fromNpyFile(const char* fileName) {
   ALLOCATE(buffer, workspace, byteLen, int8_t);
   memcpy(buffer, nBuffer, byteLen);
 
-  free(pNPY);
+  releaseNumpy(pNPY);
 
   return NDArray(buffer, shape, LaunchContext::defaultContext(), true, 0);
 }

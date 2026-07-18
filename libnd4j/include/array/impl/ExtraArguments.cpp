@@ -22,12 +22,12 @@
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
 #include <array/ExtraArguments.h>
-#include <array/ExtraArguments_cuda.h>
+#include <array/ExtraArguments_device.h>
 #include <types/types.h>
 
 #include <stdexcept>
 
-namespace sd {
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 ExtraArguments::ExtraArguments(std::initializer_list<double> arguments) { _fpArgs = arguments; }
 
 ExtraArguments::ExtraArguments(std::initializer_list<LongType> arguments) { _intArgs = arguments; }
@@ -58,9 +58,8 @@ void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
   }
   auto outLength = length - static_cast<size_t>(offset);
 
-  // Fill a local host buffer then copy to the device pointer.
-  // On CPU the "device pointer" IS host memory, so extraArgsCopyH2DDispatch is a plain memcpy.
-  // On CUDA it uses the capture-aware async path or cudaMemcpyAsync + sync.
+  // Fill a local host buffer, then hand the copy to the selected backend.
+  // Device backends preserve their active execution-stream ordering.
   auto hostBuf = new T[outLength];
 
   if (!_fpArgs.empty()) {
@@ -116,4 +115,4 @@ void *ExtraArguments::argumentsAsT(DataType dataType, LongType offset) {
 
   return ptr;
 }
-}  // namespace sd
+SD_BACKEND_ABI_NAMESPACE_END

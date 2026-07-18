@@ -5814,18 +5814,26 @@ public class Nd4j {
                     .loadClassByName(opExecutionerName);
             log.debug("Op Executioner class loaded: {}", opExecutionerClazz != null ? opExecutionerClazz.getName() : "null");
 
-            // Debug BLAS Lapack Delegator
-            String blasLapackDelegatorName = pp.toString(BLAS_LAPACK_DELEGATOR);
+            // Host LAPACK is optional for device-only backends. A backend that omits
+            // this property must expose its unsupported status explicitly instead of
+            // borrowing another backend's implementation.
+            String blasLapackDelegatorName = pp.toString(BLAS_LAPACK_DELEGATOR).trim();
             log.debug("BLAS Lapack Delegator property: {} = {}", BLAS_LAPACK_DELEGATOR, blasLapackDelegatorName);
-            Class<? extends BLASLapackDelegator> blasLapackDelegator = ND4JClassLoading
-                    .loadClassByName(blasLapackDelegatorName);
-            log.debug("BLAS Lapack Delegator class loaded: {}", blasLapackDelegator != null ? blasLapackDelegator.getName() : "null");
-
-            try {
-                BLAS_HANDLER = blasLapackDelegator.newInstance();
-                log.debug("BLAS Handler instance created: {}", BLAS_HANDLER.getClass().getName());
-            } catch (Exception e) {
-                log.error("Failed to create BLAS Handler instance: {}", e.getMessage(), e);
+            if (!blasLapackDelegatorName.isEmpty()) {
+                Class<? extends BLASLapackDelegator> blasLapackDelegator = ND4JClassLoading
+                        .loadClassByName(blasLapackDelegatorName);
+                log.debug("BLAS Lapack Delegator class loaded: {}",
+                        blasLapackDelegator != null ? blasLapackDelegator.getName() : "null");
+                try {
+                    BLAS_HANDLER = blasLapackDelegator.newInstance();
+                    log.debug("BLAS Handler instance created: {}", BLAS_HANDLER.getClass().getName());
+                } catch (Exception e) {
+                    throw new IllegalStateException(
+                            "Failed to create configured BLAS/LAPACK delegator " + blasLapackDelegatorName, e);
+                }
+            } else {
+                BLAS_HANDLER = null;
+                log.debug("No host BLAS/LAPACK delegator configured for this backend");
             }
 
             // Debug Array Stats Provider
@@ -6026,6 +6034,10 @@ public class Nd4j {
      * @return MemoryManager
      */
     public static BLASLapackDelegator getBlasLapackDelegator() {
+        if (BLAS_HANDLER == null) {
+            throw new UnsupportedOperationException(
+                    "The active backend does not provide a host BLAS/LAPACK delegator");
+        }
         return BLAS_HANDLER;
     }
     /**

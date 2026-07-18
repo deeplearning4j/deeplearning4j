@@ -29,7 +29,10 @@
 #include <system/env_functions.h>
 #include <cmath>
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
+SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN
 namespace vlmUtils {
 
 ggml_type toGgmlType(DataType dt) {
@@ -431,6 +434,7 @@ int ClipModelContext::getImageSize() const {
 }
 
 }  // namespace vlmUtils
+SD_BACKEND_ROOT_INLINE_NAMESPACE_END
 }  // namespace sd
 
 #endif  // HAVE_VLM

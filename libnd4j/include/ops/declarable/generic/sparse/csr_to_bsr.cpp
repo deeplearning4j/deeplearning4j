@@ -120,6 +120,7 @@ DECLARE_SHAPE_FN(csr_to_bsr) {
 }
 
 DECLARE_TYPES(csr_to_bsr) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})   // csrValues
       ->setAllowedInputTypes(1, {ALL_INTS})     // csrColIdx
@@ -127,6 +128,8 @@ DECLARE_TYPES(csr_to_bsr) {
       ->setAllowedOutputTypes(0, {ALL_FLOATS})  // bsrValues
       ->setAllowedOutputTypes(1, {ALL_INTS})    // bsrColIdx
       ->setAllowedOutputTypes(2, {ALL_INTS});   // bsrRowPtr
+
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
 }
 
 }  // namespace ops

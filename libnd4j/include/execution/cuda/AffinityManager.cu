@@ -41,14 +41,14 @@ std::vector<int> AffinityManager::_availableDevices;
  * Check if the given device ID represents the CPU.
  * CPU is represented as device -1.
  */
-bool isCpuDevice(int deviceId) {
+bool SD_NS::isCpuDevice(int deviceId) {
   return deviceId == CPU_DEVICE_ID;
 }
 
 /**
  * Returns the CPU device ID constant.
  */
-int getCpuDeviceId() {
+int SD_NS::getCpuDeviceId() {
   return CPU_DEVICE_ID;
 }
 

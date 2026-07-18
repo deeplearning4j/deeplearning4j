@@ -77,6 +77,7 @@ DECLARE_SHAPE_FN(grid_sample) {
 }
 
 DECLARE_TYPES(grid_sample) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {ALL_FLOATS})
         ->setAllowedInputTypes(1, {ALL_FLOATS})

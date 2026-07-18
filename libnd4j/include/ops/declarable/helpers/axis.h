@@ -32,7 +32,12 @@ namespace helpers {
  * adjustAxis routines: adjust data with output to non-negative values.
  * */
 SD_LIB_HIDDEN void adjustAxis(LongType rank, NDArray* axisVector, std::vector<LongType>& output);
-SD_LIB_HIDDEN void adjustAxis(LongType rank, std::vector<LongType>& output);
+
+SD_INLINE void adjustAxis(LongType rank, std::vector<LongType>& output) {
+  for (auto& axis : output) {
+    if (axis < 0) axis += rank;
+  }
+}
 
 }  // namespace helpers
 }  // namespace ops

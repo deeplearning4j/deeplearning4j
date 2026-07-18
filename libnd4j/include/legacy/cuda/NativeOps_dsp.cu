@@ -666,6 +666,13 @@ sd::Pointer loadModelFromFile(const char* filePath) {
   }
 }
 
+OpaqueNDArray getLoadedModelVariable(sd::Pointer modelHandle, const char* variableName) {
+  if (modelHandle == nullptr || variableName == nullptr) return nullptr;
+  auto* handle = reinterpret_cast<LoadedModelHandle*>(modelHandle);
+  auto it = handle->model.variables.find(variableName);
+  return it == handle->model.variables.end() ? nullptr : it->second;
+}
+
 sd::Pointer compileModelPlan(
     sd::Pointer modelHandle,
     sd::Pointer requestedOutputNames, int numOutputs) {
@@ -767,43 +774,33 @@ void setPlanJitMode(sd::Pointer planHandle, int mode) {
   }
 }
 
+void setPlanRuntimeCompilationAllowed(sd::Pointer planHandle, bool allowed) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setRuntimeCompilationAllowed(allowed);
+  }
+}
+
+void setPlanRuntimeArtifactDirectory(sd::Pointer planHandle, const char* directory) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setRuntimeArtifactDirectory(
+        directory == nullptr ? std::string() : std::string(directory));
+  }
+}
+
 void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
   if (planHandle != nullptr) {
     auto requested = static_cast<sd::graph::GraphExecutionMode>(mode);
     auto gem = requested;
     // Clamp to valid range
-    if (gem < sd::graph::GraphExecutionMode::GEM_AUTO || gem > sd::graph::GraphExecutionMode::GEM_NNAPI) {
+    if (gem < sd::graph::GraphExecutionMode::GEM_AUTO || gem > sd::graph::GraphExecutionMode::GEM_PORTABLE_REPLAY) {
       gem = sd::graph::GraphExecutionMode::GEM_AUTO;
     }
     reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setGraphExecutionMode(gem);
 
-    const char* requestedName = "UNKNOWN";
-    switch (requested) {
-      case sd::graph::GraphExecutionMode::GEM_AUTO: requestedName = "AUTO"; break;
-      case sd::graph::GraphExecutionMode::GEM_SLOT_BY_SLOT: requestedName = "SLOT_BY_SLOT"; break;
-      case sd::graph::GraphExecutionMode::GEM_CUDA_GRAPHS: requestedName = "CUDA_GRAPHS"; break;
-      case sd::graph::GraphExecutionMode::GEM_NVRTC_JIT: requestedName = "NVRTC_JIT"; break;
-      case sd::graph::GraphExecutionMode::GEM_PTX_JIT: requestedName = "PTX_JIT"; break;
-      case sd::graph::GraphExecutionMode::GEM_TRITON: requestedName = "TRITON"; break;
-      case sd::graph::GraphExecutionMode::GEM_MLX: requestedName = "MLX"; break;
-      case sd::graph::GraphExecutionMode::GEM_ARM_HYBRID: requestedName = "ARM_HYBRID"; break;
-      case sd::graph::GraphExecutionMode::GEM_NNAPI: requestedName = "NNAPI"; break;
-      default: break;
-    }
-
-    const char* appliedName = "UNKNOWN";
-    switch (gem) {
-      case sd::graph::GraphExecutionMode::GEM_AUTO: appliedName = "AUTO"; break;
-      case sd::graph::GraphExecutionMode::GEM_SLOT_BY_SLOT: appliedName = "SLOT_BY_SLOT"; break;
-      case sd::graph::GraphExecutionMode::GEM_CUDA_GRAPHS: appliedName = "CUDA_GRAPHS"; break;
-      case sd::graph::GraphExecutionMode::GEM_NVRTC_JIT: appliedName = "NVRTC_JIT"; break;
-      case sd::graph::GraphExecutionMode::GEM_PTX_JIT: appliedName = "PTX_JIT"; break;
-      case sd::graph::GraphExecutionMode::GEM_TRITON: appliedName = "TRITON"; break;
-      case sd::graph::GraphExecutionMode::GEM_MLX: appliedName = "MLX"; break;
-      case sd::graph::GraphExecutionMode::GEM_ARM_HYBRID: appliedName = "ARM_HYBRID"; break;
-      case sd::graph::GraphExecutionMode::GEM_NNAPI: appliedName = "NNAPI"; break;
-      default: break;
-    }
+    const char* requestedName =
+        sd::graph::ModeContract::modeName(static_cast<int>(requested));
+    const char* appliedName =
+        sd::graph::ModeContract::modeName(static_cast<int>(gem));
 
     DSP_DIAG(BACKEND, "setPlanGraphExecutionMode: requested=%d(%s) applied=%d(%s)",
              mode, requestedName, static_cast<int>(gem), appliedName);

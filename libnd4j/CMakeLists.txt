@@ -142,6 +142,12 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# Keep parser-facing generated headers inside this build tree. CPU, CUDA, Vulkan,
+# and cross-compiled builds may configure concurrently and must never overwrite a
+# shared source-tree include_ops.h.
+set(OP_OUTPUT_FILE "${CMAKE_BINARY_DIR}/include/generated/include_ops.h" CACHE FILEPATH
+    "Per-build generated operation-selection header")
+
 # On Windows + CUDA, CMake generates -Xcompiler=-FdPath\,-FS for CUDA objects.
 # nvcc misparses this (backslash escapes comma, -FS becomes input file),
 # failing with "A single input file is required".
@@ -392,7 +398,7 @@ if(CMAKE_C_COMPILER_LAUNCHER)
     endif()
 endif()
 
-if(NOT SD_CUDA AND NOT SD_TPU AND NOT SD_HEXAGON)
+if(NOT SD_CUDA AND NOT SD_TPU AND NOT SD_HEXAGON AND NOT SD_VULKAN)
     if(NOT SD_CPU)
         set(SD_CUDA FALSE)
         set(SD_TPU FALSE)
@@ -413,6 +419,16 @@ elseif(SD_HEXAGON)
     add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_CPU)
     add_compile_definitions(SD_HEXAGON=1)
     add_compile_definitions(HAVE_HEXAGON_MLIR=1)
+elseif(SD_VULKAN)
+    # Vulkan is a device backend. DSP native plans dispatch admitted operations
+    # through VulkanReplayHandle; an operation without a Vulkan device path must
+    # fail instead of entering the generic CPU implementation.
+    set(DEFAULT_ENGINE "samediff::ENGINE_VULKAN")
+    add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_VULKAN)
+    add_compile_definitions(SD_VULKAN=1)
+    # The MLIR SPIR-V compiler is optional. Development builds opt in with
+    # HELPERS_mlir=ON and MLIR_ENABLE_VULKAN=ON; mobile/runtime builds load
+    # bundled AOT SPIR-V and must remain compiler-free.
 else()
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
     add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_CPU)
@@ -425,6 +441,8 @@ if(NOT DEFINED SD_LIBRARY_NAME)
         set(SD_LIBRARY_NAME nd4jtpu)
     elseif(SD_HEXAGON)
         set(SD_LIBRARY_NAME nd4jhexagon)
+    elseif(SD_VULKAN)
+        set(SD_LIBRARY_NAME nd4jvulkan)
     else()
         set(SD_LIBRARY_NAME nd4jcpu)
     endif()
@@ -442,6 +460,27 @@ include(SelectiveRenderingIntegration)
 include(Dependencies)
 include(CompilerOptimizations)
 include(PlatformOptimizations)
+
+# A fresh Triton+MLIR build cannot discover MLIR package exports until the
+# project-managed, patched compiler stack has been built. The wrapper performs
+# this bootstrap configure/build before its normal configure, using the same
+# target toolchain and cache identity as the final build.
+if(SD_DEPENDENCY_BOOTSTRAP_ONLY)
+    if(NOT SD_TRITON OR NOT HELPERS_mlir)
+        message(FATAL_ERROR
+            "SD_DEPENDENCY_BOOTSTRAP_ONLY requires SD_TRITON=ON and HELPERS_mlir=ON")
+    endif()
+    setup_triton()
+    if(NOT TARGET triton_external)
+        message(FATAL_ERROR
+            "Compiler dependency bootstrap did not create triton_external")
+    endif()
+    add_custom_target(sd_compiler_dependencies_bootstrap
+        DEPENDS triton_external)
+    message(STATUS
+        "Configured project-managed Triton/LLVM/MLIR dependency bootstrap only")
+    return()
+endif()
 
 LIBND4J_SETUP_TYPE_VALIDATION()
 
@@ -482,6 +521,11 @@ elseif(SD_HEXAGON)
     setup_hexagon_paths()
     include(cmake/BuildHexagon.cmake)
     setup_hexagon_build()
+elseif(SD_VULKAN)
+    include(cmake/VulkanConfiguration.cmake)
+    verify_vulkan_chip_requirements()
+    include(cmake/BuildVulkan.cmake)
+    setup_vulkan_build()
 else()
     setup_cpu_environment()
 endif()

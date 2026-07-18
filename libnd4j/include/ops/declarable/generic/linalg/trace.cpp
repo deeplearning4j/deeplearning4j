@@ -42,7 +42,9 @@ CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(trace) {
+
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(trace) {

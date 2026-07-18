@@ -46,9 +46,11 @@ CUSTOM_OP_IMPL(einsum, -2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(einsum) {
+
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
       ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 }
 
 DECLARE_SHAPE_FN(einsum) {

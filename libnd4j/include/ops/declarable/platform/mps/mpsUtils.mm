@@ -27,8 +27,11 @@
 #include <system/Environment.h>
 #include <helpers/shape.h>
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 namespace mpsUtils {
 
 // ---------------------------------------------------------------------------
@@ -395,5 +398,6 @@ void checkMPSRequirements(sd::Requirements& reqs, sd::graph::Context& block,
 #endif  // HAVE_MPS
 
 }  // namespace mpsUtils
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

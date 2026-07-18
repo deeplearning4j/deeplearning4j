@@ -80,6 +80,7 @@ CUSTOM_OP_IMPL(moe_shared_experts, 6, 3, false, -2, 3) {
 }
 
 DECLARE_TYPES(moe_shared_experts) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes(0, {ALL_FLOATS})

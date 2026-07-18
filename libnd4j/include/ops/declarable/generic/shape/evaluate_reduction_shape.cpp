@@ -50,10 +50,12 @@ CUSTOM_OP_IMPL(evaluate_reduction_shape, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(evaluate_reduction_shape) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedOutputTypes(0, INT64);
+  getOpDescriptor()->addTraits(OP_TRAIT_SHAPE_ONLY_OUTPUT | OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 }
 
 DECLARE_SHAPE_FN(evaluate_reduction_shape) {

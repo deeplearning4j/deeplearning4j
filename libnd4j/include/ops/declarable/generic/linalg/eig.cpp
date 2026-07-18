@@ -51,7 +51,10 @@ CUSTOM_OP_IMPL(eig, 1, 2, false, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(eig) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(eig) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
+}
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(eig) {

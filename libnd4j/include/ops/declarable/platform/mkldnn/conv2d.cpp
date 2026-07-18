@@ -363,7 +363,7 @@ static void conv2dBpMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDAr
 
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(conv2d, ENGINE_CPU) {
+PLATFORM_IMPL(conv2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
@@ -408,7 +408,7 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(conv2d, ENGINE_CPU) {
+PLATFORM_CHECK(conv2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto weights = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
@@ -446,7 +446,7 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(conv2d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
@@ -506,7 +506,7 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(conv2d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, oC] always
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC]

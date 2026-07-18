@@ -35,9 +35,15 @@ import java.util.List;
 public class ArchitectureConfig {
 
     /**
-     * Number of transformer layers
+     * Number of target transformer layers. Bundled MTP predictor blocks are
+     * tracked separately and are not part of the target trunk.
      */
     private int numLayers;
+
+    /**
+     * Number of bundled NextN/MTP predictor layers appended after the target trunk.
+     */
+    private int numMtpLayers;
 
     /**
      * Hidden size / embedding dimension

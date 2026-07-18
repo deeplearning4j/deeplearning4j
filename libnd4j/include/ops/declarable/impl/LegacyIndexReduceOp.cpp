@@ -29,6 +29,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyIndexReduceOp::LegacyIndexReduceOp() : LegacyOp(1) {
   //
 }
@@ -161,5 +162,6 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
 
   return Status::OK;
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

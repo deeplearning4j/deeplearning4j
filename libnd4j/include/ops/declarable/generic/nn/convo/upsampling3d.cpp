@@ -49,6 +49,7 @@ CUSTOM_OP_IMPL(upsampling3d, 1, 1, false, 0, 3) {
 }
 
 DECLARE_TYPES(upsampling3d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -87,6 +88,7 @@ DECLARE_SHAPE_FN(upsampling3d) {
 }
 
 DECLARE_TYPES(upsampling3d_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

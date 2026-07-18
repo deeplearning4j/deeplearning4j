@@ -80,8 +80,8 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
     fflush(stdout);
   }
   _lenInBytes = other._lenInBytes;
-  _primaryAllocBytes = other._primaryAllocBytes;
-  _specialAllocBytes = other._specialAllocBytes;
+  _primaryAllocBytes = 0;
+  _specialAllocBytes = 0;
   _dataType = other._dataType;
   _workspace = other._workspace;
 #if defined(SD_GCC_FUNCTRACE)
@@ -90,8 +90,13 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
   allocationStackTraceSpecial = nullptr;
   creationStackTrace = nullptr;
 #endif
-  _primaryBuffer = other._primaryBuffer;
-  _specialBuffer = other._specialBuffer;
+  // A copy owns independent backend storage. Starting from null pointers is
+  // required so allocateBuffers()/copyBufferFrom() perform the backend-native
+  // deep copy instead of treating the source allocations as already present.
+  _primaryBuffer = nullptr;
+  _specialBuffer = nullptr;
+  _isOwnerPrimary = false;
+  _isOwnerSpecial = false;
 
 #if defined(SD_GCC_FUNCTRACE)
   // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization

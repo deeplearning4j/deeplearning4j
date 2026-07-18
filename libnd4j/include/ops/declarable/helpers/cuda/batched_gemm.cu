@@ -207,8 +207,24 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
     status =
         cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_16F, lda, bBuffers,
                             CUDA_R_16F, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
-  } else
-    THROW_EXCEPTION("batched gemm cuda: this mode is not implemented yet !");
+  } else if (ABC && aType == BFLOAT16) {
+    float alpha = alphas->lengthOf() > 0 ? alphas->e<float>(0) : 1.0f;
+    float beta = betas->lengthOf() > 0 ? betas->e<float>(0) : 0.0f;
+    status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha,
+                                 (const void**)aBuffers, CUDA_R_16BF, lda,
+                                 (const void**)bBuffers, CUDA_R_16BF, ldb,
+                                 &beta, (void**)cBuffers, CUDA_R_16BF, ldc, bS,
+                                 CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT);
+  } else {
+    std::string msg = "batched gemm cuda: unsupported dtype combination aType=";
+    msg += std::to_string(static_cast<int>(aType));
+    msg += " bType=";
+    msg += std::to_string(static_cast<int>(bType));
+    msg += " cType=";
+    msg += std::to_string(static_cast<int>(cType));
+    msg += "; supported: FLOAT32, DOUBLE, HALF, BFLOAT16 (all-same), INT8xINT8->FLOAT32, HALFxHALF->FLOAT32";
+    THROW_EXCEPTION(msg.c_str());
+  }
 
   if (status != CUBLAS_STATUS_SUCCESS) {
     { std::string msg = "MmulHelper::mmulMxM cuda execution failed !; Error code: [" + std::to_string(status) + "]"; THROW_EXCEPTION(msg.c_str()); }

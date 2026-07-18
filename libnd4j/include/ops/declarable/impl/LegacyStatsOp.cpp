@@ -32,6 +32,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 Status LegacyStatsOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
@@ -123,5 +124,6 @@ ShapeList *LegacyStatsOp::calculateOutputShape(ShapeList *inputShape, Context &b
   sd::LongType *xShape2 = ShapeUtils::evalReduceShapeInfo('c', &dims, inShape, outDtype, keepDims, false);
   return SHAPELIST(xShape2);
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

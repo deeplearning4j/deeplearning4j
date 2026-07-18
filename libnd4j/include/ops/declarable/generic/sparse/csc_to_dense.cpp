@@ -86,11 +86,14 @@ DECLARE_SHAPE_FN(csc_to_dense) {
 }
 
 DECLARE_TYPES(csc_to_dense) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})   // cscValues
       ->setAllowedInputTypes(1, {ALL_INTS})     // cscRowIdx
       ->setAllowedInputTypes(2, {ALL_INTS})     // cscColPtr
       ->setAllowedOutputTypes({ALL_FLOATS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

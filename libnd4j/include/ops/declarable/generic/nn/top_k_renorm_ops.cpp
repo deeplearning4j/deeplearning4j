@@ -60,6 +60,7 @@ CUSTOM_OP_IMPL(top_k_renorm, 1, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(top_k_renorm) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -117,6 +118,7 @@ CUSTOM_OP_IMPL(top_p_renorm, 1, 1, false, 1, 0) {
 }
 
 DECLARE_TYPES(top_p_renorm) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }

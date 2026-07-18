@@ -71,11 +71,11 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
 
     auto status = executeMlirEx("lstm_layer", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR lstmLayer failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
@@ -84,7 +84,7 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
     Requirements req("MLIR LSTM_LAYER");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -124,11 +124,11 @@ PLATFORM_IMPL(lstmLayer_bp, ENGINE_CPU) {
 
     auto status = executeMlir("lstm_layer_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR lstmLayer_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(lstmLayer_bp, ENGINE_CPU) {
@@ -169,11 +169,11 @@ PLATFORM_IMPL(gruCell, ENGINE_CPU) {
 
     auto status = executeMlirEx("gru_cell", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR gruCell failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(gruCell, ENGINE_CPU) {
@@ -182,7 +182,7 @@ PLATFORM_CHECK(gruCell, ENGINE_CPU) {
     Requirements req("MLIR GRU_CELL");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -214,11 +214,11 @@ PLATFORM_IMPL(gru, ENGINE_CPU) {
 
     auto status = executeMlirEx("gru", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR gru failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(gru, ENGINE_CPU) {
@@ -227,7 +227,7 @@ PLATFORM_CHECK(gru, ENGINE_CPU) {
     Requirements req("MLIR GRU");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -258,11 +258,11 @@ PLATFORM_IMPL(gru_bp, ENGINE_CPU) {
 
     auto status = executeMlir("gru_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR gru_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(gru_bp, ENGINE_CPU) {
@@ -302,11 +302,11 @@ PLATFORM_IMPL(simple_rnn, ENGINE_CPU) {
 
     auto status = executeMlirEx("simple_rnn", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR simple_rnn failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(simple_rnn, ENGINE_CPU) {
@@ -315,7 +315,7 @@ PLATFORM_CHECK(simple_rnn, ENGINE_CPU) {
     Requirements req("MLIR SIMPLE_RNN");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -348,11 +348,11 @@ PLATFORM_IMPL(lstmCell, ENGINE_CPU) {
 
     auto status = executeMlirEx("lstm_cell", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR lstmCell failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(lstmCell, ENGINE_CPU) {
@@ -361,7 +361,7 @@ PLATFORM_CHECK(lstmCell, ENGINE_CPU) {
     Requirements req("MLIR LSTM_CELL");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;

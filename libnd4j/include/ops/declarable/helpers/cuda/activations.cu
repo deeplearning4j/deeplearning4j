@@ -31,6 +31,7 @@
 #include <type_traits>
 
 #include "execution/cuda/LaunchDims.h"
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 
 namespace sd {
@@ -396,23 +397,8 @@ void softMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, co
 }
 
 ///////////////////////////////////////////////////////////////////
-// Warp-level max reduction using shuffle
-template <typename T>
-SD_DEVICE SD_INLINE T warpReduceMax(T val) {
-  for (int offset = 16; offset > 0; offset /= 2) {
-    val = math::sd_max<T>(val, __shfl_down_sync(0xffffffff, val, offset));
-  }
-  return val;
-}
-
-// Warp-level sum reduction using shuffle
-template <typename T>
-SD_DEVICE SD_INLINE T warpReduceSum(T val) {
-  for (int offset = 16; offset > 0; offset /= 2) {
-    val += __shfl_down_sync(0xffffffff, val, offset);
-  }
-  return val;
-}
+// Warp-level max/sum reductions come from device_primitives.cuh
+// (sd::device::warpReduceMax / sd::device::warpReduceSum).
 
 ///////////////////////////////////////////////////////////////////
 // Warp-per-TAD kernel with vectorized float4 loads for contiguous data
@@ -447,7 +433,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCudaWarpPerTadVec4(const 
     for (LongType j = vec4Len * 4 + laneId; j < tadLen; j += 32) {
       threadMax = fmaxf(threadMax, inBuff[j]);
     }
-    float maxVal = warpReduceMax<float>(threadMax);
+    float maxVal = sd::device::warpReduceMax<float>(threadMax);
     maxVal = __shfl_sync(0xffffffff, maxVal, 0);
 
     // Phase 2: Compute exp and sum using float4
@@ -468,7 +454,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCudaWarpPerTadVec4(const 
       outBuff[j] = temp;
       threadSum += temp;
     }
-    float sumVal = warpReduceSum<float>(threadSum);
+    float sumVal = sd::device::warpReduceSum<float>(threadSum);
     sumVal = __shfl_sync(0xffffffff, sumVal, 0);
 
     // Phase 3: Normalize using float4
@@ -516,7 +502,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCudaWarpPerTad(const void
     for (LongType j = laneId; j < tadLen; j += 32) {
       threadMax = math::sd_max<AccT>(threadMax, static_cast<AccT>(inBuff[j]));
     }
-    AccT maxVal = warpReduceMax<AccT>(threadMax);
+    AccT maxVal = sd::device::warpReduceMax<AccT>(threadMax);
     maxVal = __shfl_sync(0xffffffff, maxVal, 0);  // Broadcast max to all lanes
 
     // Phase 2: Compute exp and sum - contiguous access
@@ -526,7 +512,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCudaWarpPerTad(const void
       outBuff[j] = static_cast<T>(temp);
       threadSum += temp;
     }
-    AccT sumVal = warpReduceSum<AccT>(threadSum);
+    AccT sumVal = sd::device::warpReduceSum<AccT>(threadSum);
     sumVal = __shfl_sync(0xffffffff, sumVal, 0);  // Broadcast sum to all lanes
 
     // Phase 3: Normalize - contiguous access
@@ -585,7 +571,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCuda(const void *vx, cons
       }
 
       // Warp-level reduction
-      threadMax = warpReduceMax<AccT>(threadMax);
+      threadMax = sd::device::warpReduceMax<AccT>(threadMax);
 
       // Store warp results
       if (laneId == 0) warpPartials[warpId] = threadMax;
@@ -594,7 +580,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCuda(const void *vx, cons
       // Final reduction by first warp
       if (warpId == 0) {
         AccT val = (laneId < numWarps) ? warpPartials[laneId] : -DataTypeUtils::max<AccT>();
-        val = warpReduceMax<AccT>(val);
+        val = sd::device::warpReduceMax<AccT>(val);
         if (laneId == 0) globalMax = val;
       }
       __syncthreads();
@@ -608,7 +594,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCuda(const void *vx, cons
       }
 
       // Warp-level sum reduction
-      threadSum = warpReduceSum<AccT>(threadSum);
+      threadSum = sd::device::warpReduceSum<AccT>(threadSum);
 
       // Store warp results
       if (laneId == 0) warpPartials[warpId] = threadSum;
@@ -617,7 +603,7 @@ SD_KERNEL __launch_bounds__(256, 2) static void softMaxCuda(const void *vx, cons
       // Final reduction by first warp
       if (warpId == 0) {
         AccT val = (laneId < numWarps) ? warpPartials[laneId] : static_cast<AccT>(0);
-        val = warpReduceSum<AccT>(val);
+        val = sd::device::warpReduceSum<AccT>(val);
         if (laneId == 0) globalSum = val;
       }
       __syncthreads();

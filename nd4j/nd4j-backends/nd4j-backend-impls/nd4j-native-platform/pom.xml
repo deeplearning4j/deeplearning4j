@@ -168,37 +168,6 @@
             </dependencies>
         </profile>
 
-        <!-- llama.cpp classifier profile for LLM/GGML model support -->
-        <profile>
-            <id>llamacpp</id>
-            <activation>
-                <property>
-                    <name>libnd4j.extension</name>
-                    <value>llamacpp</value>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${nd4j.backend}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>${javacpp.platform.linux-x86_64}-llamacpp</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${nd4j.backend}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>${javacpp.platform.macosx-x86_64}-llamacpp</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>${nd4j.backend}</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>${javacpp.platform.windows-x86_64}-llamacpp</classifier>
-                </dependency>
-            </dependencies>
-        </profile>
-
         <!-- AVX2 classifier profile -->
         <profile>
             <id>avx2</id>

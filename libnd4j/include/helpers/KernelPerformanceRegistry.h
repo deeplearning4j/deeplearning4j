@@ -18,6 +18,8 @@
 #ifndef SD_KERNEL_PERFORMANCE_REGISTRY_H
 #define SD_KERNEL_PERFORMANCE_REGISTRY_H
 
+#include <system/BackendNamespace.h>
+
 #include <execution/Engine.h>
 #include <system/common.h>
 #include <array/DataType.h>
@@ -32,6 +34,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 
 /**
  * Signature for identifying a kernel execution context.
@@ -206,6 +209,7 @@ class SD_LIB_EXPORT KernelPerformanceRegistry {
   ~KernelPerformanceRegistry();
 };
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

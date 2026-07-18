@@ -46,11 +46,13 @@ static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int
     flattenedMask = mask->reshape('c', maskShape, false);
   }
 
-  // Get typed buffer pointers once to avoid O(n^2) sync overhead from per-element p()/e() calls
+  // Get typed buffer pointers once to avoid O(n^2) sync overhead from per-element p()/e() calls.
+  // getOffset() in the loop returns ABSOLUTE offsets (they include the view offset),
+  // so pair them with the DataBuffer base — bufferAsT() is already offset-shifted.
   NDArray::preparePrimaryUse({flattenedOutput, flattenedMask}, {flattenedInput});
-  auto inputBuf = flattenedInput->bufferAsT<T>();
-  auto outputBuf = flattenedOutput->bufferAsT<T>();
-  T* maskBuf = (flattenedMask != nullptr) ? flattenedMask->bufferAsT<T>() : nullptr;
+  auto inputBuf = reinterpret_cast<T*>(flattenedInput->getDataBuffer()->primary());
+  auto outputBuf = reinterpret_cast<T*>(flattenedOutput->getDataBuffer()->primary());
+  T* maskBuf = (flattenedMask != nullptr) ? reinterpret_cast<T*>(flattenedMask->getDataBuffer()->primary()) : nullptr;
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
@@ -155,11 +157,13 @@ static Status alphaDropOutFunctor_(graph::Context& context, NDArray* input, NDAr
 
   sd::graph::RandomGenerator nodeRng(3019L, seed);
 
-  // Get typed buffer pointers once to avoid O(n^2) sync overhead from per-element p()/e() calls
+  // Get typed buffer pointers once to avoid O(n^2) sync overhead from per-element p()/e() calls.
+  // getOffset() in the loop returns ABSOLUTE offsets (they include the view offset),
+  // so pair them with the DataBuffer base — bufferAsT() is already offset-shifted.
   NDArray::preparePrimaryUse({output, mask}, {input});
-  auto inputBuf = input->bufferAsT<T>();
-  auto outputBuf = output->bufferAsT<T>();
-  auto maskBuf = mask->bufferAsT<T>();
+  auto inputBuf = reinterpret_cast<T*>(input->getDataBuffer()->primary());
+  auto outputBuf = reinterpret_cast<T*>(output->getDataBuffer()->primary());
+  auto maskBuf = reinterpret_cast<T*>(mask->getDataBuffer()->primary());
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {

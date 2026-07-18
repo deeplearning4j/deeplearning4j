@@ -55,6 +55,7 @@ CONFIGURABLE_OP_IMPL(clipbyavgnorm, -1, 1, false, -2, 0) {
 
 DECLARE_TYPES(clipbyavgnorm) {
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -85,6 +86,7 @@ DECLARE_TYPES(clipbyavgnorm_bp) {
       ->setAllowedInputTypes(0, DataType::ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

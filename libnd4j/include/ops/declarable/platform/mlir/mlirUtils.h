@@ -29,9 +29,12 @@
 #include <vector>
 #include <string>
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 /// Check if MLIR JIT is available and enabled for this build
 inline bool mlirEnabled() {
@@ -167,7 +170,7 @@ inline Status executeMlir(
     auto& engine = mlir_runtime::MLIREngine::getInstance();
 
     if (!engine.isInitialized() && !engine.initialize()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "Failed to initialize MLIR engine");
+        return Status::BAD_ARGUMENTS; // mlir error: "Failed to initialize MLIR engine");
     }
 
     // Get input shapes and types
@@ -181,15 +184,15 @@ inline Status executeMlir(
     // Get or compile kernel
     auto kernel = engine.getOrCompile(opName, inputShapes, inputTypes);
     if (!kernel || !kernel->isValid()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "Failed to compile MLIR kernel for " + opName);
+        return Status::BAD_ARGUMENTS; // mlir error: "Failed to compile MLIR kernel for " + opName);
     }
 
     // Execute kernel
     if (!kernel->execute(inputs, outputs)) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "Failed to execute MLIR kernel for " + opName);
+        return Status::BAD_ARGUMENTS; // mlir error: "Failed to execute MLIR kernel for " + opName);
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 /// Execute operation via MLIR JIT with extended params extracted from context.
@@ -208,7 +211,7 @@ inline Status executeMlirEx(
     auto& engine = mlir_runtime::MLIREngine::getInstance();
 
     if (!engine.isInitialized() && !engine.initialize()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "Failed to initialize MLIR engine");
+        return Status::BAD_ARGUMENTS; // mlir error: "Failed to initialize MLIR engine");
     }
 
     // Get input shapes and types
@@ -251,19 +254,20 @@ inline Status executeMlirEx(
     // Get or compile kernel with extended params
     auto kernel = engine.getOrCompile(opName, inputShapes, inputTypes, params);
     if (!kernel || !kernel->isValid()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "Failed to compile MLIR kernel for " + opName);
+        return Status::BAD_ARGUMENTS; // mlir error: "Failed to compile MLIR kernel for " + opName);
     }
 
     // Execute kernel
     if (!kernel->execute(inputs, outputs)) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "Failed to execute MLIR kernel for " + opName);
+        return Status::BAD_ARGUMENTS; // mlir error: "Failed to execute MLIR kernel for " + opName);
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 #endif // HAVE_MLIR
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 } // namespace platforms
 } // namespace ops
 } // namespace sd

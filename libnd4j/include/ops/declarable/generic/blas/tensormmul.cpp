@@ -103,12 +103,14 @@ DECLARE_SHAPE_FN(tensormmul) {
 
 ////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(tensormmul) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {FLOAT32, DOUBLE, HALF})
       ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
       ->setAllowedInputTypes(2, {FLOAT32, DOUBLE, HALF})
       ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF})
       ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
+
 }
 
 // Comparator for sorting indices vector based on comparison of array values
@@ -263,13 +265,14 @@ DECLARE_SHAPE_FN(tensormmul_bp) {
 
 ////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(tensormmul_bp) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {FLOAT32, DOUBLE, HALF})  // maybe better ALL_FLOATS
       ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
       ->setAllowedInputTypes(2, {FLOAT32, DOUBLE, HALF})
       ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF})
       ->setAllowedOutputTypes(1, {FLOAT32, DOUBLE, HALF})
-      ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
+      ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | OP_TRAIT_EXTERNAL_WORKSPACE);
 }
 }  // namespace ops
 }  // namespace sd

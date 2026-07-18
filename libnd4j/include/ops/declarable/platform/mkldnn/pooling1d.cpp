@@ -89,7 +89,7 @@ static void pooling1dMKLDNN(NDArray* input, NDArray* output,
 
 //////////////////////////////////////////////////////////////////////
 // MAXPOOL1D
-PLATFORM_IMPL(maxpool1d, ENGINE_CPU) {
+PLATFORM_IMPL(maxpool1d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -107,7 +107,7 @@ PLATFORM_IMPL(maxpool1d, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(maxpool1d, ENGINE_CPU) {
+PLATFORM_CHECK(maxpool1d, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -122,7 +122,7 @@ PLATFORM_CHECK(maxpool1d, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // AVGPOOL1D
-PLATFORM_IMPL(avgpool1d, ENGINE_CPU) {
+PLATFORM_IMPL(avgpool1d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -144,7 +144,7 @@ PLATFORM_IMPL(avgpool1d, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(avgpool1d, ENGINE_CPU) {
+PLATFORM_CHECK(avgpool1d, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -233,7 +233,7 @@ static void pooling1dBpMKLDNN(NDArray* input, NDArray* gradO, NDArray* gradI,
   stream.wait();
 }
 
-PLATFORM_IMPL(maxpool1d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(maxpool1d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
@@ -252,7 +252,7 @@ PLATFORM_IMPL(maxpool1d_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(maxpool1d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(maxpool1d_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
@@ -267,7 +267,7 @@ PLATFORM_CHECK(maxpool1d_bp, ENGINE_CPU) {
   return req;
 }
 
-PLATFORM_IMPL(avgpool1d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(avgpool1d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
@@ -290,7 +290,7 @@ PLATFORM_IMPL(avgpool1d_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(avgpool1d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(avgpool1d_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);

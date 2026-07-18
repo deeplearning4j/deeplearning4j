@@ -57,6 +57,7 @@ class hash<std::pair<std::string, samediff::Engine>> {
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 /**
  *   This class provides runtime ops lookup, based on opName or opHash.
  *   To build lookup directory we use *_OP_IMPL macro, which puts static structs at compile time in .cpp files,
@@ -164,6 +165,7 @@ struct __registratorSynonym {
   __registratorSynonym(const char* name, const char* oname);
 };
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

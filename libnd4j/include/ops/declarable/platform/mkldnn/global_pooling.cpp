@@ -99,7 +99,7 @@ static void globalPoolingMKLDNN(NDArray* x, NDArray* z, dnnl::algorithm alg, boo
 
 //////////////////////////////////////////////////////////////////////
 // GLOBAL_MAXPOOL2D - note: maxpool2d already exists, this adds global variant support
-PLATFORM_IMPL(global_max_pooling_2d, ENGINE_CPU) {
+PLATFORM_IMPL(global_max_pooling_2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -114,7 +114,7 @@ PLATFORM_IMPL(global_max_pooling_2d, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(global_max_pooling_2d, ENGINE_CPU) {
+PLATFORM_CHECK(global_max_pooling_2d, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -129,7 +129,7 @@ PLATFORM_CHECK(global_max_pooling_2d, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // GLOBAL_AVGPOOL2D
-PLATFORM_IMPL(global_avg_pooling_2d, ENGINE_CPU) {
+PLATFORM_IMPL(global_avg_pooling_2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -143,7 +143,7 @@ PLATFORM_IMPL(global_avg_pooling_2d, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(global_avg_pooling_2d, ENGINE_CPU) {
+PLATFORM_CHECK(global_avg_pooling_2d, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 

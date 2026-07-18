@@ -30,6 +30,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.BaseBroadcastBoolOp;
 import org.nd4j.linalg.api.ops.BaseBroadcastOp;
@@ -83,14 +84,18 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class DynamicShapePlanCompiler {
 
-    // Mirror of libnd4j/include/ops/declarable/OpDescriptor.h trait bitmask.
-    // OpTraitTable.cpp is the single source of truth for per-op classification —
-    // the Java compiler queries it via JNI (getOpTraits) so Java and C++ agree.
-    private static final int OP_TRAIT_VALUE_DEPENDENT_SHAPE = 1 << 8;
-    private static final int OP_TRAIT_DATA_DEPENDENT        = 1 << 9;
+    // Mirror of libnd4j/include/ops/declarable/OpDescriptor.h. Each op
+    // publishes these traits from its own DECLARE_TYPES/addTraits registration;
+    // Java queries the resolved descriptor through JNI so both compilers use the
+    // same semantic metadata.
+    private static final int OP_TRAIT_REDUCTION              = 1 << 3;
+    private static final int OP_TRAIT_VIEW_PRODUCING         = 1 << 7;
+    private static final int OP_TRAIT_VALUE_DEPENDENT_SHAPE  = 1 << 8;
+    private static final int OP_TRAIT_DATA_DEPENDENT         = 1 << 9;
+    private static final int OP_TRAIT_CONCAT                 = 1 << 20;
 
-    // Cache: op-name → trait bitmask. Native table is immutable after initOpTraits();
-    // memoise per-name to avoid JNI round-trips during plan compilation.
+    // Cache: op-name → immutable descriptor trait bitmask. Memoise per name to
+    // avoid JNI round-trips during plan compilation.
     private static final Map<String, Integer> OP_TRAIT_CACHE = new ConcurrentHashMap<>();
 
     private static int opTraitsOf(String opName) {
@@ -100,6 +105,32 @@ public class DynamicShapePlanCompiler {
         int traits = NativeOpsHolder.getInstance().getDeviceNativeOps().getOpTraits(opName);
         OP_TRAIT_CACHE.put(opName, traits);
         return traits;
+    }
+
+    /**
+     * Copy the framework shape-info buffers declared by an op into plan-owned metadata.
+     * This is used only for zero-input slots, where there is no runtime tensor shape for
+     * the native shape function to inspect.
+     */
+    private static long[][] copyStaticOutputShapeInfos(DifferentialFunction op, int expectedOutputs) {
+        List<DataBuffer> outputShapes = op.calculateOutputShape();
+        if (outputShapes == null || outputShapes.size() != expectedOutputs) {
+            return null;
+        }
+
+        long[][] result = new long[expectedOutputs][];
+        for (int output = 0; output < expectedOutputs; output++) {
+            DataBuffer shapeInfo = outputShapes.get(output);
+            if (shapeInfo == null || shapeInfo.length() <= 0 || shapeInfo.length() > Integer.MAX_VALUE) {
+                return null;
+            }
+
+            result[output] = new long[(int) shapeInfo.length()];
+            for (int element = 0; element < result[output].length; element++) {
+                result[output][element] = shapeInfo.getLong(element);
+            }
+        }
+        return result;
     }
 
     private DynamicShapePlanCompiler() {}
@@ -167,17 +198,6 @@ public class DynamicShapePlanCompiler {
                     log.debug("DSP compile: graph contains tensor array op '{}'. " +
                             "Falling back to standard path.", opNameLower);
                     return null;
-                }
-                // Random ops with no input variables carry their shape as constructor
-                // arguments. The native executor's shape inference calls INPUT_VARIABLE(0)
-                // which fails with "Can't find requested variable by index: 0".
-                if (sdOp.getOp() instanceof BaseRandomOp) {
-                    List<String> inputs = sdOp.getInputsToOp();
-                    if (inputs == null || inputs.isEmpty()) {
-                        log.debug("DSP compile: random op '{}' has no input variables. " +
-                                "Falling back to standard path.", opNameLower);
-                        return null;
-                    }
                 }
                 // ExternalErrorsFunction is a LOGIC op handled by special Java-side logic
                 // in InferenceSession. The native executor has no implementation for it.
@@ -578,6 +598,25 @@ public class DynamicShapePlanCompiler {
                 }
             }
 
+            // Zero-input ops have no runtime tensor shape for native shape inference.
+            // Preserve the shape infos already declared by the op instead of inventing
+            // a synthetic input or encoding shape metadata as execution arguments.
+            long[][] staticOutputShapeInfos = new long[0][];
+            if (numInputs == 0 && numOutputs > 0) {
+                try {
+                    staticOutputShapeInfos = copyStaticOutputShapeInfos(op, numOutputs);
+                } catch (RuntimeException e) {
+                    log.debug("DSP compile: zero-input op '{}' did not provide static output shapes. " +
+                            "Falling back to standard path.", opName, e);
+                    return null;
+                }
+                if (staticOutputShapeInfos == null) {
+                    log.debug("DSP compile: zero-input op '{}' returned incomplete static output shapes. " +
+                            "Falling back to standard path.", opName);
+                    return null;
+                }
+            }
+
             // Freeze op arguments
             long[] iArgs = new long[0];
             double[] tArgs = new double[0];
@@ -744,52 +783,41 @@ public class DynamicShapePlanCompiler {
                 requiresDynamic = true;
             }
 
-            // Consult the C++ OpTraitTable (single source of truth) rather than the
-            // Value-dependent shape classification: only use VALUE_DEPENDENT_SHAPE trait.
-            // DATA_DEPENDENT is orthogonal — it means the op's result depends on data,
-            // not that the output SHAPE depends on data. argmax/argmin are data-dependent
-            // but have shapes fully determined by input shapes + axis iArgs.
-            // Ops whose shape function reads input tensor VALUES carry
-            // VALUE_DEPENDENT_SHAPE in the trait table (reshape, fill, range, slice, etc.).
+            // Begin with the intrinsic descriptor classification, then resolve
+            // argument-driven versus tensor-driven forms for this invocation.
+            // Operation names remain diagnostics-only.
             int opTraits = opTraitsOf(opName);
-            boolean shapeDependsOnValues;
-            if (opTraits != 0) {
-                shapeDependsOnValues = (opTraits & OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0;
-            } else {
-                // Op not in trait table (e.g. legacy / unregistered) — fall back to the
-                // old heuristic so we stay safe on unclassified ops.
-                shapeDependsOnValues = hasIntLongInputs;
-            }
+            boolean shapeDependsOnValues = opTraits != 0
+                    ? (opTraits & OP_TRAIT_VALUE_DEPENDENT_SHAPE) != 0
+                    : hasIntLongInputs;
 
-            // Per-instance demotion for ops with VALUE_DEPENDENT_SHAPE trait that
-            // don't actually read input values in specific configurations.
             if (shapeDependsOnValues) {
-                if ("reshape".equals(opName) || "reshape_no_copy".equals(opName)) {
-                    // VALUE_DEPENDENT_SHAPE only when width > 1: shape read from INPUT(1).
-                    // Single-input reshape reads target shape from iArgs.
-                    if (numInputs <= 1) {
-                        shapeDependsOnValues = false;
-                    }
+                boolean hasNoRuntimeInputs = numInputs == 0;
+                boolean argumentShapedView =
+                        (opTraits & OP_TRAIT_VIEW_PRODUCING) != 0
+                                && numInputs <= 1
+                                && iArgs.length > 0;
+                if (hasNoRuntimeInputs || argumentShapedView) {
+                    shapeDependsOnValues = false;
                 }
             }
-            // Per-instance promotion for ops with DATA_DEPENDENT that genuinely have
-            // value-dependent shape in certain configurations:
             if (!shapeDependsOnValues) {
-                if ("concat".equals(opName)) {
-                    // Axis read from last input array when isAxisInLastArr (bArgs[0]==true).
-                    boolean isAxisInLastArr = bArgs.length > 0 && bArgs[0];
-                    if (isAxisInLastArr) {
-                        shapeDependsOnValues = true;
-                    }
-                } else if ("expand_dims".equals(opName)) {
-                    // Axis from INPUT(1)->e<>() when no INT_ARG present.
-                    if (iArgs.length == 0) {
-                        shapeDependsOnValues = true;
-                    }
-                } else if (("argmax".equals(opName) || "argmin".equals(opName)) && numInputs > 1) {
-                    // 2-input form reads axes from INPUT_VARIABLE(1).
-                    shapeDependsOnValues = true;
-                }
+                boolean tensorAxisConcat =
+                        (opTraits & OP_TRAIT_CONCAT) != 0
+                                && bArgs.length > 0
+                                && bArgs[0];
+                boolean tensorControlledView =
+                        (opTraits & OP_TRAIT_VIEW_PRODUCING) != 0
+                                && (opTraits & OP_TRAIT_DATA_DEPENDENT) != 0
+                                && numInputs > 1
+                                && iArgs.length == 0;
+                boolean tensorControlledReduction =
+                        (opTraits & OP_TRAIT_REDUCTION) != 0
+                                && (opTraits & OP_TRAIT_DATA_DEPENDENT) != 0
+                                && numInputs > 1;
+                shapeDependsOnValues = tensorAxisConcat
+                        || tensorControlledView
+                        || tensorControlledReduction;
             }
 
             DifferentialFunction slotOp = op;
@@ -814,6 +842,7 @@ public class DynamicShapePlanCompiler {
                     .bArgs(bArgs)
                     .dArgs(dArgs)
                     .sArgs(sArgs)
+                    .staticOutputShapeInfos(staticOutputShapeInfos)
                     .needsIntLongSync(hasIntLongInputs)
                     .allIntLongInputsExternal(allIntLongExternal)
                     .requiresDynamicShapeInference(requiresDynamic)

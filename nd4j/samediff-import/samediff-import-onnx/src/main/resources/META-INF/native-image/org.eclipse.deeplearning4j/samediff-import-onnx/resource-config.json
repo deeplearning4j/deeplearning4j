@@ -1,0 +1,19 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "comment": "ONNX op-definition pbtxt — parsed at runtime by OnnxOpDescriptorLoader to build the op mapping table. Must be bundled so it is accessible from the image's classpath.",
+        "pattern": "onnx-mapping-ruleset\\.pbtxt"
+      },
+      {
+        "comment": "ONNX op-definition pbtxt (alternate name used by nd4j-api OnnxDescriptorParser).",
+        "pattern": "onnx-op-def\\.pbtxt"
+      },
+      {
+        "comment": "ONNX op-definition binary proto (alternate representation).",
+        "pattern": "onnx-op-defs\\.pb"
+      }
+    ]
+  },
+  "bundles": []
+}

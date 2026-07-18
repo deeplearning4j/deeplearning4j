@@ -25,10 +25,6 @@
 namespace sd {
 namespace config {
 
-CudaDeviceConfig::CudaDeviceConfig() {
-  // Defaults set via member initializers.
-}
-
 void CudaDeviceConfig::setCudaCurrentDevice(int device) {
   if (Environment_setCudaCurrentDevice_cuda(device, _cudaDeviceCount.load())) {
     _cudaCurrentDevice.store(device);

@@ -65,6 +65,7 @@ CUSTOM_OP_IMPL(segment_gemm, 4, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(segment_gemm) {
+  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
     getOpDescriptor()->setAllowedInputTypes(1, {ALL_FLOATS});
     getOpDescriptor()->setAllowedInputTypes(2, {INT64, INT32});

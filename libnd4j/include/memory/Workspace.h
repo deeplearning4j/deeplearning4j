@@ -38,6 +38,8 @@
 namespace sd {
 namespace memory {
 
+class MultiBackendWorkspace;
+
 class SD_LIB_EXPORT Workspace {
  public:
   // Size of canary region appended after workspace host buffer (debug mode only)
@@ -84,6 +86,18 @@ class SD_LIB_EXPORT Workspace {
 
   void init(sd::LongType primaryBytes, sd::LongType secondaryBytes = 0L);
   void freeSpills();
+
+  /**
+   * Snapshot separately owned primary allocation identities. The returned
+   * pointers are borrowed and remain valid only while workspace allocation
+   * lifetime is externally stable.
+   */
+  std::vector<void*> snapshotPrimaryAllocations() {
+    std::lock_guard<std::mutex> lock(_mutexSpills);
+    return _spills;
+  }
+
+  friend class MultiBackendWorkspace;
 
  public:
   explicit Workspace(ExternalWorkspace* external);

@@ -21,6 +21,7 @@
 #include <helpers/DebugHelper.h>
 #include <execution/cuda/LaunchDims.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <graph/DspDiagnostics.h>
 #include <cuda_runtime.h>
 #include <string>
 
@@ -419,8 +420,10 @@ void kvInPlaceWrite(NDArray* pastKv, NDArray* newKv,
 /**
  * CUDA kernel: writes newKv[b, s, h, d] → cache[b, cachePos+s, h, d]
  *
- * Both arrays are BSHD layout. For rank-3 BSF, treat as BSHD with heads=1
- * and dim=features.
+ * Both arrays are logical BSHD layout. For rank-3 BSF, outerDim is the feature
+ * dimension and innerDim is one. Source and destination strides are explicit so
+ * permuted/reshaped views are copied by logical coordinates rather than by flat
+ * physical spans.
  *
  * cachePosPtr is dereferenced at kernel runtime (not baked as a literal),
  * making this kernel CUDA graph compatible.
@@ -431,21 +434,36 @@ SD_KERNEL void kvInPlaceWriteBSHDKernel(const X* __restrict__ newKv,
                                          const LongType* __restrict__ cachePosPtr,
                                          LongType batch,
                                          LongType seqKV,
-                                         LongType innerSize,
-                                         LongType cacheMaxSeqLen) {
+                                         LongType outerDim,
+                                         LongType innerDim,
+                                         LongType cacheMaxSeqLen,
+                                         LongType srcStride0,
+                                         LongType srcStride1,
+                                         LongType srcStride2,
+                                         LongType srcStride3,
+                                         LongType dstStride0,
+                                         LongType dstStride1,
+                                         LongType dstStride2,
+                                         LongType dstStride3) {
     LongType cachePos = *cachePosPtr;
 
-    // Each block handles one (b, s) pair; grid-stride over innerSize (heads*dim or features)
+    // Each block handles one (b, s) pair; grid-stride over logical heads*dim
+    // (rank 4) or features (rank 3).
     LongType slice = blockIdx.x;
     LongType s = slice % seqKV;
     LongType b = slice / seqKV;
+    LongType dstSeq = cachePos + s;
+    if (b >= batch || dstSeq < 0 || dstSeq >= cacheMaxSeqLen) return;
 
-    // BSHD/BSF: contiguous innerSize elements per (b, s) position
-    LongType srcOffset = b * seqKV * innerSize + s * innerSize;
-    LongType dstOffset = b * cacheMaxSeqLen * innerSize + (cachePos + s) * innerSize;
-
+    LongType innerSize = outerDim * innerDim;
     for (LongType i = threadIdx.x; i < innerSize; i += blockDim.x) {
-        cache[dstOffset + i] = static_cast<Y>(newKv[srcOffset + i]);
+        LongType outer = i / innerDim;
+        LongType inner = i - outer * innerDim;
+        LongType srcOffset = b * srcStride0 + s * srcStride1
+                            + outer * srcStride2 + inner * srcStride3;
+        LongType dstOffset = b * dstStride0 + dstSeq * dstStride1
+                            + outer * dstStride2 + inner * dstStride3;
+        cache[dstOffset] = static_cast<Y>(newKv[srcOffset]);
     }
 }
 
@@ -454,7 +472,12 @@ static void kvInPlaceWriteBSHDCudaLauncher(const cudaStream_t* stream,
                                             const void* vNewKv, void* vCache,
                                             const void* cachePosPtr,
                                             LongType batch, LongType seqKV,
-                                            LongType innerSize, LongType cacheMaxSeqLen) {
+                                            LongType outerDim, LongType innerDim,
+                                            LongType cacheMaxSeqLen,
+                                            LongType srcStride0, LongType srcStride1,
+                                            LongType srcStride2, LongType srcStride3,
+                                            LongType dstStride0, LongType dstStride1,
+                                            LongType dstStride2, LongType dstStride3) {
     auto newKv = reinterpret_cast<const X*>(vNewKv);
     auto cache = reinterpret_cast<Y*>(vCache);
     auto posPtr = reinterpret_cast<const LongType*>(cachePosPtr);
@@ -463,14 +486,18 @@ static void kvInPlaceWriteBSHDCudaLauncher(const cudaStream_t* stream,
     dim3 launchDims = getLaunchDims("kv_scatter");
 
     kvInPlaceWriteBSHDKernel<X, Y><<<numSlices, launchDims.y, launchDims.z, *stream>>>(
-        newKv, cache, posPtr, batch, seqKV, innerSize, cacheMaxSeqLen);
+        newKv, cache, posPtr, batch, seqKV, outerDim, innerDim, cacheMaxSeqLen,
+        srcStride0, srcStride1, srcStride2, srcStride3,
+        dstStride0, dstStride1, dstStride2, dstStride3);
     DebugHelper::checkGlobalErrorCode("kvInPlaceWriteBSHD kernel failed");
 }
 
 BUILD_DOUBLE_TEMPLATE(void kvInPlaceWriteBSHDCudaLauncher,
     (const cudaStream_t* stream, const void* vNewKv, void* vCache,
      const void* cachePosPtr, LongType batch, LongType seqKV,
-     LongType innerSize, LongType cacheMaxSeqLen),
+     LongType outerDim, LongType innerDim, LongType cacheMaxSeqLen,
+     LongType srcStride0, LongType srcStride1, LongType srcStride2, LongType srcStride3,
+     LongType dstStride0, LongType dstStride1, LongType dstStride2, LongType dstStride3),
     SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
 void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
@@ -483,19 +510,52 @@ void kvInPlaceWriteBSHD(NDArray* cache, NDArray* newKv,
     // capture safety (cudaMallocAsync/cudaFreeAsync are illegal mid-capture).
     auto batch = newKv->sizeAt(0);
     auto seqKV = newKv->sizeAt(1);
-    // innerSize = everything after the seq dimension (heads*dim for rank4, features for rank3)
-    LongType innerSize = 1;
-    for (int d = 2; d < newKv->rankOf(); d++) {
-        innerSize *= newKv->sizeAt(d);
-    }
-
+    bool rank4 = newKv->rankOf() == 4;
+    LongType outerDim = newKv->sizeAt(2);
+    LongType innerDim = rank4 ? newKv->sizeAt(3) : 1;
     auto cacheMaxSeqLen = cache->sizeAt(1);
+
+    LongType srcStride0 = newKv->strideAt(0);
+    LongType srcStride1 = newKv->strideAt(1);
+    LongType srcStride2 = newKv->strideAt(2);
+    LongType srcStride3 = rank4 ? newKv->strideAt(3) : 0;
+    LongType dstStride0 = cache->strideAt(0);
+    LongType dstStride1 = cache->strideAt(1);
+    LongType dstStride2 = cache->strideAt(2);
+    LongType dstStride3 = rank4 ? cache->strideAt(3) : 0;
 
     NDArray::prepareSpecialUse({cache}, {newKv});
 
+    // Window-write source discriminator: for multi-row (W>1) float32 writes, read
+    // source row 1 (h=0, d=0..1) both via the declared strides and via an
+    // assumed-C-contiguous layout. A mismatch means the wrapper's strides misread
+    // the underlying memory (stale/regenerated view); agreement means the source
+    // tensor content itself is what lands in the cache.
+    if (DSP_DIAG_ENABLED(KV_CACHE) && rank4 && seqKV > 1
+            && newKv->dataType() == DataType::FLOAT32) {
+        float viaStride[2] = {}, viaContig[2] = {};
+        const char* base = static_cast<const char*>(newKv->specialBuffer());
+        LongType strideOff = 1 * srcStride1;  // s=1, h=0, d=0
+        LongType contigOff = 1 * (outerDim * innerDim);
+        cudaMemcpyAsync(viaStride, base + strideOff * sizeof(float),
+                        2 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+        cudaMemcpyAsync(viaContig, base + contigOff * sizeof(float),
+                        2 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+        cudaStreamSynchronize(*stream);
+        DSP_DIAG(KV_CACHE,
+                 "KV_WRITE_SRC seq=%lld shape=[%lld,%lld,%lld,%lld] strides=[%lld,%lld,%lld,%lld] "
+                 "row1ViaStride=[%.6g,%.6g] row1ViaContig=[%.6g,%.6g] cacheDst=%p",
+                 seqKV, batch, seqKV, outerDim, innerDim,
+                 srcStride0, srcStride1, srcStride2, srcStride3,
+                 viaStride[0], viaStride[1], viaContig[0], viaContig[1],
+                 (void*)cache->specialBuffer());
+    }
+
     BUILD_DOUBLE_SELECTOR(newKv->dataType(), cache->dataType(), kvInPlaceWriteBSHDCudaLauncher,
                           (stream, newKv->specialBuffer(), cache->specialBuffer(),
-                           cachePosPtr, batch, seqKV, innerSize, cacheMaxSeqLen),
+                           cachePosPtr, batch, seqKV, outerDim, innerDim, cacheMaxSeqLen,
+                           srcStride0, srcStride1, srcStride2, srcStride3,
+                           dstStride0, dstStride1, dstStride2, dstStride3),
                           SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({cache}, {newKv});

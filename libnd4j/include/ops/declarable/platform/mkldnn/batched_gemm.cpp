@@ -164,7 +164,7 @@ static void batchedGemmONEDNN(std::vector<NDArray*>& vA, std::vector<NDArray*>& 
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(batched_gemm, ENGINE_CPU) {
+PLATFORM_IMPL(batched_gemm, ENGINE_ONEDNN) {
   // Get transpose flags
   int transA = INT_ARG(0);
   int transB = INT_ARG(1);
@@ -217,7 +217,7 @@ PLATFORM_IMPL(batched_gemm, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(batched_gemm, ENGINE_CPU) {
+PLATFORM_CHECK(batched_gemm, ENGINE_ONEDNN) {
   int batchSize = (block.width() - 2) / 2;
   if (batchSize <= 0) return Requirements("ONEDNN BATCHED_GEMM OP - EMPTY BATCH");
 

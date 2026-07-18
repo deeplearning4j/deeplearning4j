@@ -88,6 +88,7 @@ DECLARE_SHAPE_FN(sequence_mask) {
 }
 
 DECLARE_TYPES(sequence_mask) {
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes(ANY);
 }
 }  // namespace ops

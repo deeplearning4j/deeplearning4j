@@ -26,18 +26,27 @@
 #include <ops/declarable/helpers/gated_delta_net_block.h>
 #include <ops/declarable/helpers/gated_delta_rule.h>
 #include <ops/declarable/helpers/causal_conv1d.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
+// Accumulator type: double when T=double for precision, float otherwise
+// (float for half keeps FP16 overflow-safety in exp/normSq accumulation).
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
+
 template <typename T>
 SD_KERNEL void sigmoidKernel(T* __restrict__ data, const LongType len) {
+    using AccT = typename AccType<T>::type;
     const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= len) return;
-    // Compute in float32 to prevent FP16 overflow in exp
-    float val = static_cast<float>(data[idx]);
-    data[idx] = static_cast<T>(1.0f / (1.0f + sd::math::sd_exp<float, float>(-val)));
+    // Compute in AccT (float for half/float, double for double) to prevent FP16 overflow in exp
+    AccT val = static_cast<AccT>(data[idx]);
+    data[idx] = static_cast<T>(static_cast<AccT>(1) / (static_cast<AccT>(1) + sd::math::sd_exp<AccT, AccT>(-val)));
 }
 
 template <typename T>
@@ -45,16 +54,17 @@ SD_KERNEL void l2NormalizeKernel(T* __restrict__ k, const LongType totalVecs, co
     const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= totalVecs) return;
 
+    using AccT = typename AccType<T>::type;
     T* base = k + idx * headDimK;
-    // Accumulate in float32 to prevent FP16 overflow for large headDimK
-    float normSq = 0.0f;
+    // Accumulate in AccT (float for half/float, double for double) to prevent FP16 overflow for large headDimK
+    AccT normSq = static_cast<AccT>(0);
     for (LongType dk = 0; dk < headDimK; ++dk) {
-        float val = static_cast<float>(base[dk]);
+        AccT val = static_cast<AccT>(base[dk]);
         normSq += val * val;
     }
-    float invNorm = rsqrtf(normSq + 1e-12f);
+    AccT invNorm = static_cast<AccT>(1) / sd::math::sd_sqrt<AccT, AccT>(normSq + static_cast<AccT>(1e-12));
     for (LongType dk = 0; dk < headDimK; ++dk)
-        base[dk] = static_cast<T>(static_cast<float>(base[dk]) * invNorm);
+        base[dk] = static_cast<T>(static_cast<AccT>(base[dk]) * invNorm);
 }
 
 template <typename T>
@@ -80,44 +90,29 @@ SD_KERNEL void qkvSplitKernel(
 
 template <typename T>
 SD_KERNEL void gdnRmsNormKernel(T* __restrict__ data, const LongType numRows, const LongType rowLen, const float eps) {
+    using AccT = typename AccType<T>::type;
+
     const LongType row = blockIdx.x;
     if (row >= numRows) return;
 
     extern __shared__ char sharedMem[];
-    float* sdata = reinterpret_cast<float*>(sharedMem);
+    AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
 
     T* rowPtr = data + row * rowLen;
 
-    float threadSumSq = 0.0f;
+    AccT threadSumSq = static_cast<AccT>(0);
     for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-        float val = static_cast<float>(rowPtr[i]);
+        AccT val = static_cast<AccT>(rowPtr[i]);
         threadSumSq += val * val;
     }
 
-    // Warp-level reduction
-    for (int offset = 16; offset > 0; offset /= 2)
-        threadSumSq += __shfl_down_sync(0xffffffff, threadSumSq, offset);
-
-    int wid = threadIdx.x / 32;
-    int lane = threadIdx.x % 32;
-    if (lane == 0) sdata[wid] = threadSumSq;
-    __syncthreads();
-
-    // Cross-warp reduction
-    int numWarps = (blockDim.x + 31) / 32;
-    threadSumSq = (threadIdx.x < numWarps) ? sdata[threadIdx.x] : 0.0f;
-    if (wid == 0) {
-        for (int offset = 16; offset > 0; offset /= 2)
-            threadSumSq += __shfl_down_sync(0xffffffff, threadSumSq, offset);
-    }
-
-    __shared__ float invRms;
-    if (threadIdx.x == 0)
-        invRms = rsqrtf(threadSumSq / static_cast<float>(rowLen) + eps);
-    __syncthreads();
+    // Block-reduce sum-of-squares (result broadcast to all threads)
+    AccT sumSq = sd::device::blockAllReduceSum(threadSumSq, sdata);
+    AccT invRms = static_cast<AccT>(1) /
+                  sd::math::sd_sqrt<AccT, AccT>(sumSq / static_cast<AccT>(rowLen) + static_cast<AccT>(eps));
 
     for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x)
-        rowPtr[i] = static_cast<T>(static_cast<float>(rowPtr[i]) * invRms);
+        rowPtr[i] = static_cast<T>(static_cast<AccT>(rowPtr[i]) * invRms);
 }
 
 void gatedDeltaNetBlock(LaunchContext* context,
@@ -230,7 +225,8 @@ void gatedDeltaNetBlock(LaunchContext* context,
         if (hdv > 256) tpb = 512;
         if (hdv > 512) tpb = 1024;
         int numWarps = (tpb + 31) / 32;
-        size_t sharedMemSize = numWarps * sizeof(float);
+        size_t accSize = (dtype == DataType::DOUBLE) ? sizeof(double) : sizeof(float);
+        size_t sharedMemSize = numWarps * accSize;
 
         if (dtype == DataType::FLOAT32)
             gdnRmsNormKernel<float><<<BL, tpb, sharedMemSize, *stream>>>(reinterpret_cast<float*>(gdnFlat->specialBuffer()), BL, hdv, rmsEps);

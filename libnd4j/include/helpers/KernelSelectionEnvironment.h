@@ -18,6 +18,8 @@
 #ifndef SD_KERNEL_SELECTION_ENVIRONMENT_H
 #define SD_KERNEL_SELECTION_ENVIRONMENT_H
 
+#include <system/BackendNamespace.h>
+
 #include <helpers/KernelPerformanceRegistry.h>
 #include <execution/Engine.h>
 #include <graph/Context.h>
@@ -31,9 +33,12 @@ namespace sd {
 namespace ops {
 
 // Forward declarations
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class DeclarableOp;
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 /**
  * Environment configuration for kernel selection.
@@ -44,7 +49,7 @@ namespace platforms {
  *   SD_KERNEL_WARMUP_RUNS     - Number of warmup runs (default: 2)
  *   SD_KERNEL_BENCHMARK_RUNS  - Number of benchmark runs (default: 5)
  *   SD_KERNEL_CACHE_PATH      - Path to cache file
- *   SD_KERNEL_FORCE_ENGINE    - Force a specific engine (cpu, cuda, onednn)
+ *   SD_KERNEL_FORCE_ENGINE    - Force an Engine name; default/native selects the artifact engine
  *   SD_KERNEL_DISABLE_ENGINES - Comma-separated list of engines to disable
  *   SD_KERNEL_VERBOSE         - Enable verbose logging (1/true to enable)
  *   SD_KERNEL_PLUGIN_PATH     - Colon-separated plugin search paths
@@ -133,6 +138,7 @@ class SD_LIB_EXPORT KernelDispatchHelper {
   static std::pair<bool, Status> dispatchWithAutoTune(DeclarableOp* op, sd::graph::Context& context);
 };
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

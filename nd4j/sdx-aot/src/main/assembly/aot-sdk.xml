@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SDX AOT SDK package: zips the layout staged by the stage-aot-sdk antrun step.
+     Attached with classifier <javacpp.platform>-<variant>-aot so it flows through
+     install/deploy alongside the platform-classified backend jars (ADR 0109). -->
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.1"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.1 http://maven.apache.org/xsd/assembly-2.1.1.xsd">
+    <id>${javacpp.platform}${javacpp.platform.extension}-${sdx.aot.variant}-aot</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <fileSets>
+        <fileSet>
+            <directory>${sdx.aot.stage.dir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <excludes>
+                <exclude>bin/sdx-llm</exclude>
+            </excludes>
+        </fileSet>
+        <!-- Re-add the executable with its mode preserved. -->
+        <fileSet>
+            <directory>${sdx.aot.stage.dir}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>bin/sdx-llm</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+    </fileSets>
+</assembly>

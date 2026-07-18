@@ -26,20 +26,21 @@
 #include <array/ConstantDescriptor.h>
 #include <array/ConstantHolder.h>
 #include <memory/Workspace.h>
+#include <system/BackendNamespace.h>
 #include <system/op_boilerplate.h>
 
 #include <map>
 #include <mutex>
 #include <vector>
 
-namespace sd {
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 class SD_LIB_EXPORT ConstantHelper {
  private:
   ConstantHelper();
 
   std::vector<SD_MAP_IMPL<ConstantDescriptor, ConstantHolder*>> _cache;
 
-  // tracking of per-device constant memory buffers (CUDA only atm)
+  // Per-device constant-space ownership for device backends.
   std::vector<Pointer> _devicePointers;
   std::vector<LongType> _deviceOffsets;
   std::mutex _mutex;
@@ -59,6 +60,7 @@ class SD_LIB_EXPORT ConstantHelper {
 
   LongType getCachedAmount(int deviceId);
 };
-}  // namespace sd
+SD_BACKEND_ABI_NAMESPACE_END
+SD_BACKEND_ABI_ALIAS(ConstantHelper)
 
 #endif  // DEV_TESTS_CONSTANTHELPER_H

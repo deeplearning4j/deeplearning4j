@@ -17,6 +17,7 @@
 
 #include <ops/declarable/MultiPlatformDispatcher.h>
 #include <ops/declarable/DeclarableOp.h>
+#include <helpers/KernelSelectionEnvironment.h>
 
 #include <algorithm>
 #include <chrono>
@@ -25,6 +26,7 @@
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // Static registry
 static std::mutex _registryMutex;
@@ -68,9 +70,9 @@ bool MultiPlatformDispatcher::exists(LongType opHash) {
 MultiPlatformDispatcher::MultiPlatformDispatcher(const std::string& opName, LongType opHash,
                                                    DeclarableOp* nativeOp)
     : _opName(opName), _opHash(opHash), _nativeOp(nativeOp), _mode(DispatchMode::AUTO) {
-  // Default engine priority
-  _enginePriority = {samediff::ENGINE_CUDA, samediff::ENGINE_ONEDNN,
-                     samediff::ENGINE_CPU};
+  // The artifact's configured engine is the only implicit engine. Optional
+  // helpers enter selection only by registering themselves.
+  _enginePriority = {DEFAULT_ENGINE};
 }
 
 void MultiPlatformDispatcher::addHelper(PlatformHelper* helper) {
@@ -96,12 +98,16 @@ std::vector<samediff::Engine> MultiPlatformDispatcher::getAvailableEngines() con
 
   std::vector<samediff::Engine> engines;
   for (auto* helper : _helpers) {
-    engines.push_back(helper->engine());
+    if (!KernelSelectionEnvironment::isEngineDisabled(helper->engine())) {
+      engines.push_back(helper->engine());
+    }
   }
 
-  // Always include CPU as fallback
-  if (std::find(engines.begin(), engines.end(), samediff::ENGINE_CPU) == engines.end()) {
-    engines.push_back(samediff::ENGINE_CPU);
+  if (_nativeOp != nullptr &&
+      !KernelSelectionEnvironment::isEngineDisabled(DEFAULT_ENGINE) &&
+      std::find(engines.begin(), engines.end(), DEFAULT_ENGINE) ==
+          engines.end()) {
+    engines.push_back(DEFAULT_ENGINE);
   }
 
   return engines;
@@ -110,20 +116,27 @@ std::vector<samediff::Engine> MultiPlatformDispatcher::getAvailableEngines() con
 bool MultiPlatformDispatcher::hasEngine(samediff::Engine engine) const {
   std::lock_guard<std::mutex> lock(_mutex);
 
+  engine = samediff::resolveConfiguredEngine(engine);
+  if (KernelSelectionEnvironment::isEngineDisabled(engine)) {
+    return false;
+  }
+
   for (auto* helper : _helpers) {
     if (helper->engine() == engine) {
       return true;
     }
   }
 
-  return engine == samediff::ENGINE_CPU;  // CPU is always available
+  return _nativeOp != nullptr && engine == DEFAULT_ENGINE;
 }
 
 std::vector<PlatformHelper*> MultiPlatformDispatcher::getUsableHelpers(graph::Context& context) {
   std::vector<PlatformHelper*> usable;
 
   for (auto* helper : _helpers) {
-    if (helper->isUsable(context)) {
+    if (helper->engine() == DEFAULT_ENGINE &&
+        !KernelSelectionEnvironment::isEngineDisabled(helper->engine()) &&
+        helper->isUsable(context)) {
       usable.push_back(helper);
     }
   }
@@ -236,7 +249,7 @@ Status MultiPlatformDispatcher::executeNativeWithTiming(graph::Context& context)
   double nanos = static_cast<double>(
       std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count());
 
-  _stats.recordExecution(samediff::ENGINE_CPU, nanos);
+  _stats.recordExecution(DEFAULT_ENGINE, nanos);
 
   return status;
 }
@@ -252,11 +265,14 @@ Status MultiPlatformDispatcher::dispatch(graph::Context& context) {
     if (status == Status::OK) {
       return status;
     }
-    // Helper failed, try fallback
+    // The helper failed; the optional native path below remains on
+    // DEFAULT_ENGINE.
   }
 
-  // Fallback to native implementation
-  if (_nativeOp != nullptr && KernelSelectionConfig::global().allowFallbackToNative) {
+  // Continue with the artifact-native implementation when enabled
+  if (_nativeOp != nullptr &&
+      !KernelSelectionEnvironment::isEngineDisabled(DEFAULT_ENGINE) &&
+      KernelSelectionConfig::global().allowFallbackToNative) {
     _stats.fallbackToNative++;
     return executeNativeWithTiming(context);
   }
@@ -267,6 +283,11 @@ Status MultiPlatformDispatcher::dispatch(graph::Context& context) {
 Status MultiPlatformDispatcher::dispatchTo(samediff::Engine engine, graph::Context& context) {
   std::lock_guard<std::mutex> lock(_mutex);
 
+  engine = samediff::resolveConfiguredEngine(engine);
+  if (KernelSelectionEnvironment::isEngineDisabled(engine)) {
+    return Status::BAD_INPUT;
+  }
+
   // Find helper for specified engine
   for (auto* helper : _helpers) {
     if (helper->engine() == engine && helper->isUsable(context)) {
@@ -274,15 +295,23 @@ Status MultiPlatformDispatcher::dispatchTo(samediff::Engine engine, graph::Conte
     }
   }
 
-  // Engine not available, fall back to best available
-  return dispatch(context);
+  if (engine == DEFAULT_ENGINE && _nativeOp != nullptr) {
+    return executeNativeWithTiming(context);
+  }
+
+  // An explicit engine request never crosses to another backend.
+  return Status::BAD_INPUT;
 }
 
 bool MultiPlatformDispatcher::isUsable(graph::Context& context) {
   std::lock_guard<std::mutex> lock(_mutex);
 
+  if (KernelSelectionEnvironment::isEngineDisabled(DEFAULT_ENGINE)) {
+    return false;
+  }
+
   for (auto* helper : _helpers) {
-    if (helper->isUsable(context)) {
+    if (helper->engine() == DEFAULT_ENGINE && helper->isUsable(context)) {
       return true;
     }
   }
@@ -325,6 +354,11 @@ std::vector<PlatformHelper*> MultiPlatformDispatcher::getVersionCompatibleHelper
   std::vector<PlatformHelper*> compatible;
 
   for (auto* helper : _helpers) {
+    if (helper->engine() != DEFAULT_ENGINE ||
+        KernelSelectionEnvironment::isEngineDisabled(helper->engine())) {
+      continue;
+    }
+
     // First check if usable at all
     if (!helper->isUsable(context)) {
       continue;
@@ -358,8 +392,10 @@ Status MultiPlatformDispatcher::dispatchWithVersionValidation(graph::Context& co
       logVersionCompatibility();
     }
 
-    // Fallback to native implementation
-    if (_nativeOp != nullptr && KernelSelectionConfig::global().allowFallbackToNative) {
+    // Continue with the artifact-native implementation when enabled.
+    if (_nativeOp != nullptr &&
+        !KernelSelectionEnvironment::isEngineDisabled(DEFAULT_ENGINE) &&
+        KernelSelectionConfig::global().allowFallbackToNative) {
       _stats.fallbackToNative++;
       return executeNativeWithTiming(context);
     }
@@ -406,8 +442,10 @@ Status MultiPlatformDispatcher::dispatchWithVersionValidation(graph::Context& co
     }
   }
 
-  // All helpers failed, try native
-  if (_nativeOp != nullptr && KernelSelectionConfig::global().allowFallbackToNative) {
+  // All helpers failed; the optional native path is still DEFAULT_ENGINE.
+  if (_nativeOp != nullptr &&
+      !KernelSelectionEnvironment::isEngineDisabled(DEFAULT_ENGINE) &&
+      KernelSelectionConfig::global().allowFallbackToNative) {
     _stats.fallbackToNative++;
     return executeNativeWithTiming(context);
   }
@@ -421,14 +459,17 @@ std::vector<samediff::Engine> MultiPlatformDispatcher::getVersionCompatibleEngin
   std::vector<samediff::Engine> engines;
 
   for (auto* helper : _helpers) {
-    if (helper->validateRuntimeVersion() && helper->hasRequiredCapabilities()) {
+    if (!KernelSelectionEnvironment::isEngineDisabled(helper->engine()) &&
+        helper->validateRuntimeVersion() && helper->hasRequiredCapabilities()) {
       engines.push_back(helper->engine());
     }
   }
 
-  // Always include CPU as fallback
-  if (std::find(engines.begin(), engines.end(), samediff::ENGINE_CPU) == engines.end()) {
-    engines.push_back(samediff::ENGINE_CPU);
+  if (_nativeOp != nullptr &&
+      !KernelSelectionEnvironment::isEngineDisabled(DEFAULT_ENGINE) &&
+      std::find(engines.begin(), engines.end(), DEFAULT_ENGINE) ==
+          engines.end()) {
+    engines.push_back(DEFAULT_ENGINE);
   }
 
   return engines;
@@ -452,14 +493,18 @@ std::unordered_map<std::string, std::string> MultiPlatformDispatcher::getHelperV
 bool MultiPlatformDispatcher::isEngineVersionCompatible(samediff::Engine engine) const {
   std::lock_guard<std::mutex> lock(_mutex);
 
+  engine = samediff::resolveConfiguredEngine(engine);
+  if (KernelSelectionEnvironment::isEngineDisabled(engine)) {
+    return false;
+  }
+
   for (auto* helper : _helpers) {
     if (helper->engine() == engine) {
       return helper->validateRuntimeVersion() && helper->hasRequiredCapabilities();
     }
   }
 
-  // CPU is always compatible
-  return engine == samediff::ENGINE_CPU;
+  return _nativeOp != nullptr && engine == DEFAULT_ENGINE;
 }
 
 void MultiPlatformDispatcher::logVersionCompatibility() const {
@@ -478,6 +523,7 @@ void MultiPlatformDispatcher::logVersionCompatibility() const {
   }
 }
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

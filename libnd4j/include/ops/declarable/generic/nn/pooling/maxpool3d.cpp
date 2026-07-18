@@ -91,7 +91,8 @@ CUSTOM_OP_IMPL(maxpool3dnew, 1, 1, false, 0, 14) {
   return Status::OK;
 }
 
-DECLARE_TYPES(maxpool3dnew) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(maxpool3dnew) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(maxpool3dnew) {
   LongType kD = INT_ARG(0);           // filter(kernel) depth
@@ -157,6 +158,7 @@ DECLARE_SHAPE_FN(maxpool3dnew) {
 }
 
 DECLARE_TYPES(maxpool3dnew_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

@@ -186,10 +186,25 @@ function(collect_all_sources out_source_list)
     file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp)
     file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp)
     file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp)
-    # Exclude ALL GPU backend files (NVRTC, PTX, GpuKernelLauncher, Triton) for CPU builds
-    # These files are guarded by #ifdef SD_CUDA / #if HAVE_TRITON but shouldn't be
-    # collected at all for CPU builds — they are CUDA-only infrastructure
-    if(NOT SD_CUDA)
+    if(SD_VULKAN)
+        # Vulkan is an independent device backend. Keep only common graph control
+        # plane sources plus the Vulkan implementation; never compile another
+        # backend's execution or replay implementation into libnd4jvulkan.
+        file(GLOB_RECURSE _non_vulkan_graph_sources
+            ./include/graph/cpu/*.cpp
+            ./include/graph/cuda/*.cpp
+            ./include/graph/gpu/*.cpp
+            ./include/graph/hexagon/*.cpp
+            ./include/graph/hip/*.cpp
+            ./include/graph/levelzero/*.cpp
+            ./include/graph/tpu/*.cpp
+        )
+        list(REMOVE_ITEM GRAPH_SOURCES ${_non_vulkan_graph_sources})
+        list(LENGTH _non_vulkan_graph_sources _non_vulkan_graph_count)
+        message(STATUS "SD_VULKAN: excluded ${_non_vulkan_graph_count} foreign graph backend sources")
+    elseif(NOT SD_CUDA)
+        # GPU backend files use the CUDA host runtime and are not generic DSP
+        # infrastructure. Non-CUDA backends provide their own recorder/dispatcher.
         file(GLOB_RECURSE _gpu_backend_sources ./include/graph/gpu/*.cpp)
         if(_gpu_backend_sources)
             list(REMOVE_ITEM GRAPH_SOURCES ${_gpu_backend_sources})
@@ -254,6 +269,19 @@ function(collect_all_sources out_source_list)
             message(STATUS "Excluded OpenVINO backend files (HAVE_OPENVINO=OFF)")
         endif()
     endif()
+    # Vulkan graph/replay sources belong only to the Vulkan native artifact.
+    # HAVE_VULKAN describes SDK availability; it must not make CPU or CUDA
+    # artifacts acquire a second backend implementation.
+    if(NOT SD_VULKAN)
+        file(GLOB_RECURSE _vulkan_sources
+            ./include/graph/vulkan/*.cpp
+        )
+        if(_vulkan_sources)
+            list(REMOVE_ITEM GRAPH_SOURCES ${_vulkan_sources})
+            list(LENGTH _vulkan_sources _vulkan_count)
+            message(STATUS "Excluded ${_vulkan_count} Vulkan backend files (not an SD_VULKAN build)")
+        endif()
+    endif()
     # MLX sources require C++20 (MLX API uses concepts, designated initializers, etc.)
     if(HAVE_MLX)
         file(GLOB_RECURSE _mlx_cxx20_sources ./include/graph/cpu/Mlx*.cpp)
@@ -272,7 +300,7 @@ function(collect_all_sources out_source_list)
             ${CUSTOMOPS_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES}
     )
 
-    # This call populates CUSTOMOPS_GENERIC_SOURCES with both CPU and CUDA generated files
+    # Template processing is backend-scoped; Vulkan deliberately generates no CPU execution TUs.
     setup_template_processing()
 
     if(SD_CUDA)
@@ -281,6 +309,13 @@ function(collect_all_sources out_source_list)
         file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/impl/*.cpp ./include/memory/cuda/*.cu)
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES ./include/ops/declarable/helpers/cuda/*.cu ./include/ops/declarable/helpers/impl/*.cpp)
         file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp ./include/helpers/cuda/*.cu)
+        # helpers/vulkan/*.cpp are SD_VULKAN-only (guarded by #error otherwise) and the CUDA
+        # backend ships its own helpers/cuda/*.cu variants. The recursive glob above pulls the
+        # Vulkan sources in; drop them here (an SD_CUDA build is never an SD_VULKAN build).
+        file(GLOB_RECURSE _vulkan_only_helpers ./include/helpers/vulkan/*.cpp)
+        if(_vulkan_only_helpers)
+            list(REMOVE_ITEM HELPERS_SOURCES ${_vulkan_only_helpers})
+        endif()
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/impl/*.cpp)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu ./include/legacy/cuda/*.cu)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA ./include/loops/*.cu ./include/loops/cuda/**/*.cu)
@@ -308,6 +343,19 @@ function(collect_all_sources out_source_list)
         # benefit. Only instantiation-dominated ops belong here.
         file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
         file(GLOB_RECURSE GRAPH_CUDA_SOURCES ./include/graph/*.cu)
+        # TritonGraphBackend_compile uses the CUDA host runtime but contains no device code.
+        # Compile it as C++ so CUDA compilation units never parse Triton/MLIR headers.
+        set(_TRITON_HOST_COMPILE_SOURCE
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/gpu/TritonGraphBackend_compile.cu")
+        set_source_files_properties("${_TRITON_HOST_COMPILE_SOURCE}" PROPERTIES LANGUAGE CXX)
+        # GCC and Clang infer the language from the .cu suffix even after CMake assigns
+        # the source to the CXX compiler. Without an explicit language flag they treat
+        # it as linker input, report success, and emit no object for the final link.
+        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+            set_property(SOURCE "${_TRITON_HOST_COMPILE_SOURCE}" APPEND PROPERTY
+                COMPILE_OPTIONS "-x;c++")
+        endif()
+
         # Exclude Triton .cu files when Triton is not available (they require MLIR headers)
         if(NOT HAVE_TRITON)
             file(GLOB_RECURSE _triton_cu_sources ./include/graph/gpu/Triton*.cu)
@@ -318,10 +366,12 @@ function(collect_all_sources out_source_list)
             endif()
         endif()
         file(GLOB_RECURSE VALIDATION_SOURCES ./include/array/DataTypeValidation.cpp)
-        file(GLOB CPU_HELPERS_TO_EXCLUDE
+        file(GLOB_RECURSE CUDA_FOREIGN_BACKEND_SOURCES
                 ./include/legacy/cpu/*.cpp
                 ./include/helpers/cpu/*.cpp
+                ./include/helpers/vulkan/*.cpp
                 ./include/array/cpu/*.cpp
+                ./include/array/vulkan/*.cpp
                 ./include/execution/cpu/*.cpp
                 ./include/graph/cpu/*.cpp
                 ./include/ops/declarable/helpers/cpu/*.cpp
@@ -332,7 +382,7 @@ function(collect_all_sources out_source_list)
                 ${HELPERS_SOURCES} ${LOOPS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES_CUDA}
                 ${GRAPH_CUDA_SOURCES} ${VALIDATION_SOURCES} ${SYSTEM_CONFIG_SOURCES}
         )
-        list(REMOVE_ITEM ALL_SOURCES_LIST ${CPU_HELPERS_TO_EXCLUDE})
+        list(REMOVE_ITEM ALL_SOURCES_LIST ${CUDA_FOREIGN_BACKEND_SOURCES})
 
         if(HAVE_CUDNN)
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ./include/ops/declarable/platform/cudnn/*.cu)
@@ -347,15 +397,181 @@ function(collect_all_sources out_source_list)
         endif()
 
         message(STATUS "🚀 CUDA build: Enhanced template system will generate additional CUDA instantiations")
+    elseif(SD_VULKAN)
+        # Vulkan mirrors CUDA's backend boundary: common control-plane
+        # implementations plus Vulkan-owned platform definitions. No CPU loop,
+        # helper, workspace, NativeOps, or eager-execution translation unit is
+        # admitted here.
+        file(GLOB_RECURSE EXEC_SOURCES
+            ./include/execution/impl/*.cpp
+            ./include/execution/vulkan/*.cpp)
+        file(GLOB_RECURSE ARRAY_SOURCES
+            ./include/array/impl/*.cpp
+            ./include/array/vulkan/*.cpp)
+        file(GLOB_RECURSE MEMORY_SOURCES
+            ./include/memory/impl/*.cpp
+            ./include/memory/vulkan/*.cpp)
+
+        # Declarable helper implementations under helpers/impl are host
+        # algorithms or platform-selection placeholders. Vulkan implementations
+        # belong under the Vulkan backend and remain absent until authored there.
+        file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES
+            ./include/ops/declarable/helpers/vulkan/*.cpp)
+
+        # Autoregressive generation is a host-orchestrated control loop around
+        # backend-owned plan execution. Reuse the canonical scalar controller,
+        # sampling policy, and KV quantization implementation on Vulkan instead
+        # of introducing an Android/Kotlin loop or a second Vulkan-specific
+        # sampler. Tensor forwards and KV scatter remain Vulkan-owned; logits are
+        # synchronized only at the sampling boundary. These sources retain their
+        # historical cpu/ location until the CPU/Vulkan host-control split is
+        # moved mechanically into a shared host/ directory.
+        set(_vulkan_host_generation_helpers
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cpu/autoregressive_decode.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cpu/token_sample.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cpu/sampling_penalties.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cpu/kv_cache_quantize.cpp")
+        list(APPEND CUSTOMOPS_HELPERS_SOURCES ${_vulkan_host_generation_helpers})
+
+        file(GLOB_RECURSE _vulkan_excluded_host_op_helpers
+            ./include/ops/declarable/helpers/impl/*.cpp)
+        list(LENGTH _vulkan_excluded_host_op_helpers _vulkan_excluded_host_op_helper_count)
+
+        # This is an ownership allowlist, not a denylist. These implementations
+        # manipulate shape/index metadata, caches, allocation/control state, or
+        # diagnostics; they do not implement tensor math on primary buffers.
+        set(_vulkan_common_helper_relpaths
+            ArrayUtils.cpp
+            AttentionWorkspace.cpp
+            BitwiseUtils.cpp
+            BlasHelper.cpp
+            ConstantShapeHelper.cpp
+            ConstantTadHelper.cpp
+            DirectShapeTrie.cpp
+            DirectTadTrie.cpp
+            DebugHelper.cpp
+            DynamicKernelLoader.cpp
+            EnumUtils.cpp
+            HelperVersionRegistry.cpp
+            KernelAutoTuner.cpp
+            KernelPerformanceRegistry.cpp
+            KernelSelectionEnvironment.cpp
+            MmulHelper_dispatch.cpp
+            RandomLauncher.cpp
+            ModularHasher.cpp
+            OmpLaunchHelper.cpp
+            OpArgsHolder.cpp
+            OpTracker.cpp
+            ShapeBufferCreatorHelper.cpp
+            ShapeBufferPlatformHelper.cpp
+            ShapeBuilders.cpp
+            ShapeUtils.cpp
+            SimpleReadWriteLock.cpp
+            StringUtils.cpp
+            TAD.cpp
+            TadCalculator.cpp
+            TransferMetrics.cpp
+            generic/TypedTrie.cpp
+            helper_hash.cpp
+            logger.cpp
+            reshapeNoCopy.cpp)
+        set(HELPERS_SOURCES "")
+        foreach(_vulkan_common_helper_relpath IN LISTS _vulkan_common_helper_relpaths)
+            set(_vulkan_common_helper
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/impl/${_vulkan_common_helper_relpath}")
+            if(NOT EXISTS "${_vulkan_common_helper}")
+                message(FATAL_ERROR
+                    "SD_VULKAN helper allowlist entry does not exist: ${_vulkan_common_helper}")
+            endif()
+            list(APPEND HELPERS_SOURCES "${_vulkan_common_helper}")
+        endforeach()
+        file(GLOB_RECURSE VULKAN_HELPERS_SOURCES
+            ./include/helpers/vulkan/*.cpp)
+        list(APPEND HELPERS_SOURCES
+            ${VULKAN_HELPERS_SOURCES}
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/build_info.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ConstMessages.cpp")
+        file(GLOB_RECURSE _vulkan_all_common_helper_sources
+            ./include/helpers/impl/*.cpp)
+        set(_vulkan_excluded_host_helpers ${_vulkan_all_common_helper_sources})
+        list(REMOVE_ITEM _vulkan_excluded_host_helpers ${HELPERS_SOURCES})
+        list(LENGTH _vulkan_excluded_host_helpers _vulkan_excluded_host_helper_count)
+        message(STATUS
+            "SD_VULKAN helper boundary: ${_vulkan_excluded_host_helper_count} host-compute helpers and "
+            "${_vulkan_excluded_host_op_helper_count} non-Vulkan declarable helper TUs excluded")
+
+        file(GLOB_RECURSE LEGACY_SOURCES
+            ./include/legacy/impl/*.cpp
+            ./include/legacy/vulkan/*.cpp)
+        file(GLOB_RECURSE LOOPS_SOURCES
+            ./include/loops/vulkan/*.cpp)
+        file(GLOB_RECURSE _vulkan_excluded_host_loop_sources
+            ./include/loops/impl/*.cpp)
+        list(LENGTH _vulkan_excluded_host_loop_sources _vulkan_excluded_host_loop_count)
+        message(STATUS
+            "SD_VULKAN loop boundary: ${_vulkan_excluded_host_loop_count} host loop TUs excluded")
+        file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES
+            ./include/system/config/impl/*.cpp
+            ./include/system/config/vulkan/*.cpp)
+        # MLIR dialect sources are compiler-only. AOT Vulkan runtimes must not
+        # carry MLIR/LLVM objects or link dependencies onto mobile devices.
+        set(MLIR_DIALECT_SOURCES "")
+        if(HELPERS_mlir)
+            file(GLOB_RECURSE MLIR_DIALECT_SOURCES
+                ./include/mlir/dialect/*.cpp)
+        endif()
+        file(GLOB VALIDATION_SOURCES
+            ./include/array/DataTypeValidation.cpp)
+
+        # These files sit in nominally common directories but implement a
+        # foreign backend, an explicit CPU functional fallback, or an ABI entry
+        # point that Vulkan implements in legacy/vulkan/NativeOps.cpp. Filter the
+        # final assembled list by source-tree-relative suffix: CMake glob results
+        # are not guaranteed to have the same path spelling as hand-built absolute
+        # paths, and GRAPH_SOURCES was already appended above.
+        set(_vulkan_foreign_common_source_suffixes
+            "include/execution/impl/DeviceManager[.]cpp"
+            "include/graph/impl/FunctionalReplayHandle[.]cpp"
+            "include/graph/cpu/NativeDynamicShapePlan_cuda_stubs[.]cpp"
+            "include/helpers/impl/CudaLaunchHelper[.]cpp"
+            "include/helpers/impl/CutlassGemmHelper[.]cpp"
+            "include/helpers/impl/CutlassHelper[.]cpp"
+            "include/legacy/impl/Environment_CudaConfig[.]cpp"
+            "include/legacy/impl/NativeOpsHelpers_Execution[.]cpp"
+            "include/legacy/impl/NativeOpsHelpers_Inspection[.]cpp"
+            "include/system/config/impl/CudaDeviceConfig[.]cpp")
+
+        list(APPEND ALL_SOURCES_LIST
+            ${EXEC_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES}
+            ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES}
+            ${LEGACY_SOURCES} ${LOOPS_SOURCES} ${SYSTEM_CONFIG_SOURCES}
+            ${MLIR_DIALECT_SOURCES} ${VALIDATION_SOURCES})
+        foreach(_vulkan_foreign_suffix IN LISTS _vulkan_foreign_common_source_suffixes)
+            list(FILTER ALL_SOURCES_LIST EXCLUDE REGEX "/${_vulkan_foreign_suffix}$")
+        endforeach()
+
+        message(STATUS "SD_VULKAN: selected common control plane and Vulkan-owned device sources")
     else()
         file(GLOB_RECURSE EXEC_SOURCES ./include/execution/*.cpp)
+        file(GLOB_RECURSE VULKAN_EXEC_SOURCES ./include/execution/vulkan/*.cpp)
+        list(REMOVE_ITEM EXEC_SOURCES ${VULKAN_EXEC_SOURCES})
         file(GLOB_RECURSE ARRAY_SOURCES ./include/array/*.cpp)
+        # Backend-owned Vulkan array translation units must not enter generic CPU
+        # artifacts merely because GLOB_RECURSE sees their directory.
+        file(GLOB_RECURSE VULKAN_ARRAY_SOURCES ./include/array/vulkan/*.cpp)
+        list(REMOVE_ITEM ARRAY_SOURCES ${VULKAN_ARRAY_SOURCES})
         file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp)
+        file(GLOB_RECURSE VULKAN_MEMORY_SOURCES ./include/memory/vulkan/*.cpp)
+        list(REMOVE_ITEM MEMORY_SOURCES ${VULKAN_MEMORY_SOURCES})
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_IMPL_SOURCES ./include/ops/declarable/helpers/impl/*.cpp)
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_CPU_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp)
         file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp)
+        file(GLOB_RECURSE VULKAN_HELPER_SOURCES ./include/helpers/vulkan/*.cpp)
+        list(REMOVE_ITEM HELPERS_SOURCES ${VULKAN_HELPER_SOURCES})
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp)
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp)
+        file(GLOB_RECURSE VULKAN_LOOP_SOURCES ./include/loops/vulkan/*.cpp)
+        list(REMOVE_ITEM LOOPS_SOURCES ${VULKAN_LOOP_SOURCES})
         file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
 
         list(APPEND ALL_SOURCES_LIST
@@ -417,16 +633,6 @@ function(collect_all_sources out_source_list)
             message(STATUS "✅ Added Accelerate platform sources: ${accelerate_count} files")
         endif()
 
-        # LlamaCpp helper (for LLM operations)
-        if(HAVE_LLAMACPP)
-            file(GLOB_RECURSE CUSTOMOPS_LLAMACPP_SOURCES ./include/ops/declarable/platform/llamacpp/*.cpp)
-            if(CUSTOMOPS_LLAMACPP_SOURCES)
-                list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_LLAMACPP_SOURCES})
-                list(LENGTH CUSTOMOPS_LLAMACPP_SOURCES llamacpp_count)
-                message(STATUS "✅ Added LlamaCpp platform sources: ${llamacpp_count} files")
-            endif()
-        endif()
-
         # VLM (Vision-Language Model) operations
         if(HAVE_VLM)
             file(GLOB_RECURSE CUSTOMOPS_VLM_SOURCES ./include/ops/declarable/platform/vlm/*.cpp)
@@ -465,25 +671,144 @@ function(collect_all_sources out_source_list)
         message(STATUS "✅ Added no-PLT libc stubs for >2GB functrace build compatibility")
     endif()
 
-    # ✅ Add the generated template sources (now includes both CPU and CUDA)
+    # Add only the template sources selected for this backend.
     list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_GENERIC_SOURCES})
     list(REMOVE_DUPLICATES ALL_SOURCES_LIST)
+
+    if(SD_VULKAN)
+        # Make source ownership enforceable. A future broad glob must fail
+        # configuration instead of silently reintroducing another backend.
+        # Match implementation roots, not semantic op families such as
+        # ops/declarable/generic/blas.
+        set(_vulkan_foreign_backend_names
+            "cpu|cuda|gpu|hexagon|hip|levelzero|metal|tpu|mkl|mkldnn|onednn|openvino|armcompute|cudnn|miopen|mps|accelerate")
+        set(_vulkan_forbidden_source_regex
+            "/include/(array|execution|graph|helpers|legacy|loops|memory|system/config)/(${_vulkan_foreign_backend_names})/|/include/ops/declarable/(helpers|platform)/(${_vulkan_foreign_backend_names})/")
+        set(_vulkan_forbidden_sources "")
+        foreach(_vulkan_source IN LISTS ALL_SOURCES_LIST)
+            # The native generation controller and sampler are portable host
+            # orchestration despite their historical cpu/ path. Only the
+            # explicit allowlist assembled above may cross this path-based
+            # ownership check; every other foreign-backend source still fails
+            # configuration.
+            list(FIND _vulkan_host_generation_helpers
+                "${_vulkan_source}" _vulkan_generation_helper_index)
+            if(_vulkan_source MATCHES "${_vulkan_forbidden_source_regex}" AND
+               _vulkan_generation_helper_index EQUAL -1)
+                list(APPEND _vulkan_forbidden_sources "${_vulkan_source}")
+            endif()
+        endforeach()
+        if(_vulkan_forbidden_sources)
+            list(JOIN _vulkan_forbidden_sources "\n  " _vulkan_forbidden_sources_text)
+            message(FATAL_ERROR
+                "SD_VULKAN source boundary admitted foreign backend sources:\n  "
+                "${_vulkan_forbidden_sources_text}")
+        endif()
+        list(LENGTH ALL_SOURCES_LIST _vulkan_source_count)
+        message(STATUS "SD_VULKAN: verified ${_vulkan_source_count} sources against the backend ownership boundary")
+    endif()
+
     set(${out_source_list} ${ALL_SOURCES_LIST} PARENT_SCOPE)
 
-    # Enhanced logging
     list(LENGTH CUSTOMOPS_GENERIC_SOURCES template_source_count)
     if(SD_CUDA)
         message(STATUS "📊 Total CUDA template-generated sources: ${template_source_count}")
+    elseif(SD_VULKAN)
+        message(STATUS "📊 Total Vulkan template-generated sources: ${template_source_count}")
     else()
         message(STATUS "📊 Total CPU template-generated sources: ${template_source_count}")
     endif()
 endfunction()
 
+function(configure_vulkan_linking main_target_name)
+    if(NOT HAVE_VULKAN OR NOT DEFINED VULKAN_LIBRARY OR NOT VULKAN_LIBRARY)
+        message(FATAL_ERROR
+            "SD_VULKAN requires a resolved Vulkan loader before linking ${main_target_name}")
+    endif()
+
+    set(_vulkan_object_target "${main_target_name}_object")
+    target_link_libraries(${main_target_name} PUBLIC
+        flatbuffers_interface
+        ${CMAKE_DL_LIBS}
+        "${VULKAN_LIBRARY}")
+    if(SD_JNI_ENABLED AND JVM_LIBRARY)
+        target_link_libraries(${main_target_name} PUBLIC ${JVM_LIBRARY})
+    endif()
+
+    # Shared libraries on ELF normally permit unresolved symbols. Vulkan must
+    # instead expose every missing backend implementation during this build.
+    if(UNIX AND NOT APPLE)
+        target_link_options(${main_target_name} PRIVATE "LINKER:-z,defs")
+    endif()
+
+    if(TARGET ${_vulkan_object_target})
+        target_include_directories(${_vulkan_object_target} SYSTEM PRIVATE
+            "${VULKAN_INCLUDE_DIR}")
+    endif()
+
+    # Vulkan and CUDA consume the same project-selected shared MLIR/LLVM
+    # package. MLIR::SPIRV extends MLIR::MLIR; it does not statically isolate
+    # another LLVM or hide symbols from sibling native backends.
+    if(HAVE_MLIR AND DEFINED MLIR)
+        if(TARGET ${_vulkan_object_target})
+            target_include_directories(${_vulkan_object_target} BEFORE PRIVATE
+                ${MLIR_INCLUDE_DIRS})
+            target_link_libraries(${_vulkan_object_target} PUBLIC ${MLIR})
+            target_compile_definitions(${_vulkan_object_target} PUBLIC HAVE_MLIR=1)
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC ${MLIR})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_MLIR=1)
+        message(STATUS "🔗 Vulkan: linking the selected shared MLIR/LLVM package")
+    endif()
+
+    # Vulkan consumes the project-managed shared LLVM/MLIR interface for
+    # MLIR-to-SPIR-V lowering independently of the optional Triton DSP compiler.
+    if(HAVE_MANAGED_LLVM_MLIR AND DEFINED TRITON)
+        if(TARGET ${_vulkan_object_target})
+            target_link_libraries(${_vulkan_object_target} PUBLIC ${TRITON})
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC ${TRITON})
+        message(STATUS "🔗 Vulkan: linking managed LLVM/MLIR infrastructure")
+    endif()
+
+    # Common host coordination code uses OpenMP, but no CPU BLAS or CPU graph
+    # backend is linked into the Vulkan artifact.
+    find_package(OpenMP QUIET)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
+    endif()
+
+    # SDZ archives are common backend metadata.
+    find_package(ZLIB QUIET)
+    if(ZLIB_FOUND)
+        if(TARGET ${_vulkan_object_target})
+            target_compile_definitions(${_vulkan_object_target} PUBLIC HAVE_ZLIB=1)
+            target_link_libraries(${_vulkan_object_target} PUBLIC ZLIB::ZLIB)
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC ZLIB::ZLIB)
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_ZLIB=1)
+    endif()
+
+    if(SD_GCC_FUNCTRACE)
+        target_link_libraries(${main_target_name} PUBLIC bfd dw dl elf pthread)
+    endif()
+
+    message(STATUS
+        "🔗 Vulkan link boundary: flatbuffers + Vulkan + optional JNI/MLIR; "
+        "no Triton DSP, BLAS, OneDNN, OpenVINO, MKL, CUDA, HIP, or vendor execution helper")
+    install(TARGETS ${main_target_name} DESTINATION .)
+endfunction()
+
 function(configure_cpu_linking main_target_name)
     # Core libraries
-    # CMAKE_DL_LIBS provides -ldl on Linux (needed for dlopen/dlsym in DynamicKernelLoader)
+    # CMAKE_DL_LIBS provides -ldl on Linux (needed for dlopen/dlsym in DynamicKernelLoader).
+    # JVM_LIBRARY is intentionally conditional: Android/mobile native builds set
+    # SD_BUILD_WITH_JAVA=OFF and must not inherit a NOTFOUND desktop JVM path.
     target_link_libraries(${main_target_name} PUBLIC
-            ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${JVM_LIBRARY} flatbuffers_interface ${CMAKE_DL_LIBS})
+            ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} flatbuffers_interface ${CMAKE_DL_LIBS})
+    if(SD_JNI_ENABLED AND JVM_LIBRARY)
+        target_link_libraries(${main_target_name} PUBLIC ${JVM_LIBRARY})
+    endif()
 
     # --- Multi-Helper Library Linking ---
     # Link all enabled helper libraries for multi-backend support
@@ -504,6 +829,18 @@ function(configure_cpu_linking main_target_name)
 
     # MLIR/LLVM JIT
     if(HAVE_MLIR AND DEFINED MLIR)
+        # Compile and link against the same imported target. The backend sources live
+        # in the object library, so linking MLIR only to the final shared library can
+        # silently compile them against unrelated headers found elsewhere.
+        set(_mlir_object_target "${main_target_name}_object")
+        if(TARGET ${_mlir_object_target})
+            # Put the selected package's headers on the ordinary, ordered include path.
+            # Linking the imported target alone may classify them as SYSTEM includes,
+            # after an ambient CPATH LLVM that does not match the selected shared DSOs.
+            target_include_directories(${_mlir_object_target} BEFORE PRIVATE ${MLIR_INCLUDE_DIRS})
+            target_link_libraries(${_mlir_object_target} PUBLIC ${MLIR})
+            target_compile_definitions(${_mlir_object_target} PUBLIC HAVE_MLIR=1)
+        endif()
         target_link_libraries(${main_target_name} PUBLIC ${MLIR})
         target_compile_definitions(${main_target_name} PUBLIC HAVE_MLIR=1)
         message(STATUS "🔗 Linking MLIR helper")
@@ -869,20 +1206,9 @@ function(create_and_link_library)
             message(STATUS "")
             add_dependencies(${OBJECT_LIB_NAME} triton_external)
             if(TARGET triton_interface)
+                # The versioned interface target owns the matching Triton and LLVM
+                # include roots, libraries, and external-project dependency.
                 target_link_libraries(${OBJECT_LIB_NAME} PUBLIC triton_interface)
-                # Explicitly add Triton/LLVM include dirs and HAVE_TRITON define to OBJECT library.
-                # CMake OBJECT libraries may not fully propagate INTERFACE properties
-                # from linked targets in all versions.
-                set(_TRITON_INSTALL "${CMAKE_BINARY_DIR}/triton_install")
-                set(_TRITON_LLVM_INSTALL "${CMAKE_BINARY_DIR}/triton_llvm_install")
-                # Use SYSTEM includes to prevent Triton/LLVM headers from conflicting
-                # with libnd4j's DataType enum names (BOOL, INT8, FLOAT32 etc.)
-                target_include_directories(${OBJECT_LIB_NAME} SYSTEM PUBLIC
-                    "${_TRITON_INSTALL}/include"
-                    "${_TRITON_LLVM_INSTALL}/include"
-                )
-                # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
-                message(STATUS "✅ Triton include dirs added to ${OBJECT_LIB_NAME} (HAVE_TRITON via config.h)")
             endif()
         endif()
 
@@ -1011,7 +1337,7 @@ function(create_and_link_library)
             target_include_directories(${OBJECT_LIB_NAME} PUBLIC
                     "${CMAKE_BINARY_DIR}/cuda_instantiations"
             )
-        else()
+        elseif(NOT SD_VULKAN)
             target_include_directories(${OBJECT_LIB_NAME} PUBLIC
                     "${OPENBLAS_PATH}/include"
                     "${CMAKE_BINARY_DIR}/cpu_instantiations"
@@ -1128,7 +1454,7 @@ function(create_and_link_library)
                 target_include_directories(${MAIN_LIB_NAME} PUBLIC
                         "${CMAKE_BINARY_DIR}/cuda_instantiations"
                 )
-            else()
+            elseif(NOT SD_VULKAN)
                 target_include_directories(${MAIN_LIB_NAME} PUBLIC
                         "${OPENBLAS_PATH}/include"
                         "${CMAKE_BINARY_DIR}/cpu_instantiations"
@@ -1152,6 +1478,8 @@ function(create_and_link_library)
         if(SD_CUDA)
             message(STATUS "DEBUG: About to call configure_cuda_linking(${MAIN_LIB_NAME})")
             configure_cuda_linking(${MAIN_LIB_NAME})
+        elseif(SD_VULKAN)
+            configure_vulkan_linking(${MAIN_LIB_NAME})
         else()
             configure_cpu_linking(${MAIN_LIB_NAME})
         endif()
@@ -1200,6 +1528,21 @@ if(NOT DEFINED SD_LIBRARY_NAME)
         set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
         add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_CUDA)
         print_status_colored("INFO" "🚀 CUDA build mode: Enhanced template system will provide full CPU/CUDA parity")
+    elseif(SD_TPU)
+        set(SD_LIBRARY_NAME nd4jtpu)
+        set(DEFAULT_ENGINE "samediff::ENGINE_TPU")
+        add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_TPU)
+        print_status_colored("INFO" "TPU build mode")
+    elseif(SD_HEXAGON)
+        set(SD_LIBRARY_NAME nd4jhexagon)
+        set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
+        add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_CPU)
+        print_status_colored("INFO" "Hexagon graph-backend build mode")
+    elseif(SD_VULKAN)
+        set(SD_LIBRARY_NAME nd4jvulkan)
+        set(DEFAULT_ENGINE "samediff::ENGINE_VULKAN")
+        add_compile_definitions(DEFAULT_ENGINE=samediff::ENGINE_VULKAN)
+        print_status_colored("INFO" "Vulkan device-backend build mode")
     else()
         set(SD_LIBRARY_NAME nd4jcpu)
         set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
@@ -1246,13 +1589,25 @@ include(TemplateProcessing)
 include(CompilerFlags)
 include(HelperConfiguration)
 setup_platform_optimizations()
-setup_onednn()
-# Setup MKL VML for vectorized math operations (vsErf, vdErf, etc.)
-# Must be called after setup_onednn() since it depends on HELPERS_onednn
-setup_mkl_vml()
-setup_armcompute()
-setup_llamacpp()
-setup_vlm()
+if(SD_VULKAN)
+    # Vulkan owns execution through its device API. CPU/vendor helper discovery
+    # must not add sources, downloads, compile definitions, or staged runtimes.
+    set(HAVE_ONEDNN FALSE)
+    set(HAVE_MKL_VML FALSE)
+    set(HAVE_MKL FALSE)
+    set(HAVE_ARMCOMPUTE FALSE)
+    set(HAVE_VLM FALSE)
+    set(HAVE_MPS FALSE)
+    set(HAVE_MLX FALSE)
+    set(HAVE_OPENVINO FALSE)
+else()
+    setup_onednn()
+    # Setup MKL VML for vectorized math operations (vsErf, vdErf, etc.)
+    # Must be called after setup_onednn() since it depends on HELPERS_onednn.
+    setup_mkl_vml()
+    setup_armcompute()
+    setup_vlm()
+endif()
 
 # UPDATED: Modern cuDNN setup
 if(SD_CUDA)
@@ -1272,16 +1627,39 @@ else()
     set(HAVE_CUDNN FALSE)
 endif()
 
-setup_blas()
-setup_mlir()
-setup_mps()
+if(NOT SD_VULKAN)
+    setup_blas()
+    setup_mps()
+endif()
+# setup_triton owns both the optional Triton DSP compiler and the
+# project-managed, patched shared LLVM/MLIR installation. Provision or restore
+# the latter before the MLIR helper performs package discovery.
 setup_triton()
-setup_mlx()
-setup_cutlass()
-setup_nccl()
-setup_cusparse()
-setup_openvino()
-message(STATUS "🔍 DEBUG: After setup_blas() - OPENBLAS_PATH='${OPENBLAS_PATH}', HAVE_OPENBLAS='${HAVE_OPENBLAS}'")
+setup_mlir()
+if(NOT SD_VULKAN)
+    setup_mlx()
+    setup_cutlass()
+    setup_nccl()
+    setup_cusparse()
+    setup_openvino()
+else()
+    set(HAVE_CUTLASS FALSE)
+    set(HAVE_NCCL FALSE)
+    set(HAVE_CUSPARSE FALSE)
+endif()
+# Vulkan SDK discovery and compile definitions belong to the Vulkan artifact.
+# Separate native artifacts can coexist at runtime without making CPU/CUDA
+# targets compile or link Vulkan backend code.
+if(SD_VULKAN)
+    setup_vulkan()
+else()
+    set(HAVE_VULKAN FALSE CACHE BOOL "Vulkan availability for this native artifact" FORCE)
+endif()
+if(SD_VULKAN)
+    message(STATUS "SD_VULKAN dependency boundary: CPU/vendor execution helpers were not configured")
+else()
+    message(STATUS "🔍 DEBUG: After setup_blas() - OPENBLAS_PATH='${OPENBLAS_PATH}', HAVE_OPENBLAS='${HAVE_OPENBLAS}'")
+endif()
 message(STATUS "Dependencies initialization complete.")
 
 # Print comprehensive helper configuration summary
@@ -1298,12 +1676,12 @@ message(STATUS "   MPS:         ${HAVE_MPS}")
 message(STATUS "   ACCELERATE:  ${HAVE_ACCELERATE}")
 message(STATUS "   MIOPEN:      ${HAVE_MIOPEN}")
 message(STATUS "   PJRT:        ${HAVE_PJRT}")
-message(STATUS "   LLAMACPP:    ${HAVE_LLAMACPP}")
 message(STATUS "   VLM:         ${HAVE_VLM}")
 message(STATUS "   TRITON:      ${HAVE_TRITON}")
 message(STATUS "   CUTLASS:     ${HAVE_CUTLASS}")
 message(STATUS "   NCCL:        ${HAVE_NCCL}")
 message(STATUS "   OPENVINO:    ${HAVE_OPENVINO}")
+message(STATUS "   VULKAN:      ${HAVE_VULKAN}")
 message(STATUS "")
 message(STATUS "🔧 === Dynamic Kernel Selection ===")
 message(STATUS "   Enabled:     ${SD_DYNAMIC_KERNEL_SELECTION}")
@@ -1398,9 +1776,9 @@ else()
         string(APPEND DEFINITIONS_CONTENT "#define OP_${OP} 1\n")
     endforeach()
 endif()
-file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/generated")
-set(INCLUDE_OPS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/generated/include_ops.h")
-file(WRITE "${INCLUDE_OPS_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
+get_filename_component(OP_OUTPUT_DIRECTORY "${OP_OUTPUT_FILE}" DIRECTORY)
+file(MAKE_DIRECTORY "${OP_OUTPUT_DIRECTORY}")
+file(WRITE "${OP_OUTPUT_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
 
 # --- Phase 3: Enhanced Selective Rendering Setup ---
 print_status_colored("INFO" "=== 3. CONFIGURING ENHANCED SELECTIVE RENDERING ===")
@@ -1415,6 +1793,8 @@ list(LENGTH UNIFIED_ACTIVE_TYPES type_count)
 list(LENGTH UNIFIED_COMBINATIONS_3 combo_3_count)
 if(SD_CUDA)
     message(STATUS "✅ Enhanced CUDA selective rendering setup complete: ${type_count} types, ${combo_3_count} combinations.")
+elseif(SD_VULKAN)
+    message(STATUS "✅ Vulkan descriptor type selection complete: ${type_count} types, ${combo_3_count} combinations.")
 else()
     message(STATUS "✅ Enhanced CPU selective rendering setup complete: ${type_count} types, ${combo_3_count} combinations.")
 endif()
@@ -1446,7 +1826,7 @@ endif()
 if(DEFINED SD_GENERATE_TYPE_REPORT AND SD_GENERATE_TYPE_REPORT)
     print_status_colored("INFO" "=== GENERATING ENHANCED USAGE DOCUMENTATION ===")
     set(usage_doc "${CMAKE_BINARY_DIR}/enhanced_selective_rendering_usage.md")
-    set(doc_content "# Enhanced Unified Selective Rendering Usage\n\nThis build was configured with the enhanced unified selective rendering system providing full CPU/CUDA parity.\n\n")
+    set(doc_content "# Enhanced Unified Selective Rendering Usage\n\nThis build was configured with backend-specific type and implementation selection.\n\n")
     if(DEFINED SD_TYPE_PROFILE)
         string(APPEND doc_content "**Type Profile**: ${SD_TYPE_PROFILE}\n\n")
     endif()
@@ -1461,6 +1841,8 @@ if(DEFINED SD_GENERATE_TYPE_REPORT AND SD_GENERATE_TYPE_REPORT)
         else()
             string(APPEND doc_content "**cuDNN Support**: Disabled\n")
         endif()
+    elseif(SD_VULKAN)
+        string(APPEND doc_content "**Build Mode**: Vulkan with descriptor-driven kernel emission\n\n")
     else()
         string(APPEND doc_content "**Build Mode**: CPU with enhanced template system\n\n")
     endif()
@@ -1481,6 +1863,9 @@ if(SD_CUDA)
     if(HAVE_CUDNN AND DEFINED CUDNN_VERSION_STRING)
         message(STATUS "   cuDNN Version: ${CUDNN_VERSION_STRING}")
     endif()
+elseif(SD_VULKAN)
+    message(STATUS "   Vulkan: Enabled")
+    message(STATUS "   Kernel System: Descriptor-driven Vulkan/SPIR-V emission")
 else()
     message(STATUS "   CUDA: Disabled")
     message(STATUS "   Template System: Enhanced CPU templates")
@@ -1500,6 +1885,8 @@ dump_type_macros_to_disk()
 
 if(SD_CUDA)
     message(STATUS "🚀 Enhanced CUDA build orchestration complete - CUDA/CPU template parity achieved")
+elseif(SD_VULKAN)
+    message(STATUS "✅ Vulkan descriptor build orchestration complete - SPIR-V sources ready for compilation")
 else()
     message(STATUS "🖥️  Enhanced CPU build orchestration complete - System ready for compilation")
 endif()
@@ -1508,9 +1895,16 @@ message(STATUS "")
 # === ENHANCED TEMPLATE SYSTEM VERIFICATION ===
 print_status_colored("INFO" "=== VERIFYING ENHANCED TEMPLATE SYSTEM ===")
 
-# Verify template generation worked
+# Verify the backend's implementation-generation contract.
 list(LENGTH CUSTOMOPS_GENERIC_SOURCES template_file_count)
-if(template_file_count GREATER 0)
+if(SD_VULKAN)
+    if(template_file_count EQUAL 0)
+        message(STATUS "✅ Vulkan descriptor source set verified: no CPU/CUDA template instantiations")
+    else()
+        message(FATAL_ERROR
+            "SD_VULKAN must not consume CPU/CUDA template instantiations: ${template_file_count} files found")
+    endif()
+elseif(template_file_count GREATER 0)
     if(SD_CUDA)
         message(STATUS "✅ CUDA template generation verified: ${template_file_count} files")
 
@@ -1542,6 +1936,8 @@ if(SD_CUDA)
     else()
         message(WARNING "⚠️  CUDA instantiation directory not found")
     endif()
+elseif(SD_VULKAN)
+    message(STATUS "✅ Vulkan uses descriptor sources; no CPU/CUDA instantiation directory is expected")
 else()
     if(EXISTS "${CMAKE_BINARY_DIR}/cpu_instantiations")
         message(STATUS "✅ CPU instantiation directory verified")
@@ -1608,6 +2004,7 @@ endif()
 set(SDX_RUNTIME_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/dsp_runtime_c.h")
 set(SDX_RUNTIME_README "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/README.md")
 set(SDX_RUNTIME_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/../resources/dsp/manifest.schema.json")
+set(SDX_RUNTIME_TEXT_GENERATION_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/../resources/dsp/text-generation.schema.json")
 set(SDX_RUNTIME_BINDINGS_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SdxRuntimePackage.cmake")
 set(SDX_RUNTIME_LANGUAGE_BINDINGS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/bindings")
 # Canonical Java wrapper source (nd4j-sdx module). Copied into wrappers/java/
@@ -1619,6 +2016,7 @@ set(SDX_RUNTIME_SDK_DIR "${CMAKE_BINARY_DIR}/sdx-runtime-sdk" CACHE PATH
 
 if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     set(_sdx_sdk_include_dir "${SDX_RUNTIME_SDK_DIR}/include/dsp/runtime")
+    set(_sdx_sdk_tokenizer_include_dir "${SDX_RUNTIME_SDK_DIR}/include/tokenizer")
     set(_sdx_sdk_lib_dir "${SDX_RUNTIME_SDK_DIR}/lib")
     set(_sdx_sdk_schema_dir "${SDX_RUNTIME_SDK_DIR}/share/dsp")
     set(_sdx_sdk_wrappers_dir "${SDX_RUNTIME_SDK_DIR}/wrappers")
@@ -1627,6 +2025,11 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         list(APPEND _sdx_schema_stage_cmds
             COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_schema_dir}"
             COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_RUNTIME_SCHEMA}" "${_sdx_sdk_schema_dir}/manifest.schema.json")
+    endif()
+    if(EXISTS "${SDX_RUNTIME_TEXT_GENERATION_SCHEMA}")
+        list(APPEND _sdx_schema_stage_cmds
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_schema_dir}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_RUNTIME_TEXT_GENERATION_SCHEMA}" "${_sdx_sdk_schema_dir}/text-generation.schema.json")
     endif()
     set(_sdx_readme_stage_cmds "")
     if(EXISTS "${SDX_RUNTIME_README}")
@@ -1642,6 +2045,28 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     if(EXISTS "${SDX_RUNTIME_JAVA_SRC_DIR}")
         list(APPEND _sdx_wrapper_stage_cmds
             COMMAND ${CMAKE_COMMAND} -E copy_directory "${SDX_RUNTIME_JAVA_SRC_DIR}" "${_sdx_sdk_wrappers_dir}/java/src/main/java")
+    endif()
+
+    # The tokenizer is built separately (Rust) so the portable runtime remains
+    # usable without it. Mobile SDK generators pass both artifacts together.
+    set(_sdx_tokenizer_stage_cmds "")
+    set(_sdx_have_tokenizer_artifacts 0)
+    if((DEFINED SDX_TOKENIZER_HEADER_FILE AND NOT "${SDX_TOKENIZER_HEADER_FILE}" STREQUAL "") OR
+       (DEFINED SDX_TOKENIZER_LIBRARY_FILE AND NOT "${SDX_TOKENIZER_LIBRARY_FILE}" STREQUAL ""))
+        if(NOT DEFINED SDX_TOKENIZER_HEADER_FILE OR "${SDX_TOKENIZER_HEADER_FILE}" STREQUAL "" OR
+           NOT EXISTS "${SDX_TOKENIZER_HEADER_FILE}")
+            message(FATAL_ERROR "SDX tokenizer header does not exist: ${SDX_TOKENIZER_HEADER_FILE}")
+        endif()
+        if(NOT DEFINED SDX_TOKENIZER_LIBRARY_FILE OR "${SDX_TOKENIZER_LIBRARY_FILE}" STREQUAL "" OR
+           NOT EXISTS "${SDX_TOKENIZER_LIBRARY_FILE}")
+            message(FATAL_ERROR "SDX tokenizer library does not exist: ${SDX_TOKENIZER_LIBRARY_FILE}")
+        endif()
+        set(_sdx_have_tokenizer_artifacts 1)
+        list(APPEND _sdx_tokenizer_stage_cmds
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_tokenizer_include_dir}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_lib_dir}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_TOKENIZER_HEADER_FILE}" "${_sdx_sdk_tokenizer_include_dir}/tokenizers_ffi.h"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_TOKENIZER_LIBRARY_FILE}" "${_sdx_sdk_lib_dir}")
     endif()
 
     # Use standalone SDX library when available, otherwise fall back to monolithic
@@ -1660,6 +2085,7 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_LINKER_FILE:${_sdx_sdk_target}>" "${_sdx_sdk_lib_dir}/$<TARGET_LINKER_FILE_NAME:${_sdx_sdk_target}>"
         ${_sdx_schema_stage_cmds}
         ${_sdx_wrapper_stage_cmds}
+        ${_sdx_tokenizer_stage_cmds}
         DEPENDS ${_sdx_sdk_target}
         COMMENT "Staging SDX C runtime SDK artifacts in ${SDX_RUNTIME_SDK_DIR} (target: ${_sdx_sdk_target})"
         VERBATIM
@@ -1681,8 +2107,49 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     endif()
 
     set(_sdx_android_abi "")
+    set(_sdx_android_api "")
+    set(_sdx_android_ndk_major "")
+    set(_sdx_android_stl "")
     if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
         set(_sdx_os "android")
+
+        if(DEFINED CMAKE_ANDROID_API AND NOT "${CMAKE_ANDROID_API}" STREQUAL "")
+            set(_sdx_android_api "${CMAKE_ANDROID_API}")
+        elseif(DEFINED ANDROID_NATIVE_API_LEVEL AND
+               NOT "${ANDROID_NATIVE_API_LEVEL}" STREQUAL "")
+            string(REGEX REPLACE "^android-" "" _sdx_android_api
+                "${ANDROID_NATIVE_API_LEVEL}")
+        elseif(DEFINED ANDROID_PLATFORM AND NOT "${ANDROID_PLATFORM}" STREQUAL "")
+            string(REGEX REPLACE "^android-" "" _sdx_android_api "${ANDROID_PLATFORM}")
+        elseif(DEFINED CMAKE_SYSTEM_VERSION AND
+               "${CMAKE_SYSTEM_VERSION}" MATCHES "^[0-9]+$" AND
+               CMAKE_SYSTEM_VERSION GREATER_EQUAL 16)
+            # Some Android toolchains expose a generic system version of "1";
+            # never publish that as an Android API level.
+            set(_sdx_android_api "${CMAKE_SYSTEM_VERSION}")
+        endif()
+        if(_sdx_android_api STREQUAL "")
+            # Vulkan and the current SDX Android runtime use API 24 as their
+            # conservative package floor when the toolchain omits its API.
+            set(_sdx_android_api "24")
+        endif()
+
+        if(DEFINED CMAKE_ANDROID_NDK_VERSION AND NOT "${CMAKE_ANDROID_NDK_VERSION}" STREQUAL "")
+            string(REGEX MATCH "^[0-9]+" _sdx_android_ndk_major "${CMAKE_ANDROID_NDK_VERSION}")
+        elseif(DEFINED ANDROID_NDK_REVISION AND NOT "${ANDROID_NDK_REVISION}" STREQUAL "")
+            string(REGEX MATCH "^[0-9]+" _sdx_android_ndk_major "${ANDROID_NDK_REVISION}")
+        endif()
+        if(_sdx_android_ndk_major STREQUAL "")
+            set(_sdx_android_ndk_major "0")
+        endif()
+
+        if(DEFINED CMAKE_ANDROID_STL_TYPE AND NOT "${CMAKE_ANDROID_STL_TYPE}" STREQUAL "")
+            set(_sdx_android_stl "${CMAKE_ANDROID_STL_TYPE}")
+        elseif(DEFINED ANDROID_STL AND NOT "${ANDROID_STL}" STREQUAL "")
+            set(_sdx_android_stl "${ANDROID_STL}")
+        else()
+            set(_sdx_android_stl "c++_shared")
+        endif()
         if(DEFINED CMAKE_ANDROID_ARCH_ABI AND NOT CMAKE_ANDROID_ARCH_ABI STREQUAL "")
             set(_sdx_android_abi "${CMAKE_ANDROID_ARCH_ABI}")
         elseif(DEFINED ANDROID_ABI AND NOT ANDROID_ABI STREQUAL "")
@@ -1737,6 +2204,10 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     if(HAVE_TRITON)
         set(_sdx_have_triton 1)
     endif()
+    set(_sdx_have_vulkan 0)
+    if(SD_VULKAN AND HAVE_VULKAN)
+        set(_sdx_have_vulkan 1)
+    endif()
     set(_sdx_have_mlir 0)
     if(HAVE_MLIR)
         set(_sdx_have_mlir 1)
@@ -1757,6 +2228,16 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     if(HAVE_ARMCOMPUTE)
         set(_sdx_have_armcompute 1)
     endif()
+    set(_sdx_have_hexagon 0)
+    if(SD_HEXAGON)
+        # The backend and stable adapter ABI are compiled independently of the
+        # optional vendor SDK, which is loaded on-device via dlopen.
+        set(_sdx_have_hexagon 1)
+    endif()
+    set(_sdx_have_tpu 0)
+    if(SD_TPU AND HAVE_PJRT)
+        set(_sdx_have_tpu 1)
+    endif()
 
     set(_sdx_enable_android_aar 0)
     if(_sdx_os STREQUAL "android")
@@ -1768,14 +2249,22 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         set(_sdx_enable_apple_xcframework 1)
     endif()
 
-    set(_sdx_runtime_variants "cpu")
-    if(_sdx_have_cuda)
-        list(APPEND _sdx_runtime_variants "cuda")
+    if(SD_HEXAGON)
+        set(_sdx_runtime_variants "hexagon")
+    elseif(SD_TPU)
+        set(_sdx_runtime_variants "tpu")
+    elseif(SD_VULKAN)
+        set(_sdx_runtime_variants "vulkan")
+    else()
+        set(_sdx_runtime_variants "cpu")
+        if(_sdx_have_cuda)
+            list(APPEND _sdx_runtime_variants "cuda")
+        endif()
+        if(_sdx_have_zluda)
+            list(APPEND _sdx_runtime_variants "amd")
+        endif()
+        list(REMOVE_DUPLICATES _sdx_runtime_variants)
     endif()
-    if(_sdx_have_zluda)
-        list(APPEND _sdx_runtime_variants "amd")
-    endif()
-    list(REMOVE_DUPLICATES _sdx_runtime_variants)
 
     set(_sdx_standalone 0)
     if(SD_BUILD_SDX_STANDALONE AND DEFINED SDX_STANDALONE_TARGET AND TARGET ${SDX_STANDALONE_TARGET})
@@ -1787,13 +2276,83 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         set(_sdx_strip_tool "${CMAKE_STRIP}")
     endif()
 
+    # Keep mobile SDKs self-contained when the runtime links or dlopens
+    # separately distributed native dependencies. Pass resolved files, not
+    # linker tokens, so packaging fails before an incomplete AAR is published.
+    set(_sdx_runtime_dependency_files "")
+    if(_sdx_enable_android_aar)
+        # Host BLAS is valid only for the Android CPU/reference runtime. Device
+        # variants must never acquire a host execution path through packaging.
+        if(NOT SD_HEXAGON AND NOT SD_TPU AND NOT SD_VULKAN AND
+           DEFINED OPENBLAS_LIBRARIES)
+            foreach(_sdx_dependency_candidate IN LISTS OPENBLAS_LIBRARIES)
+                if(IS_ABSOLUTE "${_sdx_dependency_candidate}" AND
+                   EXISTS "${_sdx_dependency_candidate}")
+                    list(APPEND _sdx_runtime_dependency_files
+                        "${_sdx_dependency_candidate}")
+                endif()
+            endforeach()
+        endif()
+        if(DEFINED OpenMP_omp_LIBRARY AND
+           IS_ABSOLUTE "${OpenMP_omp_LIBRARY}" AND
+           EXISTS "${OpenMP_omp_LIBRARY}")
+            list(APPEND _sdx_runtime_dependency_files "${OpenMP_omp_LIBRARY}")
+        endif()
+
+        # Vendor accelerator adapters are supplied by the build environment and
+        # copied into the same jni/<abi> directory as the SDX runtime. A pipe is
+        # accepted as a path-list separator because CMake uses semicolons for lists.
+        set(_sdx_extra_runtime_dependency_files "")
+        if(DEFINED SDX_EXTRA_RUNTIME_DEPENDENCY_FILES AND
+           NOT "${SDX_EXTRA_RUNTIME_DEPENDENCY_FILES}" STREQUAL "")
+            set(_sdx_extra_runtime_dependency_files
+                "${SDX_EXTRA_RUNTIME_DEPENDENCY_FILES}")
+        elseif(DEFINED ENV{SDX_EXTRA_RUNTIME_DEPENDENCY_FILES} AND
+               NOT "$ENV{SDX_EXTRA_RUNTIME_DEPENDENCY_FILES}" STREQUAL "")
+            set(_sdx_extra_runtime_dependency_files
+                "$ENV{SDX_EXTRA_RUNTIME_DEPENDENCY_FILES}")
+        endif()
+        string(REPLACE "|" ";" _sdx_extra_runtime_dependency_files
+            "${_sdx_extra_runtime_dependency_files}")
+        foreach(_sdx_dependency_candidate IN LISTS
+                _sdx_extra_runtime_dependency_files)
+            if(NOT IS_ABSOLUTE "${_sdx_dependency_candidate}" OR
+               NOT EXISTS "${_sdx_dependency_candidate}" OR
+               IS_DIRECTORY "${_sdx_dependency_candidate}")
+                message(FATAL_ERROR
+                    "Invalid SDX extra runtime dependency: ${_sdx_dependency_candidate}")
+            endif()
+            get_filename_component(_sdx_dependency_name
+                "${_sdx_dependency_candidate}" NAME)
+            string(TOLOWER "${_sdx_dependency_name}" _sdx_dependency_name_lower)
+            if((SD_HEXAGON OR SD_TPU OR SD_VULKAN) AND
+               _sdx_dependency_name_lower MATCHES
+               "openblas|mkl|gfortran|quadmath")
+                message(FATAL_ERROR
+                    "Device accelerator dependency cannot be host BLAS: ${_sdx_dependency_candidate}")
+            endif()
+            list(APPEND _sdx_runtime_dependency_files
+                "${_sdx_dependency_candidate}")
+        endforeach()
+    endif()
+    list(REMOVE_DUPLICATES _sdx_runtime_dependency_files)
+    string(JOIN "|" _sdx_runtime_dependency_files_encoded
+        ${_sdx_runtime_dependency_files})
+
     set(_sdx_binding_package_cmds "")
     foreach(_sdx_variant IN LISTS _sdx_runtime_variants)
         set(_sdx_default_gpu_target "AUTO")
+        set(_sdx_default_accelerator "NONE")
         if(_sdx_variant STREQUAL "cuda")
             set(_sdx_default_gpu_target "CUDA")
         elseif(_sdx_variant STREQUAL "amd")
             set(_sdx_default_gpu_target "AMD")
+        elseif(_sdx_variant STREQUAL "vulkan")
+            set(_sdx_default_gpu_target "VULKAN")
+        elseif(_sdx_variant STREQUAL "hexagon")
+            set(_sdx_default_accelerator "QUALCOMM_HEXAGON_HTP")
+        elseif(_sdx_variant STREQUAL "tpu")
+            set(_sdx_default_accelerator "PJRT_TPU")
         endif()
 
         list(APPEND _sdx_binding_package_cmds
@@ -1803,13 +2362,21 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
                 "-DSDX_OS=${_sdx_os}"
                 "-DSDX_ARCH=${_sdx_arch}"
                 "-DSDX_ANDROID_ABI=${_sdx_android_abi}"
+                "-DSDX_ANDROID_API=${_sdx_android_api}"
+                "-DSDX_ANDROID_NDK_MAJOR=${_sdx_android_ndk_major}"
+                "-DSDX_ANDROID_STL=${_sdx_android_stl}"
                 "-DSDX_VARIANT=${_sdx_variant}"
                 "-DSDX_DEFAULT_GPU_TARGET=${_sdx_default_gpu_target}"
+                "-DSDX_DEFAULT_ACCELERATOR=${_sdx_default_accelerator}"
                 "-DSDX_LIBRARY_FILE=$<TARGET_FILE:${_sdx_sdk_target}>"
                 "-DSDX_LINKER_FILE=$<TARGET_LINKER_FILE:${_sdx_sdk_target}>"
                 "-DSDX_HEADER_FILE=${SDX_RUNTIME_HEADER}"
+                "-DSDX_TOKENIZER_HEADER_FILE=${SDX_TOKENIZER_HEADER_FILE}"
+                "-DSDX_TOKENIZER_LIBRARY_FILE=${SDX_TOKENIZER_LIBRARY_FILE}"
+                "-DSDX_RUNTIME_DEPENDENCY_FILES=${_sdx_runtime_dependency_files_encoded}"
                 "-DSDX_README_FILE=${SDX_RUNTIME_README}"
                 "-DSDX_SCHEMA_FILE=${SDX_RUNTIME_SCHEMA}"
+                "-DSDX_TEXT_GENERATION_SCHEMA_FILE=${SDX_RUNTIME_TEXT_GENERATION_SCHEMA}"
                 "-DSDX_BINDINGS_TEMPLATE_DIR=${SDX_RUNTIME_LANGUAGE_BINDINGS_DIR}"
                 "-DSDX_JAVA_SRC_DIR=${SDX_RUNTIME_JAVA_SRC_DIR}"
                 "-DSDX_STANDALONE=${_sdx_standalone}"
@@ -1818,11 +2385,14 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
                 "-DSDX_HAVE_CUDA=${_sdx_have_cuda}"
                 "-DSDX_HAVE_ZLUDA=${_sdx_have_zluda}"
                 "-DSDX_HAVE_TRITON=${_sdx_have_triton}"
+                "-DSDX_HAVE_VULKAN=${_sdx_have_vulkan}"
                 "-DSDX_HAVE_MLIR=${_sdx_have_mlir}"
                 "-DSDX_HAVE_MLX=${_sdx_have_mlx}"
                 "-DSDX_HAVE_NNAPI=${_sdx_have_nnapi}"
                 "-DSDX_HAVE_ONEDNN=${_sdx_have_onednn}"
                 "-DSDX_HAVE_ARMCOMPUTE=${_sdx_have_armcompute}"
+                "-DSDX_HAVE_HEXAGON=${_sdx_have_hexagon}"
+                "-DSDX_HAVE_TPU=${_sdx_have_tpu}"
                 "-DSDX_ENABLE_ANDROID_AAR=${_sdx_enable_android_aar}"
                 "-DSDX_ENABLE_APPLE_XCFRAMEWORK=${_sdx_enable_apple_xcframework}"
                 -P "${SDX_RUNTIME_BINDINGS_SCRIPT}")
@@ -1838,11 +2408,18 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     endif()
 
     install(FILES "${SDX_RUNTIME_HEADER}" DESTINATION include/dsp/runtime)
+    if(_sdx_have_tokenizer_artifacts)
+        install(FILES "${SDX_TOKENIZER_HEADER_FILE}" DESTINATION include/tokenizer)
+        install(FILES "${SDX_TOKENIZER_LIBRARY_FILE}" DESTINATION lib)
+    endif()
     if(EXISTS "${SDX_RUNTIME_README}")
         install(FILES "${SDX_RUNTIME_README}" DESTINATION share/dsp/runtime)
     endif()
     if(EXISTS "${SDX_RUNTIME_SCHEMA}")
         install(FILES "${SDX_RUNTIME_SCHEMA}" DESTINATION share/dsp)
+    endif()
+    if(EXISTS "${SDX_RUNTIME_TEXT_GENERATION_SCHEMA}")
+        install(FILES "${SDX_RUNTIME_TEXT_GENERATION_SCHEMA}" DESTINATION share/dsp)
     endif()
 endif()
 

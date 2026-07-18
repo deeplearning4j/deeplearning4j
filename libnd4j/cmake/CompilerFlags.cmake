@@ -524,7 +524,13 @@ endif()
 
 # --- MEMORY-BASED PARALLEL JOB LIMITING FOR ALL BUILDS ---
 # Template instantiation files consume 2-4GB per compiler process even WITHOUT sanitizers
-# This dynamically limits parallelism based on available system memory
+# This dynamically limits parallelism based on available system memory.
+# Older configurations cached the pool name without persisting the global pool
+# definition, which produces an invalid Ninja file on the next configure.
+if(CMAKE_JOB_POOL_COMPILE STREQUAL "heavy_compile")
+    unset(CMAKE_JOB_POOL_COMPILE CACHE)
+    unset(CMAKE_JOB_POOL_COMPILE)
+endif()
 if(NOT SD_SANITIZE AND NOT DEFINED CMAKE_JOB_POOL_COMPILE)
     cmake_host_system_information(RESULT TOTAL_MEMORY_MB QUERY TOTAL_PHYSICAL_MEMORY)
     # Conservative estimate: each template instantiation compilation uses ~3GB peak
@@ -546,7 +552,7 @@ if(NOT SD_SANITIZE AND NOT DEFINED CMAKE_JOB_POOL_COMPILE)
             light_compile=${NPROC}
         )
         # Default pool for template-heavy files
-        set(CMAKE_JOB_POOL_COMPILE heavy_compile CACHE STRING "Job pool for compilation" FORCE)
+        set(CMAKE_JOB_POOL_COMPILE heavy_compile)
         message(STATUS "💾 Memory-based parallel limiting: ${AVAILABLE_FOR_COMPILE} jobs (${TOTAL_MEMORY_MB}MB RAM, ${NPROC} cores)")
         message(STATUS "   Template instantiation files limited to prevent OOM (estimated ~3GB each)")
     endif()

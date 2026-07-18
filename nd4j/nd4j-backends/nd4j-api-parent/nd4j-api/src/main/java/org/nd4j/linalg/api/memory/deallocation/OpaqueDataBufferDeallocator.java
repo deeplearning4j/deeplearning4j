@@ -22,11 +22,9 @@ package org.nd4j.linalg.api.memory.deallocation;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
-import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
-import org.nd4j.linalg.factory.BackendRegistry;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeBufferOwner;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,12 +61,34 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
      * @param allocationBytes The size of the allocation in bytes
      */
     public OpaqueDataBufferDeallocator(OpaqueDataBuffer buffer, long uniqueId, int targetDevice, long allocationBytes) {
+        this(buffer, uniqueId, targetDevice, allocationBytes,
+                requireOwner(buffer), buffer != null ? buffer.allocationDevice() : null);
+    }
+
+    /**
+     * Creates a deallocator with the exact backend authority and allocation
+     * domain captured when the buffer was created.
+     */
+    public OpaqueDataBufferDeallocator(OpaqueDataBuffer buffer, long uniqueId, int targetDevice,
+                                       long allocationBytes, NativeBufferOwner owner,
+                                       DeviceDescriptor allocationDevice) {
         if (buffer == null) {
             throw new IllegalArgumentException("OpaqueDataBuffer cannot be null");
         }
+        if (owner == null) {
+            throw new IllegalArgumentException("NativeBufferOwner cannot be null");
+        }
         this.uniqueId = uniqueId;
         this.targetDevice = targetDevice;
-        this.innerDeallocator = new BufferDeallocator(buffer, uniqueId, targetDevice, allocationBytes);
+        this.innerDeallocator = new BufferDeallocator(
+                buffer, uniqueId, allocationBytes, owner, allocationDevice);
+    }
+
+    private static NativeBufferOwner requireOwner(OpaqueDataBuffer buffer) {
+        if (buffer == null) {
+            throw new IllegalArgumentException("OpaqueDataBuffer cannot be null");
+        }
+        return buffer.backendOwner();
     }
 
     @Override
@@ -123,16 +143,19 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
     static class BufferDeallocator implements Deallocator {
         private OpaqueDataBuffer buffer;
         private final long uniqueId;
-        private final int targetDevice;
         private final long allocationBytes;
+        private final NativeBufferOwner owner;
+        private final DeviceDescriptor allocationDevice;
         private final AtomicBoolean deallocated = new AtomicBoolean(false);
         private volatile boolean constant = false;
 
-        BufferDeallocator(OpaqueDataBuffer buffer, long uniqueId, int targetDevice, long allocationBytes) {
+        BufferDeallocator(OpaqueDataBuffer buffer, long uniqueId, long allocationBytes,
+                          NativeBufferOwner owner, DeviceDescriptor allocationDevice) {
             this.buffer = buffer;
             this.uniqueId = uniqueId;
-            this.targetDevice = targetDevice;
             this.allocationBytes = allocationBytes;
+            this.owner = owner;
+            this.allocationDevice = allocationDevice;
         }
 
         @Override
@@ -141,17 +164,16 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
                 return;
             }
 
-            // During JVM shutdown, use GPU-only free (no host free) to avoid SIGABRT
-            // from corrupted malloc metadata. C++ op buffer overruns corrupt adjacent
-            // heap chunk headers; calling free() discovers this and aborts.
+            // During JVM shutdown, release native buffers without consulting any
+            // process-primary backend. The owning backend remains authoritative.
             if (DeallocatorService.getShutdownInProgress().get()) {
                 try {
                     if (buffer != null && !buffer.isNull() && buffer.tryMarkForDeallocation()) {
-                        Nd4j.getNativeOps().dbFreeBuffersOnly(buffer);
+                        owner.nativeOps().dbFreeBuffersOnly(buffer);
                         buffer.setNull();
                     }
                 } catch (Throwable t) {
-                    // Ignore - JVM is shutting down, OS will reclaim all memory
+                    // Ignore - JVM is shutting down, OS will reclaim all memory.
                 } finally {
                     buffer = null;
                     deallocated.set(true);
@@ -167,53 +189,47 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
                 try {
                     if (buffer != null && !buffer.isNull()) {
                         if (!buffer.tryMarkForDeallocation()) {
-                            // Another deallocator (e.g. explicit closeBuffer) already claimed this buffer
+                            // Another deallocator (e.g. explicit closeBuffer) already claimed this buffer.
                             return;
                         }
 
-                        int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                        int bufferDevice = targetDevice;
-                        try {
-                            bufferDevice = buffer.deviceId();
-                        } catch (Exception e) {
-                            // Fall back to targetDevice if native query fails
-                        }
-
-                        int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
-                        if (deviceCount <= 0 || bufferDevice < 0 || bufferDevice >= deviceCount) {
-                            bufferDevice = targetDevice;
-                        }
-                        if (deviceCount > 0 && (bufferDevice < 0 || bufferDevice >= deviceCount)) {
-                            bufferDevice = currentDevice;
-                        }
+                        boolean deviceBacked = allocationDevice != null
+                                && allocationDevice.getDeviceType().isAccelerator();
+                        int currentDevice = -1;
                         boolean switchedDevice = false;
+                        if (deviceBacked) {
+                            int bufferDevice = allocationDevice.getDeviceIndex();
+                            int deviceCount = owner.deviceCount();
+                            if (bufferDevice < 0 || bufferDevice >= deviceCount) {
+                                throw new IllegalStateException(
+                                        "Invalid allocation device " + bufferDevice
+                                                + " for owning backend with " + deviceCount + " devices");
+                            }
 
-                        if (currentDevice != bufferDevice) {
-                            DeviceMemoryManager.getInstance().switchDevice(bufferDevice, "OpaqueDataBufferDeallocator.deallocate", "dealloc");
-                            switchedDevice = true;
+                            currentDevice = owner.currentDevice();
+                            if (currentDevice != bufferDevice) {
+                                owner.setDevice(bufferDevice);
+                                switchedDevice = true;
+                            }
                         }
 
                         try {
-                            Nd4j.getExecutioner().commit();
-                            // Second shutdown check: narrows the race window between the
-                            // initial check above and the shutdown hook setting the flag.
-                            // If shutdown started while we were setting up, use safe path.
+                            owner.commit();
+                            // Narrow the race window between the initial shutdown check
+                            // and the shutdown hook setting the flag.
                             if (DeallocatorService.getShutdownInProgress().get()) {
-                                Nd4j.getNativeOps().dbFreeBuffersOnly(buffer);
+                                owner.nativeOps().dbFreeBuffersOnly(buffer);
                             } else {
-                                Nd4j.getNativeOps().dbClose(buffer);
+                                owner.nativeOps().dbClose(buffer);
                             }
                             buffer.setNull();
 
-                            if (allocationBytes > 0) {
-                                DeviceDescriptor actualDevice = resolveDeviceDescriptor(bufferDevice);
-                                if (actualDevice != null) {
-                                    DeviceMemoryManager.getInstance().recordDeallocation(actualDevice, allocationBytes);
-                                }
+                            if (allocationBytes > 0 && allocationDevice != null) {
+                                owner.recordDeallocation(allocationDevice, allocationBytes);
                             }
                         } finally {
                             if (switchedDevice) {
-                                DeviceMemoryManager.getInstance().switchDevice(currentDevice, "OpaqueDataBufferDeallocator.deallocate", "restore-device");
+                                owner.setDevice(currentDevice);
                             }
                         }
                     }
@@ -253,17 +269,6 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
                 this.buffer = null;
                 this.deallocated.set(true);
             }
-        }
-
-        private static DeviceDescriptor resolveDeviceDescriptor(int deviceId) {
-            BackendRegistry registry = BackendRegistry.getInstance();
-            if (deviceId >= 0) {
-                DeviceDescriptor byId = registry.getDevice(DeviceDescriptor.cuda(deviceId).getDeviceId());
-                return byId != null ? byId : DeviceDescriptor.cuda(deviceId);
-            }
-
-            DeviceDescriptor cpu = registry.getDefaultCpuDevice();
-            return cpu != null ? cpu : DeviceDescriptor.cpu();
         }
     }
 }

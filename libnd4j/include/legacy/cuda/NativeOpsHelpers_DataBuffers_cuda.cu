@@ -17,6 +17,7 @@
 ******************************************************************************/
 
 #include <cuda_runtime_api.h>
+#include <legacy/NativeOps.h>
 #include <legacy/cuda/NativeOpsHelpers_DataBuffers_cuda.h>
 
 bool dbDeviceId_cudaQuery(const void* specialPtr, int& outDeviceId) {
@@ -34,4 +35,18 @@ bool dbDeviceId_cudaQuery(const void* specialPtr, int& outDeviceId) {
   // Clear any error from the failed query so it doesn't pollute later CUDA calls.
   cudaGetLastError();
   return false;
+}
+
+int dbDeviceId(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr)
+    THROW_EXCEPTION("dbDeviceId: dataBuffer is null");
+
+  auto *buffer = dataBuffer->dataBuffer();
+  if (buffer != nullptr) {
+    int actualDevice = -1;
+    if (dbDeviceId_cudaQuery(buffer->special(), actualDevice)) {
+      return actualDevice;
+    }
+  }
+  return dataBuffer->deviceId();
 }

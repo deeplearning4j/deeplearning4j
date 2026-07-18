@@ -29,7 +29,6 @@
 
 namespace sd {
 namespace ops {
-NDArray* rowCountsPtr = nullptr;
 
 CUSTOM_OP_IMPL(barnes_symmetrized, 3, 3, false, 0, -1) {
   auto rowP = INPUT_VARIABLE(0);
@@ -42,20 +41,31 @@ CUSTOM_OP_IMPL(barnes_symmetrized, 3, 3, false, 0, -1) {
 
   if (block.getIArguments()->size() > 0) N = INT_ARG(0);
 
-  if (rowCountsPtr) {
-    helpers::barnes_symmetrize(rowP, colP, valP, N, outputRows, outputCols, outputVals, rowCountsPtr);
-    delete rowCountsPtr;
-    return Status::OK;
+  std::vector<sd::LongType> shape = {N};
+  NDArray* rowCounts =
+      NDArrayFactory::create_<int>('c', shape, block.launchContext());
+  const LongType len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
+  if (len != outputCols->lengthOf() || len != outputVals->lengthOf()) {
+    delete rowCounts;
+    return Logger::logKernelFailureMsg(
+        "barnes_symmetrized: Output length does not match the symmetrized row count.");
   }
-  return Logger::logKernelFailureMsg("barnes_symmetrized: Cannot loop due wrong input data.");
+
+  helpers::barnes_symmetrize(rowP, colP, valP, N, outputRows, outputCols,
+                             outputVals, rowCounts);
+  delete rowCounts;
+  return Status::OK;
 }
 
 DECLARE_TYPES(barnes_symmetrized) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING |
+                               OP_TRAIT_DATA_DEPENDENT |
+                               OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {INT32})
       ->setAllowedInputTypes(1, {INT32})
       ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
-      ->setAllowedOutputTypes(1, {INT32})
+      ->setAllowedOutputTypes(0, {INT32})
       ->setAllowedOutputTypes(1, {INT32})
       ->setAllowedOutputTypes(2, {ALL_INTS, ALL_FLOATS})
       ->setSameMode(false);
@@ -72,13 +82,12 @@ DECLARE_SHAPE_FN(barnes_symmetrized) {
   std::vector<sd::LongType>  shape = {N};
   NDArray* rowCounts = NDArrayFactory::create_<int>('c',shape, block.launchContext());
   LongType len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
-  rowCounts->syncToHost();
   if (len <= 0) {
     delete rowCounts;
     THROW_EXCEPTION("barnes_symmetrized: Cannot allocate shape due non-positive len.");
   }
-  rowCountsPtr = rowCounts;
-   outShapeInfo =
+  delete rowCounts;
+  outShapeInfo =
       ShapeBuilders::createShapeInfo(ArrayOptions::dataType(valPShapeInfo), 'c', {1, len}, block.getWorkspace());
   auto outColsShapeInfo = ShapeBuilders::createShapeInfo(dataType, 'c', {1, len}, block.getWorkspace());
   auto outRowsShapeInfo = ShapeBuilders::createShapeInfo(dataType, 'c', {1, N + 1}, block.getWorkspace());

@@ -58,8 +58,11 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
+        <!-- Kept in sync with the nd4j-cuda artifact family by change-cuda-versions.sh. -->
+        <cuda.version>12.9</cuda.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-cuda-12.9</backend.artifactId>
+        <backend.artifactId>nd4j-cuda-${cuda.version}</backend.artifactId>
+        <cublas.workspace.config></cublas.workspace.config>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.classes></org.nd4j.linalg.api.ops.udf.classes>
         <lombok.version>1.18.44</lombok.version>
@@ -104,31 +107,25 @@
         <!-- oneDNN/dnnl verbose trace: set -Donednn.verbose=1 to enable per-primitive logging -->
         <onednn.verbose></onednn.verbose>
         <nd4j.triton.alwaysCompile></nd4j.triton.alwaysCompile>
+        <nd4j.environment.tritonCacheDir></nd4j.environment.tritonCacheDir>
         <nd4j.triton.compileAll></nd4j.triton.compileAll>
+        <!-- Vulkan disk caches (ADR 0115): empty = native defaults (~/.kompile/cache/vulkan/...) -->
+        <nd4j.environment.vulkanSpirvCacheEnabled></nd4j.environment.vulkanSpirvCacheEnabled>
+        <nd4j.environment.vulkanSpirvCacheDir></nd4j.environment.vulkanSpirvCacheDir>
+        <nd4j.environment.vulkanSpirvOverrideDir></nd4j.environment.vulkanSpirvOverrideDir>
+        <nd4j.environment.vulkanAlwaysCompile></nd4j.environment.vulkanAlwaysCompile>
+        <nd4j.environment.vulkanPipelineCacheEnabled></nd4j.environment.vulkanPipelineCacheEnabled>
+        <nd4j.environment.vulkanPipelineCacheDir></nd4j.environment.vulkanPipelineCacheDir>
+        <nd4j.environment.vulkanPipelineCacheMaxBytes></nd4j.environment.vulkanPipelineCacheMaxBytes>
+        <nd4j.environment.vulkanKernelDump></nd4j.environment.vulkanKernelDump>
         <nd4j.triton.includeTypes></nd4j.triton.includeTypes>
         <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
         <test.asan.options></test.asan.options>
         <tests></tests>
         <excludedTests></excludedTests>
-        <!--
-        Some notes on preload:
-        1. Typical uses for debugging are pre loading address sanitizer or jemalloc to track down allocation bugs.
-        2. You must also pre load libtsan if you build with thread sanitizer like so:
-        export LD_PRELOAD=/lib64/libtsan.so.0
-        The reason for this is you run in to errors like:  libtsan.so: cannot allocate memory in static TLS block
-        This at least always seems to happen with cuda + thread sanitizer but may happen with other combinations.
-        Note that you can't use ASAN and UBSAN together. Otherwise issues occur. See:
-        https://github.com/google/sanitizers/issues/856
-
-        Of note when running in to address overlap issues also:
-        1. Can't be run with valgrind.
-        2. On linux try these settings:
-            sudo sysctl vm.mmap_rnd_bits=28
-            sudo sysctl -w kernel.randomize_va_space=0
-        -->
         <omp.num.threads>32</omp.num.threads>
-        <preload></preload>
+        <!-- Used only by the explicit jemalloc instrumentation profile. -->
         <jemalloc.path></jemalloc.path>
         <jemalloc.mallocconf></jemalloc.mallocconf>
         <!-- Used with the testing script when the valgrind script can't automatically identify where the libjvm.so is. -->
@@ -639,10 +636,22 @@
         <profile>
             <id>jemalloc</id>
             <properties>
-                <preload>${jemalloc.path}</preload>
                 <jemalloc.mallocconf>prof:true,lg_prof_interval:31,lg_prof_sample:17,prof_prefix:jeprof.out</jemalloc.mallocconf>
             </properties>
-
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <environmentVariables>
+                                <LD_PRELOAD>${jemalloc.path}</LD_PRELOAD>
+                                <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <id>javacpp-platform-default</id>
@@ -1169,12 +1178,12 @@
                 <!-- CUDA backend -->
                 <dependency>
                     <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <artifactId>nd4j-cuda-${cuda.version}</artifactId>
                     <version>${dl4j.version}</version>
                 </dependency>
                 <dependency>
                     <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <artifactId>nd4j-cuda-${cuda.version}</artifactId>
                     <version>${dl4j.version}</version>
                     <classifier>${platform.classifier}</classifier>
                 </dependency>
@@ -1226,12 +1235,12 @@
                 <!-- CUDA backend -->
                 <dependency>
                     <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <artifactId>nd4j-cuda-${cuda.version}</artifactId>
                     <version>${dl4j.version}</version>
                 </dependency>
                 <dependency>
                     <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <artifactId>nd4j-cuda-${cuda.version}</artifactId>
                     <version>${dl4j.version}</version>
                     <classifier>${platform.classifier}</classifier>
                 </dependency>
@@ -1270,10 +1279,9 @@
 
         <!-- Profile for ZLUDA-specific testing (AMD/Intel GPUs).
              Activates automatically when ZLUDA_PATH is set. The forked test JVM must see
-             ZLUDA's libcuda.so BEFORE the system CUDA driver, so this profile overrides the
-             LD_LIBRARY_PATH that the base surefire config hardcodes to the CUDA toolkit, and
-             enables JavaCPP pathsFirst so ZLUDA's cublas/nvrtc drop-ins can intercept the
-             bundled NVIDIA libraries. See ZludaSmokeTest and ADR 0087 / ADR 0102. -->
+             ZLUDA's libcuda.so before the system CUDA driver, so this opt-in emulation profile
+             prepends its interposition libraries and enables JavaCPP pathsFirst for the
+             cublas/nvrtc drop-ins. See ZludaSmokeTest and ADR 0087 / ADR 0102. -->
         <profile>
             <id>test-zluda</id>
             <activation>
@@ -1506,7 +1514,72 @@
             </build>
         </profile>
 
-        <!-- Profile for testing device memory management and routing -->
+        <!-- Profile for the Vulkan compute backend (cross-vendor GPU).
+             It does not alter Vulkan loader or device-selection environment variables. -->
+        <profile>
+            <id>test-vulkan</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <backend.artifactId>nd4j-vulkan</backend.artifactId>
+                <sd.test.backend>vulkan</sd.test.backend>
+                <nd4j.dsp.graphExecutionMode>VULKAN</nd4j.dsp.graphExecutionMode>
+                <!-- Override to broaden what runs under the Vulkan environment, e.g. -Dvulkan.test.groups=smoke -->
+                <vulkan.test.groups>vulkan</vulkan.test.groups>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <sd.test.backend>${sd.test.backend}</sd.test.backend>
+                                <nd4j.dsp.graphExecutionMode>${nd4j.dsp.graphExecutionMode}</nd4j.dsp.graphExecutionMode>
+                            </systemPropertyVariables>
+                            <groups>${vulkan.test.groups}</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Dedicated same-JVM CUDA/Vulkan coexistence classpath. This profile
+             selects neither backend and does not alter loader or device-selection
+             environment variables. -->
+        <profile>
+            <id>test-cuda-vulkan-coexistence</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-${cuda.version}</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-${cuda.version}</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-vulkan</artifactId>
+                    <version>${dl4j.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-vulkan</artifactId>
+                    <version>${dl4j.version}</version>
+                    <classifier>${platform.classifier}</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Profile for testing CPU/CUDA device memory management and routing -->
         <profile>
             <id>test-device-routing</id>
             <activation>
@@ -1533,12 +1606,12 @@
                 </dependency>
                 <dependency>
                     <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <artifactId>nd4j-cuda-${cuda.version}</artifactId>
                     <version>${dl4j.version}</version>
                 </dependency>
                 <dependency>
                     <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <artifactId>nd4j-cuda-${cuda.version}</artifactId>
                     <version>${dl4j.version}</version>
                     <classifier>${platform.classifier}</classifier>
                 </dependency>
@@ -1794,18 +1867,19 @@
                         <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
                     </properties>
                     <environmentVariables>
-                        <LD_LIBRARY_PATH>/usr/local/cuda/targets/x86_64-linux/lib:/usr/local/cuda/lib64</LD_LIBRARY_PATH>
                         <CUDA_LAUNCH_BLOCKING>${cuda.launch.blocking}</CUDA_LAUNCH_BLOCKING>
+                        <!-- :4096:8 forces deterministic cuBLAS reductions (fixed workspace, no
+                             atomics split-K). Empty default = cuBLAS default behavior. Pass
+                             -Dcublas.workspace.config=:4096:8 for decode determinism diagnosis. -->
+                        <CUBLAS_WORKSPACE_CONFIG>${cublas.workspace.config}</CUBLAS_WORKSPACE_CONFIG>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>${omp.num.threads}</OMP_NUM_THREADS>
                         <OPENBLAS_NUM_THREADS>${omp.num.threads}</OPENBLAS_NUM_THREADS>
                         <MKL_NUM_THREADS>${omp.num.threads}</MKL_NUM_THREADS>
                         <SD_OPENBLAS_THREADS>${omp.num.threads}</SD_OPENBLAS_THREADS>
                         <ND4J_OPENBLAS_THREADS>${omp.num.threads}</ND4J_OPENBLAS_THREADS>
-                        <LD_PRELOAD>${preload}</LD_PRELOAD>
                         <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                         <PRINT_MATH_FUNCTION_NAME></PRINT_MATH_FUNCTION_NAME>
-                        <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>
                         <!-- For usage with the wrapper script in bin. Do NOT delete that script. See the readme in the bin directory for more information.-->
                         <TEST_RUNNER_PREFIX>${test.prefix}</TEST_RUNNER_PREFIX>
                         <LIBJVM_PATH>${libjvm.path}</LIBJVM_PATH>
@@ -1819,6 +1893,14 @@
                         <ND4J_DSP_PLAN_CACHE_DIR>${nd4j.dsp.planCache.diskDir}</ND4J_DSP_PLAN_CACHE_DIR>
                         <ND4J_DSP_PLAN_CACHE_DISK_ENABLED>${nd4j.dsp.planCache.diskEnabled}</ND4J_DSP_PLAN_CACHE_DISK_ENABLED>
                         <ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE>${nd4j.dsp.planCache.forceRecompile}</ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE>
+                        <ND4J_VULKAN_SPIRV_CACHE_ENABLE>${nd4j.environment.vulkanSpirvCacheEnabled}</ND4J_VULKAN_SPIRV_CACHE_ENABLE>
+                        <ND4J_VULKAN_SPIRV_CACHE_DIR>${nd4j.environment.vulkanSpirvCacheDir}</ND4J_VULKAN_SPIRV_CACHE_DIR>
+                        <ND4J_VULKAN_SPIRV_OVERRIDE_DIR>${nd4j.environment.vulkanSpirvOverrideDir}</ND4J_VULKAN_SPIRV_OVERRIDE_DIR>
+                        <ND4J_VULKAN_ALWAYS_COMPILE>${nd4j.environment.vulkanAlwaysCompile}</ND4J_VULKAN_ALWAYS_COMPILE>
+                        <ND4J_VULKAN_PIPELINE_CACHE_ENABLE>${nd4j.environment.vulkanPipelineCacheEnabled}</ND4J_VULKAN_PIPELINE_CACHE_ENABLE>
+                        <ND4J_VULKAN_PIPELINE_CACHE_DIR>${nd4j.environment.vulkanPipelineCacheDir}</ND4J_VULKAN_PIPELINE_CACHE_DIR>
+                        <ND4J_VULKAN_PIPELINE_CACHE_MAX_BYTES>${nd4j.environment.vulkanPipelineCacheMaxBytes}</ND4J_VULKAN_PIPELINE_CACHE_MAX_BYTES>
+                        <ND4J_VULKAN_KERNEL_DUMP>${nd4j.environment.vulkanKernelDump}</ND4J_VULKAN_KERNEL_DUMP>
                         <ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR>${nd4j.dsp.planCache.overrideDir}</ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR>
                         <ND4J_TRITON_VERIFY_KERNELS>${nd4j.triton.verifyKernels}</ND4J_TRITON_VERIFY_KERNELS>
                         <ND4J_TRITON_VERIFY_KEEP_NATIVE>${nd4j.triton.verifyKeepNative}</ND4J_TRITON_VERIFY_KEEP_NATIVE>
@@ -1839,6 +1921,7 @@
                         <ND4J_CUBLAS_CAPTURE_WORKSPACE>${nd4j.cublas.captureWorkspace}</ND4J_CUBLAS_CAPTURE_WORKSPACE>
                         <ND4J_TRITON_TF32>${nd4j.triton.tf32}</ND4J_TRITON_TF32>
                         <ND4J_DSP_TRACE_SLOT>${nd4j.dsp.traceSlot}</ND4J_DSP_TRACE_SLOT>
+                        <ND4J_DSP_TRACE_EXT_INPUT>${nd4j.dsp.traceExtInput}</ND4J_DSP_TRACE_EXT_INPUT>
                         <ND4J_DSP_DISABLE_VIEW_FASTPATH>${nd4j.dsp.disableViewFastpath}</ND4J_DSP_DISABLE_VIEW_FASTPATH>
                         <ND4J_DSP_DISABLE_CAST_HWM>${nd4j.dsp.disableCastHwm}</ND4J_DSP_DISABLE_CAST_HWM>
                         <ND4J_DSP_DISABLE_WS_SKIP>${nd4j.dsp.disableWsSkip}</ND4J_DSP_DISABLE_WS_SKIP>
@@ -1852,6 +1935,7 @@
                         <ND4J_VERBOSE>${nd4j.verbose}</ND4J_VERBOSE>
                         <ND4J_TRITON_VERBOSE>${nd4j.triton.verbose}</ND4J_TRITON_VERBOSE>
                         <ND4J_TRITON_ALWAYS_COMPILE>${nd4j.triton.alwaysCompile}</ND4J_TRITON_ALWAYS_COMPILE>
+                        <ND4J_TRITON_CACHE_DIR>${nd4j.environment.tritonCacheDir}</ND4J_TRITON_CACHE_DIR>
                         <ND4J_TRITON_COMPILE_ALL>${nd4j.triton.compileAll}</ND4J_TRITON_COMPILE_ALL>
                         <ND4J_TRITON_INCLUDE_TYPES>${nd4j.triton.includeTypes}</ND4J_TRITON_INCLUDE_TYPES>
                     </environmentVariables>

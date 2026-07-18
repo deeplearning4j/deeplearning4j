@@ -385,6 +385,73 @@ public class ConvolutionTestsC extends BaseNd4jTestWithBackends {
 
 
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testKerasConvSecondLayerOnly(Nd4jBackend backend) {
+        runOnesConv2d(100, 32, 64, 26, 26);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testKerasMaxPoolSecondLayerShape(Nd4jBackend backend) {
+        try (INDArray input = Nd4j.ones(DataType.FLOAT, 100, 64, 24, 24);
+             INDArray output = Nd4j.createUninitialized(
+                     DataType.FLOAT, new long[]{100, 64, 12, 12}, 'c')) {
+            DynamicCustomOp maxPool = DynamicCustomOp.builder("maxpool2d")
+                    .addInputs(input)
+                    .addOutputs(output)
+                    .addIntegerArguments(2, 2, 2, 2, 0, 0, 1, 1, 0, 0, 0)
+                    .build();
+            Nd4j.getExecutioner().exec(maxPool);
+
+            assertEquals(1.0f, output.minNumber().floatValue(), 0.0f,
+                    "Exact Keras max-pool minimum differs");
+            assertEquals(1.0f, output.maxNumber().floatValue(), 0.0f,
+                    "Exact Keras max-pool maximum differs");
+        }
+    }
+
+    private void runOnesConv2d(int batchSize, int inputChannels, int outputChannels,
+                               int inputHeight, int inputWidth) {
+        int kernelHeight = 3;
+        int kernelWidth = 3;
+        int outputHeight = inputHeight - kernelHeight + 1;
+        int outputWidth = inputWidth - kernelWidth + 1;
+        float expected = kernelHeight * kernelWidth * inputChannels;
+
+        try (INDArray input = Nd4j.ones(DataType.FLOAT,
+                     batchSize, inputChannels, inputHeight, inputWidth);
+             INDArray weights = Nd4j.ones(DataType.FLOAT,
+                     outputChannels, inputChannels, kernelHeight, kernelWidth);
+             INDArray output = Nd4j.createUninitialized(DataType.FLOAT,
+                     new long[]{batchSize, outputChannels, outputHeight, outputWidth}, 'c')) {
+            DynamicCustomOp conv2d = DynamicCustomOp.builder("conv2d")
+                    .addInputs(input, weights)
+                    .addOutputs(output)
+                    .addIntegerArguments(
+                            kernelHeight, kernelWidth,
+                            1, 1,
+                            0, 0,
+                            1, 1,
+                            0,
+                            0,
+                            1)
+                    .build();
+            Nd4j.getExecutioner().exec(conv2d);
+
+            assertEquals(expected, output.minNumber().floatValue(), 0.0f,
+                    "Conv2d minimum differs for inputChannels=" + inputChannels
+                            + ", outputChannels=" + outputChannels);
+            assertEquals(expected, output.maxNumber().floatValue(), 0.0f,
+                    "Conv2d maximum differs for inputChannels=" + inputChannels
+                            + ", outputChannels=" + outputChannels);
+            assertEquals(expected, output.getFloat(
+                            batchSize - 1, outputChannels - 1, outputHeight - 1, outputWidth - 1), 0.0f,
+                    "Conv2d final element differs for inputChannels=" + inputChannels
+                            + ", outputChannels=" + outputChannels);
+        }
+    }
+
     protected static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding, boolean convolutionModeSame) {
 
         //FIXME: int cast

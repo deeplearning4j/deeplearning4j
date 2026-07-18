@@ -23,6 +23,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LogicOp::LogicOp(const char *name) : DeclarableOp(name, true) {
   // just using DeclarableOp constructor
   // this->_descriptor->
@@ -36,5 +37,6 @@ Status LogicOp::validateAndExecute(Context &block) {
 ShapeList *LogicOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   return SHAPELIST();
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

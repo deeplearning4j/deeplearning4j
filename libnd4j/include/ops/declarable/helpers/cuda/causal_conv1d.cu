@@ -22,10 +22,17 @@
 #include <math/templatemath.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/causal_conv1d.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
 namespace helpers {
+
+// Accumulator type: double when T=double for precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
 // One thread per (batch, time, channel) element
 template <typename T>
@@ -42,6 +49,8 @@ SD_KERNEL void causalConv1dKernel(
     const LongType oS0, const LongType oS1, const LongType oS2,
     const LongType siS0, const LongType siS1, const LongType siS2) {
 
+    using AccT = typename AccType<T>::type;
+
     const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
     const LongType total = B * L * D;
     if (idx >= total) return;
@@ -53,27 +62,27 @@ SD_KERNEL void causalConv1dKernel(
     // Causal convolution matching PyTorch F.conv1d with left-padding:
     //   F.conv1d(x, w.unsqueeze(1), padding=K-1)[:, :, :L]
     // weight[K-1] multiplies x[t] (current), weight[0] multiplies x[t-K+1] (oldest)
-    // Accumulate in float for numerical stability (avoids FP16 overflow)
-    float sum = 0.0f;
+    // Accumulate in AccT (double for T=double, float otherwise) for precision.
+    AccT sum = static_cast<AccT>(0);
     for (LongType kk = 0; kk < K; ++kk) {
         LongType srcT = t - kk;
-        float x_val;
+        AccT x_val;
         if (srcT >= 0) {
-            x_val = static_cast<float>(x[b * xS0 + srcT * xS1 + d * xS2]);
+            x_val = static_cast<AccT>(x[b * xS0 + srcT * xS1 + d * xS2]);
         } else if (stateIn != nullptr) {
             LongType stateIdx = (K - 1) + srcT;
-            x_val = (stateIdx >= 0) ? static_cast<float>(stateIn[b * siS0 + d * siS1 + stateIdx * siS2]) : 0.0f;
+            x_val = (stateIdx >= 0) ? static_cast<AccT>(stateIn[b * siS0 + d * siS1 + stateIdx * siS2]) : static_cast<AccT>(0);
         } else {
-            x_val = 0.0f;
+            x_val = static_cast<AccT>(0);
         }
-        sum += static_cast<float>(weight[d * wChanStride + (K - 1 - kk) * wDimStride]) * x_val;
+        sum += static_cast<AccT>(weight[d * wChanStride + (K - 1 - kk) * wDimStride]) * x_val;
     }
 
-    if (bias != nullptr) sum += static_cast<float>(bias[d]);
+    if (bias != nullptr) sum += static_cast<AccT>(bias[d]);
 
     // SiLU activation
     if (activation == 1) {
-        float sig = 1.0f / (1.0f + sd::math::sd_exp<float, float>(-sum));
+        AccT sig = static_cast<AccT>(1) / (static_cast<AccT>(1) + sd::math::sd_exp<AccT, AccT>(-sum));
         sum = sum * sig;
     }
 

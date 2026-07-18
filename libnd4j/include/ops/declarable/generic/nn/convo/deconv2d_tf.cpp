@@ -97,6 +97,7 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
 }
 
 DECLARE_TYPES(deconv2d_tf) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | (OP_TRAIT_DATA_DEPENDENT));
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

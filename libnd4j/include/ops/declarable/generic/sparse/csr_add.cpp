@@ -159,6 +159,7 @@ DECLARE_SHAPE_FN(csr_add) {
 }
 
 DECLARE_TYPES(csr_add) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})  // aValues
       ->setAllowedInputTypes(1, {ALL_INTS})    // aColIdx
@@ -169,6 +170,8 @@ DECLARE_TYPES(csr_add) {
       ->setAllowedOutputTypes(0, {ALL_FLOATS}) // cValues
       ->setAllowedOutputTypes(1, {ALL_INTS})   // cColIdx
       ->setAllowedOutputTypes(2, {ALL_INTS});  // cRowPtr
+
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
 }
 
 }  // namespace ops

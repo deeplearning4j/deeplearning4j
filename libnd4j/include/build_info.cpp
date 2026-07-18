@@ -639,3 +639,20 @@ const char *buildInfo() {
     sd_printf("%s", ret.c_str());
   return ret.c_str();
 }
+
+const char *buildInfoFingerprint() {
+  // Same lazy-cached-static pattern as buildInfo(); idempotent fill.
+  static std::string fingerprint;
+  if (!fingerprint.empty()) return fingerprint.c_str();
+
+  std::string flat(buildInfo());
+  for (size_t i = 0; i < flat.size(); i++) {
+    if (flat[i] == '\n' || flat[i] == '\r') flat[i] = ' ';
+  }
+  size_t begin = flat.find_first_not_of(' ');
+  size_t end = flat.find_last_not_of(' ');
+  fingerprint = (begin == std::string::npos)
+                    ? std::string("unavailable")
+                    : flat.substr(begin, end - begin + 1);
+  return fingerprint.c_str();
+}

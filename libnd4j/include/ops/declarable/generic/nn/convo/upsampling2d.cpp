@@ -50,6 +50,7 @@ CUSTOM_OP_IMPL(upsampling2d, 1, 1, false, 0, 2) {
 DECLARE_SYN(upsampling, upsampling2d);
 
 DECLARE_TYPES(upsampling2d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -85,6 +86,7 @@ DECLARE_SHAPE_FN(upsampling2d) {
 }
 
 DECLARE_TYPES(upsampling2d_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

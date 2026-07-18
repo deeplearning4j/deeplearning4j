@@ -83,11 +83,11 @@ DECLARE_SHAPE_FN(col2im) {
 }
 
 DECLARE_TYPES(col2im) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedOutputTypes(0, INHERIT)
-      ->setSameMode(true)
-      ->addTraits(OP_TRAIT_FULLY_WRITING);
+      ->setSameMode(true);
 }
 }  // namespace ops
 }  // namespace sd

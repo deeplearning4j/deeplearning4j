@@ -57,7 +57,9 @@ CONFIGURABLE_OP_IMPL(apply_sgd, 2, 1, true, -2, 0) {
 DECLARE_SYN(ApplyGradientDescent, apply_sgd);
 }  // namespace ops
 
-DECLARE_TYPES(apply_sgd) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(apply_sgd) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS}); }
 }  // namespace sd
 
 #endif

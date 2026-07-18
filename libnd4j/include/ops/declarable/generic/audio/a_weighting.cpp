@@ -54,6 +54,7 @@ DECLARE_SHAPE_FN(a_weighting) {
 }
 
 DECLARE_TYPES(a_weighting) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

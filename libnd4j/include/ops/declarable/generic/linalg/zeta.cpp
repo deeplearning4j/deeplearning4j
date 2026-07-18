@@ -50,7 +50,10 @@ CONFIGURABLE_OP_IMPL(zeta, 2, 1, false, 0, 0) {
 }
 DECLARE_SYN(Zeta, zeta);
 
-DECLARE_TYPES(zeta) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(zeta) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+}
 }  // namespace ops
 }  // namespace sd
 

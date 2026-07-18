@@ -47,7 +47,8 @@ class SD_LIB_EXPORT ShapeList {
 
   void destroy();
   int size() const;
-   sd::LongType *at(int idx);
+  sd::LongType *at(int idx);
+  const sd::LongType *at(int idx) const;
   void push_back( sd::LongType *shape);
 
   /**

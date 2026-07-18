@@ -62,11 +62,16 @@ int ShapeList::size() const {
 }
 
 LongType* ShapeList::at(int idx) {
-  if(idx < 0) {
+  return const_cast<LongType*>(
+      static_cast<const ShapeList*>(this)->at(idx));
+}
+
+const LongType* ShapeList::at(int idx) const {
+  if (idx < 0) {
     idx += _shapes.size();
   }
 
-  if (size() <= idx) {
+  if (idx < 0 || size() <= idx) {
     std::string errorMessage;
     errorMessage += "Can't find requested variable by index: ";
     errorMessage += std::to_string(idx);

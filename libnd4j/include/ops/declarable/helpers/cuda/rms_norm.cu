@@ -32,6 +32,7 @@
 #include <helpers/MmulHelper.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/rms_norm.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -39,43 +40,14 @@ namespace helpers {
 
 constexpr int RMS_WARP_SIZE = 32;
 
-//////////////////////////////////////////////////////////////////////////////
-// Warp-level reduction for sum
-//////////////////////////////////////////////////////////////////////////////
+// Accumulator type: use double when T=double for full precision, float otherwise.
 template <typename T>
-SD_DEVICE SD_INLINE T rmsWarpReduceSum(T val) {
-  for (int offset = RMS_WARP_SIZE / 2; offset > 0; offset /= 2) {
-    val += __shfl_down_sync(0xffffffff, val, offset);
-  }
-  return val;
-}
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
-//////////////////////////////////////////////////////////////////////////////
-// Block-level reduction for sum using shared memory
-//////////////////////////////////////////////////////////////////////////////
-template <typename T>
-SD_DEVICE T rmsBlockReduceSum(T val, T* sharedMem) {
-  const int lane = threadIdx.x % RMS_WARP_SIZE;
-  const int wid = threadIdx.x / RMS_WARP_SIZE;
-  const int numWarps = (blockDim.x + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
-
-  // Warp-level reduction
-  val = rmsWarpReduceSum(val);
-
-  // Write reduced value from each warp to shared memory
-  if (lane == 0) {
-    sharedMem[wid] = val;
-  }
-  __syncthreads();
-
-  // First warp reduces across all warps
-  val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : static_cast<T>(0);
-  if (wid == 0) {
-    val = rmsWarpReduceSum(val);
-  }
-
-  return val;
-}
+// Warp/block sum reductions come from device_primitives.cuh
+// (sd::device::warpReduceSum / sd::device::blockReduceSum).
 
 //////////////////////////////////////////////////////////////////////////////
 // Fused RMS Norm Kernel - handles one row per block
@@ -96,46 +68,48 @@ SD_KERNEL void rmsNormKernel(
     const LongType rowLen,
     const float epsilon) {
 
+  using AccT = typename AccType<T>::type;
+
   // Each block handles one row
   const LongType row = blockIdx.x;
   if (row >= numRows) return;
 
   extern __shared__ char sharedMem[];
-  float* sdata = reinterpret_cast<float*>(sharedMem);
+  AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
 
   const T* inputRow = input + row * rowLen;
   T* outputRow = output + row * rowLen;
 
   // Pass 1: Compute sum of squares in parallel
-  float threadSumSq = 0.0f;
+  AccT threadSumSq = static_cast<AccT>(0);
 
   for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-    float val = static_cast<float>(inputRow[i]);
+    AccT val = static_cast<AccT>(inputRow[i]);
     threadSumSq += val * val;
   }
 
   // Block-level reduction for sum of squares
-  float totalSumSq = rmsBlockReduceSum(threadSumSq, sdata);
+  AccT totalSumSq = sd::device::blockReduceSum(threadSumSq, sdata);
 
   // Compute inverse RMS
-  __shared__ float invRms;
+  __shared__ AccT invRms;
 
   if (threadIdx.x == 0) {
-    float meanSq = totalSumSq / static_cast<float>(rowLen);
-    invRms = rsqrtf(meanSq + epsilon);
+    AccT meanSq = totalSumSq / static_cast<AccT>(rowLen);
+    invRms = static_cast<AccT>(1) / sd::math::sd_sqrt<AccT, AccT>(meanSq + static_cast<AccT>(epsilon));
   }
   __syncthreads();
 
   // Pass 2: Normalize and scale
   if (gamma != nullptr) {
     for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-      float val = static_cast<float>(inputRow[i]);
-      float g = static_cast<float>(gamma[i]);
+      AccT val = static_cast<AccT>(inputRow[i]);
+      AccT g = static_cast<AccT>(gamma[i]);
       outputRow[i] = static_cast<T>(val * invRms * g);
     }
   } else {
     for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-      float val = static_cast<float>(inputRow[i]);
+      AccT val = static_cast<AccT>(inputRow[i]);
       outputRow[i] = static_cast<T>(val * invRms);
     }
   }
@@ -168,8 +142,9 @@ void launchRmsNormKernel(
   int numBlocks = numRows;
 
   // Shared memory for reductions (need space for warp results)
+  // Use sizeof AccType<T>::type: double when T=double, float otherwise.
   int numWarps = (threadsPerBlock + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
-  size_t sharedMemSize = numWarps * sizeof(float);
+  size_t sharedMemSize = numWarps * sizeof(typename AccType<T>::type);
 
   rmsNormKernel<T, G><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
       input, gamma, output, numRows, rowLen, epsilon);
@@ -265,11 +240,13 @@ SD_KERNEL void skipRmsNormKernel(
     const LongType rowLen,
     const float epsilon) {
 
+  using AccT = typename AccType<T>::type;
+
   const LongType row = blockIdx.x;
   if (row >= numRows) return;
 
   extern __shared__ char sharedMem[];
-  float* sdata = reinterpret_cast<float*>(sharedMem);
+  AccT* sdata = reinterpret_cast<AccT*>(sharedMem);
 
   const T* inputRow = input + row * rowLen;
   const T* skipRow = skip + row * rowLen;
@@ -277,31 +254,31 @@ SD_KERNEL void skipRmsNormKernel(
   T* hiddenRow = hiddenOut != nullptr ? hiddenOut + row * rowLen : nullptr;
 
   // Pass 1: compute hidden = input + skip [+ bias], accumulate sum of squares
-  float threadSumSq = 0.0f;
+  AccT threadSumSq = static_cast<AccT>(0);
 
   for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-    float val = static_cast<float>(inputRow[i]) + static_cast<float>(skipRow[i]);
-    if (bias != nullptr) val += static_cast<float>(bias[i]);
+    AccT val = static_cast<AccT>(inputRow[i]) + static_cast<AccT>(skipRow[i]);
+    if (bias != nullptr) val += static_cast<AccT>(bias[i]);
     if (hiddenRow != nullptr) hiddenRow[i] = static_cast<T>(val);
     threadSumSq += val * val;
   }
 
   // Block-level reduction for sum of squares
-  float totalSumSq = rmsBlockReduceSum(threadSumSq, sdata);
+  AccT totalSumSq = sd::device::blockReduceSum(threadSumSq, sdata);
 
   // Compute inverse RMS
-  __shared__ float invRms;
+  __shared__ AccT invRms;
   if (threadIdx.x == 0) {
-    float meanSq = totalSumSq / static_cast<float>(rowLen);
-    invRms = rsqrtf(meanSq + epsilon);
+    AccT meanSq = totalSumSq / static_cast<AccT>(rowLen);
+    invRms = static_cast<AccT>(1) / sd::math::sd_sqrt<AccT, AccT>(meanSq + static_cast<AccT>(epsilon));
   }
   __syncthreads();
 
   // Pass 2: recompute hidden, normalize and scale
   for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
-    float val = static_cast<float>(inputRow[i]) + static_cast<float>(skipRow[i]);
-    if (bias != nullptr) val += static_cast<float>(bias[i]);
-    float g = static_cast<float>(gamma[i]);
+    AccT val = static_cast<AccT>(inputRow[i]) + static_cast<AccT>(skipRow[i]);
+    if (bias != nullptr) val += static_cast<AccT>(bias[i]);
+    AccT g = static_cast<AccT>(gamma[i]);
     outputRow[i] = static_cast<T>(val * invRms * g);
   }
 }
@@ -333,7 +310,7 @@ void launchSkipRmsNormKernel(
 
   int numBlocks = numRows;
   int numWarps = (threadsPerBlock + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
-  size_t sharedMemSize = numWarps * sizeof(float);
+  size_t sharedMemSize = numWarps * sizeof(typename AccType<T>::type);
 
   skipRmsNormKernel<T, G><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
       input, skip, gamma, bias, output, hiddenOut, numRows, rowLen, epsilon);
@@ -453,34 +430,37 @@ SD_KERNEL void rmsNormLinearFusedKernel(
     const LongType wStride1,       // stride along N dimension (col stride)
     const float epsilon) {
 
+  using AccT = typename AccType<T>::type;
+
   extern __shared__ char smem[];
-  // Layout: [K floats for normalized x] [numWarps floats for reduction]
-  float* normX = reinterpret_cast<float*>(smem);
-  float* reduceSpace = normX + K;
+  // Layout: [K AccT values for normalized x] [numWarps AccT values for reduction]
+  AccT* normX = reinterpret_cast<AccT*>(smem);
+  AccT* reduceSpace = normX + K;
 
   // Phase 1: compute invRMS via block reduction
-  float threadSumSq = 0.0f;
+  AccT threadSumSq = static_cast<AccT>(0);
   for (LongType i = threadIdx.x; i < K; i += blockDim.x) {
-    float val = static_cast<float>(x[i]);
+    AccT val = static_cast<AccT>(x[i]);
     threadSumSq += val * val;
   }
 
-  float totalSumSq = rmsBlockReduceSum(threadSumSq, reduceSpace);
+  AccT totalSumSq = sd::device::blockReduceSum(threadSumSq, reduceSpace);
 
-  __shared__ float invRms;
+  __shared__ AccT invRms;
   if (threadIdx.x == 0) {
-    invRms = rsqrtf(totalSumSq / static_cast<float>(K) + epsilon);
+    invRms = static_cast<AccT>(1) / sd::math::sd_sqrt<AccT, AccT>(
+        totalSumSq / static_cast<AccT>(K) + static_cast<AccT>(epsilon));
   }
   __syncthreads();
 
   // Phase 2: write normalized x * gamma to shared memory
   if (gamma != nullptr) {
     for (LongType i = threadIdx.x; i < K; i += blockDim.x) {
-      normX[i] = static_cast<float>(x[i]) * invRms * static_cast<float>(gamma[i]);
+      normX[i] = static_cast<AccT>(x[i]) * invRms * static_cast<AccT>(gamma[i]);
     }
   } else {
     for (LongType i = threadIdx.x; i < K; i += blockDim.x) {
-      normX[i] = static_cast<float>(x[i]) * invRms;
+      normX[i] = static_cast<AccT>(x[i]) * invRms;
     }
   }
   __syncthreads();
@@ -492,9 +472,9 @@ SD_KERNEL void rmsNormLinearFusedKernel(
   LongType jStart = blockIdx.x * blockDim.x + threadIdx.x;
   LongType jStride = static_cast<LongType>(gridDim.x) * blockDim.x;
   for (LongType j = jStart; j < N; j += jStride) {
-    float acc = 0.0f;
+    AccT acc = static_cast<AccT>(0);
     for (LongType k = 0; k < K; ++k) {
-      acc += normX[k] * static_cast<float>(W[k * wStride0 + j * wStride1]);
+      acc += normX[k] * static_cast<AccT>(W[k * wStride0 + j * wStride1]);
     }
     output[j] = static_cast<T>(acc);
   }
@@ -525,9 +505,11 @@ void rmsNormLinearFusedLauncher(
   auto output = reinterpret_cast<T*>(vOutput);
 
   dim3 launchDims = getLaunchDims("rms_norm_linear");
-  // Shared memory: K floats for normX + warp reduction scratch
+  // Shared memory: K AccT values for normX + warp reduction scratch
+  // AccT is double for T=double, float otherwise.
+  using AccT = typename AccType<T>::type;
   int numWarps = (launchDims.y + RMS_WARP_SIZE - 1) / RMS_WARP_SIZE;
-  size_t requiredSmem = (K + numWarps) * sizeof(float);
+  size_t requiredSmem = (K + numWarps) * sizeof(AccT);
   // Use configured default or actual requirement, whichever is larger
   size_t sharedMemSize = requiredSmem > launchDims.z ? requiredSmem : launchDims.z;
 

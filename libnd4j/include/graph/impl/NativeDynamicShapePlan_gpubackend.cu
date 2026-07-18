@@ -50,7 +50,7 @@
 #include <helpers/ShapeBuilders.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/DebugHelper.h>
-#include <ops/OpTraitTable.h>
+#include <ops/declarable/OpDescriptor.h>
 #include <system/op_boilerplate.h>
 #include <system/Environment.h>
 #include <config.h>
@@ -455,18 +455,18 @@ static void dumpSegFinalArgmax(const GraphSegment& seg,
            (long long)out->lengthOf(), DSP_BUF(out), execCount);
 }
 
-static bool validateAndStoreMergedCapture(
+static bool instantiateAndStoreMergedCapture(
     const char* diagPrefix,
     sd::cuda::CudaGraphHandle* nativeHandle,
     std::unique_ptr<GraphReplayHandle>& handle,
     ReplaySchedule& sched,
     int mergedGroupId, int startSlot, int endSlot,
-    size_t nodeCount, void* stream, cudaStream_t cudaStr) {
+    size_t nodeCount, cudaStream_t cudaStr) {
 
   // ── Node type breakdown ──────────────────────────────────────────────
   // Log the full graph composition so crashes are self-diagnosing.
   auto stats = nativeHandle->getStatistics();
-  DSP_DIAG(EXECUTE, "%s: group=%d [%d-%d] VALIDATE_BEGIN nodes=%zu "
+  DSP_DIAG(EXECUTE, "%s: group=%d [%d-%d] INSTANTIATE_BEGIN nodes=%zu "
            "[kernels=%d memcpyH2D=%d memcpyD2D=%d memcpyD2H=%d "
            "memsets=%d memAllocs=%d memFrees=%d hostCb=%d events=%d empty=%d] "
            "tl_graphExecutionActive=%d "
@@ -495,7 +495,7 @@ static bool validateAndStoreMergedCapture(
     cudaError_t capErr = cudaStreamGetCaptureInfo_v2(cudaStr, &capStat, nullptr, nullptr, nullptr, nullptr);
     if (capErr != cudaSuccess || capStat != cudaStreamCaptureStatusNone) {
       DSP_DIAG(EXECUTE, "%s: group=%d ABORT — stream %p still in capture mode "
-               "(capStat=%d capErr=%d). Cannot instantiate/launch.",
+               "(capStat=%d capErr=%d). Cannot instantiate.",
                diagPrefix, mergedGroupId, (void*)cudaStr, (int)capStat, (int)capErr);
       if (capErr != cudaSuccess) cudaGetLastError();
       return false;
@@ -588,44 +588,15 @@ static bool validateAndStoreMergedCapture(
     }
   }
 
-  cudaStream_t requestedStream = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
-  cudaStream_t validationStream = cudaStr != nullptr ? cudaStr : requestedStream;
-  void* validationStreamArg = static_cast<void*>(&validationStream);
-
-  DSP_DIAG(EXECUTE, "%s: group=%d instantiate OK graphExec=%p — launching ordered validation replay "
-           "streamArg=%p requestedStream=%p validationStream=%p cudaStr=%p device=%d",
-           diagPrefix, mergedGroupId, (void*)nativeHandle->getGraphExec(),
-           stream, (void*)requestedStream, (void*)validationStream, (void*)cudaStr,
-           nativeHandle->getDeviceId());
-
-  bool launchOk = handle->replay(validationStreamArg);
-  if (!launchOk) {
-    cudaError_t lastErr = cudaGetLastError();
-    DSP_DIAG(EXECUTE, "%s: group=%d validation replay FAILED — cudaGraphLaunch error=%d (%s) "
-             "graphExec=%p nodes=%zu validationStream=%p",
-             diagPrefix, mergedGroupId, (int)lastErr, cudaGetErrorString(lastErr),
-             (void*)nativeHandle->getGraphExec(), nodeCount, (void*)validationStream);
-    return false;
-  }
-  // The validation replay MUST fully drain before this function returns: a
-  // cudaGraphExec_t supports only ONE in-flight execution. Event-ordering the
-  // requested stream is not enough — the NEXT plan execution can launch this
-  // same exec from a DIFFERENT stream (tl_dspExecutionStream / a new call's
-  // stream) that the event never ordered, giving two concurrent launches of one
-  // exec → host-side SIGSEGV inside cudaGraphLaunch (observed deterministically
-  // on small graphs where validation hasn't drained: DspBufferAliasAccuracyTest
-  // #testBufferAliasVaryingInput). Validation is once per capture, so a blocking
-  // drain here costs nothing on the steady-state path.
-  cudaError_t syncErr = cudaStreamSynchronize(validationStream);
-  if (syncErr != cudaSuccess) {
-    DSP_DIAG(EXECUTE, "%s: group=%d validation replay SYNC FAILED err=%d (%s) — discarding capture",
-             diagPrefix, mergedGroupId, (int)syncErr, cudaGetErrorString(syncErr));
-    cudaGetLastError();
-    return false;
-  }
-  DSP_DIAG(EXECUTE, "%s: group=%d [%d-%d] VALIDATE_COMPLETE nodes=%zu "
-           "(validation replay drained synchronously)",
-           diagPrefix, mergedGroupId, startSlot, endSlot, nodeCount);
+  // The pre-capture SBS warmup has already executed the complete segment and
+  // produced its visible output. Launching each captured island here would run
+  // it outside the composite gap/group schedule and mutate live intermediates
+  // before later islands are captured. Store the executable without launching;
+  // the next plan execution replays it after argument refresh in schedule order.
+  DSP_DIAG(EXECUTE, "%s: group=%d [%d-%d] INSTANTIATE_COMPLETE nodes=%zu graphExec=%p "
+           "(first launch deferred to schedule-ordered composite replay)",
+           diagPrefix, mergedGroupId, startSlot, endSlot, nodeCount,
+           (void*)nativeHandle->getGraphExec());
   sched.mergedReplayHandles.push_back(std::move(handle));
   return true;
 }
@@ -1988,17 +1959,49 @@ Status NativeDynamicShapePlan::compositeReplay(
                   }
                 }
               }
-              // Use ultra-fast path in steady state (pointers stable, well past warmup)
+              // The ultra-fast path deliberately bypasses shape inference and output
+              // reconciliation. It is valid only for shape-stable slots. A cached
+              // value-dependent/dynamic gap (for example range(stepCount)) must run
+              // executeSlot every step and must report any replacement output buffer
+              // so downstream Triton arg tables are refreshed before replay.
+              auto& activeSlot = slots_[active.slotIdx];
+              const bool needsShapeAwareGapExec =
+                  activeSlot.flags.isDynamicShape ||
+                  activeSlot.flags.outputShapeDependsOnInputValues;
+              void* shapeAwareOutputBufsBefore[NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT];
+              if (needsShapeAwareGapExec) {
+                snapshotSlotOutputBuffers(activeSlot, outputSlots_, totalOutputSlots_,
+                                          shapeAwareOutputBufsBefore,
+                                          NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT);
+              }
+
               Status slotStatus;
-              if (executeCount_ >= 5 && skipPtrTracking) {
+              if (executeCount_ >= 5 && skipPtrTracking && !needsShapeAwareGapExec) {
                 slotStatus = executeSlotGapFast(active.slotIdx, effectiveExternals, numExt);
               } else {
+                if (needsShapeAwareGapExec && executeCount_ >= 5) {
+                  DSP_DIAG_SLOT(SHAPE, active.slotIdx,
+                      "GAP_DYNAMIC_FULL_EXEC: slot=%d op=%s executeCount=%d "
+                      "isDynamic=%d valueShape=%d",
+                      active.slotIdx, activeSlot.ident.opName.c_str(), executeCount_,
+                      activeSlot.flags.isDynamicShape ? 1 : 0,
+                      activeSlot.flags.outputShapeDependsOnInputValues ? 1 : 0);
+                }
                 slotStatus = executeSlot(active.slotIdx, effectiveExternals, numExt, stream);
               }
               if (slotStatus != Status::OK) {
                 DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap slot %d FAILED status=%d",
                          active.slotIdx, static_cast<int>(slotStatus));
                 return slotStatus;  // replayGuard restores tl_dspReplayActive
+              }
+              if (needsShapeAwareGapExec &&
+                  slotOutputBuffersChanged(activeSlot, outputSlots_, totalOutputSlots_,
+                                           shapeAwareOutputBufsBefore,
+                                           NativeDynamicShapePlan::MAX_OUTPUTS_PER_SLOT)) {
+                gapOutputPointersChanged = true;
+                DSP_DIAG_SLOT(SHAPE, active.slotIdx,
+                    "GAP_DYNAMIC_OUTPUT_REBOUND: slot=%d op=%s executeCount=%d",
+                    active.slotIdx, activeSlot.ident.opName.c_str(), executeCount_);
               }
               if (executionTimingEnabled_) nExecSlots++;
               if (collectExecOpNames && active.slotIdx >= 0 && active.slotIdx < numSlots_) {
@@ -3052,7 +3055,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
     {
       int deviceId = 0;
       cudaGetDevice(&deviceId);
-      seg.exec.replayHandle = GraphReplayFactory::create(deviceId);
+      seg.exec.replayHandle = GraphReplayFactory::create(ReplayBackend::CUDA, deviceId);
     }
 
     if (seg.exec.replayHandle->getWorkspacePtr() == nullptr) {
@@ -3328,7 +3331,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         // At exec=2, executeCount_=2 → needsSync=false → device coherency
         // calls are skipped entirely. The warmup NEEDS these calls because
         // prior segments' composite captures may have changed actuality flags
-        // (validation replay writes device, ticks special-actual but not
+        // (composite replay writes device, ticks special-actual but not
         // primary-actual). Without prepareSpecialUse, ops read stale device
         // memory → zero outputs from seg[400+] onwards.
         // SyncOverride forces sync during pre-capture warmup.
@@ -3884,9 +3887,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                         mergedGroupId, mergedStartSlot, mergedEndSlot, endOk ? 1 : 0, nodeCount);
 
                if (endOk && nodeCount > 0) {
-                 if (!validateAndStoreMergedCapture("MERGED_CAPTURE", mergedNativeHandle,
+                 if (!instantiateAndStoreMergedCapture("MERGED_CAPTURE", mergedNativeHandle,
                          mergedHandle, sched, mergedGroupId, mergedStartSlot, mergedEndSlot,
-                         nodeCount, stream, ctx.cudaStr)) {
+                         nodeCount, ctx.cudaStr)) {
                    allIslandsOk = false;
                  }
                } else {
@@ -3937,7 +3940,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                DSP_DIAG(EXECUTE, "MERGED_CAPTURE_BEGIN: island %d [%d-%d] — starting new merged group",
                         islandIdx, unit.startSlot, unit.endSlot);
 
-               auto newHandle = GraphReplayFactory::create(deviceId);
+               auto newHandle = GraphReplayFactory::create(ReplayBackend::CUDA, deviceId);
                if (!newHandle) {
                  DSP_DIAG(EXECUTE, "MERGED_CAPTURE: GraphReplayFactory::create failed for island %d", islandIdx);
                  allIslandsOk = false;
@@ -4106,17 +4109,17 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                break;
              }
 
-             // End merged capture, instantiate, validate
+             // End merged capture, instantiate, and store for scheduled replay
              bool endOk = mergedNativeHandle->endCapture(ctx.cudaStr);
              size_t nodeCount = endOk ? mergedNativeHandle->getNumNodes() : 0;
              DSP_DIAG(EXECUTE, "MERGED_CAPTURE_END: group=%d [%d-%d] endCapture=%d nodes=%zu",
                       mergedGroupId, mergedStartSlot, mergedEndSlot, endOk ? 1 : 0, nodeCount);
 
              if (endOk && nodeCount > 0) {
-               if (!validateAndStoreMergedCapture("MERGED_CAPTURE", mergedNativeHandle,
+               if (!instantiateAndStoreMergedCapture("MERGED_CAPTURE", mergedNativeHandle,
                        mergedHandle, sched, mergedGroupId, mergedStartSlot, mergedEndSlot,
-                       nodeCount, stream, ctx.cudaStr)) {
-                 DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: validateAndStore FAILED group=%d [%d-%d] nodes=%zu",
+                       nodeCount, ctx.cudaStr)) {
+                 DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: instantiateAndStore FAILED group=%d [%d-%d] nodes=%zu",
                           mergedGroupId, mergedStartSlot, mergedEndSlot, nodeCount);
                  allIslandsOk = false;
                }
@@ -4149,9 +4152,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                     mergedGroupId, mergedStartSlot, mergedEndSlot, endOk ? 1 : 0, nodeCount);
 
            if (endOk && nodeCount > 0) {
-             if (!validateAndStoreMergedCapture("MERGED_CAPTURE_TAIL", mergedNativeHandle,
+             if (!instantiateAndStoreMergedCapture("MERGED_CAPTURE_TAIL", mergedNativeHandle,
                      mergedHandle, sched, mergedGroupId, mergedStartSlot, mergedEndSlot,
-                     nodeCount, stream, ctx.cudaStr)) {
+                     nodeCount, ctx.cudaStr)) {
                allIslandsOk = false;
              }
            } else {
@@ -4313,10 +4316,6 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              DSP_DIAG(EXECUTE, "FORCE_RECAPTURE: invalidated after COMPOSITE capture+launch execCount=%d",
                       seg.exec.executionCount);
            }
-           // Deactivate guard: composite capture done, executor no longer needed.
-           // Prevents destructor from interleaving with unrelated code at function exit.
-           tritonOrderedRangeGuard.active = false;
-           TritonGraphBackend::clearOrderedRangeExecutor();
          } else {
            // Partial failure — log which unit failed and why (COMPILE category
            // is always enabled for graph-capture configs, unlike EXECUTE).

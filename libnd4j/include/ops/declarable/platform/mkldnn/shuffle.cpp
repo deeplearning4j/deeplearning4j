@@ -70,7 +70,7 @@ static void shuffleChannelMKLDNN(NDArray* x, NDArray* z, int groups, int axis) {
   stream.wait();
 }
 
-PLATFORM_IMPL(shuffle_channel, ENGINE_CPU) {
+PLATFORM_IMPL(shuffle_channel, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -87,7 +87,7 @@ PLATFORM_IMPL(shuffle_channel, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(shuffle_channel, ENGINE_CPU) {
+PLATFORM_CHECK(shuffle_channel, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -142,7 +142,7 @@ static void shuffleChannelBpMKLDNN(NDArray* dLdz, NDArray* dLdx, int groups, int
   stream.wait();
 }
 
-PLATFORM_IMPL(shuffle_channel_bp, ENGINE_CPU) {
+PLATFORM_IMPL(shuffle_channel_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -158,7 +158,7 @@ PLATFORM_IMPL(shuffle_channel_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(shuffle_channel_bp, ENGINE_CPU) {
+PLATFORM_CHECK(shuffle_channel_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);

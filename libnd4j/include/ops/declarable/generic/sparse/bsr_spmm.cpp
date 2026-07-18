@@ -68,12 +68,15 @@ DECLARE_SHAPE_FN(bsr_spmm) {
 }
 
 DECLARE_TYPES(bsr_spmm) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedInputTypes(2, {ALL_INTS})
       ->setAllowedInputTypes(3, {ALL_FLOATS})
       ->setAllowedOutputTypes({ALL_FLOATS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
 }
 
 }  // namespace ops

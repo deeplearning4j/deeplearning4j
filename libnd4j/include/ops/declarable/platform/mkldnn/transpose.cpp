@@ -65,7 +65,7 @@ static void transposeMKLDNN(NDArray* x, NDArray* z, const std::vector<LongType>&
   delete permuted;
 }
 
-PLATFORM_IMPL(transpose, ENGINE_CPU) {
+PLATFORM_IMPL(transpose, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -102,7 +102,7 @@ PLATFORM_IMPL(transpose, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(transpose, ENGINE_CPU) {
+PLATFORM_CHECK(transpose, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -133,7 +133,7 @@ PLATFORM_CHECK(transpose, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // PERMUTE - similar to transpose but with explicit permutation order
-PLATFORM_IMPL(permute, ENGINE_CPU) {
+PLATFORM_IMPL(permute, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -167,7 +167,7 @@ PLATFORM_IMPL(permute, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(permute, ENGINE_CPU) {
+PLATFORM_CHECK(permute, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 

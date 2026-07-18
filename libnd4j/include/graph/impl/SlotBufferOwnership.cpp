@@ -19,7 +19,7 @@
 #include <graph/SlotBufferOwnership.h>
 #include <graph/DspDiagnostics.h>
 #include <array/NDArray.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 
 namespace sd {
 namespace graph {
@@ -111,6 +111,21 @@ const char* bufferOwnershipName(BufferOwnership ownership) {
   }
 }
 
+void resetSlotBufferOwnership(
+    SlotBufferInfo* ownershipArray, int totalSlots, int slotIdx) {
+  if (ownershipArray == nullptr || slotIdx < 0 || slotIdx >= totalSlots) return;
+
+  auto& info = ownershipArray[slotIdx];
+  if (info.ownership == BufferOwnership::VIEW_OF_SLOT &&
+      info.parentSlotIdx >= 0 && info.parentSlotIdx < totalSlots) {
+    auto& parent = ownershipArray[info.parentSlotIdx];
+    if (parent.viewRefCount > 0) {
+      parent.removeViewRef();
+    }
+  }
+  info.reset();
+}
+
 void classifyAndUpdateOwnership(
     SlotBufferInfo& info,
     NDArray* outArray,
@@ -119,15 +134,19 @@ void classifyAndUpdateOwnership(
     NDArray** outputSlots, int totalOutputSlots,
     SlotBufferInfo* ownershipArray) {
 
-  // Remember previous ownership for change detection
+  // Remember previous ownership for change detection, then detach any prior
+  // parent relation before installing the new classification.
   BufferOwnership prevOwnership = info.ownership;
   DataBuffer* prevDataBuffer = info.dataBuffer;
   int prevParentSlotIdx = info.parentSlotIdx;
+  if (ownershipArray != nullptr) {
+    resetSlotBufferOwnership(ownershipArray, totalOutputSlots, slotIdx);
+  } else {
+    info.reset();
+  }
 
   // 1. Null output or null dataBuffer → UNSET
   if (outArray == nullptr || outArray->dataBuffer() == nullptr) {
-    info.ownership = BufferOwnership::UNSET;
-    info.dataBuffer = nullptr;
     return;
   }
 
@@ -874,8 +893,8 @@ bool validateLifecycleForPhase(
   // so every SLOT_OWNED buffer must remain device-authoritative (sAct=true).
   // If pAct=1 && sAct=0, a host write poisoned the device state.
   // Only SLOT_OWNED buffers are checked — views/weights have external owners.
-  // CPU builds: pAct/sAct flags are vestigial; check is harmless (always passes).
-  if (dspIsCudaBuild() && planPhase >= 2 && ownership != nullptr && outputSlots != nullptr) {
+  // Host-only builds have no separate device-actuality domain.
+  if (dspHasDeviceMemory() && planPhase >= 2 && ownership != nullptr && outputSlots != nullptr) {
     for (int i = 0; i < totalSlots; i++) {
       const auto& info = ownership[i];
       if (info.ownership != BufferOwnership::SLOT_OWNED) continue;
@@ -1128,9 +1147,9 @@ ArrayInvalidReason validateArrayForExecution(const NDArray* arr) {
   if (!db->isValid())
     return ArrayInvalidReason::INVALID_DATABUFFER;
 
-  // On CUDA, non-empty arrays must have a GPU buffer allocated.
+  // On device backends, non-empty arrays must have a device buffer allocated.
   // special() is a plain pointer read — no sync, no side effects.
-  if (sd::graph::dspIsCudaBuild() && db->special() == nullptr && a->lengthOf() > 0)
+  if (sd::graph::dspHasDeviceMemory() && db->special() == nullptr && a->lengthOf() > 0)
     return ArrayInvalidReason::NULL_GPU_POINTER;
 
   return ArrayInvalidReason::VALID;

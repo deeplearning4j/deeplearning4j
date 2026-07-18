@@ -123,8 +123,19 @@ struct ModeContract {
         return c;
 
       case 9: // GEM_HIP_GRAPHS
+        // Routed through getGpuGraphBackend() to HipGraphBackend (like TPU/
+        // Hexagon/Triton), which captures islands during compileSegment() —
+        // so the mode needs the JIT-backend dispatch path, unlike
+        // GEM_CUDA_GRAPHS whose capture lives in the replay-handle machinery.
+        c.requiresCompilation = true;
+        c.needsJitBackend = true;
         c.usesGraphCapture = true;
         c.allowsFrozenFastPath = true;
+        c.forceSyncDuringCapture = true;
+        c.skipFrozenConstsDuringCapture = true;
+        // Gap ops between islands run through cuBLAS/hipBLAS while islands
+        // replay — same determinism reasoning as the NVRTC/PTX JIT modes.
+        c.requiresDeterministicCublas = true;
         return c;
 
       case 10: // GEM_LEVELZERO
@@ -151,6 +162,18 @@ struct ModeContract {
         c.requiresDeterministicCublas = true;
         c.isSlotBySlot = true;
         c.forcesSyncOnFrozen = true;
+        return c;
+
+      case 19: // GEM_PORTABLE_REPLAY
+        // Replay-only mode: select an integrated native recorder when one is
+        // available, otherwise use the functional recorder. Never selects a
+        // Triton/NVRTC/PTX compiler backend.
+        c.usesGraphCapture = true;
+        c.allowsFrozenFastPath = true;
+        c.requiresDeterministicCublas = true;
+        c.forcesSyncOnFrozen = true;
+        c.allowsFallback = true;
+        c.allowsPhaseStall = true;
         return c;
 
       case 18: // GEM_SHAPE_INFERENCE_ONLY
@@ -201,6 +224,7 @@ struct ModeContract {
       case 16: return "TVM";
       case 17: return "EMULATED_REPLAY";
       case 18: return "SHAPE_INFERENCE_ONLY";
+      case 19: return "PORTABLE_REPLAY";
       default: return "UNKNOWN";
     }
   }

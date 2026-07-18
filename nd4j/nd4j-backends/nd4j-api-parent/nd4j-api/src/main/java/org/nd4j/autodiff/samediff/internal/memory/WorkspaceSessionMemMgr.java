@@ -253,7 +253,28 @@ public class WorkspaceSessionMemMgr implements SessionMemMgr {
 
     @Override
     public INDArray allocate(boolean detached, LongShapeDescriptor descriptor) {
-        return allocate(detached, descriptor.dataType(), descriptor.getShape());
+        return allocate(detached, descriptor, false);
+    }
+
+    @Override
+    public INDArray allocate(boolean detached, LongShapeDescriptor descriptor, boolean requiresZeroed) {
+        INDArray ret;
+        if (detached) {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                ret = Nd4j.create(descriptor, false);
+            }
+        } else if (scopeActive && workspace != null) {
+            try (MemoryWorkspace ws = workspace.notifyScopeBorrowed()) {
+                ret = Nd4j.create(descriptor, false);
+            }
+        } else {
+            ret = Nd4j.create(descriptor, false);
+        }
+
+        if (requiresZeroed && !ret.isEmpty()) {
+            ret.assign(0);
+        }
+        return ret;
     }
 
     @Override
@@ -281,31 +302,39 @@ public class WorkspaceSessionMemMgr implements SessionMemMgr {
 
     @Override
     public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer) {
+        return allocateFromDescriptor(detached, dataBuffer, false);
+    }
+
+    @Override
+    public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer, boolean requiresZeroed) {
         long[] asJava = dataBuffer.asLong();
-        if (Shape.isEmpty(asJava)) {
-            INDArray ret = Nd4j.createFromDescriptor(dataBuffer);
+        boolean preserveDescriptor = Shape.isEmpty(asJava) || Shape.order(asJava) != 'c';
+
+        if (preserveDescriptor) {
             if (detached) {
-                ret = ret.detach();
+                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    INDArray ret = Nd4j.createFromDescriptor(dataBuffer);
+                    if (requiresZeroed && !ret.isEmpty()) ret.assign(0);
+                    return ret;
+                }
             }
+            if (scopeActive && workspace != null) {
+                try (MemoryWorkspace ws = workspace.notifyScopeBorrowed()) {
+                    INDArray ret = Nd4j.createFromDescriptor(dataBuffer);
+                    if (requiresZeroed && !ret.isEmpty()) ret.assign(0);
+                    return ret;
+                }
+            }
+            INDArray ret = Nd4j.createFromDescriptor(dataBuffer);
+            if (requiresZeroed && !ret.isEmpty()) ret.assign(0);
             return ret;
         }
 
         DataType dataType = Shape.dataType(asJava);
         long[] shape = Shape.shape(asJava);
-
-        if (detached) {
-            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                return Nd4j.create(dataType, shape);
-            }
-        }
-
-        if (scopeActive && workspace != null) {
-            try (MemoryWorkspace ws = workspace.notifyScopeBorrowed()) {
-                return Nd4j.create(dataType, shape);
-            }
-        }
-
-        return Nd4j.create(dataType, shape);
+        INDArray ret = allocate(detached, dataType, shape);
+        if (requiresZeroed && !ret.isEmpty()) ret.assign(0);
+        return ret;
     }
 
     @Override

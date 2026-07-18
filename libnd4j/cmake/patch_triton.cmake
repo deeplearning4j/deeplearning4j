@@ -324,29 +324,13 @@ if(EXISTS "${_TRITON_ROOT_CMAKE}")
         message(STATUS "Patched ${_TRITON_ROOT_CMAKE}: disabled bin subdirectory (triton-opt)")
     endif()
 
-    # [nd4j patch] Force default symbol visibility — MLIR TypeID ODR fix.
-    # Triton's CMakeLists hardcodes `-fvisibility=hidden`. When libtriton.a is
-    # statically linked into libnd4jcuda.so next to the MLIR static libs (which use
-    # DEFAULT visibility), the shared MLIR trait TypeID statics — e.g.
-    # TypeIDResolver<IsIsolatedFromAbove>::resolveTypeID()::id — are HIDDEN in
-    # libtriton.a but DEFAULT in MLIR. GNU ld demotes the merged STB_GNU_UNIQUE
-    # symbol to STB_LOCAL whenever ANY contributing copy is hidden, so the TypeID
-    # splits across addresses. hasTrait<IsIsolatedFromAbove>() then compares unequal
-    # TypeID pointers, the MLIR PassManager refuses to schedule any pass on
-    # builtin.module, and EVERY Triton kernel compile fails with
-    # "op trying to schedule a pass on an operation not marked as 'IsolatedFromAbove'".
-    # The Python module build is OFF here, so hidden visibility is unnecessary;
-    # forcing default keeps libtriton.a consistent with MLIR and the TypeID a single
-    # STB_GNU_UNIQUE definition. Verify after build:
-    #   nm -C libnd4jcuda.so | grep 'IsIsolatedFromAbove.*resolveTypeID()::id'
-    # must show a single 'u' binding (not 'b').
-    string(FIND "${_root_content}" "-fvisibility=hidden" _has_hidden_vis)
-    if(NOT _has_hidden_vis EQUAL -1)
-        string(REPLACE "-fvisibility=hidden" "-fvisibility=default" _root_content "${_root_content}")
-        message(STATUS "Patched ${_TRITON_ROOT_CMAKE}: -fvisibility=hidden -> -fvisibility=default (MLIR TypeID ODR fix)")
-    endif()
-
     file(WRITE "${_TRITON_ROOT_CMAKE}" "${_root_content}")
 endif()
+
+# === Part 8: Preserve independent LLVM/MLIR ABI state in ELF processes ===
+# Triton instantiates LLVM/MLIR C++ template statics in libtriton.a, so it must
+# use the same coexistence policy as the downloaded LLVM/MLIR DSOs.
+set(SD_EXTERNAL_PROJECT TRITON)
+include("${CMAKE_CURRENT_LIST_DIR}/patch_external_llvm_coexistence.cmake")
 
 message(STATUS "Triton patching complete (SOURCE_DIR=${SOURCE_DIR})")

@@ -115,6 +115,7 @@ CUSTOM_OP_IMPL(adaptive_avgpool2d, 1, 1, false, 0, 3) {
 }
 
 DECLARE_TYPES(adaptive_avgpool2d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
 }
 
@@ -184,6 +185,7 @@ CUSTOM_OP_IMPL(adaptive_avgpool2d_bp, 2, 1, false, 0, 3) {
 }
 
 DECLARE_TYPES(adaptive_avgpool2d_bp) {
+  getOpDescriptor()->addTraits((OP_TRAIT_BACKWARD));
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
 }
 
@@ -258,6 +260,7 @@ CUSTOM_OP_IMPL(adaptive_maxpool2d, 1, 1, false, 0, 3) {
 }
 
 DECLARE_TYPES(adaptive_maxpool2d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
 }
 
@@ -327,6 +330,7 @@ CUSTOM_OP_IMPL(adaptive_maxpool2d_bp, 2, 1, false, 0, 3) {
 }
 
 DECLARE_TYPES(adaptive_maxpool2d_bp) {
+  getOpDescriptor()->addTraits((OP_TRAIT_BACKWARD));
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
 }
 
@@ -400,6 +404,7 @@ CUSTOM_OP_IMPL(adaptive_avgpool3d, 1, 1, false, 0, 4) {
 }
 
 DECLARE_TYPES(adaptive_avgpool3d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
 }
 

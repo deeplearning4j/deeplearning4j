@@ -997,7 +997,7 @@ Status NativeDynamicShapePlan::executeBatchedGemmGroup(
   // always valid for the plan lifetime.
   if (fpRingEnabled_) {
     int baseTrack = BUF_FP_MAX_STAGING + groupIdx;
-    if (baseTrack < BUF_FP_MAX_TRACKED) {
+    if (baseTrack < BUF_FP_TRACE_TRACK) {
       auto& lbC = fpLabels_[baseTrack];
       if (lbC.tag[0] == '\0') {
         snprintf(lbC.tag, sizeof(lbC.tag), "gemm[%d].out", groupIdx);

@@ -86,6 +86,7 @@ DECLARE_SHAPE_FN(vlm_vision_encode) {
 }
 
 DECLARE_TYPES(vlm_vision_encode) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -142,6 +143,7 @@ DECLARE_SHAPE_FN(vlm_image_embed) {
 }
 
 DECLARE_TYPES(vlm_image_embed) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -247,6 +249,7 @@ DECLARE_SHAPE_FN(vlm_patch_embed) {
 }
 
 DECLARE_TYPES(vlm_patch_embed) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -385,6 +388,7 @@ DECLARE_SHAPE_FN(vlm_multimodal_fusion) {
 }
 
 DECLARE_TYPES(vlm_multimodal_fusion) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -418,6 +422,7 @@ DECLARE_SHAPE_FN(vlm_vision_projection) {
 }
 
 DECLARE_TYPES(vlm_vision_projection) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -477,6 +482,7 @@ DECLARE_SHAPE_FN(vlm_image_preprocess) {
 }
 
 DECLARE_TYPES(vlm_image_preprocess) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -557,6 +563,7 @@ DECLARE_SHAPE_FN(vlm_2d_position_encode) {
 }
 
 DECLARE_TYPES(vlm_2d_position_encode) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }

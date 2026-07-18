@@ -139,6 +139,7 @@ DECLARE_SHAPE_FN(csr_sddmm_sparse_bp) {
 }
 
 DECLARE_TYPES(csr_sddmm_sparse_bp) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS})     // targetRowPtr
       ->setAllowedInputTypes(1, {ALL_INTS})     // targetColIdx
@@ -151,6 +152,8 @@ DECLARE_TYPES(csr_sddmm_sparse_bp) {
       ->setAllowedInputTypes(8, {ALL_FLOATS})   // gradOut
       ->setAllowedOutputTypes(0, {ALL_FLOATS})  // dLvalues
       ->setAllowedOutputTypes(1, {ALL_FLOATS}); // dMvalues
+
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

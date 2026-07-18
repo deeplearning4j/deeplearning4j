@@ -356,7 +356,7 @@ DECLARE_SHAPE_FN(rope) {
 DECLARE_TYPES(rope) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
+    getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(rope_bp, 2, 1, false, 0, 0) {
@@ -385,7 +385,7 @@ DECLARE_SHAPE_FN(rope_bp) {
 DECLARE_TYPES(rope_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
+    getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -459,7 +459,7 @@ CONFIGURABLE_OP_IMPL(silu_bp, 2, 1, true, 0, 0) {
 DECLARE_TYPES(silu_bp) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
+    getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -492,10 +492,13 @@ DECLARE_SHAPE_FN(quantized_matmul) {
 }
 
 DECLARE_TYPES(quantized_matmul) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
+
+// llama.cpp-compat name
+DECLARE_SYN(quantized_mul_mat, quantized_matmul);
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -533,6 +536,9 @@ DECLARE_TYPES(grouped_query_attention) {
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
     getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
+
+// llama.cpp-compat name (head counts derive from input shapes when iArgs are absent)
+DECLARE_SYN(gqa_attention, grouped_query_attention);
 
 CUSTOM_OP_IMPL(grouped_query_attention_bp, 4, 3, false, 0, 0) {
     auto query = INPUT_VARIABLE(0);
@@ -826,6 +832,10 @@ DECLARE_TYPES(apply_alibi) {
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
     getOpDescriptor()->addTraits(OP_TRAIT_ATTENTION | OP_TRAIT_FULLY_WRITING);
 }
+
+// llama.cpp-compat name (uses standard per-head ALiBi slopes; the old llamacpp
+// scalar-slope T arg is intentionally not honored)
+DECLARE_SYN(alibi_position_bias, apply_alibi);
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -1052,9 +1062,9 @@ DECLARE_SHAPE_FN(fused_gemm_swiglu) {
 }
 
 DECLARE_TYPES(fused_gemm_swiglu) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(fused_gemm_swiglu_bp, 4, 3, false, 0, 0) {
@@ -1170,9 +1180,9 @@ DECLARE_SHAPE_FN(fused_gemm_swiglu_bp) {
 }
 
 DECLARE_TYPES(fused_gemm_swiglu_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 #endif
 
@@ -1245,9 +1255,9 @@ DECLARE_SHAPE_FN(rms_norm_linear) {
 }
 
 DECLARE_TYPES(rms_norm_linear) {
+  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(rms_norm_linear_bp, 4, 3, false, 0, 0) {
@@ -1402,6 +1412,7 @@ DECLARE_SHAPE_FN(mean_square) {
 }
 
 DECLARE_TYPES(mean_square) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -1434,6 +1445,7 @@ DECLARE_SHAPE_FN(mean_square_bp) {
 }
 
 DECLARE_TYPES(mean_square_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -1481,9 +1493,9 @@ DECLARE_SHAPE_FN(column_parallel_linear) {
 }
 
 DECLARE_TYPES(column_parallel_linear) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -1528,9 +1540,9 @@ DECLARE_SHAPE_FN(row_parallel_linear) {
 }
 
 DECLARE_TYPES(row_parallel_linear) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
-    getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 #endif
 
@@ -1684,6 +1696,9 @@ DECLARE_TYPES(ggml_dequantize) {
     getOpDescriptor()->setAllowedOutputTypes({DataType::FLOAT32, DataType::HALF, DataType::BFLOAT16});
     getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
+
+// llama.cpp-compat name (same contract: iArg 0 = GGML quant type of the input bytes)
+DECLARE_SYN(dequantize, ggml_dequantize);
 #endif
 
 }  // namespace ops

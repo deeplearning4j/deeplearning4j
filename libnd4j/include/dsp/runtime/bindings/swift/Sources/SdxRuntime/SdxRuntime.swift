@@ -23,6 +23,12 @@ import CSdxRuntime
 /// - `mlx`:          Apple MLX (Apple Silicon).
 /// - `armHybrid`:    ARM CPU/GPU hybrid path.
 /// - `nnapi`:        Android NNAPI.
+/// - `hipGraphs`:    AMD ROCm HIP graph capture and replay.
+/// - `levelZero`:    Intel Level Zero mutable command-list replay.
+/// - `vulkan`:       Vulkan compute command-buffer replay.
+/// - `metal`:        Apple Metal indirect command-buffer replay.
+/// - `tpu`:          TPU HLO compilation and PJRT execution.
+/// - `hexagon`:      Qualcomm Hexagon NPU execution.
 public enum SdxBackend: Int32, CustomStringConvertible {
     case auto       = 0
     case slotBySlot = 1
@@ -33,6 +39,12 @@ public enum SdxBackend: Int32, CustomStringConvertible {
     case mlx        = 6
     case armHybrid  = 7
     case nnapi      = 8
+    case hipGraphs  = 9
+    case levelZero  = 10
+    case vulkan     = 11
+    case metal      = 12
+    case tpu        = 13
+    case hexagon    = 14
 
     public var description: String {
         switch self {
@@ -45,6 +57,12 @@ public enum SdxBackend: Int32, CustomStringConvertible {
         case .mlx:         return "MLX"
         case .armHybrid:   return "ARM_HYBRID"
         case .nnapi:       return "NNAPI"
+        case .hipGraphs:   return "HIP_GRAPHS"
+        case .levelZero:   return "LEVEL_ZERO"
+        case .vulkan:      return "VULKAN"
+        case .metal:       return "METAL"
+        case .tpu:         return "TPU"
+        case .hexagon:     return "HEXAGON"
         }
     }
 }
@@ -58,9 +76,11 @@ public enum SdxDevice: Int32 {
 
 /// GPU compute target.
 public enum SdxGpuTarget: Int32 {
-    case auto = 0
-    case cuda = 1
-    case amd  = 2
+    case auto   = 0
+    case cuda   = 1
+    case amd    = 2
+    case vulkan = 3
+    case metal  = 4
 }
 
 /// DSP execution plan lifecycle phase.
@@ -106,6 +126,18 @@ public let SDX_BACKEND_MLX:         Int32 = 6
 public let SDX_BACKEND_ARM_HYBRID:  Int32 = 7
 @available(*, deprecated, renamed: "SdxBackend.nnapi.rawValue")
 public let SDX_BACKEND_NNAPI:       Int32 = 8
+@available(*, deprecated, renamed: "SdxBackend.hipGraphs.rawValue")
+public let SDX_BACKEND_HIP_GRAPHS:  Int32 = 9
+@available(*, deprecated, renamed: "SdxBackend.levelZero.rawValue")
+public let SDX_BACKEND_LEVEL_ZERO:  Int32 = 10
+@available(*, deprecated, renamed: "SdxBackend.vulkan.rawValue")
+public let SDX_BACKEND_VULKAN:      Int32 = 11
+@available(*, deprecated, renamed: "SdxBackend.metal.rawValue")
+public let SDX_BACKEND_METAL:       Int32 = 12
+@available(*, deprecated, renamed: "SdxBackend.tpu.rawValue")
+public let SDX_BACKEND_TPU:         Int32 = 13
+@available(*, deprecated, renamed: "SdxBackend.hexagon.rawValue")
+public let SDX_BACKEND_HEXAGON:     Int32 = 14
 
 @available(*, deprecated, renamed: "SdxDevice.host.rawValue")
 public let SDX_DEVICE_HOST: Int32 = 0
@@ -119,7 +151,11 @@ public let SDX_GPU_TARGET_AUTO: Int32 = 0
 @available(*, deprecated, renamed: "SdxGpuTarget.cuda.rawValue")
 public let SDX_GPU_TARGET_CUDA: Int32 = 1
 @available(*, deprecated, renamed: "SdxGpuTarget.amd.rawValue")
-public let SDX_GPU_TARGET_AMD:  Int32 = 2
+public let SDX_GPU_TARGET_AMD: Int32 = 2
+@available(*, deprecated, renamed: "SdxGpuTarget.vulkan.rawValue")
+public let SDX_GPU_TARGET_VULKAN: Int32 = 3
+@available(*, deprecated, renamed: "SdxGpuTarget.metal.rawValue")
+public let SDX_GPU_TARGET_METAL: Int32 = 4
 
 // ── Error type ────────────────────────────────────────────────────────────────
 
@@ -223,6 +259,44 @@ public struct SdxTensor {
                 view.device_id  = -1
                 return try withUnsafePointer(to: view, body)
             }
+        }
+    }
+}
+
+/// An owning copy of a dynamically allocated SDX output. This is the safe
+/// mobile-facing result type for logits whose shape is not known before a run.
+public struct SdxRawTensor {
+    public let shape: [Int64]
+    public let dtype: Int32
+    public let data: Data
+
+    internal init(view: sdx_tensor_view_t) {
+        let rank = max(0, Int(view.rank))
+        if rank == 0 || view.shape == nil {
+            shape = []
+        } else {
+            shape = Array(
+                UnsafeBufferPointer(start: view.shape, count: rank)
+            )
+        }
+        dtype = view.dtype
+        if view.bytes == 0 {
+            data = Data()
+        } else {
+            precondition(view.data != nil,
+                         "SDX returned non-empty output with a null data pointer")
+            data = Data(bytes: view.data!, count: view.bytes)
+        }
+    }
+
+    /// Decode FLOAT32 output storage, or return nil for another dtype.
+    public var float32Scalars: [Float]? {
+        guard dtype == SdxTensor.dtypeFloat32,
+              data.count % MemoryLayout<Float>.size == 0 else {
+            return nil
+        }
+        return data.withUnsafeBytes {
+            Array($0.bindMemory(to: Float.self))
         }
     }
 }
@@ -454,7 +528,7 @@ public final class SdxRuntime {
 /// objects from a model to run inference.  Resources are released on `deinit`
 /// or via ``close()``.
 public final class SdxModel {
-    private unowned let runtime: SdxRuntime
+    private let runtime: SdxRuntime
     private var handle: OpaquePointer?
 
     fileprivate init(runtime: SdxRuntime, handle: OpaquePointer?) {
@@ -463,6 +537,20 @@ public final class SdxModel {
     }
 
     deinit { close() }
+
+    /// Resolved offline tokenizer path declared in the loaded bundle.
+    public var tokenizerPath: String? {
+        guard let ptr = sdxGetTokenizerPath(handle) else { return nil }
+        return String(cString: ptr)
+    }
+
+    /// Resolved text-generation IO/KV/sampling metadata path.
+    public var textGenerationConfigPath: String? {
+        guard let ptr = sdxGetTextGenerationConfigPath(handle) else {
+            return nil
+        }
+        return String(cString: ptr)
+    }
 
     /// Create an inference context for this model.
     ///
@@ -474,7 +562,10 @@ public final class SdxModel {
     ///   `run()` call.  Pass `[]` (the default) to request all outputs.
     /// - Returns: A ready ``SdxContext``.
     /// - Throws:  ``SdxError/nativeStatus(code:message:)`` on failure.
-    public func createContext(requestedOutputs: [String] = []) throws -> SdxContext {
+    public func createContext(
+        requestedOutputs: [String] = [],
+        bindModelParameters: Bool = false
+    ) throws -> SdxContext {
         var context: OpaquePointer?
         var buffers: [UnsafeMutablePointer<CChar>] = []
         var cStrings: [UnsafePointer<CChar>?] = requestedOutputs.map { name in
@@ -484,15 +575,31 @@ public final class SdxModel {
         }
         defer { buffers.forEach { free($0) } }
 
+        var options = sdx_context_options_t()
+        options.struct_size = UInt32(MemoryLayout<sdx_context_options_t>.size)
+        options.bind_model_parameters = bindModelParameters ? 1 : 0
         let status = cStrings.withUnsafeMutableBufferPointer { ptr in
-            requestedOutputs.isEmpty
-                ? sdxCreateContext(handle, nil, 0, &context)
-                : sdxCreateContext(handle, ptr.baseAddress, Int32(requestedOutputs.count), &context)
+            let names = requestedOutputs.isEmpty ? nil : ptr.baseAddress
+            if bindModelParameters {
+                return sdxCreateContextWithOptions(
+                    handle, names, Int32(requestedOutputs.count), &options, &context)
+            }
+            return sdxCreateContext(
+                handle, names, Int32(requestedOutputs.count), &context)
         }
         guard status == SDX_STATUS_OK else {
             throw SdxError.nativeStatus(code: status, message: runtime.lastError())
         }
-        return SdxContext(runtime: runtime, handle: context)
+        return SdxContext(runtime: runtime, model: self, handle: context)
+    }
+
+    /// Create the recommended mobile/offline context. Bundle-owned weights are
+    /// retained by this model and omitted from the public input list.
+    public func createInferenceContext(
+        requestedOutputs: [String] = []
+    ) throws -> SdxContext {
+        try createContext(
+            requestedOutputs: requestedOutputs, bindModelParameters: true)
     }
 
     /// Release the native model handle.  Called automatically on `deinit`.
@@ -535,11 +642,14 @@ public final class SdxModel {
 /// print(outputs["probs"]!.scalars)
 /// ```
 public final class SdxContext {
-    private unowned let runtime: SdxRuntime
+    private let runtime: SdxRuntime
+    // Keeps bundle-owned arrays alive for parameter-bound contexts.
+    private let model: SdxModel
     private var handle: OpaquePointer?
 
-    fileprivate init(runtime: SdxRuntime, handle: OpaquePointer?) {
+    fileprivate init(runtime: SdxRuntime, model: SdxModel, handle: OpaquePointer?) {
         self.runtime = runtime
+        self.model = model
         self.handle  = handle
     }
 
@@ -650,6 +760,43 @@ public final class SdxContext {
         }
     }
 
+    /// Run without preallocating output buffers and copy the dynamic results
+    /// into Swift-owned storage. This is the preferred logits path on iOS.
+    public func runAllocating(
+        inputs: [sdx_tensor_view_t],
+        options: sdx_run_options_t? = nil
+    ) throws -> [SdxRawTensor] {
+        let status = inputs.withUnsafeBufferPointer { inBuf in
+            if var opts = options {
+                return withUnsafePointer(to: &opts) {
+                    sdxRunAllocating(
+                        handle, inBuf.baseAddress, Int32(inputs.count), $0)
+                }
+            }
+            return sdxRunAllocating(
+                handle, inBuf.baseAddress, Int32(inputs.count), nil)
+        }
+        guard status == SDX_STATUS_OK else {
+            throw SdxError.nativeStatus(
+                code: status, message: runtime.lastError())
+        }
+
+        let count = max(0, Int(numOutputs()))
+        var results: [SdxRawTensor] = []
+        results.reserveCapacity(count)
+        for index in 0..<count {
+            var view = sdx_tensor_view_t()
+            let outputStatus =
+                sdxGetOutputTensor(handle, Int32(index), &view)
+            guard outputStatus == SDX_STATUS_OK else {
+                throw SdxError.nativeStatus(
+                    code: outputStatus, message: runtime.lastError())
+            }
+            results.append(SdxRawTensor(view: view))
+        }
+        return results
+    }
+
     // MARK: - Telemetry
 
     /// Execution telemetry snapshot from the last `run()` call.
@@ -748,6 +895,21 @@ public final class SdxContext {
         let count = numInputs()
         guard count > 0 else { return [] }
         return (0..<count).map { inputName($0) ?? "" }
+    }
+
+    /// Explicit requested output name at the given index, if supplied.
+    public func outputName(_ outputIndex: Int32) -> String? {
+        guard let ptr = sdxGetOutputName(handle, outputIndex) else {
+            return nil
+        }
+        return String(cString: ptr)
+    }
+
+    /// Explicit requested output names in plan order.
+    public func outputNames() -> [String?] {
+        let count = numOutputs()
+        guard count > 0 else { return [] }
+        return (0..<count).map { outputName($0) }
     }
 
     // MARK: - Resource management

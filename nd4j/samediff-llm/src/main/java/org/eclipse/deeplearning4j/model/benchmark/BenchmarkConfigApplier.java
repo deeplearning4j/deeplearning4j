@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
@@ -210,7 +211,19 @@ public class BenchmarkConfigApplier {
         // EXECUTE is NOT auto-enabled — it triggers per-step cudaStreamSynchronize
         // for argmax logging (~5ms penalty per decode step). Enable explicitly via
         // -Dnd4j.dsp.diagnostics=MEMORY,EXECUTE when needed for debugging.
-        if (config.isTritonGraphCapture() || config.getExecutionMode() == GraphExecutionMode.CUDA_GRAPHS) {
+        // NEVER override a user-configured diagnostics setup: this applier runs at
+        // EVERY pipeline creation, and setLevel(LEVEL_DETAILED) here silently
+        // downgraded an explicit -Dnd4j.dsp.diagnostics.level=full for the second
+        // and later pipelines in a JVM (the first pipeline survived only because
+        // the lazy Java-side initialize() re-applied the env level after the first
+        // applier pass). Convenience defaults apply ONLY when the user set nothing.
+        boolean userConfiguredDiagnostics =
+                System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS) != null
+                || System.getenv("ND4J_DSP_DIAGNOSTICS") != null
+                || System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL) != null
+                || System.getenv("ND4J_DSP_DIAGNOSTICS_LEVEL") != null;
+        if (!userConfiguredDiagnostics
+                && (config.isTritonGraphCapture() || config.getExecutionMode() == GraphExecutionMode.CUDA_GRAPHS)) {
             DspDiagnostics.enableCategories(
                     DspDiagnostics.COMPILE | DspDiagnostics.FALLBACK |
                     DspDiagnostics.BACKEND);

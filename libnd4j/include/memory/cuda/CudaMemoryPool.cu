@@ -1242,10 +1242,9 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     auto it = graphBakedPins_.find(ptr);
     if (it != graphBakedPins_.end()) {
       it->second.freeRequested = true;
-      if (sd::Environment::getInstance().isDebug()) {
-        sd_printf("CudaMemoryPool::free: SKIP graph-baked ptr=%p dev=%d — deferred (freeRequested) until unpin\n",
-                  ptr, deviceId);
-      }
+      DSP_DIAG(MEMORY,
+               "GRAPH_PIN defer-free ptr=%p dev=%d refCount=%d freeRequested=1",
+               ptr, deviceId, it->second.refCount);
       if (needDeviceRestore) cudaSetDevice(savedDev);
       return;
     }
@@ -1626,37 +1625,41 @@ void CudaMemoryPool::pinGraphBakedAddress(void* ptr, int deviceId) {
   auto& info = graphBakedPins_[ptr];
   info.refCount++;
   info.deviceId = deviceId;
-  if (sd::Environment::getInstance().isDebug()) {
-    sd_printf("CudaMemoryPool::pinGraphBakedAddress: ptr=%p dev=%d refCount=%d\n",
-              ptr, deviceId, info.refCount);
-  }
+  DSP_DIAG(MEMORY, "GRAPH_PIN pin ptr=%p dev=%d refCount=%d",
+           ptr, deviceId, info.refCount);
 }
 
 void CudaMemoryPool::unpinGraphBakedAddress(void* ptr, int deviceId, cudaStream_t stream) {
   if (ptr == nullptr) return;
   bool shouldFree = false;
+  bool freeRequested = false;
+  int remainingRefCount = -1;
   {
     std::lock_guard<std::mutex> lock(graphBakedMutex_);
     auto it = graphBakedPins_.find(ptr);
-    if (it == graphBakedPins_.end()) return;  // Not pinned — ignore
+    if (it == graphBakedPins_.end()) {
+      DSP_DIAG(MEMORY, "GRAPH_PIN unpin-missing ptr=%p dev=%d", ptr, deviceId);
+      return;
+    }
     it->second.refCount--;
+    remainingRefCount = it->second.refCount;
+    freeRequested = it->second.freeRequested;
     if (it->second.refCount <= 0) {
       // Free ONLY if the owner actually requested a free() while the buffer was pinned.
       // A buffer that was pinned for protection but never free()'d (a SameDiff weight/
       // constant that outlives the plan) must NOT be freed here — it is externally owned;
       // freeing it would double-free a live weight (→ err700) or fail for a non-pool
       // constant (cudaFreeAsync "invalid argument" → leak).
-      shouldFree = it->second.freeRequested;
+      shouldFree = freeRequested;
       graphBakedPins_.erase(it);
     }
   }
+  DSP_DIAG(MEMORY,
+           "GRAPH_PIN unpin ptr=%p dev=%d remainingRefCount=%d freeRequested=%d release=%d",
+           ptr, deviceId, remainingRefCount, freeRequested ? 1 : 0, shouldFree ? 1 : 0);
   if (shouldFree) {
     // Deferred-free path: free() was skipped while pinned (freeRequested); now that no
     // live segment holds the address, release it to the pool on the provided stream.
-    if (sd::Environment::getInstance().isDebug()) {
-      sd_printf("CudaMemoryPool::unpinGraphBakedAddress: ptr=%p dev=%d stream=%p — deferred free (requested)\n",
-                ptr, deviceId, (void*)stream);
-    }
     free(ptr, deviceId, stream);
   }
 }

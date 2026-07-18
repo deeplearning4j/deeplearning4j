@@ -21,12 +21,14 @@
 #include <ops/declarable/OpRegistrator.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <sstream>
 
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // Use lazy initialization to avoid static initialization order fiasco.
 // All state is wrapped in a function-local static struct that's only
@@ -35,7 +37,7 @@ struct KernelSelectionState {
   bool initialized = false;
   bool autoTuneEnabled = false;
   bool verbose = false;
-  samediff::Engine forcedEngine = samediff::ENGINE_CPU;
+  samediff::Engine forcedEngine = DEFAULT_ENGINE;
   bool hasForcedEngine = false;
   std::vector<samediff::Engine> disabledEngines;
   std::string cachePath;
@@ -70,7 +72,7 @@ void KernelSelectionEnvironment::initialize() {
   const char* forceEnv = std::getenv("SD_KERNEL_FORCE_ENGINE");
   if (forceEnv != nullptr) {
     state.forcedEngine = engineFromString(forceEnv);
-    state.hasForcedEngine = true;
+    state.hasForcedEngine = state.forcedEngine != samediff::ENGINE_ANY;
   }
 
   // SD_KERNEL_DISABLE_ENGINES
@@ -188,39 +190,47 @@ bool KernelSelectionEnvironment::isPluginAutoLoadEnabled() {
   return getState().pluginAutoLoad;
 }
 
-samediff::Engine KernelSelectionEnvironment::engineFromString(const std::string& name) {
+samediff::Engine KernelSelectionEnvironment::engineFromString(
+    const std::string& name) {
   std::string lower = name;
-  std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+  std::transform(lower.begin(), lower.end(), lower.begin(),
+                 [](unsigned char value) {
+                   return static_cast<char>(std::tolower(value));
+                 });
 
-  if (lower == "cpu" || lower == "native") {
-    return samediff::ENGINE_CPU;
-  } else if (lower == "cuda" || lower == "gpu") {
-    return samediff::ENGINE_CUDA;
-  } else if (lower == "onednn" || lower == "mkldnn" || lower == "mkl") {
+  if (lower == "default" || lower == "native") return DEFAULT_ENGINE;
+  if (lower == "cpu") return samediff::ENGINE_CPU;
+  if (lower == "cuda") return samediff::ENGINE_CUDA;
+  if (lower == "tpu" || lower == "pjrt") return samediff::ENGINE_TPU;
+  if (lower == "zluda_amd" || lower == "zluda-amd")
+    return samediff::ENGINE_ZLUDA_AMD;
+  if (lower == "zluda_intel" || lower == "zluda-intel")
+    return samediff::ENGINE_ZLUDA_INTEL;
+  if (lower == "metal") return samediff::ENGINE_METAL;
+  if (lower == "vulkan") return samediff::ENGINE_VULKAN;
+  if (lower == "opencl") return samediff::ENGINE_OPENCL;
+  if (lower == "vlm") return samediff::ENGINE_VLM;
+  if (lower == "mps") return samediff::ENGINE_MPS;
+  if (lower == "accelerate") return samediff::ENGINE_ACCELERATE;
+  if (lower == "onednn" || lower == "mkldnn" || lower == "mkl")
     return samediff::ENGINE_ONEDNN;
-  }
+  if (lower == "arm" || lower == "armcompute")
+    return samediff::ENGINE_ARM;
+  if (lower == "any" || lower == "auto") return samediff::ENGINE_ANY;
 
-  return samediff::ENGINE_CPU;
+  const std::string message =
+      "Unknown kernel engine '" + name + "'";
+  THROW_EXCEPTION(message.c_str());
+  return samediff::ENGINE_ANY;
 }
 
-std::string KernelSelectionEnvironment::engineToString(samediff::Engine engine) {
-  switch (engine) {
-    case samediff::ENGINE_CPU:
-      return "CPU";
-    case samediff::ENGINE_CUDA:
-      return "CUDA";
-    case samediff::ENGINE_ONEDNN:
-      return "oneDNN";
-    default:
-      return "Unknown";
-  }
+std::string KernelSelectionEnvironment::engineToString(
+    samediff::Engine engine) {
+  return samediff::getEngineName(engine);
 }
 
 void KernelSelectionEnvironment::reinitialize() {
-  auto& state = getState();
-  state.initialized = false;
-  state.disabledEngines.clear();
-  state.pluginPaths.clear();
+  getState() = KernelSelectionState{};
   initialize();
 }
 
@@ -240,6 +250,9 @@ bool KernelDispatchHelper::shouldUseHelper(DeclarableOp* op, sd::graph::Context&
   // Check forced engine
   if (KernelSelectionEnvironment::hasForcedEngine()) {
     samediff::Engine forced = KernelSelectionEnvironment::getForcedEngine();
+    if (KernelSelectionEnvironment::isEngineDisabled(forced)) {
+      return false;
+    }
     if (registrator.hasHelper(hash, forced)) {
       auto* helper = registrator.getPlatformHelper(hash, forced);
       return helper != nullptr && helper->isUsable(context);
@@ -247,10 +260,11 @@ bool KernelDispatchHelper::shouldUseHelper(DeclarableOp* op, sd::graph::Context&
     return false;
   }
 
-  // Check available helpers
+  // Check the configured artifact engine
   auto helpers = registrator.getAllHelpersForOp(hash);
   for (auto* helper : helpers) {
-    if (!KernelSelectionEnvironment::isEngineDisabled(helper->engine()) &&
+    if (helper->engine() == DEFAULT_ENGINE &&
+        !KernelSelectionEnvironment::isEngineDisabled(helper->engine()) &&
         helper->isUsable(context)) {
       return true;
     }
@@ -274,6 +288,9 @@ std::pair<bool, Status> KernelDispatchHelper::dispatchWithAutoTune(DeclarableOp*
   if (KernelSelectionEnvironment::hasForcedEngine()) {
     samediff::Engine forced = KernelSelectionEnvironment::getForcedEngine();
     sd_debug("KernelDispatch: forced engine=%d\n", (int)forced);
+    if (KernelSelectionEnvironment::isEngineDisabled(forced)) {
+      return {true, Status::BAD_INPUT};
+    }
     if (registrator.hasHelper(hash, forced)) {
       auto* helper = registrator.getPlatformHelper(hash, forced);
       if (helper != nullptr && helper->isUsable(context)) {
@@ -282,10 +299,17 @@ std::pair<bool, Status> KernelDispatchHelper::dispatchWithAutoTune(DeclarableOp*
         return {true, status};
       }
     }
-    return {false, Status::OK};  // Fall back to native
+    if (forced == DEFAULT_ENGINE) {
+      return {false, Status::OK};
+    }
+    return {true, Status::BAD_INPUT};
   }
 
-  // Get all usable helpers
+  if (KernelSelectionEnvironment::isEngineDisabled(DEFAULT_ENGINE)) {
+    return {true, Status::BAD_INPUT};
+  }
+
+  // Get the usable helper for this artifact's configured engine
   auto allHelpers = registrator.getAllHelpersForOp(hash);
   sd_debug("KernelDispatch: found %zu helpers for op\n", allHelpers.size());
 
@@ -296,7 +320,7 @@ std::pair<bool, Status> KernelDispatchHelper::dispatchWithAutoTune(DeclarableOp*
     bool isUsable = helper->isUsable(context);
     sd_debug("KernelDispatch: helper=%s engine=%d disabled=%d usable=%d\n",
              helper->name().c_str(), (int)helper->engine(), engineDisabled, isUsable);
-    if (!engineDisabled && isUsable) {
+    if (helper->engine() == DEFAULT_ENGINE && !engineDisabled && isUsable) {
       usableHelpers.push_back(helper);
     }
   }
@@ -304,7 +328,7 @@ std::pair<bool, Status> KernelDispatchHelper::dispatchWithAutoTune(DeclarableOp*
   sd_debug("KernelDispatch: %zu usable helpers\n", usableHelpers.size());
 
   if (usableHelpers.empty()) {
-    return {false, Status::OK};  // No usable helpers, fall back to native
+    return {false, Status::OK};  // Continue on this artifact's native engine
   }
 
   // If only one helper, use it
@@ -335,11 +359,12 @@ std::pair<bool, Status> KernelDispatchHelper::dispatchWithAutoTune(DeclarableOp*
     return {true, status};
   }
 
-  // Fallback
+  // No benchmark winner: execute the eligible artifact-engine helper.
   Status status = usableHelpers[0]->invokeHelper(context);
   return {true, status};
 }
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

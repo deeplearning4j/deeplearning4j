@@ -16,37 +16,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#if HAVE_MLIR
+#include <config.h>
+
+#if defined(HAVE_MLIR) && HAVE_MLIR
 
 #include <graph/cpu/ArmHybridGraphBackend.h>
 #include <graph/DspDiagnostics.h>
-#include <graph/gpu/OpCategoryTable.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
+
+#include "mlir/IR/OwningOpRef.h"
+#include "mlir/IR/BuiltinOps.h"
 
 #include <algorithm>
 #include <cctype>
 #include <mutex>
 
-// Vulkan availability probe (platform-specific)
-#if defined(__ANDROID__)
-#include <dlfcn.h>
-#elif defined(__linux__)
-#include <dlfcn.h>
-#endif
 
 namespace sd {
 namespace graph {
 
-ArmHybridGraphBackend::ArmHybridGraphBackend() {
-  // Probe for Vulkan availability at construction time
-  vulkanAvailable_ = probeVulkanDevice();
-  if (vulkanAvailable_) {
-    DSP_DIAG(BACKEND, "ArmHybridGraphBackend: Vulkan compute available");
-  } else {
-    DSP_DIAG(BACKEND, "ArmHybridGraphBackend: Vulkan not available, CPU-only mode");
-  }
-}
+ArmHybridGraphBackend::ArmHybridGraphBackend() = default;
 
 ArmHybridGraphBackend::~ArmHybridGraphBackend() = default;
 
@@ -78,31 +68,9 @@ bool ArmHybridGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end
     }
   }
 
-  DSP_DIAG(SEGMENT, "ArmHybridGraphBackend::canFuseSegment [%d-%d]: all %d ops mappable, vulkan=%d",
-           start, end, segSize, vulkanAvailable_ ? 1 : 0);
+  DSP_DIAG(SEGMENT, "ArmHybridGraphBackend::canFuseSegment [%d-%d]: all %d ops mappable",
+           start, end, segSize);
   return true;
-}
-
-bool ArmHybridGraphBackend::probeVulkanDevice() {
-#if defined(__ANDROID__) || defined(__linux__)
-  // Try to load libvulkan.so — if it loads, Vulkan is available
-  void* vulkanLib = dlopen("libvulkan.so", RTLD_LAZY | RTLD_LOCAL);
-  if (vulkanLib) {
-    // Check if we can get vkCreateInstance — confirms a working Vulkan loader
-    void* createInstance = dlsym(vulkanLib, "vkCreateInstance");
-    dlclose(vulkanLib);
-    return createInstance != nullptr;
-  }
-
-  // On Android, also try libvulkan.so.1
-  vulkanLib = dlopen("libvulkan.so.1", RTLD_LAZY | RTLD_LOCAL);
-  if (vulkanLib) {
-    void* createInstance = dlsym(vulkanLib, "vkCreateInstance");
-    dlclose(vulkanLib);
-    return createInstance != nullptr;
-  }
-#endif
-  return false;
 }
 
 sd::mlir_runtime::MLIRCompileOptions ArmHybridGraphBackend::getArmCompileOptions() const {
@@ -111,48 +79,6 @@ sd::mlir_runtime::MLIRCompileOptions ArmHybridGraphBackend::getArmCompileOptions
   opts.aotMode = false;
   opts.aotTarget = sd::mlir_runtime::AOTTarget::HOST;
   return opts;
-}
-
-ArmHybridGraphBackend::ExecPath ArmHybridGraphBackend::selectExecPath(
-    NativeSlot* slots, int start, int end,
-    NDArray** outputSlots, int totalOutputSlots) {
-
-  // If Vulkan isn't available or enabled, always use CPU
-  if (!vulkanAvailable_ || !vulkanEnabled_) {
-    return ExecPath::ARM_CPU;
-  }
-
-  // Count GPU-suitable ops and total tensor size
-  int gpuCandidateOps = 0;
-  int64_t maxTensorSize = 0;
-
-  for (int i = start; i <= end; i++) {
-    auto category = OpCategoryTable::getCategory(slots[i].ident.opName);
-
-    // MATMUL, CONVOLUTION, and large REDUCTION are GPU candidates
-    if (category == TritonOpCategory::MATMUL ||
-        category == TritonOpCategory::CONVOLUTION ||
-        category == TritonOpCategory::FUSED_ATTENTION) {
-      gpuCandidateOps++;
-    }
-
-    // Check tensor sizes
-    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
-      int outIdx = slots[i].wiring.outputSlotIndices[o];
-      if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots && outputSlots[outIdx]) {
-        int64_t len = outputSlots[outIdx]->lengthOf();
-        if (len > maxTensorSize) maxTensorSize = len;
-      }
-    }
-  }
-
-  // Use GPU if we have GPU-candidate ops AND tensors are large enough
-  // to amortize the CPU→GPU transfer overhead
-  if (gpuCandidateOps > 0 && maxTensorSize >= gpuOffloadThreshold_) {
-    return ExecPath::VULKAN_GPU;
-  }
-
-  return ExecPath::ARM_CPU;
 }
 
 bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
@@ -180,10 +106,6 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   DSP_DIAG(COMPILE, "ArmHybridGraphBackend::compileSegment [%d-%d]: cache MISS, compiling (shapeKey=0x%llx)",
            startSlot, endSlot, (long long)shapeKey);
-
-  // Determine execution path (CPU vs GPU)
-  ExecPath execPath = selectExecPath(slots, startSlot, endSlot,
-                                      outputSlots, totalOutputSlots);
 
   // Analyze the segment
   auto analysis = CpuIRBuilder::analyzeSegment(slots, startSlot, endSlot, totalSlots,
@@ -215,32 +137,7 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   // Compile with ARM-tuned options
   auto compileOpts = getArmCompileOptions();
 
-  std::shared_ptr<sd::mlir_runtime::CompiledKernel> kernel;
-  if (execPath == ExecPath::VULKAN_GPU) {
-    // Vulkan path: enable Vulkan in options
-    compileOpts.enableVulkan = true;
-    compileOpts.mobileGPU = sd::mlir_runtime::MobileGPUTarget::VULKAN_GENERIC;
-    kernel = engine.compileModule(std::move(module), "fused_kernel", compileOpts);
-
-    if (!kernel || !kernel->isValid()) {
-      // Fall back to CPU path on Vulkan compile failure
-      DSP_DIAG(FALLBACK, "ArmHybridGraphBackend: Vulkan compile failed for segment [%d-%d], falling back to CPU",
-                startSlot, endSlot);
-      execPath = ExecPath::ARM_CPU;
-
-      // Rebuild module for CPU path
-      module = irBuilder_.buildModule(engine.getContext(), slots, startSlot, endSlot,
-                                       totalSlots, externalInputs, numExternalInputs,
-                                       outputSlots, totalOutputSlots);
-      if (!module) return false;
-
-      compileOpts = getArmCompileOptions();
-      kernel = engine.compileModule(std::move(module), "fused_kernel", compileOpts);
-    }
-  } else {
-    // CPU path with ARM optimizations
-    kernel = engine.compileModule(std::move(module), "fused_kernel", compileOpts);
-  }
+  auto kernel = engine.compileModule(std::move(module), "fused_kernel", compileOpts);
 
   if (!kernel || !kernel->isValid()) {
     DSP_DIAG(COMPILE, "ArmHybridGraphBackend: failed to compile segment [%d-%d]",
@@ -253,7 +150,6 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   compiled.kernel = kernel;
   compiled.shapeKey = shapeKey;
   compiled.valid = true;
-  compiled.execPath = execPath;
 
   // Reconstruct arg ordering via shared buildArgMappings() (GraphBackendCommon.h)
   compiled.argMappings = buildArgMappings(
@@ -276,9 +172,8 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   lastCompilationAudit_ = compiled.compilationAudit;
 
-  const char* pathName = (execPath == ExecPath::VULKAN_GPU) ? "Vulkan GPU" : "ARM CPU";
-  DSP_DIAG(COMPILE, "ArmHybridGraphBackend: compiled segment [%d-%d] via %s with %d buffer args (%d ops fused)",
-            startSlot, endSlot, pathName,
+  DSP_DIAG(COMPILE, "ArmHybridGraphBackend: compiled ARM CPU segment [%d-%d] with %d buffer args (%d ops fused)",
+            startSlot, endSlot,
             static_cast<int>(compiled.argMappings.size()),
             endSlot - startSlot + 1);
 
@@ -317,9 +212,8 @@ Status ArmHybridGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slot
     return Status::KERNEL_FAILURE;
   }
 
-  const char* pathName = (compiled->execPath == ExecPath::VULKAN_GPU) ? "Vulkan GPU" : "ARM CPU";
-  DSP_DIAG(EXECUTE, "ArmHybridGraphBackend::executeSegment [%d-%d]: executing via %s with %d args",
-           startSlot, endSlot, pathName, (int)compiled->argMappings.size());
+  DSP_DIAG(EXECUTE, "ArmHybridGraphBackend::executeSegment [%d-%d]: executing ARM CPU kernel with %d args",
+           startSlot, endSlot, (int)compiled->argMappings.size());
 
   // Wire NDArray buffers to kernel arguments in the same order as compilation
   std::vector<NDArray*> inputArrays;
@@ -351,9 +245,8 @@ Status ArmHybridGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slot
   // Execute the kernel
   bool ok = compiled->kernel->execute(inputArrays, outputArrays);
   if (!ok) {
-    DSP_DIAG(EXECUTE, "ArmHybridGraphBackend: execution failed for segment [%d-%d] (path=%s)",
-              startSlot, endSlot,
-              compiled->execPath == ExecPath::VULKAN_GPU ? "Vulkan" : "ARM CPU");
+    DSP_DIAG(EXECUTE, "ArmHybridGraphBackend: ARM CPU execution failed for segment [%d-%d]",
+              startSlot, endSlot);
     return Status::KERNEL_FAILURE;
   }
 

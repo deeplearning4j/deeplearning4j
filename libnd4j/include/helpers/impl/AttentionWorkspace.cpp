@@ -21,6 +21,7 @@
 
 #include <helpers/AttentionWorkspace.h>
 #include <array/NDArrayFactory.h>
+#include <graph/DspDiagnostics.h>
 #include <algorithm>
 
 namespace sd {
@@ -39,6 +40,21 @@ struct AttentionWorkspaceTLGuard {
 AttentionWorkspace*& AttentionWorkspace::instanceRef() {
   static thread_local AttentionWorkspaceTLGuard guard;
   return guard.ptr;
+}
+
+void*& AttentionWorkspace::activeScopeRef() {
+  static thread_local void* scope = nullptr;
+  return scope;
+}
+
+void* AttentionWorkspace::setActiveScope(void* scope) {
+  void* previous = activeScopeRef();
+  activeScopeRef() = scope;
+  return previous;
+}
+
+void* AttentionWorkspace::getActiveScope() {
+  return activeScopeRef();
 }
 
 AttentionWorkspace* AttentionWorkspace::getInstance() {
@@ -60,6 +76,8 @@ NDArray* AttentionWorkspace::getBuffer(const std::string& key,
                                         DataType dtype,
                                         LaunchContext* context) {
   std::lock_guard<std::mutex> lock(mutex_);
+  void* scope = getActiveScope();
+  auto& buffers = buffersByScope_[scope];
 
   // Calculate required capacity
   LongType requiredElements = 1;
@@ -67,9 +85,17 @@ NDArray* AttentionWorkspace::getBuffer(const std::string& key,
     requiredElements *= dim;
   }
   size_t requiredBytes = requiredElements * DataTypeUtils::sizeOf(dtype);
+  const bool traceForward4d = key.compare(0, 10, "forward4d_") == 0;
+  auto requestedDim = [&shape](size_t index) -> LongType {
+    return index < shape.size() ? shape[index] : -1;
+  };
+  auto rawSpecial = [](NDArray* array) -> void* {
+    return array != nullptr && array->dataBuffer() != nullptr
+        ? array->dataBuffer()->special() : nullptr;
+  };
 
-  auto it = buffers_.find(key);
-  if (it != buffers_.end()) {
+  auto it = buffers.find(key);
+  if (it != buffers.end()) {
     auto& existing = it->second;
 
     // Check if existing buffer is compatible
@@ -81,11 +107,37 @@ NDArray* AttentionWorkspace::getBuffer(const std::string& key,
 
       if (shapeMatches) {
         existing.lastUsed = ++accessCounter_;
+        if (traceForward4d) {
+          DSP_DIAG(MEMORY,
+                   "ATTENTION_WORKSPACE event=HIT seq=%llu key=%s rank=%zu "
+                   "shape=[%lld,%lld,%lld,%lld,%lld] elements=%lld capacity=%lld "
+                   "array=%p special=%p",
+                   static_cast<unsigned long long>(accessCounter_), key.c_str(), shape.size(),
+                   static_cast<long long>(requestedDim(0)), static_cast<long long>(requestedDim(1)),
+                   static_cast<long long>(requestedDim(2)), static_cast<long long>(requestedDim(3)),
+                   static_cast<long long>(requestedDim(4)), static_cast<long long>(requiredElements),
+                   static_cast<long long>(existing.capacity), static_cast<void*>(existing.buffer.get()),
+                   rawSpecial(existing.buffer.get()));
+        }
         // Return view if active (element count differs from buffer), otherwise return buffer
         if (existing.view) {
           return existing.view.get();
         }
         return existing.buffer.get();
+      }
+
+      if (traceForward4d) {
+        DSP_DIAG(MEMORY,
+                 "ATTENTION_WORKSPACE event=EVICT_SHAPE seq=%llu key=%s rank=%zu "
+                 "shape=[%lld,%lld,%lld,%lld,%lld] elements=%lld oldElements=%lld "
+                 "oldCapacity=%lld array=%p special=%p",
+                 static_cast<unsigned long long>(accessCounter_ + 1), key.c_str(), shape.size(),
+                 static_cast<long long>(requestedDim(0)), static_cast<long long>(requestedDim(1)),
+                 static_cast<long long>(requestedDim(2)), static_cast<long long>(requestedDim(3)),
+                 static_cast<long long>(requestedDim(4)), static_cast<long long>(requiredElements),
+                 static_cast<long long>(existing.buffer->lengthOf()),
+                 static_cast<long long>(existing.capacity), static_cast<void*>(existing.buffer.get()),
+                 rawSpecial(existing.buffer.get()));
       }
 
       // Shape mismatch — evict old buffer and reallocate.
@@ -94,10 +146,20 @@ NDArray* AttentionWorkspace::getBuffer(const std::string& key,
       // buffers causes shape mismatches and crashes. Reallocation ensures fresh buffers
       // with correct shape info are used.
       currentMemory_ -= existing.capacity * DataTypeUtils::sizeOf(existing.buffer->dataType());
-      buffers_.erase(it);
+      buffers.erase(it);
     } else {
+      if (traceForward4d) {
+        DSP_DIAG(MEMORY,
+                 "ATTENTION_WORKSPACE event=EVICT_INCOMPATIBLE seq=%llu key=%s "
+                 "requestedType=%d oldType=%d elements=%lld oldCapacity=%lld array=%p special=%p",
+                 static_cast<unsigned long long>(accessCounter_ + 1), key.c_str(),
+                 static_cast<int>(dtype), static_cast<int>(existing.buffer->dataType()),
+                 static_cast<long long>(requiredElements), static_cast<long long>(existing.capacity),
+                 static_cast<void*>(existing.buffer.get()), rawSpecial(existing.buffer.get()));
+      }
       // Buffer exists but wrong type or too small - need to reallocate
       currentMemory_ -= existing.capacity * DataTypeUtils::sizeOf(existing.buffer->dataType());
+      buffers.erase(it);
     }
   }
 
@@ -115,9 +177,23 @@ NDArray* AttentionWorkspace::getBuffer(const std::string& key,
   entry.lastUsed = ++accessCounter_;
 
   currentMemory_ += requiredBytes;
-  buffers_[key] = std::move(entry);
+  buffers[key] = std::move(entry);
 
-  return buffers_[key].buffer.get();
+  if (traceForward4d) {
+    auto* allocated = buffers[key].buffer.get();
+    DSP_DIAG(MEMORY,
+             "ATTENTION_WORKSPACE event=ALLOC seq=%llu key=%s rank=%zu "
+             "shape=[%lld,%lld,%lld,%lld,%lld] elements=%lld capacity=%lld "
+             "array=%p special=%p workspaceBytes=%zu entries=%zu",
+             static_cast<unsigned long long>(accessCounter_), key.c_str(), shape.size(),
+             static_cast<long long>(requestedDim(0)), static_cast<long long>(requestedDim(1)),
+             static_cast<long long>(requestedDim(2)), static_cast<long long>(requestedDim(3)),
+             static_cast<long long>(requestedDim(4)), static_cast<long long>(requiredElements),
+             static_cast<long long>(buffers[key].capacity), static_cast<void*>(allocated),
+             rawSpecial(allocated), currentMemory_, buffers.size());
+  }
+
+  return buffers[key].buffer.get();
 }
 
 NDArray* AttentionWorkspace::getScratchBuffer(const std::string& key,
@@ -130,21 +206,56 @@ NDArray* AttentionWorkspace::getScratchBuffer(const std::string& key,
 
 void AttentionWorkspace::clear() {
   std::lock_guard<std::mutex> lock(mutex_);
-  buffers_.clear();
+  size_t entries = 0;
+  for (const auto& scope : buffersByScope_) {
+    entries += scope.second.size();
+  }
+  if (entries > 0) {
+    DSP_DIAG(MEMORY, "ATTENTION_WORKSPACE event=CLEAR_ALL scopes=%zu entries=%zu workspaceBytes=%zu",
+             buffersByScope_.size(), entries, currentMemory_);
+  }
+  buffersByScope_.clear();
   currentMemory_ = 0;
+}
+
+void AttentionWorkspace::clearScope(void* scope) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto scopeIt = buffersByScope_.find(scope);
+  if (scopeIt == buffersByScope_.end()) {
+    return;
+  }
+
+  size_t scopeBytes = 0;
+  for (const auto& pair : scopeIt->second) {
+    scopeBytes += pair.second.capacity * DataTypeUtils::sizeOf(pair.second.buffer->dataType());
+  }
+  DSP_DIAG(MEMORY,
+           "ATTENTION_WORKSPACE event=CLEAR_SCOPE scope=%p entries=%zu scopeBytes=%zu workspaceBytes=%zu",
+           scope, scopeIt->second.size(), scopeBytes, currentMemory_);
+
+  currentMemory_ = scopeBytes <= currentMemory_ ? currentMemory_ - scopeBytes : 0;
+  buffersByScope_.erase(scopeIt);
 }
 
 void AttentionWorkspace::clearPrefix(const std::string& prefix) {
   std::lock_guard<std::mutex> lock(mutex_);
+  auto scopeIt = buffersByScope_.find(getActiveScope());
+  if (scopeIt == buffersByScope_.end()) {
+    return;
+  }
 
-  auto it = buffers_.begin();
-  while (it != buffers_.end()) {
+  auto& buffers = scopeIt->second;
+  auto it = buffers.begin();
+  while (it != buffers.end()) {
     if (it->first.find(prefix) == 0) {
       currentMemory_ -= it->second.capacity * DataTypeUtils::sizeOf(it->second.buffer->dataType());
-      it = buffers_.erase(it);
+      it = buffers.erase(it);
     } else {
       ++it;
     }
+  }
+  if (buffers.empty()) {
+    buffersByScope_.erase(scopeIt);
   }
 }
 
@@ -155,7 +266,11 @@ size_t AttentionWorkspace::getMemoryUsage() const {
 
 size_t AttentionWorkspace::getBufferCount() const {
   std::lock_guard<std::mutex> lock(mutex_);
-  return buffers_.size();
+  size_t count = 0;
+  for (const auto& scope : buffersByScope_) {
+    count += scope.second.size();
+  }
+  return count;
 }
 
 void AttentionWorkspace::setMemoryLimit(size_t maxBytes) {
@@ -173,31 +288,42 @@ void AttentionWorkspace::evictIfNeeded(size_t requiredBytes) {
     return;  // No limit set
   }
 
-  size_t targetMemory = memoryLimit_ - requiredBytes;
+  size_t targetMemory = requiredBytes >= memoryLimit_ ? 0 : memoryLimit_ - requiredBytes;
   if (currentMemory_ <= targetMemory) {
     return;  // Already under limit
   }
 
-  // Build list of buffers sorted by last used time (LRU)
-  std::vector<std::pair<std::string, uint64_t>> candidates;
-  for (const auto& pair : buffers_) {
-    candidates.push_back({pair.first, pair.second.lastUsed});
+  struct EvictionCandidate {
+    void* scope;
+    std::string key;
+    uint64_t lastUsed;
+  };
+  std::vector<EvictionCandidate> candidates;
+  for (const auto& scope : buffersByScope_) {
+    for (const auto& pair : scope.second) {
+      candidates.push_back({scope.first, pair.first, pair.second.lastUsed});
+    }
   }
 
-  // Sort by last used (oldest first)
   std::sort(candidates.begin(), candidates.end(),
-            [](const auto& a, const auto& b) { return a.second < b.second; });
+            [](const auto& a, const auto& b) { return a.lastUsed < b.lastUsed; });
 
-  // Evict until under limit
   for (const auto& candidate : candidates) {
     if (currentMemory_ <= targetMemory) {
       break;
     }
 
-    auto it = buffers_.find(candidate.first);
-    if (it != buffers_.end()) {
+    auto scopeIt = buffersByScope_.find(candidate.scope);
+    if (scopeIt == buffersByScope_.end()) {
+      continue;
+    }
+    auto it = scopeIt->second.find(candidate.key);
+    if (it != scopeIt->second.end()) {
       currentMemory_ -= it->second.capacity * DataTypeUtils::sizeOf(it->second.buffer->dataType());
-      buffers_.erase(it);
+      scopeIt->second.erase(it);
+      if (scopeIt->second.empty()) {
+        buffersByScope_.erase(scopeIt);
+      }
     }
   }
 }

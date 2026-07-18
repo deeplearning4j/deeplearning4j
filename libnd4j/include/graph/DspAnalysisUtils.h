@@ -25,7 +25,7 @@
 #ifndef LIBND4J_DSP_ANALYSIS_UTILS_H
 #define LIBND4J_DSP_ANALYSIS_UTILS_H
 
-#include <ops/OpTraitTable.h>
+#include <ops/declarable/OpDescriptor.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <system/common.h>
 

@@ -36,6 +36,7 @@ BOOLEAN_OP_IMPL(is_numeric_tensor, 1, true) {
 
 DECLARE_TYPES(is_numeric_tensor) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, BOOL);
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_COMPARISON);
 }
 }  // namespace ops
 }  // namespace sd

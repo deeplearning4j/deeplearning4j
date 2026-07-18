@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.llm.tokenizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.TokenizerConfig;
+import org.eclipse.deeplearning4j.model.download.ModelDownloader;
 
 import java.io.File;
 import java.util.*;
@@ -253,6 +254,38 @@ public class HuggingFaceTokenizer implements Tokenizer {
      */
     public static HuggingFaceTokenizer fromDirectory(String modelDirPath) {
         return fromDirectory(new File(modelDirPath));
+    }
+
+    /**
+     * Download and load a tokenizer from a Hugging Face model repository.
+     * Files are cached under {@code cacheRoot/repositoryId} and reused on later calls.
+     */
+    public static HuggingFaceTokenizer fromPretrained(String repositoryId, File cacheRoot) {
+        if (repositoryId == null || !repositoryId.matches("[A-Za-z0-9._-]+/[A-Za-z0-9._-]+")) {
+            throw new TokenizerException("Invalid Hugging Face repository id: " + repositoryId);
+        }
+        if (cacheRoot == null) {
+            throw new TokenizerException("Tokenizer cache root is required");
+        }
+        File repositoryCache = new File(cacheRoot, repositoryId);
+        String baseUrl = "https://huggingface.co/" + repositoryId + "/resolve/main/";
+        try {
+            ModelDownloader.download(baseUrl + "tokenizer.json", "tokenizer.json", repositoryCache);
+            try {
+                ModelDownloader.download(baseUrl + "tokenizer_config.json", "tokenizer_config.json", repositoryCache);
+            } catch (java.io.IOException e) {
+                log.warn("No tokenizer_config.json available for {}: {}", repositoryId, e.getMessage());
+            }
+            return fromDirectory(repositoryCache);
+        } catch (java.io.IOException e) {
+            throw new TokenizerException("Failed to download tokenizer from " + repositoryId, e);
+        }
+    }
+
+    /** Load a repository tokenizer from the standard DL4J user cache. */
+    public static HuggingFaceTokenizer fromPretrained(String repositoryId) {
+        return fromPretrained(repositoryId,
+                new File(System.getProperty("user.home"), ".cache/dl4j/tokenizers"));
     }
 
     @Override

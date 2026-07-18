@@ -121,7 +121,7 @@ DECLARE_CUSTOM_OP(select, 3, 1, false, 0, 0);
  * @tparam T
  */
 #if NOT_EXCLUDED(OP_choose)
-DECLARE_CUSTOM_OP(choose, -1, 1, false, -2, -1);
+DECLARE_CUSTOM_OP(choose, -1, 2, false, -2, -1);
 #endif
 
 /**

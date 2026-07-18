@@ -293,7 +293,7 @@ static void lstmLayerMKLDNN(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, ND
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
+PLATFORM_IMPL(lstmLayer, ENGINE_ONEDNN) {
   const auto dataFormat = INT_ARG(0);  // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL],
                                        // for bidirectional: 3 = [sL, 2, bS, nOut] (for ONNX)
   const auto directionMode =
@@ -471,7 +471,7 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
+PLATFORM_CHECK(lstmLayer, ENGINE_ONEDNN) {
   const auto dataFormat = INT_ARG(0);  // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL],
                                        // for bidirectional: 3 = [sL, 2, bS, nOut] (for ONNX)
   const auto directionMode =

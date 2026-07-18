@@ -37,9 +37,13 @@
 
 using namespace samediff;
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+// No file-level SD_NS wrap: DECLARE_PLATFORM opens it per declaration
+// (platform_boilerplate.h); wrapping the list again nests SD_NS in itself.
 
 /**
  * Platform helper declarations for VLM (Vision Language Model) accelerated operations.
@@ -105,6 +109,7 @@ DECLARE_PLATFORM(vlm_2d_position_encode, ENGINE_CUDA);
 }  // namespace platforms
 }  // namespace ops
 
+SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN
 namespace vlmUtils {
 
 #if HAVE_VLM
@@ -367,6 +372,7 @@ private:
 #endif  // HAVE_VLM
 
 }  // namespace vlmUtils
+SD_BACKEND_ROOT_INLINE_NAMESPACE_END
 }  // namespace sd
 
 #endif  // DEV_TESTS_VLMUTILS_H

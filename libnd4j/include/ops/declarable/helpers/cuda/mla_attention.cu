@@ -30,6 +30,7 @@
 #include <array/NDArray.h>
 #include <ops/declarable/helpers/mla_attention.h>
 #include <types/float16.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -37,64 +38,14 @@ namespace helpers {
 
 constexpr int MLA_WARP_SIZE = 32;
 
-//////////////////////////////////////////////////////////////////////////////
-// Warp-level reduction for sum
-//////////////////////////////////////////////////////////////////////////////
+// Accumulator type: use double when T=double for full precision, float otherwise.
 template <typename T>
-SD_DEVICE SD_INLINE T mlaWarpReduceSum(T val) {
-    for (int offset = MLA_WARP_SIZE / 2; offset > 0; offset /= 2) {
-        val += __shfl_down_sync(0xffffffff, val, offset);
-    }
-    return val;
-}
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
-//////////////////////////////////////////////////////////////////////////////
-// Warp-level reduction for max
-//////////////////////////////////////////////////////////////////////////////
-template <typename T>
-SD_DEVICE SD_INLINE T mlaWarpReduceMax(T val) {
-    for (int offset = MLA_WARP_SIZE / 2; offset > 0; offset /= 2) {
-        T other = __shfl_down_sync(0xffffffff, val, offset);
-        val = val > other ? val : other;
-    }
-    return val;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Block-level reduction for sum
-//////////////////////////////////////////////////////////////////////////////
-template <typename T>
-SD_DEVICE T mlaBlockReduceSum(T val, T* sharedMem) {
-    const int lane = threadIdx.x % MLA_WARP_SIZE;
-    const int wid = threadIdx.x / MLA_WARP_SIZE;
-    const int numWarps = (blockDim.x + MLA_WARP_SIZE - 1) / MLA_WARP_SIZE;
-
-    val = mlaWarpReduceSum(val);
-    if (lane == 0) sharedMem[wid] = val;
-    __syncthreads();
-
-    val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : static_cast<T>(0);
-    if (wid == 0) val = mlaWarpReduceSum(val);
-    return val;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Block-level reduction for max
-//////////////////////////////////////////////////////////////////////////////
-template <typename T>
-SD_DEVICE T mlaBlockReduceMax(T val, T* sharedMem) {
-    const int lane = threadIdx.x % MLA_WARP_SIZE;
-    const int wid = threadIdx.x / MLA_WARP_SIZE;
-    const int numWarps = (blockDim.x + MLA_WARP_SIZE - 1) / MLA_WARP_SIZE;
-
-    val = mlaWarpReduceMax(val);
-    if (lane == 0) sharedMem[wid] = val;
-    __syncthreads();
-
-    val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : -1e30f;
-    if (wid == 0) val = mlaWarpReduceMax(val);
-    return val;
-}
+// Warp/block sum+max reductions come from device_primitives.cuh
+// (sd::device::warpReduce* / sd::device::blockReduce*).
 
 //////////////////////////////////////////////////////////////////////////////
 // MLA Attention Kernel
@@ -123,6 +74,8 @@ SD_KERNEL __launch_bounds__(512, 1) void mlaAttentionKernel(
     const int seqLen,
     const float scale) {
 
+    using AccT = typename AccType<T>::type;
+
     // Block indices
     const int batchIdx = blockIdx.x / numHeads;
     const int headIdx = blockIdx.x % numHeads;
@@ -133,71 +86,53 @@ SD_KERNEL __launch_bounds__(512, 1) void mlaAttentionKernel(
     const int projStride = 2 * kvProjectedDim;
 
     extern __shared__ char sharedBytes[];
-    float* sdata = reinterpret_cast<float*>(sharedBytes);
+    AccT* sdata = reinterpret_cast<AccT*>(sharedBytes);
 
     // Pointer to query for this (batch, head)
     const T* qRow = query + (batchIdx * numHeads + headIdx) * headDim;
 
-    // We use online softmax: maintain running max and sum
-    // Each thread accumulates a partial weighted value vector
-    // Thread-local accumulator for output (one element at a time via loop)
-
-    // Phase 1: Compute attention scores for each sequence position
-    // We process sequence positions in parallel across threads
-    float threadMax = -1e30f;
-    float threadSumExp = 0.0f;
-
-    // Thread-local output accumulator
-    // We need headDim values; each thread maintains partial sums
-    // Since headDim can be large, we process one dim at a time later
-
-    // First pass: compute all attention scores
-    // Each thread handles a subset of sequence positions
-    // We need to store scores for the softmax pass
-    // Use a two-pass approach: (1) compute scores + max, (2) softmax + weighted V
-
     // Shared memory layout: after reduction scratch, store scores
     // sdata[0..numWarps-1] = reduction scratch
     const int numWarps = (blockDim.x + MLA_WARP_SIZE - 1) / MLA_WARP_SIZE;
-    float* scores = sdata + numWarps;  // [seqLen] in shared memory
+    AccT* scores = sdata + numWarps;  // [seqLen] in shared memory
 
     // Pass 1: Compute Q @ K^T * scale for each sequence position
     for (int s = threadIdx.x; s < seqLen; s += blockDim.x) {
         const T* latentRow = latentKVCache + (batchIdx * maxSeqLen + s) * latentDim;
 
-        float dot = 0.0f;
+        AccT dot = static_cast<AccT>(0);
         for (int d = 0; d < headDim; ++d) {
             // Decompress K[s, d] = latentRow @ kvDownProj[:, kvHead * headDim + d]
-            float kVal = 0.0f;
+            AccT kVal = static_cast<AccT>(0);
             const int kColIdx = kvHead * headDim + d;
             for (int l = 0; l < latentDim; ++l) {
-                kVal += static_cast<float>(latentRow[l]) * static_cast<float>(kvDownProj[l * projStride + kColIdx]);
+                kVal += static_cast<AccT>(latentRow[l]) * static_cast<AccT>(kvDownProj[l * projStride + kColIdx]);
             }
-            dot += static_cast<float>(qRow[d]) * kVal;
+            dot += static_cast<AccT>(qRow[d]) * kVal;
         }
-        scores[s] = dot * scale;
+        scores[s] = dot * static_cast<AccT>(scale);
     }
     __syncthreads();
 
     // Pass 2: Find max score (for numerical stability)
-    float localMax = -1e30f;
+    AccT localMax = static_cast<AccT>(-1e30);
     for (int s = threadIdx.x; s < seqLen; s += blockDim.x) {
         if (scores[s] > localMax) localMax = scores[s];
     }
-    float globalMax = mlaBlockReduceMax(localMax, sdata);
-    __shared__ float sharedMax;
+    AccT globalMax = sd::device::blockReduceMax(localMax, sdata);
+    __shared__ AccT sharedMax;
     if (threadIdx.x == 0) sharedMax = globalMax;
     __syncthreads();
 
     // Pass 3: Compute exp(score - max) and sum
-    float localSum = 0.0f;
+    AccT localSum = static_cast<AccT>(0);
     for (int s = threadIdx.x; s < seqLen; s += blockDim.x) {
-        scores[s] = __expf(scores[s] - sharedMax);
+        scores[s] = sd::math::sd_exp<AccT, AccT>(scores[s] - sharedMax);
         localSum += scores[s];
     }
-    float globalSum = mlaBlockReduceSum(localSum, sdata);
-    __shared__ float sharedInvSum;
-    if (threadIdx.x == 0) sharedInvSum = 1.0f / globalSum;
+    AccT globalSum = sd::device::blockReduceSum(localSum, sdata);
+    __shared__ AccT sharedInvSum;
+    if (threadIdx.x == 0) sharedInvSum = static_cast<AccT>(1) / globalSum;
     __syncthreads();
 
     // Normalize scores
@@ -211,15 +146,15 @@ SD_KERNEL __launch_bounds__(512, 1) void mlaAttentionKernel(
     T* outRow = output + (batchIdx * numHeads + headIdx) * headDim;
 
     for (int d = threadIdx.x; d < headDim; d += blockDim.x) {
-        float val = 0.0f;
+        AccT val = static_cast<AccT>(0);
         const int vColIdx = kvProjectedDim + kvHead * headDim + d;
 
         for (int s = 0; s < seqLen; ++s) {
             // Decompress V[s, d] on the fly
             const T* latentRow = latentKVCache + (batchIdx * maxSeqLen + s) * latentDim;
-            float vVal = 0.0f;
+            AccT vVal = static_cast<AccT>(0);
             for (int l = 0; l < latentDim; ++l) {
-                vVal += static_cast<float>(latentRow[l]) * static_cast<float>(kvDownProj[l * projStride + vColIdx]);
+                vVal += static_cast<AccT>(latentRow[l]) * static_cast<AccT>(kvDownProj[l * projStride + vColIdx]);
             }
             val += scores[s] * vVal;
         }
@@ -252,8 +187,9 @@ void launchMlaAttentionKernel(
     int numBlocks = batchSize * numHeads;
 
     // Shared memory: reduction scratch + scores array
+    // Use sizeof AccType<T>::type: double when T=double, float otherwise.
     int numWarps = (threadsPerBlock + MLA_WARP_SIZE - 1) / MLA_WARP_SIZE;
-    size_t sharedMemSize = (numWarps + seqLen) * sizeof(float);
+    size_t sharedMemSize = (numWarps + seqLen) * sizeof(typename AccType<T>::type);
 
     mlaAttentionKernel<T><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
         query, latentKVCache, kvDownProj, output,

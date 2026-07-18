@@ -140,8 +140,10 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <modules>
-                <module>nd4j-sdx</module>
                 <module>nd4j-sdx-preset</module>
+                <module>nd4j-sdx-model</module>
+                <module>nd4j-sdx</module>
+                <module>nd4j-sdx-litertlm</module>
             </modules>
         </profile>
 
@@ -255,6 +257,18 @@
             <modules>
                 <module>nd4j-hexagon</module>
                 <module>nd4j-hexagon-preset</module>
+            </modules>
+
+        </profile>
+        <profile>
+            <id>vulkan</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-vulkan-preset</module>
+                <module>nd4j-vulkan</module>
+                <module>nd4j-vulkan-platform</module>
             </modules>
 
         </profile>

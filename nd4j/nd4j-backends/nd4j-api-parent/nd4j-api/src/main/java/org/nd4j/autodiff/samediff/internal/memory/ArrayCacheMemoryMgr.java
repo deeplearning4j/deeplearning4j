@@ -689,7 +689,11 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             return cached;
 
         // Cache miss - allocate with headroom for future reuse
-        return allocateWithHeadroom(detached, dataType, shape);
+        INDArray ret = allocateWithHeadroom(detached, dataType, shape);
+        if (requiresZeroed && !ret.isEmpty()) {
+            ret.assign(0);
+        }
+        return ret;
     }
 
     @Override
@@ -700,16 +704,27 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     /**
      * Allocate from descriptor, optionally zeroing for ops with sparse output.
      */
+    @Override
     public INDArray allocate(boolean detached, LongShapeDescriptor descriptor, boolean requiresZeroed) {
-        if (descriptor.isEmpty()) {
-            INDArray ret = Nd4j.create(descriptor);
+        long[] shape = descriptor.getShape();
+        boolean canonicalC = !descriptor.isEmpty()
+                && descriptor.getOffset() == 0
+                && descriptor.getEws() == 1
+                && descriptor.getOrder() == 'c'
+                && Arrays.equals(descriptor.getStride(), Nd4j.getStrides(shape, 'c'));
+
+        if (!canonicalC) {
+            INDArray ret = Nd4j.create(descriptor, false);
             if (detached) {
                 ret = ret.detach();
+            }
+            if (requiresZeroed && !ret.isEmpty()) {
+                ret.assign(0);
             }
             return ret;
         }
 
-        return allocate(detached, descriptor.dataType(), descriptor.getShape(), requiresZeroed);
+        return allocate(detached, descriptor.dataType(), shape, requiresZeroed);
     }
 
     @Override
@@ -1003,29 +1018,38 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
      */
     public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer, boolean requiresZeroed) {
         long[] asJava = dataBuffer.asLong();
-        if (Shape.isEmpty(asJava)) {
+        long[] shape = Shape.shape(asJava);
+        boolean canonicalC = !Shape.isEmpty(asJava)
+                && Shape.order(asJava) == 'c'
+                && Shape.elementWiseStride(asJava) == 1
+                && Arrays.equals(Shape.stride(asJava), Nd4j.getStrides(shape, 'c'));
+
+        if (!canonicalC) {
+            // Capacity-cache allocation is shape-only and uses dense C strides.
+            // Preserve all descriptor metadata for every non-canonical layout.
             INDArray ret = Nd4j.createFromDescriptor(dataBuffer);
             if (detached) {
                 ret = ret.detach();
+            }
+            if (requiresZeroed && !ret.isEmpty()) {
+                ret.assign(0);
             }
 
             return ret;
         }
 
         DataType dataType = Shape.dataType(asJava);
-        long[] shape = Shape.shape(asJava);
-
         INDArray cached = tryAllocateFromCapacityCache(dataType, shape, requiresZeroed);
         if (cached != null) {
-            // Fix ordering if needed
-            if (cached.ordering() != Shape.order(asJava)) {
-                cached.setOrder(Shape.order(asJava));
-            }
             return cached;
         }
 
         // Cache miss - allocate with headroom for future reuse
-        return allocateWithHeadroom(detached, dataType, shape);
+        INDArray ret = allocateWithHeadroom(detached, dataType, shape);
+        if (requiresZeroed && !ret.isEmpty()) {
+            ret.assign(0);
+        }
+        return ret;
     }
 
 

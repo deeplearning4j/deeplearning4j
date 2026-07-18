@@ -2667,8 +2667,20 @@ endfunction()
 # ============================================================================
 
 function(execute_template_generation)
-    message(STATUS "🔧 STARTING UNIFIED CPU/CUDA TEMPLATE GENERATION")
     set(ALL_GENERATED_SOURCES "")
+
+    if(SD_VULKAN)
+        # Vulkan kernels are emitted from descriptor/trait metadata by the
+        # Vulkan compiler pipeline. CPU loop/helper instantiations are an
+        # execution backend, not common metadata, and must never be generated.
+        set(CUSTOMOPS_GENERIC_SOURCES "" CACHE INTERNAL
+            "Template-generated source files" FORCE)
+        set(CUSTOMOPS_GENERIC_SOURCES "" PARENT_SCOPE)
+        message(STATUS "✅ Vulkan template processing: no CPU loop/helper instantiations")
+        return()
+    endif()
+
+    message(STATUS "🔧 STARTING UNIFIED CPU/CUDA TEMPLATE GENERATION")
 
     # Use the combinations provided by selective rendering
     if(DEFINED UNIFIED_COMBINATIONS_3)
@@ -2847,20 +2859,41 @@ endfunction()
 # ============================================================================
 
 function(setup_template_processing)
-    # Check if selective rendering has already been executed
+    if(SD_CUDA)
+        set(_template_backend "CUDA")
+    elseif(SD_VULKAN)
+        set(_template_backend "VULKAN")
+    else()
+        set(_template_backend "CPU")
+    endif()
+
+    # Generated execution TUs are backend-specific. Never reuse a CPU list in a
+    # Vulkan build (or a CUDA list in another backend) through a shared cache.
     get_property(cached_sources CACHE CUSTOMOPS_GENERIC_SOURCES PROPERTY VALUE)
+    get_property(cached_backend CACHE CUSTOMOPS_GENERIC_SOURCES_BACKEND PROPERTY VALUE)
+    if(NOT "${cached_backend}" STREQUAL "${_template_backend}")
+        set(cached_sources "")
+        set(CUSTOMOPS_GENERIC_SOURCES "" CACHE INTERNAL
+            "Template-generated source files" FORCE)
+    endif()
+
+    if(SD_VULKAN)
+        set(CUSTOMOPS_GENERIC_SOURCES_BACKEND "VULKAN" CACHE INTERNAL
+            "Backend owning template-generated source files" FORCE)
+        set(CUSTOMOPS_GENERIC_SOURCES "" PARENT_SCOPE)
+        message(STATUS "✅ Vulkan template source set is descriptor-driven; CPU instantiations excluded")
+        return()
+    endif()
+
     if(cached_sources)
-        # Use cached results
         set(CUSTOMOPS_GENERIC_SOURCES ${cached_sources} PARENT_SCOPE)
         list(LENGTH cached_sources cached_count)
-        if(SD_CUDA)
-            message(STATUS "🔄 Using cached CUDA template processing results (${cached_count} files)")
-        else()
-            message(STATUS "🔄 Using cached CPU template processing results (${cached_count} files)")
-        endif()
+        message(STATUS
+            "🔄 Using cached ${_template_backend} template processing results (${cached_count} files)")
     else()
-        # Execute selective rendering + template processing
         execute_template_processing_with_selective_rendering()
+        set(CUSTOMOPS_GENERIC_SOURCES_BACKEND "${_template_backend}" CACHE INTERNAL
+            "Backend owning template-generated source files" FORCE)
         set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
     endif()
 endfunction()

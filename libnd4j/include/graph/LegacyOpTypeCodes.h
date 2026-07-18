@@ -29,8 +29,9 @@ namespace graph {
 //
 // Categorization notes relevant to backend routing:
 //   - LEGACY_NOT_SET (0): slot is not a legacy op wrapper.
-//   - LEGACY_TRANSFORM_SAME..LEGACY_SCALAR_BOOL (1..7): element-wise ops;
-//     Triton-compilable.
+//   - LEGACY_TRANSFORM_SAME..LEGACY_SCALAR_BOOL (1..7),
+//     LEGACY_PAIRWISE_BOOL (18), and LEGACY_TRANSFORM_ANY (19):
+//     element-wise ops; Triton-compilable.
 //   - LEGACY_REDUCE_FLOAT..LEGACY_REDUCE3 (8..12), LEGACY_INDEX_REDUCE (14),
 //     LEGACY_BROADCAST (15): read reduction/broadcast dims from block.getAxis();
 //     wrap NativeOpExecutioner C-APIs with no Triton IR emitter — must route
@@ -58,6 +59,7 @@ enum LegacyOpTypeCode : int {
   LEGACY_BROADCAST_BOOL       = 16,
   LEGACY_RANDOM               = 17,
   LEGACY_PAIRWISE_BOOL        = 18,
+  LEGACY_TRANSFORM_ANY        = 19,
 };
 
 // True for legacy op types whose reduction/broadcast dimensions live in

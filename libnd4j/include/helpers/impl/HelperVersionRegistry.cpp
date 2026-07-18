@@ -30,6 +30,7 @@
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 HelperVersionRegistry::HelperVersionRegistry() { initializeFromEnvironment(); }
 
@@ -233,6 +234,7 @@ void HelperVersionRegistry::logVersionCheck(const std::string& name, const Helpe
   }
 }
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

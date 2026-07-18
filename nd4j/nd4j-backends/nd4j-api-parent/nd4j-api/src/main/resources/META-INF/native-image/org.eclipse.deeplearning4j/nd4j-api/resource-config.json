@@ -1,0 +1,24 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "nd4j-op-def\\.pbtxt"
+      },
+      {
+        "pattern": "functions\\.properties"
+      },
+      {
+        "pattern": "onnx\\.pbtxt"
+      },
+      {
+        "pattern": "onnxops\\.json"
+      },
+      {
+        "pattern": "ops\\.proto"
+      },
+      {
+        "pattern": "org/nd4j/.*\\.properties"
+      }
+    ]
+  }
+}

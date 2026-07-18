@@ -30,11 +30,15 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyReduceFloatOp::LegacyReduceFloatOp() : LegacyOp(1) {
-  //
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyReduceFloatOp::LegacyReduceFloatOp(int opNum) : LegacyOp(1, opNum) {
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp* LegacyReduceFloatOp::clone() { return new LegacyReduceFloatOp(this->_opNum); }
@@ -163,5 +167,6 @@ ShapeList* LegacyReduceFloatOp::calculateOutputShape(ShapeList* inputShape, Cont
 
   return SHAPELIST(newShape);
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

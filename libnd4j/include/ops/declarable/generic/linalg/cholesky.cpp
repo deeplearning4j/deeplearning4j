@@ -42,7 +42,9 @@ OP_IMPL(cholesky, 1, 1, true) {
   return helpers::cholesky(block.launchContext(), input, output, block.isInplace());
 }
 DECLARE_TYPES(cholesky) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

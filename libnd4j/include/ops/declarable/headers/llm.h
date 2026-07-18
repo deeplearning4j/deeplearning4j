@@ -1167,7 +1167,7 @@ DECLARE_CUSTOM_OP(kl_divergence_per_layer, 2, 1, false, 1, 0);
  * Output:
  *   0: generatedTokenIds [maxNewTokens] INT64 — produced token sequence
  *   1: tokenCount [1] INT64 scalar — actual number of tokens generated
- *   2: timingInfo [5] FLOAT — prefillMs, avgDecodeMs, tokPerSec, p50Ms, p99Ms
+ *   2: timingInfo [10] FLOAT — timing metrics plus speculative proposed/accepted/step counts
  */
 #if NOT_EXCLUDED(OP_autoregressive_decode)
 DECLARE_CUSTOM_OP(autoregressive_decode, 3, 3, false, 3, 5);
@@ -1449,6 +1449,215 @@ DECLARE_CUSTOM_OP(ggml_qmatmul_lora_bp, 5, 3, false, 1, 3);
  */
 #if NOT_EXCLUDED(OP_multi_lora_matmul_bp)
 DECLARE_CUSTOM_OP(multi_lora_matmul_bp, 6, 3, false, 0, 0);
+#endif
+
+// ───────────────────────────────────────────────────────────────────────────
+// llama.cpp-compat op-name surface (native adapters replacing the removed
+// platform/llamacpp helpers; see also DECLARE_SYN registrations for
+// get_rows, get_rows-style pure renames). Implementations: generic/nn/llm_compat_ops.cpp
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * scale — multiply a tensor by a scalar.
+ * Input 0: x. T arg 0: scale (default 1.0). Output 0: x * scale.
+ */
+#if NOT_EXCLUDED(OP_scale)
+DECLARE_CUSTOM_OP(scale, 1, 1, false, -2, 0);
+#endif
+
+/**
+ * add_inplace — accumulator addition: output = accumulator + input.
+ * Inputs: 0 accumulator, 1 input (same shape). Output 0 may alias input 0.
+ */
+#if NOT_EXCLUDED(OP_add_inplace)
+DECLARE_CUSTOM_OP(add_inplace, 2, 1, true, 0, 0);
+#endif
+
+/**
+ * get_rows_bp — backward of get_rows/gather(axis=0): scatter-add rows of the
+ * gradient back into a zeroed [numRows, D] table.
+ * Inputs: 0 gradOutput [N, D], 1 indices [N] (int).
+ * I arg 0: numRows (required — not derivable from the inputs).
+ * Output 0: gradWeights [numRows, D].
+ */
+#if NOT_EXCLUDED(OP_get_rows_bp)
+DECLARE_CUSTOM_OP(get_rows_bp, 2, 1, false, 0, 1);
+#endif
+
+/**
+ * paged_attention — llama.cpp-compat wrapper over paged_attention_forward.
+ * Inputs: 0 query [B,1,H,Dh], 1 keyBlockPool, 2 valueBlockPool,
+ *         3 pageTables [B,maxBlocks] int32, 4 contextLens [B] int32.
+ * I arg 0: blockSize (default = keyBlockPool.sizeAt(1)); head counts and
+ * headDim derive from the input shapes. T arg 0: scale (0 = auto).
+ * Output 0: [B,1,H,Dh].
+ */
+#if NOT_EXCLUDED(OP_paged_attention)
+DECLARE_CUSTOM_OP(paged_attention, 5, 1, false, -2, -2);
+#endif
+
+/**
+ * moe_expert_ffn — apply routed experts given precomputed routing.
+ * output[t] = sum_k routingWeights[t,k] * (input[t] @ expertWeights[expertIndices[t,k]])
+ * Inputs: 0 input [T,H], 1 expertWeights [E,H,D], 2 routingWeights [T,K],
+ *         3 expertIndices [T,K] (int). I arg 0: numExperts (default E).
+ * Output 0: [T,D]. Computed via a dense-over-experts contraction
+ * (routing matrix ⊗ input, tensordot with the expert bank) — correct for all
+ * inputs; K-sparsity is honored mathematically, not exploited for speed.
+ */
+#if NOT_EXCLUDED(OP_moe_expert_ffn)
+DECLARE_CUSTOM_OP(moe_expert_ffn, 4, 1, false, 0, -2);
+#endif
+
+// ── GLU-family gated activations: out = act(x[...,:D/2]) * x[...,D/2:] ──
+// (implementations in generic/nn/llm_composed_ops.cpp)
+#if NOT_EXCLUDED(OP_swiglu)
+DECLARE_CUSTOM_OP(swiglu, 1, 1, false, 0, 0);  // SiLU gate
+#endif
+#if NOT_EXCLUDED(OP_geglu)
+DECLARE_CUSTOM_OP(geglu, 1, 1, false, 0, 0);  // tanh-GELU gate
+#endif
+#if NOT_EXCLUDED(OP_reglu)
+DECLARE_CUSTOM_OP(reglu, 1, 1, false, 0, 0);  // ReLU gate
+#endif
+
+/**
+ * win_part — Swin window partition. Input [N,H,W,C] (NHWC), I arg 0 = windowSize
+ * w (H,W must be divisible by w). Output [N*(H/w)*(W/w), w, w, C].
+ */
+#if NOT_EXCLUDED(OP_win_part)
+DECLARE_CUSTOM_OP(win_part, 1, 1, false, 0, 1);
+#endif
+
+/**
+ * win_unpart — inverse of win_part. Input [numWin, w, w, C], I args: 0=windowSize,
+ * 1=H, 2=W. Output [N, H, W, C] with N = numWin / ((H/w)*(W/w)).
+ */
+#if NOT_EXCLUDED(OP_win_unpart)
+DECLARE_CUSTOM_OP(win_unpart, 1, 1, false, 0, 3);
+#endif
+
+/**
+ * timestep_embedding — DDPM diffusion timestep embedding. Input timesteps [T],
+ * I args: 0=dim (default 128), 1=maxPeriod (default 10000). Output [T, dim] =
+ * concat(cos(args), sin(args)); trailing zero column when dim is odd.
+ */
+#if NOT_EXCLUDED(OP_timestep_embedding)
+DECLARE_CUSTOM_OP(timestep_embedding, 1, 1, false, 0, -2);
+#endif
+
+/**
+ * sinusoidal_position_encoding — transformer sinusoidal PE (sin||cos half-split,
+ * base 10000). Input positions [T], I arg 0 = embedDim (required). Output [T, embedDim].
+ */
+#if NOT_EXCLUDED(OP_sinusoidal_position_encoding)
+DECLARE_CUSTOM_OP(sinusoidal_position_encoding, 1, 1, false, 0, -2);
+#endif
+
+// ── normalization / MoE / attention compat ops (generic/nn/llm_norm_moe_ops.cpp) ──
+
+/**
+ * group_norm — GroupNorm over (C/G channels + spatial) per (N, group), no affine.
+ * Input [N, C, *spatial] (rank 2-4). I arg 0 = numGroups (default 32,
+ * must divide C). T arg 0 = eps (default 1e-5). Output = same shape.
+ */
+#if NOT_EXCLUDED(OP_group_norm)
+DECLARE_CUSTOM_OP(group_norm, 1, 1, false, 0, 0);
+#endif
+
+/**
+ * l2_normalize — x / sqrt(sum(x^2) + eps) along the last dim.
+ * Input [*], T arg 0 = eps (default 1e-12). Output = same shape.
+ */
+#if NOT_EXCLUDED(OP_l2_normalize)
+DECLARE_CUSTOM_OP(l2_normalize, 1, 1, false, 0, 0);
+#endif
+
+/**
+ * load_balance_loss — Switch-Transformer MoE aux loss:
+ *   E * sum_e( mean_batch(probs[:,e]) * mean_batch(mask[:,e]) ).
+ * Inputs: 0 routingProbs [B,E], 1 expertMask [B,E]. Output [1].
+ */
+#if NOT_EXCLUDED(OP_load_balance_loss)
+DECLARE_CUSTOM_OP(load_balance_loss, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * sparse_mul_mat — per-token expert matmul:
+ *   out[t,d] = sum_h input[t,h] * sparseWeights[indices[t], h, d].
+ * Inputs: 0 input [T,H], 1 sparseWeights [E,H,D], 2 indices [T] (int).
+ * Output [T,D].
+ */
+#if NOT_EXCLUDED(OP_sparse_mul_mat)
+DECLARE_CUSTOM_OP(sparse_mul_mat, 3, 1, false, 0, 0);
+#endif
+
+/**
+ * kv_cache_attention — non-causal scaled dot-product attention over a KV cache;
+ * thin adapter over grouped_query_attention. Inputs: 0 query [B,S,H,Dh],
+ * 1 keyCache, 2 valueCache. T arg 0 = scale (0 = auto). Output = query shape.
+ */
+#if NOT_EXCLUDED(OP_kv_cache_attention)
+DECLARE_CUSTOM_OP(kv_cache_attention, 3, 1, false, -2, -2);
+#endif
+
+/**
+ * quantize_q4_0 / quantize_q8_0 — pack a float tensor into raw GGML block bytes
+ * (the exact inverse of ggml_dequantize; Q4_0 uses this codebase's adjacent-pair
+ * nibble packing). Input [*] float, element count must be a multiple of 32.
+ * Output: flat UINT8 [numBlocks * blockBytes] (Q4_0: 18B, Q8_0: 34B per 32 elems).
+ * Implementations: generic/nn/ggml_quantize_ops.cpp + helpers/{cpu,cuda}/ggml_quantize.
+ */
+#if NOT_EXCLUDED(OP_quantize_q4_0)
+DECLARE_CUSTOM_OP(quantize_q4_0, 1, 1, false, 0, 0);
+#endif
+#if NOT_EXCLUDED(OP_quantize_q8_0)
+DECLARE_CUSTOM_OP(quantize_q8_0, 1, 1, false, 0, 0);
+#endif
+
+/**
+ * ssm_conv — Mamba depthwise causal 1D conv; adapter over causal_conv1d
+ * (standard [B,L,D] / [D,K] layout). Inputs: 0 input [B,L,D], 1 conv [D,K].
+ * Output [B,L,D].
+ */
+#if NOT_EXCLUDED(OP_ssm_conv)
+DECLARE_CUSTOM_OP(ssm_conv, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * ssm_scan — Mamba selective scan with inline ZOH discretization, delegating to
+ * selective_scan. Inputs: 0 x [B,L,dim], 1 dt [B,L,state], 2 A [B,L,state]
+ * (continuous), 3 B [B,L,state], 4 C [B,L,state], 5 s [B,dim,state] init state
+ * (optional). Output y [B,L,dim].
+ */
+#if NOT_EXCLUDED(OP_ssm_scan)
+DECLARE_CUSTOM_OP(ssm_scan, 5, 1, false, 0, 0);
+#endif
+
+/**
+ * rwkv_wkv6 — RWKV-6 WKV recurrence. Inputs: 0 k, 1 v, 2 r, 4-D [B,T,H,S];
+ * 3 tf [H,S] (time-first); 4 td [B,T,H,S] (time-decay); 5 state [B,H,S,S].
+ * Output [B,T,H,S]. Standard RWKV6 WKV (helpers/{cpu,cuda}/rwkv_wkv).
+ */
+#if NOT_EXCLUDED(OP_rwkv_wkv6)
+DECLARE_CUSTOM_OP(rwkv_wkv6, 6, 1, false, 0, 0);
+#endif
+
+/**
+ * rwkv_wkv7 — RWKV-7 WKV (generalized delta rule). Inputs: 0 r, 1 w, 2 k, 3 v,
+ * 4 a, 5 b, all [B,T,H,S]; 6 state [B,H,S,S]. Output [B,T,H,S].
+ */
+#if NOT_EXCLUDED(OP_rwkv_wkv7)
+DECLARE_CUSTOM_OP(rwkv_wkv7, 7, 1, false, 0, 0);
+#endif
+
+/**
+ * gated_linear_attn — Gated Linear Attention. Inputs: 0 q, 1 k, 2 v [B,T,H,S];
+ * 3 gate [B,T,H,S] (optional; absent → no decay). T arg 0 = scale
+ * (default 1/sqrt(S)). Starts from zero state. Output [B,T,H,S].
+ */
+#if NOT_EXCLUDED(OP_gated_linear_attn)
+DECLARE_CUSTOM_OP(gated_linear_attn, 3, 1, false, -2, 0);
 #endif
 
 }  // namespace ops

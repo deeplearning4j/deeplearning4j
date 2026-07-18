@@ -51,6 +51,153 @@ namespace graph {
 
 using namespace ir_builder_internal;
 
+mlir::Value TritonIRBuilder::emitNativeCudaExp(mlir::OpBuilder& builder,
+                                                mlir::Location loc,
+                                                mlir::Value input) {
+  auto tensorType = mlir::cast<mlir::RankedTensorType>(input.getType());
+  auto elementType = tensorType.getElementType();
+  if (!elementType.isF32() && !elementType.isF64()) {
+    return builder.create<mlir::math::ExpOp>(loc, input);
+  }
+
+  // sd::math::sd_exp clamps to [-88, 88] and then calls CUDA expf/exp.
+  // Triton's generic math.exp uses the approximate ex2 instruction, which can
+  // differ by one ULP and perturb recurrent state. Call the same libdevice
+  // entry points as native CUDA so slot-by-slot and replay are raw-bit equal.
+  auto scalar = [&](double value) -> mlir::Value {
+    auto constant = builder.create<mlir::arith::ConstantOp>(
+        loc, elementType, builder.getFloatAttr(elementType, value));
+    return builder.create<mlir::triton::SplatOp>(loc, tensorType, constant);
+  };
+  auto clampedLow = builder.create<mlir::arith::MaximumFOp>(loc, input, scalar(-88.0));
+  auto clamped = builder.create<mlir::arith::MinimumFOp>(loc, clampedLow, scalar(88.0));
+  const char* symbol = elementType.isF32() ? "__nv_expf" : "__nv_exp";
+  return builder.create<mlir::triton::ExternElementwiseOp>(
+      loc, tensorType, mlir::ValueRange{clamped.getResult()},
+      /*libname=*/"", /*libpath=*/"", symbol, /*pure=*/true).getResult();
+}
+
+mlir::Value TritonIRBuilder::emitNativeCudaLog(mlir::OpBuilder& builder,
+                                                mlir::Location loc,
+                                                mlir::Value input) {
+  auto tensorType = mlir::cast<mlir::RankedTensorType>(input.getType());
+  auto elementType = tensorType.getElementType();
+  if (!elementType.isF32() && !elementType.isF64()) {
+    return builder.create<mlir::math::LogOp>(loc, input);
+  }
+
+  // sd::math::sd_log substitutes SD_EPSILON for zero, then calls CUDA
+  // logf/log. Triton's generic math.log uses an approximation that differs
+  // by several ULP in softplus and perturbs recurrent state at the first
+  // compiled execution.
+  auto scalar = [&](double value) -> mlir::Value {
+    auto constant = builder.create<mlir::arith::ConstantOp>(
+        loc, elementType, builder.getFloatAttr(elementType, value));
+    return builder.create<mlir::triton::SplatOp>(loc, tensorType, constant);
+  };
+  auto isZero = builder.create<mlir::arith::CmpFOp>(
+      loc, mlir::arith::CmpFPredicate::OEQ, input, scalar(0.0));
+  auto guarded = builder.create<mlir::arith::SelectOp>(
+      loc, isZero, scalar(1.0e-5), input);
+  const char* symbol = elementType.isF32() ? "__nv_logf" : "__nv_log";
+  return builder.create<mlir::triton::ExternElementwiseOp>(
+      loc, tensorType, mlir::ValueRange{guarded.getResult()},
+      /*libname=*/"", /*libpath=*/"", symbol, /*pure=*/true).getResult();
+}
+
+mlir::Value TritonIRBuilder::emitNativeCudaPow(mlir::OpBuilder& builder,
+                                                mlir::Location loc,
+                                                mlir::Value base,
+                                                mlir::Value exponent) {
+  auto tensorType = mlir::cast<mlir::RankedTensorType>(base.getType());
+  auto elementType = tensorType.getElementType();
+  if (!elementType.isF32() && !elementType.isF64()) {
+    return builder.create<mlir::math::PowFOp>(loc, base, exponent);
+  }
+
+  // Match native CUDA powf/pow instead of reconstructing power through
+  // approximate exp/log operations.
+  const char* symbol = elementType.isF32() ? "__nv_powf" : "__nv_pow";
+  return builder.create<mlir::triton::ExternElementwiseOp>(
+      loc, tensorType, mlir::ValueRange{base, exponent},
+      /*libname=*/"", /*libpath=*/"", symbol, /*pure=*/true).getResult();
+}
+
+mlir::Value TritonIRBuilder::emitNativeCudaCos(mlir::OpBuilder& builder,
+                                                mlir::Location loc,
+                                                mlir::Value input) {
+  auto tensorType = mlir::cast<mlir::RankedTensorType>(input.getType());
+  auto elementType = tensorType.getElementType();
+  if (!elementType.isF32() && !elementType.isF64()) {
+    return builder.create<mlir::math::CosOp>(loc, input);
+  }
+
+  const char* symbol = elementType.isF32() ? "__nv_cosf" : "__nv_cos";
+  return builder.create<mlir::triton::ExternElementwiseOp>(
+      loc, tensorType, mlir::ValueRange{input},
+      /*libname=*/"", /*libpath=*/"", symbol, /*pure=*/true).getResult();
+}
+
+mlir::Value TritonIRBuilder::emitNativeCudaSin(mlir::OpBuilder& builder,
+                                                mlir::Location loc,
+                                                mlir::Value input) {
+  auto tensorType = mlir::cast<mlir::RankedTensorType>(input.getType());
+  auto elementType = tensorType.getElementType();
+  if (!elementType.isF32() && !elementType.isF64()) {
+    return builder.create<mlir::math::SinOp>(loc, input);
+  }
+
+  const char* symbol = elementType.isF32() ? "__nv_sinf" : "__nv_sin";
+  return builder.create<mlir::triton::ExternElementwiseOp>(
+      loc, tensorType, mlir::ValueRange{input},
+      /*libname=*/"", /*libpath=*/"", symbol, /*pure=*/true).getResult();
+}
+
+mlir::Value TritonIRBuilder::emitNativeCudaMulRn(mlir::OpBuilder& builder,
+                                                  mlir::Location loc,
+                                                  mlir::Value lhs,
+                                                  mlir::Value rhs) {
+  auto tensorType = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+  auto elementType = tensorType.getElementType();
+  if (!elementType.isF32() && !elementType.isF64()) {
+    return builder.create<mlir::arith::MulFOp>(loc, lhs, rhs);
+  }
+
+  const char* symbol = elementType.isF32() ? "__nv_fmul_rn" : "__nv_dmul_rn";
+  return builder.create<mlir::triton::ExternElementwiseOp>(
+      loc, tensorType, mlir::ValueRange{lhs, rhs},
+      /*libname=*/"", /*libpath=*/"", symbol, /*pure=*/true).getResult();
+}
+
+mlir::Value TritonIRBuilder::emitNativeCudaFmaRn(mlir::OpBuilder& builder,
+                                                  mlir::Location loc,
+                                                  mlir::Value lhs,
+                                                  mlir::Value rhs,
+                                                  mlir::Value addend) {
+  auto tensorType = mlir::cast<mlir::RankedTensorType>(lhs.getType());
+  auto elementType = tensorType.getElementType();
+  if (!elementType.isF32() && !elementType.isF64()) {
+    auto product = builder.create<mlir::arith::MulFOp>(loc, lhs, rhs);
+    return builder.create<mlir::arith::AddFOp>(loc, product, addend);
+  }
+
+  const char* symbol = elementType.isF32() ? "__nv_fmaf_rn" : "__nv_fma_rn";
+  return builder.create<mlir::triton::ExternElementwiseOp>(
+      loc, tensorType, mlir::ValueRange{lhs, rhs, addend},
+      /*libname=*/"", /*libpath=*/"", symbol, /*pure=*/true).getResult();
+}
+
+mlir::Value TritonIRBuilder::emitNativeCudaDiv(mlir::OpBuilder& builder,
+                                                mlir::Location loc,
+                                                mlir::Value lhs,
+                                                mlir::Value rhs) {
+  // precise_divf is FP32-only. FP64 arith.divf already retains IEEE division.
+  if (getElementType(lhs).isF32()) {
+    return builder.create<mlir::triton::PreciseDivFOp>(loc, lhs, rhs);
+  }
+  return builder.create<mlir::arith::DivFOp>(loc, lhs, rhs);
+}
+
 mlir::Value TritonIRBuilder::emitBinaryElementwise(mlir::OpBuilder& builder, mlir::Location loc,
                                                     const TritonOpMapping& mapping,
                                                     const NativeSlot& slot,
@@ -109,7 +256,7 @@ mlir::Value TritonIRBuilder::emitBinaryElementwise(mlir::OpBuilder& builder, mli
   if (opIr == "arith.addf") return builder.create<mlir::arith::AddFOp>(loc, lhs, rhs);
   if (opIr == "arith.subf") return builder.create<mlir::arith::SubFOp>(loc, lhs, rhs);
   if (opIr == "arith.mulf") return builder.create<mlir::arith::MulFOp>(loc, lhs, rhs);
-  if (opIr == "arith.divf") return builder.create<mlir::arith::DivFOp>(loc, lhs, rhs);
+  if (opIr == "arith.divf") return emitNativeCudaDiv(builder, loc, lhs, rhs);
   if (opIr == "arith.maximumf") return builder.create<mlir::arith::MaximumFOp>(loc, lhs, rhs);
   if (opIr == "arith.minimumf") return builder.create<mlir::arith::MinimumFOp>(loc, lhs, rhs);
   if (opIr == "arith.remf") return builder.create<mlir::arith::RemFOp>(loc, lhs, rhs);
@@ -137,11 +284,11 @@ mlir::Value TritonIRBuilder::emitBinaryElementwise(mlir::OpBuilder& builder, mli
   if (opIr == "custom.swish_mul") {
     // swish_mul(x, y) = x * sigmoid(x) * y  (SwiGLU activation)
     auto negX = builder.create<mlir::arith::NegFOp>(loc, lhs);
-    auto expNegX = builder.create<mlir::math::ExpOp>(loc, negX);
+    auto expNegX = emitNativeCudaExp(builder, loc, negX);
     auto tensorTy = mlir::cast<mlir::RankedTensorType>(lhs.getType());
     auto one = splatConstantF32(builder, loc, tensorTy, 1.0f);
     auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegX);
-    auto sigmoid = builder.create<mlir::arith::DivFOp>(loc, one, onePlusExp);
+    auto sigmoid = emitNativeCudaDiv(builder, loc, one, onePlusExp);
     auto xTimesSigmoid = builder.create<mlir::arith::MulFOp>(loc, lhs, sigmoid);
     return builder.create<mlir::arith::MulFOp>(loc, xTimesSigmoid, rhs);
   }
@@ -441,12 +588,13 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
   }
 
   if (opLower == "sigmoid") {
-    // sigmoid(x) = 1.0 / (1.0 + exp(-x))
+    // Match native sd_sigmoid: 1 / (1 + expf(-x)), including libdevice exp
+    // and round-to-nearest FP32 division.
     auto negX = builder.create<mlir::arith::NegFOp>(loc, input);
-    auto expNegX = builder.create<mlir::math::ExpOp>(loc, negX);
+    auto expNegX = emitNativeCudaExp(builder, loc, negX);
     auto one = splatConstantF32(builder, loc, tensorType, 1.0f);
     auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegX);
-    return builder.create<mlir::arith::DivFOp>(loc, one, onePlusExp);
+    return emitNativeCudaDiv(builder, loc, one, onePlusExp);
   }
 
   if (opLower == "tanh") {
@@ -480,11 +628,11 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
   }
 
   if (opLower == "exp") {
-    return builder.create<mlir::math::ExpOp>(loc, input);
+    return emitNativeCudaExp(builder, loc, input);
   }
 
   if (opLower == "log") {
-    return builder.create<mlir::math::LogOp>(loc, input);
+    return emitNativeCudaLog(builder, loc, input);
   }
 
   if (opLower == "abs") {
@@ -492,6 +640,13 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
   }
 
   if (opLower == "sqrt") {
+    // Native CUDA's sqrtf is round-to-nearest. Triton's generic FP32 math.sqrt
+    // lowers to the approximate instruction and can differ by one ULP, which
+    // is enough to perturb recurrent decode state across execution paths.
+    // precise_sqrt is FP32-only; retain generic sqrt for FP64.
+    if (getElementType(input).isF32()) {
+      return builder.create<mlir::triton::PreciseSqrtOp>(loc, input);
+    }
     return builder.create<mlir::math::SqrtOp>(loc, input);
   }
 
@@ -646,12 +801,15 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
   }
 
   if (opLower == "silu" || opLower == "swish") {
-    // silu(x) = x * sigmoid(x) = x / (1 + exp(-x))
+    // Match native Swish exactly: x * sd_sigmoid(x). Native evaluates the
+    // reciprocal and final multiply as separate rounded operations, so folding
+    // them into x / denominator changes recurrent-model outputs by one ULP.
     auto negX = builder.create<mlir::arith::NegFOp>(loc, input);
-    auto expNegX = builder.create<mlir::math::ExpOp>(loc, negX);
+    auto expNegX = emitNativeCudaExp(builder, loc, negX);
     auto one = splatConstantF32(builder, loc, tensorType, 1.0f);
     auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegX);
-    return builder.create<mlir::arith::DivFOp>(loc, input, onePlusExp);
+    auto sigmoid = emitNativeCudaDiv(builder, loc, one, onePlusExp);
+    return builder.create<mlir::arith::MulFOp>(loc, input, sigmoid);
   }
 
   if (opLower == "mish") {
@@ -713,9 +871,9 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
     auto absX = builder.create<mlir::math::AbsFOp>(loc, input);
     auto negAbsX = builder.create<mlir::arith::NegFOp>(loc, absX);
     auto maxPart = builder.create<mlir::arith::MaximumFOp>(loc, input, zero);
-    auto expNegAbs = builder.create<mlir::math::ExpOp>(loc, negAbsX);
+    auto expNegAbs = emitNativeCudaExp(builder, loc, negAbsX);
     auto onePlusExp = builder.create<mlir::arith::AddFOp>(loc, one, expNegAbs);
-    auto logPart = builder.create<mlir::math::LogOp>(loc, onePlusExp);
+    auto logPart = emitNativeCudaLog(builder, loc, onePlusExp);
     return builder.create<mlir::arith::AddFOp>(loc, maxPart, logPart);
   }
 
@@ -948,9 +1106,16 @@ mlir::Value TritonIRBuilder::emitReductionOp(mlir::OpBuilder& builder, mlir::Loc
   if (reductionAxis < 0) reductionAxis += static_cast<int>(rank);
   if (reductionAxis < 0 || reductionAxis >= static_cast<int>(rank)) reductionAxis = 0;
 
-  if (opKey == "argmax" || opKey == "argmin") {
+  if (opKey == "argmax" || opKey == "argmin" ||
+      opKey == "reducevariance" || opKey == "reducestdev" ||
+      opKey == "reducelogsumexp") {
+    // Multi-pass reductions (index tracking, mean-centered deviations,
+    // max-shifted exp sums) are implemented in the ordered-reduction module
+    // path (emitOrderedReductionValue in TritonIRBuilder_module.cpp). This
+    // single-tt.reduce path cannot express them — refuse loudly instead of
+    // emitting a plain sum.
     std::string msg = "TritonIRBuilder::emitReductionOp: reduction '" + opName +
-                      "' requires index-aware reduction and is not implemented in this path";
+                      "' requires a multi-pass algorithm and is not implemented in this path";
     THROW_EXCEPTION(msg.c_str());
     return input;
   }
@@ -973,9 +1138,7 @@ mlir::Value TritonIRBuilder::emitReductionOp(mlir::OpBuilder& builder, mlir::Loc
   if (opKey == "reducesum" || opKey == "sum" ||
       opKey == "reducemean" || opKey == "mean" ||
       opKey == "reducenorm1" || opKey == "norm1" ||
-      opKey == "reducenorm2" || opKey == "norm2" ||
-      opKey == "reducevariance" || opKey == "reducestdev" ||
-      opKey == "reducelogsumexp") {
+      opKey == "reducenorm2" || opKey == "norm2") {
     combined = builder.create<mlir::arith::AddFOp>(loc, acc, elem);
   } else if (opKey == "reducemax" || opKey == "max" || opKey == "normmax") {
     combined = builder.create<mlir::arith::MaximumFOp>(loc, acc, elem);
@@ -1005,12 +1168,6 @@ mlir::Value TritonIRBuilder::emitReductionOp(mlir::OpBuilder& builder, mlir::Loc
         loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(reductionSize)));
     result = builder.create<mlir::arith::DivFOp>(loc, result, countVal);
   } else if (opKey == "reducenorm2" || opKey == "norm2") {
-    result = builder.create<mlir::math::SqrtOp>(loc, result);
-  } else if (opKey == "reducelogsumexp") {
-    result = builder.create<mlir::math::LogOp>(loc, result);
-  } else if (opKey == "reducestdev") {
-    // stdev = sqrt(variance) — variance is mean of squares minus square of mean
-    // Simplified: assume result is already variance, just sqrt
     result = builder.create<mlir::math::SqrtOp>(loc, result);
   }
 
@@ -1104,8 +1261,57 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
     // skip_rms_norm: the residual add (input + skip) is handled in the module
     // dispatch before calling this emitter, so `input` already contains `hidden`.
     // The RMS norm computation is identical to rms_norm.
-    auto squared = builder.create<mlir::arith::MulFOp>(loc, input, input);
-    auto sumSquared = makeReduce(squared, axis, addCombiner);
+    mlir::Value squared = builder.create<mlir::arith::MulFOp>(loc, input, input);
+    mlir::Value sumSquared;
+    // Match rmsBlockReduceSum exactly for the one-value-per-thread kernels:
+    // each warp pairs lower and upper halves at offsets 16,8,4,2,1, then
+    // warp 0 applies the same tree to the warp totals. Generic tt.reduce is
+    // free to reassociate and differs by one ULP for production decode rows.
+    bool nativeWarpTree = tensorTy.getRank() == 1 && axis == 0 &&
+                          tensorTy.getShape()[0] == reductionSize &&
+                          reductionSize >= 32 && reductionSize <= 1024 &&
+                          (reductionSize & (reductionSize - 1)) == 0;
+    if (nativeWarpTree) {
+      auto roundedBinary = [&](mlir::Value lhs, mlir::Value rhs,
+                               const char* symbol) -> mlir::Value {
+        return builder.create<mlir::triton::ExternElementwiseOp>(
+            loc, lhs.getType(), mlir::ValueRange{lhs, rhs},
+            /*libname=*/"", /*libpath=*/"", symbol, /*pure=*/true).getResult();
+      };
+      // These intrinsics require an FP32 rounding boundary. In particular,
+      // __nv_fmul_rn prevents LLVM from contracting x*x + y*y into an FMA.
+      squared = roundedBinary(input, input, "__nv_fmul_rn");
+      int64_t numWarps = reductionSize / 32;
+      mlir::Value partials = builder.create<mlir::triton::ReshapeOp>(
+          loc, mlir::RankedTensorType::get({numWarps, 32}, elemType),
+          squared, /*allowReorder=*/false);
+      for (int64_t width = 32; width > 1; width /= 2) {
+        auto paired = builder.create<mlir::triton::ReshapeOp>(
+            loc, mlir::RankedTensorType::get({numWarps, 2, width / 2}, elemType),
+            partials, /*allowReorder=*/false);
+        auto order = builder.getDenseI32ArrayAttr({0, 2, 1});
+        auto transposed = builder.create<mlir::triton::TransOp>(loc, paired, order);
+        auto split = builder.create<mlir::triton::SplitOp>(loc, transposed);
+        partials = roundedBinary(
+            split.getResult(0), split.getResult(1), "__nv_fadd_rn");
+      }
+      partials = builder.create<mlir::triton::ReshapeOp>(
+          loc, mlir::RankedTensorType::get({numWarps}, elemType),
+          partials, /*allowReorder=*/false);
+      for (int64_t width = numWarps; width > 1; width /= 2) {
+        auto paired = builder.create<mlir::triton::ReshapeOp>(
+            loc, mlir::RankedTensorType::get({2, width / 2}, elemType),
+            partials, /*allowReorder=*/false);
+        auto order = builder.getDenseI32ArrayAttr({1, 0});
+        auto transposed = builder.create<mlir::triton::TransOp>(loc, paired, order);
+        auto split = builder.create<mlir::triton::SplitOp>(loc, transposed);
+        partials = roundedBinary(
+            split.getResult(0), split.getResult(1), "__nv_fadd_rn");
+      }
+      sumSquared = makeReduce(partials, 0, addCombiner);
+    } else {
+      sumSquared = makeReduce(squared, axis, addCombiner);
+    }
     auto countVal = builder.create<mlir::arith::ConstantOp>(
         loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(reductionSize)));
     auto meanSquared = builder.create<mlir::arith::DivFOp>(loc, sumSquared, countVal);

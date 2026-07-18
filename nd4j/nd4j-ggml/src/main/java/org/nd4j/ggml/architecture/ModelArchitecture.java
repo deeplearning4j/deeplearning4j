@@ -123,8 +123,16 @@ public interface ModelArchitecture {
         // Prefer explicit attention.key_length from GGUF metadata for headDim.
         // This handles models where head_dim != hidden_size / num_attention_heads (e.g. Qwen3.5).
         int headDim = metadata.getAttentionKeyLength();
+        int numMtpLayers = metadata.getNumMtpLayers();
+        int numTargetLayers = metadata.getNumLayers() - numMtpLayers;
+        if (numTargetLayers <= 0) {
+            throw new IllegalArgumentException("GGUF block_count " + metadata.getNumLayers()
+                    + " does not contain a target trunk after subtracting " + numMtpLayers
+                    + " MTP predictor layer(s)");
+        }
         return ArchitectureConfig.builder()
-                .numLayers(metadata.getNumLayers())
+                .numLayers(numTargetLayers)
+                .numMtpLayers(numMtpLayers)
                 .hiddenSize(metadata.getHiddenSize())
                 .intermediateSize(metadata.getIntermediateSize())
                 .numAttentionHeads(metadata.getNumAttentionHeads())

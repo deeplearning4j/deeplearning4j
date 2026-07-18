@@ -53,7 +53,7 @@ CONFIGURABLE_OP_IMPL(scatter_update, -2, 1, true, 0, -2) {
 }
 DECLARE_SYN(scatterupdate, scatter_update);
 
-DECLARE_TYPES(scatter_update) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(scatter_update) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT); }
 }  // namespace ops
 }  // namespace sd
 

@@ -92,6 +92,7 @@ DECLARE_SHAPE_FN(confusion_matrix) {
 }
 
 DECLARE_TYPES(confusion_matrix) {
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_INDICES})
       ->setAllowedOutputTypes({ALL_INDICES});

@@ -41,7 +41,10 @@
 #include <ggml-vulkan.h>
 #endif
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
+SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN
 namespace vlmUtils {
 
 // ============================================================================
@@ -633,6 +636,7 @@ bool VlmBackendContext::execute(ggml_cgraph* graph) {
 }
 
 }  // namespace vlmUtils
+SD_BACKEND_ROOT_INLINE_NAMESPACE_END
 }  // namespace sd
 
 #endif  // HAVE_VLM

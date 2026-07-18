@@ -27,6 +27,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 DeclarableListOp::DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs)
     : DeclarableOp(numInputs, numOutputs, opName, false, tArgs, iArgs) {
   // This kind of operations work with sets: NDArrayList
@@ -147,5 +148,6 @@ ResultSet DeclarableListOp::execute(NDArrayList* list, std::vector<NDArray*>& in
 
   return res;
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

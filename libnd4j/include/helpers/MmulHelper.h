@@ -173,6 +173,13 @@ class SD_LIB_EXPORT MmulHelper {
                      NDArray* realFinalResult = nullptr);
 
   /**
+   * Retire an owned temporary behind its last CUDA-stream consumer, then delete
+   * the host-side NDArray wrapper. CPU temporaries use ordinary destruction.
+   * The array must own its DataBuffer; never pass a view.
+   */
+  static void deleteTemporary(NDArray* array);
+
+  /**
    * Set cublasLt epilogue state for the next matmul call on this thread.
    * Used by DSP executor to fuse bias+activation into the matmul kernel.
    * @param type 0=none, 1=bias, 2=bias+relu, 3=bias+gelu

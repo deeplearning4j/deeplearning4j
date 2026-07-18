@@ -1,0 +1,19 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "comment": "VLM model downloader manifest and version files bundled as classpath resources.",
+        "pattern": "vlm-models\\.properties"
+      },
+      {
+        "comment": "PDFBox font and glyph resources needed at runtime for PDF rendering.",
+        "pattern": "org/apache/pdfbox/resources/.*"
+      },
+      {
+        "comment": "PDFBox cmap/glyph list resources for PDF text extraction.",
+        "pattern": "org/apache/fontbox/.*"
+      }
+    ]
+  },
+  "bundles": []
+}

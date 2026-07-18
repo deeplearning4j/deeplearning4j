@@ -29,7 +29,8 @@
 #   --diag-json FILE    Write structured JSON diagnostic report to FILE
 #
 # Backend:
-#   --cpu               Run against nd4j-native (CPU backend) instead of CUDA
+#   --backend NAME      Run on cuda (default), vulkan, or cpu.
+#   --cpu               Compatibility alias for --backend cpu.
 #   --no-triton         Pass -Dnd4j.triton.skipKernels=true so Triton-dependent
 #                       configs fall through to slot-by-slot. Useful on CPU-only
 #                       machines or when triaging non-Triton regressions.
@@ -45,7 +46,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-MVN="/home/agibsonccc/dev-apps/mvn/bin/mvn"
+MVN="${MVN:-mvn}"
 TEST_CLASS="TestDspConfigurationMatrix"
 TEST_METHOD="testConfiguration"
 LOG_FILE="$SCRIPT_DIR/dsp-matrix-output.log"
@@ -66,7 +67,10 @@ CONFIGS=(
 
 # Defaults
 SELECTED_CONFIG=""
+BACKEND_NAME="cuda"
 BACKEND_ARTIFACT="nd4j-cuda-12.9"
+BACKEND_PROFILE=""
+TRITON_OPTION="ON"
 NO_TRITON=false
 DIAG_REPLAY=false
 DIAG_SEGMENT=false
@@ -88,8 +92,39 @@ while [[ $# -gt 0 ]]; do
             done
             exit 0
             ;;
+        --backend)
+            case "$2" in
+                cuda)
+                    BACKEND_NAME="cuda"
+                    BACKEND_ARTIFACT="nd4j-cuda-12.9"
+                    BACKEND_PROFILE=""
+                    TRITON_OPTION="ON"
+                    ;;
+                vulkan)
+                    BACKEND_NAME="vulkan"
+                    BACKEND_ARTIFACT="nd4j-cuda-12.9"
+                    BACKEND_PROFILE="-Ptest-vulkan"
+                    TRITON_OPTION="OFF"
+                    NO_TRITON=true
+                    ;;
+                cpu)
+                    BACKEND_NAME="cpu"
+                    BACKEND_ARTIFACT="nd4j-native"
+                    BACKEND_PROFILE=""
+                    TRITON_OPTION="OFF"
+                    ;;
+                *)
+                    echo "Unknown backend: $2 (expected cuda, vulkan, or cpu)"
+                    exit 1
+                    ;;
+            esac
+            shift 2
+            ;;
         --cpu)
+            BACKEND_NAME="cpu"
             BACKEND_ARTIFACT="nd4j-native"
+            BACKEND_PROFILE=""
+            TRITON_OPTION="OFF"
             shift
             ;;
         --no-triton)
@@ -122,7 +157,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: ./run-dsp-matrix.sh [--config NAME] [--list] [--cpu] [--no-triton]"
+            echo "Usage: ./run-dsp-matrix.sh [--config NAME] [--list] [--backend NAME|--cpu] [--no-triton]"
             echo "       [--diag-replay] [--diag-segment] [--diag-phase] [--diag-all] [--diag-json FILE]"
             exit 1
             ;;
@@ -151,7 +186,7 @@ fi
 echo "═══════════════════════════════════════════════════════════"
 echo "  DSP Configuration Matrix"
 echo "  Test:   ${TEST_CLASS}#${TEST_METHOD}"
-echo "  Backend: $BACKEND_ARTIFACT"
+echo "  Backend: $BACKEND_NAME ($BACKEND_ARTIFACT)"
 if [ -n "$SELECTED_CONFIG" ]; then
     echo "  Config: $SELECTED_CONFIG (single)"
 else
@@ -214,8 +249,9 @@ echo ""
 
 set +e
 $MVN test \
+  $BACKEND_PROFILE \
   -Dtest="$TEST_SELECTOR" \
-  -Dlibnd4j.triton=ON \
+  -Dlibnd4j.triton="$TRITON_OPTION" \
   -Dbackend.artifactId="$BACKEND_ARTIFACT" \
   $EXTRA_ARGS \
   2>&1 | tee "$LOG_FILE"

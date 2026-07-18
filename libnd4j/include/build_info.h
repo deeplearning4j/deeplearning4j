@@ -27,6 +27,13 @@ extern "C" {
 
 // Existing build info functions
 SD_LIB_EXPORT const char *buildInfo();
+// Single-line canonical form of buildInfo() for cache fingerprinting.
+// buildInfo() is a multi-line human-readable report; line-oriented consumers
+// (key=value sidecar files like the DSP plan cache .meta) truncate multi-line
+// values on read, so fingerprints MUST use this form. Canonicalization:
+// every '\n'/'\r' becomes a single space, leading/trailing whitespace trimmed
+// (byte-identical to the Java-side fallback in DspPlanDiskCache).
+SD_LIB_EXPORT const char *buildInfoFingerprint();
 SD_LIB_EXPORT bool isFuncTrace();
 
 // Type information functions

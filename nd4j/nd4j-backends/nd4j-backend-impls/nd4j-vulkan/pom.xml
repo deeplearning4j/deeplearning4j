@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.eclipse.deeplearning4j</groupId>
+        <artifactId>nd4j-backend-impls</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>nd4j-vulkan</artifactId>
+
+    <name>nd4j-vulkan</name>
+    <description>ND4J backend for the standalone Vulkan compute chip (libnd4jvulkan)</description>
+
+    <properties>
+        <skipPublishing>false</skipPublishing>
+        <module.name>nd4j.vulkan</module.name>
+
+        <!-- Vulkan artifacts are keyed only by the host OS/ABI. The platform
+             Vulkan loader selects the installed GPU implementation at runtime. -->
+        <vulkan.resource.platform>${javacpp.platform}${javacpp.platform.extension}</vulkan.resource.platform>
+        <vulkan.classifier>${vulkan.resource.platform}</vulkan.classifier>
+        <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/vulkan/bindings/${vulkan.resource.platform}</javacpp.build.output.path>
+        <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
+        <!-- Resolve the source tree from the module directory. Using target/ here is invalid
+             during generate-sources because that directory does not exist yet. -->
+        <libnd4jhome>${project.basedir}/../../../../libnd4j</libnd4jhome>
+        <libnd4j.outputPath>${libnd4jhome}/blasbuild/vulkan/${vulkan.classifier}</libnd4j.outputPath>
+        <shared.runtime.manifest>shared-runtime-manifest.txt</shared.runtime.manifest>
+    </properties>
+
+    <dependencies>
+        <!-- Reactor ordering: the Vulkan chip native library must be built first
+             (mvn -Pvulkan -Dlibnd4j.vulkan -pl libnd4j,:nd4j-presets-common,:nd4j-vulkan-preset,:nd4j-vulkan). -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>libnd4j</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-vulkan-preset</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <classifier>${dependency.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
+                            <excludes>
+                                <exclude>
+                                    org/nd4j/linalg/vulkan/bindings/${vulkan.resource.platform}/*
+                                </exclude>
+                                <exclude>lib/**</exclude>
+                                <exclude>*.dll</exclude>
+                                <exclude>*.dylib</exclude>
+                                <exclude>*.so</exclude>
+                                <exclude>META-INF/native-image/${vulkan.resource.platform}/</exclude>
+                                <exclude>module-info.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>${vulkan.classifier}</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
+                            <classifier>${vulkan.classifier}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                            <includes>
+                                <include>
+                                    org/nd4j/linalg/vulkan/bindings/${vulkan.resource.platform}/*
+                                </include>
+                                <include>lib/**</include>
+                                <include>META-INF/native-image/${vulkan.resource.platform}/</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.eclipse.deeplearning4j</groupId>
+                        <artifactId>nd4j-vulkan-preset</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.eclipse.deeplearning4j</groupId>
+                        <artifactId>nd4j-native-api</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <properties>${javacpp.platform.properties}</properties>
+                    <propertyKeysAndValues>
+                        <property>
+                            <name>platform.root</name>
+                            <value>${javacpp.platform.root}</value>
+                        </property>
+                        <property>
+                            <name>platform.compiler</name>
+                            <value>${javacpp.platform.compiler}</value>
+                        </property>
+                        <property>
+                            <name>platform.sysroot</name>
+                            <value>${javacpp.platform.sysroot}</value>
+                        </property>
+                        <property>
+                            <name>platform.extension</name>
+                            <value>${javacpp.platform.extension}</value>
+                        </property>
+                    </propertyKeysAndValues>
+                    <classPaths>
+                        <classPath>${project.build.outputDirectory}</classPath>
+                    </classPaths>
+                    <includePaths>
+                        <includePath>${libnd4j.outputPath}/flatbuffers-target-build/include</includePath>
+                        <includePath>${libnd4j.outputPath}/flatbuffers-host-build/include</includePath>
+                        <includePath>${libnd4j.outputPath}/include</includePath>
+                        <includePath>${libnd4j.outputPath}/flatbuffers-src/include/
+                        </includePath>
+                        <includePath>${libnd4jhome}/blas</includePath>
+                        <includePath>${libnd4jhome}/include</includePath>
+                        <includePath>${libnd4jhome}/include/helpers</includePath>
+                        <includePath>${libnd4jhome}/include/array</includePath>
+                        <includePath>${libnd4jhome}/include/cnpy</includePath>
+                        <includePath>${libnd4jhome}/include/execution</includePath>
+                        <includePath>${libnd4jhome}/include/exceptions</includePath>
+                        <includePath>${libnd4jhome}/include/graph</includePath>
+                        <includePath>${libnd4jhome}/include/indexing</includePath>
+                        <includePath>${libnd4jhome}/include/memory</includePath>
+                    </includePaths>
+                    <linkPaths>
+                        <linkPath>${libnd4j.outputPath}</linkPath>
+                    </linkPaths>
+                    <buildResources>
+                        <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                        <buildResource>/lib/</buildResource>
+                        <buildResource>/</buildResource>
+                        <buildResource>${libnd4j.outputPath}</buildResource>
+                    </buildResources>
+                    <includeResources>
+                        <includeResource>/${javacpp.platform.library.path}/include/
+                        </includeResource>
+                    </includeResources>
+                    <linkResources>
+                        <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                        <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                    </linkResources>
+                    <compilerOptions>
+                        <!-- c++17 + nowarnings come from the preset's compiler annotation;
+                             ${compiler.flag.cpp.standard} resolves empty in this module and
+                             an empty argument breaks the ld invocation. -->
+                        <compilerOption>${javacpp.compiler.options}</compilerOption>
+                    </compilerOptions>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>javacpp-parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${javacpp.parser.skip}</skip>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <classOrPackageName>org.nd4j.presets.vulkan.Nd4jVulkanPresets</classOrPackageName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>javacpp-compiler</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${javacpp.compiler.skip}</skip>
+                            <classOrPackageName>org.nd4j.linalg.vulkan.bindings.Nd4jVulkan</classOrPackageName>
+                            <!-- This directory is the classifier payload. Recreate it from
+                                 the selected JavaCPP preset/link closure on every build so an
+                                 incremental build cannot retain another target's runtimes. -->
+                            <clean>true</clean>
+                            <copyLibs>true</copyLibs>
+                            <copyResources>false</copyResources>
+                            <configDirectory>${project.build.directory}/classes/META-INF/native-image/${vulkan.resource.platform}/</configDirectory>
+                            <outputDirectory>${javacpp.build.output.path}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
+                    <forkCount>${cpu.core.count}</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <trimStackTrace>false</trimStackTrace>
+                    <systemPropertyVariables>
+                        <backend.artifactId>nd4j-vulkan</backend.artifactId>
+                        <nd4j.backend>org.nd4j.linalg.vulkan.VulkanBackend</nd4j.backend>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-vulkan-runtime-manifest</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${javacpp.build.output.path}</outputDirectory>
+                            <overwrite>true</overwrite>
+                            <resources>
+                                <resource>
+                                    <directory>${libnd4j.outputPath}</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <!-- JavaCPP copyLibs copies only the libraries named
+                                             by this native-build manifest. The manifest itself
+                                             is retained so the runtime preset makes the same
+                                             target-specific selection when loading the jar. -->
+                                        <include>${shared.runtime.manifest}</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>linux-dynamic-shared-libraries</id>
+            <activation>
+                <os>
+                    <name>Linux</name>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <propertyKeysAndValues combine.children="append">
+                                <property>
+                                    <name>platform.compiler.output</name>
+                                    <value>-Wl,-rpath,$ORIGIN/ -Wl,-z,noexecstack -Wall -fPIC -pthread -shared -o </value>
+                                </property>
+                            </propertyKeysAndValues>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

@@ -24,9 +24,12 @@
 
 #include "cudnnUtils.h"
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 //////////////////////////////////////////////////////////////////////////
 std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv2dCUDNNPadAsymmetric(
@@ -408,6 +411,7 @@ void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
   }
 }
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

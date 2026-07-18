@@ -44,6 +44,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -115,6 +116,22 @@ class LocallyConnectedLayerTest extends BaseDL4JTest {
         assertEquals(1, opContext.numIntermediateResults());
         INDArray arr2 = opContext.getIntermediateResult(0);
         assertEquals(arr, arr2);
+    }
+
+    @Test
+    void testDeviceIntermediateRoundTripPreservesCudaValues() {
+        INDArray left = Nd4j.valueArrayOf(new long[]{2}, 1.25f);
+        INDArray right = Nd4j.valueArrayOf(new long[]{2}, 2.75f);
+        INDArray deviceResult = Nd4j.createUninitialized(DataType.FLOAT, new long[]{2}, 'c');
+        Nd4j.getExecutioner().exec(new AddOp(left, right, deviceResult));
+
+        OpContext opContext = Nd4j.getExecutioner().buildContext();
+        opContext.addIntermediateResult(deviceResult);
+        INDArray restored = opContext.getIntermediateResult(0);
+
+        INDArray expected = Nd4j.valueArrayOf(new long[]{2}, 4.0f);
+        assertEquals(expected, restored,
+                "A CUDA-produced intermediate must retain its device buffer across OpContext round-trip");
     }
 
     @Test

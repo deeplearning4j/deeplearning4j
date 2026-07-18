@@ -53,12 +53,6 @@ void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<LongType>& o
   }
 }
 
-void adjustAxis(sd::LongType rank, std::vector<LongType>& axisVector) {
-  for (size_t e = 0; e < axisVector.size(); e++) {
-    auto a = axisVector[e];
-    if (a < 0) axisVector[e] = a + rank;
-  }
-}
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

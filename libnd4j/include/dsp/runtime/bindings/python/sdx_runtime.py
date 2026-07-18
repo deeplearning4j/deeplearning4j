@@ -28,6 +28,12 @@ SDX_BACKEND_TRITON = 5
 SDX_BACKEND_MLX = 6
 SDX_BACKEND_ARM_HYBRID = 7
 SDX_BACKEND_NNAPI = 8
+SDX_BACKEND_HIP_GRAPHS = 9
+SDX_BACKEND_LEVEL_ZERO = 10
+SDX_BACKEND_VULKAN = 11
+SDX_BACKEND_METAL = 12
+SDX_BACKEND_TPU = 13
+SDX_BACKEND_HEXAGON = 14
 
 SDX_DEVICE_HOST = 0
 SDX_DEVICE_CUDA = 1
@@ -36,13 +42,17 @@ SDX_DEVICE_AMD = 2
 SDX_GPU_TARGET_AUTO = 0
 SDX_GPU_TARGET_CUDA = 1
 SDX_GPU_TARGET_AMD = 2
+SDX_GPU_TARGET_VULKAN = 3
+SDX_GPU_TARGET_METAL = 4
 
 
-_SDX_BACKENDS: Tuple[str, ...] = ("cpu", "cuda", "amd")
+_SDX_BACKENDS: Tuple[str, ...] = ("vulkan", "metal", "cpu", "cuda", "amd")
 # Standalone SDX libraries (libsdx_*) are preferred: they export only the sdx*
 # C ABI and carry no JVM dependency. Monolithic backend libraries (libnd4j*)
 # remain as fallback — they export the same sdx* symbols.
 _SDX_BACKEND_TO_LIBS: Dict[str, Tuple[str, ...]] = {
+    "vulkan": ("sdx_vulkan", "nd4jvulkan"),
+    "metal": ("sdx_metal", "nd4jmetal"),
     "cpu": ("sdx_cpu", "nd4jcpu"),
     "cuda": ("sdx_cuda", "nd4jcuda"),
     "amd": ("sdx_cuda", "nd4jamd"),
@@ -323,6 +333,16 @@ class ModelOptions(ctypes.Structure):
         )
 
 
+class ContextOptions(ctypes.Structure):
+    _fields_ = [
+        ("struct_size", ctypes.c_uint32),
+        ("bind_model_parameters", ctypes.c_int32),
+    ]
+
+    def __init__(self, bind_model_parameters: bool = False) -> None:
+        super().__init__(ctypes.sizeof(ContextOptions), 1 if bind_model_parameters else 0)
+
+
 class RunOptions(ctypes.Structure):
     _fields_ = [
         ("struct_size", ctypes.c_uint32),
@@ -406,6 +426,39 @@ class _Handles:
 
 
 @dataclass(frozen=True)
+class DynamicOutput:
+    """Python-owned copy of a runtime-allocated dynamic output."""
+
+    data: bytes
+    shape: Tuple[int, ...]
+    dtype: int
+    name: Optional[str] = None
+
+    def numpy(self):
+        """Return a copied NumPy view of this output when NumPy is available."""
+        if _np is None:
+            raise RuntimeError("NumPy is not available")
+        dtype_map = {
+            1: _np.bool_,
+            3: _np.float16,
+            5: _np.float32,
+            6: _np.float64,
+            7: _np.int8,
+            8: _np.int16,
+            9: _np.int32,
+            10: _np.int64,
+            11: _np.uint8,
+            12: _np.uint16,
+            13: _np.uint32,
+            14: _np.uint64,
+        }
+        dtype = dtype_map.get(self.dtype)
+        if dtype is None:
+            raise TypeError(f"Unsupported SDX dtype code: {self.dtype}")
+        return _np.frombuffer(self.data, dtype=dtype).copy().reshape(self.shape)
+
+
+@dataclass(frozen=True)
 class InputMetadata:
     """Metadata for one external plan input — mirrors onnxruntime's NodeArg shape.
 
@@ -440,6 +493,12 @@ _BACKEND_NAMES: Dict[int, str] = {
     6: "MLX",
     7: "ARM_HYBRID",
     8: "NNAPI",
+    9: "HIP_GRAPHS",
+    10: "LEVEL_ZERO",
+    11: "VULKAN",
+    12: "METAL",
+    13: "TPU",
+    14: "HEXAGON",
 }
 
 
@@ -458,7 +517,7 @@ class ExecutionSummary:
         plan_phase:         DSP plan phase after this run (0–3).
         execution_count:    Total executions completed on this context.
         execution_time_ns:  Wall time of the last run in nanoseconds.
-        requested_gpu_target: GPU target requested (0=AUTO, 1=CUDA, 2=AMD).
+        requested_gpu_target: GPU target requested (0=AUTO, 1=CUDA, 2=AMD, 3=VULKAN, 4=METAL).
         applied_gpu_target:   GPU target that was actually used.
     """
 
@@ -612,6 +671,12 @@ class SdxRuntime:
         self._lib.sdxUnloadModel.argtypes = [ctypes.c_void_p]
         self._lib.sdxUnloadModel.restype = None
 
+        self._lib.sdxGetTokenizerPath.argtypes = [ctypes.c_void_p]
+        self._lib.sdxGetTokenizerPath.restype = ctypes.c_char_p
+
+        self._lib.sdxGetTextGenerationConfigPath.argtypes = [ctypes.c_void_p]
+        self._lib.sdxGetTextGenerationConfigPath.restype = ctypes.c_char_p
+
         self._lib.sdxCreateContext.argtypes = [
             ctypes.c_void_p,
             ctypes.POINTER(ctypes.c_char_p),
@@ -619,6 +684,15 @@ class SdxRuntime:
             ctypes.POINTER(ctypes.c_void_p),
         ]
         self._lib.sdxCreateContext.restype = ctypes.c_int
+
+        self._lib.sdxCreateContextWithOptions.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_char_p),
+            ctypes.c_int32,
+            ctypes.POINTER(ContextOptions),
+            ctypes.POINTER(ctypes.c_void_p),
+        ]
+        self._lib.sdxCreateContextWithOptions.restype = ctypes.c_int
 
         self._lib.sdxDestroyContext.argtypes = [ctypes.c_void_p]
         self._lib.sdxDestroyContext.restype = None
@@ -632,6 +706,14 @@ class SdxRuntime:
             ctypes.POINTER(RunOptions),
         ]
         self._lib.sdxRun.restype = ctypes.c_int
+
+        self._lib.sdxRunAllocating.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(TensorView),
+            ctypes.c_int32,
+            ctypes.POINTER(RunOptions),
+        ]
+        self._lib.sdxRunAllocating.restype = ctypes.c_int
 
         self._lib.sdxGetLastError.argtypes = [ctypes.c_void_p]
         self._lib.sdxGetLastError.restype = ctypes.c_char_p
@@ -662,6 +744,16 @@ class SdxRuntime:
 
         self._lib.sdxGetInputName.argtypes = [ctypes.c_void_p, ctypes.c_int32]
         self._lib.sdxGetInputName.restype = ctypes.c_char_p
+
+        self._lib.sdxGetOutputName.argtypes = [ctypes.c_void_p, ctypes.c_int32]
+        self._lib.sdxGetOutputName.restype = ctypes.c_char_p
+
+        self._lib.sdxGetOutputTensor.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_int32,
+            ctypes.POINTER(TensorView),
+        ]
+        self._lib.sdxGetOutputTensor.restype = ctypes.c_int
 
     def abi_version(self) -> int:
         return int(self._lib.sdxGetRuntimeAbiVersion())
@@ -715,7 +807,24 @@ class SdxModel:
         self._runtime = runtime
         self._model_handle = model_handle
 
-    def create_context(self, requested_outputs: Optional[Iterable[str]] = None) -> "SdxContext":
+    @property
+    def tokenizer_path(self) -> Optional[str]:
+        raw = self._runtime._lib.sdxGetTokenizerPath(self._model_handle)
+        return raw.decode("utf-8", errors="replace") if raw else None
+
+    @property
+    def text_generation_config_path(self) -> Optional[str]:
+        raw = self._runtime._lib.sdxGetTextGenerationConfigPath(
+            self._model_handle
+        )
+        return raw.decode("utf-8", errors="replace") if raw else None
+
+    def create_context(
+        self,
+        requested_outputs: Optional[Iterable[str]] = None,
+        *,
+        bind_model_parameters: bool = False,
+    ) -> "SdxContext":
         output_array: Optional[ctypes.Array] = None
         output_ptr = None
         output_count = 0
@@ -728,14 +837,34 @@ class SdxModel:
                 output_ptr = ctypes.cast(output_array, ctypes.POINTER(ctypes.c_char_p))
 
         context = ctypes.c_void_p()
-        status = self._runtime._lib.sdxCreateContext(
-            self._model_handle,
-            output_ptr,
-            output_count,
-            ctypes.byref(context),
+        if bind_model_parameters:
+            options = ContextOptions(bind_model_parameters=True)
+            status = self._runtime._lib.sdxCreateContextWithOptions(
+                self._model_handle,
+                output_ptr,
+                output_count,
+                ctypes.byref(options),
+                ctypes.byref(context),
+            )
+            action = "sdxCreateContextWithOptions"
+        else:
+            status = self._runtime._lib.sdxCreateContext(
+                self._model_handle,
+                output_ptr,
+                output_count,
+                ctypes.byref(context),
+            )
+            action = "sdxCreateContext"
+        self._runtime._raise_on_error(status, self._runtime._handles.runtime, action)
+        return SdxContext(self._runtime, context, self)
+
+    def create_inference_context(
+        self, requested_outputs: Optional[Iterable[str]] = None
+    ) -> "SdxContext":
+        """Create a mobile/offline context with bundle-owned weights pre-bound."""
+        return self.create_context(
+            requested_outputs, bind_model_parameters=True
         )
-        self._runtime._raise_on_error(status, self._runtime._handles.runtime, "sdxCreateContext")
-        return SdxContext(self._runtime, context)
 
     def close(self) -> None:
         if self._model_handle:
@@ -750,8 +879,15 @@ class SdxModel:
 
 
 class SdxContext:
-    def __init__(self, runtime: SdxRuntime, context_handle: ctypes.c_void_p) -> None:
+    def __init__(
+        self,
+        runtime: SdxRuntime,
+        context_handle: ctypes.c_void_p,
+        model: SdxModel,
+    ) -> None:
         self._runtime = runtime
+        # Keep bundle-owned parameters alive for parameter-bound contexts.
+        self._model = model
         self._context_handle = context_handle
 
     @staticmethod
@@ -791,6 +927,51 @@ class SdxContext:
 
         for lease in output_leases:
             lease.finalize()
+
+    def run_allocating(
+        self,
+        inputs: Sequence,
+        options: Optional[RunOptions] = None,
+    ) -> List[DynamicOutput]:
+        """Run with runtime-owned outputs and return Python-owned copies."""
+        input_arr, _input_leases = self._coerce_tensor_views(
+            inputs, is_output=False
+        )
+        options_ptr = ctypes.byref(options) if options is not None else None
+        status = self._runtime._lib.sdxRunAllocating(
+            self._context_handle,
+            input_arr,
+            len(inputs),
+            options_ptr,
+        )
+        self._runtime._raise_on_error(
+            status, self._runtime._handles.runtime, "sdxRunAllocating"
+        )
+
+        results: List[DynamicOutput] = []
+        for index in range(max(0, self.num_outputs())):
+            view = TensorView()
+            output_status = self._runtime._lib.sdxGetOutputTensor(
+                self._context_handle, index, ctypes.byref(view)
+            )
+            self._runtime._raise_on_error(
+                output_status,
+                self._runtime._handles.runtime,
+                "sdxGetOutputTensor",
+            )
+            shape = tuple(
+                int(view.shape[i]) for i in range(max(0, int(view.rank)))
+            ) if view.shape else ()
+            data = ctypes.string_at(view.data, int(view.bytes)) if view.bytes else b""
+            results.append(
+                DynamicOutput(
+                    data=data,
+                    shape=shape,
+                    dtype=int(view.dtype),
+                    name=self.output_name(index),
+                )
+            )
+        return results
 
     def execution_report(self) -> ExecutionReport:
         report = ExecutionReport()
@@ -853,6 +1034,20 @@ class SdxContext:
         if count < 0:
             return []
         return [self.input_name(i) or "" for i in range(count)]
+
+    def output_name(self, output_index: int) -> Optional[str]:
+        """Explicit requested output name at the given index, if supplied."""
+        raw = self._runtime._lib.sdxGetOutputName(
+            self._context_handle, int(output_index)
+        )
+        return raw.decode("utf-8", errors="replace") if raw else None
+
+    def output_names(self) -> List[Optional[str]]:
+        """Explicit requested output names in plan order."""
+        return [
+            self.output_name(index)
+            for index in range(max(0, self.num_outputs()))
+        ]
 
     def get_inputs(self) -> List[InputMetadata]:
         """Return metadata for every external plan input in binding order.

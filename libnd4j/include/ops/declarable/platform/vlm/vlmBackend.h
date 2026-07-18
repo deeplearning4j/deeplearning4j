@@ -38,7 +38,10 @@
 #include <ggml-backend.h>
 #endif
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
+SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN
 namespace vlmUtils {
 
 #if HAVE_VLM
@@ -648,6 +651,7 @@ int getVlmParallelDeviceCount();
 #endif  // HAVE_VLM
 
 }  // namespace vlmUtils
+SD_BACKEND_ROOT_INLINE_NAMESPACE_END
 }  // namespace sd
 
 #endif  // DEV_TESTS_VLM_BACKEND_H

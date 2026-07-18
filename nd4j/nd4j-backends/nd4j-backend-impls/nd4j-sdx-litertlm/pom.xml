@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ ******************************************************************************
+  ~ This program and the accompanying materials are made available under the
+  ~ terms of the Apache License, Version 2.0.
+  ~ SPDX-License-Identifier: Apache-2.0
+  ~ ******************************************************************************
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.eclipse.deeplearning4j</groupId>
+        <artifactId>nd4j-backend-impls</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>nd4j-sdx-litertlm</artifactId>
+    <packaging>jar</packaging>
+
+    <name>nd4j-sdx-litertlm</name>
+    <description>Optional JavaCPP provider for LiteRT-LM mobile NPU chat</description>
+
+    <properties>
+        <skipPublishing>false</skipPublishing>
+        <module.name>nd4j.sdx.litertlm</module.name>
+        <litertlm.version>0.14.0</litertlm.version>
+        <litertlm.source.dir>${project.build.directory}/litert-lm-source</litertlm.source.dir>
+        <litertlm.runtime.dir>${project.build.directory}/litert-lm-runtime</litertlm.runtime.dir>
+        <litertlm.runtime.library>${litertlm.runtime.dir}/liblitert-lm.so</litertlm.runtime.library>
+        <litertlm.dispatch.library>${litertlm.runtime.dir}/libLiteRtDispatch_GoogleTensor.so</litertlm.dispatch.library>
+        <litertlm.constraint.library>${litertlm.runtime.dir}/libGemmaModelConstraintProvider.so</litertlm.constraint.library>
+        <litertlm.binding.metadata>${project.basedir}/src/main/android/google-tensor-g5-binding.json</litertlm.binding.metadata>
+        <javacpp.parser.skip>true</javacpp.parser.skip>
+        <javacpp.compiler.skip>true</javacpp.compiler.skip>
+        <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/dsp/runtime/litertlm/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
+        <javacpp.platform.build>${javacpp.platform}</javacpp.platform.build>
+        <litertlm.platform.links>litert-lm</litertlm.platform.links>
+        <android.api>28</android.api>
+        <sdx.model.jar>${project.basedir}/../nd4j-sdx-model/target/nd4j-sdx-model-${project.version}.jar</sdx.model.jar>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-sdx-preset</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-sdx-model</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-commons</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.eclipse.deeplearning4j</groupId>
+                        <artifactId>nd4j-sdx-preset</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <properties>${javacpp.platform.build}</properties>
+                    <propertyKeysAndValues>
+                        <property>
+                            <name>platform.root</name>
+                            <value>${javacpp.platform.root}</value>
+                        </property>
+                        <property>
+                            <name>platform.compiler</name>
+                            <value>${javacpp.platform.compiler}</value>
+                        </property>
+                        <property>
+                            <name>platform.sysroot</name>
+                            <value>${javacpp.platform.sysroot}</value>
+                        </property>
+                        <property>
+                            <name>platform.extension</name>
+                            <value>${javacpp.platform.extension}</value>
+                        </property>
+                        <property>
+                            <name>platform.link</name>
+                            <value>${litertlm.platform.links}</value>
+                        </property>
+                    </propertyKeysAndValues>
+                    <classPaths>
+                        <classPath>${project.build.outputDirectory}</classPath>
+                    </classPaths>
+                    <includePaths>
+                        <includePath>${litertlm.source.dir}</includePath>
+                    </includePaths>
+                    <linkPaths>
+                        <linkPath>${litertlm.runtime.dir}</linkPath>
+                    </linkPaths>
+                    <buildResources>
+                        <buildResource>${litertlm.runtime.dir}</buildResource>
+                    </buildResources>
+                    <compilerOptions>
+                        <compilerOption>-Wl,--no-undefined</compilerOption>
+                    </compilerOptions>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>javacpp-parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${javacpp.parser.skip}</skip>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <classOrPackageName>org.nd4j.dsp.runtime.presets.LiteRtLmPresets</classOrPackageName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>javacpp-compiler</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${javacpp.compiler.skip}</skip>
+                            <classOrPackageName>org.nd4j.dsp.runtime.litertlm.bindings.LiteRtLmNative</classOrPackageName>
+                            <clean>true</clean>
+                            <copyLibs>false</copyLibs>
+                            <copyResources>false</copyResources>
+                            <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
+                            <outputDirectory>${javacpp.build.output.path}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.platform</groupId>
+                        <artifactId>junit-platform-launcher</artifactId>
+                        <version>1.10.2</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>org/nd4j/dsp/runtime/litertlm/bindings/*/*</exclude>
+                                <exclude>*.dll</exclude>
+                                <exclude>*.dylib</exclude>
+                                <exclude>*.so</exclude>
+                                <exclude>META-INF/native-image/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>android-arm64-google-tensor-g5</id>
+            <properties>
+                <javacpp.parser.skip>false</javacpp.parser.skip>
+                <javacpp.compiler.skip>false</javacpp.compiler.skip>
+                <javacpp.platform>android-arm64</javacpp.platform>
+                <javacpp.platform.build>android-arm64</javacpp.platform.build>
+                <javacpp.platform.root>${android.ndk}</javacpp.platform.root>
+                <javacpp.platform.compiler>${android.ndk}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${android.api}-clang++</javacpp.platform.compiler>
+                <javacpp.platform.sysroot>--sysroot=${android.ndk}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
+                <javacpp.platform.extension>-google-tensor-g5</javacpp.platform.extension>
+                <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/dsp/runtime/litertlm/bindings/android-arm64-google-tensor-g5</javacpp.build.output.path>
+                <litertlm.platform.links>litert-lm${path.separator}log${path.separator}android${path.separator}dl${path.separator}m${path.separator}c</litertlm.platform.links>
+                <litertlm.android.abi>arm64-v8a</litertlm.android.abi>
+                <litertlm.android.stage>${project.build.directory}/android-aar-google-tensor-g5</litertlm.android.stage>
+                <litertlm.android.output>${project.build.directory}/sdx-chat-runtime-${project.version}-android-arm64-google-tensor-g5.aar</litertlm.android.output>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>assemble-google-tensor-g5-aar</id>
+                                <phase>package</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target name="assemble-google-tensor-g5-aar">
+                                        <fail message="LiteRT-LM runtime not found: ${litertlm.runtime.library}">
+                                            <condition><not><available file="${litertlm.runtime.library}"/></not></condition>
+                                        </fail>
+                                        <fail message="Google Tensor dispatch not found: ${litertlm.dispatch.library}">
+                                            <condition><not><available file="${litertlm.dispatch.library}"/></not></condition>
+                                        </fail>
+                                        <fail message="Gemma constraint provider not found: ${litertlm.constraint.library}">
+                                            <condition><not><available file="${litertlm.constraint.library}"/></not></condition>
+                                        </fail>
+                                        <fail message="JavaCPP wrapper not found: ${javacpp.build.output.path}/libjnilitertlm.so">
+                                            <condition><not><available file="${javacpp.build.output.path}/libjnilitertlm.so"/></not></condition>
+                                        </fail>
+                                        <fail message="Google Tensor binding metadata not found: ${litertlm.binding.metadata}">
+                                            <condition><not><available file="${litertlm.binding.metadata}"/></not></condition>
+                                        </fail>
+
+                                        <fail message="Shared SDX model-cache JAR not found: ${sdx.model.jar}">
+                                            <condition><not><available file="${sdx.model.jar}"/></not></condition>
+                                        </fail>
+
+                                        <delete dir="${litertlm.android.stage}"/>
+                                        <mkdir dir="${litertlm.android.stage}/root/jni/${litertlm.android.abi}"/>
+                                        <mkdir dir="${litertlm.android.stage}/classes"/>
+
+                                        <copy file="${project.basedir}/src/main/android/AndroidManifest.xml"
+                                              tofile="${litertlm.android.stage}/root/AndroidManifest.xml"/>
+                                        <copy file="${litertlm.binding.metadata}"
+                                              tofile="${litertlm.android.stage}/root/binding.json"/>
+                                        <unzip src="${project.build.directory}/${project.build.finalName}.jar"
+                                               dest="${litertlm.android.stage}/classes">
+                                            <patternset>
+                                                <include name="org/nd4j/dsp/runtime/litertlm/**/*.class"/>
+                                            </patternset>
+                                        </unzip>
+                                        <unzip src="${sdx.model.jar}"
+                                               dest="${litertlm.android.stage}/classes">
+                                            <patternset>
+                                                <include name="org/nd4j/dsp/model/**/*.class"/>
+                                            </patternset>
+                                        </unzip>
+                                        <zip destfile="${litertlm.android.stage}/root/classes.jar"
+                                             basedir="${litertlm.android.stage}/classes"/>
+
+                                        <copy file="${javacpp.build.output.path}/libjnilitertlm.so"
+                                              todir="${litertlm.android.stage}/root/jni/${litertlm.android.abi}"/>
+                                        <copy file="${litertlm.runtime.library}"
+                                              todir="${litertlm.android.stage}/root/jni/${litertlm.android.abi}"/>
+                                        <copy file="${litertlm.dispatch.library}"
+                                              todir="${litertlm.android.stage}/root/jni/${litertlm.android.abi}"/>
+                                        <copy file="${litertlm.constraint.library}"
+                                              todir="${litertlm.android.stage}/root/jni/${litertlm.android.abi}"/>
+
+                                        <zip destfile="${litertlm.android.output}"
+                                             basedir="${litertlm.android.stage}/root"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-google-tensor-g5-aar</id>
+                                <phase>package</phase>
+                                <goals><goal>attach-artifact</goal></goals>
+                                <configuration>
+                                    <artifacts>
+                                        <artifact>
+                                            <file>${litertlm.android.output}</file>
+                                            <type>aar</type>
+                                            <classifier>android-arm64-google-tensor-g5</classifier>
+                                        </artifact>
+                                    </artifacts>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

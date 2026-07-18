@@ -26,6 +26,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 
 KernelPerformanceRegistry& KernelPerformanceRegistry::getInstance() {
   static KernelPerformanceRegistry* instance = nullptr;
@@ -295,5 +296,6 @@ size_t KernelPerformanceRegistry::getOperationCount() const {
   return ops.size();
 }
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

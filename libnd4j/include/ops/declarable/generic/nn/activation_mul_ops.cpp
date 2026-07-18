@@ -58,6 +58,7 @@ CUSTOM_OP_IMPL(silu_and_mul, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(silu_and_mul) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
@@ -113,6 +114,7 @@ CUSTOM_OP_IMPL(gelu_and_mul, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(gelu_and_mul) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }

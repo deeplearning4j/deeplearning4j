@@ -108,8 +108,25 @@ class SD_LIB_EXPORT StringUtils {
    * @param needleLength
    * @return
    */
-  static LongType countSubarrays(const void* haystack, LongType haystackLength, const void* needle,
-                                 LongType needleLength);
+  static SD_INLINE LongType countSubarrays(const void* haystack, LongType haystackLength,
+                                            const void* needle, LongType needleLength) {
+    const auto* haystackValues = reinterpret_cast<const LongType*>(haystack);
+    const auto* needleValues = reinterpret_cast<const LongType*>(needle);
+    LongType number = 0;
+
+    for (LongType offset = 0; offset < haystackLength - needleLength; ++offset) {
+      bool matches = true;
+      for (LongType index = 0; index < needleLength; ++index) {
+        if (haystackValues[offset + index] != needleValues[index]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) ++number;
+    }
+
+    return number;
+  }
 
   /**
    * This method returns number of bytes used for string NDArrays content

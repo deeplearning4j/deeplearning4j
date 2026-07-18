@@ -32,6 +32,7 @@ namespace sd {
 namespace ops {
 DECLARE_TYPES(argamin) {
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setAllowedOutputTypes({ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 }
 
 CUSTOM_OP_IMPL(argamin, 1, 1, false, 0, -2) {

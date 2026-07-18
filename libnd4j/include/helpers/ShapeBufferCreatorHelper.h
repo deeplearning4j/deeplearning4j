@@ -22,9 +22,10 @@
 #define LIBND4J_SHAPEBUFFERCREATORHELPER_H
 
 #include <helpers/ShapeBufferCreator.h>
+#include <system/BackendNamespace.h>
 #include <exception>
 
-namespace sd {
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 
 /**
  * Helper class to manage ShapeBufferCreator instances and provide global access
@@ -45,6 +46,7 @@ private:
     static ShapeBufferCreator* currentCreator_;
 };
 
-} // namespace sd
+SD_BACKEND_ABI_NAMESPACE_END
+SD_BACKEND_ABI_ALIAS(ShapeBufferCreatorHelper)
 
 #endif // LIBND4J_SHAPEBUFFERCREATORHELPER_H

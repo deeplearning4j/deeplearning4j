@@ -55,6 +55,7 @@ DECLARE_SHAPE_FN(check_numerics) {
 }
 
 DECLARE_TYPES(check_numerics) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, sd::DataType::UTF8)

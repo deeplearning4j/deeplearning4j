@@ -1,0 +1,116 @@
+[
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperConfig",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperConfig$WhisperConfigBuilder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperDecoderResult",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperDecoderResult$WhisperDecoderResultBuilder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperDecoderResult$Segment",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperDecoderResult$Segment$SegmentBuilder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperModel",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperModel$WhisperModelBuilder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperTokenizer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperModelDownloader",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperModelDownloader$DownloadResult",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperModelDownloader$DownloadResult$DownloadResultBuilder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperModelDownloader$WhisperModelSize",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.whisper.WhisperModelDownloader$WhisperModelFormat",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.feature.WhisperMelSpectrogram",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.feature.AudioFeatureExtractor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.feature.AudioFeatureExtractor$AudioFeatureExtractorBuilder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.io.AudioLoader",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.transform.AudioPreprocessor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.audio.transform.AudioPreprocessor$AudioPreprocessorBuilder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  }
+]

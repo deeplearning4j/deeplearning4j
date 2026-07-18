@@ -106,7 +106,8 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
   return sd::Status::OK;
 }
 
-DECLARE_TYPES(batchnorm) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true)->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING); }
+DECLARE_TYPES(batchnorm) {
+  getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
 DECLARE_SHAPE_FN(batchnorm) {
   auto inShapeInfo = inputShape->at(0);
@@ -288,6 +289,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 }
 
 DECLARE_TYPES(batchnorm_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_NORMALIZATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()
       ->setAllowedInputTypes(0, sd::DataType::ANY)
       ->setAllowedInputTypes(1, sd::DataType::ANY)

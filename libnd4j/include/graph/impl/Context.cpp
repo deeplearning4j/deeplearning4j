@@ -26,7 +26,7 @@
 #include <helpers/shape.h>
 #include <system/env_functions.h>
 #include <system/PointerValidation.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 
 #if defined(SD_GCC_FUNCTRACE)
 #include <graph/OpContextLifecycleTracker.h>
@@ -873,12 +873,17 @@ void Context::setBArguments(bool *arguments, int numberOfArguments) {
 }
 
 void Context::setCudaContext(Pointer cudaStream, Pointer reductionPointer, Pointer allocationPointer) {
-  if (!sd::graph::dspIsCudaBuild()) return;
+  // The public name is retained for ABI compatibility, but LaunchContext stream
+  // ownership applies to every backend with a distinct device-memory domain.
+  if (!sd::graph::dspHasDeviceMemory()) return;
 
   _context = new LaunchContext(cudaStream, reductionPointer, allocationPointer);
 
-  // Reuse the default context's cuBLAS handle so all contexts share the same handle.
-  sd::graph::dspCopyCublasHandle(_context, LaunchContext::defaultContext());
+  // CUDA reuses its default cuBLAS handle. Vulkan has no such handle and must
+  // not instantiate a default LaunchContext as a side effect of stream binding.
+  if (sd::graph::dspIsCudaBuild()) {
+    sd::graph::dspCopyCublasHandle(_context, LaunchContext::defaultContext());
+  }
 
   for (auto v : _fastpath_out) v->setContext(_context);
 

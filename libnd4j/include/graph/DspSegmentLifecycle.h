@@ -261,22 +261,42 @@ static inline void markNotFusible(GraphSegmentExec& exec, const char* reason,
       exec.compiledByBackend.c_str());
 }
 
-// BUILDING:CAPTURING -> SEALED (emulated replay sealed to steady state)
-// For EMULATED_REPLAY backend: slot-by-slot execution by design, not by failure.
+// BUILDING:CAPTURING -> SEALED (functional replay program is ready).
+// Unlike diagnostic-only emulation, this transition owns an executable replay
+// artifact and therefore publishes the normal GRAPH_REPLAY outcome.
+static inline void markFunctionalReplaySealed(GraphSegmentExec& exec,
+                                              int startSlot = -1, int endSlot = -1) {
+  SLS_ASSERT_FROM(exec, SLS::CAPTURE_PENDING, "markFunctionalReplaySealed");
+  DSP_DIAG(EXECUTE,
+           "LIFECYCLE: %s -> SEALED:FUNCTIONAL_REPLAY seg[%d-%d] (execCount=%d)",
+           exec.segPhase.displayName(), startSlot, endSlot, exec.executionCount);
+  exec.segPhase.seal();  // PRIMARY: BUILDING:CAPTURING → SEALED
+  exec.outcome = SegmentExecOutcome::GRAPH_REPLAY;
+  exec.terminalReason = nullptr;
+  exec.compiledByBackend = "FunctionalReplay";
+  exec.lifecycleState = SLS::REPLAYING;  // Legacy sync
+  exec.handleTracker.record(ReplayHandleEvent::Kind::INSTANTIATE,
+                            exec.executionCount, 0, 0,
+                            "functional_replay_ready");
+}
+
+// BUILDING:CAPTURING -> SEALED (diagnostic-only emulation).
+// Used only when a data-dependent/control-flow segment cannot publish a static
+// logical program and must remain slot-by-slot by design.
 static inline void markEmulatedSealed(GraphSegmentExec& exec,
                                       int startSlot = -1, int endSlot = -1) {
   SLS_ASSERT_FROM(exec, SLS::CAPTURE_PENDING, "markEmulatedSealed");
-  DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> SEALED:EMULATED (execCount=%d)",
+  DSP_DIAG(EXECUTE, "LIFECYCLE: %s -> SEALED:EMULATED_SBS (execCount=%d)",
            exec.segPhase.displayName(), exec.executionCount);
   const char* prevPhase = exec.segPhase.displayName();
   exec.segPhase.seal();  // PRIMARY: BUILDING:CAPTURING → SEALED
   exec.outcome = SegmentExecOutcome::ZERO_KERNEL_SBS;
-  exec.terminalReason = "emulated_replay_sealed";
+  exec.terminalReason = "emulated_replay_not_recordable";
   exec.lifecycleState = SLS::REPLAYING;  // Legacy sync
   DspDiagnostics::getInstance().recordSegmentTerminal(
       startSlot, endSlot, exec.executionCount,
-      static_cast<int>(exec.outcome), prevPhase, "emulated_replay_sealed",
-      exec.compiledByBackend.c_str());
+      static_cast<int>(exec.outcome), prevPhase,
+      "emulated_replay_not_recordable", exec.compiledByBackend.c_str());
 }
 
 // OOM_DEFERRED -> CAPTURE_PENDING (OOM retry fires — back to capture attempt)

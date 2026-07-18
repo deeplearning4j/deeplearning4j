@@ -9,6 +9,11 @@
 #include <stdlib.h>
 
 /**
+ * Opaque stateful decoder handle exported through the C ABI.
+ */
+typedef struct DecodeStreamHandle DecodeStreamHandle;
+
+/**
  * Opaque encoding handle
  */
 typedef struct EncodingHandle EncodingHandle;
@@ -82,6 +87,29 @@ char *ffi_tokenizer_decode(const struct TokenizerHandle *handle,
                            const uint32_t *ids,
                            uintptr_t num_ids,
                            bool skip_special_tokens);
+
+/**
+ * Create a stateful incremental decoder.
+ *
+ * The returned handle owns an Arc reference to the tokenizer, so it remains
+ * valid even if the originating tokenizer handle is released first.
+ */
+struct DecodeStreamHandle *ffi_tokenizer_decode_stream_create(const struct TokenizerHandle *handle,
+                                                              bool skip_special_tokens);
+
+/**
+ * Decode one token ID and return the next complete text chunk.
+ *
+ * A successful step that cannot emit text yet returns an allocated empty
+ * string. The returned string must be released with
+ * ffi_tokenizer_free_string.
+ */
+char *ffi_tokenizer_decode_stream_step(struct DecodeStreamHandle *handle, uint32_t token_id);
+
+/**
+ * Free a stateful incremental decoder.
+ */
+void ffi_tokenizer_decode_stream_free(struct DecodeStreamHandle *handle);
 
 /**
  * Free a string returned by ffi_tokenizer_decode

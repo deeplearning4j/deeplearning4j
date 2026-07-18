@@ -44,7 +44,7 @@ CONFIGURABLE_OP_IMPL(invert_permutation, 1, 1, false, 0, 0) {
 
 DECLARE_SYN(InvertPermutation, invert_permutation);
 
-DECLARE_TYPES(invert_permutation) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(invert_permutation) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true);  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT); }
 }  // namespace ops
 }  // namespace sd
 

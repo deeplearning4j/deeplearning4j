@@ -94,7 +94,7 @@ static bool allShapesMatch(std::vector<NDArray*>& inputs) {
   return true;
 }
 
-PLATFORM_IMPL(mergeadd, ENGINE_CPU) {
+PLATFORM_IMPL(mergeadd, ENGINE_ONEDNN) {
   std::vector<NDArray*> inputs;
   for (int i = 0; i < block.width(); i++) {
     inputs.push_back(INPUT_VARIABLE(i));
@@ -112,7 +112,7 @@ PLATFORM_IMPL(mergeadd, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(mergeadd, ENGINE_CPU) {
+PLATFORM_CHECK(mergeadd, ENGINE_ONEDNN) {
   std::vector<NDArray*> inputs;
   for (int i = 0; i < block.width(); i++) {
     inputs.push_back(INPUT_VARIABLE(i));

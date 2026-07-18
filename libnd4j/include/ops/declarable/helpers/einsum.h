@@ -20,6 +20,7 @@
 #define LIBND4J_HELPERS_EINSUM_H
 
 #include <array/NDArray.h>
+#include <ops/declarable/helpers/einsum_shape.h>
 #include <system/op_boilerplate.h>
 
 #include <string>
@@ -31,9 +32,6 @@ namespace helpers {
 
 SD_LIB_HIDDEN void einsum(LaunchContext* context, const std::string& equation,
                            const std::vector<NDArray*>& inputs, NDArray& output);
-
-SD_LIB_HIDDEN std::vector<LongType> einsumOutputShape(const std::string& equation,
-                                                       const std::vector<const LongType*>& inputShapeInfos);
 
 }  // namespace helpers
 }  // namespace ops

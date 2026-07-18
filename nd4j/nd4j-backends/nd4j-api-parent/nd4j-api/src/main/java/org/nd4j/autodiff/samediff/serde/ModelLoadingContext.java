@@ -26,6 +26,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.buffer.HybridDataBuffer;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
@@ -361,6 +362,22 @@ public class ModelLoadingContext implements AutoCloseable {
 
         DataBuffer dataBuffer = array.data();
         long bytes = dataBuffer.length() * dataBuffer.getElementSize();
+
+        // Native loaders can produce arrays directly on a GPU. In that case the
+        // special buffer is authoritative while the lazily allocated host buffer is stale.
+        // Scheduling the normal host-to-device publication would overwrite the valid device
+        // result with stale host bytes (observed as every GGUF model weight becoming zero).
+        // Affinity location is the source of truth for both ordinary and hybrid buffers:
+        // HybridDataBuffer's residency flags can lag native device writes.
+        AffinityManager affinityManager = Nd4j.getAffinityManager();
+        AffinityManager.Location activeLocation = affinityManager.getActiveLocation(array);
+        if (activeLocation != AffinityManager.Location.HOST) {
+            Integer arrayDevice = affinityManager.getDeviceForArray(array);
+            log.trace("Host publication skipped: {} bytes are already device-authoritative "
+                            + "on device {} (requested target {})",
+                    bytes, arrayDevice, targetDevice.getDeviceId());
+            return;
+        }
 
         // Check if async transfer is beneficial
         boolean useAsync = asyncEnabled &&

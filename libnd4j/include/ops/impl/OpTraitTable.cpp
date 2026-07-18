@@ -94,7 +94,10 @@ static constexpr uint32_t TILE = DATA_MOVE_VALDEP | OP_TRAIT_TILE;
 // Partial writers: only write at scatter indices, leave other positions stale.
 // Must be zeroed before execution if downstream reads the whole buffer.
 static constexpr uint32_t SCATTER_PARTIAL = OP_TRAIT_DATA_MOVEMENT;
-static constexpr uint32_t SCATTER_ND = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND;
+// scatter_nd zero-fills the whole output before scattering updates, so every
+// element is written — matches the descriptor's FULLY_WRITING and the Vulkan
+// indexed-accumulation schedule that requires it.
+static constexpr uint32_t SCATTER_ND = SCATTER_PARTIAL | OP_TRAIT_SCATTER_ND | OP_TRAIT_FULLY_WRITING;
 // scatter_nd_update is a FULL writer: it does output->assign(input) first (copies
 // every element), THEN scatters updates at specific indices. The assign step fully
 // writes the output, so no prezero is needed. FULLY_WRITING reflects this.
@@ -277,11 +280,8 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"rms_norm_linear", NORM | MATMUL},
         {"skip_rms_norm",  NORM},
         {"normalize_moments", NORM},
-        {"fused_rope",     NORM},
-        {"fused_mrope",    NORM},
-
-        // ── Embedding merge ───────────────────────────────────────────────
-        {"vision_embedding_merge", DATA_MOVE},
+        {"fused_rope",     DATA_MOVE},
+        {"fused_mrope",    DATA_MOVE},
 
         // ── Attention ops ──────────────────────────────────────────────────
         {"onnx_multi_head_attention",       ATTN},
@@ -297,7 +297,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         // VIEW (VALDEP): shape fn dereferences an input TENSOR's data.
         //   reshape/reshape_no_copy take a shape tensor; strided_slice reads begin/end/stride tensors.
         // VIEW_SHAPE_DEP: shape fn uses only input shapes + iArgs — no data read.
-        //   expand_dims/squeeze/flatten/flatten_2d/permute all fall in this class.
+        //   expand_dims/squeeze/flatten/flatten_2d all fall in this class.
         {"reshape",        VIEW | DATADEP},     // shape fn calls INPUT_VARIABLE(1)->asVectorT() for shape tensor
         {"reshape_no_copy", VIEW | DATADEP},   // same as reshape
         {"strided_slice",  VIEW | OP_TRAIT_SLICE},
@@ -305,7 +305,6 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"squeeze",        VIEW_SHAPE_DEP},
         {"flatten",        VIEW_SHAPE_DEP},
         {"flatten_2d",     VIEW_SHAPE_DEP},
-        {"permute",        VIEW_SHAPE_DEP},
 
         // ── Shape-determined data movement (shape fn reads input shapes + iArgs only) ─
         // These MUST NOT carry VALUE_DEPENDENT_SHAPE — the SHAPES_FROZEN check relies on
@@ -412,10 +411,10 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"paged_kv_append",     DATA_MOVE_VALDEP},
 
         // ── Rotary / positional embedding ──────────────────────────────────
-        {"rope",         NORM},
-        {"rope_bp",      NORM | BP},
-        {"fused_rope_bp", NORM | BP},
-        {"dual_rope",    NORM},
+        {"rope",         DATA_MOVE},
+        {"rope_bp",      DATA_MOVE | BP},
+        {"fused_rope_bp", DATA_MOVE | BP},
+        {"dual_rope",    DATA_MOVE},
 
         // ── Normalization backprop / fused variants ────────────────────────
         {"rms_norm_bp",             NORM | BP},
@@ -441,8 +440,7 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"causal_conv1d",         UNARY_EW},
 
         // ── Fused training kernels ─────────────────────────────────────────
-        {"fused_bias_dropout_residual", UNARY_EW},
-        {"fused_elementwise_chain",     UNARY_EW},
+        {"fused_bias_dropout_residual", TERNARY_EW},
         {"swish_mul_bp",                BINARY_EW | BP},
         {"center_and_sharpen",          UNARY_EW},
         {"center_and_sharpen_bp",       UNARY_EW | BP},
@@ -860,7 +858,6 @@ static const std::unordered_map<std::string, uint32_t>& getTraitTable() {
         {"reverse_bp",          DATA_MOVE | BP},
         {"reverse_v2",          DATA_MOVE},
         {"reverse_sequence",    DATA_MOVE},
-        {"roll",                DATA_MOVE},
         {"transpose",           DATA_MOVE},
         {"concat_bp",           CONCAT | BP},
         {"concat_v2",           CONCAT | DATADEP},

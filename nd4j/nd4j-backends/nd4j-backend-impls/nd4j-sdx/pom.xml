@@ -35,24 +35,354 @@
     <packaging>jar</packaging>
 
     <name>nd4j-sdx</name>
-    <description>SDX standalone runtime — JNA wrapper for libsdx_cpu/libsdx_cuda</description>
+    <description>JavaCPP bindings and shared Java API for the backend-neutral SDX runtime</description>
 
     <properties>
         <skipPublishing>false</skipPublishing>
+        <module.name>nd4j.sdx</module.name>
+        <libnd4jhome>${project.basedir}/../../../../libnd4j</libnd4jhome>
+        <libnd4j.outputPath>${libnd4jhome}/blasbuild/cpu</libnd4j.outputPath>
+        <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/dsp/runtime/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
+        <javacpp.platform.build>${javacpp.platform}</javacpp.platform.build>
+        <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
+        <sdx.native.library>nd4jcpu</sdx.native.library>
+        <sdx.platform.links>nd4jcpu</sdx.platform.links>
+        <sdx.android.variant>vulkan</sdx.android.variant>
+        <android.api>24</android.api>
+        <sdx.model.jar>${project.basedir}/../nd4j-sdx-model/target/nd4j-sdx-model-${project.version}.jar</sdx.model.jar>
     </properties>
 
     <dependencies>
         <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+        </dependency>
+        <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
             <version>5.14.0</version>
+            <!-- Legacy desktop-only SdxLlm compatibility; never ship transitively to mobile. -->
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-sdx-preset</artifactId>
             <version>${project.version}</version>
-            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-sdx-model</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!--
+            Surefire 3.3.0 uses JUnit Platform APIs newer than the repository's
+            managed 1.8.0-M1 line. Keep the complete test platform aligned, as
+            already done by sdx-aot, so this reusable binding module can run its
+            transport smoke tests without changing the repository-wide stack.
+        -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-commons</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.eclipse.deeplearning4j</groupId>
+                        <artifactId>nd4j-sdx-preset</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <properties>${javacpp.platform.build}</properties>
+                    <propertyKeysAndValues>
+                        <property>
+                            <name>platform.root</name>
+                            <value>${javacpp.platform.root}</value>
+                        </property>
+                        <property>
+                            <name>platform.compiler</name>
+                            <value>${javacpp.platform.compiler}</value>
+                        </property>
+                        <property>
+                            <name>platform.sysroot</name>
+                            <value>${javacpp.platform.sysroot}</value>
+                        </property>
+                        <property>
+                            <name>platform.extension</name>
+                            <value>${javacpp.platform.extension}</value>
+                        </property>
+                        <property>
+                            <name>platform.link</name>
+                            <value>${sdx.platform.links}</value>
+                        </property>
+                    </propertyKeysAndValues>
+                    <classPaths>
+                        <classPath>${project.build.outputDirectory}</classPath>
+                    </classPaths>
+                    <includePaths>
+                        <includePath>${libnd4jhome}/include</includePath>
+                    </includePaths>
+                    <linkPaths>
+                        <linkPath>${libnd4j.outputPath}</linkPath>
+                    </linkPaths>
+                    <buildResources>
+                        <buildResource>${libnd4j.outputPath}</buildResource>
+                    </buildResources>
+                    <compilerOptions>
+                        <compilerOption>${javacpp.compiler.options}</compilerOption>
+                    </compilerOptions>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>javacpp-parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${javacpp.parser.skip}</skip>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <classOrPackageName>org.nd4j.dsp.runtime.presets.SdxRuntimePresets</classOrPackageName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>javacpp-compiler</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${javacpp.compiler.skip}</skip>
+                            <classOrPackageName>org.nd4j.dsp.runtime.bindings.SdxNative</classOrPackageName>
+                            <clean>true</clean>
+                            <copyLibs>false</copyLibs>
+                            <copyResources>false</copyResources>
+                            <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
+                            <outputDirectory>${javacpp.build.output.path}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.platform</groupId>
+                        <artifactId>junit-platform-launcher</artifactId>
+                        <version>1.10.2</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>org/nd4j/dsp/runtime/bindings/*/*</exclude>
+                                <exclude>lib/**</exclude>
+                                <exclude>*.dll</exclude>
+                                <exclude>*.dylib</exclude>
+                                <exclude>*.so</exclude>
+                                <exclude>META-INF/native-image/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>${javacpp.platform}${javacpp.platform.extension}</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                            <includes>
+                                <include>org/nd4j/dsp/runtime/bindings/${javacpp.platform}${javacpp.platform.extension}/*</include>
+                                <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>android-arm64</id>
+            <properties>
+                <!--
+                    Build only the generated JavaCPP transport here. The DSP
+                    implementation and every tensor/generation primitive remain
+                    in the prebuilt accelerator runtime selected below.
+                -->
+                <javacpp.platform>android-arm64</javacpp.platform>
+                <javacpp.platform.build>android-arm64</javacpp.platform.build>
+                <javacpp.platform.root>${android.ndk}</javacpp.platform.root>
+                <javacpp.platform.compiler>${android.ndk}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${android.api}-clang++</javacpp.platform.compiler>
+                <javacpp.platform.sysroot>--sysroot=${android.ndk}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
+                <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/dsp/runtime/bindings/${javacpp.platform}-${sdx.android.variant}</javacpp.build.output.path>
+                <sdx.native.library>nd4jvulkan</sdx.native.library>
+                <sdx.platform.links>${sdx.native.library}${path.separator}log${path.separator}c++_static${path.separator}c++abi${path.separator}dl${path.separator}m${path.separator}c</sdx.platform.links>
+                <sdx.android.abi>arm64-v8a</sdx.android.abi>
+                <sdx.android.native.aar>${libnd4j.outputPath}/sdx-runtime-sdk/dist/sdx-runtime-android-arm64-${sdx.android.variant}.aar</sdx.android.native.aar>
+                <tokenizers.android.module>${project.basedir}/../../../nd4j-tokenizers/tokenizers-native</tokenizers.android.module>
+                <tokenizers.android.base.jar>${tokenizers.android.module}/target/tokenizers-native-${project.version}.jar</tokenizers.android.base.jar>
+                <tokenizers.android.native.jar>${tokenizers.android.module}/target/tokenizers-native-${project.version}-android-arm64.jar</tokenizers.android.native.jar>
+                <sdx.android.aar.stage>${project.build.directory}/android-aar-${sdx.android.variant}</sdx.android.aar.stage>
+                <sdx.android.aar.output>${project.build.directory}/sdx-runtime-${project.version}-android-arm64-${sdx.android.variant}.aar</sdx.android.aar.output>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>assemble-android-aar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="assemble-android-aar">
+                                        <fail message="Native SDX Android AAR not found: ${sdx.android.native.aar}">
+                                            <condition>
+                                                <not><available file="${sdx.android.native.aar}"/></not>
+                                            </condition>
+                                        </fail>
+                                        <fail message="Build tokenizers-native with -Pandroid-arm64 first: ${tokenizers.android.base.jar}">
+                                            <condition>
+                                                <not><available file="${tokenizers.android.base.jar}"/></not>
+                                            </condition>
+                                        </fail>
+                                        <fail message="Android tokenizers-native classifier not found: ${tokenizers.android.native.jar}">
+                                            <condition>
+                                                <not><available file="${tokenizers.android.native.jar}"/></not>
+                                            </condition>
+                                        </fail>
+
+                                        <fail message="Shared SDX model-cache JAR not found: ${sdx.model.jar}">
+                                            <condition>
+                                                <not><available file="${sdx.model.jar}"/></not>
+                                            </condition>
+                                        </fail>
+
+                                        <delete dir="${sdx.android.aar.stage}"/>
+                                        <mkdir dir="${sdx.android.aar.stage}/root"/>
+                                        <mkdir dir="${sdx.android.aar.stage}/classes"/>
+                                        <mkdir dir="${sdx.android.aar.stage}/tokenizer-native"/>
+
+                                        <unzip src="${sdx.android.native.aar}" dest="${sdx.android.aar.stage}/root"/>
+                                        <delete file="${sdx.android.aar.stage}/root/classes.jar"/>
+
+                                        <!--
+                                            classes.jar contains only the reusable JavaCPP SDX API and
+                                            tokenizer facade. The old JNA/Graal desktop compatibility
+                                            wrapper is deliberately absent from the mobile artifact.
+                                        -->
+                                        <unzip src="${project.build.directory}/${project.build.finalName}.jar"
+                                               dest="${sdx.android.aar.stage}/classes">
+                                            <patternset>
+                                                <include name="org/nd4j/dsp/runtime/**/*.class"/>
+                                                <exclude name="org/nd4j/dsp/runtime/SdxLlm*.class"/>
+                                            </patternset>
+                                        </unzip>
+                                        <unzip src="${sdx.model.jar}"
+                                               dest="${sdx.android.aar.stage}/classes">
+                                            <patternset>
+                                                <include name="org/nd4j/dsp/model/**/*.class"/>
+                                            </patternset>
+                                        </unzip>
+                                        <unzip src="${tokenizers.android.base.jar}"
+                                               dest="${sdx.android.aar.stage}/classes">
+                                            <patternset>
+                                                <include name="org/eclipse/deeplearning4j/tokenizers/**/*.class"/>
+                                            </patternset>
+                                        </unzip>
+                                        <zip destfile="${sdx.android.aar.stage}/root/classes.jar"
+                                             basedir="${sdx.android.aar.stage}/classes"/>
+
+                                        <copy file="${javacpp.build.output.path}/libjnisdx.so"
+                                              todir="${sdx.android.aar.stage}/root/jni/${sdx.android.abi}"/>
+                                        <unzip src="${tokenizers.android.native.jar}"
+                                               dest="${sdx.android.aar.stage}/tokenizer-native">
+                                            <patternset>
+                                                <include name="org/eclipse/deeplearning4j/tokenizers/bindings/android-arm64/*.so"/>
+                                            </patternset>
+                                        </unzip>
+                                        <copy todir="${sdx.android.aar.stage}/root/jni/${sdx.android.abi}"
+                                              flatten="true" overwrite="true">
+                                            <fileset dir="${sdx.android.aar.stage}/tokenizer-native">
+                                                <include name="**/*.so"/>
+                                            </fileset>
+                                        </copy>
+
+                                        <zip destfile="${sdx.android.aar.output}"
+                                             basedir="${sdx.android.aar.stage}/root"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-android-aar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>attach-artifact</goal>
+                                </goals>
+                                <configuration>
+                                    <artifacts>
+                                        <artifact>
+                                            <file>${sdx.android.aar.output}</file>
+                                            <type>aar</type>
+                                            <classifier>android-arm64-${sdx.android.variant}</classifier>
+                                        </artifact>
+                                    </artifacts>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

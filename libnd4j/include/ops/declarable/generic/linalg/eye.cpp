@@ -35,9 +35,11 @@ CUSTOM_OP_IMPL(eye, -2, 1, false, -2, -2) {
 }
 
 DECLARE_TYPES(eye) {
+
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS});
   getOpDescriptor()->setAllowedInputTypes(1, {INT32, INT64});
   getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT);
 }
 
 DECLARE_SHAPE_FN(eye) {

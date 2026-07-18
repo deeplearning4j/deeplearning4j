@@ -152,7 +152,7 @@ DECLARE_SHAPE_FN(unstack) {
   return result;
 }
 
-DECLARE_TYPES(unstack) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setSameMode(true); }
+DECLARE_TYPES(unstack) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setSameMode(true);  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_SPLIT); }
 
 }  // namespace ops
 }  // namespace sd

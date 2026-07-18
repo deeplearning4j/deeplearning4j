@@ -46,7 +46,10 @@ CONFIGURABLE_OP_IMPL(fill_as, 1, 1, true, 0, 0) {
 DECLARE_SYN(filllike, fill_as);
 DECLARE_SYN(fill_like, fill_as);
 
-DECLARE_TYPES(fill_as) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(fill_as) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+}
 }  // namespace ops
 }  // namespace sd
 

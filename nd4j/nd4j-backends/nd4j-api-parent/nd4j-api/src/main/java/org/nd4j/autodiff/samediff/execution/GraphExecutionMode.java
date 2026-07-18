@@ -197,7 +197,24 @@ public enum GraphExecutionMode {
      * which may be uninitialized. For graphs with such ops, run at least one
      * full execution first to populate value-dependent shapes.</p>
      */
-    SHAPE_INFERENCE_ONLY(18);
+    SHAPE_INFERENCE_ONLY(18),
+
+    /**
+     * Portable replay without selecting a DSP compiler mode. Selects only a replay path
+     * whose recorder is integrated with the active executor:
+     * <ul>
+     *   <li>CUDA: native CUDA graph capture/replay</li>
+     *   <li>Vulkan: native compute command-buffer replay</li>
+     *   <li>CPU: an available CPU graph backend, otherwise functional replay</li>
+     *   <li>HIP, Level Zero, Metal, TPU, and Hexagon: functional replay until
+     *       replay-only plan recorders are wired end-to-end</li>
+     * </ul>
+     *
+     * <p>This mode never selects Triton, NVRTC, or PTX compilation. A compiled
+     * replay handle alone is not enough: the capability matrix also requires a
+     * plan recorder before selecting hardware replay.</p>
+     */
+    PORTABLE_REPLAY(19);
 
     private final int nativeCode;
 
@@ -213,15 +230,12 @@ public enum GraphExecutionMode {
     }
 
     /**
-     * Whether this mode requires a hardware graph capture/replay backend
-     * (CUDA graphs, HIP graphs, Vulkan command buffers, etc.).
+     * Whether this mode participates in the graph capture/replay lifecycle.
      * Mirrors the {@code usesGraphCapture} field from C++ ModeContract.
      *
-     * <p>Modes returning true here drive the DSP lifecycle into
-     * freeze→capture→replay phases. On platforms without a graph backend
-     * (e.g., plain CPU), these modes must be remapped to
-     * {@link #EMULATED_REPLAY} to avoid entering the replay path
-     * with no hardware graph to replay.</p>
+     * <p>The native resolver owns capability selection. It can choose hardware
+     * replay, a CPU graph backend, or functional replay; Java must not remap
+     * these modes based only on GPU availability.</p>
      */
     public boolean requiresGraphBackend() {
         switch (this) {
@@ -234,6 +248,7 @@ public enum GraphExecutionMode {
             case LEVEL_ZERO:
             case VULKAN:
             case METAL:
+            case PORTABLE_REPLAY:
                 return true;
             default:
                 return false;

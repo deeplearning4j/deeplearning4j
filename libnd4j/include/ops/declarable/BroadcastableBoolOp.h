@@ -30,6 +30,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT BroadcastableBoolOp : public DeclarableCustomOp {
  protected:
   Status validateAndExecute(Context &block) override = 0;
@@ -39,6 +40,7 @@ class SD_LIB_EXPORT BroadcastableBoolOp : public DeclarableCustomOp {
 
   ShapeList *calculateOutputShape(ShapeList *inputShape, Context &block) override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

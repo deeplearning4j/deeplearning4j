@@ -82,7 +82,9 @@ DECLARE_SHAPE_FN(segment_sum_bp) {
   return SHAPELIST(CONSTANT(in), CONSTANT(inIdx));
 }
 
-DECLARE_TYPES(segment_sum) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(segment_sum) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_BACKWARD);
+   getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 DECLARE_TYPES(segment_sum_bp) {
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)

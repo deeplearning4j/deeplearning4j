@@ -1,0 +1,1696 @@
+[
+  {
+    "name": "ch.qos.logback.core.ConsoleAppender",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "ch.qos.logback.classic.encoder.PatternLayoutEncoder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "ch.qos.logback.core.status.OnConsoleStatusListener",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.AntClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.ClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.ClassLoaderHandlerRegistry",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.ClassLoaderHandlerRegistry$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.ClassLoaderHandlerRegistry$ClassLoaderHandlerRegistryEntry",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.EquinoxClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.EquinoxContextFinderClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.FallbackClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.FelixClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.JBossClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.JPMSClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.OSGiDefaultClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.ParentLastDelegationOrderTestClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.PlexusClassWorldsClassRealmClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.QuarkusClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.SpringBootRestartClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.TomcatWebappClassLoaderBaseHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.URLClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.UnoOneJarClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.WeblogicClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.WebsphereLibertyClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.WebsphereTraditionalClassLoaderHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "canHandle",
+        "parameterTypes": [
+          "java.lang.Class",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClassLoaderOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClassLoaderOrder",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      },
+      {
+        "name": "findClasspathOrder",
+        "parameterTypes": [
+          "java.lang.ClassLoader",
+          "nonapi.io.github.classgraph.classpath.ClasspathOrder",
+          "nonapi.io.github.classgraph.scanspec.ScanSpec",
+          "nonapi.io.github.classgraph.utils.LogNode"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.AnnotationClassRef",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.AnnotationEnumValue",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.AnnotationInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.AnnotationInfo$AnnotationInvocationHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.AnnotationInfoList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.AnnotationInfoList$AnnotationInfoFilter",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.AnnotationParameterValue",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.AnnotationParameterValueList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.ArrayClassInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ArrayTypeSignature",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.BaseTypeSignature",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassGraph",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassGraph$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassGraph$2",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassGraph$ClasspathElementFilter",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassGraph$ClasspathElementURLFilter",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassGraph$FailureHandler",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassGraph$ScanResultProcessor",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassGraphClassLoader",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassGraphClassLoader$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassGraphException",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.ClassInfo$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfo$ClassType",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfo$ReachableAndDirectlyRelatedClasses",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfo$RelType",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfoList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.ClassInfoList$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfoList$2",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfoList$3",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfoList$4",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfoList$5",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfoList$6",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfoList$7",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfoList$8",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassInfoList$ClassInfoFilter",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassRefOrTypeVariableSignature",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassRefTypeSignature",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClassTypeSignature",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Classfile",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Classfile$ClassContainment",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Classfile$ClassfileFormatException",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Classfile$SkipClassException",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClasspathElement",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClasspathElement$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClasspathElementFileDir",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClasspathElementFileDir$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClasspathElementModule",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClasspathElementModule$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClasspathElementPathDir",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClasspathElementPathDir$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClasspathElementZip",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ClasspathElementZip$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.FieldInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.FieldInfoList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.FieldInfoList$FieldInfoFilter",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.GraphvizDotfileGenerator",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.HasName",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.HierarchicalTypeSignature",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.InfoList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.MappableInfoList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.MethodInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.MethodInfoList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.MethodInfoList$MethodInfoFilter",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.MethodParameterInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.MethodTypeSignature",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ModuleInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.ModuleInfoList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ModuleInfoList$ModuleInfoFilter",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ModulePathInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.ModuleReaderProxy",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ModuleRef",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ObjectTypedValueWrapper",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.PackageInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.PackageInfo$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.PackageInfoList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.PackageInfoList$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.PackageInfoList$PackageInfoFilter",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.PotentiallyUnmodifiableList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.PotentiallyUnmodifiableList$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.PotentiallyUnmodifiableList$2",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ReferenceTypeSignature",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Resource",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList$2",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList$3",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList$ByteArrayConsumer",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList$ByteArrayConsumerThrowsIOException",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList$ByteBufferConsumer",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList$ByteBufferConsumerThrowsIOException",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList$InputStreamConsumer",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList$InputStreamConsumerThrowsIOException",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ResourceList$ResourceFilter",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ScanResult",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.ScanResult$SerializationFormat",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.github.classgraph.ScanResultObject",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Scanner",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Scanner$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Scanner$2",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Scanner$3",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Scanner$4",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Scanner$5",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Scanner$ClassfileScanWorkUnit",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Scanner$ClassfileScannerWorkUnitProcessor",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.Scanner$ClasspathEntryWorkUnit",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.TypeArgument",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.TypeArgument$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.TypeArgument$Wildcard",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.TypeParameter",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.TypeSignature",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.github.classgraph.TypeVariableSignature",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.ClassFieldCache",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.ClassFieldCache$NoConstructor",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.ClassFields",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.ClassFields$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.ClassFields$2",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.FieldTypeInfo",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.FieldTypeInfo$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.FieldTypeInfo$PrimitiveType",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.Id",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONArray",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONDeserializer",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONDeserializer$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONDeserializer$ObjectInstantiation",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONObject",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONParser",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONReference",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONSerializer",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONSerializer$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONUtils",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.JSONUtils$1",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.ParameterizedTypeImpl",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.ReferenceEqualityKey",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.json.TypeResolutions",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.types.ParseException",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.types.Parser",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.types.TypeUtils",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.types.TypeUtils$ModifierType",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "java.lang.Object"
+  },
+  {
+    "name": "java.lang.String",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "java.util.ArrayList",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "int"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.util.HashMap",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "int"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.util.HashSet",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "int"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "java.util.PropertyPermission"
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicBoolean",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "java.util.concurrent.atomic.AtomicReference",
+    "fields": [
+      {
+        "name": "value"
+      }
+    ]
+  },
+  {
+    "name": "java.util.function.Consumer"
+  },
+  {
+    "name": "javax.imageio.spi.ImageReaderSpi"
+  },
+  {
+    "name": "javax.imageio.spi.ImageReaderWriterSpi",
+    "methods": [
+      {
+        "name": "getFileSuffixes",
+        "parameterTypes": []
+      },
+      {
+        "name": "getFormatNames",
+        "parameterTypes": []
+      },
+      {
+        "name": "getMIMETypes",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "javax.imageio.spi.ImageWriterSpi"
+  },
+  {
+    "name": "nonapi.io.github.classgraph.scanspec.AcceptReject",
+    "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.scanspec.AcceptReject$AcceptRejectLeafname",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.scanspec.AcceptReject$AcceptRejectPrefix",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.scanspec.AcceptReject$AcceptRejectWholeString",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "nonapi.io.github.classgraph.scanspec.ScanSpec",
+    "allDeclaredFields": true,
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "sun.java2d.marlin.DMarlinRenderingEngine",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": []
+      }
+    ]
+  }
+]

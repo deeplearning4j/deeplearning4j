@@ -57,11 +57,11 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
 
     auto status = executeMlirEx("maxpool2d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR maxpool2d failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
@@ -70,7 +70,7 @@ PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
     Requirements req("MLIR MAXPOOL2D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -103,11 +103,11 @@ PLATFORM_IMPL(avgpool2d, ENGINE_CPU) {
 
     auto status = executeMlirEx("avgpool2d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR avgpool2d failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(avgpool2d, ENGINE_CPU) {
@@ -116,7 +116,7 @@ PLATFORM_CHECK(avgpool2d, ENGINE_CPU) {
     Requirements req("MLIR AVGPOOL2D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -137,11 +137,11 @@ PLATFORM_IMPL(maxpool3d, ENGINE_CPU) {
 
     auto status = executeMlirEx("maxpool3d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR maxpool3d failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(maxpool3d, ENGINE_CPU) {
@@ -150,7 +150,7 @@ PLATFORM_CHECK(maxpool3d, ENGINE_CPU) {
     Requirements req("MLIR MAXPOOL3D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -171,11 +171,11 @@ PLATFORM_IMPL(avgpool3d, ENGINE_CPU) {
 
     auto status = executeMlirEx("avgpool3d", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR avgpool3d failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(avgpool3d, ENGINE_CPU) {
@@ -184,7 +184,7 @@ PLATFORM_CHECK(avgpool3d, ENGINE_CPU) {
     Requirements req("MLIR AVGPOOL3D");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;

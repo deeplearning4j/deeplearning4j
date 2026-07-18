@@ -27,6 +27,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 
 ///////////////////////////////
 
@@ -124,7 +125,7 @@ const char* OpRegistrator::getAllCustomOperations() {
                        local_to_string(it->second->getOpDescriptor()->getNumberOfOutputs()) + ":" +
                        local_to_string(it->second->getOpDescriptor()->allowsInplace()) + ":" +
                        local_to_string(it->second->getOpDescriptor()->getNumberOfTArgs()) + ":" +
-                       local_to_string(it->second->getOpDescriptor()->getNumberOfIArgs()) + ":" + ";";
+                       local_to_string(it->second->getOpDescriptor()->getNumberOfOrdinaryIArgs()) + ":" + ";";
       _opsList += op;
     }
 
@@ -137,6 +138,7 @@ const char* OpRegistrator::getAllCustomOperations() {
 }
 
 bool OpRegistrator::registerOperation(const char* name, DeclarableOp* op) {
+  op->initializeDescriptor();
   std::string str(name);
   std::pair<std::string, DeclarableOp*> pair(str, op);
   _declarablesD.insert(pair);
@@ -316,6 +318,7 @@ std::vector<LongType> OpRegistrator::getAllHashes() {
 
   return result;
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

@@ -52,6 +52,17 @@ class SD_LIB_EXPORT AttentionWorkspace {
   static AttentionWorkspace* getInstance();
 
   /**
+   * Select the ownership scope used by subsequent buffer lookups on this thread.
+   * CUDA DSP plans use their plan-owned stream handle as the scope identity so a
+   * sibling plan cannot clear or replace buffers baked into another plan's graph.
+   * Returns the previous scope for balanced restoration at execution exit.
+   */
+  static void* setActiveScope(void* scope);
+
+  /** Get the current thread's active ownership scope. */
+  static void* getActiveScope();
+
+  /**
    * Get or create a buffer with the given key and shape
    * If a buffer exists with the same key and sufficient size, it's reshaped and returned
    * Otherwise a new buffer is allocated (and cached for future use)
@@ -83,6 +94,12 @@ class SD_LIB_EXPORT AttentionWorkspace {
    * Call this when you're done with attention operations for a while
    */
   void clear();
+
+  /**
+   * Clear only buffers owned by the supplied scope.
+   * This is used when rebuilding or destroying one DSP plan; other plans remain intact.
+   */
+  void clearScope(void* scope);
 
   /**
    * Clear buffers for a specific key prefix
@@ -119,7 +136,8 @@ class SD_LIB_EXPORT AttentionWorkspace {
     uint64_t lastUsed;  // For LRU eviction
   };
 
-  std::unordered_map<std::string, BufferEntry> buffers_;
+  using BufferMap = std::unordered_map<std::string, BufferEntry>;
+  std::unordered_map<void*, BufferMap> buffersByScope_;
   mutable std::mutex mutex_;
   size_t memoryLimit_ = 0;
   size_t currentMemory_ = 0;
@@ -129,6 +147,9 @@ class SD_LIB_EXPORT AttentionWorkspace {
 
   // Thread-local instance accessor (avoids MSVC C2492 with dllexport)
   static AttentionWorkspace*& instanceRef();
+
+  // Thread-local active ownership scope. nullptr is the default non-plan scope.
+  static void*& activeScopeRef();
 };
 
 /**

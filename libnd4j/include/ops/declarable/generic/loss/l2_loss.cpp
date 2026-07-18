@@ -50,6 +50,7 @@ DECLARE_SHAPE_FN(l2_loss) {
 }
 
 DECLARE_TYPES(l2_loss) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops

@@ -26,12 +26,19 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyTransformAnyOp::LegacyTransformAnyOp() : LegacyOp(1) {
-  // just a no-op
+  this->getOpDescriptor()->allowInplace(true);
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_IDENTITY | OP_TRAIT_UNARY_ELEMENTWISE |
+      OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyTransformAnyOp::LegacyTransformAnyOp(int opNum) : LegacyOp(1, opNum) {
-  // just a no-op
+  this->getOpDescriptor()->allowInplace(true);
+  this->getOpDescriptor()->addTraits(
+      OP_TRAIT_IDENTITY | OP_TRAIT_UNARY_ELEMENTWISE |
+      OP_TRAIT_FULLY_WRITING);
 }
 
 LegacyOp *LegacyTransformAnyOp::clone() { return new LegacyTransformAnyOp(this->_opNum); }
@@ -68,5 +75,6 @@ ShapeList *LegacyTransformAnyOp::calculateOutputShape(ShapeList *inputShape, Con
   auto inShape = inputShape->at(0);
   return SHAPELIST(CONSTANT(inShape));
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

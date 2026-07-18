@@ -214,13 +214,6 @@ std::vector<LongType> StringUtils::calculateOffsetsForTargetDataType(NDArray* so
 #define DEFINE_OFFSET(T) template std::vector<LongType> StringUtils::calculateOffsetsForTargetDataType<GET_SECOND(T)>(NDArray* sourceArray);
 ITERATE_LIST((SD_STRING_TYPES),DEFINE_OFFSET)
 
-static SD_INLINE bool match(const LongType* haystack, const LongType* needle, LongType length) {
-  for (int e = 0; e < length; e++)
-    if (haystack[e] != needle[e]) return false;
-
-  return true;
-}
-
 template <typename T>
 std::string StringUtils::bitsToString(T value) {
   return std::bitset<sizeof(T) * 8>(value).to_string();
@@ -230,20 +223,6 @@ template std::string StringUtils::bitsToString(int value);
 template std::string StringUtils::bitsToString(uint32_t value);
 template std::string StringUtils::bitsToString(LongType value);
 template std::string StringUtils::bitsToString(uint64_t value);
-
-LongType StringUtils::countSubarrays(const void* haystack, LongType haystackLength, const void* needle,
-                                     LongType needleLength) {
-  auto haystack2 = reinterpret_cast<const LongType*>(haystack);
-  auto needle2 = reinterpret_cast<const LongType*>(needle);
-
-  LongType number = 0;
-
-  for (LongType e = 0; e < haystackLength - needleLength; e++) {
-    if (match(&haystack2[e], needle2, needleLength)) number++;
-  }
-
-  return number;
-}
 
 LongType StringUtils::byteLength(NDArray& array) {
   if (!array.isS()) {

@@ -18,6 +18,8 @@
 #ifndef SD_MULTI_PLATFORM_DISPATCHER_H
 #define SD_MULTI_PLATFORM_DISPATCHER_H
 
+#include <system/BackendNamespace.h>
+
 #include <execution/Engine.h>
 #include <graph/Context.h>
 #include <helpers/HelperVersionRegistry.h>
@@ -35,9 +37,12 @@ namespace sd {
 namespace ops {
 
 // Forward declaration
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class DeclarableOp;
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 /**
  * Dispatch mode for selecting which kernel to use
@@ -77,7 +82,7 @@ struct DispatcherStats {
  * - Manages multiple backend implementations (oneDNN, cuDNN, native, etc.)
  * - Auto-tunes at runtime to find fastest kernel for each shape
  * - Caches performance data to avoid repeated benchmarking
- * - Falls back gracefully if preferred backend fails
+ * - Keeps native execution on the artifact's configured engine
  * - Thread-safe operation
  *
  * Usage:
@@ -186,8 +191,8 @@ class SD_LIB_EXPORT MultiPlatformDispatcher {
   Status dispatch(graph::Context& context);
 
   /**
-   * Force dispatch to a specific engine
-   * Falls back to best available if the engine isn't usable
+   * Dispatch to a specific engine.
+   * Returns BAD_INPUT when that exact engine is unavailable.
    */
   Status dispatchTo(samediff::Engine engine, graph::Context& context);
 
@@ -210,7 +215,7 @@ class SD_LIB_EXPORT MultiPlatformDispatcher {
   }
 
   /**
-   * Set native op for fallback
+   * Set the artifact-native implementation.
    */
   void setNativeOp(DeclarableOp* op) { _nativeOp = op; }
 
@@ -231,9 +236,9 @@ class SD_LIB_EXPORT MultiPlatformDispatcher {
   // ============================================================================
 
   /**
-   * Dispatch with version validation
-   * Only uses helpers that pass version and capability checks
-   * Falls back to native if no version-compatible helper is available
+   * Dispatch with version validation.
+   * Only uses helpers that pass version and capability checks; the optional
+   * native path remains on the artifact's configured engine.
    *
    * @param context The execution context
    * @return Status of execution
@@ -298,6 +303,7 @@ class SD_LIB_EXPORT MultiPlatformDispatcher {
     } \
   } __multiPlatformRegistrar_##OP_NAME##_##ENGINE##_instance;
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

@@ -30,6 +30,7 @@
 #include <array/NDArray.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/fused_qk_norm_rope.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -37,38 +38,14 @@ namespace helpers {
 
 constexpr int FQNR_WARP_SIZE = 32;
 
-//////////////////////////////////////////////////////////////////////////////
-// Warp-level sum reduction
-//////////////////////////////////////////////////////////////////////////////
-SD_DEVICE SD_INLINE float fqnrWarpReduceSum(float val) {
-    for (int offset = FQNR_WARP_SIZE / 2; offset > 0; offset /= 2) {
-        val += __shfl_down_sync(0xffffffff, val, offset);
-    }
-    return val;
-}
+// Accumulator type: use double when T=double for full precision, float otherwise.
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
 
-//////////////////////////////////////////////////////////////////////////////
-// Block-level sum reduction
-//////////////////////////////////////////////////////////////////////////////
-SD_DEVICE float fqnrBlockReduceSum(float val, float* sharedMem) {
-    const int lane = threadIdx.x % FQNR_WARP_SIZE;
-    const int wid = threadIdx.x / FQNR_WARP_SIZE;
-    const int numWarps = (blockDim.x + FQNR_WARP_SIZE - 1) / FQNR_WARP_SIZE;
-
-    val = fqnrWarpReduceSum(val);
-
-    if (lane == 0) {
-        sharedMem[wid] = val;
-    }
-    __syncthreads();
-
-    val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : 0.0f;
-    if (wid == 0) {
-        val = fqnrWarpReduceSum(val);
-    }
-
-    return val;
-}
+// Warp/block sum reductions come from device_primitives.cuh
+// (sd::device::warpReduceSum / sd::device::blockReduceSum).
 
 //////////////////////////////////////////////////////////////////////////////
 // Fused QK Norm + RoPE kernel
@@ -93,6 +70,8 @@ SD_KERNEL void fusedQkNormRopeKernel(
     const double freqBase,
     const bool isNeox) {
 
+    using AccT = typename AccType<T>::type;
+
     // Each block handles one (batch, seq, head)
     const LongType idx = blockIdx.x;
     const LongType totalHeads = batch * seqLen * numHeads;
@@ -109,21 +88,21 @@ SD_KERNEL void fusedQkNormRopeKernel(
     T* outPtr = output + offset;
 
     extern __shared__ char sharedMemRaw[];
-    float* sdata = reinterpret_cast<float*>(sharedMemRaw);
+    AccT* sdata = reinterpret_cast<AccT*>(sharedMemRaw);
 
     // Step 1: Compute sum of squares for RMS norm
-    float sumSq = 0.0f;
+    AccT sumSq = static_cast<AccT>(0);
     for (LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
-        float val = static_cast<float>(inPtr[d]);
+        AccT val = static_cast<AccT>(inPtr[d]);
         sumSq += val * val;
     }
 
-    sumSq = fqnrBlockReduceSum(sumSq, sdata);
+    sumSq = sd::device::blockReduceSum(sumSq, sdata);
 
-    __shared__ float rmsInv;
+    __shared__ AccT rmsInv;
     if (threadIdx.x == 0) {
-        float rms = sqrtf(sumSq / static_cast<float>(headDim) + epsilon);
-        rmsInv = 1.0f / rms;
+        AccT rms = sd::math::sd_sqrt<AccT, AccT>(sumSq / static_cast<AccT>(headDim) + static_cast<AccT>(epsilon));
+        rmsInv = static_cast<AccT>(1) / rms;
     }
     __syncthreads();
 
@@ -132,22 +111,22 @@ SD_KERNEL void fusedQkNormRopeKernel(
 
     for (LongType d = threadIdx.x; d < headDim; d += blockDim.x) {
         // RMSNorm
-        float val = static_cast<float>(inPtr[d]) * rmsInv;
-        float g = static_cast<float>(gamma[d]);
+        AccT val = static_cast<AccT>(inPtr[d]) * rmsInv;
+        AccT g = static_cast<AccT>(gamma[d]);
         val *= g;
 
         // RoPE rotation
-        float cosVal, sinVal;
+        AccT cosVal, sinVal;
 
         if (cosCache != nullptr && sinCache != nullptr) {
             // Use precomputed cos/sin
             LongType pairIdx = d / 2;
             if (pairIdx < halfDim) {
-                cosVal = static_cast<float>(cosCache[s * halfDim + pairIdx]);
-                sinVal = static_cast<float>(sinCache[s * halfDim + pairIdx]);
+                cosVal = static_cast<AccT>(cosCache[s * halfDim + pairIdx]);
+                sinVal = static_cast<AccT>(sinCache[s * halfDim + pairIdx]);
             } else {
-                cosVal = 1.0f;
-                sinVal = 0.0f;
+                cosVal = static_cast<AccT>(1);
+                sinVal = static_cast<AccT>(0);
             }
         } else {
             // Compute on-the-fly
@@ -157,34 +136,35 @@ SD_KERNEL void fusedQkNormRopeKernel(
             } else {
                 pairIdx = d / 2;
             }
-            float theta = static_cast<float>(s) * powf(static_cast<float>(freqBase),
-                           -2.0f * static_cast<float>(pairIdx) / static_cast<float>(headDim));
-            cosVal = cosf(theta);
-            sinVal = sinf(theta);
+            AccT theta = static_cast<AccT>(s) * sd::math::sd_pow<AccT, AccT, AccT>(
+                static_cast<AccT>(freqBase),
+                static_cast<AccT>(-2) * static_cast<AccT>(pairIdx) / static_cast<AccT>(headDim));
+            cosVal = sd::math::sd_cos<AccT, AccT>(theta);
+            sinVal = sd::math::sd_sin<AccT, AccT>(theta);
         }
 
         // Apply rotation
-        float rotatedVal;
+        AccT rotatedVal;
         if (isNeox) {
             // NeoX style: split-half
             if (d < halfDim) {
-                float partner = static_cast<float>(inPtr[d + halfDim]) * rmsInv *
-                                static_cast<float>(gamma[d + halfDim]);
+                AccT partner = static_cast<AccT>(inPtr[d + halfDim]) * rmsInv *
+                               static_cast<AccT>(gamma[d + halfDim]);
                 rotatedVal = val * cosVal - partner * sinVal;
             } else {
-                float partner = static_cast<float>(inPtr[d - halfDim]) * rmsInv *
-                                static_cast<float>(gamma[d - halfDim]);
+                AccT partner = static_cast<AccT>(inPtr[d - halfDim]) * rmsInv *
+                               static_cast<AccT>(gamma[d - halfDim]);
                 rotatedVal = partner * sinVal + val * cosVal;
             }
         } else {
             // GPT-J style: interleaved pairs
             if (d % 2 == 0) {
-                float partner = static_cast<float>(inPtr[d + 1]) * rmsInv *
-                                static_cast<float>(gamma[d + 1]);
+                AccT partner = static_cast<AccT>(inPtr[d + 1]) * rmsInv *
+                               static_cast<AccT>(gamma[d + 1]);
                 rotatedVal = val * cosVal - partner * sinVal;
             } else {
-                float partner = static_cast<float>(inPtr[d - 1]) * rmsInv *
-                                static_cast<float>(gamma[d - 1]);
+                AccT partner = static_cast<AccT>(inPtr[d - 1]) * rmsInv *
+                               static_cast<AccT>(gamma[d - 1]);
                 rotatedVal = partner * sinVal + val * cosVal;
             }
         }
@@ -224,7 +204,8 @@ void fusedQkNormRope(LaunchContext* context,
     int threads = 128;
     if (headDim > 128) threads = 256;
     int numWarps = (threads + FQNR_WARP_SIZE - 1) / FQNR_WARP_SIZE;
-    size_t smem = numWarps * sizeof(float);
+    // Use sizeof AccType<T>::type: double when T=double, float otherwise.
+    size_t smem = numWarps * (dtype == DataType::DOUBLE ? sizeof(double) : sizeof(float));
 
     const void* cosPtr = (cosCache != nullptr) ? cosCache->specialBuffer() : nullptr;
     const void* sinPtr = (sinCache != nullptr) ? sinCache->specialBuffer() : nullptr;
@@ -238,6 +219,14 @@ void fusedQkNormRope(LaunchContext* context,
             reinterpret_cast<const float*>(cosPtr),
             reinterpret_cast<const float*>(sinPtr),
             reinterpret_cast<float*>(queryOut->specialBuffer()),
+            batch, seqLen, numQHeads, headDim, epsilon, freqBase, isNeox);
+    } else if (dtype == DataType::DOUBLE) {
+        fusedQkNormRopeKernel<double><<<totalQHeads, threads, smem, *stream>>>(
+            reinterpret_cast<const double*>(query->specialBuffer()),
+            reinterpret_cast<const double*>(gammaQ->specialBuffer()),
+            reinterpret_cast<const double*>(cosPtr),
+            reinterpret_cast<const double*>(sinPtr),
+            reinterpret_cast<double*>(queryOut->specialBuffer()),
             batch, seqLen, numQHeads, headDim, epsilon, freqBase, isNeox);
     } else if (dtype == DataType::HALF) {
         fusedQkNormRopeKernel<float16><<<totalQHeads, threads, smem, *stream>>>(
@@ -260,6 +249,14 @@ void fusedQkNormRope(LaunchContext* context,
             reinterpret_cast<const float*>(cosPtr),
             reinterpret_cast<const float*>(sinPtr),
             reinterpret_cast<float*>(keyOut->specialBuffer()),
+            batch, seqLen, numKVHeads, headDim, epsilon, freqBase, isNeox);
+    } else if (dtype == DataType::DOUBLE) {
+        fusedQkNormRopeKernel<double><<<totalKHeads, threads, smem, *stream>>>(
+            reinterpret_cast<const double*>(key->specialBuffer()),
+            reinterpret_cast<const double*>(gammaK->specialBuffer()),
+            reinterpret_cast<const double*>(cosPtr),
+            reinterpret_cast<const double*>(sinPtr),
+            reinterpret_cast<double*>(keyOut->specialBuffer()),
             batch, seqLen, numKVHeads, headDim, epsilon, freqBase, isNeox);
     } else if (dtype == DataType::HALF) {
         fusedQkNormRopeKernel<float16><<<totalKHeads, threads, smem, *stream>>>(

@@ -154,23 +154,42 @@ get_hash_file() {
 }
 
 # ==============================================================================
-# Extract the -o output path so we can find the .d dependency file
+# Extract compiler output paths. Track -MF exactly instead of assuming that the
+# dependency file is always named after -o; CMake and nvcc may choose otherwise.
 # ==============================================================================
 OUTPUT_FILE=\"\"
-PREV_WAS_O=0
+DEP_FILE=\"\"
+DEP_FILE_REQUESTED=0
+PENDING_PATH_FLAG=\"\"
 for arg in \"\$@\"; do
-    if [[ \$PREV_WAS_O -eq 1 ]]; then
-        OUTPUT_FILE=\"\$arg\"
-        PREV_WAS_O=0
-        break
+    if [[ -n \"\$PENDING_PATH_FLAG\" ]]; then
+        if [[ \"\$PENDING_PATH_FLAG\" == \"-o\" ]]; then
+            OUTPUT_FILE=\"\$arg\"
+        else
+            DEP_FILE=\"\$arg\"
+            DEP_FILE_REQUESTED=1
+        fi
+        PENDING_PATH_FLAG=\"\"
+        continue
     fi
-    if [[ \"\$arg\" == \"-o\" ]]; then
-        PREV_WAS_O=1
-    elif [[ \"\$arg\" =~ ^-o(.+) ]]; then
-        OUTPUT_FILE=\"\${BASH_REMATCH[1]}\"
-        break
-    fi
+
+    case \"\$arg\" in
+        -o|-MF)
+            PENDING_PATH_FLAG=\"\$arg\"
+            ;;
+        -o?*)
+            OUTPUT_FILE=\"\${arg#-o}\"
+            ;;
+        -MF?*)
+            DEP_FILE=\"\${arg#-MF}\"
+            DEP_FILE_REQUESTED=1
+            ;;
+    esac
 done
+
+if [[ -z \"\$DEP_FILE\" && -n \"\$OUTPUT_FILE\" ]]; then
+    DEP_FILE=\"\${OUTPUT_FILE}.d\"
+fi
 
 # ==============================================================================
 # Hash project headers from .d dependency file for this .o
@@ -203,12 +222,65 @@ hash_deps_from_d_file() {
     fi
 }
 
+# A successful compiler-cache call must produce both a valid object payload and
+# a valid Make depfile. Interrupted cache writes can preserve timestamps while
+# replacing an ELF/COFF/Mach-O object with zero-filled or truncated bytes.
+object_file_is_valid() {
+    local object_file=\"\$1\"
+    [[ -s \"\$object_file\" ]] || return 1
+
+    local magic
+    magic=\"\$(LC_ALL=C od -An -N4 -tx1 \"\$object_file\" 2>/dev/null | tr -d '[:space:]')\"
+    case \"\$magic\" in
+        7f454c46)
+            # ELF headers alone do not catch damaged group/symbol semantics.
+            # A relocatable link validates sections, symbols, groups, and
+            # relocations while allowing the unresolved references expected in
+            # a single translation unit.
+            local compiler=\"\${EXPANDED_ARGS[0]:-}\"
+            local compiler_dir=\"\"
+            local validator=\"\"
+            if [[ -n \"\$compiler\" ]]; then
+                compiler_dir=\"\$(dirname \"\$compiler\")\"
+            fi
+            if [[ -x \"\$compiler_dir/ld.lld\" ]]; then
+                validator=\"\$compiler_dir/ld.lld\"
+            elif [[ -x \"\$compiler_dir/ld\" ]]; then
+                validator=\"\$compiler_dir/ld\"
+            elif command -v ld.lld >/dev/null 2>&1; then
+                validator=\"\$(command -v ld.lld)\"
+            fi
+            if [[ -n \"\$validator\" ]]; then
+                \"\$validator\" -r -o /dev/null \"\$object_file\" >/dev/null 2>&1
+                return \$?
+            fi
+            return 0
+            ;;
+        # Mach-O, LLVM bitcode, ar archive, WebAssembly, and Mach universal.
+        feedface|cefaedfe|feedfacf|cffaedfe|4243c0de|213c6172|0061736d|cafebabe|bebafeca|cafebabf|bfbafeca)
+            return 0
+            ;;
+        # Common COFF machine headers plus MSVC /bigobj.
+        4c01????|6486????|c401????|64aa????|0000ffff)
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+dep_file_is_valid() {
+    local d_file=\"\$1\"
+    [[ -s \"\$d_file\" ]] || return 1
+    LC_ALL=C grep -Iq . \"\$d_file\" || return 1
+    LC_ALL=C grep -q '^[^:][^:]*:' \"\$d_file\" || return 1
+}
+
 if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
     # Force recache for files with known stale ccache direct-mode manifests.
     # This ensures header-level renames (member variables) are picked up even when
     # ccache's direct-mode manifest incorrectly matches on file stat data.
     case \"\$SOURCE_FILE\" in
-        *NativeDynamicShapePlan.cpp|*NativeDynamicShapePlan_gpubackend.cu|*NativeDynamicShapePlan_slotexec.cpp|*NativeDynamicShapePlan_cuda_stubs.cpp)
+        *NativeDynamicShapePlan.cpp|*NativeDynamicShapePlan_gpubackend.cu|*NativeDynamicShapePlan_slotexec.cpp|*NativeDynamicShapePlan_cuda_stubs.cpp|*VulkanPipelineCache.cpp|*VulkanReplayHandle.cpp)
             export CCACHE_RECACHE=1
             ;;
     esac
@@ -239,9 +311,9 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
                 echo \"\$CURRENT_HASH\" > \"\$HASH_FILE\" 2>/dev/null
             else
                 # Source unchanged — check if any included headers changed
-                if [[ -n \"\$OUTPUT_FILE\" && -f \"\${OUTPUT_FILE}.d\" && -f \"\$DEP_HASH_FILE\" ]]; then
+                if [[ -n \"\$DEP_FILE\" && -f \"\$DEP_FILE\" && -f \"\$DEP_HASH_FILE\" ]]; then
                     STORED_DEP_HASH=\"\$(cat \"\$DEP_HASH_FILE\" 2>/dev/null)\"
-                    CURRENT_DEP_HASH=\"\$(hash_deps_from_d_file \"\${OUTPUT_FILE}.d\")\"
+                    CURRENT_DEP_HASH=\"\$(hash_deps_from_d_file \"\$DEP_FILE\")\"
                     if [[ -n \"\$CURRENT_DEP_HASH\" && \"\$CURRENT_DEP_HASH\" != \"\$STORED_DEP_HASH\" ]]; then
                         if [[ \"\$DEBUG\" == \"ON\" ]]; then
                             echo \"[SMART_CCACHE] Header deps changed, forcing recompile: \$SOURCE_FILE\" >&2
@@ -270,9 +342,9 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
         fi
 
         # Set vars for post-compile dep hash update (done after ccache call below)
-        if [[ -n \"\$OUTPUT_FILE\" ]]; then
+        if [[ -n \"\$DEP_FILE\" ]]; then
             _UPDATE_DEP_HASH_FILE=\"\$DEP_HASH_FILE\"
-            _UPDATE_DEP_D_FILE=\"\${OUTPUT_FILE}.d\"
+            _UPDATE_DEP_D_FILE=\"\$DEP_FILE\"
         fi
     fi
 fi
@@ -334,6 +406,39 @@ ensure_output_parent_dirs \"\${EXPANDED_ARGS[@]}\"
 
 \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
 _CCACHE_EXIT=\$?
+
+# A cache hit can return a damaged object or secondary depfile after an
+# interrupted cache write. Repair the cache entry immediately by recompiling
+# once; never pass malformed compiler outputs to CMake.
+_CACHE_RESULT_INVALID=0
+if [[ \$_CCACHE_EXIT -eq 0 && -n \"\$OUTPUT_FILE\" ]] &&
+   ! object_file_is_valid \"\$OUTPUT_FILE\"; then
+    echo \"[SMART_CCACHE] Invalid object file from cache; recaching: \$OUTPUT_FILE\" >&2
+    _CACHE_RESULT_INVALID=1
+fi
+if [[ \$_CCACHE_EXIT -eq 0 && \$DEP_FILE_REQUESTED -eq 1 ]] &&
+   ! dep_file_is_valid \"\$DEP_FILE\"; then
+    echo \"[SMART_CCACHE] Invalid dependency file from cache; recaching: \$DEP_FILE\" >&2
+    _CACHE_RESULT_INVALID=1
+fi
+
+if [[ \$_CCACHE_EXIT -eq 0 && \$_CACHE_RESULT_INVALID -eq 1 ]]; then
+    [[ -n \"\$OUTPUT_FILE\" ]] && rm -f \"\$OUTPUT_FILE\"
+    [[ -n \"\$DEP_FILE\" ]] && rm -f \"\$DEP_FILE\"
+    CCACHE_RECACHE=1 \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
+    _CCACHE_EXIT=\$?
+
+    if [[ \$_CCACHE_EXIT -eq 0 && -n \"\$OUTPUT_FILE\" ]] &&
+       ! object_file_is_valid \"\$OUTPUT_FILE\"; then
+        echo \"[SMART_CCACHE] Compiler did not produce a valid object file: \$OUTPUT_FILE\" >&2
+        _CCACHE_EXIT=1
+    fi
+    if [[ \$_CCACHE_EXIT -eq 0 && \$DEP_FILE_REQUESTED -eq 1 ]] &&
+       ! dep_file_is_valid \"\$DEP_FILE\"; then
+        echo \"[SMART_CCACHE] Compiler did not produce a valid dependency file: \$DEP_FILE\" >&2
+        _CCACHE_EXIT=1
+    fi
+fi
 
 # Update dep hash after compile (exec would skip this)
 if [[ -n \"\$_UPDATE_DEP_D_FILE\" && -f \"\$_UPDATE_DEP_D_FILE\" ]]; then

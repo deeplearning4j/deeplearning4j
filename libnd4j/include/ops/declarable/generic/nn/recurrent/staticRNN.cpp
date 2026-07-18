@@ -90,6 +90,7 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
 }
 
 DECLARE_TYPES(static_rnn) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

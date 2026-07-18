@@ -27,9 +27,12 @@
 
 #include "cudnnUtils.h"
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // RAII wrapper for Spatial Transformer descriptor
 struct SpatialTransformerDesc {
@@ -224,6 +227,10 @@ static void gridSamplerBpCUDNN(const LaunchContext* context,
 
   NDArray::registerSpecialUse({gradI, gradGrid}, {input, grid, gradO});
 }
+
+// Op macros below open SD_NS themselves (platform_boilerplate.h) — the
+// file-level wrap must end before them or SD_NS nests inside itself.
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 
 //////////////////////////////////////////////////////////////////////////
 // Affine Grid Generator - generates sampling grid from affine matrix

@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <atomic>
 #include <graph/DspDiagnostics.h>
+#include <helpers/DebugHelper.h>
 #include <numeric>
 #include <unordered_map>
 #include <utility>
@@ -52,6 +53,19 @@
 // already configured for DSP gap loop. When true, skip cublasSetStream +
 // reapplyCublasWorkspace + prepareSpecialUse/registerSpecialUse (arrays device-resident).
 extern SD_TLS_EXPORT thread_local bool tl_cublasGapStreamReady;
+
+namespace sd { namespace graph {
+int recordActiveMmulFingerprintTriplet(const void* aPtr, size_t aBytes,
+                                       const void* bPtr, size_t bBytes,
+                                       const void* cPtr, size_t cBytes,
+                                       cudaStream_t intendedStream,
+                                       cudaStream_t handleStream,
+                                       int mathMode, int pointerMode, int atomicsMode,
+                                       bool deterministicWindow, bool ltDisabled,
+                                       const void* workspacePtr, size_t workspaceBytes);
+void recordActiveMmulOutputFingerprint(int ordinal, const void* cPtr, size_t cBytes,
+                                       cudaStream_t handleStream);
+} }
 
 namespace sd {
 
@@ -80,7 +94,7 @@ void MmulHelper::clearLtEpilogue() {
 // before cudaStreamBeginCapture.  Calling cublasSetWorkspace on a capturing stream may
 // inject an internal host-callback node into the graph, serialising every replay on CPU.
 static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
-  if (!tl_graphExecutionActive && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+  if (!DebugHelper::inGraphCapture(nullptr) && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
     // The DSP cuBLAS workspace is a SINGLE buffer allocated on the primary device (0). Applying it
     // to a cuBLAS handle on a SECONDARY device (multi-GPU op-segment sharding) makes the gemm fail
     // with CUBLAS_STATUS_EXECUTION_FAILED — the workspace must live on the handle's device. On a
@@ -286,6 +300,25 @@ std::pair<size_t, size_t> MmulHelper::getCastCacheHighWaterMark() {
 }
 
 void MmulHelper::clearCastCache() {
+  auto cacheBytes = [](const std::vector<NDArray*>& arrays) {
+    size_t bytes = 0;
+    for (auto* array : arrays) {
+      if (array != nullptr) {
+        bytes += static_cast<size_t>(array->lengthOf()) * array->sizeOfT();
+      }
+    }
+    return bytes;
+  };
+  const size_t arraysA = tl_castA.cache.size();
+  const size_t arraysB = tl_castB.cache.size();
+  const size_t retiredArrays = tl_retiredCastCache.size();
+  const size_t bytesA = cacheBytes(tl_castA.cache);
+  const size_t bytesB = cacheBytes(tl_castB.cache);
+  const size_t retiredBytes = cacheBytes(tl_retiredCastCache);
+  DSP_DIAG(MEMORY,
+           "CAST_CACHE_CLEAR arraysA=%zu arraysB=%zu retired=%zu bytesA=%zu bytesB=%zu retiredBytes=%zu",
+           arraysA, arraysB, retiredArrays, bytesA, bytesB, retiredBytes);
+
   tl_castA.clear(tl_retiredCastCache);
   tl_castB.clear(tl_retiredCastCache);
   for (auto* p : tl_retiredCastCache) delete p;
@@ -1146,9 +1179,12 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
   // N107: Skip cublasSetStream + workspace when DSP gap stream already configured.
   // The gap loop's CublasGapStreamGuard sets the cuBLAS handle stream+workspace once
   // at gap-loop start. Skipping here eliminates 2 cuBLAS host-API calls × 91 matmuls/step.
-  // Also skip during CUDA graph replay (existing optimization).
+  // Also preserve the preconfigured handle throughout the outer composite-capture
+  // scope. Native gaps can run before the first cudaStreamBeginCapture; resetting
+  // the handle there sends GEMMs to the array context stream while the following
+  // gap kernels use the composite stream, creating an intra-gap data race.
   cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
-  if (!tl_cublasGapStreamReady && !tl_graphExecutionActive) {
+  if (!tl_cublasGapStreamReady && !DebugHelper::inGraphCapture(nullptr)) {
     status = cublasSetStream_v2(*handle, *stream);
     if (status != CUBLAS_STATUS_SUCCESS) {
       std::string msg = "MmulHelper::mmulMxM cuda failed [cublasSetStream]; Error code: [" + std::to_string(status) + "]";
@@ -1222,9 +1258,9 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
                    tl_ltEpilogue.type, tl_ltEpilogue.biasPtr, tl_ltEpilogue.biasSize)) {
      if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({pC}, {pA, pB});
      if (C != pC) C->assign(pC);
-     for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
-     delete castA;
-     delete castB;
+     for (int i = toDelete.size() - 1; i >= 0; --i) deleteTemporary(toDelete[i]);
+     deleteTemporary(castA);
+     deleteTemporary(castB);
      return C;
    }
 
@@ -1350,12 +1386,12 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
    if (C != pC) C->assign(pC);
 
-   for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
+   for (int i = toDelete.size() - 1; i >= 0; --i) deleteTemporary(toDelete[i]);
  }
 
- // Cleanup cast arrays
- delete castA;
- delete castB;
+ // CUDA kernels and cuBLAS consume cast operands asynchronously.
+ deleteTemporary(castA);
+ deleteTemporary(castB);
 
  return C;
 }////////////////////////////////////////////////////////////////////////////
@@ -1440,7 +1476,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
   // N107: Skip cublasSetStream + workspace when DSP gap stream already configured (same as mmulMxM).
   cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
-  if (!tl_cublasGapStreamReady && !tl_graphExecutionActive) {
+  if (!tl_cublasGapStreamReady && !DebugHelper::inGraphCapture(nullptr)) {
     status = cublasSetStream_v2(*handle, *stream);
     if (status != CUBLAS_STATUS_SUCCESS) {
       std::string msg = "MmulHelper::mmulMxV cuda failed !; Error code: [" + std::to_string(status) + "]";
@@ -1516,11 +1552,11 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
    if (!tl_cublasGapStreamReady) NDArray::registerSpecialUse({Y}, {pA, effX});
 
-   if (pA != effA) delete pA;
+   if (pA != effA) deleteTemporary(pA);
  }
 
- delete castA;
- delete castX;
+ deleteTemporary(castA);
+ deleteTemporary(castX);
 
  return Y;
 }////////////////////////////////////////////////////////////////////////////
@@ -1760,28 +1796,26 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 // cuBLAS Strided Batch GEMM - most efficient for contiguous batched data on GPU
 // Uses cublasSgemmStridedBatched/cublasDgemmStridedBatched/cublasHgemmStridedBatched
 // This avoids kernel launch overhead for each batch element
-// Supports both 3D [batch, M, K] and 4D [batch0, batch1, M, K] tensors
+// Supports 2D [M, K], 3D [batch, M, K], and
+// 4D [batch0, batch1, M, K] tensors.
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
                                         double alpha, double beta,
                                         bool transA, bool transB) {
-  // transA/transB native fast path (cuBLAS CUBLAS_OP_T on the un-permuted operands) is not
-  // reinstated in this routine yet. When a transpose is requested, decline so the caller
-  // (MmulHelper.cpp ~1201) takes its DOCUMENTED alternative: re-enter on the already-permuted
-  // xT/yT with transA=transB=false (the `else if (!tryBlasStridedBatched(xT, yT, zT, ...))`
-  // branch). That alternative is mathematically identical — it differs only in floating-point
-  // accumulation order — so this is path-selection, not a silent degrade. The 7-arg signature
-  // is required because MmulHelper.h declares it and MmulHelper.cpp calls it.
-  // TODO(restore-native-transpose): reinstate the CUBLAS_OP_T strided-batched path for
-  // bit-for-bit parity with the per-slice 2D accumulation order.
-  if (transA || transB) return false;
+  // Map row-major transpose requests directly onto the swapped column-major
+  // cuBLAS operands. This avoids materializing asynchronous permute+dup temporaries
+  // whose storage could otherwise be recycled while GEMM is still reading it.
 
   const int aRank = A->rankOf();
   const int bRank = B->rankOf();
   const int cRank = C->rankOf();
 
-  // Handle 3D and 4D tensors with matching ranks
-  if (aRank != bRank || bRank != cRank || (aRank != 3 && aRank != 4)) {
+  // Handle 2D, 3D, and 4D tensors with matching ranks. Rank-2 is the
+  // batch-count-1 case and is especially important for transpose requests:
+  // keeping the transpose in cuBLAS avoids an asynchronous permute+dup
+  // temporary between a producer kernel and GEMM.
+  if (aRank != bRank || bRank != cRank ||
+      (aRank != 2 && aRank != 3 && aRank != 4)) {
     return false;
   }
 
@@ -1804,39 +1838,34 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
     return false;
   }
 
-  // For 4D tensors, flatten first two batch dimensions
-  // 3D: [batch, M, K] @ [batch, K, N] -> [batch, M, N]
-  // 4D: [b0, b1, M, K] @ [b0, b1, K, N] -> [b0, b1, M, N] (treat as [b0*b1, M, K] @ [b0*b1, K, N])
+  // For 4D tensors, flatten the first two batch dimensions. The stored
+  // row/column sizes remain distinct from logical M/K/N when a transpose is requested.
+  const LongType aRows = A->sizeAt(-2);
+  const LongType aCols = A->sizeAt(-1);
+  const LongType bRows = B->sizeAt(-2);
+  const LongType bCols = B->sizeAt(-1);
+  const LongType M = transA ? aCols : aRows;
+  const LongType K = transA ? aRows : aCols;
+  const LongType kFromB = transB ? bCols : bRows;
+  const LongType N = transB ? bRows : bCols;
   LongType batchSize;
-  LongType M, K, N;
 
-  if (aRank == 3) {
+  if (aRank == 2) {
+    batchSize = 1;
+  } else if (aRank == 3) {
+    if (A->sizeAt(0) != B->sizeAt(0) || A->sizeAt(0) != C->sizeAt(0)) {
+      return false;
+    }
     batchSize = A->sizeAt(0);
-    M = A->sizeAt(1);
-    K = A->sizeAt(2);
-    N = B->sizeAt(2);
   } else {  // aRank == 4
-    // Flatten first two batch dimensions
-    batchSize = A->sizeAt(0) * A->sizeAt(1);
-    M = A->sizeAt(2);
-    K = A->sizeAt(3);
-    N = B->sizeAt(3);
-
-    // Verify batch dimensions match
     if (A->sizeAt(0) != B->sizeAt(0) || A->sizeAt(1) != B->sizeAt(1) ||
         A->sizeAt(0) != C->sizeAt(0) || A->sizeAt(1) != C->sizeAt(1)) {
       return false;
     }
+    batchSize = A->sizeAt(0) * A->sizeAt(1);
   }
 
-  if (M <= 0 || K <= 0 || N <= 0 || batchSize <= 0) {
-    return false;
-  }
-
-  // Check inner dimensions match for matmul
-  const int kAxisA = aRank - 1;  // Last axis of A
-  const int kAxisB = aRank - 2;  // Second-to-last axis of B
-  if (A->sizeAt(kAxisA) != B->sizeAt(kAxisB)) {
+  if (M <= 0 || K <= 0 || N <= 0 || batchSize <= 0 || K != kFromB) {
     return false;
   }
 
@@ -1850,9 +1879,9 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   // We'll use the trick: C = A*B in row-major is equivalent to C^T = B^T * A^T in col-major
   // So we swap A and B and compute B * A instead
 
-  // Check for contiguous row-major layout (innermost dimensions)
-  const bool aRowMajor = (A->strideAt(-1) == 1) && (A->strideAt(-2) == K);
-  const bool bRowMajor = (B->strideAt(-1) == 1) && (B->strideAt(-2) == N);
+  // Check the stored row-major layout, independent of logical transposition.
+  const bool aRowMajor = (A->strideAt(-1) == 1) && (A->strideAt(-2) == aCols);
+  const bool bRowMajor = (B->strideAt(-1) == 1) && (B->strideAt(-2) == bCols);
   const bool cRowMajor = (C->strideAt(-1) == 1) && (C->strideAt(-2) == N);
 
   if (!aRowMajor || !bRowMajor || !cRowMajor) {
@@ -1864,9 +1893,15 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   // For 4D: stride between batches is stride[1] (stride within b0), and we need contiguous b0*b1
   long long strideA, strideB, strideC;
 
-  if (aRank == 3) {
-    const LongType expectedStrideA = M * K;
-    const LongType expectedStrideB = K * N;
+  if (aRank == 2) {
+    // Strides are ignored by cuBLAS when batchSize == 1, but valid matrix
+    // extents keep the call well-defined and make this path equivalent to GEMM.
+    strideA = aRows * aCols;
+    strideB = bRows * bCols;
+    strideC = M * N;
+  } else if (aRank == 3) {
+    const LongType expectedStrideA = aRows * aCols;
+    const LongType expectedStrideB = bRows * bCols;
     const LongType expectedStrideC = M * N;
 
     if (A->strideAt(0) < expectedStrideA || B->strideAt(0) < expectedStrideB || C->strideAt(0) < expectedStrideC) {
@@ -1879,8 +1914,8 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   } else {  // aRank == 4
     // For 4D, we need the stride between individual batch elements
     // Each batch element is M*K for A, K*N for B, M*N for C
-    const LongType expectedStrideA = M * K;
-    const LongType expectedStrideB = K * N;
+    const LongType expectedStrideA = aRows * aCols;
+    const LongType expectedStrideB = bRows * bCols;
     const LongType expectedStrideC = M * N;
 
     // Check that the 4D tensor is laid out as contiguous batches
@@ -1905,31 +1940,75 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   // Get cuBLAS handle
   auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
   auto stream = A->getContext()->getCudaStream();
-  // Skip cublasSetStream during CUDA graph capture (see mmulMxM comment above).
-  if (!tl_graphExecutionActive) {
+  // Skip cublasSetStream during both an active graph capture and its outer
+  // composite scope (see mmulMxM comment above).
+  if (!DebugHelper::inGraphCapture(nullptr)) {
     cublasSetStream(*handle, *stream);
   }
   reapplyCublasWorkspace(*handle);
 
   NDArray::prepareSpecialUse({C}, {A, B});
 
+  cudaStream_t intendedStream = stream != nullptr ? *stream : nullptr;
+  cudaStream_t handleStream = intendedStream;
+  if (cublasGetStream(*handle, &handleStream) != CUBLAS_STATUS_SUCCESS) {
+    handleStream = intendedStream;
+  }
+  cublasMath_t handleMathMode = CUBLAS_DEFAULT_MATH;
+  cublasPointerMode_t handlePointerMode = CUBLAS_POINTER_MODE_HOST;
+  cublasAtomicsMode_t handleAtomicsMode = CUBLAS_ATOMICS_NOT_ALLOWED;
+  cublasGetMathMode(*handle, &handleMathMode);
+  cublasGetPointerMode(*handle, &handlePointerMode);
+  cublasGetAtomicsMode(*handle, &handleAtomicsMode);
   cublasStatus_t status;
+  const cublasOperation_t opB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
+  const cublasOperation_t opA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
+  const int ldB = static_cast<int>(bCols);
+  const int ldA = static_cast<int>(aCols);
 
-  // cuBLAS uses column-major, so we compute C^T = B^T * A^T
-  // In terms of our row-major arrays: C = A * B becomes computing with swapped order
-  // cublas: C_col = B_col * A_col where our row-major A is cublas's A^T
-  // So we call cublas with (B, A) to get A*B in row-major
+  // cuBLAS sees each row-major operand as its column-major transpose.
+  // Compute C^T = op(B)^T * op(A)^T by swapping operands and mirroring
+  // each requested row-major transpose into the corresponding cuBLAS op.
+
+  int activeMmulFpOrdinal = -1;
+  if (!tl_graphExecutionActive) {
+    activeMmulFpOrdinal = graph::recordActiveMmulFingerprintTriplet(
+        A->specialBuffer(), static_cast<size_t>(A->lengthOf()) * A->sizeOfT(),
+        B->specialBuffer(), static_cast<size_t>(B->lengthOf()) * B->sizeOfT(),
+        C->specialBuffer(), static_cast<size_t>(C->lengthOf()) * C->sizeOfT(),
+        intendedStream, handleStream,
+        static_cast<int>(handleMathMode), static_cast<int>(handlePointerMode),
+        static_cast<int>(handleAtomicsMode), CublasHelper::inDeterministicWindow(),
+        tl_cublasLtDisabled, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
+    if (activeMmulFpOrdinal == 1 || activeMmulFpOrdinal == 3 ||
+        activeMmulFpOrdinal == 5 || activeMmulFpOrdinal == 7) {
+      const void* alphaPtr = xType == DataType::DOUBLE
+          ? static_cast<const void*>(&getCublasScalars()->alphaD)
+          : static_cast<const void*>(&getCublasScalars()->alphaF);
+      const void* betaPtr = xType == DataType::DOUBLE
+          ? static_cast<const void*>(&getCublasScalars()->betaD)
+          : static_cast<const void*>(&getCublasScalars()->betaF);
+      DSP_DIAG(MEMORY,
+               "BUF_FP_MMUL_ARGS ordinal=%d cublasHandle=%p rank=%d M=%lld N=%lld K=%lld batch=%lld strideA=%lld strideB=%lld strideC=%lld transA=%d transB=%d opA=%d opB=%d ldA=%d ldB=%d alpha=%.17g beta=%.17g alphaPtr=%p betaPtr=%p",
+               activeMmulFpOrdinal, (void*)*handle, aRank,
+               static_cast<long long>(M), static_cast<long long>(N), static_cast<long long>(K),
+               static_cast<long long>(batchSize), strideA, strideB, strideC,
+               static_cast<int>(transA), static_cast<int>(transB),
+               static_cast<int>(opA), static_cast<int>(opB), ldA, ldB,
+               alpha, beta, alphaPtr, betaPtr);
+    }
+  }
 
   if (xType == DataType::DOUBLE) {
     getCublasScalars()->alphaD = alpha;
     getCublasScalars()->betaD  = beta;
     status = cublasDgemmStridedBatched(
         *handle,
-        CUBLAS_OP_N, CUBLAS_OP_N,
+        opB, opA,
         N, M, K,  // Swapped M,N for row-major
         &getCublasScalars()->alphaD,
-        reinterpret_cast<const double*>(B->specialBuffer()), N, strideB,
-        reinterpret_cast<const double*>(A->specialBuffer()), K, strideA,
+        reinterpret_cast<const double*>(B->specialBuffer()), ldB, strideB,
+        reinterpret_cast<const double*>(A->specialBuffer()), ldA, strideA,
         &getCublasScalars()->betaD,
         reinterpret_cast<double*>(C->specialBuffer()), N, strideC,
         batchSize);
@@ -1938,11 +2017,11 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
     getCublasScalars()->betaF  = static_cast<float>(beta);
     status = cublasSgemmStridedBatched(
         *handle,
-        CUBLAS_OP_N, CUBLAS_OP_N,
+        opB, opA,
         N, M, K,  // Swapped M,N for row-major
         &getCublasScalars()->alphaF,
-        reinterpret_cast<const float*>(B->specialBuffer()), N, strideB,
-        reinterpret_cast<const float*>(A->specialBuffer()), K, strideA,
+        reinterpret_cast<const float*>(B->specialBuffer()), ldB, strideB,
+        reinterpret_cast<const float*>(A->specialBuffer()), ldA, strideA,
         &getCublasScalars()->betaF,
         reinterpret_cast<float*>(C->specialBuffer()), N, strideC,
         batchSize);
@@ -1953,11 +2032,11 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
     getCublasScalars()->betaF  = static_cast<float>(beta);
     status = cublasGemmStridedBatchedEx(
         *handle,
-        CUBLAS_OP_N, CUBLAS_OP_N,
+        opB, opA,
         N, M, K,
         &getCublasScalars()->alphaF,
-        B->specialBuffer(), CUDA_R_16F, N, strideB,
-        A->specialBuffer(), CUDA_R_16F, K, strideA,
+        B->specialBuffer(), CUDA_R_16F, ldB, strideB,
+        A->specialBuffer(), CUDA_R_16F, ldA, strideA,
         &getCublasScalars()->betaF,
         C->specialBuffer(), CUDA_R_16F, N, strideC,
         batchSize,
@@ -1971,6 +2050,12 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   if (status != CUBLAS_STATUS_SUCCESS) {
     NDArray::registerSpecialUse({C}, {A, B});
     return false;
+  }
+
+  if (!tl_graphExecutionActive) {
+    graph::recordActiveMmulOutputFingerprint(
+        activeMmulFpOrdinal, C->specialBuffer(),
+        static_cast<size_t>(C->lengthOf()) * C->sizeOfT(), handleStream);
   }
 
   NDArray::registerSpecialUse({C}, {A, B});

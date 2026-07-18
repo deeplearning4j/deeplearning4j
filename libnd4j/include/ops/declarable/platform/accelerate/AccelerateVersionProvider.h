@@ -32,9 +32,12 @@
 #include <Accelerate/Accelerate.h>
 #endif
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 namespace accelerate {
 
 // ============================================================================
@@ -257,6 +260,7 @@ class SD_LIB_EXPORT AccelerateVersionProvider {
 };
 
 }  // namespace accelerate
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

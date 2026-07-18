@@ -29,7 +29,10 @@
 namespace sd {
 namespace ops {
 
-DECLARE_TYPES(betainc) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(betainc) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+}
 
 CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
   auto a = INPUT_VARIABLE(0);

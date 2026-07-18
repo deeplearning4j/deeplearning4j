@@ -294,6 +294,7 @@ function(configure_cuda_linking main_target_name)
 
     target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
 
+
     # Link OpenBLAS for CUDA builds (needed by BlasHelper.cpp for openblas_set_num_threads)
     if(OPENBLAS_LIBRARIES)
         target_link_libraries(${main_target_name} PUBLIC ${OPENBLAS_LIBRARIES})
@@ -301,13 +302,50 @@ function(configure_cuda_linking main_target_name)
     endif()
 
     # Triton GPU Compiler linking (for CUDA builds)
+    set(_cuda_shared_runtimes "")
     if(HAVE_TRITON AND TARGET triton_interface)
         target_link_libraries(${main_target_name} PUBLIC triton_interface)
         # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
         message(STATUS "🔗 Linking Triton GPU compiler backend to ${main_target_name}")
+
+        # The classifier ships the pinned shared LLVM/MLIR runtimes explicitly
+        # selected by the native target configuration.
+        foreach(_triton_runtime_target IN ITEMS triton_mlir_shared triton_llvm_shared)
+            if(NOT TARGET ${_triton_runtime_target})
+                message(FATAL_ERROR
+                    "Triton requires normalized shared runtime target ${_triton_runtime_target}")
+            endif()
+            list(APPEND _cuda_shared_runtimes
+                "$<TARGET_FILE:${_triton_runtime_target}>")
+        endforeach()
+
+        if(APPLE)
+            set_target_properties(${main_target_name} PROPERTIES
+                BUILD_WITH_INSTALL_RPATH TRUE
+                INSTALL_RPATH "@loader_path"
+                INSTALL_RPATH_USE_LINK_PATH FALSE)
+        elseif(UNIX)
+            set_target_properties(${main_target_name} PROPERTIES
+                BUILD_WITH_INSTALL_RPATH TRUE
+                INSTALL_RPATH "$ORIGIN"
+                INSTALL_RPATH_USE_LINK_PATH FALSE)
+        endif()
     elseif(HAVE_TRITON)
-        message(STATUS "⚠️ Triton NOT linked: HAVE_TRITON=${HAVE_TRITON} but triton_interface target missing")
+        message(FATAL_ERROR
+            "HAVE_TRITON=${HAVE_TRITON}, but the required triton_interface target is missing")
     endif()
+
+    # Always refresh the manifest and build-toolchain metadata. This also clears
+    # compiler runtimes left by a previous Triton-enabled configuration.
+    add_custom_command(TARGET ${main_target_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            "-DRUNTIME_LIBRARIES_PIPE=$<JOIN:${_cuda_shared_runtimes},|>"
+            "-DREADELF=${CMAKE_READELF}"
+            "-DOTOOL=${CMAKE_OTOOL}"
+            "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
+            "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${main_target_name}>"
+            -P "${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
+        VERBATIM)
 
     # JVM library
     if(JVM_LIBRARY)
@@ -572,7 +610,6 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-asynchronous-unwind-tables")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-omit-frame-pointer")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-gsplit-dwarf")
-                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xlinker=-Bsymbolic-functions")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -lineinfo")
 
                 # Linker selection for large binaries
@@ -595,7 +632,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -mcmodel=medium -fno-plt -gsplit-dwarf ${LINKER_FLAG}" CACHE STRING "C++ compiler flags" FORCE)
                 add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wa,-mrelax-relocations=no>)
                 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wa,-mrelax-relocations=no>)
-                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic-functions ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}" CACHE STRING "Shared library linker flags" FORCE)
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}" CACHE STRING "Shared library linker flags" FORCE)
                 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}" CACHE STRING "Executable linker flags" FORCE)
 
                 if(LINKER_FLAG)

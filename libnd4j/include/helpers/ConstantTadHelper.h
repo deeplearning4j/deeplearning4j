@@ -34,7 +34,7 @@
 namespace sd {
 class SD_LIB_EXPORT ConstantTadHelper {
  private:
-  DirectTadTrie _trie;  // Single trie for device 0
+  DirectTadTrie _trie;  // Shared trie partitioned by active device at its first key
 
   ConstantTadHelper() = default;
 

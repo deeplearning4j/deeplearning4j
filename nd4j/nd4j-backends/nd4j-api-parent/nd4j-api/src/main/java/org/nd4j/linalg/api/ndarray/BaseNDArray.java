@@ -1447,21 +1447,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(isScalar() || isEmpty())
             return this;
 
+        // All paths go through the native CumSum op. A per-element Java
+        // getDouble/putScalar loop is catastrophic on CUDA buffers: every element
+        // access forces a host sync + context fetch (~248k-element vocab vector ≈
+        // minutes per call, observed frozen inside top-p sampling).
         if (isVector()) {
-            double s = 0.0;
-            for (int i = 0; i < length(); i++) {
-                s += getDouble(i);
-                putScalar(i, s);
+            int dim = rank() > 1 && size(0) == 1 ? rank() - 1 : 0;
+            try (INDArray result = Nd4j.base().cumsum(this, false, false, dim)) {
+                this.assign(result);
             }
         } else if (dimension == -1) {
             INDArray flattened = ravel();
-            double prevVal = flattened.getDouble(0);
-            for (int i = 1; i < flattened.length(); i++) {
-                double d = prevVal + flattened.getDouble(i);
-                flattened.putScalar(i, d);
-                prevVal = d;
+            try (INDArray result = Nd4j.base().cumsum(flattened, false, false, 0)) {
+                flattened.assign(result);
             }
-
             return flattened;
         } else {
             // Use the CumSum op which correctly handles multi-dimensional arrays

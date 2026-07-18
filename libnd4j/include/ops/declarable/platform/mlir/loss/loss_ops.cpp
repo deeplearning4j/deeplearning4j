@@ -48,11 +48,11 @@ PLATFORM_IMPL(softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
 
     auto status = executeMlirEx("softmax_cross_entropy_with_logits", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR softmax_cross_entropy_with_logits failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
@@ -61,7 +61,7 @@ PLATFORM_CHECK(softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
     Requirements req("MLIR SOFTMAX_CROSS_ENTROPY_WITH_LOGITS");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(logits->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(logits->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(logits->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -85,11 +85,11 @@ PLATFORM_IMPL(softmax_cross_entropy_loss_with_logits_grad, ENGINE_CPU) {
 
     auto status = executeMlir("softmax_cross_entropy_with_logits_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR softmax_cross_entropy_with_logits_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(softmax_cross_entropy_loss_with_logits_grad, ENGINE_CPU) {
@@ -119,11 +119,11 @@ PLATFORM_IMPL(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
 
     auto status = executeMlirEx("sparse_softmax_cross_entropy_with_logits", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR sparse_softmax_cross_entropy_with_logits failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
@@ -133,7 +133,7 @@ PLATFORM_CHECK(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
     Requirements req("MLIR SPARSE_SOFTMAX_CROSS_ENTROPY_WITH_LOGITS");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(logits->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(logits->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(logits->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -159,11 +159,11 @@ PLATFORM_IMPL(sigm_cross_entropy_loss, ENGINE_CPU) {
 
     auto status = executeMlirEx("sigmoid_cross_entropy_with_logits", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR sigmoid_cross_entropy_with_logits failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(sigm_cross_entropy_loss, ENGINE_CPU) {
@@ -172,7 +172,7 @@ PLATFORM_CHECK(sigm_cross_entropy_loss, ENGINE_CPU) {
     Requirements req("MLIR SIGMOID_CROSS_ENTROPY_WITH_LOGITS");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(logits->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(logits->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(logits->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -198,11 +198,11 @@ PLATFORM_IMPL(mean_sqerr_loss, ENGINE_CPU) {
 
     auto status = executeMlirEx("mean_squared_error", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR mean_squared_error failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(mean_sqerr_loss, ENGINE_CPU) {
@@ -211,7 +211,7 @@ PLATFORM_CHECK(mean_sqerr_loss, ENGINE_CPU) {
     Requirements req("MLIR MEAN_SQUARED_ERROR");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(predictions->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -237,11 +237,11 @@ PLATFORM_IMPL(mean_pairwssqerr_loss, ENGINE_CPU) {
 
     auto status = executeMlirEx("mean_pairwise_squared_error", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR mean_pairwise_squared_error failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(mean_pairwssqerr_loss, ENGINE_CPU) {
@@ -250,7 +250,7 @@ PLATFORM_CHECK(mean_pairwssqerr_loss, ENGINE_CPU) {
     Requirements req("MLIR MEAN_PAIRWISE_SQUARED_ERROR");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(predictions->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -277,11 +277,11 @@ PLATFORM_IMPL(huber_loss, ENGINE_CPU) {
 
     auto status = executeMlirEx("huber_loss", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR huber_loss failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(huber_loss, ENGINE_CPU) {
@@ -290,7 +290,7 @@ PLATFORM_CHECK(huber_loss, ENGINE_CPU) {
     Requirements req("MLIR HUBER_LOSS");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(predictions->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -316,11 +316,11 @@ PLATFORM_IMPL(hinge_loss, ENGINE_CPU) {
 
     auto status = executeMlirEx("hinge_loss", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR hinge_loss failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(hinge_loss, ENGINE_CPU) {
@@ -329,7 +329,7 @@ PLATFORM_CHECK(hinge_loss, ENGINE_CPU) {
     Requirements req("MLIR HINGE_LOSS");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(predictions->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -356,11 +356,11 @@ PLATFORM_IMPL(log_loss, ENGINE_CPU) {
 
     auto status = executeMlirEx("log_loss", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR log_loss failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(log_loss, ENGINE_CPU) {
@@ -369,7 +369,7 @@ PLATFORM_CHECK(log_loss, ENGINE_CPU) {
     Requirements req("MLIR LOG_LOSS");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(predictions->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -396,11 +396,11 @@ PLATFORM_IMPL(cosine_distance_loss, ENGINE_CPU) {
 
     auto status = executeMlirEx("cosine_distance_loss", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR cosine_distance_loss failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(cosine_distance_loss, ENGINE_CPU) {
@@ -409,7 +409,7 @@ PLATFORM_CHECK(cosine_distance_loss, ENGINE_CPU) {
     Requirements req("MLIR COSINE_DISTANCE_LOSS");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(predictions->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(predictions->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -435,11 +435,11 @@ PLATFORM_IMPL(ctc_loss, ENGINE_CPU) {
 
     auto status = executeMlirEx("ctc_loss", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR ctc_loss failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(ctc_loss, ENGINE_CPU) {
@@ -448,7 +448,7 @@ PLATFORM_CHECK(ctc_loss, ENGINE_CPU) {
     Requirements req("MLIR CTC_LOSS");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(logits->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(logits->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(logits->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;

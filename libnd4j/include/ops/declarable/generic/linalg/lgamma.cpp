@@ -40,9 +40,11 @@ OP_IMPL(lgamma, 1, 1, true) {
 }
 
 DECLARE_TYPES(lgamma) {
+
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_FLOATS})  // as TF says
       ->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 }  // namespace ops

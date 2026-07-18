@@ -45,8 +45,10 @@ CUSTOM_OP_IMPL(triu, 1, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(triu) {
+
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
 }
 
 DECLARE_SHAPE_FN(triu) {
@@ -94,10 +96,12 @@ CUSTOM_OP_IMPL(triu_bp, 2, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(triu_bp) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(triu_bp) {

@@ -26,6 +26,7 @@
 #include <array/NDArray.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/kv_cache_quantize.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -33,38 +34,8 @@ namespace helpers {
 
 constexpr int KVQ_WARP_SIZE = 32;
 
-//////////////////////////////////////////////////////////////////////////////
-// Warp-level max reduction
-//////////////////////////////////////////////////////////////////////////////
-SD_DEVICE SD_INLINE float kvqWarpReduceMax(float val) {
-    for (int offset = KVQ_WARP_SIZE / 2; offset > 0; offset /= 2) {
-        val = fmaxf(val, __shfl_down_sync(0xffffffff, val, offset));
-    }
-    return val;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Block-level max reduction using shared memory
-//////////////////////////////////////////////////////////////////////////////
-SD_DEVICE float kvqBlockReduceMax(float val, float* sharedMem) {
-    const int lane = threadIdx.x % KVQ_WARP_SIZE;
-    const int wid = threadIdx.x / KVQ_WARP_SIZE;
-    const int numWarps = (blockDim.x + KVQ_WARP_SIZE - 1) / KVQ_WARP_SIZE;
-
-    val = kvqWarpReduceMax(val);
-
-    if (lane == 0) {
-        sharedMem[wid] = val;
-    }
-    __syncthreads();
-
-    val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : 0.0f;
-    if (wid == 0) {
-        val = kvqWarpReduceMax(val);
-    }
-
-    return val;
-}
+// Warp/block max reductions come from device_primitives.cuh
+// (sd::device::warpReduceMax / sd::device::blockReduceMax).
 
 //////////////////////////////////////////////////////////////////////////////
 // INT8 Quantize Kernel: one block per row
@@ -102,7 +73,7 @@ SD_KERNEL void kvCacheQuantizeInt8Kernel(
         threadMax = fmaxf(threadMax, val);
     }
 
-    float rowMax = kvqBlockReduceMax(threadMax, sdata);
+    float rowMax = sd::device::blockReduceMax(threadMax, sdata);
 
     __shared__ float invScale;
     __shared__ float rowScale;
@@ -174,7 +145,7 @@ SD_KERNEL void kvCacheQuantizeInt4Kernel(
         threadMax = fmaxf(threadMax, val);
     }
 
-    float rowMax = kvqBlockReduceMax(threadMax, sdata);
+    float rowMax = sd::device::blockReduceMax(threadMax, sdata);
 
     __shared__ float invScale;
     __shared__ float rowScale;
@@ -466,7 +437,7 @@ SD_KERNEL void kvInPlaceWriteQuantisedBSHDKernel(
         float av = fabsf(v);
         if (av > threadMax) threadMax = av;
     }
-    float rowMax = kvqBlockReduceMax(threadMax, sdata);
+    float rowMax = sd::device::blockReduceMax(threadMax, sdata);
 
     __shared__ float invScale;
     __shared__ float rowScale;

@@ -171,6 +171,7 @@ DECLARE_SHAPE_FN(conv1d) {
 }
 
 DECLARE_TYPES(conv1d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS, QINT8, QINT16})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
@@ -396,6 +397,7 @@ DECLARE_SHAPE_FN(conv1d_bp) {
 }
 
 DECLARE_TYPES(conv1d_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | (OP_TRAIT_BACKWARD));
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS, QINT8, QINT16})
       ->setAllowedInputTypes(1, {ALL_FLOATS})

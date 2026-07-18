@@ -19,7 +19,7 @@
 #include <graph/ResourceBinder.h>
 #include <graph/SlotArray.h>
 #include <graph/DspDiagnostics.h>
-#include <graph/gpu/ResourceBinder_cuda.h>
+#include <graph/ResourceBinderDeviceDispatch.h>
 
 #include <cstring>
 #include <cassert>

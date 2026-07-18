@@ -26,22 +26,16 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 BroadcastableOp::BroadcastableOp(const char *name, int numTArgs, int numIArgs)
     : DeclarableCustomOp::DeclarableCustomOp(2, 1, name, false, numTArgs, numIArgs) {
   _descriptor->addTraits(OP_TRAIT_BINARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 
 ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
-  // Ensure registerTypes() has been called so that _descriptor->_outputTypes is populated.
-  // calculateOutputShape may be invoked before validateDataTypes (which normally triggers
-  // registerTypes). Without this, getOutputTypesForOutput(0) returns empty for ops like
-  // boolean_and/or/xor, causing the dtype to be computed as FLOAT instead of BOOL.
-  _registrator.lock();
-  if (!_registered) {
-    _registered = true;
-    this->registerTypes();
-  }
-  _registrator.unlock();
+  // Registration normally initializes this metadata eagerly. Keep the call here
+  // idempotent for directly constructed ops that bypass OpRegistrator.
+  initializeDescriptor();
 
   auto shapeList = SHAPELIST();
   auto x = inputShape->at(0);
@@ -148,5 +142,6 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
 
   return shapeList;
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

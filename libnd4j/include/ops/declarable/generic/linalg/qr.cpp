@@ -83,7 +83,10 @@ DECLARE_SHAPE_FN(qr) {
   return SHAPELIST(shapeQ, shapeR);
 }
 
-DECLARE_TYPES(qr) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(qr) {
+  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
+}
 }  // namespace ops
 }  // namespace sd
 

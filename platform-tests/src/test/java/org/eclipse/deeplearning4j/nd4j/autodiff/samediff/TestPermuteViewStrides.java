@@ -17,13 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Validate that permute operations produce correct strides and data
  * when executed through the DSP execution path. This catches regressions
- * in buildPermutedViewShapeInfo and ShapeUtils::evalPermutedViewShapeInfo.
- *
- * Run with:
- *   cd platform-tests && mvn test \
- *     -Dtest=TestPermuteViewStrides \
- *     -Dbackend.artifactId=nd4j-cuda-12.9 \
- *     2>&1 | tee /tmp/permute-strides.log
+ * in the per-op view descriptor and trait-driven view execution contract.
  */
 @Slf4j
 public class TestPermuteViewStrides {

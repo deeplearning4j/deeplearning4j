@@ -328,6 +328,67 @@ public class ND4JEnvironmentVars {
     public static final String ND4J_TRITON_KERNEL_DUMP = "ND4J_TRITON_KERNEL_DUMP";
 
     /**
+     * Applicability: nd4j-vulkan backend (ADR 0115 Tier 1)
+     * Description: Enable/disable the SPIR-V module disk cache.
+     * Valid values: "true", "false", default: "true"
+     */
+    public static final String ND4J_VULKAN_SPIRV_CACHE_ENABLE = "ND4J_VULKAN_SPIRV_CACHE_ENABLE";
+
+    /**
+     * Applicability: nd4j-vulkan backend (ADR 0115 Tier 1)
+     * Description: Directory for cached SPIR-V modules (spv_<hash>.spv + .meta).
+     * Default: ~/.kompile/cache/vulkan/spirv_cache/
+     */
+    public static final String ND4J_VULKAN_SPIRV_CACHE_DIR = "ND4J_VULKAN_SPIRV_CACHE_DIR";
+
+    /**
+     * Applicability: nd4j-vulkan backend (ADR 0115 Tier 1)
+     * Description: Read-only pre-seed directory checked before the cache dir
+     * (APK/deployment path). Never written.
+     * Default: ~/.kompile/cache/vulkan/spirv_override/
+     */
+    public static final String ND4J_VULKAN_SPIRV_OVERRIDE_DIR = "ND4J_VULKAN_SPIRV_OVERRIDE_DIR";
+
+    /**
+     * Applicability: nd4j-vulkan backend (ADR 0115 Tier 1)
+     * Description: Bypass SPIR-V disk cache reads and skip writes
+     * (Triton ND4J_TRITON_ALWAYS_COMPILE semantics).
+     * Valid values: "true", "false", default: "false"
+     */
+    public static final String ND4J_VULKAN_ALWAYS_COMPILE = "ND4J_VULKAN_ALWAYS_COMPILE";
+
+    /**
+     * Applicability: nd4j-vulkan backend (ADR 0115 Tier 2)
+     * Description: Enable/disable VkPipelineCache driver-blob persistence.
+     * Valid values: "true", "false", default: "true"
+     */
+    public static final String ND4J_VULKAN_PIPELINE_CACHE_ENABLE = "ND4J_VULKAN_PIPELINE_CACHE_ENABLE";
+
+    /**
+     * Applicability: nd4j-vulkan backend (ADR 0115 Tier 2)
+     * Description: Directory for persisted driver pipeline-cache blobs
+     * (vkpc_<hash>.bin, one per physical device).
+     * Default: ~/.kompile/cache/vulkan/pipeline_cache/
+     */
+    public static final String ND4J_VULKAN_PIPELINE_CACHE_DIR = "ND4J_VULKAN_PIPELINE_CACHE_DIR";
+
+    /**
+     * Applicability: nd4j-vulkan backend (ADR 0115 Tier 2)
+     * Description: Size budget in bytes for the driver blob; larger blobs are
+     * dropped on load and skipped on save (regenerate-from-scratch GC).
+     * Default: 67108864 (64 MB)
+     */
+    public static final String ND4J_VULKAN_PIPELINE_CACHE_MAX_BYTES = "ND4J_VULKAN_PIPELINE_CACHE_MAX_BYTES";
+
+    /**
+     * Applicability: nd4j-vulkan backend (ADR 0115 Tier 1)
+     * Description: Dump the input MLIR module (<key>.mlir) next to stored
+     * SPIR-V cache entries.
+     * Valid values: "true", "false", default: "false"
+     */
+    public static final String ND4J_VULKAN_KERNEL_DUMP = "ND4J_VULKAN_KERNEL_DUMP";
+
+    /**
      * Applicability: nd4j-cuda with Triton GPU backend
      * Description: Load prebuilt Triton kernels from ND4J_TRITON_OVERRIDE_DIR by content hash.
      * Valid values: "true", "false", default: "false"

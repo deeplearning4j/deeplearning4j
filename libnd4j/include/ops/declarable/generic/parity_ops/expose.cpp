@@ -55,7 +55,9 @@ CUSTOM_OP_IMPL(expose, -2, -2, true, 0, 0) {
 DECLARE_SYN(Enter, expose);
 DECLARE_SYN(enter, expose);
 
-DECLARE_TYPES(expose) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(expose) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
+   getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(expose) {
   auto shapeList = SHAPELIST();

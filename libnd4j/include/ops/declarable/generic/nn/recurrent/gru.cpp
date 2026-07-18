@@ -73,7 +73,8 @@ CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-DECLARE_TYPES(gru) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(gru) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(gru) {
@@ -162,6 +163,7 @@ CUSTOM_OP_IMPL(gru_bp, 6, 5, false, 0, 0) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(gru_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | (OP_TRAIT_BACKWARD));
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

@@ -1,0 +1,33 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "logback\\.xml"
+      },
+      {
+        "pattern": "sdx-classgraph-scan\\.json"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/javax.imageio.spi.ImageInputStreamSpi\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/javax.imageio.spi.ImageOutputStreamSpi\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/javax.imageio.spi.ImageReaderSpi\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/javax.imageio.spi.ImageTranscoderSpi\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/javax.imageio.spi.ImageWriterSpi\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/javax.sound.sampled.spi.AudioFileReader\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/javax.xml.parsers.SAXParserFactory\\E"
+      }
+    ]
+  }
+}

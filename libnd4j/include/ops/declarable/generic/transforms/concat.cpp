@@ -273,13 +273,17 @@ DECLARE_SYN(concatv2, concat);
 
 DECLARE_TYPES(concat) {
   getOpDescriptor()->setAllowedInputTypes(ANY);
-  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_CONCAT);
+  getOpDescriptor()
+      ->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_CONCAT)
+      ->setNumberOfStructuralIArgs(1);
 }
 
 // concat(x, empty) == x, so the op must run on empty inputs. The default EMPTY_SKIP would make
 // DeclarableOp skip execution whenever any input is empty (DeclarableOp.cpp ~1029), leaving the output
 // at its zero-init allocation; the op body already filters empty inputs, so executing is correct.
-samediff::EmptyHandling concat::emptyHandling() { return samediff::EmptyHandling::EMPTY_EXECUTE; }
+samediff::EmptyHandling SD_BACKEND_OPS_CLASS(concat)::emptyHandling() {
+  return samediff::EmptyHandling::EMPTY_EXECUTE;
+}
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(concat) {
@@ -471,6 +475,8 @@ CUSTOM_OP_IMPL(concat_bp, -1, -1, false, 0, 0) {
 
 DECLARE_TYPES(concat_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_CONCAT |
+                               OP_TRAIT_BACKWARD);
 }
 
 DECLARE_SHAPE_FN(concat_bp) {

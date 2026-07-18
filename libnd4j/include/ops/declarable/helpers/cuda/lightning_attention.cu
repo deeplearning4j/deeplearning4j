@@ -49,6 +49,14 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+// Accumulator type: double when T=double for precision, float otherwise.
+// The recurrent state is always float32 by design; AccT governs Q/K/V tiles
+// and the dot products that produce output (so double input -> double output).
+template <typename T>
+struct AccType { using type = float; };
+template <>
+struct AccType<double> { using type = double; };
+
 // ---------------------------------------------------------------------------
 // Compile-time constants
 // ---------------------------------------------------------------------------
@@ -94,11 +102,11 @@ SD_DEVICE SD_INLINE float la_decay_chunk(float decay_s, int chunk_size) {
 //   O[pos, d]       = O_inter[pos, d] + O_intra[pos, d]   (combine)
 //
 // Shared memory layout:
-//   smQ      [LA_CHUNK_SIZE * headDim]  float  — Q tile
-//   smK      [LA_CHUNK_SIZE * headDim]  float  — K tile
-//   smV      [LA_CHUNK_SIZE * headDim]  float  — V tile
-//   smScores [LA_CHUNK_SIZE * LA_CHUNK_SIZE] float — intra-attn scores
-//   smO      [LA_CHUNK_SIZE * headDim]  float  — output accumulator
+//   smQ      [LA_CHUNK_SIZE * headDim]  AccT  — Q tile
+//   smK      [LA_CHUNK_SIZE * headDim]  AccT  — K tile
+//   smV      [LA_CHUNK_SIZE * headDim]  AccT  — V tile
+//   smScores [LA_CHUNK_SIZE * LA_CHUNK_SIZE] AccT — intra-attn scores
+//   smO      [LA_CHUNK_SIZE * headDim]  AccT  — output accumulator
 //
 // State is in global memory (B*H*D*D float32, too large for shared mem).
 // ---------------------------------------------------------------------------
@@ -126,6 +134,8 @@ void lightningAttentionPrefillKernel(
         const LongType numChunks,
         const bool isCausal) {
 
+    using AccT = typename AccType<T>::type;
+
     const LongType bh = blockIdx.x;
     if (bh >= B * H) return;
 
@@ -133,13 +143,14 @@ void lightningAttentionPrefillKernel(
     const LongType h = bh % H;
     const float decay_s = decayRates[h];
 
-    // Shared memory layout
+    // Shared memory layout — tiles in AccT (double for T=double, float otherwise).
+    // State is always float32 (recurrent state stays float by design).
     extern __shared__ char smem[];
-    float* smQ      = reinterpret_cast<float*>(smem);
-    float* smK      = smQ + LA_CHUNK_SIZE * D;
-    float* smV      = smK + LA_CHUNK_SIZE * D;
-    float* smScores = smV + LA_CHUNK_SIZE * D;
-    float* smO      = smScores + LA_CHUNK_SIZE * LA_CHUNK_SIZE;
+    AccT* smQ      = reinterpret_cast<AccT*>(smem);
+    AccT* smK      = smQ + LA_CHUNK_SIZE * D;
+    AccT* smV      = smK + LA_CHUNK_SIZE * D;
+    AccT* smScores = smV + LA_CHUNK_SIZE * D;
+    AccT* smO      = smScores + LA_CHUNK_SIZE * LA_CHUNK_SIZE;
 
     float* statePtr = state + (b * H + h) * D * D;
     const int tid = threadIdx.x;
@@ -151,27 +162,27 @@ void lightningAttentionPrefillKernel(
         const LongType chunkEnd = chunkEndRaw < S ? chunkEndRaw : S;
         const int C = static_cast<int>(chunkEnd - chunkStart);
 
-        // --- Load Q, K, V tiles into shared memory ---
+        // --- Load Q, K, V tiles into shared memory as AccT ---
         for (int pos = 0; pos < C; ++pos) {
             const LongType s = chunkStart + pos;
             for (int d = tid; d < static_cast<int>(D); d += LA_BLOCK_PREFILL) {
-                smQ[pos * D + d] = static_cast<float>(query[b * qS0 + s * qS1 + h * qS2 + d * qS3]);
-                smK[pos * D + d] = static_cast<float>(key  [b * kS0 + s * kS1 + h * kS2 + d * kS3]);
-                smV[pos * D + d] = static_cast<float>(value[b * vS0 + s * vS1 + h * vS2 + d * vS3]);
+                smQ[pos * D + d] = static_cast<AccT>(query[b * qS0 + s * qS1 + h * qS2 + d * qS3]);
+                smK[pos * D + d] = static_cast<AccT>(key  [b * kS0 + s * kS1 + h * kS2 + d * kS3]);
+                smV[pos * D + d] = static_cast<AccT>(value[b * vS0 + s * vS1 + h * vS2 + d * vS3]);
             }
         }
         // Zero the output accumulator for this chunk
         for (int idx = tid; idx < C * static_cast<int>(D); idx += LA_BLOCK_PREFILL)
-            smO[idx] = 0.0f;
+            smO[idx] = static_cast<AccT>(0);
         __syncthreads();
 
         // --- Inter-chunk contribution: O_inter[pos, dv] = sum_dk Q[pos, dk] * S[dk, dv] ---
         // Each thread handles a stripe of positions; the inner loops cover all D.
         for (int pos = tid; pos < C; pos += LA_BLOCK_PREFILL) {
             for (int dv = 0; dv < static_cast<int>(D); ++dv) {
-                float acc = 0.0f;
+                AccT acc = static_cast<AccT>(0);
                 for (int dk = 0; dk < static_cast<int>(D); ++dk)
-                    acc += smQ[pos * D + dk] * statePtr[dk * D + dv];
+                    acc += smQ[pos * D + dk] * static_cast<AccT>(statePtr[dk * D + dv]);
                 smO[pos * D + dv] += acc;
             }
         }
@@ -184,12 +195,12 @@ void lightningAttentionPrefillKernel(
         for (int i = 0; i < C; ++i) {
             // Compute score row A[i, *]
             for (int j = tid; j < C; j += LA_BLOCK_PREFILL) {
-                float score = 0.0f;
+                AccT score = static_cast<AccT>(0);
                 if (!isCausal || j <= i) {
                     for (int d = 0; d < static_cast<int>(D); ++d)
                         score += smQ[i * D + d] * smK[j * D + d];
                     const int dist = (i >= j) ? (i - j) : (j - i);
-                    score *= la_decay_weight(decay_s, dist);
+                    score *= static_cast<AccT>(la_decay_weight(decay_s, dist));
                 }
                 smScores[i * LA_CHUNK_SIZE + j] = score;
             }
@@ -197,7 +208,7 @@ void lightningAttentionPrefillKernel(
 
             // Accumulate O_intra[i, dv] += sum_j score[i,j] * V[j, dv]
             for (int dv = tid; dv < static_cast<int>(D); dv += LA_BLOCK_PREFILL) {
-                float acc = 0.0f;
+                AccT acc = static_cast<AccT>(0);
                 for (int j = 0; j < C; ++j)
                     acc += smScores[i * LA_CHUNK_SIZE + j] * smV[j * D + dv];
                 smO[i * D + dv] += acc;
@@ -213,7 +224,8 @@ void lightningAttentionPrefillKernel(
         }
 
         // --- State update: S = decay^C * S + sum_{pos} decay^(C-1-pos) * K[pos]^T * V[pos] ---
-        // All arithmetic in float32 to prevent quantization drift.
+        // State is always float32 to prevent quantization drift.
+        // K and V tiles are AccT; cast back to float for the float32 state accumulation.
         const float decayC = la_decay_chunk(decay_s, C);
         for (int idx = tid; idx < static_cast<int>(D * D); idx += LA_BLOCK_PREFILL) {
             const int dk = idx / static_cast<int>(D);
@@ -223,7 +235,7 @@ void lightningAttentionPrefillKernel(
                 // Token at position `pos` in chunk is `C - 1 - pos` steps before
                 // the end of the chunk, so its contribution is decayed accordingly.
                 float w = la_decay_weight(decay_s, C - 1 - pos);
-                kv_acc += w * smK[pos * D + dk] * smV[pos * D + dv];
+                kv_acc += w * static_cast<float>(smK[pos * D + dk]) * static_cast<float>(smV[pos * D + dv]);
             }
             statePtr[idx] = decayC * statePtr[idx] + kv_acc;
         }
@@ -242,10 +254,10 @@ void lightningAttentionPrefillKernel(
 //   S      = decay * S + K ⊗ V  — rank-1 state update
 //
 // Shared memory:
-//   smQ [D]     float  — Q for this token
-//   smK [D]     float  — K for this token
-//   smV [D]     float  — V for this token
-//   smOut [D]   float  — output accumulator
+//   smQ [D]     AccT  — Q for this token
+//   smK [D]     AccT  — K for this token
+//   smV [D]     AccT  — V for this token
+//   smOut [D]   AccT  — output accumulator
 // ---------------------------------------------------------------------------
 template <typename T>
 SD_KERNEL __launch_bounds__(LA_BLOCK_DECODE, 4)
@@ -265,6 +277,8 @@ void lightningAttentionDecodeKernel(
         const LongType vS0, const LongType vS2, const LongType vS3,
         const LongType oS0, const LongType oS2, const LongType oS3) {
 
+    using AccT = typename AccType<T>::type;
+
     const LongType bh = blockIdx.x;
     if (bh >= B * H) return;
 
@@ -272,30 +286,31 @@ void lightningAttentionDecodeKernel(
     const LongType h = bh % H;
     const float decay_s = decayRates[h];
 
-    extern __shared__ float smDecode[];
-    float* smQ   = smDecode;
-    float* smK   = smQ + D;
-    float* smV   = smK + D;
-    float* smOut = smV + D;
+    // Shared memory: 4 tiles of D AccT values (Q, K, V, Out).
+    extern __shared__ char smDecodeBuf[];
+    AccT* smQ   = reinterpret_cast<AccT*>(smDecodeBuf);
+    AccT* smK   = smQ + D;
+    AccT* smV   = smK + D;
+    AccT* smOut = smV + D;
 
     const int tid = threadIdx.x;
 
-    // Load Q, K, V into shared memory (float32 cast)
+    // Load Q, K, V into shared memory as AccT
     for (int d = tid; d < static_cast<int>(D); d += LA_BLOCK_DECODE) {
-        smQ[d]   = static_cast<float>(query[b * qS0 + h * qS2 + d * qS3]);
-        smK[d]   = static_cast<float>(key  [b * kS0 + h * kS2 + d * kS3]);
-        smV[d]   = static_cast<float>(value[b * vS0 + h * vS2 + d * vS3]);
-        smOut[d] = 0.0f;
+        smQ[d]   = static_cast<AccT>(query[b * qS0 + h * qS2 + d * qS3]);
+        smK[d]   = static_cast<AccT>(key  [b * kS0 + h * kS2 + d * kS3]);
+        smV[d]   = static_cast<AccT>(value[b * vS0 + h * vS2 + d * vS3]);
+        smOut[d] = static_cast<AccT>(0);
     }
     __syncthreads();
 
     float* statePtr = state + (b * H + h) * D * D;
 
-    // Step 1: output[dv] = sum_dk Q[dk] * S[dk, dv]
+    // Step 1: output[dv] = sum_dk Q[dk] * S[dk, dv]   (result in AccT)
     for (int dv = tid; dv < static_cast<int>(D); dv += LA_BLOCK_DECODE) {
-        float acc = 0.0f;
+        AccT acc = static_cast<AccT>(0);
         for (int dk = 0; dk < static_cast<int>(D); ++dk)
-            acc += smQ[dk] * statePtr[dk * D + dv];
+            acc += smQ[dk] * static_cast<AccT>(statePtr[dk * D + dv]);
         smOut[dv] = acc;
     }
     __syncthreads();
@@ -305,11 +320,12 @@ void lightningAttentionDecodeKernel(
         output[b * oS0 + h * oS2 + d * oS3] = static_cast<T>(smOut[d]);
 
     // Step 2: S[dk, dv] = decay * S[dk, dv] + K[dk] * V[dv]
+    // State is always float32; cast AccT K/V back to float for state update.
     // Each thread owns a horizontal strip (dk row) of the state matrix.
     for (int dk = tid; dk < static_cast<int>(D); dk += LA_BLOCK_DECODE) {
-        const float k_val = smK[dk];
+        const float k_val = static_cast<float>(smK[dk]);
         for (int dv = 0; dv < static_cast<int>(D); ++dv)
-            statePtr[dk * D + dv] = decay_s * statePtr[dk * D + dv] + k_val * smV[dv];
+            statePtr[dk * D + dv] = decay_s * statePtr[dk * D + dv] + k_val * static_cast<float>(smV[dv]);
     }
 }
 
@@ -366,11 +382,14 @@ static void lightningAttentionImpl(
     auto st  = reinterpret_cast<float*>(state->specialBuffer());
     auto out = reinterpret_cast<T*>(output->specialBuffer());
 
+    using AccT = typename AccType<T>::type;
+
     if (S == 1) {
         // --- Decode path: single token ---
         dim3 grid(static_cast<unsigned>(B * H));
         dim3 block(LA_BLOCK_DECODE);
-        const size_t smem = 4 * static_cast<size_t>(D) * sizeof(float);
+        // 4 tiles of D AccT values: smQ, smK, smV, smOut
+        const size_t smem = 4 * static_cast<size_t>(D) * sizeof(AccT);
 
         lightningAttentionDecodeKernel<T><<<grid, block, smem, *stream>>>(
             q, k, v, dec, st, out,
@@ -388,7 +407,7 @@ static void lightningAttentionImpl(
         dim3 grid(static_cast<unsigned>(B * H));
         dim3 block(LA_BLOCK_PREFILL);
 
-        // Shared memory:
+        // Shared memory (all tiles in AccT — double for T=double, float otherwise):
         //   3 tiles of [LA_CHUNK_SIZE * D] for Q/K/V
         //   1 tile  of [LA_CHUNK_SIZE * LA_CHUNK_SIZE] for scores
         //   1 tile  of [LA_CHUNK_SIZE * D] for output accumulator
@@ -396,7 +415,7 @@ static void lightningAttentionImpl(
             (static_cast<size_t>(3) * LA_CHUNK_SIZE * D +
              static_cast<size_t>(LA_CHUNK_SIZE) * LA_CHUNK_SIZE +
              static_cast<size_t>(LA_CHUNK_SIZE) * D)
-            * sizeof(float);
+            * sizeof(AccT);
 
         lightningAttentionPrefillKernel<T><<<grid, block, smem, *stream>>>(
             q, k, v, dec, st, out,

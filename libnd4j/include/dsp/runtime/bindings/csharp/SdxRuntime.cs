@@ -32,6 +32,12 @@ public static class SdxConstants
     public const int SDX_BACKEND_MLX = 6;
     public const int SDX_BACKEND_ARM_HYBRID = 7;
     public const int SDX_BACKEND_NNAPI = 8;
+    public const int SDX_BACKEND_HIP_GRAPHS = 9;
+    public const int SDX_BACKEND_LEVEL_ZERO = 10;
+    public const int SDX_BACKEND_VULKAN = 11;
+    public const int SDX_BACKEND_METAL = 12;
+    public const int SDX_BACKEND_TPU = 13;
+    public const int SDX_BACKEND_HEXAGON = 14;
 
     // sdx_device_type_t
     public const int SDX_DEVICE_HOST = 0;
@@ -42,6 +48,8 @@ public static class SdxConstants
     public const int SDX_GPU_TARGET_AUTO = 0;
     public const int SDX_GPU_TARGET_CUDA = 1;
     public const int SDX_GPU_TARGET_AMD = 2;
+    public const int SDX_GPU_TARGET_VULKAN = 3;
+    public const int SDX_GPU_TARGET_METAL = 4;
 
     // sdxGetPlanPhase return values
     public const int SDX_PHASE_SLOT_BY_SLOT = 0;
@@ -105,6 +113,24 @@ public struct SdxModelOptions
     }
 }
 
+/// <summary>Options controlling context input binding.</summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct SdxContextOptions
+{
+    public uint struct_size;
+    /// <summary>When non-zero, bind bundle-owned constants and variables internally.</summary>
+    public int bind_model_parameters;
+
+    public static SdxContextOptions Inference()
+    {
+        return new SdxContextOptions
+        {
+            struct_size = (uint)Marshal.SizeOf<SdxContextOptions>(),
+            bind_model_parameters = 1
+        };
+    }
+}
+
 /// <summary>
 /// Per-invocation options passed to <see cref="SdxContext.Run"/>.
 /// Populate via <see cref="Default"/> and override only the fields you need.
@@ -158,6 +184,23 @@ public struct SdxTensorView
     public int device_type;
     /// <summary>Device ordinal for GPU tensors; -1 for host tensors.</summary>
     public int device_id;
+}
+
+/// <summary>Managed copy of one runtime-allocated dynamic output.</summary>
+public sealed class SdxDynamicOutput
+{
+    public byte[] Data { get; }
+    public long[] Shape { get; }
+    public int DType { get; }
+    public string? Name { get; }
+
+    internal SdxDynamicOutput(byte[] data, long[] shape, int dtype, string? name)
+    {
+        Data = data;
+        Shape = shape;
+        DType = dtype;
+        Name = name;
+    }
 }
 
 /// <summary>
@@ -342,13 +385,21 @@ internal static class NativeMethods
         // Standalone SDX runtimes first (JVM-free, sdx*-only exports).
         yield return "sdx_cpu";
         yield return "sdx_cuda";
+        yield return "sdx_vulkan";
+        yield return "sdx_metal";
         yield return "libsdx_cpu.so";
         yield return "libsdx_cuda.so";
+        yield return "libsdx_vulkan.so";
+        yield return "libsdx_metal.so";
         yield return "libsdx_cpu.dylib";
         yield return "libsdx_cuda.dylib";
+        yield return "libsdx_vulkan.dylib";
+        yield return "libsdx_metal.dylib";
         yield return "sdx_cpu.dll";
         yield return "sdx_cuda.dll";
         // Monolithic backend libraries export the same sdx* C ABI.
+        yield return "nd4jvulkan";
+        yield return "nd4jmetal";
         yield return "nd4jcpu";
         yield return "nd4jcuda";
         yield return "nd4jamd";
@@ -379,10 +430,24 @@ internal static class NativeMethods
     internal static extern void sdxUnloadModel(IntPtr model);
 
     [DllImport(ImportLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    internal static extern IntPtr sdxGetTokenizerPath(IntPtr model);
+
+    [DllImport(ImportLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    internal static extern IntPtr sdxGetTextGenerationConfigPath(IntPtr model);
+
+    [DllImport(ImportLibraryName, CallingConvention = CallingConvention.Cdecl)]
     internal static extern int sdxCreateContext(
         IntPtr model,
         IntPtr requestedOutputNames,
         int numRequestedOutputs,
+        out IntPtr outContext);
+
+    [DllImport(ImportLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    internal static extern int sdxCreateContextWithOptions(
+        IntPtr model,
+        IntPtr requestedOutputNames,
+        int numRequestedOutputs,
+        ref SdxContextOptions options,
         out IntPtr outContext);
 
     [DllImport(ImportLibraryName, CallingConvention = CallingConvention.Cdecl)]
@@ -395,6 +460,13 @@ internal static class NativeMethods
         int numInputs,
         [In] SdxTensorView[] outputs,
         int numOutputs,
+        ref SdxRunOptions options);
+
+    [DllImport(ImportLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    internal static extern int sdxRunAllocating(
+        IntPtr context,
+        [In] SdxTensorView[] inputs,
+        int numInputs,
         ref SdxRunOptions options);
 
     [DllImport(ImportLibraryName, CallingConvention = CallingConvention.Cdecl)]
@@ -426,6 +498,13 @@ internal static class NativeMethods
 
     [DllImport(ImportLibraryName, CallingConvention = CallingConvention.Cdecl)]
     internal static extern IntPtr sdxGetInputName(IntPtr context, int inputIndex);
+
+    [DllImport(ImportLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    internal static extern IntPtr sdxGetOutputName(IntPtr context, int outputIndex);
+
+    [DllImport(ImportLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    internal static extern int sdxGetOutputTensor(
+        IntPtr context, int outputIndex, out SdxTensorView output);
 }
 
 /// <summary>
@@ -531,6 +610,26 @@ public sealed class SdxModel : IDisposable
         _handle = handle;
     }
 
+    /// <summary>Resolved offline tokenizer path declared by the bundle.</summary>
+    public string? TokenizerPath
+    {
+        get
+        {
+            var ptr = NativeMethods.sdxGetTokenizerPath(_handle);
+            return ptr == IntPtr.Zero ? null : Marshal.PtrToStringUTF8(ptr);
+        }
+    }
+
+    /// <summary>Resolved text-generation metadata path declared by the bundle.</summary>
+    public string? TextGenerationConfigPath
+    {
+        get
+        {
+            var ptr = NativeMethods.sdxGetTextGenerationConfigPath(_handle);
+            return ptr == IntPtr.Zero ? null : Marshal.PtrToStringUTF8(ptr);
+        }
+    }
+
     /// <summary>
     /// Creates an execution context bound to this model.
     /// </summary>
@@ -541,7 +640,9 @@ public sealed class SdxModel : IDisposable
     /// <returns>A new <see cref="SdxContext"/>.  Dispose when done.</returns>
     /// <exception cref="ObjectDisposedException">Thrown when this model has been disposed.</exception>
     /// <exception cref="InvalidOperationException">Thrown when context creation fails.</exception>
-    public SdxContext CreateContext(IReadOnlyList<string>? requestedOutputs = null)
+    public SdxContext CreateContext(
+        IReadOnlyList<string>? requestedOutputs = null,
+        bool bindModelParameters = false)
     {
         if (_handle == IntPtr.Zero)
             throw new ObjectDisposedException(nameof(SdxModel));
@@ -563,15 +664,37 @@ public sealed class SdxModel : IDisposable
                 }
             }
 
-            var status = NativeMethods.sdxCreateContext(_handle, namesBuffer, outputCount, out var ctxHandle);
-            _runtime.ThrowOnError(status, "sdxCreateContext");
-            return new SdxContext(_runtime, ctxHandle);
+            IntPtr ctxHandle;
+            int status;
+            if (bindModelParameters)
+            {
+                var options = SdxContextOptions.Inference();
+                status = NativeMethods.sdxCreateContextWithOptions(
+                    _handle, namesBuffer, outputCount, ref options, out ctxHandle);
+                _runtime.ThrowOnError(status, "sdxCreateContextWithOptions");
+            }
+            else
+            {
+                status = NativeMethods.sdxCreateContext(
+                    _handle, namesBuffer, outputCount, out ctxHandle);
+                _runtime.ThrowOnError(status, "sdxCreateContext");
+            }
+            return new SdxContext(_runtime, this, ctxHandle);
         }
         finally
         {
             foreach (var ptr in encodedNames) Marshal.FreeHGlobal(ptr);
             if (namesBuffer != IntPtr.Zero) Marshal.FreeHGlobal(namesBuffer);
         }
+    }
+
+    /// <summary>
+    /// Creates the recommended mobile/offline context with bundle-owned model
+    /// parameters bound internally.
+    /// </summary>
+    public SdxContext CreateInferenceContext(IReadOnlyList<string>? requestedOutputs = null)
+    {
+        return CreateContext(requestedOutputs, bindModelParameters: true);
     }
 
     private static IntPtr AllocUtf8CString(string value)
@@ -611,11 +734,14 @@ public sealed class SdxModel : IDisposable
 public sealed class SdxContext : IDisposable
 {
     private readonly SdxRuntime _runtime;
+    // Retains bundle-owned arrays while a parameter-bound context is alive.
+    private readonly SdxModel _model;
     private IntPtr _handle;
 
-    internal SdxContext(SdxRuntime runtime, IntPtr handle)
+    internal SdxContext(SdxRuntime runtime, SdxModel model, IntPtr handle)
     {
         _runtime = runtime;
+        _model = model;
         _handle = handle;
     }
 
@@ -641,6 +767,58 @@ public sealed class SdxContext : IDisposable
         var opts = options ?? SdxRunOptions.Default();
         var status = NativeMethods.sdxRun(_handle, inputs, inputs.Length, outputs, outputs.Length, ref opts);
         _runtime.ThrowOnError(status, "sdxRun");
+    }
+
+    /// <summary>
+    /// Executes with runtime-owned dynamic outputs and returns managed copies.
+    /// </summary>
+    public SdxDynamicOutput[] RunAllocating(
+        SdxTensorView[] inputs, SdxRunOptions? options = null)
+    {
+        if (_handle == IntPtr.Zero)
+            throw new ObjectDisposedException(nameof(SdxContext));
+
+        var opts = options ?? SdxRunOptions.Default();
+        var status = NativeMethods.sdxRunAllocating(
+            _handle, inputs, inputs.Length, ref opts);
+        _runtime.ThrowOnError(status, "sdxRunAllocating");
+
+        var count = Math.Max(0, NumOutputs());
+        var results = new SdxDynamicOutput[count];
+        for (var index = 0; index < count; ++index)
+        {
+            status = NativeMethods.sdxGetOutputTensor(
+                _handle, index, out var view);
+            _runtime.ThrowOnError(status, "sdxGetOutputTensor");
+
+            if (view.rank < 0)
+                throw new InvalidOperationException(
+                    "sdxGetOutputTensor returned a negative rank");
+            var shape = new long[view.rank];
+            if (shape.Length > 0)
+            {
+                if (view.shape == IntPtr.Zero)
+                    throw new InvalidOperationException(
+                        "sdxGetOutputTensor returned a null shape");
+                Marshal.Copy(view.shape, shape, 0, shape.Length);
+            }
+
+            var byteCount64 = view.bytes.ToUInt64();
+            if (byteCount64 > int.MaxValue)
+                throw new InvalidOperationException(
+                    "Dynamic output is too large for a managed byte array");
+            var data = new byte[(int)byteCount64];
+            if (data.Length > 0)
+            {
+                if (view.data == IntPtr.Zero)
+                    throw new InvalidOperationException(
+                        "sdxGetOutputTensor returned a null data pointer");
+                Marshal.Copy(view.data, data, 0, data.Length);
+            }
+            results[index] = new SdxDynamicOutput(
+                data, shape, view.dtype, OutputName(index));
+        }
+        return results;
     }
 
     /// <summary>
@@ -738,6 +916,21 @@ public sealed class SdxContext : IDisposable
 
         var names = new string?[count];
         for (var i = 0; i < count; i++) names[i] = InputName(i);
+        return names;
+    }
+
+    public string? OutputName(int outputIndex)
+    {
+        var ptr = NativeMethods.sdxGetOutputName(_handle, outputIndex);
+        return ptr == IntPtr.Zero ? null : Marshal.PtrToStringUTF8(ptr);
+    }
+
+    public string?[] OutputNames()
+    {
+        var count = NumOutputs();
+        if (count <= 0) return Array.Empty<string?>();
+        var names = new string?[count];
+        for (var i = 0; i < count; ++i) names[i] = OutputName(i);
         return names;
     }
 

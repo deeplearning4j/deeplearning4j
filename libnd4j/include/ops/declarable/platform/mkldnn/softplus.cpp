@@ -113,7 +113,7 @@ static void softplusMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(softplus, ENGINE_CPU) {
+PLATFORM_IMPL(softplus, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -126,7 +126,7 @@ PLATFORM_IMPL(softplus, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(softplus, ENGINE_CPU) {
+PLATFORM_CHECK(softplus, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -148,18 +148,20 @@ PLATFORM_CHECK(softplus, ENGINE_CPU) {
 static void softplusBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
+  auto dataType = getOneDnnDataType(x->dataType());
+
   dnnl::memory::desc x_mkl_md, x_user_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
   // x
-  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
   // dLdz
-  dLdz_user_md = dLdz_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdz));
+  dLdz_user_md = dLdz_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*dLdz));
   onednnUtils::setBlockStrides(*dLdz, dLdz_user_md);
 
   // dLdx
-  dLdx_user_md = dLdx_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdx));
+  dLdx_user_md = dLdx_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*dLdx));
   onednnUtils::setBlockStrides(*dLdx, dLdx_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
@@ -201,7 +203,7 @@ static void softplusBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
   stream.wait();
 }
 
-PLATFORM_IMPL(softplus_bp, ENGINE_CPU) {
+PLATFORM_IMPL(softplus_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -219,7 +221,7 @@ PLATFORM_IMPL(softplus_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(softplus_bp, ENGINE_CPU) {
+PLATFORM_CHECK(softplus_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -229,20 +231,16 @@ PLATFORM_CHECK(softplus_bp, ENGINE_CPU) {
       req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32) &&
-      req.expect(
-          makeShapeInfoVariable(x, SHAPE_MSG_INPUT0), makeShapeInfoVariable(dLdz, SHAPE_MSG_INPUT1),
-          [](const decltype(x)& l, const decltype(dLdz)& r) {
-            for (int i = 0; i < l->rankOf(); i++) {
-              if (l->sizeAt(i) != r->sizeAt(i)) {
-                return false;
-              }
-            }
-            return true;
-          },
-          EXPECTED_EQ_MSG);
+      req.expectTrue(makeInfoVariable(isSupportedEltwiseType(x->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedEltwiseType(dLdz->dataType()), TYPE_MSG_INPUT1),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(isSupportedEltwiseType(dLdx->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1)) &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT));
   req.logTheSuccess();
   return req;
 }

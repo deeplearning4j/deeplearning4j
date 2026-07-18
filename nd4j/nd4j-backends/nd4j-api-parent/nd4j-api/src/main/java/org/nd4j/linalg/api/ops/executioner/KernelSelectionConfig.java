@@ -105,7 +105,6 @@ public class KernelSelectionConfig implements Serializable {
         VULKAN,
         OPENCL,
         TPU,
-        LLAMACPP,
         VLM;
 
         public static Engine fromString(String name) {
@@ -136,9 +135,6 @@ public class KernelSelectionConfig implements Serializable {
                     return OPENCL;
                 case "tpu":
                     return TPU;
-                case "llamacpp":
-                case "llama":
-                    return LLAMACPP;
                 case "vlm":
                     return VLM;
                 default:

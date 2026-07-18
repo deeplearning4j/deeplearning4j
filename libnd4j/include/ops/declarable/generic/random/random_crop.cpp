@@ -65,7 +65,10 @@ DECLARE_SHAPE_FN(random_crop) {
 }
 
 DECLARE_TYPES(random_crop) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 }
 }  // namespace ops
 }  // namespace sd

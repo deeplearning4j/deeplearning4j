@@ -42,6 +42,11 @@
 namespace sd {
 namespace graph {
 
+Status NativeDynamicShapePlan::platformExecuteSlot(const NativeSlot& slot,
+                                                   Context& context) {
+  return slot.ident.op->execute(&context);
+}
+
 // ── Platform prezero: batched cudaMemsetAsync ─────────────────────────────────
 void NativeDynamicShapePlan::platformPrezeroSegmentOutputs(const GraphSegment& seg, void* stream) {
   // The stream parameter is the Java/JNI stream pointer. On first execution it

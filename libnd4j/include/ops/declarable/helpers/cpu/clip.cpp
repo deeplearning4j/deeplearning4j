@@ -153,76 +153,88 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
   // Per-TAD sub-array reductions on views can produce incorrect threshold decisions.
 
   const auto clipVal = clipNorm->e<T>(0);
+  std::vector<sd::LongType> emptyVec = {};
 
-  // Compute per-TAD norms and dot products using a single global reduction.
-  // norm2Ptr: for each TAD i, norm2Ptr[i] = L2 norm of TAD i.
-  // dotsPtr:  for each TAD i, dotsPtr[i] = dot(gradO, input) over TAD i.
-  //
-  // IMPORTANT: NDArray copy constructor creates a VIEW (shared DataBuffer).
-  // The pointers norm2Ptr and dotsPtr must NOT be deleted until after all
-  // accesses to norm2 and dots are complete — deleting them early frees the
-  // shared buffer and causes use-after-free with undefined behaviour.
-  auto *norm2Ptr = input->reduceAlongDimension(reduce::Norm2, &dimensions);
-  auto norm2 = *norm2Ptr;  // view into norm2Ptr's buffer — do NOT delete norm2Ptr yet
+  // Whole-array (global) norm case: dims empty or spanning every axis. Matches the
+  // clipByNorm forward's branch selection.
+  const bool isGlobal =
+      dimensions.empty() || static_cast<sd::LongType>(dimensions.size()) >= input->rankOf();
 
-  // dot(gradO, input) = sum(gradO * input) per TAD
-  auto *elemwiseProductPtr = (*input) * (*gradO);
-  auto *dotsPtr = elemwiseProductPtr->reduceAlongDimension(reduce::Sum, &dimensions);
-  auto dots = *dotsPtr;  // view into dotsPtr's buffer — do NOT delete dotsPtr yet
-  delete elemwiseProductPtr;
-
-  if (norm2.lengthOf() == 1) {
-    // Global norm case: entire array is one TAD
-    const T norm2Raw = norm2.e<T>(0);
+  if (isGlobal) {
+    NDArray* norm2Res = input->reduceAlongDimension(reduce::Norm2, &emptyVec);
+    const T norm2Raw = norm2Res->e<T>(0);
     const T norm = useAverage ? norm2Raw / static_cast<T>(input->lengthOf()) : norm2Raw;
+    delete norm2Res;
 
     if (norm > clipVal) {
-      const T dot = dots.e<T>(0);
+      NDArray* prod = (*input) * (*gradO);
+      NDArray* dotRes = prod->reduceAlongDimension(reduce::Sum, &emptyVec);
+      const T dot = dotRes->e<T>(0);
+      delete prod;
+      delete dotRes;
+
       const T factor1 = clipVal / norm;
       const T factor2 = static_cast<T>(1.f) / (norm * norm);
-
       auto lambda = LAMBDA_TT(x, y, dot, factor1, factor2) {
         return factor1 * y - factor1 * factor2 * x * dot;
       });
-
       input->applyPairwiseLambda<T>(gradO, lambda, gradI);
-    } else
+    } else {
       gradI->assign(gradO);
+    }
   } else {
-    // Per-TAD case
-    auto gradISubArrs = gradI->allTensorsAlongDimension(dimensions);
-    auto gradOSubArrs = gradO->allTensorsAlongDimension(dimensions);
-    auto inputSubArrs = input->allTensorsAlongDimension(dimensions);
+    // Per-TAD case. TAD indexing MUST be consistent across input, gradO and gradI:
+    // allTensorsAlongDimension(dims).at(i) enumerates TADs in the array's own stride order, so
+    // when input/gradO/gradI have different orderings, .at(i) points at DIFFERENT logical slices.
+    // Reading input's TAD i for the clip decision but writing gradI's TAD i then targets the wrong
+    // column (the forward is immune: it reads AND writes a single contiguous array z). Diagnostics
+    // confirmed the per-column norm/decision are correct but the result landed on the wrong column.
+    // Fix: operate in 'c'-contiguous copies so all three index identically, then copy back into gradI.
+    NDArray* inputC = input->dup('c');
+    NDArray* gradOC = gradO->dup('c');
+    NDArray* gradIC = gradI->dup('c');
+
+    auto gradISubArrs = gradIC->allTensorsAlongDimension(dimensions);
+    auto gradOSubArrs = gradOC->allTensorsAlongDimension(dimensions);
+    auto inputSubArrs = inputC->allTensorsAlongDimension(dimensions);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        const T norm2Raw = norm2.e<T>(i);
-        const T norm = useAverage ? norm2Raw / static_cast<T>(gradISubArrs.at(i)->lengthOf()) : norm2Raw;
+        auto inputSubArr = inputSubArrs.at(i);
+        auto gradOSubArr = gradOSubArrs.at(i);
+        auto gradISubArr = gradISubArrs.at(i);
+
+        std::vector<sd::LongType> localEmpty = {};
+        NDArray* subNorm2 = inputSubArr->reduceAlongDimension(reduce::Norm2, &localEmpty);
+        const T norm2Raw = subNorm2->e<T>(0);
+        const T norm = useAverage ? norm2Raw / static_cast<T>(inputSubArr->lengthOf()) : norm2Raw;
+        delete subNorm2;
 
         if (norm > clipVal) {
-          auto inputSubArr = inputSubArrs.at(i);
-          auto gradOSubArr = gradOSubArrs.at(i);
-          auto gradISubArr = gradISubArrs.at(i);
+          NDArray* prod = (*inputSubArr) * (*gradOSubArr);
+          NDArray* subDot = prod->reduceAlongDimension(reduce::Sum, &localEmpty);
+          const T dot = subDot->e<T>(0);
+          delete prod;
+          delete subDot;
 
-          const T dot = dots.e<T>(i);
           const T factor1 = clipVal / norm;
           const T factor2 = static_cast<T>(1.f) / (norm * norm);
-
           auto lambda = LAMBDA_TT(x, y, dot, factor1, factor2) {
             return factor1 * y - factor1 * factor2 * x * dot;
           });
-
           inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
-        } else
-          gradISubArrs.at(i)->assign(gradOSubArrs.at(i));
+        } else {
+          gradISubArr->assign(gradOSubArr);
+        }
       }
     };
     samediff::Threads::parallel_tad(func, 0, gradISubArrs.size());
-  }
 
-  // Delete after all uses of norm2 and dots are complete.
-  delete norm2Ptr;
-  delete dotsPtr;
+    gradI->assign(gradIC);  // ordering-safe copy of the result back into gradI
+    delete inputC;
+    delete gradOC;
+    delete gradIC;
+  }
 }
 BUILD_SINGLE_TEMPLATE(void clipByNormBp_,
                       (NDArray *input, NDArray *gradO, NDArray *gradI, const std::vector<sd::LongType>& dimensions,

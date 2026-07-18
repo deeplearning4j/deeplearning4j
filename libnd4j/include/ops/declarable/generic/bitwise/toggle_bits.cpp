@@ -43,6 +43,7 @@ OP_IMPL(toggle_bits, -1, -1, true) {
 
 DECLARE_TYPES(toggle_bits) {
   getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes({ALL_INTS})->setSameMode(false);
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

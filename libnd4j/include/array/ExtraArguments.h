@@ -26,11 +26,12 @@
 #include <array/DataType.h>
 #include <stdlib.h>
 #include <system/common.h>
+#include <system/BackendNamespace.h>
 
 #include <initializer_list>
 #include <vector>
 
-namespace sd {
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 class SD_LIB_EXPORT ExtraArguments {
  private:
   std::vector<double> _fpArgs;
@@ -61,6 +62,7 @@ class SD_LIB_EXPORT ExtraArguments {
 
   size_t length();
 };
-}  // namespace sd
+SD_BACKEND_ABI_NAMESPACE_END
+SD_BACKEND_ABI_ALIAS(ExtraArguments)
 
 #endif  // DEV_TESTS_EXTRAARGUMENTS_H

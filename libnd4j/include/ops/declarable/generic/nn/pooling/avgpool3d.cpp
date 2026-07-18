@@ -88,6 +88,7 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
 }
 
 DECLARE_TYPES(avgpool3dnew) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -156,6 +157,7 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
 }
 
 DECLARE_TYPES(avgpool3dnew_bp) {
+  getOpDescriptor()->addTraits((OP_TRAIT_BACKWARD));
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

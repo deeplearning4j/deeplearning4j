@@ -19,57 +19,25 @@
 #include <graph/IslandCapturePolicy.h>
 
 // NativeDynamicShapePlan.h defines NativeSlot — pull it in here so we can
-// access opTraits_, ident, and isCapturable().  The header guard prevents
+// access opTraits_ and isCapturable(). The header guard prevents
 // double-inclusion when callers already pulled it in.
 #include <graph/NativeDynamicShapePlan.h>
-#include <ops/declarable/OpDescriptor.h>   // OpTraits enum values
+#include <ops/declarable/OpDescriptor.h>  // OpTraits enum values
 
-#include <algorithm>
-#include <cctype>
-#include <string>
 #include <vector>
 
 namespace sd {
 namespace graph {
 
-// ── Internal helpers ─────────────────────────────────────────────────────────
-
-// Case-insensitive substring search.
-static bool containsCI(const std::string& haystack, const char* needle) {
-  std::string h = haystack;
-  std::transform(h.begin(), h.end(), h.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
-  return h.find(needle) != std::string::npos;
-}
-
-// ── IslandCapturePolicy private statics ─────────────────────────────────────
-
-bool IslandCapturePolicy::nameMatchesAttention(const std::string& name) {
-  // Match known attention op name patterns (case-insensitive substrings).
-  // "attention" covers dot_product_attention, dot_product_attention_v2,
-  // flash_attention; "flash" is an additional fallback.
-  return containsCI(name, "attention") || containsCI(name, "flash");
-}
-
-bool IslandCapturePolicy::nameMatchesDynamicIndex(const std::string& name) {
-  // gather/scatter/dynamic — dynamic-index ops whose replay behaviour depends
-  // on the runtime content of an index buffer.
-  return containsCI(name, "gather")  ||
-         containsCI(name, "scatter") ||
-         containsCI(name, "dynamic");
-}
-
 bool IslandCapturePolicy::isExcluded(const NativeSlot* slots, int i,
                                      const IslandCaptureProfile& profile) {
   const NativeSlot& slot = slots[i];
   const uint32_t traits = slot.opTraits_;
-  const std::string& opName = slot.ident.opName;
 
   // ── Attention ─────────────────────────────────────────────────────────────
-  if (profile.excludeAttention) {
-    // Prefer the trait bit (OP_TRAIT_ATTENTION = 1 << 17) set by OpTraitTable.
-    const bool traitAttention = (traits & sd::ops::OP_TRAIT_ATTENTION) != 0;
-    if (traitAttention || nameMatchesAttention(opName)) return true;
+  if (profile.excludeAttention &&
+      (traits & sd::ops::OP_TRAIT_ATTENTION) != 0) {
+    return true;
   }
 
   // ── Host-callback / dynamic-output-size ──────────────────────────────────
@@ -85,13 +53,12 @@ bool IslandCapturePolicy::isExcluded(const NativeSlot* slots, int i,
 
   // ── Dynamic-index ops ────────────────────────────────────────────────────
   if (profile.excludeDynamicIndex) {
-    // Prefer trait bits for gather/scatter families.
-    const bool gatherTrait     = (traits & sd::ops::OP_TRAIT_GATHER)            != 0;
-    const bool gatherNdTrait   = (traits & sd::ops::OP_TRAIT_GATHER_ND)         != 0;
-    const bool scatterTrait    = (traits & sd::ops::OP_TRAIT_SCATTER_ND)        != 0;
-    const bool scatterUpdTrait = (traits & sd::ops::OP_TRAIT_SCATTER_ND_UPDATE) != 0;
-    if (gatherTrait || gatherNdTrait || scatterTrait || scatterUpdTrait ||
-        nameMatchesDynamicIndex(opName)) {
+    const bool gatherTrait = (traits & sd::ops::OP_TRAIT_GATHER) != 0;
+    const bool gatherNdTrait = (traits & sd::ops::OP_TRAIT_GATHER_ND) != 0;
+    const bool scatterTrait = (traits & sd::ops::OP_TRAIT_SCATTER_ND) != 0;
+    const bool scatterUpdTrait =
+        (traits & sd::ops::OP_TRAIT_SCATTER_ND_UPDATE) != 0;
+    if (gatherTrait || gatherNdTrait || scatterTrait || scatterUpdTrait) {
       return true;
     }
   }

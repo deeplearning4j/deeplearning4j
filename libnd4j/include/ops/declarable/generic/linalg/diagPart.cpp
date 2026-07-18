@@ -51,7 +51,10 @@ CUSTOM_OP_IMPL(diag_part, 1, 1, false, 0, 0) {
 }
 DECLARE_SYN(DiagPart, diag_part);
 
-DECLARE_TYPES(diag_part) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(diag_part) {
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING);
+}
 
 DECLARE_SHAPE_FN(diag_part) {
   auto inputShapeInfo = inputShape->at(0);

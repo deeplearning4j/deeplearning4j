@@ -141,6 +141,7 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
 
 
 DECLARE_TYPES(skipgram_inference) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
@@ -196,6 +197,7 @@ CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
 }
 
 DECLARE_TYPES(skipgram) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, sd::DataType::INT32)
       ->setAllowedInputTypes(1, sd::DataType::INT32)

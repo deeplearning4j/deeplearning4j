@@ -1,0 +1,66 @@
+[
+  {
+    "name": "org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative$OpaqueTokenizer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative$OpaqueEncoding",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.Pointer",
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.IntPointer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.PointerPointer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.bytedeco.javacpp.BytePointer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.llm.config.ModelConfig",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.llm.config.PreprocessorConfig",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.llm.config.PreprocessorConfig$ImageSize",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.llm.config.PreprocessorConfig$ImageSizeDeserializer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "org.eclipse.deeplearning4j.llm.config.TokenizerConfig",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  }
+]

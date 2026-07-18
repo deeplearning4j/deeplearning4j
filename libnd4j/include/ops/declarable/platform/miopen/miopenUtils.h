@@ -38,9 +38,13 @@
 #include <stdexcept>
 #include <string>
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+// Op macros open SD_NS themselves (platform_boilerplate.h) — the DECLARE list
+// must sit outside the file-level wrap or SD_NS nests inside itself.
 
 // ============================================================================
 // Platform Helper Declarations for ENGINE_ZLUDA_AMD
@@ -82,6 +86,8 @@ DECLARE_PLATFORM(softmax, ENGINE_ZLUDA_AMD);
 DECLARE_PLATFORM(softmax_bp, ENGINE_ZLUDA_AMD);
 DECLARE_PLATFORM(log_softmax, ENGINE_ZLUDA_AMD);
 DECLARE_PLATFORM(log_softmax_bp, ENGINE_ZLUDA_AMD);
+
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 // ============================================================================
 // Error Handling Utilities
@@ -432,6 +438,7 @@ inline miopenHandle_t getMIOpenHandle(const LaunchContext* context) {
     return reinterpret_cast<miopenHandle_t>(handle);
 }
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

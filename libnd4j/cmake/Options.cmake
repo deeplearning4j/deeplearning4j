@@ -16,7 +16,35 @@ option(SD_INSTANTIATION_VERBOSE "Verbose instantiation extraction" OFF)
 option(SD_CPU "Build CPU backend" ON)
 option(SD_CUDA "Build CUDA/GPU backend" OFF)
 option(SD_TPU "Build TPU backend using PJRT" OFF)
+option(SD_HEXAGON "Build Hexagon backend" OFF)
+option(SD_VULKAN "Build Vulkan backend" OFF)
 set(TPU_VERSION "v5" CACHE STRING "TPU version (v4, v5)")
+
+# Backend identity is exclusive. Shared build behavior belongs in common
+# functions and source interfaces; it must never be obtained by enabling or
+# routing through another backend.
+function(sd_validate_primary_backend_selection)
+    set(_sd_enabled_backends "")
+    foreach(_sd_backend IN ITEMS SD_CPU SD_CUDA SD_TPU SD_HEXAGON SD_VULKAN)
+        if(${_sd_backend})
+            list(APPEND _sd_enabled_backends "${_sd_backend}")
+        endif()
+    endforeach()
+
+    list(LENGTH _sd_enabled_backends _sd_backend_count)
+    if(NOT _sd_backend_count EQUAL 1)
+        list(JOIN _sd_enabled_backends ", " _sd_enabled_backend_text)
+        if(NOT _sd_enabled_backend_text)
+            set(_sd_enabled_backend_text "none")
+        endif()
+        message(FATAL_ERROR
+            "Exactly one primary backend must be enabled; active backends: "
+            "${_sd_enabled_backend_text}. Backend selection must be explicit "
+            "and mutually exclusive.")
+    endif()
+endfunction()
+
+sd_validate_primary_backend_selection()
 # Apple Silicon unified-memory MLX/Metal stack.
 # On macOS arm64 + -Dlibnd4j.triton=ON, buildnativeoperations.sh sets this to ON
 # automatically via the MLX_CMAKE variable.  You can also set it directly:
@@ -27,37 +55,48 @@ option(SD_MLX "Enable Apple MLX GPU-compute backend (macOS arm64 only; requires 
 option(SD_VERBOSE_CUDA "Enable verbose CUDA/nvcc output (increases memory usage)" OFF)
 
 # --- Backend Namespace Isolation ---
-# When multiple backends (CPU, CUDA) are loaded in the same process, symbol conflicts
-# can occur because both libraries export identically-named symbols (ops, helpers, singletons).
-# This option sets a unique namespace prefix for all internal symbols.
+# Backend DSOs are designed to coexist in one process. Give each artifact a
+# distinct internal C++ namespace while preserving the shared exported C ABI and
+# normal dynamic linkage of common dependencies.
 #
 # Default behavior:
-#   - CPU build:  SD_BACKEND_NAMESPACE = sd_cpu
-#   - CUDA build: SD_BACKEND_NAMESPACE = sd_cuda
-#   - TPU build:  SD_BACKEND_NAMESPACE = sd_tpu
-#
-# This enables true multi-backend execution where both CPU and CUDA libraries
-# can be loaded simultaneously without symbol conflicts.
-if(NOT DEFINED SD_BACKEND_NAMESPACE OR SD_BACKEND_NAMESPACE STREQUAL "")
-    if(SD_CUDA)
-        set(SD_BACKEND_NAMESPACE "sd_cuda" CACHE STRING "Backend-specific namespace for symbol isolation")
-    elseif(SD_TPU)
-        set(SD_BACKEND_NAMESPACE "sd_tpu" CACHE STRING "Backend-specific namespace for symbol isolation")
-    else()
-        set(SD_BACKEND_NAMESPACE "sd_cpu" CACHE STRING "Backend-specific namespace for symbol isolation")
-    endif()
-    message(STATUS "🔧 Backend namespace: ${SD_BACKEND_NAMESPACE} (auto-detected)")
+#   - CPU build:    SD_BACKEND_NAMESPACE = sd_cpu
+#   - CUDA build:   SD_BACKEND_NAMESPACE = sd_cuda
+#   - TPU build:    SD_BACKEND_NAMESPACE = sd_tpu
+#   - Vulkan build: SD_BACKEND_NAMESPACE = sd_vulkan
+if(SD_CUDA)
+    set(_sd_backend_namespace_default "sd_cuda")
+elseif(SD_TPU)
+    set(_sd_backend_namespace_default "sd_tpu")
+elseif(SD_VULKAN)
+    set(_sd_backend_namespace_default "sd_vulkan")
+else()
+    set(_sd_backend_namespace_default "sd_cpu")
+endif()
+
+# Standard sd_* values are CMake-owned defaults. Refresh them when a build
+# directory is reconfigured for another chip so a stale CPU cache cannot label
+# a Vulkan artifact as sd_cpu. Nonstandard values remain explicit overrides.
+if(NOT DEFINED SD_BACKEND_NAMESPACE OR
+   SD_BACKEND_NAMESPACE STREQUAL "" OR
+   SD_BACKEND_NAMESPACE MATCHES "^sd_(cpu|cuda|tpu|vulkan)$")
+    set(SD_BACKEND_NAMESPACE "${_sd_backend_namespace_default}" CACHE STRING
+        "Backend-specific namespace for symbol isolation" FORCE)
+    message(STATUS "🔧 Backend namespace: ${SD_BACKEND_NAMESPACE} (chip-derived)")
 else()
     message(STATUS "🔧 Backend namespace: ${SD_BACKEND_NAMESPACE} (user-specified)")
 endif()
+unset(_sd_backend_namespace_default)
 
-# Add the namespace as a compile definition
+# Add the namespace and configured marker as compile definitions
 add_definitions(-DSD_BACKEND_NAMESPACE=${SD_BACKEND_NAMESPACE})
+add_definitions(-DSD_BACKEND_NAMESPACE_CONFIGURED=1)
 
-# SD_CUDA, SD_TPU are already propagated as preprocessor defines by cmake.
-# Only define the non-option backends explicitly.
+# Publish exactly one backend identity for source-level capability routing.
 if(SD_TPU)
     add_definitions(-DSD_BACKEND_TYPE_TPU=1)
+elseif(SD_VULKAN)
+    add_definitions(-DSD_BACKEND_TYPE_VULKAN=1)
 elseif(NOT SD_CUDA)
     add_definitions(-DSD_BACKEND_TYPE_CPU=1)
 endif()
@@ -84,7 +123,6 @@ option(HELPERS_mps "Enable Metal Performance Shaders helper (macOS/iOS)" OFF)
 option(HELPERS_pjrt "Enable PJRT/TPU helper" OFF)
 option(HELPERS_miopen "Enable MIOpen helper (AMD GPUs via ZLUDA)" OFF)
 option(HELPERS_accelerate "Enable Apple Accelerate framework helper (macOS/iOS)" OFF)
-option(HELPERS_llamacpp "Enable LlamaCpp helper for LLM operations" OFF)
 option(HELPERS_vlm "Enable VLM (Vision-Language Model) helper" OFF)
 option(HELPERS_cutlass "Enable CUTLASS helper for optimized GEMM operations" OFF)
 option(HELPERS_nccl "Enable NCCL helper for multi-GPU collective communications" OFF)
@@ -93,7 +131,7 @@ option(HELPERS_nnapi "Enable Android NNAPI helper for hardware acceleration (And
 # --- Multi-Backend Helper Configuration ---
 # HELPERS_LIST: Semicolon-separated list of helpers to enable (alternative to individual flags)
 # Example: -DHELPERS_LIST="onednn;cudnn" or from pom.xml: -Dlibnd4j.helpers=onednn,cudnn
-set(HELPERS_LIST "" CACHE STRING "Semicolon-separated list of helpers to enable (onednn;cudnn;armcompute;mlir;mps;pjrt;miopen;accelerate;llamacpp;vlm;nnapi)")
+set(HELPERS_LIST "" CACHE STRING "Semicolon-separated list of helpers to enable (onednn;cudnn;armcompute;mlir;mps;pjrt;miopen;accelerate;vlm;nnapi)")
 
 # Parse HELPERS_LIST and set individual HELPERS_* flags
 if(HELPERS_LIST)
@@ -124,54 +162,94 @@ set_property(CACHE SD_KERNEL_STRATEGY PROPERTY STRINGS fastest first roundrobin 
 # Default priority: platform-specific optimized helpers first, then generic
 set(SD_HELPER_PRIORITY "" CACHE STRING "Helper priority order for kernel dispatch (e.g., 'cudnn;onednn;cpu')")
 
-# Auto-detect and set default helper priority based on platform
-if(NOT SD_HELPER_PRIORITY)
-    if(SD_CUDA)
-        set(SD_HELPER_PRIORITY "cudnn;cpu" CACHE STRING "Default CUDA helper priority" FORCE)
-    elseif(APPLE)
-        set(SD_HELPER_PRIORITY "mps;accelerate;cpu" CACHE STRING "Default macOS helper priority" FORCE)
-    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
-        if(CMAKE_SYSTEM_NAME STREQUAL "Android")
-            set(SD_HELPER_PRIORITY "nnapi;armcompute;mlir;cpu" CACHE STRING "Default Android ARM64 helper priority" FORCE)
-        else()
-            set(SD_HELPER_PRIORITY "armcompute;onednn;cpu" CACHE STRING "Default ARM64 helper priority" FORCE)
-        endif()
+# Derive the default from the artifact backend, not host hardware availability.
+# Refresh CMake-owned defaults when a build directory is reconfigured for a
+# different chip; preserve nonstandard values as explicit user policy.
+if(SD_CUDA)
+    set(_sd_helper_priority_default "cudnn;cpu")
+    set(_sd_helper_priority_description "Default CUDA helper priority")
+elseif(SD_VULKAN)
+    set(_sd_helper_priority_default "vulkan")
+    set(_sd_helper_priority_description "Default Vulkan helper priority")
+elseif(APPLE)
+    set(_sd_helper_priority_default "mps;accelerate;cpu")
+    set(_sd_helper_priority_description "Default macOS helper priority")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+    if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+        set(_sd_helper_priority_default "nnapi;armcompute;mlir;cpu")
+        set(_sd_helper_priority_description "Default Android ARM64 helper priority")
     else()
-        set(SD_HELPER_PRIORITY "onednn;cpu" CACHE STRING "Default x86 helper priority" FORCE)
+        set(_sd_helper_priority_default "armcompute;onednn;cpu")
+        set(_sd_helper_priority_description "Default ARM64 helper priority")
     endif()
+else()
+    set(_sd_helper_priority_default "onednn;cpu")
+    set(_sd_helper_priority_description "Default x86 helper priority")
 endif()
+
+if(NOT DEFINED SD_HELPER_PRIORITY OR
+   SD_HELPER_PRIORITY STREQUAL "" OR
+   "${SD_HELPER_PRIORITY}" STREQUAL "cudnn;cpu" OR
+   "${SD_HELPER_PRIORITY}" STREQUAL "vulkan" OR
+   "${SD_HELPER_PRIORITY}" STREQUAL "mps;accelerate;cpu" OR
+   "${SD_HELPER_PRIORITY}" STREQUAL "nnapi;armcompute;mlir;cpu" OR
+   "${SD_HELPER_PRIORITY}" STREQUAL "armcompute;onednn;cpu" OR
+   "${SD_HELPER_PRIORITY}" STREQUAL "onednn;cpu")
+    set(SD_HELPER_PRIORITY "${_sd_helper_priority_default}" CACHE STRING
+        "${_sd_helper_priority_description}" FORCE)
+endif()
+unset(_sd_helper_priority_default)
+unset(_sd_helper_priority_description)
 
 # --- MLIR Configuration Options ---
 set(MLIR_VERSION "18" CACHE STRING "MLIR/LLVM minimum version (18+)")
 option(MLIR_ENABLE_GPU "Enable MLIR GPU dialect and NVVM backend" OFF)
-option(MLIR_ENABLE_VULKAN "Enable MLIR Vulkan/SPIR-V backend for ARM mobile GPUs" OFF)
+option(MLIR_ENABLE_VULKAN "Enable the vendor-neutral MLIR Vulkan/SPIR-V backend" OFF)
 option(MLIR_ENABLE_AARCH64 "Enable LLVM AArch64 backend for ARM cross-compilation" OFF)
 set(MLIR_AOT_TARGET "HOST" CACHE STRING "AOT compilation target (HOST, AARCH64_LINUX, AARCH64_ANDROID, X86_64_LINUX)")
 set_property(CACHE MLIR_AOT_TARGET PROPERTY STRINGS HOST AARCH64_LINUX AARCH64_ANDROID X86_64_LINUX)
 option(MLIR_JIT_CACHE "Enable caching of JIT-compiled kernels" ON)
 option(MLIR_DEBUG_DUMPS "Enable MLIR IR dump during lowering (debug)" OFF)
 
-# Auto-enable AArch64 and Vulkan when cross-compiling for Android ARM64
+# Configure optional compiler and runtime helpers for Android ARM64.
 if(CMAKE_SYSTEM_NAME STREQUAL "Android" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
-    set(MLIR_ENABLE_AARCH64 ON CACHE BOOL "Auto-enabled for Android ARM64" FORCE)
-    set(MLIR_AOT_TARGET "AARCH64_ANDROID" CACHE STRING "Auto-set for Android ARM64" FORCE)
-    message(STATUS "MLIR: Auto-enabled AArch64 backend for Android cross-compilation")
-
-    # Auto-enable NNAPI on Android (API 27+)
-    if(NOT DEFINED ANDROID_NATIVE_API_LEVEL)
-        set(ANDROID_NATIVE_API_LEVEL 27)
+    if(HELPERS_mlir)
+        set(MLIR_ENABLE_AARCH64 ON CACHE BOOL "Auto-enabled for Android ARM64 compiler builds" FORCE)
+        set(MLIR_AOT_TARGET "AARCH64_ANDROID" CACHE STRING "Auto-set for Android ARM64 compiler builds" FORCE)
+        message(STATUS "MLIR: AArch64 backend enabled for Android cross-compilation")
+    else()
+        message(STATUS "MLIR: compiler helper disabled; Android runtime will load AOT artifacts only")
     endif()
-    if(ANDROID_NATIVE_API_LEVEL GREATER_EQUAL 27)
+
+    # Derive capabilities from the configured Android target API; never
+    # manufacture an API level that differs from the NDK toolchain target.
+    # The official NDK toolchain may expose CMAKE_SYSTEM_VERSION=1, so prefer
+    # its Android-specific variables.
+    if(DEFINED ANDROID_PLATFORM)
+        string(REGEX REPLACE "^android-" "" SD_ANDROID_TARGET_API_LEVEL "${ANDROID_PLATFORM}")
+    elseif(DEFINED ANDROID_NATIVE_API_LEVEL)
+        set(SD_ANDROID_TARGET_API_LEVEL "${ANDROID_NATIVE_API_LEVEL}")
+    else()
+        set(SD_ANDROID_TARGET_API_LEVEL "${CMAKE_SYSTEM_VERSION}")
+    endif()
+
+    if(SD_ANDROID_TARGET_API_LEVEL MATCHES "^[0-9]+$" AND
+       SD_ANDROID_TARGET_API_LEVEL GREATER_EQUAL 27 AND NOT SD_VULKAN)
         set(HELPERS_nnapi ON CACHE BOOL "Auto-enabled for Android API 27+" FORCE)
-        set(HAVE_NNAPI ON CACHE BOOL "NNAPI available on Android" FORCE)
-        message(STATUS "NNAPI: Auto-enabled for Android API level ${ANDROID_NATIVE_API_LEVEL}")
+        message(STATUS "NNAPI: requested for Android target API ${SD_ANDROID_TARGET_API_LEVEL}")
+    elseif(SD_ANDROID_TARGET_API_LEVEL MATCHES "^[0-9]+$" AND
+           SD_ANDROID_TARGET_API_LEVEL GREATER_EQUAL 27 AND SD_VULKAN)
+        message(STATUS "NNAPI: not auto-enabled for the dedicated Vulkan runtime")
+    else()
+        message(STATUS "NNAPI: disabled for Android target API ${SD_ANDROID_TARGET_API_LEVEL}; requires API 27+")
     endif()
 endif()
 
-# Auto-enable AArch64 on native ARM64 hosts
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64" AND NOT CMAKE_CROSSCOMPILING)
-    set(MLIR_ENABLE_AARCH64 ON CACHE BOOL "Auto-enabled for native ARM64" FORCE)
-    message(STATUS "MLIR: Auto-enabled AArch64 backend for native ARM64 host")
+# Configure the compiler backend on native ARM64 only when MLIR is requested.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64" AND
+   NOT CMAKE_CROSSCOMPILING AND HELPERS_mlir)
+    set(MLIR_ENABLE_AARCH64 ON CACHE BOOL "Auto-enabled for native ARM64 compiler builds" FORCE)
+    message(STATUS "MLIR: AArch64 backend enabled for native ARM64 host")
 endif()
 
 # Note: Helper defaults are already set by option() above (lines 34-40)
@@ -188,14 +266,31 @@ set(HAVE_PJRT OFF CACHE BOOL "PJRT/TPU availability" FORCE)
 set(HAVE_MIOPEN OFF CACHE BOOL "MIOpen availability" FORCE)
 set(HAVE_ZLUDA OFF CACHE BOOL "ZLUDA availability" FORCE)
 set(HAVE_ACCELERATE OFF CACHE BOOL "Apple Accelerate availability" FORCE)
-set(HAVE_LLAMACPP OFF CACHE BOOL "LlamaCpp availability" FORCE)
 set(HAVE_VLM OFF CACHE BOOL "VLM availability" FORCE)
 set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
 set(HAVE_MLX OFF CACHE BOOL "MLX availability" FORCE)
 set(HAVE_CUTLASS OFF CACHE BOOL "CUTLASS availability" FORCE)
 set(HAVE_NCCL OFF CACHE BOOL "NCCL availability" FORCE)
-set(HAVE_NNAPI OFF CACHE BOOL "Android NNAPI availability" FORCE)
+if(CMAKE_SYSTEM_NAME STREQUAL "Android" AND HELPERS_nnapi AND
+   SD_ANDROID_TARGET_API_LEVEL MATCHES "^[0-9]+$" AND
+   SD_ANDROID_TARGET_API_LEVEL GREATER_EQUAL 27)
+    set(HAVE_NNAPI ON CACHE BOOL "Android NNAPI availability" FORCE)
+else()
+    set(HAVE_NNAPI OFF CACHE BOOL "Android NNAPI availability" FORCE)
+endif()
 set(HAVE_OPENVINO OFF CACHE BOOL "OpenVINO availability" FORCE)
+set(HAVE_VULKAN OFF CACHE BOOL "Vulkan availability" FORCE)
+
+# --- Vulkan (standalone device backend, distinct from MLIR_ENABLE_VULKAN) ---
+# Vulkan discovery and linkage belong only to an SD_VULKAN artifact. CPU and
+# CUDA builds must not probe, bootstrap, compile, or link the Vulkan backend.
+if(SD_VULKAN)
+    set(_libnd4j_vulkan_default ON)
+else()
+    set(_libnd4j_vulkan_default OFF)
+endif()
+option(LIBND4J_ENABLE_VULKAN "Enable the standalone Vulkan device backend" ${_libnd4j_vulkan_default})
+unset(_libnd4j_vulkan_default)
 
 # --- Triton GPU Compiler Options ---
 set(TRITON_GPU_TARGET "AUTO" CACHE STRING "Triton target: AUTO, NVIDIA, AMD, INTEL")
@@ -234,7 +329,6 @@ function(print_helper_configuration)
     message(STATUS "  MLIR:         REQUESTED=${HELPERS_mlir}, AVAILABLE=${HAVE_MLIR}, VULKAN=${MLIR_ENABLE_VULKAN}, AOT=${MLIR_AOT_TARGET}")
     message(STATUS "  PJRT:         REQUESTED=${HELPERS_pjrt}, AVAILABLE=${HAVE_PJRT}")
     message(STATUS "  MIOpen:       REQUESTED=${HELPERS_miopen}, AVAILABLE=${HAVE_MIOPEN}")
-    message(STATUS "  LlamaCpp:     REQUESTED=${HELPERS_llamacpp}, AVAILABLE=${HAVE_LLAMACPP}")
     message(STATUS "  VLM:          REQUESTED=${HELPERS_vlm}, AVAILABLE=${HAVE_VLM}")
     message(STATUS "  Triton:       AVAILABLE=${HAVE_TRITON}")
     message(STATUS "  CUTLASS:      REQUESTED=${HELPERS_cutlass}, AVAILABLE=${HAVE_CUTLASS}")
@@ -432,6 +526,9 @@ endif()
 # --- Dependency Cache Options ---
 # Persistent cache for ExternalProject_Add dependencies (FlatBuffers, OneDNN, Triton/LLVM, etc.)
 # so that 'mvn clean install' doesn't re-download and rebuild everything.
+option(SD_DEPENDENCY_BOOTSTRAP_ONLY
+       "Configure only the project-managed compiler dependency bootstrap targets" OFF)
+mark_as_advanced(SD_DEPENDENCY_BOOTSTRAP_ONLY)
 option(SD_DEP_CACHE "Enable dependency caching across clean builds" ON)
 set(SD_DEP_CACHE_DIR "" CACHE STRING "Dependency cache directory (default: ~/.libnd4j/dep-cache)")
 option(SD_DEP_CACHE_CLEAR "Clear all cached dependencies at configure time" OFF)

@@ -100,7 +100,8 @@ CONFIGURABLE_OP_IMPL(ams_grad_updater, 4, 4, true, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(ams_grad_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
+DECLARE_TYPES(ams_grad_updater) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
 
 }  // namespace ops
 }  // namespace sd

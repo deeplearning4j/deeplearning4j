@@ -1,0 +1,130 @@
+[
+  {
+    "comment": "PDFBox PDDocument — loaded reflectively in SdxVlm.renderPdfPages() to avoid hard compile-time dep; Class.forName + getMethod + newInstance at runtime.",
+    "name": "org.apache.pdfbox.pdmodel.PDDocument",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "PDFRenderer — instantiated via reflective newInstance from SdxVlm; renderImageWithDPI invoked by getMethod.",
+    "name": "org.apache.pdfbox.rendering.PDFRenderer",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "ImageType enum — RGB constant accessed via getField in SdxVlm.",
+    "name": "org.apache.pdfbox.rendering.ImageType",
+    "allDeclaredFields": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "VisionLanguageModel and its builder — used as the high-level VLM facade; Lombok-generated Builder nested class needs allDeclaredConstructors.",
+    "name": "org.eclipse.deeplearning4j.vlm.model.VisionLanguageModel",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "OnnxModelCache — static factory class invoked from SdxVlm; accessed directly but graal may see it only through interface call sites.",
+    "name": "org.eclipse.deeplearning4j.vlm.model.loading.OnnxModelCache",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "VisionEncoder and its Builder (Lombok-generated) — constructed via builder() in SdxVlm.",
+    "name": "org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "VisionEncoder.Result — returned by encode(); getEmbeddings() called from SdxVlm.",
+    "name": "org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoder$Result",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "ImageTiler — splitImageForVLM / resizeLongestEdge; SplitImageResult is a public nested class with public fields (numRows, numCols, frames, getTotalFrames).",
+    "name": "org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "ImageTiler.SplitImageResult — public nested data class; fields accessed directly from SdxVlm.",
+    "name": "org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler$SplitImageResult",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "VisionEncoderUtils — static methods (preprocessFrames) called from SdxVlm.",
+    "name": "org.eclipse.deeplearning4j.vlm.model.encoder.VisionEncoderUtils",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "VLMImagePreprocessor — fromConfig factory + shutdown; called from SdxVlm.",
+    "name": "org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "ImagePromptBuilder — static helpers resolveImageTokenId + buildImagePromptString.",
+    "name": "org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "EmbeddingMerger — static mergeEmbeddings called from SdxVlm.",
+    "name": "org.eclipse.deeplearning4j.vlm.model.encoder.EmbeddingMerger",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "DocTagsParser — parse + toMarkdown called from SdxVlm for output formatting.",
+    "name": "org.eclipse.deeplearning4j.vlm.output.DocTagsParser",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "DocumentStructure — returned by DocTagsParser.parse(); getElementCount/getHeaders/getTables used for diagnostics.",
+    "name": "org.eclipse.deeplearning4j.vlm.output.DocumentStructure",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "VLMModelDownloader and VLMModel enum — used at runtime when modelPath is a VLMModel key; class loaded by service consumers.",
+    "name": "org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "comment": "MultiPartModelLoader — used via fromDirectory/loadSmolDocling; Kotlin companion-generated static helpers.",
+    "name": "org.eclipse.deeplearning4j.vlm.model.loading.MultiPartModelLoader",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "MultiPartModelLoader.LoadedModel — inner class returned by load/loadSmolDocling, toVisionLanguageModel called on it.",
+    "name": "org.eclipse.deeplearning4j.vlm.model.loading.MultiPartModelLoader$LoadedModel",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "PreprocessorConfig — fromFile/fromJson factories called from SdxVlm; Lombok @Data = generated getters.",
+    "name": "org.eclipse.deeplearning4j.llm.config.PreprocessorConfig",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "comment": "SameDiffOptimizationCache — accessed transitively via OnnxModelCache; system-property check on class load.",
+    "name": "org.eclipse.deeplearning4j.vlm.model.loading.SameDiffOptimizationCache",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  }
+]

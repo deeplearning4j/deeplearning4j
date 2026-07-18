@@ -24,8 +24,11 @@
 #include <ConstMessages.h>
 #include <system/Environment.h>
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 namespace accelerateUtils {
 
 bool isAccelerateSupported(sd::DataType dtype) {
@@ -153,5 +156,6 @@ bool canUseAccelerateBlas(const NDArray& a, const NDArray* b, const NDArray* c) 
 }
 
 }  // namespace accelerateUtils
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

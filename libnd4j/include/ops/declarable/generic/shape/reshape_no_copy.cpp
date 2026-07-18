@@ -317,11 +317,12 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
 }
 
 DECLARE_TYPES(reshape_no_copy) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(sd::DataType::ANY)
       ->setAllowedOutputTypes(sd::DataType::ANY)
       ->setSameMode(true);
-  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT);
 }
 }  // namespace ops
 }  // namespace sd

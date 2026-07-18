@@ -49,6 +49,7 @@ DECLARE_SHAPE_FN(identity_n) {
 }
 
 DECLARE_TYPES(identity_n) {
+  getOpDescriptor()->addTraits((OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING));
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY);
 }
 

@@ -114,7 +114,7 @@ static void tanhMKLDNN(NDArray* x, NDArray* z) {
   stream.wait();
 }
 
-PLATFORM_IMPL(tanh, ENGINE_CPU) {
+PLATFORM_IMPL(tanh, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   const sd::LongType rank = input->rankOf();
@@ -127,7 +127,7 @@ PLATFORM_IMPL(tanh, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(tanh, ENGINE_CPU) {
+PLATFORM_CHECK(tanh, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -204,7 +204,7 @@ static void tanhBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
   stream.wait();
 }
 
-PLATFORM_IMPL(tanh_bp, ENGINE_CPU) {
+PLATFORM_IMPL(tanh_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -223,7 +223,7 @@ PLATFORM_IMPL(tanh_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(tanh_bp, ENGINE_CPU) {
+PLATFORM_CHECK(tanh_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);

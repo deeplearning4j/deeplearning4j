@@ -46,6 +46,7 @@ DECLARE_SYN(MergeMaxIndex, mergemaxindex);
 
 DECLARE_TYPES(mergemaxindex) {
   getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})->setAllowedOutputTypes({ALL_INDICES});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 }
 }  // namespace ops
 DECLARE_SHAPE_FN(mergemaxindex) {

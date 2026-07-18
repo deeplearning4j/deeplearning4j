@@ -72,6 +72,7 @@ DECLARE_SHAPE_FN(segment_max) {
 }
 
 DECLARE_TYPES(segment_max) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INTS})
@@ -93,6 +94,7 @@ DECLARE_SHAPE_FN(segment_max_bp) {
   return SHAPELIST(CONSTANT(in), CONSTANT(inIdx));
 }
 DECLARE_TYPES(segment_max_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, {ALL_FLOATS})

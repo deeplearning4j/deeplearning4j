@@ -36,6 +36,13 @@
 
 #![allow(non_camel_case_types)]
 
+/// LLM / VLM / STT surface — wrapper over `libsdx_llm` (the AOT GraalVM
+/// native-image LLM ABI).  Enable with `features = ["llm"]` in your
+/// `Cargo.toml`.  When the feature is inactive, no link dependency on
+/// `libsdx_llm` is emitted.
+#[cfg(feature = "llm")]
+pub mod llm;
+
 use std::ffi::{CStr, CString};
 use std::fmt;
 use std::os::raw::{c_char, c_int, c_void};
@@ -44,6 +51,14 @@ use std::ptr;
 // ── ABI status code ─────────────────────────────────────────────────────────
 
 pub const SDX_STATUS_OK: i32 = 0;
+
+// ── GPU target codes ─────────────────────────────────────────────────────────
+
+pub const SDX_GPU_TARGET_AUTO: i32 = 0;
+pub const SDX_GPU_TARGET_CUDA: i32 = 1;
+pub const SDX_GPU_TARGET_AMD: i32 = 2;
+pub const SDX_GPU_TARGET_VULKAN: i32 = 3;
+pub const SDX_GPU_TARGET_METAL: i32 = 4;
 
 // ── Opaque C handles ─────────────────────────────────────────────────────────
 
@@ -100,6 +115,22 @@ impl Default for sdx_model_options_t {
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
+pub struct sdx_context_options_t {
+    pub struct_size: u32,
+    pub bind_model_parameters: i32,
+}
+
+impl Default for sdx_context_options_t {
+    fn default() -> Self {
+        Self {
+            struct_size: std::mem::size_of::<Self>() as u32,
+            bind_model_parameters: 0,
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
 pub struct sdx_run_options_t {
     pub struct_size: u32,
     pub backend: i32,
@@ -135,6 +166,14 @@ pub struct sdx_tensor_view_t {
     pub device_id: i32,
 }
 
+/// Rust-owned copy of a dynamic output returned by Context::run_allocating.
+#[derive(Clone, Debug)]
+pub struct OutputTensor {
+    pub data: Vec<u8>,
+    pub shape: Vec<i64>,
+    pub dtype: i32,
+}
+
 /// Snapshot of one execution returned by [`Context::execution_report`].
 ///
 /// Plan phases: `0` = SLOT_BY_SLOT (warmup), `1` = SHAPES_FROZEN,
@@ -142,7 +181,11 @@ pub struct sdx_tensor_view_t {
 ///
 /// Backend codes: `0` = AUTO, `1` = SLOT_BY_SLOT, `2` = CUDA_GRAPHS,
 /// `3` = NVRTC, `4` = PTX, `5` = TRITON, `6` = MLX, `7` = ARM_HYBRID,
-/// `8` = NNAPI.
+/// `8` = NNAPI, `9` = HIP_GRAPHS, `10` = LEVEL_ZERO, `11` = VULKAN,
+/// `12` = METAL, `13` = TPU, `14` = HEXAGON.
+///
+/// GPU target codes: `0` = AUTO, `1` = CUDA, `2` = AMD,
+/// `3` = VULKAN, `4` = METAL.
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 #[must_use]
@@ -196,10 +239,21 @@ macro_rules! declare_sdx_ffi {
             out_model: *mut *mut sdx_model_t,
         ) -> c_int;
         fn sdxUnloadModel(model: *mut sdx_model_t);
+        fn sdxGetTokenizerPath(model: *const sdx_model_t) -> *const c_char;
+        fn sdxGetTextGenerationConfigPath(
+            model: *const sdx_model_t,
+        ) -> *const c_char;
         fn sdxCreateContext(
             model: *mut sdx_model_t,
             requested_output_names: *const *const c_char,
             num_requested_outputs: i32,
+            out_context: *mut *mut sdx_context_t,
+        ) -> c_int;
+        fn sdxCreateContextWithOptions(
+            model: *mut sdx_model_t,
+            requested_output_names: *const *const c_char,
+            num_requested_outputs: i32,
+            options: *const sdx_context_options_t,
             out_context: *mut *mut sdx_context_t,
         ) -> c_int;
         fn sdxDestroyContext(context: *mut sdx_context_t);
@@ -209,6 +263,12 @@ macro_rules! declare_sdx_ffi {
             num_inputs: i32,
             outputs: *const sdx_tensor_view_t,
             num_outputs: i32,
+            options: *const sdx_run_options_t,
+        ) -> c_int;
+        fn sdxRunAllocating(
+            context: *mut sdx_context_t,
+            inputs: *const sdx_tensor_view_t,
+            num_inputs: i32,
             options: *const sdx_run_options_t,
         ) -> c_int;
         fn sdxGetLastError(runtime: *const sdx_runtime_t) -> *const c_char;
@@ -224,6 +284,12 @@ macro_rules! declare_sdx_ffi {
         fn sdxGetNumInputs(context: *const sdx_context_t) -> i32;
         fn sdxGetNumOutputs(context: *const sdx_context_t) -> i32;
         fn sdxGetInputName(context: *const sdx_context_t, input_index: i32) -> *const c_char;
+        fn sdxGetOutputName(context: *const sdx_context_t, output_index: i32) -> *const c_char;
+        fn sdxGetOutputTensor(
+            context: *mut sdx_context_t,
+            output_index: i32,
+            out_tensor: *mut sdx_tensor_view_t,
+        ) -> c_int;
     };
 }
 
@@ -479,6 +545,34 @@ pub struct Model {
 }
 
 impl Model {
+    /// Resolved tokenizer asset path declared by the offline bundle.
+    pub fn tokenizer_path(&self) -> Option<std::path::PathBuf> {
+        unsafe {
+            let value = sdxGetTokenizerPath(self.ptr);
+            if value.is_null() {
+                None
+            } else {
+                Some(std::path::PathBuf::from(
+                    CStr::from_ptr(value).to_string_lossy().into_owned(),
+                ))
+            }
+        }
+    }
+
+    /// Resolved text-generation metadata path declared by the offline bundle.
+    pub fn text_generation_config_path(&self) -> Option<std::path::PathBuf> {
+        unsafe {
+            let value = sdxGetTextGenerationConfigPath(self.ptr);
+            if value.is_null() {
+                None
+            } else {
+                Some(std::path::PathBuf::from(
+                    CStr::from_ptr(value).to_string_lossy().into_owned(),
+                ))
+            }
+        }
+    }
+
     /// Create an inference context requesting the given output names.
     ///
     /// Pass an empty slice to request all outputs in plan order.
@@ -506,6 +600,41 @@ impl Model {
                 self.ptr,
                 if c_ptrs.is_empty() { ptr::null() } else { c_ptrs.as_ptr() },
                 c_ptrs.len() as i32,
+                &mut ctx,
+            )
+        };
+        if status != SDX_STATUS_OK {
+            return Err(Error::ContextCreate {
+                status,
+                detail: last_error_str(self.runtime),
+            });
+        }
+        Ok(Context { runtime: self.runtime, ptr: ctx })
+    }
+
+    /// Create a mobile/offline inference context with bundle-owned constants
+    /// and variables bound internally. Only placeholders remain public inputs.
+    /// The model must outlive the returned context.
+    pub fn inference_context(&self, requested_outputs: &[&str]) -> Result<Context, Error> {
+        let mut c_strings: Vec<CString> = Vec::with_capacity(requested_outputs.len());
+        let mut c_ptrs: Vec<*const c_char> = Vec::with_capacity(requested_outputs.len());
+        for &name in requested_outputs {
+            let cs = to_cstring(name, "output name")?;
+            c_ptrs.push(cs.as_ptr());
+            c_strings.push(cs);
+        }
+
+        let options = sdx_context_options_t {
+            bind_model_parameters: 1,
+            ..Default::default()
+        };
+        let mut ctx: *mut sdx_context_t = ptr::null_mut();
+        let status = unsafe {
+            sdxCreateContextWithOptions(
+                self.ptr,
+                if c_ptrs.is_empty() { ptr::null() } else { c_ptrs.as_ptr() },
+                c_ptrs.len() as i32,
+                &options,
                 &mut ctx,
             )
         };
@@ -592,6 +721,27 @@ impl Context {
         (0..n).map(|i| self.input_name(i).unwrap_or_default()).collect()
     }
 
+    /// Explicit requested output name at the given index, if supplied.
+    pub fn output_name(&self, index: i32) -> Option<String> {
+        unsafe {
+            let value = sdxGetOutputName(self.ptr, index);
+            if value.is_null() {
+                None
+            } else {
+                Some(CStr::from_ptr(value).to_string_lossy().into_owned())
+            }
+        }
+    }
+
+    /// Explicit requested output names in plan order.
+    pub fn output_names(&self) -> Vec<Option<String>> {
+        let count = self.num_outputs();
+        if count < 0 {
+            return Vec::new();
+        }
+        (0..count).map(|index| self.output_name(index)).collect()
+    }
+
     // ── Input classification ──────────────────────────────────────────────────
 
     /// Mark the input at `index` as VARIABLE.
@@ -668,6 +818,89 @@ impl Context {
             return Err(Error::Run { status, detail: last_error_str(self.runtime) });
         }
         Ok(())
+    }
+
+    /// Execute with runtime-owned dynamic outputs and return Rust-owned copies.
+    ///
+    /// The data pointers inside inputs must remain valid for this call.
+    pub fn run_allocating(
+        &self,
+        inputs: &[sdx_tensor_view_t],
+        options: Option<sdx_run_options_t>,
+    ) -> Result<Vec<OutputTensor>, Error> {
+        let opts_ptr = options.as_ref().map_or(ptr::null(), |o| o as *const _);
+        let status = unsafe {
+            sdxRunAllocating(
+                self.ptr,
+                if inputs.is_empty() { ptr::null() } else { inputs.as_ptr() },
+                inputs.len() as i32,
+                opts_ptr,
+            )
+        };
+        if status != SDX_STATUS_OK {
+            return Err(Error::Run {
+                status,
+                detail: last_error_str(self.runtime),
+            });
+        }
+
+        let count = self.num_outputs().max(0);
+        let mut results = Vec::with_capacity(count as usize);
+        for output_index in 0..count {
+            let mut view = sdx_tensor_view_t {
+                data: ptr::null_mut(),
+                shape: ptr::null(),
+                rank: 0,
+                dtype: 0,
+                bytes: 0,
+                device_type: 0,
+                device_id: -1,
+            };
+            check(
+                unsafe {
+                    sdxGetOutputTensor(
+                        self.ptr,
+                        output_index,
+                        &mut view as *mut sdx_tensor_view_t,
+                    )
+                },
+                self.runtime,
+                "sdxGetOutputTensor",
+            )?;
+            if view.rank < 0 || (view.rank > 0 && view.shape.is_null()) ||
+                (view.bytes > 0 && view.data.is_null()) {
+                return Err(Error::Api {
+                    op: "sdxGetOutputTensor",
+                    status: -1,
+                    detail: "runtime returned an invalid borrowed output".into(),
+                });
+            }
+            let shape = if view.rank == 0 {
+                Vec::new()
+            } else {
+                unsafe {
+                    std::slice::from_raw_parts(view.shape, view.rank as usize)
+                        .to_vec()
+                }
+            };
+            let data = if view.bytes == 0 {
+                Vec::new()
+            } else {
+                unsafe {
+                    std::slice::from_raw_parts(
+                        view.data as *const u8,
+                        view.bytes,
+                    )
+                    .to_vec()
+                }
+            };
+            results.push(OutputTensor {
+                data,
+                shape,
+                dtype: view.dtype,
+            });
+        }
+        Ok(results)
     }
 
     // ── Compat alias ──────────────────────────────────────────────────────────

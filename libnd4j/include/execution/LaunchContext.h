@@ -115,6 +115,7 @@ class SD_LIB_EXPORT LaunchContext {
   void* _externalAllocationPointer = nullptr;
 
 #endif  // CUDA
+
   memory::Workspace* _workspace = nullptr;
   int _deviceID = 0;
 
@@ -201,6 +202,7 @@ class SD_LIB_EXPORT LaunchContext {
 #endif  // JCPP
 
 #endif  // CUDA
+
   LaunchContext(Pointer cudaStream, Pointer reductionPointer = nullptr, Pointer scalarPointer = nullptr,
                 Pointer allocationPointer = nullptr);
   LaunchContext();

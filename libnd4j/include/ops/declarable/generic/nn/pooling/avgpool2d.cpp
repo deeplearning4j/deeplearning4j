@@ -87,6 +87,7 @@ DECLARE_SYN(AvgPool, avgpool2d);
 DECLARE_SYN(avgpool, avgpool2d);
 
 DECLARE_TYPES(avgpool2d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -143,6 +144,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
 }
 
 DECLARE_TYPES(avgpool2d_bp) {
+  getOpDescriptor()->addTraits((OP_TRAIT_BACKWARD));
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

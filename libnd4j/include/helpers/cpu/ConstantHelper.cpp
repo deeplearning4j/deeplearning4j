@@ -32,7 +32,8 @@
 #include <cstring>
 #include <mutex>
 #include <system/selective_rendering.h>
-namespace sd {
+
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 
 ConstantHelper::ConstantHelper() {
   int numDevices = getNumberOfDevices();
@@ -136,9 +137,9 @@ void * ConstantHelper::getConstantSpace() {
 
 sd::LongType ConstantHelper::getCachedAmount(int deviceId) {
   int numDevices = getNumberOfDevices();
-  if (deviceId > numDevices || deviceId < 0)
+  if (deviceId >= numDevices || deviceId < 0)
     return 0L;
   else
     return _counters[deviceId];
 }
-}  // namespace sd
+SD_BACKEND_ABI_NAMESPACE_END

@@ -28,6 +28,7 @@
 #include <legacy/NativeOpExecutioner.h>
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyReduceBoolOp::LegacyReduceBoolOp() : LegacyOp(1) {
   //
 }
@@ -167,5 +168,6 @@ ShapeList* LegacyReduceBoolOp::calculateOutputShape(ShapeList* inputShape, Conte
                                               !newFormat, block.workspace());
   return SHAPELIST(info);
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

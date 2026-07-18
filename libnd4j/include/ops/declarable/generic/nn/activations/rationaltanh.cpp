@@ -39,6 +39,7 @@ CONFIGURABLE_OP_IMPL(rationaltanh, 1, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(rationaltanh) {
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION);
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
@@ -53,6 +54,7 @@ CONFIGURABLE_OP_IMPL(rationaltanh_bp, 2, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(rationaltanh_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING | OP_TRAIT_ACTIVATION | OP_TRAIT_BACKWARD);
   getOpDescriptor()
       ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})

@@ -159,6 +159,13 @@ class SD_LIB_EXPORT FlashAttentionHelper {
     int numKvHeads = 0;         // Number of KV heads (0 = same as numHeads)
     int windowSize = 0;         // Sliding window size (0 = no window)
     bool returnSoftmax = false; // Return softmax weights (for debugging)
+
+    // Cache-form attention writes the current invocation's K/V into a persistent
+    // cache for future calls. Direct GQA kernels may read this window from its
+    // producer tensors instead of depending on that same invocation's write-back.
+    NDArray* currentKeyWindow = nullptr;       // [batch, currentSeq, kvHeads, headDim]
+    NDArray* currentValueWindow = nullptr;     // [batch, currentSeq, kvHeads, headDim]
+    const void* currentKvPosition = nullptr;   // Device LongType scalar; capture-stable address
   };
 
   /**
@@ -396,6 +403,17 @@ extern void fusedAttentionCuda(NDArray* query, NDArray* key, NDArray* value,
                                LaunchContext* context,
                                NDArray* attentionBias = nullptr);
 
+// Direct rank-4 BSHD GQA attention that materializes the required logits and
+// softmax scores without permuting or expanding K/V heads.
+extern void fusedGQAAttentionCudaWithScores(
+    NDArray* query, NDArray* key, NDArray* value,
+    NDArray* output, NDArray* attentionLogits, NDArray* attentionScores,
+    double scale, bool isCausal, LaunchContext* context,
+    NDArray* attentionBias = nullptr,
+    NDArray* currentKeyWindow = nullptr,
+    NDArray* currentValueWindow = nullptr,
+    const void* currentKvPosition = nullptr);
+
 // Fused attention that also outputs attention scores and logits
 extern void fusedAttentionCudaWithScores(NDArray* query, NDArray* key, NDArray* value,
                                          NDArray* output, NDArray* attentionLogits,
@@ -409,14 +427,18 @@ extern void applyCausalMaskCuda(NDArray* scores, LaunchContext* context);
 extern void fusedCausalMaskSoftmaxCuda(NDArray* input, NDArray* output, NDArray* logitsOut,
                                         bool isCausal, LaunchContext* context);
 
-// Fused GQA decode attention - single kernel for Q@K^T + softmax + attn@V with GQA head mapping.
-// Takes 4D BSHD inputs directly, no permute/tile needed.
-// Q: [batch, 1, numQHeads, headDim], K/V: [batch, seqKV, numKvHeads, headDim]
-// Output: [batch, 1, numQHeads, headDim]
+// Direct GQA attention - one online-softmax kernel for Q@K^T + softmax + attn@V.
+// Takes 4D BSHD inputs directly, maps qHead -> kvHead, and supports one or more
+// query rows without permuting or materializing repeated K/V heads.
+// Q: [batch, seqQ, numQHeads, headDim], K/V: [batch, seqKV, numKvHeads, headDim]
+// Output: [batch, seqQ, numQHeads, headDim]
 extern void fusedGQADecodeCuda(NDArray* query, NDArray* key, NDArray* value,
-                                NDArray* output, double scale,
+                                NDArray* output, double scale, bool isCausal,
                                 LaunchContext* context,
-                                NDArray* attentionBias = nullptr);
+                                NDArray* attentionBias = nullptr,
+                                NDArray* currentKeyWindow = nullptr,
+                                NDArray* currentValueWindow = nullptr,
+                                const void* currentKvPosition = nullptr);
 
 // V2 quantised variant: INT8 K/V with per-token-per-head float scales.
 // Inline dequant (float(int8)*scale) inside the GQA kernel — no scratch buffers.
@@ -436,13 +458,19 @@ extern void fusedGQADecodeQuantisedCuda(
 #else  // CPU build — provide no-op stubs so impl/*.cpp files need no #ifdef SD_CUDA
 static inline void fusedAttentionCuda(NDArray*, NDArray*, NDArray*, NDArray*,
                                       double, bool, LaunchContext*, NDArray* = nullptr) {}
+static inline void fusedGQAAttentionCudaWithScores(
+    NDArray*, NDArray*, NDArray*, NDArray*, NDArray*, NDArray*,
+    double, bool, LaunchContext*, NDArray* = nullptr,
+    NDArray* = nullptr, NDArray* = nullptr, const void* = nullptr) {}
 static inline void fusedAttentionCudaWithScores(NDArray*, NDArray*, NDArray*, NDArray*,
                                                 NDArray*, NDArray*, double, bool, LaunchContext*) {}
 static inline void applyCausalMaskCuda(NDArray*, LaunchContext*) {}
 static inline void fusedCausalMaskSoftmaxCuda(NDArray*, NDArray*, NDArray*,
                                                bool, LaunchContext*) {}
 static inline void fusedGQADecodeCuda(NDArray*, NDArray*, NDArray*, NDArray*,
-                                       double, LaunchContext*, NDArray* = nullptr) {}
+                                       double, bool, LaunchContext*, NDArray* = nullptr,
+                                       NDArray* = nullptr, NDArray* = nullptr,
+                                       const void* = nullptr) {}
 static inline void fusedGQADecodeQuantisedCuda(NDArray*, NDArray*, NDArray*,
                                                 NDArray*, NDArray*, NDArray*,
                                                 double, LaunchContext*, NDArray* = nullptr) {}

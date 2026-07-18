@@ -37,7 +37,7 @@ OP_IMPL(Assert, 1, 1, false) {
 
   return sd::Status::OK;
 }
-DECLARE_TYPES(Assert) { getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(Assert) { getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setSameMode(true);  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT); }
 }  // namespace ops
 }  // namespace sd
 

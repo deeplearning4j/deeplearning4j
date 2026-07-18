@@ -103,11 +103,11 @@ CUSTOM_OP_IMPL(ggml_qmatmul, 2, 1, false, 0, 4) {
 }
 
 DECLARE_TYPES(ggml_qmatmul) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes(0, {FLOAT32, HALF})    // activations
         ->setAllowedInputTypes(1, {INT8})              // packed weight bytes
-        ->setAllowedOutputTypes({FLOAT32, HALF})
-        ->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
+        ->setAllowedOutputTypes({FLOAT32, HALF});
 }
 
 DECLARE_SHAPE_FN(ggml_qmatmul) {

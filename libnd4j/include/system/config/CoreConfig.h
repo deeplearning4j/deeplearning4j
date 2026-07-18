@@ -66,6 +66,7 @@ class SD_LIB_EXPORT CoreConfig {
   bool _blasFallback{false};
   std::atomic<bool> _enableBlasFall{true};
 
+  std::atomic<bool> _serializeBlasCalls{true};
   std::atomic<bool> _serializeBlasCallsSet{false};
   std::atomic<int> _openBlasThreads{0};
   std::atomic<int> _cpuSoftLimitPercent{0};  // proactive memory soft limit (0=disabled, 1-100)

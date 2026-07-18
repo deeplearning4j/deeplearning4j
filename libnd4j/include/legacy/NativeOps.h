@@ -65,9 +65,6 @@ typedef sd::ConstantShapeBuffer* OpaqueConstantShapeBuffer;
 typedef sd::memory::Workspace* OpaqueWorkspace;
 typedef sd::memory::MultiBackendWorkspace* OpaqueMultiBackendWorkspace;
 
-
-
-
 SD_LIB_EXPORT const char* getAllCustomOps();
 
 /**
@@ -373,6 +370,7 @@ SD_LIB_EXPORT void sort(sd::Pointer *extraPointers, OpaqueNDArray x, bool descen
 SD_LIB_EXPORT void sortTad(sd::Pointer *extraPointers, OpaqueNDArray  x,
                            sd::LongType *dimension, sd::LongType dimensionLength,
                            sd::LongType *tadShapeInfo,  sd::LongType *tadOffsets, bool descending);
+SD_LIB_EXPORT void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y, bool descending);
 SD_LIB_EXPORT void sortByValue(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y, bool descending);
 
 SD_LIB_EXPORT void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray  x,

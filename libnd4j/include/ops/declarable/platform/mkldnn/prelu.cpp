@@ -111,7 +111,7 @@ static bool isPreluCompatible(NDArray* x, NDArray* alpha) {
   return true;
 }
 
-PLATFORM_IMPL(prelu, ENGINE_CPU) {
+PLATFORM_IMPL(prelu, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto alpha = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
@@ -125,7 +125,7 @@ PLATFORM_IMPL(prelu, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(prelu, ENGINE_CPU) {
+PLATFORM_CHECK(prelu, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto alpha = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -193,7 +193,7 @@ static void preluBpMKLDNN(NDArray* x, NDArray* alpha, NDArray* dLdz, NDArray* dL
   stream.wait();
 }
 
-PLATFORM_IMPL(prelu_bp, ENGINE_CPU) {
+PLATFORM_IMPL(prelu_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto alpha = INPUT_VARIABLE(1);
   auto dLdz = INPUT_VARIABLE(2);
@@ -209,7 +209,7 @@ PLATFORM_IMPL(prelu_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(prelu_bp, ENGINE_CPU) {
+PLATFORM_CHECK(prelu_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto alpha = INPUT_VARIABLE(1);
   auto dLdz = INPUT_VARIABLE(2);

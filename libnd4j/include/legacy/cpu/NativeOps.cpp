@@ -468,8 +468,8 @@ sd::Pointer createStream() { return 0L; }
 sd::Pointer createEvent() { return 0L; }
 int getDeviceBlockThreshold(int deviceId) { return 0; }
 int getDeviceMajor(int deviceId) { return 0; }
-int getDeviceSharedThreshold(int deviceId) {return 0; }
 int getDeviceMinor(int deviceId) { return 0; }
+int getDeviceSharedThreshold(int deviceId) {return 0; }
 int getDeviceId(void* deviceId) { return 0; }
 
 int registerEvent(sd::Pointer event, sd::Pointer stream) { return 0L; }

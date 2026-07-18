@@ -87,7 +87,8 @@ DECLARE_SYN(MaxPool2D, maxpool2d);
 DECLARE_SYN(MaxPool, maxpool2d);
 DECLARE_SYN(maxpool, maxpool2d);
 
-DECLARE_TYPES(maxpool2d) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
+DECLARE_TYPES(maxpool2d) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(maxpool2d) {
   // NDArray<T> *x = block.getVariables().at(0)->getNDArray();
@@ -141,6 +142,7 @@ DECLARE_SHAPE_FN(maxpool2d) {
 }
 
 DECLARE_TYPES(maxpool2d_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

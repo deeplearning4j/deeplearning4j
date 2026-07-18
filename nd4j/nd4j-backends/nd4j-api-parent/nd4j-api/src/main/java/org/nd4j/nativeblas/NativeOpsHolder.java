@@ -100,12 +100,36 @@ public class NativeOpsHolder {
                Class<? extends NativeOps> nativeOpsClass = ND4JClassLoading
                        .loadClassByName(name)
                        .asSubclass(NativeOps.class);
-               deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
-               initOps();
+               DeviceType deviceType = deviceTypeFromClassName(name);
+               MultiBackendNativeOpsHolder multiBackendHolder =
+                       MultiBackendNativeOpsHolder.getInstance();
 
-               // Register this NativeOps with MultiBackendNativeOpsHolder so it won't
-               // try to load the same backend again when multi-backend mode is enabled.
-               registerWithMultiBackendHolder(name);
+               // Multi-backend discovery can legitimately run before the legacy holder
+               // is first requested (for example while a backend-scoped runtime is
+               // being assembled). Reuse that exact initialized binding instead of
+               // constructing a second JavaCPP authority for the same native backend.
+               synchronized (multiBackendHolder) {
+                   NativeOps registeredOps =
+                           multiBackendHolder.getLoadedBackendIfPresent(deviceType);
+                   if (registeredOps != null) {
+                       if (!nativeOpsClass.isInstance(registeredOps)) {
+                           throw new IllegalStateException(
+                                   "The registered " + deviceType + " NativeOps binding is "
+                                           + registeredOps.getClass().getName()
+                                           + ", but the active backend requested " + name);
+                       }
+                       deviceNativeOps = registeredOps;
+                       initOps(false);
+                       log.debug("Reusing multi-backend NativeOps binding for {}", deviceType);
+                   } else {
+                       deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
+                       initOps(true);
+
+                       // Register this NativeOps so later multi-backend discovery reuses
+                       // the exact active binding.
+                       registerWithMultiBackendHolder(name);
+                   }
+               }
 
                // Load any native plugin libraries from the plugin directory.
                // This must happen AFTER the main native library is initialized,
@@ -151,15 +175,19 @@ public class NativeOpsHolder {
                     e);
         }
 
-        // Fail-fast: a GPU/accelerator backend committed as the active backend with ZERO usable
-        // devices (e.g. CUDA_VISIBLE_DEVICES=-1, or a backend forced via -Dnative.ops that bypasses
-        // JCublasBackend.canRun()) would otherwise SIGSEGV on the first native op (getShape/exec)
-        // with no Java stack. Turn that into a clear, actionable startup error instead.
+        // Fail fast when an accelerator backend is active without a usable device. Backend
+        // selection must reflect actual runtime capability before the first native operation.
         verifyUsableDeviceOrFail();
     }
 
     public void initOps() {
-        deviceNativeOps.initializeDevicesAndFunctions();
+        initOps(true);
+    }
+
+    private void initOps(boolean initializeDevicesAndFunctions) {
+        if (initializeDevicesAndFunctions) {
+            deviceNativeOps.initializeDevicesAndFunctions();
+        }
 
         // Removed explicit cache initialization - caches use lazy singleton initialization
         // Previous attempts to pre-initialize caused issues with initialization tracking atomics
@@ -298,15 +326,10 @@ public class NativeOpsHolder {
      * @param className the class name of the NativeOps implementation
      */
     private void registerWithMultiBackendHolder(String className) {
-        try {
-            DeviceType deviceType = deviceTypeFromClassName(className);
-            if (deviceType != null && deviceNativeOps != null) {
-                MultiBackendNativeOpsHolder.getInstance().registerPreloadedBackend(deviceType, deviceNativeOps);
-                log.debug("Registered primary backend {} with MultiBackendNativeOpsHolder", deviceType);
-            }
-        } catch (Exception e) {
-            // Non-fatal - multi-backend mode may still work by loading backends fresh
-            log.debug("Could not register with MultiBackendNativeOpsHolder: {}", e.getMessage());
+        DeviceType deviceType = deviceTypeFromClassName(className);
+        if (deviceType != null && deviceNativeOps != null) {
+            MultiBackendNativeOpsHolder.getInstance().registerPreloadedBackend(deviceType, deviceNativeOps);
+            log.debug("Registered primary backend {} with MultiBackendNativeOpsHolder", deviceType);
         }
     }
 
@@ -324,6 +347,8 @@ public class NativeOpsHolder {
             return DeviceType.CPU;
         } else if (className.contains("Nd4jCuda") || className.contains("cuda") || className.contains("jcublas")) {
             return DeviceType.CUDA_GPU;
+        } else if (className.contains("Nd4jVulkan") || className.contains("vulkan")) {
+            return DeviceType.VULKAN_GPU;
         } else if (className.contains("Nd4jZluda") || className.contains("zluda")) {
             return DeviceType.ROCM_GPU;
         } else if (className.contains("Nd4jTpu") || className.contains("tpu")) {
@@ -335,10 +360,9 @@ public class NativeOpsHolder {
     }
 
     /**
-     * Verify that a GPU/accelerator backend committed as the active backend actually exposes at
-     * least one usable device. If it does not (e.g. CUDA_VISIBLE_DEVICES=-1), throw an
-     * {@link IllegalStateException} with an actionable message — turning an otherwise
-     * unrecoverable native SIGSEGV (on the first getShape/exec call) into a clear startup error.
+     * Verify that an accelerator backend committed as the active backend exposes at least one
+     * usable device. If it does not, throw an {@link IllegalStateException} before native
+     * operations execute against an invalid runtime.
      *
      * <p>This sits at the single point where the selected NativeOps is instantiated, so it covers
      * every selection path (ServiceLoader load, {@code -Dnative.ops} override, forced backend).
@@ -370,10 +394,8 @@ public class NativeOpsHolder {
         if (devices <= 0) {
             throw new IllegalStateException(
                     "The " + deviceType + " backend (" + ops.getClass().getName() + ") was selected as the "
-                    + "active ND4J backend, but no usable device was found (getAvailableDevices()=" + devices
-                    + "). For CUDA this usually means CUDA_VISIBLE_DEVICES=-1, or no device was visible when "
-                    + "the JVM started. Make the device visible before launching the JVM, or remove this "
-                    + "backend from the classpath so ND4J runs on the CPU backend.");
+                    + "active ND4J backend, but its runtime reported no usable device "
+                    + "(getAvailableDevices()=" + devices + ").");
         }
     }
 }

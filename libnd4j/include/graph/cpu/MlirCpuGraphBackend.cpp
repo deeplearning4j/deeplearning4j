@@ -23,6 +23,9 @@
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
+#include "mlir/IR/OwningOpRef.h"
+#include "mlir/IR/BuiltinOps.h"
+
 #include <algorithm>
 #include <cctype>
 #include <mutex>

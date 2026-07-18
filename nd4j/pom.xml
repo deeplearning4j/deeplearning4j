@@ -76,6 +76,15 @@
                 <module>nd4j-common-tests</module>
             </modules>
         </profile>
+        <!-- GraalVM AOT export of the Java LLM stack for the SDX SDK (ADR 0109).
+             Jar-only by default; add -Pnative on a GraalVM JDK to build the
+             sdx-llm executable and libsdx_llm shared library. -->
+        <profile>
+            <id>sdx-aot</id>
+            <modules>
+                <module>sdx-aot</module>
+            </modules>
+        </profile>
     </profiles>
 
     <dependencyManagement>

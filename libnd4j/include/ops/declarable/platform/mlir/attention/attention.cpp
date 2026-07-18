@@ -59,11 +59,11 @@ PLATFORM_IMPL(dot_product_attention, ENGINE_CPU) {
 
     auto status = executeMlirEx("dot_product_attention", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR dot_product_attention failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(dot_product_attention, ENGINE_CPU) {
@@ -74,7 +74,7 @@ PLATFORM_CHECK(dot_product_attention, ENGINE_CPU) {
     Requirements req("MLIR DOT_PRODUCT_ATTENTION");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(queries->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(queries->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(queries->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -107,11 +107,11 @@ PLATFORM_IMPL(dot_product_attention_bp, ENGINE_CPU) {
 
     auto status = executeMlir("dot_product_attention_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR dot_product_attention_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(dot_product_attention_bp, ENGINE_CPU) {
@@ -165,11 +165,11 @@ PLATFORM_IMPL(multi_head_attention, ENGINE_CPU) {
 
     auto status = executeMlirEx("multi_head_attention", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR multi_head_attention failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(multi_head_attention, ENGINE_CPU) {
@@ -179,7 +179,7 @@ PLATFORM_CHECK(multi_head_attention, ENGINE_CPU) {
     Requirements req("MLIR MULTI_HEAD_ATTENTION");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(queries->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(queries->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(queries->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -219,11 +219,11 @@ PLATFORM_IMPL(multi_head_attention_bp, ENGINE_CPU) {
 
     auto status = executeMlir("multi_head_attention_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR multi_head_attention_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(multi_head_attention_bp, ENGINE_CPU) {
@@ -263,11 +263,11 @@ PLATFORM_IMPL(self_attention, ENGINE_CPU) {
 
     auto status = executeMlirEx("self_attention", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR self_attention failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(self_attention, ENGINE_CPU) {
@@ -276,7 +276,7 @@ PLATFORM_CHECK(self_attention, ENGINE_CPU) {
     Requirements req("MLIR SELF_ATTENTION");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;

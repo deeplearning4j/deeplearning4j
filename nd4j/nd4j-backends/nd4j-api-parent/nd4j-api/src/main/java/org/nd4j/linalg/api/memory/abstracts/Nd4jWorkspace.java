@@ -153,12 +153,26 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     }
 
     public Nd4jWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId) {
+        this(configuration, workspaceId, Nd4j.getMemoryManager(),
+                Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                Nd4j.getWorkspaceManager().getUUID());
+    }
+
+    /**
+     * Constructor for backend-owned workspaces whose services must not be
+     * inferred from ND4J's process-primary backend.
+     */
+    protected Nd4jWorkspace(@NonNull WorkspaceConfiguration configuration,
+                            @NonNull String workspaceId,
+                            @NonNull MemoryManager memoryManager,
+                            int deviceId,
+                            @NonNull String workspaceManagerId) {
         this.workspaceConfiguration = configuration;
         this.id = workspaceId;
         this.threadId = Thread.currentThread().getId();
-        this.guid = Nd4j.getWorkspaceManager().getUUID();
-        this.memoryManager = Nd4j.getMemoryManager();
-        this.deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        this.guid = workspaceManagerId;
+        this.memoryManager = memoryManager;
+        this.deviceId = deviceId;
         AllocationsTracker.getInstance().registerWorkspace(this.id);
         // and actual workspace allocation
         currentSize.set(workspaceConfiguration.getInitialSize());
@@ -398,6 +412,16 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         return cpu != null ? cpu : DeviceDescriptor.cpu();
     }
 
+    /**
+     * Records host-plane workspace memory in backends that model host memory as
+     * a CPU device domain. Device backends with a distinct staging plane may
+     * override this hook and account that memory through their own host-memory
+     * subsystem instead of inventing a CPU execution device.
+     */
+    protected void recordHostAllocation(long bytes) {
+        DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), bytes);
+    }
+
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
 
         /*
@@ -421,7 +445,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                     numElements);
 
-            DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
+            recordHostAllocation(requiredMemory);
             externalAllocations.add(new PointersPair(null, requiredMemory, pointer, null));
             AllocationsTracker.getInstance().getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
             return pointer;
@@ -488,7 +512,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                                 numElements);
 
-                        DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
+                        recordHostAllocation(requiredMemory);
                         externalAllocations.add(new PointersPair(null, requiredMemory, pointer, null));
 
                         return pointer;
@@ -500,7 +524,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                                 numElements);
 
-                        DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
+                        recordHostAllocation(requiredMemory);
                         pinnedAllocations.add(new PointersPair(stepsCount.get(), requiredMemory, pointer, null));
 
 

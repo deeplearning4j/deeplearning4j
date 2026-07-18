@@ -301,7 +301,8 @@ std::shared_ptr<TadPack> DirectTadTrie::insert(std::vector<LongType>& dimensions
           calculator->releaseOffsets(),  // Transfer ownership
           calculator->numberOfTads(),
           dimensions.data(),
-          dimensions.size());
+          dimensions.size(),
+          calculator->tadShapeOwnership());
 
       // Store the TadPack in the node
       // setPack now also caches the signature for future fast comparisons

@@ -78,6 +78,16 @@ endfunction()
 # ============================================================================
 
 function(setup_mkl_vml)
+    if(SD_VULKAN)
+        # Vulkan kernels use Vulkan/MLIR accumulation and math implementations;
+        # host MKL VML is neither a device abstraction nor a fallback.
+        set(HAVE_MKL_VML FALSE PARENT_SCOPE)
+        set(HAVE_MKL FALSE PARENT_SCOPE)
+        set(MKL_VML_LIBRARIES "" PARENT_SCOPE)
+        set(MKL_RUNTIME_LIBRARIES "" PARENT_SCOPE)
+        return()
+    endif()
+
     if(NOT HELPERS_onednn)
         message(STATUS "MKL VML: Skipped (requires onednn helper)")
         set(HAVE_MKL_VML FALSE PARENT_SCOPE)
@@ -230,6 +240,49 @@ function(setup_mkl_vml)
             return()
         endif()
 
+        # libmkl_rt is the link-time dispatcher, but it opens the core,
+        # interface, threading, and ISA-specific oneMKL DSOs by loader name at
+        # runtime. Keep the link set minimal while exporting the complete
+        # downloaded redist set for backend classifier staging.
+        set(MKL_RUNTIME_LIBRARIES "")
+        foreach(_mkl_runtime_directory IN ITEMS "${MKL_ROOT}" "${MKL_ROOT}/lib")
+            if(NOT IS_DIRECTORY "${_mkl_runtime_directory}")
+                continue()
+            endif()
+            if(WIN32)
+                file(GLOB _mkl_runtime_candidates
+                    "${_mkl_runtime_directory}/*mkl*.dll"
+                    "${_mkl_runtime_directory}/*iomp*.dll")
+            elseif(APPLE)
+                file(GLOB _mkl_runtime_candidates
+                    "${_mkl_runtime_directory}/libmkl*.dylib"
+                    "${_mkl_runtime_directory}/libiomp*.dylib")
+            else()
+                file(GLOB _mkl_runtime_candidates
+                    "${_mkl_runtime_directory}/libmkl*.so*"
+                    "${_mkl_runtime_directory}/libiomp*.so*")
+            endif()
+            list(APPEND MKL_RUNTIME_LIBRARIES ${_mkl_runtime_candidates})
+        endforeach()
+        list(APPEND MKL_RUNTIME_LIBRARIES ${MKL_LIBRARIES})
+        list(REMOVE_DUPLICATES MKL_RUNTIME_LIBRARIES)
+
+        set(_mkl_has_dispatcher FALSE)
+        set(_mkl_has_core FALSE)
+        foreach(_mkl_runtime_library IN LISTS MKL_RUNTIME_LIBRARIES)
+            get_filename_component(_mkl_runtime_name
+                "${_mkl_runtime_library}" NAME)
+            if(_mkl_runtime_name MATCHES "mkl_rt")
+                set(_mkl_has_dispatcher TRUE)
+            elseif(_mkl_runtime_name MATCHES "mkl_core")
+                set(_mkl_has_core TRUE)
+            endif()
+        endforeach()
+        if(_mkl_has_dispatcher AND NOT _mkl_has_core)
+            message(FATAL_ERROR
+                "The oneMKL redist is incomplete: libmkl_rt requires libmkl_core at runtime")
+        endif()
+
         # =========================================================================
         # STEP 4: Set up includes and linking (like OpenBLAS)
         # =========================================================================
@@ -255,6 +308,7 @@ function(setup_mkl_vml)
         set(HAVE_MKL TRUE PARENT_SCOPE)
         set(MKL_VML_INCLUDE_DIR "${MKL_ROOT}/include" PARENT_SCOPE)
         set(MKL_VML_LIBRARIES ${MKL_LIBRARIES} PARENT_SCOPE)
+        set(MKL_RUNTIME_LIBRARIES ${MKL_RUNTIME_LIBRARIES} PARENT_SCOPE)
         set(MKL_PATH "${MKL_ROOT}" PARENT_SCOPE)
 
         message(STATUS "   ✓ MKL VML enabled for vectorized math (vsErf, vdErf, etc.)")
@@ -310,37 +364,6 @@ function(setup_accelerate)
     else()
         message(WARNING "Accelerate framework not found")
         set(HAVE_ACCELERATE FALSE PARENT_SCOPE)
-    endif()
-endfunction()
-
-# ============================================================================
-# LLAMACPP HELPER SETUP (LLM Operations)
-# ============================================================================
-
-function(setup_llamacpp)
-    if(NOT HELPERS_llamacpp)
-        message(STATUS "LlamaCpp helper is disabled (HELPERS_llamacpp=${HELPERS_llamacpp})")
-        set(HAVE_LLAMACPP FALSE PARENT_SCOPE)
-        return()
-    endif()
-
-    # LlamaCpp is a source-only helper, no external library needed
-    # Just check that the source files exist
-    file(GLOB LLAMACPP_CHECK_FILES ${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/llamacpp/*.cpp)
-    if(LLAMACPP_CHECK_FILES)
-        message(STATUS "LlamaCpp helper sources found")
-        set(HAVE_LLAMACPP TRUE PARENT_SCOPE)
-
-        # Register the helper
-        sd_register_helper("llamacpp")
-
-        # Add compile definitions
-        add_compile_definitions(HAVE_LLAMACPP=1)
-
-        message(STATUS "LlamaCpp helper setup complete")
-    else()
-        message(WARNING "LlamaCpp helper sources not found")
-        set(HAVE_LLAMACPP FALSE PARENT_SCOPE)
     endif()
 endfunction()
 
@@ -480,14 +503,6 @@ function(sd_initialize_helpers)
             endif()
         else()
             message(WARNING "MIOpen requested but ZLUDA AMD is not configured")
-        endif()
-    endif()
-
-    # LlamaCpp (LLM operations)
-    if(HELPERS_llamacpp)
-        setup_llamacpp()
-        if(HAVE_LLAMACPP)
-            list(APPEND enabled_helpers "llamacpp")
         endif()
     endif()
 
@@ -667,17 +682,6 @@ function(sd_print_helper_summary)
         message(STATUS "║ MIOpen            │    NO     │    -      │ Disabled            ║")
     endif()
 
-    # LlamaCpp
-    if(HELPERS_llamacpp)
-        if(HAVE_LLAMACPP)
-            message(STATUS "║ LlamaCpp          │    YES    │    YES    │ Active              ║")
-        else()
-            message(STATUS "║ LlamaCpp          │    YES    │    NO     │ Not Found           ║")
-        endif()
-    else()
-        message(STATUS "║ LlamaCpp          │    NO     │    -      │ Disabled            ║")
-    endif()
-
     # VLM
     if(HELPERS_vlm)
         if(HAVE_VLM)
@@ -769,14 +773,6 @@ function(sd_collect_helper_sources out_source_list)
             ${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/miopen/*.cpp
         )
         list(APPEND helper_sources ${MIOPEN_SOURCES})
-    endif()
-
-    # LlamaCpp sources
-    if(HAVE_LLAMACPP)
-        file(GLOB_RECURSE LLAMACPP_SOURCES
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/llamacpp/*.cpp
-        )
-        list(APPEND helper_sources ${LLAMACPP_SOURCES})
     endif()
 
     # VLM sources

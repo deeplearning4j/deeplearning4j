@@ -44,7 +44,6 @@
         <javacpp.platform.compiler.output></javacpp.platform.compiler.output>
         <platform.linker.flag.no.undefined>-Wl,--no-undefined</platform.linker.flag.no.undefined>
         <platform.linker.flag.rdynamic>-rdynamic</platform.linker.flag.rdynamic>
-        <platform.linker.flag.bsymbolic>-Bsymbolic</platform.linker.flag.bsymbolic>
         <platform.compiler.flag.optimize.none>-O0</platform.compiler.flag.optimize.none>
         <platform.compiler.flag.no.omit.fp>-fno-omit-frame-pointer</platform.compiler.flag.no.omit.fp>
         <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls>
@@ -267,7 +266,6 @@
             <properties>
                 <platform.linker.flag.no.undefined>-Wl,--no-undefined</platform.linker.flag.no.undefined>
                 <platform.linker.flag.rdynamic>-rdynamic</platform.linker.flag.rdynamic>
-                <platform.linker.flag.bsymbolic>-Bsymbolic</platform.linker.flag.bsymbolic>
                 <platform.compiler.flag.optimize.none>-O0</platform.compiler.flag.optimize.none>
                 <platform.compiler.flag.no.omit.fp>-fno-omit-frame-pointer</platform.compiler.flag.no.omit.fp>
                 <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls>
@@ -284,7 +282,7 @@
                 </os>
             </activation>
             <properties>
-                <platform.linker.flag.no.undefined>-Wl,-undefined,error</platform.linker.flag.no.undefined> <platform.linker.flag.rdynamic></platform.linker.flag.rdynamic> <platform.linker.flag.bsymbolic></platform.linker.flag.bsymbolic> <platform.compiler.flag.optimize.none>-O0</platform.compiler.flag.optimize.none>
+                <platform.linker.flag.no.undefined>-Wl,-undefined,error</platform.linker.flag.no.undefined> <platform.linker.flag.rdynamic></platform.linker.flag.rdynamic> <platform.compiler.flag.optimize.none>-O0</platform.compiler.flag.optimize.none>
                 <platform.compiler.flag.no.omit.fp>-fno-omit-frame-pointer</platform.compiler.flag.no.omit.fp>
                 <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls>
                 <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
@@ -299,9 +297,34 @@
                 </os>
             </activation>
             <properties>
-                <platform.linker.flag.no.undefined>-Wl,--no-undefined</platform.linker.flag.no.undefined> <platform.linker.flag.rdynamic></platform.linker.flag.rdynamic> <platform.linker.flag.bsymbolic></platform.linker.flag.bsymbolic> <platform.compiler.flag.optimize.none>-O0</platform.compiler.flag.optimize.none> <platform.compiler.flag.no.omit.fp>-fno-omit-frame-pointer</platform.compiler.flag.no.omit.fp> <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls> <platform.compiler.flag.debug>-g</platform.compiler.flag.debug> <platform.functrace.libs></platform.functrace.libs> <platform.compiler.flag.windows.define>-D_WIN32</platform.compiler.flag.windows.define>
+                <platform.linker.flag.no.undefined>-Wl,--no-undefined</platform.linker.flag.no.undefined> <platform.linker.flag.rdynamic></platform.linker.flag.rdynamic> <platform.compiler.flag.optimize.none>-O0</platform.compiler.flag.optimize.none> <platform.compiler.flag.no.omit.fp>-fno-omit-frame-pointer</platform.compiler.flag.no.omit.fp> <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls> <platform.compiler.flag.debug>-g</platform.compiler.flag.debug> <platform.functrace.libs></platform.functrace.libs> <platform.compiler.flag.windows.define>-D_WIN32</platform.compiler.flag.windows.define>
             </properties>
         </profile>
+        <profile>
+            <id>linux-dynamic-shared-libraries</id>
+            <activation>
+                <os>
+                    <name>Linux</name>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <propertyKeysAndValues combine.children="append">
+                                <property>
+                                    <name>platform.compiler.output</name>
+                                    <value>-Wl,-rpath,$ORIGIN/ -Wl,-z,noexecstack -Wall -fPIC -pthread -shared -o </value>
+                                </property>
+                            </propertyKeysAndValues>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>non-functrace</id>
             <activation>
@@ -577,7 +600,6 @@
                                 <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption>
                                 <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
                                 <compilerOption>${platform.linker.flag.rdynamic}</compilerOption>
-                                <compilerOption>${platform.linker.flag.bsymbolic}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.optimize.none}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.no.omit.fp}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.no.optimize.sibling.calls}</compilerOption>
@@ -684,7 +706,7 @@
                                 </property>
                                 <property>
                                     <name>platform.compiler.output</name>
-                                    <value>-Wl,-rpath,$ORIGIN/ -Wl,-z,noexecstack -Wl,-Bsymbolic -Wall -fPIC -pthread ${platform.sanitizer.flag} -shared -o </value>
+                                    <value>-Wl,-rpath,$ORIGIN/ -Wl,-z,noexecstack -Wall -fPIC -pthread ${platform.sanitizer.flag} -shared -o </value>
                                 </property>
                                 <property>
                                     <name>libnd4j.sanitizers</name>

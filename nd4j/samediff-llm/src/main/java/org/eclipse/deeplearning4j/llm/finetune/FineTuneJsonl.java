@@ -5,6 +5,7 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,5 +52,15 @@ public final class FineTuneJsonl {
             writer.newLine();
         }
         writer.flush();
+    }
+
+    /** Appends and flushes one record so long-running generation jobs are restartable. */
+    public static void append(File file, Object record) throws IOException {
+        if (file.toPath().getParent() != null) Files.createDirectories(file.toPath().getParent());
+        try (BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
+            writer.write(MAPPER.writeValueAsString(record));
+            writer.newLine();
+        }
     }
 }

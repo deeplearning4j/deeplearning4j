@@ -42,6 +42,7 @@ DECLARE_SHAPE_FN(split_string) {
 }
 
 DECLARE_TYPES(split_string) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()->setAllowedInputTypes({ALL_STRINGS})->setAllowedOutputTypes({ALL_STRINGS});
 }
 }  // namespace ops

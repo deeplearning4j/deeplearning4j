@@ -23,14 +23,14 @@
 
 #include <array/TadPack.h>
 #include <system/common.h>
-#include <helpers/ConstantHelper.h>
+#include <system/BackendNamespace.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <array/ConstantShapeBuffer.h>
 #include <array/ConstantOffsetsBuffer.h>
 #include <vector>
 #include <memory>
 
-namespace sd {
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 
 /**
 * TadCalculator handles the computation of Tensor Along Dimension (TAD) information
@@ -42,6 +42,7 @@ class SD_LIB_EXPORT TadCalculator {
   ConstantShapeBuffer *_tadShape;        // Calculated TAD shape buffer
   ConstantOffsetsBuffer *_tadOffsets;    // Calculated TAD offsets buffer
   LongType _numTads;                    // Number of TADs
+  TadShapeOwnership _tadShapeOwnership = TadShapeOwnership::CachedReference;
 
  public:
   /**
@@ -86,8 +87,11 @@ class SD_LIB_EXPORT TadCalculator {
     * @return Number of TADs
    */
   LongType numberOfTads() const { return _numTads; }
+
+  TadShapeOwnership tadShapeOwnership() const { return _tadShapeOwnership; }
 };
 
-} // namespace sd
+SD_BACKEND_ABI_NAMESPACE_END
+SD_BACKEND_ABI_ALIAS(TadCalculator)
 
 #endif // DEV_TESTS_TADCALCULATOR_H

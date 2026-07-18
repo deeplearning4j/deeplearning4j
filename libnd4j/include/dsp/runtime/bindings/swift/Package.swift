@@ -8,9 +8,13 @@ let package = Package(
         .iOS(.v15)
     ],
     products: [
-        .library(name: "SdxRuntime", targets: ["SdxRuntime"])
+        // DSP general inference runtime (dsp_runtime_c.h)
+        .library(name: "SdxRuntime", targets: ["SdxRuntime"]),
+        // LLM/VLM/STT AOT runtime (sdx_llm_c.h)
+        .library(name: "SdxLlm",     targets: ["SdxLlm"]),
     ],
     targets: [
+        // ── DSP general runtime ──────────────────────────────────────────────
         .systemLibrary(
             name: "CSdxRuntime",
             path: "Sources/CSdxRuntime"
@@ -19,6 +23,19 @@ let package = Package(
             name: "SdxRuntime",
             dependencies: ["CSdxRuntime"],
             path: "Sources/SdxRuntime"
-        )
+        ),
+
+        // ── LLM / VLM / STT AOT runtime (libsdx_llm.so) ─────────────────────
+        // Requires -Xcc -I<sdk>/include and -Xlinker -L<sdk>/lib at build time.
+        // See Sources/CSdxLlm/shim.h for header resolution details.
+        .systemLibrary(
+            name: "CSdxLlm",
+            path: "Sources/CSdxLlm"
+        ),
+        .target(
+            name: "SdxLlm",
+            dependencies: ["CSdxLlm"],
+            path: "Sources/SdxLlm"
+        ),
     ]
 )

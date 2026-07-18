@@ -104,6 +104,36 @@ inline std::vector<int> readHostIntVector(NDArray* arr) {
   return out;
 }
 
+inline bool isTritonStridedSliceOp(const NativeSlot& slot) {
+  return normalizeOpToken(slot.ident.opName) == "stridedslice";
+}
+
+inline bool isTritonStaticStridedSliceSupported(const NativeSlot& slot) {
+  constexpr int kMaskArgCount = 5;
+  if (!isTritonStridedSliceOp(slot) || slot.wiring.numInputs != 1 ||
+      slot.args.iArgs == nullptr || slot.args.numIArgs <= kMaskArgCount) {
+    return false;
+  }
+
+  const int payloadCount = slot.args.numIArgs - kMaskArgCount;
+  if (payloadCount <= 0 || payloadCount % 3 != 0) return false;
+
+  // The current emitter preserves rank, so axis-creating/removing forms remain
+  // native ordered ranges. Negative/zero strides need the reverse-slice emitter,
+  // which is likewise outside this section's supported contract.
+  const LongType ellipsisMask = slot.args.iArgs[1];
+  const LongType newAxisMask = slot.args.iArgs[3];
+  const LongType shrinkAxisMask = slot.args.iArgs[4];
+  if (ellipsisMask != 0 || newAxisMask != 0 || shrinkAxisMask != 0) return false;
+
+  const int specRank = payloadCount / 3;
+  const int strideOffset = kMaskArgCount + 2 * specRank;
+  for (int d = 0; d < specRank; d++) {
+    if (slot.args.iArgs[strideOffset + d] <= 0) return false;
+  }
+  return true;
+}
+
 template <typename ResolveArrayFn>
 inline void resolveStridedSliceParams(const NativeSlot& slot,
                                       const std::vector<LongType>& inputShape,
@@ -111,7 +141,7 @@ inline void resolveStridedSliceParams(const NativeSlot& slot,
                                       std::vector<int>& begins,
                                       std::vector<int>& ends,
                                       std::vector<int>& strides) {
-  int rank = static_cast<int>(inputShape.size());
+  const int rank = static_cast<int>(inputShape.size());
   begins.assign(rank, 0);
   ends.resize(rank);
   strides.assign(rank, 1);
@@ -120,14 +150,45 @@ inline void resolveStridedSliceParams(const NativeSlot& slot,
   }
   if (rank <= 0) return;
 
-  // iArgs fallback: [begin... end... stride...] or [begin... end...]
-  if (slot.args.numIArgs > 0 && slot.args.iArgs != nullptr) {
+  // SameDiff/native static strided_slice iArgs are:
+  // [beginMask, ellipsisMask, endMask, newAxisMask, shrinkAxisMask,
+  //  begin..., end..., stride...].
+  if (isTritonStaticStridedSliceSupported(slot)) {
+    constexpr int kMaskArgCount = 5;
+    const LongType beginMask = slot.args.iArgs[0];
+    const LongType endMask = slot.args.iArgs[2];
+    const int specRank = (slot.args.numIArgs - kMaskArgCount) / 3;
+    const int count = std::min(rank, specRank);
+    const int beginOffset = kMaskArgCount;
+    const int endOffset = beginOffset + specRank;
+    const int strideOffset = endOffset + specRank;
+
+    for (int d = 0; d < count; d++) {
+      const LongType dim = inputShape[d];
+      const LongType rawBegin = slot.args.iArgs[beginOffset + d];
+      const LongType rawEnd = slot.args.iArgs[endOffset + d];
+      const LongType rawStride = slot.args.iArgs[strideOffset + d];
+
+      const bool beginMasked = (beginMask & (static_cast<LongType>(1) << d)) != 0;
+      const bool endMasked = (endMask & (static_cast<LongType>(1) << d)) != 0;
+      LongType canonicalBegin = beginMasked ? 0 : (rawBegin < 0 ? dim + rawBegin : rawBegin);
+      LongType canonicalEnd = endMasked ? dim : (rawEnd < 0 ? dim + rawEnd : rawEnd);
+      canonicalBegin = std::max<LongType>(0, std::min<LongType>(dim, canonicalBegin));
+      canonicalEnd = std::max<LongType>(0, std::min<LongType>(dim, canonicalEnd));
+
+      begins[d] = static_cast<int>(canonicalBegin);
+      ends[d] = static_cast<int>(canonicalEnd);
+      strides[d] = static_cast<int>(rawStride);
+    }
+  } else if (!isTritonStridedSliceOp(slot) &&
+             slot.args.numIArgs > 0 && slot.args.iArgs != nullptr) {
+    // Preserve the historical compact layout used by other OP_TRAIT_SLICE ops.
     if (slot.args.numIArgs >= rank * 3) {
       for (int d = 0; d < rank; d++) {
         begins[d] = static_cast<int>(slot.args.iArgs[d]);
         ends[d] = static_cast<int>(slot.args.iArgs[d + rank]);
-        int s = static_cast<int>(slot.args.iArgs[d + (2 * rank)]);
-        strides[d] = (s == 0 ? 1 : s);
+        const int stride = static_cast<int>(slot.args.iArgs[d + 2 * rank]);
+        strides[d] = stride == 0 ? 1 : stride;
       }
     } else if (slot.args.numIArgs >= rank * 2) {
       for (int d = 0; d < rank; d++) {
@@ -270,18 +331,25 @@ inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int num
     choice.blockN = preferredN;
   }
 
-  // Check shared memory and scale down if needed
+  // Check shared memory and scale down if needed. Search blockM and blockN
+  // jointly, preferring the widest key tile and then the widest query tile.
+  // Reducing only blockN with the original blockM can miss a valid wider-key
+  // configuration (for example M=16,N=32 at headDim=256) and needlessly split
+  // a short causal prefix across online-softmax tiles.
   int chosenBytes = estimateFusedAttentionSharedMemBytes(headDim, choice.blockM, choice.blockN);
   if (chosenBytes > limit) {
-    // Scale down blockN first (blockM is already minimal for decode)
     bool found = false;
-    for (int n = choice.blockN; n >= 16; n /= 2) {
-      int bytes = estimateFusedAttentionSharedMemBytes(headDim, choice.blockM, n);
-      if (bytes <= limit) {
-        choice.blockN = n;
-        chosenBytes = bytes;
-        found = true;
-        break;
+    const int minBlockM = seqQ <= 4 ? choice.blockM : 16;
+    for (int n = choice.blockN; n >= 16 && !found; n /= 2) {
+      for (int m = choice.blockM; m >= minBlockM; m /= 2) {
+        int bytes = estimateFusedAttentionSharedMemBytes(headDim, m, n);
+        if (bytes <= limit) {
+          choice.blockM = m;
+          choice.blockN = n;
+          chosenBytes = bytes;
+          found = true;
+          break;
+        }
       }
     }
     if (!found) {

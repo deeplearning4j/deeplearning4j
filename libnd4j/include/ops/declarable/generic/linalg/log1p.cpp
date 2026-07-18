@@ -41,7 +41,9 @@ DECLARE_SYN(log1p, Log1p);
 }  // namespace ops
 
 DECLARE_TYPES(Log1p) {
+
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace sd
 

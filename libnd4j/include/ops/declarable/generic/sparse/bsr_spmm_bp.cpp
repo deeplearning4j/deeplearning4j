@@ -85,9 +85,12 @@ DECLARE_SHAPE_FN(bsr_spmm_bp) {
 }
 
 DECLARE_TYPES(bsr_spmm_bp) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(sd::DataType::ANY)
       ->setAllowedOutputTypes({ALL_FLOATS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

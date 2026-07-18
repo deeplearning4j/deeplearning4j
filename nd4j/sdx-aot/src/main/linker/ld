@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# src/main/linker/ld — GNU ld wrapper for libsdx_llm native-image build.
+#
+# WHY THIS EXISTS
+# ───────────────
+# GraalVM 21 BinutilsCCLinkerInvocation unconditionally generates an anonymous
+# GNU-ld version script (written to <tempdir>/exported_symbols.list) that lists
+# ALL @CEntryPoint symbols in "global:" and everything else in "local:".  It
+# injects this as -Wl,--version-script,<path> early in the linker command.
+#
+# GNU ld forbids mixing anonymous version tags with named version tags:
+#   "anonymous version tag cannot be combined with other version tags"
+# So any attempt to also pass our own named "SDX_LLM_1 { global: sdx*; local: *; }"
+# script via -H:NativeLinkerOption=-Wl,--version-script=sdx_exports.lds
+# will make the link fail.
+#
+# SOLUTION
+# ────────
+# We tell GCC to find "ld" in this directory first (via -B src/main/linker passed
+# as -H:NativeLinkerOption in the pom).  GCC calls us instead of /usr/bin/ld.
+# We strip ALL --version-script arguments from GraalVM's command, then substitute
+# the single sdx_exports.lds (which lives beside this script) and exec the real ld.
+#
+# EFFECT
+# ──────
+# Only sdxLlm*, sdxAudio*, sdxVlm* symbols are exported in .dynsym.
+# graal_*, IsolateEnterStub__*, JNI_*, __svm_*, and throw_* become local
+# (STV_DEFAULT but not exported) so they cannot collide with the symbols of a
+# co-loaded GraalVM native-image library (e.g. libkompile_reasoning.so) in the
+# same process.
+#
+# USAGE
+# ─────
+# This file must be executable (chmod +x).  The native-image build in pom.xml
+# passes -H:NativeLinkerOption=-B${project.basedir}/src/main/linker which makes
+# GCC search this directory for "ld" before the system path.  Do not call this
+# script directly.
+#
+# PROCESS MODEL CONTRACT
+# ──────────────────────
+# With the export allowlists in place on BOTH libsdx_llm.so AND
+# libkompile_reasoning.so, RTLD_LOCAL loading of any number of GraalVM-image
+# shared libraries in one process is safe.  Each library's graal_create_isolate
+# etc. are local to their dlopen handle and cannot be found by the other
+# library's dlsym(RTLD_DEFAULT, ...).  RTLD_GLOBAL is forbidden in all callers.
+
+set -euo pipefail
+
+REAL_LD="/usr/bin/ld"
+# sdx_exports.lds lives in the same directory as this wrapper script.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SDX_LDS="$SCRIPT_DIR/sdx_exports.lds"
+
+if [ ! -f "$SDX_LDS" ]; then
+    echo "ld-wrapper: ERROR: cannot find $SDX_LDS" >&2
+    exit 1
+fi
+
+# Rebuild the argument list, stripping every --version-script argument.
+# GraalVM passes it in two forms:
+#   --version-script=<path>   (single-arg =path form)
+#   --version-script <path>   (two-arg space form, used by GCC's -Wl,x,y expansion)
+ARGS=()
+SKIP_NEXT=0
+for arg in "$@"; do
+    if [ "$SKIP_NEXT" -eq 1 ]; then
+        SKIP_NEXT=0
+        continue
+    fi
+    case "$arg" in
+        --version-script=*) continue ;;
+        --version-script)   SKIP_NEXT=1; continue ;;
+        *)                  ARGS+=("$arg") ;;
+    esac
+done
+
+# Append our sdx_exports.lds as the sole version script.
+ARGS+=("--version-script=$SDX_LDS")
+
+exec "$REAL_LD" "${ARGS[@]}"

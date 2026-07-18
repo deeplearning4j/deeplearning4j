@@ -74,6 +74,7 @@ CUSTOM_OP_IMPL(simpo_loss, 2, 1, false, 2, 0) {
 }
 
 DECLARE_TYPES(simpo_loss) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});
@@ -126,6 +127,7 @@ CUSTOM_OP_IMPL(simpo_loss_bp, 3, 2, false, 2, 0) {
 }
 
 DECLARE_TYPES(simpo_loss_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

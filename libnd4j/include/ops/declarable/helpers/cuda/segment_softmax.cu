@@ -31,30 +31,16 @@
 #include <system/op_boilerplate.h>
 #include <types/bfloat16.h>
 #include <types/float16.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 // ────────────────────────────────────────────────────────────────────────────
-// Warp-level max reduction
+// Warp-level max/sum reductions come from device_primitives.cuh
+// (sd::device::warpReduceMax / sd::device::warpReduceSum).
 // ────────────────────────────────────────────────────────────────────────────
-template <typename X>
-SD_DEVICE SD_INLINE X warpReduceMax(X val) {
-    for (int offset = 16; offset > 0; offset >>= 1)
-        val = sd::math::sd_max(val, __shfl_down_sync(0xffffffff, val, offset));
-    return val;
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// Warp-level sum reduction
-// ────────────────────────────────────────────────────────────────────────────
-template <typename X>
-SD_DEVICE SD_INLINE X warpReduceSum(X val) {
-    for (int offset = 16; offset > 0; offset >>= 1)
-        val += __shfl_down_sync(0xffffffff, val, offset);
-    return val;
-}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Forward kernel: one block per (segment, inner_feature).
@@ -108,7 +94,7 @@ static SD_KERNEL void segSoftmaxKernel(
         X v = logBuf[(segStart + q) * ls0 + f * ls1];
         if (v > localMax) localMax = v;
     }
-    localMax = warpReduceMax<X>(localMax);
+    localMax = sd::device::warpReduceMax<X>(localMax);
     // Share across warps via shared memory
     extern __shared__ char smem[];
     X* shared = reinterpret_cast<X*>(smem);
@@ -118,7 +104,7 @@ static SD_KERNEL void segSoftmaxKernel(
     __syncthreads();
     if (warp == 0) {
         localMax = (lane < (bsz + 31) / 32) ? shared[lane] : -DataTypeUtils::max<X>();
-        localMax = warpReduceMax<X>(localMax);
+        localMax = sd::device::warpReduceMax<X>(localMax);
         if (lane == 0) shared[0] = localMax;
     }
     __syncthreads();
@@ -131,12 +117,12 @@ static SD_KERNEL void segSoftmaxKernel(
         outBuf[(segStart + q) * os0 + f * os1] = e;
         localSum += e;
     }
-    localSum = warpReduceSum<X>(localSum);
+    localSum = sd::device::warpReduceSum<X>(localSum);
     if (lane == 0) shared[warp] = localSum;
     __syncthreads();
     if (warp == 0) {
         localSum = (lane < (bsz + 31) / 32) ? shared[lane] : static_cast<X>(0);
-        localSum = warpReduceSum<X>(localSum);
+        localSum = sd::device::warpReduceSum<X>(localSum);
         if (lane == 0) shared[0] = localSum;
     }
     __syncthreads();
@@ -195,7 +181,7 @@ static SD_KERNEL void segSoftmaxBpKernel(
         localDot += grBuf[(segStart + q) * gs0 + f * gs1]
                   * outBuf[(segStart + q) * os0 + f * os1];
     }
-    localDot = warpReduceSum<X>(localDot);
+    localDot = sd::device::warpReduceSum<X>(localDot);
     extern __shared__ char smem[];
     X* shared = reinterpret_cast<X*>(smem);
     int warp = tid / 32;
@@ -204,7 +190,7 @@ static SD_KERNEL void segSoftmaxBpKernel(
     __syncthreads();
     if (warp == 0) {
         localDot = (lane < (bsz + 31) / 32) ? shared[lane] : static_cast<X>(0);
-        localDot = warpReduceSum<X>(localDot);
+        localDot = sd::device::warpReduceSum<X>(localDot);
         if (lane == 0) shared[0] = localDot;
     }
     __syncthreads();

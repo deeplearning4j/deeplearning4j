@@ -131,6 +131,7 @@ DECLARE_SHAPE_FN(resize_area) {
   return shapeList;
 }
 DECLARE_TYPES(resize_area) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(1, INT32)

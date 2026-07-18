@@ -26,6 +26,8 @@
 #ifndef SD_HELPER_VERSION_REGISTRY_H
 #define SD_HELPER_VERSION_REGISTRY_H
 
+#include <system/BackendNamespace.h>
+
 #include <system/common.h>
 
 #include <cstdint>
@@ -38,6 +40,7 @@
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 /**
  * Version structure representing major.minor.patch versioning
@@ -394,6 +397,7 @@ class SD_LIB_EXPORT VersionProviderRegistrar {
 #define REGISTER_VERSION_PROVIDER(name, provider) \
   static sd::ops::platforms::VersionProviderRegistrar _versionProvider_##__LINE__(name, provider)
 
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

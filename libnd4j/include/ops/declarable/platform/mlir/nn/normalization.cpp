@@ -54,11 +54,11 @@ PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
 
     auto status = executeMlirEx("batchnorm", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR batchnorm failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
@@ -67,7 +67,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
     Requirements req("MLIR BATCHNORM");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -95,11 +95,11 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
 
     auto status = executeMlir("batchnorm_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR batchnorm_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
@@ -134,11 +134,11 @@ PLATFORM_IMPL(layer_norm, ENGINE_CPU) {
 
     auto status = executeMlirEx("layer_norm", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR layer_norm failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(layer_norm, ENGINE_CPU) {
@@ -147,7 +147,7 @@ PLATFORM_CHECK(layer_norm, ENGINE_CPU) {
     Requirements req("MLIR LAYER_NORM");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -174,11 +174,11 @@ PLATFORM_IMPL(layer_norm_bp, ENGINE_CPU) {
 
     auto status = executeMlir("layer_norm_bp", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR layer_norm_bp failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(layer_norm_bp, ENGINE_CPU) {

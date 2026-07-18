@@ -146,6 +146,7 @@ DECLARE_SHAPE_FN(image_resize) {
   return SHAPELIST(shape);
 }
 DECLARE_TYPES(image_resize) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INTS})

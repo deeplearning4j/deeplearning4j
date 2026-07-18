@@ -88,7 +88,7 @@ static bool isReductionSuitable(NDArray* x, NDArray* z, const std::vector<LongTy
 
 //////////////////////////////////////////////////////////////////////
 // REDUCE_SUM
-PLATFORM_IMPL(reduce_sum, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_sum, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -112,7 +112,7 @@ PLATFORM_IMPL(reduce_sum, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_sum, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_sum, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -137,7 +137,7 @@ PLATFORM_CHECK(reduce_sum, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // REDUCE_MEAN
-PLATFORM_IMPL(reduce_mean, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_mean, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -161,7 +161,7 @@ PLATFORM_IMPL(reduce_mean, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_mean, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_mean, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -193,7 +193,7 @@ PLATFORM_CHECK(reduce_mean, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // REDUCE_MAX
-PLATFORM_IMPL(reduce_max, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_max, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -217,7 +217,7 @@ PLATFORM_IMPL(reduce_max, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_max, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_max, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -242,7 +242,7 @@ PLATFORM_CHECK(reduce_max, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // REDUCE_MIN
-PLATFORM_IMPL(reduce_min, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_min, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -266,7 +266,7 @@ PLATFORM_IMPL(reduce_min, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_min, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_min, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -291,7 +291,7 @@ PLATFORM_CHECK(reduce_min, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // REDUCE_PROD - using multiplication reduction
-PLATFORM_IMPL(reduce_prod, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_prod, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -315,7 +315,7 @@ PLATFORM_IMPL(reduce_prod, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_prod, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_prod, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 

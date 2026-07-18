@@ -57,11 +57,14 @@ DECLARE_TYPES(choose) {
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(1, {ALL_INTS});
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT |
+                               OP_TRAIT_DYNAMIC_OUTPUT_SIZE);
 }
 
 DECLARE_SHAPE_FN(choose) {
   int mode = INT_ARG(0);
-  auto numResults = NDArrayFactory::create<LongType>(0L);
+  auto numResults =
+      NDArrayFactory::create_<LongType>(0L, block.launchContext());
   if (block.width() > 1) {
     auto first = INPUT_VARIABLE(0);
     auto second = INPUT_VARIABLE(1);
@@ -75,8 +78,10 @@ DECLARE_SHAPE_FN(choose) {
     helpers::chooseFunctorScalar(block.launchContext(), first, scalar, mode, nullptr, numResults);
   }
 
-  auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(numResults->e<LongType>(0),
-                                                                     ArrayOptions::dataType(inputShape->at(0)));
+  const LongType selected = numResults->e<LongType>(0);
+  delete numResults;
+  auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(
+      selected, ArrayOptions::dataType(inputShape->at(0)));
 
   auto shapeScalar = ConstantShapeHelper::getInstance().scalarShapeInfo(INT64);
   return SHAPELIST(newShape, shapeScalar);

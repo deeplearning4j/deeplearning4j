@@ -42,6 +42,7 @@ CUSTOM_OP_IMPL(cell_contains, 3, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(cell_contains) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(BOOL)

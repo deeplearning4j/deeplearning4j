@@ -20,7 +20,7 @@
 #include <graph/DspBufferColorMap.h>
 #include <graph/DspBufferPool.h>
 #include <graph/DspDiagnostics.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 #include <array/DataTypeUtils.h>
 #include <helpers/ShapeUtils.h>
 #include <execution/LaunchContext.h>

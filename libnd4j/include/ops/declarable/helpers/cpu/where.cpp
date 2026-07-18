@@ -289,6 +289,74 @@ LongType countTrue(LaunchContext* context, NDArray& condition) {
   return count;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// where_np scalar-broadcast path: z[e] = condition[e] ? scalarY : x[e]
+// condition and x have the same shape. scalarY is a scalar NDArray.
+template <typename T>
+static void whereNpScalarBroadcastTyped(NDArray& condition, NDArray& x, NDArray& scalarY,
+                                        NDArray& output) {
+  const auto len = output.lengthOf();
+  const T yValue = scalarY.e<T>(0);
+
+  for (LongType e = 0; e < len; e++) {
+    output.p<T>(e, condition.e<bool>(e) ? yValue : x.e<T>(e));
+  }
+}
+BUILD_SINGLE_TEMPLATE(void whereNpScalarBroadcastTyped,
+                      (NDArray& condition, NDArray& x, NDArray& scalarY, NDArray& output),
+                      SD_COMMON_TYPES);
+
+void _whereNpScalarBroadcast(LaunchContext* context, NDArray& condition, NDArray& x,
+                              NDArray& scalarY, NDArray& output) {
+  if (output.isEmpty() || output.lengthOf() == 0) return;
+
+  condition.syncToHost();
+  x.syncToHost();
+  scalarY.syncToHost();
+
+  BUILD_SINGLE_SELECTOR(output.dataType(), whereNpScalarBroadcastTyped,
+                        (condition, x, scalarY, output), SD_COMMON_TYPES);
+
+  output.tickWriteHost();
+  output.syncToDevice();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// where_np gather path: z[e] = condition[e] ? y[numMatches++] : x[e]
+// condition and x have the same shape; y has lengthOf() == number of true
+// elements in condition. The match counter only advances on true.
+template <typename T>
+static void whereNpGatherTyped(NDArray& condition, NDArray& x, NDArray& y, NDArray& output) {
+  const auto len = output.lengthOf();
+  LongType numMatches = 0;
+
+  for (LongType e = 0; e < len; e++) {
+    if (condition.e<bool>(e)) {
+      output.p<T>(e, y.e<T>(numMatches++));
+    } else {
+      output.p<T>(e, x.e<T>(e));
+    }
+  }
+}
+BUILD_SINGLE_TEMPLATE(void whereNpGatherTyped,
+                      (NDArray& condition, NDArray& x, NDArray& y, NDArray& output),
+                      SD_COMMON_TYPES);
+
+void _whereNpGather(LaunchContext* context, NDArray& condition, NDArray& x, NDArray& y,
+                    NDArray& output) {
+  if (output.isEmpty() || output.lengthOf() == 0) return;
+
+  condition.syncToHost();
+  x.syncToHost();
+  y.syncToHost();
+
+  BUILD_SINGLE_SELECTOR(output.dataType(), whereNpGatherTyped,
+                        (condition, x, y, output), SD_COMMON_TYPES);
+
+  output.tickWriteHost();
+  output.syncToDevice();
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

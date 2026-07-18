@@ -387,7 +387,7 @@ static void depthwiseConv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* g
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
+PLATFORM_IMPL(depthwise_conv2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;  // [oC] = iC*mC
@@ -437,7 +437,7 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
+PLATFORM_CHECK(depthwise_conv2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto weights = INPUT_VARIABLE(1);
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -474,7 +474,7 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC] = [iC*mC]
@@ -546,7 +546,7 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC] = [iC*mC]

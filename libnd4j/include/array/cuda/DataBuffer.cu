@@ -1502,6 +1502,16 @@ void DataBuffer::deleteSpecial() {
 #endif
     const bool countAsDeviceMemory = !isHostResidentSpecialAllocation(_specialBuffer, _specialAllocBytes);
 
+    // Passive free-trace (MEMORY-diag-gated): log the device pointer being
+    // released so stale-address reads can be cross-referenced against freed
+    // addresses. NO writes, NO syncs — an active poison here is prohibited:
+    // a sync memset serializes the device and breaks capture/replay timing,
+    // and an async one races the pool's stream-ordered reuse.
+    if (DSP_DIAG_ENABLED(MEMORY) && _workspace == nullptr) {
+      DSP_DIAG(MEMORY, "DB_FREE_SPECIAL: db=%p ptr=%p bytes=%lld",
+               (void*)this, (void*)p, (long long)getLenInBytes());
+    }
+
     // Use device-aware free - critical for multi-GPU correctness
     tl_dspFreeBytes += getLenInBytes();
     tl_dspFreeCount++;

@@ -273,7 +273,10 @@ DECLARE_SHAPE_FN(create_view) {
   return SHAPELIST(newShape);
 }
 
-DECLARE_TYPES(create_view) { getOpDescriptor()->setAllowedInputTypes({ANY})->setAllowedOutputTypes(ANY); }
+DECLARE_TYPES(create_view) {
+  getOpDescriptor()->setAllowedInputTypes({ANY})->setAllowedOutputTypes(ANY);
+  getOpDescriptor()->addTraits(OP_TRAIT_VIEW_PRODUCING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT);
+}
 }  // namespace ops
 }  // namespace sd
 

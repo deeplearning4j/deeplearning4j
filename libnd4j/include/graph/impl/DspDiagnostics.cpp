@@ -21,6 +21,7 @@
 #include <system/Environment.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cstdarg>
 #include <cstdlib>
 #include <cstring>
@@ -399,6 +400,61 @@ std::string DspDiagnostics::generatePlanReport() const {
   return os.str();
 }
 
+// ─── Vulkan diagnostic helpers ───────────────────────────────────────────────
+//
+// Scans the ring buffer for GRAPH_REPLAY events emitted by VulkanReplayHandle
+// whose message starts with "vulkan_backend ".  Aggregates the most recent
+// CAPTURE_DONE and REPLAY_DONE stats into a compact structure for JSON output.
+//
+// This is a pure read — no allocations beyond the returned struct, no side
+// effects.  Called only from generateJsonReport() while the event lock is held.
+
+namespace {
+
+struct VulkanDiagSummary {
+  bool found = false;
+  std::string deviceName;
+  uint32_t apiVersion = 0;
+  int dispatches = 0;
+  double captureMs = 0.0;
+  size_t workspaceBytes = 0;
+  bool umaDetected = false;
+  bool fp16Supported = false;
+  int replayCount = 0;
+  double lastReplayMs = 0.0;
+};
+
+// Extract a quoted-string value for key= from a message like:
+//   vulkan_backend CAPTURE_DONE device="Adreno 8 Gen 3" api_version=0x...
+// Returns empty string if key not found or value not quoted.
+static std::string extractStringValue(const std::string& msg, const char* key) {
+  std::string needle = std::string(key) + "=\"";
+  auto pos = msg.find(needle);
+  if (pos == std::string::npos) return "";
+  pos += needle.size();
+  auto end = msg.find('"', pos);
+  if (end == std::string::npos) return "";
+  return msg.substr(pos, end - pos);
+}
+
+// Extract a numeric value for key= (stops at space or end of string).
+static std::string extractNumericValue(const std::string& msg, const char* key) {
+  std::string needle = std::string(key) + "=";
+  auto pos = msg.find(needle);
+  if (pos == std::string::npos) return "";
+  pos += needle.size();
+  auto end = msg.find_first_of(" \t\n", pos);
+  return msg.substr(pos, (end == std::string::npos) ? std::string::npos : end - pos);
+}
+
+// Check whether msg is a Vulkan diagnostic event and if so whether it is a
+// CAPTURE_DONE or REPLAY_DONE event.
+static bool isVulkanEvent(const char* msg) {
+  return msg != nullptr && strncmp(msg, "vulkan_backend ", 15) == 0;
+}
+
+}  // anonymous namespace
+
 std::string DspDiagnostics::generateJsonReport() const {
   std::lock_guard<std::mutex> lock(eventMutex_);
   std::ostringstream os;
@@ -450,12 +506,16 @@ std::string DspDiagnostics::generateJsonReport() const {
   }
   os << "\n  ],\n";
 
-  // Events array
+  // Events array — also scans for Vulkan GRAPH_REPLAY events while iterating
   os << "  \"events\": [\n";
   int64_t totalEvents = writePos_.load(std::memory_order_relaxed);
   int64_t startIdx = totalEvents > DSP_DIAG_RING_SIZE
                          ? totalEvents - DSP_DIAG_RING_SIZE
                          : 0;
+
+  // Accumulate the most recent Vulkan diagnostic state while iterating events.
+  // We update vulkanSummary in-pass so we only traverse the ring buffer once.
+  VulkanDiagSummary vulkanSummary;
 
   bool firstEv = true;
   for (int64_t i = startIdx; i < totalEvents; i++) {
@@ -484,8 +544,80 @@ std::string DspDiagnostics::generateJsonReport() const {
       else                 os << ch;
     }
     os << "\" }";
+
+    // Extract Vulkan stats from GRAPH_REPLAY events emitted by VulkanReplayHandle.
+    // Messages start with "vulkan_backend " and contain key=value pairs.
+    if (ev.category == DSP_DIAG_GRAPH_REPLAY && isVulkanEvent(ev.message)) {
+      std::string msg(ev.message);
+      vulkanSummary.found = true;
+
+      // Device name (quoted string) — always present in both event types
+      std::string devName = extractStringValue(msg, "device");
+      if (!devName.empty()) vulkanSummary.deviceName = devName;
+
+      if (msg.find("CAPTURE_DONE") != std::string::npos) {
+        // vulkan_backend CAPTURE_DONE device="..." api_version=0x... dispatches=N
+        //   capture_ms=F workspace_bytes=N uma=N fp16=N
+        std::string apiStr = extractNumericValue(msg, "api_version");
+        if (!apiStr.empty()) {
+          vulkanSummary.apiVersion = static_cast<uint32_t>(std::stoul(apiStr, nullptr, 0));
+        }
+        std::string dStr = extractNumericValue(msg, "dispatches");
+        if (!dStr.empty()) vulkanSummary.dispatches = std::stoi(dStr);
+        std::string cStr = extractNumericValue(msg, "capture_ms");
+        if (!cStr.empty()) vulkanSummary.captureMs = std::stod(cStr);
+        std::string wStr = extractNumericValue(msg, "workspace_bytes");
+        if (!wStr.empty()) vulkanSummary.workspaceBytes = std::stoull(wStr);
+        std::string umaStr = extractNumericValue(msg, "uma");
+        if (!umaStr.empty()) vulkanSummary.umaDetected = (umaStr == "1");
+        std::string fp16Str = extractNumericValue(msg, "fp16");
+        if (!fp16Str.empty()) vulkanSummary.fp16Supported = (fp16Str == "1");
+
+      } else if (msg.find("REPLAY_DONE") != std::string::npos) {
+        // vulkan_backend REPLAY_DONE device="..." replay_count=N replay_ms=F dispatches=N
+        std::string rcStr = extractNumericValue(msg, "replay_count");
+        if (!rcStr.empty()) vulkanSummary.replayCount = std::stoi(rcStr);
+        std::string rmStr = extractNumericValue(msg, "replay_ms");
+        if (!rmStr.empty()) vulkanSummary.lastReplayMs = std::stod(rmStr);
+        std::string dStr2 = extractNumericValue(msg, "dispatches");
+        if (!dStr2.empty()) vulkanSummary.dispatches = std::stoi(dStr2);
+      }
+    }
   }
-  os << "\n  ]\n";
+  os << "\n  ]";
+
+  // Emit a "vulkan" top-level object when any Vulkan GRAPH_REPLAY events were found.
+  // This gives a single, easily queryable location for Vulkan backend metrics
+  // (jq '.vulkan' returns the full block; jq '.vulkan.replay_ms' returns the metric).
+  if (vulkanSummary.found) {
+    // Format the Vulkan API version as "major.minor.patch" for readability.
+    // Avoid including vulkan.h here — use the bit layout directly:
+    //   bits [31:22] = major, [21:12] = minor, [11:0] = patch
+    uint32_t vkMajor = (vulkanSummary.apiVersion >> 22u) & 0x7fu;
+    uint32_t vkMinor = (vulkanSummary.apiVersion >> 12u) & 0x3ffu;
+    uint32_t vkPatch = (vulkanSummary.apiVersion) & 0xfffu;
+    char apiVersionStr[32];
+    snprintf(apiVersionStr, sizeof(apiVersionStr), "%u.%u.%u", vkMajor, vkMinor, vkPatch);
+
+    os << ",\n  \"vulkan\": {\n";
+    os << "    \"backend\": \"vulkan\",\n";
+    os << "    \"device_name\": \"" << vulkanSummary.deviceName << "\",\n";
+    os << "    \"api_version\": \"" << apiVersionStr << "\",\n";
+    os << "    \"memory_budget_mb\": "
+       << std::fixed << std::setprecision(2)
+       << (vulkanSummary.workspaceBytes / (1024.0 * 1024.0)) << ",\n";
+    os << "    \"replay_count\": " << vulkanSummary.replayCount << ",\n";
+    os << "    \"num_dispatches\": " << vulkanSummary.dispatches << ",\n";
+    os << "    \"capture_ms\": "
+       << std::fixed << std::setprecision(3) << vulkanSummary.captureMs << ",\n";
+    os << "    \"replay_ms\": "
+       << std::fixed << std::setprecision(3) << vulkanSummary.lastReplayMs << ",\n";
+    os << "    \"uma_available\": " << (vulkanSummary.umaDetected ? "true" : "false") << ",\n";
+    os << "    \"fp16_supported\": " << (vulkanSummary.fp16Supported ? "true" : "false") << "\n";
+    os << "  }\n";
+  } else {
+    os << "\n";
+  }
   os << "}\n";
 
   return os.str();

@@ -61,7 +61,11 @@ std::vector<double>* ContextPrototype::getTArguments() { return &(this->_tArgs);
 
 std::vector<LongType>* ContextPrototype::getIArguments() { return &(this->_iArgs); }
 
+const std::vector<LongType>* ContextPrototype::getIArguments() const { return &(this->_iArgs); }
+
 std::vector<bool>* ContextPrototype::getBArguments() { return &(this->_bArgs); }
+
+const std::vector<bool>* ContextPrototype::getBArguments() const { return &(this->_bArgs); }
 
 std::vector<LongType>* ContextPrototype::getAxis() { return &(this->_axis); }
 

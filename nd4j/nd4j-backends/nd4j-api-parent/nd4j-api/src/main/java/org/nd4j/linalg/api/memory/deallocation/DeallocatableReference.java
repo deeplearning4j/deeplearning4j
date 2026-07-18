@@ -32,15 +32,31 @@ import java.lang.ref.ReferenceQueue;
 public class DeallocatableReference extends PhantomReference<Deallocatable> {
     private long id;
     private Deallocator deallocator;
+    private final DeallocatorService service;
     private final long timestamp = System.currentTimeMillis();
 
     public DeallocatableReference(Deallocatable referent, ReferenceQueue<? super Deallocatable> q) {
+        this(referent, q, Nd4j.getDeallocatorService());
+    }
+
+    /**
+     * Creates a reference owned by the supplied service. Owner-scoped registration
+     * uses this constructor so listener handling never consults the process-primary
+     * backend.
+     */
+    public DeallocatableReference(Deallocatable referent,
+                                  ReferenceQueue<? super Deallocatable> q,
+                                  DeallocatorService service) {
         super(referent, q);
+        if (service == null) {
+            throw new IllegalArgumentException("DeallocatorService cannot be null");
+        }
 
         this.id = referent.getUniqueId();
         this.deallocator = referent.deallocator();
-        if(!Nd4j.getDeallocatorService().getListeners().isEmpty()) {
-          Nd4j.getDeallocatorService().registerDeallocatbleToListener(this);
+        this.service = service;
+        if (!service.getListeners().isEmpty()) {
+            service.registerDeallocatbleToListener(this);
         }
     }
 
@@ -80,8 +96,8 @@ public class DeallocatableReference extends PhantomReference<Deallocatable> {
             return;
         }
 
-        if(!Nd4j.getDeallocatorService().getListeners().isEmpty()) {
-            Nd4j.getDeallocatorService().registerDeallocatbleToListener(this);
+        if (!service.getListeners().isEmpty()) {
+            service.registerDeallocatbleToListener(this);
         }
         deallocator.deallocate();
     }

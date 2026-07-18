@@ -17,9 +17,11 @@
  ******************************************************************************/
 
 #include <dsp/runtime/dsp_runtime_c.h>
+#include <dsp/runtime/detail/DspRuntimeInternal.h>
 #include <dsp/NativeOpsDsp.h>
 #include <graph/SdzReader.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
+#include <graph/NativeDynamicShapePlan.h>
 
 #include <array/DataTypeUtils.h>
 #include <array/NDArray.h>
@@ -124,14 +126,27 @@ struct sdx_model {
   int gpu_target = static_cast<int>(SDX_GPU_TARGET_AUTO);
   bool strict_backend = false;
   bool allow_runtime_jit = false;
+  std::string runtime_artifact_directory;
+  std::string tokenizer_path;
+  std::string text_generation_config_path;
 };
 
 struct sdx_context {
   sdx_model* model = nullptr;
   sd::Pointer plan_handle = nullptr;
   OpaqueContext* graph_context = nullptr;
+  // num_inputs is the public C ABI input count. plan_num_inputs is the full
+  // executor width, including model-owned constants/variables.
   int num_inputs = -1;
+  int plan_num_inputs = -1;
   int num_outputs = -1;
+  bool binds_model_parameters = false;
+  // Public context input index -> full plan input index and inverse mapping.
+  std::vector<int> public_to_plan_input;
+  std::vector<int> plan_to_public_input;
+  // Borrowed model-owned NDArrays, indexed in full plan input order. The model
+  // is required to outlive this context.
+  std::vector<sd::NDArray*> bound_model_inputs;
   int execution_count = 0;
   std::string last_error;
   sdx_execution_report_t last_report{};
@@ -141,6 +156,11 @@ struct sdx_context {
   // shape, dtype, or device). This eliminates ~2N allocations per step.
   std::vector<std::unique_ptr<sd::NDArray>> input_wrappers;
   std::vector<std::unique_ptr<sd::NDArray>> output_wrappers;
+  // Explicit output names copied at context creation. Runtime-owned contiguous
+  // copies are populated lazily only when a produced output is a strided/view
+  // array that the C tensor-view ABI cannot represent.
+  std::vector<std::string> output_names;
+  std::vector<std::unique_ptr<sd::NDArray>> borrowed_output_copies;
 
   // Cached tensor view metadata for change detection.
   // Each entry stores {data, shape_hash, rank, dtype, bytes, device_type, device_id}
@@ -217,9 +237,9 @@ namespace {
 
 constexpr int kSdxAbiVersion = SDX_RUNTIME_ABI_VERSION;
 constexpr int kMinBackend = static_cast<int>(SDX_BACKEND_AUTO);
-constexpr int kMaxBackend = static_cast<int>(SDX_BACKEND_NNAPI);
+constexpr int kMaxBackend = static_cast<int>(SDX_BACKEND_HEXAGON);
 constexpr int kMinGpuTarget = static_cast<int>(SDX_GPU_TARGET_AUTO);
-constexpr int kMaxGpuTarget = static_cast<int>(SDX_GPU_TARGET_AMD);
+constexpr int kMaxGpuTarget = static_cast<int>(SDX_GPU_TARGET_METAL);
 
 struct BundleManifestData {
 #if HAS_FILESYSTEM
@@ -230,6 +250,10 @@ struct BundleManifestData {
   // Set when a packed .dspb archive was extracted; the model owns the dir.
   std::string extracted_dir;
   int gpu_target = static_cast<int>(SDX_GPU_TARGET_AUTO);
+  std::string vulkan_spirv_directory;
+  std::string hexagon_kernel_directory;
+  std::string tokenizer_path;
+  std::string text_generation_config_path;
 };
 
 // Sniff the 4-byte local-file-header magic that identifies a packed (ZIP)
@@ -354,6 +378,14 @@ bool parseGpuTargetString(const std::string& rawValue, int* outGpuTarget) {
     *outGpuTarget = static_cast<int>(SDX_GPU_TARGET_AMD);
     return true;
   }
+  if (value == "VULKAN") {
+    *outGpuTarget = static_cast<int>(SDX_GPU_TARGET_VULKAN);
+    return true;
+  }
+  if (value == "METAL" || value == "MPS") {
+    *outGpuTarget = static_cast<int>(SDX_GPU_TARGET_METAL);
+    return true;
+  }
   return false;
 }
 
@@ -445,6 +477,21 @@ bool extractJsonStringField(const std::string& json, const std::string& field, s
   return true;
 }
 
+std::string resolveManifestRelativePath(const std::string& manifestPath,
+                                        const std::string& assetPath) {
+  if (assetPath.empty() || assetPath.front() == '/' ||
+      assetPath.front() == '\\' ||
+      (assetPath.size() >= 2 &&
+       std::isalpha(static_cast<unsigned char>(assetPath[0])) &&
+       assetPath[1] == ':')) {
+    return assetPath;
+  }
+  const size_t separator = manifestPath.find_last_of("/\\");
+  return separator == std::string::npos
+             ? assetPath
+             : manifestPath.substr(0, separator + 1) + assetPath;
+}
+
 #if HAS_FILESYSTEM
 bool parseBundleManifest(const std::filesystem::path& manifestPath, BundleManifestData* out, std::string* errorOut) {
   std::string json;
@@ -467,6 +514,61 @@ bool parseBundleManifest(const std::filesystem::path& manifestPath, BundleManife
   }
 
   out->model_path = resolved.lexically_normal();
+
+  auto resolveManifestDirectory =
+      [&](const char* field, std::string* destination) -> bool {
+    std::string relativePath;
+    if (!extractJsonStringField(json, field, &relativePath) ||
+        relativePath.empty()) {
+      return true;
+    }
+    std::filesystem::path resolvedArtifacts(relativePath);
+    if (resolvedArtifacts.is_relative()) {
+      resolvedArtifacts = manifestPath.parent_path() / resolvedArtifacts;
+    }
+    resolvedArtifacts = resolvedArtifacts.lexically_normal();
+    if (!std::filesystem::exists(resolvedArtifacts) ||
+        !std::filesystem::is_directory(resolvedArtifacts)) {
+      *errorOut = std::string("Bundle manifest ") + field +
+                  " directory does not exist: " + resolvedArtifacts.string();
+      return false;
+    }
+    *destination = resolvedArtifacts.string();
+    return true;
+  };
+  if (!resolveManifestDirectory("vulkanSpirv",
+                                &out->vulkan_spirv_directory) ||
+      !resolveManifestDirectory("hexagonKernels",
+                                &out->hexagon_kernel_directory)) {
+    return false;
+  }
+
+  auto resolveManifestAsset =
+      [&](const char* field, std::string* destination) -> bool {
+    std::string relativePath;
+    if (!extractJsonStringField(json, field, &relativePath) ||
+        relativePath.empty()) {
+      return true;
+    }
+    std::filesystem::path resolvedAsset(relativePath);
+    if (resolvedAsset.is_relative()) {
+      resolvedAsset = manifestPath.parent_path() / resolvedAsset;
+    }
+    resolvedAsset = resolvedAsset.lexically_normal();
+    if (!std::filesystem::exists(resolvedAsset) ||
+        !std::filesystem::is_regular_file(resolvedAsset)) {
+      *errorOut = std::string("Bundle manifest ") + field +
+                  " file does not exist: " + resolvedAsset.string();
+      return false;
+    }
+    *destination = resolvedAsset.string();
+    return true;
+  };
+  if (!resolveManifestAsset("tokenizerPath", &out->tokenizer_path) ||
+      !resolveManifestAsset("configPath",
+                            &out->text_generation_config_path)) {
+    return false;
+  }
 
   std::string gpuTarget;
   if (extractJsonStringField(json, "gpuTarget", &gpuTarget)) {
@@ -578,9 +680,30 @@ bool parseBundleManifest(const std::string& manifestPath, BundleManifestData* ou
     return false;
   }
 
-  // Without std::filesystem we cannot resolve relative paths — store as-is
-  // and hope the caller provided an absolute path or the CWD is correct.
-  out->model_path = modelPath;
+  // iOS toolchains may intentionally compile without std::filesystem. Resolve
+  // bundle-relative paths lexically so unpacked mobile bundles still work.
+  out->model_path = resolveManifestRelativePath(manifestPath, modelPath);
+
+  std::string vulkanSpirvPath;
+  if (extractJsonStringField(json, "vulkanSpirv", &vulkanSpirvPath)) {
+    out->vulkan_spirv_directory =
+        resolveManifestRelativePath(manifestPath, vulkanSpirvPath);
+  }
+  std::string hexagonKernelPath;
+  if (extractJsonStringField(json, "hexagonKernels", &hexagonKernelPath)) {
+    out->hexagon_kernel_directory =
+        resolveManifestRelativePath(manifestPath, hexagonKernelPath);
+  }
+  std::string tokenizerPath;
+  if (extractJsonStringField(json, "tokenizerPath", &tokenizerPath)) {
+    out->tokenizer_path =
+        resolveManifestRelativePath(manifestPath, tokenizerPath);
+  }
+  std::string configPath;
+  if (extractJsonStringField(json, "configPath", &configPath)) {
+    out->text_generation_config_path =
+        resolveManifestRelativePath(manifestPath, configPath);
+  }
 
   std::string gpuTarget;
   if (extractJsonStringField(json, "gpuTarget", &gpuTarget)) {
@@ -853,6 +976,40 @@ SDX_API sdx_status_t sdxLoadBundle(
     gpuTarget = manifestData.gpu_target;
   }
 
+  const bool precompiledOnlyVulkan =
+      !allowRuntimeJit &&
+      (gpuTarget == static_cast<int>(SDX_GPU_TARGET_VULKAN) ||
+       backend == static_cast<int>(SDX_BACKEND_VULKAN));
+  if (precompiledOnlyVulkan && manifestData.vulkan_spirv_directory.empty()) {
+#if HAS_FILESYSTEM
+    if (!manifestData.extracted_dir.empty()) {
+      std::error_code cleanupEc;
+      std::filesystem::remove_all(manifestData.extracted_dir, cleanupEc);
+    }
+#endif
+    setLastError(
+        runtime,
+        "Vulkan bundle forbids runtime compilation but "
+        "compiledArtifacts.vulkanSpirv is missing");
+    return SDX_STATUS_MODEL_LOAD_FAILED;
+  }
+
+  const bool precompiledOnlyHexagon =
+      !allowRuntimeJit && backend == static_cast<int>(SDX_BACKEND_HEXAGON);
+  if (precompiledOnlyHexagon && manifestData.hexagon_kernel_directory.empty()) {
+#if HAS_FILESYSTEM
+    if (!manifestData.extracted_dir.empty()) {
+      std::error_code cleanupEc;
+      std::filesystem::remove_all(manifestData.extracted_dir, cleanupEc);
+    }
+#endif
+    setLastError(
+        runtime,
+        "Hexagon bundle forbids runtime compilation but "
+        "compiledArtifacts.hexagonKernels is missing");
+    return SDX_STATUS_MODEL_LOAD_FAILED;
+  }
+
 #if HAS_FILESYSTEM
   std::filesystem::path modelPath = manifestData.model_path;
   if (!std::filesystem::exists(modelPath)) {
@@ -886,6 +1043,13 @@ SDX_API sdx_status_t sdxLoadBundle(
   model->gpu_target = gpuTarget;
   model->strict_backend = strictBackend;
   model->allow_runtime_jit = allowRuntimeJit;
+  model->runtime_artifact_directory =
+      backend == static_cast<int>(SDX_BACKEND_HEXAGON)
+          ? manifestData.hexagon_kernel_directory
+          : manifestData.vulkan_spirv_directory;
+  model->tokenizer_path = manifestData.tokenizer_path;
+  model->text_generation_config_path =
+      manifestData.text_generation_config_path;
 
   setLastError(runtime, "");
   *out_model = model;
@@ -908,10 +1072,24 @@ SDX_API void sdxUnloadModel(sdx_model_t* model) {
   }
 }
 
-SDX_API sdx_status_t sdxCreateContext(
+SDX_API const char* sdxGetTokenizerPath(const sdx_model_t* model) {
+  return model == nullptr || model->tokenizer_path.empty()
+             ? nullptr
+             : model->tokenizer_path.c_str();
+}
+
+SDX_API const char* sdxGetTextGenerationConfigPath(
+    const sdx_model_t* model) {
+  return model == nullptr || model->text_generation_config_path.empty()
+             ? nullptr
+             : model->text_generation_config_path.c_str();
+}
+
+static sdx_status_t createContextInternal(
     sdx_model_t* model,
     const char* const* requested_output_names,
     int32_t num_requested_outputs,
+    bool bind_model_parameters,
     sdx_context_t** out_context) {
   if (model == nullptr || out_context == nullptr || num_requested_outputs < 0) {
     return SDX_STATUS_INVALID_ARGUMENT;
@@ -925,6 +1103,11 @@ SDX_API sdx_status_t sdxCreateContext(
   std::vector<char*> mutableOutputNames;
   mutableOutputNames.reserve(static_cast<size_t>(num_requested_outputs));
   for (int32_t i = 0; i < num_requested_outputs; i++) {
+    if (requested_output_names[i] == nullptr) {
+      setLastError(model->runtime,
+                   "requested_output_names contains a null entry");
+      return SDX_STATUS_INVALID_ARGUMENT;
+    }
     mutableOutputNames.push_back(const_cast<char*>(requested_output_names[i]));
   }
 
@@ -947,6 +1130,9 @@ SDX_API sdx_status_t sdxCreateContext(
   }
 
   setPlanGraphExecutionMode(planHandle, model->backend);
+  setPlanRuntimeCompilationAllowed(planHandle, model->allow_runtime_jit);
+  setPlanRuntimeArtifactDirectory(
+      planHandle, model->runtime_artifact_directory.c_str());
   if (!model->allow_runtime_jit) {
     setPlanJitMode(planHandle, 0);
   }
@@ -962,8 +1148,9 @@ SDX_API sdx_status_t sdxCreateContext(
   context->model = model;
   context->plan_handle = planHandle;
   context->graph_context = graphContext;
-  context->num_inputs = getPlanNumExternalInputs(planHandle);
+  context->plan_num_inputs = getPlanNumExternalInputs(planHandle);
   context->num_outputs = getPlanNumRequestedOutputs(planHandle);
+  context->binds_model_parameters = bind_model_parameters;
   context->last_error.clear();
   context->last_report.struct_size = sizeof(sdx_execution_report_t);
   context->last_report.requested_backend = model->backend;
@@ -974,23 +1161,92 @@ SDX_API sdx_status_t sdxCreateContext(
   context->last_report.used_fallback = -1;
   context->last_report.execution_time_ns = 0;
 
-  if (context->num_inputs < 0 || context->num_outputs < 0) {
+  if (context->plan_num_inputs < 0 || context->num_outputs < 0) {
     sdxDestroyContext(context);
     setLastError(model->runtime, "Compiled plan returned invalid input/output counts");
     return SDX_STATUS_EXECUTION_FAILED;
   }
 
-  // Pre-allocate cache vectors so sdxRun can do incremental updates
+  const size_t planInputCount = static_cast<size_t>(context->plan_num_inputs);
+  context->bound_model_inputs.resize(planInputCount, nullptr);
+  context->plan_to_public_input.resize(planInputCount, -1);
+  context->public_to_plan_input.reserve(planInputCount);
+
+  for (int planIndex = 0; planIndex < context->plan_num_inputs; ++planIndex) {
+    sd::NDArray* bound = nullptr;
+    const char* inputName = getPlanExternalInputName(planHandle, planIndex);
+    if (bind_model_parameters && inputName != nullptr) {
+      bound = getLoadedModelVariable(model->model_handle, inputName);
+    }
+    if (bound != nullptr) {
+      context->bound_model_inputs[static_cast<size_t>(planIndex)] = bound;
+    } else {
+      const int publicIndex = static_cast<int>(context->public_to_plan_input.size());
+      context->public_to_plan_input.push_back(planIndex);
+      context->plan_to_public_input[static_cast<size_t>(planIndex)] = publicIndex;
+    }
+  }
+  context->num_inputs = static_cast<int>(context->public_to_plan_input.size());
+
+  // Pre-allocate cache vectors so sdxRun can do incremental updates. These are
+  // public-input sized; the graph context itself is bound at plan width.
   context->input_wrappers.resize(static_cast<size_t>(context->num_inputs));
   context->output_wrappers.resize(static_cast<size_t>(context->num_outputs));
+  context->borrowed_output_copies.resize(
+      static_cast<size_t>(context->num_outputs));
+  context->output_names.resize(static_cast<size_t>(context->num_outputs));
+  for (int32_t i = 0;
+       i < num_requested_outputs && i < context->num_outputs; ++i) {
+    context->output_names[static_cast<size_t>(i)] =
+        requested_output_names[i];
+  }
   context->cached_input_meta.resize(static_cast<size_t>(context->num_inputs));
   context->cached_output_meta.resize(static_cast<size_t>(context->num_outputs));
   context->constant_replicas.resize(static_cast<size_t>(context->num_inputs));
   context->is_placeholder_input.resize(static_cast<size_t>(context->num_inputs), false);
+  for (int publicIndex = 0; publicIndex < context->num_inputs; ++publicIndex) {
+    const int planIndex = context->public_to_plan_input[static_cast<size_t>(publicIndex)];
+    context->is_placeholder_input[static_cast<size_t>(publicIndex)] =
+        getPlanIsExternalInputPlaceholder(planHandle, planIndex);
+  }
 
   setLastError(model->runtime, "");
   *out_context = context;
   return SDX_STATUS_OK;
+}
+
+SDX_API sdx_status_t sdxCreateContext(
+    sdx_model_t* model,
+    const char* const* requested_output_names,
+    int32_t num_requested_outputs,
+    sdx_context_t** out_context) {
+  return createContextInternal(model, requested_output_names,
+                               num_requested_outputs, false, out_context);
+}
+
+SDX_API sdx_status_t sdxCreateContextWithOptions(
+    sdx_model_t* model,
+    const char* const* requested_output_names,
+    int32_t num_requested_outputs,
+    const sdx_context_options_t* options,
+    sdx_context_t** out_context) {
+  if (options != nullptr && options->struct_size != 0 &&
+      options->struct_size <
+          offsetof(sdx_context_options_t, bind_model_parameters) + sizeof(int32_t)) {
+    if (model != nullptr) {
+      setLastError(model->runtime, "sdx_context_options_t struct_size is incompatible");
+    }
+    return SDX_STATUS_INCOMPATIBLE_ABI;
+  }
+  const bool bindModelParameters =
+      options != nullptr &&
+      optionHasField(options->struct_size,
+                     offsetof(sdx_context_options_t, bind_model_parameters),
+                     sizeof(int32_t)) &&
+      options->bind_model_parameters != 0;
+  return createContextInternal(model, requested_output_names,
+                               num_requested_outputs, bindModelParameters,
+                               out_context);
 }
 
 SDX_API void sdxDestroyContext(sdx_context_t* context) {
@@ -1003,9 +1259,14 @@ SDX_API void sdxDestroyContext(sdx_context_t* context) {
 
   context->input_wrappers.clear();
   context->output_wrappers.clear();
+  context->borrowed_output_copies.clear();
+  context->output_names.clear();
   context->cached_input_meta.clear();
   context->cached_output_meta.clear();
   context->constant_replicas.clear();
+  context->public_to_plan_input.clear();
+  context->plan_to_public_input.clear();
+  context->bound_model_inputs.clear();
 
   if (context->graph_context != nullptr) {
     deleteGraphContext(context->graph_context);
@@ -1020,14 +1281,18 @@ SDX_API void sdxDestroyContext(sdx_context_t* context) {
   delete context;
 }
 
-SDX_API sdx_status_t sdxRun(
+static sdx_status_t runInternal(
     sdx_context_t* context,
     const sdx_tensor_view_t* inputs,
     int32_t num_inputs,
     const sdx_tensor_view_t* outputs,
     int32_t num_outputs,
-    const sdx_run_options_t* options) {
-  if (context == nullptr || inputs == nullptr || outputs == nullptr || num_inputs < 0 || num_outputs < 0) {
+    const sdx_run_options_t* options,
+    bool copy_to_caller_outputs) {
+  if (context == nullptr || num_inputs < 0 ||
+      (num_inputs > 0 && inputs == nullptr) ||
+      (copy_to_caller_outputs &&
+       (num_outputs < 0 || (num_outputs > 0 && outputs == nullptr)))) {
     return SDX_STATUS_INVALID_ARGUMENT;
   }
 
@@ -1065,13 +1330,16 @@ SDX_API sdx_status_t sdxRun(
       setContextError(context, "Input tensor count mismatch");
       return SDX_STATUS_INVALID_ARGUMENT;
     }
-    if (num_outputs != context->num_outputs) {
+    if (copy_to_caller_outputs && num_outputs != context->num_outputs) {
       setContextError(context, "Output tensor count mismatch");
       return SDX_STATUS_INVALID_ARGUMENT;
     }
   } else {
-    if (num_inputs < context->num_inputs || num_outputs < context->num_outputs) {
-      setContextError(context, "Non-strict signature still requires at least plan input/output counts");
+    if (num_inputs < context->num_inputs ||
+        (copy_to_caller_outputs && num_outputs < context->num_outputs)) {
+      setContextError(
+          context,
+          "Non-strict signature still requires at least plan input/output counts");
       return SDX_STATUS_INVALID_ARGUMENT;
     }
   }
@@ -1132,9 +1400,11 @@ SDX_API sdx_status_t sdxRun(
       auto st = scanTensor(inputs[i], inputs[i].bytes);
       if (st != SDX_STATUS_OK) return st;
     }
-    for (int i = 0; i < context->num_outputs; i++) {
-      auto st = scanTensor(outputs[i], outputs[i].bytes);
-      if (st != SDX_STATUS_OK) return st;
+    if (copy_to_caller_outputs) {
+      for (int i = 0; i < context->num_outputs; i++) {
+        auto st = scanTensor(outputs[i], outputs[i].bytes);
+        if (st != SDX_STATUS_OK) return st;
+      }
     }
 
     if (sawCudaTensor && sawAmdTensor) {
@@ -1182,7 +1452,7 @@ SDX_API sdx_status_t sdxRun(
   // scenarios, the thread stays on the execution device until a different
   // election result changes it.
   // ══════════════════════════════════════════════════════════════════════
-  if (sd::graph::dspIsCudaBuild() && electedDeviceId >= 0) {
+  if (sd::graph::dspHasDeviceMemory() && electedDeviceId >= 0) {
     int currentDevice = sd::AffinityManager::currentDeviceId();
     if (currentDevice != electedDeviceId) {
       try {
@@ -1204,7 +1474,7 @@ SDX_API sdx_status_t sdxRun(
 
   // Cache election result after device switch succeeds.
   // Only cache when frozen — before freeze, tensors may shift devices.
-  if (sd::graph::dspIsCudaBuild() && !context->device_election_done) {
+  if (sd::graph::dspHasDeviceMemory() && !context->device_election_done) {
     int planPhase = getPlanPhase(context->plan_handle);
     if (planPhase >= 2) {  // FROZEN or REPLAYING
       context->elected_device_id = electedDeviceId;
@@ -1327,45 +1597,67 @@ SDX_API sdx_status_t sdxRun(
   }
 
   bool anyOutputChanged = false;
-  for (int i = 0; i < context->num_outputs; i++) {
-    const size_t idx = static_cast<size_t>(i);
-    if (context->output_wrappers[idx] != nullptr && context->cached_output_meta[idx].matches(outputs[i])) {
-      continue;  // Cache hit
+  if (copy_to_caller_outputs) {
+    for (int i = 0; i < context->num_outputs; i++) {
+      const size_t idx = static_cast<size_t>(i);
+      if (context->output_wrappers[idx] != nullptr &&
+          context->cached_output_meta[idx].matches(outputs[i])) {
+        continue;  // Cache hit
+      }
+      std::unique_ptr<sd::NDArray> wrapped;
+      std::string error;
+      auto status = wrapTensorView(outputs[i], &wrapped, &error);
+      if (status != SDX_STATUS_OK) {
+        setContextError(context,
+                        "Output tensor[" + std::to_string(i) +
+                            "] invalid: " + error);
+        return status;
+      }
+      context->output_wrappers[idx] = std::move(wrapped);
+      context->cached_output_meta[idx].update(outputs[i]);
+      anyOutputChanged = true;
     }
-    std::unique_ptr<sd::NDArray> wrapped;
-    std::string error;
-    auto status = wrapTensorView(outputs[i], &wrapped, &error);
-    if (status != SDX_STATUS_OK) {
-      setContextError(context, "Output tensor[" + std::to_string(i) + "] invalid: " + error);
-      return status;
-    }
-    context->output_wrappers[idx] = std::move(wrapped);
-    context->cached_output_meta[idx].update(outputs[i]);
-    anyOutputChanged = true;
   }
 
   // Only purge and re-set context arrays when wrappers actually changed.
   // On the fast path (same pointers, shapes, dtypes), this skips all context setup.
   if (anyInputChanged || anyOutputChanged || context->execution_count == 0) {
     ctxPurgeNoSync(context->graph_context);
-    for (int i = 0; i < context->num_inputs; i++) {
-      setGraphContextInputArray(
-          context->graph_context,
-          i,
-          context->input_wrappers[static_cast<size_t>(i)].get());
+    for (int planIndex = 0; planIndex < context->plan_num_inputs; ++planIndex) {
+      sd::NDArray* input =
+          context->bound_model_inputs[static_cast<size_t>(planIndex)];
+      if (input == nullptr) {
+        const int publicIndex =
+            context->plan_to_public_input[static_cast<size_t>(planIndex)];
+        if (publicIndex < 0 || publicIndex >= context->num_inputs) {
+          setContextError(context,
+                          "sdxRun: missing public-to-plan input mapping at plan index " +
+                              std::to_string(planIndex));
+          return SDX_STATUS_EXECUTION_FAILED;
+        }
+        input = context->input_wrappers[static_cast<size_t>(publicIndex)].get();
+      }
+      setGraphContextInputArray(context->graph_context, planIndex, input);
     }
-    for (int i = 0; i < context->num_outputs; i++) {
-      setGraphContextOutputArray(
-          context->graph_context,
-          i,
-          context->output_wrappers[static_cast<size_t>(i)].get());
+    if (copy_to_caller_outputs) {
+      for (int i = 0; i < context->num_outputs; i++) {
+        setGraphContextOutputArray(
+            context->graph_context,
+            i,
+            context->output_wrappers[static_cast<size_t>(i)].get());
+      }
     }
+  }
+
+  // Any borrowed output view from the prior execution expires at this point.
+  for (auto& copy : context->borrowed_output_copies) {
+    copy.reset();
   }
 
   auto start = std::chrono::steady_clock::now();
   sd::Pointer execStream = nullptr;
-  if (sd::graph::dspIsCudaBuild() && hasCudaLikeTensors) {
-    // Cache execution stream — avoids LaunchContext lookup every call
+  if (sd::graph::dspHasDeviceMemory()) {
+    // Cache the active device backend stream — avoids LaunchContext lookup every call
     if (context->exec_stream_cached) {
       execStream = context->cached_exec_stream;
     } else {
@@ -1382,9 +1674,12 @@ SDX_API sdx_status_t sdxRun(
   context->execution_count++;
 
   sdx_status_t status = mapExecuteStatus(execCode);
+  const bool explicitAcceleratorBackend =
+      requestedBackend != static_cast<int>(SDX_BACKEND_AUTO) &&
+      requestedBackend != static_cast<int>(SDX_BACKEND_SLOT_BY_SLOT);
   if (status != SDX_STATUS_OK &&
       context->model->strict_backend &&
-      requestedBackend != static_cast<int>(SDX_BACKEND_AUTO)) {
+      explicitAcceleratorBackend) {
     status = SDX_STATUS_BACKEND_UNAVAILABLE;
   }
   context->last_report.struct_size = sizeof(sdx_execution_report_t);
@@ -1398,13 +1693,13 @@ SDX_API sdx_status_t sdxRun(
   }
   context->last_report.requested_gpu_target = requestedGpuTarget;
   context->last_report.applied_gpu_target = requestedGpuTarget;
-  context->last_report.status_code = static_cast<int32_t>(status);
   context->last_report.execution_time_ns = durationNs;
   context->last_report.plan_phase = getPlanPhase(context->plan_handle);
   context->last_report.execution_count = context->execution_count;
-  // Coarse fallback telemetry: fallback observed when any segment failed
-  // graph capture or the plan is REPLAY_BLOCKED (phase 3) — both mean the
-  // plan is executing below its requested/optimal path.
+  // Fallback telemetry covers capture/replay failure and, for an explicitly
+  // requested accelerator, any non-constant segment resolved to slot-by-slot
+  // execution. The latter is host execution and must never be reported as a
+  // successful strict accelerator run.
   {
     int32_t usedFallback = 0;
     int numSegments = getPlanNumSegments(context->plan_handle);
@@ -1417,15 +1712,49 @@ SDX_API sdx_status_t sdxRun(
     if (usedFallback == 0 && context->last_report.plan_phase == 3) {
       usedFallback = 1;
     }
+    if (usedFallback == 0 && explicitAcceleratorBackend) {
+      const auto* plan =
+          reinterpret_cast<const sd::graph::NativeDynamicShapePlan*>(
+              context->plan_handle);
+      if (plan != nullptr) {
+        for (const auto& segment : plan->getSegments()) {
+          if (!segment.def.allFrozenConstants &&
+              segment.def.selectedBackend ==
+                  sd::graph::SelectedBackend::SLOT_BY_SLOT) {
+            usedFallback = 1;
+            break;
+          }
+        }
+      }
+    }
     context->last_report.used_fallback = usedFallback;
   }
 
+  const bool strictFallbackViolation =
+      status == SDX_STATUS_OK &&
+      context->model->strict_backend &&
+      explicitAcceleratorBackend &&
+      context->last_report.used_fallback != 0;
+  if (strictFallbackViolation) {
+    status = SDX_STATUS_BACKEND_UNAVAILABLE;
+  }
+  context->last_report.status_code = static_cast<int32_t>(status);
+
   if (status != SDX_STATUS_OK) {
-    const char* nativeError = lastErrorMessage();
-    if (nativeError != nullptr && nativeError[0] != '\0') {
-      setContextError(context, nativeError);
+    if (strictFallbackViolation) {
+      setContextError(
+          context,
+          "Strict accelerator execution rejected slot-by-slot host fallback");
     } else {
-      setContextError(context, "executeDynamicShapePlan failed with status " + std::to_string(execCode));
+      const char* nativeError = lastErrorMessage();
+      if (nativeError != nullptr && nativeError[0] != '\0') {
+        setContextError(context, nativeError);
+      } else {
+        setContextError(
+            context,
+            "executeDynamicShapePlan failed with status " +
+                std::to_string(execCode));
+      }
     }
     return status;
   }
@@ -1436,39 +1765,76 @@ SDX_API sdx_status_t sdxRun(
   // arrays: the plan produces its own arrays and the context's output slots
   // are REPLACED with pointers to them post-execute (see NativeOps_dsp.cpp).
   // The caller-buffer wrappers therefore act as destinations we copy into.
-  for (int i = 0; i < context->num_outputs; i++) {
-    auto& out = context->output_wrappers[static_cast<size_t>(i)];
-    sd::NDArray* produced = context->graph_context->outputArray(i);
-    if (produced == nullptr) {
-      setContextError(context,
-                      "sdxRun: plan produced no output at index " + std::to_string(i));
-      return SDX_STATUS_EXECUTION_FAILED;
-    }
-    if (produced != out.get()) {
-      if (produced->dataType() != out->dataType()) {
-        setContextError(context,
-                        "sdxRun: output dtype mismatch at index " + std::to_string(i) +
-                        " (produced=" + std::to_string(static_cast<int>(produced->dataType())) +
-                        ", caller=" + std::to_string(static_cast<int>(out->dataType())) + ")");
+  if (copy_to_caller_outputs) {
+    for (int i = 0; i < context->num_outputs; i++) {
+      auto& out = context->output_wrappers[static_cast<size_t>(i)];
+      sd::NDArray* produced = context->graph_context->outputArray(i);
+      if (produced == nullptr) {
+        setContextError(
+            context,
+            "sdxRun: plan produced no output at index " + std::to_string(i));
         return SDX_STATUS_EXECUTION_FAILED;
       }
-      if (produced->lengthOf() != out->lengthOf()) {
-        setContextError(context,
-                        "sdxRun: output length mismatch at index " + std::to_string(i) +
-                        " (produced=" + std::to_string(produced->lengthOf()) +
-                        ", caller=" + std::to_string(out->lengthOf()) + ")");
+      if (produced != out.get()) {
+        if (produced->dataType() != out->dataType()) {
+          setContextError(
+              context,
+              "sdxRun: output dtype mismatch at index " + std::to_string(i) +
+                  " (produced=" +
+                  std::to_string(static_cast<int>(produced->dataType())) +
+                  ", caller=" +
+                  std::to_string(static_cast<int>(out->dataType())) + ")");
+          return SDX_STATUS_EXECUTION_FAILED;
+        }
+        if (produced->lengthOf() != out->lengthOf()) {
+          setContextError(
+              context,
+              "sdxRun: output length mismatch at index " + std::to_string(i) +
+                  " (produced=" + std::to_string(produced->lengthOf()) +
+                  ", caller=" + std::to_string(out->lengthOf()) + ")");
+          return SDX_STATUS_EXECUTION_FAILED;
+        }
+        out->assign(produced);
+      }
+      if (outputs[i].device_type == static_cast<int32_t>(SDX_DEVICE_HOST)) {
+        out->syncToHost();
+      }
+      // GPU outputs: data stays on device, no host sync needed.
+    }
+  } else {
+    // Fail here rather than returning success with an unusable dynamic output.
+    for (int i = 0; i < context->num_outputs; ++i) {
+      if (context->graph_context->outputArray(i) == nullptr) {
+        setContextError(
+            context,
+            "sdxRunAllocating: plan produced no output at index " +
+                std::to_string(i));
         return SDX_STATUS_EXECUTION_FAILED;
       }
-      out->assign(produced);
     }
-    if (outputs[i].device_type == static_cast<int32_t>(SDX_DEVICE_HOST)) {
-      out->syncToHost();
-    }
-    // GPU outputs: data stays on device, no host sync needed
   }
 
   setContextError(context, "");
   return SDX_STATUS_OK;
+}
+
+SDX_API sdx_status_t sdxRun(
+    sdx_context_t* context,
+    const sdx_tensor_view_t* inputs,
+    int32_t num_inputs,
+    const sdx_tensor_view_t* outputs,
+    int32_t num_outputs,
+    const sdx_run_options_t* options) {
+  return runInternal(context, inputs, num_inputs, outputs, num_outputs,
+                     options, true);
+}
+
+SDX_API sdx_status_t sdxRunAllocating(
+    sdx_context_t* context,
+    const sdx_tensor_view_t* inputs,
+    int32_t num_inputs,
+    const sdx_run_options_t* options) {
+  return runInternal(context, inputs, num_inputs, nullptr, 0, options, false);
 }
 
 SDX_API const char* sdxGetLastError(const sdx_runtime_t* runtime) {
@@ -1510,7 +1876,9 @@ SDX_API sdx_status_t sdxMarkInputVariable(sdx_context_t* context, int32_t input_
     setContextError(context, "sdxMarkInputVariable: input_index out of range");
     return SDX_STATUS_INVALID_ARGUMENT;
   }
-  markPlanExternalInputVariable(context->plan_handle, input_index);
+  const int planIndex =
+      context->public_to_plan_input[static_cast<size_t>(input_index)];
+  markPlanExternalInputVariable(context->plan_handle, planIndex);
   return SDX_STATUS_OK;
 }
 
@@ -1523,7 +1891,9 @@ SDX_API sdx_status_t sdxMarkInputPlaceholder(sdx_context_t* context, int32_t inp
     setContextError(context, "sdxMarkInputPlaceholder: input_index out of range");
     return SDX_STATUS_INVALID_ARGUMENT;
   }
-  markPlanExternalInputPlaceholder(context->plan_handle, input_index);
+  const int planIndex =
+      context->public_to_plan_input[static_cast<size_t>(input_index)];
+  markPlanExternalInputPlaceholder(context->plan_handle, planIndex);
   // Record in local cache so cross-device migration knows not to cache this input
   context->is_placeholder_input[static_cast<size_t>(input_index)] = true;
   return SDX_STATUS_OK;
@@ -1550,6 +1920,15 @@ SDX_API int32_t sdxGetPlanPhase(const sdx_context_t* context) {
   return getPlanPhase(context->plan_handle);
 }
 
+SDX_API const char* sdxGetPlanSegmentsSummaryJson(
+    const sdx_context_t* context) {
+  if (context == nullptr || context->plan_handle == nullptr) {
+    return nullptr;
+  }
+  std::lock_guard<std::mutex> execLock(context->exec_mutex);
+  return getPlanSegmentsSummaryJson(context->plan_handle);
+}
+
 SDX_API int32_t sdxGetExecutionCount(const sdx_context_t* context) {
   if (context == nullptr) {
     return -1;
@@ -1572,11 +1951,245 @@ SDX_API int32_t sdxGetNumOutputs(const sdx_context_t* context) {
   return context->num_outputs;
 }
 
-SDX_API const char* sdxGetInputName(const sdx_context_t* context, int32_t input_index) {
-  if (context == nullptr || context->plan_handle == nullptr) {
+SDX_API const char* sdxGetInputName(const sdx_context_t* context,
+                                             int32_t input_index) {
+  if (context == nullptr || context->plan_handle == nullptr ||
+      input_index < 0 || input_index >= context->num_inputs) {
     return nullptr;
   }
-  return getPlanExternalInputName(context->plan_handle, input_index);
+  const int planIndex =
+      context->public_to_plan_input[static_cast<size_t>(input_index)];
+  return getPlanExternalInputName(context->plan_handle, planIndex);
+}
+
+SDX_API const char* sdxGetOutputName(const sdx_context_t* context,
+                                    int32_t output_index) {
+  if (context == nullptr || output_index < 0 ||
+      output_index >= context->num_outputs) {
+    return nullptr;
+  }
+  const auto& name =
+      context->output_names[static_cast<size_t>(output_index)];
+  return name.empty() ? nullptr : name.c_str();
+}
+
+SDX_API sdx_status_t sdxGetOutputTensor(
+    sdx_context_t* context,
+    int32_t output_index,
+    sdx_tensor_view_t* out_tensor) {
+  if (context == nullptr || out_tensor == nullptr || output_index < 0 ||
+      output_index >= context->num_outputs) {
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+
+  std::lock_guard<std::mutex> execLock(context->exec_mutex);
+  if (context->execution_count <= 0 ||
+      context->last_report.status_code !=
+          static_cast<int32_t>(SDX_STATUS_OK) ||
+      !context->last_error.empty()) {
+    setContextError(context,
+                    "sdxGetOutputTensor requires a successful prior run");
+    return SDX_STATUS_EXECUTION_FAILED;
+  }
+
+  sd::NDArray* produced =
+      context->graph_context->outputArray(output_index);
+  if (produced == nullptr) {
+    setContextError(context,
+                    "sdxGetOutputTensor: output is unavailable at index " +
+                        std::to_string(output_index));
+    return SDX_STATUS_EXECUTION_FAILED;
+  }
+
+  try {
+    const sd::LongType length = produced->lengthOf();
+    if (length < 0) {
+      setContextError(context,
+                      "sdxGetOutputTensor: output length is invalid");
+      return SDX_STATUS_EXECUTION_FAILED;
+    }
+
+    auto& contiguousCopy =
+        context->borrowed_output_copies[static_cast<size_t>(output_index)];
+    if (length > 1 &&
+        (produced->ordering() != 'c' || produced->ews() != 1)) {
+      contiguousCopy.reset(produced->dup('c'));
+      if (contiguousCopy == nullptr) {
+        setContextError(
+            context,
+            "sdxGetOutputTensor: failed to materialize contiguous output");
+        return SDX_STATUS_EXECUTION_FAILED;
+      }
+      produced = contiguousCopy.get();
+    }
+
+    produced->syncToHost();
+    const int64_t rank = static_cast<int64_t>(produced->rankOf());
+    if (rank < 0 || rank > std::numeric_limits<int32_t>::max()) {
+      setContextError(context,
+                      "sdxGetOutputTensor: output rank exceeds the C ABI");
+      return SDX_STATUS_EXECUTION_FAILED;
+    }
+    const size_t elementSize =
+        sd::DataTypeUtils::sizeOfElement(produced->dataType());
+    const uint64_t unsignedLength =
+        static_cast<uint64_t>(produced->lengthOf());
+    if (elementSize != 0 &&
+        unsignedLength >
+            std::numeric_limits<size_t>::max() / elementSize) {
+      setContextError(context,
+                      "sdxGetOutputTensor: output byte size overflow");
+      return SDX_STATUS_EXECUTION_FAILED;
+    }
+
+    out_tensor->data = produced->buffer();
+    out_tensor->shape =
+        rank == 0
+            ? nullptr
+            : reinterpret_cast<const int64_t*>(produced->shapeOf());
+    out_tensor->rank = static_cast<int32_t>(rank);
+    out_tensor->dtype = static_cast<int32_t>(produced->dataType());
+    out_tensor->bytes =
+        static_cast<size_t>(unsignedLength) * elementSize;
+    out_tensor->device_type = static_cast<int32_t>(SDX_DEVICE_HOST);
+    out_tensor->device_id = -1;
+  } catch (const std::exception& e) {
+    setContextError(
+        context,
+        std::string("sdxGetOutputTensor failed: ") + e.what());
+    return SDX_STATUS_EXECUTION_FAILED;
+  } catch (...) {
+    setContextError(context, "sdxGetOutputTensor failed");
+    return SDX_STATUS_EXECUTION_FAILED;
+  }
+
+  setContextError(context, "");
+  return SDX_STATUS_OK;
 }
 
 }  // extern "C"
+
+namespace sd {
+namespace dsp {
+namespace runtime {
+namespace detail {
+
+void setModelError(sdx_model_t* model, const std::string& error) {
+  if (model != nullptr) {
+    setLastError(model->runtime, error);
+  }
+}
+
+sdx_status_t runOwnedArrays(
+    sdx_context_t* context,
+    const std::vector<NDArray*>& publicInputs) {
+  if (context == nullptr ||
+      publicInputs.size() != static_cast<size_t>(context->num_inputs)) {
+    if (context != nullptr) {
+      setContextError(context, "runOwnedArrays input count mismatch");
+    }
+    return SDX_STATUS_INVALID_ARGUMENT;
+  }
+
+  std::vector<sdx_tensor_view_t> views(publicInputs.size());
+  for (size_t i = 0; i < publicInputs.size(); ++i) {
+    NDArray* array = publicInputs[i];
+    if (array == nullptr) {
+      setContextError(
+          context, "runOwnedArrays received a null input at index " +
+                       std::to_string(i));
+      return SDX_STATUS_INVALID_ARGUMENT;
+    }
+
+    try {
+      array->syncToHost();
+      const LongType length = array->lengthOf();
+      const size_t elementSize = DataTypeUtils::sizeOfElement(array->dataType());
+      if (length < 0 ||
+          (elementSize != 0 &&
+           static_cast<uint64_t>(length) >
+               std::numeric_limits<size_t>::max() / elementSize)) {
+        setContextError(context, "runOwnedArrays input byte size overflow");
+        return SDX_STATUS_INVALID_ARGUMENT;
+      }
+
+      auto& view = views[i];
+      view.data = array->buffer();
+      view.shape = array->rankOf() == 0
+                       ? nullptr
+                       : reinterpret_cast<const int64_t*>(array->shapeOf());
+      view.rank = static_cast<int32_t>(array->rankOf());
+      view.dtype = static_cast<int32_t>(array->dataType());
+      view.bytes = static_cast<size_t>(length) * elementSize;
+      view.device_type = static_cast<int32_t>(SDX_DEVICE_HOST);
+      view.device_id = -1;
+    } catch (const std::exception& e) {
+      setContextError(
+          context, std::string("runOwnedArrays failed to expose input: ") +
+                       e.what());
+      return SDX_STATUS_EXECUTION_FAILED;
+    }
+  }
+
+  return sdxRunAllocating(
+      context,
+      views.empty() ? nullptr : views.data(),
+      static_cast<int32_t>(views.size()),
+      nullptr);
+}
+
+NDArray* contextOutputArray(sdx_context_t* context, int32_t outputIndex) {
+  if (context == nullptr || context->graph_context == nullptr ||
+      outputIndex < 0 || outputIndex >= context->num_outputs) {
+    return nullptr;
+  }
+  return context->graph_context->outputArray(outputIndex);
+}
+
+graph::NativeDynamicShapePlan* contextPlan(sdx_context_t* context) {
+  return context == nullptr
+             ? nullptr
+             : reinterpret_cast<graph::NativeDynamicShapePlan*>(
+                   context->plan_handle);
+}
+
+graph::Context* contextGraph(sdx_context_t* context) {
+  return context == nullptr ? nullptr : context->graph_context;
+}
+
+int32_t contextPlanInputCount(const sdx_context_t* context) {
+  return context == nullptr ? -1 : context->plan_num_inputs;
+}
+
+int32_t contextOutputCount(const sdx_context_t* context) {
+  return context == nullptr ? -1 : context->num_outputs;
+}
+
+int32_t contextPlanInputIndex(
+    const sdx_context_t* context,
+    const std::string& inputName) {
+  if (context == nullptr || context->plan_handle == nullptr ||
+      inputName.empty()) {
+    return -1;
+  }
+  for (int32_t i = 0; i < context->plan_num_inputs; ++i) {
+    const char* candidate = getPlanExternalInputName(context->plan_handle, i);
+    if (candidate != nullptr && inputName == candidate) return i;
+  }
+  return -1;
+}
+
+NDArray* contextPlanInputArray(
+    sdx_context_t* context,
+    int32_t planInputIndex) {
+  if (context == nullptr || context->graph_context == nullptr ||
+      planInputIndex < 0 || planInputIndex >= context->plan_num_inputs) {
+    return nullptr;
+  }
+  return context->graph_context->array(planInputIndex);
+}
+
+}  // namespace detail
+}  // namespace runtime
+}  // namespace dsp
+}  // namespace sd

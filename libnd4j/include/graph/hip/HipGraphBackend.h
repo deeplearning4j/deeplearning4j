@@ -16,34 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-// ── Integration snippet for getGpuGraphBackend() ─────────────────────────────
+// Wired into NativeDynamicShapePlan::getGpuGraphBackend()
+// (graph/impl/NativeDynamicShapePlan_gpubackend.cpp), mirroring the
+// SD_TPU / HAVE_HEXAGON_MLIR branches: explicit GEM_HIP_GRAPHS selects it,
+// GEM_AUTO tries it after the JIT backends when isAvailable() (libamdhip64.so
+// dlopen succeeds — false on non-AMD hosts, so AUTO on NVIDIA is unaffected).
 //
-// When wiring HipGraphBackend into the GPU backend dispatcher, add the
-// following branch to getGpuGraphBackend() in
-//   libnd4j/include/graph/impl/NativeDynamicShapePlan_gpubackend.cu  (DO NOT EDIT NOW)
-//
-//   #ifdef SD_HIP
-//   #include <graph/hip/HipGraphBackend.h>
-//   #endif
-//
-//   GraphBackend* getGpuGraphBackend() {
-//     ...
-//   #ifdef SD_HIP
-//     case GraphExecutionMode::GEM_HIP_GRAPHS:
-//       return &sd::graph::HipGraphBackend::getInstance();
-//   #endif
-//     ...
-//   }
-//
-// This mirrors the existing SD_TPU / SD_HEXAGON branches and is the ONLY
-// edit needed to NativeDynamicShapePlan_gpubackend.cu after this scaffold
-// is reviewed and merged.
-// ─────────────────────────────────────────────────────────────────────────────
+// Gate: native HIP builds (SD_HIP) and ZLUDA+AMD builds (ZLUDA_TARGET_AMD /
+// HAVE_MIOPEN — ROCm is installed there, and ZLUDA streams are hipStream_t
+// underneath, so hipStreamBeginCapture on the plan stream records both
+// ZLUDA-translated launches and directly-launched HIP Triton kernels).
 
 #ifndef LIBND4J_HIP_GRAPH_BACKEND_H
 #define LIBND4J_HIP_GRAPH_BACKEND_H
 
-#ifdef SD_HIP
+#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
 
 #include <graph/GraphBackend.h>
 #include <graph/IslandCapturePolicy.h>

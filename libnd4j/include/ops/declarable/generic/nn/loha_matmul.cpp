@@ -141,8 +141,8 @@ DECLARE_SHAPE_FN(loha_matmul) {
 }
 
 DECLARE_TYPES(loha_matmul) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
-  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING);
 }
 
 CUSTOM_OP_IMPL(loha_matmul_bp, 7, 6, false, 0, 0) {
@@ -291,8 +291,8 @@ DECLARE_SHAPE_FN(loha_matmul_bp) {
 }
 
 DECLARE_TYPES(loha_matmul_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_EXTERNAL_WORKSPACE | OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
-  getOpDescriptor()->addTraits(OP_TRAIT_MATMUL | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

@@ -75,6 +75,7 @@ CUSTOM_OP_IMPL(ctc_loss, 4, 1, false, 0, 1) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(ctc_loss) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0,{ALL_INDICES})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
@@ -141,6 +142,7 @@ CUSTOM_OP_IMPL(ctc_loss_grad, 4, 1, false, 0, 1) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(ctc_loss_grad) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD);
   getOpDescriptor()
       ->setAllowedInputTypes({ALL_INDICES})
       ->setAllowedInputTypes(1, {ALL_FLOATS})

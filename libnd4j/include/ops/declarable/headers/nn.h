@@ -258,28 +258,32 @@ DECLARE_CUSTOM_OP(dot_product_attention_bp, 4, 3, false, 0, 1);
 // its zero-init allocation — i.e. an all-zero attention output / unwritten KV cache. Since
 // the op produces a NON-EMPTY result from non-empty Q/K/V regardless of the empty masks,
 // EMPTY_EXECUTE is the correct policy (mirrors onnx_multi_head_attention below).
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT dot_product_attention_v2 : public sd::ops::DeclarableCustomOp {
  protected:
   void registerTypes();
-  sd::Status validateAndExecute(sd::graph::Context& block);
+  SD_DECLARABLE_OP_EXECUTION_METHODS
 
  public:
   dot_product_attention_v2();
   sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
   samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 REGISTER_H(dot_product_attention_v2)
 
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT dot_product_attention_v2_bp : public sd::ops::DeclarableCustomOp {
  protected:
   void registerTypes();
-  sd::Status validateAndExecute(sd::graph::Context& block);
+  SD_DECLARABLE_OP_EXECUTION_METHODS
 
  public:
   dot_product_attention_v2_bp();
   sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
   samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 REGISTER_H(dot_product_attention_v2_bp)
 #endif
 
@@ -353,16 +357,18 @@ DECLARE_CUSTOM_OP(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1);
 // ANY input is empty (DeclarableOp.cpp ~1028), leaving the output at its zero-init
 // allocation — i.e. an all-zero attention output. The CUSTOM_OP_IMPL already handles empty
 // past correctly (sets it to nullptr, no-past branch), so EMPTY_EXECUTE is the right policy.
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 class SD_LIB_EXPORT onnx_multi_head_attention : public sd::ops::DeclarableCustomOp {
  protected:
   void registerTypes();
-  sd::Status validateAndExecute(sd::graph::Context& block);
+  SD_DECLARABLE_OP_EXECUTION_METHODS
 
  public:
   onnx_multi_head_attention();
   sd::ShapeList* calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block);
   samediff::EmptyHandling emptyHandling() override { return samediff::EmptyHandling::EMPTY_EXECUTE; }
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 REGISTER_H(onnx_multi_head_attention)
 #endif
 
@@ -476,6 +482,36 @@ DECLARE_CUSTOM_OP(mixture_of_experts, 3, 3, false, -2, 3);
  */
 #if NOT_EXCLUDED(OP_moe_shared_experts)
 DECLARE_CUSTOM_OP(moe_shared_experts, 6, 3, false, -2, 3);
+#endif
+
+/**
+ * Mixture-of-Experts gating (router) with top-K selection and
+ * load-balancing auxiliary loss.
+ *
+ *   logits        = hiddenStates @ gateWeight                 [tokens, numExperts]
+ *   probs         = softmax(logits, axis=-1)
+ *   expertIndices = indices of the top-K probs per token      [tokens, topK]
+ *   gateWeights   = selected probs renormalized to sum to 1   [tokens, topK]
+ *   auxLoss       = auxLossCoeff * numExperts * sum_e(meanProb_e * routedFrac_e)
+ *
+ * Inputs:
+ *   0: hiddenStates [tokens, hidden]
+ *   1: gateWeight [hidden, numExperts]
+ *
+ * Integer args:
+ *   0: topK (default 2)
+ *   1: numExperts (default = gateWeight.sizeAt(1))
+ *
+ * T args:
+ *   0: auxLossCoeff (default 0.01)
+ *
+ * Outputs:
+ *   0: expertIndices [tokens, topK] (INT64)
+ *   1: gateWeights [tokens, topK]
+ *   2: auxLoss [1]
+ */
+#if NOT_EXCLUDED(OP_moe_gate)
+DECLARE_CUSTOM_OP(moe_gate, 2, 3, false, -2, -2);
 #endif
 
 /**

@@ -30,9 +30,12 @@
 // MPS version is tied to macOS/iOS version
 // We detect features based on the deployment target
 
+#include <system/BackendNamespace.h>
+
 namespace sd {
 namespace ops {
 namespace platforms {
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 namespace mps {
 
 // ============================================================================
@@ -312,6 +315,7 @@ constexpr bool hasMPSFlashAttentionSupport() {
 }
 
 }  // namespace mps
+SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

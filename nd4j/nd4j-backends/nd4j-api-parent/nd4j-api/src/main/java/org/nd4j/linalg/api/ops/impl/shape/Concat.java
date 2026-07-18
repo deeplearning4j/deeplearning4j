@@ -91,9 +91,9 @@ public class Concat extends DynamicCustomOp {
         if(descriptor.getNumOutputs() > 0 && numOutputArguments() != descriptor.getNumOutputs())
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of outputs is invalid for execution. Specified " + numOutputArguments() + " but should be " + descriptor.getNumOutputs());
 
-        //< 0 means dynamic size
-        if(descriptor.getNumIArgs() >= 0 && numIArguments() != descriptor.getNumIArgs())
-            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of integer arguments is invalid for execution. Specified " + numIArguments() + " but should be " + descriptor.getNumIArgs());
+        //< 0 means dynamic size; non-negative values are minimum ordinary-argument counts.
+        if(descriptor.getNumIArgs() >= 0 && numIArguments() < descriptor.getNumIArgs())
+            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of integer arguments is invalid for execution. Specified " + numIArguments() + " but at least " + descriptor.getNumIArgs() + " are required");
 
         if(descriptor.getNumTArgs() >= 0 && numTArguments() != descriptor.getNumTArgs())
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numTArguments() + " but should be " + descriptor.getNumTArgs());

@@ -28,6 +28,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 /**
  *   This class provides wrapper for Transform operations (i.e. Pow or OneMinus)
  */
@@ -43,6 +44,7 @@ class SD_LIB_EXPORT LegacyTransformBoolOp : public LegacyOp {
   LegacyOp* clone() override;
   void registerTypes() override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

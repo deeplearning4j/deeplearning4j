@@ -103,7 +103,6 @@ public class KernelManager {
         VULKAN(8, "Vulkan", "Vulkan Compute"),
         MLIR(9, "MLIR", "MLIR Compiler"),
         PJRT(10, "PJRT", "PyTorch JAX Runtime"),
-        LLAMA_CPP(11, "LlamaCpp", "Llama.cpp"),
         VLM(12, "VLM", "Vision-Language Models");
 
         @Getter

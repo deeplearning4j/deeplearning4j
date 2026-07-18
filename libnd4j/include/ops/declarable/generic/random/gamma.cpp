@@ -76,11 +76,14 @@ DECLARE_SHAPE_FN(random_gamma) {
 }
 
 DECLARE_TYPES(random_gamma) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_FLOATS})
       ->setAllowedOutputTypes({ALL_FLOATS});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_STATEFUL);
 }
 }  // namespace ops
 }  // namespace sd

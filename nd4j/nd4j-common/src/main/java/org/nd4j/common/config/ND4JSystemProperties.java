@@ -647,6 +647,15 @@ public class ND4JSystemProperties {
     public static final String DSP_GRAPH_EXECUTION_MODE = "nd4j.dsp.graphExecutionMode";
 
     /**
+     * Applicability: nd4j-vulkan backend<br>
+     * Description: When set to true, force-disables the Vulkan backend during backend
+     * discovery even when the nd4j-vulkan native bindings are present on the classpath.
+     * Useful for debugging on systems where Vulkan is available but CPU execution is
+     * desired.
+     */
+    public static final String VULKAN_BACKEND_DISABLED = "nd4j.vulkan.disabled";
+
+    /**
      * Applicability: DSP execution engine / slot-by-slot lifecycle coordination<br>
      * Description: Controls how the slot-by-slot (legacy) execution path coordinates with
      * DSP capture/replay state. Gates per-buffer actuality ticks, host/device resync,
@@ -1684,6 +1693,27 @@ public class ND4JSystemProperties {
     public static final String ENV_TRITON_DUMP_DIR = "nd4j.environment.tritonDumpDir";
     public static final String ENV_TRITON_OVERRIDE_ARCH = "nd4j.environment.tritonOverrideArch";
 
+    // --- Vulkan disk caches (ADR 0115) ---
+    // Applied to the native VulkanConfig at Vulkan backend init (VulkanEnvironment),
+    // so a set property wins over the matching ND4J_VULKAN_* environment variable.
+
+    /** Enable/disable the Tier-1 SPIR-V module disk cache. Env var: ND4J_VULKAN_SPIRV_CACHE_ENABLE. Default: true. */
+    public static final String ENV_VULKAN_SPIRV_CACHE_ENABLED = "nd4j.environment.vulkanSpirvCacheEnabled";
+    /** Tier-1 SPIR-V cache directory. Env var: ND4J_VULKAN_SPIRV_CACHE_DIR. Default: ~/.kompile/cache/vulkan/spirv_cache/. */
+    public static final String ENV_VULKAN_SPIRV_CACHE_DIR = "nd4j.environment.vulkanSpirvCacheDir";
+    /** Read-only pre-seed directory checked before the cache dir. Env var: ND4J_VULKAN_SPIRV_OVERRIDE_DIR. Default: ~/.kompile/cache/vulkan/spirv_override/. */
+    public static final String ENV_VULKAN_SPIRV_OVERRIDE_DIR = "nd4j.environment.vulkanSpirvOverrideDir";
+    /** Bypass Tier-1 reads and skip writes (Triton alwaysCompile semantics). Env var: ND4J_VULKAN_ALWAYS_COMPILE. Default: false. */
+    public static final String ENV_VULKAN_ALWAYS_COMPILE = "nd4j.environment.vulkanAlwaysCompile";
+    /** Enable/disable Tier-2 VkPipelineCache blob persistence. Env var: ND4J_VULKAN_PIPELINE_CACHE_ENABLE. Default: true. */
+    public static final String ENV_VULKAN_PIPELINE_CACHE_ENABLED = "nd4j.environment.vulkanPipelineCacheEnabled";
+    /** Tier-2 pipeline-cache blob directory. Env var: ND4J_VULKAN_PIPELINE_CACHE_DIR. Default: ~/.kompile/cache/vulkan/pipeline_cache/. */
+    public static final String ENV_VULKAN_PIPELINE_CACHE_DIR = "nd4j.environment.vulkanPipelineCacheDir";
+    /** Tier-2 blob size budget in bytes; larger blobs are dropped and regenerate. Env var: ND4J_VULKAN_PIPELINE_CACHE_MAX_BYTES. Default: 67108864. */
+    public static final String ENV_VULKAN_PIPELINE_CACHE_MAX_BYTES = "nd4j.environment.vulkanPipelineCacheMaxBytes";
+    /** Dump the input MLIR module (<key>.mlir) next to stored Tier-1 entries. Env var: ND4J_VULKAN_KERNEL_DUMP. Default: false. */
+    public static final String ENV_VULKAN_KERNEL_DUMP = "nd4j.environment.vulkanKernelDump";
+
     // ---- Array cache properties ----
 
     /**
@@ -2034,6 +2064,20 @@ public class ND4JSystemProperties {
      * Default: false
      */
     public static final String DSP_NO_PADDED = "nd4j.dsp.noPadded";
+
+    // ---- DSP slot lifecycle audit test selection ----
+
+    /**
+     * Applicability: DspSlotLifecycleAuditTest<br>
+     * Description: Optional comma-separated fixture names used to narrow the audit matrix.
+     */
+    public static final String DSP_SLOT_LIFECYCLE_AUDIT_FIXTURE = "audit.fixture";
+
+    /**
+     * Applicability: DspSlotLifecycleAuditTest<br>
+     * Description: Optional comma-separated execution-mode names used to narrow the audit matrix.
+     */
+    public static final String DSP_SLOT_LIFECYCLE_AUDIT_MODE = "audit.mode";
 
     // ---- VLM image preprocessing ----
 

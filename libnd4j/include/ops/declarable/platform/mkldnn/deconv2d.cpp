@@ -345,7 +345,7 @@ static void deconv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO, N
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv2d, ENGINE_CPU) {
+PLATFORM_IMPL(deconv2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
@@ -398,7 +398,7 @@ PLATFORM_IMPL(deconv2d, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
+PLATFORM_CHECK(deconv2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto weights = INPUT_VARIABLE(1);
   auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -433,7 +433,7 @@ PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv2d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(deconv2d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC]
@@ -505,7 +505,7 @@ PLATFORM_IMPL(deconv2d_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(deconv2d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(deconv2d_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW)
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC]

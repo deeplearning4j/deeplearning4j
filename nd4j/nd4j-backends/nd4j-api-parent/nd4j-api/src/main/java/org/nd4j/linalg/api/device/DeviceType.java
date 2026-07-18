@@ -56,6 +56,11 @@ public enum DeviceType {
     METAL_GPU("metal", false),
 
     /**
+     * Cross-vendor Vulkan compute GPU
+     */
+    VULKAN_GPU("vulkan", false),
+
+    /**
      * FPGA accelerator
      */
     FPGA("fpga", false),
@@ -94,7 +99,7 @@ public enum DeviceType {
      * @return true if GPU type
      */
     public boolean isGpu() {
-        return this == CUDA_GPU || this == ROCM_GPU || this == METAL_GPU;
+        return this == CUDA_GPU || this == GPU || this == ROCM_GPU || this == METAL_GPU || this == VULKAN_GPU;
     }
 
     /**

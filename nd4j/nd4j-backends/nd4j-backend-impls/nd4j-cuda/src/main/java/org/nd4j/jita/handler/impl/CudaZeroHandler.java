@@ -931,11 +931,16 @@ public class CudaZeroHandler implements MemoryHandler {
                 throw new ND4JIllegalStateException("cuBLAS handle is null for device " + deviceId +
                     ". This may indicate cuBLAS initialization failure.");
             }
-            cublasHandles.remove(deviceId);
-            cublasHandles.add(deviceId, new cublasHandle_t(nativeHandle));
-
             cublasHandle_t handle = cublasHandles.get(deviceId);
-            if (handle == null || handle.isNull()) {
+            if (handle == null || handle.isNull() || handle.address() != nativeHandle.address()) {
+                // The native address changes after a real device/context switch; replace
+                // the wrapper only then. Same-device calls re-fetch for safety but reuse
+                // the existing Java object instead of allocating one per operation.
+                handle = new cublasHandle_t(nativeHandle);
+                cublasHandles.set(deviceId, handle);
+            }
+
+            if (handle.isNull()) {
                 throw new ND4JIllegalStateException("Cached cuBLAS handle became invalid for device " + deviceId +
                     ". This may indicate CUDA context corruption.");
             }

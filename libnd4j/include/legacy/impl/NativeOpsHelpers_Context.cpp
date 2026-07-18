@@ -25,71 +25,38 @@
 #include <windows.h>
 #endif
 
-#include <helpers/ConstantTadHelper.h>
-#include <legacy/NativeOps.h>
-#include <ops/OpTraitTable.h>
-#include <ops/declarable/OpRegistrator.h>
-#include <ops/declarable/OpExecutionLogger.h>
-
-#include "execution/Threads.h"
-#include "helpers/OpTracker.h"
-
-
 #include <fcntl.h>
 
-#include <helpers/BlasHelper.h>
-#include <helpers/helper_ptrmap.h>
+#include <atomic>
+#include <cerrno>
+#include <exception>
+#include <string>
+#include <vector>
+
+#include <graph/Context.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <helpers/ShapeBuilders.h>
 #include <helpers/logger.h>
-#include <legacy/NativeOpExecutioner.h>
+#include <helpers/shape.h>
 #include <legacy/NativeOps.h>
-#include <loops/type_conversions.h>
-#include <math/templatemath.h>
-#include <ops/declarable/helpers/transforms.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <types/float8.h>
-#include <types/types.h>
+#include <ops/OpTraitTable.h>
+#include <ops/declarable/OpExecutionLogger.h>
+#include <ops/declarable/OpRegistrator.h>
+#include <types/utf8string.h>
+
 #ifndef _WIN32
 #include <sys/mman.h>
+#include <sys/types.h>
 #include <unistd.h>
-
 #else
 #include <helpers/mman.h>
 #include <io.h>
 #endif
-#include <errno.h>
-#include <sys/types.h>
 
 
-extern bool experimentalSupport; // Defined in NativeOpsHelpers_Arrays.cpp
-
-// External references to allocation tracking variables (defined in NativeOpsHelpers_Arrays.cpp)
+// Allocation counters are owned by NativeOpsHelpers_Arrays.cpp.
 extern std::atomic<size_t> g_opaqueArrayCount;
 extern std::atomic<size_t> g_opaqueArrayBytes;
-extern std::mutex g_opaqueArrayMutex;
-
-// DataBuffer allocation tracking (defined in NativeOpsHelpers_DataBuffers.cpp)
-extern std::atomic<size_t> g_dataBufferCount;
-extern std::atomic<size_t> g_dataBufferBytes;
-extern std::mutex g_dataBufferMutex;
-
-#include <execution/Threads.h>
-#include <graph/Context.h>
-#include <helpers/ConstantTadHelper.h>
-#include <helpers/DebugHelper.h>
-
-#include <ops/declarable/OpRegistrator.h>
-#include <ops/specials.h>
-#include <system/Environment.h>
-#ifdef CPU_FEATURES
-#include <cpuinfo_x86.h>
-#endif
-#include <array/DataType.h>
-#include <array/DataTypeUtils.h>
-#include <algorithm>
-
-
-
 
 /*
  * TypeDef:
@@ -134,22 +101,17 @@ sd::LongType iArgumentAtNative(OpaqueContext* ptr, int idx) {
 namespace {
 
 constexpr sd::LongType kShapeValueSyncMaxElements = 4096;
+constexpr uint32_t kFullShapeValueTraits =
+    sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE | sd::ops::OP_TRAIT_DYNAMIC_OUTPUT_SIZE;
 
-std::string normalizeShapeOpName(const std::string& opName) {
-  std::string normalized = opName;
-  std::transform(normalized.begin(), normalized.end(), normalized.begin(),
-                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-  return normalized;
+bool requiresFullShapeValueSync(sd::ops::DeclarableOp* op) {
+  const auto* descriptor = op == nullptr ? nullptr : op->getOpDescriptor();
+  return descriptor != nullptr && (descriptor->getTraits() & kFullShapeValueTraits) != 0;
 }
 
-bool requiresFullShapeValueSync(const std::string& opName) {
-  const auto normalized = normalizeShapeOpName(opName);
-  return normalized == "where" || normalized == "unique";
-}
-
-bool shouldSyncInputForShape(const std::string& opName, sd::NDArray* array) {
+bool shouldSyncInputForShape(sd::ops::DeclarableOp* op, sd::NDArray* array) {
   if (array == nullptr || array->isEmpty()) return false;
-  if (requiresFullShapeValueSync(opName)) return true;
+  if (requiresFullShapeValueSync(op)) return true;
 
   // Shape functions typically inspect only small scalar/index/shape tensors.
   // Skipping forceSyncToHost() for large data inputs avoids replay-time D2H traffic.
@@ -284,27 +246,6 @@ OpaqueConstantShapeBuffer shapeBufferEx(int rank, sd::LongType *shape, sd::LongT
 #endif
 }
 
-void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *shapeInfo, sd::Pointer specialBuffer,
-                  sd::LongType *specialShapeInfo, sd::Pointer debugInfo) {
-#ifdef __cpp_exceptions
-  try {
-    auto p = reinterpret_cast<sd::DebugInfo *>(debugInfo);
-    sd::NDArray array(buffer, shapeInfo, nullptr, 0, 0);
-    sd::DebugHelper::retrieveDebugStatistics(p, &array);
-  } catch (std::exception &e) {
-    safeSetErrorContext(1, e.what());
-    THROW_EXCEPTION(e.what());
-  }
-#else
-  auto p = reinterpret_cast<sd::DebugInfo *>(debugInfo);
-  sd::NDArray array(buffer, shapeInfo, nullptr, 0, 0);
-  sd::DebugHelper::retrieveDebugStatistics(p, &array);
-#endif
-
-}
-
-
-
 void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) {
   // Cache owns all ConstantShapeBuffer objects - JNI should not delete them
   // This function is a no-op now
@@ -401,7 +342,6 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #ifdef __cpp_exceptions
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-    const std::string opName = op->getOpName() == nullptr ? "" : *op->getOpName();
 
 #if defined(SD_GCC_FUNCTRACE)
     // Set op name BEFORE calculateOutputShape so shape allocations are tagged
@@ -420,7 +360,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #endif
         THROW_EXCEPTION(errorMessage.c_str());
       }
-      if (shouldSyncInputForShape(opName, context->array(e))) {
+      if (shouldSyncInputForShape(op, context->array(e))) {
         context->array(e)->forceSyncToHost();
       }
       inShapes.push_back(context->array(e)->shapeInfo());
@@ -442,7 +382,6 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
   }
 #else
   auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-  const std::string opName = op->getOpName() == nullptr ? "" : *op->getOpName();
 
 #if defined(SD_GCC_FUNCTRACE)
   // Set op name BEFORE calculateOutputShape so shape allocations are tagged
@@ -462,7 +401,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
       safeSetErrorContext(1, errorMessage.c_str());
       return nullptr;
     }
-    if (shouldSyncInputForShape(opName, context->array(e))) {
+    if (shouldSyncInputForShape(op, context->array(e))) {
       context->array(e)->forceSyncToHost();
     }
     inShapes.push_back(context->array(e)->shapeInfo());
@@ -567,53 +506,6 @@ sd::LongType  const *getShape(sd::ShapeList *list, sd::LongType  i) { return lis
 
 
 
-// Function to execute a custom operation
-sd::Status execCustomOp(sd::Pointer *extraPointers, sd::LongType  hash, OpaqueNDArrayArr inputs, int numInputs,
-                        OpaqueNDArrayArr outputs, int numOutputs, double *tArgs, int numTArgs,
-                        sd::LongType  *iArgs, int numIArgs, bool *bArgs, int numBArgs, bool isInplace) {
-#ifdef __cpp_exceptions
-  try {
-    // Convert NDArray** inputs and outputs to std::vector<NDArray*>
-    const std::vector<sd::NDArray*> inputVec(inputs, inputs + numInputs);
-    const std::vector<sd::NDArray*> outputVec(outputs, outputs + numOutputs);
-    const std::vector<double> tArgsVec(tArgs, tArgs + numTArgs);
-    const std::vector<sd::LongType > iArgsVec(iArgs, iArgs + numIArgs);
-    const std::vector<bool> bArgsVec(bArgs, bArgs + numBArgs);
-
-    // Retrieve the operation based on the hash
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-    if (op == nullptr) {
-      THROW_EXCEPTION("Operation not found for the given hash.");
-    }
-
-    // Execute the custom operation
-    return op->execute(inputVec, outputVec, tArgsVec, iArgsVec, bArgsVec, {}, isInplace);
-  }
-  catch (std::exception &e) {
-    // Handle exceptions by setting error codes and messages
-    safeSetErrorContext(1, e.what());
-    return sd::Status::KERNEL_FAILURE;
-  }
-#else
-  // Convert NDArray** inputs and outputs to std::vector<NDArray*>
-  const std::vector<sd::NDArray*> inputVec(inputs, inputs + numInputs);
-  const std::vector<sd::NDArray*> outputVec(outputs, outputs + numOutputs);
-  const std::vector<double> tArgsVec(tArgs, tArgs + numTArgs);
-  const std::vector<sd::LongType > iArgsVec(iArgs, iArgs + numIArgs);
-  const std::vector<bool> bArgsVec(bArgs, bArgs + numBArgs);
-
-  // Retrieve the operation based on the hash
-  auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-  if (op == nullptr) {
-    safeSetErrorContext(1, "Operation not found for the given hash.");
-    return sd::Status::KERNEL_FAILURE;
-  }
-
-  // Execute the custom operation
-  return op->execute(inputVec, outputVec, tArgsVec, iArgsVec, bArgsVec, {}, isInplace);
-#endif
-}
-
 void toggleOpTrace(bool opTrace) { sd::ops::OpRegistrator::getInstance().toggleTraceOps(opTrace);
 }
 
@@ -668,14 +560,20 @@ std::vector<ExecTrace*> * listOpTraces() {
 unsigned int getOpTraits(const char* opName) {
   if (opName == nullptr) return 0;
   std::string name(opName);
-  uint32_t traits = sd::ops::getOpTraitsByName(name);
-  // Fall back to the registered descriptor in case traits were attached at
-  // registration time but not listed in the hand-maintained trait table.
-  if (traits == 0) {
-    auto* op = sd::ops::OpRegistrator::getInstance().getOperation(name);
-    if (op != nullptr && op->getOpDescriptor() != nullptr) {
-      traits = op->getOpDescriptor()->getTraits();
-    }
-  }
-  return static_cast<unsigned int>(traits);
+  // Answer with the merged VIEW of descriptor traits and the legacy
+  // OpTraitTable, computed here rather than by mutating descriptors via
+  // initOpTraits(): OR-ing table bits into live descriptors changes C++
+  // plan compilation (slot trait stamping, computeShapeKey gating), while
+  // this query-side merge keeps the documented contract for Java/JNI
+  // consumers without any side effects. Legacy (non-declarable) transform
+  // and scalar families are not in the registry at all and are served
+  // straight from the table.
+  const auto tableTraits =
+      static_cast<unsigned int>(sd::ops::getOpTraitsByName(name));
+  auto* op = sd::ops::OpRegistrator::getInstance().getOperation(name);
+  const auto* descriptor = op != nullptr ? op->getOpDescriptor() : nullptr;
+  if (descriptor != nullptr)
+    return static_cast<unsigned int>(descriptor->getTraits()) | tableTraits;
+  return tableTraits;
 }
+

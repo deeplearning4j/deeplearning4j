@@ -113,6 +113,52 @@ void dspPublishThreadCompletionEvent(void* streamPtr);
 
 namespace graph {
 
+// Passive BUF_FP diagnostic bridge for strided-batched matmuls.
+// The bge lifecycle path invokes four accepted batched GEMMs during re-warmup
+// and the same four again while building the outer composite. Ordinals 1/5
+// identify slot 13; ordinal 7 identifies slot 49. Queue A/B/C fingerprints on
+// the cuBLAS handle stream so they observe exact operands and results without
+// synchronization.
+static thread_local NativeDynamicShapePlan* tl_activeMmulFpPlan = nullptr;
+static thread_local int tl_activeMmulFpStep = 0;
+static thread_local int tl_activeMmulFpOrdinal = 0;
+
+int recordActiveMmulFingerprintTriplet(const void* aPtr, size_t aBytes,
+                                        const void* bPtr, size_t bBytes,
+                                        const void* cPtr, size_t cBytes,
+                                        cudaStream_t intendedStream,
+                                        cudaStream_t handleStream,
+                                        int mathMode, int pointerMode, int atomicsMode,
+                                        bool deterministicWindow, bool ltDisabled,
+                                        const void* workspacePtr, size_t workspaceBytes) {
+  if (tl_activeMmulFpPlan == nullptr) return -1;
+  const int ordinal = tl_activeMmulFpOrdinal++;
+  if (ordinal != 1 && ordinal != 3 && ordinal != 5 && ordinal != 7) return ordinal;
+  // Keep ordinal 7 (slot 49) on an isolated row: the earlier probes reuse
+  // tracks 124-127, so sharing their post-capture row would overwrite evidence.
+  const int fpStep = tl_activeMmulFpStep +
+      (ordinal == 7 ? 40 : ((ordinal == 3 || ordinal >= 5) ? 32 : 0));
+  tl_activeMmulFpPlan->recordBufFingerprintPublic(handleStream, fpStep, 124, aPtr, aBytes);
+  tl_activeMmulFpPlan->recordBufFingerprintPublic(handleStream, fpStep, 125, bPtr, bBytes);
+  tl_activeMmulFpPlan->recordBufFingerprintPublic(handleStream, fpStep, 126, cPtr, cBytes);
+  DSP_DIAG(MEMORY,
+           "BUF_FP_MMUL_SLOT plan=%p step=%d ordinal=%d slot=%d phase=%s A=%p bytesA=%zu B=%p bytesB=%zu C=%p bytesC=%zu intended=%p handle=%p math=%d pointer=%d atomics=%d deterministicWindow=%d ltDisabled=%d workspace=%p/%zu",
+           (void*)tl_activeMmulFpPlan, fpStep, ordinal, ordinal == 7 ? 49 : 13,
+           (ordinal == 3 || ordinal >= 5) ? "outer" : "warmup", aPtr, aBytes, bPtr, bBytes, cPtr, cBytes,
+           (void*)intendedStream, (void*)handleStream, mathMode, pointerMode, atomicsMode,
+           (int)deterministicWindow, (int)ltDisabled, workspacePtr, workspaceBytes);
+  return ordinal;
+}
+
+void recordActiveMmulOutputFingerprint(int ordinal, const void* cPtr, size_t cBytes,
+                                       cudaStream_t handleStream) {
+  if (tl_activeMmulFpPlan == nullptr ||
+      (ordinal != 1 && ordinal != 3 && ordinal != 5 && ordinal != 7)) return;
+  const int fpStep = tl_activeMmulFpStep +
+      (ordinal == 7 ? 40 : ((ordinal == 3 || ordinal >= 5) ? 32 : 0));
+  tl_activeMmulFpPlan->recordBufFingerprintPublic(handleStream, fpStep, 127, cPtr, cBytes);
+}
+
 // ── Per-GPU CUDA graph capture/execution coordination ───────────────────
 // Shared across _cuda.cu, _cudagraph.cu, and _gpubackend.cu (extern there).
 //
@@ -561,6 +607,12 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     }
   }
 
+  // Sync-free trace-slot fingerprint: capture the replay value on the DSP stream
+  // before output materialization or the next execution can mutate the slot.
+  if (!segments_.empty()) {
+    platformTraceSlotValues(segments_.back(), stream, executeCount_);
+  }
+
   // All segments replayed successfully.
   // Plan-output boundary: materialize any VIEW in a requested-output slot before
   // returning to Java. Same reasoning as the normal-path version in NativeDynamicShapePlan.cpp:
@@ -689,14 +741,19 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
   // Clear stale CUDA errors
   cudaGetLastError();
 
-  // Clear attention workspace when no graphs are cached yet.
+  // Clear only this plan's attention workspace scope when it has no cached graph.
+  // Each DSP plan owns a distinct CUDA stream, and captured attention kernels bake
+  // their scratch-buffer addresses into the graph. Clearing a thread-global workspace
+  // here invalidated sibling plans (prefill cleared decode immediately before replay).
   {
     bool anyGraphCached = false;
     for (const auto& seg : segments_) {
       if (seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady()) { anyGraphCached = true; break; }
     }
     if (!anyGraphCached) {
-      AttentionWorkspace::getInstance()->clear();
+      auto* cudaStreamPtr = static_cast<cudaStream_t*>(stream);
+      void* workspaceScope = cudaStreamPtr != nullptr ? static_cast<void*>(*cudaStreamPtr) : nullptr;
+      AttentionWorkspace::getInstance()->clearScope(workspaceScope);
     }
   }
 
@@ -821,7 +878,8 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
       auto& seg = segments_[task.segIdx];
       bool ok = gpuBackend->compileSegment(seg, slots_, externalInputs, numExternalInputs,
                                             outputSlots_, totalOutputSlots_, task.shapeKey,
-                                            numSlots_);
+                                            numSlots_, requestedOutputSlotIndices_,
+                                            numRequestedOutputs_);
       if (ok) {
         segments_[task.segIdx].def.shapeKeyState.markCompiled(task.shapeKey);
         precompileOk++;
@@ -1363,7 +1421,7 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
   // sub-kernels is still graph-capturable via monolithic capture. Triton is just
   // another kernel type — segments do NOT need it to be replayable.
   bool hasBackend = (segment.def.selectedBackend == SelectedBackend::GPU_COMPILER ||
-                     segment.def.selectedBackend == SelectedBackend::CUDA_GRAPHS);
+                     segment.def.selectedBackend == SelectedBackend::DEVICE_REPLAY);
   bool canCapture = !segment.exec.compilationFailed &&
                     !isTerminalOutcome(segment.exec.outcome) && hasBackend;
 
@@ -1437,10 +1495,13 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       if (!gpuBackend->canFuseSegment(slots_, segment.def.startSlot, segment.def.endSlot)) {
         DSP_DIAG(BACKEND,
                  "platformExecuteSegmentWithBackends: backend=%s cannot fuse seg[%d-%d] "
-                 "(segment contains non-JIT-compatible ops — falling back to slot-by-slot)",
+                 "(falling back to slot-by-slot)",
                  gpuBackend->name(), segment.def.startSlot, segment.def.endSlot);
-        SegmentLifecycle::markNotFusible(segment.exec, "gpu_compiler_not_fusible", segment.def.startSlot, segment.def.endSlot);
-        return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+        SegmentLifecycle::markNotFusible(
+            segment.exec, "gpu_compiler_not_fusible",
+            segment.def.startSlot, segment.def.endSlot);
+        return executeSegmentSlotBySlot(
+            segment, externalInputs, numExternalInputs, stream);
       }
 
       auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
@@ -1497,7 +1558,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
                     static_cast<int>(status));
     }
 
-    case SelectedBackend::CUDA_GRAPHS: {
+    case SelectedBackend::DEVICE_REPLAY: {
       auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
         // Graph capture failed — mark permanently failed and throw.
@@ -1577,6 +1638,11 @@ void NativeDynamicShapePlan::platformFlushGraphBakedPins(void* streamVoid) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
+#if HAVE_TRITON
+  // Compiled Triton runtime state is keyed by this live GraphSegment identity.
+  // Evict it before resegmentation destroys the object and permits address reuse.
+  TritonGraphBackend::getInstance().invalidateCacheForSegments({&seg});
+#endif
   DSP_DIAG_SEG(GRAPH_REPLAY, seg.def.startSlot,
                "platformCleanupSegmentForRebuild: seg[%d-%d] hasReplay=%d compositeHandles=%d",
                seg.def.startSlot, seg.def.endSlot, seg.exec.replayHandle ? 1 : 0,
@@ -1694,6 +1760,12 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     }
   }
 
+  // Release only this plan's named attention scratch after its stream is drained
+  // and before destroying the stream that identifies the ownership scope.
+  if (ownedStream_ != nullptr) {
+    AttentionWorkspace::getInstance()->clearScope(static_cast<void*>(*ownedStream_));
+  }
+
   // Free plan-owned CUDA stream
   if (ownedStream_ != nullptr) {
     DSP_DIAG(MEMORY, "platformFreePlanResources: destroying plan-owned stream=%p",
@@ -1707,11 +1779,6 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   if (d_fpRing_ != nullptr) { cudaFree(d_fpRing_); d_fpRing_ = nullptr; }
   if (h_fpRing_ != nullptr) { delete[] h_fpRing_; h_fpRing_ = nullptr; }
   fpRingEnabled_ = false; fpRingDrained_ = false;
-
-  // Clear AttentionWorkspace — holds named GPU buffers (attention scratch, softmax
-  // intermediate) that persist across plan lifetimes. Without this, the next plan's
-  // CUDA graph capture records addresses of the old workspace buffers.
-  AttentionWorkspace::getInstance()->clear();
 
   // Free CUDA event used for cross-stream sync (on the device it was created on).
   // Handle-value representation: executionCompleteEvent_ holds the cudaEvent_t handle directly
@@ -1777,13 +1844,13 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   // so reloading after eviction is fast (no recompilation needed).
 #if HAVE_TRITON
   {
-    std::vector<std::pair<int,int>> segRanges;
-    segRanges.reserve(segments_.size());
+    std::vector<const GraphSegment*> segInstances;
+    segInstances.reserve(segments_.size());
     for (auto& seg : segments_) {
-      segRanges.emplace_back(seg.def.startSlot, seg.def.endSlot);
+      segInstances.push_back(&seg);
     }
-    if (!segRanges.empty()) {
-      TritonGraphBackend::getInstance().invalidateCacheForSegments(segRanges);
+    if (!segInstances.empty()) {
+      TritonGraphBackend::getInstance().invalidateCacheForSegments(segInstances);
     }
   }
 #endif
@@ -1982,8 +2049,8 @@ void NativeDynamicShapePlan::platformMaybeSplitIfEnabled() {
 // CUDA Graph capture audit and validation
 // ═══════════════════════════════════════════════════════════════════════════════
 
-std::vector<cuda::CaptureAuditEntry> NativeDynamicShapePlan::getHostOnlyOps() const {
-  std::vector<cuda::CaptureAuditEntry> result;
+std::vector<::sd::cuda::CaptureAuditEntry> NativeDynamicShapePlan::getHostOnlyOps() const {
+  std::vector<::sd::cuda::CaptureAuditEntry> result;
   for (const auto& entry : lastCaptureAudit_) {
     if (entry.isHostOnly()) {
       result.push_back(entry);
@@ -2100,6 +2167,35 @@ static void logGpuMemState(const char* label) {
 }
 
 void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, int execCount) {
+  const int fpInvocationStep = fpInvocationCount_.fetch_add(1, std::memory_order_relaxed);
+  tl_activeMmulFpPlan = this;
+  tl_activeMmulFpStep = fpInvocationStep;
+  tl_activeMmulFpOrdinal = 0;
+  if (fpLabels_[124].tag[0] == '\0') {
+    snprintf(fpLabels_[124].tag, sizeof(fpLabels_[124].tag), "mmul.s13.a");
+    fpLabels_[124].extIdx = -1;
+    fpLabels_[124].groupIdx = -1;
+    fpLabels_[124].whichAB = 0;
+  }
+  if (fpLabels_[125].tag[0] == '\0') {
+    snprintf(fpLabels_[125].tag, sizeof(fpLabels_[125].tag), "mmul.s13.b");
+    fpLabels_[125].extIdx = -1;
+    fpLabels_[125].groupIdx = -1;
+    fpLabels_[125].whichAB = 1;
+  }
+  if (fpLabels_[126].tag[0] == '\0') {
+    snprintf(fpLabels_[126].tag, sizeof(fpLabels_[126].tag), "mmul.s13.c.pre");
+    fpLabels_[126].extIdx = -1;
+    fpLabels_[126].groupIdx = -1;
+    fpLabels_[126].whichAB = 2;
+  }
+  if (fpLabels_[127].tag[0] == '\0') {
+    snprintf(fpLabels_[127].tag, sizeof(fpLabels_[127].tag), "mmul.s13.c.post");
+    fpLabels_[127].extIdx = -1;
+    fpLabels_[127].groupIdx = -1;
+    fpLabels_[127].whichAB = 2;
+  }
+
   // Clear any sticky CUDA errors from previous plan teardown BEFORE creating
   // the owned stream.  Without this, cudaStreamCreateWithFlags fails with the
   // stale error, ownedStream_ stays null, ctx->dspStream inherits the Java
@@ -2209,7 +2305,9 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
 
   auto* ctx = new PlanExecutionContext();
   ctx->execCount = execCount;
+  ctx->fpStep = fpInvocationStep;
   ctx->frozen = frozen;
+  ctx->previousAttentionWorkspaceScope = AttentionWorkspace::getActiveScope();
 
   // Capture the CUDA device for this execution. All events and streams
   // created during this execute() must be on this device. The DspStreamGuard
@@ -2245,6 +2343,16 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
   if (stream != nullptr) {
     cudaStream_t cudaStr = *static_cast<cudaStream_t*>(stream);
     ctx->dspStream = static_cast<void*>(cudaStr);
+
+    // Capture the real ContextBuffers stream before installing plan-scoped
+    // stream overrides. In particular, tl_dspGapStream is pinned to cudaStr
+    // below and LaunchContext::getCudaStream() honors it; resolving afterward
+    // aliases lcDefault to dspStream and makes the event skip Java-side async
+    // producers such as recurrent-state assign().
+    auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
+    ctx->lcDefaultStream = static_cast<void*>((lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr);
+
+    AttentionWorkspace::setActiveScope(ctx->dspStream);
     // Pass deviceId to DspStreamGuard so it pins cudaSetDevice for the
     // duration of execution and restores the previous device on destruction.
     ctx->streamGuard = static_cast<void*>(new DspStreamGuard(cudaStr, ctx->deviceId));
@@ -2266,11 +2374,6 @@ void* NativeDynamicShapePlan::platformBeginExecution(void* stream, bool frozen, 
     tl_gapStreamPinnedByPlanExec = true;
     tl_dspGapStream = cudaStr;
 
-    // Resolve LC default stream (a real async stream from ContextBuffers,
-    // NOT CUDA stream 0). Post-execution ops (KvScatter, assign, mask updates)
-    // run on this stream.
-    auto* lcStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    ctx->lcDefaultStream = static_cast<void*>((lcStreamPtr != nullptr) ? *lcStreamPtr : nullptr);
   }
 
   // Stream ordering: ensure all async CUDA operations from Java complete
@@ -2442,6 +2545,28 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
       cudaEvent_t evt = reinterpret_cast<cudaEvent_t>(executionCompleteEvent_);
       cudaStream_t dspStr = reinterpret_cast<cudaStream_t>(ctx->dspStream);
       cudaStream_t lcStr  = reinterpret_cast<cudaStream_t>(ctx->lcDefaultStream);
+      NDArray* fpRequested = nullptr;
+      size_t fpBytes = 0;
+      int fpSlot = -1;
+      if (fpRingEnabled_ && numRequestedOutputs_ > 0 && requestedOutputSlotIndices_ != nullptr) {
+        fpSlot = requestedOutputSlotIndices_[0];
+        if (fpSlot >= 0 && fpSlot < totalOutputSlots_) fpRequested = outputSlots_[fpSlot];
+        if (fpRequested != nullptr && fpRequested->dataBuffer() != nullptr &&
+            fpRequested->specialBuffer() != nullptr) {
+          fpBytes = fpRequested->dataBuffer()->getLenInBytes() & ~static_cast<size_t>(7);
+        }
+      }
+      if (fpBytes > 0) {
+        if (fpLabels_[BUF_FP_END_DSP_TRACK].tag[0] == '\0') {
+          snprintf(fpLabels_[BUF_FP_END_DSP_TRACK].tag,
+                   sizeof(fpLabels_[BUF_FP_END_DSP_TRACK].tag), "req.end.dsp");
+          fpLabels_[BUF_FP_END_DSP_TRACK].extIdx = -1;
+          fpLabels_[BUF_FP_END_DSP_TRACK].groupIdx = -1;
+          fpLabels_[BUF_FP_END_DSP_TRACK].whichAB = -1;
+        }
+        recordBufFingerprintPublic(dspStr, ctx->fpStep, BUF_FP_END_DSP_TRACK,
+                                   fpRequested->specialBuffer(), fpBytes);
+      }
       cudaEventRecord(evt, dspStr);
       sd::dspPublishThreadCompletionEvent(ctx->dspStream);
       // Make BOTH CUDA stream 0 AND the LC default stream wait for DSP.
@@ -2454,6 +2579,20 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
         cudaStreamWaitEvent(lcStr, evt, 0);
         DSP_DIAG(EXECUTE, "platformEndExecution: lcDefault=%p waiting on DSP=%p",
                  ctx->lcDefaultStream, ctx->dspStream);
+      }
+      if (fpBytes > 0 && lcStr != nullptr) {
+        if (fpLabels_[BUF_FP_END_LC_TRACK].tag[0] == '\0') {
+          snprintf(fpLabels_[BUF_FP_END_LC_TRACK].tag,
+                   sizeof(fpLabels_[BUF_FP_END_LC_TRACK].tag), "req.end.lc");
+          fpLabels_[BUF_FP_END_LC_TRACK].extIdx = -1;
+          fpLabels_[BUF_FP_END_LC_TRACK].groupIdx = -1;
+          fpLabels_[BUF_FP_END_LC_TRACK].whichAB = -1;
+        }
+        recordBufFingerprintPublic(lcStr, ctx->fpStep, BUF_FP_END_LC_TRACK,
+                                   fpRequested->specialBuffer(), fpBytes);
+        DSP_DIAG(MEMORY, "BUF_FP_HANDOFF plan=%p step=%d slot=%d ptr=%p dsp=%p lc=%p",
+                 (void*)this, ctx->fpStep, fpSlot, fpRequested->specialBuffer(),
+                 ctx->dspStream, ctx->lcDefaultStream);
       }
       ctx->recordEventSync();  // Track: event-based ordering at exit
     }
@@ -2542,6 +2681,15 @@ void NativeDynamicShapePlan::platformEndExecution(void* executionState, void* st
              "platformEndExecution exit (execCount=%d). Clearing defensively.",
              (void*)tl_graphCaptureStream, executeCount_);
     tl_graphCaptureStream = nullptr;
+  }
+
+  // Restore AttentionWorkspace ownership before returning to non-plan code.
+  AttentionWorkspace::setActiveScope(ctx->previousAttentionWorkspaceScope);
+  ctx->previousAttentionWorkspaceScope = nullptr;
+
+  if (tl_activeMmulFpPlan == this) {
+    tl_activeMmulFpPlan = nullptr;
+    tl_activeMmulFpOrdinal = 0;
   }
 
   // Restore the plan-wide gap-stream pin (paired with platformBeginExecution).
@@ -2735,10 +2883,31 @@ void NativeDynamicShapePlan::platformDumpExternalInputDiagnostics(NDArray** ext,
 
 void NativeDynamicShapePlan::platformDumpExtInputGpuValues(NDArray* arr, int extIdx, int execCount, void* stream) {
   if (arr == nullptr) return;
-  if (arr->specialBuffer() != nullptr && arr->lengthOf() > 0 && arr->dataType() == FLOAT32) {
-    DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=%d len=%lld sbuf=%p "
+  // Fingerprint raw device bytes for every dtype. The XOR kernel operates on
+  // 64-bit words, so restricting this path to FLOAT32 hid scalar INT64 control
+  // inputs such as actual_sequence_length. This remains fully asynchronous and
+  // does not materialize values on the host.
+  if (arr->specialBuffer() != nullptr && arr->lengthOf() > 0) {
+    DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=%d len=%lld dtype=%d sbuf=%p "
                      "(async path: value dump skipped)",
-             execCount, extIdx, (long long)arr->lengthOf(), arr->specialBuffer());
+             execCount, extIdx, (long long)arr->lengthOf(),
+             static_cast<int>(arr->dataType()), arr->specialBuffer());
+    if (fpRingEnabled_) {
+      if (fpLabels_[BUF_FP_TRACE_TRACK].tag[0] == '\0') {
+        snprintf(fpLabels_[BUF_FP_TRACE_TRACK].tag,
+                 sizeof(fpLabels_[BUF_FP_TRACE_TRACK].tag),
+                 "ext[%d]", extIdx);
+        fpLabels_[BUF_FP_TRACE_TRACK].extIdx = extIdx;
+        fpLabels_[BUF_FP_TRACE_TRACK].groupIdx = -1;
+        fpLabels_[BUF_FP_TRACE_TRACK].whichAB = -1;
+      }
+      cudaStream_t cudaStr = stream != nullptr
+          ? *static_cast<cudaStream_t*>(stream) : nullptr;
+      size_t fpBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
+      fpBytes &= ~static_cast<size_t>(7);
+      recordBufFingerprintPublic(cudaStr, execCount, BUF_FP_TRACE_TRACK,
+                                 arr->specialBuffer(), fpBytes);
+    }
   }
 }
 
@@ -2834,7 +3003,10 @@ void NativeDynamicShapePlan::platformPostReplayPoolManagement(size_t poolUsedPre
 
 void NativeDynamicShapePlan::platformTraceSlotValues(const GraphSegment& seg, void* stream, int execCount) {
   int traceSlot = sd::graph::DspDiagnostics::getInstance().traceSlot();
-  if (traceSlot >= 0 && traceSlot < totalOutputSlots_ && !planLifecycle_.isSlotBySlot()) {
+  // Trace the first slot-by-slot execution too: it is the correctness oracle for
+  // later replay values. recordBufFingerprintPublic skips active graph capture,
+  // so this remains an asynchronous post-segment measurement with no host sync.
+  if (traceSlot >= 0 && traceSlot < totalOutputSlots_) {
     auto* arr = outputSlots_[traceSlot];
     if (arr != nullptr) {
       auto* db = arr->dataBuffer();
@@ -2851,12 +3023,38 @@ void NativeDynamicShapePlan::platformTraceSlotValues(const GraphSegment& seg, vo
                 (long long)arr->lengthOf(),
                 execCount);
       }
+      if (fpRingEnabled_ && gpuPtr != nullptr && arr->lengthOf() > 0) {
+        if (fpLabels_[BUF_FP_TRACE_TRACK].tag[0] == '\0') {
+          snprintf(fpLabels_[BUF_FP_TRACE_TRACK].tag,
+                   sizeof(fpLabels_[BUF_FP_TRACE_TRACK].tag),
+                   "slot[%d]", traceSlot);
+          fpLabels_[BUF_FP_TRACE_TRACK].extIdx = -1;
+          fpLabels_[BUF_FP_TRACE_TRACK].groupIdx = -1;
+          fpLabels_[BUF_FP_TRACE_TRACK].whichAB = -1;
+        }
+        cudaStream_t cudaStr = stream != nullptr
+            ? *static_cast<cudaStream_t*>(stream) : nullptr;
+        size_t fpBytes = static_cast<size_t>(arr->lengthOf()) * arr->sizeOfT();
+        fpBytes &= ~static_cast<size_t>(7);
+        recordBufFingerprintPublic(cudaStr, execCount, BUF_FP_TRACE_TRACK,
+                                   gpuPtr, fpBytes);
+      }
     }
   }
 }
 
 SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCapture) const {
-  return isGraphCapture ? SelectedBackend::CUDA_GRAPHS : SelectedBackend::GPU_COMPILER;
+  return isGraphCapture ? SelectedBackend::DEVICE_REPLAY : SelectedBackend::GPU_COMPILER;
+}
+
+SelectedBackend NativeDynamicShapePlan::platformResolvePortableReplayBackend() const {
+  const auto matrix = GraphReplayFactory::capabilities();
+  // The CUDA plan recorder is only integrated with the native CUDA graph
+  // handle. ZLUDA's HIP/Level Zero handles are intentionally handle-only in
+  // the matrix until their slot recorders are wired end-to-end.
+  return matrix.canExecute(ReplayBackend::CUDA)
+             ? SelectedBackend::DEVICE_REPLAY
+             : SelectedBackend::EMULATED_REPLAY;
 }
 
 bool NativeDynamicShapePlan::platformShouldBreakSegmentAtTraitBoundary(int currIdx, int prevIdx) const {
@@ -3140,13 +3338,13 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
   // Invalidate Triton compiled kernel cache
 #if HAVE_TRITON
   {
-    std::vector<std::pair<int,int>> segRanges;
-    segRanges.reserve(segments_.size());
+    std::vector<const GraphSegment*> segInstances;
+    segInstances.reserve(segments_.size());
     for (auto& seg : segments_) {
-      segRanges.emplace_back(seg.def.startSlot, seg.def.endSlot);
+      segInstances.push_back(&seg);
     }
-    if (!segRanges.empty()) {
-      TritonGraphBackend::getInstance().invalidateCacheForSegments(segRanges);
+    if (!segInstances.empty()) {
+      TritonGraphBackend::getInstance().invalidateCacheForSegments(segInstances);
     }
   }
 #endif

@@ -42,6 +42,9 @@ Notes:
   libraries (`nd4jcpu`, `nd4jcuda`, `nd4jamd`) — both export the same `sdx*` ABI.
 - Python runtime loader auto-detects host platform/arch and probes SDK packaged library layouts before linker fallback.
 - CUDA/AMD wrappers use the same C ABI and select target via model/run options.
+- Backend ordinals mirror `GraphExecutionMode`: HIP graph replay is `9` and
+  Vulkan command-buffer replay is `11`; Level Zero, Metal, TPU, and Hexagon
+  remain available at ordinals `10`, `12`, `13`, and `14` respectively.
 - Java wrapper can run with ND4J `INDArray` via `runNd4j(...)` when ND4J is present on classpath.
 - `sdxGetPlanPhase` / `plan_phase` values: 0=SLOT_BY_SLOT (warmup),
   1=SHAPES_FROZEN, 2=REPLAYING, 3=REPLAY_BLOCKED.

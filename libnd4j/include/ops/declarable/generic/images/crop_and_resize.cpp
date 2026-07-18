@@ -95,6 +95,7 @@ DECLARE_SHAPE_FN(crop_and_resize) {
 }
 
 DECLARE_TYPES(crop_and_resize) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
       ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})

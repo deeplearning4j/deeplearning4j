@@ -154,6 +154,7 @@ CUSTOM_OP_IMPL(lstmLayerCell, 5, 2, false, 1, 3) {
 }
 
 DECLARE_TYPES(lstmLayerCell) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

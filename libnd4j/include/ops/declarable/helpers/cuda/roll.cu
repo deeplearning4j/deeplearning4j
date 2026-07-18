@@ -19,354 +19,171 @@
 //
 //  @author raver119@gmail.com
 //
-#include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/roll.h>
 
 #include "execution/cuda/LaunchDims.h"
 
-
 namespace sd {
 namespace ops {
 namespace helpers {
 
+static LongType normalizedShift(LongType shift, LongType dimension) {
+  if (dimension <= 1) return 0;
+  shift %= dimension;
+  return shift < 0 ? shift + dimension : shift;
+}
+
 template <typename T>
-static void SD_DEVICE rollKernelLinearStage1Dev(const void *vx, const LongType *xShapeInfo, void *vz,
-                                                const LongType *zShapeInfo, LongType fullLength,
-                                                int actualShift) {
-  auto x = reinterpret_cast<const T *>(vx);
-  auto z = reinterpret_cast<T *>(vz);
+static SD_KERNEL void rollLinearKernel(const void* inputBuffer, const LongType* inputShapeInfo, void* outputBuffer,
+                                       const LongType* outputShapeInfo, LongType length, LongType shift) {
+  const auto input = reinterpret_cast<const T*>(inputBuffer);
+  auto output = reinterpret_cast<T*>(outputBuffer);
+  const auto inputRank = shape::rank(inputShapeInfo);
+  const auto outputRank = shape::rank(outputShapeInfo);
+  const auto inputShape = shape::shapeOf(inputShapeInfo);
+  const auto outputShape = shape::shapeOf(outputShapeInfo);
+  const auto inputStrides = shape::stride(inputShapeInfo);
+  const auto outputStrides = shape::stride(outputShapeInfo);
 
-  // Cache shape information for x buffer
-  __shared__ sd::LongType xRank;
-  __shared__ const sd::LongType* xShapePtr;
-  __shared__ const sd::LongType* xStridePtr;
-
-  // Cache shape information for z buffer
-  __shared__ sd::LongType zRank;
-  __shared__ const sd::LongType* zShapePtr;
-  __shared__ const sd::LongType* zStridePtr;
-
-  if (threadIdx.x == 0) {
-    // Cache x shape information
-    xRank = shape::rank(xShapeInfo);
-    xShapePtr = shape::shapeOf(xShapeInfo);
-    xStridePtr = shape::stride(xShapeInfo);
-
-    // Cache z shape information
-    zRank = shape::rank(zShapeInfo);
-    zShapePtr = shape::shapeOf(zShapeInfo);
-    zStridePtr = shape::stride(zShapeInfo);
-  }
-  __syncthreads();
-
-  auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-
-  LongType xCoords[SD_MAX_RANK];
-  LongType zCoords[SD_MAX_RANK];
-  LongType xOffsetA;
-  LongType xOffsetB;
-  LongType zOffsetA;
-  LongType zOffsetB;
-
-  for (LongType i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
-    int sourceIndex = fullLength - actualShift + i;
-
-    INDEX2COORDS(i, xRank, xShapePtr, xCoords);
-    COORDS2INDEX(xRank, xStridePtr, xCoords, xOffsetA);
-    INDEX2COORDS(sourceIndex, xRank, xShapePtr, xCoords);
-    COORDS2INDEX(xRank, xStridePtr, xCoords, xOffsetB);
-
-    INDEX2COORDS(i, zRank, zShapePtr, zCoords);
-    COORDS2INDEX(zRank, zStridePtr, zCoords, zOffsetA);
-    INDEX2COORDS(sourceIndex, zRank, zShapePtr, zCoords);
-    COORDS2INDEX(zRank, zStridePtr, zCoords, zOffsetB);
-
-    auto eA = x[xOffsetA];
-    auto eB = x[xOffsetB];
-
-    z[zOffsetA] = eB;
-    z[zOffsetB] = eA;
+  for (LongType outputIndex = blockIdx.x * blockDim.x + threadIdx.x; outputIndex < length;
+       outputIndex += blockDim.x * gridDim.x) {
+    const auto inputIndex = (outputIndex + length - shift) % length;
+    LongType inputCoords[SD_MAX_RANK];
+    LongType outputCoords[SD_MAX_RANK];
+    LongType inputOffset;
+    LongType outputOffset;
+    INDEX2COORDS(inputIndex, inputRank, inputShape, inputCoords);
+    INDEX2COORDS(outputIndex, outputRank, outputShape, outputCoords);
+    COORDS2INDEX(inputRank, inputStrides, inputCoords, inputOffset);
+    COORDS2INDEX(outputRank, outputStrides, outputCoords, outputOffset);
+    output[outputOffset] = input[inputOffset];
   }
 }
-template <typename T>
-static void SD_KERNEL rollKernelLinearStage1(const void *vx, const LongType *xShapeInfo, void *vz,
-                                            const LongType *zShapeInfo, LongType fullLength, int actualShift) {
- rollKernelLinearStage1Dev<T>(vx, xShapeInfo, vz, zShapeInfo, fullLength, actualShift);
-}
 
 template <typename T>
-static void SD_KERNEL rollKernelLinearStage2(const void *vx, const LongType *xShapeInfo, void *vz,
-                                             const LongType *zShapeInfo, LongType fullLength, int actualShift,
-                                             int shiftCount) {
- auto x = reinterpret_cast<const T *>(vx);
- auto z = reinterpret_cast<T *>(vz);
+static SD_KERNEL void rollAxesKernel(const void* inputBuffer, const LongType* inputShapeInfo, void* outputBuffer,
+                                     const LongType* outputShapeInfo, LongType length, const LongType* shifts,
+                                     const LongType* axes, LongType numAxes) {
+  const auto input = reinterpret_cast<const T*>(inputBuffer);
+  auto output = reinterpret_cast<T*>(outputBuffer);
+  const auto rank = shape::rank(outputShapeInfo);
+  const auto inputStrides = shape::stride(inputShapeInfo);
+  const auto outputShape = shape::shapeOf(outputShapeInfo);
+  const auto outputStrides = shape::stride(outputShapeInfo);
 
- // Cache shape information for x buffer
- __shared__ sd::LongType xRank;
- __shared__ const sd::LongType* xShapePtr;
- __shared__ const sd::LongType* xStridePtr;
+  for (LongType outputIndex = blockIdx.x * blockDim.x + threadIdx.x; outputIndex < length;
+       outputIndex += blockDim.x * gridDim.x) {
+    LongType sourceCoords[SD_MAX_RANK];
+    LongType outputCoords[SD_MAX_RANK];
+    INDEX2COORDS(outputIndex, rank, outputShape, outputCoords);
+    for (LongType dimension = 0; dimension < rank; ++dimension) sourceCoords[dimension] = outputCoords[dimension];
 
- // Cache shape information for z buffer
- __shared__ sd::LongType zRank;
- __shared__ const sd::LongType* zShapePtr;
- __shared__ const sd::LongType* zStridePtr;
+    for (LongType i = 0; i < numAxes; ++i) {
+      const auto axis = axes[i];
+      const auto dimension = outputShape[axis];
+      auto shift = shifts[i] % dimension;
+      if (shift < 0) shift += dimension;
+      sourceCoords[axis] = (sourceCoords[axis] + dimension - shift) % dimension;
+    }
 
- if (threadIdx.x == 0) {
-   // Cache x shape information
-   xRank = shape::rank(xShapeInfo);
-   xShapePtr = shape::shapeOf(xShapeInfo);
-   xStridePtr = shape::stride(xShapeInfo);
-
-   // Cache z shape information
-   zRank = shape::rank(zShapeInfo);
-   zShapePtr = shape::shapeOf(zShapeInfo);
-   zStridePtr = shape::stride(zShapeInfo);
- }
- __syncthreads();
-
- auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-
- LongType xCoords[SD_MAX_RANK];
- LongType zCoords[SD_MAX_RANK];
- LongType xOffsetA;
- LongType xOffsetB;
- LongType zOffsetA;
- LongType zOffsetB;
-
- for (int count = 1; count < shiftCount; ++count) {
-   for (int i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
-     int destinationIndex = fullLength - (count + 1) * actualShift + i;
-     int sourceIndex = fullLength - count * actualShift + i;
-
-     INDEX2COORDS(destinationIndex, xRank, xShapePtr, xCoords);
-     COORDS2INDEX(xRank, xStridePtr, xCoords, xOffsetA);
-     INDEX2COORDS(sourceIndex, xRank, xShapePtr, xCoords);
-     COORDS2INDEX(xRank, xStridePtr, xCoords, xOffsetB);
-
-     INDEX2COORDS(destinationIndex, zRank, zShapePtr, zCoords);
-     COORDS2INDEX(zRank, zStridePtr, zCoords, zOffsetA);
-     INDEX2COORDS(sourceIndex, zRank, zShapePtr, zCoords);
-     COORDS2INDEX(zRank, zStridePtr, zCoords, zOffsetB);
-
-     auto eA = x[xOffsetB];
-     auto eB = x[xOffsetA];
-
-     z[zOffsetA] = eA;
-     z[zOffsetB] = eB;
-   }
-
-   __syncthreads();
- }
-}
-template <typename T>
-static void SD_KERNEL rollKernelLinearStage3(const void *vx, const LongType *xShapeInfo, void *vz,
-                                             const LongType *zShapeInfo, LongType fullLength, int actualShift,
-                                             int remainShift) {
- auto x = reinterpret_cast<const T *>(vx);
- auto z = reinterpret_cast<T *>(vz);
-
- // Cache shape information for x buffer
- __shared__ sd::LongType xRank;
- __shared__ const sd::LongType* xShapePtr;
- __shared__ const sd::LongType* xStridePtr;
-
- // Cache shape information for z buffer
- __shared__ sd::LongType zRank;
- __shared__ const sd::LongType* zShapePtr;
- __shared__ const sd::LongType* zStridePtr;
-
- if (threadIdx.x == 0) {
-   // Cache x shape information
-   xRank = shape::rank(xShapeInfo);
-   xShapePtr = shape::shapeOf(xShapeInfo);
-   xStridePtr = shape::stride(xShapeInfo);
-
-   // Cache z shape information
-   zRank = shape::rank(zShapeInfo);
-   zShapePtr = shape::shapeOf(zShapeInfo);
-   zStridePtr = shape::stride(zShapeInfo);
- }
- __syncthreads();
-
- auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-
- for (int i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
-   int remainIdx = i + actualShift;
-   int sourceIndex = remainIdx + remainShift;
-
-   LongType xCoordsA[SD_MAX_RANK];
-   LongType xCoordsB[SD_MAX_RANK];
-   LongType zCoordsA[SD_MAX_RANK];
-   LongType zCoordsB[SD_MAX_RANK];
-   LongType xOffsetA;
-   LongType xOffsetB;
-   LongType zOffsetA;
-   LongType zOffsetB;
-
-   INDEX2COORDS(remainIdx, xRank, xShapePtr, xCoordsA);
-   COORDS2INDEX(xRank, xStridePtr, xCoordsA, xOffsetA);
-   INDEX2COORDS(sourceIndex, xRank, xShapePtr, xCoordsB);
-   COORDS2INDEX(xRank, xStridePtr, xCoordsB, xOffsetB);
-
-   INDEX2COORDS(remainIdx, zRank, zShapePtr, zCoordsA);
-   COORDS2INDEX(zRank, zStridePtr, zCoordsA, zOffsetA);
-   INDEX2COORDS(sourceIndex, zRank, zShapePtr, zCoordsB);
-   COORDS2INDEX(zRank, zStridePtr, zCoordsB, zOffsetB);
-
-   auto eA = x[xOffsetA];
-   auto eB = x[xOffsetB];
-
-   z[zOffsetA] = eB;
-   z[zOffsetB] = eA;
- }
-}
-template <typename T>
-static void SD_DEVICE swapTadsKernel(void *vx, void *vz, const LongType *zShapeInfo, LongType tadLength) {
- auto x = reinterpret_cast<T *>(vx);
- auto z = reinterpret_cast<T *>(vz);
-
- // Cache shape information for z buffer
- __shared__ sd::LongType zRank;
- __shared__ const sd::LongType* zShapePtr;
- __shared__ const sd::LongType* zStridePtr;
-
- if (threadIdx.x == 0) {
-   // Cache z shape information
-   zRank = shape::rank(zShapeInfo);
-   zShapePtr = shape::shapeOf(zShapeInfo);
-   zStridePtr = shape::stride(zShapeInfo);
- }
- __syncthreads();
-
- auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-
- for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
-   LongType zCoords[SD_MAX_RANK];
-   LongType zOffset;
-
-   INDEX2COORDS(e, zRank, zShapePtr, zCoords);
-   COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
-
-   auto eA = x[zOffset];
-   auto eB = z[zOffset];
-
-   x[zOffset] = eB;
-   z[zOffset] = eA;
- }
-}
-template <typename T>
-static void SD_KERNEL rollKernelFullAnyDimensionStage1(const void *vx, const LongType *xTadShapeInfo,
-                                                      const LongType *xTadOffsets, void *vz,
-                                                      const LongType *zTadShapeInfo,
-                                                      const LongType *zTadOffsets, int numTads, LongType tadLength, int dim, LongType sizeAt,
-                                                      int theShift) {
- auto x = reinterpret_cast<const T *>(vx);
- auto z = reinterpret_cast<T *>(vz);
-
- for (int e = blockIdx.x + theShift; e < sizeAt - theShift; e += gridDim.x) {
-   int sourceIndex = dim * sizeAt + e - theShift;
-   int targetIndex = dim * sizeAt + e;
-
-   swapTadsKernel<T>(z + xTadOffsets[sourceIndex], z + xTadOffsets[targetIndex], zTadShapeInfo, tadLength);
- }
+    LongType inputOffset;
+    LongType outputOffset;
+    COORDS2INDEX(rank, inputStrides, sourceCoords, inputOffset);
+    COORDS2INDEX(rank, outputStrides, outputCoords, outputOffset);
+    output[outputOffset] = input[inputOffset];
+  }
 }
 
 template <typename T>
-static void SD_KERNEL rollKernelFullAnyDimensionStage2(void *vx, const LongType *xTadShapeInfo,
-                                                      const LongType *xTadOffsets, void *vz,
-                                                      const LongType *zTadShapeInfo,
-                                                      const LongType *zTadOffsets, int numTads, LongType tadLength, int dim, LongType sizeAt,
-                                                      int theShift) {
- auto x = reinterpret_cast<const T *>(vx);
- auto z = reinterpret_cast<T *>(vz);
-
- for (int e = blockIdx.x; e < theShift; e += gridDim.x) {
-   int sourceIndex = dim * sizeAt + sizeAt - theShift + e;
-   int targetIndex = dim * sizeAt + e;
-
-   swapTadsKernel<T>(z + zTadOffsets[sourceIndex], z + zTadOffsets[targetIndex], zTadShapeInfo, tadLength);
- }
+static void launchRollLinear(LaunchContext* context, NDArray* input, NDArray* output, LongType shift) {
+  const auto launchDims = getLaunchDims("roll");
+  rollLinearKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+      input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
+      input->lengthOf(), shift);
+  DebugHelper::checkErrorCode(context->getCudaStream(), "rollLinearKernel failed");
 }
 
 template <typename T>
-static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<LongType> const &shifts,
-                            std::vector<LongType> const &axes, bool inplace) {
- if (!inplace) output->assign(input);
-
- for (size_t i = 0; i < axes.size(); i++) {
-   int axe = axes[i];
-   ResultSet listOfTensors = input->allTensorsAlongDimension({axe});
-   ResultSet listOfOutTensors = output->allTensorsAlongDimension({axe});
-   int fullLen = listOfTensors.size();
-   int theShift = shifts[i];
-   for (int k = 0; k < fullLen; k++) {
-     rollFunctorLinear(output->getContext(), listOfTensors.at(k), listOfOutTensors.at(k), theShift, true);
-   }
- }
+static void launchRollAxes(LaunchContext* context, NDArray* input, NDArray* output, const LongType* shifts,
+                           const LongType* axes, LongType numAxes) {
+  const auto launchDims = getLaunchDims("roll");
+  rollAxesKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(
+      input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
+      input->lengthOf(), shifts, axes, numAxes);
+  DebugHelper::checkErrorCode(context->getCudaStream(), "rollAxesKernel failed");
 }
 
+void rollFunctorLinear(LaunchContext* context, NDArray* input, NDArray* output, LongType shift, bool inplace) {
+  const auto length = input->lengthOf();
+  if (length <= 1) {
+    if (!inplace) output->assign(input);
+    return;
+  }
 
-template <typename T>
-static void rollFunctorLinear_(NDArray *input, NDArray *output, int shift, bool inplace) {
- if (!inplace) output->assign(input);
+  const auto actualShift = normalizedShift(shift, length);
+  if (actualShift == 0) {
+    if (!inplace) output->assign(input);
+    return;
+  }
 
- dim3 launchDims = getLaunchDims("roll");
- auto fullLen = input->lengthOf();
- int actualShift = shift;  // % fullLen; // shift already non-negative then
- if (actualShift < 0) {
-   actualShift -= fullLen * (actualShift / fullLen - 1);
- } else
-   actualShift %= fullLen;
+  NDArray* snapshot = inplace ? input->dup() : nullptr;
+  NDArray* source = snapshot == nullptr ? input : snapshot;
+  PointersManager manager(context, "roll");
+  NDArray::prepareSpecialUse({output}, {source});
 
- if (actualShift) {
-   int shiftCount = fullLen / actualShift - 1;
-   int remainShift = fullLen % actualShift;
+  BUILD_SINGLE_SELECTOR(input->dataType(), launchRollLinear, (context, source, output, actualShift), SD_COMMON_TYPES);
 
-   // stage 1) swap last actualShift elements with first ones.
-   rollKernelLinearStage1<T><<<launchDims.y, launchDims.x, launchDims.z, *(output->getContext()->getCudaStream())>>>(
-       output->specialBuffer(), output->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
-       fullLen, actualShift);
-   sd::DebugHelper::checkErrorCode(output->getContext()->getCudaStream(), "rollKernelLinearStage1 failed");
-
-   // stage 2) swap swapped actualShift elements with rest remainShiftCount times.
-   rollKernelLinearStage2<T><<<launchDims.y, launchDims.x, launchDims.z, *(output->getContext()->getCudaStream())>>>(
-       output->specialBuffer(), output->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
-       fullLen, actualShift, shiftCount);
-   sd::DebugHelper::checkErrorCode(output->getContext()->getCudaStream(), "rollKernelLinearStage2 failed");
-   // stage 3) swap remainer of items.
-   if (remainShift && shiftCount)
-     rollKernelLinearStage3<T><<<launchDims.y,launchDims.x,launchDims.z, *(output->getContext()->getCudaStream())>>>(
-         output->specialBuffer(), output->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
-         fullLen, actualShift, remainShift);
-   sd::DebugHelper::checkErrorCode(output->getContext()->getCudaStream(), "rollKernelLinearStage3 failed");
-
- }
+  NDArray::registerSpecialUse({output}, {source});
+  manager.synchronize();
+  delete snapshot;
 }
 
-void rollFunctorFull(LaunchContext *context, NDArray *input, NDArray *output, std::vector<LongType> const &shifts,
-                    std::vector<LongType> const &axes, bool inplace) {
- input->syncToDevice();
+void rollFunctorFull(LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>& shifts,
+                     const std::vector<LongType>& axes, bool inplace) {
+  const auto length = input->lengthOf();
+  if (length <= 1 || axes.empty()) {
+    if (!inplace) output->assign(input);
+    return;
+  }
 
- BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorFull_, (input, output, shifts, axes, inplace), SD_COMMON_TYPES);
+  bool noOp = true;
+  for (size_t i = 0; i < axes.size(); ++i) {
+    if (normalizedShift(shifts[i], input->sizeAt(axes[i])) != 0) {
+      noOp = false;
+      break;
+    }
+  }
+  if (noOp) {
+    if (!inplace) output->assign(input);
+    return;
+  }
 
- output->tickWriteDevice();
+  NDArray* snapshot = inplace ? input->dup() : nullptr;
+  NDArray* source = snapshot == nullptr ? input : snapshot;
+  PointersManager manager(context, "roll");
+  auto deviceShifts = reinterpret_cast<LongType*>(
+      manager.replicatePointer(shifts.data(), static_cast<LongType>(shifts.size() * sizeof(LongType))));
+  auto deviceAxes = reinterpret_cast<LongType*>(
+      manager.replicatePointer(axes.data(), static_cast<LongType>(axes.size() * sizeof(LongType))));
+
+  NDArray::prepareSpecialUse({output}, {source});
+  BUILD_SINGLE_SELECTOR(input->dataType(), launchRollAxes,
+                        (context, source, output, deviceShifts, deviceAxes, static_cast<LongType>(axes.size())),
+                        SD_COMMON_TYPES);
+  NDArray::registerSpecialUse({output}, {source});
+
+  manager.synchronize();
+  delete snapshot;
 }
 
-void rollFunctorLinear(LaunchContext *context, NDArray *input, NDArray *output, int shift, bool inplace) {
- input->syncToDevice();
+BUILD_SINGLE_TEMPLATE(void launchRollLinear, (LaunchContext* context, NDArray* input, NDArray* output, LongType shift),
+                      SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(void launchRollAxes,
+                      (LaunchContext* context, NDArray* input, NDArray* output, const LongType* shifts,
+                       const LongType* axes, LongType numAxes),
+                      SD_COMMON_TYPES);
 
- BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorLinear_, (input, output, shift, inplace), SD_COMMON_TYPES);
-
- output->tickWriteDevice();
-}
-
-BUILD_SINGLE_TEMPLATE( void rollFunctorLinear_, (NDArray * input, NDArray *output, int shift, bool inplace),
-                     SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE( void rollFunctorFull_,
-                     (NDArray * input, NDArray *output, std::vector<sd::LongType> const &shifts, std::vector<sd::LongType> const &axes,
-                      bool inplace),
-                     SD_COMMON_TYPES);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

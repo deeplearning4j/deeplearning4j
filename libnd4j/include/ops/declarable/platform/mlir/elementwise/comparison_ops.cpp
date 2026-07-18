@@ -46,11 +46,11 @@ PLATFORM_IMPL(equals, ENGINE_CPU) {
 
     auto status = executeMlir("equals", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR equals failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(equals, ENGINE_CPU) {
@@ -81,11 +81,11 @@ PLATFORM_IMPL(not_equals, ENGINE_CPU) {
 
     auto status = executeMlir("not_equals", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR not_equals failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(not_equals, ENGINE_CPU) {
@@ -115,11 +115,11 @@ PLATFORM_IMPL(greater, ENGINE_CPU) {
 
     auto status = executeMlir("greater", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR greater failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(greater, ENGINE_CPU) {
@@ -150,11 +150,11 @@ PLATFORM_IMPL(greater_equal, ENGINE_CPU) {
 
     auto status = executeMlir("greater_equal", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR greater_equal failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(greater_equal, ENGINE_CPU) {
@@ -184,11 +184,11 @@ PLATFORM_IMPL(less, ENGINE_CPU) {
 
     auto status = executeMlir("less", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR less failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(less, ENGINE_CPU) {
@@ -219,11 +219,11 @@ PLATFORM_IMPL(less_equal, ENGINE_CPU) {
 
     auto status = executeMlir("less_equal", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR less_equal failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(less_equal, ENGINE_CPU) {
@@ -254,11 +254,11 @@ PLATFORM_IMPL(Where, ENGINE_CPU) {
 
     auto status = executeMlir("where", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR where failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(Where, ENGINE_CPU) {
@@ -268,7 +268,7 @@ PLATFORM_CHECK(Where, ENGINE_CPU) {
     Requirements req("MLIR WHERE");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -290,11 +290,11 @@ PLATFORM_IMPL(boolean_and, ENGINE_CPU) {
 
     auto status = executeMlir("logical_and", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR logical_and failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(boolean_and, ENGINE_CPU) {
@@ -324,11 +324,11 @@ PLATFORM_IMPL(boolean_or, ENGINE_CPU) {
 
     auto status = executeMlir("logical_or", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR logical_or failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(boolean_or, ENGINE_CPU) {
@@ -358,11 +358,11 @@ PLATFORM_IMPL(boolean_xor, ENGINE_CPU) {
 
     auto status = executeMlir("logical_xor", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR logical_xor failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(boolean_xor, ENGINE_CPU) {
@@ -391,11 +391,11 @@ PLATFORM_IMPL(boolean_not, ENGINE_CPU) {
 
     auto status = executeMlir("logical_not", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR logical_not failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(boolean_not, ENGINE_CPU) {
@@ -424,11 +424,11 @@ PLATFORM_IMPL(isnan, ENGINE_CPU) {
 
     auto status = executeMlir("isnan", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR isnan failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(isnan, ENGINE_CPU) {
@@ -437,7 +437,7 @@ PLATFORM_CHECK(isnan, ENGINE_CPU) {
     Requirements req("MLIR ISNAN");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Floating point dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -458,11 +458,11 @@ PLATFORM_IMPL(isinf, ENGINE_CPU) {
 
     auto status = executeMlir("isinf", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR isinf failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(isinf, ENGINE_CPU) {
@@ -471,7 +471,7 @@ PLATFORM_CHECK(isinf, ENGINE_CPU) {
     Requirements req("MLIR ISINF");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Floating point dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -492,11 +492,11 @@ PLATFORM_IMPL(isfinite, ENGINE_CPU) {
 
     auto status = executeMlir("isfinite", block, inputs, outputs);
 
-    if (status != Status::OK()) {
-        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR isfinite failed");
+    if (status != Status::OK) {
+        return Status::BAD_ARGUMENTS;
     }
 
-    return Status::OK();
+    return Status::OK;
 }
 
 PLATFORM_CHECK(isfinite, ENGINE_CPU) {
@@ -505,7 +505,7 @@ PLATFORM_CHECK(isfinite, ENGINE_CPU) {
     Requirements req("MLIR ISFINITE");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Floating point dtype") &&
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}) &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;

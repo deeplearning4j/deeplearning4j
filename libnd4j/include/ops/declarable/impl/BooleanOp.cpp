@@ -28,6 +28,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 BooleanOp::BooleanOp(const char *name, int numInputs, bool scalar)
     : DeclarableOp(name, numInputs, scalar) {
   //
@@ -139,5 +140,6 @@ bool BooleanOp::verify(const std::vector<NDArray *> &args) {
 
   return this->verify(block);
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd

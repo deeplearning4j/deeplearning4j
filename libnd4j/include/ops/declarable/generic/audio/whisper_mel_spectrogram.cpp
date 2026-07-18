@@ -78,6 +78,7 @@ DECLARE_SHAPE_FN(whisper_mel_spectrogram) {
 }
 
 DECLARE_TYPES(whisper_mel_spectrogram) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

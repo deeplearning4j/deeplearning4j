@@ -38,6 +38,10 @@ namespace sd {
  */
 static constexpr int CPU_DEVICE_ID = -1;
 
+}  // namespace sd
+
+SD_BACKEND_ABI_NAMESPACE_BEGIN
+
 /**
  * Check if the given device ID represents the CPU.
  * @param deviceId the device ID to check
@@ -50,6 +54,10 @@ SD_LIB_EXPORT bool isCpuDevice(int deviceId);
  * @return CPU_DEVICE_ID
  */
 SD_LIB_EXPORT int getCpuDeviceId();
+
+SD_BACKEND_ABI_NAMESPACE_END
+
+namespace sd {
 
 /**
  * Device type enumeration for distinguishing between CPU and GPU devices.
@@ -70,6 +78,10 @@ inline DeviceType getDeviceType(int deviceId) {
   if (deviceId >= 0) return DeviceType::GPU;
   return DeviceType::UNKNOWN;
 }
+
+}  // namespace sd
+
+SD_BACKEND_ABI_NAMESPACE_BEGIN
 
 class SD_LIB_EXPORT AffinityManager {
  private:
@@ -105,6 +117,15 @@ class SD_LIB_EXPORT AffinityManager {
    */
   static inline bool isCpu(int deviceId) { return deviceId == CPU_DEVICE_ID; }
 };
+
+SD_BACKEND_ABI_NAMESPACE_END
+SD_BACKEND_ABI_ALIAS(AffinityManager)
+
+#if defined(SD_BACKEND_NAMESPACE_CONFIGURED)
+namespace sd {
+using SD_NS::getCpuDeviceId;
+using SD_NS::isCpuDevice;
 }  // namespace sd
+#endif
 
 #endif  // DEV_TESTS_AFFINITYMANAGER_H

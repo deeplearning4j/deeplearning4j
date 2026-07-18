@@ -42,6 +42,16 @@ public class TokenizersNative extends org.eclipse.deeplearning4j.tokenizers.pres
 }
 
 /**
+ * \brief Opaque handle for a stateful incremental decoder
+ */
+@Opaque public static class OpaqueDecodeStream extends Pointer {
+    /** Empty constructor. Calls {@code super((Pointer)null)}. */
+    public OpaqueDecodeStream() { super((Pointer)null); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public OpaqueDecodeStream(Pointer p) { super(p); }
+}
+
+/**
  * \brief Opaque handle for model manager
  */
 @Opaque public static class OpaqueModelManager extends Pointer {
@@ -215,6 +225,32 @@ public native @Cast("size_t") @Name("encoding_get_offsets") long encodingGetOffs
 public native @Name("decode_ids") @Cast("char*") String decodeIds(OpaqueTokenizer tokenizer, @Cast("const uint32_t*") IntPointer ids, @Cast("size_t") long num_ids, @Cast("bool") boolean skip_special_tokens);
 public native @Name("decode_ids") @Cast("char*") BytePointer decodeIds(OpaqueTokenizer tokenizer, @Cast("const uint32_t*") IntBuffer ids, @Cast("size_t") long num_ids, @Cast("bool") boolean skip_special_tokens);
 public native @Name("decode_ids") @Cast("char*") String decodeIds(OpaqueTokenizer tokenizer, @Cast("const uint32_t*") int[] ids, @Cast("size_t") long num_ids, @Cast("bool") boolean skip_special_tokens);
+
+/**
+ * \brief Create a stateful decoder using the tokenizer's native DecodeStream
+ * @param tokenizer Tokenizer instance
+ * @param skip_special_tokens Whether to omit special tokens
+ * @return Decoder instance, or NULL on failure
+ *
+ * The decoder retains the underlying Rust tokenizer and may outlive
+ * {@code tokenizer}.
+ */
+public native @Name("create_decode_stream") OpaqueDecodeStream createDecodeStream(OpaqueTokenizer tokenizer, @Cast("bool") boolean skip_special_tokens);
+
+/**
+ * \brief Decode one token and return the next complete text chunk
+ * @param stream Decoder instance
+ * @param token_id Unsigned 32-bit token ID
+ * @return UTF-8 chunk valid until the next call on this stream, or NULL on
+ * failure. An empty string means that more tokens are required before text can
+ * be emitted.
+ */
+public native @Name("decode_stream_step") @Cast("char*") String decodeStreamStep(OpaqueDecodeStream stream, @Cast("uint32_t") int token_id);
+
+/**
+ * \brief Free a stateful decoder
+ */
+public native @Name("free_decode_stream") void freeDecodeStream(OpaqueDecodeStream stream);
 
 /**
  * \brief Free a string returned by decode operations

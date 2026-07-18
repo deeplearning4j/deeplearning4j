@@ -23,7 +23,7 @@
 
 #include <ops/declarable/headers/nn.h>
 #include <ops/declarable/helpers/kv_scatter.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 
 namespace sd {
 namespace ops {
@@ -99,6 +99,7 @@ CUSTOM_OP_IMPL(kv_scatter, 2, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(kv_scatter) {
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true);
 }
 

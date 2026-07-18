@@ -85,6 +85,7 @@ CUSTOM_OP_IMPL(segment_prod_bp, 3, 2, false, 0, 0) {
 }
 
 DECLARE_TYPES(segment_prod) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_INTS})
@@ -99,6 +100,7 @@ DECLARE_SHAPE_FN(segment_prod_bp) {
 }
 
 DECLARE_TYPES(segment_prod_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, {ALL_FLOATS})

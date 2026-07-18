@@ -26,6 +26,7 @@
 #include <cstring>
 #include <string>
 
+
 /*
  * TypeDef:
  *     void convertTypes(Pointer *extras, DataType srcType, Pointer hX, long N, DataType dstType, Pointer hZ);
@@ -142,4 +143,5 @@ int elementSizeForNpyArrayHeader(sd::Pointer npyArray) {
 }
 
 void releaseNumpy(sd::Pointer npyArray) { free(reinterpret_cast<void*>(npyArray)); }
+
 

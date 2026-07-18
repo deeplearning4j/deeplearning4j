@@ -76,6 +76,7 @@ DECLARE_SHAPE_FN(audio_resample) {
 }
 
 DECLARE_TYPES(audio_resample) {
+    getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
         ->setAllowedOutputTypes({ALL_FLOATS});

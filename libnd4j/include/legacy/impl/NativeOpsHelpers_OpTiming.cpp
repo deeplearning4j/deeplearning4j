@@ -25,6 +25,7 @@
 
 using namespace sd::graph;
 
+
 /**
  * Enable op timing tracker.
  * @param enabled 1 to enable, 0 to disable
@@ -141,3 +142,4 @@ SD_LIB_EXPORT int exportOpTimingCSV(const char* filename) {
     if (filename == nullptr) return 0;
     return OpTimingTracker::getInstance().exportCSV(std::string(filename)) ? 1 : 0;
 }
+

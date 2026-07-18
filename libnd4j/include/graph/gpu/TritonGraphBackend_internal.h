@@ -31,6 +31,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspHashUtils.h>
+#include <graph/gpu/TritonTargetDispatch.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
@@ -215,6 +216,13 @@ inline bool configureCudaKernelSharedMemory(void* kernelFunc, unsigned int share
   }
 
   if (sharedMemBytes > 49152u && maxSharedOptIn > 49152) {
+    // The >48KB dynamic-shared opt-in is a CUDA-only concept, and kernelFunc
+    // is a hipFunction_t / ze handle on non-NVIDIA targets — calling
+    // cuFuncSetAttribute on it would be invalid. AMD LDS budgets are already
+    // enforced by the limit check above (attributes arrive via ZLUDA/HIP).
+    if (TritonTargetDispatch::detectTarget() != TritonGpuTarget::NVIDIA) {
+      return true;
+    }
     CUresult attrRes = cuFuncSetAttribute(
         static_cast<CUfunction>(kernelFunc),
         CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,

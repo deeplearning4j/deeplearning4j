@@ -20,7 +20,7 @@
 
 //
 // OneDNN implementation of thresholded ReLU: x if x > theta, 0 otherwise
-// This is implemented using bounded_relu with a lower bound of theta
+// Implemented using eltwise_relu with alpha=theta
 //
 
 #include <helpers/MKLDNNStream.h>
@@ -28,7 +28,7 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
 
-#include "mkldnnUtils.h"
+#include "mkldnnEltwise.h"
 
 using namespace dnnl;
 
@@ -40,27 +40,22 @@ namespace platforms {
 static void thresholdedReluMKLDNN(NDArray* x, NDArray* z, float theta) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
+  auto dataType = onednnUtils::toDnnlDataType(x->dataType());
+
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
 
-  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
-  z_user_md = z_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*z));
+  z_user_md = z_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*z));
   onednnUtils::setBlockStrides(*z, z_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-  dnnl::primitive_attr attr;
-
-  // thresholded relu: x if x > theta, else 0
-  // Using relu with alpha = theta as the threshold
-  // Note: This approximates thresholded relu - for x <= theta, output is 0
-  // OneDNN 3.x API: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
   dnnl::eltwise_forward::primitive_desc op_prim_desc(engine, dnnl::prop_kind::forward_inference,
                                                       algorithm::eltwise_relu, x_mkl_md, z_mkl_md, theta, 0.f);
 
   std::unordered_map<int, dnnl::memory> args;
-
   dnnl::stream stream(engine);
 
   onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
@@ -76,7 +71,7 @@ static void thresholdedReluMKLDNN(NDArray* x, NDArray* z, float theta) {
   stream.wait();
 }
 
-PLATFORM_IMPL(thresholdedrelu, ENGINE_CPU) {
+PLATFORM_IMPL(thresholdedrelu, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -84,7 +79,6 @@ PLATFORM_IMPL(thresholdedrelu, ENGINE_CPU) {
   REQUIRE_TRUE(rank <= 6, 0, "THRESHOLDEDRELU_MKLDNN OP: the rank of input must be less or equal 6, but got rank = %i instead !",
                rank);
 
-  // Get threshold from T arguments, default is 1.0
   float theta = block.numT() > 0 ? static_cast<float>(T_ARG(0)) : 1.0f;
 
   thresholdedReluMKLDNN(input, output, theta);
@@ -92,7 +86,7 @@ PLATFORM_IMPL(thresholdedrelu, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(thresholdedrelu, ENGINE_CPU) {
+PLATFORM_CHECK(thresholdedrelu, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -100,8 +94,12 @@ PLATFORM_CHECK(thresholdedrelu, ENGINE_CPU) {
   req.expectFalse(makeInfoVariable(x->isEmpty(), IS_EMPTY_MSG_INPUT), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(x->dataType()), TYPE_MSG_INPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(z->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT),
+                   makeInfoVariable(z->dataType(), TYPE_MSG_OUTPUT));
   req.logTheSuccess();
   return req;
 }
@@ -110,28 +108,27 @@ PLATFORM_CHECK(thresholdedrelu, ENGINE_CPU) {
 static void thresholdedReluBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, float theta) {
   dnnl::memory::dims shape = *x->getShapeAsFlatVector();
 
+  auto dataType = onednnUtils::toDnnlDataType(x->dataType());
+
   dnnl::memory::desc x_mkl_md, x_user_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
-  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*x));
+  x_user_md = x_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*x));
   onednnUtils::setBlockStrides(*x, x_user_md);
 
-  dLdz_user_md = dLdz_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdz));
+  dLdz_user_md = dLdz_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*dLdz));
   onednnUtils::setBlockStrides(*dLdz, dLdz_user_md);
 
-  dLdx_user_md = dLdx_mkl_md = dnnl::memory::desc(shape, dnnl::memory::data_type::f32, onednnUtils::getFormat(*dLdx));
+  dLdx_user_md = dLdx_mkl_md = dnnl::memory::desc(shape, dataType, onednnUtils::getFormat(*dLdx));
   onednnUtils::setBlockStrides(*dLdx, dLdx_user_md);
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
   std::unordered_map<int, dnnl::memory> args;
-
   dnnl::stream stream(engine);
 
-  // OneDNN 3.x API for forward hint: primitive_desc(engine, prop_kind, algorithm, src_md, dst_md, alpha, beta)
   dnnl::eltwise_forward::primitive_desc op_ff_prim_desc(engine, dnnl::prop_kind::forward_training,
                                                          algorithm::eltwise_relu, x_mkl_md, x_mkl_md, theta, 0.f);
 
-  // OneDNN 3.x API for backward: primitive_desc(engine, algorithm, diff_src_md, diff_dst_md, data_md, alpha, beta, hint_fwd_pd)
   dnnl::eltwise_backward::primitive_desc op_prim_desc(engine, algorithm::eltwise_relu,
                                                        dLdx_mkl_md, dLdz_mkl_md, x_mkl_md, theta, 0.f, op_ff_prim_desc);
 
@@ -151,7 +148,7 @@ static void thresholdedReluBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, fl
   stream.wait();
 }
 
-PLATFORM_IMPL(thresholdedrelu_bp, ENGINE_CPU) {
+PLATFORM_IMPL(thresholdedrelu_bp, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -169,7 +166,7 @@ PLATFORM_IMPL(thresholdedrelu_bp, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(thresholdedrelu_bp, ENGINE_CPU) {
+PLATFORM_CHECK(thresholdedrelu_bp, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto dLdz = INPUT_VARIABLE(1);
   auto dLdx = OUTPUT_VARIABLE(0);
@@ -179,9 +176,16 @@ PLATFORM_CHECK(thresholdedrelu_bp, ENGINE_CPU) {
       req.expectFalse(makeInfoVariable(dLdz->isEmpty(), IS_EMPTY_MSG_INPUT1), EXPECTED_FALSE) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 7) &&
       req.expectGreater(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 0) &&
-      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT), DataType::FLOAT32);
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(x->dataType()), TYPE_MSG_INPUT0),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(dLdz->dataType()), TYPE_MSG_INPUT1),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectTrue(makeInfoVariable(onednnUtils::isSupportedEltwiseType(dLdx->dataType()), TYPE_MSG_OUTPUT),
+                     "Must be FLOAT32, BFLOAT16, or HALF") &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(dLdz->dataType(), TYPE_MSG_INPUT1)) &&
+      req.expectEq(makeInfoVariable(x->dataType(), TYPE_MSG_INPUT0),
+                   makeInfoVariable(dLdx->dataType(), TYPE_MSG_OUTPUT));
   req.logTheSuccess();
   return req;
 }

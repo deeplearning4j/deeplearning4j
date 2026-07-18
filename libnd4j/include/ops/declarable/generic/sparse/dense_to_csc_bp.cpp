@@ -91,11 +91,14 @@ DECLARE_SHAPE_FN(dense_to_csc_bp) {
 }
 
 DECLARE_TYPES(dense_to_csc_bp) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS})     // cscRowIdx
       ->setAllowedInputTypes(1, {ALL_INTS})     // cscColPtr
       ->setAllowedInputTypes(2, {ALL_FLOATS})   // gradCscValues
       ->setAllowedOutputTypes(0, {ALL_FLOATS}); // dDense
+
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
 }
 
 }  // namespace ops

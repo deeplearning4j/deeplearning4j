@@ -110,10 +110,13 @@ DECLARE_SHAPE_FN(random_multinomial) {
 }
 
 DECLARE_TYPES(random_multinomial) {
+
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(1, {INT32})
       ->setAllowedOutputTypes(0, {ALL_INDICES});
+
+  getOpDescriptor()->addTraits(OP_TRAIT_CONSTANT_GENERATION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_VALUE_DEPENDENT_SHAPE | OP_TRAIT_DATA_DEPENDENT | OP_TRAIT_STATEFUL);
 }
 }  // namespace ops
 }  // namespace sd

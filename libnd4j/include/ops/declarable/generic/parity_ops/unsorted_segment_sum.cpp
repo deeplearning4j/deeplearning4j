@@ -62,6 +62,7 @@ CUSTOM_OP_IMPL(unsorted_segment_sum, 2, 1, false, 0, 0) {
   return Status::OK;
 }
 DECLARE_TYPES(unsorted_segment_sum) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
       ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
@@ -103,6 +104,7 @@ DECLARE_SHAPE_FN(unsorted_segment_sum_bp) {
   return SHAPELIST(CONSTANT(in), CONSTANT(inIdx));
 }
 DECLARE_TYPES(unsorted_segment_sum_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_BACKWARD | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(1, {ALL_INTS})

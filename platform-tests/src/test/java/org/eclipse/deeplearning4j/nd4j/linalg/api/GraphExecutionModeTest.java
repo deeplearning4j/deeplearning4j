@@ -54,6 +54,16 @@ public class GraphExecutionModeTest {
     }
 
     @Test
+    public void testPortableReplayContract() {
+        assertEquals(19, GraphExecutionMode.PORTABLE_REPLAY.getNativeCode(),
+                "PORTABLE_REPLAY native code must match C++ GEM_PORTABLE_REPLAY = 19");
+        assertTrue(GraphExecutionMode.PORTABLE_REPLAY.requiresGraphBackend(),
+                "Portable replay must enter the capture/replay lifecycle when native replay is available");
+        assertFalse(GraphExecutionMode.PORTABLE_REPLAY.isSlotBySlot(),
+                "Portable replay resolves its backend natively and is not intrinsically slot-by-slot");
+    }
+
+    @Test
     public void testEnumOrdering() {
         // Verify the new entries don't break ordering
         assertTrue(GraphExecutionMode.TPU.getNativeCode() > GraphExecutionMode.METAL.getNativeCode(),

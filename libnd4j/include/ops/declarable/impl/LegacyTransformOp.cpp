@@ -26,6 +26,7 @@
 #ifdef ONLY_SAME_TRANSFORM
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 LegacyTransformOp::LegacyTransformOp() : LegacyOp::LegacyOp(1) {
   // just a no-op
 }
@@ -60,6 +61,7 @@ ShapeList *LegacyTransformOp::calculateOutputShape(ShapeList *inputShape, sd::gr
   auto inShape = inputShape->at(0);
   return SHAPELIST(CONSTANT(inShape));
 }
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 #endif

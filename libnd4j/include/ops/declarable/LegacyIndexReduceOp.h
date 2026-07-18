@@ -26,6 +26,7 @@
 
 namespace sd {
 namespace ops {
+SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN
 /**
  *   This class provides wrapper for IndexAccumulation operations. i.e. IndexMax or IndexAbsoluteMin etc
  *
@@ -43,6 +44,7 @@ class SD_LIB_EXPORT LegacyIndexReduceOp : public LegacyOp {
   LegacyOp* clone() override;
   void registerTypes() override;
 };
+SD_BACKEND_OPS_INLINE_NAMESPACE_END
 }  // namespace ops
 }  // namespace sd
 

@@ -1,9 +1,6 @@
 {
-  "$version": 3,
-  "permissions": {
-    "allow": [
-      "mcp__kompile__bash",
-      "mcp__kompile__edit"
-    ]
+  "$version" : 4,
+  "permissions" : {
+    "allow" : [ "mcp__kompile__bash", "mcp__kompile__edit" ]
   }
 }

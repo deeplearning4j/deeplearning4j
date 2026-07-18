@@ -54,6 +54,7 @@ DECLARE_SHAPE_FN(knn_mindistance) {
 }
 
 DECLARE_TYPES(knn_mindistance) {
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
   getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops

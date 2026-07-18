@@ -43,7 +43,6 @@ enum Engine {
   ENGINE_METAL = 5,        // Apple Metal GPU backend
   ENGINE_VULKAN = 6,       // Vulkan GPU backend
   ENGINE_OPENCL = 7,       // OpenCL GPU backend
-  ENGINE_LLAMACPP = 8,     // llama.cpp/GGML backend for LLM inference
   ENGINE_VLM = 9,          // Vision-Language Model backend
   ENGINE_MPS = 10,         // Apple Metal Performance Shaders
   ENGINE_ACCELERATE = 11,  // Apple Accelerate framework
@@ -106,7 +105,6 @@ inline const char* getEngineName(Engine e) {
     case ENGINE_METAL: return "Metal";
     case ENGINE_VULKAN: return "Vulkan";
     case ENGINE_OPENCL: return "OpenCL";
-    case ENGINE_LLAMACPP: return "LlamaCpp";
     case ENGINE_VLM: return "VLM";
     case ENGINE_MPS: return "MPS";
     case ENGINE_ACCELERATE: return "Accelerate";
@@ -130,9 +128,6 @@ inline int getEngineParallelCapabilities(Engine e) {
       return PARALLEL_TENSOR | PARALLEL_PIPELINE | PARALLEL_DATA |
              PARALLEL_P2P | PARALLEL_ASYNC | PARALLEL_MIXED_PRECISION |
              PARALLEL_QUANTIZED;
-    case ENGINE_LLAMACPP:
-      return PARALLEL_TENSOR | PARALLEL_PIPELINE | PARALLEL_QUANTIZED |
-             PARALLEL_MIXED_PRECISION;
     case ENGINE_VLM:
       return PARALLEL_TENSOR | PARALLEL_PIPELINE | PARALLEL_DATA |
              PARALLEL_QUANTIZED | PARALLEL_MIXED_PRECISION;
@@ -192,23 +187,29 @@ inline bool isGpuEngine(Engine e) {
  * @return true if the engine is optimized for LLM/VLM inference
  */
 inline bool isLlmEngine(Engine e) {
-  return e == ENGINE_LLAMACPP || e == ENGINE_VLM;
+  return e == ENGINE_VLM;
 }
 
 /**
  * Get the preferred engine for multi-GPU model parallelism
  * @return The best available engine for model parallelism
  */
-inline Engine getPreferredParallelEngine() {
-#ifdef SD_CUDA
+static inline Engine getPreferredParallelEngine() {
+#if defined(DEFAULT_ENGINE)
+  return DEFAULT_ENGINE;
+#elif defined(SD_CUDA)
   return ENGINE_CUDA;
+#elif defined(SD_VULKAN)
+  return ENGINE_VULKAN;
 #elif defined(SD_APPLE_MPS)
   return ENGINE_METAL;
-#elif defined(HAVE_LLAMACPP)
-  return ENGINE_LLAMACPP;
 #else
   return ENGINE_CPU;
 #endif
+}
+
+static inline Engine resolveConfiguredEngine(Engine engine) {
+  return engine == ENGINE_ANY ? getPreferredParallelEngine() : engine;
 }
 
 }  // namespace samediff

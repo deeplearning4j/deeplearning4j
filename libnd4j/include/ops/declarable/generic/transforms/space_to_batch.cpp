@@ -77,6 +77,7 @@ CUSTOM_OP_IMPL(space_to_batch, 2, 1, false, 0, 1) {
 ////////////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(space_to_batch) {
   getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
+  getOpDescriptor()->addTraits(OP_TRAIT_DATA_MOVEMENT | OP_TRAIT_FULLY_WRITING | OP_TRAIT_DATA_DEPENDENT);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

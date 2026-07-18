@@ -43,6 +43,7 @@
 #include <array/NDArray.h>
 #include <helpers/DebugHelper.h>
 #include <types/float16.h>
+#include <ops/declarable/helpers/cuda/device_primitives.cuh>
 
 namespace sd {
 namespace ops {
@@ -113,9 +114,8 @@ SD_KERNEL static void ggmlQMatMulQ8_0Kernel(
         acc += av * (d * static_cast<float>(q));
     }
 
-    // Warp reduction
-    for (int offset = 16; offset > 0; offset >>= 1)
-        acc += __shfl_down_sync(0xFFFFFFFF, acc, offset);
+    // Warp reduction (one warp per output element)
+    acc = sd::device::warpReduceSum<float>(acc);
 
     if (laneId == 0) {
         long long outIdx = m * N + n;
@@ -193,16 +193,11 @@ SD_KERNEL static void ggmlQMatMulQ4KKernel(
         }
     }
 
-    // Block reduction via shared memory
-    __shared__ float smem[128];
-    smem[tid] = acc;
-    __syncthreads();
-    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        if (tid < stride) smem[tid] += smem[tid + stride];
-        __syncthreads();
-    }
+    // Block reduction (result on thread 0)
+    __shared__ float warpBuf[32];
+    float total = sd::device::blockReduceSum<float>(acc, warpBuf);
     if (tid == 0) {
-        out[m * N + n] = static_cast<OutT>(smem[0]);
+        out[m * N + n] = static_cast<OutT>(total);
     }
 }
 
@@ -286,16 +281,11 @@ SD_KERNEL static void ggmlQMatMulQ6KKernel(
         }
     }
 
-    // Block reduction
-    __shared__ float smem[128];
-    smem[tid] = acc;
-    __syncthreads();
-    for (int stride = blockDim.x / 2; stride > 0; stride >>= 1) {
-        if (tid < stride) smem[tid] += smem[tid + stride];
-        __syncthreads();
-    }
+    // Block reduction (result on thread 0)
+    __shared__ float warpBuf[32];
+    float total = sd::device::blockReduceSum<float>(acc, warpBuf);
     if (tid == 0) {
-        out[m * N + n] = static_cast<OutT>(smem[0]);
+        out[m * N + n] = static_cast<OutT>(total);
     }
 }
 

@@ -496,6 +496,24 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
     verifyStagingNotStale(externalArrays, result, numExt, stream, diagTag);
   }
 
+  // Sync-free external-input discriminator. The existing trace-slot setting
+  // addresses an external input when encoded as totalOutputSlots_ + extIdx;
+  // ordinary in-range trace-slot values retain their output-slot semantics.
+  // Recording happens after cross-stream/H2D/staging ordering and before any
+  // replay kernel can mutate a plan-managed recurrent input.
+  if (fpRingEnabled_) {
+    int traceExt = sd::graph::DspDiagnostics::getInstance().traceExtInput();
+    if (traceExt < 0) {
+      int encodedTrace = sd::graph::DspDiagnostics::getInstance().traceSlot();
+      if (encodedTrace >= totalOutputSlots_) {
+        traceExt = encodedTrace - totalOutputSlots_;
+      }
+    }
+    if (traceExt >= 0 && traceExt < numExt && result[traceExt] != nullptr) {
+      platformDumpExtInputGpuValues(result[traceExt], traceExt, executeCount_, stream);
+    }
+  }
+
   return result;
 }
 

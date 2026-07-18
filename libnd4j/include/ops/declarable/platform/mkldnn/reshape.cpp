@@ -60,7 +60,7 @@ static void reshapeMKLDNN(NDArray* input, NDArray* output) {
   stream.wait();
 }
 
-PLATFORM_IMPL(reshape, ENGINE_CPU) {
+PLATFORM_IMPL(reshape, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -75,7 +75,7 @@ PLATFORM_IMPL(reshape, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reshape, ENGINE_CPU) {
+PLATFORM_CHECK(reshape, ENGINE_ONEDNN) {
   // Disable OneDNN for reshape - the generic implementation has a fast path
   // for same-buffer views that avoids copying entirely, which is faster than
   // OneDNN reorder. Reshape should ideally be a zero-cost view change.
@@ -86,7 +86,7 @@ PLATFORM_CHECK(reshape, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // SQUEEZE: Remove dimensions of size 1
-PLATFORM_IMPL(squeeze, ENGINE_CPU) {
+PLATFORM_IMPL(squeeze, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -101,7 +101,7 @@ PLATFORM_IMPL(squeeze, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(squeeze, ENGINE_CPU) {
+PLATFORM_CHECK(squeeze, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -115,7 +115,7 @@ PLATFORM_CHECK(squeeze, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // UNSQUEEZE / EXPAND_DIMS: Add dimension of size 1
-PLATFORM_IMPL(expand_dims, ENGINE_CPU) {
+PLATFORM_IMPL(expand_dims, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -127,7 +127,7 @@ PLATFORM_IMPL(expand_dims, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(expand_dims, ENGINE_CPU) {
+PLATFORM_CHECK(expand_dims, ENGINE_ONEDNN) {
   // Disable OneDNN for expand_dims - the generic implementation can use views
   // to avoid copying entirely, which is faster than OneDNN reorder.
   Requirements req("ONEDNN EXPAND_DIMS OP");
@@ -137,7 +137,7 @@ PLATFORM_CHECK(expand_dims, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // FLATTEN: Flatten tensor to 1D or 2D
-PLATFORM_IMPL(flatten, ENGINE_CPU) {
+PLATFORM_IMPL(flatten, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -149,7 +149,7 @@ PLATFORM_IMPL(flatten, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(flatten, ENGINE_CPU) {
+PLATFORM_CHECK(flatten, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -165,7 +165,7 @@ PLATFORM_CHECK(flatten, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 // FLATTEN_2D: Flatten tensor to 2D
-PLATFORM_IMPL(flatten_2d, ENGINE_CPU) {
+PLATFORM_IMPL(flatten_2d, ENGINE_ONEDNN) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
@@ -177,7 +177,7 @@ PLATFORM_IMPL(flatten_2d, ENGINE_CPU) {
   return sd::Status::OK;
 }
 
-PLATFORM_CHECK(flatten_2d, ENGINE_CPU) {
+PLATFORM_CHECK(flatten_2d, ENGINE_ONEDNN) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 

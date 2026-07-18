@@ -23,10 +23,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.memory.deallocation.OpaqueNDArrayArrDeallocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 import java.util.List;
@@ -60,6 +61,8 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
     private INDArray[] parentArrays;
 
     private OpaqueNDArray[] opaqueArrays;
+    private boolean[] opaqueReferencesReleased;
+    private boolean ownsOpaqueArrays;
 
     // Track the deallocator for this instance
     private OpaqueNDArrayArrDeallocator deallocator;
@@ -91,6 +94,9 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      * </ul></p>
      */
     private LongPointer ndPtrBuffer;
+
+    /** Owns the one-slot native pointer table viewed by this facade. */
+    private PointerPointer<OpaqueNDArray> pointerStorage;
 
     /**
      * Default constructor for internal use.
@@ -130,9 +136,9 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      * @param opaqueArrays Array of OpaqueNDArray objects
      */
     public OpaqueNDArrayArr(OpaqueNDArray[] opaqueArrays) {
-        // 1-slot layout: slot[0] = address of the contiguous sd::NDArray* C-array.
-        // See ndPtrBuffer field javadoc for the detailed rationale.
-        super(1L);
+        // This facade is a non-owning view. Detached pointerStorage owns the
+        // one-slot table and can therefore be cleaned without retaining this object.
+        super();
         if (opaqueArrays == null || opaqueArrays.length == 0) {
             throw new IllegalArgumentException("Cannot create OpaqueNDArrayArr from null or empty array");
         }
@@ -152,15 +158,25 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
         for (int i = 0; i < opaqueArrays.length; i++) {
             buf.put(i, new LongPointer(opaqueArrays[i]).get(0));
         }
-        this.ndPtrBuffer = buf;  // keep alive
 
-        // slot[0] = address of the contiguous buffer.
-        // JNI dereferences once → C++ receives ndPtrBuffer.address() = sd::NDArray**.
-        this.put(0, buf);
+        PointerPointer<OpaqueNDArray> storage = new PointerPointer<>(1L);
+        storage.put(0, buf);
+        setPointerView(storage);
 
+        this.ndPtrBuffer = buf;
+        this.pointerStorage = storage;
         this.numArrays = opaqueArrays.length;
         this.opaqueArrays = opaqueArrays;
-        this.retainReference();
+        this.opaqueReferencesReleased = new boolean[opaqueArrays.length];
+        Arrays.fill(this.opaqueReferencesReleased, true);
+        this.ownsOpaqueArrays = false;
+    }
+
+    private void setPointerView(Pointer pointer) {
+        this.address = pointer.address();
+        this.position = pointer.position();
+        this.limit = pointer.limit();
+        this.capacity = pointer.capacity();
     }
 
     /**
@@ -201,6 +217,25 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
     }
 
     /**
+     * Creates an array wrapper through an explicitly selected native backend.
+     */
+    public static OpaqueNDArrayArr createFrom(
+            NativeBufferOwner owner, List<INDArray> array) {
+        return createFrom(owner, true, array);
+    }
+
+    /**
+     * Creates an array wrapper through an explicitly selected native backend.
+     */
+    public static OpaqueNDArrayArr createFrom(
+            NativeBufferOwner owner, boolean registerWithDeallocator, List<INDArray> array) {
+        if (array == null) {
+            throw new IllegalArgumentException("Cannot create OpaqueNDArrayArr from a null list");
+        }
+        return createFrom(owner, registerWithDeallocator, array.toArray(new INDArray[0]));
+    }
+
+    /**
      * Creates an OpaqueNDArrayArr from an array of INDArrays.
      * Parent INDArray references are held to ensure validity of the OpaqueNDArray pointers.
      *
@@ -208,8 +243,8 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      * with {@link DeallocatorService} for cleanup. You can also explicitly call {@link #close()}
      * for immediate cleanup.</p>
      *
-     * <p><b>Important:</b> This method uses cached OpaqueNDArray instances from parent INDArrays
-     * via {@link OpaqueNDArray#fromINDArray(INDArray)}. The parent arrays must remain alive
+     * <p><b>Important:</b> This method creates owned, uncached OpaqueNDArray wrappers from
+     * the parent INDArrays. The parent arrays must remain alive
      * while this OpaqueNDArrayArr is in use. This is ensured by storing strong references
      * to the parent arrays.</p>
      *
@@ -218,6 +253,14 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      */
     public static OpaqueNDArrayArr createFrom(INDArray... array) {
         return createFrom(true, array);
+    }
+
+    /**
+     * Creates an array wrapper through an explicitly selected native backend.
+     */
+    public static OpaqueNDArrayArr createFrom(
+            NativeBufferOwner owner, INDArray... array) {
+        return createFrom(owner, true, array);
     }
 
     /**
@@ -236,6 +279,22 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      * @return A new OpaqueNDArrayArr, optionally registered with DeallocatorService
      */
     public static OpaqueNDArrayArr createFrom(boolean registerWithDeallocator, INDArray... array) {
+        return createFromInternal(null, registerWithDeallocator, array);
+    }
+
+    /**
+     * Creates an array wrapper without consulting ND4J's primary backend.
+     */
+    public static OpaqueNDArrayArr createFrom(
+            NativeBufferOwner owner, boolean registerWithDeallocator, INDArray... array) {
+        if (owner == null) {
+            throw new IllegalArgumentException("NativeBufferOwner cannot be null");
+        }
+        return createFromInternal(owner, registerWithDeallocator, array);
+    }
+
+    private static OpaqueNDArrayArr createFromInternal(
+            NativeBufferOwner owner, boolean registerWithDeallocator, INDArray... array) {
         if (array == null || array.length == 0) {
             throw new IllegalArgumentException("Cannot create OpaqueNDArrayArr from null or empty array");
         }
@@ -252,63 +311,72 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
             }
         }
 
-        // Convert INDArrays to OpaqueNDArrays.
-        // We create new OpaqueNDArray wrappers for each INDArray to ensure we have
-        // independent native sd::NDArray* objects that we fully control.
         OpaqueNDArray[] inputs = new OpaqueNDArray[array.length];
-        for (int i = 0; i < array.length; i++) {
-            INDArray indArray = array[i];
-            // Create a new OpaqueNDArray wrapper - this creates a new sd::NDArray* in native code
-            // that wraps the same DataBuffer but is independent of any cached OpaqueNDArray
-            OpaqueNDArray opaque = OpaqueNDArray.fromINDArrayUncached(indArray);
-            if (opaque == null) {
-                throw new org.nd4j.linalg.exception.ND4JIllegalStateException(
-                    "Failed to create OpaqueNDArray for INDArray at index " + i +
-                    " (id=" + indArray.getId() + ", shape=" + java.util.Arrays.toString(indArray.shape()) + ")");
+        boolean[] opaqueReferencesReleased = new boolean[array.length];
+        Arrays.fill(opaqueReferencesReleased, true);
+        LongPointer buf = null;
+        PointerPointer<OpaqueNDArray> storage = null;
+        OpaqueNDArrayArr inputsOpaque = null;
+        try {
+            for (int i = 0; i < array.length; i++) {
+                INDArray indArray = array[i];
+                OpaqueNDArray opaque = owner == null
+                        ? OpaqueNDArray.fromINDArrayUncached(indArray)
+                        : OpaqueNDArray.fromINDArrayUncached(owner, indArray);
+                if (opaque == null || opaque.isNull()) {
+                    throw new org.nd4j.linalg.exception.ND4JIllegalStateException(
+                            "Failed to create OpaqueNDArray at index " + i
+                                    + " (id=" + indArray.getId() + ", shape="
+                                    + java.util.Arrays.toString(indArray.shape()) + ")");
+                }
+
+                // Publish the wrapper to rollback state before retention can fail.
+                inputs[i] = opaque;
+                opaque.retainReference();
+                opaqueReferencesReleased[i] = false;
             }
-            if (opaque.isNull()) {
-                throw new org.nd4j.linalg.exception.ND4JIllegalStateException(
-                    "OpaqueNDArray.fromINDArrayUncached returned object with null native pointer at index " + i +
-                    " (id=" + indArray.getId() + ", shape=" + java.util.Arrays.toString(indArray.shape()) + ")");
+
+            buf = new LongPointer(inputs.length);
+            for (int i = 0; i < inputs.length; i++) {
+                buf.put(i, new LongPointer(inputs[i]).get(0));
             }
-            opaque.retainReference(); // Explicitly retain reference for this usage
-            inputs[i] = opaque;
-        }
 
-        // 1-slot layout — see ndPtrBuffer field javadoc for full rationale.
-        // slot[0] = address of a contiguous sd::NDArray* C-array.
-        // JNI thunk dereferences once → C++ receives ndPtrBuffer.address() = sd::NDArray**.
-        // CRITICAL: inputs[i].address() is the JavaCPP WRAPPER address (OpaqueNDArray* rptr
-        // from "new OpaqueNDArray(createOpaqueNDArray(...))").  The actual sd::NDArray* value
-        // is stored AT that wrapper address (first 8 bytes).  We must dereference once to
-        // get the sd::NDArray* value that C++ shuffle()/setGraphContext*() expects as x[i].
-        LongPointer buf = new LongPointer(inputs.length);
-        for (int i = 0; i < inputs.length; i++) {
-            buf.put(i, new LongPointer(inputs[i]).get(0));
-        }
+            storage = new PointerPointer<>(1L);
+            storage.put(0, buf);
 
-        OpaqueNDArrayArr inputsOpaque = new OpaqueNDArrayArr(1L);
-        inputsOpaque.retainReference();
-        inputsOpaque.put(0, buf);
-        inputsOpaque.ndPtrBuffer = buf;  // keep alive
+            inputsOpaque = new OpaqueNDArrayArr();
+            inputsOpaque.setPointerView(storage);
+            inputsOpaque.pointerStorage = storage;
+            inputsOpaque.ndPtrBuffer = buf;
+            inputsOpaque.parentArrays = array;
+            inputsOpaque.opaqueArrays = inputs;
+            inputsOpaque.opaqueReferencesReleased = opaqueReferencesReleased;
+            inputsOpaque.ownsOpaqueArrays = true;
+            inputsOpaque.numArrays = inputs.length;
 
-        // Store references to prevent GC from freeing memory while we're using it
-        inputsOpaque.parentArrays = array;
-        inputsOpaque.opaqueArrays = inputs;
-        inputsOpaque.numArrays = inputs.length;
-
-        // Register with DeallocatorService for proper lifecycle management (if requested).
-        // When registerWithDeallocator=false, the caller (e.g., CudaOpContext) is responsible
-        // for cleanup, which prevents race conditions between multiple deallocators.
-        if (registerWithDeallocator) {
-            registerWithDeallocatorService(inputsOpaque, array);
-        } else {
-            if (log.isTraceEnabled()) {
+            if (registerWithDeallocator) {
+                registerWithDeallocatorService(inputsOpaque, array, owner);
+            } else if (log.isTraceEnabled()) {
                 log.trace("OpaqueNDArrayArr created without DeallocatorService registration (caller manages lifecycle)");
             }
-        }
 
-        return inputsOpaque;
+            return inputsOpaque;
+        } catch (RuntimeException | Error failure) {
+            try {
+                if (inputsOpaque != null) {
+                    inputsOpaque.cleanupResources();
+                } else {
+                    RuntimeException cleanupFailure = cleanupOpaqueResources(
+                            inputs, opaqueReferencesReleased, buf, storage, true);
+                    if (cleanupFailure != null) {
+                        failure.addSuppressed(cleanupFailure);
+                    }
+                }
+            } catch (RuntimeException cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            throw failure;
+        }
     }
 
     /**
@@ -319,27 +387,91 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      * @param parentArrays The parent INDArrays to keep alive
      * @throws RuntimeException if registration fails
      */
-    private static void registerWithDeallocatorService(OpaqueNDArrayArr arrayArr, INDArray[] parentArrays) {
+    private static void registerWithDeallocatorService(
+            OpaqueNDArrayArr arrayArr, INDArray[] parentArrays, NativeBufferOwner owner) {
         try {
-            DeallocatorService service = Nd4j.getDeallocatorService();
+            AllocationContext allocation = resolveAllocationContext(parentArrays, owner);
+            DeallocatorService service = allocation.owner.deallocatorService();
             long uniqueId = service.nextValue();
-            int targetDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
-            OpaqueNDArrayArrDeallocator deallocator = new OpaqueNDArrayArrDeallocator(
-                arrayArr, parentArrays, uniqueId, targetDevice
-            );
+            OpaqueNDArrayArrDeallocator.ResourceState resources =
+                    new OpaqueNDArrayArrDeallocator.ResourceState(
+                            parentArrays,
+                            arrayArr.opaqueArrays,
+                            arrayArr.opaqueReferencesReleased,
+                            arrayArr.ndPtrBuffer,
+                            arrayArr.pointerStorage,
+                            arrayArr.ownsOpaqueArrays);
+            OpaqueNDArrayArrDeallocator deallocator =
+                    new OpaqueNDArrayArrDeallocator(
+                            resources, uniqueId,
+                            allocation.device.getDeviceIndex(), allocation.owner);
 
+            // Tie the phantom referent to the facade before publishing it.
             arrayArr.deallocator = deallocator;
-            service.pickObject(deallocator);
+            try {
+                service.pickObject(deallocator, allocation.owner);
+            } catch (RuntimeException | Error registrationFailure) {
+                arrayArr.deallocator = null;
+                throw registrationFailure;
+            }
 
             if (log.isTraceEnabled()) {
                 log.trace("Registered OpaqueNDArrayArr {} with DeallocatorService (parent count: {})",
                         uniqueId, parentArrays.length);
             }
-        } catch (Exception e) {
-            // LEAK FIX: If registration fails, caller must clean up the array
+        } catch (RuntimeException e) {
             log.error("Failed to register OpaqueNDArrayArr with DeallocatorService", e);
-            throw new RuntimeException("Failed to register array with DeallocatorService", e);
+            throw e;
+        }
+    }
+
+    private static AllocationContext resolveAllocationContext(
+            INDArray[] arrays, NativeBufferOwner requestedOwner) {
+        NativeBufferOwner allocationOwner = null;
+        DeviceDescriptor allocationDevice = null;
+
+        for (int i = 0; i < arrays.length; i++) {
+            DataBuffer data = arrays[i].data();
+            OpaqueDataBuffer buffer = data != null ? data.opaqueBuffer() : null;
+            if (buffer == null) {
+                throw new IllegalArgumentException(
+                        "INDArray at index " + i + " has no native data buffer");
+            }
+
+            NativeBufferOwner bufferOwner = buffer.backendOwner();
+            DeviceDescriptor bufferDevice = buffer.allocationDevice();
+            if (bufferDevice == null) {
+                throw new IllegalStateException(
+                        "INDArray at index " + i + " has no allocation device");
+            }
+            if (requestedOwner != null && bufferOwner != requestedOwner) {
+                throw new IllegalArgumentException(
+                        "INDArray at index " + i + " belongs to a different native owner");
+            }
+            if (allocationOwner == null) {
+                allocationOwner = bufferOwner;
+                allocationDevice = bufferDevice;
+            } else if (bufferOwner != allocationOwner || !allocationDevice.equals(bufferDevice)) {
+                throw new IllegalArgumentException(
+                        "All INDArrays must share the same native owner and allocation device");
+            }
+        }
+
+        if (allocationOwner == null || allocationDevice == null) {
+            throw new IllegalArgumentException("At least one INDArray is required");
+        }
+        allocationOwner.deviceDescriptor(allocationDevice.getDeviceIndex());
+        return new AllocationContext(allocationOwner, allocationDevice);
+    }
+
+    private static final class AllocationContext {
+        private final NativeBufferOwner owner;
+        private final DeviceDescriptor device;
+
+        private AllocationContext(NativeBufferOwner owner, DeviceDescriptor device) {
+            this.owner = owner;
+            this.device = device;
         }
     }
 
@@ -352,34 +484,114 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> implements A
      */
     @Override
     public void close() {
-        if (deallocator != null) {
-            // Only deallocate if not already done - prevents double-free
-            if (!deallocator.isDeallocated()) {
-                deallocator.deallocate();
-            }
-            // If deallocator exists but is already deallocated, do nothing - already cleaned up
+        OpaqueNDArrayArrDeallocator currentDeallocator = deallocator;
+        if (currentDeallocator != null) {
+            currentDeallocator.deallocate();
+            clearFacadeAfterCleanup();
         } else {
-            // Fallback cleanup ONLY if not registered with DeallocatorService at all
-            if (log.isTraceEnabled()) {
-                log.trace("Fallback cleanup for unregistered OpaqueNDArrayArr");
+            cleanupResources();
+        }
+    }
+
+    /**
+     * Shared idempotent cleanup for explicitly managed instances and
+     * construction rollback. Registered instances use the detached state in
+     * {@link OpaqueNDArrayArrDeallocator}.
+     */
+    public synchronized void cleanupResources() {
+        boolean detachedStorage = pointerStorage != null;
+        RuntimeException failure = cleanupOpaqueResources(
+                opaqueArrays,
+                opaqueReferencesReleased,
+                ndPtrBuffer,
+                pointerStorage,
+                ownsOpaqueArrays);
+
+        // Legacy pointer/size constructors still own their JavaCPP allocation.
+        if (!detachedStorage && !isNull()) {
+            try {
+                super.close();
+            } catch (RuntimeException e) {
+                failure = appendCleanupFailure(failure, e);
             }
-            // Close the uncached OpaqueNDArrays we created
-            // Since we use fromINDArrayUncached(), these are owned by this OpaqueNDArrayArr
-            // and must be explicitly closed to free the native sd::NDArray* objects.
-            if (opaqueArrays != null) {
-                for (OpaqueNDArray opaque : opaqueArrays) {
-                    if (opaque != null) {
-                        opaque.releaseReference(); // Release the reference added in createFrom
-                        opaque.close(); // Close the uncached OpaqueNDArray to free native memory
+        }
+
+        if (failure != null) {
+            throw failure;
+        }
+        clearFacadeAfterCleanup();
+    }
+
+    private synchronized void clearFacadeAfterCleanup() {
+        pointerStorage = null;
+        ndPtrBuffer = null;
+        opaqueArrays = null;
+        opaqueReferencesReleased = null;
+        parentArrays = null;
+        deallocator = null;
+        ownsOpaqueArrays = false;
+        numArrays = 0;
+        setNull();
+    }
+
+    private static RuntimeException cleanupOpaqueResources(
+            OpaqueNDArray[] arrays,
+            boolean[] referencesReleased,
+            LongPointer pointerBuffer,
+            PointerPointer<OpaqueNDArray> storage,
+            boolean ownsArrays) {
+        RuntimeException failure = null;
+        if (ownsArrays && arrays != null) {
+            for (int i = 0; i < arrays.length; i++) {
+                OpaqueNDArray opaque = arrays[i];
+                if (opaque == null) {
+                    continue;
+                }
+
+                if (!referencesReleased[i]) {
+                    try {
+                        opaque.releaseReference();
+                        referencesReleased[i] = true;
+                    } catch (RuntimeException e) {
+                        failure = appendCleanupFailure(failure, e);
+                        continue;
                     }
                 }
+
+                try {
+                    opaque.close();
+                    arrays[i] = null;
+                } catch (RuntimeException e) {
+                    failure = appendCleanupFailure(failure, e);
+                }
             }
-            // Deallocate the PointerPointer's native memory
-            deallocate();
-            parentArrays = null;
-            opaqueArrays = null;
-            ndPtrBuffer = null;  // allow GC of the contiguous sd::NDArray* buffer
         }
+
+        if (storage != null) {
+            try {
+                storage.close();
+            } catch (RuntimeException e) {
+                failure = appendCleanupFailure(failure, e);
+            }
+        }
+
+        if (pointerBuffer != null) {
+            try {
+                pointerBuffer.close();
+            } catch (RuntimeException e) {
+                failure = appendCleanupFailure(failure, e);
+            }
+        }
+        return failure;
+    }
+
+    private static RuntimeException appendCleanupFailure(
+            RuntimeException failure, RuntimeException next) {
+        if (failure == null) {
+            return next;
+        }
+        failure.addSuppressed(next);
+        return failure;
     }
 
     /**

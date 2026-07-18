@@ -21,7 +21,7 @@
 //
 #include <helpers/BlasHelper.h>
 #include <system/env_functions.h>
-#include <graph/gpu/DspCudaDispatch.h>
+#include <graph/DspDeviceDispatch.h>
 #include <cstdlib>
 #include <mutex>
 #include <string>

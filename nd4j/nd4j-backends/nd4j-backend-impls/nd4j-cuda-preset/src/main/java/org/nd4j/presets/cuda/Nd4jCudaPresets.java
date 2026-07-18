@@ -29,13 +29,14 @@ import org.bytedeco.javacpp.annotation.Properties;
 import org.bytedeco.javacpp.tools.*;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.presets.OpExclusionUtils;
+import org.nd4j.presets.SharedCompilerRuntime;
 
 /**
  *
  * @author saudet
  */
 @Properties(target = "org.nd4j.linalg.jcublas.bindings.Nd4jCuda", helper = "org.nd4j.presets.cuda.Nd4jCudaHelper",
-        value = {@Platform(define = {"SD_ALL_OPS","SD_CUDA"}, include = {
+        value = {@Platform(define = {"SD_ALL_OPS", "SD_CUDA", "SD_BACKEND_NAMESPACE sd_cuda"}, include = {
                 //note, order matters here
                 //this particular header file is either
                 //going to be the source of ops, see also:
@@ -171,16 +172,25 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");
 
 
-        // Only apply this at load time since we don't want to copy the CUDA libraries here
+        // CMake is the source of truth for the project-managed compiler runtimes.
+        // Run this during JavaCPP generation as well as application startup so copyLibs
+        // and the native loader consume the same manifest.
+        SharedCompilerRuntime.configure(
+                properties,
+                Nd4jCudaPresets.class,
+                "org/nd4j/linalg/jcublas/bindings/");
+
+        // Only apply the CUDA toolkit preloads at load time.
         if (!Loader.isLoadLibraries()) {
             return;
         }
+
+        int i = 0;
 
         // Add CUDA libraries to preload list with correct version suffixes for CUDA 12.x
         // Library version mapping (from /usr/local/cuda-12.9/lib64/):
         //   libcudart.so.12, libcublas.so.12, libcublasLt.so.12, libcusparse.so.12
         //   libcurand.so.10 (curand is still version 10), libcusolver.so.11 (cusolver is still version 11)
-        int i = 0;
         String[] libs = {"cudart", "cublasLt", "cublas", "curand", "cusolver", "cusparse"};
         for (String lib : libs) {
             if (platform.startsWith("linux")) {
@@ -306,11 +316,25 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                         "short[]"));
 
 
-        infoMap.put(funcTrace ? new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__NEC__" ).define(false)
-                        :  new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__NEC__","SD_GCC_FUNCTRACE" ).define(false))
+        infoMap.put(funcTrace ? new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__NEC__").define(false)
+                        :  new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN", "__NEC__", "SD_GCC_FUNCTRACE").define(false))
                 .put(funcTrace ? new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__","SD_CUDA","SD_GCC_FUNCTRACE").define(true) :
                         new Info("__JAVACPP_HACK__", "SD_ALL_OPS","__CUDABLAS__","SD_CUDA").define(true))
                 .put(new Info("SD_PADDED_NEW_DELETE").cppText("#define SD_PADDED_NEW_DELETE"))
+                .put(new Info("SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN")
+                        .cppText("#define SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN"))
+                .put(new Info("SD_BACKEND_ROOT_INLINE_NAMESPACE_END")
+                        .cppText("#define SD_BACKEND_ROOT_INLINE_NAMESPACE_END"))
+                .put(new Info("SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN")
+                        .cppText("#define SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN"))
+                .put(new Info("SD_BACKEND_OPS_INLINE_NAMESPACE_END")
+                        .cppText("#define SD_BACKEND_OPS_INLINE_NAMESPACE_END"))
+                .put(new Info("SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN")
+                        .cppText("#define SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN"))
+                .put(new Info("SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END")
+                        .cppText("#define SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END"))
+                .put(new Info("SD_DECLARABLE_OP_EXECUTION_METHODS")
+                        .cppText("#define SD_DECLARABLE_OP_EXECUTION_METHODS"))
                 .put(new Info("SD_VALIDATE_PTR", "SD_VALIDATE_THIS", "SD_VALIDATE_ALIGNED", "SD_VALIDATE_MAGIC").cppText(""))
                 .put(new Info("OpTraits").cast().valueTypes("int").pointerTypes("IntPointer"))
                 .put(funcTrace ? new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",

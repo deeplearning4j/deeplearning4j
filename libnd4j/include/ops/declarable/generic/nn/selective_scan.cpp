@@ -140,10 +140,10 @@ CUSTOM_OP_IMPL(selective_scan, 5, 1, false, 0, 0) {
 }
 
 DECLARE_TYPES(selective_scan) {
+    getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
     getOpDescriptor()
         ->setAllowedInputTypes({ALL_FLOATS})
-        ->setAllowedOutputTypes({ALL_FLOATS})
-        ->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
+        ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(selective_scan) {

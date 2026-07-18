@@ -51,6 +51,7 @@ CUSTOM_OP_IMPL(barnes_edge_forces, 4, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(barnes_edge_forces) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()
       ->setAllowedInputTypes(0, {ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_INTS})

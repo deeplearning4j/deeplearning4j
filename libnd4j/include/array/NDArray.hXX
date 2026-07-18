@@ -2726,8 +2726,16 @@ void NDArray::setContext(sd::LaunchContext *context) {
 //////////////////////////////////////////////////////////////////////////
 
 void *NDArray::specialBufferWithOffset(sd::LongType offset) {
+#if defined(SD_VULKAN)
+  // A Vulkan special buffer is an allocation identity, not a host/device
+  // address. The view offset remains in the NDArray shape metadata consumed by
+  // descriptor construction.
+  (void)offset;
+  return specialBuffer();
+#else
   return const_cast<int8_t *>(specialBuffer() != nullptr ? static_cast<const int8_t *>(specialBuffer()) + (offset * sizeOfT())
                                                          : nullptr);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -5391,9 +5399,15 @@ T NDArray::e( sd::LongType i) {
   const auto rp = getOffset(i);
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
-  // Check both buffer and shapeInfo before calling dataType()
+  // getOffset(i) is ABSOLUTE (includes the view's _offset) while buffer() is
+  // already offset-shifted — index with the RELATIVE offset (rp - offset()),
+  // otherwise the view offset is applied twice and offset views read past the
+  // buffer into the host-alloc padding canary (0xDEADBEEFCAFEBABE). buffer()
+  // must stay the pointer source: it lazily allocates/syncs primary on CUDA
+  // for device-resident buffers (raw primary() here breaks ext-input staleness
+  // paths with "TemplatedGetter: Buffer is nullptr").
   if (getDataBuffer() != nullptr && _shapeInfo != nullptr) {
-    BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp), SD_COMMON_TYPES_ALL);
+    BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp - offset()), SD_COMMON_TYPES_ALL);
   }
   return static_cast<T>(0);
 }
@@ -5564,10 +5578,12 @@ BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT,
 
 //////////////////////////////////////////////->///////////////////////////
 NDArray NDArray::e(const sd::LongType i)  {
+  // getOffset(i) is already absolute (includes this->offset()); adding offset()
+  // again double-shifts the source position for offset views.
   const auto offset = getOffset(i);
   NDArray scalar(dataType(), getContext());
   NDArray &dereffed = *this;
-  scalar.copyBuffersContinuouslyFrom(dereffed, sizeOfT(), 0, this->offset() + offset);
+  scalar.copyBuffersContinuouslyFrom(dereffed, sizeOfT(), 0, offset);
 
   return scalar;
 }

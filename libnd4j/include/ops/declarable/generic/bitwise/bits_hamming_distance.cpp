@@ -52,6 +52,7 @@ DECLARE_TYPES(bits_hamming_distance) {
       ->setAllowedInputTypes(0, {ALL_INTS})
       ->setAllowedInputTypes(1, {ALL_INTS})
       ->setAllowedOutputTypes(0, {ALL_INDICES});
+  getOpDescriptor()->addTraits(OP_TRAIT_REDUCTION | OP_TRAIT_FULLY_WRITING);
 }
 }  // namespace ops
 }  // namespace sd

@@ -99,7 +99,8 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
   return Status::OK;
 }
 
-DECLARE_TYPES(sru) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(sru) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING); getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
 
 DECLARE_SHAPE_FN(sru) {
   auto xShapeInfo = inputShape->at(0);   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS -
@@ -361,6 +362,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 }
 
 DECLARE_TYPES(sru_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | (OP_TRAIT_BACKWARD));
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -441,6 +444,7 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 }
 
 DECLARE_TYPES(sru_bi) {
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING);
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -496,6 +500,8 @@ DECLARE_SHAPE_FN(sru_bi) {
 }
 
 DECLARE_TYPES(sru_bi_bp) {
+  getOpDescriptor()->addTraits(OP_TRAIT_BACKWARD);
+  getOpDescriptor()->addTraits(OP_TRAIT_FULLY_WRITING | (OP_TRAIT_BACKWARD));
   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 

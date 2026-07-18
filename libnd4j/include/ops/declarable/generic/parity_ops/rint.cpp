@@ -37,7 +37,9 @@ OP_IMPL(rint, 1, 1, true) {
 }
 }  // namespace ops
 
-DECLARE_TYPES(rint) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
+DECLARE_TYPES(rint) {
+  getOpDescriptor()->addTraits(OP_TRAIT_UNARY_ELEMENTWISE | OP_TRAIT_FULLY_WRITING);
+   getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS}); }
 }  // namespace sd
 
 #endif

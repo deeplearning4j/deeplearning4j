@@ -34,7 +34,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
  * @author saudet
  */
 @Properties(inherit = openblas.class, target = "org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu", helper = "org.nd4j.presets.cpu.Nd4jCpuHelper",
-        value = {@Platform(define = {"SD_ALL_OPS"}, include = {
+        value = {@Platform(define = {"SD_ALL_OPS", "SD_BACKEND_NAMESPACE sd_cpu"}, include = {
                 //note, order matters here
                 //config.h MUST come first to define type availability macros (SD_SELECTIVE_TYPES, HAS_*)
                 "config.h",
@@ -310,10 +310,24 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("UInt64Type").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer", "long[]"));
 
         infoMap.put(funcTrace ? new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__").define(false)
-                        : new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__","SD_GCC_FUNCTRACE").define(false))
+                        : new Info("__CUDACC__", "MAX_UINT", "HAVE_ONEDNN", "__CUDABLAS__", "__NEC__", "SD_GCC_FUNCTRACE").define(false))
                 .put(funcTrace ?  new Info("__JAVACPP_HACK__", "SD_ALL_OPS","SD_GCC_FUNCTRACE").define(true) :
                         new Info("__JAVACPP_HACK__", "SD_ALL_OPS").define(true))
                 .put(new Info("SD_PADDED_NEW_DELETE").cppText("#define SD_PADDED_NEW_DELETE"))
+                .put(new Info("SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN")
+                        .cppText("#define SD_BACKEND_ROOT_INLINE_NAMESPACE_BEGIN"))
+                .put(new Info("SD_BACKEND_ROOT_INLINE_NAMESPACE_END")
+                        .cppText("#define SD_BACKEND_ROOT_INLINE_NAMESPACE_END"))
+                .put(new Info("SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN")
+                        .cppText("#define SD_BACKEND_OPS_INLINE_NAMESPACE_BEGIN"))
+                .put(new Info("SD_BACKEND_OPS_INLINE_NAMESPACE_END")
+                        .cppText("#define SD_BACKEND_OPS_INLINE_NAMESPACE_END"))
+                .put(new Info("SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN")
+                        .cppText("#define SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN"))
+                .put(new Info("SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END")
+                        .cppText("#define SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_END"))
+                .put(new Info("SD_DECLARABLE_OP_EXECUTION_METHODS")
+                        .cppText("#define SD_DECLARABLE_OP_EXECUTION_METHODS"))
                 .put(new Info("SD_VALIDATE_PTR", "SD_VALIDATE_THIS", "SD_VALIDATE_ALIGNED", "SD_VALIDATE_MAGIC").cppText(""))
                 .put(new Info("OpTraits").cast().valueTypes("int").pointerTypes("IntPointer"))
                 // Skip raw template class definitions from loop headers

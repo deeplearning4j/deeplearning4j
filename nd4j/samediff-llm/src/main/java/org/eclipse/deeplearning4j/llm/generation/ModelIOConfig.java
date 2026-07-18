@@ -229,7 +229,9 @@ public class ModelIOConfig {
         List<String> valueInputNames = new ArrayList<>();
 
         for (String inputName : decoder.inputs()) {
-            if (!inputName.contains("past_key_values")) continue;
+            // Only the canonical target-decoder namespace belongs in this list. Branch-local
+            // caches such as mtp_past_key_values.* are managed by their own executor/state.
+            if (!inputName.startsWith("past_key_values.")) continue;
             // Match suffix: ".key" or ".value" — not substring, since "past_key_values" itself contains "key"
             if (inputName.endsWith(".key")) {
                 keyInputNames.add(inputName);
@@ -652,6 +654,13 @@ public class ModelIOConfig {
         String encoderMaskName = null;
 
         for (String input : inputs) {
+            // ModelIOConfig describes the target decoder. Auxiliary predictor branches own their
+            // inputs independently; allowing an mtp_* placeholder to win this first-match scan can
+            // silently route target prefill/decode controls to the predictor namespace.
+            if (input.startsWith("mtp_")) {
+                continue;
+            }
+
             // Encoder inputs must be checked first (they also contain "attention_mask" etc.)
             if (encoderHiddenName == null && (input.contains("encoder_hidden") || input.contains("encoder_output"))) {
                 encoderHiddenName = input;
