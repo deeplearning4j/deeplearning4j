@@ -30,6 +30,7 @@ TOKENIZER_ROOT="$REPO_ROOT/nd4j/nd4j-tokenizers"
 TOKENIZER_BUILD="$TOKENIZER_ROOT/libtokenizers/build-mobile-tokenizers.sh"
 TOKENIZER_MODULE="$TOKENIZER_ROOT/tokenizers-native"
 SDX_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx"
+SDX_MODEL_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model"
 VERIFY_SCRIPT="$SCRIPT_DIR/verify-android-accelerator-aar.sh"
 
 PROFILE=""
@@ -240,6 +241,11 @@ if [[ ! -s "$NATIVE_AAR" ]]; then
 fi
 
 if [[ "$SKIP_JAVA" != "1" ]]; then
+    # Mainline the source-SDZ compile/cache API into every provider AAR.
+    "$MVN_CMD" "${MAVEN_OFFLINE[@]}" \
+        -f "$SDX_MODEL_MODULE/pom.xml" \
+        -DskipTests install
+
     "$MVN_CMD" "${MAVEN_OFFLINE[@]}" \
         -f "$SDX_MODULE/pom.xml" \
         -Pandroid-arm64 clean package \

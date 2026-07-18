@@ -7,6 +7,7 @@ REPO_ROOT="$(cd "$LIBND4J_DIR/.." && pwd)"
 PROFILE="$SCRIPT_DIR/profiles/google-tensor-g5.env"
 MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-litertlm"
 PRESET_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset"
+SDX_MODEL_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model"
 VERIFY_SCRIPT="$SCRIPT_DIR/verify-google-tensor-g5-aar.sh"
 
 usage() {
@@ -18,7 +19,7 @@ Usage:
 
 Builds the direct Google Tensor G5 LiteRT-LM NPU provider and its JavaCPP AAR.
 The build is pinned, AOT-only, device-only, and rejects BLAS/host fallback.
-No model is downloaded or bundled; gated .litertlm files remain user inputs.
+No model is downloaded or bundled; target objects are compiled and cached from canonical .sdz inputs.
 USAGE
 }
 
@@ -256,9 +257,25 @@ for native_file in "$RUNTIME_LIBRARY" "$DISPATCH_LIBRARY" "$CONSTRAINT_LIBRARY";
 done
 
 if [[ "$SKIP_JAVA" != "1" ]]; then
-    "$MAVEN_CMD" "${MAVEN_FLAGS[@]}"         -f "$PRESET_MODULE/pom.xml" -DskipTests install
+    "$MAVEN_CMD" "${MAVEN_FLAGS[@]}" \
+        -f "$PRESET_MODULE/pom.xml" \
+        -DskipTests install
 
-    "$MAVEN_CMD" "${MAVEN_FLAGS[@]}"         -f "$MODULE/pom.xml"         -Pandroid-arm64-google-tensor-g5 clean package         -DskipTests         -Dandroid.ndk="$ANDROID_NDK_ARG"         -Dlitertlm.source.dir="$SOURCE_DIR"         -Dlitertlm.runtime.dir="$(dirname "$RUNTIME_LIBRARY")"         -Dlitertlm.runtime.library="$RUNTIME_LIBRARY"         -Dlitertlm.dispatch.library="$DISPATCH_LIBRARY"         -Dlitertlm.constraint.library="$CONSTRAINT_LIBRARY"
+    # Ship the reusable source-SDZ compile/cache API inside the provider AAR.
+    "$MAVEN_CMD" "${MAVEN_FLAGS[@]}" \
+        -f "$SDX_MODEL_MODULE/pom.xml" \
+        -DskipTests install
+
+    "$MAVEN_CMD" "${MAVEN_FLAGS[@]}" \
+        -f "$MODULE/pom.xml" \
+        -Pandroid-arm64-google-tensor-g5 clean package \
+        -DskipTests \
+        -Dandroid.ndk="$ANDROID_NDK_ARG" \
+        -Dlitertlm.source.dir="$SOURCE_DIR" \
+        -Dlitertlm.runtime.dir="$(dirname "$RUNTIME_LIBRARY")" \
+        -Dlitertlm.runtime.library="$RUNTIME_LIBRARY" \
+        -Dlitertlm.dispatch.library="$DISPATCH_LIBRARY" \
+        -Dlitertlm.constraint.library="$CONSTRAINT_LIBRARY"
 fi
 
 MODULE_AAR="$MODULE/target/sdx-chat-runtime-1.0.0-SNAPSHOT-android-arm64-google-tensor-g5.aar"
