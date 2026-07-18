@@ -1065,6 +1065,18 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       // Views must alias the staging buffer (stable address) so that cuBLAS
       // kernels baked into the CUDA graph see consistent addresses on replay.
       NDArray* resolved = resolveViewInput(srcIdx, externalArrays, numExt);
+      // Probe BEFORE any deref: on a plan-cache reuse the previous borrower's
+      // teardown can leave a destructed NDArray in outputSlots_ (internal
+      // srcIdx) — reading ->dataBuffer() from it is the bench-250 SIGSEGV at
+      // prepareBundledMtp's freeze-time refresh. A dead input nulls out here
+      // and the existing refresh-input-invalid demote path repairs the slot.
+      if (resolved != nullptr && !safeHasValidShapeInfo(resolved)) {
+        DSP_DIAG_SLOT(MEMORY, stepIdx,
+            "VIEW_REFRESH_INPUT_DEAD: step %d (%s) input[%d] srcIdx=%d arr=%p "
+            "failed shape-info probe — treating as invalid input",
+            stepIdx, slot.ident.opName.c_str(), ii, srcIdx, (void*)resolved);
+        resolved = nullptr;
+      }
       viewInputs[ii] = resolved;
       if (ii == 0) input0 = resolved;
     }
