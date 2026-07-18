@@ -4,7 +4,7 @@
 
 Accepted
 
-**Milestone status:** M1 (runtime + SDZ load path) implemented; M2-M4 (packaging and release gates) proposed.
+**Milestone status:** M1 runtime loading, M3 packaging, and the source-SDZ target cache are implemented; remaining M2/M4 work is backend conformance and release coverage.
 
 Proposed by: Adam Gibson (March 4, 2026)
 
@@ -35,17 +35,11 @@ We standardize deployment on a C runtime SDK centered on SDZ-first model loading
 
 ### 1. Canonical Runtime Model Input
 
-The runtime must load `.sdz` and `.sdnb` directly.
+The runtime must load `.sdz` and `.sdnb` directly. The application and deployment tooling expose `.sdz` as the single public model contract.
 
-`sdxLoadBundle(...)` accepts:
-- direct `.sdz` or `.sdnb` model files,
-- unpacked bundle directories containing `manifest.json` that resolves `modelPath`,
-- manifest JSON files (`.json` or `.dspb` manifest path) that point to an underlying model file,
-- packed `.dspb` archives (a ZIP of an unpacked bundle directory, as produced
-  by zipping `sdx-compile.sh` output): detected by ZIP magic, extracted to a
-  model-owned temp directory (removed at `sdxUnloadModel`), then resolved as
-  an unpacked bundle. Requires `std::filesystem`; builds without it reject
-  packed archives with an explicit error.
+An enriched SDZ may contain immutable target objects under `META-INF/sdx-cache/`. These objects are derived from the canonical SameDiff source during host compilation; their physical formats are private to the target compiler and runtime provider.
+
+`sdxLoadBundle(...)` continues to accept direct SDZ/SDNB files, unpacked manifest directories, manifest JSON, and legacy packed `.dspb` archives for compatibility. New tooling does not produce DSPB. Mobile resolves the selected target from the SDZ into an app-owned cache and passes only the opaque runtime path to the provider. It never compiles or falls back on-device.
 
 ### 2. Public C ABI Contract
 
@@ -210,9 +204,24 @@ Serialized DSP plan bytes are now persisted to `~/.kompile/cache/dsp/dsp_plan_ca
 - SDZ/SDNB models produce deterministic plan bytes on every load — the disk cache eliminates recompilation on process restart.
 - Pre-compiled plans can be distributed via the override directory (`dsp_plan_override/`), analogous to the existing Triton override mechanism.
 - The C runtime (`sdxLoadBundle` → `compileModelPlan`) benefits automatically when the Java plan cache populates the disk cache on first run.
-- Future: SDZ archives can optionally embed plan `.bin`/`.meta` files alongside the model, enabling single-artifact deployment with pre-warmed plan cache.
+- Implemented: enriched SDZ archives embed target/compiler cache objects under `META-INF/sdx-cache/`, enabling single-artifact deployment without exposing plan, SPIR-V, Hexagon, Metal, or vendor-package formats to applications.
 
 Configuration: `ND4J_DSP_PLAN_CACHE_DIR`, `ND4J_DSP_PLAN_CACHE_DISK_ENABLED`, `ND4J_DSP_PLAN_CACHE_FORCE_RECOMPILE`, `ND4J_DSP_PLAN_CACHE_OVERRIDE_DIR`.
+
+### 10. Source SDZ Target Compilation Cache
+
+The backend-neutral `nd4j-sdx-model` module owns:
+
+- logical source identity over sorted SDZ entries, excluding `META-INF/sdx-cache/`,
+- target/compiler/version/config/auxiliary-digest cache keys,
+- immutable per-file-hashed objects with locked atomic publication,
+- a `TargetCompiler` SPI plus a direct-process host adapter,
+- packaging selected cached targets back into one enriched SDZ,
+- extraction-only fail-closed resolution on mobile.
+
+The original and enriched SDZ therefore share the same logical source identity. Changing compiler version, command fingerprint, target profile, quantization metadata, tokenizer, generation configuration, or explicit cache-key properties creates a new object. The application never chooses or parses a provider extension.
+
+`libnd4j/tools/sdx-compile.sh` is only a launcher for this Java API. The former shell/Python DSPB construction logic is retired.
 
 ## Consequences
 
@@ -224,6 +233,7 @@ Configuration: `ND4J_DSP_PLAN_CACHE_DIR`, `ND4J_DSP_PLAN_CACHE_DISK_ENABLED`, `N
 - Backend policy is explicit per platform and debuggable via execution reports.
 - CUDA and AMD execution policies are represented in the public ABI.
 - Disk plan persistence eliminates multi-second plan recompilation on process restart.
+- One logical SDZ identity and compiler-owned cache replace provider-format branching in applications.
 
 ### Disadvantages
 
@@ -231,7 +241,7 @@ Configuration: `ND4J_DSP_PLAN_CACHE_DIR`, `ND4J_DSP_PLAN_CACHE_DISK_ENABLED`, `N
 - Fallback telemetry is coarse: `applied_backend` is the plan's in-force mode
   and `used_fallback` derives from segment capture failures / REPLAY_BLOCKED —
   a boolean, not a full per-segment reason graph.
-- The SDZ/packed-.dspb readers are in-memory; archives must fit in host RAM.
+- The native SDZ and legacy packed-DSPB compatibility readers are in-memory; archives must fit in host RAM.
 
 ## Milestones
 
@@ -249,3 +259,4 @@ Configuration: `ND4J_DSP_PLAN_CACHE_DIR`, `ND4J_DSP_PLAN_CACHE_DISK_ENABLED`, `N
 - `libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp`
 - `libnd4j/include/graph/impl/SdzReader.cpp`
 - `nd4j/.../samediff/execution/DspPlanDiskCache.java`
+- `nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model/`
