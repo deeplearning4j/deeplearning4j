@@ -172,6 +172,8 @@ fi
 
 CLASS_ENTRIES="$(unzip -Z1 "$CLASSES_JAR")"
 for class_name in \
+    org/nd4j/dsp/model/SdxModelCache.class \
+    org/nd4j/dsp/model/SdxTargetProfile.class \
     org/nd4j/dsp/runtime/SdxRuntime.class \
     org/nd4j/dsp/runtime/SdxTextSession.class \
     org/nd4j/dsp/runtime/bindings/SdxNative.class \

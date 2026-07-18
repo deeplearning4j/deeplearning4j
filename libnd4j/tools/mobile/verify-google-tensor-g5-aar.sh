@@ -135,7 +135,12 @@ if grep -Eiq 'opencl|webgpu|vulkan|nnapi|xnnpack' <<<"$AAR_ENTRIES"; then
 fi
 
 CLASS_ENTRIES="$(unzip -Z1 "$CLASSES_JAR")"
-for class_name in     org/nd4j/dsp/runtime/litertlm/SdxLiteRtLmChatSession.class     org/nd4j/dsp/runtime/litertlm/SdxLiteRtLmChatSession\$Builder.class     org/nd4j/dsp/runtime/litertlm/bindings/LiteRtLmNative.class; do
+for class_name in \
+    org/nd4j/dsp/model/SdxModelCache.class \
+    org/nd4j/dsp/model/SdxTargetProfile.class \
+    org/nd4j/dsp/runtime/litertlm/SdxLiteRtLmChatSession.class \
+    org/nd4j/dsp/runtime/litertlm/SdxLiteRtLmChatSession\$Builder.class \
+    org/nd4j/dsp/runtime/litertlm/bindings/LiteRtLmNative.class; do
     if ! grep -Fxq "$class_name" <<<"$CLASS_ENTRIES"; then
         echo "Required JavaCPP API class missing: $class_name" >&2
         exit 1
