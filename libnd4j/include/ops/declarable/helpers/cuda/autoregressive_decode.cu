@@ -1192,12 +1192,47 @@ void autoregressiveDecode(
         }
     }
 
+    // KV_CACHE-gated chain probe: per chain exec, sample the carry-in hidden,
+    // input token, and hidden-out (async D2H on the exec stream, drained by the
+    // acceptance path's existing sync — no new sync points). Diagnoses whether
+    // the draft chain's hidden/token carry is visible to the predictor plan.
+    float mtpChainCarryIn[33][4] = {};
+    float mtpChainHidOut[33][4] = {};
+    LongType mtpChainTok[33] = {};
+    int mtpChainSampled = 0;
+
+    // Adaptive MTP chain-depth cap. Recursive drafting feeds the predictor its
+    // OWN output hidden — out-of-distribution for heads trained only on trunk
+    // hidden (measured: Qwen3.5-0.8B bundled head hits 41% at position 0 and
+    // 0/51 at position 1 even when position 0's token was correct). Positions
+    // that never accept still cost one full predictor execution per step and
+    // widen the verification window, so once a position has enough evaluations
+    // with zero accepts, stop proposing past it. Counters persist across the
+    // whole generation (this function IS the decode loop).
+    int mtpChainCap = specK;
+    int mtpPosEvaluated[33] = {};
+    int mtpPosAccepted[33] = {};
+    constexpr int MTP_CHAIN_CAP_MIN_EVALS = 12;
+
     auto executeMtpCuda = [&](LongType position, int draftSlot, bool writeTargetRow) {
         REQUIRE_TRUE(useMtp && mtpDraftDevice != nullptr, 0,
                      "autoregressive_decode: attempted CUDA MTP execution while disabled");
         REQUIRE_TRUE(draftSlot >= 0 && draftSlot <= specK, 0,
                      "autoregressive_decode: CUDA MTP draft slot %d outside [0,%d]",
                      draftSlot, specK);
+
+        const bool chainProbe = DSP_DIAG_ENABLED(KV_CACHE) && draftSlot < 33
+            && config->mtpTargetHidden->dataType() == DataType::FLOAT32
+            && config->mtpTargetHidden->lengthOf() >= 4;
+        if (chainProbe) {
+            cudaMemcpyAsync(mtpChainCarryIn[draftSlot],
+                            config->mtpTargetHidden->specialBuffer(),
+                            4 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+            cudaMemcpyAsync(&mtpChainTok[draftSlot],
+                            config->mtpInputIds->specialBuffer(),
+                            sizeof(LongType), cudaMemcpyDeviceToHost, *stream);
+            if (draftSlot + 1 > mtpChainSampled) mtpChainSampled = draftSlot + 1;
+        }
 
         NDArray::prepareSpecialUse(
             {config->mtpPositionOffset, config->mtpCachePosition, config->mtpCausalMask}, {});
@@ -1250,6 +1285,11 @@ void autoregressiveDecode(
         cudaMemcpyAsync(config->mtpTargetHidden->specialBuffer(), mtpHidden->specialBuffer(),
                         hiddenBytes, cudaMemcpyDeviceToDevice, *stream);
         NDArray::registerSpecialUse({config->mtpTargetHidden}, {mtpHidden});
+
+        if (chainProbe && mtpHidden->dataType() == DataType::FLOAT32) {
+            cudaMemcpyAsync(mtpChainHidOut[draftSlot], mtpHidden->specialBuffer(),
+                            4 * sizeof(float), cudaMemcpyDeviceToHost, *stream);
+        }
 
         NDArray::prepareSpecialUse({config->mtpInputIds}, {mtpDraftDevice});
         cudaMemcpyAsync(config->mtpInputIds->specialBuffer(), draftPtr,
@@ -1440,6 +1480,7 @@ void autoregressiveDecode(
             maxPropose = kvDraftCapacity > 0 ? static_cast<int>(kvDraftCapacity) : 0;
         }
         if (maxPropose < 0) maxPropose = 0;
+        if (useMtp && maxPropose > mtpChainCap) maxPropose = mtpChainCap;
 
         if (useNgram && specCurrentToken >= 0) {
             LongType previous = specPreviousToken;
@@ -1980,6 +2021,21 @@ void autoregressiveDecode(
             if (useMtp) {
                 std::copy(mtpDraftDst, mtpDraftDst + proposedCount, draftIds);
             }
+            if (useMtp && DSP_DIAG_ENABLED(KV_CACHE)) {
+                // Chain-probe drain: samples were queued on the exec stream during
+                // each executeMtpCuda; the synchronize above completed them.
+                for (int cp = 0; cp < mtpChainSampled; cp++) {
+                    DSP_DIAG(KV_CACHE,
+                             "MTP_CHAIN_PROBE step=%d slot=%d tok=%lld "
+                             "carryIn=[%.6g,%.6g,%.6g,%.6g] hidOut=[%.6g,%.6g,%.6g,%.6g]",
+                             step, cp, (long long)mtpChainTok[cp],
+                             mtpChainCarryIn[cp][0], mtpChainCarryIn[cp][1],
+                             mtpChainCarryIn[cp][2], mtpChainCarryIn[cp][3],
+                             mtpChainHidOut[cp][0], mtpChainHidOut[cp][1],
+                             mtpChainHidOut[cp][2], mtpChainHidOut[cp][3]);
+                }
+                mtpChainSampled = 0;
+            }
 
             // ── Apply lossless accept rule ─────────────────────────────────────────
             // Input row i contains draftIds[i - 1] for i > 0, so target logits row i
@@ -1999,6 +2055,30 @@ void autoregressiveDecode(
             while (acceptedDrafts < proposedCount &&
                    argmaxDst[acceptedDrafts] == draftIds[acceptedDrafts]) {
                 acceptedDrafts++;
+            }
+
+            // Adaptive chain-cap accounting. Count UNCONDITIONALLY: row p's argmax
+            // is the target's continuation of the draft prefix, so draft[p] ==
+            // argmax[p] measures the head's chain quality at position p even when
+            // an earlier draft already missed (the lossless accept rule stays
+            // sequential — this only feeds the cap statistic). Unconditional
+            // counting reaches MIN_EVALS in MIN_EVALS steps instead of waiting
+            // for earlier positions to hit.
+            if (useMtp) {
+                for (int p = 0; p < proposedCount && p < 33; p++) {
+                    mtpPosEvaluated[p]++;
+                    if (argmaxDst[p] == draftIds[p]) mtpPosAccepted[p]++;
+                }
+                for (int p = 1; p < mtpChainCap && p < 33; p++) {
+                    if (mtpPosEvaluated[p] >= MTP_CHAIN_CAP_MIN_EVALS && mtpPosAccepted[p] == 0) {
+                        DSP_DIAG(KV_CACHE,
+                                 "MTP_CHAIN_CAP: capping chain depth %d -> %d "
+                                 "(pos%d evaluated=%d accepted=0; recursive drafts unproductive)",
+                                 mtpChainCap, p, p, mtpPosEvaluated[p]);
+                        mtpChainCap = p;
+                        break;
+                    }
+                }
             }
 
             // ── ADR 0106 Phase 2: accepted-prefix recurrent-state commit ─────────

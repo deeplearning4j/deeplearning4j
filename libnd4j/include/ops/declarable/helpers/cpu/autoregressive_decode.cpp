@@ -518,6 +518,15 @@ void autoregressiveDecode(
     LongType totalSpeculativeAccepted = 0;
     LongType speculativeStepCount = 0;
 
+    // Adaptive MTP chain-depth cap (mirrors the CUDA helper): recursive drafts
+    // feed the predictor its own output hidden — out-of-distribution for heads
+    // trained only on trunk hidden. Positions whose evaluations never accept
+    // cost a full predictor execution per step for nothing; cap past them.
+    int mtpChainCap_cpu = specK_cpu;
+    int mtpPosEvaluated_cpu[33] = {};
+    int mtpPosAccepted_cpu[33] = {};
+    constexpr int MTP_CHAIN_CAP_MIN_EVALS_CPU = 12;
+
     for (int step = 0; step < maxNewTokens; step++) {
         // Cancellation is observed only at a committed step boundary. This
         // keeps KV/recurrent state coherent for a later continuation.
@@ -555,6 +564,7 @@ void autoregressiveDecode(
                 ? static_cast<int>(kvDraftCapacity_cpu) : 0;
         }
         if (maxPropose_cpu < 0) maxPropose_cpu = 0;
+        if (useMtp_cpu && maxPropose_cpu > mtpChainCap_cpu) maxPropose_cpu = mtpChainCap_cpu;
 
         if (useNgram_cpu && specCurrentToken_cpu >= 0) {
             LongType previous = specPreviousToken_cpu;
@@ -843,6 +853,30 @@ void autoregressiveDecode(
                    specRowArgmax_cpu[specAccepted_cpu] == draftIds_cpu[specAccepted_cpu]) {
                 specAccepted_cpu++;
             }
+
+            // Adaptive chain-cap accounting (see declaration above the step loop).
+            // Count UNCONDITIONALLY: row p's argmax is the target's continuation
+            // of the draft prefix, so draft[p] == argmax[p] measures chain quality
+            // at position p even when an earlier draft missed (the lossless accept
+            // rule stays sequential — this only feeds the cap statistic).
+            if (useMtp_cpu) {
+                for (int p = 0; p < proposedCount_cpu && p < 33; p++) {
+                    mtpPosEvaluated_cpu[p]++;
+                    if (specRowArgmax_cpu[p] == draftIds_cpu[p]) mtpPosAccepted_cpu[p]++;
+                }
+                for (int p = 1; p < mtpChainCap_cpu && p < 33; p++) {
+                    if (mtpPosEvaluated_cpu[p] >= MTP_CHAIN_CAP_MIN_EVALS_CPU
+                            && mtpPosAccepted_cpu[p] == 0) {
+                        DSP_DIAG(KV_CACHE,
+                                 "MTP_CHAIN_CAP: capping chain depth %d -> %d "
+                                 "(pos%d evaluated=%d accepted=0; recursive drafts unproductive)",
+                                 mtpChainCap_cpu, p, p, mtpPosEvaluated_cpu[p]);
+                        mtpChainCap_cpu = p;
+                        break;
+                    }
+                }
+            }
+
             if (specAccepted_cpu < proposedCount_cpu
                     && config->actualSequenceLengthExtIdx >= 0
                     && config->actualSequenceLengthExtIdx < numExtInputs
