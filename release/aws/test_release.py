@@ -42,6 +42,22 @@ class FakeEc2:
         return {"InstanceTypeOfferings": [{"InstanceType": item, "Location": zone} for item in values]}
 
 
+class SizingEc2:
+    def describe_instance_types(self, **_kwargs):
+        return {"InstanceTypes": [
+            {"InstanceType": "c7i.large", "ProcessorInfo": {"SupportedArchitectures": ["x86_64"]},
+             "VCpuInfo": {"DefaultVCpus": 2}, "MemoryInfo": {"SizeInMiB": 4096}},
+            {"InstanceType": "c7i.xlarge", "ProcessorInfo": {"SupportedArchitectures": ["x86_64"]},
+             "VCpuInfo": {"DefaultVCpus": 4}, "MemoryInfo": {"SizeInMiB": 8192}},
+            {"InstanceType": "c7i.2xlarge", "ProcessorInfo": {"SupportedArchitectures": ["x86_64"]},
+             "VCpuInfo": {"DefaultVCpus": 8}, "MemoryInfo": {"SizeInMiB": 16384}},
+        ]}
+
+    def describe_instance_type_offerings(self, **kwargs):
+        values = kwargs["Filters"][0]["Values"]
+        return {"InstanceTypeOfferings": [{"InstanceType": item, "Location": "us-east-1"} for item in values]}
+
+
 class ReleaseValidationTest(unittest.TestCase):
     def shard(self):
         return {
@@ -101,6 +117,21 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual(1, len(selected))
         self.assertEqual("linux-x86_64-cpu--base", selected[0]["id"])
         self.assertEqual(["base"], [item["name"] for item in selected[0]["build"]["variants"]])
+
+    def test_core_constraint_greedily_selects_largest_feasible_size(self):
+        lane = self.shard()
+        lane["build"] = {"buildThreads": 48, "mavenHeapGiB": 32}
+        schedule = release.apply_core_constraint(SizingEc2(), [lane], 5)
+        self.assertEqual("c7i.xlarge", lane["instanceType"])
+        self.assertEqual(4, lane["build"]["buildThreads"])
+        self.assertEqual(4, lane["build"]["mavenHeapGiB"])
+        self.assertEqual(4, schedule[0]["selectedVcpus"])
+
+    def test_core_constraint_fails_before_launch_when_no_size_fits(self):
+        lane = self.shard()
+        lane["build"] = {"buildThreads": 48, "mavenHeapGiB": 32}
+        with self.assertRaisesRegex(SystemExit, "Core constraint is infeasible"):
+            release.apply_core_constraint(SizingEc2(), [lane], 1)
 
 
 if __name__ == "__main__":

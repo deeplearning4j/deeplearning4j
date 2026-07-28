@@ -408,6 +408,81 @@ def apply_execution_overrides(executions: list[dict[str, Any]], instance_type: s
             item["build"]["buildThreads"] = build_threads
 
 
+def apply_plan_defaults(plan: dict[str, Any], executions: list[dict[str, Any]]) -> None:
+    defaults = plan.get("defaults", {})
+    for item in executions:
+        item["build"] = {**defaults, **item["build"]}
+
+
+def apply_core_constraint(ec2, executions: list[dict[str, Any]], max_cores: int | None) -> list[dict[str, Any]]:
+    """Greedily choose the largest compatible virtualized size within an EC2 vCPU budget."""
+    if max_cores is None:
+        return []
+    if max_cores < 1:
+        raise SystemExit("--max-cores must be at least 1")
+    family_cache: dict[str, list[dict[str, Any]]] = {}
+    schedule: list[dict[str, Any]] = []
+    failures: list[str] = []
+    for lane in executions:
+        original_type = lane["instanceType"]
+        if lane.get("dedicatedHost"):
+            schedule.append({"lane": lane["id"], "originalInstanceType": original_type,
+                             "selectedInstanceType": original_type, "constraintApplied": False,
+                             "reason": "EC2 Mac dedicated-host size is fixed"})
+            continue
+        family = original_type.split(".", 1)[0]
+        if family not in family_cache:
+            request: dict[str, Any] = {"Filters": [{"Name": "instance-type", "Values": [f"{family}.*"]}]}
+            descriptions: list[dict[str, Any]] = []
+            while True:
+                response = ec2.describe_instance_types(**request)
+                descriptions.extend(response.get("InstanceTypes", []))
+                token = response.get("NextToken")
+                if not token:
+                    break
+                request["NextToken"] = token
+            family_cache[family] = descriptions
+        expected_architecture = lane["amiQuery"]["architecture"]
+        candidates = [item for item in family_cache[family]
+                      if expected_architecture in item.get("ProcessorInfo", {}).get("SupportedArchitectures", [])
+                      and int(item.get("VCpuInfo", {}).get("DefaultVCpus", 0)) <= max_cores
+                      and ".metal" not in item.get("InstanceType", "")]
+        if candidates:
+            offered_response = ec2.describe_instance_type_offerings(
+                LocationType="region",
+                Filters=[{"Name": "instance-type", "Values": [item["InstanceType"] for item in candidates]}],
+            )
+            offered_types = {item["InstanceType"] for item in offered_response.get("InstanceTypeOfferings", [])}
+            candidates = [item for item in candidates if item["InstanceType"] in offered_types]
+        if not candidates:
+            available = sorted({int(item.get("VCpuInfo", {}).get("DefaultVCpus", 0))
+                                for item in family_cache[family]
+                                if expected_architecture in item.get("ProcessorInfo", {}).get("SupportedArchitectures", [])})
+            failures.append(f"{lane['id']}: no {family} {expected_architecture} size <= {max_cores} vCPUs; family sizes={available}")
+            continue
+        selected = max(candidates, key=lambda item: (
+            int(item["VCpuInfo"]["DefaultVCpus"]), int(item.get("MemoryInfo", {}).get("SizeInMiB", 0))))
+        selected_cores = int(selected["VCpuInfo"]["DefaultVCpus"])
+        memory_gib = int(selected.get("MemoryInfo", {}).get("SizeInMiB", 0)) // 1024
+        build = lane["build"]
+        original_threads = int(build.get("buildThreads", selected_cores))
+        original_heap = int(build.get("mavenHeapGiB", 16))
+        selected_threads = min(original_threads, selected_cores)
+        selected_heap = min(original_heap, max(2, memory_gib // 2))
+        lane["instanceType"] = selected["InstanceType"]
+        build["buildThreads"] = selected_threads
+        build["mavenHeapGiB"] = selected_heap
+        schedule.append({
+            "lane": lane["id"], "family": family, "originalInstanceType": original_type,
+            "selectedInstanceType": selected["InstanceType"], "selectedVcpus": selected_cores,
+            "memoryGiB": memory_gib, "buildThreads": selected_threads,
+            "mavenHeapGiB": selected_heap, "constraintApplied": True,
+        })
+    if failures:
+        raise SystemExit("Core constraint is infeasible:\n  " + "\n  ".join(failures))
+    return schedule
+
+
 def validate_launch_matrix(ec2, ssm, executions: list[dict[str, Any]], region: str,
                            availability_zone: str | None = None) -> tuple[dict[str, str], dict[str, Any]]:
     """Validate all AMIs and instance types before any mutable AWS operation."""
@@ -504,7 +579,11 @@ def preflight(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
     session, region, ec2, ssm, _, sts, _ = session_clients(args.region)
     executions = selected_executions(plan, args.shard)
+    apply_plan_defaults(plan, executions)
     apply_execution_overrides(executions, args.instance_type, args.build_threads)
+    if args.instance_type and args.max_cores is not None:
+        raise SystemExit("--instance-type and --max-cores are mutually exclusive")
+    core_schedule = apply_core_constraint(ec2, executions, args.max_cores)
     instance_types = sorted({item["instanceType"] for item in executions})
     subnet_id, group_id, default_az = default_network(ec2, instance_types)
     availability_zones = [item["ZoneName"] for item in ec2.describe_availability_zones(
@@ -533,6 +612,7 @@ def preflight(args: argparse.Namespace) -> None:
     result = {
         "account": sts.get_caller_identity()["Account"], "region": region,
         "executions": len(executions), "instanceTypes": instance_types,
+        "maxCoresConstraint": args.max_cores, "coreConstraintSchedule": core_schedule,
         "offeringsByAvailabilityZone": offerings, "resolvedAmis": amis,
         "defaultNetwork": {"subnetId": subnet_id, "securityGroupId": group_id, "availabilityZone": default_az},
         "peakStandardOnDemandVcpusSerialLanes": required_vcpus,
@@ -552,14 +632,33 @@ def start(args: argparse.Namespace) -> None:
     session, region, ec2, ssm, s3, sts, iam = session_clients(args.region)
     logs_client = session.client("logs")
     executions = selected_executions(plan, args.shard)
+    apply_plan_defaults(plan, executions)
     apply_execution_overrides(executions, args.instance_type, args.build_threads)
+    if args.instance_type and args.max_cores is not None:
+        raise SystemExit("--instance-type and --max-cores are mutually exclusive")
+    core_schedule = apply_core_constraint(ec2, executions, args.max_cores)
     subnet_id, group_id = (args.subnet_id, args.security_group_id)
     if not subnet_id or not group_id:
         subnet_id, group_id, availability_zone = default_network(
             ec2, sorted({item["instanceType"] for item in executions}))
     else:
         availability_zone = ec2.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]["AvailabilityZone"]
-    resolved_amis, _ = validate_launch_matrix(ec2, ssm, executions, region, availability_zone)
+    resolved_amis, descriptions = validate_launch_matrix(ec2, ssm, executions, region, availability_zone)
+    peak_vcpus = max((int(descriptions[item["instanceType"]]["VCpuInfo"]["DefaultVCpus"])
+                      for item in executions if not item.get("dedicatedHost")), default=0)
+    if args.max_cores is not None and peak_vcpus > args.max_cores:
+        raise SystemExit(f"calculated schedule requires {peak_vcpus} vCPUs, exceeding --max-cores {args.max_cores}")
+    try:
+        quota_value = float(session.client("service-quotas").get_service_quota(
+            ServiceCode="ec2", QuotaCode="L-1216C47A")["Quota"]["Value"])
+    except Exception as exc:
+        if args.max_cores is not None:
+            raise SystemExit(f"cannot prove --max-cores schedule is launchable because the EC2 quota could not be read: {exc}") from exc
+        quota_value = None
+    if quota_value is not None and peak_vcpus > quota_value:
+        raise SystemExit(f"calculated schedule requires {peak_vcpus} standard vCPUs but account quota is {quota_value:g}")
+    if core_schedule:
+        print(json.dumps({"maxCoresConstraint": args.max_cores, "coreConstraintSchedule": core_schedule}, indent=2))
     if kill_switch_enabled(ssm, plan) and not args.reset_kill_switch:
         raise SystemExit("Global kill switch is ON. Pass --reset-kill-switch to explicitly start a new release.")
     set_kill_switch(ssm, plan, False)
@@ -983,6 +1082,7 @@ def parser() -> argparse.ArgumentParser:
     check.add_argument("--shard", action="append")
     check.add_argument("--instance-type", help="validated CPU instance override for capacity-limited smoke tests")
     check.add_argument("--build-threads", type=int, help="build thread override to match a smaller smoke host")
+    check.add_argument("--max-cores", type=int, help="greedily select the largest compatible size per lane within this EC2 vCPU limit")
     check.set_defaults(func=preflight)
     launch = sub.add_parser("start")
     launch.add_argument("--version", required=True)
@@ -995,6 +1095,7 @@ def parser() -> argparse.ArgumentParser:
     launch.add_argument("--shard", action="append")
     launch.add_argument("--instance-type", help="validated CPU instance override for capacity-limited smoke tests")
     launch.add_argument("--build-threads", type=int, help="build thread override to match a smaller smoke host")
+    launch.add_argument("--max-cores", type=int, help="greedily select the largest compatible size per lane within this EC2 vCPU limit")
     launch.add_argument("--bucket")
     launch.add_argument("--subnet-id")
     launch.add_argument("--security-group-id")

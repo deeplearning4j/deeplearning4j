@@ -104,25 +104,21 @@ python3 release/aws/release.py delete-logs --run-id "$RUN_ID" \
 python3 release/aws/release.py delete-logs --all-runs --yes
 ```
 
-Use the same explicit capacity overrides for both preflight and start when smoke-testing in an account with the default 5-vCPU Standard On-Demand quota. `c7i.xlarge` has 4 vCPUs; AWS still validates that it exists, supports the selected AMI architecture and is offered in the launch Availability Zone:
+Use the same core constraint for preflight and start when operating under a fixed Standard On-Demand budget. The value is EC2 vCPUs (the unit used by the AWS quota). Before creating anything, the scheduler enumerates each non-Mac lane's configured instance family, filters out sizes with the wrong architecture, unavailable regional offerings, bare-metal sizes, and sizes exceeding the constraint, then greedily selects the largest remaining size. Build threads and Maven heap are reduced to fit the selected vCPU/memory capacity. EC2 Mac remains fixed and uses its separate dedicated-host capacity model:
 
 ```bash
 python3 release/aws/release.py preflight \
-  --shard linux-x86_64-cpu--base \
-  --instance-type c7i.xlarge \
-  --build-threads 4
+  --max-cores 5
 
 python3 release/aws/release.py start \
   --branch ag_new_release_updates_2 \
   --version 1.0.0-SNAPSHOT \
   --snapshot-version 1.0.0-SNAPSHOT \
-  --shard linux-x86_64-cpu--base \
-  --instance-type c7i.xlarge \
-  --build-threads 4 \
+  --max-cores 5 \
   --reset-kill-switch
 ```
 
-The 4-vCPU override is only for bootstrap/control-plane smoke testing; it is not a useful performance build. It changes only that invocation and does not resize the checked-in production lanes. Accelerator families remain forbidden, and EC2 Mac dedicated-host shards cannot be overridden. Because production lanes are now scheduled one at a time, the Standard On-Demand quota requirement is the largest active lane (`c7i.24xlarge`, 96 vCPUs), rather than the former 3,808-vCPU sum. Request enough quota for the desired single-host size before measuring build performance.
+The preflight JSON includes `coreConstraintSchedule`, recording the original and selected type, vCPUs, memory, build threads and Maven heap for every lane. If any lane has no compatible size, the calculation fails with all infeasible lanes before the kill switch, S3, IAM, logs, dedicated hosts or instances are changed. `--instance-type` and `--max-cores` are mutually exclusive. The explicit instance/build-thread options remain available for single-lane diagnosis, while `--max-cores` is the normal whole-schedule constraint. With a budget of 5, the compute lanes select 4-vCPU sizes; this is launchable but not a performance configuration. With no constraint, the production peak remains 96 vCPUs because lanes execute serially.
 
 Before starting any smoke or full build, keep this emergency command ready in a second terminal using the same standard AWS region environment:
 
