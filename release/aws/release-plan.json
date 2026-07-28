@@ -25,8 +25,7 @@
       "architecture": "x86_64",
       "instanceType": "c7i.24xlarge",
       "amiQuery": {"owners": ["099720109477"], "ownerIds": ["099720109477"], "name": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*", "architecture": "x86_64"},
-      "worker": "worker.sh", "parallelVariants": true,
-      "workloads": ["maven", "sdk"],
+      "worker": "worker.sh",       "workloads": ["maven", "sdk"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-native", "nd4j-native-preset", "nd4j-native-platform", "libtokenizers", "tokenizers-native-preset", "tokenizers-native"], "classifierTokens": ["linux-x86_64"], "includeMetadata": true},
       "build": {
         "backend": "cpu", "javacppPlatform": "linux-x86_64", "prebuildCrossPlatform": true, "profiles": ["cpu", "sdx"],
@@ -46,7 +45,7 @@
       "id": "linux-arm64-cpu",
       "os": "linux", "architecture": "arm64", "instanceType": "c7g.16xlarge",
       "amiQuery": {"owners": ["099720109477"], "ownerIds": ["099720109477"], "name": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-arm64-server-*", "architecture": "arm64"},
-      "worker": "worker.sh", "parallelVariants": true, "workloads": ["maven", "sdk"],
+      "worker": "worker.sh", "workloads": ["maven", "sdk"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-native", "nd4j-native-preset", "libtokenizers", "tokenizers-native-preset", "tokenizers-native"], "classifierTokens": ["linux-arm64"]},
       "build": {
         "backend": "cpu", "javacppPlatform": "linux-arm64", "prebuildCrossPlatform": true, "profiles": ["cpu", "sdx", "osx-aarch64-protoc"],
@@ -59,7 +58,7 @@
       "id": "linux-x86_64-cuda-12-6",
       "os": "linux", "architecture": "x86_64", "instanceType": "c7i.24xlarge",
       "amiQuery": {"owners": ["099720109477"], "ownerIds": ["099720109477"], "name": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*", "architecture": "x86_64"},
-      "worker": "worker.sh", "containerImage": "nvidia/cuda:12.6.3-devel-ubuntu22.04", "parallelVariants": true, "workloads": ["maven", "sdk"],
+      "worker": "worker.sh", "containerImage": "nvidia/cuda:12.6.3-devel-ubuntu22.04", "workloads": ["maven", "sdk"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-cuda-12.6", "nd4j-cuda-12.6-preset", "nd4j-cuda-12.6-platform"], "classifierTokens": ["linux-x86_64"], "includeMetadata": true},
       "build": {"backend": "cuda", "cudaVersion": "12.6", "javacppPlatform": "linux-x86_64", "profiles": ["cuda", "sdx"], "modules": [":nd4j-cuda-12.6", ":nd4j-cuda-12.6-preset", ":libnd4j", ":nd4j-cuda-12.6-platform"], "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0"], "variants": [{"name": "base", "classifierSuffix": "-cuda-12.6", "platformExtension": ""}, {"name": "cudnn", "helper": "cudnn", "classifierSuffix": "-cuda-12.6-cudnn", "platformExtension": "-cudnn"}, {"name": "compile", "classifierSuffix": "-cuda-12.6-compile", "platformExtension": "-compile", "triton": true}], "buildThreads": 48}
     },
@@ -67,7 +66,7 @@
       "id": "linux-x86_64-cuda-12-9",
       "os": "linux", "architecture": "x86_64", "instanceType": "c7i.24xlarge",
       "amiQuery": {"owners": ["099720109477"], "ownerIds": ["099720109477"], "name": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*", "architecture": "x86_64"},
-      "worker": "worker.sh", "containerImage": "nvidia/cuda:12.9.1-devel-ubuntu22.04", "parallelVariants": true, "workloads": ["maven", "sdk"],
+      "worker": "worker.sh", "containerImage": "nvidia/cuda:12.9.1-devel-ubuntu22.04", "workloads": ["maven", "sdk"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-cuda-12.9", "nd4j-cuda-12.9-preset", "nd4j-cuda-12.9-platform"], "classifierTokens": ["linux-x86_64"], "includeMetadata": true},
       "build": {"backend": "cuda", "cudaVersion": "12.9", "javacppPlatform": "linux-x86_64", "profiles": ["cuda", "sdx"], "modules": [":nd4j-cuda-12.9", ":nd4j-cuda-12.9-preset", ":libnd4j", ":nd4j-cuda-12.9-platform"], "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0"], "variants": [{"name": "base", "classifierSuffix": "-cuda-12.9", "platformExtension": ""}, {"name": "cudnn", "helper": "cudnn", "classifierSuffix": "-cuda-12.9-cudnn", "platformExtension": "-cudnn"}, {"name": "compile", "classifierSuffix": "-cuda-12.9-compile", "platformExtension": "-compile", "triton": true}], "buildThreads": 48}
     },
@@ -75,21 +74,21 @@
       "id": "windows-x86_64-cpu",
       "os": "windows", "architecture": "x86_64", "instanceType": "c7i.24xlarge",
       "amiQuery": {"owners": ["amazon"], "name": "Windows_Server-2022-English-Full-Base-*", "architecture": "x86_64", "platform": "windows"},
-      "worker": "worker.ps1", "parallelVariants": true, "workloads": ["maven", "sdk"],
+      "worker": "worker.ps1", "workloads": ["maven", "sdk"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-native", "nd4j-native-preset", "nd4j-native-platform", "libtokenizers", "tokenizers-native-preset", "tokenizers-native"], "classifierTokens": ["windows-x86_64"]},
       "build": {"backend": "cpu", "prebuildCrossPlatform": true, "javacppPlatform": "windows-x86_64", "profiles": ["cpu", "sdx"], "modules": [":nd4j-native", ":nd4j-native-preset", ":libnd4j", ":nd4j-native-platform"], "variants": [{"name": "base", "suffix": ""}, {"name": "avx2", "extension": "avx2", "suffix": "-avx2"}, {"name": "avx512", "extension": "avx512", "suffix": "-avx512"}, {"name": "onednn", "helper": "onednn", "extension": "onednn", "suffix": "-onednn"}, {"name": "onednn-avx2", "helper": "onednn", "extension": "avx2", "suffix": "-onednn-avx2"}, {"name": "onednn-avx512", "helper": "onednn", "extension": "avx512", "suffix": "-onednn-avx512"}, {"name": "compile", "suffix": "-compile", "mlir": true}], "buildThreads": 48}
     },
     {
       "id": "windows-x86_64-cuda-12-6",
       "os": "windows", "architecture": "x86_64", "instanceType": "c7i.24xlarge",
-      "amiQuery": {"owners": ["amazon"], "name": "Windows_Server-2022-English-Full-Base-*", "architecture": "x86_64", "platform": "windows"}, "worker": "worker.ps1", "parallelVariants": true, "workloads": ["maven", "sdk"],
+      "amiQuery": {"owners": ["amazon"], "name": "Windows_Server-2022-English-Full-Base-*", "architecture": "x86_64", "platform": "windows"}, "worker": "worker.ps1", "workloads": ["maven", "sdk"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-cuda-12.6", "nd4j-cuda-12.6-preset", "nd4j-cuda-12.6-platform"], "classifierTokens": ["windows-x86_64"]},
       "build": {"backend": "cuda", "cudaVersion": "12.6", "javacppPlatform": "windows-x86_64", "profiles": ["cuda", "sdx"], "modules": [":nd4j-cuda-12.6", ":nd4j-cuda-12.6-preset", ":libnd4j", ":nd4j-cuda-12.6-platform"], "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0", "-Dlibnd4j.oom.killer=OFF"], "variants": [{"name": "base", "classifierSuffix": "-cuda-12.6", "platformExtension": ""}, {"name": "cudnn", "helper": "cudnn", "classifierSuffix": "-cuda-12.6-cudnn", "platformExtension": "-cudnn"}, {"name": "compile", "classifierSuffix": "-cuda-12.6-compile", "platformExtension": "-compile", "triton": true}], "buildThreads": 48}
     },
     {
       "id": "windows-x86_64-cuda-12-9",
       "os": "windows", "architecture": "x86_64", "instanceType": "c7i.24xlarge",
-      "amiQuery": {"owners": ["amazon"], "name": "Windows_Server-2022-English-Full-Base-*", "architecture": "x86_64", "platform": "windows"}, "worker": "worker.ps1", "parallelVariants": true, "workloads": ["maven", "sdk"],
+      "amiQuery": {"owners": ["amazon"], "name": "Windows_Server-2022-English-Full-Base-*", "architecture": "x86_64", "platform": "windows"}, "worker": "worker.ps1", "workloads": ["maven", "sdk"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-cuda-12.9", "nd4j-cuda-12.9-preset", "nd4j-cuda-12.9-platform"], "classifierTokens": ["windows-x86_64"]},
       "build": {"backend": "cuda", "cudaVersion": "12.9", "javacppPlatform": "windows-x86_64", "profiles": ["cuda", "sdx"], "modules": [":nd4j-cuda-12.9", ":nd4j-cuda-12.9-preset", ":libnd4j", ":nd4j-cuda-12.9-platform"], "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0", "-Dlibnd4j.oom.killer=OFF"], "variants": [{"name": "base", "classifierSuffix": "-cuda-12.9", "platformExtension": ""}, {"name": "cudnn", "helper": "cudnn", "classifierSuffix": "-cuda-12.9-cudnn", "platformExtension": "-cudnn"}, {"name": "compile", "classifierSuffix": "-cuda-12.9-compile", "platformExtension": "-compile", "triton": true}], "buildThreads": 48}
     },
@@ -104,14 +103,14 @@
     {
       "id": "android-arm64",
       "os": "linux", "architecture": "x86_64", "instanceType": "c7i.16xlarge",
-      "amiQuery": {"owners": ["099720109477"], "ownerIds": ["099720109477"], "name": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*", "architecture": "x86_64"}, "worker": "worker.sh", "parallelVariants": true, "workloads": ["maven", "sdk"],
+      "amiQuery": {"owners": ["099720109477"], "ownerIds": ["099720109477"], "name": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*", "architecture": "x86_64"}, "worker": "worker.sh", "workloads": ["maven", "sdk"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-native", "nd4j-native-preset"], "classifierTokens": ["android-arm64"]},
       "build": {"backend": "cpu", "ndkVersion": "r27d", "javacppPlatform": "android-arm64", "profiles": ["cpu", "sdx", "osx-aarch64-protoc"], "modules": [":nd4j-native", ":nd4j-native-preset", ":libnd4j"], "mavenArgs": ["-Dlibnd4j.android.api=21"], "variants": [{"name": "base", "suffix": ""}, {"name": "armcompute", "helper": "armcompute", "suffix": "-armcompute"}, {"name": "nnapi", "helper": "nnapi", "suffix": "-nnapi"}, {"name": "compile", "suffix": "-compile", "mlir": true}, {"name": "compile-nnapi", "suffix": "-compile-nnapi", "mlir": true, "triton": false, "helpers": ["mlir", "nnapi"]}], "buildThreads": 24}
     },
     {
       "id": "android-x86_64",
       "os": "linux", "architecture": "x86_64", "instanceType": "c7i.16xlarge",
-      "amiQuery": {"owners": ["099720109477"], "ownerIds": ["099720109477"], "name": "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*", "architecture": "x86_64"}, "worker": "worker.sh", "parallelVariants": true, "workloads": ["maven", "sdk"],
+      "amiQuery": {"owners": ["099720109477"], "ownerIds": ["099720109477"], "name": "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*", "architecture": "x86_64"}, "worker": "worker.sh", "workloads": ["maven", "sdk"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-native", "nd4j-native-preset"], "classifierTokens": ["android-x86_64"]},
       "build": {"backend": "cpu", "ndkVersion": "r26d", "javacppPlatform": "android-x86_64", "profiles": ["cpu", "sdx"], "modules": [":nd4j-native", ":nd4j-native-preset", ":libnd4j"], "mavenArgs": ["-Dlibnd4j.android.api=21"], "variants": [{"name": "base", "suffix": ""}, {"name": "onednn", "helper": "onednn", "suffix": "-onednn"}, {"name": "compile", "suffix": "-compile", "mlir": true}], "buildThreads": 24}
     },

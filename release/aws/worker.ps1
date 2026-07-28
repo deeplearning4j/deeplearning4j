@@ -56,6 +56,17 @@ try {
   $env:CARGO_BUILD_TARGET = 'x86_64-pc-windows-gnu'
   cargo install --locked cbindgen
   if ($LASTEXITCODE -ne 0) { throw 'cbindgen installation failed' }
+  $SccacheVersion = 'v0.15.0'
+  $SccacheFile = "sccache-$SccacheVersion-x86_64-pc-windows-msvc"
+  $SccacheDir = Join-Path $env:USERPROFILE 'sccache'
+  New-Item -ItemType Directory -Force -Path $SccacheDir | Out-Null
+  Invoke-WebRequest "https://github.com/mozilla/sccache/releases/download/$SccacheVersion/$SccacheFile.tar.gz" -OutFile (Join-Path $env:TEMP 'sccache.tar.gz') -UseBasicParsing
+  tar -xzf (Join-Path $env:TEMP 'sccache.tar.gz') -C $env:TEMP
+  Copy-Item (Join-Path $env:TEMP "$SccacheFile\sccache.exe") (Join-Path $SccacheDir 'sccache.exe') -Force
+  $env:PATH = "$SccacheDir;$env:PATH"
+  $env:SCCACHE_DIR = Join-Path $WorkRoot 'sccache'
+  $env:SCCACHE_CACHE_SIZE = '100G'
+  $env:SCCACHE_IDLE_TIMEOUT = '0'
   if ($Shard.build.backend -eq 'cuda') {
     $env:CUDA_VERSION = $Shard.build.cudaVersion
     $Installer = Join-Path $WorkRoot 'install_cuda_windows.ps1'

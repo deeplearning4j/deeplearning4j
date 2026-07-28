@@ -87,6 +87,21 @@ class ReleaseValidationTest(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "invalid CPU compile"):
             release.apply_execution_overrides([self.shard()], "g6.xlarge", 4)
 
+    def test_matrix_uses_serial_reusable_lanes(self):
+        plan = release.load_plan(Path(__file__).with_name("release-plan.json"))
+        lanes = release.execution_shards(plan)
+        self.assertEqual(len(plan["shards"]), len(lanes))
+        linux = next(item for item in lanes if item["id"] == "linux-x86_64-cpu")
+        self.assertEqual(7, len(linux["build"]["variants"]))
+        self.assertNotIn("--base", linux["id"])
+
+    def test_expanded_smoke_selector_keeps_single_variant(self):
+        plan = release.load_plan(Path(__file__).with_name("release-plan.json"))
+        selected = release.selected_executions(plan, ["linux-x86_64-cpu--base"])
+        self.assertEqual(1, len(selected))
+        self.assertEqual("linux-x86_64-cpu--base", selected[0]["id"])
+        self.assertEqual(["base"], [item["name"] for item in selected[0]["build"]["variants"]])
+
 
 if __name__ == "__main__":
     unittest.main()

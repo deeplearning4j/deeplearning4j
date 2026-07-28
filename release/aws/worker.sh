@@ -87,7 +87,7 @@ trap finish EXIT
 if [ "${OS_NAME}" = "linux" ]; then
   export DEBIAN_FRONTEND=noninteractive
   apt-get update
-  apt-get install -y --no-install-recommends awscli autoconf automake build-essential ca-certificates cmake curl docker.io gfortran git gnupg jq libdwarf-dev libdw-dev libelf-dev libgomp1 libomp-dev libopenblas-dev libtool libusb-1.0-0-dev libvulkan-dev libvulkan1 maven mesa-vulkan-drivers nasm ninja-build openjdk-11-jdk pinentry-curses pkg-config python3 swig tar unzip vulkan-tools wget zip zlib1g-dev
+  apt-get install -y --no-install-recommends awscli autoconf automake build-essential ccache ca-certificates cmake curl docker.io gfortran git gnupg jq libdwarf-dev libdw-dev libelf-dev libgomp1 libomp-dev libopenblas-dev libtool libusb-1.0-0-dev libvulkan-dev libvulkan1 maven mesa-vulkan-drivers nasm ninja-build openjdk-11-jdk pinentry-curses pkg-config python3 swig tar unzip vulkan-tools wget zip zlib1g-dev
   apt-get install -y llvm-18-dev mlir-18-tools || apt-get install -y llvm-dev libmlir-dev mlir-tools || true
   export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-$(dpkg --print-architecture)
   curl --fail --location --retry 5 https://github.com/google/protobuf/releases/download/v3.8.0/protobuf-cpp-3.8.0.tar.gz -o /tmp/protobuf-3.8.0.tar.gz
@@ -124,7 +124,7 @@ else
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     export PATH="/opt/homebrew/bin:${PATH}"
   fi
-  brew install ant autoconf autoconf-archive automake awscli binutils bison cmake flex gcc git gmp gnu-sed gradle isl jq libmpc libomp libtool libusb llvm maven mpfr nasm ninja openblas openjdk@11 perl pkg-config python@3.12 ragel rust sdl swig unzip wget xz || true
+  brew install ant autoconf autoconf-archive automake awscli binutils bison ccache cmake flex gcc git gmp gnu-sed gradle isl jq libmpc libomp libtool libusb llvm maven mpfr nasm ninja openblas openjdk@11 perl pkg-config python@3.12 ragel rust sdl swig unzip wget xz || true
   export JAVA_HOME="$(brew --prefix openjdk@11)/libexec/openjdk.jdk/Contents/Home"
   export PATH="$(brew --prefix gnu-sed)/libexec/gnubin:${JAVA_HOME}/bin:${PATH}"
   curl --fail --location --retry 5 https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-osx-aarch_64.zip -o /tmp/protoc.zip

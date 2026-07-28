@@ -13,7 +13,7 @@ The plan preserves the current release environments:
 
 Every compute host is CPU-only. CUDA builders install or enter the CUDA development toolchain but do not request a GPU/accelerator EC2 family. Both Maven-layout artifacts and SDX runtime/AOT SDK assets are required outputs where the existing workflows produce them.
 
-The plan covers every current `build-deploy-*.yml` workflow, including cross-platform Rust/tokenizers and Java modules, compatibility artifacts, Vulkan/Vulkan-MLIR, Hexagon, TPU and ZLUDA. Linux, Windows and Android matrix variants expand to independent EC2 executions so native configurations build concurrently; the current plan expands 16 logical shards to 45 executions. macOS variants remain sequential on one EC2 Mac dedicated host to avoid allocating four separately billed 24-hour hosts.
+The plan covers every current `build-deploy-*.yml` workflow, including cross-platform Rust/tokenizers and Java modules, compatibility artifacts, Vulkan/Vulkan-MLIR, Hexagon, TPU and ZLUDA. It schedules 16 platform/toolchain lanes rather than expanding 45 matrix variants into 45 instances. Within a lane, native configurations run serially on one checkout and reuse the Maven repository, downloaded dependencies, prepared toolchains, source tree and a 100 GiB ccache. The provisioner waits for the lane's signed-off `status.json` before booting the next host. macOS likewise runs base, compile, MPS and MPS+compile on one EC2 Mac dedicated host.
 
 Bootstrap parity is explicit rather than inherited from a hosted-runner image: Java 11, Maven, CMake/Ninja, LLVM/MLIR, native protoc 3.8.0 plus cross-platform protoc 21.7, Rust/cbindgen, OpenBLAS, Android NDK r27d (ARM64) and r26d (x86_64), platform compilers and CUDA tooling are installed by the workers. The embedded build driver preserves the release flags and uses per-shard `buildThreads` values sized for the EC2 host (10-48 threads), plus a platform-sized Maven heap. Rendered workers are staged in encrypted private S3 and fetched through short-lived presigned URLs, keeping EC2 user data below 16 KiB while allowing the project source commit to predate the orchestration code.
 
@@ -51,7 +51,7 @@ python3 release/aws/release.py start \
 python3 release/aws/release.py status
 ```
 
-`start` accepts exactly one of `--branch` or `--commit`. With `--branch`, the local provisioner resolves `refs/heads/<branch>` from `--repository` before making any AWS changes, then passes that immutable commit to every worker. A moving branch therefore cannot produce mixed revisions across the matrix. The output includes `sourceBranch` and `resolvedCommit`, along with the exact shutdown and live-log commands.
+`start` accepts exactly one of `--branch` or `--commit`. With `--branch`, the local provisioner resolves `refs/heads/<branch>` from `--repository` before making any AWS changes, then passes that immutable commit to every worker. A moving branch therefore cannot produce mixed revisions across the matrix. `start` remains attached while it schedules the serial lanes; use another terminal for `status`, `logs`, or the emergency stop command. The output includes `sourceBranch` and `resolvedCommit`, along with the exact shutdown and live-log commands.
 
 `start` repeats fail-closed matrix validation before it resets the kill switch, creates a bucket/log group/IAM profile, allocates a Mac host, or launches an instance. AMIs are discovered with EC2 `DescribeImages` rather than assuming that a public SSM parameter exists in every region. Ubuntu queries are restricted to Canonical owner `099720109477`; Windows and macOS queries are restricted to AWS-owned images. The returned image is then independently checked for owner (where a stable publisher account ID is available), architecture, `available` state, EBS root storage, HVM virtualization and Windows platform metadata. The selected instance types must exist, support the AMI architecture and be offered in the launch subnet's Availability Zone.
 
@@ -122,7 +122,7 @@ python3 release/aws/release.py start \
   --reset-kill-switch
 ```
 
-The override changes only that invocation; it does not weaken or resize the checked-in production matrix. Accelerator families remain forbidden, and EC2 Mac dedicated-host shards cannot be overridden. A full fan-out intentionally needs a substantially increased Standard On-Demand vCPU quota; preflight prints the exact requirement and fails before provisioning when the quota is insufficient.
+The 4-vCPU override is only for bootstrap/control-plane smoke testing; it is not a useful performance build. It changes only that invocation and does not resize the checked-in production lanes. Accelerator families remain forbidden, and EC2 Mac dedicated-host shards cannot be overridden. Because production lanes are now scheduled one at a time, the Standard On-Demand quota requirement is the largest active lane (`c7i.24xlarge`, 96 vCPUs), rather than the former 3,808-vCPU sum. Request enough quota for the desired single-host size before measuring build performance.
 
 Before starting any smoke or full build, keep this emergency command ready in a second terminal using the same standard AWS region environment:
 
@@ -139,9 +139,9 @@ python3 release/aws/release.py stop-everything --wait \
 
 The first command is the normal shutdown path and preserves staged artifacts. It activates the kill switch before terminating tagged compute, so it is safe to invoke during provisioning or compilation. The second command is destructive and requires the exact managed bucket name.
 
-Use repeated `--shard` options for a controlled partial build. Selecting a logical shard such as `linux-x86_64-cpu` launches all of its variants in parallel; selecting an expanded ID such as `linux-x86_64-cpu--avx2` launches only that execution. The complete release requires every expanded execution in `release-plan.json`.
+Use repeated `--shard` options for a controlled partial build. Selecting a logical lane such as `linux-x86_64-cpu` runs all seven CPU variants serially on the same host with warm caches. Selecting an expanded ID such as `linux-x86_64-cpu--avx2` remains available for a one-variant smoke or diagnosis. The complete release requires every logical lane in `release-plan.json`.
 
-Each worker checks out the exact commit, runs its assigned variant (or the consolidated macOS variants), uses Maven `install` rather than `deploy`, activates the SDX profile, stages only its owned Maven coordinates/classifiers, packages platform SDK JARs and SDX runtime/AOT assets, uploads checksum-addressed output to private S3, and terminates itself. Builders never receive GitHub, GPG, or Maven Central credentials.
+Each worker checks out the exact commit once, runs its lane's variants serially, uses Maven `install` rather than `deploy`, activates the SDX profile, stages only its owned Maven coordinates/classifiers, packages platform SDK JARs and SDX runtime/AOT assets, uploads checksum-addressed output to private S3, and terminates itself. The scheduler verifies the uploaded exit status before launching the next lane. Builders never receive GitHub, GPG, or Maven Central credentials.
 
 Collect only after every planned shard succeeds:
 

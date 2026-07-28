@@ -279,6 +279,23 @@ def main() -> None:
     build = shard["build"]
     env = os.environ.copy()
     env["MAVEN_OPTS"] = f"-Xmx{build.get('mavenHeapGiB', 16)}g -Dmaven.repo.local={args.repository}"
+    compiler_cache = "sccache" if shutil.which("sccache") else ("ccache" if shutil.which("ccache") else None)
+    if compiler_cache:
+        cache_dir = args.source.parent / compiler_cache
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        env.update({
+            "CMAKE_C_COMPILER_LAUNCHER": compiler_cache,
+            "CMAKE_CXX_COMPILER_LAUNCHER": compiler_cache,
+            "CMAKE_CUDA_COMPILER_LAUNCHER": compiler_cache,
+        })
+        if compiler_cache == "ccache":
+            env.update({"CCACHE_DIR": str(cache_dir), "CCACHE_BASEDIR": str(args.source),
+                        "CCACHE_NOHASHDIR": "true", "CCACHE_MAXSIZE": "100G"})
+            run([compiler_cache, "--zero-stats"], args.source, env)
+        else:
+            env.update({"SCCACHE_DIR": str(cache_dir), "SCCACHE_CACHE_SIZE": "100G",
+                        "SCCACHE_IDLE_TIMEOUT": "0"})
+            run([compiler_cache, "--start-server"], args.source, env)
     print(f"[dl4j-phase] shard={shard['id']} phase=version-setup", flush=True)
     update = ["bash", "./update-versions.sh", config["snapshotVersion"], config["releaseVersion"]]
     run(update, args.source, env)
@@ -296,6 +313,8 @@ def main() -> None:
         for variant in build["variants"]:
             print(f"[dl4j-phase] shard={shard['id']} phase=native variant={variant['name']}", flush=True)
             run(maven_command(build, variant, args.repository, args.source, env), args.source, env)
+            if compiler_cache:
+                run([compiler_cache, "--show-stats"], args.source, env)
     print(f"[dl4j-phase] shard={shard['id']} phase=package", flush=True)
     args.maven_output.mkdir(parents=True, exist_ok=True)
     args.sdk_output.mkdir(parents=True, exist_ok=True)

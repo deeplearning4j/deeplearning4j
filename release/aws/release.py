@@ -69,28 +69,14 @@ def load_plan(path: Path) -> dict[str, Any]:
 
 
 def execution_shards(plan: dict[str, Any]) -> list[dict[str, Any]]:
-    """Expand Actions-style variant matrices into independently scheduled EC2 work."""
+    """Create reusable platform/toolchain lanes; variants run serially on one host."""
     executions: list[dict[str, Any]] = []
     for original in plan["shards"]:
-        variants = original["build"]["variants"]
-        if not original.get("parallelVariants") or len(variants) == 1:
-            shard = copy.deepcopy(original)
-            shard["parentShard"] = original["id"]
-            executions.append(shard)
-            continue
-        for variant in variants:
-            shard = copy.deepcopy(original)
-            shard["parentShard"] = original["id"]
-            shard["id"] = f"{original['id']}--{variant['name']}"
-            shard["build"]["variants"] = [variant]
-            if shard["build"].get("buildAot"):
-                shard["build"]["buildAot"] = variant["name"] == "base"
-            if shard["build"].get("prebuildCrossPlatform"):
-                is_base = variant["name"] == "base"
-                shard["build"]["prebuildCrossPlatform"] = is_base
-                if is_base and original["build"]["javacppPlatform"] == "linux-x86_64":
-                    shard["artifactRules"] = {**original["artifactRules"], "mode": "all"}
-            executions.append(shard)
+        shard = copy.deepcopy(original)
+        shard["parentShard"] = original["id"]
+        if shard["build"].get("prebuildCrossPlatform") and shard["build"].get("javacppPlatform") == "linux-x86_64":
+            shard["artifactRules"] = {**original["artifactRules"], "mode": "all"}
+        executions.append(shard)
     return executions
 
 
@@ -371,8 +357,34 @@ def resolve_ami(ec2, ssm, shard: dict[str, Any]) -> str:
 
 def selected_executions(plan: dict[str, Any], selected_ids: list[str] | None) -> list[dict[str, Any]]:
     selected = set(selected_ids or [])
-    executions = [item for item in execution_shards(plan)
-                  if not selected or item["id"] in selected or item.get("parentShard") in selected]
+    lanes = execution_shards(plan)
+    if not selected:
+        return lanes
+    executions: list[dict[str, Any]] = []
+    matched: set[str] = set()
+    for lane in lanes:
+        if lane["id"] in selected:
+            executions.append(lane)
+            matched.add(lane["id"])
+            continue
+        prefix = f"{lane['id']}--"
+        for requested in sorted(item for item in selected if item.startswith(prefix)):
+            variant_name = requested[len(prefix):]
+            variants = [item for item in lane["build"]["variants"] if item["name"] == variant_name]
+            if not variants:
+                continue
+            execution = copy.deepcopy(lane)
+            execution["id"] = requested
+            execution["build"]["variants"] = variants
+            if execution["build"].get("buildAot"):
+                execution["build"]["buildAot"] = variant_name == "base"
+            if execution["build"].get("prebuildCrossPlatform"):
+                execution["build"]["prebuildCrossPlatform"] = variant_name == "base"
+            executions.append(execution)
+            matched.add(requested)
+    unmatched = sorted(selected - matched)
+    if unmatched:
+        raise SystemExit(f"No executions matched --shard {unmatched}")
     if not executions:
         raise SystemExit(f"No executions matched --shard {sorted(selected)}")
     return executions
@@ -421,6 +433,33 @@ def validate_launch_matrix(ec2, ssm, executions: list[dict[str, Any]], region: s
         if unavailable:
             raise RuntimeError(f"instance types unavailable in {availability_zone}: {unavailable}")
     return ({item["id"]: resolve_ami(ec2, ssm, item) for item in executions}, descriptions)
+
+
+def wait_for_lane(ec2, s3, ssm, plan: dict[str, Any], instance_id: str, bucket: str,
+                  status_key: str, shard_id: str) -> None:
+    """Wait for one reusable lane to finish before provisioning the next lane."""
+    while True:
+        if kill_switch_enabled(ssm, plan):
+            raise RuntimeError(f"global kill switch enabled while waiting for {shard_id}")
+        reservations = ec2.describe_instances(InstanceIds=[instance_id])["Reservations"]
+        state = reservations[0]["Instances"][0]["State"]["Name"]
+        if state in {"shutting-down", "terminated"}:
+            break
+        time.sleep(15)
+    deadline = time.time() + 300
+    while True:
+        try:
+            response = s3.get_object(Bucket=bucket, Key=status_key)
+            status = json.loads(response["Body"].read())
+            if int(status.get("exitCode", 1)) != 0:
+                raise RuntimeError(f"lane {shard_id} failed with exit code {status.get('exitCode')}")
+            return
+        except Exception as exc:
+            if getattr(exc, "response", {}).get("Error", {}).get("Code") not in {"NoSuchKey", "404"}:
+                raise
+            if time.time() >= deadline:
+                raise RuntimeError(f"lane {shard_id} terminated without uploading status.json") from exc
+            time.sleep(5)
 
 
 def render_user_data(worker: Path, values: dict[str, Any]) -> str:
@@ -482,8 +521,8 @@ def preflight(args: argparse.Namespace) -> None:
     if missing:
         raise RuntimeError(f"instance types unavailable in {region}: {missing}")
     amis, _ = validate_launch_matrix(ec2, ssm, executions, region)
-    required_vcpus = sum(descriptions[item["instanceType"]]["VCpuInfo"]["DefaultVCpus"]
-                         for item in executions if not item.get("dedicatedHost"))
+    required_vcpus = max((descriptions[item["instanceType"]]["VCpuInfo"]["DefaultVCpus"]
+                          for item in executions if not item.get("dedicatedHost")), default=0)
     quota_value = None
     quota_error = None
     try:
@@ -496,7 +535,7 @@ def preflight(args: argparse.Namespace) -> None:
         "executions": len(executions), "instanceTypes": instance_types,
         "offeringsByAvailabilityZone": offerings, "resolvedAmis": amis,
         "defaultNetwork": {"subnetId": subnet_id, "securityGroupId": group_id, "availabilityZone": default_az},
-        "requiredStandardOnDemandVcpusIfLaunchedTogether": required_vcpus,
+        "peakStandardOnDemandVcpusSerialLanes": required_vcpus,
         "standardOnDemandVcpuQuota": quota_value, "quotaReadError": quota_error,
         "macDefaultAzSupportsType": all(default_az in offerings[item["instanceType"]] for item in executions if item.get("dedicatedHost")),
     }
@@ -504,7 +543,7 @@ def preflight(args: argparse.Namespace) -> None:
     if any(item.get("dedicatedHost") for item in executions) and not result["macDefaultAzSupportsType"]:
         raise SystemExit(f"Preflight failed: default subnet AZ {default_az} does not offer the selected EC2 Mac type; pass a supported --subnet-id when starting")
     if quota_value is not None and required_vcpus > quota_value:
-        raise SystemExit(f"Preflight failed: matrix requires {required_vcpus} standard vCPUs but quota is {quota_value:g}")
+        raise SystemExit(f"Preflight failed: largest serial lane requires {required_vcpus} standard vCPUs but quota is {quota_value:g}")
 
 
 def start(args: argparse.Namespace) -> None:
@@ -611,6 +650,9 @@ def start(args: argparse.Namespace) -> None:
                 ec2.terminate_instances(InstanceIds=launched)
                 raise RuntimeError("global kill switch enabled immediately after launch")
             print(f"launched {shard['id']}: {instance_id} ({shard['os']}, {shard['build']['backend']}, CPU compile host)")
+            status_key = f"{plan.get('artifactPrefix', 'deeplearning4j/releases')}/{run_id}/{shard['id']}/status.json"
+            wait_for_lane(ec2, s3, ssm, plan, instance_id, bucket, status_key, shard["id"])
+            print(f"completed {shard['id']}: {instance_id}; launching next lane")
     except Exception:
         set_kill_switch(ssm, plan, True)
         if launched:
