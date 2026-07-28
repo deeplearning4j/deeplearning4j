@@ -20,7 +20,7 @@ class FakeSsm:
 class FakeEc2:
     def __init__(self, image=None, architectures=None, offered=True):
         self.image = image or {
-            "ImageId": "ami-verified", "Name": "ubuntu/images/hvm-ssd-gp3/ubuntu-jammy-22.04-amd64-server-20260701",
+            "ImageId": "ami-verified", "Name": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20260701",
             "OwnerId": "099720109477", "Architecture": "x86_64", "State": "available",
             "RootDeviceType": "ebs", "VirtualizationType": "hvm", "CreationDate": "2026-07-01T00:00:00Z",
         }
@@ -48,7 +48,7 @@ class ReleaseValidationTest(unittest.TestCase):
             "id": "linux-test", "instanceType": "c7i.24xlarge",
             "amiQuery": {
                 "owners": ["099720109477"], "ownerIds": ["099720109477"],
-                "name": "ubuntu/images/hvm-ssd-gp3/ubuntu-jammy-22.04-amd64-server-*",
+                "name": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*",
                 "architecture": "x86_64",
             },
         }

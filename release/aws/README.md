@@ -57,6 +57,8 @@ python3 release/aws/release.py status
 
 The image patterns intentionally mirror the hosted environments in the current Actions workflows: Ubuntu 22.04 (x86_64 and ARM64), Ubuntu 24.04 (Android x86_64), Windows Server 2022 Full Base and Amazon's macOS 14 ARM64 AMI. Image IDs remain regional and are resolved at invocation time. Canonical documents both its EC2 query pattern and publisher-account verification at <https://documentation.ubuntu.com/aws/en/latest/aws-how-to/instances/find-ubuntu-images/>; AWS documents regional AMI selection and owner/platform/root-device filtering at <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/finding-an-ami.html>.
 
+Canonical's live EC2 image catalog is the final authority for release/volume combinations. As of July 2026, Jammy 22.04 uses the `hvm-ssd` name family in `us-east-1` (for example, catalog entries `ami-0d001f8052688dc45` for amd64 and `ami-09718fd66fac8c035` for arm64), while Noble 24.04 uses `hvm-ssd-gp3`. The plan follows those published families but still resolves the current regional ID on every invocation rather than pinning these examples.
+
 To pin a commit explicitly instead:
 
 ```bash
