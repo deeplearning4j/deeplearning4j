@@ -439,8 +439,7 @@ jobs:
           %USERPROFILE%\sccache\sccache.exe --stop-server
 
       - name: Publish SDX runtime SDK artifacts
-        if: always()
-        continue-on-error: true
+        if: matrix.deploy_to_release_staging == '1'
         uses: ./.github/actions/publish-sdx-runtime-sdk
         with:
           artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}

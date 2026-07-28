@@ -37,9 +37,8 @@ runs:
         THREADS="${{ inputs.threads }}"
 
         if [ ! -d "${BUILD_ROOT}" ]; then
-          echo "No libnd4j build root found at ${BUILD_ROOT}. Skipping SDX SDK build step."
-          echo "found=0" >> "${GITHUB_OUTPUT}"
-          exit 0
+          echo "Explicit SDX SDK packaging requires a libnd4j build root at ${BUILD_ROOT}." >&2
+          exit 1
         fi
 
         FOUND_BUILD_DIR=0
@@ -59,21 +58,34 @@ runs:
           if [ -f "${BUILD_DIR}/CMakeCache.txt" ]; then
             FOUND_BUILD_DIR=1
             echo "Building sdx_runtime_bindings in ${BUILD_DIR}"
-            if ! cmake --build "${BUILD_DIR}" --target sdx_runtime_bindings --parallel "${THREADS}" \
-                 && ! cmake --build "${BUILD_DIR}" --target sdx_runtime_bindings; then
-              echo "WARNING: Failed to build sdx_runtime_bindings in ${BUILD_DIR}. Continuing to artifact discovery."
-            fi
+            cmake --build "${BUILD_DIR}" --target sdx_runtime_bindings --parallel "${THREADS}"
           fi
         done
 
         if [ "${FOUND_BUILD_DIR}" -eq 0 ]; then
-          echo "No candidate libnd4j CMake directories found for SDX SDK packaging under ${BUILD_ROOT}."
+          echo "No candidate libnd4j CMake directories found for explicit SDX SDK packaging under ${BUILD_ROOT}." >&2
+          exit 1
         fi
 
-        if find "${BUILD_ROOT}" -type f -path "*/sdx-runtime-sdk/dist/*" -print -quit 2>/dev/null | grep -q .; then
+        # GitHub Release assets must be regular files. Preserve each XCFramework
+        # bundle as one release-safe archive with its top-level directory intact.
+        while IFS= read -r -d '' xcframework; do
+          archive="${xcframework}.zip"
+          parent="$(dirname "${xcframework}")"
+          name="$(basename "${xcframework}")"
+          if command -v ditto >/dev/null 2>&1; then
+            ditto -c -k --keepParent "${xcframework}" "${archive}"
+          else
+            (cd "${parent}" && cmake -E tar cf "${archive}" --format=zip "${name}")
+          fi
+        done < <(find "${BUILD_ROOT}" -type d -path "*/sdx-runtime-sdk/dist/*.xcframework" -print0)
+
+        if find "${BUILD_ROOT}" -type f -path "*/sdx-runtime-sdk/dist/*" \
+            \( -name "*.zip" -o -name "*.aar" \) -print -quit 2>/dev/null | grep -q .; then
           echo "found=1" >> "${GITHUB_OUTPUT}"
         else
-          echo "found=0" >> "${GITHUB_OUTPUT}"
+          echo "Explicit SDX SDK packaging produced no release-safe .zip or .aar assets." >&2
+          exit 1
         fi
 
     - name: Upload SDX runtime SDK artifacts
@@ -84,7 +96,7 @@ runs:
         path: |
           ${{ inputs.build-root }}/**/sdx-runtime-sdk/dist/**
           ${{ inputs.build-root }}/**/sdx-runtime-sdk/bindings/**
-        if-no-files-found: warn
+        if-no-files-found: error
         retention-days: ${{ inputs.retention-days }}
 
     - name: Upload SDK to GitHub Release
@@ -101,7 +113,7 @@ runs:
         # Create the release if it does not exist yet (concurrent builds may race here)
         if ! gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
           echo "Creating GitHub Release ${RELEASE_TAG}"
-          gh release create "${RELEASE_TAG}" \
+          if ! gh release create "${RELEASE_TAG}" \
             --repo "${GITHUB_REPOSITORY}" \
             --title "SDX Runtime SDK ${RELEASE_VERSION}" \
             --notes "Per-platform SDX Runtime SDK packages for release ${RELEASE_VERSION}.
@@ -110,20 +122,24 @@ runs:
 
         **Platforms:** Linux x86_64, Linux ARM64, macOS x86_64, macOS ARM64, Windows x86_64, Android ARM64, Android x86_64
         **Variants:** CPU, CUDA 12.6, CUDA 12.9 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)" \
-            --prerelease \
-          || echo "Release may have been created by another job (expected in parallel builds)"
+            --prerelease; then
+            # Parallel publishing jobs may race to create the same release. A
+            # failed create is acceptable only when the release now exists.
+            gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null
+          fi
         fi
 
-        # Upload all dist files (zips, aars, xcframeworks) to the release
+        # Upload only complete package files; never upload files from inside an
+        # XCFramework directory as unrelated release assets.
         UPLOAD_COUNT=0
         while IFS= read -r -d '' dist_file; do
           BASENAME="$(basename "${dist_file}")"
           echo "Uploading ${BASENAME} to release ${RELEASE_TAG}"
           gh release upload "${RELEASE_TAG}" "${dist_file}" \
             --repo "${GITHUB_REPOSITORY}" \
-            --clobber \
-          || echo "WARNING: Failed to upload ${BASENAME}"
+            --clobber
           UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
-        done < <(find "${GITHUB_WORKSPACE}/${BUILD_ROOT}" -type f -path "*/sdx-runtime-sdk/dist/*" -print0)
+        done < <(find "${GITHUB_WORKSPACE}/${BUILD_ROOT}" -type f -path "*/sdx-runtime-sdk/dist/*" \
+          \( -name "*.zip" -o -name "*.aar" \) -print0)
 
         echo "Uploaded ${UPLOAD_COUNT} SDK asset(s) to release ${RELEASE_TAG}"

@@ -1,0 +1,184 @@
+name: Publish prebuilt release or snapshot to Maven Central
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseTag:
+        description: 'GitHub Release tag containing the AWS-built Maven shards'
+        required: true
+        type: string
+      releaseVersion:
+        description: 'Exact Maven release or -SNAPSHOT version'
+        required: true
+        type: string
+      expectedCommit:
+        description: 'Exact 40-character commit SHA used by every AWS builder'
+        required: true
+        type: string
+      automatic:
+        description: 'For non-SNAPSHOT releases, publish automatically after Central validation'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maven-central-${{ inputs.releaseVersion }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    environment: maven-central
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - name: Validate immutable publication identity
+        shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expectedCommit }}
+          RELEASE_VERSION: ${{ inputs.releaseVersion }}
+        run: |
+          set -euo pipefail
+          [[ "${EXPECTED_COMMIT}" =~ ^[0-9a-f]{40}$ ]] || { echo 'expectedCommit must be a full lowercase commit SHA' >&2; exit 2; }
+          [[ -n "${RELEASE_VERSION}" ]] || { echo 'releaseVersion is required' >&2; exit 2; }
+
+      - name: Checkout the exact build commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expectedCommit }}
+          persist-credentials: false
+
+      - name: Import the existing release signing key
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          server-id: central-portal-snapshots
+          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
+          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
+
+      - name: Download immutable AWS release assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          gh release download "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" --dir release-assets
+
+      - name: Verify the downloaded release manifest checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release-assets
+          sha256sum --check release-build-manifest.json.sha256
+
+      - name: Verify release identity and every downloaded asset
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.releaseVersion }}
+          EXPECTED_COMMIT: ${{ inputs.expectedCommit }}
+        run: |
+          set -euo pipefail
+          python3 release/central/repository.py verify-release-assets \
+            --directory release-assets \
+            --manifest release-assets/release-build-manifest.json \
+            --release-version "${RELEASE_VERSION}" \
+            --commit "${EXPECTED_COMMIT}"
+
+      - name: Merge Maven repository shards
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.releaseVersion }}
+          EXPECTED_COMMIT: ${{ inputs.expectedCommit }}
+        run: |
+          set -euo pipefail
+          args=()
+          for shard in release-assets/maven-repository-*.tar.gz; do
+            [ -f "${shard}" ] || { echo 'No Maven repository shards found' >&2; exit 2; }
+            args+=(--input "${shard}")
+          done
+          python3 release/central/repository.py merge "${args[@]}" \
+            --output central-repository \
+            --manifest merged-release-manifest.json \
+            --release-version "${RELEASE_VERSION}" \
+            --commit "${EXPECTED_COMMIT}"
+
+      - name: Verify coordinates, version, commit and bytes
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.releaseVersion }}
+          EXPECTED_COMMIT: ${{ inputs.expectedCommit }}
+        run: |
+          set -euo pipefail
+          python3 release/central/repository.py verify \
+            --repository central-repository \
+            --manifest merged-release-manifest.json \
+            --release-version "${RELEASE_VERSION}" \
+            --commit "${EXPECTED_COMMIT}"
+
+      - name: Sign and create the Central Portal bundle
+        if: ${{ !endsWith(inputs.releaseVersion, '-SNAPSHOT') }}
+        shell: bash
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+        run: |
+          set -euo pipefail
+          python3 release/central/repository.py sign-bundle \
+            --repository central-repository \
+            --output central-bundle.zip
+
+      - name: Upload and wait for Central validation/publication
+        if: ${{ !endsWith(inputs.releaseVersion, '-SNAPSHOT') }}
+        shell: bash
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          AUTOMATIC: ${{ inputs.automatic }}
+        run: |
+          set -euo pipefail
+          automatic_flag=()
+          if [ "${AUTOMATIC}" = 'true' ]; then
+            automatic_flag+=(--automatic)
+          fi
+          python3 release/central/repository.py upload \
+            --bundle central-bundle.zip \
+            --wait-seconds 5400 \
+            "${automatic_flag[@]}" | tee central-deployment.log
+
+      - name: Deploy prebuilt components to Central Portal snapshots
+        if: ${{ endsWith(inputs.releaseVersion, '-SNAPSHOT') }}
+        shell: bash
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          RELEASE_VERSION: ${{ inputs.releaseVersion }}
+        run: |
+          set -euo pipefail
+          python3 release/central/repository.py deploy-snapshot \
+            --repository central-repository \
+            --release-version "${RELEASE_VERSION}" \
+            --repository-id central-portal-snapshots \
+            --url https://central.sonatype.com/repository/maven-snapshots/ \
+            | tee snapshot-deployment.log
+
+      - name: Retain deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-deployment-${{ inputs.releaseVersion }}
+          path: |
+            central-deployment.log
+            snapshot-deployment.log
+            merged-release-manifest.json
+            merged-release-manifest.json.sha256
+          if-no-files-found: warn
+          retention-days: 90

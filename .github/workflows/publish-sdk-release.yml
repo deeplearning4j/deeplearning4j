@@ -15,6 +15,11 @@ on:
         required: false
         default: ''
 
+      includeAot:
+        description: 'Require and include independently opt-in SDX LLM AOT SDK artifacts from the selected run'
+        required: false
+        default: 'false'
+
       prerelease:
         description: 'Mark the release as a pre-release'
         required: false
@@ -86,6 +91,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ github.event.inputs.collectFromRunId }}
+          INCLUDE_AOT: ${{ github.event.inputs.includeAot }}
         run: |
           set -euo pipefail
           mkdir -p sdk-artifacts
@@ -94,11 +100,20 @@ jobs:
           gh run download "${RUN_ID}" \
             --repo "${GITHUB_REPOSITORY}" \
             --dir sdk-artifacts \
-            --pattern "sdx-runtime-sdk-*" \
-          || echo "WARNING: Some native SDK artifacts may not be available"
+            --pattern "sdx-runtime-sdk-*"
+
+          if [ "${INCLUDE_AOT}" == "true" ]; then
+            echo "Requiring independently opt-in SDX LLM AOT artifacts"
+            gh run download "${RUN_ID}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --dir sdk-artifacts \
+              --pattern "sdx-llm-aot-*"
+          else
+            echo "Skipping independently opt-in SDX LLM AOT artifacts"
+          fi
 
           echo "Downloaded native SDK artifacts:"
-          find sdk-artifacts -type f \( -name "*.zip" -o -name "*.aar" -o -name "*.xcframework" \) | head -50
+          find sdk-artifacts -type f \( -name "*.zip" -o -name "*.aar" -o -name "*.xcframework" \) | sed -n '1,50p'
 
       - name: Download JAR artifacts from workflow run
         if: github.event.inputs.collectFromRunId != ''
@@ -113,11 +128,23 @@ jobs:
           gh run download "${RUN_ID}" \
             --repo "${GITHUB_REPOSITORY}" \
             --dir jar-artifacts \
-            --pattern "sdk-jars-*" \
-          || echo "WARNING: Some JAR artifacts may not be available"
+            --pattern "sdk-jars-*"
 
           echo "Downloaded JAR artifacts:"
-          find jar-artifacts -type f -name "*.jar" | head -50
+          find jar-artifacts -type f -name "*.jar" | sed -n '1,50p'
+
+      - name: Generate release-level SDX SDK manifest
+        if: github.event.inputs.collectFromRunId != ''
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-metadata
+          python3 .github/scripts/generate_sdx_sdk_manifest.py \
+            --release-version "${RELEASE_VERSION}" \
+            --input sdk-artifacts \
+            --input jar-artifacts \
+            --output release-metadata/sdx-sdk-manifest.json
 
       - name: Upload collected native SDK artifacts to release
         if: github.event.inputs.collectFromRunId != ''
@@ -133,10 +160,9 @@ jobs:
             echo "Uploading ${BASENAME} to release ${RELEASE_TAG}"
             gh release upload "${RELEASE_TAG}" "${dist_file}" \
               --repo "${GITHUB_REPOSITORY}" \
-              --clobber \
-            || echo "WARNING: Failed to upload ${BASENAME}"
+              --clobber
             UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
-          done < <(find sdk-artifacts -type f \( -name "*.zip" -o -name "*.aar" -o -name "*.xcframework" \) -print0)
+          done < <(find sdk-artifacts -type f \( -name "*.zip" -o -name "*.aar" \) -print0)
 
           echo "Uploaded ${UPLOAD_COUNT} native SDK asset(s) to release ${RELEASE_TAG}"
 
@@ -154,12 +180,51 @@ jobs:
             echo "Uploading ${BASENAME} to release ${RELEASE_TAG}"
             gh release upload "${RELEASE_TAG}" "${jar_file}" \
               --repo "${GITHUB_REPOSITORY}" \
-              --clobber \
-            || echo "WARNING: Failed to upload ${BASENAME}"
+              --clobber
             UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
           done < <(find jar-artifacts -type f -name "*.jar" -print0)
 
           echo "Uploaded ${UPLOAD_COUNT} JAR(s) to release ${RELEASE_TAG}"
+
+      - name: Verify every manifest artifact is published
+        if: github.event.inputs.collectFromRunId != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: sdk-v${{ github.event.inputs.releaseVersion }}
+        run: |
+          set -euo pipefail
+          gh release view "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --json assets \
+            > release-metadata/published-assets.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path("release-metadata/sdx-sdk-manifest.json").read_text())
+          published = json.loads(Path("release-metadata/published-assets.json").read_text())
+          published_names = {asset["name"] for asset in published["assets"]}
+          expected_names = {artifact["fileName"] for artifact in manifest["artifacts"]}
+          missing = sorted(expected_names - published_names)
+          if missing:
+              raise SystemExit("Manifest references unpublished release assets: " + ", ".join(missing))
+          print(f"Verified {len(expected_names)} manifest artifact(s) on the release")
+          PY
+
+      # Publish the manifest last so a successful workflow never exposes a
+      # canonical index that points at assets which failed to upload.
+      - name: Upload SDX SDK manifest to release
+        if: github.event.inputs.collectFromRunId != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: sdk-v${{ github.event.inputs.releaseVersion }}
+        run: |
+          set -euo pipefail
+          gh release upload "${RELEASE_TAG}" \
+            release-metadata/sdx-sdk-manifest.json \
+            release-metadata/sdx-sdk-manifest.json.sha256 \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber
 
       - name: List release assets
         env:
