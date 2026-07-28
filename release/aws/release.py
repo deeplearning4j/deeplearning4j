@@ -221,7 +221,7 @@ def kill_switch_enabled(ssm, plan: dict[str, Any]) -> bool:
     return result["Parameter"]["Value"].strip().lower() == "true"
 
 
-def default_network(ec2) -> tuple[str, str, str]:
+def default_network(ec2, instance_types: list[str] | None = None) -> tuple[str, str, str]:
     vpcs = ec2.describe_vpcs(Filters=[{"Name": "is-default", "Values": ["true"]}])["Vpcs"]
     if not vpcs:
         raise SystemExit("No default VPC found; pass --subnet-id and --security-group-id")
@@ -229,6 +229,23 @@ def default_network(ec2) -> tuple[str, str, str]:
     subnets = ec2.describe_subnets(Filters=[{"Name": "vpc-id", "Values": [vpc_id]}])["Subnets"]
     if not subnets:
         raise SystemExit(f"Default VPC {vpc_id} has no subnets")
+    if instance_types:
+        subnet_zones = sorted({item["AvailabilityZone"] for item in subnets})
+        response = ec2.describe_instance_type_offerings(
+            LocationType="availability-zone",
+            Filters=[{"Name": "instance-type", "Values": sorted(set(instance_types))},
+                     {"Name": "location", "Values": subnet_zones}],
+        )
+        zones_by_type = {instance_type: set() for instance_type in instance_types}
+        for offering in response["InstanceTypeOfferings"]:
+            zones_by_type[offering["InstanceType"]].add(offering["Location"])
+        common_zones = set(subnet_zones)
+        for zones in zones_by_type.values():
+            common_zones &= zones
+        subnets = [item for item in subnets if item["AvailabilityZone"] in common_zones]
+        if not subnets:
+            details = {key: sorted(value) for key, value in zones_by_type.items()}
+            raise SystemExit(f"Default VPC has no subnet AZ common to selected instance types: {details}")
     subnets.sort(key=lambda item: item.get("AvailableIpAddressCount", 0), reverse=True)
     groups = ec2.describe_security_groups(
         Filters=[{"Name": "vpc-id", "Values": [vpc_id]}, {"Name": "group-name", "Values": ["default"]}]
@@ -361,6 +378,24 @@ def selected_executions(plan: dict[str, Any], selected_ids: list[str] | None) ->
     return executions
 
 
+def apply_execution_overrides(executions: list[dict[str, Any]], instance_type: str | None,
+                              build_threads: int | None) -> None:
+    """Apply explicit smoke/capacity overrides without modifying the release plan."""
+    if instance_type:
+        family = instance_type.split(".", 1)[0]
+        if "." not in instance_type or family.startswith(GPU_INSTANCE_PREFIXES):
+            raise SystemExit(f"invalid CPU compile instance type override: {instance_type}")
+        if any(item.get("dedicatedHost") for item in executions):
+            raise SystemExit("--instance-type cannot override an EC2 Mac dedicated-host shard")
+        for item in executions:
+            item["instanceType"] = instance_type
+    if build_threads is not None:
+        if build_threads < 1:
+            raise SystemExit("--build-threads must be at least 1")
+        for item in executions:
+            item["build"]["buildThreads"] = build_threads
+
+
 def validate_launch_matrix(ec2, ssm, executions: list[dict[str, Any]], region: str,
                            availability_zone: str | None = None) -> tuple[dict[str, str], dict[str, Any]]:
     """Validate all AMIs and instance types before any mutable AWS operation."""
@@ -430,10 +465,11 @@ def preflight(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
     session, region, ec2, ssm, _, sts, _ = session_clients(args.region)
     executions = selected_executions(plan, args.shard)
-    subnet_id, group_id, default_az = default_network(ec2)
+    apply_execution_overrides(executions, args.instance_type, args.build_threads)
+    instance_types = sorted({item["instanceType"] for item in executions})
+    subnet_id, group_id, default_az = default_network(ec2, instance_types)
     availability_zones = [item["ZoneName"] for item in ec2.describe_availability_zones(
         Filters=[{"Name": "state", "Values": ["available"]}])["AvailabilityZones"]]
-    instance_types = sorted({item["instanceType"] for item in executions})
     descriptions = {item["InstanceType"]: item for item in ec2.describe_instance_types(InstanceTypes=instance_types)["InstanceTypes"]}
     offerings: dict[str, list[str]] = {}
     for instance_type in instance_types:
@@ -477,9 +513,11 @@ def start(args: argparse.Namespace) -> None:
     session, region, ec2, ssm, s3, sts, iam = session_clients(args.region)
     logs_client = session.client("logs")
     executions = selected_executions(plan, args.shard)
+    apply_execution_overrides(executions, args.instance_type, args.build_threads)
     subnet_id, group_id = (args.subnet_id, args.security_group_id)
     if not subnet_id or not group_id:
-        subnet_id, group_id, availability_zone = default_network(ec2)
+        subnet_id, group_id, availability_zone = default_network(
+            ec2, sorted({item["instanceType"] for item in executions}))
     else:
         availability_zone = ec2.describe_subnets(SubnetIds=[subnet_id])["Subnets"][0]["AvailabilityZone"]
     resolved_amis, _ = validate_launch_matrix(ec2, ssm, executions, region, availability_zone)
@@ -901,6 +939,8 @@ def parser() -> argparse.ArgumentParser:
     sub = result.add_subparsers(dest="command", required=True)
     check = sub.add_parser("preflight")
     check.add_argument("--shard", action="append")
+    check.add_argument("--instance-type", help="validated CPU instance override for capacity-limited smoke tests")
+    check.add_argument("--build-threads", type=int, help="build thread override to match a smaller smoke host")
     check.set_defaults(func=preflight)
     launch = sub.add_parser("start")
     launch.add_argument("--version", required=True)
@@ -911,6 +951,8 @@ def parser() -> argparse.ArgumentParser:
     launch.add_argument("--repository", default="https://github.com/deeplearning4j/deeplearning4j.git")
     launch.add_argument("--run-id")
     launch.add_argument("--shard", action="append")
+    launch.add_argument("--instance-type", help="validated CPU instance override for capacity-limited smoke tests")
+    launch.add_argument("--build-threads", type=int, help="build thread override to match a smaller smoke host")
     launch.add_argument("--bucket")
     launch.add_argument("--subnet-id")
     launch.add_argument("--security-group-id")

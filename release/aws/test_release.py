@@ -76,6 +76,17 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertIn("amiQuery", shard)
             self.assertNotIn("amiSsmParameter", shard)
 
+    def test_smoke_overrides_instance_and_build_threads(self):
+        shard = self.shard()
+        shard["build"] = {"buildThreads": 48}
+        release.apply_execution_overrides([shard], "c7i.xlarge", 4)
+        self.assertEqual("c7i.xlarge", shard["instanceType"])
+        self.assertEqual(4, shard["build"]["buildThreads"])
+
+    def test_smoke_override_rejects_accelerator_instances(self):
+        with self.assertRaisesRegex(SystemExit, "invalid CPU compile"):
+            release.apply_execution_overrides([self.shard()], "g6.xlarge", 4)
+
 
 if __name__ == "__main__":
     unittest.main()

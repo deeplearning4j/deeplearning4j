@@ -30,7 +30,7 @@ export AWS_REGION=us-east-1        # AWS_DEFAULT_REGION also works
 
 AWS profiles, SSO, web identity and instance roles also work. The principal needs EC2 instance/network/image permissions, `AllocateHosts`/`ReleaseHosts` for EC2 Mac, IAM role/profile management, S3 bucket/object management, SSM parameter management and CloudWatch Logs group/stream management. `gh` authentication is needed only by `collect` when it creates the draft GitHub Release.
 
-The default VPC is used unless `--subnet-id` and `--security-group-id` are supplied. EC2 Mac capacity is Availability-Zone-specific; choose a subnet in an AZ where `mac2-m2pro.metal` host capacity is available.
+The default VPC is used unless `--subnet-id` and `--security-group-id` are supplied. Automatic selection intersects the Availability-Zone offerings for every selected instance type and chooses the default-VPC subnet with the most available addresses in a common AZ. For the current full matrix in `us-east-1`, this avoids an arbitrary `us-east-1a` subnet and selects `us-east-1c` or `us-east-1d`, where `mac2-m2pro.metal` is offered. Explicit subnet/security-group inputs remain available when dedicated-host capacity or network policy requires them.
 
 ## Run the complete matrix
 
@@ -104,7 +104,25 @@ python3 release/aws/release.py delete-logs --run-id "$RUN_ID" \
 python3 release/aws/release.py delete-logs --all-runs --yes
 ```
 
-Use `preflight --shard linux-x86_64-cpu--base` before a one-execution smoke build. A full fan-out intentionally needs a large Standard On-Demand vCPU quota; preflight prints the exact requirement for the selected executions and fails before provisioning when the account quota is insufficient.
+Use the same explicit capacity overrides for both preflight and start when smoke-testing in an account with the default 5-vCPU Standard On-Demand quota. `c7i.xlarge` has 4 vCPUs; AWS still validates that it exists, supports the selected AMI architecture and is offered in the launch Availability Zone:
+
+```bash
+python3 release/aws/release.py preflight \
+  --shard linux-x86_64-cpu--base \
+  --instance-type c7i.xlarge \
+  --build-threads 4
+
+python3 release/aws/release.py start \
+  --branch ag_new_release_updates_2 \
+  --version 1.0.0-SNAPSHOT \
+  --snapshot-version 1.0.0-SNAPSHOT \
+  --shard linux-x86_64-cpu--base \
+  --instance-type c7i.xlarge \
+  --build-threads 4 \
+  --reset-kill-switch
+```
+
+The override changes only that invocation; it does not weaken or resize the checked-in production matrix. Accelerator families remain forbidden, and EC2 Mac dedicated-host shards cannot be overridden. A full fan-out intentionally needs a substantially increased Standard On-Demand vCPU quota; preflight prints the exact requirement and fails before provisioning when the quota is insufficient.
 
 Before starting any smoke or full build, keep this emergency command ready in a second terminal using the same standard AWS region environment:
 
