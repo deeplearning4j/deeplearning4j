@@ -101,6 +101,8 @@ def build_cross_platform(source: Path, build: dict, repository: Path, env: dict[
     profiles = []
     if platform in {"linux-arm64", "macosx-arm64"}:
         profiles.append("osx-aarch64-protoc")
+    if platform == "linux-x86_64":
+        profiles.extend(["zluda", "tpu", "hexagon"])
     # ZLUDA/TPU/Hexagon are built with their native backend shards so release
     # dependencies remain local instead of relying on a remote snapshot race.
     java = common[:-1] + ["-Dmaven.test.skip=true"]
@@ -266,6 +268,20 @@ def stage_repository(repository: Path, output: Path, rules: dict) -> None:
             shutil.copy2(path, destination)
 
 
+def build_native_platform(source: Path, build: dict, repository: Path, env: dict[str, str],
+                          compiler_cache: str | None, shard_id: str) -> None:
+    """Build local native dependencies before the GitHub-equivalent Java stages."""
+    prepare_openblas(source, build, env)
+    for variant in build["variants"]:
+        print(f"[dl4j-phase] shard={shard_id} phase=native variant={variant['name']}", flush=True)
+        run(maven_command(build, variant, repository, source, env), source, env)
+        if compiler_cache:
+            run([compiler_cache, "--show-stats"], source, env)
+    if build.get("buildCrossPlatform"):
+        print(f"[dl4j-phase] shard={shard_id} phase=cross-platform", flush=True)
+        build_cross_platform(source, build, repository, env)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, required=True)
@@ -306,15 +322,7 @@ def main() -> None:
         print(f"[dl4j-phase] shard={shard['id']} phase=cross-platform", flush=True)
         build_cross_platform(args.source, build, args.repository, env)
     else:
-        if build.get("prebuildCrossPlatform"):
-            print(f"[dl4j-phase] shard={shard['id']} phase=cross-platform", flush=True)
-            build_cross_platform(args.source, build, args.repository, env)
-        prepare_openblas(args.source, build, env)
-        for variant in build["variants"]:
-            print(f"[dl4j-phase] shard={shard['id']} phase=native variant={variant['name']}", flush=True)
-            run(maven_command(build, variant, args.repository, args.source, env), args.source, env)
-            if compiler_cache:
-                run([compiler_cache, "--show-stats"], args.source, env)
+        build_native_platform(args.source, build, args.repository, env, compiler_cache, shard["id"])
     print(f"[dl4j-phase] shard={shard['id']} phase=package", flush=True)
     args.maven_output.mkdir(parents=True, exist_ok=True)
     args.sdk_output.mkdir(parents=True, exist_ok=True)

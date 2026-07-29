@@ -74,7 +74,7 @@ def execution_shards(plan: dict[str, Any]) -> list[dict[str, Any]]:
     for original in plan["shards"]:
         shard = copy.deepcopy(original)
         shard["parentShard"] = original["id"]
-        if shard["build"].get("prebuildCrossPlatform") and shard["build"].get("javacppPlatform") == "linux-x86_64":
+        if shard["build"].get("buildCrossPlatform") and shard["build"].get("javacppPlatform") == "linux-x86_64":
             shard["artifactRules"] = {**original["artifactRules"], "mode": "all"}
         executions.append(shard)
     return executions
@@ -400,8 +400,8 @@ def selected_executions(plan: dict[str, Any], selected_ids: list[str] | None) ->
             execution["build"]["variants"] = variants
             if execution["build"].get("buildAot"):
                 execution["build"]["buildAot"] = variant_name == "base"
-            if execution["build"].get("prebuildCrossPlatform"):
-                execution["build"]["prebuildCrossPlatform"] = variant_name == "base"
+            if execution["build"].get("buildCrossPlatform"):
+                execution["build"]["buildCrossPlatform"] = variant_name == "base"
             executions.append(execution)
             matched.add(requested)
     unmatched = sorted(selected - matched)

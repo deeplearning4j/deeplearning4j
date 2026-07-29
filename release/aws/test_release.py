@@ -20,6 +20,12 @@ FORWARDER_SPEC = importlib.util.spec_from_file_location(
 log_forwarder = importlib.util.module_from_spec(FORWARDER_SPEC)
 assert FORWARDER_SPEC.loader is not None
 FORWARDER_SPEC.loader.exec_module(log_forwarder)
+BUILD_PLATFORM_SPEC = importlib.util.spec_from_file_location(
+    "dl4j_aws_build_platform", Path(__file__).with_name("build-platform.py")
+)
+build_platform = importlib.util.module_from_spec(BUILD_PLATFORM_SPEC)
+assert BUILD_PLATFORM_SPEC.loader is not None
+BUILD_PLATFORM_SPEC.loader.exec_module(build_platform)
 
 
 class FakeSsm:
@@ -299,6 +305,34 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual("runs/run-1/lane/build.log", s3.request["Key"])
         self.assertEqual("bytes=-262144", s3.request["Range"])
         self.assertIn("real bootstrap error", output.getvalue())
+
+    def test_native_artifacts_are_installed_before_cross_platform_reactor(self):
+        build = {
+            "javacppPlatform": "linux-x86_64", "backend": "cpu", "profiles": ["cpu", "sdx"],
+            "modules": [":libnd4j"], "variants": [{"name": "base"}], "buildCrossPlatform": True,
+        }
+        events = []
+        with patch.object(build_platform, "prepare_openblas"), \
+                patch.object(build_platform, "maven_command", return_value=["mvn", "native", "install"]), \
+                patch.object(build_platform, "run", side_effect=lambda command, *_args: events.append(command[1])), \
+                patch.object(build_platform, "build_cross_platform", side_effect=lambda *_args: events.append("cross-platform")):
+            build_platform.build_native_platform(Path("/source"), build, Path("/m2"), {}, None, "lane")
+        self.assertEqual(["native", "cross-platform"], events)
+
+    def test_cross_platform_commands_match_github_workflow_for_local_staging(self):
+        commands = []
+        build = {"javacppPlatform": "linux-x86_64"}
+        with patch.object(build_platform, "run", side_effect=lambda command, *_args: commands.append(command)):
+            build_platform.build_cross_platform(Path("/source"), build, Path("/m2"), {})
+        tokenizer, java = commands
+        self.assertEqual(":libtokenizers,:tokenizers-native-preset,:tokenizers-native", tokenizer[tokenizer.index("-pl") + 1])
+        self.assertIn("--also-make", tokenizer)
+        self.assertEqual("install", tokenizer[-1])
+        self.assertIn("-Pzluda,tpu,hexagon", java)
+        self.assertIn("!:libnd4j", java[java.index("-pl") + 1])
+        self.assertIn("!:platform-tests", java[java.index("-pl") + 1])
+        self.assertEqual("install", java[-1])
+        self.assertNotIn("deploy", tokenizer + java)
 
     def test_bootstrap_and_workers_emit_durable_lifecycle_phases(self):
         bootstrap = release.bootstrap_user_data("linux", "https://example.invalid/worker")
