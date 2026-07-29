@@ -119,20 +119,7 @@ jobs:
           # -Ptpu adds nd4j-tpu/-preset to the reactor (nd4j-backend-impls 'tpu' profile is
           # -P activated, NOT property activated) — without it `-pl :nd4j-tpu` cannot resolve.
           # -Dlibnd4j.tpu separately activates the libnd4j chip=tpu profile.
-          command="mvn ${{ github.event.inputs.mvnFlags }} \
-            --no-transfer-progress \
-            -Ptpu \
-            -pl ${modules} \
-            -Dlibnd4j.tpu \
-            -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \
-            -Dhttp.keepAlive=false \
-            -Dmaven.wagon.http.pool=false \
-            -Dmaven.wagon.http.retryHandler.count=3 \
-            -DskipTestResourceEnforcement=true \
-            -Dmaven.javadoc.failOnError=false \
-            -Djavacpp.platform=linux-x86_64 \
-            -Dplatform.classifier=linux-x86_64 \
-            --also-make --batch-mode deploy -DskipTests"
+          command=$(DL4J_FAMILY=tpu DL4J_BUILD_THREADS='${{ github.event.inputs.buildThreads }}' DL4J_MVN_FLAGS='${{ github.event.inputs.mvnFlags }}' DL4J_LIBND4J_URL='${{ github.event.inputs.libnd4jUrl }}' bash build-scripts/release/native-platform.sh --print)
           echo "COMMAND=${command}" >> $GITHUB_ENV
           echo "Build command: ${command}"
 

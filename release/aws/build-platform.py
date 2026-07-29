@@ -48,43 +48,6 @@ def variant_flags(build: dict, variant: dict) -> list[str]:
     return flags
 
 
-def maven_command(build: dict, variant: dict, repository: Path, source: Path | None = None, env: dict[str, str] | None = None) -> list[str]:
-    profiles = list(build.get("profiles", []))
-    if "sdx" not in profiles:
-        profiles.append("sdx")
-    command = [
-        "mvn", "--batch-mode", "--no-transfer-progress", f"-P{','.join(profiles)}",
-        f"-Dmaven.repo.local={repository}", "-DskipTests", "-DskipTestResourceEnforcement=true",
-        "-Dmaven.javadoc.failOnError=false", "-Dlibnd4j.generate.flatc=ON",
-        "-Dlibnd4j.sdx.standalone=ON", "-Dlibnd4j.sdx.package.runtime=ON",
-        "-Dlibnd4j.log=libnd4j-build.log", "-Dlibnd4j.oom.memory.threshold=95",
-        "-Dlibnd4j.oom.velocity.threshold=40", "-Dhttp.keepAlive=false",
-        "-Dmaven.wagon.http.pool=false", "-Dmaven.wagon.http.retryHandler.count=3",
-        f"-Dlibnd4j.buildthreads={build.get('buildThreads', 16)}",
-        f"-Djavacpp.platform={build['javacppPlatform']}",
-    ]
-    command.extend(build.get("mavenArgs", []))
-    if build["javacppPlatform"].startswith("android-"):
-        if source is None or env is None or not env.get("ANDROID_NDK") or not env.get("OPENBLAS_PATH"):
-            raise ValueError("Android builds require source, ANDROID_NDK and OPENBLAS_PATH")
-        arm64 = build["javacppPlatform"] == "android-arm64"
-        abi = "arm64-v8a" if arm64 else "x86_64"
-        toolchain = "android-arm64.cmake" if arm64 else "android-x86_64.cmake"
-        api = 27 if "nnapi" in variant.get("name", "") else 21
-        compiler = Path(env["ANDROID_NDK"]) / "toolchains/llvm/prebuilt/linux-x86_64/bin/clang++"
-        cmake_args = " ".join([
-            f"-DCMAKE_TOOLCHAIN_FILE={source / 'libnd4j/cmake' / toolchain}", "-G Ninja",
-            "-DSD_ANDROID_BUILD=true", f"-DANDROID_ABI={abi}", f"-DANDROID_PLATFORM=android-{api}",
-            f"-DANDROID_NDK={env['ANDROID_NDK']}", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_MAKE_PROGRAM=/usr/bin/ninja",
-            f"-DBLAS_LIBRARIES={Path(env['OPENBLAS_PATH']) / 'libopenblas.so'}",
-            f"-DLAPACK_LIBRARIES={Path(env['OPENBLAS_PATH']) / 'libopenblas.so'}",
-        ])
-        command.extend([f"-Djavacpp.platform.compiler={compiler}", f"-Dlibnd4j.cmake={cmake_args}"])
-    command.extend(variant_flags(build, variant))
-    command.extend(["-pl", ",".join(build["modules"]), "--also-make", "install"])
-    return command
-
-
 def build_cross_platform(source: Path, build: dict, repository: Path, env: dict[str, str]) -> None:
     platform = build["javacppPlatform"]
     cross_env = env.copy()
@@ -257,27 +220,84 @@ def stage_repository(repository: Path, output: Path, rules: dict) -> None:
             shutil.copy2(path, destination)
 
 
-def build_native_platform(source: Path, build: dict, repository: Path, env: dict[str, str],
-                          compiler_cache: str | None, shard_id: str) -> None:
-    """Build local native dependencies before the GitHub-equivalent Java stages."""
+def shared_native_family(shard: dict, variant: dict) -> str:
+    build = shard["build"]
+    if build.get("zludaVersion"):
+        return "zluda"
+    if variant.get("name") == "compat":
+        return "compat"
+    if build["backend"] in {"vulkan", "hexagon", "tpu"}:
+        return "vulkan-mlir" if build["backend"] == "vulkan" and variant.get("mlir") else build["backend"]
+    if build["backend"] == "cuda":
+        return "windows-cuda" if shard["os"] == "windows" else "linux-cuda"
+    return {
+        "linux-arm64": "linux-arm64", "windows-x86_64": "windows-cpu",
+        "macosx-arm64": "macos-arm64", "android-arm64": "android-arm64",
+        "android-x86_64": "android-x86_64", "linux-x86_64": "linux-x86_64",
+    }[build["javacppPlatform"]]
+
+
+def android_cmake_args(source: Path, build: dict, variant: dict, env: dict[str, str]) -> str:
+    if not env.get("ANDROID_NDK") or not env.get("OPENBLAS_PATH"):
+        raise ValueError("Android builds require ANDROID_NDK and OPENBLAS_PATH")
+    arm64 = build["javacppPlatform"] == "android-arm64"
+    abi, toolchain = ("arm64-v8a", "android-arm64.cmake") if arm64 else ("x86_64", "android-x86_64.cmake")
+    api = 27 if "nnapi" in variant.get("name", "") else 21
+    return " ".join([
+        f"-DCMAKE_TOOLCHAIN_FILE={source / 'libnd4j/cmake' / toolchain}", "-G Ninja",
+        "-DSD_ANDROID_BUILD=true", f"-DANDROID_ABI={abi}", f"-DANDROID_PLATFORM=android-{api}",
+        f"-DANDROID_NDK={env['ANDROID_NDK']}", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_MAKE_PROGRAM=/usr/bin/ninja",
+        f"-DBLAS_LIBRARIES={Path(env['OPENBLAS_PATH']) / 'libopenblas.so'}",
+        f"-DLAPACK_LIBRARIES={Path(env['OPENBLAS_PATH']) / 'libopenblas.so'}",
+    ])
+
+
+def shared_variant_helper(variant: dict) -> str:
+    """Translate a release-plan variant to the workflow matrix helper verbatim."""
+    name = variant.get("name", "")
+    if name == "mps-compile":
+        return "mps-compile"
+    if name == "compile-nnapi":
+        return "compile-nnapi"
+    if variant.get("mlir"):
+        return "compile"
+    return variant.get("helper", "")
+
+
+def zluda_target(build: dict) -> str:
+    for argument in build.get("mavenArgs", []):
+        if argument.startswith("-Dlibnd4j.zluda="):
+            return argument.split("=", 1)[1]
+    return "rocm6"
+
+
+def build_native_platform(source: Path, shard: dict, repository: Path, env: dict[str, str],
+                          compiler_cache: str | None) -> None:
+    """Invoke the exact shared scripts used by each GitHub platform workflow."""
+    build, shard_id = shard["build"], shard["id"]
     prepare_openblas(source, build, env)
     for variant in build["variants"]:
         print(f"[dl4j-phase] shard={shard_id} phase=native variant={variant['name']}", flush=True)
         variant_env = env.copy()
-        if build["backend"] == "cpu" and build["javacppPlatform"] == "linux-x86_64":
-            variant_env.update({
-                "DL4J_HELPER": "compile" if variant.get("mlir") else variant.get("helper", ""),
-                "DL4J_EXTENSION": variant.get("extension", ""),
-                "DL4J_LIBND4J_FILE_DOWNLOAD": "",
-                "DL4J_BUILD_THREADS": str(build.get("buildThreads", 16)),
-                "DL4J_MATRIX_MVN_EXT": " ".join(build.get("mavenArgs", [])),
-                "DL4J_MAVEN_GOAL": "install",
-                "DL4J_MAVEN_REPOSITORY": str(repository),
-            })
-            command = ["bash", str(source / "build-scripts/release/linux-x86_64.sh"), "--run"]
-        else:
-            command = maven_command(build, variant, repository, source, variant_env)
-        run(command, source, variant_env)
+        family = shared_native_family(shard, variant)
+        variant_env.update({
+            "DL4J_FAMILY": family,
+            "DL4J_HELPER": shared_variant_helper(variant),
+            "DL4J_EXTENSION": variant.get("extension", ""),
+            "DL4J_BUILD_THREADS": str(build.get("buildThreads", 16)),
+            "DL4J_MVN_FLAGS": str(build.get("workflowMvnFlags", "")),
+            "DL4J_MAVEN_GOAL": "install",
+            "DL4J_MAVEN_REPOSITORY": str(repository),
+            "DL4J_CUDA_VERSION": str(build.get("cudaVersion", "")),
+            "DL4J_ZLUDA_TARGET": zluda_target(build),
+        })
+        if build["javacppPlatform"].startswith("android-"):
+            variant_env["DL4J_CMAKE_ARGS"] = android_cmake_args(source, build, variant, variant_env)
+        script_name = "linux-x86_64.sh" if family == "linux-x86_64" else "native-platform.sh"
+        if family == "linux-x86_64":
+            variant_env["DL4J_MATRIX_MVN_EXT"] = variant_env.pop("DL4J_MVN_FLAGS")
+            variant_env["DL4J_LIBND4J_FILE_DOWNLOAD"] = ""
+        run(["bash", str(source / "build-scripts/release" / script_name), "--run"], source, variant_env)
         if compiler_cache:
             run([compiler_cache, "--show-stats"], source, env)
     if build.get("buildCrossPlatform"):
@@ -325,7 +345,7 @@ def main() -> None:
         print(f"[dl4j-phase] shard={shard['id']} phase=cross-platform", flush=True)
         build_cross_platform(args.source, build, args.repository, env)
     else:
-        build_native_platform(args.source, build, args.repository, env, compiler_cache, shard["id"])
+        build_native_platform(args.source, shard, args.repository, env, compiler_cache)
     print(f"[dl4j-phase] shard={shard['id']} phase=package", flush=True)
     args.maven_output.mkdir(parents=True, exist_ok=True)
     args.sdk_output.mkdir(parents=True, exist_ok=True)

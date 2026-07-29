@@ -296,7 +296,7 @@ jobs:
              HELPER_FLAGS=""
           fi
 
-          MAVEN_COMMAND="mvn ${MVN_COMMON} ${HELPER_FLAGS} -pl ${MODULES} --also-make deploy"
+          MAVEN_COMMAND=$(DL4J_FAMILY=android-arm64 DL4J_BUILD_THREADS='${{ github.event.inputs.buildThreads }}' DL4J_HELPER='${{ matrix.helper }}' DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}' DL4J_LIBND4J_URL='${{ github.event.inputs.libnd4jUrl }}' DL4J_CMAKE_ARGS="${CMAKE_ARGS}" bash build-scripts/release/native-platform.sh --print)
           
           if [ "${PERFORM_RELEASE}" == "1" ]; then
               bash "${GITHUB_WORKSPACE}/release-specified-component.sh" \

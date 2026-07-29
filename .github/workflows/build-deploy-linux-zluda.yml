@@ -160,22 +160,10 @@ jobs:
         run: |
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version && cmake --version && protoc --version
-          # compute flag copied verbatim from build-deploy-linux-cuda-12.9.yml — do not change
-          mvn ${{ github.event.inputs.mvnFlags }} -Pcuda \
-            -Dlibnd4j.generate.flatc=ON \
-            -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 \
-            --no-transfer-progress \
-            -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda \
-            -Dlibnd4j.compute='8.6 9.0' \
-            -Dlibnd4j.cpu.compile.skip=true \
-            -Dlibnd4j.zluda=${{ github.event.inputs.zludaTarget }} \
-            -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false \
-            -Dmaven.wagon.http.retryHandler.count=3 \
-            -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} \
-            -Djavacpp.platform=linux-x86_64 \
-            --batch-mode -DskipTests \
-            -pl :nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:libnd4j --also-make \
-            install 2>&1 | tee zluda-native-build.log
+          DL4J_FAMILY=zluda DL4J_BUILD_THREADS='${{ github.event.inputs.buildThreads }}' \
+            DL4J_MVN_FLAGS='${{ github.event.inputs.mvnFlags }}' \
+            DL4J_ZLUDA_TARGET='${{ github.event.inputs.zludaTarget }}' \
+            bash build-scripts/release/native-platform.sh --run 2>&1 | tee zluda-native-build.log
 
       - name: Verify ZLUDA configuration took effect
         shell: bash

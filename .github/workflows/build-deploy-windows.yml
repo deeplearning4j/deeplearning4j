@@ -272,8 +272,8 @@ jobs:
              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
           }
 
-          $mvn_common="${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests $mvn_ext"
-          $command="mvn $mvn_common -pl $modules --also-make deploy"
+          $env:DL4J_FAMILY='windows-cpu'; $env:DL4J_BUILD_THREADS='${{ matrix.build_threads }}'; $env:DL4J_HELPER='${{ matrix.helper }}'; $env:DL4J_EXTENSION='${{ matrix.extension }}'; $env:DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}'; $env:DL4J_LIBND4J_URL='${{ matrix.libnd4j_file_download }}'
+          $command = bash build-scripts/release/native-platform.sh --print
 
           if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
                  echo "Adding libnd4j download"

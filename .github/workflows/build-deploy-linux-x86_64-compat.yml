@@ -125,25 +125,11 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              command="mvn  -pl ':nd4j-native-preset,:libnd4j,:nd4j-native' ${{ matrix.mvn_ext }}  -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3    -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode  -DskipTests"
-              if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
-              elif [ "${{ matrix.helper }}" != '' ]; then
-                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}"
-              elif [ "${{ matrix.extension }}" != '' ]; then
-                     mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.extension }}"
-               else
-                   mvn_ext=""
-              fi
-              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-                 echo "Adding libnd4j download"
-                 echo "LIBND4J_FILE_NAME=${libnd4j_download_file_url}" >> $GITHUB_ENV
-              fi
-              command="${command} ${mvn_ext}"
-              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-              echo "DEPLOY_COMMAND=${command} deploy -Dlibnd4j.cpu.compile.skip=true -Djavacpp.compiler.skip=true -Djavacpp.parser.skip=true" >> $GITHUB_ENV
-              echo "INSTALL_COMMAND=${command} install" >> "$GITHUB_ENV"
-              echo "COMMAND=${command}" >> "$GITHUB_ENV"
+              deploy_command=$(DL4J_FAMILY=compat DL4J_BUILD_THREADS='${{ matrix.build_threads }}' DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}' DL4J_MAVEN_GOAL=deploy bash build-scripts/release/native-platform.sh --print)
+              install_command=$(DL4J_FAMILY=compat DL4J_BUILD_THREADS='${{ matrix.build_threads }}' DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}' DL4J_MAVEN_GOAL=install bash build-scripts/release/native-platform.sh --print)
+              echo "DEPLOY_COMMAND=${deploy_command} -Dlibnd4j.cpu.compile.skip=true -Djavacpp.compiler.skip=true -Djavacpp.parser.skip=true" >> "$GITHUB_ENV"
+              echo "INSTALL_COMMAND=${install_command}" >> "$GITHUB_ENV"
+              echo "COMMAND=${install_command}" >> "$GITHUB_ENV"
 
       - uses: ./.github/actions/update-deps-linux
 

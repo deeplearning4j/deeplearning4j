@@ -2,6 +2,7 @@
 """Unit tests for the release provisioner's fail-closed AWS validation."""
 
 import importlib.util
+import json
 import shlex
 import subprocess
 import unittest
@@ -312,12 +313,36 @@ class ReleaseValidationTest(unittest.TestCase):
             "javacppPlatform": "linux-x86_64", "backend": "cpu", "profiles": ["cpu", "sdx"],
             "modules": [":libnd4j"], "variants": [{"name": "base"}], "buildCrossPlatform": True,
         }
+        shard = {"id": "linux-x86_64-cpu", "os": "linux", "build": build}
         events = []
         with patch.object(build_platform, "prepare_openblas"), \
                 patch.object(build_platform, "run", side_effect=lambda command, *_args: events.append(Path(command[1]).name)), \
                 patch.object(build_platform, "build_cross_platform", side_effect=lambda *_args: events.append("cross-platform.sh")):
-            build_platform.build_native_platform(Path("/source"), build, Path("/m2"), {}, None, "lane")
+            build_platform.build_native_platform(Path("/source"), shard, Path("/m2"), {}, None)
         self.assertEqual(["linux-x86_64.sh", "cross-platform.sh"], events)
+
+    def test_every_covered_workflow_uses_a_shared_release_executor(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        plan = json.loads((Path(__file__).with_name("release-plan.json")).read_text(encoding="utf-8"))
+        shared = (
+            "build-scripts/release/linux-x86_64.sh",
+            "build-scripts/release/cross-platform.sh",
+            "build-scripts/release/native-platform.sh",
+        )
+        missing = []
+        for relative_path in plan["coveredWorkflows"]:
+            workflow_path = Path(relative_path)
+            if workflow_path.parent == Path("."):
+                workflow_path = Path(".github/workflows") / workflow_path
+            workflow = (repository_root / workflow_path).read_text(encoding="utf-8")
+            if not any(script in workflow for script in shared):
+                missing.append(relative_path)
+        self.assertEqual([], missing)
+
+    def test_shared_variant_names_preserve_workflow_matrix_semantics(self):
+        self.assertEqual("mps-compile", build_platform.shared_variant_helper({"name": "mps-compile", "helper": "mps", "mlir": True}))
+        self.assertEqual("compile-nnapi", build_platform.shared_variant_helper({"name": "compile-nnapi", "mlir": True}))
+        self.assertEqual("compile", build_platform.shared_variant_helper({"name": "compile", "mlir": True}))
 
     def test_aws_cross_platform_invokes_the_shared_workflow_script(self):
         calls = []
@@ -353,8 +378,9 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("build-scripts/release/linux-x86_64.sh --print", linux_workflow)
         self.assertIn("build-scripts/release/cross-platform.sh --print-tokenizers", cross_workflow)
         self.assertIn("build-scripts/release/cross-platform.sh --print-java", cross_workflow)
-        self.assertIn("build-scripts/release/linux-x86_64.sh", driver)
-        self.assertIn("build-scripts/release/cross-platform.sh", driver)
+        self.assertIn('script_name = "linux-x86_64.sh"', driver)
+        self.assertIn('source / "build-scripts/release/cross-platform.sh"', driver)
+        self.assertIn('else "native-platform.sh"', driver)
 
     def test_bootstrap_and_workers_emit_durable_lifecycle_phases(self):
         bootstrap = release.bootstrap_user_data("linux", "https://example.invalid/worker")

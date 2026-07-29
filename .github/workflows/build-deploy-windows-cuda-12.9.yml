@@ -234,8 +234,8 @@ jobs:
           # ninja re-dispatches it, wasting minutes of the hard 6h GitHub Actions job
           # limit. The runner is dedicated (nothing else to protect) — let nvcc use
           # the full 16 GB; a genuine OOM then surfaces as an honest compiler failure.
-          $mvn_common="${{ matrix.mvn_ext }} -Pcuda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dlibnd4j.oom.killer=OFF -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests $mvn_ext"
-          $command="mvn $mvn_common -pl $modules --also-make deploy"
+          $env:DL4J_FAMILY='windows-cuda'; $env:DL4J_CUDA_VERSION='12.9'; $env:DL4J_BUILD_THREADS='${{ matrix.build_threads }}'; $env:DL4J_HELPER='${{ matrix.helper }}'; $env:DL4J_EXTENSION='${{ matrix.extension }}'; $env:DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}'; $env:DL4J_LIBND4J_URL='${{ matrix.libnd4j_file_download }}'
+          $command = bash build-scripts/release/native-platform.sh --print
 
           $to_write = -join("COMMAND=","$($command)");
           if ( "${{ matrix.libnd4j_file_download }}" -ne "") {

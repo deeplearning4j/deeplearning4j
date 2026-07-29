@@ -163,7 +163,7 @@ jobs:
              mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-12.6"
              libnd4j_download_file_url="linux-cuda-12.6-${{ matrix.extension }}-${{ matrix.helper }}"
           fi
-          command="mvn ${{ matrix.mvn_ext }} -Pcuda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda -Dlibnd4j.compute='8.6 9.0' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Djavacpp.platform=linux-x86_64 --batch-mode -DskipTests ${mvn_ext} -pl ${modules} --also-make deploy"
+          command=$(DL4J_FAMILY=linux-cuda DL4J_CUDA_VERSION=12.6 DL4J_BUILD_THREADS='${{ matrix.build_threads }}' DL4J_HELPER='${{ matrix.helper }}' DL4J_EXTENSION='${{ matrix.extension }}' DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}' DL4J_LIBND4J_URL='${{ matrix.libnd4j_file_download }}' bash build-scripts/release/native-platform.sh --print)
           echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
       - uses: ./.github/actions/install-protobuf-linux

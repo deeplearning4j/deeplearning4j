@@ -140,7 +140,7 @@ jobs:
           else
              mvn_ext=""
           fi
-          command="mvn ${{ matrix.mvn_ext }} -Posx-aarch64-protoc -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON --no-transfer-progress -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --batch-mode -DskipTests ${mvn_ext} -pl $modules --also-make deploy"
+          command=$(DL4J_FAMILY=linux-arm64 DL4J_BUILD_THREADS='${{ github.event.inputs.buildThreads }}' DL4J_HELPER='${{ matrix.helper }}' DL4J_EXTENSION='${{ matrix.extension }}' DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}' DL4J_LIBND4J_URL='${{ github.event.inputs.libnd4jUrl }}' bash build-scripts/release/native-platform.sh --print)
           echo "COMMAND=${command}" >> $GITHUB_ENV
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
