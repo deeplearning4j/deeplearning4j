@@ -184,28 +184,12 @@ jobs:
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-          if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-             modules=':nd4j-native,:nd4j-native-preset'
-          else 
-           echo "Building libnd4j from source"
-           modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
-          fi
-          command="mvn -X ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu --also-make --batch-mode deploy -DskipTests"
-          if [ "${{ matrix.helper }}" == 'compile' ]; then
-                 mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=linux-x86_64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
-          elif [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                 mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
-          elif [ "${{ matrix.helper }}" != '' ]; then
-                 mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}"
-          elif [ "${{ matrix.extension }}" != '' ]; then
-                 mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.extension }}"
-           else
-               mvn_ext=""
-          fi
-          if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-             echo "Adding libnd4j download"
-          fi
-          command="${command} ${mvn_ext}"
+          command=$(DL4J_HELPER='${{ matrix.helper }}' \
+            DL4J_EXTENSION='${{ matrix.extension }}' \
+            DL4J_LIBND4J_FILE_DOWNLOAD='${{ matrix.libnd4j_file_download }}' \
+            DL4J_BUILD_THREADS='${{ matrix.build_threads }}' \
+            DL4J_MATRIX_MVN_EXT='${{ matrix.mvn_ext }}' \
+            bash build-scripts/release/linux-x86_64.sh --print)
           echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
 

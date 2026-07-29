@@ -2,6 +2,7 @@
 """Unit tests for the release provisioner's fail-closed AWS validation."""
 
 import importlib.util
+import shlex
 import subprocess
 import unittest
 from contextlib import redirect_stdout
@@ -306,33 +307,54 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual("bytes=-262144", s3.request["Range"])
         self.assertIn("real bootstrap error", output.getvalue())
 
-    def test_native_artifacts_are_installed_before_cross_platform_reactor(self):
+    def test_native_lane_invokes_shared_github_script_before_cross_platform_script(self):
         build = {
             "javacppPlatform": "linux-x86_64", "backend": "cpu", "profiles": ["cpu", "sdx"],
             "modules": [":libnd4j"], "variants": [{"name": "base"}], "buildCrossPlatform": True,
         }
         events = []
         with patch.object(build_platform, "prepare_openblas"), \
-                patch.object(build_platform, "maven_command", return_value=["mvn", "native", "install"]), \
-                patch.object(build_platform, "run", side_effect=lambda command, *_args: events.append(command[1])), \
-                patch.object(build_platform, "build_cross_platform", side_effect=lambda *_args: events.append("cross-platform")):
+                patch.object(build_platform, "run", side_effect=lambda command, *_args: events.append(Path(command[1]).name)), \
+                patch.object(build_platform, "build_cross_platform", side_effect=lambda *_args: events.append("cross-platform.sh")):
             build_platform.build_native_platform(Path("/source"), build, Path("/m2"), {}, None, "lane")
-        self.assertEqual(["native", "cross-platform"], events)
+        self.assertEqual(["linux-x86_64.sh", "cross-platform.sh"], events)
 
-    def test_cross_platform_commands_match_github_workflow_for_local_staging(self):
-        commands = []
+    def test_aws_cross_platform_invokes_the_shared_workflow_script(self):
+        calls = []
         build = {"javacppPlatform": "linux-x86_64"}
-        with patch.object(build_platform, "run", side_effect=lambda command, *_args: commands.append(command)):
+        with patch.object(build_platform, "run", side_effect=lambda command, _cwd, env: calls.append((command, env))):
             build_platform.build_cross_platform(Path("/source"), build, Path("/m2"), {})
-        tokenizer, java = commands
-        self.assertEqual(":libtokenizers,:tokenizers-native-preset,:tokenizers-native", tokenizer[tokenizer.index("-pl") + 1])
-        self.assertIn("--also-make", tokenizer)
-        self.assertEqual("install", tokenizer[-1])
-        self.assertIn("-Pzluda,tpu,hexagon", java)
-        self.assertIn("!:libnd4j", java[java.index("-pl") + 1])
-        self.assertIn("!:platform-tests", java[java.index("-pl") + 1])
-        self.assertEqual("install", java[-1])
-        self.assertNotIn("deploy", tokenizer + java)
+        self.assertEqual(["--run-tokenizers", "--run-java"], [call[0][-1] for call in calls])
+        self.assertTrue(all(Path(call[0][1]).name == "cross-platform.sh" for call in calls))
+        self.assertTrue(all(call[1]["DL4J_MAVEN_GOAL"] == "install" for call in calls))
+
+    def test_shared_linux_script_emits_the_workflow_command(self):
+        root = Path(__file__).parents[2]
+        environment = {
+            "DL4J_HELPER": "", "DL4J_EXTENSION": "", "DL4J_LIBND4J_FILE_DOWNLOAD": "",
+            "DL4J_BUILD_THREADS": "16", "DL4J_MATRIX_MVN_EXT": "", "PATH": "/usr/bin:/bin",
+        }
+        result = subprocess.run(
+            ["bash", str(root / "build-scripts/release/linux-x86_64.sh"), "--print"],
+            env=environment, check=True, capture_output=True, text=True,
+        )
+        command = shlex.split(result.stdout)
+        self.assertEqual("mvn", command[0])
+        self.assertIn("-X", command)
+        self.assertEqual(":nd4j-native,:nd4j-native-preset,:libnd4j", command[command.index("-pl") + 1])
+        self.assertEqual("deploy", command[-2])
+        self.assertEqual("-DskipTests", command[-1])
+
+    def test_github_and_aws_reference_the_same_release_scripts(self):
+        root = Path(__file__).parents[2]
+        linux_workflow = (root / ".github/workflows/build-deploy-linux-x86_64.yml").read_text(encoding="utf-8")
+        cross_workflow = (root / ".github/workflows/build-deploy-cross-platform.yml").read_text(encoding="utf-8")
+        driver = (root / "release/aws/build-platform.py").read_text(encoding="utf-8")
+        self.assertIn("build-scripts/release/linux-x86_64.sh --print", linux_workflow)
+        self.assertIn("build-scripts/release/cross-platform.sh --print-tokenizers", cross_workflow)
+        self.assertIn("build-scripts/release/cross-platform.sh --print-java", cross_workflow)
+        self.assertIn("build-scripts/release/linux-x86_64.sh", driver)
+        self.assertIn("build-scripts/release/cross-platform.sh", driver)
 
     def test_bootstrap_and_workers_emit_durable_lifecycle_phases(self):
         bootstrap = release.bootstrap_user_data("linux", "https://example.invalid/worker")

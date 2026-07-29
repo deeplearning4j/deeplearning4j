@@ -242,21 +242,8 @@ jobs:
             [ -d /opt/cmake/bin ] && export PATH=/opt/cmake/bin:$PATH
           fi
 
-          # On Windows with MSYS2/MinGW, use the mingw JavaCPP properties
-          # (GCC-style flags instead of MSVC-style /I /O2 /link flags)
-          MINGW_OVERRIDE=""
-          if [ "${{ matrix.os }}" == "windows" ]; then
-            MINGW_OVERRIDE="-Djavacpp.platform.build=windows-x86_64-mingw -Djavacpp.platform.compiler=g++"
-          fi
-
-          command="mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native \
-            --also-make \
-            -Djavacpp.platform=${{ matrix.platform }} \
-            ${MINGW_OVERRIDE} \
-            -DskipTestResourceEnforcement=true \
-            -Dmaven.javadoc.failOnError=false \
-            --no-transfer-progress --batch-mode \
-            deploy -DskipTests"
+          command=$(DL4J_PLATFORM='${{ matrix.platform }}' DL4J_OS='${{ matrix.os }}' \
+            bash build-scripts/release/cross-platform.sh --print-tokenizers)
 
           if [ "$PERFORM_RELEASE" == 1 ]; then
             echo "Performing release"
@@ -294,43 +281,8 @@ jobs:
 
           mvn --version
 
-          # Build all Java modules, skip only:
-          # - libnd4j: C++ native ops (built by per-platform native workflows)
-          # - libtokenizers, tokenizers-native-preset, tokenizers-native: just built and deployed in previous step
-          # - codegen modules not needed for deployment
-          PROTOC_PROFILE=""
-          if [ "${{ matrix.platform }}" == "linux-arm64" ] || [ "${{ matrix.platform }}" == "macosx-arm64" ]; then
-            PROTOC_PROFILE="-Posx-aarch64-protoc"
-          fi
-
-          # nd4j-ggml is backend-agnostic (nd4j-api only); its tests live in
-          # platform-tests, so it no longer carries an nd4j-native:<platform>
-          # test dep and builds on every platform without native snapshots.
-          # (The former windows-only GGML_EXCLUDE workaround is obsolete.)
-          GGML_EXCLUDE=""
-
-          # Enable ZLUDA, TPU and Hexagon Java modules on linux-x86_64 (the only
-          # platform that publishes nd4j-zluda/nd4j-tpu/nd4j-hexagon artifacts today;
-          # all are Java-only and pull native deps from snapshots — no C++/nvcc build).
-          PLATFORM_PROFILES=""
-          if [ "${{ matrix.platform }}" == "linux-x86_64" ]; then
-            PLATFORM_PROFILES="-Pzluda,tpu,hexagon"
-          fi
-
-          # platform-tests is the test suite, never a deployable library: it pulls
-          # org.deeplearning4j:dl4j-test-resources (a large EXTERNAL snapshot not in
-          # this reactor) as a compile dep, so a deploy build cannot resolve it. Per
-          # the project rule it must never be built with the project — exclude it so
-          # the library deploy is not blocked by a test-only, unresolvable dependency.
-          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:platform-tests${GGML_EXCLUDE} \
-            ${PROTOC_PROFILE} \
-            ${PLATFORM_PROFILES} \
-            -DskipTestResourceEnforcement=true \
-            -Djavacpp.platform=${{ matrix.platform }} \
-            -Dmaven.javadoc.failOnError=false \
-            -Dmaven.test.skip=true \
-            --no-transfer-progress --batch-mode \
-            deploy"
+          command=$(DL4J_PLATFORM='${{ matrix.platform }}' DL4J_OS='${{ matrix.os }}' \
+            bash build-scripts/release/cross-platform.sh --print-java)
 
           if [ "$PERFORM_RELEASE" == 1 ]; then
             echo "Performing release"

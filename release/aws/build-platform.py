@@ -90,26 +90,15 @@ def build_cross_platform(source: Path, build: dict, repository: Path, env: dict[
     cross_env = env.copy()
     if platform in {"linux-arm64", "macosx-arm64"} and Path("/opt/protoc-21.7/bin").exists():
         cross_env["PATH"] = f"/opt/protoc-21.7/bin:{cross_env.get('PATH', '')}"
-    common = ["mvn", "--batch-mode", "--no-transfer-progress", f"-Dmaven.repo.local={repository}",
-              f"-Djavacpp.platform={platform}", "-DskipTestResourceEnforcement=true",
-              "-Dmaven.javadoc.failOnError=false", "-DskipTests"]
-    tokenizer = common + ["-pl", ":libtokenizers,:tokenizers-native-preset,:tokenizers-native", "--also-make"]
-    if platform == "windows-x86_64":
-        tokenizer.extend(["-Djavacpp.platform.build=windows-x86_64-mingw", "-Djavacpp.platform.compiler=g++"])
-    tokenizer.append("install")
-    run(tokenizer, source, cross_env)
-    profiles = []
-    if platform in {"linux-arm64", "macosx-arm64"}:
-        profiles.append("osx-aarch64-protoc")
-    if platform == "linux-x86_64":
-        profiles.extend(["zluda", "tpu", "hexagon"])
-    # ZLUDA/TPU/Hexagon are built with their native backend shards so release
-    # dependencies remain local instead of relying on a remote snapshot race.
-    java = common[:-1] + ["-Dmaven.test.skip=true"]
-    if profiles:
-        java.append(f"-P{','.join(profiles)}")
-    java.extend(["-pl", "!:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:platform-tests", "install"])
-    run(java, source, cross_env)
+    cross_env.update({
+        "DL4J_PLATFORM": platform,
+        "DL4J_OS": "windows" if platform == "windows-x86_64" else ("macos" if platform == "macosx-arm64" else "linux"),
+        "DL4J_MAVEN_GOAL": "install",
+        "DL4J_MAVEN_REPOSITORY": str(repository),
+    })
+    script = source / "build-scripts/release/cross-platform.sh"
+    run(["bash", str(script), "--run-tokenizers"], source, cross_env)
+    run(["bash", str(script), "--run-java"], source, cross_env)
 
 
 def prepare_openblas(source: Path, build: dict, env: dict[str, str]) -> None:
@@ -274,7 +263,21 @@ def build_native_platform(source: Path, build: dict, repository: Path, env: dict
     prepare_openblas(source, build, env)
     for variant in build["variants"]:
         print(f"[dl4j-phase] shard={shard_id} phase=native variant={variant['name']}", flush=True)
-        run(maven_command(build, variant, repository, source, env), source, env)
+        variant_env = env.copy()
+        if build["backend"] == "cpu" and build["javacppPlatform"] == "linux-x86_64":
+            variant_env.update({
+                "DL4J_HELPER": "compile" if variant.get("mlir") else variant.get("helper", ""),
+                "DL4J_EXTENSION": variant.get("extension", ""),
+                "DL4J_LIBND4J_FILE_DOWNLOAD": "",
+                "DL4J_BUILD_THREADS": str(build.get("buildThreads", 16)),
+                "DL4J_MATRIX_MVN_EXT": " ".join(build.get("mavenArgs", [])),
+                "DL4J_MAVEN_GOAL": "install",
+                "DL4J_MAVEN_REPOSITORY": str(repository),
+            })
+            command = ["bash", str(source / "build-scripts/release/linux-x86_64.sh"), "--run"]
+        else:
+            command = maven_command(build, variant, repository, source, variant_env)
+        run(command, source, variant_env)
         if compiler_cache:
             run([compiler_cache, "--show-stats"], source, env)
     if build.get("buildCrossPlatform"):
