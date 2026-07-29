@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# EC2 user-data is not an interactive/login shell. Establish every environment
+# value the GitHub-hosted runners normally provide before strict-mode expansion.
+export PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
+if [ "$(/usr/bin/uname -s)" = Darwin ]; then
+  export HOME="${HOME:-/Users/ec2-user}"
+else
+  export HOME="${HOME:-/root}"
+fi
+export USER="${USER:-$(id -un)}"
+export LOGNAME="${LOGNAME:-${USER}}"
+
 CONFIG_B64='__DL4J_WORKER_CONFIG_B64__'
 BUILD_DRIVER_B64='__DL4J_BUILD_DRIVER_B64__'
 LOG_FORWARDER_B64='__DL4J_LOG_FORWARDER_B64__'
@@ -14,10 +25,13 @@ SOURCE_DIR=${WORK_ROOT}/source
 OUTPUT_DIR=${WORK_ROOT}/output
 MAVEN_REPO=${WORK_ROOT}/m2
 BUILD_LOG=${OUTPUT_DIR}/build.log
+export CARGO_HOME="${CARGO_HOME:-${WORK_ROOT}/toolchains/cargo}"
+export RUSTUP_HOME="${RUSTUP_HOME:-${WORK_ROOT}/toolchains/rustup}"
+export PATH="${CARGO_HOME}/bin:${PATH}"
 BUILD_PID_FILE=/tmp/dl4j-release-build.pid
 WATCHDOG_PID=""
 LOG_FORWARDER_PID=""
-mkdir -p "${OUTPUT_DIR}" "${MAVEN_REPO}"
+mkdir -p "${OUTPUT_DIR}" "${MAVEN_REPO}" "${CARGO_HOME}" "${RUSTUP_HOME}"
 decode_b64() {
   if [ "$(uname -s)" = Darwin ]; then
     printf '%s' "$1" | base64 -D > "$2"
@@ -132,7 +146,6 @@ if [ "${OS_NAME}" = "linux" ]; then
   fi
   phase rust-toolchain started
   curl --proto '=https' --tlsv1.2 --fail --silent --show-error https://sh.rustup.rs | sh -s -- -y --profile minimal
-  export PATH="${HOME}/.cargo/bin:${PATH}"
   cargo install --locked cbindgen
   phase rust-toolchain complete
   if [[ "${PLATFORM}" == android-* ]]; then

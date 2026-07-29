@@ -4,6 +4,12 @@ $ConfigB64 = '__DL4J_WORKER_CONFIG_B64__'
 $BuildDriverB64 = '__DL4J_BUILD_DRIVER_B64__'
 $LogForwarderB64 = '__DL4J_LOG_FORWARDER_B64__'
 $WorkRoot = 'C:\dl4j-release'
+$ToolchainRoot = Join-Path $WorkRoot 'toolchains'
+$env:CARGO_HOME = Join-Path $ToolchainRoot 'cargo'
+$env:RUSTUP_HOME = Join-Path $ToolchainRoot 'rustup'
+$env:TEMP = Join-Path $WorkRoot 'tmp'
+$env:TMP = $env:TEMP
+$env:PATH = "$($env:CARGO_HOME)\bin;$env:PATH"
 $SourceDir = Join-Path $WorkRoot 'source'
 $OutputDir = Join-Path $WorkRoot 'output'
 $MavenRepo = Join-Path $WorkRoot 'm2'
@@ -14,7 +20,7 @@ $LogForwarderStop = Join-Path $WorkRoot 'log-forwarder.stop'
 $LogForwarderError = Join-Path $WorkRoot 'log-forwarder.err'
 $BootstrapLog = Join-Path $OutputDir 'bootstrap.log'
 $BuildLog = Join-Path $OutputDir 'build.log'
-New-Item -ItemType Directory -Force -Path $WorkRoot,$OutputDir,$MavenRepo | Out-Null
+New-Item -ItemType Directory -Force -Path $WorkRoot,$OutputDir,$MavenRepo,$env:CARGO_HOME,$env:RUSTUP_HOME,$env:TEMP | Out-Null
 [IO.File]::WriteAllBytes($ConfigFile, [Convert]::FromBase64String($ConfigB64))
 [IO.File]::WriteAllBytes($BuildDriver, [Convert]::FromBase64String($BuildDriverB64))
 [IO.File]::WriteAllBytes($LogForwarder, [Convert]::FromBase64String($LogForwarderB64))
@@ -75,7 +81,6 @@ try {
   & C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja"
   Write-Phase 'msys-toolchain' 'complete'
   Write-Phase 'rust-toolchain' 'started'
-  $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
   rustup toolchain install stable-x86_64-pc-windows-gnu
   rustup default stable-x86_64-pc-windows-gnu
   $env:CARGO_BUILD_TARGET = 'x86_64-pc-windows-gnu'
@@ -84,7 +89,7 @@ try {
   Write-Phase 'rust-toolchain' 'complete'
   $SccacheVersion = 'v0.15.0'
   $SccacheFile = "sccache-$SccacheVersion-x86_64-pc-windows-msvc"
-  $SccacheDir = Join-Path $env:USERPROFILE 'sccache'
+  $SccacheDir = Join-Path $ToolchainRoot 'sccache'
   New-Item -ItemType Directory -Force -Path $SccacheDir | Out-Null
   Invoke-WebRequest "https://github.com/mozilla/sccache/releases/download/$SccacheVersion/$SccacheFile.tar.gz" -OutFile (Join-Path $env:TEMP 'sccache.tar.gz') -UseBasicParsing
   tar -xzf (Join-Path $env:TEMP 'sccache.tar.gz') -C $env:TEMP

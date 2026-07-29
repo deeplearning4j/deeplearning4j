@@ -2,6 +2,7 @@
 """Unit tests for the release provisioner's fail-closed AWS validation."""
 
 import importlib.util
+import subprocess
 import unittest
 from contextlib import redirect_stdout
 from io import BytesIO, StringIO
@@ -303,6 +304,8 @@ class ReleaseValidationTest(unittest.TestCase):
         bootstrap = release.bootstrap_user_data("linux", "https://example.invalid/worker")
         self.assertIn("phase=cloud-init status=started", bootstrap)
         self.assertIn("phase=worker-download status=complete", bootstrap)
+        self.assertIn("export HOME=${HOME:-/root}", bootstrap)
+        self.assertLess(bootstrap.index("export HOME="), bootstrap.index("curl --fail"))
         root = Path(__file__).parent
         linux = (root / "worker.sh").read_text(encoding="utf-8")
         windows = (root / "worker.ps1").read_text(encoding="utf-8")
@@ -311,6 +314,24 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertIn(phase, windows)
         self.assertLess(linux.index("start_log_forwarder\n"), linux.index("phase toolchain-packages started"))
         self.assertLess(windows.index("Start-LogForwarder\n"), windows.index("Write-Phase 'toolchain-packages' 'started'"))
+        self.assertLess(linux.index("export HOME="), linux.index("CONFIG_B64="))
+        self.assertLess(linux.index("export CARGO_HOME="), linux.index("rust-toolchain started"))
+        self.assertNotIn('${HOME}/.cargo', linux)
+        self.assertLess(windows.index("$env:CARGO_HOME ="), windows.index("rustup toolchain install"))
+        self.assertNotIn("$env:USERPROFILE", windows)
+
+    def test_unix_worker_initializes_cloud_init_environment_under_strict_mode(self):
+        worker = (Path(__file__).parent / "worker.sh").read_text(encoding="utf-8")
+        environment_prefix = worker.split("CONFIG_B64=", 1)[0]
+        probe = environment_prefix + "printf '%s\\n' \"$HOME|$USER|$LOGNAME|$PATH\""
+        result = subprocess.run(
+            ["bash", "-u", "-c", probe], env={}, check=True, capture_output=True, text=True
+        )
+        home, user, logname, path = result.stdout.strip().split("|", 3)
+        self.assertEqual("/root", home)
+        self.assertTrue(user)
+        self.assertEqual(user, logname)
+        self.assertIn("/usr/bin", path)
 
 
 if __name__ == "__main__":

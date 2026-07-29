@@ -712,6 +712,8 @@ def bootstrap_user_data(os_name: str, url: str) -> str:
                 "Write-Output '[dl4j-phase] phase=worker-download status=complete'\n"
                 "& powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\\dl4j-worker.ps1\n</powershell>\n")
     return ("#!/usr/bin/env bash\nset -Eeuo pipefail\n"
+            "export HOME=${HOME:-/root}\n"
+            "export PATH=${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}\n"
             "printf '[dl4j-phase] phase=cloud-init status=started\\n'\n"
             f"curl --fail --location --retry 5 '{url}' -o /tmp/dl4j-worker.sh\n"
             "printf '[dl4j-phase] phase=worker-download status=complete\\n'\n"
