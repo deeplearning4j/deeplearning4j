@@ -31,7 +31,20 @@ function Upload-IfPresent([string]$Path, [string]$Name) {
 }
 
 function Write-Phase([string]$Phase, [string]$Status, [string]$Detail = '') {
-  Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=$Phase status=$Status $Detail"
+  $Message = "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=$Phase status=$Status $Detail"
+  Write-Output $Message
+  Add-Content -Path $BuildLog -Value $Message
+}
+
+function Start-LogForwarder {
+  if ($LogForwarderProcess) { return }
+  Write-Phase 'cloudwatch-forwarder' 'started'
+  $LogArguments = @(
+    $LogForwarder, '--file', $BuildLog, '--stop-file', $LogForwarderStop,
+    '--region', $Region, '--group', $Config.logGroupName, '--stream', $Config.logStreamName
+  )
+  $script:LogForwarderProcess = Start-Process python -ArgumentList $LogArguments -RedirectStandardOutput $LogForwarderError -RedirectStandardError "$LogForwarderError.stderr" -PassThru -NoNewWindow
+  Write-Phase 'cloudwatch-forwarder' 'complete' "pid=$($LogForwarderProcess.Id)"
 }
 
 Write-Phase 'worker' 'started' "pid=$PID"
@@ -45,15 +58,15 @@ try {
     Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
   }
   Write-Phase 'chocolatey-bootstrap' 'complete'
+  Write-Phase 'logging-prerequisites' 'started'
+  choco install -y --no-progress awscli python312
+  $env:PATH = "C:\Program Files\Amazon\AWSCLIV2;C:\ProgramData\chocolatey\bin;$env:PATH"
+  Write-Phase 'logging-prerequisites' 'complete'
+  Start-LogForwarder
   Write-Phase 'toolchain-packages' 'started'
-  choco install -y --no-progress awscli cmake git maven ninja temurin11 python312 7zip msys2 rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
+  choco install -y --no-progress cmake git maven ninja temurin11 7zip msys2 rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
   Write-Phase 'toolchain-packages' 'complete'
-  $env:PATH = "C:\Program Files\Amazon\AWSCLIV2;C:\Program Files\Git\cmd;C:\Program Files\Git\bin;C:\ProgramData\chocolatey\bin;C:\tools\msys64\mingw64\bin;C:\tools\msys64\usr\bin;$env:PATH"
-  $LogArguments = @(
-    $LogForwarder, '--file', $BuildLog, '--stop-file', $LogForwarderStop,
-    '--region', $Region, '--group', $Config.logGroupName, '--stream', $Config.logStreamName
-  )
-  $LogForwarderProcess = Start-Process python -ArgumentList $LogArguments -RedirectStandardOutput $LogForwarderError -RedirectStandardError "$LogForwarderError.stderr" -PassThru -NoNewWindow
+  $env:PATH = "C:\Program Files\Git\cmd;C:\Program Files\Git\bin;C:\tools\msys64\mingw64\bin;C:\tools\msys64\usr\bin;$env:PATH"
   $JavaHome = Get-ChildItem 'C:\Program Files\Eclipse Adoptium' -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
   if (-not $JavaHome) { $JavaHome = Get-ChildItem 'C:\Program Files\Java' -Directory | Sort-Object Name -Descending | Select-Object -First 1 }
   $env:JAVA_HOME = $JavaHome.FullName

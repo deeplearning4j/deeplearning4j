@@ -63,6 +63,11 @@ class SizingEc2:
 class FakeLogs:
     def __init__(self):
         self.requests = []
+        self.published = []
+
+    def put_log_events(self, **kwargs):
+        self.published.append(kwargs)
+        return {}
 
     def get_log_events(self, **kwargs):
         self.requests.append(kwargs)
@@ -169,6 +174,13 @@ class ReleaseValidationTest(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "Core constraint is infeasible"):
             release.apply_core_constraint(SizingEc2(), [lane], 1)
 
+    def test_controller_event_is_published_without_worker_bootstrap(self):
+        logs = FakeLogs()
+        self.assertTrue(release.emit_cloudwatch_event(logs, "/releases", "run/lane", "phase=launched"))
+        self.assertEqual("/releases", logs.published[0]["logGroupName"])
+        self.assertEqual("run/lane", logs.published[0]["logStreamName"])
+        self.assertIn("[dl4j-controller] phase=launched", logs.published[0]["logEvents"][0]["message"])
+
     def test_stream_lane_logs_prints_events_and_reuses_cursor(self):
         logs = FakeLogs()
         output = StringIO()
@@ -204,9 +216,11 @@ class ReleaseValidationTest(unittest.TestCase):
         root = Path(__file__).parent
         linux = (root / "worker.sh").read_text(encoding="utf-8")
         windows = (root / "worker.ps1").read_text(encoding="utf-8")
-        for phase in ("toolchain-packages", "source-checkout", "matrix-build", "artifact-packaging", "finalize"):
+        for phase in ("logging-prerequisites", "toolchain-packages", "source-checkout", "matrix-build", "artifact-packaging", "finalize"):
             self.assertIn(phase, linux)
             self.assertIn(phase, windows)
+        self.assertLess(linux.index("start_log_forwarder\n"), linux.index("phase toolchain-packages started"))
+        self.assertLess(windows.index("Start-LogForwarder\n"), windows.index("Write-Phase 'toolchain-packages' 'started'"))
 
 
 if __name__ == "__main__":

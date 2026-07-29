@@ -151,6 +151,20 @@ def ensure_log_stream(logs_client, group: str, stream: str) -> None:
             raise
 
 
+def emit_cloudwatch_event(logs_client, group: str, stream: str, message: str) -> bool:
+    """Publish a controller lifecycle event without depending on worker bootstrap."""
+    try:
+        logs_client.put_log_events(
+            logGroupName=group,
+            logStreamName=stream,
+            logEvents=[{"timestamp": int(time.time() * 1000), "message": f"[dl4j-controller] {message}"}],
+        )
+        return True
+    except Exception as exc:
+        print(f"[{stream}] controller CloudWatch publish failed: {exc}", flush=True)
+        return False
+
+
 def list_log_streams(logs_client, group: str, prefix: str | None = None) -> list[str]:
     _, ClientError = _boto3()
     request: dict[str, Any] = {"logGroupName": group}
@@ -565,6 +579,8 @@ def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: 
     log_warning_reported = False
     console_warning_reported = False
     print(f"waiting for {shard_id}; live stream {log_group} / {log_stream}", flush=True)
+    emit_cloudwatch_event(logs_client, log_group, log_stream,
+                          f"phase=controller-wait status=started shard={shard_id} instance={instance_id}")
     while True:
         if kill_switch_enabled(ssm, plan):
             raise RuntimeError(f"global kill switch enabled while waiting for {shard_id}")
@@ -574,12 +590,18 @@ def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: 
         if state != last_state:
             reason = reservations[0]["Instances"][0].get("StateTransitionReason", "")
             suffix = f"; reason={reason}" if reason else ""
+            message = f"phase=ec2-state status={state} shard={shard_id} instance={instance_id} elapsedSeconds={elapsed}{suffix}"
             print(f"[{shard_id}] EC2 state: {state} ({elapsed}s elapsed){suffix}", flush=True)
+            emit_cloudwatch_event(logs_client, log_group, log_stream, message)
             last_state = state
         try:
             health = instance_health(ec2, instance_id)
             if health != last_health:
                 print(f"[{shard_id}] AWS health: instance={health[0]} system={health[1]}", flush=True)
+                emit_cloudwatch_event(
+                    logs_client, log_group, log_stream,
+                    f"phase=ec2-health status=changed shard={shard_id} instance={instance_id} instanceCheck={health[0]} systemCheck={health[1]}",
+                )
                 last_health = health
         except Exception as exc:
             print(f"[{shard_id}] AWS health unavailable: {exc}", flush=True)
@@ -600,6 +622,10 @@ def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: 
         now = time.monotonic()
         if now - last_report >= 60:
             print(f"[{shard_id}] still {state}; {elapsed}s elapsed; waiting for build completion", flush=True)
+            emit_cloudwatch_event(
+                logs_client, log_group, log_stream,
+                f"phase=controller-heartbeat status={state} shard={shard_id} instance={instance_id} elapsedSeconds={elapsed}",
+            )
             last_report = now
         if state in {"shutting-down", "terminated"}:
             try:
