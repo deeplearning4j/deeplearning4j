@@ -71,7 +71,7 @@ python3 release/aws/release.py start \
 
 ## Monitor live builds
 
-Every execution streams bootstrap, dependency installation and compiler output into CloudWatch Logs group `/deeplearning4j/releases`, with one stream named `<RUN_ID>/<SHARD_ID>`. A heartbeat is emitted every 60 seconds even when a compiler produces no output. CloudWatch retains streams for 30 days by default; both settings are explicit in `release-plan.json`.
+Every execution streams bootstrap, dependency installation and compiler output into CloudWatch Logs group `/deeplearning4j/releases`, with one stream named `<RUN_ID>/<SHARD_ID>`. `start` follows that stream automatically, reports every EC2 state transition, falls back to early EC2 console output until CloudWatch becomes active, and emits an elapsed-time status line at least once per minute. The build itself has no controller-side timeout; the five-minute grace period applies only after EC2 has terminated and the controller is waiting for the worker's final `status.json` upload. A worker heartbeat is emitted every 60 seconds even when a compiler produces no output. CloudWatch retains streams for 30 days by default; both settings are explicit in `release-plan.json`.
 
 ```bash
 # EC2 state, shard identity, instance type, kill-switch state and log command:

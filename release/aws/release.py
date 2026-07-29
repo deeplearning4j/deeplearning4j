@@ -510,31 +510,108 @@ def validate_launch_matrix(ec2, ssm, executions: list[dict[str, Any]], region: s
     return ({item["id"]: resolve_ami(ec2, ssm, item) for item in executions}, descriptions)
 
 
-def wait_for_lane(ec2, s3, ssm, plan: dict[str, Any], instance_id: str, bucket: str,
-                  status_key: str, shard_id: str) -> None:
-    """Wait for one reusable lane to finish before provisioning the next lane."""
+def stream_lane_logs(logs_client, group: str, stream: str, token: str | None = None) -> tuple[str | None, int]:
+    """Print newly available events from one CloudWatch stream and return its cursor."""
+    request: dict[str, Any] = {
+        "logGroupName": group,
+        "logStreamName": stream,
+        "startFromHead": True,
+    }
+    if token:
+        request["nextToken"] = token
+    response = logs_client.get_log_events(**request)
+    events = response.get("events", [])
+    for event in events:
+        print(f"[{stream}] {event.get('message', '')}", flush=True)
+    return response.get("nextForwardToken", token), len(events)
+
+
+def stream_console_output(ec2, instance_id: str, offset: int) -> int:
+    """Print new EC2 console output, which is available before CloudWatch bootstrap."""
+    response = ec2.get_console_output(InstanceId=instance_id, Latest=True)
+    output = response.get("Output", "") or ""
+    if len(output) < offset:
+        offset = 0
+    if len(output) > offset:
+        for line in output[offset:].splitlines():
+            print(f"[{instance_id}/console] {line}", flush=True)
+        offset = len(output)
+    return offset
+
+
+def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: str, bucket: str,
+                  status_key: str, shard_id: str, log_group: str, log_stream: str) -> None:
+    """Wait for a reusable lane while continuously reporting state and build activity."""
+    started = time.monotonic()
+    last_report = 0.0
+    last_state = None
+    log_token = None
+    console_offset = 0
+    cloudwatch_active = False
+    log_warning_reported = False
+    console_warning_reported = False
+    print(f"waiting for {shard_id}; live stream {log_group} / {log_stream}", flush=True)
     while True:
         if kill_switch_enabled(ssm, plan):
             raise RuntimeError(f"global kill switch enabled while waiting for {shard_id}")
         reservations = ec2.describe_instances(InstanceIds=[instance_id])["Reservations"]
         state = reservations[0]["Instances"][0]["State"]["Name"]
+        elapsed = int(time.monotonic() - started)
+        if state != last_state:
+            print(f"[{shard_id}] EC2 state: {state} ({elapsed}s elapsed)", flush=True)
+            last_state = state
+        try:
+            log_token, event_count = stream_lane_logs(logs_client, log_group, log_stream, log_token)
+            cloudwatch_active = cloudwatch_active or event_count > 0
+        except Exception as exc:
+            if not log_warning_reported:
+                print(f"[{shard_id}] CloudWatch stream not ready: {exc}", flush=True)
+                log_warning_reported = True
+        if not cloudwatch_active:
+            try:
+                console_offset = stream_console_output(ec2, instance_id, console_offset)
+            except Exception as exc:
+                if not console_warning_reported:
+                    print(f"[{shard_id}] EC2 console output not ready: {exc}", flush=True)
+                    console_warning_reported = True
+        now = time.monotonic()
+        if now - last_report >= 60:
+            print(f"[{shard_id}] still {state}; {elapsed}s elapsed; waiting for build completion", flush=True)
+            last_report = now
         if state in {"shutting-down", "terminated"}:
             break
         time.sleep(15)
-    deadline = time.time() + 300
+
+    # The worker uploads status before shutting down. Drain final log events while
+    # allowing a short grace period for an in-flight S3 upload.
+    deadline = time.monotonic() + 300
     while True:
+        try:
+            log_token, _ = stream_lane_logs(logs_client, log_group, log_stream, log_token)
+        except Exception:
+            pass
         try:
             response = s3.get_object(Bucket=bucket, Key=status_key)
             status = json.loads(response["Body"].read())
-            if int(status.get("exitCode", 1)) != 0:
-                raise RuntimeError(f"lane {shard_id} failed with exit code {status.get('exitCode')}")
+            exit_code = int(status.get("exitCode", 1))
+            if exit_code != 0:
+                raise RuntimeError(f"lane {shard_id} failed with exit code {exit_code}; see live output above")
             return
         except Exception as exc:
             if getattr(exc, "response", {}).get("Error", {}).get("Code") not in {"NoSuchKey", "404"}:
                 raise
-            if time.time() >= deadline:
-                raise RuntimeError(f"lane {shard_id} terminated without uploading status.json") from exc
-            time.sleep(5)
+            remaining = max(0, int(deadline - time.monotonic()))
+            if remaining == 0:
+                try:
+                    stream_console_output(ec2, instance_id, console_offset)
+                except Exception:
+                    pass
+                raise RuntimeError(
+                    f"lane {shard_id} terminated without status.json; bootstrap failed before its final upload. "
+                    f"Review the console and CloudWatch output above"
+                ) from exc
+            print(f"[{shard_id}] instance terminated; waiting for final status upload ({remaining}s remaining)", flush=True)
+            time.sleep(min(15, remaining))
 
 
 def render_user_data(worker: Path, values: dict[str, Any]) -> str:
@@ -750,7 +827,10 @@ def start(args: argparse.Namespace) -> None:
                 raise RuntimeError("global kill switch enabled immediately after launch")
             print(f"launched {shard['id']}: {instance_id} ({shard['os']}, {shard['build']['backend']}, CPU compile host)")
             status_key = f"{plan.get('artifactPrefix', 'deeplearning4j/releases')}/{run_id}/{shard['id']}/status.json"
-            wait_for_lane(ec2, s3, ssm, plan, instance_id, bucket, status_key, shard["id"])
+            wait_for_lane(
+                ec2, s3, ssm, logs_client, plan, instance_id, bucket, status_key,
+                shard["id"], log_group, config["logStreamName"],
+            )
             print(f"completed {shard['id']}: {instance_id}; launching next lane")
     except Exception:
         set_kill_switch(ssm, plan, True)

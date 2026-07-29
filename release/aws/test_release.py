@@ -3,6 +3,8 @@
 
 import importlib.util
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 
 
@@ -56,6 +58,31 @@ class SizingEc2:
     def describe_instance_type_offerings(self, **kwargs):
         values = kwargs["Filters"][0]["Values"]
         return {"InstanceTypeOfferings": [{"InstanceType": item, "Location": "us-east-1"} for item in values]}
+
+
+class FakeLogs:
+    def __init__(self):
+        self.requests = []
+
+    def get_log_events(self, **kwargs):
+        self.requests.append(kwargs)
+        if len(self.requests) == 1:
+            return {
+                "events": [{"timestamp": 1, "message": "bootstrap ready"}],
+                "nextForwardToken": "cursor-1",
+            }
+        return {
+            "events": [{"timestamp": 2, "message": "building base"}],
+            "nextForwardToken": "cursor-2",
+        }
+
+
+class FakeConsoleEc2:
+    def __init__(self):
+        self.output = "cloud-init starting\n"
+
+    def get_console_output(self, **_kwargs):
+        return {"Output": self.output}
 
 
 class ReleaseValidationTest(unittest.TestCase):
@@ -132,6 +159,29 @@ class ReleaseValidationTest(unittest.TestCase):
         lane["build"] = {"buildThreads": 48, "mavenHeapGiB": 32}
         with self.assertRaisesRegex(SystemExit, "Core constraint is infeasible"):
             release.apply_core_constraint(SizingEc2(), [lane], 1)
+
+    def test_stream_lane_logs_prints_events_and_reuses_cursor(self):
+        logs = FakeLogs()
+        output = StringIO()
+        with redirect_stdout(output):
+            token, count = release.stream_lane_logs(logs, "/releases", "run/lane")
+            token, second_count = release.stream_lane_logs(logs, "/releases", "run/lane", token)
+        self.assertEqual("cursor-2", token)
+        self.assertEqual((1, 1), (count, second_count))
+        self.assertEqual("cursor-1", logs.requests[1]["nextToken"])
+        self.assertIn("[run/lane] bootstrap ready", output.getvalue())
+        self.assertIn("[run/lane] building base", output.getvalue())
+
+    def test_stream_console_output_only_prints_new_bytes(self):
+        ec2 = FakeConsoleEc2()
+        output = StringIO()
+        with redirect_stdout(output):
+            offset = release.stream_console_output(ec2, "i-test", 0)
+            ec2.output += "worker downloaded\n"
+            offset = release.stream_console_output(ec2, "i-test", offset)
+        self.assertEqual(len(ec2.output), offset)
+        self.assertEqual(1, output.getvalue().count("cloud-init starting"))
+        self.assertEqual(1, output.getvalue().count("worker downloaded"))
 
 
 if __name__ == "__main__":
