@@ -13,6 +13,7 @@
     <name>nd4j-minimizer-preset</name>
     <properties>
         <skipPublishing>false</skipPublishing>
+        <maven-javadoc-plugin.version>3.2.0</maven-javadoc-plugin.version>
         <module.name>nd4j.minimal.preset</module.name>
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/minimal/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
     </properties>
@@ -157,16 +158,8 @@
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
-                    <compilerArgs>
-                        <arg>--add-exports</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                        <arg>--add-opens</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                    </compilerArgs>
+                    <release combine.self="override"/>
                 </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

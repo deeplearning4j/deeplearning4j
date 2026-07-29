@@ -37,6 +37,138 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
+                            <excludes>
+                                <exclude>
+                                    org/nd4j/linalg/minimal/bindings/${javacpp.platform}${javacpp.platform.extension}/*
+                                </exclude>
+                                <exclude>lib/**</exclude>
+                                <exclude>*.dll</exclude>
+                                <exclude>*.dylib</exclude>
+                                <exclude>*.so</exclude>
+                                <exclude>*.vso</exclude>
+                                <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>${javacpp.platform}${javacpp.platform.extension}</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifestEntries>
+                                    <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
+                                </manifestEntries>
+                            </archive>
+                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                            <includes>
+                                <include>
+                                    org/nd4j/linalg/minimal/bindings/${javacpp.platform}${javacpp.platform.extension}/*
+                                </include>
+                                <include>lib/**</include>
+                                <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>javacpp-parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <skipMain>${javacpp.parser.skip}</skipMain>
+                            <includes>
+                                <include>org/nd4j/linalg/minimal/bindings/*.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>none</phase>
+                    </execution>
+
+                    <execution>
+                        <id>java-classes</id>
+                        <phase>deploy</phase>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <groupId>${project.groupId}</groupId>
+                            <version>${project.version}</version>
+                            <sources>${project.build.directory}/nd4j-native-${project.version}.jar</sources>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>native-deps</id>
+                        <phase>deploy</phase>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <groupId>${project.groupId}</groupId>
+                            <version>${project.version}</version>
+                            <classifier>${javacpp.platform}</classifier>
+                            <sources>${project.build.directory}/nd4j-native-${project.version}-${javacpp.platform}.jar</sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
 
     <profiles>
 
@@ -320,142 +452,7 @@
                 </plugins>
             </build>
         </profile>
-    </profiles>
 
-    <build>
-        <plugins>
-
-            <plugin>
-                <groupId>org.moditect</groupId>
-                <artifactId>moditect-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <archive>
-                                <manifestEntries>
-                                    <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
-                                </manifestEntries>
-                            </archive>
-                            <excludes>
-                                <exclude>
-                                    org/nd4j/linalg/minimal/bindings/${javacpp.platform}${javacpp.platform.extension}/*
-                                </exclude>
-                                <exclude>lib/**</exclude>
-                                <exclude>*.dll</exclude>
-                                <exclude>*.dylib</exclude>
-                                <exclude>*.so</exclude>
-                                <exclude>*.vso</exclude>
-                                <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
-                            </excludes>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>${javacpp.platform}${javacpp.platform.extension}</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <archive>
-                                <manifestEntries>
-                                    <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
-                                </manifestEntries>
-                            </archive>
-                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
-                            <skipIfEmpty>true</skipIfEmpty>
-                            <includes>
-                                <include>
-                                    org/nd4j/linalg/minimal/bindings/${javacpp.platform}${javacpp.platform.extension}/*
-                                </include>
-                                <include>lib/**</include>
-                                <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>javacpp-parser</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <skipMain>${javacpp.parser.skip}</skipMain>
-                            <includes>
-                                <include>org/nd4j/linalg/minimal/bindings/*.java</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-                <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                </configuration>
-            </plugin>
-
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-            </plugin>
-
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-deploy</id>
-                        <phase>none</phase>
-                    </execution>
-
-                    <execution>
-                        <id>java-classes</id>
-                        <phase>deploy</phase>
-                        <configuration>
-                            <packaging>jar</packaging>
-                            <artifactId>${project.artifactId}</artifactId>
-                            <groupId>${project.groupId}</groupId>
-                            <version>${project.version}</version>
-                            <sources>${project.build.directory}/nd4j-native-${project.version}.jar</sources>
-                        </configuration>
-                    </execution>
-
-                    <execution>
-                        <id>native-deps</id>
-                        <phase>deploy</phase>
-                        <configuration>
-                            <packaging>jar</packaging>
-                            <artifactId>${project.artifactId}</artifactId>
-                            <groupId>${project.groupId}</groupId>
-                            <version>${project.version}</version>
-                            <classifier>${javacpp.platform}</classifier>
-                            <sources>${project.build.directory}/nd4j-native-${project.version}-${javacpp.platform}.jar</sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-        </plugins>
-    </build>
-
-    <profiles>
         <!-- profile only enabled for compat which does not have a matching classifier for dependencies-->
         <profile>
             <id>compat-profile</id>

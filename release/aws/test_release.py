@@ -3,8 +3,10 @@
 
 import importlib.util
 import json
+import os
 import shlex
 import subprocess
+import tempfile
 import unittest
 import xml.etree.ElementTree as ET
 from contextlib import redirect_stdout
@@ -390,6 +392,22 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertEqual(expected_modules, profiles[profile_id][0])
             self.assertEqual("false", profiles[profile_id][1])
 
+    def test_no_pom_has_duplicate_top_level_profiles_sections(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+        tracked_files = subprocess.run(
+            ["git", "ls-files"], cwd=repository_root, check=True, capture_output=True, text=True,
+        ).stdout.splitlines()
+        duplicates = []
+        for relative_path in tracked_files:
+            if Path(relative_path).name != "pom.xml":
+                continue
+            pom = ET.parse(repository_root / relative_path).getroot()
+            count = len(pom.findall("m:profiles", namespace))
+            if count > 1:
+                duplicates.append(f"{relative_path} ({count})")
+        self.assertEqual([], duplicates)
+
     def test_shared_variant_names_preserve_workflow_matrix_semantics(self):
         self.assertEqual("mps-compile", build_platform.shared_variant_helper({"name": "mps-compile", "helper": "mps", "mlir": True}))
         self.assertEqual("compile-nnapi", build_platform.shared_variant_helper({"name": "compile-nnapi", "mlir": True}))
@@ -449,6 +467,41 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual(["--run-tokenizers", "--run-java"], [call[0][-1] for call in calls])
         self.assertTrue(all(Path(call[0][1]).name == "cross-platform.sh" for call in calls))
         self.assertTrue(all(call[1]["DL4J_MAVEN_GOAL"] == "install" for call in calls))
+
+    def test_linux_cross_platform_java_command_does_not_infer_accelerator_profiles(self):
+        root = Path(__file__).parents[2]
+        environment = {
+            "DL4J_PLATFORM": "linux-x86_64",
+            "DL4J_OS": "linux",
+            "PATH": "/usr/bin:/bin",
+        }
+        result = subprocess.run(
+            ["bash", str(root / "build-scripts/release/cross-platform.sh"), "--print-java"],
+            env=environment, check=True, capture_output=True, text=True,
+        )
+        command = shlex.split(result.stdout)
+        self.assertEqual([], [argument for argument in command if argument.startswith("-P")])
+
+    def test_update_versions_propagates_maven_failure(self):
+        root = Path(__file__).parents[2]
+        script = root / "update-versions.sh"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            project = Path(temporary_directory)
+            pom = project / "pom.xml"
+            pom.write_text("<project><version>1.0.0-SNAPSHOT</version></project>\n", encoding="utf-8")
+            bin_directory = project / "bin"
+            bin_directory.mkdir()
+            fake_maven = bin_directory / "mvn"
+            fake_maven.write_text("#!/usr/bin/env bash\nexit 23\n", encoding="utf-8")
+            fake_maven.chmod(0o755)
+            environment = os.environ.copy()
+            environment["PATH"] = f"{bin_directory}:{environment['PATH']}"
+            result = subprocess.run(
+                ["bash", str(script), "1.0.0-SNAPSHOT", "1.0.0"],
+                cwd=project, env=environment, capture_output=True, text=True,
+            )
+            self.assertEqual(23, result.returncode)
+            self.assertIn("<version>1.0.0-SNAPSHOT</version>", pom.read_text(encoding="utf-8"))
 
     def test_shared_linux_script_emits_the_workflow_command(self):
         root = Path(__file__).parents[2]
