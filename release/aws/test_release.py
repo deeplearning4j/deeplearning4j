@@ -6,6 +6,7 @@ import json
 import shlex
 import subprocess
 import unittest
+import xml.etree.ElementTree as ET
 from contextlib import redirect_stdout
 from io import BytesIO, StringIO
 from pathlib import Path
@@ -360,6 +361,35 @@ class ReleaseValidationTest(unittest.TestCase):
                 missing.append(relative_path)
         self.assertEqual([], missing)
 
+    def test_every_accelerator_backend_is_profile_gated_like_cuda(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        pom = ET.parse(repository_root / "nd4j/nd4j-backends/nd4j-backend-impls/pom.xml").getroot()
+        namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+        direct_modules = {node.text for node in pom.findall("m:modules/m:module", namespace)}
+        expected_profiles = {
+            "cuda": {"nd4j-cuda", "nd4j-cuda-preset", "nd4j-cuda-platform"},
+            "metal": {"nd4j-metal", "nd4j-metal-preset"},
+            "tpu": {"nd4j-tpu", "nd4j-tpu-preset"},
+            "hexagon": {"nd4j-hexagon", "nd4j-hexagon-preset"},
+            "vulkan": {"nd4j-vulkan", "nd4j-vulkan-preset", "nd4j-vulkan-platform"},
+            "zluda": {"nd4j-zluda"},
+            "zluda-amd": {"nd4j-zluda"},
+            "zluda-intel": {"nd4j-zluda"},
+        }
+        profiles = {}
+        for profile in pom.findall("m:profiles/m:profile", namespace):
+            profile_id = profile.findtext("m:id", namespaces=namespace)
+            modules = {node.text for node in profile.findall("m:modules/m:module", namespace)}
+            active_by_default = profile.findtext("m:activation/m:activeByDefault", namespaces=namespace)
+            profiles[profile_id] = (modules, active_by_default)
+
+        accelerator_modules = set().union(*expected_profiles.values())
+        self.assertTrue(direct_modules.isdisjoint(accelerator_modules))
+        for profile_id, expected_modules in expected_profiles.items():
+            self.assertIn(profile_id, profiles)
+            self.assertEqual(expected_modules, profiles[profile_id][0])
+            self.assertEqual("false", profiles[profile_id][1])
+
     def test_shared_variant_names_preserve_workflow_matrix_semantics(self):
         self.assertEqual("mps-compile", build_platform.shared_variant_helper({"name": "mps-compile", "helper": "mps", "mlir": True}))
         self.assertEqual("compile-nnapi", build_platform.shared_variant_helper({"name": "compile-nnapi", "mlir": True}))
@@ -381,7 +411,15 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Dlibnd4j.classifier=linux-x86_64-cuda-12.9-compile", cuda)
         self.assertIn("-Djavacpp.platform.extension=-compile", cuda)
 
+        metal = command(DL4J_FAMILY="macos-arm64", DL4J_HELPER="mps")
+        self.assertIn("-Pmetal", metal)
+
+        for family in ("tpu", "hexagon", "vulkan"):
+            accelerator = command(DL4J_FAMILY=family)
+            self.assertIn(f"-P{family}", accelerator)
+
         vulkan = command(DL4J_FAMILY="vulkan-mlir")
+        self.assertIn("-Pvulkan", vulkan)
         self.assertIn("-Dplatform.classifier=linux-x86_64-compile", vulkan)
 
         zluda = command(DL4J_FAMILY="zluda")

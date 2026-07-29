@@ -43,7 +43,7 @@ case "${DL4J_FAMILY}" in
   linux-arm64|macos-arm64|android-x86_64|android-arm64)
     case "${DL4J_FAMILY}" in
       linux-arm64) platform=linux-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=();;
-      macos-arm64) platform=macosx-arm64; profiles=(-Pcpu -Posx-aarch64-protoc); extra=(-Dlibnd4j.arch=armv8-a -Dlibnd4j.platform=macosx-arm64);;
+      macos-arm64) platform=macosx-arm64; profiles=(-Pcpu -Pmetal -Posx-aarch64-protoc); extra=(-Dlibnd4j.arch=armv8-a -Dlibnd4j.platform=macosx-arm64);;
       android-x86_64) platform=android-x86_64; profiles=(-Pcpu); extra=();;
       android-arm64) platform=android-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}");;
     esac

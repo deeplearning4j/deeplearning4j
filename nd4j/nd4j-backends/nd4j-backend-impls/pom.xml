@@ -26,9 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
     <modules>
         <module>nd4j-presets-common</module>
-        <module>nd4j-metal-preset</module>
-        <module>nd4j-metal</module>
-      </modules>
+    </modules>
 
     <parent>
         <groupId>org.eclipse.deeplearning4j</groupId>
@@ -199,6 +197,17 @@
                 <module>nd4j-cuda</module>
                 <module>nd4j-cuda-preset</module>
                 <module>nd4j-cuda-platform</module>
+            </modules>
+
+        </profile>
+        <profile>
+            <id>metal</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-metal</module>
+                <module>nd4j-metal-preset</module>
             </modules>
 
         </profile>
