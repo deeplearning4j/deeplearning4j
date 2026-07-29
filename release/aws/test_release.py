@@ -85,6 +85,15 @@ class FakeConsoleEc2:
         return {"Output": self.output}
 
 
+class FakeHealthEc2:
+    def describe_instance_status(self, **kwargs):
+        self.request = kwargs
+        return {"InstanceStatuses": [{
+            "InstanceStatus": {"Status": "ok"},
+            "SystemStatus": {"Status": "initializing"},
+        }]}
+
+
 class ReleaseValidationTest(unittest.TestCase):
     def shard(self):
         return {
@@ -182,6 +191,22 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual(len(ec2.output), offset)
         self.assertEqual(1, output.getvalue().count("cloud-init starting"))
         self.assertEqual(1, output.getvalue().count("worker downloaded"))
+
+    def test_instance_health_includes_aws_system_and_instance_checks(self):
+        ec2 = FakeHealthEc2()
+        self.assertEqual(("ok", "initializing"), release.instance_health(ec2, "i-test"))
+        self.assertTrue(ec2.request["IncludeAllInstances"])
+
+    def test_bootstrap_and_workers_emit_durable_lifecycle_phases(self):
+        bootstrap = release.bootstrap_user_data("linux", "https://example.invalid/worker")
+        self.assertIn("phase=cloud-init status=started", bootstrap)
+        self.assertIn("phase=worker-download status=complete", bootstrap)
+        root = Path(__file__).parent
+        linux = (root / "worker.sh").read_text(encoding="utf-8")
+        windows = (root / "worker.ps1").read_text(encoding="utf-8")
+        for phase in ("toolchain-packages", "source-checkout", "matrix-build", "artifact-packaging", "finalize"):
+            self.assertIn(phase, linux)
+            self.assertIn(phase, windows)
 
 
 if __name__ == "__main__":

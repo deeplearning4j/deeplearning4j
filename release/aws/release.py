@@ -539,12 +539,26 @@ def stream_console_output(ec2, instance_id: str, offset: int) -> int:
     return offset
 
 
+def instance_health(ec2, instance_id: str) -> tuple[str, str]:
+    """Return AWS instance/system status checks even while they are initializing."""
+    response = ec2.describe_instance_status(InstanceIds=[instance_id], IncludeAllInstances=True)
+    statuses = response.get("InstanceStatuses", [])
+    if not statuses:
+        return "not-reported", "not-reported"
+    status = statuses[0]
+    return (
+        status.get("InstanceStatus", {}).get("Status", "not-reported"),
+        status.get("SystemStatus", {}).get("Status", "not-reported"),
+    )
+
+
 def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: str, bucket: str,
                   status_key: str, shard_id: str, log_group: str, log_stream: str) -> None:
     """Wait for a reusable lane while continuously reporting state and build activity."""
     started = time.monotonic()
     last_report = 0.0
     last_state = None
+    last_health = None
     log_token = None
     console_offset = 0
     cloudwatch_active = False
@@ -558,8 +572,17 @@ def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: 
         state = reservations[0]["Instances"][0]["State"]["Name"]
         elapsed = int(time.monotonic() - started)
         if state != last_state:
-            print(f"[{shard_id}] EC2 state: {state} ({elapsed}s elapsed)", flush=True)
+            reason = reservations[0]["Instances"][0].get("StateTransitionReason", "")
+            suffix = f"; reason={reason}" if reason else ""
+            print(f"[{shard_id}] EC2 state: {state} ({elapsed}s elapsed){suffix}", flush=True)
             last_state = state
+        try:
+            health = instance_health(ec2, instance_id)
+            if health != last_health:
+                print(f"[{shard_id}] AWS health: instance={health[0]} system={health[1]}", flush=True)
+                last_health = health
+        except Exception as exc:
+            print(f"[{shard_id}] AWS health unavailable: {exc}", flush=True)
         try:
             log_token, event_count = stream_lane_logs(logs_client, log_group, log_stream, log_token)
             cloudwatch_active = cloudwatch_active or event_count > 0
@@ -579,6 +602,10 @@ def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: 
             print(f"[{shard_id}] still {state}; {elapsed}s elapsed; waiting for build completion", flush=True)
             last_report = now
         if state in {"shutting-down", "terminated"}:
+            try:
+                console_offset = stream_console_output(ec2, instance_id, console_offset)
+            except Exception as exc:
+                print(f"[{shard_id}] final EC2 console retrieval failed: {exc}", flush=True)
             break
         time.sleep(15)
 
@@ -627,10 +654,14 @@ def render_user_data(worker: Path, values: dict[str, Any]) -> str:
 def bootstrap_user_data(os_name: str, url: str) -> str:
     if os_name == "windows":
         return ("<powershell>\n$ErrorActionPreference='Stop'\n"
+                "Write-Output '[dl4j-phase] phase=cloud-init status=started'\n"
                 f"Invoke-WebRequest -UseBasicParsing -Uri '{url}' -OutFile C:\\dl4j-worker.ps1\n"
+                "Write-Output '[dl4j-phase] phase=worker-download status=complete'\n"
                 "& powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\\dl4j-worker.ps1\n</powershell>\n")
     return ("#!/usr/bin/env bash\nset -Eeuo pipefail\n"
+            "printf '[dl4j-phase] phase=cloud-init status=started\\n'\n"
             f"curl --fail --location --retry 5 '{url}' -o /tmp/dl4j-worker.sh\n"
+            "printf '[dl4j-phase] phase=worker-download status=complete\\n'\n"
             "chmod 700 /tmp/dl4j-worker.sh\nexec /tmp/dl4j-worker.sh\n")
 
 
@@ -641,11 +672,10 @@ def managed_hosts(ec2, run_id: str | None = None) -> list[dict[str, Any]]:
     return ec2.describe_hosts(Filter=filters).get("Hosts", [])
 
 
-def managed_instances(ec2, run_id: str | None = None) -> list[dict[str, Any]]:
-    filters = [
-        {"Name": f"tag:{MANAGED_TAG}", "Values": ["true"]},
-        {"Name": "instance-state-name", "Values": list(ACTIVE_STATES)},
-    ]
+def managed_instances(ec2, run_id: str | None = None, include_terminated: bool = False) -> list[dict[str, Any]]:
+    filters = [{"Name": f"tag:{MANAGED_TAG}", "Values": ["true"]}]
+    if not include_terminated:
+        filters.append({"Name": "instance-state-name", "Values": list(ACTIVE_STATES)})
     if run_id:
         filters.append({"Name": f"tag:{RUN_TAG}", "Values": [run_id]})
     reservations = ec2.describe_instances(Filters=filters)["Reservations"]
@@ -743,6 +773,13 @@ def start(args: argparse.Namespace) -> None:
     log_group = ensure_log_group(logs_client, plan)
     profile = ensure_instance_profile(iam, bucket, kill_parameter_name(plan), log_group)
     run_id = args.run_id or f"{args.version}-{uuid.uuid4().hex[:10]}"
+    print(json.dumps({
+        "event": "run-created", "runId": run_id, "region": region, "bucket": bucket,
+        "sourceBranch": args.branch, "resolvedCommit": commit,
+        "logsCommand": f"python3 release/aws/release.py --region {region} logs --run-id {run_id} --follow",
+        "statusCommand": f"python3 release/aws/release.py --region {region} status --run-id {run_id}",
+        "shutdownCommand": f"python3 release/aws/release.py --region {region} stop-everything --wait",
+    }, indent=2), flush=True)
     defaults = plan.get("defaults", {})
     launched: list[str] = []
     allocated_hosts: list[str] = []
@@ -859,11 +896,27 @@ def start(args: argparse.Namespace) -> None:
 def status(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
     _, region, ec2, ssm, s3, _, _ = session_clients(args.region)
-    instances = managed_instances(ec2, args.run_id)
+    instances = managed_instances(ec2, args.run_id, include_terminated=True)
     rows = []
     for instance in instances:
         tags = {tag["Key"]: tag["Value"] for tag in instance.get("Tags", [])}
-        rows.append({"instanceId": instance["InstanceId"], "state": instance["State"]["Name"], "runId": tags.get(RUN_TAG), "shard": tags.get(SHARD_TAG), "type": instance["InstanceType"]})
+        try:
+            health = instance_health(ec2, instance["InstanceId"])
+        except Exception:
+            health = ("unavailable", "unavailable")
+        try:
+            console = ec2.get_console_output(InstanceId=instance["InstanceId"], Latest=True).get("Output", "") or ""
+        except Exception as exc:
+            console = f"console unavailable: {exc}"
+        launch_time = instance.get("LaunchTime")
+        rows.append({
+            "instanceId": instance["InstanceId"], "state": instance["State"]["Name"],
+            "stateTransitionReason": instance.get("StateTransitionReason", ""),
+            "instanceHealth": health[0], "systemHealth": health[1],
+            "launchTime": launch_time.isoformat() if hasattr(launch_time, "isoformat") else str(launch_time or ""),
+            "runId": tags.get(RUN_TAG), "shard": tags.get(SHARD_TAG), "type": instance["InstanceType"],
+            "consoleOutputTail": console[-12000:].splitlines(),
+        })
     hosts = [{"hostId": host["HostId"], "state": host["State"], "type": host.get("InstanceType")} for host in managed_hosts(ec2, args.run_id)]
     print(json.dumps({
         "region": region,

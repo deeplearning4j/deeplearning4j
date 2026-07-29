@@ -30,6 +30,12 @@ decode_b64 "${BUILD_DRIVER_B64}" "${BUILD_DRIVER}"
 decode_b64 "${LOG_FORWARDER_B64}" "${LOG_FORWARDER}"
 exec > >(tee -a "${BUILD_LOG}") 2>&1
 
+phase() {
+  printf '[dl4j-phase] timestamp=%s phase=%s status=%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$2" "${3:-}"
+}
+trap 'phase bootstrap failed "line=${LINENO} command=${BASH_COMMAND}"' ERR
+phase worker started "pid=$$"
+
 config() {
   python3 -c 'import json,sys; value=json.load(open(sys.argv[1]));
 for part in sys.argv[2].split("."): value=value[part]
@@ -61,6 +67,7 @@ upload_if_present() {
 finish() {
   local exit_code=$?
   set +e
+  phase finalize started "exitCode=${exit_code}"
   [ -n "${WATCHDOG_PID}" ] && kill "${WATCHDOG_PID}" 2>/dev/null
   touch "${LOG_FORWARDER_STOP}"
   if [ -n "${LOG_FORWARDER_PID}" ]; then
@@ -86,10 +93,15 @@ trap finish EXIT
 
 if [ "${OS_NAME}" = "linux" ]; then
   export DEBIAN_FRONTEND=noninteractive
+  phase package-index started
   apt-get update
+  phase package-index complete
+  phase toolchain-packages started
   apt-get install -y --no-install-recommends awscli autoconf automake build-essential ccache ca-certificates cmake curl docker.io gfortran git gnupg jq libdwarf-dev libdw-dev libelf-dev libgomp1 libomp-dev libopenblas-dev libtool libusb-1.0-0-dev libvulkan-dev libvulkan1 maven mesa-vulkan-drivers nasm ninja-build openjdk-11-jdk pinentry-curses pkg-config python3 swig tar unzip vulkan-tools wget zip zlib1g-dev
   apt-get install -y llvm-18-dev mlir-18-tools || apt-get install -y llvm-dev libmlir-dev mlir-tools || true
+  phase toolchain-packages complete
   export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-$(dpkg --print-architecture)
+  phase protobuf-toolchain started
   curl --fail --location --retry 5 https://github.com/google/protobuf/releases/download/v3.8.0/protobuf-cpp-3.8.0.tar.gz -o /tmp/protobuf-3.8.0.tar.gz
   tar -xzf /tmp/protobuf-3.8.0.tar.gz -C /tmp
   (cd /tmp/protobuf-3.8.0 && ./configure --prefix=/opt/protobuf && make -j2 && make install)
@@ -98,14 +110,17 @@ if [ "${OS_NAME}" = "linux" ]; then
   curl --fail --location --retry 5 "https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-linux-${PROTOC_ARCH}.zip" -o /tmp/protoc.zip
   unzip -qo /tmp/protoc.zip -d /opt/protoc-21.7 bin/protoc
   chmod +x /opt/protoc-21.7/bin/protoc
+  phase protobuf-toolchain complete
   if [ "$(uname -m)" = x86_64 ]; then
     curl --fail --location --retry 5 https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3-linux-x86_64.tar.gz -o /tmp/cmake.tar.gz
     mkdir -p /opt/cmake && tar -xzf /tmp/cmake.tar.gz -C /opt/cmake --strip-components=1
     export PATH="/opt/cmake/bin:${PATH}"
   fi
+  phase rust-toolchain started
   curl --proto '=https' --tlsv1.2 --fail --silent --show-error https://sh.rustup.rs | sh -s -- -y --profile minimal
   export PATH="${HOME}/.cargo/bin:${PATH}"
   cargo install --locked cbindgen
+  phase rust-toolchain complete
   if [[ "${PLATFORM}" == android-* ]]; then
     NDK_VERSION=$(config shard.build.ndkVersion)
     curl --fail --location --retry 5 "https://dl.google.com/android/repository/android-ndk-${NDK_VERSION}-linux.zip" -o /tmp/android-ndk.zip
@@ -119,6 +134,7 @@ if [ "${OS_NAME}" = "linux" ]; then
     export GRAALVM_HOME=/opt/graalvm
   fi
 else
+  phase macos-toolchain started
   export PATH="/opt/homebrew/bin:/usr/local/bin:${PATH}"
   if ! command -v brew >/dev/null 2>&1; then
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -131,13 +147,15 @@ else
   unzip -qo /tmp/protoc.zip -d /usr/local bin/protoc
   chmod +x /usr/local/bin/protoc
   cargo install --locked cbindgen
+  phase macos-toolchain complete
 fi
 
+phase cloudwatch-forwarder started
 python3 "${LOG_FORWARDER}" --file "${BUILD_LOG}" --stop-file "${LOG_FORWARDER_STOP}" \
   --region "${REGION}" --group "${LOG_GROUP}" --stream "${LOG_STREAM}" \
   >"${LOG_FORWARDER_ERROR}" 2>&1 &
 LOG_FORWARDER_PID=$!
-printf 'CloudWatch logging started: %s / %s\n' "${LOG_GROUP}" "${LOG_STREAM}"
+phase cloudwatch-forwarder complete "group=${LOG_GROUP} stream=${LOG_STREAM}"
 
 watch_kill_switch() {
   while true; do
@@ -160,10 +178,12 @@ WATCHDOG_PID=$!
 kill_value=$(aws --region "${REGION}" ssm get-parameter --name "${KILL_SWITCH_PARAMETER}" --query 'Parameter.Value' --output text)
 [ "${kill_value}" != true ] || exit 130
 
+phase source-checkout started "commit=${COMMIT}"
 git clone --filter=blob:none "${REPOSITORY}" "${SOURCE_DIR}"
 git -C "${SOURCE_DIR}" fetch --depth=1 origin "${COMMIT}"
 git -C "${SOURCE_DIR}" checkout --detach "${COMMIT}"
 [ "$(git -C "${SOURCE_DIR}" rev-parse HEAD)" = "${COMMIT}" ] || exit 2
+phase source-checkout complete "commit=${COMMIT}"
 mkdir -p "${OUTPUT_DIR}/maven-repository" "${OUTPUT_DIR}/sdk-assets"
 
 build=(python3 "${BUILD_DRIVER}" --config "${CONFIG_FILE}" --source "${SOURCE_DIR}" --repository "${MAVEN_REPO}" --maven-output "${OUTPUT_DIR}/maven-repository" --sdk-output "${OUTPUT_DIR}/sdk-assets")
@@ -175,11 +195,14 @@ if [ -n "${CONTAINER_IMAGE}" ]; then
     build=(docker run --rm --network host -v "${SOURCE_DIR}:/workspace" -v "${MAVEN_REPO}:/dl4j-m2" -v "${OUTPUT_DIR}:/dl4j-output" -v "${CONFIG_FILE}:/dl4j-config.json:ro" -v "${BUILD_DRIVER}:/dl4j-build-platform.py:ro" -v /opt/protobuf:/opt/protobuf:ro -v /opt/cmake:/opt/cmake:ro -w /workspace "${CONTAINER_IMAGE}" bash -lc "apt-get update && apt-get install -y --no-install-recommends autoconf automake build-essential ca-certificates cmake gfortran git libomp-dev libopenblas-dev libtool maven nasm ninja-build openjdk-11-jdk pkg-config python3 swig unzip xz-utils zip && export PATH=/opt/protobuf/bin:/opt/cmake/bin:\$PATH && python3 /dl4j-build-platform.py --config /dl4j-config.json --source /workspace --repository /dl4j-m2 --maven-output /dl4j-output/maven-repository --sdk-output /dl4j-output/sdk-assets")
   fi
 fi
+phase matrix-build started
 setsid "${build[@]}" &
 BUILD_PID=$!
 printf '%s\n' "${BUILD_PID}" > "${BUILD_PID_FILE}"
 wait "${BUILD_PID}"
 rm -f "${BUILD_PID_FILE}"
+phase matrix-build complete
+phase artifact-packaging started
 
 python3 -c 'import hashlib,json,pathlib,sys; root=pathlib.Path(sys.argv[1]); files=[]
 for p in sorted(x for x in root.rglob("*") if x.is_file()):
@@ -190,3 +213,4 @@ for p in sorted(x for x in root.rglob("*") if x.is_file()):
 c=json.load(open(sys.argv[2])); json.dump({"schemaVersion":1,"runId":c["runId"],"shard":c["shard"]["id"],"commit":c["commit"],"releaseVersion":c["releaseVersion"],"workloads":c["shard"]["workloads"],"os":c["shard"]["os"],"platform":c["shard"]["build"]["javacppPlatform"],"backend":c["shard"]["build"]["backend"],"files":files},open(root/"shard-manifest.json","w"),indent=2,sort_keys=True)' "${OUTPUT_DIR}" "${CONFIG_FILE}"
 tar -C "${OUTPUT_DIR}/maven-repository" -czf "${OUTPUT_DIR}/maven-repository.tar.gz" .
 tar -C "${OUTPUT_DIR}/sdk-assets" -czf "${OUTPUT_DIR}/sdk-assets.tar.gz" .
+phase artifact-packaging complete

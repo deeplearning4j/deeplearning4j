@@ -30,15 +30,24 @@ function Upload-IfPresent([string]$Path, [string]$Name) {
   if (Test-Path $Path) { aws --region $Region s3 cp $Path "$Prefix/$Name" --only-show-errors; if ($LASTEXITCODE -ne 0) { Write-Warning "Upload failed: $Name" } }
 }
 
+function Write-Phase([string]$Phase, [string]$Status, [string]$Detail = '') {
+  Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=$Phase status=$Status $Detail"
+}
+
+Write-Phase 'worker' 'started' "pid=$PID"
 try {
   Start-Transcript -Path $BootstrapLog -Append -Force | Out-Null
   $TranscriptStarted = $true
   Set-ExecutionPolicy Bypass -Scope Process -Force
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  Write-Phase 'chocolatey-bootstrap' 'started'
   if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
     Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
   }
+  Write-Phase 'chocolatey-bootstrap' 'complete'
+  Write-Phase 'toolchain-packages' 'started'
   choco install -y --no-progress awscli cmake git maven ninja temurin11 python312 7zip msys2 rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
+  Write-Phase 'toolchain-packages' 'complete'
   $env:PATH = "C:\Program Files\Amazon\AWSCLIV2;C:\Program Files\Git\cmd;C:\Program Files\Git\bin;C:\ProgramData\chocolatey\bin;C:\tools\msys64\mingw64\bin;C:\tools\msys64\usr\bin;$env:PATH"
   $LogArguments = @(
     $LogForwarder, '--file', $BuildLog, '--stop-file', $LogForwarderStop,
@@ -49,13 +58,17 @@ try {
   if (-not $JavaHome) { $JavaHome = Get-ChildItem 'C:\Program Files\Java' -Directory | Sort-Object Name -Descending | Select-Object -First 1 }
   $env:JAVA_HOME = $JavaHome.FullName
   $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
+  Write-Phase 'msys-toolchain' 'started'
   & C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja"
+  Write-Phase 'msys-toolchain' 'complete'
+  Write-Phase 'rust-toolchain' 'started'
   $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
   rustup toolchain install stable-x86_64-pc-windows-gnu
   rustup default stable-x86_64-pc-windows-gnu
   $env:CARGO_BUILD_TARGET = 'x86_64-pc-windows-gnu'
   cargo install --locked cbindgen
   if ($LASTEXITCODE -ne 0) { throw 'cbindgen installation failed' }
+  Write-Phase 'rust-toolchain' 'complete'
   $SccacheVersion = 'v0.15.0'
   $SccacheFile = "sccache-$SccacheVersion-x86_64-pc-windows-msvc"
   $SccacheDir = Join-Path $env:USERPROFILE 'sccache'
@@ -68,6 +81,7 @@ try {
   $env:SCCACHE_CACHE_SIZE = '100G'
   $env:SCCACHE_IDLE_TIMEOUT = '0'
   if ($Shard.build.backend -eq 'cuda') {
+    Write-Phase 'cuda-toolchain' 'started' "version=$($Shard.build.cudaVersion)"
     $env:CUDA_VERSION = $Shard.build.cudaVersion
     $Installer = Join-Path $WorkRoot 'install_cuda_windows.ps1'
     Invoke-WebRequest 'https://raw.githubusercontent.com/KonduitAI/cuda-install/master/.github/actions/install-cuda-windows/install_cuda_windows.ps1' -OutFile $Installer -UseBasicParsing
@@ -86,16 +100,19 @@ try {
     $env:CUDA_PATH = $CudaPath
     $env:CUDNN_ROOT_DIR = $CudaPath
     $env:PATH = "$CudaPath\bin;$CudaPath\libnvvp;$env:PATH"
+    Write-Phase 'cuda-toolchain' 'complete' "version=$($Shard.build.cudaVersion)"
   }
 
   $Kill = aws --region $Region ssm get-parameter --name $Config.killSwitchParameter --query 'Parameter.Value' --output text
   if ($LASTEXITCODE -ne 0 -or $Kill -eq 'true') { throw 'Global kill switch is enabled or unreadable' }
 
+  Write-Phase 'source-checkout' 'started' "commit=$($Config.commit)"
   git clone --filter=blob:none $Config.repository $SourceDir
   git -C $SourceDir fetch --depth=1 origin $Config.commit
   git -C $SourceDir checkout --detach $Config.commit
   $Actual = git -C $SourceDir rev-parse HEAD
   if ($Actual.Trim() -ne $Config.commit) { throw "Commit mismatch: $Actual" }
+  Write-Phase 'source-checkout' 'complete' "commit=$($Config.commit)"
 
   $MavenOutput = Join-Path $OutputDir 'maven-repository'
   $SdkOutput = Join-Path $OutputDir 'sdk-assets'
@@ -108,6 +125,7 @@ try {
     '--source', $SourceDir, '--repository', $MavenRepo,
     '--maven-output', $MavenOutput, '--sdk-output', $SdkOutput
   )
+  Write-Phase 'matrix-build' 'started'
   $Process = Start-Process python -ArgumentList $Arguments -RedirectStandardOutput $BuildLog -RedirectStandardError "$BuildLog.err" -PassThru -NoNewWindow
   while (-not $Process.HasExited) {
     Start-Sleep -Seconds 15
@@ -121,17 +139,22 @@ try {
   }
   if ($Process.ExitCode -ne 0) { throw "Build failed with exit code $($Process.ExitCode)" }
   if (Test-Path "$BuildLog.err") { Get-Content "$BuildLog.err" | Add-Content $BuildLog }
+  Write-Phase 'matrix-build' 'complete'
+  Write-Phase 'artifact-packaging' 'started'
 
   python -c "import hashlib,json,pathlib,sys; root=pathlib.Path(sys.argv[1]); c=json.load(open(sys.argv[2])); files=[]; [(lambda p: files.append({'path':p.relative_to(root).as_posix(),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'size':p.stat().st_size}))(p) for p in sorted(root.rglob('*')) if p.is_file()]; json.dump({'schemaVersion':1,'runId':c['runId'],'shard':c['shard']['id'],'commit':c['commit'],'releaseVersion':c['releaseVersion'],'workloads':c['shard']['workloads'],'os':c['shard']['os'],'platform':c['shard']['build']['javacppPlatform'],'backend':c['shard']['build']['backend'],'files':files},open(root/'shard-manifest.json','w'),indent=2,sort_keys=True)" $OutputDir $ConfigFile
   tar -C $MavenOutput -czf (Join-Path $OutputDir 'maven-repository.tar.gz') .
   tar -C $SdkOutput -czf (Join-Path $OutputDir 'sdk-assets.tar.gz') .
+  Write-Phase 'artifact-packaging' 'complete'
   $ExitCode = 0
 }
 catch {
+  Write-Phase 'worker' 'failed' $_.Exception.Message
   $_ | Out-String | Tee-Object -FilePath $BuildLog -Append
   $ExitCode = 1
 }
 finally {
+  Write-Phase 'finalize' 'started' "exitCode=$ExitCode"
   if ($TranscriptStarted) {
     Stop-Transcript | Out-Null
     Get-Content $BootstrapLog | Add-Content $BuildLog
