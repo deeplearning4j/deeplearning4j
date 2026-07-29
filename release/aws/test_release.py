@@ -4,14 +4,21 @@
 import importlib.util
 import unittest
 from contextlib import redirect_stdout
-from io import StringIO
+from io import BytesIO, StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 
 SPEC = importlib.util.spec_from_file_location("dl4j_aws_release", Path(__file__).with_name("release.py"))
 release = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(release)
+FORWARDER_SPEC = importlib.util.spec_from_file_location(
+    "dl4j_aws_log_forwarder", Path(__file__).with_name("log-forwarder.py")
+)
+log_forwarder = importlib.util.module_from_spec(FORWARDER_SPEC)
+assert FORWARDER_SPEC.loader is not None
+FORWARDER_SPEC.loader.exec_module(log_forwarder)
 
 
 class FakeSsm:
@@ -265,6 +272,32 @@ class ReleaseValidationTest(unittest.TestCase):
         ec2 = FakeHealthEc2()
         self.assertEqual(("ok", "initializing"), release.instance_health(ec2, "i-test"))
         self.assertTrue(ec2.request["IncludeAllInstances"])
+
+    def test_log_forwarder_supports_ubuntu_aws_cli_v1(self):
+        with patch.object(log_forwarder.subprocess, "run") as run:
+            log_forwarder.aws("us-east-1", "logs", "create-log-stream")
+        command = run.call_args.args[0]
+        self.assertNotIn("--no-cli-pager", command)
+        self.assertEqual("", run.call_args.kwargs["env"]["AWS_PAGER"])
+
+    def test_failed_lane_log_is_retrieved_from_s3(self):
+        class LogS3:
+            request = None
+
+            def get_object(self, **kwargs):
+                self.request = kwargs
+                return {"Body": BytesIO(b"phase=rust-toolchain status=failed\nreal bootstrap error\n")}
+
+        s3 = LogS3()
+        output = StringIO()
+        with redirect_stdout(output):
+            retrieved = release.print_s3_build_log(
+                s3, "release-bucket", "runs/run-1/lane/status.json", "lane"
+            )
+        self.assertTrue(retrieved)
+        self.assertEqual("runs/run-1/lane/build.log", s3.request["Key"])
+        self.assertEqual("bytes=-262144", s3.request["Range"])
+        self.assertIn("real bootstrap error", output.getvalue())
 
     def test_bootstrap_and_workers_emit_durable_lifecycle_phases(self):
         bootstrap = release.bootstrap_user_data("linux", "https://example.invalid/worker")

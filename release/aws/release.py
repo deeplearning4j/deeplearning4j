@@ -574,6 +574,21 @@ def instance_health(ec2, instance_id: str) -> tuple[str, str]:
     )
 
 
+def print_s3_build_log(s3, bucket: str, status_key: str, shard_id: str, max_bytes: int = 256 * 1024) -> bool:
+    """Print the retained worker log so a broken live forwarder cannot hide the failure."""
+    log_key = f"{status_key.rsplit('/', 1)[0]}/build.log"
+    try:
+        response = s3.get_object(Bucket=bucket, Key=log_key, Range=f"bytes=-{max_bytes}")
+        contents = response["Body"].read().decode("utf-8", errors="replace")
+    except Exception as exc:
+        print(f"[{shard_id}/s3-build-log] unavailable: {exc}", flush=True)
+        return False
+    print(f"[{shard_id}/s3-build-log] retained tail from s3://{bucket}/{log_key}", flush=True)
+    for line in contents.splitlines():
+        print(f"[{shard_id}/s3-build-log] {line}", flush=True)
+    return True
+
+
 def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: str, bucket: str,
                   status_key: str, shard_id: str, log_group: str, log_stream: str) -> None:
     """Wait for a reusable lane while continuously reporting state and build activity."""
@@ -656,7 +671,10 @@ def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: 
             status = json.loads(response["Body"].read())
             exit_code = int(status.get("exitCode", 1))
             if exit_code != 0:
-                raise RuntimeError(f"lane {shard_id} failed with exit code {exit_code}; see live output above")
+                print_s3_build_log(s3, bucket, status_key, shard_id)
+                raise RuntimeError(
+                    f"lane {shard_id} failed with exit code {exit_code}; retained S3 build log printed above"
+                )
             return
         except Exception as exc:
             if getattr(exc, "response", {}).get("Error", {}).get("Code") not in {"NoSuchKey", "404"}:
@@ -667,9 +685,10 @@ def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: 
                     stream_console_output(ec2, instance_id, console_offset)
                 except Exception:
                     pass
+                print_s3_build_log(s3, bucket, status_key, shard_id)
                 raise RuntimeError(
                     f"lane {shard_id} terminated without status.json; bootstrap failed before its final upload. "
-                    f"Review the console and CloudWatch output above"
+                    f"Review the retained S3 log, console, and CloudWatch output above"
                 ) from exc
             print(f"[{shard_id}] instance terminated; waiting for final status upload ({remaining}s remaining)", flush=True)
             time.sleep(min(15, remaining))

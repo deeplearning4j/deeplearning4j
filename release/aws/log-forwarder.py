@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import tempfile
 import time
@@ -32,12 +33,16 @@ def chunks(message: str):
 
 
 def aws(region: str, *arguments: str, input_path: Path | None = None, check: bool = True, quiet: bool = False):
-    command = ["aws", "--region", region, "--no-cli-pager", *arguments]
+    # Ubuntu Jammy installs AWS CLI v1, which does not consistently support the
+    # v2-only --no-cli-pager global option. AWS_PAGER works with both versions.
+    command = ["aws", "--region", region, *arguments]
     if input_path is not None:
         command.extend(["--log-events", f"file://{input_path}"])
+    environment = os.environ.copy()
+    environment["AWS_PAGER"] = ""
     return subprocess.run(
         command, check=check, stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL if quiet else None,
+        stderr=subprocess.DEVNULL if quiet else None, env=environment,
     )
 
 
