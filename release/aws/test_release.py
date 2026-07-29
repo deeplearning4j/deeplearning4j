@@ -532,6 +532,36 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn('source / "build-scripts/release/cross-platform.sh"', driver)
         self.assertIn('else "native-platform.sh"', driver)
 
+    def test_omnihub_pipeline_dependencies_are_in_the_shared_java_reactor(self):
+        root = Path(__file__).parents[2]
+        namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+        nd4j_pom = ET.parse(root / "nd4j/pom.xml").getroot()
+        reactor_modules = {
+            module.text for module in nd4j_pom.findall("./m:modules/m:module", namespace)
+        }
+        omnihub_pom = ET.parse(root / "omnihub/pom.xml").getroot()
+        pipeline_dependencies = {
+            dependency.find("m:artifactId", namespace).text
+            for dependency in omnihub_pom.findall("./m:dependencies/m:dependency", namespace)
+            if dependency.find("m:artifactId", namespace) is not None
+            and dependency.find("m:artifactId", namespace).text.startswith("samediff-pipeline-")
+        }
+
+        self.assertIn("samediff-pipeline-ggml", pipeline_dependencies)
+        self.assertTrue(
+            pipeline_dependencies.issubset(reactor_modules),
+            f"OmniHub pipeline dependencies missing from nd4j reactor: {pipeline_dependencies - reactor_modules}",
+        )
+        for module in pipeline_dependencies:
+            self.assertTrue((root / "nd4j" / module / "pom.xml").is_file(), module)
+
+        service = root / "nd4j/samediff-pipeline-ggml/src/main/resources/META-INF/services" \
+            / "org.eclipse.deeplearning4j.pipeline.PipelineLoader"
+        self.assertEqual(
+            "org.eclipse.deeplearning4j.ggml.GGMLPipelineLoader",
+            service.read_text(encoding="utf-8").strip(),
+        )
+
     def test_bootstrap_and_workers_emit_durable_lifecycle_phases(self):
         bootstrap = release.bootstrap_user_data("linux", "https://example.invalid/worker")
         self.assertIn("phase=cloud-init status=started", bootstrap)

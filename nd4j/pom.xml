@@ -58,6 +58,7 @@
         <!-- Pipeline loaders for model format support -->
         <module>samediff-pipeline-core</module>
         <module>samediff-pipeline-safetensors</module>
+        <module>samediff-pipeline-ggml</module>
         <module>samediff-pipeline-onnx</module>
         <!-- Audio processing -->
         <module>samediff-audio</module>

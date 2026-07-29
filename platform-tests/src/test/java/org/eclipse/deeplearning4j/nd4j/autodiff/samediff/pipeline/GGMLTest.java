@@ -20,9 +20,15 @@
 package org.eclipse.deeplearning4j.nd4j.autodiff.samediff.pipeline;
 
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.deeplearning4j.ggml.*;
+import org.eclipse.deeplearning4j.ggml.GGMLPipelineLoader;
 import org.eclipse.deeplearning4j.pipeline.ModelFormat;
 import org.eclipse.deeplearning4j.pipeline.PipelineLoader;
+import org.nd4j.ggml.GGMLImportException;
+import org.nd4j.ggml.format.GGMLDataType;
+import org.nd4j.ggml.format.GGMLMetadata;
+import org.nd4j.ggml.format.GGMLTensorInfo;
+import org.nd4j.ggml.format.GGUFHeader;
+import org.nd4j.ggml.format.GGUFReader;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,117 +68,97 @@ public class GGMLTest extends BaseNd4jTestWithBackends {
         return 'c';
     }
 
-    // ==================== GGUFType Tests ====================
+    // ==================== GGMLDataType Tests ====================
 
     @Test
-    public void testGGUFTypeFromId() {
-        assertEquals(GGUFType.F32, GGUFType.fromId(0));
-        assertEquals(GGUFType.F16, GGUFType.fromId(1));
-        assertEquals(GGUFType.Q4_0, GGUFType.fromId(2));
-        assertEquals(GGUFType.Q4_1, GGUFType.fromId(3));
-        assertEquals(GGUFType.Q8_0, GGUFType.fromId(8));
-        assertEquals(GGUFType.BF16, GGUFType.fromId(30));
+    public void testGGMLDataTypeFromId() {
+        assertEquals(GGMLDataType.GGML_TYPE_F32, GGMLDataType.fromTypeId(0));
+        assertEquals(GGMLDataType.GGML_TYPE_F16, GGMLDataType.fromTypeId(1));
+        assertEquals(GGMLDataType.GGML_TYPE_Q4_0, GGMLDataType.fromTypeId(2));
+        assertEquals(GGMLDataType.GGML_TYPE_Q4_1, GGMLDataType.fromTypeId(3));
+        assertEquals(GGMLDataType.GGML_TYPE_Q8_0, GGMLDataType.fromTypeId(8));
+        assertEquals(GGMLDataType.GGML_TYPE_BF16, GGMLDataType.fromTypeId(30));
+        assertThrows(IllegalArgumentException.class, () -> GGMLDataType.fromTypeId(999));
     }
 
     @Test
-    public void testGGUFTypeToNd4jType() {
-        assertEquals(DataType.FLOAT, GGUFType.F32.toNd4jType());
-        assertEquals(DataType.HALF, GGUFType.F16.toNd4jType());
-        assertEquals(DataType.BFLOAT16, GGUFType.BF16.toNd4jType());
-        assertEquals(DataType.INT, GGUFType.I32.toNd4jType());
+    public void testGGMLDataTypeToNd4jType() {
+        assertEquals(DataType.FLOAT, GGMLDataType.GGML_TYPE_F32.getNd4jType());
+        assertEquals(DataType.HALF, GGMLDataType.GGML_TYPE_F16.getNd4jType());
+        assertEquals(DataType.BFLOAT16, GGMLDataType.GGML_TYPE_BF16.getNd4jType());
+        assertEquals(DataType.INT, GGMLDataType.GGML_TYPE_I32.getNd4jType());
     }
 
     @Test
-    public void testGGUFTypeIsQuantized() {
-        assertFalse(GGUFType.F32.isQuantized());
-        assertFalse(GGUFType.F16.isQuantized());
-        assertFalse(GGUFType.BF16.isQuantized());
-        assertTrue(GGUFType.Q4_0.isQuantized());
-        assertTrue(GGUFType.Q4_1.isQuantized());
-        assertTrue(GGUFType.Q5_0.isQuantized());
-        assertTrue(GGUFType.Q5_1.isQuantized());
-        assertTrue(GGUFType.Q8_0.isQuantized());
-        assertTrue(GGUFType.Q4_K.isQuantized());
-        assertTrue(GGUFType.Q5_K.isQuantized());
-        assertTrue(GGUFType.Q6_K.isQuantized());
+    public void testGGMLDataTypeIsQuantized() {
+        assertFalse(GGMLDataType.GGML_TYPE_F32.isQuantized());
+        assertFalse(GGMLDataType.GGML_TYPE_F16.isQuantized());
+        assertFalse(GGMLDataType.GGML_TYPE_BF16.isQuantized());
+        assertTrue(GGMLDataType.GGML_TYPE_Q4_0.isQuantized());
+        assertTrue(GGMLDataType.GGML_TYPE_Q4_1.isQuantized());
+        assertTrue(GGMLDataType.GGML_TYPE_Q5_0.isQuantized());
+        assertTrue(GGMLDataType.GGML_TYPE_Q5_1.isQuantized());
+        assertTrue(GGMLDataType.GGML_TYPE_Q8_0.isQuantized());
+        assertTrue(GGMLDataType.GGML_TYPE_Q4_K.isQuantized());
+        assertTrue(GGMLDataType.GGML_TYPE_Q5_K.isQuantized());
+        assertTrue(GGMLDataType.GGML_TYPE_Q6_K.isQuantized());
     }
 
     @Test
-    public void testGGUFTypeBlockElements() {
-        assertEquals(1, GGUFType.F32.getBlockElements());
-        assertEquals(1, GGUFType.F16.getBlockElements());
-        assertEquals(32, GGUFType.Q4_0.getBlockElements());
-        assertEquals(32, GGUFType.Q4_1.getBlockElements());
-        assertEquals(32, GGUFType.Q8_0.getBlockElements());
-        assertEquals(256, GGUFType.Q4_K.getBlockElements());
+    public void testGGMLDataTypeBlockSize() {
+        assertEquals(1, GGMLDataType.GGML_TYPE_F32.getBlockSize());
+        assertEquals(1, GGMLDataType.GGML_TYPE_F16.getBlockSize());
+        assertEquals(32, GGMLDataType.GGML_TYPE_Q4_0.getBlockSize());
+        assertEquals(32, GGMLDataType.GGML_TYPE_Q4_1.getBlockSize());
+        assertEquals(32, GGMLDataType.GGML_TYPE_Q8_0.getBlockSize());
+        assertEquals(256, GGMLDataType.GGML_TYPE_Q4_K.getBlockSize());
     }
 
     @Test
-    public void testGGUFTypeCalculateBlockSize() {
-        assertEquals(4, GGUFType.F32.calculateBlockSize()); // 4 bytes per float
-        assertEquals(2, GGUFType.F16.calculateBlockSize()); // 2 bytes per half
-        assertEquals(18, GGUFType.Q4_0.calculateBlockSize()); // 32 elements * 4 bits / 8 + 2 bytes scale = 16 + 2 = 18
-        assertEquals(20, GGUFType.Q4_1.calculateBlockSize()); // includes min value
-        assertEquals(34, GGUFType.Q8_0.calculateBlockSize()); // 32 bytes + 2 bytes scale
+    public void testGGMLDataTypeStorageBytesPerBlock() {
+        assertEquals(4L, storageBytesPerBlock(GGMLDataType.GGML_TYPE_F32));
+        assertEquals(2L, storageBytesPerBlock(GGMLDataType.GGML_TYPE_F16));
+        assertEquals(18L, storageBytesPerBlock(GGMLDataType.GGML_TYPE_Q4_0));
+        assertEquals(20L, storageBytesPerBlock(GGMLDataType.GGML_TYPE_Q4_1));
+        assertEquals(34L, storageBytesPerBlock(GGMLDataType.GGML_TYPE_Q8_0));
     }
 
-    // ==================== GGUFMetadataType Tests ====================
-
-    @Test
-    public void testGGUFMetadataTypeFromId() {
-        assertEquals(GGUFMetadataType.UINT8, GGUFMetadataType.fromId(0));
-        assertEquals(GGUFMetadataType.INT8, GGUFMetadataType.fromId(1));
-        assertEquals(GGUFMetadataType.UINT16, GGUFMetadataType.fromId(2));
-        assertEquals(GGUFMetadataType.INT16, GGUFMetadataType.fromId(3));
-        assertEquals(GGUFMetadataType.UINT32, GGUFMetadataType.fromId(4));
-        assertEquals(GGUFMetadataType.INT32, GGUFMetadataType.fromId(5));
-        assertEquals(GGUFMetadataType.FLOAT32, GGUFMetadataType.fromId(6));
-        assertEquals(GGUFMetadataType.BOOL, GGUFMetadataType.fromId(7));
-        assertEquals(GGUFMetadataType.STRING, GGUFMetadataType.fromId(8));
-        assertEquals(GGUFMetadataType.ARRAY, GGUFMetadataType.fromId(9));
-        assertEquals(GGUFMetadataType.UINT64, GGUFMetadataType.fromId(10));
-        assertEquals(GGUFMetadataType.INT64, GGUFMetadataType.fromId(11));
-        assertEquals(GGUFMetadataType.FLOAT64, GGUFMetadataType.fromId(12));
-    }
-
-    @Test
-    public void testGGUFMetadataTypeUnknown() {
-        // Test that unknown IDs return UNKNOWN
-        GGUFMetadataType unknown = GGUFMetadataType.fromId(999);
-        assertEquals(GGUFMetadataType.UNKNOWN, unknown);
+    private static long storageBytesPerBlock(GGMLDataType type) {
+        return type.calculateStorageBytes(type.getBlockSize());
     }
 
     // ==================== GGUFHeader Tests ====================
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGGUFHeaderFromFile(Nd4jBackend backend) throws IOException {
-        // Create a minimal GGUF file
+    public void testGGUFHeaderFromFile(Nd4jBackend backend) throws IOException, GGMLImportException {
         File ggufFile = tempDir.resolve("test.gguf").toFile();
         writeMinimalGGUFFile(ggufFile, "llama", 4096, 32, 32);
 
-        GGUFHeader header = GGUFHeader.fromFile(ggufFile);
-
-        assertNotNull(header);
-        assertEquals(3, header.getVersion()); // GGUF v3
-        assertEquals("llama", header.getArchitecture());
-        assertEquals(4096, header.getContextLength());
-        assertEquals(32, header.getEmbeddingLength());
-        assertEquals(32, header.getBlockCount());
+        try (GGUFReader reader = new GGUFReader(ggufFile)) {
+            GGUFHeader header = reader.getHeader();
+            assertNotNull(header);
+            assertEquals(3, header.getVersion());
+            assertEquals("llama", header.getArchitecture());
+            assertEquals(4096, header.getContextLength());
+            assertEquals(32, header.getEmbeddingLength());
+            assertEquals(32, header.getBlockCount());
+        }
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGGUFHeaderWithMetadata(Nd4jBackend backend) throws IOException {
+    public void testGGUFHeaderWithMetadata(Nd4jBackend backend) throws IOException, GGMLImportException {
         File ggufFile = tempDir.resolve("meta.gguf").toFile();
         writeMinimalGGUFFile(ggufFile, "mistral", 8192, 4096, 32);
 
-        GGUFHeader header = GGUFHeader.fromFile(ggufFile);
-
-        assertEquals("mistral", header.getArchitecture());
-        assertEquals(8192, header.getContextLength());
-        assertEquals(4096, header.getEmbeddingLength());
-        assertEquals(32, header.getBlockCount());
+        try (GGUFReader reader = new GGUFReader(ggufFile)) {
+            GGUFHeader header = reader.getHeader();
+            assertEquals("mistral", header.getArchitecture());
+            assertEquals(8192, header.getContextLength());
+            assertEquals(4096, header.getEmbeddingLength());
+            assertEquals(32, header.getBlockCount());
+        }
     }
 
     @Test
@@ -183,13 +169,21 @@ public class GGMLTest extends BaseNd4jTestWithBackends {
             fos.write(new byte[]{0x00, 0x00, 0x00, 0x00});
         }
 
-        assertThrows(IOException.class, () -> GGUFHeader.fromFile(invalidFile));
+        assertThrows(GGMLImportException.class, () -> {
+            try (GGUFReader reader = new GGUFReader(invalidFile)) {
+                reader.getHeader();
+            }
+        });
     }
 
     @Test
     public void testGGUFHeaderFileNotFound() {
         File nonExistent = new File("/non/existent/file.gguf");
-        assertThrows(IOException.class, () -> GGUFHeader.fromFile(nonExistent));
+        assertThrows(IOException.class, () -> {
+            try (GGUFReader ignored = new GGUFReader(nonExistent)) {
+                // Constructor should fail before the body is reached.
+            }
+        });
     }
 
     // ==================== GGMLPipelineLoader Tests ====================
@@ -212,6 +206,15 @@ public class GGMLTest extends BaseNd4jTestWithBackends {
         assertTrue(loader.convertsToSdz());
     }
 
+    @Test
+    public void testGGMLPipelineLoaderServiceDiscovery() {
+        boolean discovered = ServiceLoader.load(PipelineLoader.class)
+                .stream()
+                .map(ServiceLoader.Provider::type)
+                .anyMatch(GGMLPipelineLoader.class::equals);
+        assertTrue(discovered, "GGML pipeline loader must be registered through ServiceLoader");
+    }
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGGMLInspectFile(Nd4jBackend backend) throws IOException {
@@ -229,11 +232,11 @@ public class GGMLTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGGUFReaderOpen(Nd4jBackend backend) throws IOException {
+    public void testGGUFReaderOpen(Nd4jBackend backend) throws IOException, GGMLImportException {
         File ggufFile = tempDir.resolve("reader.gguf").toFile();
         writeMinimalGGUFFile(ggufFile, "qwen", 4096, 1536, 28);
 
-        try (GGUFReader reader = GGUFReader.open(ggufFile)) {
+        try (GGUFReader reader = new GGUFReader(ggufFile)) {
             assertNotNull(reader);
             assertNotNull(reader.getHeader());
             assertEquals("qwen", reader.getHeader().getArchitecture());
@@ -242,34 +245,34 @@ public class GGMLTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGGUFReaderGetMetadata(Nd4jBackend backend) throws IOException {
+    public void testGGUFReaderGetMetadata(Nd4jBackend backend) throws IOException, GGMLImportException {
         File ggufFile = tempDir.resolve("metadata.gguf").toFile();
         writeMinimalGGUFFile(ggufFile, "llama", 4096, 4096, 32);
 
-        try (GGUFReader reader = GGUFReader.open(ggufFile)) {
-            Map<String, Object> metadata = reader.getMetadata();
+        try (GGUFReader reader = new GGUFReader(ggufFile)) {
+            GGMLMetadata metadata = reader.getMetadata();
             assertNotNull(metadata);
-            // Metadata should contain architecture info
-            assertTrue(metadata.containsKey("general.architecture") ||
-                    reader.getHeader().getArchitecture() != null);
+            assertEquals("llama", metadata.getArchitecture());
+            assertTrue(metadata.getRawMetadata().containsKey("general.architecture"));
         }
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testGGUFReaderWithTensors(Nd4jBackend backend) throws IOException {
+    public void testGGUFReaderWithTensors(Nd4jBackend backend) throws IOException, GGMLImportException {
         File ggufFile = tempDir.resolve("tensors.gguf").toFile();
 
-        // Create a GGUF file with a simple F32 tensor
         Map<String, INDArray> tensors = new LinkedHashMap<>();
         tensors.put("test.weight", Nd4j.rand(DataType.FLOAT, 16, 32));
         writeGGUFFileWithTensors(ggufFile, "test", tensors);
 
-        try (GGUFReader reader = GGUFReader.open(ggufFile)) {
-            Set<String> tensorNames = reader.getTensorNames();
-            assertNotNull(tensorNames);
-            assertTrue(tensorNames.contains("test.weight"));
-            assertEquals(1, reader.getTensorCount());
+        try (GGUFReader reader = new GGUFReader(ggufFile)) {
+            List<GGMLTensorInfo> tensorInfos = reader.getTensorInfos();
+            assertEquals(1, tensorInfos.size());
+            assertTrue(tensorInfos.stream()
+                    .map(GGMLTensorInfo::getName)
+                    .anyMatch("test.weight"::equals));
+            assertEquals(1, reader.getHeader().getTensorCount());
         }
     }
 
