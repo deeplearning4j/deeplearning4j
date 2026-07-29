@@ -140,6 +140,19 @@ class FakeHealthEc2:
         }]}
 
 
+class EventuallyConsistentEc2:
+    def __init__(self):
+        self.calls = 0
+
+    def describe_instances(self, **_kwargs):
+        self.calls += 1
+        if self.calls == 1:
+            error = RuntimeError("not propagated")
+            error.response = {"Error": {"Code": "InvalidInstanceID.NotFound"}}
+            raise error
+        return {"Reservations": [{"Instances": [{"InstanceId": "i-eventual", "State": {"Name": "pending"}}]}]}
+
+
 class ReleaseValidationTest(unittest.TestCase):
     def shard(self):
         return {
@@ -166,6 +179,14 @@ class ReleaseValidationTest(unittest.TestCase):
     def test_matrix_rejects_unavailable_instance_type_in_zone(self):
         with self.assertRaisesRegex(RuntimeError, "unavailable"):
             release.validate_launch_matrix(FakeEc2(offered=False), FakeSsm(), [self.shard()], "us-east-1", "us-east-1a")
+
+    def test_just_launched_instance_is_retried_during_ec2_eventual_consistency(self):
+        ec2 = EventuallyConsistentEc2()
+        with patch.object(release.time, "sleep") as sleep:
+            instance = release.describe_instance_eventually(ec2, "i-eventual")
+        self.assertEqual("i-eventual", instance["InstanceId"])
+        self.assertEqual(2, ec2.calls)
+        sleep.assert_called_once_with(2)
 
     def test_checked_in_plan_has_verification_for_every_shard(self):
         plan = release.load_plan(Path(__file__).with_name("release-plan.json"))

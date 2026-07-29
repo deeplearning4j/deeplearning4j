@@ -574,6 +574,39 @@ def instance_health(ec2, instance_id: str) -> tuple[str, str]:
     )
 
 
+def describe_instance_eventually(ec2, instance_id: str, timeout_seconds: int = 300) -> dict[str, Any]:
+    """Resolve a just-created instance despite EC2's documented eventual consistency."""
+    deadline = time.monotonic() + timeout_seconds
+    delay = 2
+    while True:
+        try:
+            reservations = ec2.describe_instances(InstanceIds=[instance_id]).get("Reservations", [])
+            instances = [instance for reservation in reservations for instance in reservation.get("Instances", [])]
+            if instances:
+                return instances[0]
+            error_code = "EmptyDescribeInstancesResult"
+            error = None
+        except Exception as exc:
+            error_code = getattr(exc, "response", {}).get("Error", {}).get("Code", "")
+            if error_code != "InvalidInstanceID.NotFound":
+                raise
+            error = exc
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError(
+                f"EC2 instance {instance_id} was not visible to DescribeInstances after {timeout_seconds}s "
+                f"(last result: {error_code})"
+            ) from error
+        wait_seconds = min(delay, remaining)
+        print(
+            f"[controller] EC2 instance {instance_id} not visible yet ({error_code}); "
+            f"retrying in {int(wait_seconds)}s",
+            flush=True,
+        )
+        time.sleep(wait_seconds)
+        delay = min(delay * 2, 30)
+
+
 def print_s3_build_log(s3, bucket: str, status_key: str, shard_id: str, max_bytes: int = 256 * 1024) -> bool:
     """Print the retained worker log so a broken live forwarder cannot hide the failure."""
     log_key = f"{status_key.rsplit('/', 1)[0]}/build.log"
@@ -607,11 +640,11 @@ def wait_for_lane(ec2, s3, ssm, logs_client, plan: dict[str, Any], instance_id: 
     while True:
         if kill_switch_enabled(ssm, plan):
             raise RuntimeError(f"global kill switch enabled while waiting for {shard_id}")
-        reservations = ec2.describe_instances(InstanceIds=[instance_id])["Reservations"]
-        state = reservations[0]["Instances"][0]["State"]["Name"]
+        instance = describe_instance_eventually(ec2, instance_id)
+        state = instance["State"]["Name"]
         elapsed = int(time.monotonic() - started)
         if state != last_state:
-            reason = reservations[0]["Instances"][0].get("StateTransitionReason", "")
+            reason = instance.get("StateTransitionReason", "")
             suffix = f"; reason={reason}" if reason else ""
             message = f"phase=ec2-state status={state} shard={shard_id} instance={instance_id} elapsedSeconds={elapsed}{suffix}"
             print(f"[{shard_id}] EC2 state: {state} ({elapsed}s elapsed){suffix}", flush=True)
@@ -820,7 +853,13 @@ def start(args: argparse.Namespace) -> None:
     if quota_value is not None and peak_vcpus > quota_value:
         raise SystemExit(f"calculated schedule requires {peak_vcpus} standard vCPUs but account quota is {quota_value:g}")
     if core_schedule:
-        print(json.dumps({"maxCoresConstraint": args.max_cores, "coreConstraintSchedule": core_schedule}, indent=2))
+        print(json.dumps({
+            "maxCoresConstraint": args.max_cores,
+            "peakStandardOnDemandVcpus": peak_vcpus,
+            "standardOnDemandVcpuQuota": quota_value,
+            "standardOnDemandVcpuHeadroom": quota_value - peak_vcpus if quota_value is not None else None,
+            "coreConstraintSchedule": core_schedule,
+        }, indent=2))
     if kill_switch_enabled(ssm, plan) and not args.reset_kill_switch:
         raise SystemExit("Global kill switch is ON. Pass --reset-kill-switch to explicitly start a new release.")
     set_kill_switch(ssm, plan, False)
