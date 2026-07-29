@@ -1,0 +1,6 @@
+google-auth>=2.30.0,<3
+google-cloud-compute>=1.20.0,<2
+google-cloud-quotas>=0.3.0,<1
+google-cloud-storage>=2.18.0,<4
+google-cloud-logging>=3.11.0,<4
+google-cloud-tpu>=1.21.0,<2

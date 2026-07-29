@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       releaseTag:
-        description: 'GitHub Release tag containing the AWS-built Maven shards'
+        description: 'GitHub Release tag containing the externally built Maven shards'
         required: true
         type: string
       releaseVersion:
@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       expectedCommit:
-        description: 'Exact 40-character commit SHA used by every AWS builder'
+        description: 'Exact 40-character commit SHA used by every external builder'
         required: true
         type: string
       automatic:
@@ -64,7 +64,7 @@ jobs:
           server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
           server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
 
-      - name: Download immutable AWS release assets
+      - name: Download immutable external release assets
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,6 +80,16 @@ jobs:
           set -euo pipefail
           cd release-assets
           sha256sum --check release-build-manifest.json.sha256
+          python3 - <<'PY'
+          import json
+          manifest = json.load(open('release-build-manifest.json', encoding='utf-8'))
+          complete = manifest.get('completeMatrix')
+          if complete is None:
+              complete = manifest.get('testMavenRepository', {}).get('completeMatrix')
+          missing = manifest.get('missingMatrixEntries') or manifest.get('missingWorkflows', [])
+          if complete is not True or missing:
+              raise SystemExit(f'external release is not a verified complete matrix; missing entries: {missing}')
+          PY
 
       - name: Verify release identity and every downloaded asset
         shell: bash
