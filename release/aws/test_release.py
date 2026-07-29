@@ -82,6 +82,31 @@ class FakeLogs:
         }
 
 
+class FakeS3Paginator:
+    def __init__(self, pages):
+        self.pages = pages
+        self.requests = []
+
+    def paginate(self, **kwargs):
+        self.requests.append(kwargs)
+        return self.pages
+
+
+class FakeS3:
+    def __init__(self, pages):
+        self.paginator = FakeS3Paginator(pages)
+        self.deletions = []
+
+    def get_paginator(self, name):
+        if name != "list_object_versions":
+            raise AssertionError(name)
+        return self.paginator
+
+    def delete_objects(self, **kwargs):
+        self.deletions.append(kwargs)
+        return {}
+
+
 class FakeConsoleEc2:
     def __init__(self):
         self.output = "cloud-init starting\n"
@@ -173,6 +198,38 @@ class ReleaseValidationTest(unittest.TestCase):
         lane["build"] = {"buildThreads": 48, "mavenHeapGiB": 32}
         with self.assertRaisesRegex(SystemExit, "Core constraint is infeasible"):
             release.apply_core_constraint(SizingEc2(), [lane], 1)
+
+    def test_s3_log_purge_deletes_only_selected_build_log_versions(self):
+        s3 = FakeS3([{
+            "Versions": [
+                {"Key": "deeplearning4j/releases/run-a/linux-cpu--base/build.log", "VersionId": "v1"},
+                {"Key": "deeplearning4j/releases/run-a/linux-cpu/status.json", "VersionId": "v2"},
+                {"Key": "deeplearning4j/releases/run-a/windows-cpu/build.log", "VersionId": "v3"},
+            ],
+            "DeleteMarkers": [
+                {"Key": "deeplearning4j/releases/run-a/linux-cpu--base/build.log", "VersionId": "d1"},
+            ],
+        }])
+        deleted = release.delete_s3_log_objects(
+            s3, "release-bucket", "deeplearning4j/releases/run-a/", {"linux-cpu"},
+        )
+        self.assertEqual(["v1", "d1"], [item["VersionId"] for item in deleted])
+        self.assertEqual("deeplearning4j/releases/run-a/", s3.paginator.requests[0]["Prefix"])
+        request_objects = s3.deletions[0]["Delete"]["Objects"]
+        self.assertEqual(deleted, request_objects)
+        self.assertFalse(any(item["Key"].endswith("status.json") for item in request_objects))
+        self.assertTrue(release.shard_selected("linux-cpu--avx2", {"linux-cpu"}))
+        self.assertFalse(release.shard_selected("windows-cpu", {"linux-cpu"}))
+
+    def test_s3_log_purge_batches_at_aws_limit(self):
+        versions = [
+            {"Key": f"deeplearning4j/releases/run-{index}/linux-cpu/build.log", "VersionId": str(index)}
+            for index in range(1001)
+        ]
+        s3 = FakeS3([{"Versions": versions}])
+        deleted = release.delete_s3_log_objects(s3, "release-bucket", "deeplearning4j/releases/")
+        self.assertEqual(1001, len(deleted))
+        self.assertEqual([1000, 1], [len(call["Delete"]["Objects"]) for call in s3.deletions])
 
     def test_controller_event_is_published_without_worker_bootstrap(self):
         logs = FakeLogs()

@@ -185,10 +185,14 @@ def list_log_streams(logs_client, group: str, prefix: str | None = None) -> list
         request["nextToken"] = token
 
 
+def shard_selected(shard: str, selected: set[str] | None) -> bool:
+    return not selected or any(shard == item or shard.startswith(f"{item}--") for item in selected)
+
+
 def delete_log_streams(logs_client, group: str, prefix: str | None = None, selected: set[str] | None = None) -> list[str]:
     deleted = []
     for stream in list_log_streams(logs_client, group, prefix):
-        if selected and stream.rsplit("/", 1)[-1] not in selected:
+        if not shard_selected(stream.rsplit("/", 1)[-1], selected):
             continue
         logs_client.delete_log_stream(logGroupName=group, logStreamName=stream)
         deleted.append(stream)
@@ -253,11 +257,15 @@ def default_network(ec2, instance_types: list[str] | None = None) -> tuple[str, 
     return subnets[0]["SubnetId"], groups[0]["GroupId"], subnets[0]["AvailabilityZone"]
 
 
-def ensure_bucket(s3, sts, region: str, explicit: str | None) -> str:
+def release_bucket_name(sts, region: str, explicit: str | None) -> str:
     if explicit:
         return explicit
     account = sts.get_caller_identity()["Account"]
-    bucket = f"dl4j-release-{account}-{region}".lower()
+    return f"dl4j-release-{account}-{region}".lower()
+
+
+def ensure_bucket(s3, sts, region: str, explicit: str | None) -> str:
+    bucket = release_bucket_name(sts, region, explicit)
     try:
         s3.head_bucket(Bucket=bucket)
     except Exception:
@@ -961,14 +969,8 @@ def show_logs(args: argparse.Namespace) -> None:
     group = log_group_name(plan)
     selected = set(args.shard or [])
     if selected:
-        execution_ids = {
-            item["id"] for item in execution_shards(plan)
-            if item["id"] in selected or item.get("parentShard") in selected
-        }
-        if not execution_ids:
-            raise SystemExit(f"No executions matched --shard {sorted(selected)}")
-    else:
-        execution_ids = set()
+        selected_executions(plan, list(selected))
+    execution_ids = selected
     since = None
     if args.since_minutes is not None:
         since = int((time.time() - args.since_minutes * 60) * 1000)
@@ -999,25 +1001,55 @@ def show_logs(args: argparse.Namespace) -> None:
         return
 
 
+def delete_s3_log_objects(s3, bucket: str, prefix: str, selected: set[str] | None = None) -> list[dict[str, str]]:
+    """Permanently delete every matching S3 build.log version and delete marker."""
+    deleted: list[dict[str, str]] = []
+    paginator = s3.get_paginator("list_object_versions")
+    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        objects = []
+        for collection in ("Versions", "DeleteMarkers"):
+            for item in page.get(collection, []):
+                key = item["Key"]
+                if not key.endswith("/build.log"):
+                    continue
+                shard = key.rsplit("/", 2)[-2]
+                if not shard_selected(shard, selected):
+                    continue
+                target = {"Key": key, "VersionId": item["VersionId"]}
+                objects.append(target)
+                deleted.append(target)
+        for offset in range(0, len(objects), 1000):
+            response = s3.delete_objects(
+                Bucket=bucket, Delete={"Objects": objects[offset:offset + 1000], "Quiet": True},
+            )
+            if response.get("Errors"):
+                raise RuntimeError(f"S3 log purge failed: {response['Errors']}")
+    return deleted
+
+
 def delete_logs(args: argparse.Namespace) -> None:
     if not args.yes:
         raise SystemExit("Log deletion requires --yes")
     plan = load_plan(args.plan)
-    session, region, _, _, _, _, _ = session_clients(args.region)
+    session, region, _, _, s3, sts, _ = session_clients(args.region)
     logs_client = session.client("logs")
     group = log_group_name(plan)
     selected = set(args.shard or [])
-    execution_ids = None
     if selected:
-        execution_ids = {
-            item["id"] for item in execution_shards(plan)
-            if item["id"] in selected or item.get("parentShard") in selected
-        }
-        if not execution_ids:
-            raise SystemExit(f"No executions matched --shard {sorted(selected)}")
-    prefix = None if args.all_runs else f"{args.run_id}/"
-    deleted = delete_log_streams(logs_client, group, prefix, execution_ids)
-    print(json.dumps({"region": region, "logGroup": group, "deletedLogStreams": deleted}, indent=2))
+        selected_executions(plan, list(selected))
+    execution_ids = selected or None
+    stream_prefix = None if args.all_runs else f"{args.run_id}/"
+    deleted_streams = delete_log_streams(logs_client, group, stream_prefix, execution_ids)
+    bucket = release_bucket_name(sts, region, args.bucket)
+    artifact_prefix = str(plan.get("artifactPrefix", "deeplearning4j/releases")).strip("/")
+    object_prefix = f"{artifact_prefix}/" if args.all_runs else f"{artifact_prefix}/{args.run_id}/"
+    deleted_objects = delete_s3_log_objects(s3, bucket, object_prefix, execution_ids)
+    print(json.dumps({
+        "region": region, "logGroup": group, "bucket": bucket,
+        "deletedLogStreams": deleted_streams,
+        "deletedS3LogObjectVersions": deleted_objects,
+        "deletedS3LogObjectVersionCount": len(deleted_objects),
+    }, indent=2))
 
 
 def file_digest(path: Path) -> str:
@@ -1141,7 +1173,7 @@ def collect(args: argparse.Namespace) -> None:
                 seen_outputs[shard].add("maven" if name.startswith("maven-") else "sdk")
             if name == "maven-repository.tar.gz":
                 maven_archives.append(output)
-            if name in {"maven-repository.tar.gz", "sdk-assets.tar.gz", "shard-manifest.json", "build.log"}:
+            if name in {"maven-repository.tar.gz", "sdk-assets.tar.gz", "shard-manifest.json"}:
                 assets.append({"fileName": output_name, "sha256": file_digest(output), "size": output.stat().st_size, "shard": shard, "sourceKey": item["Key"]})
         missing = sorted(expected_shards - seen_status)
         if missing:
@@ -1218,17 +1250,28 @@ def stop_everything(args: argparse.Namespace) -> None:
             released_hosts.append(host_id)
         except Exception as exc:
             pending_hosts[host_id] = str(exc)
+    bucket = release_bucket_name(sts, region, args.bucket)
     if args.purge_storage:
-        bucket = ensure_bucket(s3, sts, region, args.bucket)
         paginator = s3.get_paginator("list_object_versions")
         for page in paginator.paginate(Bucket=bucket):
             objects = [{"Key": item["Key"], "VersionId": item["VersionId"]} for key in ("Versions", "DeleteMarkers") for item in page.get(key, [])]
             if objects:
                 s3.delete_objects(Bucket=bucket, Delete={"Objects": objects, "Quiet": True})
     deleted_logs = []
+    deleted_s3_logs: list[dict[str, str]] = []
     if getattr(args, "purge_logs", False):
         deleted_logs = delete_log_streams(session.client("logs"), log_group_name(plan))
-    print(json.dumps({"region": region, "killSwitch": True, "terminatedInstances": ids, "cancelledSpotRequests": spot_ids, "releasedDedicatedHosts": released_hosts, "pendingDedicatedHosts": pending_hosts, "storagePurged": args.purge_storage, "deletedLogStreams": deleted_logs}, indent=2))
+        if not args.purge_storage:
+            artifact_prefix = str(plan.get("artifactPrefix", "deeplearning4j/releases")).strip("/") + "/"
+            deleted_s3_logs = delete_s3_log_objects(s3, bucket, artifact_prefix)
+    print(json.dumps({
+        "region": region, "killSwitch": True, "terminatedInstances": ids,
+        "cancelledSpotRequests": spot_ids, "releasedDedicatedHosts": released_hosts,
+        "pendingDedicatedHosts": pending_hosts, "storagePurged": args.purge_storage,
+        "deletedLogStreams": deleted_logs,
+        "deletedS3LogObjectVersions": deleted_s3_logs,
+        "deletedS3LogObjectVersionCount": len(deleted_s3_logs),
+    }, indent=2))
 
 
 def parser() -> argparse.ArgumentParser:
@@ -1274,6 +1317,7 @@ def parser() -> argparse.ArgumentParser:
     target.add_argument("--run-id")
     target.add_argument("--all-runs", action="store_true")
     remove_logs.add_argument("--shard", action="append")
+    remove_logs.add_argument("--bucket", help="managed release bucket; defaults to dl4j-release-ACCOUNT-REGION")
     remove_logs.add_argument("--yes", action="store_true")
     remove_logs.set_defaults(func=delete_logs)
     gather = sub.add_parser("collect")

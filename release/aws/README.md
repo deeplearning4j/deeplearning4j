@@ -89,19 +89,23 @@ python3 release/aws/release.py logs --run-id "$RUN_ID" \
 python3 release/aws/release.py logs --run-id "$RUN_ID"
 ```
 
-The final `build.log` is also uploaded to private S3 and included in the draft GitHub Release, so CloudWatch is the operational live view while S3/GitHub retain the release evidence.
+The final `build.log` is uploaded to private S3 but is deliberately not copied into the draft GitHub Release, so every managed log copy remains purgeable through this tooling. Maven/SDK archives and shard manifests remain separate release evidence.
 
-CloudWatch log streams are independently deletable without touching artifacts or the log-group retention policy:
+Log purging deletes both CloudWatch streams and every matching S3 `build.log` version/delete marker without touching status files, Maven repositories, SDK archives, manifests, or the CloudWatch retention policy:
 
 ```bash
-# Delete every stream belonging to one run:
+# Delete all CloudWatch and S3 log copies belonging to one run:
 python3 release/aws/release.py delete-logs --run-id "$RUN_ID" --yes
+
+# An explicitly named non-default release bucket is also supported:
+python3 release/aws/release.py delete-logs --run-id "$RUN_ID" \
+  --bucket dl4j-release-ACCOUNT-REGION --yes
 
 # Delete only one logical shard from that run:
 python3 release/aws/release.py delete-logs --run-id "$RUN_ID" \
   --shard linux-x86_64-cpu --yes
 
-# Explicitly delete every DL4J release log stream in this AWS region:
+# Explicitly delete every managed CloudWatch and S3 release log in this region:
 python3 release/aws/release.py delete-logs --all-runs --yes
 ```
 
@@ -126,7 +130,7 @@ Before starting any smoke or full build, keep this emergency command ready in a 
 ```bash
 python3 release/aws/release.py stop-everything --wait
 
-# Stop compute and also delete every managed CloudWatch release log stream:
+# Stop compute and also delete every managed CloudWatch stream and S3 build log version:
 python3 release/aws/release.py stop-everything --wait --purge-logs
 
 # Only when you also intend to delete every staged release object in the managed bucket:
@@ -187,7 +191,7 @@ The command enables the global SSM kill switch first, then terminates every tagg
 
 AWS imposes a minimum 24-hour allocation period on EC2 Mac dedicated hosts. An emergency stop terminates the Mac instance immediately, but AWS may reject `ReleaseHosts` until that period expires. Such hosts are reported under `pendingDedicatedHosts`; rerun `stop-everything --wait` after they become eligible. This AWS billing constraint cannot be bypassed by an API call.
 
-Add `--purge-storage` to delete collected S3 objects as well, and `--purge-logs` to delete all streams in the configured release log group. Both deletions are separate opt-ins so release evidence is not destroyed accidentally. For run-scoped log cleanup, prefer `delete-logs --run-id ... --yes`.
+Add `--purge-storage` to delete all collected S3 objects, and `--purge-logs` to delete all streams in the configured release log group plus every S3 `build.log` version. Both deletions are separate opt-ins so release evidence is not destroyed accidentally. `--purge-logs` preserves artifacts and status/manifests; for run-scoped cleanup, prefer `delete-logs --run-id ... --yes`.
 
 ## Maven Central handoff
 
