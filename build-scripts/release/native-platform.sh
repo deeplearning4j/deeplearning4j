@@ -79,19 +79,21 @@ case "${DL4J_FAMILY}" in
     ;;
   vulkan|vulkan-mlir|hexagon|tpu)
     backend=${DL4J_FAMILY%%-*}; [ "${DL4J_FAMILY}" != vulkan-mlir ] || backend=vulkan
+    classifier=linux-x86_64
+    [ "${DL4J_FAMILY}" != vulkan-mlir ] || classifier=linux-x86_64-compile
     modules=":nd4j-${backend},:nd4j-${backend}-preset"
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
     flags=("-Dlibnd4j.${backend}")
     if [ "${DL4J_FAMILY}" = vulkan ] || [ "${DL4J_FAMILY}" = vulkan-mlir ]; then flags+=(-Dlibnd4j.triton=ON); fi
     [ "${DL4J_FAMILY}" != vulkan-mlir ] || flags+=(-Dlibnd4j.mlir=ON)
-    command=(mvn "${split_flags[@]}" "${repo[@]}" --no-transfer-progress "-P${backend}" -pl "${modules}" "${flags[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Dplatform.classifier=linux-x86_64 --also-make --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests)
+    command=(mvn "${split_flags[@]}" "${repo[@]}" --no-transfer-progress "-P${backend}" -pl "${modules}" "${flags[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 "-Dplatform.classifier=${classifier}" --also-make --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests)
     ;;
   compat)
     command=(mvn -pl :nd4j-native-preset,:libnd4j,:nd4j-native "${split_flags[@]}" "${repo[@]}" -Pcpu "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu --also-make --batch-mode -DskipTests -Dlibnd4j.extension=compat -Djavacpp.platform.extension=-compat -Dlibnd4j.classifier=linux-x86_64-compat "${DL4J_MAVEN_GOAL}")
     ;;
   zluda)
     : "${DL4J_ZLUDA_TARGET:=rocm6}"
-    command=(mvn "${split_flags[@]}" "${repo[@]}" -Pcuda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Djavacpp.platform=linux-x86_64 --batch-mode -DskipTests -pl :nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:libnd4j --also-make install)
+    command=(mvn "${split_flags[@]}" "${repo[@]}" -Pcuda -Pzluda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" -Djavacpp.platform.extension=-zluda -Dlibnd4j.classifier=linux-x86_64-cuda-12.9-zluda -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Djavacpp.platform=linux-x86_64 --batch-mode -DskipTests -pl :nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda,:libnd4j --also-make install)
     ;;
   *) printf 'Unsupported DL4J_FAMILY=%s\n' "${DL4J_FAMILY}" >&2; exit 2;;
 esac

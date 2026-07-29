@@ -343,6 +343,44 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual("mps-compile", build_platform.shared_variant_helper({"name": "mps-compile", "helper": "mps", "mlir": True}))
         self.assertEqual("compile-nnapi", build_platform.shared_variant_helper({"name": "compile-nnapi", "mlir": True}))
         self.assertEqual("compile", build_platform.shared_variant_helper({"name": "compile", "mlir": True}))
+        self.assertEqual("compile", build_platform.shared_variant_helper({"name": "compile", "triton": True}))
+
+    def test_shared_native_script_emits_specialized_classifiers(self):
+        root = Path(__file__).parents[2]
+        script = root / "build-scripts/release/native-platform.sh"
+
+        def command(**environment):
+            process_environment = {"PATH": "/usr/bin:/bin", "DL4J_BUILD_THREADS": "16", "DL4J_MVN_FLAGS": ""}
+            process_environment.update(environment)
+            result = subprocess.run(["bash", str(script), "--print"], env=process_environment,
+                                    check=True, capture_output=True, text=True)
+            return shlex.split(result.stdout)
+
+        cuda = command(DL4J_FAMILY="linux-cuda", DL4J_CUDA_VERSION="12.9", DL4J_HELPER="compile")
+        self.assertIn("-Dlibnd4j.classifier=linux-x86_64-cuda-12.9-compile", cuda)
+        self.assertIn("-Djavacpp.platform.extension=-compile", cuda)
+
+        vulkan = command(DL4J_FAMILY="vulkan-mlir")
+        self.assertIn("-Dplatform.classifier=linux-x86_64-compile", vulkan)
+
+        zluda = command(DL4J_FAMILY="zluda")
+        self.assertIn("-Dlibnd4j.classifier=linux-x86_64-cuda-12.9-zluda", zluda)
+        self.assertIn("-Djavacpp.platform.extension=-zluda", zluda)
+        self.assertIn("-Pzluda", zluda)
+        self.assertEqual(":nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda,:libnd4j", zluda[zluda.index("-pl") + 1])
+
+    def test_aws_cuda_compile_variant_uses_workflow_compile_classifier_path(self):
+        shard = {
+            "id": "linux-x86_64-cuda-12-9", "os": "linux", "workloads": ["maven"],
+            "build": {"backend": "cuda", "cudaVersion": "12.9", "javacppPlatform": "linux-x86_64",
+                      "modules": [], "variants": [{"name": "compile", "triton": True}]},
+        }
+        calls = []
+        with patch.object(build_platform, "prepare_openblas"), \
+                patch.object(build_platform, "run", side_effect=lambda command, _cwd, env: calls.append((command, env))):
+            build_platform.build_native_platform(Path("/source"), shard, Path("/m2"), {}, None)
+        self.assertEqual("compile", calls[0][1]["DL4J_HELPER"])
+        self.assertEqual("12.9", calls[0][1]["DL4J_CUDA_VERSION"])
 
     def test_aws_cross_platform_invokes_the_shared_workflow_script(self):
         calls = []

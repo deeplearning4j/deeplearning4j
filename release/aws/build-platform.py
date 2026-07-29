@@ -259,6 +259,8 @@ def shared_variant_helper(variant: dict) -> str:
         return "mps-compile"
     if name == "compile-nnapi":
         return "compile-nnapi"
+    if name == "compile":
+        return "compile"
     if variant.get("mlir"):
         return "compile"
     return variant.get("helper", "")
