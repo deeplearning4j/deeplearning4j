@@ -21,6 +21,7 @@ import os
 from pathlib import Path
 import random
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -40,6 +41,12 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PLAN = ROOT / "release/gcp/release-plan.json"
 BUILD_DRIVER = ROOT / "release/aws/build-platform.py"
 CLOUD_IO = ROOT / "release/gcp/cloud-io.py"
+GCP_PROJECT_PATTERN = re.compile(r"^(?:[a-z][a-z0-9-]{4,28}[a-z0-9]|[0-9]{6,})$")
+GCP_REGION_PATTERN = re.compile(r"^[a-z]+(?:-[a-z0-9]+)*[0-9]$")
+GCP_CREDENTIAL_ERROR_NAMES = {
+    "ClientCertError", "DefaultCredentialsError", "MalformedError", "OAuthError",
+    "RefreshError", "UserAccessTokenError",
+}
 
 
 def utc_now() -> str:
@@ -98,19 +105,155 @@ def control_bucket_name(project: str) -> str:
 def google_modules():
     try:
         import google.auth
-        from google.auth.transport.requests import AuthorizedSession
+        from google.auth.transport.requests import AuthorizedSession, Request
         from google.cloud import cloudquotas_v1, compute_v1, logging_v2, storage, tpu_v2
     except ImportError as exc:
         raise SystemExit(
             "Google Cloud dependencies are missing. Run: "
             "python3 -m pip install -r release/gcp/requirements.txt"
         ) from exc
-    return google.auth, AuthorizedSession, cloudquotas_v1, compute_v1, logging_v2, storage, tpu_v2
+    return google.auth, AuthorizedSession, Request, cloudquotas_v1, compute_v1, logging_v2, storage, tpu_v2
 
 
-def cloud_context(project_override: str | None = None):
-    google_auth, authorized_session, cloudquotas_v1, compute_v1, logging_v2, storage, tpu_v2 = google_modules()
-    credentials, adc_project = google_auth.default(scopes=SCOPES)
+def interactive_wizard_enabled(allow_wizard: bool) -> bool:
+    """Never make a redirected or CI controller wait for input."""
+    ci = any(
+        os.environ.get(name, "").strip().lower() not in {"", "0", "false", "no"}
+        for name in ("CI", "GITHUB_ACTIONS")
+    )
+    return bool(allow_wizard and not ci and getattr(sys.stdin, "isatty", lambda: False)())
+
+
+def prompt_value(label: str, *, default: str | None = None) -> str:
+    suffix = f" [{default}]" if default else ""
+    while True:
+        try:
+            print(f"{label}{suffix}: ", end="", file=sys.stderr, flush=True)
+            value = input().strip()
+        except EOFError as exc:
+            raise SystemExit("Google Cloud configuration wizard lost its interactive input") from exc
+        if not value and default is not None:
+            value = default
+        if value:
+            return value
+        print(f"{label} is required.", file=sys.stderr)
+
+
+def gcp_configuration_error(problem: str) -> SystemExit:
+    return SystemExit(
+        f"Google Cloud release configuration is incomplete: {problem}. Configure Application "
+        "Default Credentials plus GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_REGION, or run "
+        "`python3 release/gcp/release.py configure` in an interactive terminal."
+    )
+
+
+def gcp_credential_exception(exc: BaseException) -> bool:
+    return bool({item.__name__ for item in exc.__class__.__mro__} & GCP_CREDENTIAL_ERROR_NAMES)
+
+
+def safe_gcp_credential_problem(exc: BaseException) -> str:
+    return f"ADC validation returned {exc.__class__.__name__}"
+
+
+def load_gcp_credentials(google_auth: Any, request_factory: Any) -> tuple[Any | None, str | None, str | None]:
+    try:
+        credentials, project = google_auth.default(scopes=SCOPES)
+        if not getattr(credentials, "valid", True):
+            credentials.refresh(request_factory())
+        return credentials, project, None
+    except Exception as exc:
+        if gcp_credential_exception(exc):
+            return None, None, safe_gcp_credential_problem(exc)
+        raise
+
+
+def configured_gcp_project(project_override: str | None = None) -> str | None:
+    return (
+        project_override
+        or os.environ.get("GOOGLE_CLOUD_PROJECT")
+        or os.environ.get("GCLOUD_PROJECT")
+        or os.environ.get("CLOUDSDK_CORE_PROJECT")
+    )
+
+
+def valid_gcp_project(project: str | None) -> bool:
+    return bool(project and GCP_PROJECT_PATTERN.fullmatch(project))
+
+
+def valid_gcp_region(region: str | None) -> bool:
+    return bool(region and GCP_REGION_PATTERN.fullmatch(region))
+
+
+def prompt_gcp_project(project_override: str | None = None) -> str:
+    current = configured_gcp_project(project_override)
+    while True:
+        project = prompt_value("Google Cloud project ID", default=current)
+        if valid_gcp_project(project):
+            os.environ["GOOGLE_CLOUD_PROJECT"] = project
+            return project
+        print("Enter a project ID (for example deeplearning4j-release) or numeric project number.", file=sys.stderr)
+
+
+def configure_gcp_credentials(google_auth: Any, request_factory: Any,
+                              project_override: str | None, initial_problem: str) -> tuple[Any, str | None]:
+    """Interactively select an official ADC source; credential contents are never printed or copied."""
+    print(f"Google Cloud credential setup is required ({initial_problem}).", file=sys.stderr)
+    project = configured_gcp_project(project_override)
+    if not valid_gcp_project(project):
+        project = prompt_gcp_project(project_override)
+    current_file = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    default_source = "file" if current_file else "gcloud"
+
+    while True:
+        source = prompt_value("ADC source (file/gcloud)", default=default_source).lower()
+        if source in {"file", "f"}:
+            path_text = prompt_value("GOOGLE_APPLICATION_CREDENTIALS file", default=current_file)
+            path = Path(path_text).expanduser().resolve()
+            if not path.is_file():
+                print("That ADC JSON file does not exist.", file=sys.stderr)
+                continue
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(path)
+        elif source in {"gcloud", "login", "g"}:
+            executable = shutil.which("gcloud")
+            if not executable:
+                print(
+                    "gcloud is not installed; choose `file` or install the Google Cloud CLI.",
+                    file=sys.stderr,
+                )
+                continue
+            old_file = os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+            command = [executable, "auth", "application-default", "login"]
+            if project:
+                command.extend(["--project", project])
+            if subprocess.run(command, check=False).returncode != 0:
+                if old_file:
+                    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = old_file
+                print("gcloud did not create Application Default Credentials.", file=sys.stderr)
+                continue
+        else:
+            print("Choose `file` or `gcloud`.", file=sys.stderr)
+            continue
+
+        credentials, adc_project, problem = load_gcp_credentials(google_auth, request_factory)
+        if problem is None:
+            print("Google Application Default Credentials validated for this invocation.", file=sys.stderr)
+            return credentials, adc_project
+        print(f"That ADC source is not usable: {problem}.", file=sys.stderr)
+
+
+def cloud_context(project_override: str | None = None, *, allow_wizard: bool = True):
+    (
+        google_auth, authorized_session, request_factory, cloudquotas_v1,
+        compute_v1, logging_v2, storage, tpu_v2,
+    ) = google_modules()
+    credentials, adc_project, credential_problem = load_gcp_credentials(google_auth, request_factory)
+    if credential_problem:
+        if not interactive_wizard_enabled(allow_wizard):
+            raise gcp_configuration_error(credential_problem)
+        print("Google Cloud release environment wizard", file=sys.stderr)
+        credentials, adc_project = configure_gcp_credentials(
+            google_auth, request_factory, project_override, credential_problem
+        )
     project = (
         project_override
         or os.environ.get("GOOGLE_CLOUD_PROJECT")
@@ -118,11 +261,12 @@ def cloud_context(project_override: str | None = None):
         or os.environ.get("CLOUDSDK_CORE_PROJECT")
         or adc_project
     )
-    if not project:
-        raise SystemExit(
-            "No Google Cloud project is configured. Set GOOGLE_CLOUD_PROJECT or run "
-            "gcloud auth application-default login with a default project."
-        )
+    if not valid_gcp_project(project):
+        problem = "no valid Google Cloud project ID was resolved"
+        if not interactive_wizard_enabled(allow_wizard):
+            raise gcp_configuration_error(problem)
+        print("Google Cloud release environment wizard", file=sys.stderr)
+        project = prompt_gcp_project(project_override)
     return {
         "project": project,
         "credentials": credentials,
@@ -135,11 +279,42 @@ def cloud_context(project_override: str | None = None):
     }
 
 
-def resolve_region(value: str | None) -> str:
+def resolve_region(value: str | None, *, allow_wizard: bool = True) -> str:
     region = value or os.environ.get("GOOGLE_CLOUD_REGION") or os.environ.get("CLOUDSDK_COMPUTE_REGION")
-    if not region:
-        raise SystemExit("Set GOOGLE_CLOUD_REGION (or pass --region); Google Cloud has no global Compute Engine region.")
+    if not valid_gcp_region(region):
+        problem = "no valid Compute Engine region was resolved"
+        if not interactive_wizard_enabled(allow_wizard):
+            raise gcp_configuration_error(problem)
+        print("Google Cloud release environment wizard", file=sys.stderr)
+        while True:
+            region = prompt_value("Google Cloud region", default=region)
+            if valid_gcp_region(region):
+                os.environ["GOOGLE_CLOUD_REGION"] = region
+                break
+            print("Enter a region such as us-central1, not a zone such as us-central1-a.", file=sys.stderr)
     return region
+
+
+def configure_environment(args: argparse.Namespace) -> None:
+    context = cloud_context(args.project, allow_wizard=not getattr(args, "no_wizard", False))
+    region = resolve_region(args.region, allow_wizard=not getattr(args, "no_wizard", False))
+    credentials = context["credentials"]
+    credential_source = (
+        "GOOGLE_APPLICATION_CREDENTIALS"
+        if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+        else credentials.__class__.__name__
+    )
+    print(json.dumps({
+        "configured": True,
+        "project": context["project"],
+        "region": region,
+        "credentialSource": credential_source,
+        "nonSecretEnvironmentForFutureCommands": {
+            "GOOGLE_CLOUD_PROJECT": context["project"],
+            "GOOGLE_CLOUD_REGION": region,
+        },
+        "environmentPersisted": False,
+    }, indent=2))
 
 
 def resolve_commit(repository: str, branch: str) -> str:
@@ -454,9 +629,9 @@ def quota_report(
 def preflight_data(args: argparse.Namespace, *, include_clients: bool = False) -> dict[str, Any]:
     plan = load_plan(args.plan)
     executions = selected_executions(plan, args.shard, getattr(args, "exclude_shard", None))
-    context = cloud_context(args.project)
+    context = cloud_context(args.project, allow_wizard=not getattr(args, "no_wizard", False))
     project = context["project"]
-    region = resolve_region(args.region)
+    region = resolve_region(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     compute = context["compute"]
     zones_client = compute.ZonesClient(credentials=context["credentials"])
     machine_client = compute.MachineTypesClient(credentials=context["credentials"])
@@ -537,7 +712,7 @@ def preflight(args: argparse.Namespace) -> None:
     if value["quota"]["failures"]:
         raise SystemExit("Preflight failed: " + "; ".join(value["quota"]["failures"]))
     if getattr(args, "include_tpu_smoke", False):
-        validate_tpu_configuration(args, load_plan(args.plan), cloud_context(args.project))
+        validate_tpu_configuration(args, load_plan(args.plan), cloud_context(args.project, allow_wizard=not getattr(args, "no_wizard", False)))
 
 
 def ensure_bucket(context: dict[str, Any], project: str, region: str, name: str):
@@ -967,9 +1142,9 @@ def load_run(bucket: Any, plan: dict[str, Any], run_id: str) -> dict[str, Any]:
 
 
 def context_bucket(args: argparse.Namespace, plan: dict[str, Any]):
-    context = cloud_context(args.project)
+    context = cloud_context(args.project, allow_wizard=not getattr(args, "no_wizard", False))
     project = context["project"]
-    region = resolve_region(args.region)
+    region = resolve_region(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     name = release_bucket_name(project, region, getattr(args, "bucket", None))
     storage_client = context["storage"].Client(project=project, credentials=context["credentials"])
     bucket = storage_client.lookup_bucket(name)
@@ -1126,9 +1301,9 @@ def validate_tpu_configuration(args: argparse.Namespace, plan: dict[str, Any], c
 
 def tpu_smoke(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
-    context = cloud_context(args.project)
+    context = cloud_context(args.project, allow_wizard=not getattr(args, "no_wizard", False))
     project = context["project"]
-    region = resolve_region(args.region)
+    region = resolve_region(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     tpu = validate_tpu_configuration(args, plan, context)
     network = resolve_network(
         context["compute"], context["credentials"], project, region, args.network, args.subnetwork
@@ -1372,9 +1547,9 @@ def collect(args: argparse.Namespace) -> None:
 
 def stop_everything(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
-    context = cloud_context(args.project)
+    context = cloud_context(args.project, allow_wizard=not getattr(args, "no_wizard", False))
     project = context["project"]
-    region = resolve_region(args.region)
+    region = resolve_region(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     bucket_name = release_bucket_name(project, region, args.bucket)
     shutdown_errors: list[str] = []
     try:
@@ -1541,7 +1716,14 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--plan", type=Path, default=DEFAULT_PLAN)
     result.add_argument("--project", help="defaults to GOOGLE_CLOUD_PROJECT/ADC project")
     result.add_argument("--region", help="defaults to GOOGLE_CLOUD_REGION or CLOUDSDK_COMPUTE_REGION")
+    result.add_argument(
+        "--no-wizard", action="store_true",
+        help="fail instead of prompting when ADC, project, or region configuration is incomplete",
+    )
     sub = result.add_subparsers(dest="command", required=True)
+
+    setup = sub.add_parser("configure", help="validate or interactively complete Google Cloud configuration")
+    setup.set_defaults(func=configure_environment)
 
     check = sub.add_parser("preflight")
     add_selection_options(check)

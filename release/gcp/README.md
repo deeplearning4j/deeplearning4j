@@ -26,6 +26,14 @@ export GOOGLE_CLOUD_PROJECT=my-project-id
 export GOOGLE_CLOUD_REGION=us-central1
 ```
 
+Every cloud command resolves ADC, refreshes it to prove that it is usable, and validates project-ID and Compute Engine region syntax before provisioning; `preflight` then resolves both against the live APIs. When ADC, project, or region is missing or malformed and stdin is a terminal, the controller opens an interactive wizard. It can point `GOOGLE_APPLICATION_CREDENTIALS` at any ADC-compatible JSON file (service account, workload identity, or workforce identity), or explicitly run `gcloud auth application-default login`; the controller never prints or copies credential-file contents. Run the same validation explicitly with:
+
+```bash
+python3 release/gcp/release.py configure
+```
+
+Project, region, and a selected credential-file path apply to the command that opened the wizard; export the non-secret values reported by `configure` for later shell commands. Choosing `gcloud` writes user ADC to Google's standard well-known location, as the Google Cloud CLI normally does. Redirected and other noninteractive invocations fail immediately with the recovery command instead of waiting for input. Put `--no-wizard` before the subcommand to force that behavior, for example `python3 release/gcp/release.py --no-wizard preflight`.
+
 For local user credentials, `gcloud auth application-default login` is also supported. The ADC search order is documented at <https://cloud.google.com/docs/authentication/application-default-credentials>.
 
 Enable these APIs in the project:

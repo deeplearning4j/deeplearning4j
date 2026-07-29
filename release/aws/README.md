@@ -28,6 +28,14 @@ export AWS_SESSION_TOKEN=...       # temporary credentials only
 export AWS_REGION=us-east-1        # AWS_DEFAULT_REGION also works
 ```
 
+Every command validates the resolved region and calls STS with the identity from the normal boto3 chain before it touches release resources. If the region or credentials are missing, partial, expired, or rejected and stdin is a terminal, the controller opens an interactive wizard. It can select an existing AWS profile or accept an access key, secret key, and optional session token; secret values use hidden prompts and are never printed or written by the controller. Run the same check explicitly with:
+
+```bash
+python3 release/aws/release.py configure
+```
+
+Values entered by the wizard apply to the command that opened it. A Python child process cannot export into its parent shell, so use the non-secret environment values reported by `configure` and put credentials in your normal shell/profile/SSO setup for later commands. Redirected and other noninteractive invocations fail immediately with the exact recovery command instead of waiting for input. Put `--no-wizard` before the subcommand to request that behavior explicitly, for example `python3 release/aws/release.py --no-wizard preflight`.
+
 AWS profiles, SSO, web identity and instance roles also work. The principal needs EC2 instance/network/image permissions, `AllocateHosts`/`ReleaseHosts` for EC2 Mac, IAM role/profile management, S3 bucket/object management, SSM parameter management and CloudWatch Logs group/stream management. `gh` authentication is needed only by `collect` when it creates the draft GitHub Release.
 
 The default VPC is used unless `--subnet-id` and `--security-group-id` are supplied. Automatic selection intersects the Availability-Zone offerings for every selected instance type and chooses the default-VPC subnet with the most available addresses in a common AZ. For the current full matrix in `us-east-1`, this avoids an arbitrary `us-east-1a` subnet and selects `us-east-1c` or `us-east-1d`, where `mac2-m2pro.metal` is offered. Explicit subnet/security-group inputs remain available when dedicated-host capacity or network policy requires them.

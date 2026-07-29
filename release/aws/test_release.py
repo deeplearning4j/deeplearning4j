@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from io import BytesIO, StringIO
 from pathlib import Path
 from unittest.mock import patch
@@ -594,6 +594,117 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertTrue(user)
         self.assertEqual(user, logname)
         self.assertIn("/usr/bin", path)
+
+
+class EnvironmentWizardTest(unittest.TestCase):
+    class Credentials:
+        def __init__(self, method):
+            self.method = method
+
+    class Sts:
+        def __init__(self, usable):
+            self.usable = usable
+
+        def get_caller_identity(self):
+            if not self.usable:
+                raise AssertionError("STS must not run without resolved credentials")
+            return {"Account": "123456789012", "Arn": "arn:aws:iam::123456789012:user/test"}
+
+    class Session:
+        available_profiles = ["release"]
+
+        def __init__(self, **kwargs):
+            self.region_name = kwargs.get("region_name") or os.environ.get("AWS_REGION")
+            access_key = kwargs.get("aws_access_key_id") or os.environ.get("AWS_ACCESS_KEY_ID")
+            secret_key = kwargs.get("aws_secret_access_key") or os.environ.get("AWS_SECRET_ACCESS_KEY")
+            profile = kwargs.get("profile_name") or os.environ.get("AWS_PROFILE")
+            self.method = "env" if access_key and secret_key else ("shared-credentials-file" if profile == "release" else None)
+
+        def get_credentials(self):
+            return EnvironmentWizardTest.Credentials(self.method) if self.method else None
+
+        def client(self, name):
+            if name == "sts":
+                return EnvironmentWizardTest.Sts(bool(self.method))
+            return object()
+
+    class Boto3:
+        @staticmethod
+        def Session(**kwargs):
+            return EnvironmentWizardTest.Session(**kwargs)
+
+    def test_ci_never_enables_wizard_even_with_a_tty(self):
+        tty = type("Tty", (), {"isatty": lambda self: True})()
+        with patch.dict(os.environ, {"CI": "true"}, clear=True), patch.object(release.sys, "stdin", tty):
+            self.assertFalse(release.interactive_wizard_enabled(True))
+
+    def test_region_validation_is_partition_agnostic(self):
+        self.assertTrue(release.valid_aws_region("us-east-1"))
+        self.assertTrue(release.valid_aws_region("eusc-de-east-1"))
+        self.assertFalse(release.valid_aws_region("global"))
+
+    def test_noninteractive_missing_configuration_fails_with_recovery_command(self):
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch.object(release, "_boto3", return_value=(self.Boto3, Exception)),
+            self.assertRaisesRegex(SystemExit, "release/aws/release.py configure"),
+        ):
+            release.session_clients(allow_wizard=False)
+
+    def test_existing_standard_environment_does_not_prompt(self):
+        environment = {
+            "AWS_REGION": "us-east-1",
+            "AWS_ACCESS_KEY_ID": "AKIATEST",
+            "AWS_SECRET_ACCESS_KEY": "already-configured",
+        }
+        with (
+            patch.dict(os.environ, environment, clear=True),
+            patch.object(release, "_boto3", return_value=(self.Boto3, Exception)),
+            patch("builtins.input", side_effect=AssertionError("wizard unexpectedly prompted")),
+        ):
+            session, region, *_ = release.session_clients(allow_wizard=True)
+        self.assertEqual("us-east-1", region)
+        self.assertEqual("env", session.get_credentials().method)
+
+    def test_wizard_sets_region_and_hidden_access_credentials_for_current_command(self):
+        stderr = StringIO()
+        stdout = StringIO()
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            patch.object(release, "_boto3", return_value=(self.Boto3, Exception)),
+            patch.object(release, "interactive_wizard_enabled", return_value=True),
+            patch("builtins.input", side_effect=["us-east-1", "access-key", "AKIAWIZARD"]),
+            patch.object(release.getpass, "getpass", side_effect=["never-print-this", ""]),
+            redirect_stderr(stderr),
+            redirect_stdout(stdout),
+        ):
+            session, region, *_ = release.session_clients()
+            self.assertNotIn("AWS_ACCESS_KEY_ID", os.environ)
+            self.assertNotIn("AWS_SECRET_ACCESS_KEY", os.environ)
+            self.assertNotIn("AWS_PROFILE", os.environ)
+            self.assertEqual("us-east-1", os.environ["AWS_REGION"])
+        self.assertEqual("env", session.get_credentials().method)
+        self.assertEqual("us-east-1", region)
+        self.assertNotIn("never-print-this", stderr.getvalue())
+        self.assertEqual("", stdout.getvalue())
+
+    def test_wizard_can_select_an_existing_profile_without_requesting_secrets(self):
+        with (
+            patch.dict(os.environ, {"AWS_REGION": "us-east-1"}, clear=True),
+            patch.object(release, "_boto3", return_value=(self.Boto3, Exception)),
+            patch.object(release, "interactive_wizard_enabled", return_value=True),
+            patch("builtins.input", side_effect=["profile", "release"]),
+            patch.object(release.getpass, "getpass", side_effect=AssertionError("secret prompt was used")),
+            redirect_stderr(StringIO()),
+        ):
+            session, _, *_ = release.session_clients()
+            self.assertEqual("release", os.environ["AWS_PROFILE"])
+        self.assertEqual("shared-credentials-file", session.get_credentials().method)
+
+    def test_configure_and_no_wizard_options_parse(self):
+        args = release.parser().parse_args(["--no-wizard", "configure"])
+        self.assertEqual("configure", args.command)
+        self.assertTrue(args.no_wizard)
 
 
 if __name__ == "__main__":

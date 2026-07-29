@@ -6,9 +6,11 @@ from __future__ import annotations
 import argparse
 import copy
 import base64
+import getpass
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -23,6 +25,24 @@ RUN_TAG = "DL4JReleaseRun"
 SHARD_TAG = "DL4JReleaseShard"
 ACTIVE_STATES = ("pending", "running", "stopping", "stopped")
 GPU_INSTANCE_PREFIXES = ("g", "p", "inf", "trn")
+# Region prefixes are partition-specific; for example, aws-eusc uses
+# eusc-de-east-1 rather than a two-letter geographic prefix.
+AWS_REGION_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+){2,}$")
+AWS_CREDENTIAL_ENVIRONMENT = (
+    "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_SECURITY_TOKEN"
+)
+AWS_CREDENTIAL_ERROR_NAMES = {
+    "ConfigNotFound", "ConfigParseError", "CredentialRetrievalError",
+    "InfiniteLoopConfigError", "InvalidConfigError", "LoginRefreshRequired",
+    "LoginTokenLoadError", "NoAuthTokenError", "NoCredentialsError",
+    "PartialCredentialsError", "ProfileNotFound", "RefreshWithMFAUnsupportedError",
+    "SSOTokenLoadError", "TokenRetrievalError", "UnauthorizedSSOTokenError",
+}
+AWS_CREDENTIAL_ERROR_CODES = {
+    "AuthFailure", "ExpiredToken", "ExpiredTokenException", "InvalidAccessKeyId",
+    "InvalidClientTokenId", "RequestExpired", "SignatureDoesNotMatch",
+    "TokenRefreshRequired", "UnrecognizedClientException",
+}
 
 
 def _boto3():
@@ -32,6 +52,206 @@ def _boto3():
     except ImportError as exc:
         raise SystemExit("boto3 is required: python3 -m pip install boto3") from exc
     return boto3, ClientError
+
+
+def interactive_wizard_enabled(allow_wizard: bool) -> bool:
+    """Never block CI or redirected commands waiting for interactive input."""
+    ci = any(
+        os.environ.get(name, "").strip().lower() not in {"", "0", "false", "no"}
+        for name in ("CI", "GITHUB_ACTIONS")
+    )
+    return bool(allow_wizard and not ci and getattr(sys.stdin, "isatty", lambda: False)())
+
+
+def prompt_value(label: str, *, default: str | None = None, secret: bool = False, required: bool = True) -> str:
+    suffix = f" [{default}]" if default else ""
+    while True:
+        try:
+            if secret:
+                value = getpass.getpass(f"{label}{suffix}: ").strip()
+            else:
+                print(f"{label}{suffix}: ", end="", file=sys.stderr, flush=True)
+                value = input().strip()
+        except EOFError as exc:
+            raise SystemExit("AWS configuration wizard lost its interactive input") from exc
+        if not value and default is not None:
+            value = default
+        if value or not required:
+            return value
+        print(f"{label} is required.", file=sys.stderr)
+
+
+def aws_configuration_error(problem: str) -> SystemExit:
+    return SystemExit(
+        f"AWS release configuration is incomplete: {problem}. Use the standard boto3 "
+        "credential chain and set AWS_REGION/AWS_DEFAULT_REGION, or run "
+        "`python3 release/aws/release.py configure` in an interactive terminal."
+    )
+
+
+def valid_aws_region(region: str | None) -> bool:
+    return bool(region and AWS_REGION_PATTERN.fullmatch(region))
+
+
+def aws_credential_exception(exc: BaseException) -> bool:
+    response = getattr(exc, "response", {})
+    code = response.get("Error", {}).get("Code") if isinstance(response, dict) else None
+    names = {item.__name__ for item in exc.__class__.__mro__}
+    return bool(names & AWS_CREDENTIAL_ERROR_NAMES) or code in AWS_CREDENTIAL_ERROR_CODES
+
+
+def safe_aws_credential_problem(exc: BaseException) -> str:
+    response = getattr(exc, "response", {})
+    code = response.get("Error", {}).get("Code") if isinstance(response, dict) else None
+    return f"credential validation returned {code or exc.__class__.__name__}"
+
+
+def aws_credential_problem(session: Any) -> str | None:
+    """Resolve the normal SDK chain and prove the resulting identity without exposing it."""
+    try:
+        if session.get_credentials() is None:
+            return "the boto3 credential chain did not resolve credentials"
+        session.client("sts").get_caller_identity()
+    except Exception as exc:
+        if aws_credential_exception(exc):
+            return safe_aws_credential_problem(exc)
+        raise
+    return None
+
+
+def create_aws_session(boto3: Any, *, region: str, profile: str | None = None,
+                       access_key: str | None = None, secret_key: str | None = None,
+                       session_token: str | None = None) -> tuple[Any | None, str | None]:
+    try:
+        keyword: dict[str, Any] = {"region_name": region}
+        if profile:
+            keyword["profile_name"] = profile
+        if access_key:
+            keyword.update(
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                aws_session_token=session_token or None,
+            )
+        return boto3.Session(**keyword), None
+    except Exception as exc:
+        if aws_credential_exception(exc):
+            return None, safe_aws_credential_problem(exc)
+        raise
+
+
+def configure_aws_credentials(boto3: Any, region: str, initial_problem: str) -> Any:
+    """Interactively choose a standard boto3 credential source for this invocation."""
+    print(f"AWS credential setup is required ({initial_problem}).", file=sys.stderr)
+    try:
+        profiles = sorted(set(boto3.Session(region_name=region).available_profiles))
+    except Exception:
+        profiles = []
+    current_profile = os.environ.get("AWS_PROFILE") or os.environ.get("AWS_DEFAULT_PROFILE")
+    default_source = "profile" if current_profile or profiles else "access-key"
+    if profiles:
+        print("Available AWS profiles: " + ", ".join(profiles), file=sys.stderr)
+
+    while True:
+        source = prompt_value("Credential source (profile/access-key)", default=default_source).lower()
+        if source in {"profile", "p"}:
+            profile = prompt_value("AWS profile", default=current_profile or (profiles[0] if profiles else None))
+            candidate, problem = create_aws_session(boto3, region=region, profile=profile)
+            if candidate is not None:
+                problem = aws_credential_problem(candidate)
+            if problem is None:
+                for name in AWS_CREDENTIAL_ENVIRONMENT:
+                    os.environ.pop(name, None)
+                os.environ["AWS_PROFILE"] = profile
+                os.environ.pop("AWS_DEFAULT_PROFILE", None)
+            else:
+                print(f"That profile is not usable: {problem}.", file=sys.stderr)
+                continue
+        elif source in {"access-key", "access", "key", "a"}:
+            access_key = prompt_value("AWS_ACCESS_KEY_ID")
+            secret_key = prompt_value("AWS_SECRET_ACCESS_KEY", secret=True)
+            session_token = prompt_value("AWS_SESSION_TOKEN (optional)", secret=True, required=False)
+            candidate, problem = create_aws_session(
+                boto3, region=region, access_key=access_key, secret_key=secret_key,
+                session_token=session_token,
+            )
+            if candidate is not None:
+                problem = aws_credential_problem(candidate)
+            if problem is None:
+                # Keep interactively entered secrets inside this boto3 Session.  Putting
+                # them in os.environ would leak them to later git/gh subprocesses.
+                for name in AWS_CREDENTIAL_ENVIRONMENT:
+                    os.environ.pop(name, None)
+                os.environ.pop("AWS_PROFILE", None)
+                os.environ.pop("AWS_DEFAULT_PROFILE", None)
+                os.environ["AWS_REGION"] = region
+                os.environ["AWS_DEFAULT_REGION"] = region
+                print("AWS credentials validated through STS for this invocation.", file=sys.stderr)
+                return candidate
+            else:
+                print(f"Those credentials are not usable: {problem}.", file=sys.stderr)
+                continue
+        else:
+            print("Choose `profile` or `access-key`.", file=sys.stderr)
+            continue
+
+        os.environ["AWS_REGION"] = region
+        os.environ["AWS_DEFAULT_REGION"] = region
+        standard_session, problem = create_aws_session(boto3, region=region)
+        if standard_session is not None:
+            problem = aws_credential_problem(standard_session)
+        if problem is None:
+            print("AWS credentials validated through STS for this invocation.", file=sys.stderr)
+            return standard_session
+        print(f"The standard boto3 chain still is not usable: {problem}.", file=sys.stderr)
+
+
+def configured_aws_session(region: str | None = None, *, allow_wizard: bool = True) -> tuple[Any, str]:
+    boto3, _ = _boto3()
+    requested_region = region or os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+    session = None
+    session_problem = None
+    if requested_region and valid_aws_region(requested_region):
+        session, session_problem = create_aws_session(boto3, region=requested_region)
+    elif requested_region:
+        session_problem = f"{requested_region!r} is not a valid AWS region name"
+    else:
+        try:
+            inherited = boto3.Session()
+            requested_region = inherited.region_name
+            if requested_region and valid_aws_region(requested_region):
+                session = inherited
+            else:
+                session_problem = "no AWS region was resolved"
+        except Exception as exc:
+            if aws_credential_exception(exc):
+                session_problem = safe_aws_credential_problem(exc)
+            else:
+                raise
+
+    if session is None and (not requested_region or not valid_aws_region(requested_region)):
+        if not interactive_wizard_enabled(allow_wizard):
+            raise aws_configuration_error(session_problem or "no AWS region was resolved")
+        print("AWS release environment wizard", file=sys.stderr)
+        while True:
+            requested_region = prompt_value(
+                "AWS region", default=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+            )
+            if valid_aws_region(requested_region):
+                break
+            print("Enter a regional EC2 name such as us-east-1.", file=sys.stderr)
+        os.environ["AWS_REGION"] = requested_region
+        os.environ["AWS_DEFAULT_REGION"] = requested_region
+        session, session_problem = create_aws_session(boto3, region=requested_region)
+
+    if session is not None:
+        credential_problem = aws_credential_problem(session)
+    else:
+        credential_problem = session_problem or "the boto3 credential chain could not be loaded"
+    if credential_problem:
+        if not interactive_wizard_enabled(allow_wizard):
+            raise aws_configuration_error(credential_problem)
+        session = configure_aws_credentials(boto3, str(requested_region), credential_problem)
+    return session, str(requested_region)
 
 
 def load_plan(path: Path) -> dict[str, Any]:
@@ -106,14 +326,33 @@ def resolve_branch(repository: str, branch: str) -> str:
     return commit
 
 
-def session_clients(region: str | None = None):
-    boto3, _ = _boto3()
-    requested_region = region or os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
-    session = boto3.Session(region_name=requested_region)
-    resolved_region = session.region_name
-    if not resolved_region:
-        raise SystemExit("Set AWS_REGION or AWS_DEFAULT_REGION")
-    return session, resolved_region, session.client("ec2"), session.client("ssm"), session.client("s3"), session.client("sts"), session.client("iam")
+def session_clients(region: str | None = None, *, allow_wizard: bool = True):
+    session, resolved_region = configured_aws_session(region, allow_wizard=allow_wizard)
+    return (
+        session, resolved_region, session.client("ec2"), session.client("ssm"),
+        session.client("s3"), session.client("sts"), session.client("iam"),
+    )
+
+
+def configure_environment(args: argparse.Namespace) -> None:
+    session, region, _, _, _, sts, _ = session_clients(
+        args.region, allow_wizard=not getattr(args, "no_wizard", False)
+    )
+    identity = sts.get_caller_identity()
+    credentials = session.get_credentials()
+    source = getattr(credentials, "method", "unknown")
+    reusable = {"AWS_REGION": region, "AWS_DEFAULT_REGION": region}
+    if os.environ.get("AWS_PROFILE"):
+        reusable["AWS_PROFILE"] = os.environ["AWS_PROFILE"]
+    print(json.dumps({
+        "configured": True,
+        "region": region,
+        "account": identity.get("Account"),
+        "arn": identity.get("Arn"),
+        "credentialSource": source,
+        "nonSecretEnvironmentForFutureCommands": reusable,
+        "credentialsPersisted": False,
+    }, indent=2))
 
 
 def kill_parameter_name(plan: dict[str, Any]) -> str:
@@ -772,7 +1011,7 @@ def managed_instances(ec2, run_id: str | None = None, include_terminated: bool =
 
 def preflight(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
-    session, region, ec2, ssm, _, sts, _ = session_clients(args.region)
+    session, region, ec2, ssm, _, sts, _ = session_clients(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     executions = selected_executions(plan, args.shard)
     apply_plan_defaults(plan, executions)
     apply_execution_overrides(executions, args.instance_type, args.build_threads)
@@ -824,7 +1063,7 @@ def preflight(args: argparse.Namespace) -> None:
 def start(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
     commit = args.commit or resolve_branch(args.repository, args.branch)
-    session, region, ec2, ssm, s3, sts, iam = session_clients(args.region)
+    session, region, ec2, ssm, s3, sts, iam = session_clients(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     logs_client = session.client("logs")
     executions = selected_executions(plan, args.shard)
     apply_plan_defaults(plan, executions)
@@ -989,7 +1228,7 @@ def start(args: argparse.Namespace) -> None:
 
 def status(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
-    _, region, ec2, ssm, s3, _, _ = session_clients(args.region)
+    _, region, ec2, ssm, s3, _, _ = session_clients(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     instances = managed_instances(ec2, args.run_id, include_terminated=True)
     rows = []
     for instance in instances:
@@ -1024,7 +1263,7 @@ def status(args: argparse.Namespace) -> None:
 
 def show_logs(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
-    session, region, _, _, _, _, _ = session_clients(args.region)
+    session, region, _, _, _, _, _ = session_clients(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     logs_client = session.client("logs")
     group = log_group_name(plan)
     selected = set(args.shard or [])
@@ -1091,7 +1330,7 @@ def delete_logs(args: argparse.Namespace) -> None:
     if not args.yes:
         raise SystemExit("Log deletion requires --yes")
     plan = load_plan(args.plan)
-    session, region, _, _, s3, sts, _ = session_clients(args.region)
+    session, region, _, _, s3, sts, _ = session_clients(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     logs_client = session.client("logs")
     group = log_group_name(plan)
     selected = set(args.shard or [])
@@ -1175,7 +1414,7 @@ def publish_test_repository(
 
 def collect(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
-    _, region, _, _, s3, _, _ = session_clients(args.region)
+    _, region, _, _, s3, _, _ = session_clients(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     prefix = f"{plan.get('artifactPrefix', 'deeplearning4j/releases')}/{args.run_id}/"
     paginator = s3.get_paginator("list_objects_v2")
     objects = [item for page in paginator.paginate(Bucket=args.bucket, Prefix=prefix) for item in page.get("Contents", [])]
@@ -1288,7 +1527,7 @@ def collect(args: argparse.Namespace) -> None:
 
 def stop_everything(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
-    session, region, ec2, ssm, s3, sts, _ = session_clients(args.region)
+    session, region, ec2, ssm, s3, sts, _ = session_clients(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     set_kill_switch(ssm, plan, True)
     victims = managed_instances(ec2)
     hosts = managed_hosts(ec2)
@@ -1339,7 +1578,13 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--plan", type=Path, default=root / "release/aws/release-plan.json")
     result.add_argument("--region")
+    result.add_argument(
+        "--no-wizard", action="store_true",
+        help="fail instead of prompting when the standard AWS SDK configuration is incomplete",
+    )
     sub = result.add_subparsers(dest="command", required=True)
+    setup = sub.add_parser("configure", help="validate or interactively complete AWS SDK configuration")
+    setup.set_defaults(func=configure_environment)
     check = sub.add_parser("preflight")
     check.add_argument("--shard", action="append")
     check.add_argument("--instance-type", help="validated CPU instance override for capacity-limited smoke tests")

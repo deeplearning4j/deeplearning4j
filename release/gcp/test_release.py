@@ -5,7 +5,9 @@ import importlib.util
 import inspect
 import io
 import json
+import os
 from pathlib import Path
+import tempfile
 import types
 import unittest
 from unittest import mock
@@ -404,6 +406,7 @@ class WorkerTests(unittest.TestCase):
 class CliTests(unittest.TestCase):
     def test_all_operational_commands_parse(self):
         command_sets = [
+            ["configure"],
             ["preflight", "--max-cores", "96"],
             ["start", "--branch", "main", "--version", "1.0.0", "--exclude-shard", "linux-x86_64-cpu--base"],
             ["status", "--run-id", "run"],
@@ -423,6 +426,128 @@ class CliTests(unittest.TestCase):
         self.assertIn("GOOGLE_CLOUD_REGION", text)
         self.assertIn("CLOUDSDK_COMPUTE_REGION", text)
         self.assertIn("GOOGLE_APPLICATION_CREDENTIALS", (ROOT / "release/gcp/README.md").read_text(encoding="utf-8"))
+
+
+class EnvironmentWizardTests(unittest.TestCase):
+    class DefaultCredentialsError(Exception):
+        pass
+
+    class Credentials:
+        def __init__(self, valid=True):
+            self.valid = valid
+            self.refresh_calls = 0
+
+        def refresh(self, _request):
+            self.refresh_calls += 1
+            self.valid = True
+
+    class Auth:
+        def __init__(self, *, always_available=False, credentials=None):
+            self.always_available = always_available
+            self.credentials = credentials or EnvironmentWizardTests.Credentials()
+
+        def default(self, **_kwargs):
+            if self.always_available or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                return self.credentials, None
+            raise EnvironmentWizardTests.DefaultCredentialsError("ADC missing")
+
+    @staticmethod
+    def modules(auth):
+        return (auth, object(), lambda: object(), object(), object(), object(), object(), object())
+
+    def test_noninteractive_missing_adc_fails_with_recovery_command(self):
+        auth = self.Auth()
+        with (
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(release, "google_modules", return_value=self.modules(auth)),
+            self.assertRaisesRegex(SystemExit, "release/gcp/release.py configure"),
+        ):
+            release.cloud_context(allow_wizard=False)
+
+    def test_wizard_selects_adc_file_project_and_region_for_current_command(self):
+        auth = self.Auth()
+        stderr = io.StringIO()
+        stdout = io.StringIO()
+        with tempfile.TemporaryDirectory() as temporary:
+            credential_file = Path(temporary) / "adc.json"
+            credential_file.write_text('{"private_key":"never-print-this"}', encoding="utf-8")
+            with (
+                mock.patch.dict(os.environ, {}, clear=True),
+                mock.patch.object(release, "google_modules", return_value=self.modules(auth)),
+                mock.patch.object(release, "interactive_wizard_enabled", return_value=True),
+                mock.patch("builtins.input", side_effect=[
+                    "dl4j-release", "file", str(credential_file), "us-central1"
+                ]),
+                mock.patch.object(release.sys, "stderr", new=stderr),
+                mock.patch.object(release.sys, "stdout", new=stdout),
+            ):
+                context = release.cloud_context()
+                region = release.resolve_region(None)
+                self.assertEqual(str(credential_file), os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
+                self.assertEqual("dl4j-release", os.environ["GOOGLE_CLOUD_PROJECT"])
+                self.assertEqual("us-central1", os.environ["GOOGLE_CLOUD_REGION"])
+        self.assertIs(auth.credentials, context["credentials"])
+        self.assertEqual("us-central1", region)
+        self.assertNotIn("never-print-this", stderr.getvalue())
+        self.assertEqual("", stdout.getvalue())
+
+    def test_existing_adc_only_prompts_for_missing_project(self):
+        auth = self.Auth(always_available=True)
+        with (
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(release, "google_modules", return_value=self.modules(auth)),
+            mock.patch.object(release, "interactive_wizard_enabled", return_value=True),
+            mock.patch("builtins.input", side_effect=["dl4j-release"]),
+            mock.patch.object(release.sys, "stderr", new=io.StringIO()),
+        ):
+            context = release.cloud_context()
+        self.assertEqual("dl4j-release", context["project"])
+
+    def test_wizard_can_create_user_adc_with_gcloud(self):
+        auth = self.Auth()
+
+        def login(_command, **_kwargs):
+            auth.always_available = True
+            return types.SimpleNamespace(returncode=0)
+
+        with (
+            mock.patch.dict(os.environ, {}, clear=True),
+            mock.patch.object(release, "google_modules", return_value=self.modules(auth)),
+            mock.patch.object(release, "interactive_wizard_enabled", return_value=True),
+            mock.patch.object(release.shutil, "which", return_value="/usr/bin/gcloud"),
+            mock.patch.object(release.subprocess, "run", side_effect=login) as run,
+            mock.patch("builtins.input", side_effect=["dl4j-release", "gcloud"]),
+            mock.patch.object(release.sys, "stderr", new=io.StringIO()),
+        ):
+            context = release.cloud_context()
+        self.assertIs(auth.credentials, context["credentials"])
+        self.assertEqual(
+            ["/usr/bin/gcloud", "auth", "application-default", "login", "--project", "dl4j-release"],
+            run.call_args.args[0],
+        )
+
+    def test_adc_credentials_are_refreshed_during_validation(self):
+        credentials = self.Credentials(valid=False)
+        auth = self.Auth(always_available=True, credentials=credentials)
+        with (
+            mock.patch.dict(os.environ, {"GOOGLE_CLOUD_PROJECT": "dl4j-release"}, clear=True),
+            mock.patch.object(release, "google_modules", return_value=self.modules(auth)),
+        ):
+            release.cloud_context(allow_wizard=False)
+        self.assertEqual(1, credentials.refresh_calls)
+
+    def test_github_actions_never_enables_wizard_even_with_a_tty(self):
+        tty = types.SimpleNamespace(isatty=lambda: True)
+        with (
+            mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}, clear=True),
+            mock.patch.object(release.sys, "stdin", tty),
+        ):
+            self.assertFalse(release.interactive_wizard_enabled(True))
+
+    def test_configure_and_no_wizard_options_parse(self):
+        args = release.parser().parse_args(["--no-wizard", "configure"])
+        self.assertEqual("configure", args.command)
+        self.assertTrue(args.no_wizard)
 
 
 class ShutdownTests(unittest.TestCase):
