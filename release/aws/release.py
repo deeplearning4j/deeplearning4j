@@ -65,26 +65,26 @@ def interactive_wizard_enabled(allow_wizard: bool) -> bool:
 
 def prompt_value(label: str, *, default: str | None = None, secret: bool = False, required: bool = True) -> str:
     suffix = f" [{default}]" if default else ""
-    while True:
-        try:
-            if secret:
-                value = getpass.getpass(f"{label}{suffix}: ").strip()
-            else:
-                print(f"{label}{suffix}: ", end="", file=sys.stderr, flush=True)
-                value = input().strip()
-        except EOFError as exc:
-            raise SystemExit("AWS configuration wizard lost its interactive input") from exc
-        if not value and default is not None:
-            value = default
-        if value or not required:
-            return value
-        print(f"{label} is required.", file=sys.stderr)
+    try:
+        if secret:
+            value = getpass.getpass(f"{label}{suffix}: ").strip()
+        else:
+            print(f"{label}{suffix}: ", end="", file=sys.stderr, flush=True)
+            value = input().strip()
+    except EOFError as exc:
+        raise SystemExit("AWS configuration wizard lost its interactive input") from exc
+    if not value and default is not None:
+        value = default
+    if not value and required:
+        raise aws_configuration_error(f"no value was entered for {label}")
+    return value
 
 
 def aws_configuration_error(problem: str) -> SystemExit:
     return SystemExit(
-        f"AWS release configuration is incomplete: {problem}. Use the standard boto3 "
-        "credential chain and set AWS_REGION/AWS_DEFAULT_REGION, or run "
+        f"AWS release configuration is incomplete: {problem}. Set AWS_REGION (or "
+        "AWS_DEFAULT_REGION) and either AWS_PROFILE, or AWS_ACCESS_KEY_ID plus "
+        "AWS_SECRET_ACCESS_KEY and AWS_SESSION_TOKEN when the credentials are temporary. Run "
         "`python3 release/aws/release.py configure` in an interactive terminal."
     )
 
@@ -140,69 +140,43 @@ def create_aws_session(boto3: Any, *, region: str, profile: str | None = None,
 
 
 def configure_aws_credentials(boto3: Any, region: str, initial_problem: str) -> Any:
-    """Interactively choose a standard boto3 credential source for this invocation."""
-    print(f"AWS credential setup is required ({initial_problem}).", file=sys.stderr)
-    try:
-        profiles = sorted(set(boto3.Session(region_name=region).available_profiles))
-    except Exception:
-        profiles = []
+    """Prompt once for the exact standard AWS credential environment values."""
+    print(f"AWS credentials are required ({initial_problem}).", file=sys.stderr)
     current_profile = os.environ.get("AWS_PROFILE") or os.environ.get("AWS_DEFAULT_PROFILE")
-    default_source = "profile" if current_profile or profiles else "access-key"
-    if profiles:
-        print("Available AWS profiles: " + ", ".join(profiles), file=sys.stderr)
+    if current_profile:
+        print(
+            f"AWS_PROFILE is currently {current_profile!r}, but it was rejected. "
+            "Enter an access key below, or press Ctrl-C and fix AWS_PROFILE.",
+            file=sys.stderr,
+        )
+    access_key = prompt_value("AWS user access key ID (AWS_ACCESS_KEY_ID)")
+    secret_key = prompt_value("AWS user secret access key (AWS_SECRET_ACCESS_KEY)", secret=True)
+    session_token = prompt_value(
+        "AWS temporary session token (AWS_SESSION_TOKEN; leave blank for a long-lived key)",
+        secret=True, required=False,
+    )
+    candidate, problem = create_aws_session(
+        boto3, region=region, access_key=access_key, secret_key=secret_key,
+        session_token=session_token,
+    )
+    if candidate is not None:
+        problem = aws_credential_problem(candidate)
+    if problem is not None:
+        raise aws_configuration_error(
+            f"AWS rejected the values entered for AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY"
+            f"{('/AWS_SESSION_TOKEN' if session_token else '')}: {problem}"
+        )
 
-    while True:
-        source = prompt_value("Credential source (profile/access-key)", default=default_source).lower()
-        if source in {"profile", "p"}:
-            profile = prompt_value("AWS profile", default=current_profile or (profiles[0] if profiles else None))
-            candidate, problem = create_aws_session(boto3, region=region, profile=profile)
-            if candidate is not None:
-                problem = aws_credential_problem(candidate)
-            if problem is None:
-                for name in AWS_CREDENTIAL_ENVIRONMENT:
-                    os.environ.pop(name, None)
-                os.environ["AWS_PROFILE"] = profile
-                os.environ.pop("AWS_DEFAULT_PROFILE", None)
-            else:
-                print(f"That profile is not usable: {problem}.", file=sys.stderr)
-                continue
-        elif source in {"access-key", "access", "key", "a"}:
-            access_key = prompt_value("AWS_ACCESS_KEY_ID")
-            secret_key = prompt_value("AWS_SECRET_ACCESS_KEY", secret=True)
-            session_token = prompt_value("AWS_SESSION_TOKEN (optional)", secret=True, required=False)
-            candidate, problem = create_aws_session(
-                boto3, region=region, access_key=access_key, secret_key=secret_key,
-                session_token=session_token,
-            )
-            if candidate is not None:
-                problem = aws_credential_problem(candidate)
-            if problem is None:
-                # Keep interactively entered secrets inside this boto3 Session.  Putting
-                # them in os.environ would leak them to later git/gh subprocesses.
-                for name in AWS_CREDENTIAL_ENVIRONMENT:
-                    os.environ.pop(name, None)
-                os.environ.pop("AWS_PROFILE", None)
-                os.environ.pop("AWS_DEFAULT_PROFILE", None)
-                os.environ["AWS_REGION"] = region
-                os.environ["AWS_DEFAULT_REGION"] = region
-                print("AWS credentials validated through STS for this invocation.", file=sys.stderr)
-                return candidate
-            else:
-                print(f"Those credentials are not usable: {problem}.", file=sys.stderr)
-                continue
-        else:
-            print("Choose `profile` or `access-key`.", file=sys.stderr)
-            continue
-
-        os.environ["AWS_REGION"] = region
-        os.environ["AWS_DEFAULT_REGION"] = region
-        standard_session, problem = create_aws_session(boto3, region=region)
-        if standard_session is not None:
-            problem = aws_credential_problem(standard_session)
-        if problem is None:
-            print("AWS credentials validated through STS for this invocation.", file=sys.stderr)
-            return standard_session
-        print(f"The standard boto3 chain still is not usable: {problem}.", file=sys.stderr)
+    # Keep interactively entered secrets inside this boto3 Session. Putting them
+    # in os.environ would leak them to later git/gh subprocesses.
+    for name in AWS_CREDENTIAL_ENVIRONMENT:
+        os.environ.pop(name, None)
+    os.environ.pop("AWS_PROFILE", None)
+    os.environ.pop("AWS_DEFAULT_PROFILE", None)
+    os.environ["AWS_REGION"] = region
+    os.environ["AWS_DEFAULT_REGION"] = region
+    print("AWS credentials validated through STS for this invocation.", file=sys.stderr)
+    return candidate
 
 
 def configured_aws_session(region: str | None = None, *, allow_wizard: bool = True) -> tuple[Any, str]:
@@ -232,13 +206,14 @@ def configured_aws_session(region: str | None = None, *, allow_wizard: bool = Tr
         if not interactive_wizard_enabled(allow_wizard):
             raise aws_configuration_error(session_problem or "no AWS region was resolved")
         print("AWS release environment wizard", file=sys.stderr)
-        while True:
-            requested_region = prompt_value(
-                "AWS region", default=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+        requested_region = prompt_value(
+            "AWS region (AWS_REGION or AWS_DEFAULT_REGION)",
+            default=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION"),
+        )
+        if not valid_aws_region(requested_region):
+            raise aws_configuration_error(
+                f"{requested_region!r} is not a valid value for AWS_REGION/AWS_DEFAULT_REGION"
             )
-            if valid_aws_region(requested_region):
-                break
-            print("Enter a regional EC2 name such as us-east-1.", file=sys.stderr)
         os.environ["AWS_REGION"] = requested_region
         os.environ["AWS_DEFAULT_REGION"] = requested_region
         session, session_problem = create_aws_session(boto3, region=requested_region)

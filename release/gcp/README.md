@@ -26,7 +26,7 @@ export GOOGLE_CLOUD_PROJECT=my-project-id
 export GOOGLE_CLOUD_REGION=us-central1
 ```
 
-Every cloud command resolves ADC, refreshes it to prove that it is usable, and validates project-ID and Compute Engine region syntax before provisioning; `preflight` then resolves both against the live APIs. When ADC, project, or region is missing or malformed and stdin is a terminal, the controller opens an interactive wizard. It can point `GOOGLE_APPLICATION_CREDENTIALS` at any ADC-compatible JSON file (service account, workload identity, or workforce identity), or explicitly run `gcloud auth application-default login`; the controller never prints or copies credential-file contents. Run the same validation explicitly with:
+Every cloud command resolves ADC, refreshes it to prove that it is usable, and validates project-ID and Compute Engine region syntax before provisioning; `preflight` then resolves both against the live APIs. When configuration is missing or malformed and stdin is a terminal, the controller asks once for plainly named values: `GOOGLE_CLOUD_PROJECT`, a `GOOGLE_APPLICATION_CREDENTIALS` JSON path (enter `gcloud` at that exact prompt to run `gcloud auth application-default login` instead), and `GOOGLE_CLOUD_REGION`. There are no ADC-source menus or retry loops, and the controller never prints or copies credential-file contents. Run the same validation explicitly with:
 
 ```bash
 python3 release/gcp/release.py configure

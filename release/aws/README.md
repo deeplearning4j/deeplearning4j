@@ -28,7 +28,7 @@ export AWS_SESSION_TOKEN=...       # temporary credentials only
 export AWS_REGION=us-east-1        # AWS_DEFAULT_REGION also works
 ```
 
-Every command validates the resolved region and calls STS with the identity from the normal boto3 chain before it touches release resources. If the region or credentials are missing, partial, expired, or rejected and stdin is a terminal, the controller opens an interactive wizard. It can select an existing AWS profile or accept an access key, secret key, and optional session token; secret values use hidden prompts and are never printed or written by the controller. Run the same check explicitly with:
+Every command validates the resolved region and calls STS with the identity from the normal boto3 chain before it touches release resources. If the region or credentials are missing, partial, expired, or rejected and stdin is a terminal, the controller asks once for plainly named SDK values: `AWS_REGION`/`AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID`, hidden `AWS_SECRET_ACCESS_KEY`, and hidden optional `AWS_SESSION_TOKEN`. A working `AWS_PROFILE` is still used automatically; a rejected profile is reported before the direct access-key prompts. There are no credential-source menus or retry loops. Secret values are never printed, put in the process environment, or written by the controller. Run the same check explicitly with:
 
 ```bash
 python3 release/aws/release.py configure

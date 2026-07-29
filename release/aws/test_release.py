@@ -666,6 +666,16 @@ class EnvironmentWizardTest(unittest.TestCase):
         self.assertEqual("us-east-1", region)
         self.assertEqual("env", session.get_credentials().method)
 
+    def test_existing_standard_profile_does_not_prompt(self):
+        environment = {"AWS_REGION": "us-east-1", "AWS_PROFILE": "release"}
+        with (
+            patch.dict(os.environ, environment, clear=True),
+            patch.object(release, "_boto3", return_value=(self.Boto3, Exception)),
+            patch("builtins.input", side_effect=AssertionError("wizard unexpectedly prompted")),
+        ):
+            session, _, *_ = release.session_clients(allow_wizard=True)
+        self.assertEqual("shared-credentials-file", session.get_credentials().method)
+
     def test_wizard_sets_region_and_hidden_access_credentials_for_current_command(self):
         stderr = StringIO()
         stdout = StringIO()
@@ -673,8 +683,8 @@ class EnvironmentWizardTest(unittest.TestCase):
             patch.dict(os.environ, {}, clear=True),
             patch.object(release, "_boto3", return_value=(self.Boto3, Exception)),
             patch.object(release, "interactive_wizard_enabled", return_value=True),
-            patch("builtins.input", side_effect=["us-east-1", "access-key", "AKIAWIZARD"]),
-            patch.object(release.getpass, "getpass", side_effect=["never-print-this", ""]),
+            patch("builtins.input", side_effect=["us-east-1", "AKIAWIZARD"]),
+            patch.object(release.getpass, "getpass", side_effect=["never-print-this", ""]) as secret_input,
             redirect_stderr(stderr),
             redirect_stdout(stdout),
         ):
@@ -686,20 +696,44 @@ class EnvironmentWizardTest(unittest.TestCase):
         self.assertEqual("env", session.get_credentials().method)
         self.assertEqual("us-east-1", region)
         self.assertNotIn("never-print-this", stderr.getvalue())
+        self.assertIn("AWS_REGION", stderr.getvalue())
+        self.assertIn("AWS_ACCESS_KEY_ID", stderr.getvalue())
+        self.assertIn("AWS_SECRET_ACCESS_KEY", secret_input.call_args_list[0].args[0])
+        self.assertIn("AWS_SESSION_TOKEN", secret_input.call_args_list[1].args[0])
         self.assertEqual("", stdout.getvalue())
 
-    def test_wizard_can_select_an_existing_profile_without_requesting_secrets(self):
+    def test_rejected_profile_prompts_directly_for_access_key(self):
         with (
-            patch.dict(os.environ, {"AWS_REGION": "us-east-1"}, clear=True),
+            patch.dict(os.environ, {"AWS_REGION": "us-east-1", "AWS_PROFILE": "broken"}, clear=True),
             patch.object(release, "_boto3", return_value=(self.Boto3, Exception)),
             patch.object(release, "interactive_wizard_enabled", return_value=True),
-            patch("builtins.input", side_effect=["profile", "release"]),
-            patch.object(release.getpass, "getpass", side_effect=AssertionError("secret prompt was used")),
-            redirect_stderr(StringIO()),
+            patch("builtins.input", side_effect=["AKIADIRECT"]) as user_input,
+            patch.object(release.getpass, "getpass", side_effect=["direct-secret", ""]),
+            redirect_stderr(StringIO()) as stderr,
         ):
             session, _, *_ = release.session_clients()
-            self.assertEqual("release", os.environ["AWS_PROFILE"])
-        self.assertEqual("shared-credentials-file", session.get_credentials().method)
+            self.assertNotIn("AWS_PROFILE", os.environ)
+        self.assertEqual("env", session.get_credentials().method)
+        self.assertEqual(1, user_input.call_count)
+        self.assertIn("AWS_PROFILE", stderr.getvalue())
+        self.assertIn("AWS_ACCESS_KEY_ID", stderr.getvalue())
+
+    def test_rejected_entered_credentials_exit_instead_of_looping(self):
+        with (
+            patch.dict(os.environ, {"AWS_REGION": "us-east-1", "AWS_PROFILE": "broken"}, clear=True),
+            patch.object(release, "_boto3", return_value=(self.Boto3, Exception)),
+            patch.object(release, "interactive_wizard_enabled", return_value=True),
+            patch.object(
+                release, "aws_credential_problem",
+                return_value="credential validation returned InvalidClientTokenId",
+            ),
+            patch("builtins.input", return_value="AKIAREJECTED") as user_input,
+            patch.object(release.getpass, "getpass", side_effect=["rejected-secret", ""]),
+            redirect_stderr(StringIO()),
+            self.assertRaisesRegex(SystemExit, "AWS rejected the values entered"),
+        ):
+            release.session_clients()
+        self.assertEqual(1, user_input.call_count)
 
     def test_configure_and_no_wizard_options_parse(self):
         args = release.parser().parse_args(["--no-wizard", "configure"])

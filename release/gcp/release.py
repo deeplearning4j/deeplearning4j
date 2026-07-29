@@ -126,23 +126,23 @@ def interactive_wizard_enabled(allow_wizard: bool) -> bool:
 
 def prompt_value(label: str, *, default: str | None = None) -> str:
     suffix = f" [{default}]" if default else ""
-    while True:
-        try:
-            print(f"{label}{suffix}: ", end="", file=sys.stderr, flush=True)
-            value = input().strip()
-        except EOFError as exc:
-            raise SystemExit("Google Cloud configuration wizard lost its interactive input") from exc
-        if not value and default is not None:
-            value = default
-        if value:
-            return value
-        print(f"{label} is required.", file=sys.stderr)
+    try:
+        print(f"{label}{suffix}: ", end="", file=sys.stderr, flush=True)
+        value = input().strip()
+    except EOFError as exc:
+        raise SystemExit("Google Cloud configuration wizard lost its interactive input") from exc
+    if not value and default is not None:
+        value = default
+    if not value:
+        raise gcp_configuration_error(f"no value was entered for {label}")
+    return value
 
 
 def gcp_configuration_error(problem: str) -> SystemExit:
     return SystemExit(
-        f"Google Cloud release configuration is incomplete: {problem}. Configure Application "
-        "Default Credentials plus GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_REGION, or run "
+        f"Google Cloud release configuration is incomplete: {problem}. Set "
+        "GOOGLE_APPLICATION_CREDENTIALS, GOOGLE_CLOUD_PROJECT, and GOOGLE_CLOUD_REGION, "
+        "or create user credentials with `gcloud auth application-default login`. Run "
         "`python3 release/gcp/release.py configure` in an interactive terminal."
     )
 
@@ -186,59 +186,60 @@ def valid_gcp_region(region: str | None) -> bool:
 
 def prompt_gcp_project(project_override: str | None = None) -> str:
     current = configured_gcp_project(project_override)
-    while True:
-        project = prompt_value("Google Cloud project ID", default=current)
-        if valid_gcp_project(project):
-            os.environ["GOOGLE_CLOUD_PROJECT"] = project
-            return project
-        print("Enter a project ID (for example deeplearning4j-release) or numeric project number.", file=sys.stderr)
+    project = prompt_value("Google Cloud project ID (GOOGLE_CLOUD_PROJECT)", default=current)
+    if not valid_gcp_project(project):
+        raise gcp_configuration_error(
+            f"{project!r} is not a valid project ID for GOOGLE_CLOUD_PROJECT"
+        )
+    os.environ["GOOGLE_CLOUD_PROJECT"] = project
+    return project
 
 
 def configure_gcp_credentials(google_auth: Any, request_factory: Any,
                               project_override: str | None, initial_problem: str) -> tuple[Any, str | None]:
-    """Interactively select an official ADC source; credential contents are never printed or copied."""
-    print(f"Google Cloud credential setup is required ({initial_problem}).", file=sys.stderr)
+    """Prompt once for GOOGLE_APPLICATION_CREDENTIALS or an explicit gcloud login."""
+    print(f"Google Cloud credentials are required ({initial_problem}).", file=sys.stderr)
     project = configured_gcp_project(project_override)
     if not valid_gcp_project(project):
         project = prompt_gcp_project(project_override)
     current_file = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
-    default_source = "file" if current_file else "gcloud"
+    if current_file:
+        print(
+            f"GOOGLE_APPLICATION_CREDENTIALS is currently {current_file!r}, but it was rejected.",
+            file=sys.stderr,
+        )
+    path_text = prompt_value(
+        "Google credential JSON file path (GOOGLE_APPLICATION_CREDENTIALS; enter gcloud to sign in instead)"
+    )
+    if path_text.lower() == "gcloud":
+        executable = shutil.which("gcloud")
+        if not executable:
+            raise gcp_configuration_error(
+                "gcloud is not installed; enter a file path for GOOGLE_APPLICATION_CREDENTIALS instead"
+            )
+        old_file = os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+        command = [executable, "auth", "application-default", "login"]
+        if project:
+            command.extend(["--project", project])
+        if subprocess.run(command, check=False).returncode != 0:
+            if old_file:
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = old_file
+            raise gcp_configuration_error("gcloud auth application-default login failed")
+    else:
+        path = Path(path_text).expanduser().resolve()
+        if not path.is_file():
+            raise gcp_configuration_error(
+                f"the GOOGLE_APPLICATION_CREDENTIALS file does not exist: {path}"
+            )
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(path)
 
-    while True:
-        source = prompt_value("ADC source (file/gcloud)", default=default_source).lower()
-        if source in {"file", "f"}:
-            path_text = prompt_value("GOOGLE_APPLICATION_CREDENTIALS file", default=current_file)
-            path = Path(path_text).expanduser().resolve()
-            if not path.is_file():
-                print("That ADC JSON file does not exist.", file=sys.stderr)
-                continue
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(path)
-        elif source in {"gcloud", "login", "g"}:
-            executable = shutil.which("gcloud")
-            if not executable:
-                print(
-                    "gcloud is not installed; choose `file` or install the Google Cloud CLI.",
-                    file=sys.stderr,
-                )
-                continue
-            old_file = os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
-            command = [executable, "auth", "application-default", "login"]
-            if project:
-                command.extend(["--project", project])
-            if subprocess.run(command, check=False).returncode != 0:
-                if old_file:
-                    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = old_file
-                print("gcloud did not create Application Default Credentials.", file=sys.stderr)
-                continue
-        else:
-            print("Choose `file` or `gcloud`.", file=sys.stderr)
-            continue
-
-        credentials, adc_project, problem = load_gcp_credentials(google_auth, request_factory)
-        if problem is None:
-            print("Google Application Default Credentials validated for this invocation.", file=sys.stderr)
-            return credentials, adc_project
-        print(f"That ADC source is not usable: {problem}.", file=sys.stderr)
+    credentials, adc_project, problem = load_gcp_credentials(google_auth, request_factory)
+    if problem is not None:
+        raise gcp_configuration_error(
+            f"Google rejected GOOGLE_APPLICATION_CREDENTIALS/ADC: {problem}"
+        )
+    print("Google Application Default Credentials validated for this invocation.", file=sys.stderr)
+    return credentials, adc_project
 
 
 def cloud_context(project_override: str | None = None, *, allow_wizard: bool = True):
@@ -286,12 +287,12 @@ def resolve_region(value: str | None, *, allow_wizard: bool = True) -> str:
         if not interactive_wizard_enabled(allow_wizard):
             raise gcp_configuration_error(problem)
         print("Google Cloud release environment wizard", file=sys.stderr)
-        while True:
-            region = prompt_value("Google Cloud region", default=region)
-            if valid_gcp_region(region):
-                os.environ["GOOGLE_CLOUD_REGION"] = region
-                break
-            print("Enter a region such as us-central1, not a zone such as us-central1-a.", file=sys.stderr)
+        region = prompt_value("Google Cloud region (GOOGLE_CLOUD_REGION)", default=region)
+        if not valid_gcp_region(region):
+            raise gcp_configuration_error(
+                f"{region!r} is not a valid region for GOOGLE_CLOUD_REGION; use a region such as us-central1"
+            )
+        os.environ["GOOGLE_CLOUD_REGION"] = region
     return region
 
 

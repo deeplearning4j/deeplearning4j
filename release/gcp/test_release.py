@@ -476,7 +476,7 @@ class EnvironmentWizardTests(unittest.TestCase):
                 mock.patch.object(release, "google_modules", return_value=self.modules(auth)),
                 mock.patch.object(release, "interactive_wizard_enabled", return_value=True),
                 mock.patch("builtins.input", side_effect=[
-                    "dl4j-release", "file", str(credential_file), "us-central1"
+                    "dl4j-release", str(credential_file), "us-central1"
                 ]),
                 mock.patch.object(release.sys, "stderr", new=stderr),
                 mock.patch.object(release.sys, "stdout", new=stdout),
@@ -489,6 +489,9 @@ class EnvironmentWizardTests(unittest.TestCase):
         self.assertIs(auth.credentials, context["credentials"])
         self.assertEqual("us-central1", region)
         self.assertNotIn("never-print-this", stderr.getvalue())
+        self.assertIn("GOOGLE_CLOUD_PROJECT", stderr.getvalue())
+        self.assertIn("GOOGLE_APPLICATION_CREDENTIALS", stderr.getvalue())
+        self.assertIn("GOOGLE_CLOUD_REGION", stderr.getvalue())
         self.assertEqual("", stdout.getvalue())
 
     def test_existing_adc_only_prompts_for_missing_project(self):
@@ -525,6 +528,19 @@ class EnvironmentWizardTests(unittest.TestCase):
             ["/usr/bin/gcloud", "auth", "application-default", "login", "--project", "dl4j-release"],
             run.call_args.args[0],
         )
+
+    def test_missing_credential_file_exits_instead_of_looping(self):
+        auth = self.Auth()
+        with (
+            mock.patch.dict(os.environ, {"GOOGLE_CLOUD_PROJECT": "dl4j-release"}, clear=True),
+            mock.patch.object(release, "google_modules", return_value=self.modules(auth)),
+            mock.patch.object(release, "interactive_wizard_enabled", return_value=True),
+            mock.patch("builtins.input", return_value="/missing/credentials.json") as user_input,
+            mock.patch.object(release.sys, "stderr", new=io.StringIO()),
+            self.assertRaisesRegex(SystemExit, "GOOGLE_APPLICATION_CREDENTIALS file does not exist"),
+        ):
+            release.cloud_context()
+        self.assertEqual(1, user_input.call_count)
 
     def test_adc_credentials_are_refreshed_during_validation(self):
         credentials = self.Credentials(valid=False)
