@@ -1891,6 +1891,27 @@ def resolve_ssh_public_key(explicit: str | None) -> str:
         return key_path.with_suffix(".pub").read_text(encoding="utf-8").strip()
 
 
+def windows_worker_bootstrap_command() -> str:
+    """Locate the one downloaded worker beneath the extension's sequence root."""
+    return (
+        "powershell -NoLogo -NonInteractive -ExecutionPolicy Bypass -Command "
+        "\"$worker = Get-ChildItem -LiteralPath . -Filter 'worker.ps1' "
+        "-Recurse -File | Select-Object -First 1; "
+        "if ($null -eq $worker) { throw 'worker.ps1 was not downloaded' }; "
+        "& $worker.FullName -Register\""
+    )
+
+
+def require_succeeded_provisioning_state(resource: Any, description: str) -> Any:
+    """Turn terminal Azure resource failure states into controller failures."""
+    state = getattr(resource, "provisioning_state", None)
+    if state is None and isinstance(resource, dict):
+        state = resource.get("provisioningState") or resource.get("provisioning_state")
+    if state and str(state).lower() != "succeeded":
+        raise RuntimeError(f"{description} provisioning failed: {state}")
+    return resource
+
+
 def _create_lane_vm_resources(
     context: dict[str, Any],
     group: str,
@@ -2016,11 +2037,8 @@ def _create_lane_vm_resources(
         timeout=1800,
     )
     if lane_os == "windows":
-        command = (
-            "powershell -NoLogo -NonInteractive -ExecutionPolicy Bypass "
-            "-File worker.ps1 -Register"
-        )
-        fenced_azure_operation(
+        command = windows_worker_bootstrap_command()
+        extension = fenced_azure_operation(
             lambda: context["compute"].virtual_machine_extensions.begin_create_or_update(
                 group,
                 vm_name,
@@ -2040,6 +2058,9 @@ def _create_lane_vm_resources(
             ),
             fence_check,
             timeout=1800,
+        )
+        require_succeeded_provisioning_state(
+            extension, "Windows worker extension"
         )
     return {"vm": vm_name, "nic": nic_name, "publicIp": pip_name}
 

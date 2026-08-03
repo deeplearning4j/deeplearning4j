@@ -1786,6 +1786,23 @@ class AzureSafetyTests(unittest.TestCase):
             "connectionString", release.compiler_cache_metadata(plan, "storageaccount")
         )
 
+    def test_failed_extension_provisioning_state_is_fatal(self):
+        succeeded = SimpleNamespace(provisioning_state="Succeeded")
+        self.assertIs(
+            succeeded,
+            release.require_succeeded_provisioning_state(
+                succeeded, "Windows worker extension"
+            ),
+        )
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "Windows worker extension provisioning failed: Failed",
+        ):
+            release.require_succeeded_provisioning_state(
+                SimpleNamespace(provisioning_state="Failed"),
+                "Windows worker extension",
+            )
+
     def test_partial_provisioning_invokes_transactional_cleanup(self):
         item = {"shard": {"id": "lane"}}
         fence_check = mock.Mock()
@@ -2736,7 +2753,11 @@ class AzureSafetyTests(unittest.TestCase):
             'resource_name("dl4j", resource_run_id, lane_id, 15)', source
         )
         self.assertIn('"type": "UserAssigned"', source)
-        self.assertIn("-File worker.ps1 -Register", source)
+        command = release.windows_worker_bootstrap_command()
+        self.assertIn("Get-ChildItem -LiteralPath .", command)
+        self.assertIn("-Recurse -File", command)
+        self.assertIn("& $worker.FullName -Register", command)
+        self.assertNotIn("-File worker.ps1", command)
         worker = (HERE / "worker.ps1").read_text(encoding="utf-8")
         self.assertIn("Register-ScheduledTask", worker)
         self.assertIn("Start-ScheduledTask", worker)
