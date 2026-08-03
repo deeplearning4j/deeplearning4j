@@ -3079,6 +3079,21 @@ class WorkerTransportTests(unittest.TestCase):
         self.assertIn('git clone --filter=blob:none "${REPOSITORY}" "${source_dir}"', linux)
         self.assertNotIn('worktree add', linux)
 
+    def test_windows_worker_uses_python_before_machine_path_refresh(self):
+        source = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        self.assertIn(
+            "$PythonInstall = Join-Path $env:SystemDrive 'Python312'", source
+        )
+        self.assertIn(
+            "$script:PythonExe = Join-Path $PythonInstall 'python.exe'", source
+        )
+        self.assertIn("& $script:PythonExe $CloudIo kill-enabled", source)
+        self.assertIn("Start-Process $script:PythonExe", source)
+        self.assertNotRegex(
+            source,
+            r"(?m)^\s*(?:&\s+|Start-Process\s+)?python(?:\.exe)?\s",
+        )
+
 
 class CliTests(unittest.TestCase):
     def test_all_operational_commands_parse(self):

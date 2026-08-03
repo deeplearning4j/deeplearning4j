@@ -93,6 +93,7 @@ $script:ShardMavenRepo = $null
 $script:ObjectPrefix = $null
 $script:LogForwarderStop = $null
 $script:LogForwarderError = $null
+$script:PythonExe = $null
 $script:MatrixLogOffsets = @{}
 
 function Write-Phase([string]$Phase, [string]$Status, [string]$Detail = '') {
@@ -102,7 +103,7 @@ function Write-Phase([string]$Phase, [string]$Status, [string]$Detail = '') {
 }
 
 function Test-KillSwitch {
-  & python $CloudIo kill-enabled --bucket $Config.killSwitchBucket --object $Config.killSwitchObject --controller-epoch $Config.controllerEpoch --client-id $Config.managedIdentityClientId *> $null
+  & $script:PythonExe $CloudIo kill-enabled --bucket $Config.killSwitchBucket --object $Config.killSwitchObject --controller-epoch $Config.controllerEpoch --client-id $Config.managedIdentityClientId *> $null
   $State = $LASTEXITCODE
   if ($State -eq 1) { return $false }
   if ($State -ne 0) { Write-Warning "Global kill switch is unreadable (cloud-io exit $State); failing closed" }
@@ -119,7 +120,7 @@ function Test-RemoteShardSuccess($Candidate) {
   $SafeId = $Candidate.id -replace '[^A-Za-z0-9._-]', '-'
   $StatusFile = Join-Path $BootstrapRoot "remote-$SafeId.json"
   Remove-Item -LiteralPath $StatusFile -Force -ErrorAction SilentlyContinue
-  & python $CloudIo download --bucket $Config.bucket --object "$($Config.artifactPrefix)/$($Config.runId)/$($Candidate.id)/status.json" --file $StatusFile --client-id $Config.managedIdentityClientId *> $null
+  & $script:PythonExe $CloudIo download --bucket $Config.bucket --object "$($Config.artifactPrefix)/$($Config.runId)/$($Candidate.id)/status.json" --file $StatusFile --client-id $Config.managedIdentityClientId *> $null
   if ($LASTEXITCODE -ne 0 -or -not (Test-Path $StatusFile)) { return $false }
   try {
     $Status = Get-Content -Raw $StatusFile | ConvertFrom-Json
@@ -207,7 +208,7 @@ function Start-ShardLogging {
     '--object', "$ObjectPrefix/live.log", '--file', $BuildLog,
     '--stop-file', $LogForwarderStop, '--client-id', $Config.managedIdentityClientId
   )
-  $script:LogForwarderProcess = Start-Process python -ArgumentList $LogArguments -RedirectStandardOutput $LogForwarderError -RedirectStandardError "$LogForwarderError.stderr" -PassThru -NoNewWindow
+  $script:LogForwarderProcess = Start-Process $script:PythonExe -ArgumentList $LogArguments -RedirectStandardOutput $LogForwarderError -RedirectStandardError "$LogForwarderError.stderr" -PassThru -NoNewWindow
   Write-Phase 'azure-blob-log-forwarder' 'started' "lane=$($Config.laneId) shard=$($Shard.id) pid=$($LogForwarderProcess.Id)"
 }
 
@@ -224,7 +225,7 @@ function Start-LaneLogging {
     '--file', $LaneLog, '--stop-file', $LaneForwarderStop,
     '--client-id', $Config.managedIdentityClientId
   )
-  $script:LaneForwarderProcess = Start-Process python -ArgumentList $LaneArguments -RedirectStandardOutput $LaneForwarderError -RedirectStandardError "$LaneForwarderError.stderr" -PassThru -NoNewWindow
+  $script:LaneForwarderProcess = Start-Process $script:PythonExe -ArgumentList $LaneArguments -RedirectStandardOutput $LaneForwarderError -RedirectStandardError "$LaneForwarderError.stderr" -PassThru -NoNewWindow
   Write-Phase 'azure-blob-lane-forwarder' 'started' "lane=$($Config.laneId) pid=$($LaneForwarderProcess.Id)"
 }
 
@@ -259,7 +260,7 @@ function Stop-ShardLogging {
 
 function Upload-IfPresent([string]$Path, [string]$Name) {
   if (-not (Test-Path $Path)) { return $true }
-  & python $CloudIo upload --bucket $Config.bucket --object "$ObjectPrefix/$Name" --file $Path --client-id $Config.managedIdentityClientId
+  & $script:PythonExe $CloudIo upload --bucket $Config.bucket --object "$ObjectPrefix/$Name" --file $Path --client-id $Config.managedIdentityClientId
   if ($LASTEXITCODE -ne 0) {
     Write-Warning "Upload failed: $Name"
     return $false
@@ -302,7 +303,7 @@ function Complete-Shard([int]$RequestedExitCode) {
 }
 
 function Start-KillWatchdog {
-  $PythonExe = (Get-Command python -ErrorAction Stop).Source
+  $PythonExe = $script:PythonExe
   $ParentPid = $PID
   $script:KillWatchJob = Start-Job -Name "dl4j-release-kill-watchdog" -ArgumentList $PythonExe,$CloudIo,$Config.killSwitchBucket,$Config.killSwitchObject,$Config.controllerEpoch,$LaneLog,$ActiveBuildLogFile,$Config.managedIdentityClientId,$KillRequestedFile,$WatchdogStopFile,$WatchdogCloudPidFile,$BuildPidFile,$ParentPid -ScriptBlock {
     param($PythonExe,$CloudIo,$Bucket,$KillSwitchObject,$ControllerEpoch,$LaneLog,$ActiveBuildLogFile,$ClientId,$KillRequestedFile,$StopFile,$CloudPidFile,$BuildPidFile,$ParentPid)
@@ -451,7 +452,7 @@ function Invoke-ShardBuild {
   New-Item -ItemType Directory -Force -Path $MavenOutput,$SdkOutput | Out-Null
   $Arguments = @($BuildDriver, '--config', $ShardConfigFile, '--source', $SourceDir, '--repository', $ShardMavenRepo, '--maven-output', $MavenOutput, '--sdk-output', $SdkOutput)
   Write-Phase 'matrix-build' 'started' "shard=$($Shard.id)"
-  $Process = Start-Process python -ArgumentList $Arguments -RedirectStandardOutput $MatrixLog -RedirectStandardError $MatrixError -PassThru -NoNewWindow
+  $Process = Start-Process $script:PythonExe -ArgumentList $Arguments -RedirectStandardOutput $MatrixLog -RedirectStandardError $MatrixError -PassThru -NoNewWindow
   Set-Content -LiteralPath $BuildPidFile -Value $Process.Id
   try {
     while (-not $Process.HasExited) {
@@ -479,7 +480,7 @@ function Invoke-ShardBuild {
   tar -C $MavenOutput -czf (Join-Path $OutputDir 'maven-repository.tar.gz') .
   tar -C $SdkOutput -czf (Join-Path $OutputDir 'sdk-assets.tar.gz') .
   $ManifestScript = 'import hashlib,json,pathlib,sys; root=pathlib.Path(sys.argv[1]); c=json.load(open(sys.argv[2])); s=c["shard"]; files=[]; [(lambda p: files.append({"path":p.relative_to(root).as_posix(),"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"size":p.stat().st_size}))(p) for p in sorted(root.rglob("*")) if p.is_file()]; json.dump({"schemaVersion":1,"provider":"azure","runId":c["runId"],"shard":s["id"],"commit":c["commit"],"releaseVersion":c["releaseVersion"],"workloads":s["workloads"],"os":s["os"],"platform":s["build"]["javacppPlatform"],"backend":s["build"]["backend"],"variants":[v["name"] for v in s["build"]["variants"]],"files":files},open(root/"shard-manifest.json","w"),indent=2,sort_keys=True)'
-  python -c $ManifestScript $OutputDir $ShardConfigFile
+  & $script:PythonExe -c $ManifestScript $OutputDir $ShardConfigFile
   if ($LASTEXITCODE -ne 0) { throw 'Shard manifest creation failed' }
   Write-Phase 'artifact-packaging' 'complete' "shard=$($Shard.id)"
 }
@@ -491,7 +492,16 @@ try {
     Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
   }
   choco install -y --no-progress python312
-  $env:PATH = "C:\ProgramData\chocolatey\bin;$env:PATH"
+  if ($LASTEXITCODE -notin @(0, 1641, 3010)) {
+    throw "Python 3.12 installation failed with exit code $LASTEXITCODE"
+  }
+  $PythonInstall = Join-Path $env:SystemDrive 'Python312'
+  $env:PATH = "${PythonInstall};${PythonInstall}\Scripts;C:\ProgramData\chocolatey\bin;$env:PATH"
+  $script:PythonExe = Join-Path $PythonInstall 'python.exe'
+  if (-not (Test-Path -LiteralPath $script:PythonExe)) {
+    throw "Python 3.12 executable was not found at $script:PythonExe"
+  }
+  Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=python-runtime status=ready executable=$script:PythonExe"
   if (Test-KillSwitch) { throw 'Global kill switch is enabled or unreadable' }
 
   $Pending = @()
