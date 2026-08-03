@@ -2,12 +2,16 @@
 #
 # BuildSDX.cmake — Standalone SDX runtime library target.
 #
-# Builds libsdx_cpu.so or libsdx_cuda.so: a self-contained shared library
-# that exports only the sdx* C API (dsp_runtime_c.h), with no JVM dependency.
+# CPU and CUDA builds produce a self-contained libsdx_cpu.so or
+# libsdx_cuda.so that exports only the sdx* C API (dsp_runtime_c.h), with no
+# JVM dependency. Vulkan, TPU, NNAPI, and Hexagon builds reuse their central
+# chip library because it is already JVM-free and contains the same SDX C ABI.
+# Tensor G3's central NNAPI library also owns its planned ARM DSP replay islands;
+# reusing it keeps one canonical binary and avoids a misleading libsdx_cpu.so.
 #
 # Usage:
 #   cmake -DSD_BUILD_SDX_STANDALONE=ON ...
-#   make sdx_cpu -j12        # or sdx_cuda for CUDA builds
+#   cmake --build <build-dir> --target sdx_cpu  # or sdx_cuda for CUDA builds
 #
 # Each kernel backend can be independently toggled.  All default ON when the
 # parent build detected them, so a plain -DSD_BUILD_SDX_STANDALONE=ON produces
@@ -20,13 +24,61 @@
 #
 ################################################################################
 
-# --- SDX kernel backend options (default: match parent build) ---
-option(SDX_INCLUDE_TRITON   "Include Triton JIT compiler in SDX"   ${HAVE_TRITON})
-option(SDX_INCLUDE_ONEDNN   "Include OneDNN CPU primitives in SDX" ${HAVE_ONEDNN})
-option(SDX_INCLUDE_MLIR     "Include MLIR JIT compiler in SDX"     ${HAVE_MLIR})
-option(SDX_INCLUDE_OPENVINO "Include OpenVINO graph backend in SDX" ${HAVE_OPENVINO})
+# --- SDX kernel backend options (default: match the current parent build) ---
+#
+# These are tri-state instead of BOOL options. A release matrix deliberately
+# reuses one CMake build tree across classifiers, so a BOOL default cached by
+# the base classifier (usually OFF) would otherwise remain OFF when a later
+# classifier enables OneDNN, Triton, MLIR, or OpenVINO. AUTO is stable in the
+# cache while its effective value is recomputed from HAVE_* on every configure.
+function(sdx_resolve_feature_option option_name detected_name description output_name)
+    set(${option_name} "AUTO" CACHE STRING
+        "${description} (AUTO follows the parent build)")
+    set_property(CACHE ${option_name} PROPERTY STRINGS AUTO ON OFF)
+
+    string(TOUPPER "${${option_name}}" _sdx_requested)
+    if(_sdx_requested STREQUAL "AUTO")
+        if(DEFINED ${detected_name} AND ${detected_name})
+            set(_sdx_enabled ON)
+        else()
+            set(_sdx_enabled OFF)
+        endif()
+    elseif(_sdx_requested MATCHES "^(ON|TRUE|YES|Y|1)$")
+        set(_sdx_enabled ON)
+    elseif(_sdx_requested MATCHES "^(OFF|FALSE|NO|N|0)$")
+        set(_sdx_enabled OFF)
+    else()
+        message(FATAL_ERROR
+            "${option_name} must be AUTO, ON, or OFF; got '${${option_name}}'")
+    endif()
+    set(${output_name} "${_sdx_enabled}" PARENT_SCOPE)
+endfunction()
+
+sdx_resolve_feature_option(
+    SDX_INCLUDE_TRITON HAVE_TRITON "Include Triton JIT compiler in SDX" SDX_ENABLE_TRITON)
+sdx_resolve_feature_option(
+    SDX_INCLUDE_ONEDNN HAVE_ONEDNN "Include OneDNN CPU primitives in SDX" SDX_ENABLE_ONEDNN)
+sdx_resolve_feature_option(
+    SDX_INCLUDE_MLIR HAVE_MLIR "Include MLIR JIT compiler in SDX" SDX_ENABLE_MLIR)
+sdx_resolve_feature_option(
+    SDX_INCLUDE_OPENVINO HAVE_OPENVINO "Include OpenVINO graph backend in SDX" SDX_ENABLE_OPENVINO)
 
 function(build_sdx_library)
+    # Mobile chip libraries already expose the SDX C ABI and do not link libjvm.
+    # Keep that single canonical binary instead of re-linking the same objects
+    # through a second CPU artifact (which would mislabel the Tensor G3 hybrid
+    # runtime and omit device loader libraries such as Vulkan or NNAPI).
+    if(SD_VULKAN OR SD_TPU OR SD_HEXAGON OR SD_NNAPI_ACCELERATOR_ONLY)
+        if(NOT TARGET ${SD_LIBRARY_NAME})
+            message(FATAL_ERROR
+                "SDX device runtime requires the central ${SD_LIBRARY_NAME} target")
+        endif()
+        set(SDX_STANDALONE_TARGET ${SD_LIBRARY_NAME} PARENT_SCOPE)
+        message(STATUS
+            "SDX standalone: reusing canonical device target ${SD_LIBRARY_NAME}")
+        return()
+    endif()
+
     # --- Determine target name ---
     if(SD_CUDA)
         set(SDX_LIB_NAME "sdx_cuda")
@@ -82,13 +134,72 @@ function(build_sdx_library)
     endif()
 
     message(STATUS "SDX standalone target: ${SDX_LIB_NAME} (no JVM)")
-    message(STATUS "  Triton:   ${SDX_INCLUDE_TRITON}")
-    message(STATUS "  OneDNN:   ${SDX_INCLUDE_ONEDNN}")
-    message(STATUS "  MLIR:     ${SDX_INCLUDE_MLIR}")
-    message(STATUS "  OpenVINO: ${SDX_INCLUDE_OPENVINO}")
+    message(STATUS "  Triton:   ${SDX_ENABLE_TRITON} (requested ${SDX_INCLUDE_TRITON})")
+    message(STATUS "  OneDNN:   ${SDX_ENABLE_ONEDNN} (requested ${SDX_INCLUDE_ONEDNN})")
+    message(STATUS "  MLIR:     ${SDX_ENABLE_MLIR} (requested ${SDX_INCLUDE_MLIR})")
+    message(STATUS "  OpenVINO: ${SDX_ENABLE_OPENVINO} (requested ${SDX_INCLUDE_OPENVINO})")
 
     # Make the target name available to the parent scope for sdx_runtime_sdk
     set(SDX_STANDALONE_TARGET ${SDX_LIB_NAME} PARENT_SCOPE)
+endfunction()
+
+
+# ---------------------------------------------------------------------------
+# Triton linking and runtime delivery shared by CPU and CUDA SDX targets.
+# The standalone target consumes object files from the central library, so it
+# must carry the same normalized Triton/LLVM/MLIR closure whenever those object
+# files were compiled with Triton enabled.
+# ---------------------------------------------------------------------------
+function(configure_sdx_triton_linking main_target_name)
+    if(NOT SDX_ENABLE_TRITON)
+        return()
+    endif()
+    if(NOT HAVE_TRITON)
+        message(FATAL_ERROR
+            "SDX requested Triton, but the parent build did not configure it")
+    endif()
+    if(NOT TARGET triton_interface)
+        message(FATAL_ERROR
+            "SDX Triton support requires the triton_interface target")
+    endif()
+
+    target_link_libraries(${main_target_name} PUBLIC triton_interface)
+
+    set(_sdx_triton_runtime_targets "")
+    set(_sdx_triton_shared_runtimes "")
+    foreach(_triton_runtime_target IN ITEMS triton_mlir_shared triton_llvm_shared)
+        if(NOT TARGET ${_triton_runtime_target})
+            message(FATAL_ERROR
+                "SDX Triton support requires normalized shared runtime target ${_triton_runtime_target}")
+        endif()
+        list(APPEND _sdx_triton_runtime_targets ${_triton_runtime_target})
+        list(APPEND _sdx_triton_shared_runtimes
+            "$<TARGET_FILE:${_triton_runtime_target}>")
+    endforeach()
+    set_property(TARGET ${main_target_name} PROPERTY
+        SDX_RUNTIME_DEPENDENCY_TARGETS "${_sdx_triton_runtime_targets}")
+
+    if(APPLE)
+        set_target_properties(${main_target_name} PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "@loader_path"
+            INSTALL_RPATH_USE_LINK_PATH FALSE)
+    elseif(UNIX)
+        set_target_properties(${main_target_name} PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "$ORIGIN"
+            INSTALL_RPATH_USE_LINK_PATH FALSE)
+    endif()
+
+    add_custom_command(TARGET ${main_target_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            "-DRUNTIME_LIBRARIES_PIPE=$<JOIN:${_sdx_triton_shared_runtimes},|>"
+            "-DREADELF=${CMAKE_READELF}"
+            "-DOTOOL=${CMAKE_OTOOL}"
+            "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
+            "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${main_target_name}>"
+            -P "${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
+        VERBATIM)
 endfunction()
 
 
@@ -101,7 +212,7 @@ function(configure_sdx_cpu_linking main_target_name)
             ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} flatbuffers_interface ${CMAKE_DL_LIBS})
 
     # OneDNN
-    if(SDX_INCLUDE_ONEDNN AND HAVE_ONEDNN AND DEFINED ONEDNN)
+    if(SDX_ENABLE_ONEDNN AND HAVE_ONEDNN AND DEFINED ONEDNN)
         target_link_libraries(${main_target_name} PUBLIC ${ONEDNN})
         target_compile_definitions(${main_target_name} PUBLIC HAVE_ONEDNN=1)
     endif()
@@ -113,18 +224,16 @@ function(configure_sdx_cpu_linking main_target_name)
     endif()
 
     # MLIR
-    if(SDX_INCLUDE_MLIR AND HAVE_MLIR AND DEFINED MLIR)
+    if(SDX_ENABLE_MLIR AND HAVE_MLIR AND DEFINED MLIR)
         target_link_libraries(${main_target_name} PUBLIC ${MLIR})
         target_compile_definitions(${main_target_name} PUBLIC HAVE_MLIR=1)
     endif()
 
     # Triton
-    if(SDX_INCLUDE_TRITON AND HAVE_TRITON AND DEFINED TRITON)
-        target_link_libraries(${main_target_name} PUBLIC ${TRITON})
-    endif()
+    configure_sdx_triton_linking(${main_target_name})
 
     # OpenVINO
-    if(SDX_INCLUDE_OPENVINO AND HAVE_OPENVINO AND TARGET openvino_interface)
+    if(SDX_ENABLE_OPENVINO AND HAVE_OPENVINO AND TARGET openvino_interface)
         target_link_libraries(${main_target_name} PUBLIC openvino_interface)
     endif()
 
@@ -191,14 +300,12 @@ function(configure_sdx_cuda_linking main_target_name)
     target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface ${CMAKE_DL_LIBS})
 
     # OneDNN
-    if(SDX_INCLUDE_ONEDNN AND HAVE_ONEDNN AND DEFINED ONEDNN)
+    if(SDX_ENABLE_ONEDNN AND HAVE_ONEDNN AND DEFINED ONEDNN)
         target_link_libraries(${main_target_name} PUBLIC ${ONEDNN})
     endif()
 
     # Triton
-    if(SDX_INCLUDE_TRITON AND HAVE_TRITON AND DEFINED TRITON)
-        target_link_libraries(${main_target_name} PUBLIC ${TRITON})
-    endif()
+    configure_sdx_triton_linking(${main_target_name})
 
     # NCCL (always included when available)
     if(HAVE_NCCL AND DEFINED NCCL_LIB)
