@@ -1477,6 +1477,27 @@ class AzureSafetyTests(unittest.TestCase):
             container.download_blob.call_args_list,
         )
 
+    def test_stream_blob_log_decodes_windows_utf16_output(self):
+        payload = "\ufeffline one\r\nline two\r\n".encode("utf-16-le")
+        self.assertEqual(
+            "continued\r\n",
+            release.decode_log_payload("continued\r\n".encode("utf-16-le")),
+        )
+        container = mock.Mock()
+        container.download_blob.return_value.readall.return_value = payload
+        output = io.StringIO()
+
+        with mock.patch.object(release.sys, "stdout", output):
+            offset = release.stream_blob_log(
+                container, "live.log", 0, label="lane/windows"
+            )
+
+        self.assertEqual(len(payload), offset)
+        self.assertEqual(
+            "[lane/windows] line one\r\n[lane/windows] line two\r\n",
+            output.getvalue(),
+        )
+
     def test_stream_blob_log_retries_concurrent_append_conflict(self):
         class ResourceModifiedError(Exception):
             status_code = 412

@@ -2117,6 +2117,23 @@ def create_lane_vm(
         raise
 
 
+def decode_log_payload(payload: bytes) -> str:
+    """Decode UTF-8 logs and Windows PowerShell 5 UTF-16 redirection output."""
+    if payload.startswith(b"\xff\xfe"):
+        return payload.decode("utf-16-le", "replace").lstrip("\ufeff")
+    if payload.startswith(b"\xfe\xff"):
+        return payload.decode("utf-16-be", "replace").lstrip("\ufeff")
+    if len(payload) >= 4 and len(payload) % 2 == 0:
+        pairs = len(payload) // 2
+        odd_nulls = payload[1::2].count(0)
+        even_nulls = payload[0::2].count(0)
+        if odd_nulls >= max(2, pairs // 4) and odd_nulls > even_nulls * 2:
+            return payload.decode("utf-16-le", "replace")
+        if even_nulls >= max(2, pairs // 4) and even_nulls > odd_nulls * 2:
+            return payload.decode("utf-16-be", "replace")
+    return payload.decode("utf-8", "replace")
+
+
 def stream_blob_log(
     container: Any,
     name: str,
@@ -2159,7 +2176,7 @@ def stream_blob_log(
         conflict_attempts = 0
         if not payload:
             return offset
-        output = payload.decode("utf-8", "replace")
+        output = decode_log_payload(payload)
         if label:
             output = "".join(
                 f"[{label}] {line}" for line in output.splitlines(keepends=True)
