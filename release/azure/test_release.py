@@ -70,6 +70,79 @@ class ReleasePlanTests(unittest.TestCase):
             (ROOT / "release/gcp/release-plan.json").read_text(encoding="utf-8")
         )
 
+    def test_resource_names_are_opaque_and_reserved_word_safe(self):
+        run_id = "azure-windows-microsoft-login-office"
+        identity_name = release.resource_name(
+            "dl4j-release-identity", run_id, maximum=64
+        )
+        self.assertEqual(
+            identity_name,
+            release.resource_name("dl4j-release-identity", run_id, maximum=64),
+        )
+        self.assertRegex(
+            identity_name, r"^dl4j-release-identity-[0-9a-f]{16}$"
+        )
+        self.assertNotIn("azure", identity_name)
+        self.assertNotIn("windows", identity_name)
+        self.assertNotIn("microsoft", identity_name)
+        self.assertNotIn("login", identity_name)
+        self.assertNotIn("office", identity_name)
+
+        computer_name = release.resource_name(
+            "dl4j", run_id, "windows-x86-64-2022", maximum=15
+        )
+        self.assertRegex(computer_name, r"^dl4j-[0-9a-f]{10}$")
+        self.assertLessEqual(len(computer_name), 15)
+        self.assertNotEqual(
+            computer_name,
+            release.resource_name("dl4j", run_id, "other-lane", maximum=15),
+        )
+
+    def test_identity_name_hashes_full_epoch_and_preserves_readable_tags(self):
+        run_id = "azure-windows-full-20260803-105253"
+        epochs = [
+            "123456789abc-first-controller",
+            "123456789abc-second-controller",
+        ]
+        created = []
+
+        def create_identity(group, name, parameters):
+            created.append((name, parameters))
+            return SimpleNamespace(
+                id="/identity",
+                client_id="client",
+                principal_id="principal",
+            )
+
+        context = {
+            "subscription": "subscription",
+            "identity": SimpleNamespace(
+                user_assigned_identities=SimpleNamespace(
+                    create_or_update=create_identity
+                )
+            ),
+            "authorization": SimpleNamespace(
+                role_assignments=SimpleNamespace(create=mock.Mock())
+            ),
+        }
+        for epoch in epochs:
+            release.ensure_identity(
+                context,
+                "group",
+                "eastus2",
+                run_id,
+                "/storage/scope",
+                controller_epoch=epoch,
+            )
+
+        self.assertNotEqual(created[0][0], created[1][0])
+        for epoch, (name, parameters) in zip(epochs, created):
+            self.assertRegex(name, r"^dl4j-release-identity-[0-9a-f]{16}$")
+            self.assertEqual(run_id, parameters["tags"][release.RUN_TAG])
+            self.assertEqual(
+                epoch, parameters["tags"][release.CONTROLLER_EPOCH_TAG]
+            )
+
     def test_azure_covers_every_aws_lane_except_unavailable_macos(self):
         expected = {
             item["id"] for item in self.aws["shards"]

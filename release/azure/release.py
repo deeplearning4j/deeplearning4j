@@ -168,10 +168,16 @@ def normalize_name(value: str, maximum: int = 63) -> str:
 
 
 def resource_name(prefix: str, run_id: str, shard: str = "", maximum: int = 63) -> str:
+    """Return a deterministic Azure-safe name without exposing user-supplied text."""
+    if maximum < 10:
+        raise ValueError("Azure resource names require room for an opaque suffix")
     source = f"{run_id}/{shard}" if shard else run_id
-    digest = hashlib.sha1(source.encode()).hexdigest()[:8]
-    stem = normalize_name(f"{prefix}-{run_id}-{shard}", maximum - 9)
-    return f"{stem}-{digest}"[:maximum].rstrip("-")
+    digest = hashlib.sha256(source.encode()).hexdigest()
+    # Azure rejects reserved words such as WINDOWS even as substrings. Run and
+    # lane IDs remain available through tags and manifests instead of names.
+    stem = normalize_name(prefix, maximum - 9)
+    digest_length = min(16, maximum - len(stem) - 1)
+    return f"{stem}-{digest[:digest_length]}"
 
 
 def resource_group_name(location: str, override: str | None = None) -> str:
@@ -1292,7 +1298,7 @@ def ensure_identity(
 ) -> tuple[Any, dict[str, str]]:
     check = fence_check or (lambda: None)
     resource_run_id = (
-        f"{run_id}-{controller_epoch[:12]}" if controller_epoch else run_id
+        f"{run_id}-{controller_epoch}" if controller_epoch else run_id
     )
     name = resource_name("dl4j-release-identity", resource_run_id, maximum=64)
     tags = {MANAGED_TAG: "true", RUN_TAG: run_id}
@@ -1902,7 +1908,7 @@ def _create_lane_vm_resources(
     lane_os = item.get("os") or item["shard"]["os"]
     image = item.get("image") or item["shard"]["image"]
     resource_run_id = (
-        f"{run_id}-{controller_epoch[:12]}" if controller_epoch else run_id
+        f"{run_id}-{controller_epoch}" if controller_epoch else run_id
     )
     vm_name = resource_name("dl4j", resource_run_id, lane_id, 64)
     nic_name = resource_name("dl4j-nic", resource_run_id, lane_id, 80)
@@ -2054,7 +2060,7 @@ def create_lane_vm(
 ) -> dict[str, str]:
     lane_id = item.get("id") or item["shard"]["id"]
     resource_run_id = (
-        f"{run_id}-{controller_epoch[:12]}" if controller_epoch else run_id
+        f"{run_id}-{controller_epoch}" if controller_epoch else run_id
     )
     resources = {
         "vm": resource_name("dl4j", resource_run_id, lane_id, 64),
