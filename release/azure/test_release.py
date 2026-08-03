@@ -2795,6 +2795,9 @@ class AzureSafetyTests(unittest.TestCase):
             worker,
         )
         self.assertIn("sccache archive SHA-256 mismatch", worker)
+        self.assertIn("$WindowsTar = Join-Path $env:SystemRoot 'System32\\tar.exe'", worker)
+        self.assertIn("& $WindowsTar -xzf $SccacheArchive -C $env:TEMP", worker)
+        self.assertNotRegex(worker, r"(?m)^\s+tar -xzf \$SccacheArchive")
         self.assertIn("worker-started.txt", worker)
         self.assertIn("worker-attempt.txt", worker)
         self.assertIn("Remove-Item -LiteralPath $LogForwarderStop", worker)

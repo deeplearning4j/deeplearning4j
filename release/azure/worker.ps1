@@ -578,9 +578,14 @@ function Install-CommonToolchains {
       Remove-Item -LiteralPath $SccacheArchive -Force
       throw "sccache archive SHA-256 mismatch: expected $SccacheSha256, got $ActualSccacheSha256"
     }
+    $WindowsTar = Join-Path $env:SystemRoot 'System32\tar.exe'
+    if (-not (Test-Path -LiteralPath $WindowsTar)) {
+      Remove-Item -LiteralPath $SccacheArchive -Force
+      throw "Windows tar.exe was not found at $WindowsTar"
+    }
     try {
       Invoke-NativeChecked -Description 'sccache archive extraction' -Command {
-        tar -xzf $SccacheArchive -C $env:TEMP
+        & $WindowsTar -xzf $SccacheArchive -C $env:TEMP
       }
     }
     catch {
