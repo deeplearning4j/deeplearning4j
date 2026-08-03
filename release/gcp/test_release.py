@@ -252,6 +252,9 @@ class WorkerTests(unittest.TestCase):
         self.assertIn("kill-enabled", rendered)
         self.assertIn("KILL_SWITCH_BUCKET", rendered)
         self.assertIn("cloud-logging", rendered)
+        self.assertIn('SCCACHE_ROOT=${WORK_ROOT}/sccache', rendered)
+        self.assertIn('${SCCACHE_ROOT}:/sccache', rendered)
+        self.assertIn('${SCCACHE_ROOT}:/github/sccache', rendered)
 
     def test_windows_worker_has_mid_build_kill_polling(self):
         text = (ROOT / "release/gcp/worker.ps1").read_text(encoding="utf-8")
@@ -367,6 +370,18 @@ class WorkerTests(unittest.TestCase):
         self.assertNotEqual(
             release.control_bucket_name("project"), release.release_bucket_name("project", "us-central1")
         )
+
+    def test_gcs_compiler_cache_uses_worker_identity_and_stable_namespace(self):
+        cache = release.compiler_cache_config(
+            {"artifactPrefix": "deeplearning4j/releases"}, "release-bucket"
+        )
+        self.assertEqual({
+            "backend": "gcs",
+            "bucket": "release-bucket",
+            "keyPrefix": "deeplearning4j/releases/compiler-cache/v1",
+        }, cache)
+        self.assertNotIn("credentials", cache)
+        self.assertEqual(["https://www.googleapis.com/auth/cloud-platform"], release.SCOPES)
 
     def test_central_workflow_rejects_missing_or_non_boolean_completeness(self):
         text = (ROOT / ".github/workflows/publish-central-from-release.yml").read_text(encoding="utf-8")

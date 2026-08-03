@@ -102,6 +102,18 @@ def control_bucket_name(project: str) -> str:
     return normalize_label(f"dl4j-release-{project}-control", 63).replace("_", "-")
 
 
+def compiler_cache_key_prefix(plan: dict[str, Any]) -> str:
+    return f"{plan.get('artifactPrefix', 'deeplearning4j/releases').strip('/')}/compiler-cache/v1"
+
+
+def compiler_cache_config(plan: dict[str, Any], bucket: str) -> dict[str, str]:
+    return {
+        "backend": "gcs",
+        "bucket": bucket,
+        "keyPrefix": compiler_cache_key_prefix(plan),
+    }
+
+
 def google_modules():
     try:
         import google.auth
@@ -999,6 +1011,7 @@ def start(args: argparse.Namespace) -> None:
     run_id = args.run_id or run_id_for(args.version, commit)
     bucket_name = release_bucket_name(project, region, args.bucket)
     storage_client, bucket = ensure_bucket(context, project, region, bucket_name)
+    cache_config = compiler_cache_config(plan, bucket_name)
     _, control_bucket = ensure_control_bucket(context, project, region)
     worker_account = worker_service_account_email(args.service_account, value["projectNumber"])
     ensure_worker_bucket_access(bucket, worker_account)
@@ -1040,6 +1053,7 @@ def start(args: argparse.Namespace) -> None:
         "completeDl4jMatrix": False,
         "unsupportedWorkflows": plan.get("unsupportedWorkflows", {}),
         "workerServiceAccount": worker_account,
+        "compilerCache": cache_config,
         "executions": schedule,
     }
     run_key = f"{plan['artifactPrefix'].strip('/')}/{run_id}/run.json"
@@ -1075,7 +1089,8 @@ def start(args: argparse.Namespace) -> None:
                         "artifactPrefix": plan["artifactPrefix"], "runId": run_id, "releaseVersion": args.version,
                         "snapshotVersion": args.snapshot_version, "commit": commit, "repository": args.repository,
                         "killSwitchBucket": control_bucket.name, "killSwitchObject": kill_switch_object(plan),
-                        "logId": candidate["logId"], "shard": shard,
+                        "logId": candidate["logId"], "compilerCache": cache_config,
+                        "shard": shard,
                     }
                     startup = render_worker(ROOT / "release/gcp" / shard["worker"], config)
                     resource = instance_resource(context, args, candidate, startup)

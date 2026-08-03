@@ -217,6 +217,140 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual(7, len(linux["build"]["variants"]))
         self.assertNotIn("--base", linux["id"])
 
+    def test_s3_compiler_cache_uses_a_stable_cross_run_namespace(self):
+        plan = {"artifactPrefix": "deeplearning4j/releases"}
+        cache = release.compiler_cache_config(plan, "release-bucket", "us-east-2")
+        self.assertEqual({
+            "backend": "s3",
+            "bucket": "release-bucket",
+            "region": "us-east-2",
+            "keyPrefix": "deeplearning4j/releases/compiler-cache/v1",
+        }, cache)
+        self.assertNotIn("runId", cache["keyPrefix"])
+
+    def test_instance_role_can_read_and_publish_sccache_objects(self):
+        class ClientError(Exception):
+            pass
+
+        class Iam:
+            def __init__(self):
+                self.policy = None
+
+            def get_role(self, **_kwargs):
+                return {"Role": {}}
+
+            def put_role_policy(self, **kwargs):
+                self.policy = json.loads(kwargs["PolicyDocument"])
+
+            def get_instance_profile(self, **_kwargs):
+                return {"InstanceProfile": {"Roles": [{"RoleName": "DL4JReleaseBuilderRole"}]}}
+
+        iam = Iam()
+        with patch.object(release, "_boto3", return_value=(object(), ClientError)):
+            release.ensure_instance_profile(iam, "release-bucket", "kill", "/logs")
+        s3_actions = set(iam.policy["Statement"][0]["Action"])
+        self.assertTrue({"s3:GetObject", "s3:PutObject", "s3:ListBucket"}.issubset(s3_actions))
+
+    def test_shared_driver_configures_two_level_remote_sccache_backends(self):
+        settings = {
+            "s3": {
+                "backend": "s3", "bucket": "s3-bucket", "region": "us-east-2",
+                "keyPrefix": "cache/v1",
+            },
+            "gcs": {
+                "backend": "gcs", "bucket": "gcs-bucket", "keyPrefix": "cache/v1",
+            },
+            "azure": {
+                "backend": "azure", "container": "releases", "keyPrefix": "cache/v1",
+                "connectionString": "BlobEndpoint=https://account/;SharedAccessSignature=token",
+            },
+        }
+        for backend, remote in settings.items():
+            with self.subTest(backend=backend), tempfile.TemporaryDirectory() as temp:
+                source = Path(temp) / "source"
+                source.mkdir()
+                environment = {"PATH": "/existing/bin"}
+                with patch.object(
+                    build_platform, "ensure_sccache", return_value="/tools/sccache"
+                ), patch.object(build_platform, "run") as execute:
+                    executable, started = build_platform.configure_compiler_cache(
+                        {"compilerCache": remote}, source, environment
+                    )
+                self.assertEqual("/tools/sccache", executable)
+                self.assertTrue(started)
+                self.assertEqual(f"disk,{backend}", environment["SCCACHE_MULTILEVEL_CHAIN"])
+                self.assertEqual("all", environment["SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY"])
+                self.assertEqual(str(source.resolve()), environment["SCCACHE_BASEDIRS"])
+                self.assertEqual("1", environment["SD_USE_SCCACHE"])
+                self.assertEqual(
+                    ["/tools", "/existing/bin"], environment["PATH"].split(os.pathsep)
+                )
+                for launcher in (
+                    "CMAKE_C_COMPILER_LAUNCHER",
+                    "CMAKE_CXX_COMPILER_LAUNCHER",
+                    "CMAKE_CUDA_COMPILER_LAUNCHER",
+                ):
+                    self.assertEqual("/tools/sccache", environment[launcher])
+                execute.assert_called_once_with(
+                    ["/tools/sccache", "--start-server"], source, environment
+                )
+        self.assertEqual("s3-bucket", settings["s3"]["bucket"])
+
+    def test_shared_driver_activates_local_sccache_but_not_ccache(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "source"
+            source.mkdir()
+
+            sccache_env = {"PATH": "/existing/bin"}
+            with patch.object(
+                build_platform.shutil,
+                "which",
+                side_effect=lambda name: "/tools/sccache" if name == "sccache" else None,
+            ), patch.object(build_platform, "run") as execute:
+                executable, started = build_platform.configure_compiler_cache(
+                    {}, source, sccache_env
+                )
+            self.assertEqual("/tools/sccache", executable)
+            self.assertTrue(started)
+            self.assertEqual("1", sccache_env["SD_USE_SCCACHE"])
+            self.assertEqual(
+                ["/tools", "/existing/bin"], sccache_env["PATH"].split(os.pathsep)
+            )
+            execute.assert_called_once_with(
+                ["/tools/sccache", "--start-server"], source, sccache_env
+            )
+
+            ccache_env = {"PATH": "/existing/bin"}
+            with patch.object(
+                build_platform.shutil,
+                "which",
+                side_effect=lambda name: "/tools/ccache" if name == "ccache" else None,
+            ), patch.object(build_platform, "run") as execute:
+                executable, started = build_platform.configure_compiler_cache(
+                    {}, source, ccache_env
+                )
+            self.assertEqual("/tools/ccache", executable)
+            self.assertFalse(started)
+            self.assertNotIn("SD_USE_SCCACHE", ccache_env)
+            self.assertEqual("/existing/bin", ccache_env["PATH"])
+            execute.assert_called_once_with(
+                ["/tools/ccache", "--zero-stats"], source, ccache_env
+            )
+
+    def test_shared_driver_rejects_incomplete_remote_cache_configuration(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "source"
+            source.mkdir()
+            with self.assertRaisesRegex(ValueError, "compilerCache.region"):
+                with patch.object(build_platform, "ensure_sccache", return_value="sccache"):
+                    build_platform.configure_compiler_cache(
+                        {"compilerCache": {
+                            "backend": "s3", "bucket": "bucket", "keyPrefix": "cache/v1",
+                        }},
+                        source,
+                        {},
+                    )
+
     def test_expanded_smoke_selector_keeps_single_variant(self):
         plan = release.load_plan(Path(__file__).with_name("release-plan.json"))
         selected = release.selected_executions(plan, ["linux-x86_64-cpu--base"])
@@ -578,6 +712,9 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertLess(windows.index("Start-LogForwarder\n"), windows.index("Write-Phase 'toolchain-packages' 'started'"))
         self.assertLess(linux.index("export HOME="), linux.index("CONFIG_B64="))
         self.assertLess(linux.index("export CARGO_HOME="), linux.index("rust-toolchain started"))
+        self.assertIn('SCCACHE_ROOT=${WORK_ROOT}/sccache', linux)
+        self.assertIn('${SCCACHE_ROOT}:/sccache', linux)
+        self.assertIn('${SCCACHE_ROOT}:/github/sccache', linux)
         self.assertNotIn('${HOME}/.cargo', linux)
         self.assertLess(windows.index("$env:CARGO_HOME ="), windows.index("rustup toolchain install"))
         self.assertNotIn("$env:USERPROFILE", windows)

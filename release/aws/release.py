@@ -478,6 +478,19 @@ def release_bucket_name(sts, region: str, explicit: str | None) -> str:
     return f"dl4j-release-{account}-{region}".lower()
 
 
+def compiler_cache_key_prefix(plan: dict[str, Any]) -> str:
+    return f"{plan.get('artifactPrefix', 'deeplearning4j/releases').strip('/')}/compiler-cache/v1"
+
+
+def compiler_cache_config(plan: dict[str, Any], bucket: str, region: str) -> dict[str, str]:
+    return {
+        "backend": "s3",
+        "bucket": bucket,
+        "region": region,
+        "keyPrefix": compiler_cache_key_prefix(plan),
+    }
+
+
 def ensure_bucket(s3, sts, region: str, explicit: str | None) -> str:
     bucket = release_bucket_name(sts, region, explicit)
     try:
@@ -520,7 +533,7 @@ def ensure_instance_profile(iam, bucket: str, parameter: str, log_group: str) ->
     policy = {
         "Version": "2012-10-17",
         "Statement": [
-            {"Effect": "Allow", "Action": ["s3:PutObject", "s3:AbortMultipartUpload", "s3:ListBucket"], "Resource": [f"arn:aws:s3:::{bucket}", f"arn:aws:s3:::{bucket}/*"]},
+            {"Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject", "s3:AbortMultipartUpload", "s3:ListBucket"], "Resource": [f"arn:aws:s3:::{bucket}", f"arn:aws:s3:::{bucket}/*"]},
             {"Effect": "Allow", "Action": "ssm:GetParameter", "Resource": "*", "Condition": {"StringEquals": {"ssm:ResourceTag/DL4JReleaseKillSwitch": "true"}}},
             {"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"], "Resource": f"arn:aws:logs:*:*:log-group:{log_group}:log-stream:*"},
         ],
@@ -1078,11 +1091,13 @@ def start(args: argparse.Namespace) -> None:
         raise SystemExit("Global kill switch is ON. Pass --reset-kill-switch to explicitly start a new release.")
     set_kill_switch(ssm, plan, False)
     bucket = ensure_bucket(s3, sts, region, args.bucket)
+    cache_config = compiler_cache_config(plan, bucket, region)
     log_group = ensure_log_group(logs_client, plan)
     profile = ensure_instance_profile(iam, bucket, kill_parameter_name(plan), log_group)
     run_id = args.run_id or f"{args.version}-{uuid.uuid4().hex[:10]}"
     print(json.dumps({
         "event": "run-created", "runId": run_id, "region": region, "bucket": bucket,
+        "compilerCache": cache_config,
         "sourceBranch": args.branch, "resolvedCommit": commit,
         "logsCommand": f"python3 release/aws/release.py --region {region} logs --run-id {run_id} --follow",
         "statusCommand": f"python3 release/aws/release.py --region {region} status --run-id {run_id}",
@@ -1111,6 +1126,7 @@ def start(args: argparse.Namespace) -> None:
                 "killSwitchParameter": kill_parameter_name(plan),
                 "logGroupName": log_group,
                 "logStreamName": f"{run_id}/{shard['id']}",
+                "compilerCache": cache_config,
                 "shard": shard,
                 "region": region,
             }

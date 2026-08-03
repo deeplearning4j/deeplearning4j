@@ -2,7 +2,9 @@
 
 This is the Google Cloud sibling of `release/aws`. It keeps the proven part of that backend intact: the same `release/aws/build-platform.py` execution driver, the same shared `build-scripts/release/*.sh` platform entry points used by GitHub Actions, the same Maven/SDK workloads, and every classifier variant in `release-plan.json`.
 
-The controller launches one serial lane at a time. All variants in a lane run on the same VM, so ccache/sccache and the local Maven repository are reused. `--shard linux-x86_64-cpu--base` runs only the base variant; `--shard linux-x86_64-cpu` runs all seven CPU variants.
+The controller launches one serial lane at a time. All variants in a lane run on the same VM, so the compiler cache and local Maven repository are reused. `--shard linux-x86_64-cpu--base` runs only the base variant; `--shard linux-x86_64-cpu` runs all seven CPU variants.
+
+Release workers use pinned sccache 0.15.0 with a two-level `disk,gcs` cache. Object files are written directly to the private regional release bucket under `deeplearning4j/releases/compiler-cache/v1`; the namespace is stable across run IDs, branches, and commits, while sccache hashes the compiler, command, environment, and inputs. Workers authenticate through their Compute Engine service account and metadata server—no service-account key is copied into a VM. Cache startup, per-variant statistics, and shutdown appear in the ordinary Cloud Logging stream. VM cleanup preserves the cache for later runs; the explicit `stop-everything --purge-storage` operation removes it with the other managed bucket objects.
 
 ## Boundary: macOS and TPU hardware
 

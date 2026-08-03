@@ -4,19 +4,228 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import platform
 import shutil
 import subprocess
 import tarfile
+import tempfile
 import urllib.request
 import zipfile
 from pathlib import Path
 
 
+SCCACHE_VERSION = "0.15.0"
+SCCACHE_RELEASE_BASE = (
+    f"https://github.com/mozilla/sccache/releases/download/v{SCCACHE_VERSION}"
+)
+SCCACHE_ASSETS = {
+    ("linux", "x86_64"): (
+        "x86_64-unknown-linux-musl",
+        "782d2b5dd7ae0a55ebe368ab258114d0928d019ac2d949ab85d5d02f3926709e",
+    ),
+    ("linux", "arm64"): (
+        "aarch64-unknown-linux-musl",
+        "3a6a3712b49da3d263bf2d30d702de4302793016019e800bfb81c0c69401d8f8",
+    ),
+    ("macos", "arm64"): (
+        "aarch64-apple-darwin",
+        "430ef7b5f54256d3ed5bfe77e8b0afc51aa209aeebe4f95b69c3a52ce3acc6e9",
+    ),
+    ("windows", "x86_64"): (
+        "x86_64-pc-windows-msvc",
+        "b0b257a164bf438b2dea134ca7ded41c100f59a64b3bf275a202f1e8102ab217",
+    ),
+}
+
+
 def run(command: list[str], cwd: Path, env: dict[str, str]) -> None:
     print("+", subprocess.list2cmdline(command), flush=True)
     subprocess.run(command, cwd=cwd, env=env, check=True)
+
+
+def host_platform() -> tuple[str, str]:
+    system = platform.system().lower()
+    os_name = {"darwin": "macos", "windows": "windows", "linux": "linux"}.get(system)
+    machine = platform.machine().lower()
+    architecture = {
+        "amd64": "x86_64", "x86_64": "x86_64", "arm64": "arm64", "aarch64": "arm64",
+    }.get(machine)
+    if os_name is None or architecture is None:
+        raise RuntimeError(f"sccache {SCCACHE_VERSION} has no pinned release asset for {system}/{machine}")
+    return os_name, architecture
+
+
+def pinned_sccache_asset() -> tuple[str, str]:
+    key = host_platform()
+    if key not in SCCACHE_ASSETS:
+        raise RuntimeError(
+            f"sccache {SCCACHE_VERSION} has no pinned release asset for {key[0]}/{key[1]}"
+        )
+    target, digest = SCCACHE_ASSETS[key]
+    return f"sccache-v{SCCACHE_VERSION}-{target}.tar.gz", digest
+
+
+def _matching_system_sccache() -> str | None:
+    candidate = shutil.which("sccache")
+    if not candidate:
+        return None
+    result = subprocess.run(
+        [candidate, "--version"], check=False, capture_output=True, text=True,
+    )
+    version = (result.stdout + result.stderr).strip()
+    return candidate if result.returncode == 0 and f"sccache {SCCACHE_VERSION}" in version else None
+
+
+def _validate_tar_members(bundle: tarfile.TarFile, destination: Path) -> None:
+    root = destination.resolve()
+    for member in bundle.getmembers():
+        resolved = (destination / member.name).resolve()
+        if resolved != root and root not in resolved.parents:
+            raise RuntimeError(f"unsafe path in sccache release archive: {member.name!r}")
+        if member.issym() or member.islnk() or not (member.isdir() or member.isfile()):
+            raise RuntimeError(f"unsafe member in sccache release archive: {member.name!r}")
+
+
+def ensure_sccache(cache_dir: Path) -> str:
+    existing = _matching_system_sccache()
+    if existing:
+        return existing
+    archive_name, expected_digest = pinned_sccache_asset()
+    executable_name = "sccache.exe" if host_platform()[0] == "windows" else "sccache"
+    executable = cache_dir / "tools" / f"sccache-{SCCACHE_VERSION}" / executable_name
+    if executable.is_file():
+        return str(executable)
+    executable.parent.mkdir(parents=True, exist_ok=True)
+    url = f"{SCCACHE_RELEASE_BASE}/{archive_name}"
+    print(f"[dl4j-cache] installing pinned sccache {SCCACHE_VERSION} from {url}", flush=True)
+    with tempfile.TemporaryDirectory(prefix="sccache-install-", dir=executable.parent.parent) as temporary:
+        temporary_root = Path(temporary)
+        archive = temporary_root / archive_name
+        urllib.request.urlretrieve(url, archive)
+        actual_digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+        if actual_digest != expected_digest:
+            raise RuntimeError(
+                f"sccache archive SHA-256 mismatch: expected {expected_digest}, got {actual_digest}"
+            )
+        extracted = temporary_root / "extracted"
+        extracted.mkdir()
+        with tarfile.open(archive, mode="r:gz") as bundle:
+            _validate_tar_members(bundle, extracted)
+            bundle.extractall(extracted)
+        candidates = [path for path in extracted.rglob(executable_name) if path.is_file()]
+        if len(candidates) != 1:
+            raise RuntimeError(
+                f"expected one {executable_name} in {archive_name}, found {len(candidates)}"
+            )
+        staged = executable.with_name(executable.name + ".new")
+        shutil.copy2(candidates[0], staged)
+        staged.chmod(0o755)
+        os.replace(staged, executable)
+    return str(executable)
+
+
+def _required_cache_value(settings: dict, name: str) -> str:
+    value = settings.get(name)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"compilerCache.{name} must be a non-empty string")
+    return value.strip()
+
+
+def _configure_compiler_launchers(env: dict[str, str], compiler_cache: str) -> None:
+    env.update({
+        "CMAKE_C_COMPILER_LAUNCHER": compiler_cache,
+        "CMAKE_CXX_COMPILER_LAUNCHER": compiler_cache,
+        "CMAKE_CUDA_COMPILER_LAUNCHER": compiler_cache,
+    })
+
+
+def _activate_sccache(env: dict[str, str], compiler_cache: str) -> None:
+    compiler_cache_dir = str(Path(compiler_cache).parent)
+    existing_path = env.get("PATH", "")
+    env["SD_USE_SCCACHE"] = "1"
+    env["PATH"] = (
+        compiler_cache_dir
+        if not existing_path
+        else f"{compiler_cache_dir}{os.pathsep}{existing_path}"
+    )
+    _configure_compiler_launchers(env, compiler_cache)
+
+
+def configure_compiler_cache(
+    config: dict, source: Path, env: dict[str, str]
+) -> tuple[str | None, bool]:
+    remote = config.get("compilerCache")
+    if remote is not None and not isinstance(remote, dict):
+        raise ValueError("compilerCache must be an object")
+    if remote is not None:
+        backend = _required_cache_value(remote, "backend")
+        if backend not in {"s3", "gcs", "azure"}:
+            raise ValueError(f"unsupported compilerCache.backend {backend!r}")
+        cache_dir = source.parent / "sccache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        compiler_cache = ensure_sccache(cache_dir)
+        env.update({
+            "SCCACHE_DIR": str(cache_dir),
+            "SCCACHE_CACHE_SIZE": "100G",
+            "SCCACHE_IDLE_TIMEOUT": "0",
+            "SCCACHE_BASEDIRS": str(source.resolve()),
+            "SCCACHE_ERROR_LOG": str(cache_dir / "sccache-error.log"),
+            "SCCACHE_MULTILEVEL_CHAIN": f"disk,{backend}",
+            "SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY": "all",
+        })
+        prefix = _required_cache_value(remote, "keyPrefix")
+        if backend == "s3":
+            env.update({
+                "SCCACHE_BUCKET": _required_cache_value(remote, "bucket"),
+                "SCCACHE_REGION": _required_cache_value(remote, "region"),
+                "SCCACHE_S3_KEY_PREFIX": prefix,
+                "SCCACHE_S3_SERVER_SIDE_ENCRYPTION": "true",
+            })
+        elif backend == "gcs":
+            env.update({
+                "SCCACHE_GCS_BUCKET": _required_cache_value(remote, "bucket"),
+                "SCCACHE_GCS_KEY_PREFIX": prefix,
+                "SCCACHE_GCS_RW_MODE": "READ_WRITE",
+            })
+        else:
+            env.update({
+                "SCCACHE_AZURE_CONNECTION_STRING": _required_cache_value(
+                    remote, "connectionString"
+                ),
+                "SCCACHE_AZURE_BLOB_CONTAINER": _required_cache_value(remote, "container"),
+                "SCCACHE_AZURE_KEY_PREFIX": prefix,
+            })
+        print(
+            f"[dl4j-cache] backend={backend} mode=disk+remote keyPrefix={prefix}", flush=True,
+        )
+        _activate_sccache(env, compiler_cache)
+        run([compiler_cache, "--start-server"], source, env)
+        return compiler_cache, True
+
+    compiler_cache = shutil.which("sccache") or shutil.which("ccache")
+    if not compiler_cache:
+        return None, False
+    cache_name = "sccache" if Path(compiler_cache).stem.lower() == "sccache" else "ccache"
+    cache_dir = source.parent / cache_name
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    if cache_name == "ccache":
+        _configure_compiler_launchers(env, compiler_cache)
+        env.update({
+            "CCACHE_DIR": str(cache_dir), "CCACHE_BASEDIR": str(source),
+            "CCACHE_NOHASHDIR": "true", "CCACHE_MAXSIZE": "100G",
+        })
+        run([compiler_cache, "--zero-stats"], source, env)
+        return compiler_cache, False
+    _activate_sccache(env, compiler_cache)
+    env.update({
+        "SCCACHE_DIR": str(cache_dir), "SCCACHE_CACHE_SIZE": "100G",
+        "SCCACHE_IDLE_TIMEOUT": "0",
+    })
+    run([compiler_cache, "--start-server"], source, env)
+    return compiler_cache, True
 
 
 def variant_flags(build: dict, variant: dict) -> list[str]:
@@ -320,48 +529,53 @@ def main() -> None:
     build = shard["build"]
     env = os.environ.copy()
     env["MAVEN_OPTS"] = f"-Xmx{build.get('mavenHeapGiB', 16)}g -Dmaven.repo.local={args.repository}"
-    compiler_cache = "sccache" if shutil.which("sccache") else ("ccache" if shutil.which("ccache") else None)
-    if compiler_cache:
-        cache_dir = args.source.parent / compiler_cache
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        env.update({
-            "CMAKE_C_COMPILER_LAUNCHER": compiler_cache,
-            "CMAKE_CXX_COMPILER_LAUNCHER": compiler_cache,
-            "CMAKE_CUDA_COMPILER_LAUNCHER": compiler_cache,
-        })
-        if compiler_cache == "ccache":
-            env.update({"CCACHE_DIR": str(cache_dir), "CCACHE_BASEDIR": str(args.source),
-                        "CCACHE_NOHASHDIR": "true", "CCACHE_MAXSIZE": "100G"})
-            run([compiler_cache, "--zero-stats"], args.source, env)
+    compiler_cache, sccache_started = configure_compiler_cache(
+        config, args.source, env
+    )
+    build_completed = False
+    try:
+        print(f"[dl4j-phase] shard={shard['id']} phase=version-setup", flush=True)
+        update = ["bash", "./update-versions.sh", config["snapshotVersion"], config["releaseVersion"]]
+        run(update, args.source, env)
+        if build["backend"] == "cuda":
+            run(["bash", "./change-cuda-versions.sh", build["cudaVersion"]], args.source, env)
+        prepare_zluda(args.source, build, env)
+        if build.get("kind") == "cross-platform":
+            print(f"[dl4j-phase] shard={shard['id']} phase=cross-platform", flush=True)
+            build_cross_platform(args.source, build, args.repository, env)
         else:
-            env.update({"SCCACHE_DIR": str(cache_dir), "SCCACHE_CACHE_SIZE": "100G",
-                        "SCCACHE_IDLE_TIMEOUT": "0"})
-            run([compiler_cache, "--start-server"], args.source, env)
-    print(f"[dl4j-phase] shard={shard['id']} phase=version-setup", flush=True)
-    update = ["bash", "./update-versions.sh", config["snapshotVersion"], config["releaseVersion"]]
-    run(update, args.source, env)
-    if build["backend"] == "cuda":
-        run(["bash", "./change-cuda-versions.sh", build["cudaVersion"]], args.source, env)
-    prepare_zluda(args.source, build, env)
-    if build.get("kind") == "cross-platform":
-        print(f"[dl4j-phase] shard={shard['id']} phase=cross-platform", flush=True)
-        build_cross_platform(args.source, build, args.repository, env)
-    else:
-        build_native_platform(args.source, shard, args.repository, env, compiler_cache)
-    print(f"[dl4j-phase] shard={shard['id']} phase=package", flush=True)
-    args.maven_output.mkdir(parents=True, exist_ok=True)
-    args.sdk_output.mkdir(parents=True, exist_ok=True)
-    stage_repository(args.repository, args.maven_output, shard.get("artifactRules", {}))
-    runtime_count = package_runtime_sdk(args.source, args.sdk_output, int(build.get("buildThreads", 16)))
-    jar_count = package_sdk_jars(args.repository, args.sdk_output, build, shard.get("artifactRules", {}))
-    build_aot(args.source, args.sdk_output, build, args.repository, env)
-    if "maven" in shard["workloads"] and not any(path.is_file() for path in args.maven_output.rglob("*")):
-        raise RuntimeError("Maven workload produced no owned release artifacts")
-    if "sdk" in shard["workloads"] and runtime_count == 0:
-        raise RuntimeError("SDK workload produced no SDX runtime assets")
-    if "sdk" in shard["workloads"] and jar_count == 0:
-        raise RuntimeError("SDK workload produced no platform SDK JARs")
-    print(f"[dl4j-phase] shard={shard['id']} phase=complete", flush=True)
+            build_native_platform(args.source, shard, args.repository, env, compiler_cache)
+        print(f"[dl4j-phase] shard={shard['id']} phase=package", flush=True)
+        args.maven_output.mkdir(parents=True, exist_ok=True)
+        args.sdk_output.mkdir(parents=True, exist_ok=True)
+        stage_repository(args.repository, args.maven_output, shard.get("artifactRules", {}))
+        runtime_count = package_runtime_sdk(
+            args.source, args.sdk_output, int(build.get("buildThreads", 16))
+        )
+        jar_count = package_sdk_jars(
+            args.repository, args.sdk_output, build, shard.get("artifactRules", {})
+        )
+        build_aot(args.source, args.sdk_output, build, args.repository, env)
+        if "maven" in shard["workloads"] and not any(
+            path.is_file() for path in args.maven_output.rglob("*")
+        ):
+            raise RuntimeError("Maven workload produced no owned release artifacts")
+        if "sdk" in shard["workloads"] and runtime_count == 0:
+            raise RuntimeError("SDK workload produced no SDX runtime assets")
+        if "sdk" in shard["workloads"] and jar_count == 0:
+            raise RuntimeError("SDK workload produced no platform SDK JARs")
+        print(f"[dl4j-phase] shard={shard['id']} phase=complete", flush=True)
+        build_completed = True
+    finally:
+        if sccache_started and compiler_cache:
+            print("+", subprocess.list2cmdline([compiler_cache, "--stop-server"]), flush=True)
+            stopped = subprocess.run(
+                [compiler_cache, "--stop-server"], cwd=args.source, env=env, check=False,
+            )
+            if build_completed and stopped.returncode != 0:
+                raise RuntimeError(
+                    f"sccache server shutdown failed with exit code {stopped.returncode}"
+                )
 
 
 if __name__ == "__main__":

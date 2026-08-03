@@ -1,0 +1,9 @@
+azure-core>=1.30.0,<2
+azure-identity>=1.17.0,<2
+azure-mgmt-authorization>=4.0.0,<5
+azure-mgmt-compute>=34.0.0,<40
+azure-mgmt-msi>=7.0.0,<8
+azure-mgmt-network>=27.0.0,<30
+azure-mgmt-resource>=23.0.0,<25
+azure-mgmt-storage>=21.0.0,<24
+azure-storage-blob>=12.22.0,<13
