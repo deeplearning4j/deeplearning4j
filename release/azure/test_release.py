@@ -3069,9 +3069,15 @@ class WorkerTransportTests(unittest.TestCase):
         source = (HERE / "worker.ps1").read_text(encoding="utf-8")
         self.assertIn("param([switch]$Register)", source)
         self.assertIn(
-            "$ActiveBuildLogFile,$Config.managedIdentityClientId,$KillRequestedFile",
+            "$Config.controllerEpoch,$Config.managedIdentityClientId,"
+            "$KillRequestedFile",
             source,
         )
+        self.assertIn(
+            "Set-Content -LiteralPath $KillRequestedFile -Value $Reason",
+            source,
+        )
+        self.assertNotIn("$ActiveBuildLogFile", source)
         self.assertIn("'--client-id', $ClientId", source)
         self.assertIn("$ObjectPrefix/live.log", source)
         self.assertIn("*>> '$LaneLog'", source)
@@ -3098,6 +3104,18 @@ class WorkerTransportTests(unittest.TestCase):
         self.assertIn('maven_repo="${MAVEN_REPO_ROOT}/${safe_id}"', linux)
         self.assertIn('git clone --filter=blob:none "${REPOSITORY}" "${source_dir}"', linux)
         self.assertNotIn('worktree add', linux)
+
+    def test_windows_transcript_has_one_writer_for_the_build_log(self):
+        source = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        self.assertIn("function Write-BuildContent", source)
+        self.assertIn(
+            "$script:BuildLog -and -not $script:TranscriptStarted",
+            source,
+        )
+        self.assertIn("if ($Text) { Write-BuildContent $Text }", source)
+        self.assertIn("Write-BuildContent ($_ | Out-String)", source)
+        self.assertNotIn("[IO.File]::AppendAllText($BuildLog", source)
+        self.assertNotIn("$_ | Out-String | Add-Content $BuildLog", source)
 
     def test_windows_worker_uses_python_before_machine_path_refresh(self):
         source = (HERE / "worker.ps1").read_text(encoding="utf-8")

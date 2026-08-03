@@ -39,7 +39,6 @@ $ToolchainRoot = Join-Path $WorkRoot 'toolchains'
 $SourceRoot = Join-Path $WorkRoot 'sources'
 $OutputRoot = Join-Path $WorkRoot 'outputs'
 $MavenRepoRoot = Join-Path $WorkRoot 'm2'
-$ActiveBuildLogFile = Join-Path $WorkRoot 'active-build-log.txt'
 $LaneForwarderStop = Join-Path $WorkRoot 'lane-forwarder.stop'
 $LaneForwarderError = Join-Path $WorkRoot 'lane-forwarder.err'
 $KillRequestedFile = Join-Path $WorkRoot 'kill-requested'
@@ -96,10 +95,17 @@ $script:LogForwarderError = $null
 $script:PythonExe = $null
 $script:MatrixLogOffsets = @{}
 
+function Write-BuildContent([string]$Text) {
+  if (-not $Text) { return }
+  Write-Output $Text
+  if ($script:BuildLog -and -not $script:TranscriptStarted) {
+    Add-Content -Path $script:BuildLog -Value $Text
+  }
+}
+
 function Write-Phase([string]$Phase, [string]$Status, [string]$Detail = '') {
   $Message = "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=$Phase status=$Status $Detail"
-  Write-Output $Message
-  if ($script:BuildLog) { Add-Content -Path $script:BuildLog -Value $Message }
+  Write-BuildContent $Message
 }
 
 function Invoke-KillSwitchProbe {
@@ -135,7 +141,9 @@ function Wait-ForCloudAccess {
 
 function Assert-NotKilled {
   if (Test-Path -LiteralPath $KillRequestedFile) {
-    throw 'Global kill switch stopped the lane'
+    $Reason = (Get-Content -Raw $KillRequestedFile).Trim()
+    if (-not $Reason) { $Reason = 'requested' }
+    throw "Global kill switch stopped the lane ($Reason)"
   }
 }
 
@@ -173,7 +181,6 @@ function Set-ShardContext($NextShard) {
   $script:SourceDir = Join-Path $SourceRoot $SafeId
   $script:OutputDir = Join-Path $OutputRoot $SafeId
   $script:BuildLog = Join-Path $OutputDir 'build.log'
-  Set-Content -LiteralPath $ActiveBuildLogFile -Value $script:BuildLog
   $script:MatrixLog = Join-Path $OutputDir 'matrix-build.log'
   $script:MatrixError = Join-Path $OutputDir 'matrix-build.err'
   $script:ShardConfigFile = Join-Path $BootstrapRoot "$SafeId.json"
@@ -214,7 +221,7 @@ function Copy-NewLogContent([string]$Path) {
     finally {
       $Reader.Dispose()
     }
-    if ($Text) { [IO.File]::AppendAllText($BuildLog, $Text, [Text.Encoding]::UTF8) }
+    if ($Text) { Write-BuildContent $Text }
   }
   finally {
     $Stream.Dispose()
@@ -328,8 +335,8 @@ function Complete-Shard([int]$RequestedExitCode) {
 function Start-KillWatchdog {
   $PythonExe = $script:PythonExe
   $ParentPid = $PID
-  $script:KillWatchJob = Start-Job -Name "dl4j-release-kill-watchdog" -ArgumentList $PythonExe,$CloudIo,$Config.killSwitchBucket,$Config.killSwitchObject,$Config.controllerEpoch,$LaneLog,$ActiveBuildLogFile,$Config.managedIdentityClientId,$KillRequestedFile,$WatchdogStopFile,$WatchdogCloudPidFile,$BuildPidFile,$ParentPid -ScriptBlock {
-    param($PythonExe,$CloudIo,$Bucket,$KillSwitchObject,$ControllerEpoch,$LaneLog,$ActiveBuildLogFile,$ClientId,$KillRequestedFile,$StopFile,$CloudPidFile,$BuildPidFile,$ParentPid)
+  $script:KillWatchJob = Start-Job -Name "dl4j-release-kill-watchdog" -ArgumentList $PythonExe,$CloudIo,$Config.killSwitchBucket,$Config.killSwitchObject,$Config.controllerEpoch,$Config.managedIdentityClientId,$KillRequestedFile,$WatchdogStopFile,$WatchdogCloudPidFile,$BuildPidFile,$ParentPid -ScriptBlock {
+    param($PythonExe,$CloudIo,$Bucket,$KillSwitchObject,$ControllerEpoch,$ClientId,$KillRequestedFile,$StopFile,$CloudPidFile,$BuildPidFile,$ParentPid)
     while (-not (Test-Path -LiteralPath $StopFile)) {
       $ProbeArguments = @($CloudIo, 'kill-enabled', '--bucket', $Bucket, '--object', $KillSwitchObject, '--controller-epoch', $ControllerEpoch, '--client-id', $ClientId)
       $Probe = Start-Process $PythonExe -ArgumentList $ProbeArguments -PassThru -NoNewWindow -RedirectStandardOutput "$CloudPidFile.out" -RedirectStandardError "$CloudPidFile.err"
@@ -347,13 +354,7 @@ function Start-KillWatchdog {
       Remove-Item -LiteralPath $CloudPidFile -Force -ErrorAction SilentlyContinue
       if ($State -ne 1) {
         $Reason = if ($State -eq 0) { 'enabled' } else { "unreadable-exit-$State" }
-        $DiagnosticLog = $LaneLog
-        if (Test-Path -LiteralPath $ActiveBuildLogFile) {
-          $CandidateLog = (Get-Content -Raw $ActiveBuildLogFile).Trim()
-          if ($CandidateLog) { $DiagnosticLog = $CandidateLog }
-        }
-        Add-Content -Path $DiagnosticLog -Value "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=kill-switch status=$Reason"
-        New-Item -ItemType File -Force -Path $KillRequestedFile | Out-Null
+        Set-Content -LiteralPath $KillRequestedFile -Value $Reason
         if (Test-Path -LiteralPath $BuildPidFile) {
           $ActiveBuildPid = (Get-Content -Raw $BuildPidFile).Trim()
           if ($ActiveBuildPid -match '^\d+$') { taskkill /PID $ActiveBuildPid /T /F *> $null }
@@ -564,7 +565,7 @@ try {
       }
       catch {
         Write-Phase 'shard' 'failed' $_.Exception.Message
-        $_ | Out-String | Add-Content $BuildLog
+        Write-BuildContent ($_ | Out-String)
         $ShardExitCode = 1
       }
       $FinalCode = Complete-Shard $ShardExitCode
@@ -579,7 +580,7 @@ try {
 catch {
   if ($script:BuildLog) {
     Write-Phase 'worker' 'failed' $_.Exception.Message
-    $_ | Out-String | Add-Content $BuildLog
+    Write-BuildContent ($_ | Out-String)
   }
   else {
     Write-Error $_
