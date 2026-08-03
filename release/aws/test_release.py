@@ -778,6 +778,24 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertRegex(source, r'case "\$ZLUDA" in\s+OFF\)')
         self.assertIn("expected OFF, ON, AMD, INTEL, or AUTO", source)
 
+    def test_buildnativeoperations_keeps_parser_header_path_portable(self):
+        root = Path(__file__).parents[2]
+        source = (root / "libnd4j/buildnativeoperations.sh").read_text(encoding="utf-8")
+        start = source.index("# CMake runs from this chip's build directory")
+        end = source.index('EXPERIMENTAL_ARG=""', start)
+        path_contract = source[start:end]
+
+        self.assertIn('OP_OUTPUT_FILE_PATH="$OP_OUTPUT_FILE"', path_contract)
+        self.assertIn('cygpath -m "$OP_OUTPUT_FILE_PATH"', path_contract)
+        self.assertIn(
+            'OP_OUTPUT_FILE_ARG="-DOP_OUTPUT_FILE=\\\"${OP_OUTPUT_FILE_PATH}\\\""',
+            path_contract,
+        )
+        self.assertNotIn(
+            'OP_OUTPUT_FILE_PATH="${BUILD_DIR}/${OP_OUTPUT_FILE}"',
+            path_contract,
+        )
+
     def test_shared_native_script_emits_specialized_classifiers(self):
         root = Path(__file__).parents[2]
         script = root / "build-scripts/release/native-platform.sh"

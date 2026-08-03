@@ -2797,15 +2797,25 @@ if [ "$PACKAGING" == "msi" ]; then
     PACKAGING_ARG="-DPACKAGING=msi"
 fi
 
-# Resolve relative parser-header paths against this chip's build directory.
-# Keeping the header build-local lets independent CPU, CUDA, Vulkan, and cross builds
-# configure concurrently without deleting or replacing one another's parser input.
-if [[ "$OP_OUTPUT_FILE" = /* ]]; then
-    OP_OUTPUT_FILE_PATH="$OP_OUTPUT_FILE"
-else
-    OP_OUTPUT_FILE_PATH="${BUILD_DIR}/${OP_OUTPUT_FILE}"
-fi
-OP_OUTPUT_FILE_ARG="-DOP_OUTPUT_FILE=${OP_OUTPUT_FILE_PATH}"
+# CMake runs from this chip's build directory, so relative parser-header paths
+# must stay relative. Expanding the default through BUILD_DIR turns Maven's native
+# Windows path into mixed C:\\.../... syntax under MSYS and writes the header outside
+# the include tree JavaCPP searches.
+case "$OP_OUTPUT_FILE" in
+    /*|[A-Za-z]:[\\/]*)
+        OP_OUTPUT_FILE_PATH="$OP_OUTPUT_FILE"
+        # Explicit absolute overrides remain supported. Normalize them for native
+        # Windows CMake when this script is running under MSYS/Cygwin.
+        if command -v cygpath >/dev/null 2>&1; then
+            OP_OUTPUT_FILE_PATH="$(cygpath -m "$OP_OUTPUT_FILE_PATH")"
+        fi
+        ;;
+    *)
+        OP_OUTPUT_FILE_PATH="$OP_OUTPUT_FILE"
+        ;;
+esac
+# Preserve spaces through the eval-based CMake command construction below.
+OP_OUTPUT_FILE_ARG="-DOP_OUTPUT_FILE=\"${OP_OUTPUT_FILE_PATH}\""
 
 EXPERIMENTAL_ARG=""
 MINIFIER_ARG="-DSD_BUILD_MINIFIER=false"
