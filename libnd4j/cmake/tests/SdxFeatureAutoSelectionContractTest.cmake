@@ -76,3 +76,22 @@ foreach(_sdx_packaging_contract_fragment IN LISTS
             "SDX shared runtime packaging contract is missing: ${_sdx_packaging_contract_fragment}")
     endif()
 endforeach()
+
+# The CUDA standalone target consumes nd4jcuda's object library directly.
+# A cuDNN classifier therefore has to repeat the normal CUDA target's cuDNN
+# link closure rather than relying on a non-transitive sibling target.
+file(READ "${SDX_SOURCE_DIR}/cmake/BuildSDX.cmake" _sdx_build_contract)
+set(_sdx_cudnn_link_contract_fragments
+    [=[if(HAVE_CUDNN AND TARGET CUDNN::cudnn)]=]
+    [=[target_link_libraries(${main_target_name} PUBLIC CUDNN::cudnn)]=]
+    [=[elseif(HAVE_CUDNN AND CUDNN_LIBRARIES)]=]
+    [=[target_link_libraries(${main_target_name} PUBLIC ${CUDNN_LIBRARIES})]=])
+foreach(_sdx_cudnn_link_contract_fragment IN LISTS
+        _sdx_cudnn_link_contract_fragments)
+    string(FIND "${_sdx_build_contract}"
+        "${_sdx_cudnn_link_contract_fragment}" _sdx_cudnn_fragment_position)
+    if(_sdx_cudnn_fragment_position EQUAL -1)
+        message(FATAL_ERROR
+            "SDX cuDNN link contract is missing: ${_sdx_cudnn_link_contract_fragment}")
+    endif()
+endforeach()

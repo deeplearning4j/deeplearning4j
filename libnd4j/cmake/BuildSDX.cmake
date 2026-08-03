@@ -289,6 +289,20 @@ function(configure_sdx_cuda_linking main_target_name)
         target_link_libraries(${main_target_name} PUBLIC CUDA::cuda_driver)
     endif()
 
+    # The standalone target consumes the same CUDA object library as nd4jcuda.
+    # When those objects were compiled with cuDNN helpers, their cuDNN symbols
+    # must be resolved here as well; the normal nd4jcuda link is not transitive.
+    if(HAVE_CUDNN AND TARGET CUDNN::cudnn)
+        target_link_libraries(${main_target_name} PUBLIC CUDNN::cudnn)
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
+    elseif(HAVE_CUDNN AND CUDNN_LIBRARIES)
+        target_link_libraries(${main_target_name} PUBLIC ${CUDNN_LIBRARIES})
+        if(CUDNN_INCLUDE_DIR)
+            target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
+        endif()
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
+    endif()
+
     # OpenBLAS / BLAS
     if(DEFINED OPENBLAS_LIBRARIES)
         target_link_libraries(${main_target_name} PUBLIC ${OPENBLAS_LIBRARIES})
