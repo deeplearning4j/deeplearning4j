@@ -76,32 +76,35 @@ struct DataBufferThreadState {
   int islandSlotMax = INT_MIN;
 };
 
-extern SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
+// Export an ordinary accessor rather than a TLS data symbol. MinGW GCC 16
+// rejects dllexport on thread_local variables, while the accessor keeps TLS
+// ownership inside the runtime DLL and remains callable across DLL boundaries.
+SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState();
 
-#define tl_graphExecutionActive   tl_dataBufferState.graphExecutionActive
-#define tl_capturedHostPtrs       tl_dataBufferState.capturedHostPtrs
-#define tl_capturedModules        tl_dataBufferState.capturedModules
-#define tl_captureReplicateCache  tl_dataBufferState.captureReplicateCache
-#define tl_captureWorkspace       tl_dataBufferState.captureWorkspace
-#define tl_captureWorkspaceSize   tl_dataBufferState.captureWorkspaceSize
-#define tl_captureWorkspaceOffset tl_dataBufferState.captureWorkspaceOffset
-#define tl_captureHostWorkspace       tl_dataBufferState.captureHostWorkspace
-#define tl_captureHostWorkspaceSize   tl_dataBufferState.captureHostWorkspaceSize
-#define tl_captureHostWorkspaceOffset tl_dataBufferState.captureHostWorkspaceOffset
-#define tl_cublasWorkspacePtr     tl_dataBufferState.cublasWorkspacePtr
-#define tl_cublasWorkspaceSize    tl_dataBufferState.cublasWorkspaceSize
-#define tl_dspAllocBytes          tl_dataBufferState.dspAllocBytes
-#define tl_dspFreeBytes           tl_dataBufferState.dspFreeBytes
-#define tl_dspAllocCount          tl_dataBufferState.dspAllocCount
-#define tl_dspFreeCount           tl_dataBufferState.dspFreeCount
-#define tl_dspFreeSkipCount       tl_dataBufferState.dspFreeSkipCount
-#define tl_dspReplayActive        tl_dataBufferState.dspReplayActive
-#define tl_cublasLtDisabled       tl_dataBufferState.cublasLtDisabled
-#define tl_graphCaptureStream     tl_dataBufferState.graphCaptureStream
-#define tl_dspExecutionStream     tl_dataBufferState.dspExecutionStream
-#define tl_compositeCaptureStream tl_dataBufferState.compositeCaptureStream
-#define tl_islandSlotMin          tl_dataBufferState.islandSlotMin
-#define tl_islandSlotMax          tl_dataBufferState.islandSlotMax
+#define tl_graphExecutionActive   dataBufferThreadState().graphExecutionActive
+#define tl_capturedHostPtrs       dataBufferThreadState().capturedHostPtrs
+#define tl_capturedModules        dataBufferThreadState().capturedModules
+#define tl_captureReplicateCache  dataBufferThreadState().captureReplicateCache
+#define tl_captureWorkspace       dataBufferThreadState().captureWorkspace
+#define tl_captureWorkspaceSize   dataBufferThreadState().captureWorkspaceSize
+#define tl_captureWorkspaceOffset dataBufferThreadState().captureWorkspaceOffset
+#define tl_captureHostWorkspace       dataBufferThreadState().captureHostWorkspace
+#define tl_captureHostWorkspaceSize   dataBufferThreadState().captureHostWorkspaceSize
+#define tl_captureHostWorkspaceOffset dataBufferThreadState().captureHostWorkspaceOffset
+#define tl_cublasWorkspacePtr     dataBufferThreadState().cublasWorkspacePtr
+#define tl_cublasWorkspaceSize    dataBufferThreadState().cublasWorkspaceSize
+#define tl_dspAllocBytes          dataBufferThreadState().dspAllocBytes
+#define tl_dspFreeBytes           dataBufferThreadState().dspFreeBytes
+#define tl_dspAllocCount          dataBufferThreadState().dspAllocCount
+#define tl_dspFreeCount           dataBufferThreadState().dspFreeCount
+#define tl_dspFreeSkipCount       dataBufferThreadState().dspFreeSkipCount
+#define tl_dspReplayActive        dataBufferThreadState().dspReplayActive
+#define tl_cublasLtDisabled       dataBufferThreadState().cublasLtDisabled
+#define tl_graphCaptureStream     dataBufferThreadState().graphCaptureStream
+#define tl_dspExecutionStream     dataBufferThreadState().dspExecutionStream
+#define tl_compositeCaptureStream dataBufferThreadState().compositeCaptureStream
+#define tl_islandSlotMin          dataBufferThreadState().islandSlotMin
+#define tl_islandSlotMax          dataBufferThreadState().islandSlotMax
 #endif  // __JAVACPP_HACK__
 
 class SD_LIB_EXPORT DataBuffer {

@@ -30,7 +30,10 @@
 
 namespace sd {
 
-SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
+SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState() {
+  static thread_local DataBufferThreadState state;
+  return state;
+}
 
 void DataBuffer::replaceSpecialBuffer(void* newPtr, bool isOwner) {
   // No-op on CPU: there is no device (special) buffer to replace.

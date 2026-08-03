@@ -45,7 +45,10 @@
 
 namespace sd {
 
-SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
+SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState() {
+  static thread_local DataBufferThreadState state;
+  return state;
+}
 
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {

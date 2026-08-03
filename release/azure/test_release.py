@@ -2800,8 +2800,11 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertIn("& $script:WindowsTarExe -C $MavenOutput -czf", worker)
         self.assertIn("& $script:WindowsTarExe -C $SdkOutput -czf", worker)
         self.assertNotRegex(worker, r"(?m)^\s+tar (?:-xzf|-C)")
+        self.assertIn("$null = $Process.Handle", worker)
         self.assertIn("$Process.WaitForExit()\n  $BuildExitCode = $Process.ExitCode", worker)
         self.assertIn("Build process exited without an available exit code", worker)
+        self.assertIn("$null = $Probe.Handle", worker)
+        self.assertIn("$Probe.WaitForExit()\n      $State = $Probe.ExitCode", worker)
         self.assertIn("worker-started.txt", worker)
         self.assertIn("worker-attempt.txt", worker)
         self.assertIn("Remove-Item -LiteralPath $LogForwarderStop", worker)
@@ -2832,6 +2835,42 @@ class AzureSafetyTests(unittest.TestCase):
             with self.subTest(path=relative_path):
                 source = (ROOT / relative_path).read_text(encoding="utf-8")
                 self.assertIn(expected, source)
+
+    def test_data_buffer_tls_uses_exported_accessor(self):
+        header = (ROOT / "libnd4j/include/array/DataBuffer.h").read_text(encoding="utf-8")
+        self.assertIn(
+            "SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState();",
+            header,
+        )
+        self.assertIn(
+            "#define tl_graphExecutionActive   dataBufferThreadState().graphExecutionActive",
+            header,
+        )
+        self.assertNotIn(
+            "extern SD_TLS_EXPORT thread_local DataBufferThreadState",
+            header,
+        )
+        for relative_path in (
+            "libnd4j/include/array/cpu/DataBuffer.cpp",
+            "libnd4j/include/array/cuda/DataBuffer.cu",
+            "libnd4j/include/array/vulkan/DataBuffer.cpp",
+        ):
+            with self.subTest(path=relative_path):
+                source = (ROOT / relative_path).read_text(encoding="utf-8")
+                self.assertIn(
+                    "SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState()",
+                    source,
+                )
+                self.assertIn("static thread_local DataBufferThreadState state;", source)
+                self.assertNotIn(
+                    "SD_TLS_EXPORT thread_local DataBufferThreadState",
+                    source,
+                )
+        native_ops = (ROOT / "libnd4j/include/legacy/cuda/NativeOps.cu").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("sd::tl_dataBufferState", native_ops)
+        self.assertIn("sd::dataBufferThreadState()", native_ops)
 
 
 class WorkerTransportTests(unittest.TestCase):

@@ -66,7 +66,10 @@
 namespace sd {
 
 // ─── Thread-local state (required by DataBuffer.h macros) ──────────────────────
-SD_TLS_EXPORT thread_local DataBufferThreadState tl_dataBufferState;
+SD_LIB_EXPORT DataBufferThreadState& dataBufferThreadState() {
+  static thread_local DataBufferThreadState state;
+  return state;
+}
 
 // ─── Internal helpers ───────────────────────────────────────────────────────────
 

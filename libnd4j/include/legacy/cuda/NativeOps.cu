@@ -1040,8 +1040,8 @@ int memsetSync(sd::Pointer dst, int value, sd::LongType size, int flags, sd::Poi
   if (!switchedDevice) {
     // Global-scope JNI function — qualify the thread-state explicitly (the
     // tl_dspExecutionStream macro expands unqualified inside namespace sd).
-    if (sd::tl_dataBufferState.dspExecutionStream != nullptr) {
-      memsetStream = reinterpret_cast<cudaStream_t>(sd::tl_dataBufferState.dspExecutionStream);
+    if (sd::dataBufferThreadState().dspExecutionStream != nullptr) {
+      memsetStream = reinterpret_cast<cudaStream_t>(sd::dataBufferThreadState().dspExecutionStream);
     } else {
       auto* ctxStream = sd::LaunchContext::defaultContext()->getCudaStream();
       if (ctxStream != nullptr) memsetStream = *ctxStream;

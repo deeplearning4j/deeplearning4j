@@ -482,6 +482,7 @@ function Start-KillWatchdog {
     while (-not (Test-Path -LiteralPath $StopFile)) {
       $ProbeArguments = @($CloudIo, 'kill-enabled', '--bucket', $Bucket, '--object', $KillSwitchObject, '--controller-epoch', $ControllerEpoch, '--client-id', $ClientId)
       $Probe = Start-Process $PythonExe -ArgumentList $ProbeArguments -PassThru -NoNewWindow -RedirectStandardOutput "$CloudPidFile.out" -RedirectStandardError "$CloudPidFile.err"
+      $null = $Probe.Handle
       Set-Content -LiteralPath $CloudPidFile -Value $Probe.Id
       while (-not $Probe.HasExited) {
         if (Test-Path -LiteralPath $StopFile) {
@@ -492,7 +493,9 @@ function Start-KillWatchdog {
         Start-Sleep -Seconds 1
         $Probe.Refresh()
       }
+      $Probe.WaitForExit()
       $State = $Probe.ExitCode
+      if ($null -eq $State) { $State = -1 }
       Remove-Item -LiteralPath $CloudPidFile -Force -ErrorAction SilentlyContinue
       if ($State -ne 1) {
         $Reason = if ($State -eq 0) { 'enabled' } else { "unreadable-exit-$State" }
@@ -675,6 +678,7 @@ function Invoke-ShardBuild {
   $Arguments = @($BuildDriver, '--config', $ShardConfigFile, '--source', $SourceDir, '--repository', $ShardMavenRepo, '--maven-output', $MavenOutput, '--sdk-output', $SdkOutput)
   Write-Phase 'matrix-build' 'started' "shard=$($Shard.id)"
   $Process = Start-Process $script:PythonExe -ArgumentList $Arguments -RedirectStandardOutput $MatrixLog -RedirectStandardError $MatrixError -PassThru -NoNewWindow
+  $null = $Process.Handle
   Set-Content -LiteralPath $BuildPidFile -Value $Process.Id
   try {
     while (-not $Process.HasExited) {
