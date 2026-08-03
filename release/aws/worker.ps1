@@ -53,6 +53,43 @@ function Start-LogForwarder {
   Write-Phase 'cloudwatch-forwarder' 'complete' "pid=$($LogForwarderProcess.Id)"
 }
 
+function Import-VisualStudioEnvironment {
+  Write-Phase 'visual-studio-environment' 'started'
+  $VsWhereRoot = ${env:ProgramFiles(x86)}
+  if (-not $VsWhereRoot) { $VsWhereRoot = $env:ProgramFiles }
+  $VsWhere = Join-Path $VsWhereRoot 'Microsoft Visual Studio\Installer\vswhere.exe'
+  if (-not (Test-Path -LiteralPath $VsWhere)) {
+    throw "Visual Studio locator was not found at $VsWhere"
+  }
+  $VsInstall = (& $VsWhere -latest -products '*' -version '[17.0,18.0)' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1)
+  if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($VsInstall)) {
+    throw 'Visual Studio 2022 C++ Build Tools installation was not found'
+  }
+  $VsInstall = $VsInstall.Trim()
+  $VcVars = Join-Path $VsInstall 'VC\Auxiliary\Build\vcvars64.bat'
+  if (-not (Test-Path -LiteralPath $VcVars)) {
+    throw "Visual Studio x64 environment script was not found at $VcVars"
+  }
+  $EnvironmentLines = & $env:ComSpec /d /s /c "`"$VcVars`" >nul && set"
+  if ($LASTEXITCODE -ne 0) {
+    throw "Visual Studio x64 environment initialization failed with exit code $LASTEXITCODE"
+  }
+  foreach ($Line in $EnvironmentLines) {
+    $Separator = $Line.IndexOf('=')
+    if ($Separator -le 0) { continue }
+    $Name = $Line.Substring(0, $Separator)
+    $Value = $Line.Substring($Separator + 1)
+    [Environment]::SetEnvironmentVariable($Name, $Value, 'Process')
+  }
+  if (-not $env:VCINSTALLDIR -or -not $env:INCLUDE -or -not $env:LIB) {
+    throw 'Visual Studio environment is missing VCINSTALLDIR, INCLUDE, or LIB'
+  }
+  if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
+    throw 'Visual Studio environment did not expose cl.exe on PATH'
+  }
+  Write-Phase 'visual-studio-environment' 'complete' "installation=$VsInstall"
+}
+
 Write-Phase 'worker' 'started' "pid=$PID"
 try {
   Start-Transcript -Path $BootstrapLog -Append -Force | Out-Null
@@ -72,6 +109,7 @@ try {
   Write-Phase 'toolchain-packages' 'started'
   choco install -y --no-progress cmake git maven ninja temurin11 7zip msys2 rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
   Write-Phase 'toolchain-packages' 'complete'
+  Import-VisualStudioEnvironment
   $env:PATH = "C:\Program Files\Git\cmd;C:\Program Files\Git\bin;C:\tools\msys64\mingw64\bin;C:\tools\msys64\usr\bin;$env:PATH"
   $JavaHome = Get-ChildItem 'C:\Program Files\Eclipse Adoptium' -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
   if (-not $JavaHome) { $JavaHome = Get-ChildItem 'C:\Program Files\Java' -Directory | Sort-Object Name -Descending | Select-Object -First 1 }

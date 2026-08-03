@@ -588,8 +588,44 @@ class ReleaseValidationTest(unittest.TestCase):
                         [f"{platform}-cuda-12.9-zluda"],
                         shard["artifactRules"]["classifierTokens"],
                     )
-                    expected_unclassified = ["nd4j-zluda"] if operating_system == "linux" else []
-                    self.assertEqual(expected_unclassified, rules.get("unclassifiedArtifactIds", []))
+                    self.assertEqual(
+                        ["nd4j-zluda"],
+                        rules.get("unclassifiedArtifactIds", []),
+                    )
+
+    def test_windows_workers_import_visual_studio_environment_before_build(self):
+        root = Path(__file__).parents[2]
+        for provider in ("aws", "gcp", "azure"):
+            with self.subTest(provider=provider):
+                worker = (root / f"release/{provider}/worker.ps1").read_text(
+                    encoding="utf-8"
+                )
+                self.assertEqual(2, worker.count("Import-VisualStudioEnvironment"))
+                self.assertIn(
+                    "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+                    worker,
+                )
+                self.assertIn("-version '[17.0,18.0)'", worker)
+                self.assertIn(r"VC\Auxiliary\Build\vcvars64.bat", worker)
+                self.assertIn(
+                    '$env:ComSpec /d /s /c "`"$VcVars`" >nul && set"',
+                    worker,
+                )
+                self.assertIn(
+                    "[Environment]::SetEnvironmentVariable("
+                    "$Name, $Value, 'Process')",
+                    worker,
+                )
+                self.assertIn("$env:VCINSTALLDIR", worker)
+                self.assertIn("Get-Command cl.exe", worker)
+                self.assertGreater(
+                    worker.rindex("Import-VisualStudioEnvironment"),
+                    worker.index("visualstudio2022-workload-vctools"),
+                )
+                self.assertLess(
+                    worker.rindex("Import-VisualStudioEnvironment"),
+                    worker.index("$Arguments ="),
+                )
 
     def test_zluda_cmake_runtime_contract_is_registered(self):
         root = Path(__file__).parents[2]
