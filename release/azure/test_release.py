@@ -1461,6 +1461,53 @@ class AzureSafetyTests(unittest.TestCase):
             calls["parameters"]["network_security_group"],
         )
 
+    def test_ensure_network_preserves_sdk_nsg_id(self):
+        calls = {}
+
+        def operation(value):
+            return SimpleNamespace(result=lambda timeout=None: value)
+
+        network = SimpleNamespace(
+            network_security_groups=SimpleNamespace(
+                begin_create_or_update=lambda *args: operation(
+                    SimpleNamespace(id="/sdk/nsg")
+                )
+            ),
+            virtual_networks=SimpleNamespace(
+                begin_create_or_update=lambda *args: operation(SimpleNamespace())
+            ),
+            subnets=SimpleNamespace(
+                begin_create_or_update=lambda group, vnet, name, parameters: (
+                    calls.update(parameters=parameters)
+                    or operation(SimpleNamespace(id="/subnet"))
+                )
+            ),
+        )
+
+        subnet_id, nsg_id = release.ensure_network(
+            {"network": network}, "group", "eastus2"
+        )
+
+        self.assertEqual("/subnet", subnet_id)
+        self.assertEqual("/sdk/nsg", nsg_id)
+        self.assertEqual(
+            {"id": "/sdk/nsg"},
+            calls["parameters"]["network_security_group"],
+        )
+
+    def test_ensure_network_requires_subscription_when_sdk_omits_nsg_id(self):
+        operation = SimpleNamespace(
+            result=lambda timeout=None: SimpleNamespace(id=None)
+        )
+        network = SimpleNamespace(
+            network_security_groups=SimpleNamespace(
+                begin_create_or_update=lambda *args: operation
+            )
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "subscription is unavailable"):
+            release.ensure_network({"network": network}, "group", "eastus2")
+
     def test_stream_blob_log_reads_bounded_ranges_from_current_offset(self):
         container = mock.Mock()
         container.download_blob.side_effect = [
