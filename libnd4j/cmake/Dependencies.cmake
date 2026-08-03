@@ -907,6 +907,14 @@ function(setup_onednn)
     set(HAVE_ONEDNN ON CACHE BOOL "OneDNN availability" FORCE)
     set(ONEDNN_INSTALL_DIR "${CMAKE_BINARY_DIR}/onednn_install")
 
+    # Use one platform-derived library directory for both fresh installs and
+    # dependency-cache restores. MinGW installs oneDNN into lib, not lib64.
+    if(WIN32)
+        set(ONEDNN_LIB_DIR "lib")
+    else()
+        set(ONEDNN_LIB_DIR "lib64")
+    endif()
+
     # --- Dependency cache check ---
     set(ONEDNN_VERSION "3.8.1")
     if(SD_DEP_CACHE)
@@ -920,11 +928,9 @@ function(setup_onednn)
             add_library(onednn_interface INTERFACE)
             target_include_directories(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/include")
             if(MSVC)
-                target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib")
-            elseif(WIN32)
-                target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a")
+                target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/${ONEDNN_LIB_DIR}/dnnl.lib")
             else()
-                target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a")
+                target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/${ONEDNN_LIB_DIR}/libdnnl.a")
             endif()
             add_dependencies(onednn_interface onednn_external)
             set(ONEDNN onednn_interface PARENT_SCOPE)
@@ -957,11 +963,6 @@ function(setup_onednn)
     set(ONEDNN_URL_HASH "SHA256=4b0638061a789a1efbefdcd2e85eb257c7b432b3b6a71ba8909e19d75f50b163")
 
     # Build CMAKE_ARGS list for OneDNN
-    if(WIN32)
-        set(ONEDNN_LIB_DIR "lib")
-    else()
-        set(ONEDNN_LIB_DIR "lib64")
-    endif()
     set(ONEDNN_CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
             -DCMAKE_INSTALL_LIBDIR=${ONEDNN_LIB_DIR}

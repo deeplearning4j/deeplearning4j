@@ -734,6 +734,41 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertLess(dependencies.index(normalization), dependencies.index(propagation))
         self.assertLess(dependencies.index(propagation), dependencies.index(validation))
 
+    def test_onednn_cache_restore_uses_cold_build_platform_libdir(self):
+        root = Path(__file__).parents[2]
+        dependencies = (
+            root / "libnd4j/cmake/Dependencies.cmake"
+        ).read_text(encoding="utf-8")
+        setup_start = dependencies.index("function(setup_onednn)")
+        setup_end = dependencies.index("endfunction()", setup_start)
+        setup = dependencies[setup_start:setup_end]
+        libdir_selection = (
+            'if(WIN32)\n'
+            '        set(ONEDNN_LIB_DIR "lib")\n'
+            '    else()\n'
+            '        set(ONEDNN_LIB_DIR "lib64")\n'
+            '    endif()'
+        )
+        cache_start = setup.index("if(_onednn_hit)")
+        cache_end = setup.index("return()", cache_start)
+        cache_hit = setup[cache_start:cache_end]
+
+        self.assertIn(libdir_selection, setup)
+        self.assertLess(
+            setup.index(libdir_selection),
+            setup.index("# --- Dependency cache check ---"),
+        )
+        self.assertIn(
+            '"${ONEDNN_INSTALL_DIR}/${ONEDNN_LIB_DIR}/dnnl.lib"',
+            cache_hit,
+        )
+        self.assertIn(
+            '"${ONEDNN_INSTALL_DIR}/${ONEDNN_LIB_DIR}/libdnnl.a"',
+            cache_hit,
+        )
+        self.assertIn("-DCMAKE_INSTALL_LIBDIR=${ONEDNN_LIB_DIR}", setup)
+        self.assertNotIn("${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a", setup)
+
     def test_classifier_staging_keeps_only_explicit_unclassified_zluda_runtime(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
