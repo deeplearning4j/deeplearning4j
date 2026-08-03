@@ -62,7 +62,8 @@ file(READ "${SDX_SOURCE_DIR}/cmake/MainBuildFlow.cmake" _sdx_main_build_flow)
 set(_sdx_packaging_contract_fragments
     [=[get_target_property(_sdx_runtime_dependency_targets]=]
     [=[SDX_RUNTIME_DEPENDENCY_TARGETS]=]
-    [=[RUNTIME_LIBRARIES_PIPE=$<JOIN:${_sdx_sdk_shared_runtime_files},|>]=]
+    [=[list(JOIN _sdx_sdk_shared_runtime_files "|"]=]
+    [=[RUNTIME_LIBRARIES_PIPE=${_sdx_sdk_shared_runtime_files_pipe}]=]
     [=[${_sdx_shared_runtime_stage_cmds}]=]
     [=[set(_sdx_runtime_dependency_files
         ${_sdx_sdk_shared_runtime_files})]=]
@@ -93,5 +94,31 @@ foreach(_sdx_cudnn_link_contract_fragment IN LISTS
     if(_sdx_cudnn_fragment_position EQUAL -1)
         message(FATAL_ERROR
             "SDX cuDNN link contract is missing: ${_sdx_cudnn_link_contract_fragment}")
+    endif()
+endforeach()
+
+# CMake list separators must be removed before runtime paths are placed in a
+# custom-command argv entry. Otherwise a two-library LLVM/MLIR closure splits
+# the $<JOIN:...> expression itself and StageSharedRuntime receives a literal.
+set(_sdx_runtime_argv_contract_fragments
+    [=[list(JOIN _sdx_triton_shared_runtimes "|"]=]
+    [=[RUNTIME_LIBRARIES_PIPE=${_sdx_triton_shared_runtimes_pipe}]=])
+foreach(_sdx_runtime_argv_contract_fragment IN LISTS
+        _sdx_runtime_argv_contract_fragments)
+    string(FIND "${_sdx_build_contract}"
+        "${_sdx_runtime_argv_contract_fragment}" _sdx_runtime_argv_position)
+    if(_sdx_runtime_argv_position EQUAL -1)
+        message(FATAL_ERROR
+            "SDX runtime argv encoding contract is missing: ${_sdx_runtime_argv_contract_fragment}")
+    endif()
+endforeach()
+
+set(_sdx_unencoded_runtime_argv [=[RUNTIME_LIBRARIES_PIPE=$<JOIN:]=])
+foreach(_sdx_contract_source IN ITEMS _sdx_build_contract _sdx_main_build_flow)
+    string(FIND "${${_sdx_contract_source}}"
+        "${_sdx_unencoded_runtime_argv}" _sdx_unencoded_runtime_argv_position)
+    if(NOT _sdx_unencoded_runtime_argv_position EQUAL -1)
+        message(FATAL_ERROR
+            "SDX runtime staging still embeds a raw list in a generator expression")
     endif()
 endforeach()

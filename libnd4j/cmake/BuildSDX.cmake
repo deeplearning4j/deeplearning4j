@@ -178,6 +178,11 @@ function(configure_sdx_triton_linking main_target_name)
     endforeach()
     set_property(TARGET ${main_target_name} PROPERTY
         SDX_RUNTIME_DEPENDENCY_TARGETS "${_sdx_triton_runtime_targets}")
+    # Encode the list before placing it in a custom-command argument. Expanding
+    # a semicolon-delimited list inside $<JOIN:...> lets CMake split the
+    # generator expression into multiple argv entries before it is evaluated.
+    list(JOIN _sdx_triton_shared_runtimes "|"
+        _sdx_triton_shared_runtimes_pipe)
 
     if(APPLE)
         set_target_properties(${main_target_name} PROPERTIES
@@ -193,7 +198,7 @@ function(configure_sdx_triton_linking main_target_name)
 
     add_custom_command(TARGET ${main_target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND}
-            "-DRUNTIME_LIBRARIES_PIPE=$<JOIN:${_sdx_triton_shared_runtimes},|>"
+            "-DRUNTIME_LIBRARIES_PIPE=${_sdx_triton_shared_runtimes_pipe}"
             "-DREADELF=${CMAKE_READELF}"
             "-DOTOOL=${CMAKE_OTOOL}"
             "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
