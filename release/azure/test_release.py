@@ -1330,7 +1330,12 @@ class AzureSafetyTests(unittest.TestCase):
                 begin_delete=lambda group, name: (
                     events.append("begin-vm") or operation("vm")
                 )
-            )
+            ),
+            disks=SimpleNamespace(
+                begin_delete=lambda group, name: (
+                    events.append("begin-disk") or operation("disk")
+                )
+            ),
         )
         network = SimpleNamespace(
             network_interfaces=SimpleNamespace(
@@ -1347,7 +1352,7 @@ class AzureSafetyTests(unittest.TestCase):
         errors = release.delete_lane_resources(
             {"compute": compute, "network": network},
             "group",
-            {"vm": "vm", "nic": "nic", "publicIp": "pip"},
+            {"vm": "vm", "nic": "nic", "publicIp": "pip", "disk": "disk"},
             fence_check=lambda: events.append("check"),
         )
         self.assertEqual([], errors)
@@ -1356,9 +1361,89 @@ class AzureSafetyTests(unittest.TestCase):
                 "check", "begin-vm", "check", "wait-vm", "check",
                 "check", "begin-nic", "check", "wait-nic", "check",
                 "check", "begin-pip", "check", "wait-pip", "check",
+                "check", "begin-disk", "check", "wait-disk", "check",
             ],
             events,
         )
+
+    def test_lane_cleanup_retries_public_ip_dependency_lag(self):
+        class DependencyError(RuntimeError):
+            error_code = "PublicIPAddressCannotBeDeleted"
+
+        attempts = {"pip": 0}
+        completed = SimpleNamespace(result=lambda timeout=None: None)
+
+        def begin_public_ip_delete(group, name):
+            attempts["pip"] += 1
+            if attempts["pip"] == 1:
+                return SimpleNamespace(
+                    result=lambda timeout=None: (_ for _ in ()).throw(
+                        DependencyError("public IP is still allocated to the NIC")
+                    )
+                )
+            return completed
+
+        context = {
+            "compute": SimpleNamespace(
+                virtual_machines=SimpleNamespace(
+                    begin_delete=lambda group, name: completed
+                )
+            ),
+            "network": SimpleNamespace(
+                network_interfaces=SimpleNamespace(
+                    begin_delete=lambda group, name: completed
+                ),
+                public_ip_addresses=SimpleNamespace(
+                    begin_delete=begin_public_ip_delete
+                ),
+            ),
+        }
+        with mock.patch.object(release.time, "sleep") as sleep:
+            errors = release.delete_lane_resources(
+                context,
+                "group",
+                {"vm": "vm", "nic": "nic", "publicIp": "pip"},
+            )
+        self.assertEqual([], errors)
+        self.assertEqual(2, attempts["pip"])
+        sleep.assert_called_once_with(5)
+
+    def test_lane_cleanup_skips_public_ip_after_nic_failure(self):
+        class NicDeleteError(RuntimeError):
+            pass
+
+        completed = SimpleNamespace(result=lambda timeout=None: None)
+        failed = SimpleNamespace(
+            result=lambda timeout=None: (_ for _ in ()).throw(
+                NicDeleteError("NIC is still attached to the VM")
+            )
+        )
+        public_ip_delete = mock.Mock(return_value=completed)
+        context = {
+            "compute": SimpleNamespace(
+                virtual_machines=SimpleNamespace(
+                    begin_delete=lambda group, name: completed
+                )
+            ),
+            "network": SimpleNamespace(
+                network_interfaces=SimpleNamespace(
+                    begin_delete=lambda group, name: failed
+                ),
+                public_ip_addresses=SimpleNamespace(
+                    begin_delete=public_ip_delete
+                ),
+            ),
+        }
+
+        errors = release.delete_lane_resources(
+            context,
+            "group",
+            {"vm": "vm", "nic": "nic", "publicIp": "pip"},
+        )
+
+        self.assertTrue(any("NIC cleanup" in item for item in errors))
+        self.assertTrue(any("public IP cleanup skipped" in item for item in errors))
+        public_ip_delete.assert_not_called()
 
     def test_lane_cleanup_stops_before_next_delete_if_fence_is_lost(self):
         started = []
@@ -1413,6 +1498,83 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertEqual("created", actual)
         self.assertEqual(["check", "begin", "check", "wait", "check"], events)
 
+    def test_lane_resource_creation_derives_missing_network_resource_ids(self):
+        calls = {}
+
+        def operation(value):
+            return SimpleNamespace(result=lambda timeout=None: value)
+
+        network = SimpleNamespace(
+            public_ip_addresses=SimpleNamespace(
+                begin_create_or_update=lambda *args: operation(
+                    SimpleNamespace(id=None)
+                )
+            ),
+            network_interfaces=SimpleNamespace(
+                begin_create_or_update=lambda group, name, parameters: (
+                    calls.update(nic=parameters)
+                    or operation(SimpleNamespace(id=None))
+                )
+            ),
+        )
+        compute = SimpleNamespace(
+            virtual_machines=SimpleNamespace(
+                begin_create_or_update=lambda group, name, parameters: (
+                    calls.update(vm=parameters) or operation(SimpleNamespace())
+                )
+            )
+        )
+        item = {
+            "id": "linux-x86-64",
+            "os": "linux",
+            "image": {
+                "publisher": "Canonical",
+                "offer": "ubuntu",
+                "sku": "22_04-lts",
+                "version": "latest",
+            },
+            "selectedMachine": {"name": "Standard_F4s_v2"},
+            "rootVolumeGiB": 100,
+        }
+        context = {
+            "subscription": "subscription",
+            "network": network,
+            "compute": compute,
+        }
+
+        resources = release._create_lane_vm_resources(
+            context,
+            "group",
+            "eastus2",
+            "run",
+            item,
+            SimpleNamespace(id="/identity"),
+            "/subnet",
+            "https://worker",
+            "ssh-key",
+        )
+
+        expected_public_ip = (
+            "/subscriptions/subscription/resourceGroups/group/providers/"
+            f"Microsoft.Network/publicIPAddresses/{resources['publicIp']}"
+        )
+        expected_nic = (
+            "/subscriptions/subscription/resourceGroups/group/providers/"
+            f"Microsoft.Network/networkInterfaces/{resources['nic']}"
+        )
+        self.assertEqual(
+            expected_public_ip,
+            calls["nic"]["ip_configurations"][0]["public_ip_address"]["id"],
+        )
+        self.assertEqual(
+            expected_nic,
+            calls["vm"]["network_profile"]["network_interfaces"][0]["id"],
+        )
+        self.assertEqual(
+            resources["disk"],
+            calls["vm"]["storage_profile"]["os_disk"]["name"],
+        )
+
     def test_ensure_network_derives_resource_ids_when_sdk_results_omit_them(self):
         calls = {}
 
@@ -1438,7 +1600,7 @@ class AzureSafetyTests(unittest.TestCase):
                         name=name,
                         parameters=parameters,
                     )
-                    or operation(SimpleNamespace(id="/subnet"))
+                    or operation(SimpleNamespace(id=None))
                 )
             ),
         )
@@ -1453,7 +1615,11 @@ class AzureSafetyTests(unittest.TestCase):
             "/subscriptions/subscription/resourceGroups/group/providers/"
             "Microsoft.Network/networkSecurityGroups/dl4j-release-nsg"
         )
-        self.assertEqual("/subnet", subnet_id)
+        expected_subnet_id = (
+            "/subscriptions/subscription/resourceGroups/group/providers/"
+            "Microsoft.Network/virtualNetworks/dl4j-release-vnet/subnets/builders"
+        )
+        self.assertEqual(expected_subnet_id, subnet_id)
         self.assertEqual(expected_nsg_id, nsg_id)
         self.assertEqual("dl4j-release-vnet", calls["vnet"])
         self.assertEqual(
@@ -1899,8 +2065,35 @@ class AzureSafetyTests(unittest.TestCase):
                     fence_check=fence_check,
                 )
         resources = cleanup.call_args.args[2]
-        self.assertEqual({"vm", "nic", "publicIp"}, set(resources))
+        self.assertEqual({"vm", "nic", "publicIp", "disk"}, set(resources))
         self.assertIs(fence_check, cleanup.call_args.kwargs["fence_check"])
+
+    def test_partial_provisioning_preserves_primary_failure_when_cleanup_fails(self):
+        item = {"shard": {"id": "lane"}}
+        with mock.patch.object(
+            release,
+            "_create_lane_vm_resources",
+            side_effect=RuntimeError("original provisioning failure"),
+        ), mock.patch.object(
+            release,
+            "delete_lane_resources",
+            return_value=["public IP cleanup: dependency pending"],
+        ):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "original provisioning failure; partial-resource cleanup also failed",
+            ):
+                release.create_lane_vm(
+                    {},
+                    "group",
+                    "eastus2",
+                    "run",
+                    item,
+                    object(),
+                    "subnet",
+                    "worker-url",
+                    "ssh-key",
+                )
 
     def test_persistent_lane_receives_multiple_shards_and_one_vm_lifecycle(self):
         plan = release.load_plan(HERE / "release-plan.json")
@@ -2695,6 +2888,18 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertIn("break_lease", fence)
         self.assertIn("fence_lease = ControllerLease", fence)
         self.assertIn('"stop-everything fenced"', fence)
+
+    def test_emergency_cleanup_deletes_disks_before_identities(self):
+        source = (HERE / "release.py").read_text(encoding="utf-8")
+        body = source.split("def _stop_fenced_resources", 1)[1].split(
+            "def stop_everything", 1
+        )[0]
+        self.assertIn('"disks": []', body)
+        self.assertIn("disks.list_by_resource_group(group)", body)
+        self.assertLess(
+            body.index('"OS disk"'),
+            body.index("cleanup_managed_identities("),
+        )
 
     def test_emergency_stop_refuses_deletion_when_fencing_fails(self):
         plan = release.load_plan(HERE / "release-plan.json")

@@ -1070,6 +1070,44 @@ def is_not_found(exc: BaseException) -> bool:
     return getattr(exc, "status_code", None) == 404 or exc.__class__.__name__ == "ResourceNotFoundError"
 
 
+def azure_resource_id(
+    context: dict[str, Any],
+    group: str,
+    provider: str,
+    resource_type: str,
+    name: str,
+    resource: Any,
+    description: str,
+) -> str:
+    """Return an SDK resource ID, deriving it when an Azure LRO omits the field."""
+    resource_id = getattr(resource, "id", None)
+    if resource_id is None and isinstance(resource, dict):
+        resource_id = resource.get("id")
+    if resource_id:
+        return str(resource_id)
+    subscription = context.get("subscription")
+    if not subscription:
+        raise RuntimeError(
+            f"Azure {description} result omitted its resource ID and the "
+            "subscription is unavailable"
+        )
+    return (
+        f"/subscriptions/{subscription}/resourceGroups/{group}/providers/"
+        f"{provider}/{resource_type}/{name}"
+    )
+
+
+def is_delete_dependency_conflict(exc: BaseException) -> bool:
+    """Recognize Azure's eventually-consistent network dependency rejection."""
+    code = str(getattr(exc, "error_code", "") or "").lower()
+    compact = str(exc).replace(" ", "").lower()
+    return (
+        code == "publicipaddresscannotbedeleted"
+        or "publicipaddresscannotbedeleted" in compact
+        or ("cannotbedeleted" in compact and "stillallocated" in compact)
+    )
+
+
 def resolve_marketplace_image_version(
     images: Any, location: str, image: dict[str, Any]
 ) -> str:
@@ -1571,11 +1609,12 @@ def ensure_network(
         fence_check,
         timeout=600,
     )
+    subnet_name = "builders"
     subnet = fenced_azure_operation(
         lambda: network.subnets.begin_create_or_update(
             group,
             vnet_name,
-            "builders",
+            subnet_name,
             {
                 "address_prefix": "10.78.0.0/24",
                 "network_security_group": {"id": nsg_id},
@@ -1584,7 +1623,16 @@ def ensure_network(
         fence_check,
         timeout=600,
     )
-    return subnet.id, nsg_id
+    subnet_id = azure_resource_id(
+        context,
+        group,
+        "Microsoft.Network",
+        f"virtualNetworks/{vnet_name}/subnets",
+        subnet_name,
+        subnet,
+        "subnet",
+    )
+    return subnet_id, nsg_id
 
 
 def get_json(container: Any, name: str) -> dict[str, Any] | None:
@@ -1947,6 +1995,7 @@ def _create_lane_vm_resources(
     vm_name = resource_name("dl4j", resource_run_id, lane_id, 64)
     nic_name = resource_name("dl4j-nic", resource_run_id, lane_id, 80)
     pip_name = resource_name("dl4j-pip", resource_run_id, lane_id, 80)
+    disk_name = resource_name("dl4j-osdisk", resource_run_id, lane_id, 80)
     tags = {
         MANAGED_TAG: "true",
         RUN_TAG: run_id,
@@ -1970,6 +2019,15 @@ def _create_lane_vm_resources(
         fence_check,
         timeout=600,
     )
+    public_ip_id = azure_resource_id(
+        context,
+        group,
+        "Microsoft.Network",
+        "publicIPAddresses",
+        pip_name,
+        public_ip,
+        "public IP",
+    )
     nic = fenced_azure_operation(
         lambda: context["network"].network_interfaces.begin_create_or_update(
             group,
@@ -1980,7 +2038,7 @@ def _create_lane_vm_resources(
                 "ip_configurations": [{
                     "name": "primary",
                     "subnet": {"id": subnet_id},
-                    "public_ip_address": {"id": public_ip.id},
+                    "public_ip_address": {"id": public_ip_id},
                     "private_ip_allocation_method": "Dynamic",
                 }],
                 "tags": tags,
@@ -1988,6 +2046,15 @@ def _create_lane_vm_resources(
         ),
         fence_check,
         timeout=600,
+    )
+    nic_id = azure_resource_id(
+        context,
+        group,
+        "Microsoft.Network",
+        "networkInterfaces",
+        nic_name,
+        nic,
+        "network interface",
     )
     os_profile: dict[str, Any] = {
         "computer_name": (
@@ -2023,6 +2090,7 @@ def _create_lane_vm_resources(
                 "version": image["version"],
             },
             "os_disk": {
+                "name": disk_name,
                 "create_option": "FromImage",
                 "disk_size_gb": item["rootVolumeGiB"],
                 "delete_option": "Delete",
@@ -2031,7 +2099,11 @@ def _create_lane_vm_resources(
         },
         "os_profile": os_profile,
         "network_profile": {
-            "network_interfaces": [{"id": nic.id, "primary": True, "delete_option": "Delete"}]
+            "network_interfaces": [{
+                "id": nic_id,
+                "primary": True,
+                "delete_option": "Delete",
+            }]
         },
         "diagnostics_profile": {"boot_diagnostics": {"enabled": True}},
         "identity": {
@@ -2075,7 +2147,12 @@ def _create_lane_vm_resources(
         require_succeeded_provisioning_state(
             extension, "Windows worker extension"
         )
-    return {"vm": vm_name, "nic": nic_name, "publicIp": pip_name}
+    return {
+        "vm": vm_name,
+        "nic": nic_name,
+        "publicIp": pip_name,
+        "disk": disk_name,
+    }
 
 
 def create_lane_vm(
@@ -2100,6 +2177,7 @@ def create_lane_vm(
         "vm": resource_name("dl4j", resource_run_id, lane_id, 64),
         "nic": resource_name("dl4j-nic", resource_run_id, lane_id, 80),
         "publicIp": resource_name("dl4j-pip", resource_run_id, lane_id, 80),
+        "disk": resource_name("dl4j-osdisk", resource_run_id, lane_id, 80),
     }
     try:
         return _create_lane_vm_resources(
@@ -2123,8 +2201,9 @@ def create_lane_vm(
             fence_check=cleanup_fence_check or fence_check,
         )
         if cleanup_errors:
+            primary_failure = str(exc) or repr(exc)
             raise RuntimeError(
-                f"Azure lane provisioning failed for {lane_id}; "
+                f"Azure lane provisioning failed for {lane_id}: {primary_failure}; "
                 f"partial-resource cleanup also failed: {'; '.join(cleanup_errors)}"
             ) from exc
         raise
@@ -2353,13 +2432,38 @@ def delete_lane_resources(
         ("NIC", lambda: context["network"].network_interfaces.begin_delete(group, resources["nic"])),
         ("public IP", lambda: context["network"].public_ip_addresses.begin_delete(group, resources["publicIp"])),
     ]
+    disk_name = resources.get("disk")
+    if disk_name:
+        operations.append(
+            ("OS disk", lambda: context["compute"].disks.begin_delete(group, disk_name))
+        )
+    nic_cleanup_failed = False
     for label, create_operation in operations:
-        try:
-            fenced_azure_operation(create_operation, check, timeout=1800)
-        except Exception as exc:
-            check()
-            if not is_not_found(exc):
-                errors.append(f"{label} cleanup: {exc}")
+        if label == "public IP" and nic_cleanup_failed:
+            errors.append(
+                "public IP cleanup skipped because NIC cleanup did not complete"
+            )
+            continue
+        for attempt in range(6):
+            try:
+                fenced_azure_operation(create_operation, check, timeout=1800)
+                break
+            except Exception as exc:
+                check()
+                dependency_pending = (
+                    label == "public IP"
+                    and is_delete_dependency_conflict(exc)
+                    and attempt < 5
+                )
+                if dependency_pending:
+                    time.sleep(5)
+                    check()
+                    continue
+                if not is_not_found(exc):
+                    errors.append(f"{label} cleanup: {exc}")
+                    if label == "NIC":
+                        nic_cleanup_failed = True
+                break
     return errors
 
 
@@ -4118,6 +4222,7 @@ def _stop_fenced_resources(
         "virtualMachines": [],
         "networkInterfaces": [],
         "publicIps": [],
+        "disks": [],
         "managedIdentities": [],
     }
 
@@ -4131,7 +4236,11 @@ def _stop_fenced_resources(
         fence_lease.check()
         for value in values:
             fence_lease.check()
-            if not managed_tags(value):
+            managed_disk_name = (
+                label == "OS disk"
+                and str(getattr(value, "name", "")).startswith("dl4j-osdisk-")
+            )
+            if not managed_tags(value) and not managed_disk_name:
                 continue
             try:
                 operation = begin_delete(value.name)
@@ -4183,6 +4292,17 @@ def _stop_fenced_resources(
     except Exception as exc:
         if not is_not_found(exc):
             errors.append(f"public IP discovery: {exc}")
+    fence_lease.check()
+    try:
+        delete_phase(
+            "OS disk",
+            context["compute"].disks.list_by_resource_group(group),
+            lambda name: context["compute"].disks.begin_delete(group, name),
+            "disks",
+        )
+    except Exception as exc:
+        if not is_not_found(exc):
+            errors.append(f"OS disk discovery: {exc}")
     fence_lease.check()
 
     identity_names, identity_errors = cleanup_managed_identities(
