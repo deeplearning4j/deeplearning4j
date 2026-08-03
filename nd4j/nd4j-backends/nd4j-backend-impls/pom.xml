@@ -233,6 +233,15 @@
 
         </profile>
         <profile>
+            <id>zluda-platform</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-zluda-platform</module>
+            </modules>
+        </profile>
+        <profile>
             <id>zluda-amd</id>
             <activation>
                 <activeByDefault>false</activeByDefault>

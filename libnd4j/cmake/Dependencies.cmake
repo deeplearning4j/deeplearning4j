@@ -353,6 +353,13 @@ function(setup_blas)
     # Handle Android path normalization at CMake level (in case shell script normalization didn't work)
     setup_android_arm_openblas()
 
+    # config.h exposes this value as a quoted C macro and JavaCPP copies it into
+    # generated Java sources. Normalize Windows backslashes before either parser
+    # sees the path so sequences such as \t and \U cannot become escapes. Push
+    # the normalized value to directory scope immediately so both config-header
+    # generators see it even if a later OpenBLAS validation returns early.
+    string(REPLACE "\\" "/" OPENBLAS_PATH "${OPENBLAS_PATH}")
+    set(OPENBLAS_PATH "${OPENBLAS_PATH}" PARENT_SCOPE)
 
     # Verify the path exists and has the required headers
     if(NOT EXISTS "${OPENBLAS_PATH}/include")

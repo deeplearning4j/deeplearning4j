@@ -512,6 +512,7 @@ class ReleaseValidationTest(unittest.TestCase):
             "hexagon": {"nd4j-hexagon", "nd4j-hexagon-preset"},
             "vulkan": {"nd4j-vulkan", "nd4j-vulkan-preset", "nd4j-vulkan-platform"},
             "zluda": {"nd4j-zluda"},
+            "zluda-platform": {"nd4j-zluda-platform"},
             "zluda-amd": {"nd4j-zluda"},
             "zluda-intel": {"nd4j-zluda"},
         }
@@ -528,6 +529,68 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertIn(profile_id, profiles)
             self.assertEqual(expected_modules, profiles[profile_id][0])
             self.assertEqual("false", profiles[profile_id][1])
+
+    def test_zluda_platform_selects_exactly_one_os_native_classifier(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+        pom = ET.parse(
+            repository_root
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda-platform/pom.xml"
+        ).getroot()
+
+        self.assertEqual(
+            "nd4j-zluda-platform",
+            pom.findtext("m:artifactId", namespaces=namespace),
+        )
+        self.assertEqual(
+            "false",
+            pom.findtext("m:properties/m:skipPublishing", namespaces=namespace),
+        )
+        direct_dependencies = pom.findall("m:dependencies/m:dependency", namespace)
+        self.assertEqual(1, len(direct_dependencies))
+        self.assertEqual(
+            "nd4j-zluda",
+            direct_dependencies[0].findtext("m:artifactId", namespaces=namespace),
+        )
+        self.assertIsNone(
+            direct_dependencies[0].findtext("m:classifier", namespaces=namespace)
+        )
+
+        expected_profiles = {
+            "zluda-linux-amd64": ("Linux", None, "amd64", "linux-x86_64-cuda-12.9-zluda"),
+            "zluda-linux-x86_64": ("Linux", None, "x86_64", "linux-x86_64-cuda-12.9-zluda"),
+            "zluda-windows-amd64": (None, "windows", "amd64", "windows-x86_64-cuda-12.9-zluda"),
+            "zluda-windows-x86_64": (None, "windows", "x86_64", "windows-x86_64-cuda-12.9-zluda"),
+        }
+        profiles = {
+            profile.findtext("m:id", namespaces=namespace): profile
+            for profile in pom.findall("m:profiles/m:profile", namespace)
+        }
+        self.assertEqual(set(expected_profiles), set(profiles))
+        for profile_id, (name, family, arch, classifier) in expected_profiles.items():
+            profile = profiles[profile_id]
+            os_activation = profile.find("m:activation/m:os", namespace)
+            self.assertIsNotNone(os_activation)
+            self.assertEqual(name, os_activation.findtext("m:name", namespaces=namespace))
+            self.assertEqual(family, os_activation.findtext("m:family", namespaces=namespace))
+            self.assertEqual(arch, os_activation.findtext("m:arch", namespaces=namespace))
+            dependencies = profile.findall("m:dependencies/m:dependency", namespace)
+            self.assertEqual(1, len(dependencies))
+            self.assertEqual(
+                "nd4j-cuda-12.9",
+                dependencies[0].findtext("m:artifactId", namespaces=namespace),
+            )
+            self.assertEqual(
+                classifier,
+                dependencies[0].findtext("m:classifier", namespaces=namespace),
+            )
+
+        all_artifact_ids = {
+            dependency.findtext("m:artifactId", namespaces=namespace)
+            for dependency in pom.findall(".//m:dependency", namespace)
+        }
+        self.assertNotIn("nd4j-cuda-12.9-platform", all_artifact_ids)
+        self.assertNotIn("cuda-platform", all_artifact_ids)
 
     def test_no_pom_has_duplicate_top_level_profiles_sections(self):
         repository_root = Path(__file__).resolve().parents[2]
@@ -554,25 +617,53 @@ class ReleaseValidationTest(unittest.TestCase):
     def test_zluda_release_contract_is_explicit_for_every_cloud_plan(self):
         root = Path(__file__).parents[2]
         expected = {
-            "linux-x86_64-zluda": ("linux", "linux-x86_64"),
-            "windows-x86_64-zluda": ("windows", "windows-x86_64"),
+            "linux-x86_64-zluda": {
+                "os": "linux",
+                "platform": "linux-x86_64",
+                "profiles": ["cuda", "sdx", "zluda", "zluda-platform"],
+                "modules": {
+                    ":nd4j-cuda-12.9",
+                    ":nd4j-cuda-12.9-preset",
+                    ":nd4j-zluda",
+                    ":nd4j-zluda-platform",
+                    ":libnd4j",
+                },
+                "artifactIds": {
+                    "nd4j-cuda-12.9",
+                    "nd4j-cuda-12.9-preset",
+                    "nd4j-zluda",
+                    "nd4j-zluda-platform",
+                },
+                "unclassifiedArtifactIds": ["nd4j-zluda", "nd4j-zluda-platform"],
+            },
+            "windows-x86_64-zluda": {
+                "os": "windows",
+                "platform": "windows-x86_64",
+                "profiles": ["cuda", "sdx", "zluda"],
+                "modules": {
+                    ":nd4j-cuda-12.9",
+                    ":nd4j-cuda-12.9-preset",
+                    ":nd4j-zluda",
+                    ":libnd4j",
+                },
+                "artifactIds": {"nd4j-cuda-12.9", "nd4j-cuda-12.9-preset"},
+                "unclassifiedArtifactIds": [],
+            },
         }
         for provider in ("aws", "gcp", "azure"):
             plan = json.loads((root / f"release/{provider}/release-plan.json").read_text(encoding="utf-8"))
-            for shard_id, (operating_system, platform) in expected.items():
+            for shard_id, expectation in expected.items():
                 with self.subTest(provider=provider, shard=shard_id):
                     shard = next(item for item in plan["shards"] if item["id"] == shard_id)
-                    self.assertEqual(operating_system, shard["os"])
+                    self.assertEqual(expectation["os"], shard["os"])
                     build = shard["build"]
                     rules = shard["artifactRules"]
+                    platform = expectation["platform"]
                     self.assertEqual(platform, build["javacppPlatform"])
                     self.assertEqual("12.9", build["cudaVersion"])
                     self.assertEqual("v6", build["zludaVersion"])
-                    self.assertEqual(["cuda", "sdx", "zluda"], build["profiles"])
-                    self.assertEqual(
-                        {":nd4j-cuda-12.9", ":nd4j-cuda-12.9-preset", ":nd4j-zluda", ":libnd4j"},
-                        set(build["modules"]),
-                    )
+                    self.assertEqual(expectation["profiles"], build["profiles"])
+                    self.assertEqual(expectation["modules"], set(build["modules"]))
                     self.assertEqual([{
                         "name": "zluda",
                         "classifierSuffix": "-cuda-12.9-zluda",
@@ -580,16 +671,13 @@ class ReleaseValidationTest(unittest.TestCase):
                     }], build["variants"])
                     self.assertIn("-Dlibnd4j.zluda=AMD", build["mavenArgs"])
                     self.assertNotIn("-Dlibnd4j.zluda=rocm6", build["mavenArgs"])
-                    self.assertEqual(
-                        {"nd4j-cuda-12.9", "nd4j-cuda-12.9-preset", "nd4j-zluda"},
-                        set(rules["artifactIds"]),
-                    )
+                    self.assertEqual(expectation["artifactIds"], set(rules["artifactIds"]))
                     self.assertEqual(
                         [f"{platform}-cuda-12.9-zluda"],
                         shard["artifactRules"]["classifierTokens"],
                     )
                     self.assertEqual(
-                        ["nd4j-zluda"],
+                        expectation["unclassifiedArtifactIds"],
                         rules.get("unclassifiedArtifactIds", []),
                     )
 
@@ -633,6 +721,19 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("NAME zluda_windows_runtime_contract", cmake_source)
         self.assertIn("cmake/tests/ZludaWindowsRuntimeContractTest.cmake", cmake_source)
 
+    def test_openblas_path_is_normalized_before_config_header_generation(self):
+        root = Path(__file__).parents[2]
+        dependencies = (
+            root / "libnd4j/cmake/Dependencies.cmake"
+        ).read_text(encoding="utf-8")
+        normalization = 'string(REPLACE "\\\\" "/" OPENBLAS_PATH "${OPENBLAS_PATH}")'
+        propagation = 'set(OPENBLAS_PATH "${OPENBLAS_PATH}" PARENT_SCOPE)'
+        validation = 'if(NOT EXISTS "${OPENBLAS_PATH}/include")'
+        self.assertIn(normalization, dependencies)
+        self.assertIn(propagation, dependencies)
+        self.assertLess(dependencies.index(normalization), dependencies.index(propagation))
+        self.assertLess(dependencies.index(propagation), dependencies.index(validation))
+
     def test_classifier_staging_keeps_only_explicit_unclassified_zluda_runtime(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -644,6 +745,10 @@ class ReleaseValidationTest(unittest.TestCase):
                     f"nd4j-zluda-{version}.jar",
                     f"nd4j-zluda-{version}-sources.jar",
                     f"nd4j-zluda-{version}-wrong-classifier.jar",
+                ],
+                "nd4j-zluda-platform": [
+                    f"nd4j-zluda-platform-{version}.jar",
+                    f"nd4j-zluda-platform-{version}-sources.jar",
                 ],
                 "nd4j-cuda-12.9": [
                     f"nd4j-cuda-12.9-{version}.jar",
@@ -660,15 +765,17 @@ class ReleaseValidationTest(unittest.TestCase):
                 "mode": "classifier",
                 "artifactIds": list(artifacts),
                 "classifierTokens": ["linux-x86_64-cuda-12.9-zluda"],
-                "unclassifiedArtifactIds": ["nd4j-zluda"],
+                "unclassifiedArtifactIds": ["nd4j-zluda", "nd4j-zluda-platform"],
                 "includeMetadata": False,
             })
 
             staged = {path.name for path in output.rglob("*.jar")}
             self.assertIn(f"nd4j-zluda-{version}.jar", staged)
+            self.assertIn(f"nd4j-zluda-platform-{version}.jar", staged)
             self.assertIn(f"nd4j-cuda-12.9-{version}-linux-x86_64-cuda-12.9-zluda.jar", staged)
             self.assertNotIn(f"nd4j-cuda-12.9-{version}.jar", staged)
             self.assertNotIn(f"nd4j-zluda-{version}-sources.jar", staged)
+            self.assertNotIn(f"nd4j-zluda-platform-{version}-sources.jar", staged)
             self.assertNotIn(f"nd4j-zluda-{version}-wrong-classifier.jar", staged)
             with self.assertRaisesRegex(ValueError, "must be a subset"):
                 build_platform.stage_repository(repository, output, {
