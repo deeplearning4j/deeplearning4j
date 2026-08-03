@@ -692,10 +692,10 @@ function Invoke-ShardBuild {
     Remove-Item -LiteralPath $BuildPidFile -Force -ErrorAction SilentlyContinue
   }
   $Process.WaitForExit()
-  $Process.Refresh()
+  $BuildExitCode = $Process.ExitCode
   Copy-NewLogContent $MatrixLog
   Copy-NewLogContent $MatrixError
-  $BuildExitCode = $Process.ExitCode
+  if ($null -eq $BuildExitCode) { throw 'Build process exited without an available exit code' }
   if ($BuildExitCode -ne 0) { throw "Build failed with exit code $BuildExitCode" }
   Write-Phase 'matrix-build' 'complete' "shard=$($Shard.id)"
 

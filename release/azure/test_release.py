@@ -2800,8 +2800,8 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertIn("& $script:WindowsTarExe -C $MavenOutput -czf", worker)
         self.assertIn("& $script:WindowsTarExe -C $SdkOutput -czf", worker)
         self.assertNotRegex(worker, r"(?m)^\s+tar (?:-xzf|-C)")
-        self.assertIn("$Process.WaitForExit()", worker)
-        self.assertIn("$BuildExitCode = $Process.ExitCode", worker)
+        self.assertIn("$Process.WaitForExit()\n  $BuildExitCode = $Process.ExitCode", worker)
+        self.assertIn("Build process exited without an available exit code", worker)
         self.assertIn("worker-started.txt", worker)
         self.assertIn("worker-attempt.txt", worker)
         self.assertIn("Remove-Item -LiteralPath $LogForwarderStop", worker)
@@ -2816,6 +2816,22 @@ class AzureSafetyTests(unittest.TestCase):
             "Remove-Item -LiteralPath $MavenRepo -Recurse", worker
         )
         self.assertIn("Unregister-ScheduledTask", worker)
+
+    def test_mingw_gcc_16_does_not_dllexport_thread_local_variables(self):
+        expected = (
+            "#if __GNUC__ >= 16\n"
+            "#define SD_TLS_EXPORT\n"
+            "#else\n"
+            "#define SD_TLS_EXPORT __attribute__((dllexport))\n"
+            "#endif"
+        )
+        for relative_path in (
+            "libnd4j/include/system/common.h",
+            "libnd4j/include/system/sd_export.h",
+        ):
+            with self.subTest(path=relative_path):
+                source = (ROOT / relative_path).read_text(encoding="utf-8")
+                self.assertIn(expected, source)
 
 
 class WorkerTransportTests(unittest.TestCase):

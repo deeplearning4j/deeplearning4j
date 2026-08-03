@@ -28,7 +28,13 @@
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef __GNUC__
 #define SD_LIB_EXPORT __attribute__((dllexport))
+// GCC 16 rejects dllexport on thread_local declarations. Older MinGW needs the
+// attribute for its __emutls wrapper symbols when they cross DLL boundaries.
+#if __GNUC__ >= 16
+#define SD_TLS_EXPORT
+#else
 #define SD_TLS_EXPORT __attribute__((dllexport))
+#endif
 #else
 #define SD_LIB_EXPORT __declspec(dllexport)
 #define SD_TLS_EXPORT

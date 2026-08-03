@@ -65,9 +65,14 @@
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef __GNUC__
 #define SD_LIB_EXPORT __attribute__((dllexport))
-// MinGW uses __emutls for thread_local; wrapper symbols must be exported from DLL.
-// MSVC forbids dllexport on thread_local (C2492), so SD_TLS_EXPORT is GCC-only.
+// Older MinGW uses __emutls for thread_local and requires its wrapper symbols
+// to be exported across DLL boundaries. GCC 16 rejects dllexport directly on a
+// thread_local declaration, so let the owning DLL resolve those symbols internally.
+#if __GNUC__ >= 16
+#define SD_TLS_EXPORT
+#else
 #define SD_TLS_EXPORT __attribute__((dllexport))
+#endif
 #else
 #define SD_LIB_EXPORT __declspec(dllexport)
 #define SD_TLS_EXPORT
