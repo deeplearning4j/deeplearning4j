@@ -533,16 +533,35 @@ function Install-CommonToolchains {
     & C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja"
   }
   Write-Phase 'msys-toolchain' 'complete'
-  if (-not (Get-Command cbindgen -ErrorAction SilentlyContinue)) {
+  $RustBinCandidates = @((Join-Path $env:CARGO_HOME 'bin'))
+  if ($env:USERPROFILE) {
+    $RustBinCandidates += (Join-Path $env:USERPROFILE '.cargo\bin')
+  }
+  $RustBinCandidates += (Join-Path $env:SystemRoot 'System32\config\systemprofile\.cargo\bin')
+  $RustBin = $RustBinCandidates |
+    Where-Object {
+      (Test-Path -LiteralPath (Join-Path $_ 'rustup.exe')) -and
+      (Test-Path -LiteralPath (Join-Path $_ 'cargo.exe'))
+    } |
+    Select-Object -First 1
+  if (-not $RustBin) {
+    throw "rustup.install completed without creating rustup.exe and cargo.exe in: $($RustBinCandidates -join ', ')"
+  }
+  $env:CARGO_HOME = Split-Path -Parent $RustBin
+  $env:PATH = "$RustBin;$env:PATH"
+  $RustupExe = Join-Path $RustBin 'rustup.exe'
+  $CargoExe = Join-Path $RustBin 'cargo.exe'
+  $CbindgenExe = Join-Path $RustBin 'cbindgen.exe'
+  if (-not (Test-Path -LiteralPath $CbindgenExe)) {
     Invoke-NativeChecked -Description 'Rust GNU toolchain installation' -Command {
-      rustup toolchain install stable-x86_64-pc-windows-gnu
+      & $RustupExe toolchain install stable-x86_64-pc-windows-gnu
     }
     Invoke-NativeChecked -Description 'Rust GNU toolchain selection' -Command {
-      rustup default stable-x86_64-pc-windows-gnu
+      & $RustupExe default stable-x86_64-pc-windows-gnu
     }
     $env:CARGO_BUILD_TARGET = 'x86_64-pc-windows-gnu'
     Invoke-NativeChecked -Description 'cbindgen installation' -Command {
-      cargo install --locked cbindgen
+      & $CargoExe install --locked cbindgen
     }
   }
   $SccacheVersion = 'v0.15.0'

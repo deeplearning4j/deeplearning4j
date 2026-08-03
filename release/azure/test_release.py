@@ -3161,6 +3161,13 @@ class WorkerTransportTests(unittest.TestCase):
         ):
             self.assertIn(f"Invoke-NativeChecked -Description '{description}'", source)
         self.assertIn("$FallbackPython = Join-Path $env:SystemDrive 'Python312\\python.exe'", source)
+        self.assertIn("$RustBinCandidates = @((Join-Path $env:CARGO_HOME 'bin'))", source)
+        self.assertIn("$RustupExe = Join-Path $RustBin 'rustup.exe'", source)
+        self.assertIn("$CargoExe = Join-Path $RustBin 'cargo.exe'", source)
+        self.assertIn("& $RustupExe toolchain install stable-x86_64-pc-windows-gnu", source)
+        self.assertIn("& $RustupExe default stable-x86_64-pc-windows-gnu", source)
+        self.assertIn("& $CargoExe install --locked cbindgen", source)
+        self.assertNotRegex(source, r"(?m)^\s+rustup (?:toolchain|default)")
         self.assertIn("Write-Phase 'worker-bootstrap' 'failed'", source)
         self.assertIn("[void](Complete-Shard 1)", source)
 
