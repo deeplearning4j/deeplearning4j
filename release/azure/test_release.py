@@ -2799,6 +2799,26 @@ class WorkerTransportTests(unittest.TestCase):
             url,
         )
 
+    def test_missing_checkpoint_download_is_a_quiet_cache_miss(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "status.json"
+            args = SimpleNamespace(
+                bucket="dl4jaccount/releases",
+                object="run/shard/status.json",
+                file=str(output),
+                client_id="client",
+            )
+            with mock.patch.object(
+                cloud_io, "download_bytes", side_effect=FileNotFoundError
+            ):
+                self.assertEqual(1, cloud_io.command_download(args))
+            self.assertFalse(output.exists())
+            with mock.patch.object(
+                cloud_io, "download_bytes", return_value=b'{"exitCode":0}'
+            ):
+                self.assertEqual(0, cloud_io.command_download(args))
+            self.assertEqual(b'{"exitCode":0}', output.read_bytes())
+
     def test_kill_switch_is_fail_closed(self):
         args = SimpleNamespace(
             bucket="dl4jaccount/control",

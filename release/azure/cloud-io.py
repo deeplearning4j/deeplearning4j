@@ -198,7 +198,12 @@ def command_upload_json(args):
 
 
 def command_download(args):
-    pathlib.Path(args.file).write_bytes(download_bytes(args.bucket, args.object, args.client_id))
+    try:
+        payload = download_bytes(args.bucket, args.object, args.client_id)
+    except FileNotFoundError:
+        return 1
+    pathlib.Path(args.file).write_bytes(payload)
+    return 0
 
 
 def command_kill_enabled(args):
