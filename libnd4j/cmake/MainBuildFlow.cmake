@@ -13,8 +13,6 @@
 
 # Include partial linking support for large binaries (>2GB with debug/trace)
 include(${CMAKE_CURRENT_LIST_DIR}/PartialLinking.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/SdxPlatformProviders.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/SdxAppleProviderTargets.cmake)
 
 # =============================================================================
 # SECTION 1: HELPER FUNCTION DEFINITIONS
@@ -204,60 +202,16 @@ function(collect_all_sources out_source_list)
         list(REMOVE_ITEM GRAPH_SOURCES ${_non_vulkan_graph_sources})
         list(LENGTH _non_vulkan_graph_sources _non_vulkan_graph_count)
         message(STATUS "SD_VULKAN: excluded ${_non_vulkan_graph_count} foreign graph backend sources")
-    elseif(SD_HEXAGON)
-        # Hexagon is likewise a graph-level device artifact. Keep the common
-        # graph control plane plus graph/hexagon, excluding every sibling
-        # backend implementation.
-        file(GLOB_RECURSE _non_hexagon_graph_sources
-            ./include/graph/cpu/*.cpp
-            ./include/graph/cuda/*.cpp
-            ./include/graph/gpu/*.cpp
-            ./include/graph/hip/*.cpp
-            ./include/graph/levelzero/*.cpp
-            ./include/graph/tpu/*.cpp
-            ./include/graph/vulkan/*.cpp
-        )
-        list(REMOVE_ITEM GRAPH_SOURCES ${_non_hexagon_graph_sources})
-        # This file is the non-CUDA platform adaptation for DynamicShapePlan,
-        # shared by CPU and device-only builds despite its historical cpu/ location.
-        list(APPEND GRAPH_SOURCES
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/cpu/NativeDynamicShapePlan_cuda_stubs.cpp)
-        list(LENGTH _non_hexagon_graph_sources _non_hexagon_graph_count)
-        message(STATUS
-            "SD_HEXAGON: excluded ${_non_hexagon_graph_count} foreign graph backend sources")
-    elseif(SD_TPU)
-        # TPU/PJRT is a standalone graph backend. Retain the common graph control
-        # plane plus graph/tpu and exclude sibling execution implementations.
-        file(GLOB_RECURSE _non_tpu_graph_sources
-            ./include/graph/cpu/*.cpp
-            ./include/graph/cuda/*.cpp
-            ./include/graph/gpu/*.cpp
-            ./include/graph/hexagon/*.cpp
-            ./include/graph/hip/*.cpp
-            ./include/graph/levelzero/*.cpp
-            ./include/graph/vulkan/*.cpp
-        )
-        list(REMOVE_ITEM GRAPH_SOURCES ${_non_tpu_graph_sources})
-        list(APPEND GRAPH_SOURCES
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/cpu/NativeDynamicShapePlan_cuda_stubs.cpp)
-        list(LENGTH _non_tpu_graph_sources _non_tpu_graph_count)
-        message(STATUS
-            "SD_TPU: excluded ${_non_tpu_graph_count} foreign graph backend sources")
-    elseif(SD_CUDA)
-        # CUDA owns graph/cuda and graph/gpu. Vendor-specific sibling backends
-        # must never enter the CUDA artifact merely because their sources exist.
-        file(GLOB_RECURSE _non_cuda_graph_sources
-            ./include/graph/hexagon/*.cpp
-            ./include/graph/hip/*.cpp
-            ./include/graph/levelzero/*.cpp
-            ./include/graph/tpu/*.cpp
-            ./include/graph/vulkan/*.cpp
-        )
-        list(REMOVE_ITEM GRAPH_SOURCES ${_non_cuda_graph_sources})
-        list(LENGTH _non_cuda_graph_sources _non_cuda_graph_count)
-        message(STATUS
-            "SD_CUDA: excluded ${_non_cuda_graph_count} foreign graph backend sources")
-
+    elseif(NOT SD_CUDA)
+        # GPU backend files use the CUDA host runtime and are not generic DSP
+        # infrastructure. Non-CUDA backends provide their own recorder/dispatcher.
+        file(GLOB_RECURSE _gpu_backend_sources ./include/graph/gpu/*.cpp)
+        if(_gpu_backend_sources)
+            list(REMOVE_ITEM GRAPH_SOURCES ${_gpu_backend_sources})
+            list(LENGTH _gpu_backend_sources _gpu_count)
+            message(STATUS "Excluded ${_gpu_count} GPU backend files (non-CUDA build)")
+        endif()
+    else()
         # CUDA build: only exclude Triton files when Triton is not available (they require MLIR headers)
         if(NOT HAVE_TRITON)
             file(GLOB_RECURSE _triton_gpu_sources
@@ -269,22 +223,6 @@ function(collect_all_sources out_source_list)
                 message(STATUS "Excluded ${_triton_count} Triton GPU backend files (HAVE_TRITON=OFF)")
             endif()
         endif()
-    else()
-        # CPU-family builds include Android NNAPI. Keep the common graph control
-        # plane plus graph/cpu, and exclude every independent device backend.
-        file(GLOB_RECURSE _non_cpu_graph_sources
-            ./include/graph/cuda/*.cpp
-            ./include/graph/gpu/*.cpp
-            ./include/graph/hexagon/*.cpp
-            ./include/graph/hip/*.cpp
-            ./include/graph/levelzero/*.cpp
-            ./include/graph/tpu/*.cpp
-            ./include/graph/vulkan/*.cpp
-        )
-        list(REMOVE_ITEM GRAPH_SOURCES ${_non_cpu_graph_sources})
-        list(LENGTH _non_cpu_graph_sources _non_cpu_graph_count)
-        message(STATUS
-            "CPU/NNAPI: excluded ${_non_cpu_graph_count} foreign graph backend sources")
     endif()
     # Exclude MLIR CPU backend files when MLIR is not available (they require MLIR headers)
     if(NOT HAVE_MLIR)
@@ -861,87 +799,6 @@ function(configure_vulkan_linking main_target_name)
     install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
-function(configure_device_only_linking main_target_name)
-    set(_device_object_target "${main_target_name}_object")
-    set(_exact_apple_ios FALSE)
-    if(IOS AND (SD_PACKAGE_APPLE_METAL_PROVIDER OR
-                SD_PACKAGE_APPLE_COREML_ANE_PROVIDER OR
-                SD_PACKAGE_APPLE_METAL_AOT_PROVIDER))
-        set(_exact_apple_ios TRUE)
-    endif()
-    target_link_libraries(${main_target_name} PUBLIC
-        flatbuffers_interface)
-    if(NOT _exact_apple_ios AND CMAKE_DL_LIBS)
-        target_link_libraries(${main_target_name} PUBLIC ${CMAKE_DL_LIBS})
-    endif()
-    if(NOT _exact_apple_ios AND SD_JNI_ENABLED AND JVM_LIBRARY)
-        target_link_libraries(${main_target_name} PUBLIC ${JVM_LIBRARY})
-    endif()
-
-    # NNAPI is an Android system ABI, not a bundled host fallback. Keep the
-    # dependency explicit so -z,defs validates every ANeuralNetworks* call and
-    # the packaged runtime records libneuralnetworks.so in DT_NEEDED.
-    if(HAVE_NNAPI)
-        if(NOT ANDROID)
-            message(FATAL_ERROR
-                "HAVE_NNAPI requires an Android toolchain for ${main_target_name}")
-        endif()
-        find_library(_sd_nnapi_library neuralnetworks)
-        if(NOT _sd_nnapi_library)
-            message(FATAL_ERROR
-                "Android system libneuralnetworks was not found for ${main_target_name}")
-        endif()
-        target_link_libraries(${main_target_name} PUBLIC "${_sd_nnapi_library}")
-        message(STATUS
-            "NNAPI device-only link boundary: ${main_target_name} -> ${_sd_nnapi_library}")
-    endif()
-
-    # Shared libraries on ELF must surface an accidental CPU/BLAS dependency at
-    # link time instead of publishing an accelerator artifact with unresolved
-    # host execution symbols.
-    if(UNIX AND NOT APPLE)
-        target_link_options(${main_target_name} PRIVATE "LINKER:-z,defs")
-    endif()
-
-    # Common graph orchestration may use OpenMP, while numerical kernels remain
-    # owned by the selected accelerator.
-    if(NOT _exact_apple_ios)
-        find_package(OpenMP QUIET)
-        if(OpenMP_CXX_FOUND)
-            target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
-        endif()
-    else()
-        message(STATUS
-            "Exact iOS Apple SDK: OpenMP/JVM/host dl dependencies are disabled")
-    endif()
-
-    # SDZ archive handling is backend-neutral.
-    find_package(ZLIB QUIET)
-    if(ZLIB_FOUND)
-        if(TARGET ${_device_object_target})
-            target_compile_definitions(${_device_object_target} PUBLIC HAVE_ZLIB=1)
-            target_link_libraries(${_device_object_target} PUBLIC ZLIB::ZLIB)
-        endif()
-        target_link_libraries(${main_target_name} PUBLIC ZLIB::ZLIB)
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_ZLIB=1)
-    endif()
-
-    if(SD_GCC_FUNCTRACE AND NOT _exact_apple_ios)
-        target_link_libraries(${main_target_name} PUBLIC bfd dw dl elf pthread)
-    endif()
-
-    if(_exact_apple_ios)
-        message(STATUS
-            "Exact iOS link boundary: flatbuffers + Zlib + Apple frameworks; "
-            "no dl/JVM/OpenMP/OpenBLAS/MKL/Fortran or CPU helper runtime")
-    else()
-        message(STATUS
-            "Device-only link boundary: flatbuffers + dl + optional JNI/NNAPI/OpenMP/Zlib; "
-            "no OpenBLAS, MKL, OneDNN, OpenVINO, CUDA, or CPU helper runtime")
-    endif()
-    install(TARGETS ${main_target_name} DESTINATION .)
-endfunction()
-
 function(configure_cpu_linking main_target_name)
     # Core libraries
     # CMAKE_DL_LIBS provides -ldl on Linux (needed for dlopen/dlsym in DynamicKernelLoader).
@@ -951,25 +808,6 @@ function(configure_cpu_linking main_target_name)
             ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} flatbuffers_interface ${CMAKE_DL_LIBS})
     if(SD_JNI_ENABLED AND JVM_LIBRARY)
         target_link_libraries(${main_target_name} PUBLIC ${JVM_LIBRARY})
-    endif()
-
-    # Android CPU-family builds include NnapiGraphBackend whenever HAVE_NNAPI is
-    # enabled. Keep that system ABI explicit here just as the device-only linker
-    # does, so -z,defs validates the graph backend and the final ELF records the
-    # required libneuralnetworks dependency.
-    if(HAVE_NNAPI)
-        if(NOT ANDROID)
-            message(FATAL_ERROR
-                "HAVE_NNAPI requires an Android toolchain for ${main_target_name}")
-        endif()
-        find_library(_sd_cpu_nnapi_library neuralnetworks)
-        if(NOT _sd_cpu_nnapi_library)
-            message(FATAL_ERROR
-                "Android system libneuralnetworks was not found for ${main_target_name}")
-        endif()
-        target_link_libraries(${main_target_name} PUBLIC "${_sd_cpu_nnapi_library}")
-        message(STATUS
-            "NNAPI CPU-family link boundary: ${main_target_name} -> ${_sd_cpu_nnapi_library}")
     endif()
 
     # --- Multi-Helper Library Linking ---
@@ -989,24 +827,6 @@ function(configure_cpu_linking main_target_name)
         message(STATUS "🔗 Linking ARM Compute helper")
     endif()
 
-    # The CPU-family backend is also the host for DSP compiler support. Keep every
-    # project-managed compiler DSO beside the backend just as the CUDA and Vulkan
-    # paths do; CPU-family here describes the native library target, not execution.
-    set(_cpu_shared_runtimes "")
-    set(_cpu_shared_runtime_directories "")
-
-    # MKL's dispatcher loads the rest of the oneMKL redist by loader name.
-    # setup_mkl_vml() publishes the complete, validated runtime set specifically
-    # for classifier staging; omitting it produces a backend that links on the
-    # build host but cannot load from its installed artifact.
-    if(HAVE_MKL_VML)
-        if(NOT MKL_RUNTIME_LIBRARIES)
-            message(FATAL_ERROR
-                "MKL VML is enabled but its shared-runtime closure is empty")
-        endif()
-        list(APPEND _cpu_shared_runtimes ${MKL_RUNTIME_LIBRARIES})
-    endif()
-
     # MLIR/LLVM JIT
     if(HAVE_MLIR AND DEFINED MLIR)
         # Compile and link against the same imported target. The backend sources live
@@ -1023,14 +843,6 @@ function(configure_cpu_linking main_target_name)
         endif()
         target_link_libraries(${main_target_name} PUBLIC ${MLIR})
         target_compile_definitions(${main_target_name} PUBLIC HAVE_MLIR=1)
-        foreach(_mlir_runtime_target IN ITEMS MLIR MLIRExecutionEngineShared LLVM)
-            if(NOT TARGET ${_mlir_runtime_target})
-                message(FATAL_ERROR
-                    "CPU-family MLIR requires shared runtime target ${_mlir_runtime_target}")
-            endif()
-            list(APPEND _cpu_shared_runtimes
-                "$<TARGET_FILE:${_mlir_runtime_target}>")
-        endforeach()
         message(STATUS "🔗 Linking MLIR helper")
     endif()
 
@@ -1041,22 +853,13 @@ function(configure_cpu_linking main_target_name)
         message(STATUS "🔗 Linking MPS helper + Metal ICB replay")
     endif()
 
-    # Triton DSP compiler. SD_TRITON enables this path for CPU-family libraries;
-    # it does not select CPU model execution.
+    # Triton GPU Compiler
     if(HAVE_TRITON AND DEFINED TRITON)
         target_link_libraries(${main_target_name} PUBLIC ${TRITON})
         # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
         # Global -D flags change every file's compiler command line, breaking ccache
         # for the 276 generated .cu template instantiation files.
-        foreach(_triton_runtime_target IN ITEMS triton_mlir_shared triton_llvm_shared)
-            if(NOT TARGET ${_triton_runtime_target})
-                message(FATAL_ERROR
-                    "CPU-family Triton requires shared runtime target ${_triton_runtime_target}")
-            endif()
-            list(APPEND _cpu_shared_runtimes
-                "$<TARGET_FILE:${_triton_runtime_target}>")
-        endforeach()
-        message(STATUS "🔗 Linking Triton DSP compiler backend")
+        message(STATUS "🔗 Linking Triton GPU compiler backend")
     endif()
 
     # OpenVINO CPU Graph Backend
@@ -1085,13 +888,36 @@ function(configure_cpu_linking main_target_name)
         target_compile_definitions(${main_target_name} PUBLIC HAVE_OPENVINO=1)
         message(STATUS "🔗 Linking OpenVINO CPU graph backend")
 
-        # OpenVINO's TBB files are produced by an ExternalProject, so they may
-        # not exist during this configure pass. Give their runtime directory to
-        # the shared-runtime staging command; it resolves and manifests the exact
-        # files after OpenVINO has finished instead of relying on an untracked copy.
-        if(UNIX AND NOT APPLE)
-            list(APPEND _cpu_shared_runtime_directories
-                "${CMAKE_BINARY_DIR}/openvino_install/runtime/3rdparty/tbb/lib64")
+        # Bundle TBB shared library alongside libnd4jcpu.so so JavaCPP packaging
+        # can include it in the native jar. libtbb.so.12 is OpenVINO's threading
+        # runtime — it is always a shared library (no static variant in OpenVINO's build).
+        # The pom.xml copy step globs all *.so / *.so.* from CMAKE_BINARY_DIR into
+        # the jar. Without this step, libtbb.so.12 only exists at the absolute build
+        # path that is baked into RUNPATH; after a clean build that path no longer exists.
+        if(NOT WIN32)
+            set(_OV_TBB_SRC_DIR "${CMAKE_BINARY_DIR}/openvino_install/runtime/3rdparty/tbb/lib64")
+            if(EXISTS "${_OV_TBB_SRC_DIR}")
+                # Copy at configure time for the "already built" reuse path
+                file(GLOB _tbb_so_files "${_OV_TBB_SRC_DIR}/libtbb.so*"
+                                        "${_OV_TBB_SRC_DIR}/libtbbmalloc.so*"
+                                        "${_OV_TBB_SRC_DIR}/libtbbmalloc_proxy.so*")
+                foreach(_f ${_tbb_so_files})
+                    get_filename_component(_fname "${_f}" NAME)
+                    if(NOT EXISTS "${CMAKE_BINARY_DIR}/${_fname}")
+                        message(STATUS "  Copying TBB library for bundling: ${_fname}")
+                        execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${_f}" "${CMAKE_BINARY_DIR}/${_fname}")
+                    endif()
+                endforeach()
+            endif()
+            # Also copy at build time (POST_BUILD) for the case where OpenVINO is
+            # built as part of this cmake invocation (ExternalProject path).
+            add_custom_command(TARGET ${main_target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND}
+                    -D_OV_TBB_SRC_DIR=${CMAKE_BINARY_DIR}/openvino_install/runtime/3rdparty/tbb/lib64
+                    -D_DST_DIR=${CMAKE_BINARY_DIR}
+                    -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/copy_tbb_libs.cmake"
+                COMMENT "Copying OpenVINO TBB shared libraries to output directory for jar bundling"
+            )
         endif()
     endif()
 
@@ -1204,50 +1030,6 @@ function(configure_cpu_linking main_target_name)
     else()
         message(WARNING "⚠️ zlib not found - SDZ reader supports STORED ZIP entries only")
     endif()
-
-    list(REMOVE_DUPLICATES _cpu_shared_runtimes)
-    list(REMOVE_DUPLICATES _cpu_shared_runtime_directories)
-    # Pre-encode list-valued custom-command arguments. A raw semicolon list
-    # embedded in a generator expression is split into separate argv entries.
-    list(JOIN _cpu_shared_runtimes "|" _cpu_shared_runtimes_pipe)
-    list(JOIN _cpu_shared_runtime_directories "|"
-        _cpu_shared_runtime_directories_pipe)
-    if((_cpu_shared_runtimes OR _cpu_shared_runtime_directories) AND UNIX)
-        if(ANDROID)
-            # Android resolves sibling JNI libraries through the APK/application linker
-            # namespace. A DT_RUNPATH is unnecessary there and violates the mobile ELF
-            # contract, so clear any generic CPU/OpenMP RPATH inherited earlier.
-            set_target_properties(${main_target_name} PROPERTIES
-                SKIP_BUILD_RPATH TRUE
-                BUILD_RPATH ""
-                BUILD_WITH_INSTALL_RPATH FALSE
-                INSTALL_RPATH ""
-                INSTALL_RPATH_USE_LINK_PATH FALSE)
-        else()
-            if(APPLE)
-                set(_cpu_runtime_rpath "@loader_path")
-            else()
-                set(_cpu_runtime_rpath "$ORIGIN")
-            endif()
-            set_target_properties(${main_target_name} PROPERTIES
-                BUILD_WITH_INSTALL_RPATH TRUE
-                INSTALL_RPATH "${_cpu_runtime_rpath}"
-                INSTALL_RPATH_USE_LINK_PATH FALSE)
-        endif()
-    endif()
-
-    # Refresh one exact manifest for every non-system shared runtime selected by
-    # this backend. The JavaCPP build and runtime loader both consume this file.
-    add_custom_command(TARGET ${main_target_name} POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-            "-DRUNTIME_LIBRARIES_PIPE=${_cpu_shared_runtimes_pipe}"
-            "-DRUNTIME_DIRECTORIES_PIPE=${_cpu_shared_runtime_directories_pipe}"
-            "-DREADELF=${CMAKE_READELF}"
-            "-DOTOOL=${CMAKE_OTOOL}"
-            "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
-            "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${main_target_name}>"
-            -P "${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
-        VERBATIM)
 
     install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
@@ -1555,10 +1337,6 @@ function(create_and_link_library)
             target_include_directories(${OBJECT_LIB_NAME} PUBLIC
                     "${CMAKE_BINARY_DIR}/cuda_instantiations"
             )
-        elseif(SD_DEVICE_ONLY_RUNTIME AND NOT SD_VULKAN)
-            target_include_directories(${OBJECT_LIB_NAME} PUBLIC
-                    "${CMAKE_BINARY_DIR}/cpu_instantiations"
-            )
         elseif(NOT SD_VULKAN)
             target_include_directories(${OBJECT_LIB_NAME} PUBLIC
                     "${OPENBLAS_PATH}/include"
@@ -1676,10 +1454,6 @@ function(create_and_link_library)
                 target_include_directories(${MAIN_LIB_NAME} PUBLIC
                         "${CMAKE_BINARY_DIR}/cuda_instantiations"
                 )
-            elseif(SD_DEVICE_ONLY_RUNTIME AND NOT SD_VULKAN)
-                target_include_directories(${MAIN_LIB_NAME} PUBLIC
-                        "${CMAKE_BINARY_DIR}/cpu_instantiations"
-                )
             elseif(NOT SD_VULKAN)
                 target_include_directories(${MAIN_LIB_NAME} PUBLIC
                         "${OPENBLAS_PATH}/include"
@@ -1706,8 +1480,6 @@ function(create_and_link_library)
             configure_cuda_linking(${MAIN_LIB_NAME})
         elseif(SD_VULKAN)
             configure_vulkan_linking(${MAIN_LIB_NAME})
-        elseif(SD_DEVICE_ONLY_RUNTIME)
-            configure_device_only_linking(${MAIN_LIB_NAME})
         else()
             configure_cpu_linking(${MAIN_LIB_NAME})
         endif()
@@ -1722,17 +1494,6 @@ endfunction()
 # =============================================================================
 
 print_status_colored("INFO" "=== ORCHESTRATING ENHANCED LIBND4J BUILD WITH TEMPLATE PARITY ===")
-
-# Keep one source of truth for native artifacts that must never discover or
-# link external CPU/vendor helpers. Tensor G3 remains BLAS-free, but its NNAPI
-# artifact deliberately contains the built-in ARM DSP functional replay path.
-set(SD_DEVICE_ONLY_RUNTIME OFF)
-if(SD_VULKAN OR SD_HEXAGON OR SD_TPU OR SD_NNAPI_ACCELERATOR_ONLY OR
-   SD_PACKAGE_APPLE_METAL_PROVIDER OR
-   SD_PACKAGE_APPLE_COREML_ANE_PROVIDER OR
-   SD_PACKAGE_APPLE_METAL_AOT_PROVIDER)
-    set(SD_DEVICE_ONLY_RUNTIME ON)
-endif()
 
 # --- Phase 1: Initial Setup ---
 print_status_colored("INFO" "=== 1. INITIALIZING BUILD CONFIGURATION ===")
@@ -1828,10 +1589,9 @@ include(TemplateProcessing)
 include(CompilerFlags)
 include(HelperConfiguration)
 setup_platform_optimizations()
-if(SD_DEVICE_ONLY_RUNTIME)
-    # Device artifacts own execution through their accelerator API. CPU/vendor
-    # helper discovery must not add sources, downloads, compile definitions, or
-    # staged host runtimes.
+if(SD_VULKAN)
+    # Vulkan owns execution through its device API. CPU/vendor helper discovery
+    # must not add sources, downloads, compile definitions, or staged runtimes.
     set(HAVE_ONEDNN FALSE)
     set(HAVE_MKL_VML FALSE)
     set(HAVE_MKL FALSE)
@@ -1840,9 +1600,6 @@ if(SD_DEVICE_ONLY_RUNTIME)
     set(HAVE_MPS FALSE)
     set(HAVE_MLX FALSE)
     set(HAVE_OPENVINO FALSE)
-    set(HAVE_OPENBLAS FALSE)
-    set(OPENBLAS_LIBRARIES "")
-    set(BLAS_LIBRARIES "")
 else()
     setup_onednn()
     # Setup MKL VML for vectorized math operations (vsErf, vdErf, etc.)
@@ -1870,7 +1627,7 @@ else()
     set(HAVE_CUDNN FALSE)
 endif()
 
-if(NOT SD_DEVICE_ONLY_RUNTIME)
+if(NOT SD_VULKAN)
     setup_blas()
     setup_mps()
 endif()
@@ -1879,7 +1636,7 @@ endif()
 # the latter before the MLIR helper performs package discovery.
 setup_triton()
 setup_mlir()
-if(NOT SD_DEVICE_ONLY_RUNTIME)
+if(NOT SD_VULKAN)
     setup_mlx()
     setup_cutlass()
     setup_nccl()
@@ -1898,10 +1655,8 @@ if(SD_VULKAN)
 else()
     set(HAVE_VULKAN FALSE CACHE BOOL "Vulkan availability for this native artifact" FORCE)
 endif()
-if(SD_DEVICE_ONLY_RUNTIME)
-    message(STATUS
-        "Device-only dependency boundary: CPU/BLAS/vendor host execution "
-        "helpers were not configured")
+if(SD_VULKAN)
+    message(STATUS "SD_VULKAN dependency boundary: CPU/vendor execution helpers were not configured")
 else()
     message(STATUS "🔍 DEBUG: After setup_blas() - OPENBLAS_PATH='${OPENBLAS_PATH}', HAVE_OPENBLAS='${HAVE_OPENBLAS}'")
 endif()
@@ -1976,7 +1731,6 @@ else()
     string(APPEND TYPE_DEFINES "#define HAS_BFLOAT16 1\n")
     string(APPEND TYPE_DEFINES "#define HAS_BFLOAT 1\n")
     string(APPEND TYPE_DEFINES "#define HAS_FLOAT8 1\n")
-    string(APPEND TYPE_DEFINES "#define HAS_FLOAT4 1\n")
     string(APPEND TYPE_DEFINES "#define HAS_HALF2 1\n")
     string(APPEND TYPE_DEFINES "#define HAS_INT8 1\n")
     string(APPEND TYPE_DEFINES "#define HAS_INT8_T 1\n")
@@ -2293,26 +2047,6 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
             COMMAND ${CMAKE_COMMAND} -E copy_directory "${SDX_RUNTIME_JAVA_SRC_DIR}" "${_sdx_sdk_wrappers_dir}/java/src/main/java")
     endif()
 
-    # Qualcomm's Android FastRPC packaging contract keeps the project-owned DSP
-    # skeleton beside the APK's extracted native libraries. The vendor
-    # libcdsprpc.so remains a system dependency; the skeleton must be bundled.
-    set(_sdx_hexagon_dsp_stage_cmds "")
-    if(SD_HEXAGON)
-        if(NOT DEFINED SD_HEXAGON_DSP_SERVICE OR
-           "${SD_HEXAGON_DSP_SERVICE}" STREQUAL "")
-            message(FATAL_ERROR
-                "Hexagon runtime configured without its DSP service artifact")
-        endif()
-        set(_sdx_sdk_hexagon_dsp_dir
-            "${SDX_RUNTIME_SDK_DIR}/share/dsp/hexagon")
-        list(APPEND _sdx_hexagon_dsp_stage_cmds
-            COMMAND ${CMAKE_COMMAND} -E make_directory
-                "${_sdx_sdk_hexagon_dsp_dir}"
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${SD_HEXAGON_DSP_SERVICE}"
-                "${_sdx_sdk_hexagon_dsp_dir}/libsdx_hexagon_runtime_skel.so")
-    endif()
-
     # The tokenizer is built separately (Rust) so the portable runtime remains
     # usable without it. Mobile SDK generators pass both artifacts together.
     set(_sdx_tokenizer_stage_cmds "")
@@ -2335,14 +2069,8 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
             COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_TOKENIZER_LIBRARY_FILE}" "${_sdx_sdk_lib_dir}")
     endif()
 
-    # Exact Apple packages always use the central device-only target. A separately
-    # requested standalone SDX target follows the generic CPU/CUDA link path and
-    # must never be copied into a Metal/Core ML accelerator SDK.
-    if(IOS AND (SD_PACKAGE_APPLE_METAL_PROVIDER OR
-                SD_PACKAGE_APPLE_COREML_ANE_PROVIDER OR
-                SD_PACKAGE_APPLE_METAL_AOT_PROVIDER))
-        set(_sdx_sdk_target ${SD_LIBRARY_NAME})
-    elseif(SD_BUILD_SDX_STANDALONE AND DEFINED SDX_STANDALONE_TARGET AND TARGET ${SDX_STANDALONE_TARGET})
+    # Use standalone SDX library when available, otherwise fall back to monolithic
+    if(SD_BUILD_SDX_STANDALONE AND DEFINED SDX_STANDALONE_TARGET AND TARGET ${SDX_STANDALONE_TARGET})
         set(_sdx_sdk_target ${SDX_STANDALONE_TARGET})
     else()
         set(_sdx_sdk_target ${SD_LIBRARY_NAME})
@@ -2350,14 +2078,14 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
 
     # Standalone compiler-enabled runtimes publish their normalized shared
     # dependency targets through a target property. Stage that exact closure
-    # into the SDK with loader-correct names rather than leaking build paths.
-    set(_sdx_runtime_dependency_targets "")
+    # into the SDK and pass it to each platform package.
     get_target_property(_sdx_runtime_dependency_targets
         ${_sdx_sdk_target} SDX_RUNTIME_DEPENDENCY_TARGETS)
     if(_sdx_runtime_dependency_targets STREQUAL
        "_sdx_runtime_dependency_targets-NOTFOUND")
         set(_sdx_runtime_dependency_targets "")
     endif()
+
     set(_sdx_sdk_shared_runtime_files "")
     foreach(_sdx_runtime_dependency_target IN LISTS
             _sdx_runtime_dependency_targets)
@@ -2370,6 +2098,7 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     endforeach()
     list(JOIN _sdx_sdk_shared_runtime_files "|"
         _sdx_sdk_shared_runtime_files_pipe)
+
     set(_sdx_shared_runtime_stage_cmds "")
     if(_sdx_sdk_shared_runtime_files)
         list(APPEND _sdx_shared_runtime_stage_cmds
@@ -2381,83 +2110,8 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
                 "-DOUTPUT_DIR=${_sdx_sdk_lib_dir}"
                 -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/StageSharedRuntime.cmake")
     endif()
-
-    set(_sdx_sdk_dependencies ${_sdx_sdk_target})
-    set(_sdx_exact_apple_package_targets "")
-    if(IOS AND (SD_PACKAGE_APPLE_METAL_PROVIDER OR
-                SD_PACKAGE_APPLE_COREML_ANE_PROVIDER OR
-                SD_PACKAGE_APPLE_METAL_AOT_PROVIDER))
-        set(_sdx_core_object_target "${SD_LIBRARY_NAME}_object")
-        if(NOT TARGET "${_sdx_core_object_target}")
-            message(FATAL_ERROR
-                "Exact Apple SDX packaging requires ${_sdx_core_object_target}")
-        endif()
-        set(_sdx_apple_output_root
-            "${SDX_RUNTIME_SDK_DIR}/bindings/apple")
-        add_custom_target(sdx_apple_sdk_publish)
-        if(SD_PACKAGE_APPLE_METAL_PROVIDER)
-            sdx_add_apple_static_provider(
-                sdx_runtime_metal metal "${_sdx_core_object_target}"
-                "${SD_LIBRARY_NAME}")
-            sdx_add_apple_provider_link_check(
-                sdx_runtime_metal_final_link sdx_runtime_metal)
-            sdx_add_apple_provider_xcframework(
-                sdx_runtime_metal_xcframework sdx_runtime_metal
-                "${_sdx_apple_output_root}/metal/SdxRuntimeMetal.xcframework")
-            sdx_add_apple_swift_sdk(
-                sdx_runtime_metal_publish metal
-                sdx_runtime_metal_xcframework
-                "${_sdx_apple_output_root}/metal/SwiftPackage"
-                "${_sdx_apple_output_root}/metal/SdxRuntimeMetal-SwiftSDK.zip")
-            add_dependencies(sdx_apple_sdk_publish
-                sdx_runtime_metal_publish)
-        endif()
-        if(SD_PACKAGE_APPLE_METAL_AOT_PROVIDER)
-            if(NOT DEFINED SDX_METAL_AOT_EXPORTER_TARGET OR
-               "${SDX_METAL_AOT_EXPORTER_TARGET}" STREQUAL "" OR
-               NOT TARGET "${SDX_METAL_AOT_EXPORTER_TARGET}")
-                message(FATAL_ERROR
-                    "metal-aot packaging requires an in-tree content-addressed exporter target")
-            endif()
-            sdx_add_apple_static_provider(
-                sdx_runtime_metal_aot metal-aot "${_sdx_core_object_target}"
-                "${SD_LIBRARY_NAME}")
-            sdx_add_apple_provider_link_check(
-                sdx_runtime_metal_aot_final_link sdx_runtime_metal_aot)
-            sdx_add_apple_provider_xcframework(
-                sdx_runtime_metal_aot_xcframework sdx_runtime_metal_aot
-                "${_sdx_apple_output_root}/metal-aot/SdxRuntimeMetalAot.xcframework")
-            sdx_add_apple_swift_sdk(
-                sdx_runtime_metal_aot_publish metal-aot
-                sdx_runtime_metal_aot_xcframework
-                "${_sdx_apple_output_root}/metal-aot/SwiftPackage"
-                "${_sdx_apple_output_root}/metal-aot/SdxRuntimeMetalAot-SwiftSDK.zip")
-            add_dependencies(sdx_apple_sdk_publish
-                sdx_runtime_metal_aot_publish)
-        endif()
-        if(SD_PACKAGE_APPLE_COREML_ANE_PROVIDER)
-            sdx_add_apple_static_provider(
-                sdx_runtime_coreml_ane coreml-ane "${_sdx_core_object_target}"
-                "${SD_LIBRARY_NAME}")
-            sdx_add_apple_provider_link_check(
-                sdx_runtime_coreml_ane_final_link sdx_runtime_coreml_ane)
-            sdx_add_apple_provider_xcframework(
-                sdx_runtime_coreml_ane_xcframework sdx_runtime_coreml_ane
-                "${_sdx_apple_output_root}/coreml-ane/SdxRuntimeCoreMlAne.xcframework")
-            sdx_add_apple_swift_sdk(
-                sdx_runtime_coreml_ane_publish coreml-ane
-                sdx_runtime_coreml_ane_xcframework
-                "${_sdx_apple_output_root}/coreml-ane/SwiftPackage"
-                "${_sdx_apple_output_root}/coreml-ane/SdxRuntimeCoreMlAne-SwiftSDK.zip")
-            add_dependencies(sdx_apple_sdk_publish
-                sdx_runtime_coreml_ane_publish)
-        endif()
-        list(APPEND _sdx_exact_apple_package_targets
-            sdx_apple_sdk_publish)
-    endif()
-    if(SD_HEXAGON AND TARGET sd_hexagon_dsp_service)
-        list(APPEND _sdx_sdk_dependencies sd_hexagon_dsp_service)
-    endif()
+    set(_sdx_sdk_dependencies
+        ${_sdx_sdk_target} ${_sdx_runtime_dependency_targets})
 
     add_custom_target(sdx_runtime_sdk
         COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_include_dir}"
@@ -2470,7 +2124,6 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         ${_sdx_schema_stage_cmds}
         ${_sdx_wrapper_stage_cmds}
         ${_sdx_tokenizer_stage_cmds}
-        ${_sdx_hexagon_dsp_stage_cmds}
         DEPENDS ${_sdx_sdk_dependencies}
         COMMENT "Staging SDX C runtime SDK artifacts in ${SDX_RUNTIME_SDK_DIR} (target: ${_sdx_sdk_target})"
         VERBATIM
@@ -2630,29 +2283,16 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     endif()
 
     set(_sdx_enable_apple_xcframework 0)
-    set(_sdx_require_apple_xcframework 0)
     if(APPLE)
         set(_sdx_enable_apple_xcframework 1)
     endif()
-    if(IOS AND (SD_PACKAGE_APPLE_METAL_PROVIDER OR
-                SD_PACKAGE_APPLE_COREML_ANE_PROVIDER OR
-                SD_PACKAGE_APPLE_METAL_AOT_PROVIDER))
-        set(_sdx_require_apple_xcframework 1)
-    endif()
 
-    sdx_select_apple_mobile_providers(_sdx_apple_runtime_variants)
-    if(_sdx_apple_runtime_variants)
-        set(_sdx_runtime_variants "${_sdx_apple_runtime_variants}")
-    elseif(SD_HEXAGON)
+    if(SD_HEXAGON)
         set(_sdx_runtime_variants "hexagon")
     elseif(SD_TPU)
         set(_sdx_runtime_variants "tpu")
     elseif(SD_VULKAN)
         set(_sdx_runtime_variants "vulkan")
-    elseif(SD_NNAPI_ACCELERATOR_ONLY)
-        # Pixel Tensor G3 packages one canonical NNAPI + ARM DSP runtime. NNAPI
-        # islands are device-pinned; unsupported islands use planned replay.
-        set(_sdx_runtime_variants "tensor-g3")
     else()
         set(_sdx_runtime_variants "cpu")
         if(_sdx_have_cuda)
@@ -2682,7 +2322,8 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     if(_sdx_enable_android_aar)
         # Host BLAS is valid only for the Android CPU/reference runtime. Device
         # variants must never acquire a host execution path through packaging.
-        if(NOT SD_DEVICE_ONLY_RUNTIME AND DEFINED OPENBLAS_LIBRARIES)
+        if(NOT SD_HEXAGON AND NOT SD_TPU AND NOT SD_VULKAN AND
+           DEFINED OPENBLAS_LIBRARIES)
             foreach(_sdx_dependency_candidate IN LISTS OPENBLAS_LIBRARIES)
                 if(IS_ABSOLUTE "${_sdx_dependency_candidate}" AND
                    EXISTS "${_sdx_dependency_candidate}")
@@ -2723,7 +2364,7 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
             get_filename_component(_sdx_dependency_name
                 "${_sdx_dependency_candidate}" NAME)
             string(TOLOWER "${_sdx_dependency_name}" _sdx_dependency_name_lower)
-            if(SD_DEVICE_ONLY_RUNTIME AND
+            if((SD_HEXAGON OR SD_TPU OR SD_VULKAN) AND
                _sdx_dependency_name_lower MATCHES
                "openblas|mkl|gfortran|quadmath")
                 message(FATAL_ERROR
@@ -2739,19 +2380,20 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
 
     set(_sdx_binding_package_cmds "")
     foreach(_sdx_variant IN LISTS _sdx_runtime_variants)
-        # Exact Apple variants are complete in-tree archives/XCFrameworks built
-        # above. Do not route them through the generic dsp_runtime_c Swift
-        # wrapper or substitute provider-owned Apple accelerator artifacts.
-        if(_sdx_variant STREQUAL "metal" OR
-           _sdx_variant STREQUAL "metal-aot" OR
-           _sdx_variant STREQUAL "coreml-ane")
-            continue()
+        set(_sdx_default_gpu_target "AUTO")
+        set(_sdx_default_accelerator "NONE")
+        if(_sdx_variant STREQUAL "cuda")
+            set(_sdx_default_gpu_target "CUDA")
+        elseif(_sdx_variant STREQUAL "amd")
+            set(_sdx_default_gpu_target "AMD")
+        elseif(_sdx_variant STREQUAL "vulkan")
+            set(_sdx_default_gpu_target "VULKAN")
+        elseif(_sdx_variant STREQUAL "hexagon")
+            set(_sdx_default_accelerator "QUALCOMM_HEXAGON_HTP")
+        elseif(_sdx_variant STREQUAL "tpu")
+            set(_sdx_default_accelerator "PJRT_TPU")
         endif()
-        sdx_provider_runtime_defaults("${_sdx_variant}"
-            _sdx_default_gpu_target _sdx_default_accelerator)
 
-        set(_sdx_variant_library_file "$<TARGET_FILE:${_sdx_sdk_target}>")
-        set(_sdx_variant_linker_file "$<TARGET_LINKER_FILE:${_sdx_sdk_target}>")
         list(APPEND _sdx_binding_package_cmds
             COMMAND ${CMAKE_COMMAND}
                 "-DSDX_SDK_DIR=${SDX_RUNTIME_SDK_DIR}"
@@ -2765,14 +2407,12 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
                 "-DSDX_VARIANT=${_sdx_variant}"
                 "-DSDX_DEFAULT_GPU_TARGET=${_sdx_default_gpu_target}"
                 "-DSDX_DEFAULT_ACCELERATOR=${_sdx_default_accelerator}"
-                "-DSDX_LIBRARY_FILE=${_sdx_variant_library_file}"
-                "-DSDX_LINKER_FILE=${_sdx_variant_linker_file}"
+                "-DSDX_LIBRARY_FILE=$<TARGET_FILE:${_sdx_sdk_target}>"
+                "-DSDX_LINKER_FILE=$<TARGET_LINKER_FILE:${_sdx_sdk_target}>"
                 "-DSDX_HEADER_FILE=${SDX_RUNTIME_HEADER}"
                 "-DSDX_TOKENIZER_HEADER_FILE=${SDX_TOKENIZER_HEADER_FILE}"
                 "-DSDX_TOKENIZER_LIBRARY_FILE=${SDX_TOKENIZER_LIBRARY_FILE}"
                 "-DSDX_RUNTIME_DEPENDENCY_FILES=${_sdx_runtime_dependency_files_encoded}"
-                "-DSDX_HEXAGON_DSP_SERVICE=${SD_HEXAGON_DSP_SERVICE}"
-                "-DSDX_HEXAGON_ARCH_VERSION=${SD_HEXAGON_ARCH_VERSION}"
                 "-DSDX_README_FILE=${SDX_RUNTIME_README}"
                 "-DSDX_SCHEMA_FILE=${SDX_RUNTIME_SCHEMA}"
                 "-DSDX_TEXT_GENERATION_SCHEMA_FILE=${SDX_RUNTIME_TEXT_GENERATION_SCHEMA}"
@@ -2794,19 +2434,13 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
                 "-DSDX_HAVE_TPU=${_sdx_have_tpu}"
                 "-DSDX_ENABLE_ANDROID_AAR=${_sdx_enable_android_aar}"
                 "-DSDX_ENABLE_APPLE_XCFRAMEWORK=${_sdx_enable_apple_xcframework}"
-                "-DSDX_REQUIRE_APPLE_XCFRAMEWORK=${_sdx_require_apple_xcframework}"
                 -P "${SDX_RUNTIME_BINDINGS_SCRIPT}")
     endforeach()
 
     if(EXISTS "${SDX_RUNTIME_BINDINGS_SCRIPT}")
-        if(SD_PACKAGE_SDX_RUNTIME)
-            set(_sdx_runtime_bindings_all ALL)
-        else()
-            set(_sdx_runtime_bindings_all)
-        endif()
-        add_custom_target(sdx_runtime_bindings ${_sdx_runtime_bindings_all}
+        add_custom_target(sdx_runtime_bindings ALL
             ${_sdx_binding_package_cmds}
-            DEPENDS sdx_runtime_sdk ${_sdx_exact_apple_package_targets}
+            DEPENDS sdx_runtime_sdk
             COMMENT "Packaging platform-specific SDX runtime bindings for ${_sdx_platform_id}"
             VERBATIM
         )
