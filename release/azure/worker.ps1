@@ -10,24 +10,41 @@ $TaskName = 'DL4JReleaseWorker'
 $LaneLog = Join-Path $WorkRoot 'lane.log'
 
 if ($Register) {
-  New-Item -ItemType Directory -Force -Path $WorkRoot,$BootstrapRoot | Out-Null
-  Copy-Item -LiteralPath $PSCommandPath -Destination $PersistedWorker -Force
-  Remove-Item -LiteralPath $WorkerStartedMarker -Force -ErrorAction SilentlyContinue
-  $TaskCommand = "& '$PersistedWorker' *>> '$LaneLog'"
-  $TaskArguments = '-NoLogo -NonInteractive -ExecutionPolicy Bypass -Command "' + $TaskCommand + '"'
-  $Action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $TaskArguments
-  $Trigger = New-ScheduledTaskTrigger -AtStartup
-  $Principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
-  $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
-  Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Principal $Principal -Settings $Settings -Force | Out-Null
-  Start-ScheduledTask -TaskName $TaskName
-  $Deadline = [DateTime]::UtcNow.AddSeconds(90)
-  while (-not (Test-Path -LiteralPath $WorkerStartedMarker)) {
-    if ([DateTime]::UtcNow -ge $Deadline) {
-      $Info = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction SilentlyContinue
-      throw "Scheduled worker did not start within 90 seconds (lastResult=$($Info.LastTaskResult))"
+  try {
+    New-Item -ItemType Directory -Force -Path $WorkRoot,$BootstrapRoot | Out-Null
+    Copy-Item -LiteralPath $PSCommandPath -Destination $PersistedWorker -Force
+    Remove-Item -LiteralPath $WorkerStartedMarker -Force -ErrorAction SilentlyContinue
+    $TaskCommand = "& '$PersistedWorker' *>> '$LaneLog'"
+    $TaskArguments = '-NoLogo -NonInteractive -ExecutionPolicy Bypass -Command "' + $TaskCommand + '"'
+    $Action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $TaskArguments
+    $Trigger = New-ScheduledTaskTrigger -AtStartup
+    $Principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+    $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
+    Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Principal $Principal -Settings $Settings -Force | Out-Null
+    Start-ScheduledTask -TaskName $TaskName
+    $Deadline = [DateTime]::UtcNow.AddSeconds(90)
+    while (-not (Test-Path -LiteralPath $WorkerStartedMarker)) {
+      if ([DateTime]::UtcNow -ge $Deadline) {
+        $Info = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction SilentlyContinue
+        throw "Scheduled worker did not start within 90 seconds (lastResult=$($Info.LastTaskResult))"
+      }
+      Start-Sleep -Seconds 2
     }
-    Start-Sleep -Seconds 2
+  }
+  catch {
+    Write-Output ($_ | Out-String)
+    try {
+      $global:LASTEXITCODE = $null
+      & shutdown.exe /s /t 0 /f
+      if ($null -ne $global:LASTEXITCODE -and $global:LASTEXITCODE -ne 0) {
+        throw "shutdown.exe failed with exit code $global:LASTEXITCODE"
+      }
+    }
+    catch {
+      Write-Warning "shutdown.exe was unsuccessful after worker registration failure; using Stop-Computer: $($_.Exception.Message)"
+      try { Stop-Computer -Force } catch { Write-Warning "Unable to shut down after worker registration failure: $($_.Exception.Message)" }
+    }
+    exit 1
   }
   exit 0
 }
@@ -55,25 +72,8 @@ $env:TEMP = Join-Path $WorkRoot 'tmp'
 $env:TMP = $env:TEMP
 $env:PATH = "$($env:CARGO_HOME)\bin;$env:PATH"
 $Attempt = 1
-if (Test-Path -LiteralPath $AttemptFile) {
-  $PriorAttempt = 0
-  [void][int]::TryParse((Get-Content -Raw $AttemptFile).Trim(), [ref]$PriorAttempt)
-  $Attempt = $PriorAttempt + 1
-}
-if ($Attempt -gt 1) {
-  Remove-Item -LiteralPath $SourceRoot -Recurse -Force -ErrorAction SilentlyContinue
-}
-New-Item -ItemType Directory -Force -Path $WorkRoot,$BootstrapRoot,$SourceRoot,$OutputRoot,$MavenRepoRoot,$ToolchainRoot,$env:CARGO_HOME,$env:RUSTUP_HOME,$env:TEMP | Out-Null
-Remove-Item -LiteralPath $KillRequestedFile,$WatchdogStopFile,$WatchdogCloudPidFile,$BuildPidFile -Force -ErrorAction SilentlyContinue
-Set-Content -LiteralPath $AttemptFile -Value $Attempt
-Set-Content -LiteralPath $WorkerStartedMarker -Value "started=$([DateTimeOffset]::UtcNow.ToString('o')) pid=$PID attempt=$Attempt"
-[IO.File]::WriteAllBytes($ConfigFile, [Convert]::FromBase64String($ConfigB64))
-[IO.File]::WriteAllBytes($BuildDriver, [Convert]::FromBase64String($BuildDriverB64))
-[IO.File]::WriteAllBytes($CloudIo, [Convert]::FromBase64String($CloudIoB64))
-$Config = Get-Content -Raw $ConfigFile | ConvertFrom-Json
-$Shards = if ($Config.shards) { @($Config.shards) } else { @($Config.shard) }
-if ($Shards.Count -eq 0) { throw 'Azure lane worker received no shards' }
-
+$Config = $null
+$Shards = @()
 $ExitCode = 1
 $KillWatchJob = $null
 $LogForwarderProcess = $null
@@ -117,9 +117,11 @@ function Invoke-NativeChecked {
   $PreviousPreference = $ErrorActionPreference
   try {
     $ErrorActionPreference = 'Continue'
-    $LASTEXITCODE = $null
+    # Native invocations update the automatic global variable; an unscoped
+    # assignment here would create a function-local shadow that never changes.
+    $global:LASTEXITCODE = $null
     & $Command
-    $Code = $LASTEXITCODE
+    $Code = $global:LASTEXITCODE
   }
   finally {
     $ErrorActionPreference = $PreviousPreference
@@ -322,18 +324,8 @@ function Upload-IfPresent([string]$Path, [string]$Name) {
   return $true
 }
 
-function Complete-Shard([int]$RequestedExitCode) {
-  $FinalCode = $RequestedExitCode
-  Stop-ShardLogging
-  $Artifacts = @(
-    [pscustomobject]@{Path=$BuildLog; Name='build.log'},
-    [pscustomobject]@{Path=(Join-Path $OutputDir 'maven-repository.tar.gz'); Name='maven-repository.tar.gz'},
-    [pscustomobject]@{Path=(Join-Path $OutputDir 'sdk-assets.tar.gz'); Name='sdk-assets.tar.gz'},
-    [pscustomobject]@{Path=(Join-Path $OutputDir 'shard-manifest.json'); Name='shard-manifest.json'}
-  )
-  foreach ($Artifact in $Artifacts) {
-    if (-not (Upload-IfPresent $Artifact.Path $Artifact.Name)) { $FinalCode = 1 }
-  }
+function Write-ShardStatus([int]$FinalCode) {
+  $StatusPath = Join-Path $OutputDir 'status.json'
   @{
     runId=$Config.runId
     shard=$Shard.id
@@ -347,12 +339,137 @@ function Complete-Shard([int]$RequestedExitCode) {
     exitCode=$FinalCode
     completedAt=[DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
   } |
-    ConvertTo-Json | Set-Content (Join-Path $OutputDir 'status.json')
-  if (-not (Upload-IfPresent (Join-Path $OutputDir 'status.json') 'status.json')) {
-    Write-Warning 'Final status upload was not acknowledged; the controller will reconcile the canonical blob'
+    ConvertTo-Json | Set-Content $StatusPath
+  return $StatusPath
+}
+
+function Get-AzureStorageAccessToken {
+  $ClientId = [Uri]::EscapeDataString([string]$Config.managedIdentityClientId)
+  $TokenUri = "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https%3A%2F%2Fstorage.azure.com%2F&client_id=$ClientId"
+  $Response = Invoke-RestMethod -Method Get -Uri $TokenUri -Headers @{Metadata='true'}
+  if (-not $Response.access_token) { throw 'Azure managed identity returned no storage access token' }
+  return [string]$Response.access_token
+}
+
+function Upload-AzureBlobPowerShell([string]$Path, [string]$ObjectName, [string]$AccessToken, [string]$ContentType) {
+  $BucketParts = @(([string]$Config.bucket) -split '/', 2)
+  if ($BucketParts.Count -ne 2) { throw "Invalid Azure bucket '$($Config.bucket)'" }
+  $EncodedObject = (($ObjectName -split '/') | ForEach-Object { [Uri]::EscapeDataString($_) }) -join '/'
+  $BlobUri = "https://$($BucketParts[0]).blob.core.windows.net/$($BucketParts[1])/$EncodedObject"
+  $Headers = @{
+    Authorization="Bearer $AccessToken"
+    'x-ms-blob-type'='BlockBlob'
+    'x-ms-date'=[DateTime]::UtcNow.ToString('R', [Globalization.CultureInfo]::InvariantCulture)
+    'x-ms-version'='2021-12-02'
   }
-  $script:CurrentFinalized = $true
-  $script:CurrentActive = $false
+  Invoke-WebRequest -Method Put -Uri $BlobUri -Headers $Headers -InFile $Path -ContentType $ContentType -UseBasicParsing | Out-Null
+}
+
+function Publish-BootstrapFailureWithoutPython([string]$Message, [string]$Details) {
+  $Uploads = @()
+  foreach ($Candidate in $Shards) {
+    try {
+      Set-ShardContext $Candidate
+      $script:CurrentActive = $true
+      $script:CurrentFinalized = $false
+      Write-Phase 'worker-bootstrap' 'failed' $Message
+      Write-BuildContent $Details
+      $StatusPath = Write-ShardStatus 1
+      $Uploads += [pscustomobject]@{Path=$BuildLog; Object="$ObjectPrefix/build.log"; ContentType='text/plain'}
+      $Uploads += [pscustomobject]@{Path=$StatusPath; Object="$ObjectPrefix/status.json"; ContentType='application/json'}
+    }
+    catch {
+      Write-Warning "Unable to prepare bootstrap failure for shard $($Candidate.id): $($_.Exception.Message)"
+    }
+    finally {
+      $script:CurrentFinalized = $true
+      $script:CurrentActive = $false
+    }
+  }
+  if ($Uploads.Count -eq 0) { return $false }
+
+  $PendingUploads = @($Uploads)
+  $Deadline = [DateTime]::UtcNow.AddMinutes(15)
+  $AttemptNumber = 0
+  while ($PendingUploads.Count -gt 0 -and [DateTime]::UtcNow -lt $Deadline) {
+    $AttemptNumber += 1
+    $Remaining = @()
+    try {
+      $AccessToken = Get-AzureStorageAccessToken
+      foreach ($Upload in $PendingUploads) {
+        try {
+          Upload-AzureBlobPowerShell $Upload.Path $Upload.Object $AccessToken $Upload.ContentType
+        }
+        catch {
+          Write-Warning "Bootstrap blob upload failed for $($Upload.Object): $($_.Exception.Message)"
+          $Remaining += $Upload
+        }
+      }
+    }
+    catch {
+      Write-Warning "Azure bootstrap upload authentication failed: $($_.Exception.Message)"
+      $Remaining = @($PendingUploads)
+    }
+    $PendingUploads = @($Remaining)
+    if ($PendingUploads.Count -gt 0 -and [DateTime]::UtcNow -lt $Deadline) {
+      Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=bootstrap-log-upload status=waiting attempt=$AttemptNumber pending=$($PendingUploads.Count)"
+      Start-Sleep -Seconds 15
+    }
+  }
+  if ($PendingUploads.Count -gt 0) {
+    Write-Warning "Unable to upload $($PendingUploads.Count) bootstrap failure blobs before the deadline"
+    return $false
+  }
+  return $true
+}
+
+function Complete-Shard([int]$RequestedExitCode) {
+  $FinalCode = $RequestedExitCode
+  try {
+    try {
+      Stop-ShardLogging
+    }
+    catch {
+      Write-Warning "Unable to stop shard logging for $($Shard.id): $($_.Exception.Message)"
+      $FinalCode = 1
+    }
+
+    $Artifacts = @(
+      [pscustomobject]@{Path=$BuildLog; Name='build.log'},
+      [pscustomobject]@{Path=(Join-Path $OutputDir 'maven-repository.tar.gz'); Name='maven-repository.tar.gz'},
+      [pscustomobject]@{Path=(Join-Path $OutputDir 'sdk-assets.tar.gz'); Name='sdk-assets.tar.gz'},
+      [pscustomobject]@{Path=(Join-Path $OutputDir 'shard-manifest.json'); Name='shard-manifest.json'}
+    )
+    foreach ($Artifact in $Artifacts) {
+      try {
+        if (-not (Upload-IfPresent $Artifact.Path $Artifact.Name)) { $FinalCode = 1 }
+      }
+      catch {
+        Write-Warning "Artifact finalization failed for $($Artifact.Name): $($_.Exception.Message)"
+        $FinalCode = 1
+      }
+    }
+
+    try {
+      $StatusPath = Write-ShardStatus $FinalCode
+      if (-not (Upload-IfPresent $StatusPath 'status.json')) {
+        Write-Warning 'Final status upload was not acknowledged; the controller will reconcile the canonical blob'
+        $FinalCode = 1
+      }
+    }
+    catch {
+      Write-Warning "Final status creation or upload failed for $($Shard.id): $($_.Exception.Message)"
+      $FinalCode = 1
+    }
+  }
+  catch {
+    Write-Warning "Unexpected shard finalization failure for $($Shard.id): $($_.Exception.Message)"
+    $FinalCode = 1
+  }
+  finally {
+    $script:CurrentFinalized = $true
+    $script:CurrentActive = $false
+  }
   return [int]$FinalCode
 }
 
@@ -554,7 +671,36 @@ function Invoke-ShardBuild {
   Write-Phase 'artifact-packaging' 'complete' "shard=$($Shard.id)"
 }
 
+function Invoke-CleanupStep([string]$Description, [scriptblock]$Action) {
+  try {
+    & $Action
+  }
+  catch {
+    $script:ExitCode = 1
+    Write-Warning "Cleanup step '$Description' failed: $($_.Exception.Message)"
+  }
+}
+
 try {
+  if (Test-Path -LiteralPath $AttemptFile) {
+    $PriorAttempt = 0
+    [void][int]::TryParse((Get-Content -Raw $AttemptFile).Trim(), [ref]$PriorAttempt)
+    $Attempt = $PriorAttempt + 1
+  }
+  if ($Attempt -gt 1) {
+    Remove-Item -LiteralPath $SourceRoot -Recurse -Force -ErrorAction SilentlyContinue
+  }
+  New-Item -ItemType Directory -Force -Path $WorkRoot,$BootstrapRoot,$SourceRoot,$OutputRoot,$MavenRepoRoot,$ToolchainRoot,$env:CARGO_HOME,$env:RUSTUP_HOME,$env:TEMP | Out-Null
+  Remove-Item -LiteralPath $KillRequestedFile,$WatchdogStopFile,$WatchdogCloudPidFile,$BuildPidFile -Force -ErrorAction SilentlyContinue
+  Set-Content -LiteralPath $AttemptFile -Value $Attempt
+  Set-Content -LiteralPath $WorkerStartedMarker -Value "started=$([DateTimeOffset]::UtcNow.ToString('o')) pid=$PID attempt=$Attempt"
+  [IO.File]::WriteAllBytes($ConfigFile, [Convert]::FromBase64String($ConfigB64))
+  [IO.File]::WriteAllBytes($BuildDriver, [Convert]::FromBase64String($BuildDriverB64))
+  [IO.File]::WriteAllBytes($CloudIo, [Convert]::FromBase64String($CloudIoB64))
+  $Config = Get-Content -Raw $ConfigFile | ConvertFrom-Json
+  $Shards = if ($Config.shards) { @($Config.shards) } else { @($Config.shard) }
+  if ($Shards.Count -eq 0) { throw 'Azure lane worker received no shards' }
+
   Set-ExecutionPolicy Bypass -Scope Process -Force
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
@@ -622,38 +768,111 @@ try {
   }
 }
 catch {
+  $BootstrapMessage = $_.Exception.Message
+  $BootstrapError = $_ | Out-String
+  Write-Output $BootstrapError
   if ($script:BuildLog) {
-    Write-Phase 'worker' 'failed' $_.Exception.Message
-    Write-BuildContent ($_ | Out-String)
+    try {
+      Write-Phase 'worker' 'failed' $BootstrapMessage
+      Write-BuildContent $BootstrapError
+    }
+    catch {
+      Write-Warning "Unable to append the worker failure to the build log: $($_.Exception.Message)"
+    }
   }
   else {
-    Write-Error $_
+    $FallbackPython = Join-Path $env:SystemDrive 'Python312\python.exe'
+    if (Test-Path -LiteralPath $FallbackPython) {
+      try {
+        $script:PythonExe = $FallbackPython
+        Wait-ForCloudAccess
+        foreach ($Candidate in $Shards) {
+          try {
+            Set-ShardContext $Candidate
+            $script:CurrentActive = $true
+            $script:CurrentFinalized = $false
+            Write-Phase 'worker-bootstrap' 'failed' $BootstrapMessage
+            Write-BuildContent $BootstrapError
+            [void](Complete-Shard 1)
+          }
+          catch {
+            Write-Warning "Unable to publish the Python bootstrap failure for shard $($Candidate.id): $($_.Exception.Message)"
+            try { Stop-ShardLogging } catch { Write-Warning "Unable to stop fallback shard logging: $($_.Exception.Message)" }
+            $script:CurrentFinalized = $true
+            $script:CurrentActive = $false
+          }
+        }
+      }
+      catch {
+        Write-Warning "Unable to initialize Python bootstrap failure publishing: $($_.Exception.Message)"
+      }
+    }
+    if ($null -ne $Config -and $Shards.Count -gt 0) {
+      try {
+        if (-not (Publish-BootstrapFailureWithoutPython $BootstrapMessage $BootstrapError)) {
+          Write-Warning 'The direct Azure bootstrap failure upload did not complete'
+        }
+      }
+      catch {
+        Write-Warning "Unable to publish bootstrap failure directly to Azure Blob Storage: $($_.Exception.Message)"
+      }
+    }
+    else {
+      Write-Warning 'Bootstrap failed before the Azure shard configuration could be loaded'
+    }
   }
   $ExitCode = 1
 }
 finally {
-  if ($CurrentActive -and -not $CurrentFinalized) {
-    $FinalCode = Complete-Shard $ExitCode
-    if ($FinalCode -ne 0) { $ExitCode = 1 }
-  }
-  if ($KillWatchJob) {
-    New-Item -ItemType File -Force -Path $WatchdogStopFile | Out-Null
-    Wait-Job -Job $KillWatchJob -Timeout 35 -ErrorAction SilentlyContinue | Out-Null
-    if ($KillWatchJob.State -ne 'Completed') {
-      if (Test-Path -LiteralPath $WatchdogCloudPidFile) {
-        $CloudPid = (Get-Content -Raw $WatchdogCloudPidFile).Trim()
-        if ($CloudPid -match '^\d+$') { taskkill /PID $CloudPid /T /F *> $null }
-      }
-      Stop-Job -Job $KillWatchJob -ErrorAction SilentlyContinue
+  Invoke-CleanupStep 'active shard finalization' {
+    if ($script:CurrentActive -and -not $script:CurrentFinalized) {
+      $FinalCode = Complete-Shard $script:ExitCode
+      if ($FinalCode -ne 0) { $script:ExitCode = 1 }
     }
-    Remove-Job -Job $KillWatchJob -Force -ErrorAction SilentlyContinue
   }
-  if ($TranscriptStarted) {
-    Stop-Transcript | Out-Null
-    $script:TranscriptStarted = $false
+  Invoke-CleanupStep 'kill watchdog stop signal' {
+    if ($script:KillWatchJob) {
+      New-Item -ItemType File -Force -Path $WatchdogStopFile | Out-Null
+    }
   }
-  Stop-LaneLogging
-  Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
-  shutdown.exe /s /t 0 /f
+  Invoke-CleanupStep 'kill watchdog job cleanup' {
+    if ($script:KillWatchJob) {
+      Wait-Job -Job $script:KillWatchJob -Timeout 35 -ErrorAction SilentlyContinue | Out-Null
+      if ($script:KillWatchJob.State -ne 'Completed') {
+        if (Test-Path -LiteralPath $WatchdogCloudPidFile) {
+          $CloudPid = (Get-Content -Raw $WatchdogCloudPidFile).Trim()
+          if ($CloudPid -match '^\d+$') { taskkill /PID $CloudPid /T /F *> $null }
+        }
+        Stop-Job -Job $script:KillWatchJob -ErrorAction SilentlyContinue
+      }
+      Remove-Job -Job $script:KillWatchJob -Force -ErrorAction SilentlyContinue
+      $script:KillWatchJob = $null
+    }
+  }
+  Invoke-CleanupStep 'PowerShell transcript cleanup' {
+    if ($script:TranscriptStarted) {
+      Stop-Transcript | Out-Null
+      $script:TranscriptStarted = $false
+    }
+  }
+  Invoke-CleanupStep 'lane log cleanup' {
+    Stop-LaneLogging
+  }
+  Invoke-CleanupStep 'scheduled worker cleanup' {
+    Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+  }
+  Invoke-CleanupStep 'VM shutdown' {
+    try {
+      $global:LASTEXITCODE = $null
+      & shutdown.exe /s /t 0 /f
+      if ($null -ne $global:LASTEXITCODE -and $global:LASTEXITCODE -ne 0) {
+        throw "shutdown.exe failed with exit code $global:LASTEXITCODE"
+      }
+    }
+    catch {
+      Write-Warning "shutdown.exe was unsuccessful; using Stop-Computer: $($_.Exception.Message)"
+      Stop-Computer -Force
+    }
+  }
 }
 exit $ExitCode

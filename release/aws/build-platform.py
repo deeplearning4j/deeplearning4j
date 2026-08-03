@@ -12,6 +12,8 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import time
+import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -21,6 +23,17 @@ SCCACHE_VERSION = "0.15.0"
 SCCACHE_RELEASE_BASE = (
     f"https://github.com/mozilla/sccache/releases/download/v{SCCACHE_VERSION}"
 )
+ZLUDA_TARGET = "AMD"
+ZLUDA_WINDOWS_REQUIRED_FILES = (
+    "nvcuda.dll",
+    "nvcudart_hybrid64.dll",
+    "zluda.exe",
+    "zluda_redirect.dll",
+)
+DOWNLOAD_RETRIES = 4
+TRANSIENT_HTTP_STATUSES = {408, 429, 500, 502, 503, 504}
+
+
 SCCACHE_ASSETS = {
     ("linux", "x86_64"): (
         "x86_64-unknown-linux-musl",
@@ -291,21 +304,88 @@ def prepare_openblas(source: Path, build: dict, env: dict[str, str]) -> None:
     env["OPENBLAS_PATH"] = str(headers[0].parent.parent)
 
 
+def urlopen_with_retry(request: urllib.request.Request, description: str):
+    delay = 1.0
+    for attempt in range(DOWNLOAD_RETRIES):
+        try:
+            return urllib.request.urlopen(request, timeout=60)
+        except urllib.error.HTTPError as exc:
+            if exc.code not in TRANSIENT_HTTP_STATUSES or attempt + 1 == DOWNLOAD_RETRIES:
+                raise RuntimeError(f"{description} failed with HTTP {exc.code}") from exc
+        except (urllib.error.URLError, TimeoutError) as exc:
+            if attempt + 1 == DOWNLOAD_RETRIES:
+                raise RuntimeError(f"{description} failed: {exc}") from exc
+        print(f"[dl4j-download] {description} attempt {attempt + 1} failed; retrying in {delay:g}s", flush=True)
+        time.sleep(delay)
+        delay = min(delay * 2, 8.0)
+    raise AssertionError("unreachable")
+
+
+def download_with_retry(url: str, destination: Path, description: str) -> None:
+    request = urllib.request.Request(url, headers={"User-Agent": "dl4j-release-builder"})
+    try:
+        with urlopen_with_retry(request, description) as response, destination.open("wb") as output:
+            shutil.copyfileobj(response, output)
+    except BaseException:
+        destination.unlink(missing_ok=True)
+        raise
+
+
+def zluda_platform(build: dict) -> str:
+    platform = build.get("javacppPlatform", "")
+    if platform.startswith("windows-"):
+        return "windows"
+    if platform.startswith("linux-"):
+        return "linux"
+    raise ValueError(f"ZLUDA releases do not support JavaCPP platform {platform!r}")
+
+
+def find_zluda_runtime(root: Path, build: dict) -> Path | None:
+    platform = zluda_platform(build)
+    if platform == "windows":
+        candidates = [
+            candidate
+            for candidate in root.rglob("nvcuda.dll")
+            if candidate.is_file()
+            and all((candidate.parent / name).is_file() for name in ZLUDA_WINDOWS_REQUIRED_FILES)
+        ]
+    else:
+        candidates = [
+            candidate
+            for candidate in list(root.rglob("libcuda.so")) + list(root.rglob("libcuda.so.*"))
+            if candidate.is_file()
+        ]
+    return (
+        min(candidates, key=lambda path: (len(path.relative_to(root).parts), str(path)))
+        if candidates else None
+    )
+
+
 def prepare_zluda(source: Path, build: dict, env: dict[str, str]) -> None:
     version = build.get("zludaVersion")
     if not version:
         return
+    platform = zluda_platform(build)
     request = urllib.request.Request(
         f"https://api.github.com/repos/vosen/ZLUDA/releases/tags/{version}",
         headers={"Accept": "application/vnd.github+json", "User-Agent": "dl4j-release-builder"},
     )
-    with urllib.request.urlopen(request) as response:
+    with urlopen_with_retry(request, f"ZLUDA release metadata for {version}") as response:
         release = json.load(response)
-    assets = [asset for asset in release.get("assets", []) if "linux" in asset["name"].lower()]
+    assets = [
+        asset for asset in release.get("assets", [])
+        if platform in asset["name"].lower()
+    ]
     if len(assets) != 1:
-        raise RuntimeError(f"expected one Linux ZLUDA asset for {version}, found {[a['name'] for a in assets]}")
-    archive = source / assets[0]["name"]
-    urllib.request.urlretrieve(assets[0]["browser_download_url"], archive)
+        raise RuntimeError(
+            f"expected one {platform} ZLUDA asset for {version}, "
+            f"found {[asset['name'] for asset in assets]}"
+        )
+    asset = assets[0]
+    archive = source / asset["name"]
+    download_with_retry(
+        asset["browser_download_url"], archive, f"ZLUDA {platform} asset for {version}"
+    )
     target = source / "zluda"
     target.mkdir()
     if archive.suffix == ".zip":
@@ -314,12 +394,18 @@ def prepare_zluda(source: Path, build: dict, env: dict[str, str]) -> None:
     else:
         with tarfile.open(archive) as bundle:
             bundle.extractall(target)
-    libraries = list(target.rglob("libcuda.so")) + list(target.rglob("libcuda.so.*"))
-    if not libraries:
-        raise RuntimeError(f"ZLUDA release {version} contains no libcuda.so")
-    library = libraries[0]
-    root = library.parent.parent if library.parent.name == "lib" else library.parent
-    env["ZLUDA_PATH"] = str(root)
+    runtime = find_zluda_runtime(target, build)
+    if runtime is None:
+        expected = "nvcuda.dll" if platform == "windows" else "libcuda.so"
+        raise RuntimeError(f"ZLUDA {platform} release {version} contains no {expected}")
+    runtime_directory = str(runtime.parent)
+    env["ZLUDA_PATH"] = runtime_directory
+    search_variable = "PATH" if platform == "windows" else "LD_LIBRARY_PATH"
+    current_search_path = env.get(search_variable, "")
+    env[search_variable] = (
+        runtime_directory + os.pathsep + current_search_path
+        if current_search_path else runtime_directory
+    )
 
 
 def package_runtime_sdk(source: Path, output: Path, threads: int) -> int:
@@ -406,6 +492,9 @@ def stage_repository(repository: Path, output: Path, rules: dict) -> None:
     mode = rules.get("mode", "all")
     artifact_ids = set(rules.get("artifactIds", []))
     classifier_tokens = tuple(rules.get("classifierTokens", []))
+    unclassified_artifact_ids = set(rules.get("unclassifiedArtifactIds", []))
+    if not unclassified_artifact_ids.issubset(artifact_ids):
+        raise ValueError("unclassifiedArtifactIds must be a subset of artifactIds")
     include_metadata = bool(rules.get("includeMetadata", False))
     for namespace in namespaces:
         root = repository / namespace
@@ -422,7 +511,12 @@ def stage_repository(repository: Path, output: Path, rules: dict) -> None:
                 is_metadata = path.suffix == ".pom" or path.name.endswith(("-sources.jar", "-javadoc.jar", ".module"))
                 if is_metadata and not include_metadata:
                     continue
-                if not is_metadata and classifier_tokens and not any(token in path.name for token in classifier_tokens):
+                is_unclassified_runtime = (
+                    artifact_id in unclassified_artifact_ids
+                    and path.name == f"{artifact_id}-{path.parent.name}.jar"
+                )
+                if (not is_metadata and not is_unclassified_runtime and classifier_tokens
+                        and not any(token in path.name for token in classifier_tokens)):
                     continue
             destination = output / namespace / relative_under_namespace
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -432,7 +526,7 @@ def stage_repository(repository: Path, output: Path, rules: dict) -> None:
 def shared_native_family(shard: dict, variant: dict) -> str:
     build = shard["build"]
     if build.get("zludaVersion"):
-        return "zluda"
+        return "windows-zluda" if shard["os"] == "windows" else "zluda"
     if variant.get("name") == "compat":
         return "compat"
     if build["backend"] in {"vulkan", "hexagon", "tpu"}:
@@ -476,10 +570,56 @@ def shared_variant_helper(variant: dict) -> str:
 
 
 def zluda_target(build: dict) -> str:
-    for argument in build.get("mavenArgs", []):
-        if argument.startswith("-Dlibnd4j.zluda="):
-            return argument.split("=", 1)[1]
-    return "rocm6"
+    arguments = [
+        argument.split("=", 1)[1]
+        for argument in build.get("mavenArgs", [])
+        if argument.startswith("-Dlibnd4j.zluda=")
+    ]
+    if not build.get("zludaVersion"):
+        if arguments:
+            raise ValueError("libnd4j.zluda is set without zludaVersion")
+        return ""
+    if len(arguments) != 1:
+        raise ValueError("ZLUDA releases require exactly one -Dlibnd4j.zluda target")
+    if arguments[0] != ZLUDA_TARGET:
+        raise ValueError(f"unsupported ZLUDA target {arguments[0]!r}; expected {ZLUDA_TARGET}")
+    return arguments[0]
+
+
+def attest_zluda_configuration(build: dict, env: dict[str, str]) -> None:
+    version = build.get("zludaVersion")
+    if not version:
+        return
+    target = zluda_target(build)
+    failures = []
+    if build.get("backend") != "cuda":
+        failures.append("backend must be cuda")
+    if "zluda" not in build.get("profiles", []):
+        failures.append("zluda profile is missing")
+    if ":nd4j-zluda" not in build.get("modules", []):
+        failures.append(":nd4j-zluda module is missing")
+    variants = build.get("variants", [])
+    expected_classifier_suffix = f"-cuda-{build.get('cudaVersion', '')}-zluda"
+    if not variants or any(
+            variant.get("classifierSuffix") != expected_classifier_suffix
+            or variant.get("platformExtension") != "-zluda"
+            for variant in variants):
+        failures.append("ZLUDA classifier/platform extension is not active")
+    zluda_path = Path(env.get("ZLUDA_PATH", ""))
+    runtime = None
+    if not env.get("ZLUDA_PATH") or not zluda_path.is_dir():
+        failures.append("prepared ZLUDA_PATH is missing")
+    else:
+        runtime = find_zluda_runtime(zluda_path, build)
+        if runtime is None:
+            failures.append(f"prepared ZLUDA_PATH contains no {zluda_platform(build)} runtime")
+    if failures:
+        raise RuntimeError("ZLUDA configuration attestation failed: " + "; ".join(failures))
+    print(
+        f"[dl4j-attestation] zludaVersion={version} target={target} "
+        f"profile=zluda module=:nd4j-zluda path={zluda_path} runtime={runtime}",
+        flush=True,
+    )
 
 
 def build_native_platform(source: Path, shard: dict, repository: Path, env: dict[str, str],
@@ -540,6 +680,7 @@ def main() -> None:
         if build["backend"] == "cuda":
             run(["bash", "./change-cuda-versions.sh", build["cudaVersion"]], args.source, env)
         prepare_zluda(args.source, build, env)
+        attest_zluda_configuration(build, env)
         if build.get("kind") == "cross-platform":
             print(f"[dl4j-phase] shard={shard['id']} phase=cross-platform", flush=True)
             build_cross_platform(args.source, build, args.repository, env)

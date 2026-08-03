@@ -11,6 +11,51 @@
 #   - oneDNN configuration for Intel (cuDNN alternative)
 #   - CUDA compatibility flags for ZLUDA
 
+function(zluda_find_first_existing output_var)
+    set(_zluda_match "")
+    foreach(_zluda_candidate IN LISTS ARGN)
+        if(NOT "${_zluda_candidate}" STREQUAL "" AND EXISTS "${_zluda_candidate}")
+            set(_zluda_match "${_zluda_candidate}")
+            break()
+        endif()
+    endforeach()
+    set(${output_var} "${_zluda_match}" PARENT_SCOPE)
+endfunction()
+
+# Resolve the runtime independently from the link input. Official Windows
+# packages contain nvcuda.dll but no import library: Windows builds link the
+# CUDA SDK's ABI-compatible nvcuda.lib and ZLUDA replaces it at runtime through
+# zluda.exe or the documented application-local DLL layout. Unix can link the
+# ZLUDA shared object directly. Keeping this helper side-effect free also makes
+# release layouts testable without configuring the complete native build.
+function(resolve_zluda_runtime zluda_root windows_layout output_link output_runtime)
+    set(_zluda_link "")
+    if(windows_layout)
+        set(_zluda_runtime "")
+        foreach(_zluda_layout_root
+                "${zluda_root}" "${zluda_root}/bin" "${zluda_root}/lib")
+            if(EXISTS "${_zluda_layout_root}/nvcuda.dll"
+                    AND EXISTS "${_zluda_layout_root}/nvcudart_hybrid64.dll"
+                    AND EXISTS "${_zluda_layout_root}/zluda.exe"
+                    AND EXISTS "${_zluda_layout_root}/zluda_redirect.dll")
+                set(_zluda_runtime "${_zluda_layout_root}/nvcuda.dll")
+                break()
+            endif()
+        endforeach()
+    else()
+        zluda_find_first_existing(_zluda_runtime
+            "${zluda_root}/libcuda.so"
+            "${zluda_root}/lib/libcuda.so"
+            "${zluda_root}/lib64/libcuda.so"
+            "${zluda_root}/libnvcuda.so"
+            "${zluda_root}/lib/libnvcuda.so"
+            "${zluda_root}/lib64/libnvcuda.so")
+        set(_zluda_link "${_zluda_runtime}")
+    endif()
+    set(${output_link} "${_zluda_link}" PARENT_SCOPE)
+    set(${output_runtime} "${_zluda_runtime}" PARENT_SCOPE)
+endfunction()
+
 ################################################################################
 # Main ZLUDA Setup Function
 ################################################################################
@@ -35,26 +80,27 @@ function(setup_zluda)
         ${CMAKE_PREFIX_PATH}/zluda
     )
 
-    # Find ZLUDA library (provides libcuda.so replacement)
-    find_library(ZLUDA_LIBRARY
-        NAMES cuda nvcuda zluda
-        HINTS ${ZLUDA_SEARCH_PATHS}
-        PATH_SUFFIXES lib lib64
-        NO_DEFAULT_PATH
-    )
+    set(ZLUDA_LINK_LIBRARY "")
+    set(ZLUDA_RUNTIME_LIBRARY "")
+    foreach(_zluda_search_root IN LISTS ZLUDA_SEARCH_PATHS)
+        if(NOT "${_zluda_search_root}" STREQUAL "")
+            resolve_zluda_runtime("${_zluda_search_root}" "${WIN32}"
+                _zluda_link_candidate _zluda_runtime_candidate)
+            if(_zluda_runtime_candidate)
+                set(ZLUDA_LINK_LIBRARY "${_zluda_link_candidate}")
+                set(ZLUDA_RUNTIME_LIBRARY "${_zluda_runtime_candidate}")
+                break()
+            endif()
+        endif()
+    endforeach()
 
-    # Also check for ZLUDA in the environment
-    if(NOT ZLUDA_LIBRARY AND DEFINED ENV{ZLUDA_PATH})
-        set(ZLUDA_LIBRARY "$ENV{ZLUDA_PATH}/lib/libcuda.so")
-        if(NOT EXISTS "${ZLUDA_LIBRARY}")
-            set(ZLUDA_LIBRARY "$ENV{ZLUDA_PATH}/lib/libnvcuda.so")
-        endif()
-        if(NOT EXISTS "${ZLUDA_LIBRARY}")
-            set(ZLUDA_LIBRARY "")
-        endif()
+    # Preserve the historic variable for consumers that report or inspect it.
+    set(ZLUDA_LIBRARY "${ZLUDA_LINK_LIBRARY}")
+    if(NOT ZLUDA_LIBRARY)
+        set(ZLUDA_LIBRARY "${ZLUDA_RUNTIME_LIBRARY}")
     endif()
 
-    if(NOT ZLUDA_LIBRARY)
+    if(NOT ZLUDA_RUNTIME_LIBRARY)
         # Try to download ZLUDA automatically
         message(STATUS "ZLUDA not found locally, attempting automatic download...")
         setup_zluda_download()
@@ -62,26 +108,37 @@ function(setup_zluda)
         # Check if download succeeded and search again
         if(TARGET zluda_external)
             get_target_property(ZLUDA_INSTALL_DIR zluda_external INSTALL_DIR)
-            if(EXISTS "${ZLUDA_INSTALL_DIR}/lib/libcuda.so")
-                set(ZLUDA_LIBRARY "${ZLUDA_INSTALL_DIR}/lib/libcuda.so")
-                message(STATUS "Using auto-downloaded ZLUDA: ${ZLUDA_LIBRARY}")
-            elseif(EXISTS "${ZLUDA_INSTALL_DIR}/libnvcuda.so")
-                set(ZLUDA_LIBRARY "${ZLUDA_INSTALL_DIR}/libnvcuda.so")
-                message(STATUS "Using auto-downloaded ZLUDA: ${ZLUDA_LIBRARY}")
+            resolve_zluda_runtime("${ZLUDA_INSTALL_DIR}" "${WIN32}"
+                ZLUDA_LINK_LIBRARY ZLUDA_RUNTIME_LIBRARY)
+            if(ZLUDA_RUNTIME_LIBRARY)
+                set(ZLUDA_LIBRARY "${ZLUDA_LINK_LIBRARY}")
+                if(NOT ZLUDA_LIBRARY)
+                    set(ZLUDA_LIBRARY "${ZLUDA_RUNTIME_LIBRARY}")
+                endif()
+                message(STATUS "Using auto-downloaded ZLUDA runtime: ${ZLUDA_RUNTIME_LIBRARY}")
             endif()
         endif()
     endif()
 
-    if(NOT ZLUDA_LIBRARY)
-        print_status_colored("WARNING" "ZLUDA library not found. Set ZLUDA_PATH environment variable.")
+    if(NOT ZLUDA_RUNTIME_LIBRARY)
+        print_status_colored("WARNING" "ZLUDA runtime not found. Set ZLUDA_PATH environment variable.")
         print_status_colored("WARNING" "Or ensure automatic download completes successfully.")
         print_status_colored("WARNING" "ZLUDA support disabled - falling back to standard CUDA if available.")
         return()
     endif()
 
-    message(STATUS "Found ZLUDA library: ${ZLUDA_LIBRARY}")
-    get_filename_component(ZLUDA_LIB_DIR "${ZLUDA_LIBRARY}" DIRECTORY)
+    message(STATUS "Found ZLUDA runtime: ${ZLUDA_RUNTIME_LIBRARY}")
+    if(ZLUDA_LINK_LIBRARY)
+        message(STATUS "Found ZLUDA link library: ${ZLUDA_LINK_LIBRARY}")
+        get_filename_component(ZLUDA_LIB_DIR "${ZLUDA_LINK_LIBRARY}" DIRECTORY)
+    else()
+        message(STATUS "Windows will link the CUDA SDK driver import library")
+        get_filename_component(ZLUDA_LIB_DIR "${ZLUDA_RUNTIME_LIBRARY}" DIRECTORY)
+    endif()
     set(ZLUDA_LIB_DIR "${ZLUDA_LIB_DIR}" PARENT_SCOPE)
+    set(ZLUDA_LIBRARY "${ZLUDA_LIBRARY}" PARENT_SCOPE)
+    set(ZLUDA_LINK_LIBRARY "${ZLUDA_LINK_LIBRARY}" PARENT_SCOPE)
+    set(ZLUDA_RUNTIME_LIBRARY "${ZLUDA_RUNTIME_LIBRARY}" PARENT_SCOPE)
 
     # Determine target backend
     if(SD_ZLUDA_TARGET STREQUAL "AMD" OR SD_ZLUDA_TARGET STREQUAL "amd")
@@ -444,6 +501,15 @@ function(configure_zluda_linking target_name)
 
     message(STATUS "Configuring ZLUDA linking for ${target_name}...")
 
+    if(ZLUDA_LINK_LIBRARY)
+        target_link_libraries(${target_name} PUBLIC "${ZLUDA_LINK_LIBRARY}")
+        message(STATUS "   Linked ZLUDA import/shared library: ${ZLUDA_LINK_LIBRARY}")
+    endif()
+
+    if(WIN32)
+        message(STATUS "   Using CUDA SDK import libraries; deploy the complete ZLUDA runtime with zluda.exe or its documented DLL layout")
+    endif()
+
     # Add ZLUDA library path (takes precedence over system CUDA)
     if(ZLUDA_LIB_DIR)
         target_link_directories(${target_name} BEFORE PUBLIC ${ZLUDA_LIB_DIR})
@@ -503,7 +569,8 @@ function(print_zluda_summary)
     message(STATUS "")
     message(STATUS "=== ZLUDA Configuration Summary ===")
     message(STATUS "Target Backend: ${ZLUDA_TARGET_BACKEND}")
-    message(STATUS "ZLUDA Library: ${ZLUDA_LIBRARY}")
+    message(STATUS "ZLUDA Link Library: ${ZLUDA_LINK_LIBRARY}")
+    message(STATUS "ZLUDA Runtime Library: ${ZLUDA_RUNTIME_LIBRARY}")
 
     if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
         message(STATUS "ROCm Path: ${ROCM_PATH}")

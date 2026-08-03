@@ -91,9 +91,15 @@ case "${DL4J_FAMILY}" in
   compat)
     command=(mvn -pl :nd4j-native-preset,:libnd4j,:nd4j-native "${split_flags[@]}" "${repo[@]}" -Pcpu "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64 -Pcpu --also-make --batch-mode -DskipTests -Dlibnd4j.extension=compat -Djavacpp.platform.extension=-compat -Dlibnd4j.classifier=linux-x86_64-compat "${DL4J_MAVEN_GOAL}")
     ;;
-  zluda)
-    : "${DL4J_ZLUDA_TARGET:=rocm6}"
-    command=(mvn "${split_flags[@]}" "${repo[@]}" -Pcuda -Pzluda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" -Djavacpp.platform.extension=-zluda -Dlibnd4j.classifier=linux-x86_64-cuda-12.9-zluda -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Djavacpp.platform=linux-x86_64 --batch-mode -DskipTests -pl :nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda,:libnd4j --also-make install)
+  zluda|windows-zluda)
+    : "${DL4J_ZLUDA_TARGET:=AMD}"
+    platform=linux-x86_64
+    zluda_win=()
+    if [ "${DL4J_FAMILY}" = windows-zluda ]; then
+      platform=windows-x86_64
+      zluda_win=(-Dlibnd4j.platform=windows-x86_64 -Dlibnd4j.oom.killer=OFF)
+    fi
+    command=(mvn "${split_flags[@]}" "${repo[@]}" -Pcuda -Pzluda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" -Djavacpp.platform.extension=-zluda "-Dlibnd4j.classifier=${platform}-cuda-12.9-zluda" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" "${zluda_win[@]}" --batch-mode -DskipTests -pl :nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda,:libnd4j --also-make install)
     ;;
   *) printf 'Unsupported DL4J_FAMILY=%s\n' "${DL4J_FAMILY}" >&2; exit 2;;
 esac

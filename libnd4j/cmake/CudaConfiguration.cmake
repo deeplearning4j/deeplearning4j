@@ -252,6 +252,13 @@ function(configure_cuda_linking main_target_name)
     # Imported targets handle .so/.lib/.dylib; guard each so an install that lacks a
     # specific target degrades to a warning instead of failing configuration.
     foreach(_sd_cuda_lib CUDA::cublas CUDA::cusolver CUDA::cusparse CUDA::nvrtc CUDA::cuda_driver)
+        # Unix ZLUDA can provide the link-time driver library directly. Official
+        # Windows packages contain no import library, so Windows deliberately
+        # keeps the CUDA SDK's ABI-compatible nvcuda.lib here.
+        if(_sd_cuda_lib STREQUAL "CUDA::cuda_driver" AND SD_ZLUDA
+                AND HAVE_ZLUDA AND ZLUDA_LINK_LIBRARY)
+            continue()
+        endif()
         if(TARGET ${_sd_cuda_lib})
             target_link_libraries(${main_target_name} PUBLIC ${_sd_cuda_lib})
         else()
@@ -259,6 +266,13 @@ function(configure_cuda_linking main_target_name)
                             "relying on CUDA::toolkit umbrella (verify the toolkit provides it).")
         endif()
     endforeach()
+
+    # Add the ZLUDA target definitions and optional AMD/Intel helper links.
+    # Windows runtime interposition remains an external deployment concern, as
+    # documented by ZLUDA (launcher or complete application-local DLL layout).
+    if(SD_ZLUDA AND HAVE_ZLUDA)
+        configure_zluda_linking(${main_target_name})
+    endif()
 
     # SD_GCC_FUNCTRACE: Link libdw for stack traces
     if(SD_GCC_FUNCTRACE AND NOT WIN32)

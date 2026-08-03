@@ -581,6 +581,11 @@ endif()
 if(SD_BUILD_TESTS)
     message(STATUS "Building libnd4j tests (SD_BUILD_TESTS=ON)")
     enable_testing()
+    add_test(
+        NAME zluda_windows_runtime_contract
+        COMMAND ${CMAKE_COMMAND}
+            "-DLIBND4J_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/ZludaWindowsRuntimeContractTest.cmake")
     add_subdirectory(tests_cpu)
 endif()
 

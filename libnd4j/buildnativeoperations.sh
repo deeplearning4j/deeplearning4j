@@ -1790,9 +1790,16 @@ do
             else
                 ZLUDA="ON"
             fi
-            if [ "$ZLUDA" == "ON" ]; then
-                print_colored "green" "✓ ZLUDA mode enabled"
-            fi
+            ZLUDA="${ZLUDA^^}"
+            case "$ZLUDA" in
+                ON|AMD|INTEL|AUTO)
+                    print_colored "green" "✓ ZLUDA mode enabled (target: $ZLUDA)"
+                    ;;
+                *)
+                    print_colored "red" "Unsupported --zluda target '$ZLUDA' (expected ON, AMD, INTEL, or AUTO)"
+                    exit 2
+                    ;;
+            esac
             shift # past argument
             ;;
         --default)

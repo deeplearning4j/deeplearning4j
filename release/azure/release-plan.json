@@ -1017,6 +1017,9 @@
         "classifierTokens": [
           "linux-x86_64-cuda-12.9-zluda"
         ],
+        "unclassifiedArtifactIds": [
+          "nd4j-zluda"
+        ],
         "includeMetadata": true
       },
       "build": {
@@ -1037,7 +1040,7 @@
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",
-          "-Dlibnd4j.zluda=rocm6"
+          "-Dlibnd4j.zluda=AMD"
         ],
         "variants": [
           {
@@ -1052,6 +1055,66 @@
         "publisher": "Canonical",
         "offer": "0001-com-ubuntu-server-jammy",
         "sku": "22_04-lts-gen2",
+        "version": "latest",
+        "architecture": "x64"
+      }
+    },
+    {
+      "id": "windows-x86_64-zluda",
+      "lane": "windows-x86-64-2022",
+      "os": "windows",
+      "architecture": "x86_64",
+      "machineClass": "x86",
+      "worker": "worker.ps1",
+      "workloads": [
+        "maven"
+      ],
+      "artifactRules": {
+        "mode": "classifier",
+        "artifactIds": [
+          "nd4j-cuda-12.9",
+          "nd4j-cuda-12.9-preset",
+          "nd4j-zluda"
+        ],
+        "classifierTokens": [
+          "windows-x86_64-cuda-12.9-zluda"
+        ],
+        "includeMetadata": true
+      },
+      "build": {
+        "backend": "cuda",
+        "cudaVersion": "12.9",
+        "zludaVersion": "v6",
+        "javacppPlatform": "windows-x86_64",
+        "profiles": [
+          "cuda",
+          "sdx",
+          "zluda"
+        ],
+        "modules": [
+          ":nd4j-cuda-12.9",
+          ":nd4j-cuda-12.9-preset",
+          ":nd4j-zluda",
+          ":libnd4j"
+        ],
+        "mavenArgs": [
+          "-Dlibnd4j.compute=8.6 9.0",
+          "-Dlibnd4j.zluda=AMD",
+          "-Dlibnd4j.oom.killer=OFF"
+        ],
+        "variants": [
+          {
+            "name": "zluda",
+            "classifierSuffix": "-cuda-12.9-zluda",
+            "platformExtension": "-zluda"
+          }
+        ],
+        "buildThreads": 48
+      },
+      "image": {
+        "publisher": "MicrosoftWindowsServer",
+        "offer": "WindowsServer",
+        "sku": "2022-datacenter-azure-edition",
         "version": "latest",
         "architecture": "x64"
       }

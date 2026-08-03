@@ -9,6 +9,8 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -274,6 +276,7 @@ class ReleasePlanTests(unittest.TestCase):
             "linux-x86_64-hexagon",
             "linux-x86_64-tpu",
             "linux-x86_64-zluda",
+            "windows-x86_64-zluda",
         }
         for shard in self.azure["shards"]:
             if shard["id"] in ids:
@@ -3143,6 +3146,10 @@ class WorkerTransportTests(unittest.TestCase):
         self.assertIn("function Invoke-NativeChecked", source)
         self.assertIn("$ErrorActionPreference = 'Continue'", source)
         self.assertIn("$ErrorActionPreference = $PreviousPreference", source)
+        self.assertIn("$global:LASTEXITCODE = $null", source)
+        self.assertIn("& $Command", source)
+        self.assertIn("$Code = $global:LASTEXITCODE", source)
+        self.assertNotIn("$LASTEXITCODE = $null\n    & $Command", source)
         self.assertIn("$SuccessCodes -notcontains [int]$Code", source)
         for description in (
             "Chocolatey toolchain installation",
@@ -3153,6 +3160,149 @@ class WorkerTransportTests(unittest.TestCase):
             "Python 3.12 installation",
         ):
             self.assertIn(f"Invoke-NativeChecked -Description '{description}'", source)
+        self.assertIn("$FallbackPython = Join-Path $env:SystemDrive 'Python312\\python.exe'", source)
+        self.assertIn("Write-Phase 'worker-bootstrap' 'failed'", source)
+        self.assertIn("[void](Complete-Shard 1)", source)
+
+    def test_windows_native_checked_executes_a_real_process(self):
+        powershell = shutil.which("pwsh") or shutil.which("powershell")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+        source = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        helper_start = source.index("function Invoke-NativeChecked")
+        helper_end = source.index("\nfunction Invoke-KillSwitchProbe", helper_start)
+        helper = source[helper_start:helper_end]
+        probe = helper + r'''
+$Python = $env:DL4J_TEST_NATIVE_EXE
+$SuccessOutput = Invoke-NativeChecked -Description 'success probe' -Command {
+  & $Python -c "import sys; print('native-warning', file=sys.stderr); print('native-ok')"
+} | Out-String
+if ($SuccessOutput -notmatch 'native-ok') { throw 'Native success output was lost' }
+$CaughtExpectedFailure = $false
+try {
+  Invoke-NativeChecked -Description 'failure probe' -Command {
+    & $Python -c "import sys; sys.exit(7)"
+  }
+}
+catch {
+  if ($_.Exception.Message -notmatch 'failure probe failed with exit code 7') { throw }
+  $CaughtExpectedFailure = $true
+}
+if (-not $CaughtExpectedFailure) { throw 'Native exit code 7 was accepted' }
+Write-Output 'native-helper-probe-ok'
+'''
+        with tempfile.TemporaryDirectory() as temp:
+            probe_path = Path(temp) / "native-helper-probe.ps1"
+            probe_path.write_text(probe, encoding="utf-8")
+            env = os.environ.copy()
+            env["DL4J_TEST_NATIVE_EXE"] = sys.executable
+            completed = subprocess.run(
+                [
+                    powershell,
+                    "-NoLogo",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-File",
+                    str(probe_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                env=env,
+            )
+        self.assertEqual(
+            0,
+            completed.returncode,
+            f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}",
+        )
+        self.assertIn("native-helper-probe-ok", completed.stdout)
+
+    def test_windows_bootstrap_failure_and_cleanup_are_fault_isolated(self):
+        source = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        self.assertIn("function Publish-BootstrapFailureWithoutPython", source)
+        self.assertIn("function Upload-AzureBlobPowerShell", source)
+        self.assertIn("'x-ms-blob-type'='BlockBlob'", source)
+        self.assertIn("'x-ms-date'=[DateTime]::UtcNow.ToString('R'", source)
+        self.assertIn("foreach ($Candidate in $Shards) {\n          try {", source)
+        self.assertIn("function Invoke-CleanupStep", source)
+        self.assertIn("Invoke-CleanupStep 'active shard finalization'", source)
+        self.assertIn("Invoke-CleanupStep 'VM shutdown'", source)
+        self.assertIn("Stop-Computer -Force", source)
+        main_try = source.index("try {\n  if (Test-Path -LiteralPath $AttemptFile)")
+        self.assertLess(main_try, source.index("[IO.File]::WriteAllBytes($ConfigFile"))
+        config_parse = "$Config = Get-Content -Raw $ConfigFile | ConvertFrom-Json"
+        self.assertLess(main_try, source.index(config_parse))
+
+    def test_windows_direct_blob_fallback_builds_a_timestamped_put(self):
+        powershell = shutil.which("pwsh") or shutil.which("powershell")
+        if not powershell:
+            self.skipTest("PowerShell is not available")
+        source = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        helper_start = source.index("function Upload-AzureBlobPowerShell")
+        helper_end = source.index(
+            "\nfunction Publish-BootstrapFailureWithoutPython", helper_start
+        )
+        helper = source[helper_start:helper_end]
+        probe = helper + r'''
+$Config = [pscustomobject]@{bucket='account/container'}
+function Invoke-WebRequest {
+  param(
+    [string]$Method,
+    [string]$Uri,
+    [hashtable]$Headers,
+    [string]$InFile,
+    [string]$ContentType,
+    [switch]$UseBasicParsing
+  )
+  if ($Method -ne 'Put') { throw "Unexpected method: $Method" }
+  if ($Uri -ne 'https://account.blob.core.windows.net/container/prefix/status.json') {
+    throw "Unexpected URI: $Uri"
+  }
+  if ($Headers.Authorization -ne 'Bearer access-token') { throw 'Bearer token missing' }
+  if ($Headers['x-ms-blob-type'] -ne 'BlockBlob') { throw 'Blob type missing' }
+  if (-not $Headers['x-ms-date']) { throw 'Storage timestamp missing' }
+  $ParsedDate = [DateTimeOffset]::MinValue
+  if (-not [DateTimeOffset]::TryParseExact(
+      [string]$Headers['x-ms-date'], 'R',
+      [Globalization.CultureInfo]::InvariantCulture,
+      [Globalization.DateTimeStyles]::AssumeUniversal,
+      [ref]$ParsedDate)) { throw "Invalid storage timestamp: $($Headers['x-ms-date'])" }
+  if ($ContentType -ne 'application/json') { throw "Unexpected content type: $ContentType" }
+  if (-not (Test-Path -LiteralPath $InFile)) { throw "Input file missing: $InFile" }
+  return [pscustomobject]@{StatusCode=201}
+}
+Upload-AzureBlobPowerShell $env:DL4J_TEST_BLOB_FILE 'prefix/status.json' 'access-token' 'application/json'
+Write-Output 'blob-put-probe-ok'
+'''
+        with tempfile.TemporaryDirectory() as temp:
+            blob_path = Path(temp) / "status.json"
+            blob_path.write_text("{}", encoding="utf-8")
+            probe_path = Path(temp) / "blob-put-probe.ps1"
+            probe_path.write_text(probe, encoding="utf-8")
+            env = os.environ.copy()
+            env["DL4J_TEST_BLOB_FILE"] = str(blob_path)
+            completed = subprocess.run(
+                [
+                    powershell,
+                    "-NoLogo",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-File",
+                    str(probe_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                env=env,
+            )
+        self.assertEqual(
+            0,
+            completed.returncode,
+            f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}",
+        )
+        self.assertIn("blob-put-probe-ok", completed.stdout)
 
     def test_windows_worker_uses_python_before_machine_path_refresh(self):
         source = (HERE / "worker.ps1").read_text(encoding="utf-8")

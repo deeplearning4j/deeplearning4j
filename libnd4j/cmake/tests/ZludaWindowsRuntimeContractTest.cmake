@@ -1,0 +1,42 @@
+cmake_minimum_required(VERSION 3.18)
+
+if(NOT DEFINED LIBND4J_SOURCE_DIR)
+    message(FATAL_ERROR "LIBND4J_SOURCE_DIR is required")
+endif()
+
+include("${LIBND4J_SOURCE_DIR}/cmake/ZludaConfiguration.cmake")
+
+set(_fixture "${CMAKE_CURRENT_BINARY_DIR}/zluda-windows-runtime-contract")
+file(REMOVE_RECURSE "${_fixture}")
+file(MAKE_DIRECTORY "${_fixture}/bin" "${_fixture}/lib")
+file(WRITE "${_fixture}/bin/nvcuda.dll" "runtime")
+file(WRITE "${_fixture}/bin/nvcudart_hybrid64.dll" "runtime")
+file(WRITE "${_fixture}/bin/zluda.exe" "launcher")
+file(WRITE "${_fixture}/bin/zluda_redirect.dll" "runtime")
+file(WRITE "${_fixture}/lib/nvcuda.lib" "not distributed by official ZLUDA packages")
+
+resolve_zluda_runtime("${_fixture}" TRUE _windows_link _windows_runtime)
+if(NOT _windows_runtime STREQUAL "${_fixture}/bin/nvcuda.dll")
+    message(FATAL_ERROR "Windows ZLUDA DLL was not resolved: '${_windows_runtime}'")
+endif()
+if(NOT _windows_link STREQUAL "")
+    message(FATAL_ERROR "Windows must use the CUDA SDK import library, got: '${_windows_link}'")
+endif()
+
+file(REMOVE "${_fixture}/bin/zluda_redirect.dll")
+resolve_zluda_runtime("${_fixture}" TRUE _incomplete_link _incomplete_runtime)
+if(NOT _incomplete_runtime STREQUAL "")
+    message(FATAL_ERROR "Incomplete Windows ZLUDA layout must be rejected")
+endif()
+file(WRITE "${_fixture}/bin/zluda_redirect.dll" "runtime")
+
+file(WRITE "${_fixture}/lib/libcuda.so" "runtime")
+resolve_zluda_runtime("${_fixture}" FALSE _linux_link _linux_runtime)
+if(NOT _linux_runtime STREQUAL "${_fixture}/lib/libcuda.so")
+    message(FATAL_ERROR "Linux ZLUDA runtime was not resolved: '${_linux_runtime}'")
+endif()
+if(NOT _linux_link STREQUAL "${_linux_runtime}")
+    message(FATAL_ERROR "Linux must link its ZLUDA runtime directly: '${_linux_link}'")
+endif()
+
+file(REMOVE_RECURSE "${_fixture}")
