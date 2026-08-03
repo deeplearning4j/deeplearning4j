@@ -3167,6 +3167,12 @@ class WorkerTransportTests(unittest.TestCase):
         ):
             self.assertIn(f"Invoke-NativeChecked -Description '{description}'", source)
         self.assertIn("$FallbackPython = Join-Path $env:SystemDrive 'Python312\\python.exe'", source)
+        self.assertIn("Get-ChildItem 'C:\\ProgramData\\chocolatey\\lib\\maven'", source)
+        self.assertIn("$env:MAVEN_HOME = $MavenHome.FullName", source)
+        self.assertIn("$env:M2_HOME = $MavenHome.FullName", source)
+        self.assertIn("$MavenExe = Join-Path $MavenHome.FullName 'bin\\mvn.cmd'", source)
+        self.assertIn("& $MavenExe --version", source)
+        self.assertIn("Invoke-NativeChecked -Description 'Maven toolchain validation'", source)
         self.assertIn("$RustBinCandidates = @((Join-Path $env:CARGO_HOME 'bin'))", source)
         self.assertIn("$RustupExe = Join-Path $RustBin 'rustup.exe'", source)
         self.assertIn("$CargoExe = Join-Path $RustBin 'cargo.exe'", source)

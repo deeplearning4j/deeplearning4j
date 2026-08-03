@@ -528,6 +528,20 @@ function Install-CommonToolchains {
   }
   $env:JAVA_HOME = $JavaHome.FullName
   $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
+  $MavenHome = Get-ChildItem 'C:\ProgramData\chocolatey\lib\maven' -Directory -ErrorAction SilentlyContinue |
+    Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'bin\mvn.cmd') } |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
+  if (-not $MavenHome) {
+    throw 'Chocolatey completed without installing an Apache Maven distribution'
+  }
+  $env:MAVEN_HOME = $MavenHome.FullName
+  $env:M2_HOME = $MavenHome.FullName
+  $env:PATH = "$($MavenHome.FullName)\bin;$env:PATH"
+  $MavenExe = Join-Path $MavenHome.FullName 'bin\mvn.cmd'
+  Invoke-NativeChecked -Description 'Maven toolchain validation' -Command {
+    & $MavenExe --version
+  }
   Write-Phase 'msys-toolchain' 'started'
   Invoke-NativeChecked -Description 'MSYS2 toolchain installation' -Command {
     & C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja"
