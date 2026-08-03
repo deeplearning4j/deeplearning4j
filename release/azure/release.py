@@ -1536,15 +1536,28 @@ def ensure_network(
     network = context["network"]
     tags = {MANAGED_TAG: "true", "dl4j-provider": "azure"}
     vnet_name = "dl4j-release-vnet"
+    nsg_name = "dl4j-release-nsg"
     nsg = fenced_azure_operation(
         lambda: network.network_security_groups.begin_create_or_update(
             group,
-            "dl4j-release-nsg",
+            nsg_name,
             {"location": location, "security_rules": [], "tags": tags},
         ),
         fence_check,
         timeout=600,
     )
+    nsg_id = object_value(nsg, "id")
+    if not nsg_id:
+        subscription = str(context.get("subscription") or "").strip()
+        if not subscription:
+            raise RuntimeError(
+                "Azure network security group result omitted its resource ID "
+                "and the subscription is unavailable"
+            )
+        nsg_id = (
+            f"/subscriptions/{subscription}/resourceGroups/{group}"
+            f"/providers/Microsoft.Network/networkSecurityGroups/{nsg_name}"
+        )
     vnet = fenced_azure_operation(
         lambda: network.virtual_networks.begin_create_or_update(
             group,
@@ -1565,13 +1578,13 @@ def ensure_network(
             "builders",
             {
                 "address_prefix": "10.78.0.0/24",
-                "network_security_group": {"id": nsg.id},
+                "network_security_group": {"id": nsg_id},
             },
         ),
         fence_check,
         timeout=600,
     )
-    return subnet.id, nsg.id
+    return subnet.id, nsg_id
 
 
 def get_json(container: Any, name: str) -> dict[str, Any] | None:

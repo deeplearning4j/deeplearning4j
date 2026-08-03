@@ -1413,7 +1413,7 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertEqual("created", actual)
         self.assertEqual(["check", "begin", "check", "wait", "check"], events)
 
-    def test_ensure_network_uses_requested_vnet_name_when_sdk_result_omits_it(self):
+    def test_ensure_network_derives_resource_ids_when_sdk_results_omit_them(self):
         calls = {}
 
         def operation(value):
@@ -1422,7 +1422,7 @@ class AzureSafetyTests(unittest.TestCase):
         network = SimpleNamespace(
             network_security_groups=SimpleNamespace(
                 begin_create_or_update=lambda *args: operation(
-                    SimpleNamespace(id="/nsg")
+                    SimpleNamespace(id=None)
                 )
             ),
             virtual_networks=SimpleNamespace(
@@ -1444,12 +1444,22 @@ class AzureSafetyTests(unittest.TestCase):
         )
 
         subnet_id, nsg_id = release.ensure_network(
-            {"network": network}, "group", "eastus2"
+            {"network": network, "subscription": "subscription"},
+            "group",
+            "eastus2",
         )
 
+        expected_nsg_id = (
+            "/subscriptions/subscription/resourceGroups/group/providers/"
+            "Microsoft.Network/networkSecurityGroups/dl4j-release-nsg"
+        )
         self.assertEqual("/subnet", subnet_id)
-        self.assertEqual("/nsg", nsg_id)
+        self.assertEqual(expected_nsg_id, nsg_id)
         self.assertEqual("dl4j-release-vnet", calls["vnet"])
+        self.assertEqual(
+            {"id": expected_nsg_id},
+            calls["parameters"]["network_security_group"],
+        )
 
     def test_stream_blob_log_reads_bounded_ranges_from_current_offset(self):
         container = mock.Mock()
