@@ -1792,11 +1792,14 @@ do
             fi
             ZLUDA="${ZLUDA^^}"
             case "$ZLUDA" in
+                OFF)
+                    print_colored "blue" "✓ ZLUDA mode disabled"
+                    ;;
                 ON|AMD|INTEL|AUTO)
                     print_colored "green" "✓ ZLUDA mode enabled (target: $ZLUDA)"
                     ;;
                 *)
-                    print_colored "red" "Unsupported --zluda target '$ZLUDA' (expected ON, AMD, INTEL, or AUTO)"
+                    print_colored "red" "Unsupported --zluda target '$ZLUDA' (expected OFF, ON, AMD, INTEL, or AUTO)"
                     exit 2
                     ;;
             esac

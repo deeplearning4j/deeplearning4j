@@ -93,6 +93,7 @@ $script:ObjectPrefix = $null
 $script:LogForwarderStop = $null
 $script:LogForwarderError = $null
 $script:PythonExe = $null
+$script:WindowsTarExe = Join-Path $env:SystemRoot 'System32\tar.exe'
 $script:MatrixLogOffsets = @{}
 
 function Write-BuildContent([string]$Text) {
@@ -583,6 +584,9 @@ function Install-CommonToolchains {
   $SccacheSha256 = 'b0b257a164bf438b2dea134ca7ded41c100f59a64b3bf275a202f1e8102ab217'
   $SccacheDir = Join-Path $ToolchainRoot 'sccache'
   $SccacheExe = Join-Path $SccacheDir 'sccache.exe'
+  if (-not (Test-Path -LiteralPath $script:WindowsTarExe)) {
+    throw "Windows tar.exe was not found at $script:WindowsTarExe"
+  }
   if (-not (Test-Path $SccacheExe)) {
     New-Item -ItemType Directory -Force -Path $SccacheDir | Out-Null
     $SccacheArchive = Join-Path $env:TEMP 'sccache.tar.gz'
@@ -592,14 +596,9 @@ function Install-CommonToolchains {
       Remove-Item -LiteralPath $SccacheArchive -Force
       throw "sccache archive SHA-256 mismatch: expected $SccacheSha256, got $ActualSccacheSha256"
     }
-    $WindowsTar = Join-Path $env:SystemRoot 'System32\tar.exe'
-    if (-not (Test-Path -LiteralPath $WindowsTar)) {
-      Remove-Item -LiteralPath $SccacheArchive -Force
-      throw "Windows tar.exe was not found at $WindowsTar"
-    }
     try {
       Invoke-NativeChecked -Description 'sccache archive extraction' -Command {
-        & $WindowsTar -xzf $SccacheArchive -C $env:TEMP
+        & $script:WindowsTarExe -xzf $SccacheArchive -C $env:TEMP
       }
     }
     catch {
@@ -692,19 +691,20 @@ function Invoke-ShardBuild {
   finally {
     Remove-Item -LiteralPath $BuildPidFile -Force -ErrorAction SilentlyContinue
   }
-  Wait-Process -Id $Process.Id -ErrorAction SilentlyContinue
+  $Process.WaitForExit()
   $Process.Refresh()
   Copy-NewLogContent $MatrixLog
   Copy-NewLogContent $MatrixError
-  if ($Process.ExitCode -ne 0) { throw "Build failed with exit code $($Process.ExitCode)" }
+  $BuildExitCode = $Process.ExitCode
+  if ($BuildExitCode -ne 0) { throw "Build failed with exit code $BuildExitCode" }
   Write-Phase 'matrix-build' 'complete' "shard=$($Shard.id)"
 
   Write-Phase 'artifact-packaging' 'started' "shard=$($Shard.id)"
   Invoke-NativeChecked -Description 'Maven repository packaging' -Command {
-    tar -C $MavenOutput -czf (Join-Path $OutputDir 'maven-repository.tar.gz') .
+    & $script:WindowsTarExe -C $MavenOutput -czf (Join-Path $OutputDir 'maven-repository.tar.gz') .
   }
   Invoke-NativeChecked -Description 'SDK asset packaging' -Command {
-    tar -C $SdkOutput -czf (Join-Path $OutputDir 'sdk-assets.tar.gz') .
+    & $script:WindowsTarExe -C $SdkOutput -czf (Join-Path $OutputDir 'sdk-assets.tar.gz') .
   }
   $ManifestScript = 'import hashlib,json,pathlib,sys; root=pathlib.Path(sys.argv[1]); c=json.load(open(sys.argv[2])); s=c["shard"]; files=[]; [(lambda p: files.append({"path":p.relative_to(root).as_posix(),"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"size":p.stat().st_size}))(p) for p in sorted(root.rglob("*")) if p.is_file()]; json.dump({"schemaVersion":1,"provider":"azure","runId":c["runId"],"shard":s["id"],"commit":c["commit"],"releaseVersion":c["releaseVersion"],"workloads":s["workloads"],"os":s["os"],"platform":s["build"]["javacppPlatform"],"backend":s["build"]["backend"],"variants":[v["name"] for v in s["build"]["variants"]],"files":files},open(root/"shard-manifest.json","w"),indent=2,sort_keys=True)'
   & $script:PythonExe -c $ManifestScript $OutputDir $ShardConfigFile

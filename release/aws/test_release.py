@@ -772,6 +772,12 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual(2, result.returncode)
         self.assertIn("Unsupported --zluda target 'ROCM6'", result.stdout + result.stderr)
 
+    def test_buildnativeoperations_accepts_explicit_zluda_off(self):
+        root = Path(__file__).parents[2]
+        source = (root / "libnd4j/buildnativeoperations.sh").read_text(encoding="utf-8")
+        self.assertRegex(source, r'case "\$ZLUDA" in\s+OFF\)')
+        self.assertIn("expected OFF, ON, AMD, INTEL, or AUTO", source)
+
     def test_shared_native_script_emits_specialized_classifiers(self):
         root = Path(__file__).parents[2]
         script = root / "build-scripts/release/native-platform.sh"
