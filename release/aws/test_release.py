@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Unit tests for the release provisioner's fail-closed AWS validation."""
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -698,24 +699,29 @@ class ReleaseValidationTest(unittest.TestCase):
         sleep.assert_called_once_with(1.0)
 
     def test_prepare_zluda_selects_and_validates_windows_asset(self):
-        release_metadata = BytesIO(json.dumps({
-            "assets": [
-                {"name": "zluda-linux.tar.gz", "browser_download_url": "https://example/linux"},
-                {"name": "zluda-windows.zip", "browser_download_url": "https://example/windows"},
-            ]
-        }).encode("utf-8"))
+        archive_buffer = BytesIO()
+        with build_platform.zipfile.ZipFile(archive_buffer, "w") as bundle:
+            for name in build_platform.ZLUDA_WINDOWS_REQUIRED_FILES:
+                bundle.writestr(f"zluda/{name}", b"runtime")
+            bundle.writestr("zluda/trace/nvcuda.dll", b"trace")
+        archive_payload = archive_buffer.getvalue()
+        archive_digest = hashlib.sha256(archive_payload).hexdigest()
 
         def write_windows_archive(url, destination, description):
-            self.assertEqual("https://example/windows", url)
+            self.assertEqual(
+                "https://github.com/vosen/ZLUDA/releases/download/v6/zluda-windows.zip",
+                url,
+            )
             self.assertIn("windows", description)
-            with build_platform.zipfile.ZipFile(destination, "w") as bundle:
-                for name in build_platform.ZLUDA_WINDOWS_REQUIRED_FILES:
-                    bundle.writestr(f"zluda/{name}", b"runtime")
-                bundle.writestr("zluda/trace/nvcuda.dll", b"trace")
+            destination.write_bytes(archive_payload)
 
         with tempfile.TemporaryDirectory() as temporary_directory, \
-                patch.object(build_platform, "urlopen_with_retry", return_value=release_metadata), \
-                patch.object(build_platform, "download_with_retry", side_effect=write_windows_archive):
+                patch.dict(
+                    build_platform.ZLUDA_ASSETS,
+                    {("v6", "windows"): ("zluda-windows.zip", archive_digest)},
+                ), patch.object(
+                    build_platform, "download_with_retry", side_effect=write_windows_archive
+                ):
             environment = {"PATH": "existing-search-path"}
             build_platform.prepare_zluda(
                 Path(temporary_directory),
@@ -738,6 +744,22 @@ class ReleaseValidationTest(unittest.TestCase):
                 env=child_environment,
             )
             self.assertEqual(str(runtime_directory), child.stdout.strip().split(os.pathsep)[0])
+
+    def test_prepare_zluda_rejects_archive_with_wrong_digest(self):
+        def write_archive(unused_url, destination, unused_description):
+            destination.write_bytes(b"tampered")
+
+        with tempfile.TemporaryDirectory() as temporary_directory, patch.dict(
+                build_platform.ZLUDA_ASSETS,
+                {("v6", "windows"): ("zluda-windows.zip", "0" * 64)},
+        ), patch.object(
+                build_platform, "download_with_retry", side_effect=write_archive
+        ), self.assertRaisesRegex(RuntimeError, "ZLUDA archive SHA-256 mismatch"):
+            build_platform.prepare_zluda(
+                Path(temporary_directory),
+                {"zludaVersion": "v6", "javacppPlatform": "windows-x86_64"},
+                {},
+            )
 
     def test_buildnativeoperations_rejects_unknown_zluda_target(self):
         root = Path(__file__).parents[2]

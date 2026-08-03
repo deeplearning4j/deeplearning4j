@@ -639,7 +639,10 @@ function Invoke-ShardBuild {
   Install-ShardCuda
   Write-Phase 'source-checkout' 'started' "shard=$($Shard.id) commit=$($Config.commit)"
   Invoke-NativeChecked -Description 'Source clone' -Command {
-    git clone --filter=blob:none $Config.repository $SourceDir
+    git -c core.autocrlf=false clone --filter=blob:none $Config.repository $SourceDir
+  }
+  Invoke-NativeChecked -Description 'Source line-ending configuration' -Command {
+    git -C $SourceDir config core.autocrlf false
   }
   Invoke-NativeChecked -Description 'Pinned commit fetch' -Command {
     git -C $SourceDir fetch --depth=1 origin $Config.commit

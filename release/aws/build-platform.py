@@ -30,6 +30,16 @@ ZLUDA_WINDOWS_REQUIRED_FILES = (
     "zluda.exe",
     "zluda_redirect.dll",
 )
+ZLUDA_ASSETS = {
+    ("v6", "linux"): (
+        "zluda-linux-3fe12063.tar.gz",
+        "d9fd9893abaf3206c56d3eb25f0475c6327aa8de8e77f21be8a24f275556c3e1",
+    ),
+    ("v6", "windows"): (
+        "zluda-windows-3fe1206.zip",
+        "fda8891c6fdfaba438f2eb0f9d749ffa2c1fddbdf225be2301f0d7a25e37208a",
+    ),
+}
 DOWNLOAD_RETRIES = 4
 TRANSIENT_HTTP_STATUSES = {408, 429, 500, 502, 503, 504}
 
@@ -340,6 +350,15 @@ def zluda_platform(build: dict) -> str:
     raise ValueError(f"ZLUDA releases do not support JavaCPP platform {platform!r}")
 
 
+def pinned_zluda_asset(version: str, platform_name: str) -> tuple[str, str]:
+    key = (version, platform_name)
+    if key not in ZLUDA_ASSETS:
+        raise RuntimeError(
+            f"ZLUDA {version} has no pinned release asset for {platform_name}"
+        )
+    return ZLUDA_ASSETS[key]
+
+
 def find_zluda_runtime(root: Path, build: dict) -> Path | None:
     platform = zluda_platform(build)
     if platform == "windows":
@@ -366,26 +385,19 @@ def prepare_zluda(source: Path, build: dict, env: dict[str, str]) -> None:
     if not version:
         return
     platform = zluda_platform(build)
-    request = urllib.request.Request(
-        f"https://api.github.com/repos/vosen/ZLUDA/releases/tags/{version}",
-        headers={"Accept": "application/vnd.github+json", "User-Agent": "dl4j-release-builder"},
-    )
-    with urlopen_with_retry(request, f"ZLUDA release metadata for {version}") as response:
-        release = json.load(response)
-    assets = [
-        asset for asset in release.get("assets", [])
-        if platform in asset["name"].lower()
-    ]
-    if len(assets) != 1:
-        raise RuntimeError(
-            f"expected one {platform} ZLUDA asset for {version}, "
-            f"found {[asset['name'] for asset in assets]}"
-        )
-    asset = assets[0]
-    archive = source / asset["name"]
+    asset_name, expected_digest = pinned_zluda_asset(version, platform)
+    archive = source / asset_name
     download_with_retry(
-        asset["browser_download_url"], archive, f"ZLUDA {platform} asset for {version}"
+        f"https://github.com/vosen/ZLUDA/releases/download/{version}/{asset_name}",
+        archive,
+        f"ZLUDA {platform} asset for {version}",
     )
+    actual_digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+    if actual_digest != expected_digest:
+        archive.unlink(missing_ok=True)
+        raise RuntimeError(
+            f"ZLUDA archive SHA-256 mismatch: expected {expected_digest}, got {actual_digest}"
+        )
     target = source / "zluda"
     target.mkdir()
     if archive.suffix == ".zip":
