@@ -3138,6 +3138,22 @@ class WorkerTransportTests(unittest.TestCase):
         self.assertNotIn("[IO.File]::AppendAllText($BuildLog", source)
         self.assertNotIn("$_ | Out-String | Add-Content $BuildLog", source)
 
+    def test_windows_native_commands_ignore_stderr_but_check_exit_codes(self):
+        source = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        self.assertIn("function Invoke-NativeChecked", source)
+        self.assertIn("$ErrorActionPreference = 'Continue'", source)
+        self.assertIn("$ErrorActionPreference = $PreviousPreference", source)
+        self.assertIn("$SuccessCodes -notcontains [int]$Code", source)
+        for description in (
+            "Chocolatey toolchain installation",
+            "MSYS2 toolchain installation",
+            "Rust GNU toolchain installation",
+            "Source clone",
+            "Maven repository packaging",
+            "Python 3.12 installation",
+        ):
+            self.assertIn(f"Invoke-NativeChecked -Description '{description}'", source)
+
     def test_windows_worker_uses_python_before_machine_path_refresh(self):
         source = (HERE / "worker.ps1").read_text(encoding="utf-8")
         self.assertIn(

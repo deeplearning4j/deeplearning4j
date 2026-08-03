@@ -108,6 +108,30 @@ function Write-Phase([string]$Phase, [string]$Status, [string]$Detail = '') {
   Write-BuildContent $Message
 }
 
+function Invoke-NativeChecked {
+  param(
+    [Parameter(Mandatory=$true)][scriptblock]$Command,
+    [Parameter(Mandatory=$true)][string]$Description,
+    [int[]]$SuccessCodes = @(0)
+  )
+  $PreviousPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'
+    $LASTEXITCODE = $null
+    & $Command
+    $Code = $LASTEXITCODE
+  }
+  finally {
+    $ErrorActionPreference = $PreviousPreference
+  }
+  if ($null -eq $Code) {
+    throw "$Description did not report an exit code"
+  }
+  if ($SuccessCodes -notcontains [int]$Code) {
+    throw "$Description failed with exit code $Code"
+  }
+}
+
 function Invoke-KillSwitchProbe {
   & $script:PythonExe $CloudIo kill-enabled --bucket $Config.killSwitchBucket --object $Config.killSwitchObject --controller-epoch $Config.controllerEpoch --client-id $Config.managedIdentityClientId *> $null
   return $LASTEXITCODE
@@ -376,7 +400,9 @@ function Start-KillWatchdog {
 
 function Install-CommonToolchains {
   Write-Phase 'toolchain-packages' 'started'
-  choco install -y --no-progress cmake git maven ninja temurin11 7zip msys2 rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
+  Invoke-NativeChecked -Description 'Chocolatey toolchain installation' -SuccessCodes @(0, 1641, 3010) -Command {
+    choco install -y --no-progress cmake git maven ninja temurin11 7zip msys2 rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
+  }
   Write-Phase 'toolchain-packages' 'complete'
   $env:PATH = "C:\Program Files\Git\cmd;C:\Program Files\Git\bin;C:\tools\msys64\mingw64\bin;C:\tools\msys64\usr\bin;$env:PATH"
   $JavaHome = Get-ChildItem 'C:\Program Files\Eclipse Adoptium' -Directory -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
@@ -386,15 +412,21 @@ function Install-CommonToolchains {
   $env:JAVA_HOME = $JavaHome.FullName
   $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
   Write-Phase 'msys-toolchain' 'started'
-  & C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja"
-  if ($LASTEXITCODE -ne 0) { throw 'MSYS2 toolchain installation failed' }
+  Invoke-NativeChecked -Description 'MSYS2 toolchain installation' -Command {
+    & C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja"
+  }
   Write-Phase 'msys-toolchain' 'complete'
   if (-not (Get-Command cbindgen -ErrorAction SilentlyContinue)) {
-    rustup toolchain install stable-x86_64-pc-windows-gnu
-    rustup default stable-x86_64-pc-windows-gnu
+    Invoke-NativeChecked -Description 'Rust GNU toolchain installation' -Command {
+      rustup toolchain install stable-x86_64-pc-windows-gnu
+    }
+    Invoke-NativeChecked -Description 'Rust GNU toolchain selection' -Command {
+      rustup default stable-x86_64-pc-windows-gnu
+    }
     $env:CARGO_BUILD_TARGET = 'x86_64-pc-windows-gnu'
-    cargo install --locked cbindgen
-    if ($LASTEXITCODE -ne 0) { throw 'cbindgen installation failed' }
+    Invoke-NativeChecked -Description 'cbindgen installation' -Command {
+      cargo install --locked cbindgen
+    }
   }
   $SccacheVersion = 'v0.15.0'
   $SccacheFile = "sccache-$SccacheVersion-x86_64-pc-windows-msvc"
@@ -410,10 +442,14 @@ function Install-CommonToolchains {
       Remove-Item -LiteralPath $SccacheArchive -Force
       throw "sccache archive SHA-256 mismatch: expected $SccacheSha256, got $ActualSccacheSha256"
     }
-    tar -xzf $SccacheArchive -C $env:TEMP
-    if ($LASTEXITCODE -ne 0) {
+    try {
+      Invoke-NativeChecked -Description 'sccache archive extraction' -Command {
+        tar -xzf $SccacheArchive -C $env:TEMP
+      }
+    }
+    catch {
       Remove-Item -LiteralPath $SccacheArchive -Force
-      throw 'sccache archive extraction failed'
+      throw
     }
     Copy-Item (Join-Path $env:TEMP "$SccacheFile\sccache.exe") $SccacheExe -Force
     Remove-Item -LiteralPath $SccacheArchive -Force
@@ -461,13 +497,18 @@ function Invoke-ShardBuild {
   if (Test-KillSwitch) { throw 'Global kill switch is enabled or unreadable' }
   Install-ShardCuda
   Write-Phase 'source-checkout' 'started' "shard=$($Shard.id) commit=$($Config.commit)"
-  git clone --filter=blob:none $Config.repository $SourceDir
-  if ($LASTEXITCODE -ne 0) { throw 'Source clone failed' }
-  git -C $SourceDir fetch --depth=1 origin $Config.commit
-  if ($LASTEXITCODE -ne 0) { throw 'Pinned commit fetch failed' }
-  git -C $SourceDir checkout --detach $Config.commit
-  if ($LASTEXITCODE -ne 0) { throw 'Pinned commit checkout failed' }
-  $Actual = git -C $SourceDir rev-parse HEAD
+  Invoke-NativeChecked -Description 'Source clone' -Command {
+    git clone --filter=blob:none $Config.repository $SourceDir
+  }
+  Invoke-NativeChecked -Description 'Pinned commit fetch' -Command {
+    git -C $SourceDir fetch --depth=1 origin $Config.commit
+  }
+  Invoke-NativeChecked -Description 'Pinned commit checkout' -Command {
+    git -C $SourceDir checkout --detach $Config.commit
+  }
+  $Actual = Invoke-NativeChecked -Description 'Pinned commit resolution' -Command {
+    git -C $SourceDir rev-parse HEAD
+  }
   if ($Actual.Trim() -ne $Config.commit) { throw "Commit mismatch: $Actual" }
   Write-Phase 'source-checkout' 'complete' "shard=$($Shard.id) commit=$($Config.commit)"
 
@@ -484,7 +525,7 @@ function Invoke-ShardBuild {
       Copy-NewLogContent $MatrixLog
       Copy-NewLogContent $MatrixError
       if ((Test-Path -LiteralPath $KillRequestedFile) -or (Test-KillSwitch)) {
-        taskkill /PID $Process.Id /T /F | Out-Null
+        taskkill /PID $Process.Id /T /F *> $null
         throw 'Global kill switch stopped the build'
       }
       $Process.Refresh()
@@ -501,8 +542,12 @@ function Invoke-ShardBuild {
   Write-Phase 'matrix-build' 'complete' "shard=$($Shard.id)"
 
   Write-Phase 'artifact-packaging' 'started' "shard=$($Shard.id)"
-  tar -C $MavenOutput -czf (Join-Path $OutputDir 'maven-repository.tar.gz') .
-  tar -C $SdkOutput -czf (Join-Path $OutputDir 'sdk-assets.tar.gz') .
+  Invoke-NativeChecked -Description 'Maven repository packaging' -Command {
+    tar -C $MavenOutput -czf (Join-Path $OutputDir 'maven-repository.tar.gz') .
+  }
+  Invoke-NativeChecked -Description 'SDK asset packaging' -Command {
+    tar -C $SdkOutput -czf (Join-Path $OutputDir 'sdk-assets.tar.gz') .
+  }
   $ManifestScript = 'import hashlib,json,pathlib,sys; root=pathlib.Path(sys.argv[1]); c=json.load(open(sys.argv[2])); s=c["shard"]; files=[]; [(lambda p: files.append({"path":p.relative_to(root).as_posix(),"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"size":p.stat().st_size}))(p) for p in sorted(root.rglob("*")) if p.is_file()]; json.dump({"schemaVersion":1,"provider":"azure","runId":c["runId"],"shard":s["id"],"commit":c["commit"],"releaseVersion":c["releaseVersion"],"workloads":s["workloads"],"os":s["os"],"platform":s["build"]["javacppPlatform"],"backend":s["build"]["backend"],"variants":[v["name"] for v in s["build"]["variants"]],"files":files},open(root/"shard-manifest.json","w"),indent=2,sort_keys=True)'
   & $script:PythonExe -c $ManifestScript $OutputDir $ShardConfigFile
   if ($LASTEXITCODE -ne 0) { throw 'Shard manifest creation failed' }
@@ -515,9 +560,8 @@ try {
   if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
     Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
   }
-  choco install -y --no-progress python312
-  if ($LASTEXITCODE -notin @(0, 1641, 3010)) {
-    throw "Python 3.12 installation failed with exit code $LASTEXITCODE"
+  Invoke-NativeChecked -Description 'Python 3.12 installation' -SuccessCodes @(0, 1641, 3010) -Command {
+    choco install -y --no-progress python312
   }
   $PythonInstall = Join-Path $env:SystemDrive 'Python312'
   $env:PATH = "${PythonInstall};${PythonInstall}\Scripts;C:\ProgramData\chocolatey\bin;$env:PATH"
