@@ -102,12 +102,35 @@ function Write-Phase([string]$Phase, [string]$Status, [string]$Detail = '') {
   if ($script:BuildLog) { Add-Content -Path $script:BuildLog -Value $Message }
 }
 
-function Test-KillSwitch {
+function Invoke-KillSwitchProbe {
   & $script:PythonExe $CloudIo kill-enabled --bucket $Config.killSwitchBucket --object $Config.killSwitchObject --controller-epoch $Config.controllerEpoch --client-id $Config.managedIdentityClientId *> $null
-  $State = $LASTEXITCODE
+  return $LASTEXITCODE
+}
+
+function Test-KillSwitch {
+  $State = Invoke-KillSwitchProbe
   if ($State -eq 1) { return $false }
   if ($State -ne 0) { Write-Warning "Global kill switch is unreadable (cloud-io exit $State); failing closed" }
   return $true
+}
+
+function Wait-ForCloudAccess {
+  $Deadline = [DateTime]::UtcNow.AddMinutes(15)
+  $ProbeAttempt = 0
+  while ($true) {
+    $ProbeAttempt += 1
+    $State = Invoke-KillSwitchProbe
+    if ($State -eq 0) { throw 'Global kill switch is enabled' }
+    if ($State -eq 1) {
+      Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=azure-blob-auth status=ready attempt=$ProbeAttempt"
+      return
+    }
+    if ([DateTime]::UtcNow -ge $Deadline) {
+      throw "Azure Blob access remained unavailable after 15 minutes (cloud-io exit $State)"
+    }
+    Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=azure-blob-auth status=waiting attempt=$ProbeAttempt exit=$State"
+    Start-Sleep -Seconds 15
+  }
 }
 
 function Assert-NotKilled {
@@ -502,7 +525,7 @@ try {
     throw "Python 3.12 executable was not found at $script:PythonExe"
   }
   Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=python-runtime status=ready executable=$script:PythonExe"
-  if (Test-KillSwitch) { throw 'Global kill switch is enabled or unreadable' }
+  Wait-ForCloudAccess
 
   $Pending = @()
   foreach ($Candidate in $Shards) {

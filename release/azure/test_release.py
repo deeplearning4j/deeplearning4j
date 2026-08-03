@@ -3089,6 +3089,10 @@ class WorkerTransportTests(unittest.TestCase):
         )
         self.assertIn("& $script:PythonExe $CloudIo kill-enabled", source)
         self.assertIn("Start-Process $script:PythonExe", source)
+        self.assertIn("function Wait-ForCloudAccess", source)
+        self.assertIn("[DateTime]::UtcNow.AddMinutes(15)", source)
+        self.assertIn("phase=azure-blob-auth status=waiting", source)
+        self.assertIn("phase=azure-blob-auth status=ready", source)
         self.assertNotRegex(
             source,
             r"(?m)^\s*(?:&\s+|Start-Process\s+)?python(?:\.exe)?\s",
