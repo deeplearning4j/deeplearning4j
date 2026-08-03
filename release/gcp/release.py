@@ -64,8 +64,26 @@ def load_plan(path: Path) -> dict[str, Any]:
     for shard in shards:
         if shard.get("os") not in {"linux", "windows"}:
             raise ValueError(f"GCP shard {shard['id']} has unsupported OS {shard.get('os')!r}")
-        if not shard.get("build", {}).get("variants"):
+        variants = shard.get("build", {}).get("variants")
+        if not variants:
             raise ValueError(f"shard {shard['id']} has no build variants")
+        if shard.get("os") == "windows":
+            unsupported = [
+                str(variant.get("name") or "<unnamed>")
+                for variant in variants
+                if isinstance(variant, dict)
+                and (
+                    variant.get("mlir")
+                    or variant.get("triton")
+                    or variant.get("name") == "compile"
+                    or str(variant.get("name", "")).endswith("-compile")
+                )
+            ]
+            if unsupported:
+                raise ValueError(
+                    f"Windows shard {shard['id']} requests managed LLVM/MLIR variants "
+                    f"unsupported by MSVC: {', '.join(unsupported)}"
+                )
         if not set(shard.get("workloads", [])) <= {"maven", "sdk"}:
             raise ValueError(f"shard {shard['id']} has an unknown workload")
     return value

@@ -254,8 +254,26 @@ def load_plan(path: Path) -> dict[str, Any]:
             raise ValueError(f"shard {shard_id} must define a complete amiQuery")
         if shard.get("amiSsmParameter") and not query:
             raise ValueError(f"shard {shard_id} cannot trust an SSM AMI without independent query criteria")
-        if not shard.get("worker") or not shard.get("build", {}).get("variants"):
+        variants = shard.get("build", {}).get("variants")
+        if not shard.get("worker") or not variants:
             raise ValueError(f"shard {shard_id} has no worker or build variants")
+        if shard.get("os") == "windows":
+            unsupported = [
+                str(variant.get("name") or "<unnamed>")
+                for variant in variants
+                if isinstance(variant, dict)
+                and (
+                    variant.get("mlir")
+                    or variant.get("triton")
+                    or variant.get("name") == "compile"
+                    or str(variant.get("name", "")).endswith("-compile")
+                )
+            ]
+            if unsupported:
+                raise ValueError(
+                    f"Windows shard {shard_id} requests managed LLVM/MLIR variants "
+                    f"unsupported by MSVC: {', '.join(unsupported)}"
+                )
         if shard.get("os") == "macos" and not shard.get("dedicatedHost"):
             raise ValueError(f"macOS shard {shard_id} must use an EC2 Mac dedicated host")
     if not ids:

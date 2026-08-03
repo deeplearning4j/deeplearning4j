@@ -126,6 +126,22 @@ def load_plan(path: Path) -> dict[str, Any]:
             )
         ):
             raise ValueError(f"shard {shard_id} has no valid build variants")
+        if shard["os"] == "windows":
+            unsupported = [
+                variant["name"]
+                for variant in variants
+                if (
+                    variant.get("mlir")
+                    or variant.get("triton")
+                    or variant["name"] == "compile"
+                    or variant["name"].endswith("-compile")
+                )
+            ]
+            if unsupported:
+                raise ValueError(
+                    f"Windows shard {shard_id} requests managed LLVM/MLIR variants "
+                    f"unsupported by MSVC: {', '.join(unsupported)}"
+                )
         workloads = shard.get("workloads")
         if (
             not isinstance(workloads, list)

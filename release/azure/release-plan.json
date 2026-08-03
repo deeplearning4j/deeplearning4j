@@ -428,11 +428,6 @@
             "helper": "onednn",
             "extension": "avx512",
             "suffix": "-onednn-avx512"
-          },
-          {
-            "name": "compile",
-            "suffix": "-compile",
-            "mlir": true
           }
         ],
         "buildThreads": 48
@@ -496,12 +491,6 @@
             "helper": "cudnn",
             "classifierSuffix": "-cuda-12.6-cudnn",
             "platformExtension": "-cudnn"
-          },
-          {
-            "name": "compile",
-            "classifierSuffix": "-cuda-12.6-compile",
-            "platformExtension": "-compile",
-            "triton": true
           }
         ],
         "buildThreads": 48
@@ -565,12 +554,6 @@
             "helper": "cudnn",
             "classifierSuffix": "-cuda-12.9-cudnn",
             "platformExtension": "-cudnn"
-          },
-          {
-            "name": "compile",
-            "classifierSuffix": "-cuda-12.9-compile",
-            "platformExtension": "-compile",
-            "triton": true
           }
         ],
         "buildThreads": 48

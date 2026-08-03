@@ -220,6 +220,36 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual(7, len(linux["build"]["variants"]))
         self.assertNotIn("--base", linux["id"])
 
+    def test_windows_shards_omit_unsupported_managed_llvm_variants(self):
+        plan = release.load_plan(Path(__file__).with_name("release-plan.json"))
+        windows = [item for item in plan["shards"] if item["os"] == "windows"]
+        self.assertTrue(windows)
+        for shard in windows:
+            variants = shard["build"]["variants"]
+            self.assertNotIn("compile", [item["name"] for item in variants], shard["id"])
+            self.assertFalse(
+                any(item.get("mlir") or item.get("triton") for item in variants),
+                shard["id"],
+            )
+        linux = next(item for item in plan["shards"] if item["id"] == "linux-x86_64-cpu")
+        self.assertIn("compile", [item["name"] for item in linux["build"]["variants"]])
+
+    def test_plan_rejects_windows_managed_llvm_before_provisioning(self):
+        for variant in (
+            {"name": "compile", "mlir": True},
+            {"name": "cuda-compile", "triton": True},
+        ):
+            with self.subTest(variant=variant), tempfile.TemporaryDirectory() as temp:
+                plan = json.loads(
+                    Path(__file__).with_name("release-plan.json").read_text(encoding="utf-8")
+                )
+                windows = next(item for item in plan["shards"] if item["os"] == "windows")
+                windows["build"]["variants"].append(variant)
+                path = Path(temp) / "plan.json"
+                path.write_text(json.dumps(plan), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "unsupported by MSVC"):
+                    release.load_plan(path)
+
     def test_s3_compiler_cache_uses_a_stable_cross_run_namespace(self):
         plan = {"artifactPrefix": "deeplearning4j/releases"}
         cache = release.compiler_cache_config(plan, "release-bucket", "us-east-2")

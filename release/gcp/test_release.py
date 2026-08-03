@@ -109,6 +109,33 @@ class ReleasePlanTests(unittest.TestCase):
         tpu = next(item for item in self.gcp["shards"] if item["id"] == "linux-x86_64-tpu")
         self.assertEqual("x86", tpu["machineClass"])
 
+    def test_windows_shards_omit_unsupported_managed_llvm_variants(self):
+        windows = [item for item in self.gcp["shards"] if item["os"] == "windows"]
+        self.assertTrue(windows)
+        for shard in windows:
+            variants = shard["build"]["variants"]
+            self.assertNotIn("compile", [item["name"] for item in variants], shard["id"])
+            self.assertFalse(
+                any(item.get("mlir") or item.get("triton") for item in variants),
+                shard["id"],
+            )
+        linux = next(item for item in self.gcp["shards"] if item["id"] == "linux-x86_64-cpu")
+        self.assertIn("compile", [item["name"] for item in linux["build"]["variants"]])
+
+    def test_plan_rejects_windows_managed_llvm_before_provisioning(self):
+        for variant in (
+            {"name": "compile", "mlir": True},
+            {"name": "cuda-compile", "triton": True},
+        ):
+            with self.subTest(variant=variant), tempfile.TemporaryDirectory() as temp:
+                plan = json.loads(json.dumps(self.gcp))
+                windows = next(item for item in plan["shards"] if item["os"] == "windows")
+                windows["build"]["variants"].append(variant)
+                path = Path(temp) / "plan.json"
+                path.write_text(json.dumps(plan), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "unsupported by MSVC"):
+                    release.load_plan(path)
+
     def test_official_image_families_are_architecture_specific(self):
         arm = next(item for item in self.gcp["shards"] if item["id"] == "linux-arm64-cpu")
         windows = next(item for item in self.gcp["shards"] if item["id"] == "windows-x86_64-cpu")
