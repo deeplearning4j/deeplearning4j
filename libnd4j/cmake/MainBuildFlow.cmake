@@ -2076,6 +2076,41 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         set(_sdx_sdk_target ${SD_LIBRARY_NAME})
     endif()
 
+    # Standalone compiler-enabled runtimes publish their normalized shared
+    # dependency targets through a target property. Stage that exact closure
+    # into the SDK and pass it to each platform package.
+    get_target_property(_sdx_runtime_dependency_targets
+        ${_sdx_sdk_target} SDX_RUNTIME_DEPENDENCY_TARGETS)
+    if(_sdx_runtime_dependency_targets STREQUAL
+       "_sdx_runtime_dependency_targets-NOTFOUND")
+        set(_sdx_runtime_dependency_targets "")
+    endif()
+
+    set(_sdx_sdk_shared_runtime_files "")
+    foreach(_sdx_runtime_dependency_target IN LISTS
+            _sdx_runtime_dependency_targets)
+        if(NOT TARGET ${_sdx_runtime_dependency_target})
+            message(FATAL_ERROR
+                "SDX runtime dependency target is missing: ${_sdx_runtime_dependency_target}")
+        endif()
+        list(APPEND _sdx_sdk_shared_runtime_files
+            "$<TARGET_FILE:${_sdx_runtime_dependency_target}>")
+    endforeach()
+
+    set(_sdx_shared_runtime_stage_cmds "")
+    if(_sdx_sdk_shared_runtime_files)
+        list(APPEND _sdx_shared_runtime_stage_cmds
+            COMMAND ${CMAKE_COMMAND}
+                "-DRUNTIME_LIBRARIES_PIPE=$<JOIN:${_sdx_sdk_shared_runtime_files},|>"
+                "-DREADELF=${CMAKE_READELF}"
+                "-DOTOOL=${CMAKE_OTOOL}"
+                "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
+                "-DOUTPUT_DIR=${_sdx_sdk_lib_dir}"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/StageSharedRuntime.cmake")
+    endif()
+    set(_sdx_sdk_dependencies
+        ${_sdx_sdk_target} ${_sdx_runtime_dependency_targets})
+
     add_custom_target(sdx_runtime_sdk
         COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_include_dir}"
         COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_lib_dir}"
@@ -2083,10 +2118,11 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         ${_sdx_readme_stage_cmds}
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${_sdx_sdk_target}>" "${_sdx_sdk_lib_dir}/$<TARGET_FILE_NAME:${_sdx_sdk_target}>"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_LINKER_FILE:${_sdx_sdk_target}>" "${_sdx_sdk_lib_dir}/$<TARGET_LINKER_FILE_NAME:${_sdx_sdk_target}>"
+        ${_sdx_shared_runtime_stage_cmds}
         ${_sdx_schema_stage_cmds}
         ${_sdx_wrapper_stage_cmds}
         ${_sdx_tokenizer_stage_cmds}
-        DEPENDS ${_sdx_sdk_target}
+        DEPENDS ${_sdx_sdk_dependencies}
         COMMENT "Staging SDX C runtime SDK artifacts in ${SDX_RUNTIME_SDK_DIR} (target: ${_sdx_sdk_target})"
         VERBATIM
     )
@@ -2279,7 +2315,8 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
     # Keep mobile SDKs self-contained when the runtime links or dlopens
     # separately distributed native dependencies. Pass resolved files, not
     # linker tokens, so packaging fails before an incomplete AAR is published.
-    set(_sdx_runtime_dependency_files "")
+    set(_sdx_runtime_dependency_files
+        ${_sdx_sdk_shared_runtime_files})
     if(_sdx_enable_android_aar)
         # Host BLAS is valid only for the Android CPU/reference runtime. Device
         # variants must never acquire a host execution path through packaging.

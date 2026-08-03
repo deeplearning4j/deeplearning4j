@@ -55,3 +55,24 @@ sdx_resolve_feature_option(
 if(NOT SDX_TEST_FEATURE_ENABLED)
     message(FATAL_ERROR "explicit ON was not honored")
 endif()
+
+# The standalone SDK and every platform binding must receive the exact shared
+# runtime closure published by BuildSDX (currently LLVM + MLIR for Triton).
+file(READ "${SDX_SOURCE_DIR}/cmake/MainBuildFlow.cmake" _sdx_main_build_flow)
+set(_sdx_packaging_contract_fragments
+    [=[get_target_property(_sdx_runtime_dependency_targets]=]
+    [=[SDX_RUNTIME_DEPENDENCY_TARGETS]=]
+    [=[RUNTIME_LIBRARIES_PIPE=$<JOIN:${_sdx_sdk_shared_runtime_files},|>]=]
+    [=[${_sdx_shared_runtime_stage_cmds}]=]
+    [=[set(_sdx_runtime_dependency_files
+        ${_sdx_sdk_shared_runtime_files})]=]
+    [=[SDX_RUNTIME_DEPENDENCY_FILES=${_sdx_runtime_dependency_files_encoded}]=])
+foreach(_sdx_packaging_contract_fragment IN LISTS
+        _sdx_packaging_contract_fragments)
+    string(FIND "${_sdx_main_build_flow}"
+        "${_sdx_packaging_contract_fragment}" _sdx_fragment_position)
+    if(_sdx_fragment_position EQUAL -1)
+        message(FATAL_ERROR
+            "SDX shared runtime packaging contract is missing: ${_sdx_packaging_contract_fragment}")
+    endif()
+endforeach()
