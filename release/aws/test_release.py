@@ -1228,9 +1228,18 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertNotIn("-Dlibnd4j.build.with.java=OFF", linux_arm64)
         self.assertIn("-Djavacpp.platform.compiler=g++", linux_arm64)
         arm64_libgcc = "-Dplatform.linker.flag.no.undefined=-Wl,--no-undefined,-lgcc"
-        self.assertIn(arm64_libgcc, linux_arm64)
-        for other_platform in (android, android_x86, metal, cuda):
-            self.assertNotIn(arm64_libgcc, other_platform)
+        for generated_command in (linux_arm64, android, android_x86, metal, cuda):
+            self.assertNotIn(arm64_libgcc, generated_command)
+
+        cpu_preset = (
+            root
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/"
+            "src/main/java/org/nd4j/presets/cpu/Nd4jCpuPresets.java"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            '@Platform(value = "linux-arm64", link = {"nd4jcpu", "dl", "gcc"},',
+            cpu_preset,
+        )
 
         for family in ("tpu", "hexagon", "vulkan"):
             accelerator = command(DL4J_FAMILY=family)
