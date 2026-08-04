@@ -130,13 +130,16 @@ if(SD_USE_LTO)
 endif()
 
 # --- Memory Model for large binaries ---
-# -mcmodel=large is INCOMPATIBLE with system CRT libraries (crtbeginS.o, crti.o)
-# System libraries are compiled with -mcmodel=small and cannot be linked into -mcmodel=large binaries
-# This causes "relocation truncated to fit: R_X86_64_PC32" errors (see session #959, #1008)
-# SOLUTION: Use -mcmodel=medium for both sanitizers AND functrace builds
-# Medium model: Code can be anywhere, data/GOT in lowest 2GB (compatible with system libraries)
+# Most x86-64 builds use the medium model so their code remains compatible with
+# the usual system startup objects. ZLUDA's all-ops shared library is different:
+# its code-to-read-only-data span exceeds 2 GiB, so every host translation unit
+# must use the large model. The ZLUDA link is handled separately by LLD.
 if(SD_X86_BUILD AND NOT WIN32)
-    if(SD_SANITIZE OR SD_GCC_FUNCTRACE)
+    if(SD_ZLUDA)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large -fPIC")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
+        message(STATUS "Applied large memory model for x86-64 ZLUDA all-ops build")
+    elseif(SD_SANITIZE OR SD_GCC_FUNCTRACE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium")
         if(SD_SANITIZE)
@@ -566,11 +569,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT SD_SANITIZE AND NOT SD_GCC_FUNCTRA
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-undefined")
 
-    # Without this, linker uses wrong relocation types → "relocation truncated to fit" errors
+    # Keep the driver-side link model aligned with the translation units.
     if(SD_X86_BUILD AND NOT WIN32)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mcmodel=medium")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mcmodel=medium")
-        message(STATUS "Applied medium code model to linker flags (matches compiler -mcmodel=medium)")
+        if(SD_ZLUDA)
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mcmodel=large")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mcmodel=large")
+            message(STATUS "Applied large code model to ZLUDA linker flags")
+        else()
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -mcmodel=medium")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mcmodel=medium")
+            message(STATUS "Applied medium code model to linker flags (matches compiler -mcmodel=medium)")
+        endif()
     endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND SD_GCC_FUNCTRACE AND NOT SD_SANITIZE)
     #

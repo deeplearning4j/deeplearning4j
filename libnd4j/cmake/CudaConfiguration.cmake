@@ -618,10 +618,16 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
 
             if(SD_GCC_FUNCTRACE OR SD_ZLUDA)
                 # Large binary support flags. ZLUDA's all-ops CUDA library can
-                # exceed the x86-64 small-code-model relocation range even
-                # without lifecycle tracing.
+                # span more than 2 GiB between code and read-only data, which
+                # requires the large model. Lifecycle tracing builds retain the
+                # established medium model.
+                if(SD_ZLUDA)
+                    set(DL4J_LARGE_BINARY_CODE_MODEL "large")
+                else()
+                    set(DL4J_LARGE_BINARY_CODE_MODEL "medium")
+                endif()
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC")
-                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-mcmodel=medium")
+                set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-mcmodel=${DL4J_LARGE_BINARY_CODE_MODEL}")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-plt")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-asynchronous-unwind-tables")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-omit-frame-pointer")
@@ -656,7 +662,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                     set(LINKER_FLAG "-fuse-ld=mold")
                 endif()
 
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -mcmodel=medium -fno-plt -gsplit-dwarf ${LINKER_FLAG}")
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -mcmodel=${DL4J_LARGE_BINARY_CODE_MODEL} -fno-plt -gsplit-dwarf ${LINKER_FLAG}")
                 add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wa,-mrelax-relocations=no>)
                 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wa,-mrelax-relocations=no>)
                 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}")

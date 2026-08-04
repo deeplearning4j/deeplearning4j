@@ -979,6 +979,70 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertNotIn("amdgpu-dkms", workflow)
         self.assertNotIn("rocminfo", workflow)
 
+    def test_linux_zluda_uses_large_code_model_for_multi_gibibyte_library(self):
+        root = Path(__file__).parents[2]
+        configuration = (
+            root / "libnd4j/cmake/CudaConfiguration.cmake"
+        ).read_text(encoding="utf-8")
+        compiler_flags = (
+            root / "libnd4j/cmake/CompilerFlags.cmake"
+        ).read_text(encoding="utf-8")
+        large_binary_start = configuration.index(
+            "if(SD_GCC_FUNCTRACE OR SD_ZLUDA)"
+        )
+        linker_selection = configuration.index(
+            "# Linker selection for large binaries", large_binary_start
+        )
+        large_binary_flags = configuration[large_binary_start:linker_selection]
+
+        self.assertIn(
+            'if(SD_ZLUDA)\n'
+            '                    set(DL4J_LARGE_BINARY_CODE_MODEL "large")\n'
+            '                else()\n'
+            '                    set(DL4J_LARGE_BINARY_CODE_MODEL "medium")\n'
+            '                endif()',
+            large_binary_flags,
+        )
+        self.assertIn(
+            "-Xcompiler=-mcmodel=${DL4J_LARGE_BINARY_CODE_MODEL}",
+            large_binary_flags,
+        )
+        self.assertIn(
+            "-mcmodel=${DL4J_LARGE_BINARY_CODE_MODEL}", configuration
+        )
+
+        memory_model_start = compiler_flags.index(
+            "# --- Memory Model for large binaries ---"
+        )
+        section_splitting = compiler_flags.index(
+            "# --- Section splitting for better linker handling ---",
+            memory_model_start,
+        )
+        memory_model = compiler_flags[memory_model_start:section_splitting]
+        self.assertIn(
+            'if(SD_ZLUDA)\n'
+            '        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large -fPIC")\n'
+            '        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")',
+            memory_model,
+        )
+        self.assertIn("elseif(SD_SANITIZE OR SD_GCC_FUNCTRACE)", memory_model)
+        self.assertIn("-mcmodel=medium", memory_model)
+
+        strict_linker_start = compiler_flags.index(
+            "# --- Strict Linker Flags to Catch Undefined Symbols Early ---"
+        )
+        functrace_linker = compiler_flags.index(
+            "elseif(CMAKE_SYSTEM_NAME STREQUAL \"Linux\" AND SD_GCC_FUNCTRACE",
+            strict_linker_start,
+        )
+        strict_linker = compiler_flags[strict_linker_start:functrace_linker]
+        self.assertIn(
+            'if(SD_ZLUDA)\n'
+            '            set(CMAKE_SHARED_LINKER_FLAGS '
+            '"${CMAKE_SHARED_LINKER_FLAGS} -mcmodel=large")',
+            strict_linker,
+        )
+
     def test_linux_zluda_requires_lld_with_section_gc(self):
         root = Path(__file__).parents[2]
         configuration = (
