@@ -2563,7 +2563,9 @@ class AzureSafetyTests(unittest.TestCase):
         service.get_container_client.side_effect = [artifact, control]
         lease = mock.Mock()
         with mock.patch.object(
-            release, "get_json", side_effect=[None, {"enabled": False}]
+            release, "prepare_emergency_kill_switch"
+        ), mock.patch.object(
+            release, "get_json", return_value=None
         ), mock.patch.object(
             release, "put_json"
         ) as put, mock.patch.object(
@@ -2662,7 +2664,9 @@ class AzureSafetyTests(unittest.TestCase):
         service = mock.Mock()
         service.get_container_client.side_effect = [artifact, control]
         with mock.patch.object(
-            release, "get_json", side_effect=[None, {"enabled": False}]
+            release, "prepare_emergency_kill_switch"
+        ), mock.patch.object(
+            release, "get_json", return_value=None
         ), mock.patch.object(
             release, "put_json"
         ) as put, mock.patch.object(
@@ -2908,12 +2912,37 @@ class AzureSafetyTests(unittest.TestCase):
         blob.acquire_lease.assert_called_once_with(lease_duration=60)
         lease_client.release.assert_called_once_with()
 
-    def test_controller_lease_protects_the_kill_switch_blob_itself(self):
+    def test_run_controller_lease_protects_only_its_run_switch(self):
         plan = release.load_plan(HERE / "release-plan.json")
-        self.assertEqual(
-            release.kill_switch_blob(plan),
-            release.controller_lock_blob(plan),
-        )
+        first = release.controller_lock_blob(plan, "windows-run")
+        repeated = release.controller_lock_blob(plan, "windows-run")
+        second = release.controller_lock_blob(plan, "linux-run")
+        self.assertEqual(first, repeated)
+        self.assertEqual(first, release.run_kill_switch_blob(plan, "windows-run"))
+        self.assertNotEqual(first, second)
+        self.assertNotEqual(first, release.kill_switch_blob(plan))
+        self.assertNotEqual(second, release.kill_switch_blob(plan))
+
+    def test_two_run_controllers_acquire_distinct_blob_leases(self):
+        first_blob = mock.Mock()
+        first_blob.acquire_lease.return_value = mock.Mock()
+        second_blob = mock.Mock()
+        second_blob.acquire_lease.return_value = mock.Mock()
+        container = mock.Mock()
+        container.get_blob_client.side_effect = [first_blob, second_blob]
+        plan = release.load_plan(HERE / "release-plan.json")
+        first_name = release.controller_lock_blob(plan, "windows-run")
+        second_name = release.controller_lock_blob(plan, "linux-run")
+        first = release.ControllerLease(container, first_name).acquire()
+        second = release.ControllerLease(container, second_name).acquire()
+        try:
+            self.assertEqual(
+                [mock.call(first_name), mock.call(second_name)],
+                container.get_blob_client.call_args_list,
+            )
+        finally:
+            first.release()
+            second.release()
 
     def test_controller_json_update_uses_epoch_and_etag_compare_and_swap(self):
         downloader = SimpleNamespace(
@@ -2949,9 +2978,10 @@ class AzureSafetyTests(unittest.TestCase):
     def test_kill_switch_write_supplies_its_blob_lease(self):
         plan = release.load_plan(HERE / "release-plan.json")
         container = mock.Mock()
+        run_switch = release.run_kill_switch_blob(plan, "run-id")
         lease = SimpleNamespace(
             epoch="epoch",
-            name=release.kill_switch_blob(plan),
+            name=run_switch,
             lease="lease-token",
             check=mock.Mock(),
         )
@@ -2963,6 +2993,7 @@ class AzureSafetyTests(unittest.TestCase):
             modules,
             "test",
             controller_lease=lease,
+            object_name=run_switch,
         )
         self.assertEqual(
             "lease-token", container.upload_blob.call_args.kwargs["lease"]
@@ -3064,6 +3095,7 @@ class AzureSafetyTests(unittest.TestCase):
             context["modules"],
             "controller-failure",
             controller_lease=lease,
+            object_name=release.run_kill_switch_blob(plan, "run-id"),
         )
         self.assertEqual("failed", run["status"])
         self.assertEqual("setup failed", run["failure"])
@@ -3477,6 +3509,7 @@ class WorkerTransportTests(unittest.TestCase):
         args = SimpleNamespace(
             bucket="dl4jaccount/control",
             object="control/kill-switch.json",
+            emergency_object=None,
             client_id=None,
             controller_epoch=None,
         )
@@ -3495,6 +3528,7 @@ class WorkerTransportTests(unittest.TestCase):
         args = SimpleNamespace(
             bucket="dl4jaccount/control",
             object="control/kill-switch.json",
+            emergency_object=None,
             client_id=None,
             controller_epoch="current",
         )
@@ -3519,10 +3553,80 @@ class WorkerTransportTests(unittest.TestCase):
         ):
             self.assertEqual(0, cloud_io.command_kill_enabled(args))
 
+    def test_worker_kill_probe_combines_run_and_global_emergency_switches(self):
+        args = SimpleNamespace(
+            bucket="dl4jaccount/control",
+            object="control/runs/run/kill-switch.json",
+            emergency_object="control/kill-switch.json",
+            client_id=None,
+            controller_epoch="current",
+        )
+        run_disabled = b'{"enabled":false,"controllerEpoch":"current"}'
+        legacy_global_enabled = b'{"enabled":true,"force":false}'
+        forced_global = b'{"enabled":true,"force":true}'
+        global_disabled = b'{"enabled":false,"force":false}'
+
+        with mock.patch.object(
+            cloud_io,
+            "download_bytes",
+            side_effect=[run_disabled, legacy_global_enabled],
+        ):
+            self.assertEqual(1, cloud_io.command_kill_enabled(args))
+        with mock.patch.object(
+            cloud_io,
+            "download_bytes",
+            side_effect=[run_disabled, forced_global],
+        ):
+            self.assertEqual(0, cloud_io.command_kill_enabled(args))
+        with mock.patch.object(
+            cloud_io,
+            "download_bytes",
+            side_effect=[run_disabled, FileNotFoundError()],
+        ):
+            self.assertEqual(2, cloud_io.command_kill_enabled(args))
+        with mock.patch.object(
+            cloud_io,
+            "download_bytes",
+            side_effect=[
+                b'{"enabled":true,"controllerEpoch":"current"}',
+                global_disabled,
+            ],
+        ) as download:
+            self.assertEqual(0, cloud_io.command_kill_enabled(args))
+            self.assertEqual(1, download.call_count)
+        with mock.patch.object(
+            cloud_io,
+            "download_bytes",
+            side_effect=[
+                b'{"enabled":true,"controllerEpoch":"stale"}',
+                global_disabled,
+            ],
+        ):
+            self.assertEqual(1, cloud_io.command_kill_enabled(args))
+        for invalid_json_object in (b"null", b"[]", b'"text"'):
+            with self.subTest(switch="run", payload=invalid_json_object):
+                with mock.patch.object(
+                    cloud_io,
+                    "download_bytes",
+                    side_effect=[invalid_json_object, global_disabled],
+                ) as download:
+                    self.assertEqual(2, cloud_io.command_kill_enabled(args))
+                    self.assertEqual(1, download.call_count)
+            with self.subTest(switch="global", payload=invalid_json_object):
+                with mock.patch.object(
+                    cloud_io,
+                    "download_bytes",
+                    side_effect=[run_disabled, invalid_json_object],
+                ):
+                    self.assertEqual(2, cloud_io.command_kill_enabled(args))
+
     def test_workers_render_all_payloads_and_use_managed_identity(self):
         config = {
             "provider": "azure",
             "managedIdentityClientId": "client-id",
+            "killSwitchObject": "control/kill-switch.json",
+            "runKillSwitchObject": "control/runs/run/kill-switch.json",
+            "controllerEpoch": "epoch",
             "laneId": "lane",
             "shards": [{"id": "shard"}],
         }
@@ -3532,6 +3636,8 @@ class WorkerTransportTests(unittest.TestCase):
             self.assertIn("client-id", rendered)
             self.assertIn("--client-id", rendered)
             self.assertIn("--controller-epoch", rendered)
+            self.assertIn("--emergency-object", rendered)
+            self.assertIn("runKillSwitchObject", rendered)
             self.assertIn("contractDigest", rendered)
             self.assertIn("controllerEpoch", rendered)
             self.assertIn("repository", rendered)

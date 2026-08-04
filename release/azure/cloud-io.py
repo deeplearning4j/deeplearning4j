@@ -206,18 +206,43 @@ def command_download(args):
     return 0
 
 
-def command_kill_enabled(args):
+def kill_switch_state(
+    bucket,
+    object_name,
+    client_id,
+    *,
+    expected_epoch=None,
+    force_only=False,
+):
     try:
-        value = json.loads(download_bytes(args.bucket, args.object, args.client_id).decode("utf-8"))
+        value = json.loads(
+            download_bytes(bucket, object_name, client_id).decode("utf-8")
+        )
     except FileNotFoundError:
         print("kill switch object is missing", file=sys.stderr, flush=True)
         return 2
     except Exception as exc:
         print(f"kill switch is unreadable: {exc}", file=sys.stderr, flush=True)
         return 2
-    expected_epoch = getattr(args, "controller_epoch", None)
+    if not isinstance(value, dict):
+        print(
+            "kill switch JSON must be an object",
+            file=sys.stderr,
+            flush=True,
+        )
+        return 2
+    enabled = value.get("enabled")
+    if not isinstance(enabled, bool):
+        print(
+            "kill switch JSON does not contain a boolean enabled field",
+            file=sys.stderr,
+            flush=True,
+        )
+        return 2
+    if force_only:
+        return 0 if enabled and value.get("force") is True else 1
     actual_epoch = value.get("controllerEpoch")
-    if value.get("enabled") is True:
+    if enabled:
         if (
             not expected_epoch
             or actual_epoch == expected_epoch
@@ -230,17 +255,34 @@ def command_kill_enabled(args):
             flush=True,
         )
         return 1
-    if value.get("enabled") is False:
-        if expected_epoch and actual_epoch != expected_epoch:
-            print(
-                "kill switch controller epoch does not match this worker",
-                file=sys.stderr,
-                flush=True,
-            )
-            return 2
-        return 1
-    print("kill switch JSON does not contain a boolean enabled field", file=sys.stderr, flush=True)
-    return 2
+    if expected_epoch and actual_epoch != expected_epoch:
+        print(
+            "kill switch controller epoch does not match this worker",
+            file=sys.stderr,
+            flush=True,
+        )
+        return 2
+    return 1
+
+
+def command_kill_enabled(args):
+    state = kill_switch_state(
+        args.bucket,
+        args.object,
+        args.client_id,
+        expected_epoch=getattr(args, "controller_epoch", None),
+    )
+    if state != 1:
+        return state
+    emergency_object = getattr(args, "emergency_object", None)
+    if emergency_object:
+        return kill_switch_state(
+            args.bucket,
+            emergency_object,
+            args.client_id,
+            force_only=True,
+        )
+    return 1
 
 
 def command_log(args):
@@ -350,6 +392,7 @@ def parser():
     kill = commands.add_parser("kill-enabled")
     kill.add_argument("--bucket", required=True)
     kill.add_argument("--object", required=True)
+    kill.add_argument("--emergency-object")
     kill.add_argument("--controller-epoch")
     add_identity_option(kill)
     kill.set_defaults(func=command_kill_enabled)

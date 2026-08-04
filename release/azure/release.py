@@ -235,14 +235,22 @@ def compiler_cache_metadata(plan: dict[str, Any], account_name: str) -> dict[str
 
 
 def kill_switch_blob(plan: dict[str, Any]) -> str:
+    """Global, forced emergency-stop switch retained for stop-everything."""
     return f"{plan.get('artifactPrefix', 'deeplearning4j/releases').strip('/')}/control/kill-switch.json"
 
 
-def controller_lock_blob(plan: dict[str, Any]) -> str:
-    # The kill-switch blob is also the controller lock. Blob leases only fence
-    # writes to the blob they protect, so a separate lock blob would leave a
-    # check/write race on the switch itself.
-    return kill_switch_blob(plan)
+def run_controller_prefix(plan: dict[str, Any]) -> str:
+    return f"{plan.get('artifactPrefix', 'deeplearning4j/releases').strip('/')}/control/runs/"
+
+
+def run_kill_switch_blob(plan: dict[str, Any], run_id: str) -> str:
+    return f"{run_controller_prefix(plan)}{run_id}/kill-switch.json"
+
+
+def controller_lock_blob(plan: dict[str, Any], run_id: str | None = None) -> str:
+    # A lease must protect the switch it fences. Run controllers therefore lease
+    # their own switch, while administrative operations retain the global switch.
+    return run_kill_switch_blob(plan, run_id) if run_id else kill_switch_blob(plan)
 
 
 def shard_contract_digest(shard: dict[str, Any]) -> str:
@@ -1881,8 +1889,9 @@ def set_kill_switch(
     *,
     controller_lease: Any | None = None,
     force: bool = False,
+    object_name: str | None = None,
 ) -> None:
-    put_json(container, kill_switch_blob(plan), {
+    put_json(container, object_name or kill_switch_blob(plan), {
         "enabled": bool(enabled),
         "updatedAt": utc_now(),
         "reason": reason,
@@ -1894,8 +1903,10 @@ def kill_switch_enabled(
     container: Any,
     plan: dict[str, Any],
     expected_controller_epoch: str | None = None,
+    *,
+    object_name: str | None = None,
 ) -> bool:
-    value = get_json(container, kill_switch_blob(plan))
+    value = get_json(container, object_name or kill_switch_blob(plan))
     if value is None or not isinstance(value.get("enabled"), bool):
         raise RuntimeError("Azure release kill switch is missing or malformed")
     if (
@@ -1907,8 +1918,69 @@ def kill_switch_enabled(
     return bool(value["enabled"])
 
 
+def emergency_kill_switch_enabled(
+    container: Any,
+    plan: dict[str, Any],
+) -> bool:
+    value = get_json(container, kill_switch_blob(plan))
+    if value is None or not isinstance(value.get("enabled"), bool):
+        raise RuntimeError("Azure global emergency kill switch is missing or malformed")
+    # Normal run-scoped cancellation never sets force. This also lets a new
+    # controller coexist with a legacy controller that still owns this blob.
+    return value["enabled"] is True and value.get("force") is True
+
+
+def assert_emergency_kill_switch_disabled(
+    container: Any,
+    plan: dict[str, Any],
+) -> None:
+    if emergency_kill_switch_enabled(container, plan):
+        raise RuntimeError("Azure global emergency kill switch was enabled")
+
+
+def prepare_emergency_kill_switch(
+    container: Any,
+    plan: dict[str, Any],
+    modules: dict[str, Any],
+    reset_requested: bool,
+) -> None:
+    value = get_json(container, kill_switch_blob(plan))
+    malformed = value is None or not isinstance(value.get("enabled"), bool)
+    forced = (
+        not malformed
+        and value.get("enabled") is True
+        and value.get("force") is True
+    )
+    if malformed or forced:
+        if not reset_requested:
+            raise RuntimeError(
+                "Azure global emergency kill switch is enabled, missing, or malformed; "
+                "pass --reset-kill-switch only after confirming emergency shutdown is complete"
+            )
+        emergency_lease = ControllerLease(
+            container, controller_lock_blob(plan)
+        ).acquire()
+        try:
+            set_kill_switch(
+                container,
+                plan,
+                False,
+                modules,
+                "start-reset-global-emergency",
+                controller_lease=emergency_lease,
+            )
+        finally:
+            release_errors = emergency_lease.release()
+        if release_errors:
+            raise RuntimeError(
+                "Azure global emergency-switch lease cleanup failed: "
+                + "; ".join(release_errors)
+            )
+    assert_emergency_kill_switch_disabled(container, plan)
+
+
 class ControllerLease:
-    """Renewable Blob lease that serializes Azure release controllers."""
+    """Renewable Blob lease that serializes one Azure release mutation scope."""
 
     def __init__(self, container: Any, name: str, *, duration: int = 60) -> None:
         self.container = container
@@ -1918,6 +1990,7 @@ class ControllerLease:
         self.epoch = uuid.uuid4().hex
         self.lease: Any | None = None
         self.failure: BaseException | None = None
+        self.external_check: Callable[[], None] | None = None
         self._stop = threading.Event()
         self._renew_lock = threading.Lock()
         self._thread: threading.Thread | None = None
@@ -1948,7 +2021,7 @@ class ControllerLease:
         except Exception as exc:
             if getattr(exc, "status_code", None) == 409:
                 raise RuntimeError(
-                    "another Azure release controller already holds the global Blob lease"
+                    f"another Azure release controller already holds Blob lease {self.name!r}"
                 ) from exc
             raise
         self._thread = threading.Thread(
@@ -1977,11 +2050,15 @@ class ControllerLease:
         except BaseException as exc:
             self.failure = exc
             raise RuntimeError("Azure controller Blob lease renewal failed") from exc
+        if self.external_check is not None:
+            self.external_check()
 
     def assert_healthy(self) -> None:
-        """Surface a background renewal failure without forcing another renewal."""
+        """Surface lease or global-emergency failure without forcing renewal."""
         if self.failure is not None:
             raise RuntimeError("Azure controller Blob lease renewal failed") from self.failure
+        if self.external_check is not None:
+            self.external_check()
 
     def release(self) -> list[str]:
         errors: list[str] = []
@@ -1994,6 +2071,36 @@ class ControllerLease:
             except Exception as exc:
                 if getattr(exc, "status_code", None) not in {404, 409}:
                     errors.append(f"controller lease release: {exc}")
+        return errors
+
+
+class ControllerLeaseGroup:
+    """Hold a primary administrative fence plus every active run fence."""
+
+    def __init__(
+        self, primary: ControllerLease, additional: Iterable[ControllerLease]
+    ) -> None:
+        self.primary = primary
+        self.additional = list(additional)
+        self.name = primary.name
+        self.epoch = primary.epoch
+        self.lease = primary.lease
+
+    def check(self) -> None:
+        self.primary.check()
+        for lease in self.additional:
+            lease.check()
+
+    def assert_healthy(self) -> None:
+        self.primary.assert_healthy()
+        for lease in self.additional:
+            lease.assert_healthy()
+
+    def release(self) -> list[str]:
+        errors: list[str] = []
+        for lease in reversed(self.additional):
+            errors.extend(lease.release())
+        errors.extend(self.primary.release())
         return errors
 
 
@@ -2557,8 +2664,18 @@ def wait_for_lane(
             if controller_lease is not None
             else None
         )
-        if kill_switch_enabled(control_container, plan, expected_epoch):
-            raise RuntimeError("global Azure release kill switch was enabled")
+        switch_object = (
+            controller_lease.name
+            if controller_lease is not None
+            else kill_switch_blob(plan)
+        )
+        if kill_switch_enabled(
+            control_container,
+            plan,
+            expected_epoch,
+            object_name=switch_object,
+        ):
+            raise RuntimeError("Azure release run kill switch was enabled")
         try:
             view = context["compute"].virtual_machines.instance_view(group, vm_name)
             codes = [
@@ -2702,6 +2819,7 @@ def _run_parallel_lane(
             "commit": args.commit,
             "repository": args.repository,
             "killSwitchObject": kill_switch_blob(plan),
+            "runKillSwitchObject": run_kill_switch_blob(plan, args.run_id),
             "managedIdentityClientId": identity.client_id,
             "compilerCache": compiler_cache_config(
                 context,
@@ -2850,6 +2968,15 @@ def _start_under_controller_lease(
     prefix = f"{plan['artifactPrefix'].strip('/')}/{run_id}"
     run_blob = f"{prefix}/run.json"
     epoch = controller_epoch(controller_lease)
+    prepare_emergency_kill_switch(
+        control_container,
+        plan,
+        context["modules"],
+        args.reset_kill_switch,
+    )
+    controller_lease.external_check = lambda: assert_emergency_kill_switch_disabled(
+        control_container, plan
+    )
     controller_lease.check()
     if get_json(artifact_container, run_blob) is not None:
         raise RuntimeError(f"Azure release run {run_id!r} already exists")
@@ -2909,32 +3036,19 @@ def _start_under_controller_lease(
         create_only=True,
     )
     controller_lease.check()
-    existing_switch = get_json(control_container, kill_switch_blob(plan))
-    if args.reset_kill_switch:
-        set_kill_switch(
-            control_container,
-            plan,
-            False,
-            context["modules"],
-            "start",
-            controller_lease=controller_lease,
-        )
-    elif existing_switch is None or existing_switch.get("enabled") is not False:
-        raise RuntimeError(
-            "Azure release kill switch is enabled or missing; pass --reset-kill-switch "
-            "only after confirming no prior build should remain stopped"
-        )
-    else:
-        # Stamp the disabled switch with this controller epoch before any VM is
-        # created. Workers fail closed on a mismatched epoch.
-        set_kill_switch(
-            control_container,
-            plan,
-            False,
-            context["modules"],
-            "start-fence",
-            controller_lease=controller_lease,
-        )
+    run_switch = run_kill_switch_blob(plan, run_id)
+    # The create-only run manifest above proves this is a new run. Initialize its
+    # leased switch automatically; --reset-kill-switch is reserved for clearing a
+    # prior forced global emergency stop.
+    set_kill_switch(
+        control_container,
+        plan,
+        False,
+        context["modules"],
+        "start",
+        controller_lease=controller_lease,
+        object_name=run_switch,
+    )
     identity, identity_metadata = ensure_identity(
         context,
         group,
@@ -3065,6 +3179,7 @@ def _start_under_controller_lease(
                         context["modules"],
                         f"parallel-lane-failure:{lane_id}",
                         controller_lease=controller_lease,
+                        object_name=run_kill_switch_blob(plan, run_id),
                     )
                     cancellation_enabled = True
             controller_lease.check()
@@ -3148,6 +3263,7 @@ def _start_under_controller_lease(
                         context["modules"],
                         "controller-abort",
                         controller_lease=controller_lease,
+                        object_name=run_kill_switch_blob(plan, run_id),
                     )
                     cancellation_enabled = True
                 except Exception:
@@ -3214,7 +3330,9 @@ def start(args: argparse.Namespace) -> None:
     )
     artifact_container = service.get_container_client(artifact_container_name(plan))
     control_container = service.get_container_client(control_container_name(plan))
-    lease = ControllerLease(control_container, controller_lock_blob(plan)).acquire()
+    lease = ControllerLease(
+        control_container, controller_lock_blob(plan, run_id)
+    ).acquire()
     completed = False
     primary_error: BaseException | None = None
     cleanup_errors: list[str] = []
@@ -3244,6 +3362,7 @@ def start(args: argparse.Namespace) -> None:
                         context["modules"],
                         "run-complete" if completed else "controller-failure",
                         controller_lease=lease,
+                        object_name=run_kill_switch_blob(plan, run_id),
                     )
                     lease.check()
                 except Exception as exc:
@@ -4363,7 +4482,7 @@ def fence_release_controller(
     plan: dict[str, Any],
     group: str,
     account_name: str,
-) -> tuple[str, Any, Any, ControllerLease]:
+) -> tuple[str, Any, Any, ControllerLeaseGroup]:
     account = context["storage"].storage_accounts.get_properties(group, account_name)
     keys = context["storage"].storage_accounts.list_keys(group, account_name)
     values = list(object_value(keys, "keys", []) or [])
@@ -4375,23 +4494,29 @@ def fence_release_controller(
     )
     control_container = service.get_container_client(control_container_name(plan))
     artifact_container = service.get_container_client(artifact_container_name(plan))
-    try:
-        lock_blob = control_container.get_blob_client(controller_lock_blob(plan))
-        context["modules"]["BlobLeaseClient"](lock_blob).break_lease(
-            lease_break_period=0
-        )
-    except Exception as exc:
-        status_code = getattr(exc, "status_code", None)
-        error_code = str(getattr(exc, "error_code", "") or "")
-        no_lease = status_code == 409 and error_code in {
-            "LeaseAlreadyBroken",
-            "LeaseNotPresentWithLeaseOperation",
-        }
-        if status_code != 404 and not no_lease:
-            raise RuntimeError("could not break the Azure release controller lease") from exc
-    fence_lease = ControllerLease(
-        control_container, controller_lock_blob(plan)
-    ).acquire()
+
+    def break_lease(name: str) -> None:
+        try:
+            lock_blob = control_container.get_blob_client(name)
+            context["modules"]["BlobLeaseClient"](lock_blob).break_lease(
+                lease_break_period=0
+            )
+        except Exception as exc:
+            status_code = getattr(exc, "status_code", None)
+            error_code = str(getattr(exc, "error_code", "") or "")
+            no_lease = status_code == 409 and error_code in {
+                "LeaseAlreadyBroken",
+                "LeaseNotPresentWithLeaseOperation",
+            }
+            if status_code != 404 and not no_lease:
+                raise RuntimeError(
+                    f"could not break Azure release controller lease {name!r}"
+                ) from exc
+
+    global_lock = controller_lock_blob(plan)
+    break_lease(global_lock)
+    fence_lease = ControllerLease(control_container, global_lock).acquire()
+    run_fences: list[ControllerLease] = []
     try:
         fence_lease.check()
         set_kill_switch(
@@ -4403,10 +4528,25 @@ def fence_release_controller(
             controller_lease=fence_lease,
             force=True,
         )
+        # The forced switch prevents new controllers from mutating resources.
+        # Break and hold every already-visible run lease before deletion starts.
+        for item in control_container.list_blobs(
+            name_starts_with=run_controller_prefix(plan)
+        ):
+            fence_lease.check()
+            name = str(object_value(item, "name", ""))
+            if not name.endswith("/kill-switch.json"):
+                continue
+            break_lease(name)
+            run_fences.append(ControllerLease(control_container, name).acquire())
+        group_lease = ControllerLeaseGroup(fence_lease, run_fences)
+        group_lease.check()
     except BaseException:
+        for lease in reversed(run_fences):
+            lease.release()
         fence_lease.release()
         raise
-    return str(account.id), control_container, artifact_container, fence_lease
+    return str(account.id), control_container, artifact_container, group_lease
 
 
 def _stop_fenced_resources(

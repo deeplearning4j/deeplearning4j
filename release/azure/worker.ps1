@@ -136,7 +136,7 @@ function Invoke-NativeChecked {
 }
 
 function Invoke-KillSwitchProbe {
-  & $script:PythonExe $CloudIo kill-enabled --bucket $Config.killSwitchBucket --object $Config.killSwitchObject --controller-epoch $Config.controllerEpoch --client-id $Config.managedIdentityClientId *> $null
+  & $script:PythonExe $CloudIo kill-enabled --bucket $Config.killSwitchBucket --object $Config.runKillSwitchObject --emergency-object $Config.killSwitchObject --controller-epoch $Config.controllerEpoch --client-id $Config.managedIdentityClientId *> $null
   return $LASTEXITCODE
 }
 
@@ -477,10 +477,10 @@ function Complete-Shard([int]$RequestedExitCode) {
 function Start-KillWatchdog {
   $PythonExe = $script:PythonExe
   $ParentPid = $PID
-  $script:KillWatchJob = Start-Job -Name "dl4j-release-kill-watchdog" -ArgumentList $PythonExe,$CloudIo,$Config.killSwitchBucket,$Config.killSwitchObject,$Config.controllerEpoch,$Config.managedIdentityClientId,$KillRequestedFile,$WatchdogStopFile,$WatchdogCloudPidFile,$BuildPidFile,$ParentPid -ScriptBlock {
-    param($PythonExe,$CloudIo,$Bucket,$KillSwitchObject,$ControllerEpoch,$ClientId,$KillRequestedFile,$StopFile,$CloudPidFile,$BuildPidFile,$ParentPid)
+  $script:KillWatchJob = Start-Job -Name "dl4j-release-kill-watchdog" -ArgumentList $PythonExe,$CloudIo,$Config.killSwitchBucket,$Config.runKillSwitchObject,$Config.killSwitchObject,$Config.controllerEpoch,$Config.managedIdentityClientId,$KillRequestedFile,$WatchdogStopFile,$WatchdogCloudPidFile,$BuildPidFile,$ParentPid -ScriptBlock {
+    param($PythonExe,$CloudIo,$Bucket,$KillSwitchObject,$EmergencyKillSwitchObject,$ControllerEpoch,$ClientId,$KillRequestedFile,$StopFile,$CloudPidFile,$BuildPidFile,$ParentPid)
     while (-not (Test-Path -LiteralPath $StopFile)) {
-      $ProbeArguments = @($CloudIo, 'kill-enabled', '--bucket', $Bucket, '--object', $KillSwitchObject, '--controller-epoch', $ControllerEpoch, '--client-id', $ClientId)
+      $ProbeArguments = @($CloudIo, 'kill-enabled', '--bucket', $Bucket, '--object', $KillSwitchObject, '--emergency-object', $EmergencyKillSwitchObject, '--controller-epoch', $ControllerEpoch, '--client-id', $ClientId)
       $Probe = Start-Process $PythonExe -ArgumentList $ProbeArguments -PassThru -NoNewWindow -RedirectStandardOutput "$CloudPidFile.out" -RedirectStandardError "$CloudPidFile.err"
       $null = $Probe.Handle
       Set-Content -LiteralPath $CloudPidFile -Value $Probe.Id

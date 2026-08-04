@@ -67,6 +67,7 @@ LANE_ID=$(config laneId)
 COMMIT=$(config commit)
 REPOSITORY=$(config repository)
 KILL_SWITCH_OBJECT=$(config killSwitchObject)
+RUN_KILL_SWITCH_OBJECT=$(config runKillSwitchObject)
 AZURE_CLIENT_ID=$(config managedIdentityClientId)
 CONTROLLER_EPOCH=$(config controllerEpoch)
 export AZURE_CLIENT_ID
@@ -255,7 +256,7 @@ trap 'phase worker failed "line=${LINENO} command=${BASH_COMMAND}"' ERR
 
 watch_kill_switch() {
   while true; do
-    if python3 "${CLOUD_IO}" kill-enabled --bucket "${KILL_SWITCH_BUCKET}"         --object "${KILL_SWITCH_OBJECT}" --controller-epoch "${CONTROLLER_EPOCH}"         --client-id "${AZURE_CLIENT_ID}" >/dev/null 2>&1; then
+    if python3 "${CLOUD_IO}" kill-enabled --bucket "${KILL_SWITCH_BUCKET}"         --object "${RUN_KILL_SWITCH_OBJECT}" --emergency-object "${KILL_SWITCH_OBJECT}"         --controller-epoch "${CONTROLLER_EPOCH}" --client-id "${AZURE_CLIENT_ID}" >/dev/null 2>&1; then
       reason=enabled
     else
       state=$?
@@ -435,7 +436,7 @@ PY
 
 phase worker started "lane=${LANE_ID} pid=$$"
 start_lane_forwarder
-if python3 "${CLOUD_IO}" kill-enabled --bucket "${KILL_SWITCH_BUCKET}"     --object "${KILL_SWITCH_OBJECT}" --controller-epoch "${CONTROLLER_EPOCH}"     --client-id "${AZURE_CLIENT_ID}" >/dev/null 2>&1; then
+if python3 "${CLOUD_IO}" kill-enabled --bucket "${KILL_SWITCH_BUCKET}"     --object "${RUN_KILL_SWITCH_OBJECT}" --emergency-object "${KILL_SWITCH_OBJECT}"     --controller-epoch "${CONTROLLER_EPOCH}" --client-id "${AZURE_CLIENT_ID}" >/dev/null 2>&1; then
   exit 130
 else
   KILL_STATE=$?
