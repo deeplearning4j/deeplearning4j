@@ -40,7 +40,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: /tmp/sccache-patched-bin
-        key: sccache-patched-v0.15.0-linux-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
+        key: sccache-patched-v0.17.0-linux-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
 
     # ---------------------------------------------------------------
     # 3. On cache miss: clone sccache source, apply RetryLayer patch,
@@ -53,7 +53,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        SCCACHE_VERSION="v0.15.0"
+        SCCACHE_VERSION="v0.17.0"
         PATCH_FILE="${GITHUB_WORKSPACE}/.github/patches/sccache-retry.patch"
 
         # Ensure Rust is available (pre-installed on GHA runners, but just in case)
@@ -92,7 +92,7 @@ runs:
     - name: Install sccache
       shell: bash
       run: |
-        SCCACHE_VERSION="v0.15.0"
+        SCCACHE_VERSION="v0.17.0"
 
         if [ -f "/tmp/sccache-patched-bin/sccache" ]; then
           sudo cp /tmp/sccache-patched-bin/sccache /usr/local/bin/sccache

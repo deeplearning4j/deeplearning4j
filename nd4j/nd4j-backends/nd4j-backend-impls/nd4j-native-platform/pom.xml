@@ -137,12 +137,12 @@
     </dependencies>
 
     <profiles>
-        <!-- OneDNN classifier profile for optimized CPU operations -->
+        <!-- OneDNN is a backend helper; ISA variants remain libnd4j.extension values. -->
         <profile>
             <id>onednn</id>
             <activation>
                 <property>
-                    <name>libnd4j.extension</name>
+                    <name>libnd4j.helper</name>
                     <value>onednn</value>
                 </property>
             </activation>

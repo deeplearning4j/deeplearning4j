@@ -201,6 +201,59 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertIn("amiQuery", shard)
             self.assertNotIn("amiSsmParameter", shard)
 
+    def test_sccache_release_assets_are_pinned_to_quoted_response_file_support(self):
+        self.assertEqual("0.17.0", build_platform.SCCACHE_VERSION)
+        self.assertEqual(
+            {
+                ("linux", "x86_64"): (
+                    "x86_64-unknown-linux-musl",
+                    "67c4a96dd237c1f518f6b36083f270f9976d516f1e57fce891755ea782e50006",
+                ),
+                ("linux", "arm64"): (
+                    "aarch64-unknown-linux-musl",
+                    "821a86343191aa1cbab74bd42f9e93c9a63bf85e4742945f40d3ae84193c1c77",
+                ),
+                ("macos", "x86_64"): (
+                    "x86_64-apple-darwin",
+                    "c2144cafbfe3d22e34ae637f9974ce53613543ac19477fdb287df22ea3668261",
+                ),
+                ("macos", "arm64"): (
+                    "aarch64-apple-darwin",
+                    "0c560bfba31aef5bdfb4fb3d2677f6e61d71c5c00952f2a83344f47aa31f00f1",
+                ),
+                ("windows", "x86_64"): (
+                    "x86_64-pc-windows-msvc",
+                    "caf1932d76a909c909b7a2e41443cdfe3c79a49a380da1a22fa422e1d00d3ca7",
+                ),
+            },
+            build_platform.SCCACHE_ASSETS,
+        )
+        root = Path(__file__).parents[2]
+        pinned_files = [
+            root / "release/aws/worker.ps1",
+            root / "release/azure/worker.ps1",
+            root / "release/gcp/worker.ps1",
+            root / ".github/actions/setup-sccache-linux/action.yml",
+            root / ".github/actions/setup-sccache-macos/action.yml",
+            root / ".github/actions/setup-sccache-windows/action.yml",
+        ]
+        for pinned_file in pinned_files:
+            source = pinned_file.read_text(encoding="utf-8")
+            self.assertIn("v0.17.0", source, pinned_file)
+            self.assertNotIn("v0.15.0", source, pinned_file)
+
+    def test_cloud_plans_do_not_model_onednn_as_an_isa_extension(self):
+        root = Path(__file__).parents[2]
+        for provider in ("aws", "azure", "gcp"):
+            plan = json.loads(
+                (root / f"release/{provider}/release-plan.json").read_text(encoding="utf-8")
+            )
+            shard = next(item for item in plan["shards"] if item["id"] == "windows-x86_64-cpu")
+            variant = next(item for item in shard["build"]["variants"] if item["name"] == "onednn")
+            self.assertEqual("onednn", variant["helper"], provider)
+            self.assertEqual("-onednn", variant["suffix"], provider)
+            self.assertNotIn("extension", variant, provider)
+
     def test_smoke_overrides_instance_and_build_threads(self):
         shard = self.shard()
         shard["build"] = {"buildThreads": 48}
@@ -1183,6 +1236,41 @@ class ReleaseValidationTest(unittest.TestCase):
             path_contract,
         )
 
+    def test_backend_helpers_activate_backend_owned_platform_profiles(self):
+        root = Path(__file__).parents[2]
+        namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+
+        def activation_property(pom_path, profile_id):
+            profiles = ET.parse(pom_path).getroot().findall("m:profiles/m:profile", namespace)
+            for profile in profiles:
+                if profile.findtext("m:id", default="", namespaces=namespace) == profile_id:
+                    return profile.findtext(
+                        "m:activation/m:property/m:name",
+                        default="",
+                        namespaces=namespace,
+                    )
+            self.fail(f"profile {profile_id!r} was not found in {pom_path}")
+
+        native_platform = (
+            root
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-platform/pom.xml"
+        )
+        cuda_platform = (
+            root
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform/pom.xml"
+        )
+        self.assertEqual("libnd4j.helper", activation_property(native_platform, "onednn"))
+        self.assertEqual("libnd4j.helper", activation_property(cuda_platform, "cudnn"))
+
+        cpu_preset = (
+            root
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/"
+            "src/main/java/org/nd4j/presets/cpu/Nd4jCpuPresets.java"
+        ).read_text(encoding="utf-8")
+        for extension in ("-onednn", "-onednn-avx2", "-onednn-avx512"):
+            self.assertIn(f'"{extension}"', cpu_preset)
+        self.assertNotIn('"-onednn-onednn"', cpu_preset)
+
     def test_shared_native_script_emits_specialized_classifiers(self):
         root = Path(__file__).parents[2]
         script = root / "build-scripts/release/native-platform.sh"
@@ -1197,6 +1285,26 @@ class ReleaseValidationTest(unittest.TestCase):
         cuda = command(DL4J_FAMILY="linux-cuda", DL4J_CUDA_VERSION="12.9", DL4J_HELPER="compile")
         self.assertIn("-Dlibnd4j.classifier=linux-x86_64-cuda-12.9-compile", cuda)
         self.assertIn("-Djavacpp.platform.extension=-compile", cuda)
+
+        windows_onednn = command(DL4J_FAMILY="windows-cpu", DL4J_HELPER="onednn")
+        self.assertIn("-Dlibnd4j.helper=onednn", windows_onednn)
+        self.assertIn("-Djavacpp.platform.extension=-onednn", windows_onednn)
+        self.assertIn("-Dlibnd4j.classifier=windows-x86_64-onednn", windows_onednn)
+        self.assertNotIn("-Dlibnd4j.extension=onednn", windows_onednn)
+        self.assertFalse(any("onednn-onednn" in argument for argument in windows_onednn))
+
+        windows_cudnn = command(
+            DL4J_FAMILY="windows-cuda",
+            DL4J_CUDA_VERSION="12.9",
+            DL4J_HELPER="cudnn",
+        )
+        self.assertIn("-Dlibnd4j.helper=cudnn", windows_cudnn)
+        self.assertIn("-Djavacpp.platform.extension=-cudnn", windows_cudnn)
+        self.assertIn(
+            "-Dlibnd4j.classifier=windows-x86_64-cuda-12.9-cudnn",
+            windows_cudnn,
+        )
+        self.assertNotIn("-Dlibnd4j.extension=cudnn", windows_cudnn)
 
         metal = command(DL4J_FAMILY="macos-arm64", DL4J_HELPER="mps")
         self.assertIn("-Pmetal", metal)

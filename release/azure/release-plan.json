@@ -418,7 +418,6 @@
           {
             "name": "onednn",
             "helper": "onednn",
-            "extension": "onednn",
             "suffix": "-onednn"
           },
           {

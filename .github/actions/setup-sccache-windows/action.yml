@@ -38,7 +38,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: C:\sccache-patched-bin
-        key: sccache-patched-v0.15.0-windows-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
+        key: sccache-patched-v0.17.0-windows-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
 
     # ---------------------------------------------------------------
     # 3. On cache miss: clone, patch, and build from source.
@@ -49,7 +49,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        SCCACHE_VERSION="v0.15.0"
+        SCCACHE_VERSION="v0.17.0"
         PATCH_FILE="${GITHUB_WORKSPACE}/.github/patches/sccache-retry.patch"
 
         # Ensure Rust is available (pre-installed on GHA Windows runners)
@@ -88,7 +88,7 @@ runs:
       continue-on-error: true
       shell: pwsh
       run: |
-        $sccacheVersion = "v0.15.0"
+        $sccacheVersion = "v0.17.0"
         $versionBare    = $sccacheVersion.TrimStart('v')
         $installDir     = "$env:USERPROFILE\sccache"
         if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir -Force | Out-Null }

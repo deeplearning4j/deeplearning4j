@@ -620,9 +620,9 @@ function Install-CommonToolchains {
       & $CargoExe install --locked cbindgen
     }
   }
-  $SccacheVersion = 'v0.15.0'
+  $SccacheVersion = 'v0.17.0'
   $SccacheFile = "sccache-$SccacheVersion-x86_64-pc-windows-msvc"
-  $SccacheSha256 = 'b0b257a164bf438b2dea134ca7ded41c100f59a64b3bf275a202f1e8102ab217'
+  $SccacheSha256 = 'caf1932d76a909c909b7a2e41443cdfe3c79a49a380da1a22fa422e1d00d3ca7'
   $SccacheDir = Join-Path $ToolchainRoot 'sccache'
   $SccacheExe = Join-Path $SccacheDir 'sccache.exe'
   if (-not (Test-Path -LiteralPath $script:WindowsTarExe)) {

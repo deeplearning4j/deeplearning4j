@@ -125,7 +125,7 @@ try {
   cargo install --locked cbindgen
   if ($LASTEXITCODE -ne 0) { throw 'cbindgen installation failed' }
   Write-Phase 'rust-toolchain' 'complete'
-  $SccacheVersion = 'v0.15.0'
+  $SccacheVersion = 'v0.17.0'
   $SccacheFile = "sccache-$SccacheVersion-x86_64-pc-windows-msvc"
   $SccacheDir = Join-Path $ToolchainRoot 'sccache'
   New-Item -ItemType Directory -Force -Path $SccacheDir | Out-Null

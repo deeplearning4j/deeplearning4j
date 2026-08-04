@@ -38,7 +38,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: /tmp/sccache-patched-bin
-        key: sccache-patched-v0.15.0-macos-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
+        key: sccache-patched-v0.17.0-macos-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
 
     # ---------------------------------------------------------------
     # 3. On cache miss: clone, patch, and build from source.
@@ -49,7 +49,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        SCCACHE_VERSION="v0.15.0"
+        SCCACHE_VERSION="v0.17.0"
         PATCH_FILE="${GITHUB_WORKSPACE}/.github/patches/sccache-retry.patch"
 
         # Ensure Rust is available (pre-installed on GHA macOS runners)

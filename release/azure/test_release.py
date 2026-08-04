@@ -3381,10 +3381,11 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertNotIn("-File worker.ps1", command)
         worker = (HERE / "worker.ps1").read_text(encoding="utf-8")
         self.assertIn("Register-ScheduledTask", worker)
+        self.assertIn("$SccacheVersion = 'v0.17.0'", worker)
         self.assertIn("Start-ScheduledTask", worker)
         self.assertIn(
             "$SccacheSha256 = "
-            "'b0b257a164bf438b2dea134ca7ded41c100f59a64b3bf275a202f1e8102ab217'",
+            "'caf1932d76a909c909b7a2e41443cdfe3c79a49a380da1a22fa422e1d00d3ca7'",
             worker,
         )
         self.assertIn(

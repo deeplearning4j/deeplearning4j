@@ -72,12 +72,12 @@
     </dependencies>
 
     <profiles>
-        <!-- cuDNN classifier profile for optimized CUDA deep learning operations -->
+        <!-- cuDNN is a backend helper, not a platform extension. -->
         <profile>
             <id>cudnn</id>
             <activation>
                 <property>
-                    <name>libnd4j.extension</name>
+                    <name>libnd4j.helper</name>
                     <value>cudnn</value>
                 </property>
             </activation>

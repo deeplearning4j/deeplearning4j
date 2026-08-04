@@ -32,7 +32,6 @@ variant_cpu() {
     VARIANT=("-Dlibnd4j.helper=${DL4J_HELPER}" "-Dlibnd4j.extension=${DL4J_EXTENSION}" "-Djavacpp.platform.extension=-${DL4J_HELPER}-${DL4J_EXTENSION}" "-Dlibnd4j.classifier=${classifier}-${DL4J_HELPER}-${DL4J_EXTENSION}")
   elif [ -n "${DL4J_HELPER}" ]; then
     VARIANT=("-Dlibnd4j.helper=${DL4J_HELPER}" "-Djavacpp.platform.extension=-${DL4J_HELPER}" "-Dlibnd4j.classifier=${classifier}-${DL4J_HELPER}")
-    [ "${DL4J_FAMILY}" != windows-cpu ] || VARIANT+=("-Dlibnd4j.extension=${DL4J_HELPER}")
   elif [ -n "${DL4J_EXTENSION}" ]; then
     VARIANT=("-Dlibnd4j.extension=${DL4J_EXTENSION}" "-Djavacpp.platform.extension=-${DL4J_EXTENSION}" "-Dlibnd4j.classifier=${classifier}-${DL4J_EXTENSION}")
   else
@@ -66,7 +65,6 @@ case "${DL4J_FAMILY}" in
       variant=("-Djavacpp.platform.extension=-${DL4J_HELPER}-${DL4J_EXTENSION}" "-Dlibnd4j.helper=${DL4J_HELPER}" "-Dlibnd4j.extension=${DL4J_EXTENSION}" "-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}-${DL4J_HELPER}-${DL4J_EXTENSION}")
     elif [ -n "${DL4J_HELPER}" ]; then
       variant=("-Djavacpp.platform.extension=-${DL4J_HELPER}" "-Dlibnd4j.helper=${DL4J_HELPER}" "-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}-${DL4J_HELPER}")
-      [ "${DL4J_FAMILY}" != windows-cuda ] || variant+=("-Dlibnd4j.extension=${DL4J_HELPER}")
     else
       variant=("-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}")
     fi

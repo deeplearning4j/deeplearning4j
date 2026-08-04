@@ -19,7 +19,7 @@ import zipfile
 from pathlib import Path
 
 
-SCCACHE_VERSION = "0.15.0"
+SCCACHE_VERSION = "0.17.0"
 SCCACHE_RELEASE_BASE = (
     f"https://github.com/mozilla/sccache/releases/download/v{SCCACHE_VERSION}"
 )
@@ -47,19 +47,23 @@ TRANSIENT_HTTP_STATUSES = {408, 429, 500, 502, 503, 504}
 SCCACHE_ASSETS = {
     ("linux", "x86_64"): (
         "x86_64-unknown-linux-musl",
-        "782d2b5dd7ae0a55ebe368ab258114d0928d019ac2d949ab85d5d02f3926709e",
+        "67c4a96dd237c1f518f6b36083f270f9976d516f1e57fce891755ea782e50006",
     ),
     ("linux", "arm64"): (
         "aarch64-unknown-linux-musl",
-        "3a6a3712b49da3d263bf2d30d702de4302793016019e800bfb81c0c69401d8f8",
+        "821a86343191aa1cbab74bd42f9e93c9a63bf85e4742945f40d3ae84193c1c77",
+    ),
+    ("macos", "x86_64"): (
+        "x86_64-apple-darwin",
+        "c2144cafbfe3d22e34ae637f9974ce53613543ac19477fdb287df22ea3668261",
     ),
     ("macos", "arm64"): (
         "aarch64-apple-darwin",
-        "430ef7b5f54256d3ed5bfe77e8b0afc51aa209aeebe4f95b69c3a52ce3acc6e9",
+        "0c560bfba31aef5bdfb4fb3d2677f6e61d71c5c00952f2a83344f47aa31f00f1",
     ),
     ("windows", "x86_64"): (
         "x86_64-pc-windows-msvc",
-        "b0b257a164bf438b2dea134ca7ded41c100f59a64b3bf275a202f1e8102ab217",
+        "caf1932d76a909c909b7a2e41443cdfe3c79a49a380da1a22fa422e1d00d3ca7",
     ),
 }
 
