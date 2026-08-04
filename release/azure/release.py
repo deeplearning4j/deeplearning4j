@@ -28,6 +28,7 @@ import re
 import secrets
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -2604,6 +2605,10 @@ class LaneWaitError(RuntimeError):
         self.completed_results = copy.deepcopy(completed_results)
 
 
+class ControllerDetached(BaseException):
+    """Stop local supervision without cancelling or deleting remote workers."""
+
+
 def wait_for_lane(
     context: dict[str, Any],
     group: str,
@@ -2619,6 +2624,7 @@ def wait_for_lane(
     controller_lease: ControllerLease | None = None,
     result_callback: Callable[[str, dict[str, Any]], None] | None = None,
     abort_event: threading.Event | None = None,
+    detach_event: threading.Event | None = None,
 ) -> dict[str, dict[str, Any]]:
     deadline = time.monotonic() + timeout_hours * 3600
     lane_log_offset = 0
@@ -2626,6 +2632,10 @@ def wait_for_lane(
     results: dict[str, dict[str, Any]] = {}
     stopped_at: float | None = None
     while time.monotonic() < deadline:
+        if detach_event is not None and detach_event.is_set():
+            raise ControllerDetached(
+                f"Azure controller detached from lane {lane_id}"
+            )
         if abort_event is not None and abort_event.is_set():
             raise LaneWaitError(
                 f"Azure lane {lane_id} was cancelled by its controller",
@@ -2783,6 +2793,7 @@ def _run_parallel_lane(
     executions_by_id: dict[str, dict[str, Any]],
     events: queue.Queue[dict[str, Any]],
     abort_event: threading.Event | None = None,
+    detach_event: threading.Event | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Run one persistent lane. Mutable run-manifest state stays in the caller."""
     context = data["context"]
@@ -2795,6 +2806,10 @@ def _run_parallel_lane(
     results: dict[str, dict[str, Any]] = {}
 
     def lane_fence_check() -> None:
+        if detach_event is not None and detach_event.is_set():
+            raise ControllerDetached(
+                f"Azure controller detached from lane {lane_id}"
+            )
         if abort_event is not None and abort_event.is_set():
             raise RuntimeError(f"Azure lane {lane_id} was cancelled by its controller")
         controller_lease.check()
@@ -2910,6 +2925,7 @@ def _run_parallel_lane(
             controller_lease,
             result_callback=report_shard_result,
             abort_event=abort_event,
+            detach_event=detach_event,
         )
     except Exception as exc:
         primary_error = exc
@@ -2917,7 +2933,9 @@ def _run_parallel_lane(
         if abort_event is not None:
             abort_event.set()
     finally:
-        if resources:
+        if resources and not (
+            detach_event is not None and detach_event.is_set()
+        ):
             try:
                 cleanup_errors = delete_lane_resources(
                     context,
@@ -3209,6 +3227,7 @@ def _start_under_controller_lease(
             controller_lease.check()
 
         abort_event = threading.Event()
+        detach_event = threading.Event()
         executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=len(data["lanes"]),
             thread_name_prefix="azure-release-lane",
@@ -3233,6 +3252,7 @@ def _start_under_controller_lease(
                     execution_records,
                     event_queue,
                     abort_event,
+                    detach_event,
                 ): lane["id"]
                 for lane in data["lanes"]
             }
@@ -3261,11 +3281,22 @@ def _start_under_controller_lease(
                     apply_event(event_queue.get_nowait())
                 except queue.Empty:
                     break
-        except BaseException:
+        except BaseException as exc:
+            if isinstance(exc, (ControllerDetached, KeyboardInterrupt)):
+                # Losing the initiating terminal is not a build cancellation.
+                # Stop only local polling; workers retain their disabled run
+                # switch, VM, identity, and immutable checkpoint epoch.
+                detach_event.set()
+                for future in future_lanes:
+                    future.cancel()
+                raise ControllerDetached(
+                    f"Azure controller detached from run {run_id}; "
+                    "remote workers remain active"
+                ) from exc
             abort_event.set()
-            # A local event makes every lane leave its polling/provisioning loop
-            # even when Blob cancellation itself is unavailable. Only mutate the
-            # shared switch while this controller can still prove ownership.
+            # A genuine controller/build failure makes every lane leave its
+            # polling/provisioning loop. Only mutate the shared switch while
+            # this controller can still prove ownership.
             try:
                 controller_lease.check()
             except Exception:
@@ -3350,14 +3381,40 @@ def start(args: argparse.Namespace) -> None:
         control_container, controller_lock_blob(plan, run_id)
     ).acquire()
     completed = False
+    detached = False
     primary_error: BaseException | None = None
     cleanup_errors: list[str] = []
     identity_errors: list[str] = []
+    previous_sigterm: Any | None = None
+    handles_sigterm = threading.current_thread() is threading.main_thread()
     try:
-        _start_under_controller_lease(
-            args, lease, data, account, service, account_key
-        )
+        if handles_sigterm:
+            previous_sigterm = signal.getsignal(signal.SIGTERM)
+
+            def detach_on_sigterm(signum: int, frame: Any) -> None:
+                del signum, frame
+                raise ControllerDetached(
+                    f"Azure controller detached from run {run_id} after SIGTERM"
+                )
+
+            signal.signal(signal.SIGTERM, detach_on_sigterm)
+        try:
+            _start_under_controller_lease(
+                args, lease, data, account, service, account_key
+            )
+        finally:
+            if handles_sigterm and previous_sigterm is not None:
+                signal.signal(signal.SIGTERM, previous_sigterm)
         completed = True
+    except (ControllerDetached, KeyboardInterrupt) as exc:
+        detached = True
+        primary_error = exc
+        print(
+            f"Azure controller detached from run {run_id}; remote workers "
+            f"remain active. Reconnect with the run status/log commands.",
+            file=sys.stderr,
+            flush=True,
+        )
     except BaseException as exc:
         primary_error = exc
         raise
@@ -3368,6 +3425,11 @@ def start(args: argparse.Namespace) -> None:
         except Exception as exc:
             owns_fence = False
             cleanup_errors.append(f"controller lease before cleanup: {exc}")
+        if detached:
+            # Controller interruption is deliberately non-terminal. The run
+            # lease is released below, but the disabled run switch, remote VM,
+            # managed identity, and artifacts are retained for adoption.
+            owns_fence = False
         try:
             if owns_fence:
                 try:

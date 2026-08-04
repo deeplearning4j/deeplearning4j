@@ -2504,6 +2504,74 @@ class AzureSafetyTests(unittest.TestCase):
             [events.get_nowait()["status"] for _ in range(3)],
         )
 
+    def test_controller_detach_leaves_lane_resources_running(self):
+        plan = release.load_plan(HERE / "release-plan.json")
+        data = {
+            "context": {
+                "subscription": "subscription",
+                "modules": {"ContentSettings": lambda **values: values},
+            },
+            "plan": plan,
+            "location": "eastus2",
+            "resourceGroup": "group",
+            "storageAccount": "account",
+        }
+        lane = {
+            "id": "windows",
+            "worker": "worker.ps1",
+            "executionIds": ["windows"],
+        }
+        executions = {"windows": {"shard": {
+            "id": "windows",
+            "build": {"variants": [{"name": "avx512"}]},
+        }}}
+        args = SimpleNamespace(
+            run_id="run",
+            version="1.0.0",
+            snapshot_version="1.0.0-SNAPSHOT",
+            commit="a" * 40,
+            repository="repository",
+            timeout_hours=12,
+        )
+        detach = release.threading.Event()
+
+        def detach_while_waiting(*call_args, **call_kwargs):
+            detach.set()
+            raise release.ControllerDetached("local controller stopped")
+
+        with mock.patch.object(
+            release, "render_worker", return_value=b"worker"
+        ), mock.patch.object(
+            release, "worker_sas_url", return_value="worker-url"
+        ), mock.patch.object(
+            release, "compiler_cache_config", return_value={}
+        ), mock.patch.object(
+            release,
+            "create_lane_vm",
+            return_value={"vm": "vm", "nic": "nic", "publicIp": "pip"},
+        ), mock.patch.object(
+            release, "wait_for_lane", side_effect=detach_while_waiting
+        ), mock.patch.object(release, "delete_lane_resources") as cleanup:
+            with self.assertRaises(release.ControllerDetached):
+                release._run_parallel_lane(
+                    args,
+                    mock.Mock(),
+                    data,
+                    mock.Mock(),
+                    "account-key",
+                    mock.Mock(),
+                    mock.Mock(),
+                    SimpleNamespace(client_id="identity"),
+                    "subnet",
+                    "ssh-key",
+                    "prefix",
+                    lane,
+                    executions,
+                    release.queue.Queue(),
+                    detach_event=detach,
+                )
+        cleanup.assert_not_called()
+
     def test_controller_starts_three_selected_lanes_concurrently(self):
         plan = release.load_plan(HERE / "release-plan.json")
         lane_ids = ["linux", "arm", "windows"]
@@ -3122,6 +3190,61 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertEqual("failed", run["status"])
         self.assertEqual("setup failed", run["failure"])
         lease.check.assert_called()
+        lease.release.assert_called_once_with()
+
+    def test_start_detach_releases_lease_without_cancelling_remote_workers(self):
+        plan = release.load_plan(HERE / "release-plan.json")
+        context = {"modules": {}, "subscription": "subscription"}
+        data = {
+            "context": context,
+            "plan": plan,
+            "resourceGroup": "group",
+            "storageAccount": "account",
+            "location": "eastus2",
+        }
+        artifact_container = mock.Mock()
+        control_container = mock.Mock()
+        service = mock.Mock()
+        service.get_container_client.side_effect = [
+            artifact_container,
+            control_container,
+        ]
+        lease = mock.Mock()
+        lease.release.return_value = []
+        args = SimpleNamespace(
+            commit="a" * 40,
+            repository="repository",
+            branch="main",
+            version="1.0.0",
+            run_id="run-id",
+        )
+        with mock.patch.object(
+            release, "preflight_data", return_value=data
+        ), mock.patch.object(
+            release, "ensure_resource_group"
+        ), mock.patch.object(
+            release,
+            "ensure_storage",
+            return_value=(SimpleNamespace(id="scope"), service, "key"),
+        ), mock.patch.object(
+            release.ControllerLease, "acquire", return_value=lease
+        ), mock.patch.object(
+            release,
+            "_start_under_controller_lease",
+            side_effect=release.ControllerDetached("terminal closed"),
+        ), mock.patch.object(release, "set_kill_switch") as kill, mock.patch.object(
+            release, "reconcile_managed_run_resources"
+        ) as resources, mock.patch.object(
+            release, "cleanup_managed_identities"
+        ) as identities, mock.patch.object(
+            release, "load_run"
+        ) as load_run, mock.patch.object(release, "put_json") as put:
+            release.start(args)
+        kill.assert_not_called()
+        resources.assert_not_called()
+        identities.assert_not_called()
+        load_run.assert_not_called()
+        put.assert_not_called()
         lease.release.assert_called_once_with()
 
     def test_start_stops_all_shared_cleanup_mutations_after_lease_loss(self):
