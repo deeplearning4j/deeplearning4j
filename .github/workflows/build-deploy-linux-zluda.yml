@@ -9,7 +9,7 @@ name: Build Linux x86_64 CUDA+ZLUDA (native validation)
 # snapshot coordinates (HAVE_ZLUDA changes compile definitions).  It runs
 # `install`, verifies the ZLUDA configuration took effect, and uploads the
 # native artifacts for inspection.  Publishing would require a distinct
-# classifier (e.g. linux-x86_64-cuda-12.9-zluda) — see ADR 0087 / ADR 0102.
+# classifier (linux-x86_64-zluda) — see ADR 0087 / ADR 0102.
 #
 # A pinned ZLUDA release is downloaded and exposed via ZLUDA_PATH so
 # setup_zluda() finds it (it would otherwise attempt its own download).

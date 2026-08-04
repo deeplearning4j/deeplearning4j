@@ -4327,8 +4327,10 @@ def attested_shard_variants(
     platform = planned["build"]["javacppPlatform"]
     inferred = set()
     for name, variant in planned_variants.items():
-        suffix = variant.get("classifierSuffix", variant.get("suffix", ""))
-        classifier = f"{platform}{suffix}"
+        platform_extension = variant.get(
+            "platformExtension", variant.get("suffix", "")
+        )
+        classifier = f"{platform}{platform_extension}"
         if any(file_name.endswith(f"-{classifier}.jar") for file_name in file_names):
             inferred.add(name)
     if not inferred:

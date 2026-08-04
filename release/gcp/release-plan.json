@@ -142,13 +142,13 @@
     {
       "id": "linux-x86_64-zluda", "sourceWorkflow": "build-deploy-linux-zluda.yml",
       "os": "linux", "architecture": "x86_64", "imageProject": "ubuntu-os-cloud", "imageFamily": "ubuntu-2204-lts", "machineClass": "x86", "worker": "worker.sh", "containerImage": "nvidia/cuda:12.9.1-devel-ubuntu22.04", "workloads": ["maven"],
-      "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-cuda-12.9", "nd4j-cuda-12.9-preset", "nd4j-zluda", "nd4j-zluda-platform"], "classifierTokens": ["linux-x86_64-cuda-12.9-zluda"], "unclassifiedArtifactIds": ["nd4j-zluda", "nd4j-zluda-platform"], "includeMetadata": true},
+      "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-cuda-12.9", "nd4j-cuda-12.9-preset", "nd4j-zluda", "nd4j-zluda-platform"], "classifierTokens": ["linux-x86_64-zluda"], "unclassifiedArtifactIds": ["nd4j-zluda", "nd4j-zluda-platform"], "includeMetadata": true},
       "build": {"backend": "cuda", "cudaVersion": "12.9", "zludaVersion": "v6", "javacppPlatform": "linux-x86_64", "profiles": ["cuda", "sdx", "zluda", "zluda-platform"], "modules": [":nd4j-cuda-12.9", ":nd4j-cuda-12.9-preset", ":nd4j-zluda", ":nd4j-zluda-platform", ":libnd4j"], "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0", "-Dlibnd4j.zluda=AMD"], "variants": [{"name": "zluda", "classifierSuffix": "-cuda-12.9-zluda", "platformExtension": "-zluda"}], "buildThreads": 48}
     },
     {
       "id": "windows-x86_64-zluda",
       "os": "windows", "architecture": "x86_64", "imageProject": "windows-cloud", "imageFamily": "windows-2022", "machineClass": "x86", "worker": "worker.ps1", "workloads": ["maven"],
-      "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-cuda-12.9", "nd4j-cuda-12.9-preset"], "classifierTokens": ["windows-x86_64-cuda-12.9-zluda"], "includeMetadata": true},
+      "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-cuda-12.9", "nd4j-cuda-12.9-preset"], "classifierTokens": ["windows-x86_64-zluda"], "includeMetadata": true},
       "build": {"backend": "cuda", "cudaVersion": "12.9", "zludaVersion": "v6", "javacppPlatform": "windows-x86_64", "profiles": ["cuda", "sdx", "zluda"], "modules": [":nd4j-cuda-12.9", ":nd4j-cuda-12.9-preset", ":nd4j-zluda", ":libnd4j"], "mavenArgs": ["-Dlibnd4j.compute=8.6 9.0", "-Dlibnd4j.zluda=AMD", "-Dlibnd4j.oom.killer=OFF"], "variants": [{"name": "zluda", "classifierSuffix": "-cuda-12.9-zluda", "platformExtension": "-zluda"}], "buildThreads": 48}
     }
   ]

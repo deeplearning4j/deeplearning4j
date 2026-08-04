@@ -1291,6 +1291,36 @@ class AzureSafetyTests(unittest.TestCase):
                 )
             self.assertEqual(set(payloads), set(outputs))
 
+    def test_attested_variants_use_the_attached_javacpp_classifier(self):
+        planned = {
+            "build": {
+                "javacppPlatform": "linux-x86_64",
+                "variants": [{
+                    "name": "zluda",
+                    "classifierSuffix": "-cuda-12.9-zluda",
+                    "platformExtension": "-zluda",
+                }],
+            },
+        }
+        manifest = {
+            "variants": ["zluda"],
+            "files": [{
+                "path": (
+                    "maven-repository/org/nd4j/nd4j-cuda-12.9/1.0.0/"
+                    "nd4j-cuda-12.9-1.0.0-linux-x86_64-zluda.jar"
+                ),
+            }],
+        }
+        self.assertEqual(
+            {"zluda"}, release.attested_shard_variants(planned, manifest)
+        )
+        manifest["files"][0]["path"] = (
+            "maven-repository/org/nd4j/nd4j-cuda-12.9/1.0.0/"
+            "nd4j-cuda-12.9-1.0.0-linux-x86_64-cuda-12.9-zluda.jar"
+        )
+        with self.assertRaisesRegex(RuntimeError, "no exact classifier JARs"):
+            release.attested_shard_variants(planned, manifest)
+
     def test_existing_shards_are_derived_from_verified_release_assets(self):
         aws_plan = json.loads(
             (ROOT / "release/aws/release-plan.json").read_text(encoding="utf-8")

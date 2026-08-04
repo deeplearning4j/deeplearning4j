@@ -1002,7 +1002,7 @@
           "nd4j-zluda-platform"
         ],
         "classifierTokens": [
-          "linux-x86_64-cuda-12.9-zluda"
+          "linux-x86_64-zluda"
         ],
         "unclassifiedArtifactIds": [
           "nd4j-zluda",
@@ -1066,7 +1066,7 @@
           "nd4j-cuda-12.9-preset"
         ],
         "classifierTokens": [
-          "windows-x86_64-cuda-12.9-zluda"
+          "windows-x86_64-zluda"
         ],
         "includeMetadata": true
       },

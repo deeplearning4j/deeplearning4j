@@ -694,10 +694,10 @@ class ReleaseValidationTest(unittest.TestCase):
         )
 
         expected_profiles = {
-            "zluda-linux-amd64": ("Linux", None, "amd64", "linux-x86_64-cuda-12.9-zluda"),
-            "zluda-linux-x86_64": ("Linux", None, "x86_64", "linux-x86_64-cuda-12.9-zluda"),
-            "zluda-windows-amd64": (None, "windows", "amd64", "windows-x86_64-cuda-12.9-zluda"),
-            "zluda-windows-x86_64": (None, "windows", "x86_64", "windows-x86_64-cuda-12.9-zluda"),
+            "zluda-linux-amd64": ("Linux", None, "amd64", "linux-x86_64-zluda"),
+            "zluda-linux-x86_64": ("Linux", None, "x86_64", "linux-x86_64-zluda"),
+            "zluda-windows-amd64": (None, "windows", "amd64", "windows-x86_64-zluda"),
+            "zluda-windows-x86_64": (None, "windows", "x86_64", "windows-x86_64-zluda"),
         }
         profiles = {
             profile.findtext("m:id", namespaces=namespace): profile
@@ -810,8 +810,14 @@ class ReleaseValidationTest(unittest.TestCase):
                     self.assertNotIn("-Dlibnd4j.zluda=rocm6", build["mavenArgs"])
                     self.assertEqual(expectation["artifactIds"], set(rules["artifactIds"]))
                     self.assertEqual(
-                        [f"{platform}-cuda-12.9-zluda"],
+                        [f"{platform}-zluda"],
                         shard["artifactRules"]["classifierTokens"],
+                    )
+                    self.assertEqual(
+                        f"{platform}-zluda",
+                        build_platform.variant_artifact_classifier(
+                            build, build["variants"][0]
+                        ),
                     )
                     self.assertEqual(
                         expectation["unclassifiedArtifactIds"],
@@ -941,7 +947,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 ],
                 "nd4j-cuda-12.9": [
                     f"nd4j-cuda-12.9-{version}.jar",
-                    f"nd4j-cuda-12.9-{version}-linux-x86_64-cuda-12.9-zluda.jar",
+                    f"nd4j-cuda-12.9-{version}-linux-x86_64-zluda.jar",
                 ],
             }
             for artifact_id, names in artifacts.items():
@@ -953,7 +959,7 @@ class ReleaseValidationTest(unittest.TestCase):
             build_platform.stage_repository(repository, output, {
                 "mode": "classifier",
                 "artifactIds": list(artifacts),
-                "classifierTokens": ["linux-x86_64-cuda-12.9-zluda"],
+                "classifierTokens": ["linux-x86_64-zluda"],
                 "unclassifiedArtifactIds": ["nd4j-zluda", "nd4j-zluda-platform"],
                 "includeMetadata": False,
             })
@@ -961,7 +967,7 @@ class ReleaseValidationTest(unittest.TestCase):
             staged = {path.name for path in output.rglob("*.jar")}
             self.assertIn(f"nd4j-zluda-{version}.jar", staged)
             self.assertIn(f"nd4j-zluda-platform-{version}.jar", staged)
-            self.assertIn(f"nd4j-cuda-12.9-{version}-linux-x86_64-cuda-12.9-zluda.jar", staged)
+            self.assertIn(f"nd4j-cuda-12.9-{version}-linux-x86_64-zluda.jar", staged)
             self.assertNotIn(f"nd4j-cuda-12.9-{version}.jar", staged)
             self.assertNotIn(f"nd4j-zluda-{version}-sources.jar", staged)
             self.assertNotIn(f"nd4j-zluda-platform-{version}-sources.jar", staged)
@@ -1092,11 +1098,7 @@ class ReleaseValidationTest(unittest.TestCase):
                     "mode": "classifier",
                     "artifactIds": [*artifact_ids, f"{artifact_ids[0]}-platform"],
                 }
-                classifier = next(
-                    flag.split("=", 1)[1]
-                    for flag in build_platform.variant_flags(build, variant)
-                    if flag.startswith("-Dlibnd4j.classifier=")
-                )
+                classifier = build_platform.variant_artifact_classifier(build, variant)
 
                 def write_jar(artifact_id, artifact_classifier):
                     path = (

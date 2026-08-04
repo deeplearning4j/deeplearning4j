@@ -284,6 +284,14 @@ def variant_flags(build: dict, variant: dict) -> list[str]:
     return flags
 
 
+def variant_artifact_classifier(build: dict, variant: dict) -> str:
+    """Return the attached JavaCPP JAR classifier for a release variant."""
+    platform_extension = variant.get(
+        "platformExtension", variant.get("suffix", "")
+    )
+    return f"{build['javacppPlatform']}{platform_extension}"
+
+
 def required_classifier_artifact_ids(build: dict, rules: dict) -> tuple[str, ...]:
     """Return the CPU/CUDA artifacts that must carry every planned classifier."""
     if rules.get("mode", "all") != "classifier":
@@ -430,11 +438,7 @@ def reset_variant_classifier_artifacts(
         return
     if not version:
         raise ValueError("classifier artifact validation requires a release version")
-    classifier = next(
-        flag.split("=", 1)[1]
-        for flag in variant_flags(build, variant)
-        if flag.startswith("-Dlibnd4j.classifier=")
-    )
+    classifier = variant_artifact_classifier(build, variant)
     for artifact_id in required:
         for path in exact_classifier_jar_candidates(
             repository, artifact_id, version, classifier
@@ -455,11 +459,7 @@ def attest_variant_classifier_artifacts(
         return
     if not version:
         raise ValueError("classifier artifact validation requires a release version")
-    classifier = next(
-        flag.split("=", 1)[1]
-        for flag in variant_flags(build, variant)
-        if flag.startswith("-Dlibnd4j.classifier=")
-    )
+    classifier = variant_artifact_classifier(build, variant)
     found: dict[str, list[Path]] = {}
     for artifact_id in required:
         found[artifact_id] = [
@@ -654,11 +654,10 @@ def package_sdk_jars(repository: Path, output: Path, build: dict, rules: dict) -
     artifact_ids = set(rules.get("artifactIds", []))
     if not artifact_ids:
         return 0
-    classifiers = set()
-    for variant in build["variants"]:
-        classifier = next(flag.split("=", 1)[1] for flag in variant_flags(build, variant)
-                          if flag.startswith("-Dlibnd4j.classifier="))
-        classifiers.add(classifier)
+    classifiers = {
+        variant_artifact_classifier(build, variant)
+        for variant in build["variants"]
+    }
     produced = 0
     for namespace in (Path("org/eclipse/deeplearning4j"), Path("org/nd4j")):
         root = repository / namespace
