@@ -884,6 +884,7 @@ class ReleaseValidationTest(unittest.TestCase):
             'include_directories(SYSTEM "${ROCM_INCLUDE_DIR}")',
             "target_include_directories(${target_name} SYSTEM PUBLIC ${ROCM_INCLUDE_DIR})",
             "target_link_libraries(${target_name} PUBLIC ${ROCM_HIP_RUNTIME_LIBRARY})",
+            "add_compile_definitions(__HIP_PLATFORM_AMD__=1)",
             "DL4J_ZLUDA_REQUIRE_ROCM",
             "DL4J_ZLUDA_REQUIRE_MIOPEN",
         ):

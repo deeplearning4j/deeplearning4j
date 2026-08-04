@@ -170,6 +170,11 @@ function(setup_zluda)
     set(HAVE_ZLUDA TRUE PARENT_SCOPE)
     add_compile_definitions(HAVE_ZLUDA=1)
     add_compile_definitions(ZLUDA_TARGET_${ZLUDA_TARGET_BACKEND}=1)
+    if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
+        # HIP headers are also consumed by ordinary C++ translation units, so
+        # select the AMD platform even when hipcc is not the active compiler.
+        add_compile_definitions(__HIP_PLATFORM_AMD__=1)
+    endif()
 
     print_status_colored("SUCCESS" "ZLUDA configuration complete (target: ${ZLUDA_TARGET_BACKEND})")
 endfunction()
