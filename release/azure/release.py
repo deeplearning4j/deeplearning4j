@@ -540,26 +540,42 @@ def selected_executions(
     if not selectors:
         selected = [copy.deepcopy(item) for item in plan["shards"]]
     else:
-        seen: set[tuple[str, str | None]] = set()
+        # Coalesce sibling lane--variant selectors before creating executions.
+        # A filtered parent then gets one checkout and Maven repository, so its
+        # variants can reuse native, Java, and Rust outputs on the persistent VM.
+        requested: dict[str, set[str] | None] = {}
         for selector in selectors:
             parent, variant = _selector_parts(selector)
             if parent not in by_id:
                 raise ValueError(f"unknown shard selector: {selector}")
-            key = (parent, variant)
-            if key in seen:
-                continue
-            seen.add(key)
-            shard = copy.deepcopy(by_id[parent])
             if variant is not None:
-                variants = [
-                    item for item in shard["build"]["variants"]
-                    if item["name"] == variant
-                ]
-                if not variants:
+                names = {
+                    item["name"] for item in by_id[parent]["build"]["variants"]
+                }
+                if variant not in names:
                     raise ValueError(f"unknown variant selector: {selector}")
-                shard["build"]["variants"] = variants
+
+            if variant is None:
+                requested[parent] = None
+            elif parent not in requested:
+                requested[parent] = {variant}
+            elif requested[parent] is not None:
+                requested[parent].add(variant)
+
+        for parent, requested_variants in requested.items():
+            shard = copy.deepcopy(by_id[parent])
+            if requested_variants is not None:
+                shard["build"]["variants"] = [
+                    item for item in shard["build"]["variants"]
+                    if item["name"] in requested_variants
+                ]
                 shard["parentShard"] = parent
-                shard["id"] = selector
+                if len(requested_variants) == 1:
+                    shard["id"] = (
+                        f"{parent}--{next(iter(requested_variants))}"
+                    )
+                else:
+                    shard["id"] = parent
             selected.append(shard)
     excluded_lanes = {value for value in exclusions if "--" not in value}
     excluded_variants: dict[str, set[str]] = {}

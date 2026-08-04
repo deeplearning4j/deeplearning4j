@@ -432,6 +432,28 @@ class SelectionTests(unittest.TestCase):
             item["name"] for item in selected[0]["build"]["variants"]
         ])
 
+    def test_sibling_variant_selection_reuses_one_filtered_parent_execution(self):
+        selectors = [
+            "windows-x86_64-cpu--avx512",
+            "windows-x86_64-cpu--onednn-avx512",
+        ]
+        selected = release.selected_executions(self.plan, selectors)
+
+        self.assertEqual(1, len(selected))
+        self.assertEqual("windows-x86_64-cpu", selected[0]["id"])
+        self.assertEqual("windows-x86_64-cpu", selected[0]["parentShard"])
+        self.assertEqual(
+            ["avx512", "onednn-avx512"],
+            [item["name"] for item in selected[0]["build"]["variants"]],
+        )
+        self.assertEqual(
+            set(selectors),
+            release.execution_matrix_coverage([{"shard": selected[0]}]),
+        )
+        lanes = release.group_execution_lanes(self.plan, selected)
+        self.assertEqual(1, len(lanes))
+        self.assertEqual(1, len(lanes[0]["shards"]))
+
     def test_excluding_one_variant_keeps_the_other_classifiers(self):
         selected = release.selected_executions(
             self.plan, ["linux-x86_64-cpu"], ["linux-x86_64-cpu--base"]
