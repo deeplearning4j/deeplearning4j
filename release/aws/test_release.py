@@ -1332,6 +1332,32 @@ class ReleaseValidationTest(unittest.TestCase):
             cpu_linking,
         )
 
+    def test_nnapi_backend_uses_current_array_api_and_android_symbol_guard(self):
+        root = Path(__file__).parents[2]
+        source = (
+            root / "libnd4j/include/graph/cpu/NnapiGraphBackend.cpp"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("case DataType::HALF:", source)
+        self.assertNotIn("DataType::FLOAT16", source)
+        self.assertNotIn("isContiguous()", source)
+        self.assertIn(
+            "shape::strideDescendingCAscendingF(arr->shapeInfo())",
+            source,
+        )
+        self.assertGreaterEqual(source.count("!isDenseCOrder(arr)"), 3)
+
+        call = source.index(
+            "ANeuralNetworksModel_relaxComputationFloat32toFloat16"
+        )
+        compile_guard = source.rfind(
+            "#if defined(__ANDROID_API__) && __ANDROID_API__ >= 28",
+            0,
+            call,
+        )
+        self.assertGreaterEqual(compile_guard, 0)
+        self.assertGreater(source.index("#endif", call), call)
+
     def test_shared_native_script_emits_specialized_classifiers(self):
         root = Path(__file__).parents[2]
         script = root / "build-scripts/release/native-platform.sh"

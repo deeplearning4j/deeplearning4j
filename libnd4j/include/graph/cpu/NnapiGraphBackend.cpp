@@ -22,6 +22,7 @@
 #include <graph/DspDiagnostics.h>
 #include <graph/gpu/OpCategoryTable.h>
 #include <helpers/logger.h>
+#include <helpers/shape.h>
 #include <system/Environment.h>
 
 #include <android/NeuralNetworks.h>
@@ -50,12 +51,17 @@ static std::string toLower(const std::string& s) {
   return r;
 }
 
+static bool isDenseCOrder(NDArray* arr) {
+  return arr != nullptr && arr->ordering() == 'c' &&
+         shape::strideDescendingCAscendingF(arr->shapeInfo());
+}
+
 // ─── Data type support ──────────────────────────────────────────────────────
 
 int32_t NnapiGraphBackend::toNnapiOperandType(DataType dt) {
   switch (dt) {
     case DataType::FLOAT32: return ANEURALNETWORKS_TENSOR_FLOAT32;
-    case DataType::FLOAT16: return ANEURALNETWORKS_TENSOR_FLOAT16;
+    case DataType::HALF:    return ANEURALNETWORKS_TENSOR_FLOAT16;
     case DataType::INT32:   return ANEURALNETWORKS_TENSOR_INT32;
     case DataType::BOOL:    return ANEURALNETWORKS_TENSOR_BOOL8;
     case DataType::INT8:    return ANEURALNETWORKS_TENSOR_QUANT8_ASYMM_SIGNED;
@@ -305,8 +311,8 @@ uint32_t NnapiGraphBackend::addOperand(ANeuralNetworksModel* model, NDArray* arr
   // NNAPI requires contiguous memory. If the array is a view or has
   // non-trivial strides, dup() it into a contiguous copy.
   NDArray* contiguous = arr;
-  if (!arr->isContiguous()) {
-    auto copy = std::make_unique<NDArray>(arr->dup());
+  if (!isDenseCOrder(arr)) {
+    auto copy = std::make_unique<NDArray>(arr->dup('c'));
     contiguous = copy.get();
     contiguousCopies.push_back(std::move(copy));
   }
@@ -1062,9 +1068,11 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
   }
 
   // Allow NNAPI to use FP16 computation when beneficial (API 28+)
+#if defined(__ANDROID_API__) && __ANDROID_API__ >= 28
   if (apiLevel_ >= 28) {
     ANeuralNetworksModel_relaxComputationFloat32toFloat16(model, true);
   }
+#endif
 
   result = ANeuralNetworksModel_finish(model);
   if (result != ANEURALNETWORKS_NO_ERROR) {
@@ -1235,8 +1243,8 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     arr->syncToHost();
 
     NDArray* contiguous = arr;
-    if (!arr->isContiguous()) {
-      auto copy = std::make_unique<NDArray>(arr->dup());
+    if (!isDenseCOrder(arr)) {
+      auto copy = std::make_unique<NDArray>(arr->dup('c'));
       contiguous = copy.get();
       contiguousInputCopies.push_back(std::move(copy));
     }
@@ -1276,7 +1284,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
 
     // Output must be contiguous for NNAPI to write into
-    if (!arr->isContiguous()) {
+    if (!isDenseCOrder(arr)) {
       DSP_DIAG(EXECUTE, "NnapiGraphBackend: output array at source %d is not contiguous",
                 mapping.sourceIndex);
       ANeuralNetworksExecution_free(execution);
