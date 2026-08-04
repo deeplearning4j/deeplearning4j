@@ -810,6 +810,25 @@ function(configure_cpu_linking main_target_name)
         target_link_libraries(${main_target_name} PUBLIC ${JVM_LIBRARY})
     endif()
 
+    # Android CPU-family builds include NnapiGraphBackend whenever HAVE_NNAPI is
+    # enabled. Keep that system ABI explicit here just as the device-only linker
+    # does, so -z,defs validates the graph backend and the final ELF records the
+    # required libneuralnetworks dependency.
+    if(HAVE_NNAPI)
+        if(NOT ANDROID)
+            message(FATAL_ERROR
+                "HAVE_NNAPI requires an Android toolchain for ${main_target_name}")
+        endif()
+        find_library(_sd_cpu_nnapi_library neuralnetworks)
+        if(NOT _sd_cpu_nnapi_library)
+            message(FATAL_ERROR
+                "Android system libneuralnetworks was not found for ${main_target_name}")
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC "${_sd_cpu_nnapi_library}")
+        message(STATUS
+            "NNAPI CPU-family link boundary: ${main_target_name} -> ${_sd_cpu_nnapi_library}")
+    endif()
+
     # --- Multi-Helper Library Linking ---
     # Link all enabled helper libraries for multi-backend support
 
@@ -1047,6 +1066,19 @@ function(create_and_link_library)
         add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
         target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
+
+        # Capability-gated implementation files are compiled by the object target,
+        # before the final shared-library target exists. Propagate NNAPI there so
+        # NnapiGraphBackend.cpp emits its implementation instead of an empty
+        # translation unit while callers are compiled with HAVE_NNAPI enabled.
+        if(HAVE_NNAPI)
+            if(NOT ANDROID)
+                message(FATAL_ERROR
+                    "HAVE_NNAPI requires an Android toolchain for ${OBJECT_LIB_NAME}")
+            endif()
+            target_compile_definitions(${OBJECT_LIB_NAME} PUBLIC HAVE_NNAPI=1)
+            message(STATUS "NNAPI compile boundary: ${OBJECT_LIB_NAME} -> HAVE_NNAPI=1")
+        endif()
 
         # OpenMP: add compile flags to the OBJECT target.
         # find_package(OpenMP) runs inside setup_cpu_environment() which has function

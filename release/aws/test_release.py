@@ -1309,6 +1309,29 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertNotIn("SD_AVX512_FLAGS", avx512_block)
         self.assertNotIn("runtime feature detection", avx512_block)
 
+    def test_nnapi_capability_reaches_object_compilation_and_linking(self):
+        root = Path(__file__).parents[2]
+        source = (root / "libnd4j/cmake/MainBuildFlow.cmake").read_text(
+            encoding="utf-8"
+        )
+        object_start = source.index("function(create_and_link_library)")
+        object_end = source.index("# OpenMP: add compile flags", object_start)
+        object_setup = source[object_start:object_end]
+        cpu_link_start = source.index("function(configure_cpu_linking")
+        cpu_link_end = source.index("# --- Multi-Helper Library Linking", cpu_link_start)
+        cpu_linking = source[cpu_link_start:cpu_link_end]
+
+        self.assertIn("if(HAVE_NNAPI)", object_setup)
+        self.assertIn(
+            "target_compile_definitions(${OBJECT_LIB_NAME} PUBLIC HAVE_NNAPI=1)",
+            object_setup,
+        )
+        self.assertIn("find_library(_sd_cpu_nnapi_library neuralnetworks)", cpu_linking)
+        self.assertIn(
+            'target_link_libraries(${main_target_name} PUBLIC "${_sd_cpu_nnapi_library}")',
+            cpu_linking,
+        )
+
     def test_shared_native_script_emits_specialized_classifiers(self):
         root = Path(__file__).parents[2]
         script = root / "build-scripts/release/native-platform.sh"
