@@ -34,8 +34,8 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
 static void conv2dMIOpen(const LaunchContext* context,
-                         const NDArray* input, const NDArray* weights,
-                         const NDArray* bias, NDArray* output,
+                         NDArray* input, NDArray* weights,
+                         NDArray* bias, NDArray* output,
                          const int kH, const int kW,
                          const int sH, const int sW,
                          const int pH, const int pW,
@@ -46,19 +46,22 @@ static void conv2dMIOpen(const LaunchContext* context,
     }
     (void)paddingMode;
 
-    int bS, iC, iH, iW, oC, oH, oW;
-    int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
+    LongType bS, iC, iH, iW, oC, oH, oW;
+    LongType indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH;
     ConvolutionUtils::getSizesAndIndexesConv2d(
         isNCHW, 0, *input, *output,
         bS, iC, iH, iW, oC, oH, oW,
-        indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
+        indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
-    const auto inputTensor =
-        miopenTensor4D(input->dataType(), bS, iC, iH, iW);
-    const auto weightsTensor =
-        miopenTensor4D(weights->dataType(), oC, iC, kH, kW);
-    const auto outputTensor =
-        miopenTensor4D(output->dataType(), bS, oC, oH, oW);
+    const auto inputTensor = miopenTensor4D(
+        input->dataType(), static_cast<int>(bS), static_cast<int>(iC),
+        static_cast<int>(iH), static_cast<int>(iW));
+    const auto weightsTensor = miopenTensor4D(
+        weights->dataType(), static_cast<int>(oC), static_cast<int>(iC),
+        kH, kW);
+    const auto outputTensor = miopenTensor4D(
+        output->dataType(), static_cast<int>(bS), static_cast<int>(oC),
+        static_cast<int>(oH), static_cast<int>(oW));
     const miopen_bridge::Convolution2D convolution{
         pH, pW, sH, sW, dH, dW};
 
@@ -110,7 +113,7 @@ PLATFORM_IMPL(conv2d, ENGINE_ZLUDA_AMD) {
 
     // Handle SAME padding
     if (paddingMode == 1) {
-        int oH, oW;
+        LongType oH, oW;
         ConvolutionUtils::calcOutSizePool2D(oH, oW,
             kH, kW, sH, sW, pH, pW, dH, dW,
             isNCHW ? input->sizeAt(2) : input->sizeAt(1),
@@ -137,11 +140,11 @@ PLATFORM_CHECK(conv2d, ENGINE_ZLUDA_AMD) {
 
     // Check for supported data types
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
 
     // MIOpen works best with NCHW format
     req.expectTrue(makeInfoVariable(isNCHW, "isNCHW format"));
@@ -156,8 +159,8 @@ PLATFORM_CHECK(conv2d, ENGINE_ZLUDA_AMD) {
 //////////////////////////////////////////////////////////////////////////
 // Backpropagation implementation
 static void conv2dBpMIOpen(const LaunchContext* context,
-                           const NDArray* input, const NDArray* weights,
-                           const NDArray* gradO, NDArray* gradI,
+                           NDArray* input, NDArray* weights,
+                           NDArray* gradO, NDArray* gradI,
                            NDArray* gradW, NDArray* gradB,
                            const int kH, const int kW,
                            const int sH, const int sW,
@@ -169,19 +172,22 @@ static void conv2dBpMIOpen(const LaunchContext* context,
     }
     (void)paddingMode;
 
-    int bS, iC, iH, iW, oC, oH, oW;
-    int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
+    LongType bS, iC, iH, iW, oC, oH, oW;
+    LongType indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH;
     ConvolutionUtils::getSizesAndIndexesConv2d(
         isNCHW, 0, *input, *gradO,
         bS, iC, iH, iW, oC, oH, oW,
-        indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
+        indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
-    const auto inputTensor =
-        miopenTensor4D(input->dataType(), bS, iC, iH, iW);
-    const auto weightsTensor =
-        miopenTensor4D(weights->dataType(), oC, iC, kH, kW);
-    const auto gradOutputTensor =
-        miopenTensor4D(gradO->dataType(), bS, oC, oH, oW);
+    const auto inputTensor = miopenTensor4D(
+        input->dataType(), static_cast<int>(bS), static_cast<int>(iC),
+        static_cast<int>(iH), static_cast<int>(iW));
+    const auto weightsTensor = miopenTensor4D(
+        weights->dataType(), static_cast<int>(oC), static_cast<int>(iC),
+        kH, kW);
+    const auto gradOutputTensor = miopenTensor4D(
+        gradO->dataType(), static_cast<int>(bS), static_cast<int>(oC),
+        static_cast<int>(oH), static_cast<int>(oW));
     const miopen_bridge::Convolution2D convolution{
         pH, pW, sH, sW, dH, dW};
 
@@ -252,11 +258,11 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_ZLUDA_AMD) {
     Requirements req("MIOPEN CONV2D_BP OP");
 
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(gradO->dataType(), "gradO type"),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
 
     req.expectTrue(makeInfoVariable(isNCHW, "isNCHW format"));
     req.expectNotEq(makeInfoVariable(paddingMode, "paddingMode"), 2);

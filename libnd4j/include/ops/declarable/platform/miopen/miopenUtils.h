@@ -70,15 +70,15 @@ SD_BACKEND_PLATFORMS_INLINE_NAMESPACE_BEGIN
 
 inline miopen_bridge::DataType miopenBridgeDataType(DataType dataType) {
   switch (dataType) {
-    case FLOAT32:
+    case sd::DataType::FLOAT32:
       return miopen_bridge::DataType::FLOAT32;
-    case FLOAT16:
+    case sd::DataType::HALF:
       return miopen_bridge::DataType::FLOAT16;
-    case BFLOAT16:
+    case sd::DataType::BFLOAT16:
       return miopen_bridge::DataType::BFLOAT16;
-    case INT8:
+    case sd::DataType::INT8:
       return miopen_bridge::DataType::INT8;
-    case INT32:
+    case sd::DataType::INT32:
       return miopen_bridge::DataType::INT32;
     default: {
       const std::string message =
@@ -91,11 +91,11 @@ inline miopen_bridge::DataType miopenBridgeDataType(DataType dataType) {
 
 inline bool isMIOpenSupportedType(DataType dataType) {
   switch (dataType) {
-    case FLOAT32:
-    case FLOAT16:
-    case BFLOAT16:
-    case INT8:
-    case INT32:
+    case sd::DataType::FLOAT32:
+    case sd::DataType::HALF:
+    case sd::DataType::BFLOAT16:
+    case sd::DataType::INT8:
+    case sd::DataType::INT32:
       return true;
     default:
       return false;

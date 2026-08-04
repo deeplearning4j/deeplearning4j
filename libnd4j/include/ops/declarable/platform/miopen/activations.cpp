@@ -32,7 +32,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static miopen_bridge::Tensor4D activationTensor(const NDArray* input) {
+static miopen_bridge::Tensor4D activationTensor(NDArray* input) {
     const auto shape = input->shapeOf();
     const auto rank = input->rankOf();
 
@@ -53,7 +53,7 @@ static miopen_bridge::Tensor4D activationTensor(const NDArray* input) {
 }
 
 static void activationMIOpen(const LaunchContext* context,
-                             const NDArray* input, NDArray* output,
+                             NDArray* input, NDArray* output,
                              miopen_bridge::ActivationMode mode,
                              double alpha = 0.0, double beta = 0.0,
                              double gamma = 0.0) {
@@ -87,9 +87,9 @@ PLATFORM_CHECK(relu, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN RELU OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectLessEq(makeInfoVariable(input->lengthOf(), LENGTH_MSG_INPUT0),
                      static_cast<LongType>(INT_MAX));
     req.logTheSuccess();
@@ -115,9 +115,9 @@ PLATFORM_CHECK(relu6, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN RELU6 OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
     req.logTheSuccess();
     return req;
 }
@@ -139,9 +139,9 @@ PLATFORM_CHECK(sigmoid, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN SIGMOID OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
     req.logTheSuccess();
     return req;
 }
@@ -163,9 +163,9 @@ PLATFORM_CHECK(tanh, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN TANH OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
     req.logTheSuccess();
     return req;
 }
@@ -189,9 +189,9 @@ PLATFORM_CHECK(elu, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN ELU OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
     req.logTheSuccess();
     return req;
 }
@@ -213,9 +213,9 @@ PLATFORM_CHECK(softplus, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN SOFTPLUS OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
     req.logTheSuccess();
     return req;
 }

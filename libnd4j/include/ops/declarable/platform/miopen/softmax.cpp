@@ -32,7 +32,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static miopen_bridge::Tensor4D softmaxTensor(const NDArray* input,
+static miopen_bridge::Tensor4D softmaxTensor(NDArray* input,
                                              int dimension) {
     const auto shape = input->shapeOf();
     const int rank = input->rankOf();
@@ -57,7 +57,7 @@ static miopen_bridge::Tensor4D softmaxTensor(const NDArray* input,
 }
 
 static void softmaxMIOpen(const LaunchContext* context,
-                          const NDArray* input, NDArray* output,
+                          NDArray* input, NDArray* output,
                           int dimension, bool isLog = false) {
     const auto tensor = softmaxTensor(input, dimension);
 
@@ -89,9 +89,9 @@ PLATFORM_CHECK(softmax, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN SOFTMAX OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
     req.logTheSuccess();
     return req;
 }
@@ -114,9 +114,9 @@ PLATFORM_CHECK(log_softmax, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN LOG_SOFTMAX OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
     req.logTheSuccess();
     return req;
 }
@@ -124,7 +124,7 @@ PLATFORM_CHECK(log_softmax, ENGINE_ZLUDA_AMD) {
 //////////////////////////////////////////////////////////////////////////
 // Softmax Backpropagation
 static void softmaxBpMIOpen(const LaunchContext* context,
-                            const NDArray* input, const NDArray* gradO,
+                            NDArray* input, NDArray* gradO,
                             NDArray* gradI, int dimension,
                             bool isLog = false) {
     const auto tensor = softmaxTensor(input, dimension);
@@ -159,9 +159,9 @@ PLATFORM_CHECK(softmax_bp, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN SOFTMAX_BP OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(gradO->dataType(), "gradO type"),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
     req.logTheSuccess();
     return req;
 }
@@ -185,9 +185,9 @@ PLATFORM_CHECK(log_softmax_bp, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN LOG_SOFTMAX_BP OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(gradO->dataType(), "gradO type"),
-                 {FLOAT32, FLOAT16, BFLOAT16});
+                 {FLOAT32, HALF, BFLOAT16});
     req.logTheSuccess();
     return req;
 }

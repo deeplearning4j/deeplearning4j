@@ -32,7 +32,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static miopen_bridge::Tensor4D batchnormTensor(const NDArray* input,
+static miopen_bridge::Tensor4D batchnormTensor(NDArray* input,
                                                bool isNCHW,
                                                int& channels) {
     const auto shape = input->shapeOf();
@@ -57,9 +57,9 @@ static miopen_bridge::Tensor4D batchnormTensor(const NDArray* input,
 }
 
 static void batchnormMIOpen(const LaunchContext* context,
-                            const NDArray* input,
-                            const NDArray* mean, const NDArray* variance,
-                            const NDArray* gamma, const NDArray* beta,
+                            NDArray* input,
+                            NDArray* mean, NDArray* variance,
+                            NDArray* gamma, NDArray* beta,
                             NDArray* output,
                             double epsilon, bool isNCHW) {
     int channels = 0;
@@ -103,9 +103,9 @@ PLATFORM_CHECK(batchnorm, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN BATCHNORM OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(output->dataType(), TYPE_MSG_OUTPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(input->rankOf(), RANK_MSG_INPUT0), {2, 4});
     req.logTheSuccess();
     return req;
@@ -114,9 +114,9 @@ PLATFORM_CHECK(batchnorm, ENGINE_ZLUDA_AMD) {
 //////////////////////////////////////////////////////////////////////////
 // Batch Normalization Backpropagation
 static void batchnormBpMIOpen(const LaunchContext* context,
-                              const NDArray* input, const NDArray* gradO,
-                              const NDArray* mean, const NDArray* variance,
-                              const NDArray* gamma,
+                              NDArray* input, NDArray* gradO,
+                              NDArray* mean, NDArray* variance,
+                              NDArray* gamma,
                               NDArray* gradI, NDArray* gradGamma, NDArray* gradBeta,
                               double epsilon, bool isNCHW) {
     int channels = 0;
@@ -166,9 +166,9 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_ZLUDA_AMD) {
 
     Requirements req("MIOPEN BATCHNORM_BP OP");
     req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(gradO->dataType(), "gradO type"),
-                 {FLOAT32, FLOAT16, BFLOAT16}) &&
+                 {FLOAT32, HALF, BFLOAT16}) &&
     req.expectIn(makeInfoVariable(input->rankOf(), RANK_MSG_INPUT0), {2, 4});
     req.logTheSuccess();
     return req;

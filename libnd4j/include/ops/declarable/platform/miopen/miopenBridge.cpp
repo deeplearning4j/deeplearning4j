@@ -343,7 +343,8 @@ int batchNormForwardInference(int deviceId, const Tensor4D& tensor,
       dataDescriptor.value, input,
       dataDescriptor.value, output,
       parameterDescriptor.value,
-      scale, bias, mean, variance, epsilon);
+      const_cast<void*>(scale), const_cast<void*>(bias),
+      const_cast<void*>(mean), const_cast<void*>(variance), epsilon);
   if (callStatus != miopenStatusSuccess) {
     return miopenFailure("miopenBatchNormalizationForwardInference", callStatus);
   }
@@ -378,8 +379,8 @@ int batchNormBackward(int deviceId, const Tensor4D& tensor,
       dataDescriptor.value, gradOutput,
       dataDescriptor.value, gradInput,
       parameterDescriptor.value,
-      scale, gradScale, gradBias,
-      epsilon, mean, variance);
+      const_cast<void*>(scale), gradScale, gradBias,
+      epsilon, const_cast<void*>(mean), const_cast<void*>(variance));
   if (callStatus != miopenStatusSuccess) {
     return miopenFailure("miopenBatchNormalizationBackward", callStatus);
   }
@@ -398,12 +399,13 @@ int softmaxForward(int deviceId, const Tensor4D& tensor,
 
   float alpha = 1.0f;
   float beta = 0.0f;
-  const auto algorithm = logSoftmax ? miopenSoftmaxLog : miopenSoftmaxAccurate;
+  const miopenSoftmaxAlgorithm_t algorithm =
+      logSoftmax ? MIOPEN_SOFTMAX_LOG : MIOPEN_SOFTMAX_ACCURATE;
   auto callStatus = miopenSoftmaxForward_V2(
       context->handle, &alpha,
       descriptor.value, input,
       &beta, descriptor.value, output,
-      algorithm, miopenSoftmaxChannel);
+      algorithm, MIOPEN_SOFTMAX_MODE_CHANNEL);
   if (callStatus != miopenStatusSuccess) {
     return miopenFailure("miopenSoftmaxForward_V2", callStatus);
   }
@@ -430,12 +432,13 @@ int softmaxBackward(int deviceId, const Tensor4D& tensor,
 
   float alpha = 1.0f;
   float beta = 0.0f;
-  const auto algorithm = logSoftmax ? miopenSoftmaxLog : miopenSoftmaxAccurate;
+  const miopenSoftmaxAlgorithm_t algorithm =
+      logSoftmax ? MIOPEN_SOFTMAX_LOG : MIOPEN_SOFTMAX_ACCURATE;
   auto callStatus = miopenSoftmaxForward_V2(
       context->handle, &alpha,
       descriptor.value, input,
       &beta, descriptor.value, forwardOutput.data,
-      algorithm, miopenSoftmaxChannel);
+      algorithm, MIOPEN_SOFTMAX_MODE_CHANNEL);
   if (callStatus != miopenStatusSuccess) {
     return miopenFailure("miopenSoftmaxForward_V2(backward preparation)",
                          callStatus);
@@ -446,7 +449,7 @@ int softmaxBackward(int deviceId, const Tensor4D& tensor,
       descriptor.value, forwardOutput.data,
       descriptor.value, gradOutput,
       &beta, descriptor.value, gradInput,
-      algorithm, miopenSoftmaxChannel);
+      algorithm, MIOPEN_SOFTMAX_MODE_CHANNEL);
   if (callStatus != miopenStatusSuccess) {
     return miopenFailure("miopenSoftmaxBackward_V2", callStatus);
   }
