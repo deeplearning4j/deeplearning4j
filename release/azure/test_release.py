@@ -4021,6 +4021,92 @@ class WorkerTransportTests(unittest.TestCase):
             url,
         )
 
+    def test_small_file_upload_uses_a_single_block_blob_put(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "artifact.bin"
+            path.write_bytes(b"small")
+            args = SimpleNamespace(
+                bucket="dl4jaccount/releases",
+                object="run/artifact.bin",
+                file=str(path),
+                content_type="application/test",
+                client_id="client",
+            )
+            with mock.patch.object(
+                cloud_io, "request", return_value=b""
+            ) as request:
+                cloud_io.command_upload(args)
+
+        request.assert_called_once()
+        call = request.call_args
+        self.assertEqual(
+            "https://dl4jaccount.blob.core.windows.net/releases/run/artifact.bin",
+            call.args[0],
+        )
+        self.assertEqual(b"small", call.kwargs["data"])
+        self.assertEqual("BlockBlob", call.kwargs["headers"]["x-ms-blob-type"])
+        self.assertEqual("application/test", call.kwargs["headers"]["Content-Type"])
+
+    def test_large_file_upload_streams_ordered_blocks_then_commits_them(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "sdk-assets.tar.gz"
+            path.write_bytes(b"abcdefghij")
+            args = SimpleNamespace(
+                bucket="dl4jaccount/releases",
+                object="run/sdk-assets.tar.gz",
+                file=str(path),
+                content_type="application/gzip",
+                client_id="client",
+            )
+            with mock.patch.object(
+                cloud_io, "SINGLE_PUT_LIMIT", 4
+            ), mock.patch.object(
+                cloud_io, "BLOCK_UPLOAD_SIZE", 3
+            ), mock.patch.object(
+                Path, "read_bytes", side_effect=AssertionError("must stream")
+            ), mock.patch.object(
+                cloud_io, "request", return_value=b""
+            ) as request:
+                cloud_io.command_upload(args)
+
+        block_ids = [cloud_io._block_id(index) for index in range(4)]
+        self.assertEqual(5, request.call_count)
+        for index, (call, expected_data) in enumerate(
+            zip(request.call_args_list[:4], (b"abc", b"def", b"ghi", b"j"))
+        ):
+            query = cloud_io.urllib.parse.urlencode(
+                (("comp", "block"), ("blockid", block_ids[index]))
+            )
+            self.assertEqual(
+                "https://dl4jaccount.blob.core.windows.net/releases/"
+                "run/sdk-assets.tar.gz?" + query,
+                call.args[0],
+            )
+            self.assertEqual(expected_data, call.kwargs["data"])
+            self.assertTrue(call.kwargs["authenticated"])
+            self.assertEqual("client", call.kwargs["client_id"])
+
+        commit = request.call_args_list[-1]
+        self.assertEqual(
+            "https://dl4jaccount.blob.core.windows.net/releases/"
+            "run/sdk-assets.tar.gz?comp=blocklist",
+            commit.args[0],
+        )
+        self.assertEqual(
+            (
+                '<?xml version="1.0" encoding="utf-8"?>\n<BlockList>'
+                + "".join(
+                    f"<Latest>{block_id}</Latest>" for block_id in block_ids
+                )
+                + "</BlockList>"
+            ).encode("utf-8"),
+            commit.kwargs["data"],
+        )
+        self.assertEqual(
+            "application/gzip",
+            commit.kwargs["headers"]["x-ms-blob-content-type"],
+        )
+
     def test_missing_checkpoint_download_is_a_quiet_cache_miss(self):
         with tempfile.TemporaryDirectory() as temp:
             output = Path(temp) / "status.json"

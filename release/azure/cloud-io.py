@@ -6,6 +6,7 @@ workers never receive storage keys or release/publication credentials.
 """
 
 import argparse
+import base64
 import datetime as dt
 import json
 import mimetypes
@@ -21,6 +22,11 @@ import urllib.request
 METADATA_TOKEN_URL = "http://169.254.169.254/metadata/identity/oauth2/token"
 STORAGE_RESOURCE = "https://storage.azure.com/"
 STORAGE_API_VERSION = "2023-11-03"
+# Keep ordinary metadata uploads simple, but stream release archives through the
+# block-list API well below Azure's per-request limit (currently 5,000 MiB).
+SINGLE_PUT_LIMIT = 256 * 1024 * 1024
+BLOCK_UPLOAD_SIZE = 128 * 1024 * 1024
+MAX_BLOCKS = 50_000
 _TOKEN = {"value": None, "expires": 0.0, "client_id": None}
 
 
@@ -130,7 +136,60 @@ def blob_url(bucket, name):
     return f"https://{account}.blob.core.windows.net/{container}/{quoted_name}"
 
 
+def _block_id(index):
+    return base64.b64encode(f"{index:08d}".encode("ascii")).decode("ascii")
+
+
+def upload_block_blob(bucket, name, chunks, content_type, client_id=None):
+    """Upload chunks as uncommitted blocks, then atomically publish their list."""
+    url = blob_url(bucket, name)
+    block_ids = []
+    for index, chunk in enumerate(chunks):
+        if not chunk:
+            continue
+        if index >= MAX_BLOCKS:
+            raise RuntimeError(
+                f"Azure block blob upload exceeds the {MAX_BLOCKS} block limit"
+            )
+        block_id = _block_id(index)
+        query = urllib.parse.urlencode(
+            (("comp", "block"), ("blockid", block_id))
+        )
+        request(
+            url + "?" + query,
+            method="PUT",
+            data=chunk,
+            headers={"Content-Type": "application/octet-stream"},
+            authenticated=True,
+            client_id=client_id,
+        )
+        block_ids.append(block_id)
+
+    block_list = (
+        '<?xml version="1.0" encoding="utf-8"?>\n<BlockList>'
+        + "".join(f"<Latest>{block_id}</Latest>" for block_id in block_ids)
+        + "</BlockList>"
+    ).encode("utf-8")
+    return request(
+        url + "?comp=blocklist",
+        method="PUT",
+        data=block_list,
+        headers={
+            "Content-Type": "application/xml; charset=utf-8",
+            "x-ms-blob-content-type": content_type,
+        },
+        authenticated=True,
+        client_id=client_id,
+    )
+
+
 def upload_bytes(bucket, name, data, content_type="application/octet-stream", client_id=None):
+    if len(data) > SINGLE_PUT_LIMIT:
+        chunks = (
+            data[offset:offset + BLOCK_UPLOAD_SIZE]
+            for offset in range(0, len(data), BLOCK_UPLOAD_SIZE)
+        )
+        return upload_block_blob(bucket, name, chunks, content_type, client_id)
     return request(
         blob_url(bucket, name),
         method="PUT",
@@ -142,6 +201,22 @@ def upload_bytes(bucket, name, data, content_type="application/octet-stream", cl
         authenticated=True,
         client_id=client_id,
     )
+
+
+def upload_file(bucket, name, path, content_type="application/octet-stream", client_id=None):
+    path = pathlib.Path(path)
+    if path.stat().st_size <= SINGLE_PUT_LIMIT:
+        return upload_bytes(bucket, name, path.read_bytes(), content_type, client_id)
+
+    def chunks():
+        with path.open("rb") as stream:
+            while True:
+                chunk = stream.read(BLOCK_UPLOAD_SIZE)
+                if not chunk:
+                    return
+                yield chunk
+
+    return upload_block_blob(bucket, name, chunks(), content_type, client_id)
 
 
 def download_bytes(bucket, name, client_id=None):
@@ -188,7 +263,7 @@ def append_bytes(bucket, name, data, position, client_id=None):
 def command_upload(args):
     path = pathlib.Path(args.file)
     content_type = args.content_type or mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-    upload_bytes(args.bucket, args.object, path.read_bytes(), content_type, args.client_id)
+    upload_file(args.bucket, args.object, path, content_type, args.client_id)
 
 
 def command_upload_json(args):
