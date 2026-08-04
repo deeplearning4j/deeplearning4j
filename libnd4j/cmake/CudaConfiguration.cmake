@@ -414,10 +414,13 @@ function(setup_cuda_architectures_early)
         endif()
     endif()
 
-    # ZLUDA mode: Force sm_50
+    # ZLUDA translates PTX at runtime. Disable CMake's implicit real+virtual
+    # sm_50 pair so every translation unit embeds one PTX payload rather than
+    # PTX plus native NVIDIA SASS. This is also required to keep the all-ops
+    # Windows DLL below the PE image-size limit.
     if(SD_ZLUDA)
-        set(CUDA_ARCHITECTURES "50" PARENT_SCOPE)
-        set(CMAKE_CUDA_ARCHITECTURES "50" PARENT_SCOPE)
+        set(CUDA_ARCHITECTURES "OFF" PARENT_SCOPE)
+        set(CMAKE_CUDA_ARCHITECTURES "OFF" PARENT_SCOPE)
         return()
     endif()
 
@@ -494,10 +497,12 @@ function(configure_windows_cuda_build)
 endfunction()
 
 function(configure_cuda_architecture_flags COMPUTE)
-    # ZLUDA: sm_50 baseline
+    # ZLUDA consumes PTX, not NVIDIA SASS. Keep one compute_50 virtual
+    # image for the widest PTX compatibility and suppress CMake's additional
+    # architecture emission with CMAKE_CUDA_ARCHITECTURES=OFF.
     if(SD_ZLUDA)
-        set(CUDA_ARCH_FLAGS "-arch=sm_50" PARENT_SCOPE)
-        set(CMAKE_CUDA_ARCHITECTURES "50" PARENT_SCOPE)
+        set(CUDA_ARCH_FLAGS "-gencode arch=compute_50,code=compute_50" PARENT_SCOPE)
+        set(CMAKE_CUDA_ARCHITECTURES "OFF" PARENT_SCOPE)
         return()
     endif()
 

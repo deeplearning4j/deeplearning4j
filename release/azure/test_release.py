@@ -400,6 +400,23 @@ class ReleasePlanTests(unittest.TestCase):
         self.assertIn("::sortTadGeneric", cuda_branch)
         self.assertNotIn("template class SpecialMethods", cuda_branch)
 
+        cuda_configuration = (
+            root / "libnd4j/cmake/CudaConfiguration.cmake"
+        ).read_text(encoding="utf-8")
+        architecture_function = cuda_configuration.split(
+            "function(configure_cuda_architecture_flags COMPUTE)", 1
+        )[1].split("endfunction()", 1)[0]
+        self.assertIn(
+            'set(CUDA_ARCH_FLAGS "-gencode arch=compute_50,code=compute_50" '
+            "PARENT_SCOPE)",
+            architecture_function,
+        )
+        self.assertIn(
+            'set(CMAKE_CUDA_ARCHITECTURES "OFF" PARENT_SCOPE)',
+            architecture_function,
+        )
+        self.assertNotIn("-arch=sm_50", cuda_configuration)
+
 
 class SelectionTests(unittest.TestCase):
     def setUp(self):
