@@ -1008,6 +1008,23 @@ class ReleaseValidationTest(unittest.TestCase):
             large_binary_flags,
         )
         self.assertIn(
+            'if(SD_ZLUDA)\n'
+            '                    # GCC 11 emits 32-bit jump-table references'
+            ' at the project\'s\n'
+            '                    # -O level even under the large code model.',
+            large_binary_flags,
+        )
+        self.assertIn(
+            "-Xcompiler=-fno-jump-tables",
+            large_binary_flags,
+        )
+        self.assertIn(
+            'if(SD_ZLUDA)\n'
+            '                    set(CMAKE_CXX_FLAGS '
+            '"${CMAKE_CXX_FLAGS} -fno-jump-tables")',
+            configuration,
+        )
+        self.assertIn(
             "-mcmodel=${DL4J_LARGE_BINARY_CODE_MODEL}", configuration
         )
 
@@ -1021,8 +1038,12 @@ class ReleaseValidationTest(unittest.TestCase):
         memory_model = compiler_flags[memory_model_start:section_splitting]
         self.assertIn(
             'if(SD_ZLUDA)\n'
-            '        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large -fPIC")\n'
-            '        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")',
+            '        # GCC 11 can still emit R_X86_64_PC32 references from switch code to\n'
+            '        # jump tables at -O even with -mcmodel=large. The all-ops ZLUDA image\n'
+            '        # can place those tables more than 2 GiB away, so use comparison trees\n'
+            '        # for this classifier\'s host code instead.\n'
+            '        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large -fPIC -fno-jump-tables")\n'
+            '        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large -fno-jump-tables")',
             memory_model,
         )
         self.assertIn("elseif(SD_SANITIZE OR SD_GCC_FUNCTRACE)", memory_model)

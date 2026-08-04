@@ -136,9 +136,13 @@ endif()
 # must use the large model. The ZLUDA link is handled separately by LLD.
 if(SD_X86_BUILD AND NOT WIN32)
     if(SD_ZLUDA)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large -fPIC")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
-        message(STATUS "Applied large memory model for x86-64 ZLUDA all-ops build")
+        # GCC 11 can still emit R_X86_64_PC32 references from switch code to
+        # jump tables at -O even with -mcmodel=large. The all-ops ZLUDA image
+        # can place those tables more than 2 GiB away, so use comparison trees
+        # for this classifier's host code instead.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large -fPIC -fno-jump-tables")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large -fno-jump-tables")
+        message(STATUS "Applied large memory model without jump tables for x86-64 ZLUDA all-ops build")
     elseif(SD_SANITIZE OR SD_GCC_FUNCTRACE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=medium -fPIC")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=medium")

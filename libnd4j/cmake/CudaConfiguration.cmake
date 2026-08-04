@@ -628,6 +628,13 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 endif()
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-mcmodel=${DL4J_LARGE_BINARY_CODE_MODEL}")
+                if(SD_ZLUDA)
+                    # GCC 11 emits 32-bit jump-table references at the project's
+                    # -O level even under the large code model. They overflow
+                    # once ZLUDA's all-ops image separates text and rodata by
+                    # more than 2 GiB.
+                    set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-jump-tables")
+                endif()
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-plt")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-asynchronous-unwind-tables")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-omit-frame-pointer")
@@ -663,6 +670,9 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 endif()
 
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -mcmodel=${DL4J_LARGE_BINARY_CODE_MODEL} -fno-plt -gsplit-dwarf ${LINKER_FLAG}")
+                if(SD_ZLUDA)
+                    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-jump-tables")
+                endif()
                 add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wa,-mrelax-relocations=no>)
                 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wa,-mrelax-relocations=no>)
                 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}")
