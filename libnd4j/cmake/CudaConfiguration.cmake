@@ -645,11 +645,21 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                     set(LINKER_FLAG "-fuse-ld=mold")
                 endif()
 
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -mcmodel=medium -fno-plt -gsplit-dwarf ${LINKER_FLAG}" CACHE STRING "C++ compiler flags" FORCE)
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -mcmodel=medium -fno-plt -gsplit-dwarf ${LINKER_FLAG}")
                 add_compile_options($<$<COMPILE_LANGUAGE:C>:-Wa,-mrelax-relocations=no>)
                 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wa,-mrelax-relocations=no>)
-                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}" CACHE STRING "Shared library linker flags" FORCE)
-                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}" CACHE STRING "Executable linker flags" FORCE)
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}")
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAG} ${LINKER_EXTRA_FLAGS}")
+
+                # Cache the values for subsequent configures and explicitly return
+                # them to setup_cuda_build(). CACHE writes alone do not replace an
+                # inherited normal variable inside a CMake function scope.
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" CACHE STRING "C++ compiler flags" FORCE)
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}" CACHE STRING "Shared library linker flags" FORCE)
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}" CACHE STRING "Executable linker flags" FORCE)
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
+                set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}" PARENT_SCOPE)
+                set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}" PARENT_SCOPE)
 
                 if(LINKER_FLAG)
                     set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=${LINKER_FLAG}")
@@ -814,6 +824,9 @@ function(setup_cuda_build)
     build_cuda_compiler_flags("${CUDA_ARCH_FLAGS}")
 
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}" PARENT_SCOPE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}" PARENT_SCOPE)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}" PARENT_SCOPE)
     set(CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES "${CUDA_INCLUDE_DIRS}" PARENT_SCOPE)
 
     # Print summary
