@@ -138,21 +138,23 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
                 return get(deviceId);
             }
 
-            // if updates map contains some deviceId - we should take updated array from there
+            // Use the backend affinity primitive for the whole cross-device transfer.
+            // It owns source synchronization, target allocation, device switching, and
+            // copy actuality. Reimplementing those steps here can publish a zero-filled
+            // target when the delayed source and current thread belong to different GPUs.
             INDArray newArray;
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                newArray = sourceWasConstant ?
-                    Nd4j.getDeallocatorService().registerPendingConstant(
-                        Nd4j.create(delayedArray.dataType(), delayedArray.shape(), delayedArray.stride(), delayedArray.ordering())) :
-                    Nd4j.create(delayedArray.dataType(), delayedArray.shape(), delayedArray.stride(), delayedArray.ordering());
+                newArray = Nd4j.getAffinityManager().replicateToDevice(deviceId, delayedArray);
             }
-            // Bidirectional sync delayedArray so HOST has current data for cross-device memcpy.
-            // ensureHostAccess does H→D then force D→H, handling both:
-            //   - device-only data (compact copies from assign ops)
-            //   - host-only data (deserialized from FlatBuffers)
-            DeviceMemoryManager.getInstance().ensureHostAccess(delayedArray);
-            Nd4j.getMemoryManager().memcpy(newArray.data(), delayedArray.data());
 
+            // A replica must not become immutable until its contents are initialized.
+            // Marking the freshly allocated destination constant before memcpy causes
+            // CUDA constant replicas to retain their zero-filled allocation instead of
+            // the source values. The local strong reference protects the array while
+            // the copy completes; register it only after initialization, then publish it.
+            if (sourceWasConstant) {
+                newArray = Nd4j.getDeallocatorService().registerPendingConstant(newArray);
+            }
             applyConstantFlag(newArray);
             if (sourceWasConstant) {
                 Nd4j.getDeallocatorService().releasePendingConstant(newArray);

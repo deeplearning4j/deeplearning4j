@@ -6,9 +6,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,6 +36,20 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @Tag("multi-gpu")
 public class MultiGpuBufferRegressionTest {
+
+    private static final class InspectableDeviceLocalNDArray extends DeviceLocalNDArray {
+        private InspectableDeviceLocalNDArray(INDArray array) {
+            super(array, true);
+        }
+
+        private INDArray delayedSnapshot() {
+            return delayedArray;
+        }
+
+        private int pendingSourceFor(int deviceId) {
+            return updatesMap.get(deviceId).get();
+        }
+    }
 
     // ========================================================================
     // DataBuffer::expand() path — exercises handleNonPeerFailover in expand()
@@ -198,6 +214,193 @@ public class MultiGpuBufferRegressionTest {
 
         original.close();
         replica.close();
+    }
+
+    /**
+     * Verify the production affinity primitive independently of DeviceLocalNDArray.
+     * This distinguishes a cross-device transfer regression from lazy-replica bookkeeping.
+     */
+    @Test
+    public void testReplicateToDevicePreservesConstantDataAcrossGpus() {
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        org.junit.jupiter.api.Assumptions.assumeTrue(numDevices > 1,
+                "Requires at least two automatically discovered GPU devices");
+
+        int sourceDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        int targetDevice = (sourceDevice + 1) % numDevices;
+        long[] expected = {12L, 64L, -1L, 768L};
+
+        INDArray source = Nd4j.createFromArray(expected);
+        source.data().setConstant(true);
+        source.shapeInfoDataBuffer().setConstant(true);
+        source.setCloseable(false);
+        DeviceMemoryManager.getInstance().ensureHostAccess(source);
+
+        INDArray replica;
+        try {
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice,
+                    "MultiGpuBufferRegressionTest", "direct-constant-replica-target");
+            try (org.nd4j.linalg.api.memory.MemoryWorkspace ws =
+                         Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                replica = Nd4j.getAffinityManager().replicateToDevice(targetDevice, source);
+            }
+            assertEquals(targetDevice, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                    "Replication must restore the caller's target-device context");
+            assertEquals(targetDevice, Nd4j.getAffinityManager().getDeviceForArray(replica),
+                    "Direct replica must be allocated on the selected target device");
+            assertArrayEquals(expected, replica.toLongVector(),
+                    "Production affinity replication must preserve constant values before sealing");
+
+            Nd4j.getDeallocatorService().registerPendingConstant(replica);
+            try {
+                assertTrue(replica.data().isConstant(),
+                        "Registering a pending constant must seal the replica");
+                assertArrayEquals(expected, replica.toLongVector(),
+                        "Sealing a device-authoritative replica must preserve its values");
+            } finally {
+                Nd4j.getDeallocatorService().releasePendingConstant(replica);
+            }
+            assertArrayEquals(expected, replica.toLongVector(),
+                    "Releasing the pending-constant guard must preserve replica values");
+        } finally {
+            DeviceMemoryManager.getInstance().switchDevice(sourceDevice,
+                    "MultiGpuBufferRegressionTest", "restore-direct-constant-source");
+        }
+
+        assertArrayEquals(expected, source.toLongVector(),
+                "Direct cross-device replication must not mutate the source");
+    }
+
+    /**
+     * Verify that a device-authoritative replica can be sealed as constant before
+     * any host read synchronizes its primary allocation.
+     */
+    @Test
+    public void testReplicatedConstantCanBeSealedBeforeHostRead() {
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        org.junit.jupiter.api.Assumptions.assumeTrue(numDevices > 1,
+                "Requires at least two automatically discovered GPU devices");
+
+        int sourceDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        int targetDevice = (sourceDevice + 1) % numDevices;
+        long[] expected = {12L, 64L, -1L, 768L};
+
+        INDArray source = Nd4j.createFromArray(expected);
+        source.data().setConstant(true);
+        source.shapeInfoDataBuffer().setConstant(true);
+        source.setCloseable(false);
+        DeviceMemoryManager.getInstance().ensureHostAccess(source);
+
+        INDArray replica;
+        try {
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice,
+                    "MultiGpuBufferRegressionTest", "seal-before-host-read-target");
+            replica = Nd4j.getAffinityManager().replicateToDevice(targetDevice, source);
+            assertEquals(targetDevice, Nd4j.getAffinityManager().getDeviceForArray(replica),
+                    "Replica must be allocated on the selected target device");
+
+            replica = Nd4j.getDeallocatorService().registerPendingConstant(replica);
+            try {
+                assertTrue(replica.data().isConstant(),
+                        "Target replica must be sealed as constant");
+            } finally {
+                Nd4j.getDeallocatorService().releasePendingConstant(replica);
+            }
+
+            assertArrayEquals(expected, replica.toLongVector(),
+                    "Sealing a device-authoritative replica before its first host read must preserve values");
+        } finally {
+            DeviceMemoryManager.getInstance().switchDevice(sourceDevice,
+                    "MultiGpuBufferRegressionTest", "restore-seal-before-host-read-source");
+        }
+    }
+
+    /**
+     * Verify that lazy device-local replication preserves small integral control values.
+     * SameDiff uses this path for VARIABLE and CONSTANT arrays. A DSP plan may select a
+     * different GPU after model import, so the first lookup on that GPU must copy both
+     * the shape and the contents rather than materializing a zero-filled replica.
+     */
+    @Test
+    public void testLazyDeviceLocalReplicationPreservesControlsAcrossGpus() {
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        org.junit.jupiter.api.Assumptions.assumeTrue(numDevices > 1,
+                "Requires at least two automatically discovered GPU devices");
+
+        int sourceDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        int targetDevice = (sourceDevice + 1) % numDevices;
+        long[] expected = {12L, 64L, -1L, 768L};
+
+        INDArray source = Nd4j.createFromArray(expected);
+        source.data().setConstant(true);
+        source.shapeInfoDataBuffer().setConstant(true);
+        source.setCloseable(false);
+        assertFalse(source.isAttached(), "Focused source must not require workspace detachment");
+        InspectableDeviceLocalNDArray deviceLocal = new InspectableDeviceLocalNDArray(source);
+        assertSame(source, deviceLocal.delayedSnapshot(),
+                "Unattached source must remain the delayed snapshot rather than an implicit copy");
+        assertEquals(sourceDevice, deviceLocal.pendingSourceFor(targetDevice),
+                "Target device must resolve its pending update from the source device");
+        assertArrayEquals(expected, deviceLocal.delayedSnapshot().toLongVector(),
+                "Delayed snapshot values must be intact before lazy replication");
+        assertArrayEquals(expected, deviceLocal.get().toLongVector(),
+                "Source-device values must be intact before lazy replication");
+
+        try {
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice,
+                    "MultiGpuBufferRegressionTest", "lazy-device-local-target");
+            INDArray target = deviceLocal.get();
+            assertEquals(targetDevice, Nd4j.getAffinityManager().getDeviceForArray(target),
+                    "Lazy replica must be allocated on the selected target device");
+            assertArrayEquals(expected, target.toLongVector(),
+                    "Lazy cross-device replica must preserve integral control values");
+        } finally {
+            DeviceMemoryManager.getInstance().switchDevice(sourceDevice,
+                    "MultiGpuBufferRegressionTest", "restore-source-device");
+        }
+
+        assertArrayEquals(expected, deviceLocal.get().toLongVector(),
+                "Creating a target replica must not mutate the source-device copy");
+    }
+
+    /**
+     * Verify that constant transition does not overwrite device-authoritative data.
+     * CUDA arithmetic makes the special buffer current while the host allocation is
+     * stale. Marking the array constant must preserve that device result, and lazy
+     * replication must then relay the same values to another discovered GPU.
+     */
+    @Test
+    public void testLazyDeviceLocalReplicationPreservesDeviceAuthoritativeConstant() {
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        org.junit.jupiter.api.Assumptions.assumeTrue(numDevices > 1,
+                "Requires at least two automatically discovered GPU devices");
+
+        int sourceDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        int targetDevice = (sourceDevice + 1) % numDevices;
+        long[] expected = {7L, 7L, 7L, 7L};
+
+        INDArray source = Nd4j.zeros(DataType.INT64, expected.length);
+        source.addi(7L);
+        source.data().setConstant(true);
+        source.shapeInfoDataBuffer().setConstant(true);
+        source.setCloseable(false);
+        DeviceLocalNDArray deviceLocal = new DeviceLocalNDArray(source, true);
+
+        try {
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice,
+                    "MultiGpuBufferRegressionTest", "device-authoritative-constant-target");
+            INDArray target = deviceLocal.get();
+            assertEquals(targetDevice, Nd4j.getAffinityManager().getDeviceForArray(target),
+                    "Lazy replica must be allocated on the selected target device");
+            assertArrayEquals(expected, target.toLongVector(),
+                    "Constant transition must not replace device-authoritative values with stale host data");
+        } finally {
+            DeviceMemoryManager.getInstance().switchDevice(sourceDevice,
+                    "MultiGpuBufferRegressionTest", "restore-device-authoritative-source");
+        }
+
+        assertArrayEquals(expected, deviceLocal.get().toLongVector(),
+                "Cross-device replication must preserve the device-authoritative source");
     }
 
     /**

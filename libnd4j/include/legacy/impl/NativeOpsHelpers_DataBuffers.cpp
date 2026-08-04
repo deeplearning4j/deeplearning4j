@@ -417,15 +417,36 @@ bool dbSetConstant(OpaqueDataBuffer *dataBuffer, bool isConstant) {
     }
   }
 
-  dataBuffer->isConstant.store(isConstant, std::memory_order_release);
-
-  // Also propagate to the underlying DataBuffer if it exists
+  // Resolve and validate the underlying buffer before changing either constant flag.
+  // A failed synchronization must not leave the OpaqueDataBuffer and DataBuffer with
+  // conflicting lifecycle state.
   auto db = dataBuffer->dataBuffer();
   if (db != nullptr) {
-    // Validate DataBuffer integrity before marking constant (debug only)
     if (sd::Environment::getInstance().isDebug()) {
       db->validateIntegrity();
     }
+
+    // Marking a buffer constant freezes its contents as well as its lifecycle.
+    // Seal the authoritative side to the other allocation before that transition:
+    // host-created constants need H2D, while device-produced/replicated constants
+    // need D2H. Otherwise a later host read can expose the destination's original
+    // zero-filled primary allocation even though the special allocation was copied.
+    if (isConstant && !alreadyConstant) {
+      const bool primaryActual = db->isPrimaryActual();
+      const bool specialActual = db->isSpecialActual();
+      if (specialActual && !primaryActual) {
+        db->syncToPrimary(nullptr, true);
+      } else if (!specialActual) {
+        // With no actuality counters, host initialization is the established
+        // default (for example JNI/external-buffer construction).
+        db->syncToSpecial(true);
+      }
+    }
+  }
+
+  dataBuffer->isConstant.store(isConstant, std::memory_order_release);
+
+  if (db != nullptr) {
     db->markConstant(isConstant);
   }
 
