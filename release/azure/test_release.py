@@ -2504,6 +2504,77 @@ class AzureSafetyTests(unittest.TestCase):
             [events.get_nowait()["status"] for _ in range(3)],
         )
 
+    def test_lane_failure_does_not_set_controller_abort_event(self):
+        plan = release.load_plan(HERE / "release-plan.json")
+        data = {
+            "context": {"subscription": "subscription", "modules": {}},
+            "plan": plan,
+            "location": "eastus2",
+            "resourceGroup": "group",
+            "storageAccount": "account",
+        }
+        lane = {
+            "id": "failed-lane",
+            "worker": "worker.sh",
+            "executionIds": ["failed-shard"],
+        }
+        executions = {
+            "failed-shard": {
+                "shard": {
+                    "id": "failed-shard",
+                    "lane": "failed-lane",
+                    "build": {"variants": [{"name": "base"}]},
+                }
+            }
+        }
+        args = SimpleNamespace(
+            run_id="run",
+            version="1.0.0",
+            snapshot_version="1.0.0-SNAPSHOT",
+            commit="a" * 40,
+            repository="repository",
+            timeout_hours=12,
+        )
+        lease = mock.Mock()
+        lease.epoch = "b" * 32
+        events = release.queue.Queue()
+        abort = release.threading.Event()
+        resources = release.lane_resource_names("run", "failed-lane", lease.epoch)
+
+        with mock.patch.object(
+            release, "compiler_cache_config", return_value={}
+        ), mock.patch.object(
+            release, "wait_for_lane", side_effect=RuntimeError("lane failed")
+        ), mock.patch.object(
+            release, "delete_lane_resources", return_value=[]
+        ) as cleanup:
+            with self.assertRaisesRegex(RuntimeError, "lane failed"):
+                release._run_parallel_lane(
+                    args,
+                    lease,
+                    data,
+                    mock.Mock(),
+                    "account-key",
+                    mock.Mock(),
+                    mock.Mock(),
+                    SimpleNamespace(client_id="identity"),
+                    "",
+                    "",
+                    "prefix",
+                    lane,
+                    executions,
+                    events,
+                    abort_event=abort,
+                    existing_resources=resources,
+                )
+
+        self.assertFalse(abort.is_set())
+        cleanup.assert_called_once()
+        self.assertEqual(
+            ["running", "failed"],
+            [events.get_nowait()["status"] for _ in range(2)],
+        )
+
     def test_controller_detach_leaves_lane_resources_running(self):
         plan = release.load_plan(HERE / "release-plan.json")
         data = {
@@ -2571,6 +2642,250 @@ class AzureSafetyTests(unittest.TestCase):
                     detach_event=detach,
                 )
         cleanup.assert_not_called()
+
+    def test_resumed_lane_adopts_resources_without_provisioning(self):
+        plan = release.load_plan(HERE / "release-plan.json")
+        data = {
+            "context": {
+                "subscription": "subscription",
+                "modules": {},
+            },
+            "plan": plan,
+            "location": "eastus2",
+            "resourceGroup": "group",
+            "storageAccount": "account",
+        }
+        lane = {
+            "id": "lane",
+            "worker": "worker.sh",
+            "executionIds": ["lane"],
+        }
+        executions = {
+            "lane": {
+                "shard": {
+                    "id": "lane",
+                    "lane": "lane",
+                    "build": {"variants": [{"name": "compile"}]},
+                }
+            }
+        }
+        args = SimpleNamespace(
+            run_id="run",
+            version="1.0.0",
+            snapshot_version="1.0.0-SNAPSHOT",
+            commit="a" * 40,
+            repository="repository",
+            timeout_hours=12,
+        )
+        lease = mock.Mock()
+        lease.epoch = "b" * 32
+        events = release.queue.Queue()
+        resources = release.lane_resource_names("run", "lane", lease.epoch)
+        retained_status = {"shard": "lane", "exitCode": 0}
+
+        with mock.patch.object(
+            release, "compiler_cache_config", return_value={}
+        ), mock.patch.object(release, "render_worker") as render, mock.patch.object(
+            release, "create_lane_vm"
+        ) as create, mock.patch.object(
+            release, "wait_for_lane", return_value={"lane": retained_status}
+        ) as wait, mock.patch.object(
+            release, "delete_lane_resources", return_value=[]
+        ):
+            result = release._run_parallel_lane(
+                args,
+                lease,
+                data,
+                mock.Mock(),
+                "account-key",
+                mock.Mock(),
+                mock.Mock(),
+                SimpleNamespace(client_id="identity"),
+                "",
+                "",
+                "prefix",
+                lane,
+                executions,
+                events,
+                existing_resources=resources,
+            )
+
+        self.assertEqual({"lane": retained_status}, result)
+        render.assert_not_called()
+        create.assert_not_called()
+        self.assertEqual(resources["vm"], wait.call_args.args[2])
+        expected = wait.call_args.args[10]["lane"]
+        self.assertEqual(lease.epoch, expected["controllerEpoch"])
+        self.assertEqual(
+            ["running", "succeeded"],
+            [events.get_nowait()["status"] for _ in range(2)],
+        )
+
+    def test_resume_reprovisions_when_recorded_vm_is_gone(self):
+        class MissingVm(Exception):
+            status_code = 404
+
+        epoch = "b" * 32
+        resources = release.lane_resource_names("run", "lane", epoch)
+        lane = {"id": "lane", "resources": resources}
+        virtual_machines = mock.Mock()
+        virtual_machines.get.side_effect = MissingVm("gone")
+        context = {
+            "compute": SimpleNamespace(virtual_machines=virtual_machines),
+        }
+
+        self.assertIsNone(
+            release.retained_lane_resources(
+                context, "group", "run", epoch, lane
+            )
+        )
+        virtual_machines.get.assert_called_once_with("group", resources["vm"])
+
+    def test_resume_data_excludes_already_succeeded_siblings(self):
+        plan = release.load_plan(HERE / "release-plan.json")
+        context = {
+            "subscription": "subscription",
+            "storage": mock.Mock(),
+        }
+        context["storage"].storage_accounts.list_keys.return_value = (
+            SimpleNamespace(keys=[SimpleNamespace(value="account-key")])
+        )
+        service = mock.Mock()
+        run = {
+            "schemaVersion": 1,
+            "provider": "azure",
+            "runId": "run",
+            "subscription": "subscription",
+            "location": "eastus2",
+            "resourceGroup": "group",
+            "storageAccount": "account",
+            "container": release.artifact_container_name(plan),
+            "releaseVersion": "1.0.0",
+            "snapshotVersion": "1.0.0-SNAPSHOT",
+            "commit": "a" * 40,
+            "sourceBranch": "main",
+            "repository": "repository",
+            "controllerEpoch": "b" * 32,
+            "status": "running",
+            "managedIdentity": {"clientId": "identity"},
+            "lanes": [{
+                "id": "lane",
+                "executionIds": ["done", "pending"],
+                "status": "running",
+            }],
+            "executions": [
+                {
+                    "id": "done",
+                    "laneId": "lane",
+                    "status": "succeeded",
+                    "shard": {
+                        "id": "done",
+                        "lane": "lane",
+                        "worker": "worker.sh",
+                        "build": {"variants": [{"name": "base"}]},
+                    },
+                },
+                {
+                    "id": "pending",
+                    "laneId": "lane",
+                    "status": "running",
+                    "shard": {
+                        "id": "pending",
+                        "lane": "lane",
+                        "worker": "worker.sh",
+                        "build": {"variants": [{"name": "compile"}]},
+                    },
+                },
+            ],
+        }
+        args = SimpleNamespace(
+            plan=HERE / "release-plan.json",
+            run_id="run",
+            subscription=None,
+            location=None,
+            no_wizard=True,
+            resource_group="group",
+            storage_account="account",
+            timeout_hours=12,
+        )
+        account = SimpleNamespace(id="/storage/account")
+        with mock.patch.object(
+            release,
+            "existing_storage",
+            return_value=(context, "eastus2", "group", account, service),
+        ), mock.patch.object(release, "load_run", return_value=run):
+            data, actual_account, actual_service, key, actual_run = (
+                release.resume_controller_data(args)
+            )
+
+        self.assertIs(account, actual_account)
+        self.assertIs(service, actual_service)
+        self.assertEqual("account-key", key)
+        self.assertIs(run, actual_run)
+        self.assertEqual(["pending"], data["lanes"][0]["executionIds"])
+        self.assertEqual(["done", "pending"], [
+            execution["id"] for execution in data["executions"]
+        ])
+        self.assertEqual(run["commit"], args.commit)
+        self.assertEqual(run["releaseVersion"], args.version)
+
+    def test_resume_start_reuses_retained_epoch_and_detaches_safely(self):
+        plan = release.load_plan(HERE / "release-plan.json")
+        context = {"subscription": "subscription", "modules": {}}
+        data = {
+            "context": context,
+            "plan": plan,
+            "location": "eastus2",
+            "resourceGroup": "group",
+            "storageAccount": "account",
+            "lanes": [],
+            "executions": [],
+        }
+        artifact = mock.Mock()
+        control = mock.Mock()
+        service = mock.Mock()
+        service.get_container_client.side_effect = [artifact, control]
+        account = SimpleNamespace(id="/storage/account")
+        manifest = {
+            "runId": "run",
+            "controllerEpoch": "c" * 32,
+        }
+        args = SimpleNamespace(
+            resume_existing=True,
+            run_id="run",
+        )
+        lease = mock.Mock()
+        lease.check.return_value = None
+        lease.release.return_value = []
+        controller = mock.Mock()
+        controller.acquire.return_value = lease
+
+        with mock.patch.object(
+            release,
+            "resume_controller_data",
+            return_value=(data, account, service, "key", manifest),
+        ), mock.patch.object(
+            release, "ControllerLease", return_value=controller
+        ) as lease_class, mock.patch.object(
+            release,
+            "_start_under_controller_lease",
+            side_effect=release.ControllerDetached("terminal closed"),
+        ) as runner, mock.patch.object(
+            release, "set_kill_switch"
+        ) as kill, mock.patch.object(
+            release, "reconcile_managed_run_resources"
+        ) as resources:
+            release.start(args)
+
+        lease_class.assert_called_once_with(
+            control,
+            release.controller_lock_blob(plan, "run"),
+            epoch=manifest["controllerEpoch"],
+        )
+        self.assertIs(manifest, runner.call_args.kwargs["resume_manifest"])
+        kill.assert_not_called()
+        resources.assert_not_called()
+        lease.release.assert_called_once_with()
 
     def test_controller_starts_three_selected_lanes_concurrently(self):
         plan = release.load_plan(HERE / "release-plan.json")
@@ -2701,6 +3016,13 @@ class AzureSafetyTests(unittest.TestCase):
             "rootVolumeGiB": 128,
             "zone": None,
         }
+        healthy_lane = {
+            **lane,
+            "id": "windows",
+            "os": "windows",
+            "worker": "worker.ps1",
+            "executionIds": ["three"],
+        }
         executions = [{
             "id": shard_id,
             "laneId": "linux",
@@ -2709,13 +3031,21 @@ class AzureSafetyTests(unittest.TestCase):
             "rootVolumeGiB": 128,
             "zone": None,
         } for shard_id in ("one", "two")]
+        executions.append({
+            "id": "three",
+            "laneId": "windows",
+            "shard": {"id": "three"},
+            "selectedMachine": {"name": "size", "vcpus": 8},
+            "rootVolumeGiB": 128,
+            "zone": None,
+        })
         data = {
             "context": {"subscription": "subscription", "modules": {}},
             "plan": plan,
             "location": "eastus2",
             "resourceGroup": "group",
             "storageAccount": "account",
-            "lanes": [lane],
+            "lanes": [lane, healthy_lane],
             "executions": executions,
         }
         args = SimpleNamespace(
@@ -2729,8 +3059,28 @@ class AzureSafetyTests(unittest.TestCase):
             ssh_public_key=None,
         )
 
+        healthy_started = release.threading.Event()
+        failure_persisted = release.threading.Event()
+
         def run_lane(*call_args):
+            current_lane = call_args[11]
             events = call_args[13]
+            abort = call_args[14]
+            if current_lane["id"] == "windows":
+                healthy_started.set()
+                if not failure_persisted.wait(2):
+                    raise RuntimeError("failed lane state was not persisted")
+                if abort.is_set():
+                    raise RuntimeError("healthy lane was cancelled")
+                result = {"shard": "three", "exitCode": 0}
+                events.put({
+                    "laneId": "windows",
+                    "status": "succeeded",
+                    "results": {"three": result},
+                })
+                return {"three": result}
+            if not healthy_started.wait(2):
+                raise RuntimeError("healthy lane did not start")
             events.put({"laneId": "linux", "status": "provisioning"})
             events.put({"laneId": "linux", "status": "running", "resources": {"vm": "vm"}})
             result = {"shard": "one", "exitCode": 0}
@@ -2749,6 +3099,11 @@ class AzureSafetyTests(unittest.TestCase):
             })
             raise RuntimeError("two failed; cleanup failed: public IP pip remained")
 
+        def capture_manifest(container, name, manifest, modules, **kwargs):
+            del container, name, modules, kwargs
+            if any(item.get("status") == "failed" for item in manifest.get("lanes", [])):
+                failure_persisted.set()
+
         artifact = mock.Mock()
         control = mock.Mock()
         service = mock.Mock()
@@ -2758,7 +3113,7 @@ class AzureSafetyTests(unittest.TestCase):
         ), mock.patch.object(
             release, "get_json", return_value=None
         ), mock.patch.object(
-            release, "put_json"
+            release, "put_json", side_effect=capture_manifest
         ) as put, mock.patch.object(
             release,
             "ensure_identity",
@@ -2769,7 +3124,9 @@ class AzureSafetyTests(unittest.TestCase):
             release, "resolve_ssh_public_key", return_value="ssh"
         ), mock.patch.object(
             release, "_run_parallel_lane", side_effect=run_lane
-        ) as runner, mock.patch.object(release, "set_kill_switch"):
+        ) as runner, mock.patch.object(
+            release, "set_kill_switch"
+        ) as set_switch:
             with self.assertRaisesRegex(
                 RuntimeError, "parallel Azure lane failure"
             ) as caught:
@@ -2786,8 +3143,11 @@ class AzureSafetyTests(unittest.TestCase):
         records = {item["id"]: item for item in final_manifest["executions"]}
         self.assertEqual("succeeded", records["one"]["status"])
         self.assertEqual("failed", records["two"]["status"])
+        self.assertEqual("succeeded", records["three"]["status"])
         self.assertEqual("failed", final_manifest["status"])
-        self.assertTrue(runner.call_args.args[14].is_set())
+        self.assertEqual(2, runner.call_count)
+        self.assertFalse(any(call.args[14].is_set() for call in runner.call_args_list))
+        self.assertFalse(any(call.args[2] is True for call in set_switch.call_args_list))
 
     def test_failed_identity_assignment_rollback_is_fenced(self):
         class FatalRoleError(Exception):
@@ -4022,6 +4382,22 @@ class WorkerTransportTests(unittest.TestCase):
         self.assertIn("Write-BuildContent ($_ | Out-String)", source)
         self.assertNotIn("[IO.File]::AppendAllText($BuildLog", source)
         self.assertNotIn("$_ | Out-String | Add-Content $BuildLog", source)
+
+    def test_windows_cuda_installer_is_azure_safe_and_pinned(self):
+        source = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        self.assertIn(
+            "KonduitAI/cuda-install/1bd33888dea7d372de612ec9ecc87343ec8dba4a/",
+            source,
+        )
+        self.assertNotIn("KonduitAI/cuda-install/master/", source)
+        self.assertIn("$PreviousGithubEnv = $env:GITHUB_ENV", source)
+        self.assertIn(
+            "$env:GITHUB_ENV = Join-Path $ToolchainRoot "
+            "'cuda-installer-github-env.txt'",
+            source,
+        )
+        self.assertIn("Remove-Item Env:GITHUB_ENV -ErrorAction SilentlyContinue", source)
+        self.assertIn("installation did not provide nvcc.exe", source)
 
     def test_windows_native_commands_ignore_stderr_but_check_exit_codes(self):
         source = (HERE / "worker.ps1").read_text(encoding="utf-8")

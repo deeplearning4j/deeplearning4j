@@ -662,8 +662,23 @@ function Install-ShardCuda {
   $CudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v$($Shard.build.cudaVersion)"
   if (-not (Test-Path "$CudaPath\bin\nvcc.exe")) {
     $Installer = Join-Path $ToolchainRoot 'install_cuda_windows.ps1'
-    Invoke-WebRequest 'https://raw.githubusercontent.com/KonduitAI/cuda-install/master/.github/actions/install-cuda-windows/install_cuda_windows.ps1' -OutFile $Installer -UseBasicParsing
-    & $Installer
+    Invoke-WebRequest 'https://raw.githubusercontent.com/KonduitAI/cuda-install/1bd33888dea7d372de612ec9ecc87343ec8dba4a/.github/actions/install-cuda-windows/install_cuda_windows.ps1' -OutFile $Installer -UseBasicParsing
+    $PreviousGithubEnv = $env:GITHUB_ENV
+    if ([string]::IsNullOrWhiteSpace($PreviousGithubEnv)) {
+      $env:GITHUB_ENV = Join-Path $ToolchainRoot 'cuda-installer-github-env.txt'
+    }
+    try {
+      & $Installer
+    } finally {
+      if ([string]::IsNullOrWhiteSpace($PreviousGithubEnv)) {
+        Remove-Item Env:GITHUB_ENV -ErrorAction SilentlyContinue
+      } else {
+        $env:GITHUB_ENV = $PreviousGithubEnv
+      }
+    }
+    if (-not (Test-Path "$CudaPath\bin\nvcc.exe")) {
+      throw "CUDA $($Shard.build.cudaVersion) installation did not provide nvcc.exe at $CudaPath"
+    }
   }
   $SparseVersion = if ($Shard.build.cudaVersion -eq '12.9') { '12.5.10.65' } else { '12.5.4.2' }
   if (-not (Test-Path "$CudaPath\include\cusparse_v2.h")) {

@@ -1999,12 +1999,19 @@ def prepare_emergency_kill_switch(
 class ControllerLease:
     """Renewable Blob lease that serializes one Azure release mutation scope."""
 
-    def __init__(self, container: Any, name: str, *, duration: int = 60) -> None:
+    def __init__(
+        self,
+        container: Any,
+        name: str,
+        *,
+        duration: int = 60,
+        epoch: str | None = None,
+    ) -> None:
         self.container = container
         self.blob = container.get_blob_client(name)
         self.name = name
         self.duration = duration
-        self.epoch = uuid.uuid4().hex
+        self.epoch = epoch or uuid.uuid4().hex
         self.lease: Any | None = None
         self.failure: BaseException | None = None
         self.external_check: Callable[[], None] | None = None
@@ -2453,6 +2460,22 @@ def _create_lane_vm_resources(
     }
 
 
+def lane_resource_names(
+    run_id: str,
+    lane_id: str,
+    controller_epoch: str | None = None,
+) -> dict[str, str]:
+    resource_run_id = (
+        f"{run_id}-{controller_epoch}" if controller_epoch else run_id
+    )
+    return {
+        "vm": resource_name("dl4j", resource_run_id, lane_id, 64),
+        "nic": resource_name("dl4j-nic", resource_run_id, lane_id, 80),
+        "publicIp": resource_name("dl4j-pip", resource_run_id, lane_id, 80),
+        "disk": resource_name("dl4j-osdisk", resource_run_id, lane_id, 80),
+    }
+
+
 def create_lane_vm(
     context: dict[str, Any],
     group: str,
@@ -2468,15 +2491,7 @@ def create_lane_vm(
     controller_epoch: str | None = None,
 ) -> dict[str, str]:
     lane_id = item.get("id") or item["shard"]["id"]
-    resource_run_id = (
-        f"{run_id}-{controller_epoch}" if controller_epoch else run_id
-    )
-    resources = {
-        "vm": resource_name("dl4j", resource_run_id, lane_id, 64),
-        "nic": resource_name("dl4j-nic", resource_run_id, lane_id, 80),
-        "publicIp": resource_name("dl4j-pip", resource_run_id, lane_id, 80),
-        "disk": resource_name("dl4j-osdisk", resource_run_id, lane_id, 80),
-    }
+    resources = lane_resource_names(run_id, lane_id, controller_epoch)
     try:
         return _create_lane_vm_resources(
             context,
@@ -2794,13 +2809,14 @@ def _run_parallel_lane(
     events: queue.Queue[dict[str, Any]],
     abort_event: threading.Event | None = None,
     detach_event: threading.Event | None = None,
+    existing_resources: dict[str, str] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Run one persistent lane. Mutable run-manifest state stays in the caller."""
     context = data["context"]
     plan = data["plan"]
     lane_id = lane["id"]
     epoch = controller_epoch(controller_lease)
-    resources: dict[str, str] | None = None
+    resources = copy.deepcopy(existing_resources)
     cleanup_errors: list[str] = []
     primary_error: Exception | None = None
     results: dict[str, dict[str, Any]] = {}
@@ -2822,7 +2838,8 @@ def _run_parallel_lane(
             "result": status,
         })
 
-    events.put({"laneId": lane_id, "status": "provisioning"})
+    if resources is None:
+        events.put({"laneId": lane_id, "status": "provisioning"})
     try:
         lane_fence_check()
         shards = [
@@ -2863,45 +2880,46 @@ def _run_parallel_lane(
             "laneId": lane_id,
             "shards": shards,
         }
-        worker_path = ROOT / "release/azure" / lane["worker"]
-        payload = render_worker(worker_path, config)
-        bootstrap_blob = (
-            f"{prefix}/lanes/{lane_id}/bootstrap/{epoch}/{worker_path.name}"
-        )
-        lane_fence_check()
-        artifact_container.upload_blob(
-            bootstrap_blob,
-            payload,
-            overwrite=True,
-            content_settings=context["modules"]["ContentSettings"](
-                content_type="text/plain"
-            ),
-        )
-        lane_fence_check()
-        worker_url = worker_sas_url(
-            context,
-            service,
-            data["storageAccount"],
-            account_key,
-            artifact_container_name(plan),
-            bootstrap_blob,
-            args.timeout_hours,
-        )
-        lane_fence_check()
-        resources = create_lane_vm(
-            context,
-            data["resourceGroup"],
-            data["location"],
-            args.run_id,
-            lane,
-            identity,
-            subnet_id,
-            worker_url,
-            ssh_key,
-            fence_check=lane_fence_check,
-            cleanup_fence_check=controller_lease.check,
-            controller_epoch=epoch,
-        )
+        if resources is None:
+            worker_path = ROOT / "release/azure" / lane["worker"]
+            payload = render_worker(worker_path, config)
+            bootstrap_blob = (
+                f"{prefix}/lanes/{lane_id}/bootstrap/{epoch}/{worker_path.name}"
+            )
+            lane_fence_check()
+            artifact_container.upload_blob(
+                bootstrap_blob,
+                payload,
+                overwrite=True,
+                content_settings=context["modules"]["ContentSettings"](
+                    content_type="text/plain"
+                ),
+            )
+            lane_fence_check()
+            worker_url = worker_sas_url(
+                context,
+                service,
+                data["storageAccount"],
+                account_key,
+                artifact_container_name(plan),
+                bootstrap_blob,
+                args.timeout_hours,
+            )
+            lane_fence_check()
+            resources = create_lane_vm(
+                context,
+                data["resourceGroup"],
+                data["location"],
+                args.run_id,
+                lane,
+                identity,
+                subnet_id,
+                worker_url,
+                ssh_key,
+                fence_check=lane_fence_check,
+                cleanup_fence_check=controller_lease.check,
+                controller_epoch=epoch,
+            )
         events.put({
             "laneId": lane_id,
             "status": "running",
@@ -2930,8 +2948,6 @@ def _run_parallel_lane(
     except Exception as exc:
         primary_error = exc
         results = copy.deepcopy(getattr(exc, "completed_results", results))
-        if abort_event is not None:
-            abort_event.set()
     finally:
         if resources and not (
             detach_event is not None and detach_event.is_set()
@@ -2983,6 +2999,226 @@ def _run_parallel_lane(
     return results
 
 
+def validate_resume_manifest(
+    run: dict[str, Any],
+    *,
+    run_id: str,
+    context: dict[str, Any],
+    location: str,
+    group: str,
+    account_name: str,
+    plan: dict[str, Any],
+) -> None:
+    """Reject adoption unless the retained workload contract is self-consistent."""
+    expected = {
+        "schemaVersion": 1,
+        "provider": "azure",
+        "runId": run_id,
+        "subscription": context["subscription"],
+        "location": location,
+        "resourceGroup": group,
+        "storageAccount": account_name,
+        "container": artifact_container_name(plan),
+    }
+    case_insensitive = {"subscription", "location", "resourceGroup", "storageAccount"}
+    for key, value in expected.items():
+        actual = run.get(key)
+        matches = (
+            str(actual).lower() == str(value).lower()
+            if key in case_insensitive
+            else actual == value
+        )
+        if not matches:
+            raise RuntimeError(
+                f"Azure resume contract mismatch for {key}: retained {actual!r}, expected {value!r}"
+            )
+    if run.get("status") not in {"initializing", "running"}:
+        raise RuntimeError(
+            f"Azure release run {run_id!r} is already terminal with status {run.get('status')!r}"
+        )
+    epoch = run.get("controllerEpoch")
+    if not isinstance(epoch, str) or not re.fullmatch(r"[0-9a-f]{32}", epoch):
+        raise RuntimeError("Azure resume manifest has an invalid controller workload epoch")
+    commit = run.get("commit")
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise RuntimeError("Azure resume manifest has an invalid full Git commit")
+    for key in ("repository", "releaseVersion", "snapshotVersion"):
+        if not isinstance(run.get(key), str) or not run[key]:
+            raise RuntimeError(f"Azure resume manifest has an invalid {key}")
+
+    lanes = run.get("lanes")
+    executions = run.get("executions")
+    if not isinstance(lanes, list) or not isinstance(executions, list):
+        raise RuntimeError("Azure resume manifest requires lane and execution lists")
+    execution_records: dict[str, dict[str, Any]] = {}
+    executions_by_lane: dict[str, list[str]] = {}
+    for execution in executions:
+        if not isinstance(execution, dict):
+            raise RuntimeError("Azure resume manifest contains a non-object execution")
+        execution_id = execution.get("id")
+        lane_id = execution.get("laneId")
+        shard = execution.get("shard")
+        if (
+            not isinstance(execution_id, str)
+            or not execution_id
+            or execution_id in execution_records
+            or not isinstance(lane_id, str)
+            or not lane_id
+            or not isinstance(shard, dict)
+            or shard.get("id") != execution_id
+            or shard.get("lane") != lane_id
+        ):
+            raise RuntimeError("Azure resume manifest contains an invalid execution contract")
+        if execution.get("status") not in {
+            "pending", "provisioning", "running", "succeeded"
+        }:
+            raise RuntimeError(
+                f"Azure execution {execution_id!r} cannot be resumed from status "
+                f"{execution.get('status')!r}"
+            )
+        build = shard.get("build")
+        variants = build.get("variants") if isinstance(build, dict) else None
+        if not isinstance(variants, list):
+            raise RuntimeError(
+                f"Azure execution {execution_id!r} has no immutable variant contract"
+            )
+        with_shard_contract_digest(shard)
+        execution_records[execution_id] = execution
+        executions_by_lane.setdefault(lane_id, []).append(execution_id)
+
+    lane_ids: set[str] = set()
+    for lane in lanes:
+        if not isinstance(lane, dict):
+            raise RuntimeError("Azure resume manifest contains a non-object lane")
+        lane_id = lane.get("id")
+        execution_ids = lane.get("executionIds")
+        if (
+            not isinstance(lane_id, str)
+            or not lane_id
+            or lane_id in lane_ids
+            or not isinstance(execution_ids, list)
+            or any(not isinstance(value, str) for value in execution_ids)
+            or execution_ids != executions_by_lane.get(lane_id, [])
+        ):
+            raise RuntimeError("Azure resume manifest contains an invalid lane contract")
+        if lane.get("status") not in {
+            "pending", "provisioning", "running", "succeeded"
+        }:
+            raise RuntimeError(
+                f"Azure lane {lane_id!r} cannot be resumed from status {lane.get('status')!r}"
+            )
+        lane_ids.add(lane_id)
+    if set(executions_by_lane) != lane_ids:
+        raise RuntimeError("Azure resume manifest has executions without a retained lane")
+
+
+def retained_lane_resources(
+    context: dict[str, Any],
+    group: str,
+    run_id: str,
+    epoch: str,
+    lane: dict[str, Any],
+) -> dict[str, str] | None:
+    """Return the exact retained VM set, including the manifest-write crash window."""
+    expected = lane_resource_names(run_id, lane["id"], epoch)
+    recorded = lane.get("resources")
+    if isinstance(recorded, dict) and recorded.get("vm"):
+        for key, value in recorded.items():
+            if key in expected and value != expected[key]:
+                raise RuntimeError(
+                    f"Azure lane {lane['id']!r} retained unexpected {key} resource {value!r}"
+                )
+        # Recorded names do not prove the VM still exists or still belongs to this
+        # controller epoch. Validate the live VM below before adopting it.
+    try:
+        vm = context["compute"].virtual_machines.get(group, expected["vm"])
+    except Exception as exc:
+        if is_not_found(exc):
+            return None
+        raise
+    tags = object_value(vm, "tags", {}) or {}
+    required_tags = {
+        MANAGED_TAG: "true",
+        RUN_TAG: run_id,
+        SHARD_TAG: normalize_name(lane["id"], 63),
+        CONTROLLER_EPOCH_TAG: epoch,
+    }
+    if any(str(tags.get(key)) != value for key, value in required_tags.items()):
+        raise RuntimeError(
+            f"refusing to adopt Azure VM {expected['vm']!r}: workload tags do not match"
+        )
+    return expected
+
+
+def resume_controller_data(
+    args: argparse.Namespace,
+) -> tuple[dict[str, Any], Any, Any, str, dict[str, Any]]:
+    plan = load_plan(args.plan)
+    context, location, group, account, service = existing_storage(args, plan)
+    account_name = storage_account_name(
+        context["subscription"], location, getattr(args, "storage_account", None)
+    )
+    artifact_container = service.get_container_client(artifact_container_name(plan))
+    run = load_run(artifact_container, plan, args.run_id)
+    validate_resume_manifest(
+        run,
+        run_id=args.run_id,
+        context=context,
+        location=location,
+        group=group,
+        account_name=account_name,
+        plan=plan,
+    )
+    keys = context["storage"].storage_accounts.list_keys(group, account_name)
+    values = list(object_value(keys, "keys", []) or [])
+    if not values:
+        raise RuntimeError(f"Azure storage account {account_name} returned no keys")
+    account_key = str(object_value(values[0], "value"))
+
+    executions = copy.deepcopy(run["executions"])
+    execution_records = {item["id"]: item for item in executions}
+    lanes: list[dict[str, Any]] = []
+    for retained_lane in run["lanes"]:
+        execution_ids = retained_lane["executionIds"]
+        pending_execution_ids = [
+            execution_id
+            for execution_id in execution_ids
+            if execution_records[execution_id].get("status") != "succeeded"
+        ]
+        if not pending_execution_ids:
+            continue
+        lane = copy.deepcopy(retained_lane)
+        lane["executionIds"] = pending_execution_ids
+        workers = {
+            execution_records[execution_id]["shard"].get("worker")
+            for execution_id in execution_ids
+        }
+        if len(workers) != 1 or None in workers:
+            raise RuntimeError(
+                f"Azure lane {lane['id']!r} has no unique retained worker contract"
+            )
+        lane["worker"] = workers.pop()
+        lanes.append(lane)
+
+    args.commit = run["commit"]
+    args.branch = run.get("sourceBranch")
+    args.repository = run["repository"]
+    args.version = run["releaseVersion"]
+    args.snapshot_version = run["snapshotVersion"]
+    args.reset_kill_switch = False
+    args.ssh_public_key = None
+    data = {
+        "context": context,
+        "plan": plan,
+        "location": location,
+        "resourceGroup": group,
+        "storageAccount": account_name,
+        "lanes": lanes,
+        "executions": executions,
+    }
+    return data, account, service, account_key, run
+
+
 def _start_under_controller_lease(
     args: argparse.Namespace,
     controller_lease: ControllerLease,
@@ -2990,6 +3226,7 @@ def _start_under_controller_lease(
     account: Any,
     service: Any,
     account_key: str,
+    resume_manifest: dict[str, Any] | None = None,
 ) -> None:
     context = data["context"]
     plan = data["plan"]
@@ -3012,93 +3249,154 @@ def _start_under_controller_lease(
         control_container, plan
     )
     controller_lease.check()
-    if get_json(artifact_container, run_blob) is not None:
-        raise RuntimeError(f"Azure release run {run_id!r} already exists")
-    run_manifest = {
-        "schemaVersion": 1,
-        "provider": "azure",
-        "runId": run_id,
-        "subscription": context["subscription"],
-        "location": data["location"],
-        "resourceGroup": group,
-        "storageAccount": account_name,
-        "container": artifact_container_name(plan),
-        "releaseVersion": args.version,
-        "snapshotVersion": args.snapshot_version,
-        "commit": commit,
-        "sourceBranch": args.branch,
-        "repository": args.repository,
-        "createdAt": utc_now(),
-        "controllerEpoch": epoch,
-        "status": "initializing",
-        "managedIdentity": None,
-        "compilerCache": compiler_cache_metadata(plan, account_name),
-        "parallel": True,
-        "lanes": [],
-        "executions": [],
-        "unsupportedWorkflows": plan.get("unsupportedWorkflows", {}),
-    }
-    for lane in data["lanes"]:
-        run_manifest["lanes"].append({
-            "id": lane["id"],
-            "os": lane["os"],
-            "architecture": lane["architecture"],
-            "image": lane["image"],
-            "executionIds": lane["executionIds"],
-            "selectedMachine": lane["selectedMachine"],
-            "rootVolumeGiB": lane["rootVolumeGiB"],
-            "zone": lane.get("zone"),
-            "status": "pending",
-        })
-    for item in data["executions"]:
-        run_manifest["executions"].append({
-            "id": item["id"],
-            "laneId": item["laneId"],
-            "shard": item["shard"],
-            "selectedMachine": item["selectedMachine"],
-            "rootVolumeGiB": item["rootVolumeGiB"],
-            "zone": item.get("zone"),
-            "status": "pending",
-        })
-    controller_lease.check()
-    put_json(
-        artifact_container,
-        run_blob,
-        run_manifest,
-        context["modules"],
-        controller_lease=controller_lease,
-        create_only=True,
-    )
-    controller_lease.check()
+    existing_manifest = get_json(artifact_container, run_blob)
     run_switch = run_kill_switch_blob(plan, run_id)
-    # The create-only run manifest above proves this is a new run. Initialize its
-    # leased switch automatically; --reset-kill-switch is reserved for clearing a
-    # prior forced global emergency stop.
-    set_kill_switch(
-        control_container,
-        plan,
-        False,
-        context["modules"],
-        "start",
-        controller_lease=controller_lease,
-        object_name=run_switch,
+    resuming = resume_manifest is not None
+    if resuming:
+        if existing_manifest is None:
+            raise RuntimeError(f"Azure release run {run_id!r} was not found for resume")
+        validate_resume_manifest(
+            existing_manifest,
+            run_id=run_id,
+            context=context,
+            location=data["location"],
+            group=group,
+            account_name=account_name,
+            plan=plan,
+        )
+        if existing_manifest["controllerEpoch"] != epoch:
+            raise RuntimeError(
+                "Azure resume lease does not preserve the retained workload epoch"
+            )
+        if kill_switch_enabled(
+            control_container,
+            plan,
+            epoch,
+            object_name=run_switch,
+        ):
+            raise RuntimeError(
+                f"Azure release run {run_id!r} has its cancellation switch enabled"
+            )
+        run_manifest = copy.deepcopy(existing_manifest)
+        run_manifest["status"] = "running"
+        run_manifest["resumedAt"] = utc_now()
+        run_manifest["resumeCount"] = int(run_manifest.get("resumeCount", 0)) + 1
+        run_manifest.pop("failure", None)
+        run_manifest.pop("completedAt", None)
+        for lane in data["lanes"]:
+            lane["resumeResources"] = retained_lane_resources(
+                context,
+                group,
+                run_id,
+                epoch,
+                lane,
+            )
+    else:
+        if existing_manifest is not None:
+            raise RuntimeError(f"Azure release run {run_id!r} already exists")
+        run_manifest = {
+            "schemaVersion": 1,
+            "provider": "azure",
+            "runId": run_id,
+            "subscription": context["subscription"],
+            "location": data["location"],
+            "resourceGroup": group,
+            "storageAccount": account_name,
+            "container": artifact_container_name(plan),
+            "releaseVersion": args.version,
+            "snapshotVersion": args.snapshot_version,
+            "commit": commit,
+            "sourceBranch": args.branch,
+            "repository": args.repository,
+            "createdAt": utc_now(),
+            "controllerEpoch": epoch,
+            "status": "initializing",
+            "managedIdentity": None,
+            "compilerCache": compiler_cache_metadata(plan, account_name),
+            "parallel": True,
+            "lanes": [],
+            "executions": [],
+            "unsupportedWorkflows": plan.get("unsupportedWorkflows", {}),
+        }
+        for lane in data["lanes"]:
+            run_manifest["lanes"].append({
+                "id": lane["id"],
+                "os": lane["os"],
+                "architecture": lane["architecture"],
+                "image": lane["image"],
+                "executionIds": lane["executionIds"],
+                "selectedMachine": lane["selectedMachine"],
+                "rootVolumeGiB": lane["rootVolumeGiB"],
+                "zone": lane.get("zone"),
+                "status": "pending",
+            })
+        for item in data["executions"]:
+            run_manifest["executions"].append({
+                "id": item["id"],
+                "laneId": item["laneId"],
+                "shard": item["shard"],
+                "selectedMachine": item["selectedMachine"],
+                "rootVolumeGiB": item["rootVolumeGiB"],
+                "zone": item.get("zone"),
+                "status": "pending",
+            })
+        controller_lease.check()
+        put_json(
+            artifact_container,
+            run_blob,
+            run_manifest,
+            context["modules"],
+            controller_lease=controller_lease,
+            create_only=True,
+        )
+        controller_lease.check()
+        # The create-only run manifest above proves this is a new run. Initialize its
+        # leased switch automatically; --reset-kill-switch is reserved for clearing a
+        # prior forced global emergency stop.
+        set_kill_switch(
+            control_container,
+            plan,
+            False,
+            context["modules"],
+            "start",
+            controller_lease=controller_lease,
+            object_name=run_switch,
+        )
+
+    needs_provisioning = any(
+        lane.get("resumeResources") is None for lane in data["lanes"]
     )
-    identity, identity_metadata = ensure_identity(
-        context,
-        group,
-        data["location"],
-        run_id,
-        account.id,
-        fence_check=controller_lease.check,
-        controller_epoch=epoch,
-    )
-    subnet_id, _ = ensure_network(
-        context,
-        group,
-        data["location"],
-        fence_check=controller_lease.check,
-    )
-    ssh_key = resolve_ssh_public_key(args.ssh_public_key)
+    identity_metadata = run_manifest.get("managedIdentity")
+    if not resuming or needs_provisioning:
+        identity, identity_metadata = ensure_identity(
+            context,
+            group,
+            data["location"],
+            run_id,
+            account.id,
+            fence_check=controller_lease.check,
+            controller_epoch=epoch,
+        )
+    else:
+        client_id = (
+            identity_metadata.get("clientId")
+            if isinstance(identity_metadata, dict)
+            else None
+        )
+        if not isinstance(client_id, str) or not client_id:
+            raise RuntimeError("Azure resume manifest has no managed identity client ID")
+        identity = argparse.Namespace(client_id=client_id)
+    if needs_provisioning:
+        subnet_id, _ = ensure_network(
+            context,
+            group,
+            data["location"],
+            fence_check=controller_lease.check,
+        )
+        ssh_key = resolve_ssh_public_key(args.ssh_public_key)
+    else:
+        subnet_id = ""
+        ssh_key = ""
     run_manifest["managedIdentity"] = identity_metadata
     run_manifest["status"] = "running"
     controller_lease.check()
@@ -3135,7 +3433,6 @@ def _start_under_controller_lease(
         }
         event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
         failures: dict[str, str] = {}
-        cancellation_enabled = False
 
         def record_failure(lane_id: str, message: str) -> None:
             message = str(message)
@@ -3150,7 +3447,6 @@ def _start_under_controller_lease(
                 failures[lane_id] = f"{previous}; {message}"
 
         def apply_event(event: dict[str, Any]) -> None:
-            nonlocal cancellation_enabled
             lane_id = event["laneId"]
             lane = lane_records[lane_id]
             status_value = event["status"]
@@ -3186,8 +3482,9 @@ def _start_under_controller_lease(
                     if "resources" in event:
                         execution["resources"] = event["resources"]
                 elif status_value == "succeeded":
-                    execution["status"] = "succeeded"
-                    execution["result"] = event["results"][execution_id]
+                    if execution_id in event["results"]:
+                        execution["status"] = "succeeded"
+                        execution["result"] = event["results"][execution_id]
                 elif status_value in {"failed", "cleanup-failed"}:
                     if execution.get("status") != "succeeded":
                         execution["status"] = "failed"
@@ -3195,7 +3492,6 @@ def _start_under_controller_lease(
                             "failure", lane.get("failure", "lane cleanup failed")
                         )
             if status_value in {"failed", "cleanup-failed"}:
-                abort_event.set()
                 failure_message = event.get(
                     "failure", lane.get("failure", "lane failed")
                 )
@@ -3203,19 +3499,9 @@ def _start_under_controller_lease(
                     failure_message += "; resource cleanup failed: " + "; ".join(
                         event["cleanupErrors"]
                     )
+                # A lane failure is terminal for that lane, but independent lanes
+                # must be allowed to finish and publish their successful artifacts.
                 record_failure(lane_id, failure_message)
-                if not cancellation_enabled:
-                    controller_lease.check()
-                    set_kill_switch(
-                        control_container,
-                        plan,
-                        True,
-                        context["modules"],
-                        f"parallel-lane-failure:{lane_id}",
-                        controller_lease=controller_lease,
-                        object_name=run_kill_switch_blob(plan, run_id),
-                    )
-                    cancellation_enabled = True
             controller_lease.check()
             put_json(
                 artifact_container,
@@ -3229,7 +3515,7 @@ def _start_under_controller_lease(
         abort_event = threading.Event()
         detach_event = threading.Event()
         executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=len(data["lanes"]),
+            max_workers=max(1, len(data["lanes"])),
             thread_name_prefix="azure-release-lane",
         )
         future_lanes: dict[concurrent.futures.Future[Any], str] = {}
@@ -3253,6 +3539,7 @@ def _start_under_controller_lease(
                     event_queue,
                     abort_event,
                     detach_event,
+                    lane.get("resumeResources"),
                 ): lane["id"]
                 for lane in data["lanes"]
             }
@@ -3312,7 +3599,6 @@ def _start_under_controller_lease(
                         controller_lease=controller_lease,
                         object_name=run_kill_switch_blob(plan, run_id),
                     )
-                    cancellation_enabled = True
                 except Exception:
                     pass
             for future in future_lanes:
@@ -3357,28 +3643,44 @@ def _start_under_controller_lease(
 
 
 def start(args: argparse.Namespace) -> None:
-    data = preflight_data(args, include_context=True)
-    context = data["context"]
-    plan = data["plan"]
-    commit = args.commit.lower() if args.commit else resolve_commit(args.repository, args.branch)
-    if not re.fullmatch(r"[0-9a-f]{40}", commit):
-        raise ValueError("--commit must be a full 40-character Git commit")
-    run_id = args.run_id or run_id_for(args.version, commit)
-    args.commit = commit
-    args.run_id = run_id
+    resuming = bool(getattr(args, "resume_existing", False))
+    resume_manifest: dict[str, Any] | None = None
+    if resuming:
+        data, account, service, account_key, resume_manifest = resume_controller_data(args)
+        context = data["context"]
+        plan = data["plan"]
+        run_id = args.run_id
+    else:
+        data = preflight_data(args, include_context=True)
+        context = data["context"]
+        plan = data["plan"]
+        commit = (
+            args.commit.lower()
+            if args.commit
+            else resolve_commit(args.repository, args.branch)
+        )
+        if not re.fullmatch(r"[0-9a-f]{40}", commit):
+            raise ValueError("--commit must be a full 40-character Git commit")
+        run_id = args.run_id or run_id_for(args.version, commit)
+        args.commit = commit
+        args.run_id = run_id
+        group = data["resourceGroup"]
+        account_name = data["storageAccount"]
+        # Blob locking cannot precede the lock account. These two operations are the
+        # only pre-lease mutations and are idempotent bootstrap infrastructure; all
+        # run state, kill-switch changes, identity/network/VM work follows the lease.
+        ensure_resource_group(context, group, data["location"])
+        account, service, account_key = ensure_storage(
+            context, group, data["location"], account_name, plan
+        )
     group = data["resourceGroup"]
     account_name = data["storageAccount"]
-    # Blob locking cannot precede the lock account. These two operations are the
-    # only pre-lease mutations and are idempotent bootstrap infrastructure; all
-    # run state, kill-switch changes, identity/network/VM work follows the lease.
-    ensure_resource_group(context, group, data["location"])
-    account, service, account_key = ensure_storage(
-        context, group, data["location"], account_name, plan
-    )
     artifact_container = service.get_container_client(artifact_container_name(plan))
     control_container = service.get_container_client(control_container_name(plan))
     lease = ControllerLease(
-        control_container, controller_lock_blob(plan, run_id)
+        control_container,
+        controller_lock_blob(plan, run_id),
+        epoch=resume_manifest["controllerEpoch"] if resume_manifest else None,
     ).acquire()
     completed = False
     detached = False
@@ -3400,7 +3702,13 @@ def start(args: argparse.Namespace) -> None:
             signal.signal(signal.SIGTERM, detach_on_sigterm)
         try:
             _start_under_controller_lease(
-                args, lease, data, account, service, account_key
+                args,
+                lease,
+                data,
+                account,
+                service,
+                account_key,
+                resume_manifest=resume_manifest,
             )
         finally:
             if handles_sigterm and previous_sigterm is not None:
@@ -4909,7 +5217,16 @@ def parser() -> argparse.ArgumentParser:
     )
     add_selection_options(launch)
     add_storage_options(launch)
-    launch.set_defaults(func=start)
+    launch.set_defaults(func=start, resume_existing=False)
+
+    resume = sub.add_parser(
+        "resume",
+        help="reattach to a non-terminal run without reprovisioning retained workers",
+    )
+    resume.add_argument("--run-id", required=True)
+    resume.add_argument("--timeout-hours", type=int, default=12)
+    add_storage_options(resume)
+    resume.set_defaults(func=start, resume_existing=True)
 
     show = sub.add_parser("status")
     show.add_argument("--run-id")
