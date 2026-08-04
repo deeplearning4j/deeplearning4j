@@ -30,7 +30,17 @@
 
 namespace sd {
 
-#define SPECIAL_METHODS_DECL(T) template  class SpecialMethods<GET_SECOND(T)>;
+#if defined(SD_CUDA)
+// CUDA/ZLUDA only needs the two host sort entry points referenced by
+// NativeOpExecutioner. Instantiating the complete SpecialMethods class here
+// makes the Windows CUDA image exceed the PE/COFF 2 GiB limit.
+#define SPECIAL_METHODS_DECL(T)                                                        \
+  template void SpecialMethods<GET_SECOND(T)>::sortGeneric(NDArray *, bool);          \
+  template void SpecialMethods<GET_SECOND(T)>::sortTadGeneric(                        \
+      NDArray *, sd::LongType *, int, bool);
+#else
+#define SPECIAL_METHODS_DECL(T) template class SpecialMethods<GET_SECOND(T)>;
+#endif
 ITERATE_LIST(
     SD_COMMON_TYPES_PART_@COMB1@,
     SPECIAL_METHODS_DECL

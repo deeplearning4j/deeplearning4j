@@ -2827,23 +2827,28 @@ function(execute_template_generation)
 
     endif()
 
-    # SpecialMethods are host-side helpers used by both CPU and CUDA libraries.
-    # Their .cpp.in templates do not contain the legacy #cmakedefine markers, so
-    # genCompilation() deliberately emits nothing for them. Generate their
-    # explicit instantiations for either backend with the direct generator.
+    # CPU needs the complete SpecialMethods/DoubleMethods matrix. ZLUDA only
+    # needs the host sort entry points used by NativeOpExecutioner; the
+    # specials_single template deliberately emits just those under SD_CUDA.
+    # Keeping specials_double out of CUDA avoids pushing the Windows DLL beyond
+    # the PE/COFF 2 GiB image limit.
     set(SPECIALS_INST_DIR "${CMAKE_BINARY_DIR}/host_instantiations")
     file(MAKE_DIRECTORY "${SPECIALS_INST_DIR}")
 
-    set(SPECIALS_DOUBLE_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_double.cpp.in")
-    if(EXISTS "${SPECIALS_DOUBLE_TEMPLATE}")
-        message(STATUS "   Processing specials_double template")
-        create_direct_instantiation_file("${SPECIALS_DOUBLE_TEMPLATE}" "${COMBINATIONS_2}" "${SPECIALS_INST_DIR}" ALL_GENERATED_SOURCES)
+    if(NOT SD_CUDA)
+        set(SPECIALS_DOUBLE_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_double.cpp.in")
+        if(EXISTS "${SPECIALS_DOUBLE_TEMPLATE}")
+            message(STATUS "   Processing CPU specials_double template")
+            create_direct_instantiation_file("${SPECIALS_DOUBLE_TEMPLATE}" "${COMBINATIONS_2}" "${SPECIALS_INST_DIR}" ALL_GENERATED_SOURCES)
+        endif()
     endif()
 
-    set(SPECIALS_SINGLE_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in")
-    if(EXISTS "${SPECIALS_SINGLE_TEMPLATE}")
-        message(STATUS "   Processing specials_single template")
-        create_direct_instantiation_file("${SPECIALS_SINGLE_TEMPLATE}" "${COMBINATIONS_1}" "${SPECIALS_INST_DIR}" ALL_GENERATED_SOURCES)
+    if(NOT SD_CUDA OR HAVE_ZLUDA)
+        set(SPECIALS_SINGLE_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in")
+        if(EXISTS "${SPECIALS_SINGLE_TEMPLATE}")
+            message(STATUS "   Processing host specials_single template")
+            create_direct_instantiation_file("${SPECIALS_SINGLE_TEMPLATE}" "${COMBINATIONS_1}" "${SPECIALS_INST_DIR}" ALL_GENERATED_SOURCES)
+        endif()
     endif()
     
     # Final reporting

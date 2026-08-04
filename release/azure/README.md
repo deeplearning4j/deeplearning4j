@@ -177,7 +177,15 @@ The control kill switch is recreated/enabled after a storage purge so old worker
 
 ## Collect, hybrid completion, and Central
 
-After selected lanes succeed, verify and collect their outputs:
+A successful `start` or `resume` automatically performs a Blob-only collection after VM and identity cleanup. Raw shard archives remain under their shard paths as immutable provenance, while the usable Maven 2 repository is materialized with normal Maven coordinates at:
+
+```text
+deeplearning4j/releases/RUN_ID/maven-repository/
+```
+
+Repository files are uploaded as individual blobs, followed by `.dl4j/repository-manifest.json` and its SHA-256 file; `.dl4j/complete.json` is written last. The run root also receives `release-build-manifest.json` and its checksum, so consumers do not need to inspect the raw `.tar.gz` files. Pass `--no-auto-collect` only when deliberately retaining raw outputs without publishing the expanded repository.
+
+Run `collect` explicitly when assembling a hybrid release or updating its draft GitHub Release:
 
 ```bash
 python3 release/azure/release.py collect \
@@ -187,7 +195,9 @@ python3 release/azure/release.py collect \
   --commit FULL_40_CHARACTER_SHA
 ```
 
-`collect` checks `run.json`, every `status.json`, every shard identity, release version, commit, workload/variant selection, and each archive against the worker-attested size and SHA-256 digest. It materializes a Maven 2 test repository under the run's `maven2/` prefix and writes `.dl4j/complete.json` last.
+To publish only the expanded Blob repository for an existing successful run, without downloading the SDK archive or touching GitHub, add `--no-github --repository-only`. This is the same lightweight mode used by automatic collection.
+
+`collect` checks `run.json`, every `status.json`, every shard identity, release version, commit, and workload/variant selection. Every archive included in a full or GitHub collection is verified against the worker-attested size and SHA-256 digest before the expanded repository is replaced; repository-only mode deliberately omits SDK archives from its manifest instead of claiming an unverified digest.
 
 Azure-only output remains intentionally incomplete because the macOS/MPS variants are absent. For hybrid assembly, collect the AWS macOS lane first and then collect the Azure lanes with the same draft tag, version, and commit; cross-provider collectors must run sequentially. The Azure collector holds the same renewable controller lease while collecting, requires an existing release manifest to download and parse successfully, downloads and hash/size-verifies every retained GitHub asset, and derives retained coverage only from verified shard manifests plus their required Maven/SDK archives. New manifests attest `variants` directly; for legacy AWS manifests, exact variants are inferred from hash-verified classifier files in the worker shard manifest rather than assuming that a parent lane built everything. It re-fetches the GitHub manifest immediately before replacement; a changed manifest aborts collection so the operator can rerun against the new state. New data assets are uploaded without `--clobber`, while duplicate content keeps normalized provider/source provenance and every other asset field must agree. Completeness is calculated from exact attested classifier variants and emitted as `matrixEntries`, so a parent lane with exclusions cannot claim its omitted variants.
 

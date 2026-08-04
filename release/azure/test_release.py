@@ -376,6 +376,30 @@ class ReleasePlanTests(unittest.TestCase):
             "hybrid", release.merged_release_provider({"provider": "aws"})
         )
 
+    def test_zluda_limits_host_special_instantiations_for_windows_image_size(self):
+        root = Path(__file__).parents[2]
+        processing = (
+            root / "libnd4j/cmake/TemplateProcessing.cmake"
+        ).read_text(encoding="utf-8")
+        template = (
+            root
+            / "libnd4j/include/ops/impl/compilation_units/specials_single.cpp.in"
+        ).read_text(encoding="utf-8")
+
+        double_template = processing.index("set(SPECIALS_DOUBLE_TEMPLATE")
+        double_gate = processing.rindex("if(NOT SD_CUDA)", 0, double_template)
+        single_gate = processing.index("if(NOT SD_CUDA OR HAVE_ZLUDA)")
+        single_template = processing.index("set(SPECIALS_SINGLE_TEMPLATE")
+        self.assertLess(double_gate, double_template)
+        self.assertLess(single_gate, single_template)
+
+        cuda_branch = template.split("#if defined(SD_CUDA)", 1)[1].split(
+            "#else", 1
+        )[0]
+        self.assertIn("::sortGeneric", cuda_branch)
+        self.assertIn("::sortTadGeneric", cuda_branch)
+        self.assertNotIn("template class SpecialMethods", cuda_branch)
+
 
 class SelectionTests(unittest.TestCase):
     def setUp(self):
@@ -4780,6 +4804,344 @@ Write-Output 'blob-put-probe-ok'
         )
 
 
+class MavenRepositoryPublicationTests(unittest.TestCase):
+    def test_large_blob_download_is_streamed_to_disk_and_fenced(self):
+        downloader = mock.Mock()
+        downloader.chunks.return_value = iter((b"pay", b"load"))
+        container = mock.Mock()
+        container.download_blob.return_value = downloader
+        fence = mock.Mock()
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "nested/archive.tar.gz"
+            release.download_blob_to_path(
+                container,
+                "source/archive.tar.gz",
+                target,
+                fence_check=fence,
+            )
+            self.assertEqual(b"payload", target.read_bytes())
+
+        container.download_blob.assert_called_once_with(
+            "source/archive.tar.gz", max_concurrency=4
+        )
+        self.assertEqual(4, fence.call_count)
+
+    def test_publisher_replaces_stale_tree_and_writes_marker_last(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repository = root / "repository"
+            component = repository / "org/nd4j/example/1.0.0"
+            component.mkdir(parents=True)
+            jar = component / "example-1.0.0.jar"
+            pom = component / "example-1.0.0.pom"
+            jar.write_bytes(b"jar")
+            pom.write_text("<project/>", encoding="utf-8")
+            manifest = root / "repository-manifest.json"
+            manifest.write_text('{"files": []}\n', encoding="utf-8")
+            checksum = Path(str(manifest) + ".sha256")
+            checksum.write_text("digest  repository-manifest.json\n", encoding="ascii")
+
+            prefix = "deeplearning4j/releases/run/maven-repository/"
+            stale = [prefix + ".dl4j/complete.json", prefix + "stale.jar"]
+            container = mock.Mock()
+            container.list_blobs.return_value = [
+                SimpleNamespace(name=name, etag=f'"etag-{index}"')
+                for index, name in enumerate(stale)
+            ]
+            legacy_marker = "deeplearning4j/releases/run/maven2/.dl4j/complete.json"
+
+            def get_blob_client(name):
+                client = mock.Mock()
+                if name == legacy_marker:
+                    client.get_blob_properties.return_value = SimpleNamespace(
+                        etag='"legacy-etag"'
+                    )
+                else:
+                    missing = RuntimeError("missing")
+                    missing.status_code = 404
+                    client.get_blob_properties.side_effect = missing
+                return client
+
+            container.get_blob_client.side_effect = get_blob_client
+            container.delete_blobs.return_value = iter(())
+            uploads = []
+            fence = mock.Mock()
+
+            def upload(name, data, **options):
+                streamed = hasattr(data, "read")
+                payload = data.read() if streamed else data
+                uploads.append((name, payload, streamed, options))
+
+            container.upload_blob.side_effect = upload
+            modules = {
+                "ContentSettings": lambda **values: SimpleNamespace(**values),
+                "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+            }
+            marker_lease = SimpleNamespace(
+                name=prefix + ".dl4j/complete.json",
+                lease="marker-lease",
+                epoch="publisher-epoch",
+                check=fence,
+            )
+
+            result = release.publish_maven_repository(
+                container,
+                modules,
+                account_name="account",
+                container_name="releases",
+                run_prefix="deeplearning4j/releases/run",
+                repository=repository,
+                repository_manifest=manifest,
+                run_id="run",
+                version="1.0.0",
+                commit="a" * 40,
+                completion={
+                    "completeMatrix": False,
+                    "missingMatrixEntries": ["macos"],
+                },
+                fence_check=fence,
+            )
+            self.assertNotIn(prefix + ".dl4j/complete.json", [
+                item[0] for item in uploads
+            ])
+            release.finalize_maven_repository(
+                container,
+                modules,
+                run_prefix="deeplearning4j/releases/run",
+                repository_info=result,
+                marker_lease=marker_lease,
+                fence_check=fence,
+            )
+
+        container.delete_blob.assert_called_once_with(
+            "deeplearning4j/releases/run/maven2/.dl4j/complete.json",
+            delete_snapshots="include",
+            etag='"legacy-etag"',
+            match_condition="if-not-modified",
+        )
+        container.delete_blobs.assert_called_once_with(
+            {
+                "name": prefix + "stale.jar",
+                "etag": '"etag-1"',
+                "match_condition": "if-not-modified",
+            },
+            delete_snapshots="include",
+            raise_on_any_failure=True,
+        )
+        names = [item[0] for item in uploads]
+        self.assertEqual(
+            [
+                prefix + "org/nd4j/example/1.0.0/example-1.0.0.jar",
+                prefix + "org/nd4j/example/1.0.0/example-1.0.0.pom",
+                prefix + ".dl4j/repository-manifest.json",
+                prefix + ".dl4j/repository-manifest.json.sha256",
+                prefix + ".dl4j/complete.json",
+            ],
+            names,
+        )
+        self.assertTrue(all(item[2] for item in uploads[:-1]))
+        self.assertFalse(uploads[-1][2])
+        self.assertTrue(all(item[3]["overwrite"] is False for item in uploads[:-1]))
+        self.assertEqual("marker-lease", uploads[-1][3]["lease"])
+        marker = json.loads(uploads[-1][1])
+        self.assertTrue(marker["ready"])
+        self.assertEqual(2, marker["repositoryFiles"])
+        self.assertFalse(marker["completeMatrix"])
+        self.assertEqual(
+            "https://account.blob.core.windows.net/releases/"
+            "deeplearning4j/releases/run/maven-repository/",
+            result["uri"],
+        )
+        self.assertTrue(result["completionMarker"].endswith("/.dl4j/complete.json"))
+        self.assertGreater(fence.call_count, len(uploads))
+
+    def test_publisher_deletes_stale_blobs_in_bounded_batches(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repository = root / "repository"
+            component = repository / "org/nd4j/example/1.0.0"
+            component.mkdir(parents=True)
+            (component / "example-1.0.0.pom").write_text(
+                "<project/>", encoding="utf-8"
+            )
+            manifest = root / "repository-manifest.json"
+            manifest.write_text('{"files": []}\n', encoding="utf-8")
+            Path(str(manifest) + ".sha256").write_text(
+                "digest  repository-manifest.json\n", encoding="ascii"
+            )
+            container = mock.Mock()
+            container.list_blobs.return_value = [
+                SimpleNamespace(
+                    name=f"prefix/maven-repository/stale-{index}",
+                    etag=f'"etag-{index}"',
+                )
+                for index in range(257)
+            ]
+            missing = RuntimeError("missing")
+            missing.status_code = 404
+            container.get_blob_client.return_value.get_blob_properties.side_effect = missing
+            container.delete_blobs.return_value = iter(())
+            container.upload_blob.side_effect = (
+                lambda name, data, **options: data.read()
+                if hasattr(data, "read")
+                else None
+            )
+            modules = {
+                "ContentSettings": lambda **values: SimpleNamespace(**values),
+                "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+            }
+
+            release.publish_maven_repository(
+                container,
+                modules,
+                account_name="account",
+                container_name="releases",
+                run_prefix="prefix",
+                repository=repository,
+                repository_manifest=manifest,
+                run_id="run",
+                version="1.0.0",
+                commit="a" * 40,
+                completion={},
+                fence_check=mock.Mock(),
+            )
+
+        self.assertEqual(2, container.delete_blobs.call_count)
+        first, second = container.delete_blobs.call_args_list
+        self.assertEqual(256, len(first.args))
+        self.assertEqual(1, len(second.args))
+
+    def test_lost_lease_prevents_readiness_marker(self):
+        container = mock.Mock()
+        modules = {
+            "ContentSettings": lambda **values: SimpleNamespace(**values)
+        }
+        marker_lease = SimpleNamespace(
+            name="prefix/maven-repository/.dl4j/complete.json",
+            lease="marker-lease",
+            epoch="publisher-epoch",
+            check=mock.Mock(),
+        )
+        repository_info = {
+            "uri": "https://account/repository/",
+            "completionMarker": "https://account/repository/.dl4j/complete.json",
+            "ready": True,
+            "runId": "run",
+        }
+
+        with self.assertRaisesRegex(RuntimeError, "lease lost"):
+            release.finalize_maven_repository(
+                container,
+                modules,
+                run_prefix="prefix",
+                repository_info=repository_info,
+                marker_lease=marker_lease,
+                fence_check=mock.Mock(side_effect=RuntimeError("lease lost")),
+            )
+
+        container.upload_blob.assert_not_called()
+
+    def test_automatic_collection_is_blob_only_and_covers_the_whole_run(self):
+        source = SimpleNamespace(
+            plan=HERE / "release-plan.json",
+            subscription="subscription",
+            location="eastus2",
+            no_wizard=True,
+            run_id="run-id",
+            version="1.0.0-SNAPSHOT",
+            commit="a" * 40,
+            resource_group="group",
+            storage_account="account",
+        )
+
+        result = release.automatic_collect_args(source)
+
+        self.assertTrue(result.no_github)
+        self.assertTrue(result.repository_only)
+        self.assertIsNone(result.shard)
+        self.assertEqual(source.run_id, result.release_tag)
+        self.assertEqual(source.commit, result.commit)
+        self.assertEqual(source.version, result.version)
+
+    def test_successful_start_auto_collects_after_cleanup_and_lease_release(self):
+        plan = release.load_plan(HERE / "release-plan.json")
+        context = {"subscription": "subscription", "modules": {}}
+        data = {
+            "context": context,
+            "plan": plan,
+            "location": "eastus2",
+            "resourceGroup": "group",
+            "storageAccount": "account",
+            "lanes": [],
+            "executions": [],
+        }
+        artifact = mock.Mock()
+        control = mock.Mock()
+        service = mock.Mock()
+        service.get_container_client.side_effect = [artifact, control]
+        account = SimpleNamespace(id="/storage/account")
+        retained = {"runId": "run", "controllerEpoch": "c" * 32}
+        args = SimpleNamespace(
+            resume_existing=True,
+            run_id="run",
+            plan=HERE / "release-plan.json",
+            subscription="subscription",
+            location="eastus2",
+            no_wizard=True,
+            resource_group="group",
+            storage_account="account",
+            auto_collect=True,
+        )
+
+        def resume_data(actual):
+            actual.commit = "a" * 40
+            actual.version = "1.0.0-SNAPSHOT"
+            actual.snapshot_version = "1.0.0-SNAPSHOT"
+            actual.repository = "repository"
+            actual.branch = None
+            return data, account, service, "key", retained
+
+        order = []
+        lease = mock.Mock()
+        lease.check.return_value = None
+        lease.release.side_effect = lambda: order.append("lease-release") or []
+        controller = mock.Mock()
+        controller.acquire.return_value = lease
+
+        with mock.patch.object(
+            release, "resume_controller_data", side_effect=resume_data
+        ), mock.patch.object(
+            release, "ControllerLease", return_value=controller
+        ), mock.patch.object(
+            release,
+            "_start_under_controller_lease",
+            side_effect=lambda *values, **options: order.append("build"),
+        ), mock.patch.object(
+            release, "set_kill_switch"
+        ), mock.patch.object(
+            release,
+            "reconcile_managed_run_resources",
+            side_effect=lambda *values, **options: (
+                order.append("resource-cleanup") or ({}, [])
+            ),
+        ), mock.patch.object(
+            release, "cleanup_managed_identities", return_value=([], [])
+        ), mock.patch.object(
+            release, "load_run", return_value={"status": "succeeded"}
+        ), mock.patch.object(
+            release, "put_json"
+        ), mock.patch.object(
+            release,
+            "collect",
+            side_effect=lambda collected: order.append("auto-collect"),
+        ) as collect:
+            release.start(args)
+
+        self.assertLess(order.index("resource-cleanup"), order.index("lease-release"))
+        self.assertLess(order.index("lease-release"), order.index("auto-collect"))
+        self.assertTrue(collect.call_args.args[0].no_github)
+
+
 class CliTests(unittest.TestCase):
     def test_all_operational_commands_parse(self):
         subscription = "00000000-0000-0000-0000-000000000001"
@@ -4797,6 +5159,7 @@ class CliTests(unittest.TestCase):
             [
                 "collect", "--run-id", "run", "--release-tag", "tag",
                 "--version", "1.0.0", "--commit", "a" * 40,
+                "--no-github", "--repository-only",
             ],
             ["stop-everything", "--wait"],
         ]
@@ -4804,6 +5167,29 @@ class CliTests(unittest.TestCase):
             with self.subTest(command=command[0]):
                 parsed = release.parser().parse_args(prefix + command)
                 self.assertTrue(callable(parsed.func))
+
+    def test_repository_only_collection_requires_blob_only_mode(self):
+        args = mock.Mock(repository_only=True, no_github=False)
+        with self.assertRaisesRegex(RuntimeError, "requires --no-github"):
+            release.collect(args)
+
+    def test_start_and_resume_publish_expanded_repository_by_default(self):
+        prefix = [
+            "--subscription", "00000000-0000-0000-0000-000000000001",
+            "--location", "eastus2",
+        ]
+        start = release.parser().parse_args(prefix + [
+            "start", "--version", "1.0.0-SNAPSHOT", "--commit", "a" * 40,
+        ])
+        start_raw_only = release.parser().parse_args(prefix + [
+            "start", "--version", "1.0.0-SNAPSHOT", "--commit", "a" * 40,
+            "--no-auto-collect",
+        ])
+        resume = release.parser().parse_args(prefix + ["resume", "--run-id", "run"])
+
+        self.assertTrue(start.auto_collect)
+        self.assertFalse(start_raw_only.auto_collect)
+        self.assertTrue(resume.auto_collect)
 
     def test_standard_environment_names_are_documented(self):
         source = (HERE / "release.py").read_text(encoding="utf-8")

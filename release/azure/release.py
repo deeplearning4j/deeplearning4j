@@ -3642,6 +3642,26 @@ def _start_under_controller_lease(
     print(json.dumps(run_manifest, indent=2))
 
 
+def automatic_collect_args(args: argparse.Namespace) -> argparse.Namespace:
+    """Build the Blob-only collection contract for a successful start/resume."""
+    return argparse.Namespace(
+        plan=args.plan,
+        subscription=args.subscription,
+        location=args.location,
+        no_wizard=getattr(args, "no_wizard", False),
+        run_id=args.run_id,
+        release_tag=args.run_id,
+        version=args.version,
+        commit=args.commit,
+        github_repository="deeplearning4j/deeplearning4j",
+        shard=None,
+        no_github=True,
+        repository_only=True,
+        resource_group=getattr(args, "resource_group", None),
+        storage_account=getattr(args, "storage_account", None),
+    )
+
+
 def start(args: argparse.Namespace) -> None:
     resuming = bool(getattr(args, "resume_existing", False))
     resume_manifest: dict[str, Any] | None = None
@@ -3845,6 +3865,13 @@ def start(args: argparse.Namespace) -> None:
             if primary_error is None:
                 raise RuntimeError(message)
             print(message, file=sys.stderr)
+
+    if completed and getattr(args, "auto_collect", False):
+        print(
+            f"Publishing expanded Azure Maven repository for run {run_id}",
+            flush=True,
+        )
+        collect(automatic_collect_args(args))
 
 
 def existing_storage(
@@ -4150,9 +4177,237 @@ def file_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
-def verify_attested_file(
-    shard_manifest: dict[str, Any], file_name: str, path: Path
+def download_blob_to_path(
+    container: Any,
+    name: str,
+    path: Path,
+    *,
+    fence_check: Callable[[], None] | None = None,
 ) -> None:
+    """Stream one block blob to disk while repeatedly checking collector ownership."""
+    if fence_check is not None:
+        fence_check()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    downloader = container.download_blob(name, max_concurrency=4)
+    with path.open("wb") as stream:
+        for chunk in downloader.chunks():
+            if fence_check is not None:
+                fence_check()
+            stream.write(chunk)
+    if fence_check is not None:
+        fence_check()
+
+
+def blob_etag(container: Any, name: str) -> str | None:
+    """Return the current ETag, or None when the block blob does not exist."""
+    try:
+        properties = container.get_blob_client(name).get_blob_properties()
+    except Exception as exc:
+        if is_not_found(exc):
+            return None
+        raise
+    etag = str(object_value(properties, "etag", ""))
+    if not etag:
+        raise RuntimeError(f"Azure Blob {name!r} did not expose an ETag")
+    return etag
+
+
+def upload_local_blob(
+    container: Any,
+    modules: dict[str, Any],
+    name: str,
+    path: Path,
+    *,
+    content_type: str | None = None,
+    fence_check: Callable[[], None] | None = None,
+) -> None:
+    """Stream one local artifact using target-ETag compare-and-swap fencing."""
+    if fence_check is not None:
+        fence_check()
+    existing_etag = blob_etag(container, name)
+    if fence_check is not None:
+        fence_check()
+    resolved_type = (
+        content_type
+        or mimetypes.guess_type(str(path))[0]
+        or "application/octet-stream"
+    )
+    upload_options: dict[str, Any] = {"overwrite": existing_etag is not None}
+    if existing_etag is not None:
+        upload_options.update({
+            "etag": existing_etag,
+            "match_condition": modules["MatchConditions"].IfNotModified,
+        })
+    with path.open("rb") as stream:
+        container.upload_blob(
+            name,
+            stream,
+            length=path.stat().st_size,
+            max_concurrency=4,
+            content_settings=modules["ContentSettings"](
+                content_type=resolved_type
+            ),
+            **upload_options,
+        )
+    if fence_check is not None:
+        fence_check()
+
+
+def publish_maven_repository(
+    container: Any,
+    modules: dict[str, Any],
+    *,
+    account_name: str,
+    container_name: str,
+    run_prefix: str,
+    repository: Path,
+    repository_manifest: Path,
+    run_id: str,
+    version: str,
+    commit: str,
+    completion: dict[str, Any],
+    fence_check: Callable[[], None] | None = None,
+) -> dict[str, Any]:
+    """Replace a Maven 2 tree; its readiness marker is finalized separately."""
+    repository_prefix = f"{run_prefix.strip('/')}/maven-repository"
+    object_prefix = repository_prefix + "/"
+
+    legacy_marker = f"{run_prefix.strip('/')}/maven2/.dl4j/complete.json"
+    if fence_check is not None:
+        fence_check()
+    legacy_etag = blob_etag(container, legacy_marker)
+    if legacy_etag is not None:
+        container.delete_blob(
+            legacy_marker,
+            delete_snapshots="include",
+            etag=legacy_etag,
+            match_condition=modules["MatchConditions"].IfNotModified,
+        )
+    if fence_check is not None:
+        fence_check()
+
+    marker_name = object_prefix + ".dl4j/complete.json"
+    stale_batch: list[dict[str, Any]] = []
+
+    def delete_stale_batch() -> None:
+        if not stale_batch:
+            return
+        if fence_check is not None:
+            fence_check()
+        list(container.delete_blobs(
+            *stale_batch,
+            delete_snapshots="include",
+            raise_on_any_failure=True,
+        ))
+        if fence_check is not None:
+            fence_check()
+        stale_batch.clear()
+
+    for item in container.list_blobs(name_starts_with=object_prefix):
+        if fence_check is not None:
+            fence_check()
+        name = str(object_value(item, "name", ""))
+        if not name or name == marker_name:
+            continue
+        etag = str(object_value(item, "etag", ""))
+        if not etag:
+            raise RuntimeError(f"Azure Blob {name!r} did not expose an ETag")
+        stale_batch.append({
+            "name": name,
+            "etag": etag,
+            "match_condition": modules["MatchConditions"].IfNotModified,
+        })
+        if len(stale_batch) == 256:
+            delete_stale_batch()
+    delete_stale_batch()
+
+    files = sorted(path for path in repository.rglob("*") if path.is_file())
+    for path in files:
+        relative = path.relative_to(repository).as_posix()
+        upload_local_blob(
+            container,
+            modules,
+            object_prefix + relative,
+            path,
+            fence_check=fence_check,
+        )
+
+    metadata_prefix = object_prefix + ".dl4j/"
+    upload_local_blob(
+        container,
+        modules,
+        metadata_prefix + "repository-manifest.json",
+        repository_manifest,
+        content_type="application/json",
+        fence_check=fence_check,
+    )
+    manifest_checksum = Path(str(repository_manifest) + ".sha256")
+    upload_local_blob(
+        container,
+        modules,
+        metadata_prefix + "repository-manifest.json.sha256",
+        manifest_checksum,
+        content_type="text/plain",
+        fence_check=fence_check,
+    )
+    marker = {
+        "schemaVersion": 1,
+        "layout": "maven2",
+        "ready": True,
+        "provider": "azure",
+        "runId": run_id,
+        "releaseVersion": version,
+        "commit": commit,
+        "repositoryFiles": len(files),
+        "manifestSha256": file_digest(repository_manifest),
+        **completion,
+    }
+    marker_name = metadata_prefix + "complete.json"
+    return {
+        "uri": (
+            f"https://{account_name}.blob.core.windows.net/"
+            f"{container_name}/{repository_prefix}/"
+        ),
+        "completionMarker": (
+            f"https://{account_name}.blob.core.windows.net/"
+            f"{container_name}/{marker_name}"
+        ),
+        **marker,
+    }
+
+
+def finalize_maven_repository(
+    container: Any,
+    modules: dict[str, Any],
+    *,
+    run_prefix: str,
+    repository_info: dict[str, Any],
+    marker_lease: ControllerLease,
+    fence_check: Callable[[], None],
+) -> None:
+    """Publish readiness through the leased marker so a stale collector is rejected."""
+    marker = {
+        key: value
+        for key, value in repository_info.items()
+        if key not in {"uri", "completionMarker"}
+    }
+    marker_name = (
+        f"{run_prefix.strip('/')}/maven-repository/.dl4j/complete.json"
+    )
+    fence_check()
+    put_json(
+        container,
+        marker_name,
+        marker,
+        modules,
+        controller_lease=marker_lease,
+    )
+    fence_check()
+
+
+def attested_file_entry(
+    shard_manifest: dict[str, Any], file_name: str
+) -> dict[str, Any]:
     entries = [
         item for item in shard_manifest.get("files", [])
         if isinstance(item, dict) and item.get("path") == file_name
@@ -4161,7 +4416,13 @@ def verify_attested_file(
         raise RuntimeError(
             f"shard manifest must attest exactly one {file_name!r} entry"
         )
-    entry = entries[0]
+    return entries[0]
+
+
+def verify_attested_file(
+    shard_manifest: dict[str, Any], file_name: str, path: Path
+) -> None:
+    entry = attested_file_entry(shard_manifest, file_name)
     if int(entry.get("size", -1)) != path.stat().st_size:
         raise RuntimeError(f"shard manifest size mismatch for {file_name!r}")
     if entry.get("sha256") != file_digest(path):
@@ -4497,7 +4758,8 @@ def _collect_under_controller_lease(
     group: str,
     account: Any,
     service: Any,
-    collector_lease: ControllerLease,
+    collector_lease: ControllerLeaseGroup,
+    marker_lease: ControllerLease,
 ) -> None:
     container = service.get_container_client(artifact_container_name(plan))
     collector_lease.check()
@@ -4579,6 +4841,7 @@ def _collect_under_controller_lease(
                 })
         assets: list[dict[str, Any]] = []
         for item in executions:
+            collector_lease.check()
             shard = item["shard"]["id"]
             status_value = get_json(container, f"{prefix}/{shard}/status.json")
             if not status_value or int(status_value.get("exitCode", 1)) != 0:
@@ -4609,9 +4872,16 @@ def _collect_under_controller_lease(
                 output_name = (
                     f"{source_name.removesuffix('.tar.gz')}-{shard}.tar.gz"
                 )
+                source_object = f"{prefix}/{shard}/{source_name}"
+                if getattr(args, "repository_only", False) and workload != "maven":
+                    continue
+                attestation = attested_file_entry(manifest_value, source_name)
                 output = directory / output_name
-                output.write_bytes(
-                    container.download_blob(f"{prefix}/{shard}/{source_name}").readall()
+                download_blob_to_path(
+                    container,
+                    source_object,
+                    output,
+                    fence_check=collector_lease.check,
                 )
                 verify_attested_file(manifest_value, source_name, output)
                 if workload == "maven":
@@ -4654,27 +4924,9 @@ def _collect_under_controller_lease(
         ]
         for archive in sorted(maven_archives.values()):
             command.extend(["--input", str(archive)])
+        collector_lease.check()
         subprocess.run(command, check=True)
-        repository_prefix = f"{prefix}/maven2"
-        for path in sorted(repository_dir.rglob("*")):
-            if path.is_file():
-                content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-                container.upload_blob(
-                    f"{repository_prefix}/{path.relative_to(repository_dir).as_posix()}",
-                    path.read_bytes(),
-                    overwrite=True,
-                    content_settings=context["modules"]["ContentSettings"](
-                        content_type=content_type
-                    ),
-                )
-        container.upload_blob(
-            f"{repository_prefix}/.dl4j/manifest.json",
-            repository_manifest.read_bytes(),
-            overwrite=True,
-            content_settings=context["modules"]["ContentSettings"](
-                content_type="application/json"
-            ),
-        )
+        collector_lease.check()
         current_shards = sorted(item["shard"]["id"] for item in executions)
         expected_matrix = matrix_coverage(
             aws_plan, [item["id"] for item in aws_plan["shards"]]
@@ -4684,29 +4936,37 @@ def _collect_under_controller_lease(
         combined_shards = sorted(set(current_shards) | verified_existing_shards)
         combined_matrix = current_matrix | verified_existing_matrix
         missing_matrix = sorted(expected_matrix - combined_matrix)
-        put_json(container, f"{repository_prefix}/.dl4j/complete.json", {
-            "schemaVersion": 1,
-            "layout": "maven2",
-            "ready": True,
-            "provider": "azure",
-            "runId": args.run_id,
-            "releaseVersion": args.version,
-            "commit": args.commit,
-            "azureMatrixComplete": len(executions) == len(run.get("executions", [])),
-            "azureMissingMatrixEntries": current_missing_matrix,
-            "matrixEntries": sorted(combined_matrix),
-            "completeMatrix": not missing_matrix,
-            "missingMatrixEntries": missing_matrix,
-            "missingWorkflows": (
-                sorted(plan.get("unsupportedWorkflows", {}))
-                if any(
-                    value.startswith("macos-14-arm64-cpu--")
-                    for value in missing_matrix
-                )
-                else []
-            ),
-            "manifestSha256": file_digest(repository_manifest),
-        }, context["modules"])
+        missing_workflows = (
+            sorted(plan.get("unsupportedWorkflows", {}))
+            if any(
+                value.startswith("macos-14-arm64-cpu--")
+                for value in missing_matrix
+            )
+            else []
+        )
+        repository_info = publish_maven_repository(
+            container,
+            context["modules"],
+            account_name=account.name,
+            container_name=artifact_container_name(plan),
+            run_prefix=prefix,
+            repository=repository_dir,
+            repository_manifest=repository_manifest,
+            run_id=args.run_id,
+            version=args.version,
+            commit=args.commit,
+            completion={
+                "azureMatrixComplete": (
+                    len(executions) == len(run.get("executions", []))
+                ),
+                "azureMissingMatrixEntries": current_missing_matrix,
+                "matrixEntries": sorted(combined_matrix),
+                "completeMatrix": not missing_matrix,
+                "missingMatrixEntries": missing_matrix,
+                "missingWorkflows": missing_workflows,
+            },
+            fence_check=collector_lease.check,
+        )
         current_workloads = {
             workload
             for item in executions
@@ -4738,24 +4998,8 @@ def _collect_under_controller_lease(
             "matrixEntries": sorted(combined_matrix),
             "completeMatrix": not missing_matrix,
             "missingMatrixEntries": missing_matrix,
-            "missingWorkflows": (
-                sorted(plan.get("unsupportedWorkflows", {}))
-                if any(
-                    value.startswith("macos-14-arm64-cpu--")
-                    for value in missing_matrix
-                )
-                else []
-            ),
-            "testMavenRepository": {
-                "uri": (
-                    f"https://{account.name}.blob.core.windows.net/"
-                    f"{artifact_container_name(plan)}/{repository_prefix}"
-                ),
-                "layout": "maven2",
-                "ready": True,
-                "completeMatrix": not missing_matrix,
-                "missingMatrixEntries": missing_matrix,
-            },
+            "missingWorkflows": missing_workflows,
+            "testMavenRepository": repository_info,
             "assets": sorted(
                 combined_assets.values(), key=lambda value: value["fileName"]
             ),
@@ -4769,6 +5013,30 @@ def _collect_under_controller_lease(
         checksum.write_text(
             f"{file_digest(manifest_path)}  {manifest_path.name}\n",
             encoding="ascii",
+        )
+        upload_local_blob(
+            container,
+            context["modules"],
+            f"{prefix}/{manifest_path.name}",
+            manifest_path,
+            content_type="application/json",
+            fence_check=collector_lease.check,
+        )
+        upload_local_blob(
+            container,
+            context["modules"],
+            f"{prefix}/{checksum.name}",
+            checksum,
+            content_type="text/plain",
+            fence_check=collector_lease.check,
+        )
+        finalize_maven_repository(
+            container,
+            context["modules"],
+            run_prefix=prefix,
+            repository_info=repository_info,
+            marker_lease=marker_lease,
+            fence_check=collector_lease.check,
         )
         if not args.no_github:
             collector_lease.check()
@@ -4840,20 +5108,61 @@ def _collect_under_controller_lease(
 
 
 def collect(args: argparse.Namespace) -> None:
+    if getattr(args, "repository_only", False) and not args.no_github:
+        raise RuntimeError("--repository-only requires --no-github")
     plan = load_plan(args.plan)
     context, location, group, account, service = existing_storage(args, plan)
     control_container = service.get_container_client(control_container_name(plan))
-    lease = ControllerLease(control_container, controller_lock_blob(plan)).acquire()
+    primary_lease = ControllerLease(
+        control_container, controller_lock_blob(plan)
+    ).acquire()
+    active_lease: ControllerLease | ControllerLeaseGroup = primary_lease
     primary_error: BaseException | None = None
     try:
+        artifact_container = service.get_container_client(artifact_container_name(plan))
+        run = load_run(artifact_container, plan, args.run_id)
+        if run.get("commit") != args.commit or run.get("releaseVersion") != args.version:
+            raise RuntimeError("collect identity does not match run.json")
+        run_prefix = f"{plan['artifactPrefix'].strip('/')}/{args.run_id}"
+        marker_name = f"{run_prefix}/maven-repository/.dl4j/complete.json"
+        marker_lease = ControllerLease(
+            artifact_container,
+            marker_name,
+            epoch=primary_lease.epoch,
+        ).acquire()
+        active_lease = ControllerLeaseGroup(primary_lease, [marker_lease])
+        put_json(
+            artifact_container,
+            marker_name,
+            {
+                "schemaVersion": 1,
+                "layout": "maven2",
+                "ready": False,
+                "provider": "azure",
+                "runId": args.run_id,
+                "releaseVersion": args.version,
+                "commit": args.commit,
+            },
+            context["modules"],
+            controller_lease=marker_lease,
+        )
+        active_lease.check()
         _collect_under_controller_lease(
-            args, plan, context, location, group, account, service, lease
+            args,
+            plan,
+            context,
+            location,
+            group,
+            account,
+            service,
+            active_lease,
+            marker_lease,
         )
     except BaseException as exc:
         primary_error = exc
         raise
     finally:
-        release_errors = lease.release()
+        release_errors = active_lease.release()
         if release_errors:
             message = "Azure collector lease cleanup failed: " + "; ".join(release_errors)
             if primary_error is None:
@@ -5214,12 +5523,18 @@ def parser() -> argparse.ArgumentParser:
     launch.add_argument("--timeout-hours", type=int, default=12)
     launch.add_argument("--reset-kill-switch", action="store_true")
     launch.add_argument(
+        "--no-auto-collect",
+        dest="auto_collect",
+        action="store_false",
+        help="retain raw shard outputs without publishing the expanded Maven repository",
+    )
+    launch.add_argument(
         "--ssh-public-key",
         help="public key text or path; an existing local key/ephemeral key is otherwise used",
     )
     add_selection_options(launch)
     add_storage_options(launch)
-    launch.set_defaults(func=start, resume_existing=False)
+    launch.set_defaults(func=start, resume_existing=False, auto_collect=True)
 
     resume = sub.add_parser(
         "resume",
@@ -5227,8 +5542,14 @@ def parser() -> argparse.ArgumentParser:
     )
     resume.add_argument("--run-id", required=True)
     resume.add_argument("--timeout-hours", type=int, default=12)
+    resume.add_argument(
+        "--no-auto-collect",
+        dest="auto_collect",
+        action="store_false",
+        help="retain raw shard outputs without publishing the expanded Maven repository",
+    )
     add_storage_options(resume)
-    resume.set_defaults(func=start, resume_existing=True)
+    resume.set_defaults(func=start, resume_existing=True, auto_collect=True)
 
     show = sub.add_parser("status")
     show.add_argument("--run-id")
@@ -5260,6 +5581,14 @@ def parser() -> argparse.ArgumentParser:
     )
     gather.add_argument("--shard", action="append")
     gather.add_argument("--no-github", action="store_true")
+    gather.add_argument(
+        "--repository-only",
+        action="store_true",
+        help=(
+            "materialize only the expanded Azure Blob Maven repository; "
+            "requires --no-github and skips SDK archive downloads"
+        ),
+    )
     add_storage_options(gather)
     gather.set_defaults(func=collect)
 
