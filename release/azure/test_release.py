@@ -3916,6 +3916,7 @@ class WorkerTransportTests(unittest.TestCase):
             "Rust GNU toolchain installation",
             "Source clone",
             "Maven repository packaging",
+            "Shard manifest creation",
             "Python 3.12 installation",
         ):
             self.assertIn(f"Invoke-NativeChecked -Description '{description}'", source)
@@ -3989,6 +3990,70 @@ Write-Output 'native-helper-probe-ok'
             f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}",
         )
         self.assertIn("native-helper-probe-ok", completed.stdout)
+
+    def test_windows_manifest_writer_runs_from_a_file_without_command_quoting(self):
+        source = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        marker = "  $ManifestScript = @'\n"
+        script_start = source.index(marker) + len(marker)
+        script_end = source.index("\n'@", script_start)
+        manifest_script = source[script_start:script_end]
+
+        self.assertIn(
+            "& $script:PythonExe $ManifestScriptPath $OutputDir $ShardConfigFile",
+            source,
+        )
+        self.assertNotIn("& $script:PythonExe -c $ManifestScript", source)
+
+        config = {
+            "runId": "windows-manifest-test",
+            "commit": "a" * 40,
+            "releaseVersion": "1.0.0-SNAPSHOT",
+            "shard": {
+                "id": "windows-x86_64-cpu",
+                "workloads": ["maven", "sdk"],
+                "os": "windows",
+                "build": {
+                    "javacppPlatform": "windows-x86_64",
+                    "backend": "cpu",
+                    "variants": [{"name": "avx512"}],
+                },
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            output = root / "output"
+            output.mkdir()
+            payload = output / "payload.bin"
+            payload.write_bytes(b"azure-windows-manifest")
+            config_path = root / "config.json"
+            config_path.write_text(json.dumps(config), encoding="utf-8")
+            script_path = root / "write-shard-manifest.py"
+            script_path.write_text(manifest_script, encoding="utf-8")
+
+            completed = subprocess.run(
+                [sys.executable, str(script_path), str(output), str(config_path)],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(
+                0,
+                completed.returncode,
+                f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}",
+            )
+            manifest = json.loads(
+                (output / "shard-manifest.json").read_text(encoding="utf-8")
+            )
+
+        self.assertEqual("azure", manifest["provider"])
+        self.assertEqual("windows-x86_64-cpu", manifest["shard"])
+        self.assertEqual(["avx512"], manifest["variants"])
+        self.assertEqual([{
+            "path": "payload.bin",
+            "sha256": hashlib.sha256(b"azure-windows-manifest").hexdigest(),
+            "size": len(b"azure-windows-manifest"),
+        }], manifest["files"])
 
     def test_windows_bootstrap_failure_and_cleanup_are_fault_isolated(self):
         source = (HERE / "worker.ps1").read_text(encoding="utf-8")

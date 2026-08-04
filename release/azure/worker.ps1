@@ -748,9 +748,52 @@ function Invoke-ShardBuild {
   Invoke-NativeChecked -Description 'SDK asset packaging' -Command {
     & $script:WindowsTarExe -C $SdkOutput -czf (Join-Path $OutputDir 'sdk-assets.tar.gz') .
   }
-  $ManifestScript = 'import hashlib,json,pathlib,sys; root=pathlib.Path(sys.argv[1]); c=json.load(open(sys.argv[2])); s=c["shard"]; files=[]; [(lambda p: files.append({"path":p.relative_to(root).as_posix(),"sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"size":p.stat().st_size}))(p) for p in sorted(root.rglob("*")) if p.is_file()]; json.dump({"schemaVersion":1,"provider":"azure","runId":c["runId"],"shard":s["id"],"commit":c["commit"],"releaseVersion":c["releaseVersion"],"workloads":s["workloads"],"os":s["os"],"platform":s["build"]["javacppPlatform"],"backend":s["build"]["backend"],"variants":[v["name"] for v in s["build"]["variants"]],"files":files},open(root/"shard-manifest.json","w"),indent=2,sort_keys=True)'
-  & $script:PythonExe -c $ManifestScript $OutputDir $ShardConfigFile
-  if ($LASTEXITCODE -ne 0) { throw 'Shard manifest creation failed' }
+  # Windows PowerShell can corrupt nested quotes when a Python program is
+  # passed through -c. Materialize the same streaming manifest writer used by
+  # the Linux worker and execute the file instead.
+  $ManifestScriptPath = Join-Path $BootstrapRoot 'write-shard-manifest.py'
+  $ManifestScript = @'
+import hashlib
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+files = []
+for path in sorted(item for item in root.rglob("*") if item.is_file()):
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1048576), b""):
+            digest.update(chunk)
+    files.append({
+        "path": path.relative_to(root).as_posix(),
+        "sha256": digest.hexdigest(),
+        "size": path.stat().st_size,
+    })
+
+with open(sys.argv[2], encoding="utf-8") as stream:
+    config = json.load(stream)
+shard = config["shard"]
+with open(root / "shard-manifest.json", "w", encoding="utf-8") as stream:
+    json.dump({
+        "schemaVersion": 1,
+        "provider": "azure",
+        "runId": config["runId"],
+        "shard": shard["id"],
+        "commit": config["commit"],
+        "releaseVersion": config["releaseVersion"],
+        "workloads": shard["workloads"],
+        "os": shard["os"],
+        "platform": shard["build"]["javacppPlatform"],
+        "backend": shard["build"]["backend"],
+        "variants": [variant["name"] for variant in shard["build"]["variants"]],
+        "files": files,
+    }, stream, indent=2, sort_keys=True)
+'@
+  [IO.File]::WriteAllText($ManifestScriptPath, $ManifestScript)
+  Invoke-NativeChecked -Description 'Shard manifest creation' -Command {
+    & $script:PythonExe $ManifestScriptPath $OutputDir $ShardConfigFile
+  }
   Write-Phase 'artifact-packaging' 'complete' "shard=$($Shard.id)"
 }
 
