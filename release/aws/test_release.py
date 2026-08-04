@@ -973,6 +973,82 @@ class ReleaseValidationTest(unittest.TestCase):
                     "unclassifiedArtifactIds": ["nd4j-zluda"],
                 })
 
+    def test_zluda_unclassified_artifact_attestation_is_exact_and_complete(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            repository = Path(temporary_directory)
+            version = "1.0.0"
+            build = {
+                "modules": [":nd4j-zluda", ":nd4j-zluda-platform"],
+            }
+            rules = {
+                "mode": "classifier",
+                "artifactIds": ["nd4j-zluda", "nd4j-zluda-platform"],
+                "unclassifiedArtifactIds": [
+                    "nd4j-zluda",
+                    "nd4j-zluda-platform",
+                ],
+            }
+            zluda_jar = (
+                repository
+                / "org/nd4j/nd4j-zluda"
+                / version
+                / f"nd4j-zluda-{version}.jar"
+            )
+            platform_jar = (
+                repository
+                / "org/eclipse/deeplearning4j/nd4j-zluda-platform"
+                / version
+                / f"nd4j-zluda-platform-{version}.jar"
+            )
+            zluda_jar.parent.mkdir(parents=True)
+            zluda_jar.write_bytes(b"jar")
+
+            with self.assertRaisesRegex(RuntimeError, "nd4j-zluda-platform"):
+                build_platform.attest_unclassified_artifacts(
+                    repository,
+                    build,
+                    rules,
+                    version,
+                    "local-repository",
+                )
+
+            platform_jar.parent.mkdir(parents=True)
+            platform_jar.write_bytes(b"jar")
+            output = StringIO()
+            with redirect_stdout(output):
+                build_platform.attest_unclassified_artifacts(
+                    repository,
+                    build,
+                    rules,
+                    version,
+                    "local-repository",
+                )
+            self.assertIn(
+                "unclassified-artifacts="
+                "org/eclipse/deeplearning4j/nd4j-zluda-platform/"
+                f"{version}/nd4j-zluda-platform-{version}.jar,"
+                f"org/nd4j/nd4j-zluda/{version}/nd4j-zluda-{version}.jar",
+                output.getvalue(),
+            )
+
+            build_platform.reset_unclassified_artifacts(
+                repository,
+                build,
+                rules,
+                version,
+            )
+            self.assertFalse(zluda_jar.exists())
+            self.assertFalse(platform_jar.exists())
+
+            with self.assertRaisesRegex(
+                ValueError,
+                "does not include required modules",
+            ):
+                build_platform.required_unclassified_artifact_ids(
+                    {"modules": [":nd4j-zluda"]},
+                    rules,
+                )
+
     def test_cpu_cuda_classifier_artifact_attestation_is_exact_and_complete(self):
         cases = (
             (
@@ -1449,13 +1525,23 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Dlibnd4j.classifier=linux-x86_64-cuda-12.9-zluda", zluda)
         self.assertIn("-Djavacpp.platform.extension=-zluda", zluda)
         self.assertIn("-Pzluda", zluda)
-        self.assertEqual(":nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda,:libnd4j", zluda[zluda.index("-pl") + 1])
+        self.assertIn("-Pzluda-platform", zluda)
+        self.assertEqual(
+            ":nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda,"
+            ":nd4j-zluda-platform,:libnd4j",
+            zluda[zluda.index("-pl") + 1],
+        )
 
         windows_zluda = command(DL4J_FAMILY="windows-zluda", DL4J_ZLUDA_TARGET="AMD")
         self.assertIn("-Dlibnd4j.classifier=windows-x86_64-cuda-12.9-zluda", windows_zluda)
         self.assertIn("-Djavacpp.platform=windows-x86_64", windows_zluda)
         self.assertIn("-Dlibnd4j.platform=windows-x86_64", windows_zluda)
         self.assertIn("-Dlibnd4j.oom.killer=OFF", windows_zluda)
+        self.assertNotIn("-Pzluda-platform", windows_zluda)
+        self.assertEqual(
+            ":nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda,:libnd4j",
+            windows_zluda[windows_zluda.index("-pl") + 1],
+        )
 
     def test_zluda_native_family_tracks_worker_os(self):
         build = {"zludaVersion": "v6"}

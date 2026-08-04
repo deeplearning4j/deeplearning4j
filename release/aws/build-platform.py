@@ -331,6 +331,97 @@ def exact_classifier_jar_candidates(
     )
 
 
+def required_unclassified_artifact_ids(build: dict, rules: dict) -> tuple[str, ...]:
+    """Return explicitly owned runtime artifacts that must be unclassified JARs."""
+    required = tuple(dict.fromkeys(rules.get("unclassifiedArtifactIds", [])))
+    if not required:
+        return ()
+    if rules.get("mode", "all") != "classifier":
+        raise ValueError("unclassifiedArtifactIds require classifier artifact mode")
+    owned = set(rules.get("artifactIds", []))
+    missing_owned = [artifact_id for artifact_id in required if artifact_id not in owned]
+    if missing_owned:
+        raise ValueError(
+            "unclassifiedArtifactIds must be a subset of artifactIds: "
+            + ", ".join(missing_owned)
+        )
+    modules = {
+        str(module).removeprefix(":") for module in build.get("modules", [])
+    }
+    missing_modules = [artifact_id for artifact_id in required if artifact_id not in modules]
+    if missing_modules:
+        raise ValueError(
+            "unclassified artifact build does not include required modules: "
+            + ", ".join(missing_modules)
+        )
+    return required
+
+
+def exact_unclassified_jar_candidates(
+    repository: Path, artifact_id: str, version: str
+) -> tuple[Path, ...]:
+    file_name = f"{artifact_id}-{version}.jar"
+    return tuple(
+        repository / namespace / artifact_id / version / file_name
+        for namespace in (
+            Path("org/eclipse/deeplearning4j"),
+            Path("org/nd4j"),
+        )
+    )
+
+
+def reset_unclassified_artifacts(
+    repository: Path, build: dict, rules: dict, version: str | None
+) -> None:
+    required = required_unclassified_artifact_ids(build, rules)
+    if not required:
+        return
+    if not version:
+        raise ValueError("unclassified artifact validation requires a release version")
+    for artifact_id in required:
+        for path in exact_unclassified_jar_candidates(repository, artifact_id, version):
+            path.unlink(missing_ok=True)
+
+
+def attest_unclassified_artifacts(
+    repository: Path,
+    build: dict,
+    rules: dict,
+    version: str | None,
+    phase: str,
+) -> None:
+    required = required_unclassified_artifact_ids(build, rules)
+    if not required:
+        return
+    if not version:
+        raise ValueError("unclassified artifact validation requires a release version")
+    found = {
+        artifact_id: [
+            path
+            for path in exact_unclassified_jar_candidates(
+                repository, artifact_id, version
+            )
+            if path.is_file()
+        ]
+        for artifact_id in required
+    }
+    missing = [artifact_id for artifact_id, paths in found.items() if not paths]
+    if missing:
+        raise RuntimeError(
+            f"{phase} is missing exact unclassified JARs: {', '.join(missing)}"
+        )
+    paths = sorted(
+        path.relative_to(repository).as_posix()
+        for matches in found.values()
+        for path in matches
+    )
+    print(
+        f"[dl4j-attestation] phase={phase} "
+        f"unclassified-artifacts={','.join(paths)}",
+        flush=True,
+    )
+
+
 def reset_variant_classifier_artifacts(
     repository: Path, build: dict, rules: dict, variant: dict, version: str | None
 ) -> None:
@@ -760,6 +851,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
     """Invoke the exact shared scripts used by each GitHub platform workflow."""
     build, shard_id = shard["build"], shard["id"]
     rules = shard.get("artifactRules", {})
+    reset_unclassified_artifacts(repository, build, rules, release_version)
     prepare_openblas(source, build, env)
     for variant in build["variants"]:
         print(f"[dl4j-phase] shard={shard_id} phase=native variant={variant['name']}", flush=True)
@@ -792,6 +884,9 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
         )
         if compiler_cache:
             run([compiler_cache, "--show-stats"], source, env)
+    attest_unclassified_artifacts(
+        repository, build, rules, release_version, "local-repository"
+    )
     if build.get("buildCrossPlatform"):
         print(f"[dl4j-phase] shard={shard_id} phase=cross-platform", flush=True)
         build_cross_platform(source, build, repository, env)
@@ -848,6 +943,13 @@ def main() -> None:
                 config["releaseVersion"],
                 "staged-repository",
             )
+        attest_unclassified_artifacts(
+            args.maven_output,
+            build,
+            rules,
+            config["releaseVersion"],
+            "staged-repository",
+        )
         runtime_count = package_runtime_sdk(
             args.source, args.sdk_output, int(build.get("buildThreads", 16))
         )

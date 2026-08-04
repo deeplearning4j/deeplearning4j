@@ -94,12 +94,20 @@ case "${DL4J_FAMILY}" in
   zluda|windows-zluda)
     : "${DL4J_ZLUDA_TARGET:=AMD}"
     platform=linux-x86_64
+    zluda_profiles=(-Pcuda -Pzluda)
+    zluda_modules=:nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda
     zluda_win=()
     if [ "${DL4J_FAMILY}" = windows-zluda ]; then
       platform=windows-x86_64
       zluda_win=(-Dlibnd4j.platform=windows-x86_64 -Dlibnd4j.oom.killer=OFF)
+    else
+      # Linux owns the unclassified runtime and its single cross-OS platform POM.
+      # Windows publishes only its classified CUDA pair to avoid duplicate GAVs.
+      zluda_profiles+=(-Pzluda-platform)
+      zluda_modules+=,:nd4j-zluda-platform
     fi
-    command=(mvn "${split_flags[@]}" "${repo[@]}" -Pcuda -Pzluda -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" -Djavacpp.platform.extension=-zluda "-Dlibnd4j.classifier=${platform}-cuda-12.9-zluda" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" "${zluda_win[@]}" --batch-mode -DskipTests -pl :nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda,:libnd4j --also-make install)
+    zluda_modules+=,:libnd4j
+    command=(mvn "${split_flags[@]}" "${repo[@]}" "${zluda_profiles[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" -Djavacpp.platform.extension=-zluda "-Dlibnd4j.classifier=${platform}-cuda-12.9-zluda" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" "${zluda_win[@]}" --batch-mode -DskipTests -pl "${zluda_modules}" --also-make "${DL4J_MAVEN_GOAL}")
     ;;
   *) printf 'Unsupported DL4J_FAMILY=%s\n' "${DL4J_FAMILY}" >&2; exit 2;;
 esac
