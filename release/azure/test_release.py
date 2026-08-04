@@ -1467,14 +1467,15 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertEqual(2, attempts["pip"])
         sleep.assert_called_once_with(5)
 
-    def test_lane_cleanup_skips_public_ip_after_nic_failure(self):
+    def test_lane_cleanup_still_attempts_public_ip_after_nic_failure(self):
         class NicDeleteError(RuntimeError):
-            pass
+            status_code = 409
+            error_code = "UnrelatedResourceConflict"
 
         completed = SimpleNamespace(result=lambda timeout=None: None)
         failed = SimpleNamespace(
             result=lambda timeout=None: (_ for _ in ()).throw(
-                NicDeleteError("NIC is still attached to the VM")
+                NicDeleteError("unrelated resource version conflict")
             )
         )
         public_ip_delete = mock.Mock(return_value=completed)
@@ -1494,15 +1495,204 @@ class AzureSafetyTests(unittest.TestCase):
             ),
         }
 
-        errors = release.delete_lane_resources(
-            context,
-            "group",
-            {"vm": "vm", "nic": "nic", "publicIp": "pip"},
-        )
+        with mock.patch.object(release.time, "sleep") as sleep:
+            errors = release.delete_lane_resources(
+                context,
+                "group",
+                {"vm": "vm", "nic": "nic", "publicIp": "pip"},
+            )
 
         self.assertTrue(any("NIC cleanup" in item for item in errors))
-        self.assertTrue(any("public IP cleanup skipped" in item for item in errors))
-        public_ip_delete.assert_not_called()
+        self.assertFalse(any("public IP cleanup" in item for item in errors))
+        public_ip_delete.assert_called_once_with("group", "pip")
+        sleep.assert_not_called()
+
+    def test_lane_cleanup_retries_transient_nic_dependency(self):
+        class NicDependencyError(RuntimeError):
+            error_code = "NetworkInterfaceCannotBeDeleted"
+
+        attempts = {"nic": 0}
+        completed = SimpleNamespace(result=lambda timeout=None: None)
+
+        def delete_nic(group, name):
+            attempts["nic"] += 1
+            if attempts["nic"] == 1:
+                return SimpleNamespace(
+                    result=lambda timeout=None: (_ for _ in ()).throw(
+                        NicDependencyError("NIC is still used by the VM")
+                    )
+                )
+            return completed
+
+        context = {
+            "compute": SimpleNamespace(
+                virtual_machines=SimpleNamespace(
+                    begin_delete=lambda group, name: completed
+                )
+            ),
+            "network": SimpleNamespace(
+                network_interfaces=SimpleNamespace(begin_delete=delete_nic),
+                public_ip_addresses=SimpleNamespace(
+                    begin_delete=lambda group, name: completed
+                ),
+            ),
+        }
+
+        with mock.patch.object(release.time, "sleep") as sleep:
+            errors = release.delete_lane_resources(
+                context,
+                "group",
+                {"vm": "vm", "nic": "nic", "publicIp": "pip"},
+            )
+
+        self.assertEqual([], errors)
+        self.assertEqual(2, attempts["nic"])
+        sleep.assert_called_once_with(release.RESOURCE_CLEANUP_RETRY_SECONDS)
+
+    def test_run_reconciliation_verifies_delete_until_orphan_disappears(self):
+        tags = {release.MANAGED_TAG: "true", release.RUN_TAG: "run"}
+        state = {"attempts": 0, "present": True}
+
+        def public_ips(group):
+            values = [
+                SimpleNamespace(
+                    name="wrong-run-pip",
+                    tags={release.MANAGED_TAG: "true", release.RUN_TAG: "other"},
+                ),
+                SimpleNamespace(name="untagged-pip", tags={}),
+            ]
+            if state["present"]:
+                values.insert(0, SimpleNamespace(name="pip", tags=tags))
+            return values
+
+        def delete_public_ip(group, name):
+            def finish(timeout=None):
+                state["attempts"] += 1
+                if state["attempts"] == 2:
+                    state["present"] = False
+
+            return SimpleNamespace(result=finish)
+
+        empty = SimpleNamespace(
+            list=lambda group: [],
+            begin_delete=mock.Mock(),
+        )
+        context = {
+            "compute": SimpleNamespace(
+                virtual_machines=empty,
+                disks=SimpleNamespace(
+                    list_by_resource_group=lambda group: [],
+                    begin_delete=mock.Mock(),
+                ),
+            ),
+            "network": SimpleNamespace(
+                network_interfaces=empty,
+                public_ip_addresses=SimpleNamespace(
+                    list=public_ips,
+                    begin_delete=delete_public_ip,
+                ),
+            ),
+        }
+
+        remaining, errors = release.reconcile_managed_run_resources(
+            context,
+            "group",
+            "run",
+            timeout_seconds=30,
+            retry_seconds=0,
+        )
+
+        self.assertEqual([], errors)
+        self.assertFalse(any(remaining.values()))
+        self.assertEqual(2, state["attempts"])
+
+    def test_run_inventory_requires_both_current_run_ownership_tags(self):
+        empty = SimpleNamespace(list=lambda group: [])
+        current_tags = {
+            release.MANAGED_TAG: "true",
+            release.RUN_TAG: "run",
+        }
+        context = {
+            "compute": SimpleNamespace(
+                virtual_machines=empty,
+                disks=SimpleNamespace(
+                    list_by_resource_group=lambda group: [
+                        SimpleNamespace(name="current-disk", tags=current_tags),
+                        SimpleNamespace(name="untagged-disk", tags={}),
+                        SimpleNamespace(
+                            name="wrong-run-disk",
+                            tags={
+                                release.MANAGED_TAG: "true",
+                                release.RUN_TAG: "other",
+                            },
+                        ),
+                        SimpleNamespace(
+                            name="unmanaged-disk",
+                            tags={release.RUN_TAG: "run"},
+                        ),
+                    ]
+                ),
+            ),
+            "network": SimpleNamespace(
+                network_interfaces=empty,
+                public_ip_addresses=empty,
+            ),
+        }
+
+        inventory = release.managed_run_resource_names(
+            context,
+            "group",
+            "run",
+        )
+
+        self.assertEqual(["current-disk"], inventory["disks"])
+        self.assertFalse(inventory["virtualMachines"])
+        self.assertFalse(inventory["networkInterfaces"])
+        self.assertFalse(inventory["publicIps"])
+
+    def test_run_reconciliation_bounds_delete_poller_by_deadline(self):
+        tags = {release.MANAGED_TAG: "true", release.RUN_TAG: "run"}
+        observed_timeouts = []
+
+        def pending_delete(group, name):
+            def wait(timeout=None):
+                observed_timeouts.append(timeout)
+                raise TimeoutError("still deleting")
+
+            return SimpleNamespace(result=wait)
+
+        empty = SimpleNamespace(list=lambda group: [], begin_delete=mock.Mock())
+        context = {
+            "compute": SimpleNamespace(
+                virtual_machines=empty,
+                disks=SimpleNamespace(
+                    list_by_resource_group=lambda group: [],
+                    begin_delete=mock.Mock(),
+                ),
+            ),
+            "network": SimpleNamespace(
+                network_interfaces=empty,
+                public_ip_addresses=SimpleNamespace(
+                    list=lambda group: [SimpleNamespace(name="pip", tags=tags)],
+                    begin_delete=pending_delete,
+                ),
+            ),
+        }
+
+        with mock.patch.object(
+            release.time, "monotonic", side_effect=[0, 0, 0, 0, 2, 2]
+        ):
+            remaining, errors = release.reconcile_managed_run_resources(
+                context,
+                "group",
+                "run",
+                timeout_seconds=2,
+                retry_seconds=0,
+            )
+
+        self.assertEqual([2], observed_timeouts)
+        self.assertEqual(["pip"], remaining["publicIps"])
+        self.assertTrue(any("deadline exceeded" in item for item in errors))
 
     def test_lane_cleanup_stops_before_next_delete_if_fence_is_lost(self):
         started = []
@@ -1581,7 +1771,13 @@ class AzureSafetyTests(unittest.TestCase):
                 begin_create_or_update=lambda group, name, parameters: (
                     calls.update(vm=parameters) or operation(SimpleNamespace())
                 )
-            )
+            ),
+            disks=SimpleNamespace(
+                begin_update=lambda group, name, parameters: (
+                    calls.update(disk=(name, parameters))
+                    or operation(SimpleNamespace())
+                )
+            ),
         )
         item = {
             "id": "linux-x86-64",
@@ -1633,6 +1829,9 @@ class AzureSafetyTests(unittest.TestCase):
             resources["disk"],
             calls["vm"]["storage_profile"]["os_disk"]["name"],
         )
+        self.assertEqual(resources["disk"], calls["disk"][0])
+        self.assertEqual("true", calls["disk"][1]["tags"][release.MANAGED_TAG])
+        self.assertEqual("run", calls["disk"][1]["tags"][release.RUN_TAG])
 
     def test_ensure_network_derives_resource_ids_when_sdk_results_omit_them(self):
         calls = {}
@@ -2432,9 +2631,10 @@ class AzureSafetyTests(unittest.TestCase):
                 "laneId": "linux",
                 "status": "failed",
                 "failure": "two failed",
+                "cleanupErrors": ["public IP pip remained"],
                 "results": {"one": result},
             })
-            raise RuntimeError("two failed")
+            raise RuntimeError("two failed; cleanup failed: public IP pip remained")
 
         artifact = mock.Mock()
         control = mock.Mock()
@@ -2455,7 +2655,9 @@ class AzureSafetyTests(unittest.TestCase):
         ), mock.patch.object(
             release, "_run_parallel_lane", side_effect=run_lane
         ) as runner, mock.patch.object(release, "set_kill_switch"):
-            with self.assertRaisesRegex(RuntimeError, "parallel Azure lane failure"):
+            with self.assertRaisesRegex(
+                RuntimeError, "parallel Azure lane failure"
+            ) as caught:
                 release._start_under_controller_lease(
                     args,
                     mock.Mock(),
@@ -2464,6 +2666,7 @@ class AzureSafetyTests(unittest.TestCase):
                     service,
                     "key",
                 )
+        self.assertIn("public IP pip remained", str(caught.exception))
         final_manifest = put.call_args.args[2]
         records = {item["id"]: item for item in final_manifest["executions"]}
         self.assertEqual("succeeded", records["one"]["status"])
@@ -2813,7 +3016,17 @@ class AzureSafetyTests(unittest.TestCase):
         ), mock.patch.object(
             release, "_start_under_controller_lease", side_effect=RuntimeError("setup failed")
         ), mock.patch.object(
-            release, "managed_run_vm_names", return_value=[]
+            release,
+            "reconcile_managed_run_resources",
+            return_value=(
+                {
+                    "virtualMachines": [],
+                    "networkInterfaces": [],
+                    "publicIps": [],
+                    "disks": [],
+                },
+                [],
+            ),
         ), mock.patch.object(
             release, "cleanup_managed_identities", return_value=([], [])
         ), mock.patch.object(
@@ -2871,8 +3084,8 @@ class AzureSafetyTests(unittest.TestCase):
             "_start_under_controller_lease",
             side_effect=RuntimeError("lease renewal failed"),
         ), mock.patch.object(release, "set_kill_switch") as kill, mock.patch.object(
-            release, "managed_run_vm_names"
-        ) as machines, mock.patch.object(
+            release, "reconcile_managed_run_resources"
+        ) as resources, mock.patch.object(
             release, "cleanup_managed_identities"
         ) as identities, mock.patch.object(
             release, "load_run"
@@ -2880,7 +3093,7 @@ class AzureSafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "lease renewal failed"):
                 release.start(args)
         kill.assert_not_called()
-        machines.assert_not_called()
+        resources.assert_not_called()
         identities.assert_not_called()
         load_run.assert_not_called()
         put.assert_not_called()
@@ -2921,7 +3134,17 @@ class AzureSafetyTests(unittest.TestCase):
         ), mock.patch.object(
             release, "_start_under_controller_lease"
         ), mock.patch.object(
-            release, "managed_run_vm_names", return_value=["vm-one"]
+            release,
+            "reconcile_managed_run_resources",
+            return_value=(
+                {
+                    "virtualMachines": ["vm-one"],
+                    "networkInterfaces": [],
+                    "publicIps": [],
+                    "disks": [],
+                },
+                [],
+            ),
         ), mock.patch.object(
             release, "cleanup_managed_identities"
         ) as identities, mock.patch.object(

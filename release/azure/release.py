@@ -54,6 +54,9 @@ BUILD_DRIVER = ROOT / "release/aws/build-platform.py"
 CLOUD_IO = ROOT / "release/azure/cloud-io.py"
 LOG_STREAM_CHUNK_BYTES = 8 * 1024 * 1024
 LOG_STREAM_CONFLICT_RETRIES = 3
+RESOURCE_CLEANUP_ATTEMPTS = 12
+RESOURCE_CLEANUP_RETRY_SECONDS = 5
+RESOURCE_RECONCILE_TIMEOUT_SECONDS = 300
 
 
 def utc_now() -> str:
@@ -1113,14 +1116,31 @@ def azure_resource_id(
     )
 
 
-def is_delete_dependency_conflict(exc: BaseException) -> bool:
-    """Recognize Azure's eventually-consistent network dependency rejection."""
-    code = str(getattr(exc, "error_code", "") or "").lower()
+def is_transient_delete_error(exc: BaseException) -> bool:
+    """Recognize retryable Azure dependency, throttling, and service failures."""
+    if isinstance(exc, TimeoutError):
+        return True
+    try:
+        status = int(getattr(exc, "status_code", 0) or 0)
+    except (TypeError, ValueError):
+        status = 0
+    if status in {408, 429, 500, 502, 503, 504}:
+        return True
+    code = str(getattr(exc, "error_code", "") or "").replace(" ", "").lower()
     compact = str(exc).replace(" ", "").lower()
+    dependency_markers = (
+        "publicipaddresscannotbedeleted",
+        "networkinterfacecannotbedeleted",
+    )
     return (
-        code == "publicipaddresscannotbedeleted"
-        or "publicipaddresscannotbedeleted" in compact
-        or ("cannotbedeleted" in compact and "stillallocated" in compact)
+        any(marker in code or marker in compact for marker in dependency_markers)
+        or (
+            "cannotbedeleted" in compact
+            and any(
+                marker in compact
+                for marker in ("stillallocated", "inuse", "usedby")
+            )
+        )
     )
 
 
@@ -1554,31 +1574,162 @@ def cleanup_managed_identities(
     return deleted, errors
 
 
-def managed_run_vm_names(
+def managed_run_resource_names(
     context: dict[str, Any],
     group: str,
     run_id: str,
     fence_check: Callable[[], None] | None = None,
-) -> list[str]:
-    """Return live run-tagged VMs while retaining the controller fence."""
+) -> dict[str, list[str]]:
+    """Inventory every run-tagged ephemeral resource under the controller fence."""
     check = fence_check or (lambda: None)
-    check()
-    try:
-        machines = list(context["compute"].virtual_machines.list(group))
-    except Exception as exc:
+    sources = [
+        (
+            "virtualMachines",
+            lambda: context["compute"].virtual_machines.list(group),
+        ),
+        (
+            "networkInterfaces",
+            lambda: context["network"].network_interfaces.list(group),
+        ),
+        (
+            "publicIps",
+            lambda: context["network"].public_ip_addresses.list(group),
+        ),
+        (
+            "disks",
+            lambda: context["compute"].disks.list_by_resource_group(group),
+        ),
+    ]
+    inventory: dict[str, list[str]] = {}
+    for key, list_resources in sources:
         check()
-        if is_not_found(exc):
-            return []
-        raise
-    check()
-    names: list[str] = []
-    for machine in machines:
+        try:
+            values = list(list_resources())
+        except Exception as exc:
+            check()
+            if is_not_found(exc):
+                inventory[key] = []
+                continue
+            raise RuntimeError(f"{key} discovery failed: {exc}") from exc
         check()
-        tags = object_value(machine, "tags", {}) or {}
-        if tags.get(MANAGED_TAG) == "true" and tags.get(RUN_TAG) == run_id:
-            names.append(str(object_value(machine, "name", "")))
+        names = []
+        for value in values:
+            check()
+            tags = object_value(value, "tags", {}) or {}
+            name = str(object_value(value, "name", ""))
+            if (
+                tags.get(MANAGED_TAG) == "true"
+                and tags.get(RUN_TAG) == run_id
+            ):
+                if name:
+                    names.append(name)
+        inventory[key] = sorted(names)
     check()
-    return sorted(name for name in names if name)
+    return inventory
+
+
+def reconcile_managed_run_resources(
+    context: dict[str, Any],
+    group: str,
+    run_id: str,
+    fence_check: Callable[[], None] | None = None,
+    timeout_seconds: float = RESOURCE_RECONCILE_TIMEOUT_SECONDS,
+    retry_seconds: float = RESOURCE_CLEANUP_RETRY_SECONDS,
+) -> tuple[dict[str, list[str]], list[str]]:
+    """Delete run resources repeatedly until Azure's inventory converges to zero."""
+    check = fence_check or (lambda: None)
+    deadline = time.monotonic() + max(0.0, timeout_seconds)
+    phases = [
+        (
+            "virtualMachines",
+            "VM",
+            lambda name: context["compute"].virtual_machines.begin_delete(
+                group, name
+            ),
+        ),
+        (
+            "networkInterfaces",
+            "NIC",
+            lambda name: context["network"].network_interfaces.begin_delete(
+                group, name
+            ),
+        ),
+        (
+            "publicIps",
+            "public IP",
+            lambda name: context["network"].public_ip_addresses.begin_delete(
+                group, name
+            ),
+        ),
+        (
+            "disks",
+            "OS disk",
+            lambda name: context["compute"].disks.begin_delete(group, name),
+        ),
+    ]
+    last_errors: dict[str, str] = {}
+    while True:
+        try:
+            inventory = managed_run_resource_names(
+                context,
+                group,
+                run_id,
+                fence_check=check,
+            )
+        except Exception as exc:
+            return {}, [f"run resource reconciliation: {exc}"]
+        if not any(inventory.values()):
+            return inventory, []
+        for key, label, begin_delete in phases:
+            for name in inventory[key]:
+                check()
+                error_key = f"{label} {name}"
+                remaining_budget = deadline - time.monotonic()
+                if remaining_budget < 1:
+                    break
+                try:
+                    fenced_azure_operation(
+                        lambda name=name, begin_delete=begin_delete: begin_delete(name),
+                        check,
+                        timeout=min(1800, int(remaining_budget)),
+                    )
+                    last_errors.pop(error_key, None)
+                except Exception as exc:
+                    check()
+                    if is_not_found(exc):
+                        last_errors.pop(error_key, None)
+                    elif not is_transient_delete_error(exc):
+                        return inventory, [f"{error_key}: {exc}"]
+                    else:
+                        last_errors[error_key] = str(exc)
+        try:
+            remaining = managed_run_resource_names(
+                context,
+                group,
+                run_id,
+                fence_check=check,
+            )
+        except Exception as exc:
+            return inventory, [f"run resource reconciliation: {exc}"]
+        if not any(remaining.values()):
+            return remaining, []
+        if time.monotonic() >= deadline:
+            names = ", ".join(
+                f"{key}={','.join(values)}"
+                for key, values in remaining.items()
+                if values
+            )
+            errors = [
+                "run resource cleanup deadline exceeded; remaining " + names
+            ]
+            errors.extend(
+                f"{label}: {message}"
+                for label, message in sorted(last_errors.items())
+            )
+            return remaining, errors
+        check()
+        time.sleep(min(retry_seconds, max(0.0, deadline - time.monotonic())))
+        check()
 
 
 def ensure_network(
@@ -2137,6 +2288,13 @@ def _create_lane_vm_resources(
         fence_check,
         timeout=1800,
     )
+    fenced_azure_operation(
+        lambda: context["compute"].disks.begin_update(
+            group, disk_name, {"tags": tags}
+        ),
+        fence_check,
+        timeout=600,
+    )
     if lane_os == "windows":
         command = windows_worker_bootstrap_command()
         extension = fenced_azure_operation(
@@ -2453,32 +2611,25 @@ def delete_lane_resources(
         operations.append(
             ("OS disk", lambda: context["compute"].disks.begin_delete(group, disk_name))
         )
-    nic_cleanup_failed = False
     for label, create_operation in operations:
-        if label == "public IP" and nic_cleanup_failed:
-            errors.append(
-                "public IP cleanup skipped because NIC cleanup did not complete"
-            )
-            continue
-        for attempt in range(6):
+        for attempt in range(RESOURCE_CLEANUP_ATTEMPTS):
             try:
                 fenced_azure_operation(create_operation, check, timeout=1800)
                 break
             except Exception as exc:
                 check()
-                dependency_pending = (
-                    label == "public IP"
-                    and is_delete_dependency_conflict(exc)
-                    and attempt < 5
+                if is_not_found(exc):
+                    break
+                retryable_network_cleanup = (
+                    label in {"NIC", "public IP"}
+                    and is_transient_delete_error(exc)
+                    and attempt < RESOURCE_CLEANUP_ATTEMPTS - 1
                 )
-                if dependency_pending:
-                    time.sleep(5)
+                if retryable_network_cleanup:
+                    time.sleep(RESOURCE_CLEANUP_RETRY_SECONDS)
                     check()
                     continue
-                if not is_not_found(exc):
-                    errors.append(f"{label} cleanup: {exc}")
-                    if label == "NIC":
-                        nic_cleanup_failed = True
+                errors.append(f"{label} cleanup: {exc}")
                 break
     return errors
 
@@ -2838,6 +2989,18 @@ def _start_under_controller_lease(
         failures: dict[str, str] = {}
         cancellation_enabled = False
 
+        def record_failure(lane_id: str, message: str) -> None:
+            message = str(message)
+            previous = failures.get(lane_id)
+            if not previous:
+                failures[lane_id] = message
+            elif message in previous:
+                return
+            elif previous in message:
+                failures[lane_id] = message
+            else:
+                failures[lane_id] = f"{previous}; {message}"
+
         def apply_event(event: dict[str, Any]) -> None:
             nonlocal cancellation_enabled
             lane_id = event["laneId"]
@@ -2863,11 +3026,6 @@ def _start_under_controller_lease(
                     completed.append(execution_id)
             elif status_value == "cleanup-failed":
                 lane["status"] = "failed"
-                failures.setdefault(
-                    lane_id,
-                    "resource cleanup failed: "
-                    + "; ".join(event.get("cleanupErrors", [])),
-                )
             else:
                 lane["status"] = status_value
             for execution_id in lane["executionIds"]:
@@ -2890,10 +3048,14 @@ def _start_under_controller_lease(
                         )
             if status_value in {"failed", "cleanup-failed"}:
                 abort_event.set()
-                failures.setdefault(
-                    lane_id,
-                    event.get("failure", lane.get("failure", "lane failed")),
+                failure_message = event.get(
+                    "failure", lane.get("failure", "lane failed")
                 )
+                if event.get("cleanupErrors"):
+                    failure_message += "; resource cleanup failed: " + "; ".join(
+                        event["cleanupErrors"]
+                    )
+                record_failure(lane_id, failure_message)
                 if not cancellation_enabled:
                     controller_lease.check()
                     set_kill_switch(
@@ -2962,7 +3124,7 @@ def _start_under_controller_lease(
                     try:
                         future.result()
                     except Exception as exc:
-                        failures.setdefault(lane_id, str(exc))
+                        record_failure(lane_id, str(exc))
             while True:
                 try:
                     apply_event(event_queue.get_nowait())
@@ -3093,16 +3255,27 @@ def start(args: argparse.Namespace) -> None:
 
             if owns_fence:
                 try:
-                    remaining_vms = managed_run_vm_names(
-                        context,
-                        group,
-                        run_id,
-                        fence_check=lease.check,
+                    remaining_resources, resource_errors = (
+                        reconcile_managed_run_resources(
+                            context,
+                            group,
+                            run_id,
+                            fence_check=lease.check,
+                        )
                     )
-                    if remaining_vms:
+                    cleanup_errors.extend(resource_errors)
+                    remaining_names = [
+                        f"{kind}={name}"
+                        for kind, names in remaining_resources.items()
+                        for name in names
+                    ]
+                    if resource_errors or remaining_names:
+                        detail = ", ".join(remaining_names) or (
+                            "resource cleanup could not be verified"
+                        )
                         identity_errors.append(
-                            "managed identity retained because run VMs remain: "
-                            + ", ".join(remaining_vms)
+                            "managed identity retained because run resources remain: "
+                            + detail
                         )
                     else:
                         _, identity_errors = cleanup_managed_identities(
@@ -3115,7 +3288,13 @@ def start(args: argparse.Namespace) -> None:
                     cleanup_errors.extend(identity_errors)
                     lease.check()
                 except Exception as exc:
-                    cleanup_errors.append(f"managed identity cleanup: {exc}")
+                    cleanup_errors.append(f"managed resource cleanup: {exc}")
+                    identity_error = (
+                        "managed identity retained because run resource cleanup failed: "
+                        f"{exc}"
+                    )
+                    identity_errors.append(identity_error)
+                    cleanup_errors.append(identity_error)
                     try:
                         lease.check()
                     except Exception:
