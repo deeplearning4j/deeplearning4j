@@ -971,12 +971,30 @@ class ReleaseValidationTest(unittest.TestCase):
             root / ".github/workflows/build-deploy-linux-zluda.yml"
         ).read_text(encoding="utf-8")
         self.assertIn("ROCM_VERSION=7.2.4", workflow)
-        self.assertIn("rocm-hip-runtime-dev miopen-hip-dev", workflow)
+        self.assertIn("lld rocm-hip-runtime-dev miopen-hip-dev", workflow)
+        self.assertIn("test -x /usr/bin/ld.lld", workflow)
         self.assertIn("DL4J_ZLUDA_REQUIRE_ROCM=1", workflow)
         self.assertIn("DL4J_ZLUDA_REQUIRE_MIOPEN=1", workflow)
         self.assertIn("hardwareProbe=skipped", workflow)
         self.assertNotIn("amdgpu-dkms", workflow)
         self.assertNotIn("rocminfo", workflow)
+
+    def test_linux_zluda_requires_lld_with_section_gc(self):
+        root = Path(__file__).parents[2]
+        configuration = (
+            root / "libnd4j/cmake/CudaConfiguration.cmake"
+        ).read_text(encoding="utf-8")
+        zluda_branch = configuration.index("if(SD_ZLUDA)")
+        lld_selection = configuration.index(
+            'set(LINKER_FLAG "-fuse-ld=lld")', zluda_branch
+        )
+        gold_fallback = configuration.index("elseif(GOLD_LINKER)", zluda_branch)
+        self.assertLess(lld_selection, gold_fallback)
+        self.assertIn("if(NOT LLD_LINKER)", configuration[zluda_branch:gold_fallback])
+        self.assertIn(
+            "-Wl,--icf=all -Wl,--gc-sections -Wl,--as-needed -Wl,-z,notext",
+            configuration[zluda_branch:gold_fallback],
+        )
 
     def test_openblas_path_is_normalized_before_config_header_generation(self):
         root = Path(__file__).parents[2]
@@ -1401,11 +1419,16 @@ class ReleaseValidationTest(unittest.TestCase):
                 build_platform, "run") as run_command, patch.object(
                 build_platform.platform, "system", return_value="Linux"), patch.object(
                 build_platform.platform, "machine", return_value="x86_64"), patch.object(
-                build_platform.os, "geteuid", return_value=0, create=True):
-            build_platform.prepare_rocm_build_toolchain(build, {})
+                build_platform.os, "geteuid", return_value=0, create=True), patch.object(
+                build_platform.shutil, "which",
+                side_effect=[None, "/usr/bin/ld.lld"]):
+            environment = {}
+            build_platform.prepare_rocm_build_toolchain(build, environment)
         download.assert_called_once()
+        self.assertEqual("/usr/bin/ld.lld", environment["DL4J_ZLUDA_LINKER"])
         commands = [entry.args[0] for entry in run_command.call_args_list]
         flattened = " ".join(token for command in commands for token in command)
+        self.assertIn("lld", flattened)
         self.assertIn("rocm-hip-runtime-dev", flattened)
         self.assertIn("miopen-hip-dev", flattened)
         self.assertNotIn("amdgpu-dkms", flattened)

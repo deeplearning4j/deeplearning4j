@@ -628,14 +628,25 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-gsplit-dwarf")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -lineinfo")
 
-                # Linker selection for large binaries
+                # Linker selection for large binaries. Gold overflows its
+                # APLT and .eh_frame relocations on ZLUDA's >2 GiB all-ops
+                # image, so that classifier requires LLD. Keep the established
+                # Gold-first fallback for lifecycle tracing builds.
                 find_program(GOLD_LINKER ld.gold)
                 find_program(LLD_LINKER ld.lld)
                 find_program(MOLD_LINKER mold)
 
                 set(LINKER_FLAG "")
                 set(LINKER_EXTRA_FLAGS "")
-                if(GOLD_LINKER)
+                if(SD_ZLUDA)
+                    if(NOT LLD_LINKER)
+                        message(FATAL_ERROR
+                                "Linux ZLUDA builds require LLVM ld.lld for the large all-ops shared library")
+                    endif()
+                    set(LINKER_FLAG "-fuse-ld=lld")
+                    set(LINKER_EXTRA_FLAGS
+                        "-Wl,--icf=all -Wl,--gc-sections -Wl,--as-needed -Wl,-z,notext")
+                elseif(GOLD_LINKER)
                     set(LINKER_FLAG "-fuse-ld=gold")
                     set(LINKER_EXTRA_FLAGS "-Wl,--icf=safe -Wl,--no-keep-memory -Wl,-z,notext -Wl,--no-relax -Wl,--sort-section=name")
                 elseif(LLD_LINKER)

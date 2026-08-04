@@ -146,8 +146,9 @@ jobs:
           sudo apt-get install -y --no-install-recommends "${RUNNER_TEMP}/${ROCM_INSTALLER}"
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            rocm-hip-runtime-dev miopen-hip-dev
+            lld rocm-hip-runtime-dev miopen-hip-dev
 
+          test -x /usr/bin/ld.lld
           test -f /opt/rocm/include/hip/hip_runtime.h
           test -f /opt/rocm/include/miopen/miopen.h
           test -f /opt/rocm/lib/libamdhip64.so

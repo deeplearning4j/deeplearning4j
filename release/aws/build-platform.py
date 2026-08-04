@@ -24,6 +24,7 @@ SCCACHE_RELEASE_BASE = (
     f"https://github.com/mozilla/sccache/releases/download/v{SCCACHE_VERSION}"
 )
 ZLUDA_TARGET = "AMD"
+ZLUDA_LINUX_LINKER_PACKAGE = "lld"
 ZLUDA_WINDOWS_REQUIRED_FILES = (
     "nvcuda.dll",
     "nvcudart_hybrid64.dll",
@@ -686,41 +687,66 @@ def attest_rocm_build_toolchain(
 
 
 def prepare_rocm_build_toolchain(build: dict, env: dict[str, str]) -> None:
-    """Install the pinned userspace ROCm SDK on a CPU builder; never install a driver."""
+    """Install the pinned userspace ROCm SDK and LLD; never install or probe a driver."""
     spec = rocm_build_spec(build)
     if spec is None:
         return
+
+    rocm_ready = True
     try:
         attest_rocm_build_toolchain(build, env, emit=False)
-    except RuntimeError as initial_failure:
+    except RuntimeError:
+        rocm_ready = False
+    linker = shutil.which("ld.lld", path=env.get("PATH"))
+
+    if not rocm_ready or linker is None:
         if platform.system().lower() != "linux" or platform.machine().lower() not in {
                 "amd64", "x86_64"}:
             raise RuntimeError(
                 "ROCm build-only provisioning requires a Linux x86_64 builder"
-            ) from initial_failure
+            )
         if not hasattr(os, "geteuid") or os.geteuid() != 0:
             raise RuntimeError(
                 "ROCm build-only provisioning requires root inside the disposable build container"
-            ) from initial_failure
+            )
+
         install_env = env.copy()
         install_env["DEBIAN_FRONTEND"] = "noninteractive"
         with tempfile.TemporaryDirectory(prefix="dl4j-rocm-sdk-") as temporary_directory:
             installer = Path(temporary_directory) / str(spec["installer_name"])
-            download_with_retry(
-                str(spec["installer_url"]),
-                installer,
-                f"ROCm {spec['version']} Ubuntu Jammy repository installer",
-            )
+            if not rocm_ready:
+                download_with_retry(
+                    str(spec["installer_url"]),
+                    installer,
+                    f"ROCm {spec['version']} Ubuntu Jammy repository installer",
+                )
             run(["apt-get", "update"], Path("/"), install_env)
-            run([
-                "apt-get", "install", "-y", "--no-install-recommends", str(installer),
-            ], Path("/"), install_env)
-            run(["apt-get", "update"], Path("/"), install_env)
-            run([
-                "apt-get", "install", "-y", "--no-install-recommends",
-                *spec["packages"],
-            ], Path("/"), install_env)
+            if not rocm_ready:
+                run([
+                    "apt-get", "install", "-y", "--no-install-recommends", str(installer),
+                ], Path("/"), install_env)
+                run(["apt-get", "update"], Path("/"), install_env)
+
+            packages = list(spec["packages"]) if not rocm_ready else []
+            if linker is None:
+                packages.append(ZLUDA_LINUX_LINKER_PACKAGE)
+            if packages:
+                run([
+                    "apt-get", "install", "-y", "--no-install-recommends", *packages,
+                ], Path("/"), install_env)
+
     attest_rocm_build_toolchain(build, env)
+    linker = shutil.which("ld.lld", path=env.get("PATH"))
+    if linker is None:
+        raise RuntimeError(
+            "ZLUDA build-only provisioning requires ld.lld from the lld package"
+        )
+    env["DL4J_ZLUDA_LINKER"] = linker
+    print(
+        f"[dl4j-attestation] zludaLinker={linker} linkerFamily=lld "
+        "sectionGc=true hardwareProbe=skipped",
+        flush=True,
+    )
 
 
 def zluda_platform(build: dict) -> str:
