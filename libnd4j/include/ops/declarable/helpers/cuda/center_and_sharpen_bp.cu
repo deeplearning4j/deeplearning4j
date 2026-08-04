@@ -121,11 +121,11 @@ SD_KERNEL void csBpGradKernel(const T* __restrict__ softmaxOut,
         T dLdz = y * (gRow[f] - dotYG_T);
         T dLdx = dLdz * invTemp;
         dRow[f] = dLdx;
-        atomicAdd(&dLdCenterAcc[f], -static_cast<AccT>(dLdx));
+        sd::math::atomics::sd_atomicAdd(&dLdCenterAcc[f], -static_cast<AccT>(dLdx));
     }
 }
 
-// Phase 3: Convert accumulated float center gradient to output type
+// Phase 3: Convert the accumulated center gradient to the output type
 template <typename T>
 SD_KERNEL void convertCenterGradKernel(const typename AccType<T>::type* __restrict__ dLdCenterAcc,
                                          T* __restrict__ dLdCenter,
