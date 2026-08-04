@@ -894,6 +894,11 @@ class ReleaseValidationTest(unittest.TestCase):
             setup_call,
         )
         self.assertLess(setup_call, propagation)
+        for poisoned_lookup in (
+                'set(ROCM_HIP_RUNTIME_LIBRARY "")',
+                'set(MIOPEN_LIBRARY "")',
+                'set(MIOPEN_INCLUDE_DIR "")'):
+            self.assertNotIn(poisoned_lookup, configuration)
 
     def test_linux_zluda_workflow_installs_only_build_time_rocm_components(self):
         root = Path(__file__).parents[2]

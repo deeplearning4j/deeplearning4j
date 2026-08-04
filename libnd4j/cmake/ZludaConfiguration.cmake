@@ -181,10 +181,10 @@ endfunction()
 function(setup_zluda_amd)
     message(STATUS "Configuring ZLUDA for AMD GPUs...")
 
+    # Do not pre-seed find_library/find_path outputs with empty strings.
+    # CMake treats any defined value other than *-NOTFOUND as resolved and
+    # skips the filesystem search entirely.
     set(HAVE_MIOPEN FALSE)
-    set(MIOPEN_LIBRARY "")
-    set(MIOPEN_INCLUDE_DIR "")
-    set(ROCM_HIP_RUNTIME_LIBRARY "")
 
     # Find ROCm installation
     set(ROCM_SEARCH_PATHS
