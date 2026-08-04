@@ -849,6 +849,131 @@ class ReleaseValidationTest(unittest.TestCase):
                     "unclassifiedArtifactIds": ["nd4j-zluda"],
                 })
 
+    def test_cpu_cuda_classifier_artifact_attestation_is_exact_and_complete(self):
+        cases = (
+            (
+                {
+                    "backend": "cpu",
+                    "javacppPlatform": "linux-x86_64",
+                    "modules": [":nd4j-native", ":nd4j-native-preset", ":libnd4j"],
+                },
+                {
+                    "name": "compile",
+                    "suffix": "-compile",
+                    "mlir": True,
+                },
+                ("nd4j-native", "nd4j-native-preset"),
+            ),
+            (
+                {
+                    "backend": "cuda",
+                    "cudaVersion": "12.9",
+                    "javacppPlatform": "linux-x86_64",
+                    "modules": [
+                        ":nd4j-cuda-12.9",
+                        ":nd4j-cuda-12.9-preset",
+                        ":libnd4j",
+                    ],
+                },
+                {
+                    "name": "compile",
+                    "classifierSuffix": "-cuda-12.9-compile",
+                    "platformExtension": "-compile",
+                    "triton": True,
+                },
+                ("nd4j-cuda-12.9", "nd4j-cuda-12.9-preset"),
+            ),
+        )
+        version = "1.0.0-SNAPSHOT"
+        for build, variant, artifact_ids in cases:
+            with self.subTest(backend=build["backend"]), tempfile.TemporaryDirectory() as temp:
+                repository = Path(temp)
+                rules = {
+                    "mode": "classifier",
+                    "artifactIds": [*artifact_ids, f"{artifact_ids[0]}-platform"],
+                }
+                classifier = next(
+                    flag.split("=", 1)[1]
+                    for flag in build_platform.variant_flags(build, variant)
+                    if flag.startswith("-Dlibnd4j.classifier=")
+                )
+
+                def write_jar(artifact_id, artifact_classifier):
+                    path = (
+                        repository
+                        / "org/eclipse/deeplearning4j"
+                        / artifact_id
+                        / version
+                        / f"{artifact_id}-{version}-{artifact_classifier}.jar"
+                    )
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b"jar")
+                    return path
+
+                lookalikes = [
+                    write_jar(artifact_id, f"{classifier}-extra")
+                    for artifact_id in artifact_ids
+                ]
+                with self.assertRaisesRegex(RuntimeError, "missing exact"):
+                    build_platform.attest_variant_classifier_artifacts(
+                        repository,
+                        build,
+                        rules,
+                        variant,
+                        version,
+                        "test-repository",
+                    )
+
+                exact = [write_jar(artifact_ids[0], classifier)]
+                with self.assertRaisesRegex(RuntimeError, artifact_ids[1]):
+                    build_platform.attest_variant_classifier_artifacts(
+                        repository,
+                        build,
+                        rules,
+                        variant,
+                        version,
+                        "test-repository",
+                    )
+                exact.append(write_jar(artifact_ids[1], classifier))
+                output = StringIO()
+                with redirect_stdout(output):
+                    build_platform.attest_variant_classifier_artifacts(
+                        repository,
+                        build,
+                        rules,
+                        variant,
+                        version,
+                        "test-repository",
+                    )
+                self.assertIn(f"classifier={classifier}", output.getvalue())
+                self.assertTrue(all(path.is_file() for path in exact))
+
+                build_platform.reset_variant_classifier_artifacts(
+                    repository, build, rules, variant, version
+                )
+                self.assertTrue(all(not path.exists() for path in exact))
+                self.assertTrue(all(path.is_file() for path in lookalikes))
+
+    def test_cpu_cuda_classifier_contract_rejects_incomplete_plan(self):
+        build = {
+            "backend": "cuda",
+            "cudaVersion": "12.9",
+            "modules": [":nd4j-cuda-12.9"],
+        }
+        with self.assertRaisesRegex(ValueError, "do not own required artifacts"):
+            build_platform.required_classifier_artifact_ids(build, {
+                "mode": "classifier",
+                "artifactIds": ["nd4j-cuda-12.9"],
+            })
+        with self.assertRaisesRegex(ValueError, "does not include required modules"):
+            build_platform.required_classifier_artifact_ids(build, {
+                "mode": "classifier",
+                "artifactIds": [
+                    "nd4j-cuda-12.9",
+                    "nd4j-cuda-12.9-preset",
+                ],
+            })
+
     def test_zluda_target_and_attestation_fail_closed(self):
         build = {
             "backend": "cuda",

@@ -280,6 +280,118 @@ def variant_flags(build: dict, variant: dict) -> list[str]:
     return flags
 
 
+def required_classifier_artifact_ids(build: dict, rules: dict) -> tuple[str, ...]:
+    """Return the CPU/CUDA artifacts that must carry every planned classifier."""
+    if rules.get("mode", "all") != "classifier":
+        return ()
+    backend = build.get("backend")
+    if backend == "cpu":
+        primary = "nd4j-native"
+    elif backend == "cuda":
+        cuda_version = str(build.get("cudaVersion", ""))
+        if not cuda_version:
+            raise ValueError("CUDA classifier validation requires cudaVersion")
+        primary = f"nd4j-cuda-{cuda_version}"
+    else:
+        return ()
+    required = (primary, f"{primary}-preset")
+    owned = set(rules.get("artifactIds", []))
+    missing_owned = [artifact_id for artifact_id in required if artifact_id not in owned]
+    if missing_owned:
+        raise ValueError(
+            "classifier artifact rules do not own required artifacts: "
+            + ", ".join(missing_owned)
+        )
+    modules = {
+        str(module).removeprefix(":") for module in build.get("modules", [])
+    }
+    missing_modules = [artifact_id for artifact_id in required if artifact_id not in modules]
+    if missing_modules:
+        raise ValueError(
+            "classifier build does not include required modules: "
+            + ", ".join(missing_modules)
+        )
+    return required
+
+
+def exact_classifier_jar_candidates(
+    repository: Path, artifact_id: str, version: str, classifier: str
+) -> tuple[Path, ...]:
+    file_name = f"{artifact_id}-{version}-{classifier}.jar"
+    return tuple(
+        repository / namespace / artifact_id / version / file_name
+        for namespace in (
+            Path("org/eclipse/deeplearning4j"),
+            Path("org/nd4j"),
+        )
+    )
+
+
+def reset_variant_classifier_artifacts(
+    repository: Path, build: dict, rules: dict, variant: dict, version: str | None
+) -> None:
+    required = required_classifier_artifact_ids(build, rules)
+    if not required:
+        return
+    if not version:
+        raise ValueError("classifier artifact validation requires a release version")
+    classifier = next(
+        flag.split("=", 1)[1]
+        for flag in variant_flags(build, variant)
+        if flag.startswith("-Dlibnd4j.classifier=")
+    )
+    for artifact_id in required:
+        for path in exact_classifier_jar_candidates(
+            repository, artifact_id, version, classifier
+        ):
+            path.unlink(missing_ok=True)
+
+
+def attest_variant_classifier_artifacts(
+    repository: Path,
+    build: dict,
+    rules: dict,
+    variant: dict,
+    version: str | None,
+    phase: str,
+) -> None:
+    required = required_classifier_artifact_ids(build, rules)
+    if not required:
+        return
+    if not version:
+        raise ValueError("classifier artifact validation requires a release version")
+    classifier = next(
+        flag.split("=", 1)[1]
+        for flag in variant_flags(build, variant)
+        if flag.startswith("-Dlibnd4j.classifier=")
+    )
+    found: dict[str, list[Path]] = {}
+    for artifact_id in required:
+        found[artifact_id] = [
+            path
+            for path in exact_classifier_jar_candidates(
+                repository, artifact_id, version, classifier
+            )
+            if path.is_file()
+        ]
+    missing = [artifact_id for artifact_id, paths in found.items() if not paths]
+    if missing:
+        raise RuntimeError(
+            f"{phase} is missing exact {classifier} classifier JARs for "
+            f"variant {variant['name']}: {', '.join(missing)}"
+        )
+    paths = sorted(
+        path.relative_to(repository).as_posix()
+        for matches in found.values()
+        for path in matches
+    )
+    print(
+        f"[dl4j-attestation] phase={phase} variant={variant['name']} "
+        f"classifier={classifier} artifacts={','.join(paths)}",
+        flush=True,
+    )
+
+
 def build_cross_platform(source: Path, build: dict, repository: Path, env: dict[str, str]) -> None:
     platform = build["javacppPlatform"]
     cross_env = env.copy()
@@ -635,12 +747,16 @@ def attest_zluda_configuration(build: dict, env: dict[str, str]) -> None:
 
 
 def build_native_platform(source: Path, shard: dict, repository: Path, env: dict[str, str],
-                          compiler_cache: str | None) -> None:
+                          compiler_cache: str | None, release_version: str | None = None) -> None:
     """Invoke the exact shared scripts used by each GitHub platform workflow."""
     build, shard_id = shard["build"], shard["id"]
+    rules = shard.get("artifactRules", {})
     prepare_openblas(source, build, env)
     for variant in build["variants"]:
         print(f"[dl4j-phase] shard={shard_id} phase=native variant={variant['name']}", flush=True)
+        reset_variant_classifier_artifacts(
+            repository, build, rules, variant, release_version
+        )
         variant_env = env.copy()
         family = shared_native_family(shard, variant)
         variant_env.update({
@@ -661,6 +777,9 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             variant_env["DL4J_MATRIX_MVN_EXT"] = variant_env.pop("DL4J_MVN_FLAGS")
             variant_env["DL4J_LIBND4J_FILE_DOWNLOAD"] = ""
         run(["bash", str(source / "build-scripts/release" / script_name), "--run"], source, variant_env)
+        attest_variant_classifier_artifacts(
+            repository, build, rules, variant, release_version, "local-repository"
+        )
         if compiler_cache:
             run([compiler_cache, "--show-stats"], source, env)
     if build.get("buildCrossPlatform"):
@@ -697,11 +816,28 @@ def main() -> None:
             print(f"[dl4j-phase] shard={shard['id']} phase=cross-platform", flush=True)
             build_cross_platform(args.source, build, args.repository, env)
         else:
-            build_native_platform(args.source, shard, args.repository, env, compiler_cache)
+            build_native_platform(
+                args.source,
+                shard,
+                args.repository,
+                env,
+                compiler_cache,
+                config["releaseVersion"],
+            )
         print(f"[dl4j-phase] shard={shard['id']} phase=package", flush=True)
         args.maven_output.mkdir(parents=True, exist_ok=True)
         args.sdk_output.mkdir(parents=True, exist_ok=True)
-        stage_repository(args.repository, args.maven_output, shard.get("artifactRules", {}))
+        rules = shard.get("artifactRules", {})
+        stage_repository(args.repository, args.maven_output, rules)
+        for variant in build.get("variants", []):
+            attest_variant_classifier_artifacts(
+                args.maven_output,
+                build,
+                rules,
+                variant,
+                config["releaseVersion"],
+                "staged-repository",
+            )
         runtime_count = package_runtime_sdk(
             args.source, args.sdk_output, int(build.get("buildThreads", 16))
         )

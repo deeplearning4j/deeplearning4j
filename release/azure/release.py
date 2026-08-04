@@ -3806,14 +3806,14 @@ def attested_shard_variants(
     planned_variants = {
         item["name"]: item for item in planned["build"]["variants"]
     }
+    declared: set[str] | None = None
     if "variants" in shard_manifest:
         raw = shard_manifest["variants"]
         if not isinstance(raw, list) or any(not isinstance(item, str) for item in raw):
             raise RuntimeError("shard manifest variants must be a string list")
-        variants = set(raw)
-        if len(variants) != len(raw):
+        declared = set(raw)
+        if len(declared) != len(raw):
             raise RuntimeError("shard manifest variants contain duplicates")
-        return variants
     file_names = {
         Path(str(item.get("path", ""))).name
         for item in shard_manifest.get("files", [])
@@ -3824,11 +3824,21 @@ def attested_shard_variants(
     for name, variant in planned_variants.items():
         suffix = variant.get("classifierSuffix", variant.get("suffix", ""))
         classifier = f"{platform}{suffix}"
-        if any(f"-{classifier}." in file_name for file_name in file_names):
+        if any(file_name.endswith(f"-{classifier}.jar") for file_name in file_names):
             inferred.add(name)
     if not inferred:
+        raise RuntimeError("shard manifest has no exact classifier JARs to attest variants")
+    if declared is not None and declared != inferred:
+        missing = sorted(declared - inferred)
+        undeclared = sorted(inferred - declared)
+        details = []
+        if missing:
+            details.append(f"declared without classifier JAR: {', '.join(missing)}")
+        if undeclared:
+            details.append(f"classifier JAR without declaration: {', '.join(undeclared)}")
         raise RuntimeError(
-            "legacy shard manifest lacks exact variants and has no classifier files to infer them"
+            "shard manifest variants do not match classifier files"
+            + (f" ({'; '.join(details)})" if details else "")
         )
     return inferred
 

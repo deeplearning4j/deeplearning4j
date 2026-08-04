@@ -1291,6 +1291,23 @@ class AzureSafetyTests(unittest.TestCase):
                 }
                 for variant in planned["build"]["variants"]
             ]
+            variant_names = {
+                variant["name"] for variant in planned["build"]["variants"]
+            }
+            self.assertEqual(
+                variant_names,
+                release.attested_shard_variants(planned, {
+                    "variants": sorted(variant_names),
+                    "files": classifier_files,
+                }),
+            )
+            with self.assertRaisesRegex(
+                RuntimeError, "variants do not match classifier files"
+            ):
+                release.attested_shard_variants(planned, {
+                    "variants": sorted(variant_names),
+                    "files": classifier_files[:-1],
+                })
             shard_path.write_text(json.dumps({
                 "runId": run_id,
                 "shard": shard_id,
