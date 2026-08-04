@@ -874,21 +874,61 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("NAME zluda_windows_runtime_contract", cmake_source)
         self.assertIn("cmake/tests/ZludaWindowsRuntimeContractTest.cmake", cmake_source)
 
-    def test_zluda_cmake_propagates_and_links_the_rocm_sdk(self):
+    def test_zluda_cmake_scopes_rocm_to_amd_native_call_sites(self):
         root = Path(__file__).parents[2]
         configuration = (
             root / "libnd4j/cmake/ZludaConfiguration.cmake"
         ).read_text(encoding="utf-8")
+        replay_factory = (
+            root / "libnd4j/include/graph/impl/GraphReplayFactory.cpp"
+        ).read_text(encoding="utf-8")
+        gpu_backend = (
+            root / "libnd4j/include/graph/impl/NativeDynamicShapePlan_gpubackend.cpp"
+        ).read_text(encoding="utf-8")
+        direct_hip_sources = "\n".join(
+            (root / path).read_text(encoding="utf-8")
+            for path in (
+                "libnd4j/include/graph/hip/HipGraphBackend.cpp",
+                "libnd4j/include/graph/hip/HipGraphBackend.h",
+                "libnd4j/include/graph/hip/HipRuntimeManager.cpp",
+                "libnd4j/include/graph/hip/HipRuntimeManager.h",
+                "libnd4j/include/graph/hip/HipGraphReplayHandle.cpp",
+                "libnd4j/include/graph/hip/HipGraphReplayHandle.h",
+            )
+        )
+
         for token in (
             "ROCM_HIP_RUNTIME_LIBRARY",
+            "DL4J_ZLUDA_REQUIRE_ROCM",
+            "DL4J_ZLUDA_REQUIRE_MIOPEN",
+            "target_link_libraries(${target_name} PRIVATE ${MIOPEN_LIBRARY})",
+        ):
+            self.assertIn(token, configuration)
+        for leaked_sdk_setting in (
             'include_directories(SYSTEM "${ROCM_INCLUDE_DIR}")',
             "target_include_directories(${target_name} SYSTEM PUBLIC ${ROCM_INCLUDE_DIR})",
             "target_link_libraries(${target_name} PUBLIC ${ROCM_HIP_RUNTIME_LIBRARY})",
             "add_compile_definitions(__HIP_PLATFORM_AMD__=1)",
-            "DL4J_ZLUDA_REQUIRE_ROCM",
-            "DL4J_ZLUDA_REQUIRE_MIOPEN",
         ):
-            self.assertIn(token, configuration)
+            self.assertNotIn(leaked_sdk_setting, configuration)
+
+        self.assertIn(
+            'COMPILE_DEFINITIONS "__HIP_PLATFORM_NVIDIA__=1"', configuration
+        )
+        self.assertIn(
+            'INCLUDE_DIRECTORIES "${_ZLUDA_MIOPEN_INCLUDE_DIRS}"', configuration
+        )
+        old_hip_gate = (
+            "#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || "
+            "defined(HAVE_MIOPEN)"
+        )
+        self.assertNotIn(old_hip_gate, replay_factory)
+        self.assertNotIn(old_hip_gate, gpu_backend)
+        self.assertNotIn(old_hip_gate, direct_hip_sources)
+        self.assertIn("#if defined(SD_HIP)", replay_factory)
+        self.assertIn("#if defined(SD_HIP)", gpu_backend)
+        self.assertEqual(6, direct_hip_sources.count("#if defined(SD_HIP)"))
+
         setup_call = configuration.index("setup_zluda_amd()")
         propagation = configuration.index(
             "ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY",

@@ -21,9 +21,9 @@
 
 #include <system/common.h>
 
-// Requires real HIP headers (unlike the dlopen-opaque backend/manager), which
-// native HIP builds and ZLUDA+AMD builds (ROCm installed) both provide.
-#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
+// Requires real HIP headers and is owned exclusively by native SD_HIP builds.
+// CUDA/ZLUDA replay stays on the CUDA ABI to avoid mixing CUDA and ROCm types.
+#if defined(SD_HIP)
 
 #include <graph/GraphReplayHandle.h>
 #include <hip/hip_runtime.h>

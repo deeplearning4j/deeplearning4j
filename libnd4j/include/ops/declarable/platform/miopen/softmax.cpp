@@ -37,7 +37,7 @@ static void softmaxMIOpen(const LaunchContext* context,
                           int dimension, bool isLog = false) {
 
     auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceId()));
+    CHECK_HIP(hipSetDevice(context->getDeviceID()));
 
     // Get shape info
     auto shape = input->shapeOf();
@@ -154,7 +154,7 @@ static void softmaxBpMIOpen(const LaunchContext* context,
                             int dimension, bool isLog = false) {
 
     auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceId()));
+    CHECK_HIP(hipSetDevice(context->getDeviceID()));
 
     auto shape = input->shapeOf();
     auto rank = input->rankOf();

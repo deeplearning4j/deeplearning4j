@@ -38,7 +38,7 @@ static void activationMIOpen(const LaunchContext* context,
                              double alpha = 0.0, double beta = 0.0, double gamma = 0.0) {
 
     auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceId()));
+    CHECK_HIP(hipSetDevice(context->getDeviceID()));
 
     // Create tensor descriptor
     MIOpenTensor xDesc;

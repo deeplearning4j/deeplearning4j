@@ -51,7 +51,7 @@ static void conv2dMIOpen(const LaunchContext* context,
 
     // Get MIOpen handle
     auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceId()));
+    CHECK_HIP(hipSetDevice(context->getDeviceID()));
 
     // Create tensor descriptors
     MIOpenTensor xDesc, yDesc, wDesc;
@@ -211,7 +211,7 @@ static void conv2dBpMIOpen(const LaunchContext* context,
         bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
 
     auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceId()));
+    CHECK_HIP(hipSetDevice(context->getDeviceID()));
 
     // Create descriptors
     MIOpenTensor xDesc, dyDesc, dxDesc, dwDesc;

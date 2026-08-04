@@ -170,11 +170,9 @@ function(setup_zluda)
     set(HAVE_ZLUDA TRUE PARENT_SCOPE)
     add_compile_definitions(HAVE_ZLUDA=1)
     add_compile_definitions(ZLUDA_TARGET_${ZLUDA_TARGET_BACKEND}=1)
-    if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
-        # HIP headers are also consumed by ordinary C++ translation units, so
-        # select the AMD platform even when hipcc is not the active compiler.
-        add_compile_definitions(__HIP_PLATFORM_AMD__=1)
-    endif()
+    # A ZLUDA artifact remains a CUDA build. Never select a HIP platform at
+    # directory scope: AMD-native translation units must opt in explicitly so
+    # CUDA and ROCm cannot declare their vector types in the same source file.
 
     print_status_colored("SUCCESS" "ZLUDA configuration complete (target: ${ZLUDA_TARGET_BACKEND})")
 endfunction()
@@ -224,13 +222,25 @@ function(setup_zluda_amd)
             )
         endif()
 
-        # HipGraphReplayHandle is compiled into the CUDA object target before the
-        # final nd4jcuda target is linked, so the SDK include root must be visible
-        # at directory scope as well as on the final target.
-        include_directories(SYSTEM "${ROCM_INCLUDE_DIR}")
+        # ROCm headers are scoped to the MIOpen translation units in
+        # MainBuildFlow.cmake. The primary nd4jcuda object target stays CUDA-only.
 
         # Set up MIOpen for DNN operations (cuDNN replacement)
         setup_miopen()
+
+        # MIOpen helpers are CUDA/ZLUDA call sites that link the native ROCm
+        # library. Select HIP's CUDA-compatible type surface only for those
+        # translation units; direct AMD HIP sources belong to a native-HIP
+        # target and must never share a source file with CUDA headers.
+        if(HAVE_MIOPEN)
+            file(GLOB_RECURSE _ZLUDA_MIOPEN_SOURCES
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/miopen/*.cpp")
+            set(_ZLUDA_MIOPEN_INCLUDE_DIRS "${ROCM_INCLUDE_DIR}" "${MIOPEN_INCLUDE_DIR}")
+            list(REMOVE_DUPLICATES _ZLUDA_MIOPEN_INCLUDE_DIRS)
+            set_source_files_properties(${_ZLUDA_MIOPEN_SOURCES} PROPERTIES
+                COMPILE_DEFINITIONS "__HIP_PLATFORM_NVIDIA__=1"
+                INCLUDE_DIRECTORIES "${_ZLUDA_MIOPEN_INCLUDE_DIRS}")
+        endif()
 
         if(DEFINED ENV{DL4J_ZLUDA_REQUIRE_ROCM}
                 AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_ROCM}" STREQUAL ""
@@ -572,26 +582,19 @@ function(configure_zluda_linking target_name)
     endif()
 
     if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
-        if(ROCM_INCLUDE_DIR)
-            target_include_directories(${target_name} SYSTEM PUBLIC ${ROCM_INCLUDE_DIR})
-            message(STATUS "   Added ROCm include path: ${ROCM_INCLUDE_DIR}")
-        endif()
-
-        if(ROCM_HIP_RUNTIME_LIBRARY)
-            target_link_libraries(${target_name} PUBLIC ${ROCM_HIP_RUNTIME_LIBRARY})
-            message(STATUS "   Linked HIP runtime: ${ROCM_HIP_RUNTIME_LIBRARY}")
-        endif()
-
-        # Link MIOpen instead of cuDNN for AMD
+        # ROCm headers are attached only to the MIOpen source files. The CUDA
+        # object target and its consumers must never inherit HIP include paths.
+        # The CUDA-side MIOpen bridge uses CUDA/ZLUDA for device management, so
+        # libamdhip64 is reached transitively through MIOpen instead of being a
+        # blanket dependency of every ZLUDA artifact.
         if(HAVE_MIOPEN)
-            target_link_libraries(${target_name} PUBLIC ${MIOPEN_LIBRARY})
-            target_include_directories(${target_name} PUBLIC ${MIOPEN_INCLUDE_DIR})
-            message(STATUS "   Linked MIOpen: ${MIOPEN_LIBRARY}")
+            target_link_libraries(${target_name} PRIVATE ${MIOPEN_LIBRARY})
+            message(STATUS "   Linked isolated MIOpen runtime: ${MIOPEN_LIBRARY}")
         endif()
 
-        # Add ROCm library path
+        # Add ROCm library path privately for the AMD-only runtime dependency.
         if(ROCM_LIB_DIR)
-            target_link_directories(${target_name} PUBLIC ${ROCM_LIB_DIR})
+            target_link_directories(${target_name} PRIVATE ${ROCM_LIB_DIR})
         endif()
 
     elseif(ZLUDA_TARGET_BACKEND STREQUAL "INTEL")

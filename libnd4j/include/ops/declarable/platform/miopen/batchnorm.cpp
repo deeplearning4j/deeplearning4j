@@ -40,7 +40,7 @@ static void batchnormMIOpen(const LaunchContext* context,
                             double epsilon, bool isNCHW) {
 
     auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceId()));
+    CHECK_HIP(hipSetDevice(context->getDeviceID()));
 
     auto shape = input->shapeOf();
     auto rank = input->rankOf();
@@ -136,7 +136,7 @@ static void batchnormBpMIOpen(const LaunchContext* context,
                               double epsilon, bool isNCHW) {
 
     auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceId()));
+    CHECK_HIP(hipSetDevice(context->getDeviceID()));
 
     auto shape = input->shapeOf();
     auto rank = input->rankOf();

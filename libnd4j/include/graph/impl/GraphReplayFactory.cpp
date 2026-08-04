@@ -28,7 +28,7 @@
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #endif
 
-#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
+#if defined(SD_HIP)
 #include <graph/hip/HipGraphReplayHandle.h>
 #endif
 
@@ -164,7 +164,7 @@ ReplayCapabilityMatrix GraphReplayFactory::capabilities() {
 #endif
 #endif
 
-#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
+#if defined(SD_HIP)
   matrix.hip.handleAvailable = true;
   // HipGraphReplayHandle is complete, but NativeDynamicShapePlan does not yet
   // inject slot execution into a HIP capture stream.
@@ -226,7 +226,7 @@ std::unique_ptr<GraphReplayHandle> GraphReplayFactory::create(
 #endif
 
     case ReplayBackend::HIP:
-#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
+#if defined(SD_HIP)
       DSP_DIAG_DEV(GRAPH_REPLAY, deviceId,
                    "GraphReplayFactory: creating HipGraphReplayHandle");
       return std::make_unique<HipGraphReplayHandle>(deviceId);

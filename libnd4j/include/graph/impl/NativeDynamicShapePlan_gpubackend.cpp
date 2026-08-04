@@ -43,7 +43,7 @@
 #ifdef HAVE_HEXAGON_MLIR
 #include <graph/hexagon/HexagonGraphBackend.h>
 #endif
-#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
+#if defined(SD_HIP)
 #include <graph/hip/HipGraphBackend.h>
 #endif
 
@@ -279,13 +279,11 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
   }
 #endif
 
-#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN)
+#if defined(SD_HIP)
   if (graphExecutionMode_ == GraphExecutionMode::GEM_HIP_GRAPHS ||
       graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-    // isAvailable() dlopens libamdhip64.so — false on non-AMD hosts, so AUTO
-    // on NVIDIA hardware falls through untouched. Under ZLUDA+AMD the plan
-    // stream is a hipStream_t underneath, so island capture records both
-    // ZLUDA-translated launches and directly-launched HIP Triton kernels.
+    // Native HIP builds own the direct libamdhip64 graph-capture path.
+    // CUDA/ZLUDA builds use CUDA graph APIs and let ZLUDA translate them.
     auto& hip = HipGraphBackend::getInstance();
     if (hip.isAvailable()) {
       gpuGraphBackend_ = &hip;
@@ -302,7 +300,7 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
 #else
   if (graphExecutionMode_ == GraphExecutionMode::GEM_HIP_GRAPHS) {
     DSP_DIAG(BACKEND, "HIP graphs backend requested but not compiled "
-             "(needs SD_HIP or ZLUDA_TARGET_AMD/HAVE_MIOPEN build)");
+             "(needs a native SD_HIP build)");
     gpuGraphBackend_ = nullptr;
     return nullptr;
   }
