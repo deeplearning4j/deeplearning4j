@@ -1227,6 +1227,10 @@ class ReleaseValidationTest(unittest.TestCase):
         linux_arm64 = command(DL4J_FAMILY="linux-arm64")
         self.assertNotIn("-Dlibnd4j.build.with.java=OFF", linux_arm64)
         self.assertIn("-Djavacpp.platform.compiler=g++", linux_arm64)
+        arm64_libgcc = "-Dplatform.linker.flag.no.undefined=-Wl,--no-undefined,-lgcc"
+        self.assertIn(arm64_libgcc, linux_arm64)
+        for other_platform in (android, android_x86, metal, cuda):
+            self.assertNotIn(arm64_libgcc, other_platform)
 
         for family in ("tpu", "hexagon", "vulkan"):
             accelerator = command(DL4J_FAMILY=family)
