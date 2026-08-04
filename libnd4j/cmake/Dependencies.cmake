@@ -3,6 +3,7 @@
 
 include(ExternalProject)
 include(ProcessorCount)
+include("${CMAKE_CURRENT_LIST_DIR}/ExternalProjectCompatibility.cmake")
 
 # =============================================================================
 # PARALLEL BUILD CONFIGURATION FOR DEPENDENCIES
@@ -569,7 +570,7 @@ function(setup_flatbuffers)
                 BUILD_COMMAND     ${CMAKE_COMMAND} --build . --target flatc --config Release --parallel ${DEP_PARALLEL_JOBS}
                 INSTALL_COMMAND   ""
                 BUILD_BYPRODUCTS  "${FLATC_EXECUTABLE}"
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
                 LOG_DOWNLOAD      OFF
                 LOG_CONFIGURE     OFF
                 LOG_BUILD         OFF
@@ -640,7 +641,7 @@ function(setup_flatbuffers)
                 INSTALL_COMMAND   ""
                 BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-target-build/libflatbuffers.a"
                 DEPENDS           flatbuffers_host
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
                 LOG_DOWNLOAD      OFF
                 LOG_CONFIGURE     OFF
                 LOG_BUILD         OFF
@@ -763,7 +764,7 @@ function(setup_flatbuffers)
                 BUILD_BYPRODUCTS
                 "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
                 "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/${FLATBUFFERS_LIB_NAME}"
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
                 LOG_DOWNLOAD      OFF
                 LOG_CONFIGURE     OFF
                 LOG_BUILD         OFF
@@ -1038,7 +1039,7 @@ function(setup_onednn)
             BINARY_DIR        "${ONEDNN_PREFIX}/build"
             STAMP_DIR         "${ONEDNN_STAMP_DIR}"
             DOWNLOAD_NO_PROGRESS FALSE
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
             CMAKE_ARGS        ${ONEDNN_CMAKE_ARGS}
             BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${DEP_PARALLEL_JOBS}
             INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
@@ -1129,7 +1130,7 @@ function(setup_armcompute)
                 BUILD_COMMAND     ""
                 INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/${ARMCOMPUTE_PKG_NAME} ${ARMCOMPUTE_INSTALL_DIR}
                 BUILD_BYPRODUCTS "${ARMCOMPUTE_INSTALL_DIR}/include/arm_compute/core/CL/CLKernelLibrary.h"
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
                 LOG_DOWNLOAD      OFF
                 LOG_CONFIGURE     OFF
                 LOG_BUILD         OFF
@@ -1344,7 +1345,7 @@ function(setup_zluda_download)
             INSTALL_COMMAND   ""
             BUILD_BYPRODUCTS  "${ZLUDA_INSTALL_DIR}/lib/libcuda.so"
             TIMEOUT           300
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
             LOG_DOWNLOAD      OFF
             LOG_CONFIGURE     OFF
             LOG_BUILD         OFF
@@ -1443,7 +1444,7 @@ function(setup_miopen_download)
                 BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${DEP_PARALLEL_JOBS}
                 INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
                 TIMEOUT           1200
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
                 LOG_DOWNLOAD      OFF
                 LOG_CONFIGURE     OFF
                 LOG_BUILD         OFF
@@ -2070,7 +2071,7 @@ function(setup_triton)
             URL               "${TRITON_LLVM_URL}"
             URL_HASH          "${TRITON_LLVM_URL_HASH}"
             DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
             PATCH_COMMAND     ${CMAKE_COMMAND}
                 -DSOURCE_DIR=<SOURCE_DIR>
                 -DSD_EXTERNAL_PROJECT=LLVM
@@ -2181,7 +2182,7 @@ function(setup_triton)
                 URL               "${TRITON_LLVM_URL}"
                 URL_HASH          "${TRITON_LLVM_URL_HASH}"
                 DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
-                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
                 PATCH_COMMAND     ${CMAKE_COMMAND}
                     -DSOURCE_DIR=<SOURCE_DIR>
                     -DSD_EXTERNAL_PROJECT=LLVM
@@ -2364,7 +2365,7 @@ function(setup_triton)
             BINARY_DIR        "${TRITON_PREFIX}/build"
             STAMP_DIR         "${TRITON_STAMP_DIR}"
             DOWNLOAD_NO_PROGRESS FALSE
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
             PATCH_COMMAND     ${_TRITON_EP_PATCH_CMD}
             CMAKE_ARGS        ${TRITON_CMAKE_ARGS}
             BUILD_COMMAND     ${TRITON_BUILD_COMMAND}
@@ -2518,7 +2519,7 @@ function(setup_cutlass)
             URL               "${CUTLASS_URL}"
             URL_HASH          "${CUTLASS_URL_HASH}"
             DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
             CONFIGURE_COMMAND ""
             BUILD_COMMAND     ""
             INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CUTLASS_INSTALL_DIR}/include
@@ -2626,7 +2627,7 @@ function(setup_mlx)
         URL               "${MLX_URL}"
         URL_HASH          "${MLX_URL_HASH}"
         DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
         CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${MLX_INSTALL_DIR}
             -DCMAKE_BUILD_TYPE=Release
@@ -3024,7 +3025,7 @@ function(setup_openvino)
         URL               "${OPENVINO_URL}"
         URL_HASH          "${OPENVINO_URL_HASH}"
         DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
         SOURCE_DIR        "${OPENVINO_SOURCE_DIR}"
         BINARY_DIR        "${OPENVINO_PREFIX}/build"
         STAMP_DIR         "${OPENVINO_STAMP_DIR}"
