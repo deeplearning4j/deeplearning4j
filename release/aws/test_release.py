@@ -512,6 +512,60 @@ class ReleaseValidationTest(unittest.TestCase):
             build_platform.build_native_platform(Path("/source"), shard, Path("/m2"), {}, None)
         self.assertEqual(["linux-x86_64.sh", "cross-platform.sh"], events)
 
+    def test_android_release_disables_host_jvm_linking_and_selects_variant_api(self):
+        source = Path("/source")
+        build = {"javacppPlatform": "android-arm64"}
+        environment = {
+            "ANDROID_NDK": "/opt/android/android-ndk-r27d",
+            "OPENBLAS_PATH": "/opt/openblas",
+        }
+        base = build_platform.android_cmake_args(
+            source, build, {"name": "base"}, environment
+        )
+        nnapi = build_platform.android_cmake_args(
+            source, build, {"name": "compile-nnapi"}, environment
+        )
+        self.assertIn("-DSD_BUILD_WITH_JAVA=OFF", base)
+        self.assertIn("-DANDROID_PLATFORM=android-21", base)
+        self.assertIn("-DSD_BUILD_WITH_JAVA=OFF", nnapi)
+        self.assertIn("-DANDROID_PLATFORM=android-27", nnapi)
+
+    def test_android_release_driver_propagates_each_variant_api(self):
+        shard = {
+            "id": "android-arm64",
+            "os": "linux",
+            "artifactRules": {},
+            "build": {
+                "backend": "cpu",
+                "javacppPlatform": "android-arm64",
+                "buildThreads": 4,
+                "variants": [{"name": "base"}, {"name": "compile-nnapi"}],
+            },
+        }
+        environment = {
+            "ANDROID_NDK": "/opt/android/android-ndk-r27d",
+            "OPENBLAS_PATH": "/opt/openblas",
+        }
+        invocations = []
+        with patch.object(build_platform, "prepare_openblas"), \
+                patch.object(build_platform, "reset_variant_classifier_artifacts"), \
+                patch.object(build_platform, "attest_variant_classifier_artifacts"), \
+                patch.object(
+                    build_platform,
+                    "run",
+                    side_effect=lambda _command, _source, env: invocations.append(env.copy()),
+                ):
+            build_platform.build_native_platform(
+                Path("/source"), shard, Path("/m2"), environment, None
+            )
+        self.assertEqual(["21", "27"], [
+            invocation["DL4J_ANDROID_API"] for invocation in invocations
+        ])
+        self.assertTrue(all(
+            "-DSD_BUILD_WITH_JAVA=OFF" in invocation["DL4J_CMAKE_ARGS"]
+            for invocation in invocations
+        ))
+
     def test_every_covered_workflow_uses_a_shared_release_executor(self):
         repository_root = Path(__file__).resolve().parents[2]
         plan = json.loads((Path(__file__).with_name("release-plan.json")).read_text(encoding="utf-8"))
@@ -1146,6 +1200,32 @@ class ReleaseValidationTest(unittest.TestCase):
 
         metal = command(DL4J_FAMILY="macos-arm64", DL4J_HELPER="mps")
         self.assertIn("-Pmetal", metal)
+
+        android = command(
+            DL4J_FAMILY="android-arm64",
+            DL4J_ANDROID_API="27",
+            DL4J_CMAKE_ARGS="-DSD_BUILD_WITH_JAVA=OFF",
+            ANDROID_NDK="/opt/android/android-ndk-r27d",
+        )
+        self.assertIn("-Dlibnd4j.android.api=27", android)
+        self.assertIn("-Dlibnd4j.build.with.java=OFF", android)
+        self.assertIn("-Dlibnd4j.cmake=-DSD_BUILD_WITH_JAVA=OFF", android)
+        self.assertIn(
+            "-Djavacpp.platform.compiler=/opt/android/android-ndk-r27d/"
+            "toolchains/llvm/prebuilt/linux-x86_64/bin/clang++",
+            android,
+        )
+
+        android_x86 = command(
+            DL4J_FAMILY="android-x86_64",
+            DL4J_ANDROID_API="21",
+            DL4J_CMAKE_ARGS="-DSD_BUILD_WITH_JAVA=OFF",
+        )
+        self.assertIn("-Dlibnd4j.android.api=21", android_x86)
+        self.assertIn("-Dlibnd4j.build.with.java=OFF", android_x86)
+
+        linux_arm64 = command(DL4J_FAMILY="linux-arm64")
+        self.assertNotIn("-Dlibnd4j.build.with.java=OFF", linux_arm64)
 
         for family in ("tpu", "hexagon", "vulkan"):
             accelerator = command(DL4J_FAMILY=family)

@@ -10,6 +10,7 @@ set -Eeuo pipefail
 : "${DL4J_MAVEN_REPOSITORY:=}"
 : "${DL4J_LIBND4J_URL:=}"
 : "${DL4J_CMAKE_ARGS:=}"
+: "${DL4J_ANDROID_API:=24}"
 
 split_flags=()
 [ -z "${DL4J_MVN_FLAGS}" ] || read -r -a split_flags <<<"${DL4J_MVN_FLAGS}"
@@ -44,8 +45,8 @@ case "${DL4J_FAMILY}" in
     case "${DL4J_FAMILY}" in
       linux-arm64) platform=linux-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=();;
       macos-arm64) platform=macosx-arm64; profiles=(-Pcpu -Pmetal -Posx-aarch64-protoc); extra=(-Dlibnd4j.arch=armv8-a -Dlibnd4j.platform=macosx-arm64);;
-      android-x86_64) platform=android-x86_64; profiles=(-Pcpu); extra=();;
-      android-arm64) platform=android-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}");;
+      android-x86_64) platform=android-x86_64; profiles=(-Pcpu); extra=("-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF);;
+      android-arm64) platform=android-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF);;
     esac
     modules=:nd4j-native,:nd4j-native-preset
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j

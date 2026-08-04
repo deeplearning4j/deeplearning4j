@@ -664,15 +664,20 @@ def shared_native_family(shard: dict, variant: dict) -> str:
     }[build["javacppPlatform"]]
 
 
+def android_api_level(variant: dict) -> int:
+    return 27 if "nnapi" in variant.get("name", "") else 21
+
+
 def android_cmake_args(source: Path, build: dict, variant: dict, env: dict[str, str]) -> str:
     if not env.get("ANDROID_NDK") or not env.get("OPENBLAS_PATH"):
         raise ValueError("Android builds require ANDROID_NDK and OPENBLAS_PATH")
     arm64 = build["javacppPlatform"] == "android-arm64"
     abi, toolchain = ("arm64-v8a", "android-arm64.cmake") if arm64 else ("x86_64", "android-x86_64.cmake")
-    api = 27 if "nnapi" in variant.get("name", "") else 21
+    api = android_api_level(variant)
     return " ".join([
         f"-DCMAKE_TOOLCHAIN_FILE={source / 'libnd4j/cmake' / toolchain}", "-G Ninja",
-        "-DSD_ANDROID_BUILD=true", f"-DANDROID_ABI={abi}", f"-DANDROID_PLATFORM=android-{api}",
+        "-DSD_ANDROID_BUILD=true", "-DSD_BUILD_WITH_JAVA=OFF",
+        f"-DANDROID_ABI={abi}", f"-DANDROID_PLATFORM=android-{api}",
         f"-DANDROID_NDK={env['ANDROID_NDK']}", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_MAKE_PROGRAM=/usr/bin/ninja",
         f"-DBLAS_LIBRARIES={Path(env['OPENBLAS_PATH']) / 'libopenblas.so'}",
         f"-DLAPACK_LIBRARIES={Path(env['OPENBLAS_PATH']) / 'libopenblas.so'}",
@@ -771,6 +776,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_ZLUDA_TARGET": zluda_target(build),
         })
         if build["javacppPlatform"].startswith("android-"):
+            variant_env["DL4J_ANDROID_API"] = str(android_api_level(variant))
             variant_env["DL4J_CMAKE_ARGS"] = android_cmake_args(source, build, variant, variant_env)
         script_name = "linux-x86_64.sh" if family == "linux-x86_64" else "native-platform.sh"
         if family == "linux-x86_64":
