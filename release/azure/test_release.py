@@ -35,6 +35,38 @@ release = load_module("dl4j_azure_release", HERE / "release.py")
 cloud_io = load_module("dl4j_azure_cloud_io", HERE / "cloud-io.py")
 
 
+class TokenizerNativeBuildScriptTests(unittest.TestCase):
+    def test_visual_studio_platform_variable_does_not_override_msys_host(self):
+        script = (
+            ROOT
+            / "nd4j/nd4j-tokenizers/libtokenizers/buildnativetokenizers.sh"
+        )
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "Platform": "x64",
+                "PLATFORM": "x64",
+                "TOKENIZERS_PLATFORM": "msys_nt-10.0",
+                "TOKENIZERS_ARCH": "x86_64",
+                "JAVACPP_PLATFORM": "windows-x86_64",
+            }
+        )
+
+        result = subprocess.run(
+            ["bash", str(script), "--print-build-config"],
+            cwd=script.parent,
+            env=environment,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertIn("Platform: windows (detected as msys_nt-10.0)", result.stdout)
+        self.assertIn("Architecture: x86_64", result.stdout)
+        self.assertIn("JavaCPP Platform: windows-x86_64", result.stdout)
+        self.assertNotIn("Unsupported platform: x64", result.stdout)
+
+
 def fake_sku(
     name: str,
     *,

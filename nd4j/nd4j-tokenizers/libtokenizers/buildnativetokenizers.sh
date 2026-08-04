@@ -12,9 +12,29 @@ set -e  # Exit on any error
 
 # Build configuration
 BUILD_TYPE="${BUILD_TYPE:-Release}"
-PLATFORM="${PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
-ARCH="${ARCH:-$(uname -m)}"
+TOKENIZERS_PLATFORM_RAW="${TOKENIZERS_PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
+TOKENIZERS_ARCH="${TOKENIZERS_ARCH:-$(uname -m)}"
 VERBOSE="${VERBOSE:-false}"
+
+# Visual Studio defines Platform=x64. Environment variable names are
+# case-insensitive on Windows, so using the generic PLATFORM name here makes
+# MSYS inherit x64 instead of the host OS reported by uname. Keep host
+# detection namespaced and reduce it to the three values used by this script.
+case "${TOKENIZERS_PLATFORM_RAW}" in
+    linux*)
+        HOST_PLATFORM="linux"
+        ;;
+    darwin*)
+        HOST_PLATFORM="darwin"
+        ;;
+    mingw*|cygwin*|msys*|windows*)
+        HOST_PLATFORM="windows"
+        ;;
+    *)
+        echo "Unsupported platform: ${TOKENIZERS_PLATFORM_RAW}"
+        exit 1
+        ;;
+esac
 
 # Directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,30 +43,26 @@ BUILD_DIR="${SCRIPT_DIR}/build"
 OUTPUT_DIR="${SCRIPT_DIR}/target/native"
 
 # JavaCPP platform naming - use environment variable if set by Maven
-if [[ -n "${JAVACPP_PLATFORM}" ]]; then
+if [[ -n "${JAVACPP_PLATFORM:-}" ]]; then
     echo "Using JAVACPP_PLATFORM from environment: ${JAVACPP_PLATFORM}"
 else
-    case "${PLATFORM}" in
+    case "${HOST_PLATFORM}" in
         linux)
-            if [[ "${ARCH}" == "aarch64" || "${ARCH}" == "arm64" ]]; then
+            if [[ "${TOKENIZERS_ARCH}" == "aarch64" || "${TOKENIZERS_ARCH}" == "arm64" ]]; then
                 JAVACPP_PLATFORM="linux-arm64"
             else
                 JAVACPP_PLATFORM="linux-x86_64"
             fi
             ;;
         darwin)
-            if [[ "${ARCH}" == "arm64" ]]; then
+            if [[ "${TOKENIZERS_ARCH}" == "arm64" ]]; then
                 JAVACPP_PLATFORM="macosx-arm64"
             else
                 JAVACPP_PLATFORM="macosx-x86_64"
             fi
             ;;
-        mingw*|cygwin*|msys*|windows*)
+        windows)
             JAVACPP_PLATFORM="windows-x86_64"
-            ;;
-        *)
-            echo "Unsupported platform: ${PLATFORM}"
-            exit 1
             ;;
     esac
 fi
@@ -54,13 +70,18 @@ fi
 echo "==============================================="
 echo "Building tokenizers native library"
 echo "==============================================="
-echo "Platform: ${PLATFORM}"
-echo "Architecture: ${ARCH}"
+echo "Platform: ${HOST_PLATFORM} (detected as ${TOKENIZERS_PLATFORM_RAW})"
+echo "Architecture: ${TOKENIZERS_ARCH}"
 echo "JavaCPP Platform: ${JAVACPP_PLATFORM}"
 echo "Build type: ${BUILD_TYPE}"
 echo "Build directory: ${BUILD_DIR}"
 echo "Output directory: ${OUTPUT_DIR}"
 echo "==============================================="
+
+# Side-effect-free diagnostics used by release preflight and regression tests.
+if [[ "${1:-}" == "--print-build-config" ]]; then
+    exit 0
+fi
 
 # Create directories using JavaCPP structure
 mkdir -p "${BUILD_DIR}"
@@ -95,7 +116,7 @@ echo "All dependencies found."
 # CRITICAL: Detect and use linuxbrew compiler if available to match JavaCPP's ABI
 # JavaCPP uses linuxbrew's GCC on Linux, so we must use the same compiler
 # to avoid C++ ABI mismatches that cause SIGSEGV crashes
-if [[ "${PLATFORM}" == "linux" ]]; then
+if [[ "${HOST_PLATFORM}" == "linux" ]]; then
     LINUXBREW_GCC="/home/linuxbrew/.linuxbrew/bin/gcc"
     LINUXBREW_GXX="/home/linuxbrew/.linuxbrew/bin/g++"
 
@@ -113,40 +134,28 @@ if [[ "${PLATFORM}" == "linux" ]]; then
 fi
 
 # Platform-specific configuration
-case "${PLATFORM}" in
+case "${HOST_PLATFORM}" in
     linux)
         TARGET="x86_64-unknown-linux-gnu"
         LIB_EXT="so"
-        if [[ "${ARCH}" == "aarch64" || "${ARCH}" == "arm64" ]]; then
+        if [[ "${TOKENIZERS_ARCH}" == "aarch64" || "${TOKENIZERS_ARCH}" == "arm64" ]]; then
             TARGET="aarch64-unknown-linux-gnu"
         fi
         ;;
     darwin)
         TARGET="x86_64-apple-darwin"
         LIB_EXT="dylib"
-        if [[ "${ARCH}" == "arm64" ]]; then
+        if [[ "${TOKENIZERS_ARCH}" == "arm64" ]]; then
             TARGET="aarch64-apple-darwin"
         fi
         ;;
-    mingw*|cygwin*|msys*|windows*)
+    windows)
         TARGET="x86_64-pc-windows-gnu"
         LIB_EXT="dll"
         ;;
-    *)
-        echo "Unsupported platform: ${PLATFORM}"
-        exit 1
-        ;;
 esac
 
-# Normalize PLATFORM for CMake (uname returns mingw64_nt-... on MSYS2)
-case "${PLATFORM}" in
-    mingw*|cygwin*|msys*)
-        CMAKE_PLATFORM="windows"
-        ;;
-    *)
-        CMAKE_PLATFORM="${PLATFORM}"
-        ;;
-esac
+CMAKE_PLATFORM="${HOST_PLATFORM}"
 
 echo "Building for target: ${TARGET}"
 
@@ -216,16 +225,14 @@ CMAKE_ARGS=(
     "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
     "-DCMAKE_INSTALL_PREFIX=${OUTPUT_DIR}/org/eclipse/deeplearning4j/tokenizers"
     "-DPLATFORM=${CMAKE_PLATFORM}"
-    "-DARCH=${ARCH}"
+    "-DARCH=${TOKENIZERS_ARCH}"
     "-DJAVACPP_PLATFORM=${JAVACPP_PLATFORM}"
 )
 
 # On Windows/MSYS2, force MinGW Makefiles generator (otherwise cmake picks Visual Studio)
-case "${PLATFORM}" in
-    mingw*|cygwin*|msys*|windows*)
-        CMAKE_ARGS+=("-G" "MinGW Makefiles")
-        ;;
-esac
+if [[ "${HOST_PLATFORM}" == "windows" ]]; then
+    CMAKE_ARGS+=("-G" "MinGW Makefiles")
+fi
 
 # Explicitly pass compiler if set (critical for ABI compatibility)
 if [[ -n "${CC}" ]]; then
@@ -257,7 +264,7 @@ copy_essential_libraries() {
     echo "Copying essential libraries from ${source_dir} to ${dest_dir}"
 
     # Copy our wrapper library (the main one we built)
-    case "${PLATFORM}" in
+    case "${HOST_PLATFORM}" in
         linux)
             find "${source_dir}" -maxdepth 1 -name "libtokenizers_wrapper.so*" -exec cp {} "${dest_dir}/" \; 2>/dev/null || true
             # Also copy the FFI library if present (needed if dynamically linked)
@@ -272,7 +279,7 @@ copy_essential_libraries() {
                 cp "${FFI_TARGET_DIR}/release/libtokenizers_ffi.dylib" "${dest_dir}/" 2>/dev/null || true
             fi
             ;;
-        mingw*|cygwin*|msys*|windows*)
+        windows)
             find "${source_dir}" -maxdepth 1 -name "libtokenizers_wrapper.dll*" -exec cp {} "${dest_dir}/" \; 2>/dev/null || true
             if [[ -f "${FFI_TARGET_DIR}/release/tokenizers_ffi.dll" ]]; then
                 cp "${FFI_TARGET_DIR}/release/tokenizers_ffi.dll" "${dest_dir}/" 2>/dev/null || true
@@ -305,8 +312,8 @@ MANIFEST_FILE="${JAVACPP_PLATFORM_DIR}/manifest.properties"
 cat > "${MANIFEST_FILE}" << EOF
 # Tokenizers Native Library Manifest
 build.timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-build.platform=${PLATFORM}
-build.arch=${ARCH}
+build.platform=${HOST_PLATFORM}
+build.arch=${TOKENIZERS_ARCH}
 build.javacpp.platform=${JAVACPP_PLATFORM}
 build.type=${BUILD_TYPE}
 build.target=${TARGET}
