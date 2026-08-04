@@ -4431,13 +4431,17 @@ class WorkerTransportTests(unittest.TestCase):
 
     def test_windows_native_commands_ignore_stderr_but_check_exit_codes(self):
         source = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        helper_start = source.index("function Invoke-NativeChecked")
+        helper_end = source.index("\nfunction Invoke-KillSwitchProbe", helper_start)
+        helper = source[helper_start:helper_end]
         self.assertIn("function Invoke-NativeChecked", source)
         self.assertIn("$ErrorActionPreference = 'Continue'", source)
         self.assertIn("$ErrorActionPreference = $PreviousPreference", source)
-        self.assertIn("$global:LASTEXITCODE = $null", source)
-        self.assertIn("& $Command", source)
-        self.assertIn("$Code = $global:LASTEXITCODE", source)
-        self.assertNotIn("$LASTEXITCODE = $null\n    & $Command", source)
+        self.assertIn("$Invocation = [pscustomobject]@{ ExitCode = $null }", source)
+        self.assertIn(". $Command", source)
+        self.assertIn("$Invocation.ExitCode = $LASTEXITCODE", source)
+        self.assertIn("$Code = $Invocation.ExitCode", source)
+        self.assertNotIn("$global:LASTEXITCODE", helper)
         self.assertIn("$SuccessCodes -notcontains [int]$Code", source)
         for description in (
             "Chocolatey toolchain installation",

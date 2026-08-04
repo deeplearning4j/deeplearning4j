@@ -116,13 +116,18 @@ function Invoke-NativeChecked {
     [int[]]$SuccessCodes = @(0)
   )
   $PreviousPreference = $ErrorActionPreference
+  $Invocation = [pscustomobject]@{ ExitCode = $null }
   try {
     $ErrorActionPreference = 'Continue'
-    # Native invocations update the automatic global variable; an unscoped
-    # assignment here would create a function-local shadow that never changes.
-    $global:LASTEXITCODE = $null
-    & $Command
-    $Code = $global:LASTEXITCODE
+    # A scriptblock invoked with '&' has child scope, so its native command's
+    # LASTEXITCODE does not reliably flow back to this helper. Run the caller's
+    # block dot-sourced inside an isolated scope and copy the exit code through
+    # a mutable holder before that scope ends.
+    & {
+      . $Command
+      $Invocation.ExitCode = $LASTEXITCODE
+    }
+    $Code = $Invocation.ExitCode
   }
   finally {
     $ErrorActionPreference = $PreviousPreference
