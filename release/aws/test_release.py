@@ -1288,6 +1288,27 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertIn(f'"{extension}"', cpu_preset)
         self.assertNotIn('"-onednn-onednn"', cpu_preset)
 
+    def test_avx512_classifier_enables_avx512_codegen(self):
+        root = Path(__file__).parents[2]
+        source = (root / "libnd4j/cmake/CompilerOptimizations.cmake").read_text(
+            encoding="utf-8"
+        )
+        start = source.index('if(SD_EXTENSION MATCHES "avx512")')
+        end = source.index("endif()", start)
+        avx512_block = source[start:end]
+
+        self.assertIn("set(CMAKE_CXX_FLAGS", avx512_block)
+        for flag in (
+            "-mavx512f",
+            "-mavx512vl",
+            "-mavx512bw",
+            "-mavx512dq",
+            "-mavx512cd",
+        ):
+            self.assertIn(flag, avx512_block)
+        self.assertNotIn("SD_AVX512_FLAGS", avx512_block)
+        self.assertNotIn("runtime feature detection", avx512_block)
+
     def test_shared_native_script_emits_specialized_classifiers(self):
         root = Path(__file__).parents[2]
         script = root / "build-scripts/release/native-platform.sh"
