@@ -34,99 +34,59 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
 static void conv2dMIOpen(const LaunchContext* context,
-                         const NDArray* input, const NDArray* weights, const NDArray* bias,
-                         NDArray* output,
+                         const NDArray* input, const NDArray* weights,
+                         const NDArray* bias, NDArray* output,
                          const int kH, const int kW,
                          const int sH, const int sW,
                          const int pH, const int pW,
                          const int dH, const int dW,
                          const int paddingMode, const int isNCHW) {
+    if (!isNCHW) {
+        THROW_EXCEPTION("MIOpen conv2d requires NCHW input");
+    }
+    (void)paddingMode;
 
-    // Get dimensions
     int bS, iC, iH, iW, oC, oH, oW;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
+    ConvolutionUtils::getSizesAndIndexesConv2d(
+        isNCHW, 0, *input, *output,
+        bS, iC, iH, iW, oC, oH, oW,
+        indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
 
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output,
-        bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
+    const auto inputTensor =
+        miopenTensor4D(input->dataType(), bS, iC, iH, iW);
+    const auto weightsTensor =
+        miopenTensor4D(weights->dataType(), oC, iC, kH, kW);
+    const auto outputTensor =
+        miopenTensor4D(output->dataType(), bS, oC, oH, oW);
+    const miopen_bridge::Convolution2D convolution{
+        pH, pW, sH, sW, dH, dW};
 
-    // Get MIOpen handle
-    auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceID()));
-
-    // Create tensor descriptors
-    MIOpenTensor xDesc, yDesc, wDesc;
-
-    auto xType = miopenDataType(input->dataType());
-    auto yType = miopenDataType(output->dataType());
-    auto wType = miopenDataType(weights->dataType());
-
-    if (isNCHW) {
-        xDesc.set4D(xType, bS, iC, iH, iW);
-        yDesc.set4D(yType, bS, oC, oH, oW);
-    } else {
-        // NHWC format - MIOpen requires NCHW, so we need to handle this
-        // For now, we'll use NCHW and let the caller handle any needed transposition
-        xDesc.set4D(xType, bS, iC, iH, iW);
-        yDesc.set4D(yType, bS, oC, oH, oW);
-    }
-
-    // Filter descriptor: MIOpen uses NCHW for filters (oC, iC, kH, kW)
-    wDesc.set4D(wType, oC, iC, kH, kW);
-
-    // Convolution descriptor
-    MIOpenConvolution convDesc;
-    convDesc.set2D(pH, pW, sH, sW, dH, dW, miopenConvolution);
-
-    // Find best algorithm
-    int returnedAlgoCount;
-    miopenConvAlgoPerf_t perfResults;
-    size_t wsSize = 0;
-
-    CHECK_MIOPEN(miopenConvolutionForwardGetWorkSpaceSize(
-        handle, wDesc, xDesc, convDesc, yDesc, &wsSize));
-
-    HipWorkspace workspace(wsSize);
-
-    CHECK_MIOPEN(miopenFindConvolutionForwardAlgorithm(
-        handle, xDesc, input->specialBuffer(),
-        wDesc, weights->specialBuffer(),
-        convDesc, yDesc, output->specialBuffer(),
-        1, &returnedAlgoCount, &perfResults,
-        workspace, wsSize, false));
-
-    miopenConvFwdAlgorithm_t algo = perfResults.fwd_algo;
-
-    // Execute convolution
-    float alpha = 1.0f;
-    float beta = 0.0f;
-
-    NDArray::prepareSpecialUse({output}, {input, weights, bias});
-
-    CHECK_MIOPEN(miopenConvolutionForward(
-        handle, &alpha,
-        xDesc, input->specialBuffer(),
-        wDesc, weights->specialBuffer(),
-        convDesc, algo,
-        &beta,
-        yDesc, output->specialBuffer(),
-        workspace, wsSize));
-
-    // Add bias if present
+    miopen_bridge::Tensor4D biasTensor{};
+    const miopen_bridge::Tensor4D* biasTensorPointer = nullptr;
+    const void* biasBuffer = nullptr;
     if (bias != nullptr && bias->lengthOf() > 0) {
-        MIOpenTensor biasDesc;
-        biasDesc.set4D(miopenDataType(bias->dataType()), 1, oC, 1, 1);
-
-        float biasAlpha = 1.0f;
-        float biasBeta = 1.0f;
-
-        CHECK_MIOPEN(miopenOpTensor(
-            handle, miopenTensorOpAdd,
-            &biasAlpha, yDesc, output->specialBuffer(),
-            &biasAlpha, biasDesc, bias->specialBuffer(),
-            &biasBeta, yDesc, output->specialBuffer()));
+        biasTensor = miopenTensor4D(bias->dataType(), 1, oC, 1, 1);
+        biasTensorPointer = &biasTensor;
+        biasBuffer = bias->specialBuffer();
+        NDArray::prepareSpecialUse({output}, {input, weights, bias});
+    } else {
+        NDArray::prepareSpecialUse({output}, {input, weights});
     }
 
-    NDArray::registerSpecialUse({output}, {input, weights, bias});
+    synchronizeZludaForMIOpen(context);
+    checkMIOpenBridge(
+        miopen_bridge::convolutionForward(
+            context->getDeviceID(), inputTensor, weightsTensor, outputTensor,
+            convolution, input->specialBuffer(), weights->specialBuffer(),
+            output->specialBuffer(), biasTensorPointer, biasBuffer),
+        "convolutionForward");
+
+    if (biasTensorPointer != nullptr) {
+        NDArray::registerSpecialUse({output}, {input, weights, bias});
+    } else {
+        NDArray::registerSpecialUse({output}, {input, weights});
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -197,109 +157,58 @@ PLATFORM_CHECK(conv2d, ENGINE_ZLUDA_AMD) {
 // Backpropagation implementation
 static void conv2dBpMIOpen(const LaunchContext* context,
                            const NDArray* input, const NDArray* weights,
-                           const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB,
+                           const NDArray* gradO, NDArray* gradI,
+                           NDArray* gradW, NDArray* gradB,
                            const int kH, const int kW,
                            const int sH, const int sW,
                            const int pH, const int pW,
                            const int dH, const int dW,
                            const int paddingMode, const int isNCHW) {
+    if (!isNCHW) {
+        THROW_EXCEPTION("MIOpen conv2d_bp requires NCHW input");
+    }
+    (void)paddingMode;
 
     int bS, iC, iH, iW, oC, oH, oW;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
+    ConvolutionUtils::getSizesAndIndexesConv2d(
+        isNCHW, 0, *input, *gradO,
+        bS, iC, iH, iW, oC, oH, oW,
+        indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
 
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO,
-        bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
+    const auto inputTensor =
+        miopenTensor4D(input->dataType(), bS, iC, iH, iW);
+    const auto weightsTensor =
+        miopenTensor4D(weights->dataType(), oC, iC, kH, kW);
+    const auto gradOutputTensor =
+        miopenTensor4D(gradO->dataType(), bS, oC, oH, oW);
+    const miopen_bridge::Convolution2D convolution{
+        pH, pW, sH, sW, dH, dW};
 
-    auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceID()));
-
-    // Create descriptors
-    MIOpenTensor xDesc, dyDesc, dxDesc, dwDesc;
-    auto dtype = miopenDataType(input->dataType());
-
-    xDesc.set4D(dtype, bS, iC, iH, iW);
-    dyDesc.set4D(dtype, bS, oC, oH, oW);
-
-    if (gradI != nullptr) {
-        dxDesc.set4D(dtype, bS, iC, iH, iW);
-    }
-    dwDesc.set4D(dtype, oC, iC, kH, kW);
-
-    MIOpenConvolution convDesc;
-    convDesc.set2D(pH, pW, sH, sW, dH, dW, miopenConvolution);
-
-    NDArray::prepareSpecialUse({gradI, gradW, gradB}, {input, weights, gradO});
-
-    float alpha = 1.0f;
-    float beta = 0.0f;
-
-    // Compute gradient with respect to input
-    if (gradI != nullptr) {
-        size_t wsSize = 0;
-        CHECK_MIOPEN(miopenConvolutionBackwardDataGetWorkSpaceSize(
-            handle, dyDesc, dwDesc, convDesc, dxDesc, &wsSize));
-
-        HipWorkspace workspace(wsSize);
-
-        int returnedAlgoCount;
-        miopenConvAlgoPerf_t perfResults;
-        CHECK_MIOPEN(miopenFindConvolutionBackwardDataAlgorithm(
-            handle, dyDesc, gradO->specialBuffer(),
-            dwDesc, weights->specialBuffer(),
-            convDesc, dxDesc, gradI->specialBuffer(),
-            1, &returnedAlgoCount, &perfResults,
-            workspace, wsSize, false));
-
-        CHECK_MIOPEN(miopenConvolutionBackwardData(
-            handle, &alpha,
-            dyDesc, gradO->specialBuffer(),
-            dwDesc, weights->specialBuffer(),
-            convDesc, perfResults.bwd_data_algo,
-            &beta,
-            dxDesc, gradI->specialBuffer(),
-            workspace, wsSize));
-    }
-
-    // Compute gradient with respect to weights
-    if (gradW != nullptr) {
-        size_t wsSize = 0;
-        CHECK_MIOPEN(miopenConvolutionBackwardWeightsGetWorkSpaceSize(
-            handle, dyDesc, xDesc, convDesc, dwDesc, &wsSize));
-
-        HipWorkspace workspace(wsSize);
-
-        int returnedAlgoCount;
-        miopenConvAlgoPerf_t perfResults;
-        CHECK_MIOPEN(miopenFindConvolutionBackwardWeightsAlgorithm(
-            handle, dyDesc, gradO->specialBuffer(),
-            xDesc, input->specialBuffer(),
-            convDesc, dwDesc, gradW->specialBuffer(),
-            1, &returnedAlgoCount, &perfResults,
-            workspace, wsSize, false));
-
-        CHECK_MIOPEN(miopenConvolutionBackwardWeights(
-            handle, &alpha,
-            dyDesc, gradO->specialBuffer(),
-            xDesc, input->specialBuffer(),
-            convDesc, perfResults.bwd_weights_algo,
-            &beta,
-            dwDesc, gradW->specialBuffer(),
-            workspace, wsSize));
-    }
-
-    // Compute gradient with respect to bias
+    miopen_bridge::Tensor4D gradBiasTensor{};
+    const miopen_bridge::Tensor4D* gradBiasTensorPointer = nullptr;
     if (gradB != nullptr) {
-        MIOpenTensor dbDesc;
-        dbDesc.set4D(dtype, 1, oC, 1, 1);
-
-        CHECK_MIOPEN(miopenConvolutionBackwardBias(
-            handle, &alpha,
-            dyDesc, gradO->specialBuffer(),
-            &beta,
-            dbDesc, gradB->specialBuffer()));
+        gradBiasTensor =
+            miopenTensor4D(gradB->dataType(), 1, oC, 1, 1);
+        gradBiasTensorPointer = &gradBiasTensor;
     }
 
-    NDArray::registerSpecialUse({gradI, gradW, gradB}, {input, weights, gradO});
+    NDArray::prepareSpecialUse({gradI, gradW, gradB},
+                               {input, weights, gradO});
+    synchronizeZludaForMIOpen(context);
+    checkMIOpenBridge(
+        miopen_bridge::convolutionBackward(
+            context->getDeviceID(), inputTensor, weightsTensor,
+            gradOutputTensor, convolution,
+            input->specialBuffer(), weights->specialBuffer(),
+            gradO->specialBuffer(),
+            gradI != nullptr ? gradI->specialBuffer() : nullptr,
+            gradW != nullptr ? gradW->specialBuffer() : nullptr,
+            gradBiasTensorPointer,
+            gradB != nullptr ? gradB->specialBuffer() : nullptr),
+        "convolutionBackward");
+    NDArray::registerSpecialUse({gradI, gradW, gradB},
+                                {input, weights, gradO});
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -32,68 +32,42 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
+static miopen_bridge::Tensor4D softmaxTensor(const NDArray* input,
+                                             int dimension) {
+    const auto shape = input->shapeOf();
+    const int rank = input->rankOf();
+    if (dimension < 0) dimension += rank;
+    if (dimension < 0 || dimension >= rank) {
+        THROW_EXCEPTION("MIOpen softmax dimension is outside the input rank");
+    }
+
+    LongType outerSize = 1;
+    LongType innerSize = 1;
+    for (int index = 0; index < dimension; ++index) {
+        outerSize *= shape[index];
+    }
+    for (int index = dimension + 1; index < rank; ++index) {
+        innerSize *= shape[index];
+    }
+
+    return miopenTensor4D(input->dataType(),
+                          static_cast<int>(outerSize),
+                          static_cast<int>(shape[dimension]), 1,
+                          static_cast<int>(innerSize));
+}
+
 static void softmaxMIOpen(const LaunchContext* context,
                           const NDArray* input, NDArray* output,
                           int dimension, bool isLog = false) {
-
-    auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceID()));
-
-    // Get shape info
-    auto shape = input->shapeOf();
-    auto rank = input->rankOf();
-
-    // Create tensor descriptor
-    MIOpenTensor xDesc;
-    auto dtype = miopenDataType(input->dataType());
-
-    // MIOpen softmax operates on 4D tensors in NCHW format
-    // We need to reshape our input appropriately
-    int n = 1, c = 1, h = 1, w = 1;
-
-    if (rank == 2) {
-        // [batch, features] -> softmax along features
-        n = static_cast<int>(shape[0]);
-        c = static_cast<int>(shape[1]);
-    } else if (rank == 4) {
-        n = static_cast<int>(shape[0]);
-        c = static_cast<int>(shape[1]);
-        h = static_cast<int>(shape[2]);
-        w = static_cast<int>(shape[3]);
-    } else {
-        // Generic case: flatten appropriately based on dimension
-        LongType outerSize = 1;
-        LongType innerSize = 1;
-        LongType dimSize = shape[dimension];
-
-        for (int i = 0; i < dimension; i++) {
-            outerSize *= shape[i];
-        }
-        for (int i = dimension + 1; i < rank; i++) {
-            innerSize *= shape[i];
-        }
-
-        n = static_cast<int>(outerSize);
-        c = static_cast<int>(dimSize);
-        h = 1;
-        w = static_cast<int>(innerSize);
-    }
-
-    xDesc.set4D(dtype, n, c, h, w);
-
-    float alpha = 1.0f;
-    float beta = 0.0f;
+    const auto tensor = softmaxTensor(input, dimension);
 
     NDArray::prepareSpecialUse({output}, {input});
-
-    miopenSoftmaxAlgorithm_t algo = isLog ? miopenSoftmaxLog : miopenSoftmaxAccurate;
-    miopenSoftmaxMode_t mode = miopenSoftmaxChannel;
-
-    CHECK_MIOPEN(miopenSoftmaxForward_V2(
-        handle, &alpha, xDesc, input->specialBuffer(),
-        &beta, xDesc, output->specialBuffer(),
-        algo, mode));
-
+    synchronizeZludaForMIOpen(context);
+    checkMIOpenBridge(
+        miopen_bridge::softmaxForward(
+            context->getDeviceID(), tensor,
+            input->specialBuffer(), output->specialBuffer(), isLog),
+        "softmaxForward");
     NDArray::registerSpecialUse({output}, {input});
 }
 
@@ -150,64 +124,19 @@ PLATFORM_CHECK(log_softmax, ENGINE_ZLUDA_AMD) {
 //////////////////////////////////////////////////////////////////////////
 // Softmax Backpropagation
 static void softmaxBpMIOpen(const LaunchContext* context,
-                            const NDArray* input, const NDArray* gradO, NDArray* gradI,
-                            int dimension, bool isLog = false) {
-
-    auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceID()));
-
-    auto shape = input->shapeOf();
-    auto rank = input->rankOf();
-
-    MIOpenTensor xDesc;
-    auto dtype = miopenDataType(input->dataType());
-
-    int n = 1, c = 1, h = 1, w = 1;
-
-    if (rank == 2) {
-        n = static_cast<int>(shape[0]);
-        c = static_cast<int>(shape[1]);
-    } else if (rank == 4) {
-        n = static_cast<int>(shape[0]);
-        c = static_cast<int>(shape[1]);
-        h = static_cast<int>(shape[2]);
-        w = static_cast<int>(shape[3]);
-    } else {
-        LongType outerSize = 1;
-        LongType innerSize = 1;
-        LongType dimSize = shape[dimension];
-
-        for (int i = 0; i < dimension; i++) {
-            outerSize *= shape[i];
-        }
-        for (int i = dimension + 1; i < rank; i++) {
-            innerSize *= shape[i];
-        }
-
-        n = static_cast<int>(outerSize);
-        c = static_cast<int>(dimSize);
-        h = 1;
-        w = static_cast<int>(innerSize);
-    }
-
-    xDesc.set4D(dtype, n, c, h, w);
-
-    float alpha = 1.0f;
-    float beta = 0.0f;
+                            const NDArray* input, const NDArray* gradO,
+                            NDArray* gradI, int dimension,
+                            bool isLog = false) {
+    const auto tensor = softmaxTensor(input, dimension);
 
     NDArray::prepareSpecialUse({gradI}, {input, gradO});
-
-    miopenSoftmaxAlgorithm_t algo = isLog ? miopenSoftmaxLog : miopenSoftmaxAccurate;
-    miopenSoftmaxMode_t mode = miopenSoftmaxChannel;
-
-    CHECK_MIOPEN(miopenSoftmaxBackward_V2(
-        handle, &alpha,
-        xDesc, input->specialBuffer(),  // output of forward pass (softmax result)
-        xDesc, gradO->specialBuffer(),  // gradient from next layer
-        &beta,
-        xDesc, gradI->specialBuffer(),  // gradient to propagate back
-        algo, mode));
-
+    synchronizeZludaForMIOpen(context);
+    checkMIOpenBridge(
+        miopen_bridge::softmaxBackward(
+            context->getDeviceID(), tensor,
+            input->specialBuffer(), gradO->specialBuffer(),
+            gradI->specialBuffer(), isLog),
+        "softmaxBackward");
     NDArray::registerSpecialUse({gradI}, {input, gradO});
 }
 

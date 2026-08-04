@@ -32,65 +32,50 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
+static miopen_bridge::Tensor4D batchnormTensor(const NDArray* input,
+                                               bool isNCHW,
+                                               int& channels) {
+    const auto shape = input->shapeOf();
+    const auto rank = input->rankOf();
+
+    if (rank == 4) {
+        if (!isNCHW) {
+            THROW_EXCEPTION("MIOpen batchnorm requires NCHW input");
+        }
+        channels = static_cast<int>(shape[1]);
+        return miopenTensor4D(input->dataType(),
+                              static_cast<int>(shape[0]), channels,
+                              static_cast<int>(shape[2]),
+                              static_cast<int>(shape[3]));
+    }
+    if (rank == 2) {
+        channels = static_cast<int>(shape[1]);
+        return miopenTensor4D(input->dataType(),
+                              static_cast<int>(shape[0]), channels, 1, 1);
+    }
+    THROW_EXCEPTION("MIOpen batchnorm supports only rank-2 and rank-4 input");
+}
+
 static void batchnormMIOpen(const LaunchContext* context,
                             const NDArray* input,
                             const NDArray* mean, const NDArray* variance,
                             const NDArray* gamma, const NDArray* beta,
                             NDArray* output,
                             double epsilon, bool isNCHW) {
-
-    auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceID()));
-
-    auto shape = input->shapeOf();
-    auto rank = input->rankOf();
-
-    int bS, iC, iH, iW;
-    if (rank == 4) {
-        if (isNCHW) {
-            bS = static_cast<int>(shape[0]);
-            iC = static_cast<int>(shape[1]);
-            iH = static_cast<int>(shape[2]);
-            iW = static_cast<int>(shape[3]);
-        } else {
-            bS = static_cast<int>(shape[0]);
-            iH = static_cast<int>(shape[1]);
-            iW = static_cast<int>(shape[2]);
-            iC = static_cast<int>(shape[3]);
-        }
-    } else if (rank == 2) {
-        bS = static_cast<int>(shape[0]);
-        iC = static_cast<int>(shape[1]);
-        iH = 1;
-        iW = 1;
-    } else {
-        THROW_EXCEPTION("MIOpen batchnorm: only 2D and 4D inputs supported");
-    }
-
-    MIOpenTensor xDesc, bnScaleBiasMeanVarDesc;
-    auto dtype = miopenDataType(input->dataType());
-
-    xDesc.set4D(dtype, bS, iC, iH, iW);
-    bnScaleBiasMeanVarDesc.set4D(dtype, 1, iC, 1, 1);
-
-    float alpha = 1.0f;
-    float betaVal = 0.0f;
+    int channels = 0;
+    const auto tensor = batchnormTensor(input, isNCHW, channels);
+    const auto parameterTensor =
+        miopenTensor4D(input->dataType(), 1, channels, 1, 1);
 
     NDArray::prepareSpecialUse({output}, {input, mean, variance, gamma, beta});
-
-    CHECK_MIOPEN(miopenBatchNormalizationForwardInference(
-        handle,
-        miopenBNSpatial,
-        &alpha, &betaVal,
-        xDesc, input->specialBuffer(),
-        xDesc, output->specialBuffer(),
-        bnScaleBiasMeanVarDesc,
-        const_cast<void*>(gamma->specialBuffer()),
-        const_cast<void*>(beta->specialBuffer()),
-        const_cast<void*>(mean->specialBuffer()),
-        const_cast<void*>(variance->specialBuffer()),
-        epsilon));
-
+    synchronizeZludaForMIOpen(context);
+    checkMIOpenBridge(
+        miopen_bridge::batchNormForwardInference(
+            context->getDeviceID(), tensor, parameterTensor,
+            input->specialBuffer(), output->specialBuffer(),
+            gamma->specialBuffer(), beta->specialBuffer(),
+            mean->specialBuffer(), variance->specialBuffer(), epsilon),
+        "batchNormForwardInference");
     NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
 }
 
@@ -134,62 +119,22 @@ static void batchnormBpMIOpen(const LaunchContext* context,
                               const NDArray* gamma,
                               NDArray* gradI, NDArray* gradGamma, NDArray* gradBeta,
                               double epsilon, bool isNCHW) {
-
-    auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceID()));
-
-    auto shape = input->shapeOf();
-    auto rank = input->rankOf();
-
-    int bS, iC, iH, iW;
-    if (rank == 4) {
-        if (isNCHW) {
-            bS = static_cast<int>(shape[0]);
-            iC = static_cast<int>(shape[1]);
-            iH = static_cast<int>(shape[2]);
-            iW = static_cast<int>(shape[3]);
-        } else {
-            bS = static_cast<int>(shape[0]);
-            iH = static_cast<int>(shape[1]);
-            iW = static_cast<int>(shape[2]);
-            iC = static_cast<int>(shape[3]);
-        }
-    } else if (rank == 2) {
-        bS = static_cast<int>(shape[0]);
-        iC = static_cast<int>(shape[1]);
-        iH = 1;
-        iW = 1;
-    } else {
-        THROW_EXCEPTION("MIOpen batchnorm_bp: only 2D and 4D inputs supported");
-    }
-
-    MIOpenTensor xDesc, bnScaleBiasDiffDesc;
-    auto dtype = miopenDataType(input->dataType());
-
-    xDesc.set4D(dtype, bS, iC, iH, iW);
-    bnScaleBiasDiffDesc.set4D(dtype, 1, iC, 1, 1);
-
-    float alpha = 1.0f;
-    float betaVal = 0.0f;
+    int channels = 0;
+    const auto tensor = batchnormTensor(input, isNCHW, channels);
+    const auto parameterTensor =
+        miopenTensor4D(input->dataType(), 1, channels, 1, 1);
 
     NDArray::prepareSpecialUse({gradI, gradGamma, gradBeta},
                                {input, gradO, mean, variance, gamma});
-
-    CHECK_MIOPEN(miopenBatchNormalizationBackward(
-        handle,
-        miopenBNSpatial,
-        &alpha, &betaVal, &alpha, &betaVal,
-        xDesc, input->specialBuffer(),
-        xDesc, gradO->specialBuffer(),
-        xDesc, gradI->specialBuffer(),
-        bnScaleBiasDiffDesc,
-        const_cast<void*>(gamma->specialBuffer()),
-        gradGamma->specialBuffer(),
-        gradBeta->specialBuffer(),
-        epsilon,
-        const_cast<void*>(mean->specialBuffer()),
-        const_cast<void*>(variance->specialBuffer())));
-
+    synchronizeZludaForMIOpen(context);
+    checkMIOpenBridge(
+        miopen_bridge::batchNormBackward(
+            context->getDeviceID(), tensor, parameterTensor,
+            input->specialBuffer(), gradO->specialBuffer(),
+            gamma->specialBuffer(), mean->specialBuffer(),
+            variance->specialBuffer(), gradI->specialBuffer(),
+            gradGamma->specialBuffer(), gradBeta->specialBuffer(), epsilon),
+        "batchNormBackward");
     NDArray::registerSpecialUse({gradI, gradGamma, gradBeta},
                                 {input, gradO, mean, variance, gamma});
 }

@@ -32,46 +32,41 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void activationMIOpen(const LaunchContext* context,
-                             const NDArray* input, NDArray* output,
-                             miopenActivationMode_t mode,
-                             double alpha = 0.0, double beta = 0.0, double gamma = 0.0) {
-
-    auto handle = getMIOpenHandle(context);
-    CHECK_HIP(hipSetDevice(context->getDeviceID()));
-
-    // Create tensor descriptor
-    MIOpenTensor xDesc;
-    auto dtype = miopenDataType(input->dataType());
-
-    // Set up tensor descriptor based on input shape
-    auto shape = input->shapeOf();
-    auto rank = input->rankOf();
+static miopen_bridge::Tensor4D activationTensor(const NDArray* input) {
+    const auto shape = input->shapeOf();
+    const auto rank = input->rankOf();
 
     if (rank == 4) {
-        xDesc.set4D(dtype, shape[0], shape[1], shape[2], shape[3]);
-    } else if (rank == 2) {
-        xDesc.set4D(dtype, shape[0], shape[1], 1, 1);
-    } else {
-        // For other ranks, flatten to 4D
-        LongType n = input->lengthOf();
-        xDesc.set4D(dtype, 1, static_cast<int>(n), 1, 1);
+        return miopenTensor4D(input->dataType(),
+                              static_cast<int>(shape[0]),
+                              static_cast<int>(shape[1]),
+                              static_cast<int>(shape[2]),
+                              static_cast<int>(shape[3]));
     }
+    if (rank == 2) {
+        return miopenTensor4D(input->dataType(),
+                              static_cast<int>(shape[0]),
+                              static_cast<int>(shape[1]), 1, 1);
+    }
+    return miopenTensor4D(input->dataType(), 1,
+                          static_cast<int>(input->lengthOf()), 1, 1);
+}
 
-    // Create activation descriptor
-    MIOpenActivation actDesc;
-    actDesc.set(mode, alpha, beta, gamma);
-
-    float fAlpha = 1.0f;
-    float fBeta = 0.0f;
+static void activationMIOpen(const LaunchContext* context,
+                             const NDArray* input, NDArray* output,
+                             miopen_bridge::ActivationMode mode,
+                             double alpha = 0.0, double beta = 0.0,
+                             double gamma = 0.0) {
+    const auto tensor = activationTensor(input);
 
     NDArray::prepareSpecialUse({output}, {input});
-
-    CHECK_MIOPEN(miopenActivationForward(
-        handle, actDesc,
-        &fAlpha, xDesc, input->specialBuffer(),
-        &fBeta, xDesc, output->specialBuffer()));
-
+    synchronizeZludaForMIOpen(context);
+    checkMIOpenBridge(
+        miopen_bridge::activationForward(
+            context->getDeviceID(), tensor,
+            input->specialBuffer(), output->specialBuffer(),
+            mode, alpha, beta, gamma),
+        "activationForward");
     NDArray::registerSpecialUse({output}, {input});
 }
 
@@ -81,7 +76,7 @@ PLATFORM_IMPL(relu, ENGINE_ZLUDA_AMD) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    activationMIOpen(block.launchContext(), input, output, miopenActivationRELU);
+    activationMIOpen(block.launchContext(), input, output, miopen_bridge::ActivationMode::RELU);
 
     return Status::OK;
 }
@@ -109,7 +104,7 @@ PLATFORM_IMPL(relu6, ENGINE_ZLUDA_AMD) {
 
     // MIOpen uses CLIPPED_RELU with ceiling parameter
     activationMIOpen(block.launchContext(), input, output,
-                     miopenActivationCLIPPEDRELU, 6.0, 0.0, 0.0);
+                     miopen_bridge::ActivationMode::CLIPPED_RELU, 6.0, 0.0, 0.0);
 
     return Status::OK;
 }
@@ -133,7 +128,7 @@ PLATFORM_IMPL(sigmoid, ENGINE_ZLUDA_AMD) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    activationMIOpen(block.launchContext(), input, output, miopenActivationLOGISTIC);
+    activationMIOpen(block.launchContext(), input, output, miopen_bridge::ActivationMode::LOGISTIC);
 
     return Status::OK;
 }
@@ -157,7 +152,7 @@ PLATFORM_IMPL(tanh, ENGINE_ZLUDA_AMD) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    activationMIOpen(block.launchContext(), input, output, miopenActivationTANH);
+    activationMIOpen(block.launchContext(), input, output, miopen_bridge::ActivationMode::TANH);
 
     return Status::OK;
 }
@@ -183,7 +178,7 @@ PLATFORM_IMPL(elu, ENGINE_ZLUDA_AMD) {
 
     double alpha = block.numT() > 0 ? T_ARG(0) : 1.0;
 
-    activationMIOpen(block.launchContext(), input, output, miopenActivationELU, alpha);
+    activationMIOpen(block.launchContext(), input, output, miopen_bridge::ActivationMode::ELU, alpha);
 
     return Status::OK;
 }
@@ -207,7 +202,7 @@ PLATFORM_IMPL(softplus, ENGINE_ZLUDA_AMD) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    activationMIOpen(block.launchContext(), input, output, miopenActivationSOFTRELU);
+    activationMIOpen(block.launchContext(), input, output, miopen_bridge::ActivationMode::SOFT_RELU);
 
     return Status::OK;
 }

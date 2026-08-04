@@ -885,6 +885,20 @@ class ReleaseValidationTest(unittest.TestCase):
         gpu_backend = (
             root / "libnd4j/include/graph/impl/NativeDynamicShapePlan_gpubackend.cpp"
         ).read_text(encoding="utf-8")
+        miopen_bridge = (
+            root / "libnd4j/include/ops/declarable/platform/miopen/miopenBridge.cpp"
+        ).read_text(encoding="utf-8")
+        miopen_cuda_call_sites = "\n".join(
+            (root / path).read_text(encoding="utf-8")
+            for path in (
+                "libnd4j/include/ops/declarable/platform/miopen/miopenBridge.h",
+                "libnd4j/include/ops/declarable/platform/miopen/miopenUtils.h",
+                "libnd4j/include/ops/declarable/platform/miopen/activations.cpp",
+                "libnd4j/include/ops/declarable/platform/miopen/batchnorm.cpp",
+                "libnd4j/include/ops/declarable/platform/miopen/conv2d.cpp",
+                "libnd4j/include/ops/declarable/platform/miopen/softmax.cpp",
+            )
+        )
         direct_hip_sources = "\n".join(
             (root / path).read_text(encoding="utf-8")
             for path in (
@@ -902,6 +916,7 @@ class ReleaseValidationTest(unittest.TestCase):
             "DL4J_ZLUDA_REQUIRE_ROCM",
             "DL4J_ZLUDA_REQUIRE_MIOPEN",
             "target_link_libraries(${target_name} PRIVATE ${MIOPEN_LIBRARY})",
+            "target_link_libraries(${target_name} PRIVATE ${ROCM_HIP_RUNTIME_LIBRARY})",
         ):
             self.assertIn(token, configuration)
         for leaked_sdk_setting in (
@@ -909,15 +924,24 @@ class ReleaseValidationTest(unittest.TestCase):
             "target_include_directories(${target_name} SYSTEM PUBLIC ${ROCM_INCLUDE_DIR})",
             "target_link_libraries(${target_name} PUBLIC ${ROCM_HIP_RUNTIME_LIBRARY})",
             "add_compile_definitions(__HIP_PLATFORM_AMD__=1)",
+            'COMPILE_DEFINITIONS "__HIP_PLATFORM_NVIDIA__=1"',
         ):
             self.assertNotIn(leaked_sdk_setting, configuration)
 
         self.assertIn(
-            'COMPILE_DEFINITIONS "__HIP_PLATFORM_NVIDIA__=1"', configuration
+            'COMPILE_DEFINITIONS "__HIP_PLATFORM_AMD__=1"', configuration
+        )
+        self.assertIn(
+            'set(_ZLUDA_MIOPEN_BRIDGE_SOURCE', configuration
         )
         self.assertIn(
             'INCLUDE_DIRECTORIES "${_ZLUDA_MIOPEN_INCLUDE_DIRS}"', configuration
         )
+        self.assertIn("SKIP_UNITY_BUILD_INCLUSION ON", configuration)
+        self.assertIn("#include <hip/hip_runtime.h>", miopen_bridge)
+        self.assertIn("#include <miopen/miopen.h>", miopen_bridge)
+        self.assertNotIn("#include <hip/", miopen_cuda_call_sites)
+        self.assertNotIn("#include <miopen/", miopen_cuda_call_sites)
         old_hip_gate = (
             "#if defined(SD_HIP) || defined(ZLUDA_TARGET_AMD) || "
             "defined(HAVE_MIOPEN)"

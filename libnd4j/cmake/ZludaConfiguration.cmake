@@ -228,18 +228,18 @@ function(setup_zluda_amd)
         # Set up MIOpen for DNN operations (cuDNN replacement)
         setup_miopen()
 
-        # MIOpen helpers are CUDA/ZLUDA call sites that link the native ROCm
-        # library. Select HIP's CUDA-compatible type surface only for those
-        # translation units; direct AMD HIP sources belong to a native-HIP
-        # target and must never share a source file with CUDA headers.
+        # Only the SDK-neutral bridge implementation sees AMD HIP and MIOpen.
+        # All other ZLUDA sources remain CUDA-only, so CUDA and AMD HIP vector
+        # declarations can never collide in one translation unit.
         if(HAVE_MIOPEN)
-            file(GLOB_RECURSE _ZLUDA_MIOPEN_SOURCES
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/miopen/*.cpp")
+            set(_ZLUDA_MIOPEN_BRIDGE_SOURCE
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/miopen/miopenBridge.cpp")
             set(_ZLUDA_MIOPEN_INCLUDE_DIRS "${ROCM_INCLUDE_DIR}" "${MIOPEN_INCLUDE_DIR}")
             list(REMOVE_DUPLICATES _ZLUDA_MIOPEN_INCLUDE_DIRS)
-            set_source_files_properties(${_ZLUDA_MIOPEN_SOURCES} PROPERTIES
-                COMPILE_DEFINITIONS "__HIP_PLATFORM_NVIDIA__=1"
-                INCLUDE_DIRECTORIES "${_ZLUDA_MIOPEN_INCLUDE_DIRS}")
+            set_source_files_properties("${_ZLUDA_MIOPEN_BRIDGE_SOURCE}" PROPERTIES
+                COMPILE_DEFINITIONS "__HIP_PLATFORM_AMD__=1"
+                INCLUDE_DIRECTORIES "${_ZLUDA_MIOPEN_INCLUDE_DIRS}"
+                SKIP_UNITY_BUILD_INCLUSION ON)
         endif()
 
         if(DEFINED ENV{DL4J_ZLUDA_REQUIRE_ROCM}
@@ -582,14 +582,16 @@ function(configure_zluda_linking target_name)
     endif()
 
     if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
-        # ROCm headers are attached only to the MIOpen source files. The CUDA
-        # object target and its consumers must never inherit HIP include paths.
-        # The CUDA-side MIOpen bridge uses CUDA/ZLUDA for device management, so
-        # libamdhip64 is reached transitively through MIOpen instead of being a
-        # blanket dependency of every ZLUDA artifact.
+        # ROCm headers are attached only to miopenBridge.cpp. Its object calls
+        # both MIOpen and the AMD HIP runtime directly, so both libraries are
+        # private implementation dependencies of the final ZLUDA artifact.
         if(HAVE_MIOPEN)
             target_link_libraries(${target_name} PRIVATE ${MIOPEN_LIBRARY})
+            if(ROCM_HIP_RUNTIME_LIBRARY)
+                target_link_libraries(${target_name} PRIVATE ${ROCM_HIP_RUNTIME_LIBRARY})
+            endif()
             message(STATUS "   Linked isolated MIOpen runtime: ${MIOPEN_LIBRARY}")
+            message(STATUS "   Linked isolated AMD HIP runtime: ${ROCM_HIP_RUNTIME_LIBRARY}")
         endif()
 
         # Add ROCm library path privately for the AMD-only runtime dependency.
