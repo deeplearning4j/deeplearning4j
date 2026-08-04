@@ -616,8 +616,10 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-v -Xcompiler=-H -Xlinker=-v -Xlinker=--verbose")
             endif()
 
-            if(SD_GCC_FUNCTRACE)
-                # Large binary support flags
+            if(SD_GCC_FUNCTRACE OR SD_ZLUDA)
+                # Large binary support flags. ZLUDA's all-ops CUDA library can
+                # exceed the x86-64 small-code-model relocation range even
+                # without lifecycle tracing.
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fPIC")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-mcmodel=medium")
                 set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=-fno-plt")
