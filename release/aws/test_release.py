@@ -906,6 +906,23 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-DCMAKE_INSTALL_LIBDIR=${ONEDNN_LIB_DIR}", setup)
         self.assertNotIn("${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a", setup)
 
+    def test_managed_llvm_does_not_publish_private_zstd_dependency(self):
+        root = Path(__file__).parents[2]
+        dependencies = (
+            root / "libnd4j/cmake/Dependencies.cmake"
+        ).read_text(encoding="utf-8")
+        setup_start = dependencies.index("function(setup_triton)")
+        setup_end = dependencies.index("endfunction()", setup_start)
+        setup = dependencies[setup_start:setup_end]
+
+        self.assertNotIn("-lzstd", setup)
+        self.assertEqual(
+            2,
+            setup.count(
+                "target_link_libraries(triton_interface INTERFACE -lz -lm)"
+            ),
+        )
+
     def test_classifier_staging_keeps_only_explicit_unclassified_zluda_runtime(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
