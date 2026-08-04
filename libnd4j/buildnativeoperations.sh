@@ -3288,6 +3288,7 @@ run_cmake_configure() {
         -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
         $HELPERS_CMAKE \
         $MLX_CMAKE \
+        $ZLUDA_CMAKE \
         $KERNEL_CMAKE \
         $DEP_CACHE_CMAKE \
         $MLIR_ARG \

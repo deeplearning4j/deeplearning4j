@@ -1313,6 +1313,15 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertRegex(source, r'case "\$ZLUDA" in\s+OFF\)')
         self.assertIn("expected OFF, ON, AMD, INTEL, or AUTO", source)
 
+    def test_buildnativeoperations_propagates_zluda_to_canonical_cmake_configure(self):
+        root = Path(__file__).parents[2]
+        source = (root / "libnd4j/buildnativeoperations.sh").read_text(encoding="utf-8")
+        start = source.index("run_cmake_configure() {")
+        end = source.index("\n}", start)
+        configure_function = source[start:end]
+
+        self.assertIn("$ZLUDA_CMAKE", configure_function)
+
     def test_buildnativeoperations_keeps_parser_header_path_portable(self):
         root = Path(__file__).parents[2]
         source = (root / "libnd4j/buildnativeoperations.sh").read_text(encoding="utf-8")

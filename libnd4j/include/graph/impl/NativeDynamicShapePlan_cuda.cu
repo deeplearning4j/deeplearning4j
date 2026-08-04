@@ -1919,15 +1919,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   // (used by multiple plans on the same device), we don't free it — it persists for other plans.
   // Only free if it's a plan-private workspace (legacy or non-global).
   if (sharedCaptureWorkspace_ != nullptr) {
-    extern std::unordered_map<int, void*> g_globalCaptureWorkspaceByDevice;
-    extern std::mutex g_globalCaptureWorkspaceMtx;
-    bool isGlobal = false;
-    {
-      std::lock_guard<std::mutex> lk(g_globalCaptureWorkspaceMtx);
-      auto it = g_globalCaptureWorkspaceByDevice.find(sharedCaptureWorkspaceDevice_);
-      isGlobal = (it != g_globalCaptureWorkspaceByDevice.end() &&
-                  it->second == sharedCaptureWorkspace_);
-    }
+    const bool isGlobal = sd::graph::dspIsGlobalCaptureWorkspace(sharedCaptureWorkspace_);
     if (isGlobal) {
       DSP_DIAG(MEMORY, "platformFreePlanResources: releasing reference to GLOBAL capture workspace %zuMB on device %d (NOT freeing)",
                sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
