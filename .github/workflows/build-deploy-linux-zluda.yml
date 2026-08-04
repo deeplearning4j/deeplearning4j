@@ -13,7 +13,8 @@ name: Build Linux x86_64 CUDA+ZLUDA (native validation)
 #
 # A pinned ZLUDA release is downloaded and exposed via ZLUDA_PATH so
 # setup_zluda() finds it (it would otherwise attempt its own download).
-# No AMD GPU or ROCm is needed to BUILD — only to run.
+# The CPU runner also installs the pinned ROCm HIP+MIOpen development SDK.
+# It never installs an AMD kernel driver or probes/runs GPU hardware.
 #
 # NOTE: hosted CUDA builds are known to be resource-tight (see the audit in
 # PLATFORM_TESTS_CI_AUDIT.md) — this workflow inherits the same swap/sccache
@@ -130,6 +131,37 @@ jobs:
           ls -la "$ZLUDA_PATH"
 
       - uses: ./.github/actions/update-deps-linux
+
+      - name: Install pinned build-only ROCm SDK
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          ROCM_VERSION=7.2.4
+          ROCM_INSTALLER=amdgpu-install_7.2.4.70204-1_all.deb
+          curl --fail --location --retry 5 \
+            "https://repo.radeon.com/amdgpu-install/${ROCM_VERSION}/ubuntu/jammy/${ROCM_INSTALLER}" \
+            --output "${RUNNER_TEMP}/${ROCM_INSTALLER}"
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends "${RUNNER_TEMP}/${ROCM_INSTALLER}"
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            rocm-hip-runtime-dev miopen-hip-dev
+
+          test -f /opt/rocm/include/hip/hip_runtime.h
+          test -f /opt/rocm/include/miopen/miopen.h
+          test -f /opt/rocm/lib/libamdhip64.so
+          test -f /opt/rocm/lib/libMIOpen.so
+          grep -q "^${ROCM_VERSION}" /opt/rocm/.info/version
+          /opt/rocm/bin/hipcc --version
+
+          echo "ROCM_PATH=/opt/rocm" >> "$GITHUB_ENV"
+          echo "ROCM_HOME=/opt/rocm" >> "$GITHUB_ENV"
+          echo "HIP_PATH=/opt/rocm" >> "$GITHUB_ENV"
+          echo "DL4J_ZLUDA_REQUIRE_ROCM=1" >> "$GITHUB_ENV"
+          echo "DL4J_ZLUDA_REQUIRE_MIOPEN=1" >> "$GITHUB_ENV"
+          echo "/opt/rocm/bin" >> "$GITHUB_PATH"
+          echo "[dl4j-attestation] rocmVersion=${ROCM_VERSION} rocmBuildOnly=true components=hip,miopen hardwareProbe=skipped"
 
       - name: Setup sccache
         id: setup-sccache

@@ -22,7 +22,7 @@ The Azure plan includes every AWS lane that Azure can actually host:
 - Ubuntu cross-builders for Android ARM64 and Android x86_64.
 - Maven, tokenizers, Java/SDX coordinates, platform SDKs, and runtime/AOT assets owned by those lanes.
 
-Every Azure builder is CPU-only. CUDA, TPU, Vulkan, Hexagon, and ZLUDA lanes compile their toolchains and classifiers but do not request GPU, TPU, or other accelerator VM families.
+Every Azure builder is CPU-only. CUDA, TPU, Vulkan, Hexagon, and ZLUDA lanes compile their toolchains and classifiers but do not request GPU, TPU, or other accelerator VM families. The Linux ZLUDA lane layers the pinned ROCm 7.2.4 HIP development runtime and MIOpen development package into its disposable CUDA 12.9 container. It verifies the SDK headers and shared libraries at build time but deliberately skips GPU discovery and never installs an AMD kernel driver; AMD hardware execution belongs in a separate opt-in validation run.
 
 The full plan resolves to four independently schedulable Azure VMs:
 

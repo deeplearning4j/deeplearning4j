@@ -40,6 +40,20 @@ ZLUDA_ASSETS = {
         "fda8891c6fdfaba438f2eb0f9d749ffa2c1fddbdf225be2301f0d7a25e37208a",
     ),
 }
+ROCM_BUILD_SDKS = {
+    "7.2.4": {
+        "installer_name": "amdgpu-install_7.2.4.70204-1_all.deb",
+        "installer_url": (
+            "https://repo.radeon.com/amdgpu-install/7.2.4/ubuntu/jammy/"
+            "amdgpu-install_7.2.4.70204-1_all.deb"
+        ),
+        "component_packages": {
+            "hip": ("rocm-hip-runtime-dev",),
+            "miopen": ("miopen-hip-dev",),
+        },
+    },
+}
+ROCM_BUILD_COMPONENTS = ("hip", "miopen")
 DOWNLOAD_RETRIES = 4
 TRANSIENT_HTTP_STATUSES = {408, 429, 500, 502, 503, 504}
 
@@ -548,6 +562,167 @@ def download_with_retry(url: str, destination: Path, description: str) -> None:
         raise
 
 
+def _prepend_environment_path(env: dict[str, str], name: str, value: str) -> None:
+    entries = [entry for entry in env.get(name, "").split(os.pathsep) if entry]
+    env[name] = os.pathsep.join([value] + [entry for entry in entries if entry != value])
+
+
+def rocm_build_spec(build: dict) -> dict | None:
+    """Return the pinned CPU-hosted ROCm SDK contract for a Linux ZLUDA build."""
+    if not build.get("zludaVersion") or not build.get("javacppPlatform", "").startswith("linux-"):
+        return None
+    version = build.get("rocmVersion")
+    if version not in ROCM_BUILD_SDKS:
+        raise ValueError(
+            f"Linux ZLUDA releases require a supported rocmVersion; got {version!r}"
+        )
+    if build.get("rocmBuildOnly") is not True:
+        raise ValueError("Linux ZLUDA releases must declare rocmBuildOnly=true")
+    components = tuple(build.get("rocmBuildComponents", ()))
+    if components != ROCM_BUILD_COMPONENTS:
+        raise ValueError(
+            "Linux ZLUDA releases require the exact ROCm build components "
+            f"{list(ROCM_BUILD_COMPONENTS)!r}; got {list(components)!r}"
+        )
+    sdk = ROCM_BUILD_SDKS[version]
+    packages = tuple(
+        package
+        for component in components
+        for package in sdk["component_packages"][component]
+    )
+    return {
+        "version": version,
+        "components": components,
+        "packages": packages,
+        "installer_name": sdk["installer_name"],
+        "installer_url": sdk["installer_url"],
+    }
+
+
+def _first_existing_file(root: Path, relative_paths: tuple[str, ...]) -> Path | None:
+    for relative_path in relative_paths:
+        candidate = root / relative_path
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def attest_rocm_build_toolchain(
+        build: dict,
+        env: dict[str, str],
+        root: Path | None = None,
+        emit: bool = True) -> dict[str, Path] | None:
+    """Fail closed on the SDK files needed to build, without probing GPU hardware."""
+    spec = rocm_build_spec(build)
+    if spec is None:
+        return None
+    rocm_root = root or Path(env.get("ROCM_PATH", "/opt/rocm"))
+    version_file = rocm_root / ".info/version"
+    hip_header = rocm_root / "include/hip/hip_runtime.h"
+    hipcc = rocm_root / "bin/hipcc"
+    hip_runtime = _first_existing_file(rocm_root, (
+        "lib/libamdhip64.so",
+        "lib64/libamdhip64.so",
+        "lib/x86_64-linux-gnu/libamdhip64.so",
+    ))
+    miopen_header = rocm_root / "include/miopen/miopen.h"
+    miopen_runtime = _first_existing_file(rocm_root, (
+        "lib/libMIOpen.so",
+        "lib64/libMIOpen.so",
+        "lib/x86_64-linux-gnu/libMIOpen.so",
+    ))
+    failures = []
+    installed_version = (
+        version_file.read_text(encoding="utf-8").strip()
+        if version_file.is_file() else ""
+    )
+    if not installed_version.startswith(str(spec["version"])):
+        failures.append(
+            f"{version_file} does not attest ROCm {spec['version']} "
+            f"(found {installed_version or 'missing'})"
+        )
+    for description, path in (
+            ("HIP header", hip_header),
+            ("HIP compiler driver", hipcc)):
+        if not path.is_file():
+            failures.append(f"{description} is missing at {path}")
+    if hip_runtime is None:
+        failures.append(f"HIP runtime library is missing below {rocm_root}")
+    if "miopen" in spec["components"]:
+        if not miopen_header.is_file():
+            failures.append(f"MIOpen header is missing at {miopen_header}")
+        if miopen_runtime is None:
+            failures.append(f"MIOpen runtime library is missing below {rocm_root}")
+    if failures:
+        raise RuntimeError("ROCm build-toolchain attestation failed: " + "; ".join(failures))
+
+    env["ROCM_PATH"] = str(rocm_root)
+    env["ROCM_HOME"] = str(rocm_root)
+    env["HIP_PATH"] = str(rocm_root)
+    env["DL4J_ZLUDA_REQUIRE_ROCM"] = "1"
+    env["DL4J_ZLUDA_REQUIRE_MIOPEN"] = "1"
+    _prepend_environment_path(env, "PATH", str(rocm_root / "bin"))
+    _prepend_environment_path(env, "LD_LIBRARY_PATH", str(hip_runtime.parent))
+    _prepend_environment_path(env, "CPLUS_INCLUDE_PATH", str(rocm_root / "include"))
+    attested = {
+        "version": version_file,
+        "hipHeader": hip_header,
+        "hipcc": hipcc,
+        "hipRuntime": hip_runtime,
+        "miopenHeader": miopen_header,
+        "miopenRuntime": miopen_runtime,
+    }
+    if emit:
+        print(
+            "[dl4j-attestation] "
+            f"rocmVersion={spec['version']} rocmBuildOnly=true "
+            f"components={','.join(spec['components'])} root={rocm_root} "
+            f"hipHeader={hip_header} hipRuntime={hip_runtime} "
+            f"miopenHeader={miopen_header} miopenRuntime={miopen_runtime} "
+            "hardwareProbe=skipped",
+            flush=True,
+        )
+    return attested
+
+
+def prepare_rocm_build_toolchain(build: dict, env: dict[str, str]) -> None:
+    """Install the pinned userspace ROCm SDK on a CPU builder; never install a driver."""
+    spec = rocm_build_spec(build)
+    if spec is None:
+        return
+    try:
+        attest_rocm_build_toolchain(build, env, emit=False)
+    except RuntimeError as initial_failure:
+        if platform.system().lower() != "linux" or platform.machine().lower() not in {
+                "amd64", "x86_64"}:
+            raise RuntimeError(
+                "ROCm build-only provisioning requires a Linux x86_64 builder"
+            ) from initial_failure
+        if not hasattr(os, "geteuid") or os.geteuid() != 0:
+            raise RuntimeError(
+                "ROCm build-only provisioning requires root inside the disposable build container"
+            ) from initial_failure
+        install_env = env.copy()
+        install_env["DEBIAN_FRONTEND"] = "noninteractive"
+        with tempfile.TemporaryDirectory(prefix="dl4j-rocm-sdk-") as temporary_directory:
+            installer = Path(temporary_directory) / str(spec["installer_name"])
+            download_with_retry(
+                str(spec["installer_url"]),
+                installer,
+                f"ROCm {spec['version']} Ubuntu Jammy repository installer",
+            )
+            run(["apt-get", "update"], Path("/"), install_env)
+            run([
+                "apt-get", "install", "-y", "--no-install-recommends", str(installer),
+            ], Path("/"), install_env)
+            run(["apt-get", "update"], Path("/"), install_env)
+            run([
+                "apt-get", "install", "-y", "--no-install-recommends",
+                *spec["packages"],
+            ], Path("/"), install_env)
+    attest_rocm_build_toolchain(build, env)
+
+
 def zluda_platform(build: dict) -> str:
     platform = build.get("javacppPlatform", "")
     if platform.startswith("windows-"):
@@ -914,6 +1089,7 @@ def main() -> None:
         run(update, args.source, env)
         if build["backend"] == "cuda":
             run(["bash", "./change-cuda-versions.sh", build["cudaVersion"]], args.source, env)
+        prepare_rocm_build_toolchain(build, env)
         prepare_zluda(args.source, build, env)
         attest_zluda_configuration(build, env)
         if build.get("kind") == "cross-platform":

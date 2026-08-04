@@ -1014,6 +1014,12 @@
         "backend": "cuda",
         "cudaVersion": "12.9",
         "zludaVersion": "v6",
+        "rocmVersion": "7.2.4",
+        "rocmBuildOnly": true,
+        "rocmBuildComponents": [
+          "hip",
+          "miopen"
+        ],
         "javacppPlatform": "linux-x86_64",
         "profiles": [
           "cuda",

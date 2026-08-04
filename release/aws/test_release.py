@@ -799,6 +799,16 @@ class ReleaseValidationTest(unittest.TestCase):
                     self.assertEqual(platform, build["javacppPlatform"])
                     self.assertEqual("12.9", build["cudaVersion"])
                     self.assertEqual("v6", build["zludaVersion"])
+                    if expectation["os"] == "linux":
+                        self.assertEqual("7.2.4", build["rocmVersion"])
+                        self.assertIs(True, build["rocmBuildOnly"])
+                        self.assertEqual(
+                            ["hip", "miopen"], build["rocmBuildComponents"]
+                        )
+                    else:
+                        self.assertNotIn("rocmVersion", build)
+                        self.assertNotIn("rocmBuildOnly", build)
+                        self.assertNotIn("rocmBuildComponents", build)
                     self.assertEqual(expectation["profiles"], build["profiles"])
                     self.assertEqual(expectation["modules"], set(build["modules"]))
                     self.assertEqual([{
@@ -863,6 +873,40 @@ class ReleaseValidationTest(unittest.TestCase):
         cmake_source = (root / "libnd4j/CMakeLists.txt").read_text(encoding="utf-8")
         self.assertIn("NAME zluda_windows_runtime_contract", cmake_source)
         self.assertIn("cmake/tests/ZludaWindowsRuntimeContractTest.cmake", cmake_source)
+
+    def test_zluda_cmake_propagates_and_links_the_rocm_sdk(self):
+        root = Path(__file__).parents[2]
+        configuration = (
+            root / "libnd4j/cmake/ZludaConfiguration.cmake"
+        ).read_text(encoding="utf-8")
+        for token in (
+            "ROCM_HIP_RUNTIME_LIBRARY",
+            'include_directories(SYSTEM "${ROCM_INCLUDE_DIR}")',
+            "target_include_directories(${target_name} SYSTEM PUBLIC ${ROCM_INCLUDE_DIR})",
+            "target_link_libraries(${target_name} PUBLIC ${ROCM_HIP_RUNTIME_LIBRARY})",
+            "DL4J_ZLUDA_REQUIRE_ROCM",
+            "DL4J_ZLUDA_REQUIRE_MIOPEN",
+        ):
+            self.assertIn(token, configuration)
+        setup_call = configuration.index("setup_zluda_amd()")
+        propagation = configuration.index(
+            "ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY",
+            setup_call,
+        )
+        self.assertLess(setup_call, propagation)
+
+    def test_linux_zluda_workflow_installs_only_build_time_rocm_components(self):
+        root = Path(__file__).parents[2]
+        workflow = (
+            root / ".github/workflows/build-deploy-linux-zluda.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("ROCM_VERSION=7.2.4", workflow)
+        self.assertIn("rocm-hip-runtime-dev miopen-hip-dev", workflow)
+        self.assertIn("DL4J_ZLUDA_REQUIRE_ROCM=1", workflow)
+        self.assertIn("DL4J_ZLUDA_REQUIRE_MIOPEN=1", workflow)
+        self.assertIn("hardwareProbe=skipped", workflow)
+        self.assertNotIn("amdgpu-dkms", workflow)
+        self.assertNotIn("rocminfo", workflow)
 
     def test_openblas_path_is_normalized_before_config_header_generation(self):
         root = Path(__file__).parents[2]
@@ -1219,6 +1263,83 @@ class ReleaseValidationTest(unittest.TestCase):
                 build_platform.attest_zluda_configuration(
                     build, {"ZLUDA_PATH": empty_zluda_path}
                 )
+
+    def test_rocm_sdk_attestation_is_build_only_and_fail_closed(self):
+        build = {
+            "zludaVersion": "v6",
+            "javacppPlatform": "linux-x86_64",
+            "rocmVersion": "7.2.4",
+            "rocmBuildOnly": True,
+            "rocmBuildComponents": ["hip", "miopen"],
+        }
+        spec = build_platform.rocm_build_spec(build)
+        self.assertEqual(
+            ("rocm-hip-runtime-dev", "miopen-hip-dev"), spec["packages"]
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            files = (
+                root / ".info/version",
+                root / "include/hip/hip_runtime.h",
+                root / "bin/hipcc",
+                root / "lib/libamdhip64.so",
+                root / "include/miopen/miopen.h",
+                root / "lib/libMIOpen.so",
+            )
+            for path in files:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(
+                    "7.2.4.70204-93~22.04" if path == files[0] else "sdk",
+                    encoding="utf-8",
+                )
+            environment = {"PATH": "/usr/bin"}
+            output = StringIO()
+            with redirect_stdout(output):
+                attested = build_platform.attest_rocm_build_toolchain(
+                    build, environment, root=root
+                )
+            self.assertEqual(files[1], attested["hipHeader"])
+            self.assertEqual(str(root), environment["ROCM_PATH"])
+            self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_ROCM"])
+            self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_MIOPEN"])
+            self.assertIn("hardwareProbe=skipped", output.getvalue())
+            files[4].unlink()
+            with self.assertRaisesRegex(RuntimeError, "MIOpen header"):
+                build_platform.attest_rocm_build_toolchain(
+                    build, environment, root=root
+                )
+
+        with self.assertRaisesRegex(ValueError, "exact ROCm build components"):
+            build_platform.rocm_build_spec(
+                dict(build, rocmBuildComponents=["hip"])
+            )
+        with self.assertRaisesRegex(ValueError, "rocmBuildOnly=true"):
+            build_platform.rocm_build_spec(dict(build, rocmBuildOnly=False))
+
+    def test_rocm_sdk_provisioning_installs_no_kernel_driver(self):
+        build = {
+            "zludaVersion": "v6",
+            "javacppPlatform": "linux-x86_64",
+            "rocmVersion": "7.2.4",
+            "rocmBuildOnly": True,
+            "rocmBuildComponents": ["hip", "miopen"],
+        }
+        with patch.object(
+                build_platform, "attest_rocm_build_toolchain",
+                side_effect=[RuntimeError("missing"), None]), patch.object(
+                build_platform, "download_with_retry") as download, patch.object(
+                build_platform, "run") as run_command, patch.object(
+                build_platform.platform, "system", return_value="Linux"), patch.object(
+                build_platform.platform, "machine", return_value="x86_64"), patch.object(
+                build_platform.os, "geteuid", return_value=0, create=True):
+            build_platform.prepare_rocm_build_toolchain(build, {})
+        download.assert_called_once()
+        commands = [entry.args[0] for entry in run_command.call_args_list]
+        flattened = " ".join(token for command in commands for token in command)
+        self.assertIn("rocm-hip-runtime-dev", flattened)
+        self.assertIn("miopen-hip-dev", flattened)
+        self.assertNotIn("amdgpu-dkms", flattened)
+        self.assertNotIn("rocminfo", flattened)
 
     def test_zluda_download_retries_transient_open_failure(self):
         request = build_platform.urllib.request.Request("https://example.invalid/zluda")

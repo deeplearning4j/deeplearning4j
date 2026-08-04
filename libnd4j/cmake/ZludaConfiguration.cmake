@@ -146,6 +146,11 @@ function(setup_zluda)
         set(ZLUDA_TARGET_BACKEND "AMD")
         message(STATUS "ZLUDA target: AMD (ROCm/HIP)")
         setup_zluda_amd()
+        foreach(_zluda_amd_variable
+                ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY
+                HAVE_MIOPEN MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR)
+            set(${_zluda_amd_variable} "${${_zluda_amd_variable}}" PARENT_SCOPE)
+        endforeach()
     elseif(SD_ZLUDA_TARGET STREQUAL "INTEL" OR SD_ZLUDA_TARGET STREQUAL "intel")
         set(ZLUDA_TARGET_BACKEND "INTEL" PARENT_SCOPE)
         set(ZLUDA_TARGET_BACKEND "INTEL")
@@ -176,6 +181,11 @@ endfunction()
 function(setup_zluda_amd)
     message(STATUS "Configuring ZLUDA for AMD GPUs...")
 
+    set(HAVE_MIOPEN FALSE)
+    set(MIOPEN_LIBRARY "")
+    set(MIOPEN_INCLUDE_DIR "")
+    set(ROCM_HIP_RUNTIME_LIBRARY "")
+
     # Find ROCm installation
     set(ROCM_SEARCH_PATHS
         $ENV{ROCM_PATH}
@@ -197,13 +207,53 @@ function(setup_zluda_amd)
 
     if(ROCM_PATH)
         message(STATUS "Found ROCm: ${ROCM_PATH}")
-        set(ROCM_PATH "${ROCM_PATH}" PARENT_SCOPE)
-        set(ROCM_INCLUDE_DIR "${ROCM_PATH}/include" PARENT_SCOPE)
-        set(ROCM_LIB_DIR "${ROCM_PATH}/lib" PARENT_SCOPE)
+        set(ROCM_INCLUDE_DIR "${ROCM_PATH}/include")
+        set(ROCM_LIB_DIR "${ROCM_PATH}/lib")
+
+        if(NOT WIN32)
+            find_library(ROCM_HIP_RUNTIME_LIBRARY
+                NAMES amdhip64
+                HINTS ${ROCM_PATH}
+                PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu
+                NO_DEFAULT_PATH
+            )
+        endif()
+
+        # HipGraphReplayHandle is compiled into the CUDA object target before the
+        # final nd4jcuda target is linked, so the SDK include root must be visible
+        # at directory scope as well as on the final target.
+        include_directories(SYSTEM "${ROCM_INCLUDE_DIR}")
 
         # Set up MIOpen for DNN operations (cuDNN replacement)
         setup_miopen()
+
+        if(DEFINED ENV{DL4J_ZLUDA_REQUIRE_ROCM}
+                AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_ROCM}" STREQUAL ""
+                AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_ROCM}" STREQUAL "0"
+                AND NOT WIN32 AND NOT ROCM_HIP_RUNTIME_LIBRARY)
+            message(FATAL_ERROR
+                "Build-only ZLUDA contract requires libamdhip64 below ${ROCM_PATH}")
+        endif()
+        if(DEFINED ENV{DL4J_ZLUDA_REQUIRE_MIOPEN}
+                AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_MIOPEN}" STREQUAL ""
+                AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_MIOPEN}" STREQUAL "0"
+                AND NOT HAVE_MIOPEN)
+            message(FATAL_ERROR
+                "Build-only ZLUDA contract requires MIOpen headers and library below ${ROCM_PATH}")
+        endif()
+
+        foreach(_zluda_amd_variable
+                ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY
+                HAVE_MIOPEN MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR)
+            set(${_zluda_amd_variable} "${${_zluda_amd_variable}}" PARENT_SCOPE)
+        endforeach()
     else()
+        if(DEFINED ENV{DL4J_ZLUDA_REQUIRE_ROCM}
+                AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_ROCM}" STREQUAL ""
+                AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_ROCM}" STREQUAL "0")
+            message(FATAL_ERROR
+                "Build-only ZLUDA contract requires ROCm headers below ROCM_PATH")
+        endif()
         print_status_colored("WARNING" "ROCm not found. AMD ZLUDA DNN operations may fall back to CPU.")
         print_status_colored("WARNING" "Install ROCm and set ROCM_PATH for full AMD GPU support.")
     endif()
@@ -517,6 +567,16 @@ function(configure_zluda_linking target_name)
     endif()
 
     if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
+        if(ROCM_INCLUDE_DIR)
+            target_include_directories(${target_name} SYSTEM PUBLIC ${ROCM_INCLUDE_DIR})
+            message(STATUS "   Added ROCm include path: ${ROCM_INCLUDE_DIR}")
+        endif()
+
+        if(ROCM_HIP_RUNTIME_LIBRARY)
+            target_link_libraries(${target_name} PUBLIC ${ROCM_HIP_RUNTIME_LIBRARY})
+            message(STATUS "   Linked HIP runtime: ${ROCM_HIP_RUNTIME_LIBRARY}")
+        endif()
+
         # Link MIOpen instead of cuDNN for AMD
         if(HAVE_MIOPEN)
             target_link_libraries(${target_name} PUBLIC ${MIOPEN_LIBRARY})
