@@ -40,7 +40,11 @@
       "Standard_F8s_v2",
       "Standard_F8as_v7",
       "Standard_F4s_v2",
-      "Standard_F4as_v7"
+      "Standard_F4as_v7",
+      "Standard_E8s_v6",
+      "Standard_E8as_v7",
+      "Standard_D8s_v6",
+      "Standard_D8as_v7"
     ],
     "armMachineCandidates": [
       "Standard_D96ps_v6",

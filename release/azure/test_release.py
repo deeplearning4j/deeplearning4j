@@ -288,13 +288,17 @@ class ReleasePlanTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     release.load_plan(path)
 
-    def test_machine_candidates_are_cpu_only_and_have_arm64_capacity(self):
+    def test_machine_candidates_are_cpu_only_and_have_quota_fallbacks(self):
         x86 = self.azure["defaults"]["x86MachineCandidates"]
         arm = self.azure["defaults"]["armMachineCandidates"]
-        self.assertTrue(all(name.startswith("Standard_F") for name in x86))
+        self.assertTrue(
+            all(name.startswith(("Standard_F", "Standard_E", "Standard_D")) for name in x86)
+        )
         self.assertIn("Standard_F64as_v7", x86)
         self.assertLess(x86.index("Standard_F64s_v2"), x86.index("Standard_F64as_v7"))
         self.assertLess(x86.index("Standard_F64as_v7"), x86.index("Standard_F48s_v2"))
+        self.assertLess(x86.index("Standard_F4as_v7"), x86.index("Standard_E8s_v6"))
+        self.assertLess(x86.index("Standard_E8as_v7"), x86.index("Standard_D8s_v6"))
         self.assertTrue(all("ps_v" in name for name in arm))
         self.assertIn("Standard_D96ps_v6", arm)
         self.assertFalse(any(token in name for name in x86 + arm for token in ("NC", "ND", "NV")))
