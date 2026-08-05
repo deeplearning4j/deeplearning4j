@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+from datetime import datetime
 import hashlib
 import json
 import os
@@ -17,6 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 from typing import Iterable
@@ -24,6 +26,9 @@ from typing import Iterable
 PRIMARY_SUFFIXES = (".pom", ".jar", ".aar", ".war", ".module")
 CHECKSUMS = {"md5": hashlib.md5, "sha1": hashlib.sha1, "sha256": hashlib.sha256, "sha512": hashlib.sha512}  # nosec: Central requires MD5/SHA1 metadata
 MAX_BUNDLE_BYTES = 1_000_000_000
+MAVEN_METADATA_NAMESPACE = "http://maven.apache.org/METADATA/1.1.0"
+MAVEN_METADATA_SCHEMA = "https://maven.apache.org/xsd/repository-metadata-1.1.0.xsd"
+XML_SCHEMA_INSTANCE_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
 
 
 def digest(path: Path, algorithm: str = "sha256") -> str:
@@ -81,7 +86,9 @@ def repository_files(root: Path) -> Iterable[Path]:
         relative = path.relative_to(root)
         if relative.name in {"shard-manifest.json", "release-build-manifest.json"}:
             continue
-        if relative.parts[:3] not in (("org", "eclipse", "deeplearning4j"), ("org", "nd4j")):
+        is_eclipse_dl4j = relative.parts[:3] == ("org", "eclipse", "deeplearning4j")
+        is_legacy_nd4j = relative.parts[:2] == ("org", "nd4j")
+        if not is_eclipse_dl4j and not is_legacy_nd4j:
             continue
         yield path
 
@@ -151,16 +158,33 @@ def verify(repository: Path, manifest_path: Path | None, version: str | None, co
             raise ValueError(f"release version mismatch: {manifest.get('releaseVersion')} != {version}")
         if commit and manifest.get("commit") != commit:
             raise ValueError(f"commit mismatch: {manifest.get('commit')} != {commit}")
-        expected = {item["path"]: item["sha256"] for item in manifest.get("files", [])}
-        actual = {path.relative_to(repository).as_posix(): digest(path) for path in repository_files(repository)}
+        expected = {
+            item["path"]: (item["sha256"], item["size"])
+            for item in manifest.get("files", [])
+        }
+        actual = {
+            path.relative_to(repository).as_posix(): (
+                digest(path),
+                path.stat().st_size,
+            )
+            for path in repository_files(repository)
+        }
         if expected != actual:
             missing = sorted(set(expected) - set(actual))
             extra = sorted(set(actual) - set(expected))
-            changed = sorted(path for path in expected.keys() & actual.keys() if expected[path] != actual[path])
-            raise ValueError(f"manifest mismatch; missing={missing}, extra={extra}, changed={changed}")
+            changed = sorted(
+                path
+                for path in expected.keys() & actual.keys()
+                if expected[path] != actual[path]
+            )
+            raise ValueError(
+                f"manifest mismatch; missing={missing}, extra={extra}, changed={changed}"
+            )
     version_dirs: dict[Path, list[Path]] = {}
     for path in repository_files(repository):
         if path.name.endswith((".asc", ".md5", ".sha1", ".sha256", ".sha512")):
+            continue
+        if path.name == "maven-metadata.xml":
             continue
         if version and version not in path.parts:
             raise ValueError(f"unexpected version path in repository: {path.relative_to(repository)}")
@@ -178,21 +202,178 @@ def verify(repository: Path, manifest_path: Path | None, version: str | None, co
 
 
 def primary_files(repository: Path) -> list[Path]:
-    return [path for path in repository_files(repository) if path.suffix in PRIMARY_SUFFIXES and not path.name.endswith(".asc")]
+    return [
+        path
+        for path in repository_files(repository)
+        if path.suffix in PRIMARY_SUFFIXES and not path.name.endswith(".asc")
+    ]
+
+
+def write_checksums(paths: Iterable[Path]) -> None:
+    for path in paths:
+        for algorithm in CHECKSUMS:
+            Path(str(path) + f".{algorithm}").write_text(
+                digest(path, algorithm) + "\n", encoding="ascii"
+            )
+
+
+def metadata_element() -> ET.Element:
+    ET.register_namespace("", MAVEN_METADATA_NAMESPACE)
+    ET.register_namespace("xsi", XML_SCHEMA_INSTANCE_NAMESPACE)
+    return ET.Element(
+        f"{{{MAVEN_METADATA_NAMESPACE}}}metadata",
+        {
+            "modelVersion": "1.1.0",
+            f"{{{XML_SCHEMA_INSTANCE_NAMESPACE}}}schemaLocation": (
+                f"{MAVEN_METADATA_NAMESPACE} {MAVEN_METADATA_SCHEMA}"
+            ),
+        },
+    )
+
+
+def metadata_child(parent: ET.Element, name: str, value: str | None = None) -> ET.Element:
+    child = ET.SubElement(parent, f"{{{MAVEN_METADATA_NAMESPACE}}}{name}")
+    child.text = value
+    return child
+
+
+def write_metadata_xml(path: Path, root: ET.Element) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    ET.indent(root, space="  ")
+    ET.ElementTree(root).write(
+        path, encoding="utf-8", xml_declaration=True, short_empty_elements=True
+    )
+
+
+def snapshot_file_identity(
+    path: Path, artifact_id: str, release_version: str
+) -> tuple[str, str | None]:
+    extension = path.suffix.removeprefix(".")
+    stem = path.name[: -(len(extension) + 1)]
+    base_name = f"{artifact_id}-{release_version}"
+    if stem == base_name:
+        return extension, None
+    classifier_prefix = base_name + "-"
+    if not stem.startswith(classifier_prefix):
+        raise ValueError(
+            f"Maven artifact name does not match its coordinates: {path.name}"
+        )
+    classifier = stem[len(classifier_prefix) :]
+    if not classifier:
+        raise ValueError(f"Maven artifact has an empty classifier: {path.name}")
+    return extension, classifier
+
+
+def write_maven_metadata(
+    repository: Path, release_version: str, updated: str | None = None
+) -> list[Path]:
+    """Write Maven A-level and snapshot V-level metadata with stable filenames."""
+    updated = updated or time.strftime("%Y%m%d%H%M%S", time.gmtime())
+    try:
+        if len(updated) != 14 or not updated.isdigit():
+            raise ValueError
+        datetime.strptime(updated, "%Y%m%d%H%M%S")
+    except ValueError as exc:
+        raise ValueError(
+            "Maven metadata timestamp must use UTC yyyyMMddHHmmss"
+        ) from exc
+
+    components: dict[tuple[str, str, Path], list[Path]] = {}
+    for path in primary_files(repository):
+        version_dir = path.parent
+        if version_dir.name != release_version:
+            raise ValueError(
+                f"unexpected Maven version directory: {version_dir.relative_to(repository)}"
+            )
+        artifact_dir = version_dir.parent
+        relative_artifact = artifact_dir.relative_to(repository)
+        if len(relative_artifact.parts) < 2:
+            raise ValueError(
+                f"invalid Maven coordinate path: {relative_artifact.as_posix()}"
+            )
+        group_id = ".".join(relative_artifact.parts[:-1])
+        artifact_id = relative_artifact.parts[-1]
+        components.setdefault((group_id, artifact_id, version_dir), []).append(path)
+    if not components:
+        raise ValueError("repository contains no components for Maven metadata")
+
+    metadata_paths: list[Path] = []
+    for (group_id, artifact_id, version_dir), artifacts in sorted(
+        components.items(), key=lambda item: (item[0][0], item[0][1])
+    ):
+        artifact_metadata = metadata_element()
+        metadata_child(artifact_metadata, "groupId", group_id)
+        metadata_child(artifact_metadata, "artifactId", artifact_id)
+        artifact_versioning = metadata_child(artifact_metadata, "versioning")
+        metadata_child(artifact_versioning, "latest", release_version)
+        if not release_version.endswith("-SNAPSHOT"):
+            metadata_child(artifact_versioning, "release", release_version)
+        versions = metadata_child(artifact_versioning, "versions")
+        metadata_child(versions, "version", release_version)
+        metadata_child(artifact_versioning, "lastUpdated", updated)
+        artifact_metadata_path = version_dir.parent / "maven-metadata.xml"
+        write_metadata_xml(artifact_metadata_path, artifact_metadata)
+        metadata_paths.append(artifact_metadata_path)
+
+        if release_version.endswith("-SNAPSHOT"):
+            version_metadata = metadata_element()
+            metadata_child(version_metadata, "groupId", group_id)
+            metadata_child(version_metadata, "artifactId", artifact_id)
+            metadata_child(version_metadata, "version", release_version)
+            versioning = metadata_child(version_metadata, "versioning")
+            snapshot = metadata_child(versioning, "snapshot")
+            metadata_child(snapshot, "localCopy", "true")
+            metadata_child(versioning, "lastUpdated", updated)
+            snapshot_versions = metadata_child(versioning, "snapshotVersions")
+            identities: set[tuple[str, str | None]] = set()
+            for path in sorted(artifacts):
+                extension, classifier = snapshot_file_identity(
+                    path, artifact_id, release_version
+                )
+                identity = (extension, classifier)
+                if identity in identities:
+                    raise ValueError(
+                        "duplicate Maven snapshot extension/classifier for "
+                        f"{group_id}:{artifact_id}:{release_version}: {identity}"
+                    )
+                identities.add(identity)
+                snapshot_version = metadata_child(
+                    snapshot_versions, "snapshotVersion"
+                )
+                if classifier is not None:
+                    metadata_child(snapshot_version, "classifier", classifier)
+                metadata_child(snapshot_version, "extension", extension)
+                metadata_child(snapshot_version, "value", release_version)
+                metadata_child(snapshot_version, "updated", updated)
+            version_metadata_path = version_dir / "maven-metadata.xml"
+            write_metadata_xml(version_metadata_path, version_metadata)
+            metadata_paths.append(version_metadata_path)
+    return metadata_paths
 
 
 def materialize_test_repository(
-    inputs: list[Path], output: Path, manifest_path: Path, release_version: str, commit: str,
+    inputs: list[Path],
+    output: Path,
+    manifest_path: Path,
+    release_version: str,
+    commit: str,
+    *,
+    metadata_updated: str | None = None,
 ) -> dict:
-    """Merge shards into a checksum-complete Maven layout suitable for local testing."""
+    """Merge shards into a checksum-complete, remote-consumable Maven 2 layout."""
     scratch_manifest = manifest_path.with_name(manifest_path.name + ".merge")
     merge(inputs, output, scratch_manifest, release_version, commit)
     verify(output, scratch_manifest, release_version, commit)
-    for path in primary_files(output):
-        for algorithm in ("md5", "sha1", "sha256", "sha512"):
-            Path(str(path) + f".{algorithm}").write_text(digest(path, algorithm) + "\n", encoding="ascii")
+    metadata_paths = write_maven_metadata(
+        output, release_version, updated=metadata_updated
+    )
+    write_checksums([*primary_files(output), *metadata_paths])
     files = [
-        {"path": path.relative_to(output).as_posix(), "sha256": digest(path), "size": path.stat().st_size}
+        {
+            "path": path.relative_to(output).as_posix(),
+            "sha256": digest(path),
+            "size": path.stat().st_size,
+        }
         for path in repository_files(output)
     ]
     manifest = {
@@ -203,8 +384,13 @@ def materialize_test_repository(
         "files": files,
     }
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    Path(str(manifest_path) + ".sha256").write_text(f"{digest(manifest_path)}  {manifest_path.name}\n", encoding="ascii")
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    Path(str(manifest_path) + ".sha256").write_text(
+        f"{digest(manifest_path)}  {manifest_path.name}\n", encoding="ascii"
+    )
+    verify(output, manifest_path, release_version, commit)
     scratch_manifest.unlink(missing_ok=True)
     Path(str(scratch_manifest) + ".sha256").unlink(missing_ok=True)
     return manifest

@@ -183,7 +183,7 @@ A successful `start` or `resume` automatically performs a Blob-only collection a
 deeplearning4j/releases/RUN_ID/maven-repository/
 ```
 
-Repository files are uploaded as individual blobs, followed by `.dl4j/repository-manifest.json` and its SHA-256 file; `.dl4j/complete.json` is written last. The run root also receives `release-build-manifest.json` and its checksum, so consumers do not need to inspect the raw `.tar.gz` files. Pass `--no-auto-collect` only when deliberately retaining raw outputs without publishing the expanded repository.
+Repository files are uploaded as individual blobs with stable Maven filenames: classifier JARs, their POMs, standard artifact-level `maven-metadata.xml`, snapshot version-level `maven-metadata.xml`, and MD5/SHA-1/SHA-256/SHA-512 sidecars. Snapshot metadata uses Maven's `localCopy` form so the resolved filenames retain the clean `VERSION-SNAPSHOT` spelling instead of publication-time names. `.dl4j/repository-manifest.json` and its SHA-256 file follow the Maven tree, and `.dl4j/complete.json` is written last. The run root also receives `release-build-manifest.json` and its checksum, so consumers do not need to inspect the raw `.tar.gz` files. Pass `--no-auto-collect` only when deliberately retaining raw outputs without publishing the expanded repository.
 
 Run `collect` explicitly when assembling a hybrid release or updating its draft GitHub Release:
 
