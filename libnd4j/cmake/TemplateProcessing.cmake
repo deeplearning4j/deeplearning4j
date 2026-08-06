@@ -2827,9 +2827,9 @@ function(execute_template_generation)
 
     endif()
 
-    # CPU needs the complete SpecialMethods/DoubleMethods matrix. ZLUDA only
-    # needs the host sort entry points used by NativeOpExecutioner; the
-    # specials_single template deliberately emits just those under SD_CUDA.
+    # CPU needs the complete SpecialMethods/DoubleMethods matrix. CUDA and
+    # ZLUDA both need the host sort entry points used by NativeOpExecutioner;
+    # specials_single.cpp.in deliberately emits only those under SD_CUDA.
     # Keeping specials_double out of CUDA avoids pushing the Windows DLL beyond
     # the PE/COFF 2 GiB image limit.
     set(SPECIALS_INST_DIR "${CMAKE_BINARY_DIR}/host_instantiations")
@@ -2843,12 +2843,10 @@ function(execute_template_generation)
         endif()
     endif()
 
-    if(NOT SD_CUDA OR HAVE_ZLUDA)
-        set(SPECIALS_SINGLE_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in")
-        if(EXISTS "${SPECIALS_SINGLE_TEMPLATE}")
-            message(STATUS "   Processing host specials_single template")
-            create_direct_instantiation_file("${SPECIALS_SINGLE_TEMPLATE}" "${COMBINATIONS_1}" "${SPECIALS_INST_DIR}" ALL_GENERATED_SOURCES)
-        endif()
+    set(SPECIALS_SINGLE_TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in")
+    if(EXISTS "${SPECIALS_SINGLE_TEMPLATE}")
+        message(STATUS "   Processing host specials_single template")
+        create_direct_instantiation_file("${SPECIALS_SINGLE_TEMPLATE}" "${COMBINATIONS_1}" "${SPECIALS_INST_DIR}" ALL_GENERATED_SOURCES)
     endif()
     
     # Final reporting
