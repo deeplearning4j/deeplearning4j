@@ -71,6 +71,7 @@ RUN_KILL_SWITCH_OBJECT=$(config runKillSwitchObject)
 AZURE_CLIENT_ID=$(config managedIdentityClientId)
 CONTROLLER_EPOCH=$(config controllerEpoch)
 export AZURE_CLIENT_ID
+export DL4J_CLOUD_IO="${CLOUD_IO}"
 mapfile -t SHARD_IDS < <(
   python3 -c 'import json,sys; print(*[s["id"] for s in json.load(open(sys.argv[1]))["shards"]], sep="\n")' "${CONFIG_FILE}"
 )

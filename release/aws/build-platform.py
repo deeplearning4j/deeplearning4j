@@ -169,6 +169,183 @@ def ensure_sccache(cache_dir: Path) -> str:
     return str(executable)
 
 
+def restore_remote_dependency_cache(
+    source: Path, config: dict, env: dict[str, str]
+) -> None:
+    """Restore the managed host/target dependency snapshots before MLIR builds."""
+    remote = config.get("compilerCache")
+    if not isinstance(remote, dict):
+        return
+    snapshots = remote.get("dependencyCache")
+    if not isinstance(snapshots, dict):
+        print("[dl4j-dep-cache] no managed dependency snapshots were advertised", flush=True)
+        return
+    build = (config.get("shard") or {}).get("build") or {}
+    javacpp_platform = str(build.get("javacppPlatform", ""))
+    native_backend = str(build.get("backend", ""))
+    targets = snapshots.get("targets") or []
+    target = next(
+        (
+            item
+            for item in targets
+            if isinstance(item, dict)
+            and str((item.get("compatibility") or {}).get("javacppPlatform", ""))
+            == javacpp_platform
+            and str(
+                (item.get("compatibility") or {}).get(
+                    "nativeBackend",
+                    (item.get("compatibility") or {}).get("backend", ""),
+                )
+            )
+            == native_backend
+        ),
+        None,
+    )
+    if target is None and len(targets) == 1 and isinstance(targets[0], dict):
+        target = targets[0]
+    host = snapshots.get("host")
+    if not isinstance(host, dict) or not isinstance(target, dict):
+        raise RuntimeError(
+            f"managed dependency snapshots are incomplete for {javacpp_platform}/{native_backend}"
+        )
+
+    cache_root = Path.home() / ".libnd4j"
+    cache_dir = cache_root / "dep-cache"
+    marker = cache_root / ".dl4j-remote-dependency-cache.json"
+    identities = {
+        "host": str(host.get("identity", "")),
+        "target": str(target.get("identity", "")),
+    }
+    if marker.is_file() and cache_dir.is_dir():
+        try:
+            cached = json.loads(marker.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            cached = {}
+        managed_root = cached.get("managedLlvmRoot")
+        if (
+            cached.get("identities") == identities
+            and isinstance(managed_root, str)
+            and Path(managed_root).is_dir()
+        ):
+            env["SD_TRITON_MANAGED_LLVM_ROOT"] = managed_root
+            print(
+                f"[dl4j-dep-cache] reuse host={identities['host']} "
+                f"target={identities['target']} llvm={managed_root}",
+                flush=True,
+            )
+            return
+
+    cloud_io = Path(
+        env.get("DL4J_CLOUD_IO", "/opt/dl4j-release/bootstrap/cloud-io.py")
+    )
+    if not cloud_io.is_file():
+        raise RuntimeError(f"managed dependency cache transport is missing: {cloud_io}")
+    account = _required_cache_value(remote, "account")
+    container = _required_cache_value(remote, "container")
+    bucket = f"{account}/{container}"
+    cache_root.mkdir(parents=True, exist_ok=True)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    restored = []
+    with tempfile.TemporaryDirectory(
+        prefix="dl4j-dependency-cache-restore-", dir=cache_root
+    ) as temporary:
+        temporary_root = Path(temporary)
+        for scope, manifest in (("host", host), ("target", target)):
+            index_object = manifest.get("indexObject")
+            archive_object = manifest.get("archiveObject")
+            if not isinstance(index_object, str) or not isinstance(archive_object, str):
+                raise RuntimeError(f"{scope} dependency snapshot has invalid object metadata")
+            index_path = temporary_root / f"{scope}-index.json"
+            archive_path = temporary_root / f"{scope}-cache.tar.gz"
+            run(
+                [
+                    "python3",
+                    str(cloud_io),
+                    "download",
+                    "--bucket",
+                    bucket,
+                    "--object",
+                    index_object,
+                    "--file",
+                    str(index_path),
+                    "--client-id",
+                    env.get("AZURE_CLIENT_ID", ""),
+                ],
+                source,
+                env,
+            )
+            index = json.loads(index_path.read_text(encoding="utf-8"))
+            indexed_archive = index.get("archiveObject")
+            if indexed_archive and indexed_archive != archive_object:
+                raise RuntimeError(
+                    f"{scope} dependency snapshot index/archive mismatch: "
+                    f"{indexed_archive!r} != {archive_object!r}"
+                )
+            run(
+                [
+                    "python3",
+                    str(cloud_io),
+                    "download",
+                    "--bucket",
+                    bucket,
+                    "--object",
+                    archive_object,
+                    "--file",
+                    str(archive_path),
+                    "--client-id",
+                    env.get("AZURE_CLIENT_ID", ""),
+                ],
+                source,
+                env,
+            )
+            extracted = temporary_root / f"{scope}-extracted"
+            extracted.mkdir()
+            with tarfile.open(archive_path, mode="r:gz") as bundle:
+                _validate_tar_members(bundle, extracted)
+                bundle.extractall(extracted)
+            candidate = extracted / "dep-cache"
+            if not candidate.is_dir():
+                candidates = [
+                    path
+                    for path in extracted.rglob("dep-cache")
+                    if path.is_dir()
+                ]
+                candidate = candidates[0] if len(candidates) == 1 else extracted
+            shutil.copytree(candidate, cache_dir, dirs_exist_ok=True)
+            restored.append(
+                f"{scope}={manifest.get('identity', archive_object)}"
+            )
+    llvm_roots = []
+    for llvm_config in cache_dir.rglob("LLVMConfig.cmake"):
+        root = llvm_config.parents[3]
+        if (root / "lib/cmake/mlir/MLIRConfig.cmake").is_file():
+            llvm_roots.append(root)
+    if len(llvm_roots) != 1:
+        raise RuntimeError(
+            "managed dependency snapshots did not contain exactly one complete "
+            f"LLVM/MLIR package (found {len(llvm_roots)})"
+        )
+    managed_llvm_root = str(llvm_roots[0].resolve())
+    env["SD_TRITON_MANAGED_LLVM_ROOT"] = managed_llvm_root
+    marker.write_text(
+        json.dumps(
+            {
+                "identities": identities,
+                "javacppPlatform": javacpp_platform,
+                "nativeBackend": native_backend,
+                "managedLlvmRoot": managed_llvm_root,
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    print(
+        "[dl4j-dep-cache] restored " + " ".join(restored) +
+        f" llvm={managed_llvm_root}",
+        flush=True,
+    )
+
+
 def _required_cache_value(settings: dict, name: str) -> str:
     value = settings.get(name)
     if not isinstance(value, str) or not value.strip():
@@ -987,7 +1164,9 @@ def shared_variant_helper(variant: dict) -> str:
     if name == "compile-nnapi":
         return "compile-nnapi"
     if name == "compile":
-        return "compile"
+        # Windows uses the compile classifier for a native MSVC build.  Keep the
+        # generic compile helper (which enables managed LLVM/MLIR) for other OSes.
+        return "" if variant.get("windowsNativeCompile") else "compile"
     if variant.get("mlir"):
         return "compile"
     return variant.get("helper", "")
@@ -1047,7 +1226,8 @@ def attest_zluda_configuration(build: dict, env: dict[str, str]) -> None:
 
 
 def build_native_platform(source: Path, shard: dict, repository: Path, env: dict[str, str],
-                          compiler_cache: str | None, release_version: str | None = None) -> None:
+                          compiler_cache: str | None, release_version: str | None = None,
+                          config: dict | None = None) -> None:
     """Invoke the exact shared scripts used by each GitHub platform workflow."""
     build, shard_id = shard["build"], shard["id"]
     rules = shard.get("artifactRules", {})
@@ -1078,6 +1258,8 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
         if family == "linux-x86_64":
             variant_env["DL4J_MATRIX_MVN_EXT"] = variant_env.pop("DL4J_MVN_FLAGS")
             variant_env["DL4J_LIBND4J_FILE_DOWNLOAD"] = ""
+        if variant.get("mlir") and config is not None:
+            restore_remote_dependency_cache(source, config, variant_env)
         run(["bash", str(source / "build-scripts/release" / script_name), "--run"], source, variant_env)
         attest_variant_classifier_artifacts(
             repository, build, rules, variant, release_version, "local-repository"
@@ -1129,6 +1311,7 @@ def main() -> None:
                 env,
                 compiler_cache,
                 config["releaseVersion"],
+                config,
             )
         print(f"[dl4j-phase] shard={shard['id']} phase=package", flush=True)
         args.maven_output.mkdir(parents=True, exist_ok=True)

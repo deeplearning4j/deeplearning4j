@@ -131,16 +131,23 @@ def load_plan(path: Path) -> dict[str, Any]:
         ):
             raise ValueError(f"shard {shard_id} has no valid build variants")
         if shard["os"] == "windows":
-            unsupported = [
-                variant["name"]
-                for variant in variants
-                if (
-                    variant.get("mlir")
-                    or variant.get("triton")
-                    or variant["name"] == "compile"
-                    or variant["name"].endswith("-compile")
+            unsupported = []
+            for variant in variants:
+                name = variant["name"]
+                native_compile = variant.get("windowsNativeCompile") is True
+                managed_compile_name = name == "compile" or name.endswith("-compile")
+                managed_llvm = variant.get("mlir") or variant.get("triton")
+                invalid_native_compile = native_compile and (
+                    name != "compile"
+                    or variant.get("extension") != "compile"
+                    or variant.get("suffix") != "-compile"
+                    or variant.get("helper")
+                    or managed_llvm
                 )
-            ]
+                if invalid_native_compile or (
+                    not native_compile and (managed_llvm or managed_compile_name)
+                ):
+                    unsupported.append(name)
             if unsupported:
                 raise ValueError(
                     f"Windows shard {shard_id} requests managed LLVM/MLIR variants "
@@ -2140,6 +2147,9 @@ def render_worker(worker_path: Path, config: dict[str, Any]) -> bytes:
         "__DL4J_CLOUD_IO_B64__": base64.b64encode(
             CLOUD_IO.read_bytes()
         ).decode("ascii"),
+        "__DL4J_NATIVE_PLATFORM_SCRIPT_B64__": base64.b64encode(
+            (ROOT / "build-scripts/release/native-platform.sh").read_bytes()
+        ).decode("ascii"),
     }
     for marker, value in replacements.items():
         content = content.replace(marker, value)
@@ -2170,13 +2180,61 @@ def worker_sas_url(
     return service.get_blob_client(container_name, blob_name).url + "?" + token
 
 
+def dependency_cache_metadata(
+    context: dict[str, Any],
+    account_name: str,
+    account_key: str,
+    plan: dict[str, Any],
+) -> dict[str, Any]:
+    """Select the newest managed dependency snapshots for worker-side restore."""
+    modules = context["modules"]
+    container_name = artifact_container_name(plan)
+    service = modules["BlobServiceClient"](
+        account_url=f"https://{account_name}.blob.core.windows.net",
+        credential=account_key,
+    )
+    container = service.get_container_client(container_name)
+    prefix = f"{plan.get('artifactPrefix', 'deeplearning4j/releases').strip('/')}/dependency-cache/v2"
+    selected: dict[tuple[str, str], tuple[int, dict[str, Any]]] = {}
+    host: tuple[int, dict[str, Any]] | None = None
+    for scope, scope_prefix in (
+        ("host", f"{prefix}/host-index/"),
+        ("target", f"{prefix}/index/"),
+    ):
+        for item in container.list_blobs(name_starts_with=scope_prefix):
+            if not item.name.endswith(".json"):
+                continue
+            manifest = get_json(container, item.name)
+            if not isinstance(manifest, dict) or not manifest.get("archiveObject"):
+                continue
+            published = int(manifest.get("publishedAt", 0) or 0)
+            if scope == "host":
+                if host is None or published > host[0]:
+                    host = (published, manifest | {"indexObject": item.name})
+                continue
+            compatibility = manifest.get("compatibility") or {}
+            key = (
+                str(compatibility.get("javacppPlatform", "")),
+                str(compatibility.get("nativeBackend", compatibility.get("backend", ""))),
+            )
+            current = selected.get(key)
+            if current is None or published > current[0]:
+                selected[key] = (published, manifest | {"indexObject": item.name})
+    snapshots: dict[str, Any] = {}
+    if host is not None:
+        snapshots["host"] = host[1]
+    if selected:
+        snapshots["targets"] = [manifest for _, manifest in sorted(selected.values(), key=lambda value: value[1].get("indexObject", ""))]
+    return snapshots
+
+
 def compiler_cache_config(
     context: dict[str, Any],
     account_name: str,
     account_key: str,
     plan: dict[str, Any],
     timeout_hours: int,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     modules = context["modules"]
     container = artifact_container_name(plan)
     token = modules["generate_container_sas"](
@@ -2190,6 +2248,9 @@ def compiler_cache_config(
     ).lstrip("?")
     return {
         **compiler_cache_metadata(plan, account_name),
+        "dependencyCache": dependency_cache_metadata(
+            context, account_name, account_key, plan
+        ),
         "connectionString": (
             f"BlobEndpoint=https://{account_name}.blob.core.windows.net;"
             f"SharedAccessSignature={token}"
@@ -3868,7 +3929,7 @@ def start(args: argparse.Namespace) -> None:
 
     if completed and getattr(args, "auto_collect", False):
         print(
-            f"Publishing expanded Azure Maven repository for run {run_id}",
+            f"Publishing expanded Azure Maven repository to the stable root for run {run_id}",
             flush=True,
         )
         collect(automatic_collect_args(args))
@@ -4259,7 +4320,7 @@ def publish_maven_repository(
     *,
     account_name: str,
     container_name: str,
-    run_prefix: str,
+    repository_prefix: str,
     repository: Path,
     repository_manifest: Path,
     run_id: str,
@@ -4268,58 +4329,16 @@ def publish_maven_repository(
     completion: dict[str, Any],
     fence_check: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
-    """Replace a Maven 2 tree; its readiness marker is finalized separately."""
-    repository_prefix = f"{run_prefix.strip('/')}/maven-repository"
+    """Upsert a Maven 2 tree; its readiness marker is finalized separately.
+
+    The repository prefix is intentionally stable across runs. Individual Maven
+    coordinates are overwritten in place, while unrelated classifiers and
+    versions remain available for subsequent partial publishes.
+    """
+    repository_prefix = repository_prefix.strip("/")
     object_prefix = repository_prefix + "/"
-
-    legacy_marker = f"{run_prefix.strip('/')}/maven2/.dl4j/complete.json"
     if fence_check is not None:
         fence_check()
-    legacy_etag = blob_etag(container, legacy_marker)
-    if legacy_etag is not None:
-        container.delete_blob(
-            legacy_marker,
-            delete_snapshots="include",
-            etag=legacy_etag,
-            match_condition=modules["MatchConditions"].IfNotModified,
-        )
-    if fence_check is not None:
-        fence_check()
-
-    marker_name = object_prefix + ".dl4j/complete.json"
-    stale_batch: list[dict[str, Any]] = []
-
-    def delete_stale_batch() -> None:
-        if not stale_batch:
-            return
-        if fence_check is not None:
-            fence_check()
-        list(container.delete_blobs(
-            *stale_batch,
-            delete_snapshots="include",
-            raise_on_any_failure=True,
-        ))
-        if fence_check is not None:
-            fence_check()
-        stale_batch.clear()
-
-    for item in container.list_blobs(name_starts_with=object_prefix):
-        if fence_check is not None:
-            fence_check()
-        name = str(object_value(item, "name", ""))
-        if not name or name == marker_name:
-            continue
-        etag = str(object_value(item, "etag", ""))
-        if not etag:
-            raise RuntimeError(f"Azure Blob {name!r} did not expose an ETag")
-        stale_batch.append({
-            "name": name,
-            "etag": etag,
-            "match_condition": modules["MatchConditions"].IfNotModified,
-        })
-        if len(stale_batch) == 256:
-            delete_stale_batch()
-    delete_stale_batch()
 
     files = sorted(path for path in repository.rglob("*") if path.is_file())
     for path in files:
@@ -4380,7 +4399,7 @@ def finalize_maven_repository(
     container: Any,
     modules: dict[str, Any],
     *,
-    run_prefix: str,
+    repository_prefix: str,
     repository_info: dict[str, Any],
     marker_lease: ControllerLease,
     fence_check: Callable[[], None],
@@ -4392,7 +4411,7 @@ def finalize_maven_repository(
         if key not in {"uri", "completionMarker"}
     }
     marker_name = (
-        f"{run_prefix.strip('/')}/maven-repository/.dl4j/complete.json"
+        f"{repository_prefix.strip('/')}/.dl4j/complete.json"
     )
     fence_check()
     put_json(
@@ -4949,7 +4968,7 @@ def _collect_under_controller_lease(
             context["modules"],
             account_name=account.name,
             container_name=artifact_container_name(plan),
-            run_prefix=prefix,
+            repository_prefix=f"{plan['artifactPrefix'].strip('/')}/maven-repository",
             repository=repository_dir,
             repository_manifest=repository_manifest,
             run_id=args.run_id,
@@ -5033,7 +5052,7 @@ def _collect_under_controller_lease(
         finalize_maven_repository(
             container,
             context["modules"],
-            run_prefix=prefix,
+            repository_prefix=f"{plan['artifactPrefix'].strip('/')}/maven-repository",
             repository_info=repository_info,
             marker_lease=marker_lease,
             fence_check=collector_lease.check,
@@ -5124,7 +5143,8 @@ def collect(args: argparse.Namespace) -> None:
         if run.get("commit") != args.commit or run.get("releaseVersion") != args.version:
             raise RuntimeError("collect identity does not match run.json")
         run_prefix = f"{plan['artifactPrefix'].strip('/')}/{args.run_id}"
-        marker_name = f"{run_prefix}/maven-repository/.dl4j/complete.json"
+        repository_prefix = f"{plan['artifactPrefix'].strip('/')}/maven-repository"
+        marker_name = f"{repository_prefix}/.dl4j/complete.json"
         marker_lease = ControllerLease(
             artifact_container,
             marker_name,
