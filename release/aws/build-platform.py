@@ -246,6 +246,7 @@ def restore_remote_dependency_cache(
     cache_root.mkdir(parents=True, exist_ok=True)
     cache_dir.mkdir(parents=True, exist_ok=True)
     restored = []
+    package_roots_by_scope = {"host": [], "target": []}
     with tempfile.TemporaryDirectory(
         prefix="dl4j-dependency-cache-restore-", dir=cache_root
     ) as temporary:
@@ -311,21 +312,44 @@ def restore_remote_dependency_cache(
                     if path.is_dir()
                 ]
                 candidate = candidates[0] if len(candidates) == 1 else extracted
+            candidate_roots = []
+            for llvm_config in candidate.rglob("LLVMConfig.cmake"):
+                root = llvm_config.parents[3]
+                if (root / "lib/cmake/mlir/MLIRConfig.cmake").is_file():
+                    candidate_roots.append(root.relative_to(candidate))
             shutil.copytree(candidate, cache_dir, dirs_exist_ok=True)
+            package_roots_by_scope[scope].extend(
+                cache_dir / relative_root for relative_root in candidate_roots
+            )
             restored.append(
                 f"{scope}={manifest.get('identity', archive_object)}"
             )
-    llvm_roots = []
-    for llvm_config in cache_dir.rglob("LLVMConfig.cmake"):
-        root = llvm_config.parents[3]
-        if (root / "lib/cmake/mlir/MLIRConfig.cmake").is_file():
-            llvm_roots.append(root)
-    if len(llvm_roots) != 1:
+    llvm_roots = sorted(
+        {
+            root.resolve()
+            for roots in package_roots_by_scope.values()
+            for root in roots
+            if (root / "lib/cmake/llvm/LLVMConfig.cmake").is_file()
+            and (root / "lib/cmake/mlir/MLIRConfig.cmake").is_file()
+        }
+    )
+    target_roots = sorted(
+        {
+            root.resolve()
+            for root in package_roots_by_scope["target"]
+            if (root / "lib/cmake/llvm/LLVMConfig.cmake").is_file()
+            and (root / "lib/cmake/mlir/MLIRConfig.cmake").is_file()
+        }
+    )
+    if len(target_roots) == 1:
+        managed_llvm_root = str(target_roots[0])
+    elif len(llvm_roots) == 1:
+        managed_llvm_root = str(llvm_roots[0])
+    else:
         raise RuntimeError(
-            "managed dependency snapshots did not contain exactly one complete "
-            f"LLVM/MLIR package (found {len(llvm_roots)})"
+            "managed dependency snapshots did not contain a uniquely selectable "
+            f"LLVM/MLIR package (found {len(llvm_roots)} roots: {llvm_roots})"
         )
-    managed_llvm_root = str(llvm_roots[0].resolve())
     env["SD_TRITON_MANAGED_LLVM_ROOT"] = managed_llvm_root
     marker.write_text(
         json.dumps(
