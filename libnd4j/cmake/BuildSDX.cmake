@@ -216,6 +216,25 @@ function(configure_sdx_cpu_linking main_target_name)
     target_link_libraries(${main_target_name} PUBLIC
             ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} flatbuffers_interface ${CMAKE_DL_LIBS})
 
+    # Android CPU-family SDX builds include the NNAPI system ABI whenever the
+    # shared object contains NnapiGraphBackend.  Keep this explicit on the
+    # standalone target as well as the normal CPU target; otherwise the object
+    # graph compiles successfully but libsdx_cpu.so fails at link time.
+    if(HAVE_NNAPI)
+        if(NOT ANDROID)
+            message(FATAL_ERROR
+                "HAVE_NNAPI requires an Android toolchain for ${main_target_name}")
+        endif()
+        find_library(_sdx_nnapi_library neuralnetworks)
+        if(NOT _sdx_nnapi_library)
+            message(FATAL_ERROR
+                "Android system libneuralnetworks was not found for ${main_target_name}")
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC "${_sdx_nnapi_library}")
+        message(STATUS
+            "NNAPI SDX link boundary: ${main_target_name} -> ${_sdx_nnapi_library}")
+    endif()
+
     # OneDNN
     if(SDX_ENABLE_ONEDNN AND HAVE_ONEDNN AND DEFINED ONEDNN)
         target_link_libraries(${main_target_name} PUBLIC ${ONEDNN})
