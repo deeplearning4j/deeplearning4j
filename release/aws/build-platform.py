@@ -341,8 +341,29 @@ def restore_remote_dependency_cache(
             and (root / "lib/cmake/mlir/MLIRConfig.cmake").is_file()
         }
     )
-    if len(target_roots) == 1:
-        managed_llvm_root = str(target_roots[0])
+    target_arch = {
+        "android-arm64": "AArch64",
+        "android-x86_64": "X86",
+        "linux-arm64": "AArch64",
+        "linux-x86_64": "X86",
+    }.get(javacpp_platform)
+    platform_target_roots = []
+    if target_arch:
+        for root in target_roots:
+            config_path = root / "lib/cmake/llvm/LLVMConfig.cmake"
+            try:
+                config_text = config_path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            if any(
+                line.startswith("set(LLVM_TARGETS_TO_BUILD ")
+                and target_arch in line.split()
+                for line in config_text.splitlines()
+            ):
+                platform_target_roots.append(root)
+    selectable_target_roots = platform_target_roots or target_roots
+    if len(selectable_target_roots) == 1:
+        managed_llvm_root = str(selectable_target_roots[0])
     elif len(llvm_roots) == 1:
         managed_llvm_root = str(llvm_roots[0])
     else:
