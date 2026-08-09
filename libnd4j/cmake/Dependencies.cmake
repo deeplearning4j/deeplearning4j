@@ -1519,10 +1519,25 @@ function(setup_triton)
         set(_triton_requested ${SD_TRITON})
     endif()
 
+    # Release workers can restore the exact managed LLVM/MLIR package from the
+    # cloud dependency cache. That package is also a valid MLIR-only consumer
+    # when Triton itself is disabled (for example Android compile classifiers).
+    # Preserve the injected root instead of clearing it below.
+    set(_managed_llvm_root_from_config "")
+    if(DEFINED SD_TRITON_MANAGED_LLVM_ROOT AND
+       NOT "${SD_TRITON_MANAGED_LLVM_ROOT}" STREQUAL "" AND
+       EXISTS "${SD_TRITON_MANAGED_LLVM_ROOT}/lib/cmake/llvm/LLVMConfig.cmake" AND
+       EXISTS "${SD_TRITON_MANAGED_LLVM_ROOT}/lib/cmake/mlir/MLIRConfig.cmake")
+        set(_managed_llvm_root_from_config "${SD_TRITON_MANAGED_LLVM_ROOT}")
+    endif()
+
     # Vulkan replay consumes the pinned shared LLVM/MLIR package for native
     # MLIR-to-SPIR-V lowering, but it does not consume or enable the Triton DSP
     # compiler. Keep that infrastructure request independent of SD_TRITON.
     set(_managed_llvm_requested ${_triton_requested})
+    if(NOT _managed_llvm_root_from_config STREQUAL "")
+        set(_managed_llvm_requested ON)
+    endif()
     if(SD_VULKAN AND HELPERS_mlir STREQUAL "ON" AND MLIR_ENABLE_VULKAN)
         set(_managed_llvm_requested ON)
     endif()
@@ -1574,6 +1589,11 @@ function(setup_triton)
             "SD_TRITON=ON has no compiler-package routing for the selected backend. "
             "Expected SD_CPU, SD_CUDA/SD_HIP/SD_LEVEL_ZERO, or SD_VULKAN.")
     endif()
+    # A restored package can satisfy MLIR discovery without asking setup_triton
+    # to build or link the Triton compiler itself.
+    if(NOT _triton_requested AND NOT _managed_llvm_root_from_config STREQUAL "")
+        set(_TRITON_BUILDS_COMPILER FALSE)
+    endif()
     set(SD_TRITON_CONSUMER_KIND "${_TRITON_CONSUMER_KIND}" CACHE INTERNAL
         "Compiler package consumer selected by setup_triton" FORCE)
     set(HAVE_TRITON_CPU OFF CACHE BOOL "Triton CPU backend" FORCE)
@@ -1614,7 +1634,16 @@ function(setup_triton)
     # Check if the selected compiler package is already built from a previous
     # run. CPU Triton has its own LLVM ABI. GPU emitters and Vulkan SPIR-V use
     # the same patched shared LLVM/MLIR package and revision.
-    if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+    if(NOT _managed_llvm_root_from_config STREQUAL "")
+        # The release worker already restored this exact package. Keep all
+        # CMake/package paths pointed at it and avoid a source rebuild.
+        set(TRITON_LLVM_INSTALL_DIR "${_managed_llvm_root_from_config}")
+        if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+            set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_cpu_install")
+        elseif(_TRITON_CONSUMER_KIND STREQUAL "GPU_EMITTER")
+            set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
+        endif()
+    elseif(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
         set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_cpu_install")
         set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_cpu_llvm_install")
     elseif(_TRITON_CONSUMER_KIND STREQUAL "GPU_EMITTER")
