@@ -588,7 +588,8 @@
         ],
         "classifierTokens": [
           "android-arm64"
-        ]
+        ],
+        "includeMetadata": true
       },
       "build": {
         "backend": "cpu",
@@ -667,7 +668,8 @@
         ],
         "classifierTokens": [
           "android-x86_64"
-        ]
+        ],
+        "includeMetadata": true
       },
       "build": {
         "backend": "cpu",
