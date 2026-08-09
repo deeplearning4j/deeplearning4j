@@ -1519,6 +1519,22 @@ function(setup_triton)
         set(_triton_requested ${SD_TRITON})
     endif()
 
+    # JavaCPP's libnd4j.cmake property is applied to a nested configure. Keep
+    # the worker-provided contract available through the inherited environment
+    # as well, so setup_triton sees the restored package in that configure.
+    if((NOT DEFINED SD_TRITON_MANAGED_LLVM_ROOT OR
+        "${SD_TRITON_MANAGED_LLVM_ROOT}" STREQUAL "") AND
+       DEFINED ENV{SD_TRITON_MANAGED_LLVM_ROOT} AND
+       NOT "$ENV{SD_TRITON_MANAGED_LLVM_ROOT}" STREQUAL "")
+        set(SD_TRITON_MANAGED_LLVM_ROOT "$ENV{SD_TRITON_MANAGED_LLVM_ROOT}")
+    endif()
+    if((NOT DEFINED SD_TRITON_CONSUMER_KIND OR
+        "${SD_TRITON_CONSUMER_KIND}" STREQUAL "") AND
+       DEFINED ENV{SD_TRITON_CONSUMER_KIND} AND
+       NOT "$ENV{SD_TRITON_CONSUMER_KIND}" STREQUAL "")
+        set(SD_TRITON_CONSUMER_KIND "$ENV{SD_TRITON_CONSUMER_KIND}")
+    endif()
+
     # Release workers can restore the exact managed LLVM/MLIR package from the
     # cloud dependency cache. That package is also a valid MLIR-only consumer
     # when Triton itself is disabled (for example Android compile classifiers).
