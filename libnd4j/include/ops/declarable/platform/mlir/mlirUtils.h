@@ -64,7 +64,7 @@ inline bool initializeMlir() {
 }
 
 /// Get shapes from NDArray for MLIR compilation
-inline std::vector<int64_t> getShape(const NDArray* arr) {
+inline std::vector<int64_t> getShape(NDArray* arr) {
     std::vector<int64_t> shape;
     if (arr != nullptr) {
         auto shapeInfo = arr->shapeInfo();
@@ -110,7 +110,7 @@ inline std::vector<int> getInputTypes(graph::Context& context) {
 constexpr int64_t MLIR_MIN_TENSOR_SIZE = 1024;
 
 /// Check if tensor size meets minimum threshold for MLIR
-inline bool meetsSizeThreshold(const NDArray* arr, int64_t minSize = MLIR_MIN_TENSOR_SIZE) {
+inline bool meetsSizeThreshold(NDArray* arr, int64_t minSize = MLIR_MIN_TENSOR_SIZE) {
     return arr != nullptr && arr->lengthOf() >= minSize;
 }
 
