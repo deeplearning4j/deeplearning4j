@@ -347,21 +347,43 @@ def restore_remote_dependency_cache(
         "linux-arm64": "AArch64",
         "linux-x86_64": "X86",
     }.get(javacpp_platform)
+    def llvm_target_signature(root: Path) -> tuple[str, ...]:
+        config_path = root / "lib/cmake/llvm/LLVMConfig.cmake"
+        try:
+            config_text = config_path.read_text(encoding="utf-8")
+        except OSError:
+            return ()
+        markers = []
+        for line in config_text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith(
+                (
+                    "set(LLVM_VERSION_",
+                    "set(LLVM_PACKAGE_VERSION ",
+                    "set(LLVM_TARGETS_TO_BUILD ",
+                )
+            ):
+                markers.append(stripped)
+        return tuple(markers)
+
     platform_target_roots = []
     if target_arch:
         for root in target_roots:
-            config_path = root / "lib/cmake/llvm/LLVMConfig.cmake"
-            try:
-                config_text = config_path.read_text(encoding="utf-8")
-            except OSError:
-                continue
+            signature = llvm_target_signature(root)
             if any(
                 line.startswith("set(LLVM_TARGETS_TO_BUILD ")
                 and target_arch in line
-                for line in config_text.splitlines()
+                for line in signature
             ):
                 platform_target_roots.append(root)
     selectable_target_roots = platform_target_roots or target_roots
+    if len(selectable_target_roots) > 1:
+        signatures = {llvm_target_signature(root) for root in selectable_target_roots}
+        if len(signatures) == 1 and signatures != {()}:
+            # A snapshot can contain duplicate complete packages from repeated
+            # builds. They are interchangeable when their LLVM target contract
+            # is identical; keep a deterministic root instead of failing.
+            selectable_target_roots = [sorted(selectable_target_roots)[0]]
     if len(selectable_target_roots) == 1:
         managed_llvm_root = str(selectable_target_roots[0])
     elif len(llvm_roots) == 1:
