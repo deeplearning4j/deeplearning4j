@@ -1704,7 +1704,8 @@ function(setup_triton)
        EXISTS "${_TRITON_LLVM_SHARED_LIBRARY}" AND
        EXISTS "${_TRITON_MLIR_SHARED_LIBRARY}" AND
        EXISTS "${_TRITON_MLIR_EXECUTION_ENGINE_SHARED_LIBRARY}" AND
-       EXISTS "${_TRITON_LLVM_INSTALL_MARKER}")
+       (EXISTS "${_TRITON_LLVM_INSTALL_MARKER}" OR
+        NOT _managed_llvm_root_from_config STREQUAL ""))
         set(_TRITON_LLVM_INSTALL_COMPLETE TRUE)
     endif()
 
@@ -2039,7 +2040,8 @@ function(setup_triton)
                EXISTS "${_TRITON_LLVM_SHARED_LIBRARY}" AND
                EXISTS "${_TRITON_MLIR_SHARED_LIBRARY}" AND
                EXISTS "${_TRITON_MLIR_EXECUTION_ENGINE_SHARED_LIBRARY}" AND
-               EXISTS "${_TRITON_LLVM_INSTALL_MARKER}")
+               (EXISTS "${_TRITON_LLVM_INSTALL_MARKER}" OR
+                NOT _managed_llvm_root_from_config STREQUAL ""))
                 set(_TRITON_LLVM_INSTALL_COMPLETE TRUE)
             endif()
         endif()
