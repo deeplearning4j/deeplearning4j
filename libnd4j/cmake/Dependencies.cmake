@@ -2092,10 +2092,14 @@ function(setup_triton)
         # LLVM/MLIR libraries below run on the target. Mirror the repository's
         # FlatBuffers host-generator/target-library split instead of allowing
         # target executables or ambient host packages to cross that boundary.
+        # Prefer the native host GNU toolchain. During Android cross builds the
+        # NDK places target clang first on PATH; selecting it here would make
+        # llvm-tblgen/mlir-tblgen's host-only configure test the Android target
+        # compiler and reject host flags such as -fno-gnu-unique.
         find_program(_TRITON_HOST_C_COMPILER
-            NAMES clang gcc cc NO_CMAKE_FIND_ROOT_PATH)
+            NAMES gcc cc clang NO_CMAKE_FIND_ROOT_PATH)
         find_program(_TRITON_HOST_CXX_COMPILER
-            NAMES clang++ g++ c++ NO_CMAKE_FIND_ROOT_PATH)
+            NAMES g++ c++ clang++ NO_CMAKE_FIND_ROOT_PATH)
         if(NOT _TRITON_HOST_C_COMPILER OR NOT _TRITON_HOST_CXX_COMPILER)
             message(FATAL_ERROR
                 "Cross-building Triton LLVM requires host C and C++ compilers for "
