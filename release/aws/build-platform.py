@@ -394,6 +394,14 @@ def restore_remote_dependency_cache(
             f"LLVM/MLIR package (found {len(llvm_roots)} roots: {llvm_roots})"
         )
     env["SD_TRITON_MANAGED_LLVM_ROOT"] = managed_llvm_root
+    managed_cmake_args = (
+        f"-DSD_TRITON_MANAGED_LLVM_ROOT={managed_llvm_root} "
+        "-DSD_TRITON_CONSUMER_KIND=CPU_COMPILER"
+    )
+    existing_cmake_args = env.get("DL4J_CMAKE_ARGS", "").strip()
+    env["DL4J_CMAKE_ARGS"] = (
+        f"{existing_cmake_args} {managed_cmake_args}".strip()
+    )
     marker.write_text(
         json.dumps(
             {
