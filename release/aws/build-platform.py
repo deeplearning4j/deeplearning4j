@@ -357,7 +357,7 @@ def restore_remote_dependency_cache(
                 continue
             if any(
                 line.startswith("set(LLVM_TARGETS_TO_BUILD ")
-                and target_arch in line.split()
+                and target_arch in line
                 for line in config_text.splitlines()
             ):
                 platform_target_roots.append(root)
