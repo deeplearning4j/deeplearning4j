@@ -18,22 +18,32 @@ if(NPROC EQUAL 0)
     set(NPROC 4)  # Fallback
 endif()
 
-# Dependencies (LLVM, flatbuffers, etc.) use less memory per compile (~1GB vs 2-4GB for CUDA)
-# Always auto-compute from available memory and cores — don't use SD_PARALLEL_COMPILE_JOBS
-# which is tuned for CUDA compilation and would under-utilize the machine.
+# Dependencies (LLVM, flatbuffers, etc.) use less memory per compile (~1GB vs 2-4GB for CUDA).
+# The top-level Maven/native launcher publishes its explicit -j value as
+# SD_PARALLEL_COMPILE_JOBS; that caller choice must govern every nested build.
 cmake_host_system_information(RESULT AVAILABLE_MEMORY QUERY AVAILABLE_PHYSICAL_MEMORY)
 math(EXPR MEM_BASED_JOBS "${AVAILABLE_MEMORY} / 1000")  # 1GB per job for deps
 
-# Cap at processor count, minimum 1
-if(MEM_BASED_JOBS GREATER NPROC)
-    set(DEP_PARALLEL_JOBS ${NPROC})
-elseif(MEM_BASED_JOBS LESS 1)
-    set(DEP_PARALLEL_JOBS 1)
+if(DEFINED SD_PARALLEL_COMPILE_JOBS AND
+   "${SD_PARALLEL_COMPILE_JOBS}" MATCHES "^[1-9][0-9]*$")
+    set(DEP_PARALLEL_JOBS ${SD_PARALLEL_COMPILE_JOBS})
+    if(DEP_PARALLEL_JOBS GREATER NPROC)
+        set(DEP_PARALLEL_JOBS ${NPROC})
+    endif()
+    set(_DEP_PARALLEL_SOURCE "explicit SD_PARALLEL_COMPILE_JOBS")
 else()
-    set(DEP_PARALLEL_JOBS ${MEM_BASED_JOBS})
+    # Auto mode is capped by both available memory and processor count.
+    if(MEM_BASED_JOBS GREATER NPROC)
+        set(DEP_PARALLEL_JOBS ${NPROC})
+    elseif(MEM_BASED_JOBS LESS 1)
+        set(DEP_PARALLEL_JOBS 1)
+    else()
+        set(DEP_PARALLEL_JOBS ${MEM_BASED_JOBS})
+    endif()
+    set(_DEP_PARALLEL_SOURCE "automatic memory/core limit")
 endif()
 
-message(STATUS "🔧 Dependency builds will use ${DEP_PARALLEL_JOBS} parallel jobs (${NPROC} cores, ${AVAILABLE_MEMORY}MB available)")
+message(STATUS "🔧 Dependency builds will use ${DEP_PARALLEL_JOBS} parallel jobs (${_DEP_PARALLEL_SOURCE}; ${NPROC} cores, ${AVAILABLE_MEMORY}MB available)")
 
 # =============================================================================
 # DEPENDENCY CACHE INFRASTRUCTURE
@@ -97,8 +107,17 @@ endfunction()
 function(sd_dep_cache_restore dep_name cache_path install_dir)
     message(STATUS "DEP-CACHE [${dep_name}] Restoring from ${cache_path} -> ${install_dir}")
     file(MAKE_DIRECTORY "${install_dir}")
+    # A routine configure must not refresh every cached header timestamp: those
+    # headers are prerequisites of consumer objects. CMake 3.26 added the
+    # directory-wide content-stable copy; retain the legacy command only for
+    # older CMake versions supported by the project.
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.26")
+        set(_copy_directory_command copy_directory_if_different)
+    else()
+        set(_copy_directory_command copy_directory)
+    endif()
     execute_process(
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${cache_path}" "${install_dir}"
+        COMMAND ${CMAKE_COMMAND} -E ${_copy_directory_command} "${cache_path}" "${install_dir}"
         RESULT_VARIABLE _copy_result
     )
     if(NOT _copy_result EQUAL 0)
@@ -1084,6 +1103,88 @@ function(setup_armcompute)
         return()
     endif()
 
+    # Android Tensor G3 must use the prevalidated Android/NDK libc++ ACL
+    # artifact. The generic aarch64 package below is a Linux/libstdc++ DSO;
+    # linking it into an Android consumer produces unresolved std::__ndk1
+    # symbols at the final link (and can otherwise fail much later at load time).
+    if(SD_NNAPI_TENSOR_G3_HYBRID AND
+       (ANDROID OR SD_ANDROID_BUILD OR CMAKE_SYSTEM_NAME STREQUAL "Android"))
+        set(SDX_TENSOR_G3_ARMCOMPUTE_VERSION "v25.04" CACHE STRING
+            "Pinned ARM Compute release for the Tensor G3 Android provider")
+        set(SDX_TENSOR_G3_ARMCOMPUTE_CACHE_KEY "v25.04-a0b2f80b" CACHE STRING
+            "Dependency-cache key for the prevalidated Tensor G3 Android ACL artifact")
+        if(NOT SDX_TENSOR_G3_ARMCOMPUTE_VERSION STREQUAL "v25.04")
+            message(FATAL_ERROR
+                "Tensor G3 Android requires ARM Compute v25.04; got "
+                "${SDX_TENSOR_G3_ARMCOMPUTE_VERSION}")
+        endif()
+
+        if(TARGET armcompute_external OR TARGET armcompute_interface)
+            get_property(_tensor_g3_configured GLOBAL PROPERTY
+                SD_TENSOR_G3_ARMCOMPUTE_CONFIGURED)
+            if(NOT _tensor_g3_configured)
+                message(FATAL_ERROR
+                    "Tensor G3 ARM Compute target names are already owned by a "
+                    "non-Tensor configuration; refusing an ABI-ambiguous mix")
+            endif()
+            set(HAVE_ARMCOMPUTE 1 PARENT_SCOPE)
+            set(ARMCOMPUTE_LIBRARIES armcompute_interface PARENT_SCOPE)
+            return()
+        endif()
+
+        if(NOT SD_DEP_CACHE)
+            message(FATAL_ERROR
+                "Tensor G3 Android requires the prevalidated Android ARM Compute "
+                "dependency cache; refusing the Linux ARM Compute fallback")
+        endif()
+        sd_dep_cache_check("tensor-g3-armcompute"
+            "${SDX_TENSOR_G3_ARMCOMPUTE_CACHE_KEY}" _tensor_g3_cache_hit
+            _tensor_g3_cache_path)
+        if(NOT _tensor_g3_cache_hit)
+            message(FATAL_ERROR
+                "Tensor G3 Android ARM Compute cache miss for "
+                "${SDX_TENSOR_G3_ARMCOMPUTE_CACHE_KEY}; refusing to download or "
+                "link the Linux package. Populate the validated Android cache first.")
+        endif()
+
+        set(ARMCOMPUTE_INSTALL_DIR
+            "${CMAKE_BINARY_DIR}/tensor_g3_armcompute_install")
+        sd_dep_cache_restore("tensor-g3-armcompute"
+            "${_tensor_g3_cache_path}" "${ARMCOMPUTE_INSTALL_DIR}")
+        set(_tensor_g3_shared_library
+            "${ARMCOMPUTE_INSTALL_DIR}/lib/armv8a-neon/libarm_compute.so")
+        set(_tensor_g3_required_header
+            "${ARMCOMPUTE_INSTALL_DIR}/arm_compute/runtime/NEON/NEFunctions.h")
+        if(NOT EXISTS "${_tensor_g3_shared_library}" OR
+           NOT EXISTS "${_tensor_g3_required_header}")
+            message(FATAL_ERROR
+                "Tensor G3 Android ARM Compute cache is incomplete: expected "
+                "${_tensor_g3_shared_library} and ${_tensor_g3_required_header}")
+        endif()
+
+        add_custom_target(armcompute_external)
+        add_library(armcompute_interface INTERFACE)
+        target_include_directories(armcompute_interface INTERFACE
+            "${ARMCOMPUTE_INSTALL_DIR}"
+            "${ARMCOMPUTE_INSTALL_DIR}/include")
+        # Link the exact Android DSO by path. Do not add the generic Linux
+        # armcompute_install directory or libarm_compute_graph.so.
+        target_link_libraries(armcompute_interface INTERFACE
+            "${_tensor_g3_shared_library}")
+        add_dependencies(armcompute_interface armcompute_external)
+
+        set(ARMCOMPUTE_LINK_MODE "BUNDLED_SHARED" CACHE STRING
+            "ARM Compute linkage mode" FORCE)
+        set(ARMCOMPUTE_SHARED_LIBRARY "${_tensor_g3_shared_library}"
+            CACHE FILEPATH "Pinned bundled ACL DSO used by Tensor G3" FORCE)
+        set(ARMCOMPUTE_LIBRARIES armcompute_interface PARENT_SCOPE)
+        set(HAVE_ARMCOMPUTE 1 PARENT_SCOPE)
+        set_property(GLOBAL PROPERTY SD_TENSOR_G3_ARMCOMPUTE_CONFIGURED TRUE)
+        message(STATUS
+            "Tensor G3 ACL/NEON: pinned v25.04 Android AArch64 bundled DSO")
+        return()
+    endif()
+
     if(TARGET armcompute_external)
         set(HAVE_ARMCOMPUTE 1 PARENT_SCOPE)
         set(ARMCOMPUTE_LIBRARIES armcompute_interface PARENT_SCOPE)
@@ -1110,8 +1211,12 @@ function(setup_armcompute)
                     add_custom_target(armcompute_external)
                 endif()
                 add_library(armcompute_interface INTERFACE)
-                target_include_directories(armcompute_interface INTERFACE "${ARMCOMPUTE_INSTALL_DIR}/include")
-                target_link_directories(armcompute_interface INTERFACE "${ARMCOMPUTE_INSTALL_DIR}/lib")
+                target_include_directories(armcompute_interface INTERFACE
+                    "${ARMCOMPUTE_INSTALL_DIR}"
+                    "${ARMCOMPUTE_INSTALL_DIR}/include")
+                target_link_directories(armcompute_interface INTERFACE
+                    "${ARMCOMPUTE_INSTALL_DIR}/lib"
+                    "${ARMCOMPUTE_INSTALL_DIR}/lib/armv8a-neon")
                 target_link_libraries(armcompute_interface INTERFACE arm_compute arm_compute_graph)
                 add_dependencies(armcompute_interface armcompute_external)
                 set(ARMCOMPUTE_LIBRARIES armcompute_interface PARENT_SCOPE)
@@ -1128,8 +1233,8 @@ function(setup_armcompute)
                 DOWNLOAD_DIR "${CMAKE_BINARY_DIR}/downloads"
                 CONFIGURE_COMMAND ""
                 BUILD_COMMAND     ""
-                INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/${ARMCOMPUTE_PKG_NAME} ${ARMCOMPUTE_INSTALL_DIR}
-                BUILD_BYPRODUCTS "${ARMCOMPUTE_INSTALL_DIR}/include/arm_compute/core/CL/CLKernelLibrary.h"
+                INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR> ${ARMCOMPUTE_INSTALL_DIR}
+                BUILD_BYPRODUCTS "${ARMCOMPUTE_INSTALL_DIR}/arm_compute/core/CL/CLKernelLibrary.h"
                 ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
                 LOG_DOWNLOAD      OFF
                 LOG_CONFIGURE     OFF
@@ -1138,8 +1243,12 @@ function(setup_armcompute)
         )
 
         add_library(armcompute_interface INTERFACE)
-        target_include_directories(armcompute_interface INTERFACE "${ARMCOMPUTE_INSTALL_DIR}/include")
-        target_link_directories(armcompute_interface INTERFACE "${ARMCOMPUTE_INSTALL_DIR}/lib")
+        target_include_directories(armcompute_interface INTERFACE
+                    "${ARMCOMPUTE_INSTALL_DIR}"
+                    "${ARMCOMPUTE_INSTALL_DIR}/include")
+        target_link_directories(armcompute_interface INTERFACE
+                    "${ARMCOMPUTE_INSTALL_DIR}/lib"
+                    "${ARMCOMPUTE_INSTALL_DIR}/lib/armv8a-neon")
         target_link_libraries(armcompute_interface INTERFACE arm_compute arm_compute_graph)
         add_dependencies(armcompute_interface armcompute_external)
 
@@ -2083,7 +2192,7 @@ function(setup_triton)
             COMMAND ${CMAKE_COMMAND} -E env
                 "SD_SMART_CCACHE_SEGMENT=triton_llvm"
                 "SD_SMART_CCACHE_SHAPE_KEY=${TRITON_LLVM_SHAPE_KEY}"
-            # MLIRExecutionEngineShared is EXCLUDE_FROM_LIBMLIR, so include it
+                # MLIRExecutionEngineShared is EXCLUDE_FROM_LIBMLIR, so include it
             # explicitly in the same build invocation. Keeping both goals in one
             # generator call avoids rebuilding the complete dependency graph.
             ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release
@@ -2138,6 +2247,7 @@ function(setup_triton)
             BINARY_DIR        "${_TRITON_LLVM_HOST_BUILD_DIR}"
             CMAKE_ARGS
                 -DCMAKE_BUILD_TYPE=Release
+                -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
                 -DLLVM_ENABLE_PROJECTS=mlir
                 -DLLVM_TARGETS_TO_BUILD=host
                 -DLLVM_ENABLE_ASSERTIONS=ON
@@ -2177,6 +2287,10 @@ function(setup_triton)
         set(TRITON_LLVM_CMAKE_ARGS
                 -DCMAKE_INSTALL_PREFIX=${TRITON_LLVM_INSTALL_DIR}
                 -DCMAKE_BUILD_TYPE=Release
+                # LLVM enables PCH under Clang, but compiler launchers cannot
+                # reliably validate .pch outputs as object files. Disable PCH
+                # for the managed dependency so ccache remains deterministic.
+                -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
                 -DLLVM_ENABLE_PROJECTS=mlir
                 -DLLVM_TARGETS_TO_BUILD=${TRITON_LLVM_TARGETS}
                 -DLLVM_ENABLE_ASSERTIONS=ON
@@ -2287,6 +2401,58 @@ function(setup_triton)
         add_dependencies(triton_llvm_external triton_llvm_host_tools_external)
     endif()
 
+    set(_TRITON_EXTERNAL_DEPENDENCIES triton_llvm_external)
+    if(CMAKE_CROSSCOMPILING AND
+       _TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+        # SLEEF generates target headers with small executables such as
+        # mkrename. Its cross-build contract expects those tools in a native
+        # build directory; otherwise imported targets collapse to /bin and
+        # Android binaries are incorrectly executed through QEMU.
+        set(_TRITON_SLEEF_HOST_PREFIX
+            "${CMAKE_BINARY_DIR}/triton_cpu_sleef_host_tools_${_TRITON_MANAGED_RECIPE_REVISION}")
+        set(_TRITON_SLEEF_HOST_BUILD_DIR
+            "${_TRITON_SLEEF_HOST_PREFIX}/build")
+        ExternalProject_Add(triton_cpu_sleef_host_tools_external
+            PREFIX            "${_TRITON_SLEEF_HOST_PREFIX}"
+            URL               "https://github.com/shibatch/sleef/archive/refs/tags/3.8.tar.gz"
+            URL_HASH          "SHA256=a12ccd50f57083c530e1c76f10d52865defbd19fc9e2c85b483493065709874a"
+            DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+            ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
+            BINARY_DIR        "${_TRITON_SLEEF_HOST_BUILD_DIR}"
+            CMAKE_ARGS
+                -DCMAKE_BUILD_TYPE=Release
+                -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
+                -DCMAKE_C_COMPILER=${_TRITON_HOST_C_COMPILER}
+                -DSLEEF_BUILD_SHARED_LIBS=OFF
+                -DSLEEF_BUILD_DFT=OFF
+                -DSLEEF_BUILD_QUAD=OFF
+                -DSLEEF_BUILD_GNUABI_LIBS=OFF
+                -DSLEEF_BUILD_SCALAR_LIB=OFF
+                -DSLEEF_BUILD_TESTS=OFF
+                -DSLEEF_BUILD_BENCH=OFF
+            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR>
+                --config Release
+                --target mkrename mkrename_gnuabi mkmasked_gnuabi mkdisp mkalias addSuffix
+                --parallel ${DEP_PARALLEL_JOBS}
+            INSTALL_COMMAND   ""
+            BUILD_BYPRODUCTS
+                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkrename${_TRITON_HOST_EXE_SUFFIX}"
+                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkrename_gnuabi${_TRITON_HOST_EXE_SUFFIX}"
+                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkmasked_gnuabi${_TRITON_HOST_EXE_SUFFIX}"
+                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkdisp${_TRITON_HOST_EXE_SUFFIX}"
+                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkalias${_TRITON_HOST_EXE_SUFFIX}"
+                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/addSuffix${_TRITON_HOST_EXE_SUFFIX}"
+            TIMEOUT           1800
+            LOG_DOWNLOAD      OFF
+            LOG_CONFIGURE     OFF
+            LOG_BUILD         OFF
+            LOG_INSTALL       OFF)
+        list(APPEND _TRITON_EXTERNAL_DEPENDENCIES
+            triton_cpu_sleef_host_tools_external)
+        message(STATUS
+            "   SLEEF host tools: ${_TRITON_SLEEF_HOST_BUILD_DIR}/bin")
+    endif()
+
     set(TRITON_MLIR_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir")
     set(TRITON_LLVM_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm")
     # Publish one target package identity for both Triton and the standalone
@@ -2315,7 +2481,14 @@ function(setup_triton)
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     )
     if(CMAKE_CROSSCOMPILING)
-        list(APPEND TRITON_CMAKE_ARGS ${_TRITON_TARGET_CMAKE_ARGS})
+        list(APPEND TRITON_CMAKE_ARGS
+            ${_TRITON_TARGET_CMAKE_ARGS}
+            -DLLVM_HOST_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}
+            -DMLIR_HOST_TABLEGEN=${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX})
+        if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+            list(APPEND TRITON_CMAKE_ARGS
+                -DNATIVE_BUILD_DIR=${_TRITON_SLEEF_HOST_BUILD_DIR})
+        endif()
     endif()
 
     # MSVC-specific flags for Triton build
@@ -2441,7 +2614,7 @@ function(setup_triton)
             LOG_CONFIGURE     OFF
             LOG_BUILD         OFF
             LOG_INSTALL       OFF
-            DEPENDS           triton_llvm_external
+            DEPENDS           ${_TRITON_EXTERNAL_DEPENDENCIES}
     )
     else()
         # MainBuildFlow depends on this stable compiler-package target. Vulkan
