@@ -1676,7 +1676,7 @@ function(setup_triton)
     # dynamic-linking and MLIR correctness patches and partitions dependency caches.
     # Bump the recipe whenever the managed install contract changes; this prevents
     # incomplete LLVM/MLIR archives from being restored from the shared cache.
-    set(_TRITON_MANAGED_RECIPE_REVISION "managed-llvm-patches-v8")
+    set(_TRITON_MANAGED_RECIPE_REVISION "managed-llvm-patches-v9")
     set(_TRITON_LLVM_INSTALL_MARKER
         "${TRITON_LLVM_INSTALL_DIR}/.sd-${_TRITON_MANAGED_RECIPE_REVISION}")
     if(_TRITON_BUILDS_COMPILER)

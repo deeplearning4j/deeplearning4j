@@ -182,6 +182,44 @@ ${_sd_android_shared_patch}
     endif()
 endif()
 
+# Upstream MLIR deliberately resets this option from the native host
+# architecture, which disables the execution-engine shared runtime for an
+# Android cross build even when the external-project cache receives ON.
+if(_sd_external_project STREQUAL "LLVM")
+    set(_sd_mlir_options_file "${SOURCE_DIR}/mlir/CMakeLists.txt")
+    if(EXISTS "${_sd_mlir_options_file}")
+        file(READ "${_sd_mlir_options_file}" _sd_mlir_options_source)
+        set(_sd_android_mlir_engine_marker "# SD_ANDROID_MLIR_EXECUTION_ENGINE_V1")
+        string(FIND "${_sd_mlir_options_source}" "${_sd_android_mlir_engine_marker}"
+            _sd_android_mlir_engine_marker_pos)
+        if(_sd_android_mlir_engine_marker_pos EQUAL -1)
+            set(_sd_mlir_options_anchor [=[if(${LLVM_NATIVE_ARCH} IN_LIST LLVM_TARGETS_TO_BUILD)
+  set(MLIR_ENABLE_EXECUTION_ENGINE 1)
+else()
+  set(MLIR_ENABLE_EXECUTION_ENGINE 0)
+endif()]=])
+            set(_sd_android_mlir_engine_patch [=[
+# SD_ANDROID_MLIR_EXECUTION_ENGINE_V1
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+  set(MLIR_ENABLE_EXECUTION_ENGINE 1)
+  set(MLIR_ENABLE_EXECUTION_ENGINE 1 CACHE BOOL "Enable MLIR execution engine" FORCE)
+endif()
+]=])
+            string(REPLACE
+                "${_sd_mlir_options_anchor}"
+                "${_sd_mlir_options_anchor}
+${_sd_android_mlir_engine_patch}"
+                _sd_mlir_options_patched
+                "${_sd_mlir_options_source}")
+            if(_sd_mlir_options_patched STREQUAL _sd_mlir_options_source)
+                message(FATAL_ERROR
+                    "patch_external_llvm_coexistence: failed to enable Android MLIR execution engine")
+            endif()
+            file(WRITE "${_sd_mlir_options_file}" "${_sd_mlir_options_patched}")
+        endif()
+    endif()
+endif()
+
 # The pinned MLIR SCF-to-SPIR-V conversion represents scf.for results with
 # Function-scope variables. Upstream initializes those variables only from
 # scf.yield in the loop body, so a zero-trip loop reads undefined data instead
