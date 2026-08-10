@@ -650,6 +650,67 @@
       }
     },
     {
+      "id": "android-arm64-vulkan",
+      "lane": "linux-x86-64-jammy",
+      "sourceWorkflow": "build-deploy-android-arm64.yml",
+      "os": "linux",
+      "architecture": "x86_64",
+      "machineClass": "x86",
+      "worker": "worker.sh",
+      "workloads": [
+        "maven",
+        "sdk"
+      ],
+      "artifactRules": {
+        "mode": "classifier",
+        "artifactIds": [
+          "nd4j-vulkan",
+          "nd4j-vulkan-preset"
+        ],
+        "classifierTokens": [
+          "android-arm64"
+        ],
+        "unclassifiedArtifactIds": [
+          "nd4j-vulkan-preset"
+        ],
+        "includeMetadata": true
+      },
+      "build": {
+        "backend": "vulkan",
+        "ndkVersion": "r27d",
+        "javacppPlatform": "android-arm64",
+        "profiles": [
+          "vulkan",
+          "sdx",
+          "osx-aarch64-protoc"
+        ],
+        "modules": [
+          ":nd4j-vulkan",
+          ":nd4j-vulkan-preset",
+          ":libnd4j"
+        ],
+        "mavenArgs": [
+          "-Dlibnd4j.vulkan",
+          "-Dlibnd4j.android.api=24",
+          "-Dplatform.classifier=android-arm64"
+        ],
+        "variants": [
+          {
+            "name": "base",
+            "suffix": ""
+          }
+        ],
+        "buildThreads": 24
+      },
+      "image": {
+        "publisher": "Canonical",
+        "offer": "0001-com-ubuntu-server-jammy",
+        "sku": "22_04-lts-gen2",
+        "version": "latest",
+        "architecture": "x64"
+      }
+    },
+    {
       "id": "android-x86_64",
       "lane": "linux-x86-64-noble",
       "os": "linux",
