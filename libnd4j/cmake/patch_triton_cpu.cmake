@@ -27,6 +27,29 @@ if(_host_tablegen_patch_pos EQUAL -1)
     set(_mlir_find_replacement [=[find_package(MLIR REQUIRED CONFIG PATHS ${MLIR_DIR})
 # PATCHED_BY_LIBND4J_HOST_TABLEGEN: generated sources are build-host work.
 if(CMAKE_CROSSCOMPILING)
+  # ExternalProject forwards LLVM_NATIVE_TOOL_DIR more reliably than custom
+  # cache variables. Derive the explicit host generator paths from it before
+  # validating them, then fall back to PATH for preinstalled host tools.
+  if((NOT LLVM_HOST_TABLEGEN OR NOT EXISTS "${LLVM_HOST_TABLEGEN}") AND LLVM_NATIVE_TOOL_DIR)
+    set(LLVM_HOST_TABLEGEN "${LLVM_NATIVE_TOOL_DIR}/llvm-tblgen")
+  endif()
+  if((NOT MLIR_HOST_TABLEGEN OR NOT EXISTS "${MLIR_HOST_TABLEGEN}") AND LLVM_NATIVE_TOOL_DIR)
+    set(MLIR_HOST_TABLEGEN "${LLVM_NATIVE_TOOL_DIR}/mlir-tblgen")
+  endif()
+  if(NOT EXISTS "${LLVM_HOST_TABLEGEN}")
+    find_program(_LIBND4J_LLVM_HOST_TABLEGEN NAMES llvm-tblgen
+      HINTS "${LLVM_NATIVE_TOOL_DIR}" NO_DEFAULT_PATH)
+    if(_LIBND4J_LLVM_HOST_TABLEGEN)
+      set(LLVM_HOST_TABLEGEN "${_LIBND4J_LLVM_HOST_TABLEGEN}")
+    endif()
+  endif()
+  if(NOT EXISTS "${MLIR_HOST_TABLEGEN}")
+    find_program(_LIBND4J_MLIR_HOST_TABLEGEN NAMES mlir-tblgen
+      HINTS "${LLVM_NATIVE_TOOL_DIR}" NO_DEFAULT_PATH)
+    if(_LIBND4J_MLIR_HOST_TABLEGEN)
+      set(MLIR_HOST_TABLEGEN "${_LIBND4J_MLIR_HOST_TABLEGEN}")
+    endif()
+  endif()
   if(NOT EXISTS "${LLVM_HOST_TABLEGEN}" OR NOT EXISTS "${MLIR_HOST_TABLEGEN}")
     message(FATAL_ERROR
       "Cross-building triton-cpu requires LLVM_HOST_TABLEGEN and "
