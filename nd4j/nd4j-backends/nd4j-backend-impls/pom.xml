@@ -48,6 +48,7 @@
         <dependency.classifier>${javacpp.platform}${javacpp.platform.extension}</dependency.classifier>
         <dependency.platform></dependency.platform>   <!-- Same as ${javacpp.platform} but without breaking Gradle, sbt, etc -->
         <dependency.platform2></dependency.platform2> <!-- Same as ${dependency.platform} minus Android, iOS, etc -->
+        <android.api>24</android.api>
         <javacpp.platform.android-arm>android-arm${javacpp.platform.extension}</javacpp.platform.android-arm>
         <javacpp.platform.android-arm64>android-arm64${javacpp.platform.extension}</javacpp.platform.android-arm64>
         <javacpp.platform.android-x86>android-x86${javacpp.platform.extension}</javacpp.platform.android-x86>
@@ -446,7 +447,7 @@
                 <javacpp.platform.properties>android-arm-clang</javacpp.platform.properties>
                 <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
                 <javacpp.platform.compiler>
-                    toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++
+                    toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi${android.api}-clang++
                 </javacpp.platform.compiler>
                 <javacpp.platform.sysroot>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
                 <dependency.platform2></dependency.platform2>
@@ -464,7 +465,7 @@
                 <javacpp.platform.properties>android-arm64-clang</javacpp.platform.properties>
                 <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
                 <javacpp.platform.compiler>
-                    toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++
+                    toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${android.api}-clang++
                 </javacpp.platform.compiler>
                 <javacpp.platform.sysroot>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
                 <dependency.platform2></dependency.platform2>
@@ -482,7 +483,7 @@
                 <javacpp.platform.properties>android-x86-clang</javacpp.platform.properties>
                 <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
                 <javacpp.platform.compiler>
-                    toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++
+                    toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android${android.api}-clang++
                 </javacpp.platform.compiler>
                 <javacpp.platform.sysroot>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
                 <dependency.platform2></dependency.platform2>
@@ -500,7 +501,7 @@
                 <javacpp.platform.properties>android-x86_64-clang</javacpp.platform.properties>
                 <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
                 <javacpp.platform.compiler>
-                    toolchains/llvm/prebuilt/${os.name}-${os.arch}/bin/clang++
+                    toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android${android.api}-clang++
                 </javacpp.platform.compiler>
                 <javacpp.platform.sysroot>--sysroot=${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
                 <dependency.platform2></dependency.platform2>
