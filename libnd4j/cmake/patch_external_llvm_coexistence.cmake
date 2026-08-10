@@ -43,6 +43,53 @@ if(NOT EXISTS "${_sd_target_file}")
 endif()
 
 file(READ "${_sd_target_file}" _sd_source)
+
+# Older pinned LLVM snapshots perform the GNU-unique probe unconditionally,
+# even when the external project is being configured with the Android Clang
+# target compiler.  That compiler intentionally does not accept the host-only
+# flag; only GNU host builds need it.  Normalize the legacy block before adding
+# the idempotent coexistence marker.  Newer snapshots already contain this
+# compiler-aware form, so the replacement is a no-op for them.
+if(_sd_external_project STREQUAL "LLVM")
+    set(_sd_legacy_unique_block [=[
+if(CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF")
+  include(CheckCXXCompilerFlag)
+  check_cxx_compiler_flag("-fno-gnu-unique" SD_CXX_SUPPORTS_FNO_GNU_UNIQUE)
+  if(NOT SD_CXX_SUPPORTS_FNO_GNU_UNIQUE)
+    message(FATAL_ERROR
+      "Bundled LLVM/Triton requires C++ compiler support for -fno-gnu-unique "
+      "so multiple LLVM/MLIR shared-library versions can coexist")
+  endif()
+  add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-fno-gnu-unique>")
+endif()
+]=])
+    set(_sd_compiler_aware_unique_block [=[
+if(CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag("-fno-gnu-unique" SD_CXX_SUPPORTS_FNO_GNU_UNIQUE)
+    if(NOT SD_CXX_SUPPORTS_FNO_GNU_UNIQUE)
+      message(FATAL_ERROR
+        "Bundled LLVM/Triton requires C++ compiler support for -fno-gnu-unique "
+        "so multiple LLVM/MLIR shared-library versions can coexist")
+    endif()
+    add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-fno-gnu-unique>")
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(Clang|AppleClang)$")
+    message(STATUS
+      "Clang emits ordinary weak template statics; -fno-gnu-unique is not required")
+  else()
+    message(FATAL_ERROR
+      "Unsupported C++ compiler for LLVM/MLIR coexistence: ${CMAKE_CXX_COMPILER_ID}")
+  endif()
+endif()
+]=])
+    string(REPLACE
+        "${_sd_legacy_unique_block}"
+        "${_sd_compiler_aware_unique_block}"
+        _sd_source
+        "${_sd_source}")
+endif()
+
 set(_sd_unique_marker "# SD_EXTERNAL_LLVM_COEXISTENCE_V1")
 string(FIND "${_sd_source}" "${_sd_unique_marker}" _sd_unique_marker_pos)
 
@@ -59,14 +106,22 @@ if(_sd_unique_marker_pos EQUAL -1)
 # ELF symbol-version selection. LLVM/MLIR versions with distinct SONAMEs must
 # retain their own registries, so emit ordinary weak/versioned definitions.
 if(CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF")
-  include(CheckCXXCompilerFlag)
-  check_cxx_compiler_flag("-fno-gnu-unique" SD_CXX_SUPPORTS_FNO_GNU_UNIQUE)
-  if(NOT SD_CXX_SUPPORTS_FNO_GNU_UNIQUE)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag("-fno-gnu-unique" SD_CXX_SUPPORTS_FNO_GNU_UNIQUE)
+    if(NOT SD_CXX_SUPPORTS_FNO_GNU_UNIQUE)
+      message(FATAL_ERROR
+        "Bundled LLVM/Triton requires C++ compiler support for -fno-gnu-unique "
+        "so multiple LLVM/MLIR shared-library versions can coexist")
+    endif()
+    add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-fno-gnu-unique>")
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(Clang|AppleClang)$")
+    message(STATUS
+      "Clang emits ordinary weak template statics; -fno-gnu-unique is not required")
+  else()
     message(FATAL_ERROR
-      "Bundled LLVM/Triton requires C++ compiler support for -fno-gnu-unique "
-      "so multiple LLVM/MLIR shared-library versions can coexist")
+      "Unsupported C++ compiler for LLVM/MLIR coexistence: ${CMAKE_CXX_COMPILER_ID}")
   endif()
-  add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-fno-gnu-unique>")
 endif()
 ]=])
 
