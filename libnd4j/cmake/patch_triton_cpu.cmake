@@ -16,6 +16,49 @@ endif()
 
 message(STATUS "patch_triton_cpu: patching ${SOURCE_DIR}")
 
+# Cross builds must execute host generators, not Android target binaries.
+# Apply these idempotent fixes before the legacy patch marker check so an
+# already-populated ExternalProject source tree can pick up build-recipe fixes.
+set(_TRITON_ROOT_CMAKE "${SOURCE_DIR}/CMakeLists.txt")
+file(READ "${_TRITON_ROOT_CMAKE}" _cross_content)
+string(FIND "${_cross_content}" "PATCHED_BY_LIBND4J_HOST_TABLEGEN" _host_tablegen_patch_pos)
+if(_host_tablegen_patch_pos EQUAL -1)
+    set(_mlir_find_anchor "find_package(MLIR REQUIRED CONFIG PATHS \${MLIR_DIR})")
+    set(_mlir_find_replacement [=[find_package(MLIR REQUIRED CONFIG PATHS ${MLIR_DIR})
+# PATCHED_BY_LIBND4J_HOST_TABLEGEN: generated sources are build-host work.
+if(CMAKE_CROSSCOMPILING)
+  if(NOT EXISTS "${LLVM_HOST_TABLEGEN}" OR NOT EXISTS "${MLIR_HOST_TABLEGEN}")
+    message(FATAL_ERROR
+      "Cross-building triton-cpu requires LLVM_HOST_TABLEGEN and "
+      "MLIR_HOST_TABLEGEN to name executable host tools")
+  endif()
+  set(LLVM_TABLEGEN_EXE "${LLVM_HOST_TABLEGEN}")
+  set(MLIR_TABLEGEN_EXE "${MLIR_HOST_TABLEGEN}")
+endif()
+]=])
+    string(FIND "${_cross_content}" "${_mlir_find_anchor}" _mlir_find_pos)
+    if(_mlir_find_pos EQUAL -1)
+        message(FATAL_ERROR
+            "patch_triton_cpu: could not find MLIR package anchor for host TableGen override")
+    endif()
+    string(REPLACE "${_mlir_find_anchor}" "${_mlir_find_replacement}"
+        _cross_content "${_cross_content}")
+endif()
+
+# Android's libc++ has std::filesystem in the standard library and provides no
+# separate libstdc++fs compatibility archive. ExternalProject's nested Triton
+# configure does not always export the ANDROID variable, so check the platform
+# name as well.
+string(REPLACE
+    "if (NOT WIN32 AND NOT APPLE AND NOT BSD AND NOT ANDROID)"
+    "if (NOT WIN32 AND NOT APPLE AND NOT BSD AND NOT (ANDROID OR CMAKE_SYSTEM_NAME STREQUAL \"Android\"))"
+    _cross_content "${_cross_content}")
+string(REPLACE
+    "if (NOT WIN32 AND NOT APPLE AND NOT BSD)"
+    "if (NOT WIN32 AND NOT APPLE AND NOT BSD AND NOT (ANDROID OR CMAKE_SYSTEM_NAME STREQUAL \"Android\"))"
+    _cross_content "${_cross_content}")
+file(WRITE "${_TRITON_ROOT_CMAKE}" "${_cross_content}")
+
 # ══════════════════════════════════════════════════════════════════════════
 # 0. Populate SLEEF submodule (vectorized math library, required by cpu backend)
 # ══════════════════════════════════════════════════════════════════════════
