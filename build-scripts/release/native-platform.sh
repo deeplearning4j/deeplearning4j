@@ -45,8 +45,8 @@ case "${DL4J_FAMILY}" in
       # This shard runs natively on ARM64; use the VM compiler and its matching GCC runtime.
       linux-arm64) platform=linux-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=(-Djavacpp.platform.compiler=g++);;
       macos-arm64) platform=macosx-arm64; profiles=(-Pcpu -Pmetal -Posx-aarch64-protoc); extra=(-Dlibnd4j.arch=armv8-a -Dlibnd4j.platform=macosx-arm64);;
-      android-x86_64) platform=android-x86_64; profiles=(-Pcpu); extra=("-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Djavacpp.compiler.options=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" -Dlibnd4j.build.with.java=OFF);;
-      android-arm64) platform=android-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Djavacpp.compiler.options=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF);;
+      android-x86_64) platform=android-x86_64; profiles=(-Pcpu); extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android${DL4J_ANDROID_API}-clang++" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Djavacpp.compiler.options=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" -Dlibnd4j.build.with.java=OFF);;
+      android-arm64) platform=android-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${DL4J_ANDROID_API}-clang++" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Djavacpp.compiler.options=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF);;
     esac
     modules=:nd4j-native,:nd4j-native-preset
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
@@ -87,12 +87,12 @@ case "${DL4J_FAMILY}" in
       android-arm64-vulkan)
         platform=android-arm64
         profiles=(-Posx-aarch64-protoc -Pvulkan)
-        extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Djavacpp.compiler.options=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
+        extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${DL4J_ANDROID_API}-clang++" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Djavacpp.compiler.options=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
         ;;
       android-x86_64-vulkan)
         platform=android-x86_64
         profiles=(-Pvulkan)
-        extra=("-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Djavacpp.compiler.options=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
+        extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android${DL4J_ANDROID_API}-clang++" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Djavacpp.compiler.options=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
         ;;
     esac
     modules=:nd4j-vulkan,:nd4j-vulkan-preset
