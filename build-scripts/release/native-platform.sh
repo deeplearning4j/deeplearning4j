@@ -45,8 +45,8 @@ case "${DL4J_FAMILY}" in
       # This shard runs natively on ARM64; use the VM compiler and its matching GCC runtime.
       linux-arm64) platform=linux-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=(-Djavacpp.platform.compiler=g++);;
       macos-arm64) platform=macosx-arm64; profiles=(-Pcpu -Pmetal -Posx-aarch64-protoc); extra=(-Dlibnd4j.arch=armv8-a -Dlibnd4j.platform=macosx-arm64);;
-      android-x86_64) platform=android-x86_64; profiles=(-Pcpu); extra=("-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF);;
-      android-arm64) platform=android-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF);;
+      android-x86_64) platform=android-x86_64; profiles=(-Pcpu); extra=("-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" -Dlibnd4j.build.with.java=OFF);;
+      android-arm64) platform=android-arm64; profiles=(-Posx-aarch64-protoc -Pcpu); extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF);;
     esac
     modules=:nd4j-native,:nd4j-native-preset
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
@@ -60,11 +60,16 @@ case "${DL4J_FAMILY}" in
     modules=":nd4j-cuda-${DL4J_CUDA_VERSION},:nd4j-cuda-${DL4J_CUDA_VERSION}-preset"
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
     if [ "${DL4J_HELPER}" = compile ]; then
+      # Linux uses the managed Triton/MLIR compile-only classifier. Windows
+      # native compile variants leave DL4J_HELPER empty and use the extension
+      # branch below so MSVC/MinGW does not request managed LLVM.
       variant=(-Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile "-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}-compile")
     elif [ -n "${DL4J_HELPER}" ] && [ -n "${DL4J_EXTENSION}" ]; then
       variant=("-Djavacpp.platform.extension=-${DL4J_HELPER}-${DL4J_EXTENSION}" "-Dlibnd4j.helper=${DL4J_HELPER}" "-Dlibnd4j.extension=${DL4J_EXTENSION}" "-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}-${DL4J_HELPER}-${DL4J_EXTENSION}")
     elif [ -n "${DL4J_HELPER}" ]; then
       variant=("-Djavacpp.platform.extension=-${DL4J_HELPER}" "-Dlibnd4j.helper=${DL4J_HELPER}" "-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}-${DL4J_HELPER}")
+    elif [ -n "${DL4J_EXTENSION}" ]; then
+      variant=("-Djavacpp.platform.extension=-${DL4J_EXTENSION}" "-Dlibnd4j.extension=${DL4J_EXTENSION}" "-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}-${DL4J_EXTENSION}")
     else
       variant=("-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}")
     fi
@@ -82,18 +87,18 @@ case "${DL4J_FAMILY}" in
       android-arm64-vulkan)
         platform=android-arm64
         profiles=(-Posx-aarch64-protoc -Pvulkan)
-        extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
+        extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
         ;;
       android-x86_64-vulkan)
         platform=android-x86_64
         profiles=(-Pvulkan)
-        extra=("-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
+        extra=("-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
         ;;
     esac
     modules=:nd4j-vulkan,:nd4j-vulkan-preset
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
     variant_cpu "${platform}"
-    command=(mvn "${split_flags[@]}" "${repo[@]}" --no-transfer-progress "${profiles[@]}" -pl "${modules}" -Dlibnd4j.vulkan -Dlibnd4j.triton=ON "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Djavacpp.platform=${platform} "-Dplatform.classifier=${platform}" --also-make --batch-mode "${extra[@]}" "${VARIANT[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
+    command=(mvn "${split_flags[@]}" "${repo[@]}" --no-transfer-progress "${profiles[@]}" -pl "${modules}" -Dlibnd4j.vulkan -Dlibnd4j.triton=ON "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=true "-Djavacpp.platform=${platform}" "-Dplatform.classifier=${platform}" --also-make --batch-mode "${extra[@]}" "${VARIANT[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
     ;;
   vulkan|vulkan-mlir|hexagon|tpu)
     backend=${DL4J_FAMILY%%-*}; [ "${DL4J_FAMILY}" != vulkan-mlir ] || backend=vulkan
