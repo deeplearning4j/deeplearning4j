@@ -220,6 +220,46 @@ ${_sd_android_mlir_engine_patch}"
     endif()
 endif()
 
+# The Android NDK libc headers do not expose aligned_alloc even though the
+# pinned MLIR execution-engine runtime uses it for its generic aligned allocator.
+# Use POSIX memalign on Android; this preserves the allocator contract without
+# changing host or Apple builds.
+if(_sd_external_project STREQUAL "LLVM")
+    set(_sd_crunner_utils_file
+        "${SOURCE_DIR}/mlir/lib/ExecutionEngine/CRunnerUtils.cpp")
+    if(EXISTS "${_sd_crunner_utils_file}")
+        file(READ "${_sd_crunner_utils_file}" _sd_crunner_utils_source)
+        set(_sd_android_aligned_alloc_marker
+            "// SD_ANDROID_CRUNNERUTILS_ALIGNED_ALLOC_V1")
+        string(FIND "${_sd_crunner_utils_source}"
+            "${_sd_android_aligned_alloc_marker}"
+            _sd_android_aligned_alloc_marker_pos)
+        if(_sd_android_aligned_alloc_marker_pos EQUAL -1)
+            set(_sd_android_aligned_alloc_anchor [=[#elif defined(__APPLE__)
+  // aligned_alloc was added in MacOS 10.15. Fall back to posix_memalign to also
+  // support older versions.
+]=])
+            set(_sd_android_aligned_alloc_patch [=[#elif defined(__APPLE__) || defined(__ANDROID__)
+  // SD_ANDROID_CRUNNERUTILS_ALIGNED_ALLOC_V1
+  // aligned_alloc is not exposed by the Android NDK libc headers; use the POSIX
+  // allocator with the same alignment contract.
+]=])
+            string(REPLACE
+                "${_sd_android_aligned_alloc_anchor}"
+                "${_sd_android_aligned_alloc_patch}"
+                _sd_crunner_utils_patched
+                "${_sd_crunner_utils_source}")
+            if(_sd_crunner_utils_patched STREQUAL _sd_crunner_utils_source)
+                message(FATAL_ERROR
+                    "patch_external_llvm_coexistence: failed to patch Android "
+                    "aligned allocation in ${_sd_crunner_utils_file}")
+            endif()
+            file(WRITE "${_sd_crunner_utils_file}"
+                "${_sd_crunner_utils_patched}")
+        endif()
+    endif()
+endif()
+
 # The pinned MLIR SCF-to-SPIR-V conversion represents scf.for results with
 # Function-scope variables. Upstream initializes those variables only from
 # scf.yield in the loop body, so a zero-trip loop reads undefined data instead
