@@ -1201,6 +1201,8 @@ def shared_native_family(shard: dict, variant: dict) -> str:
     if variant.get("name") == "compat":
         return "compat"
     if build["backend"] in {"vulkan", "hexagon", "tpu"}:
+        if build["backend"] == "vulkan" and build.get("javacppPlatform", "").startswith("android-"):
+            return f"{build['javacppPlatform']}-vulkan"
         return "vulkan-mlir" if build["backend"] == "vulkan" and variant.get("mlir") else build["backend"]
     if build["backend"] == "cuda":
         return "windows-cuda" if shard["os"] == "windows" else "linux-cuda"
@@ -1212,6 +1214,9 @@ def shared_native_family(shard: dict, variant: dict) -> str:
 
 
 def android_api_level(variant: dict) -> int:
+    configured = variant.get("androidApi")
+    if configured is not None:
+        return int(configured)
     return 27 if "nnapi" in variant.get("name", "") else 21
 
 

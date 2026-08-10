@@ -77,6 +77,24 @@ case "${DL4J_FAMILY}" in
     variant_cpu windows-x86_64
     command=(mvn "${split_flags[@]}" "${repo[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Pcpu "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests "${VARIANT[@]}" -pl "${modules}" --also-make "${DL4J_MAVEN_GOAL}")
     ;;
+  android-arm64-vulkan|android-x86_64-vulkan)
+    case "${DL4J_FAMILY}" in
+      android-arm64-vulkan)
+        platform=android-arm64
+        profiles=(-Posx-aarch64-protoc -Pvulkan)
+        extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
+        ;;
+      android-x86_64-vulkan)
+        platform=android-x86_64
+        profiles=(-Pvulkan)
+        extra=("-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
+        ;;
+    esac
+    modules=:nd4j-vulkan,:nd4j-vulkan-preset
+    [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
+    variant_cpu "${platform}"
+    command=(mvn "${split_flags[@]}" "${repo[@]}" --no-transfer-progress "${profiles[@]}" -pl "${modules}" -Dlibnd4j.vulkan -Dlibnd4j.triton=ON "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Djavacpp.platform=${platform} "-Dplatform.classifier=${platform}" --also-make --batch-mode "${extra[@]}" "${VARIANT[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
+    ;;
   vulkan|vulkan-mlir|hexagon|tpu)
     backend=${DL4J_FAMILY%%-*}; [ "${DL4J_FAMILY}" != vulkan-mlir ] || backend=vulkan
     classifier=linux-x86_64

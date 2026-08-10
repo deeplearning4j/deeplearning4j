@@ -697,7 +697,8 @@
         "variants": [
           {
             "name": "base",
-            "suffix": ""
+            "suffix": "",
+            "androidApi": 24
           }
         ],
         "buildThreads": 24
