@@ -140,6 +140,48 @@ else()
         "External ${_sd_external_project} GNU-unique patch already applied: ${_sd_target_file}")
 endif()
 
+# Android's cross toolchain can cause LLVM's dependent shared-library options
+# to remain disabled even when the external-project cache receives ON values.
+# The Vulkan/SDX consumer requires the monolithic LLVM/MLIR DSOs and the
+# MLIRExecutionEngineShared target, so force the shared-runtime contract in the
+# downloaded LLVM project before its target directories are configured.
+if(_sd_external_project STREQUAL "LLVM")
+    set(_sd_llvm_options_file "${SOURCE_DIR}/llvm/CMakeLists.txt")
+    if(EXISTS "${_sd_llvm_options_file}")
+        file(READ "${_sd_llvm_options_file}" _sd_llvm_options_source)
+        set(_sd_android_shared_marker "# SD_ANDROID_LLVM_SHARED_RUNTIME_V1")
+        string(FIND "${_sd_llvm_options_source}" "${_sd_android_shared_marker}"
+            _sd_android_shared_marker_pos)
+        if(_sd_android_shared_marker_pos EQUAL -1)
+            set(_sd_llvm_options_anchor [=[cmake_dependent_option(LLVM_BUILD_LLVM_DYLIB "Build libllvm dynamic library" ${LLVM_BUILD_LLVM_DYLIB_default}
+                       "CAN_BUILD_LLVM_DYLIB" OFF)
+]=])
+            set(_sd_android_shared_patch [=[
+# SD_ANDROID_LLVM_SHARED_RUNTIME_V1
+if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+    set(CAN_BUILD_LLVM_DYLIB ON CACHE BOOL "" FORCE)
+    set(LLVM_BUILD_LLVM_DYLIB ON CACHE BOOL "Build libllvm dynamic library" FORCE)
+    set(LLVM_LINK_LLVM_DYLIB ON CACHE BOOL "Link tools against the libllvm dynamic library" FORCE)
+    set(MLIR_BUILD_MLIR_DYLIB ON CACHE BOOL "Build MLIR dynamic library" FORCE)
+    set(MLIR_LINK_MLIR_DYLIB ON CACHE BOOL "Link tools against the MLIR dynamic library" FORCE)
+endif()
+]=])
+            string(REPLACE
+                "${_sd_llvm_options_anchor}"
+                "${_sd_llvm_options_anchor}
+${_sd_android_shared_patch}
+"
+                _sd_llvm_options_patched
+                "${_sd_llvm_options_source}")
+            if(_sd_llvm_options_patched STREQUAL _sd_llvm_options_source)
+                message(FATAL_ERROR
+                    "patch_external_llvm_coexistence: failed to enable Android LLVM shared runtime")
+            endif()
+            file(WRITE "${_sd_llvm_options_file}" "${_sd_llvm_options_patched}")
+        endif()
+    endif()
+endif()
+
 # The pinned MLIR SCF-to-SPIR-V conversion represents scf.for results with
 # Function-scope variables. Upstream initializes those variables only from
 # scf.yield in the loop body, so a zero-trip loop reads undefined data instead

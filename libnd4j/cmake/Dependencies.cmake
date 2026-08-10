@@ -1676,7 +1676,7 @@ function(setup_triton)
     # dynamic-linking and MLIR correctness patches and partitions dependency caches.
     # Bump the recipe whenever the managed install contract changes; this prevents
     # incomplete LLVM/MLIR archives from being restored from the shared cache.
-    set(_TRITON_MANAGED_RECIPE_REVISION "managed-llvm-patches-v6")
+    set(_TRITON_MANAGED_RECIPE_REVISION "managed-llvm-patches-v7")
     set(_TRITON_LLVM_INSTALL_MARKER
         "${TRITON_LLVM_INSTALL_DIR}/.sd-${_TRITON_MANAGED_RECIPE_REVISION}")
     if(_TRITON_BUILDS_COMPILER)
@@ -2083,12 +2083,11 @@ function(setup_triton)
             COMMAND ${CMAKE_COMMAND} -E env
                 "SD_SMART_CCACHE_SEGMENT=triton_llvm"
                 "SD_SMART_CCACHE_SHAPE_KEY=${TRITON_LLVM_SHAPE_KEY}"
-                ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel ${DEP_PARALLEL_JOBS}
-            # MLIRExecutionEngineShared is EXCLUDE_FROM_LIBMLIR, so it is not part
-            # of the default `all` target. Build it explicitly for FindMLIR and the
-            # runtime staging contract used by Vulkan/SDX consumers.
-            COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release
-                --target MLIRExecutionEngineShared --parallel ${DEP_PARALLEL_JOBS}
+            # MLIRExecutionEngineShared is EXCLUDE_FROM_LIBMLIR, so include it
+            # explicitly in the same build invocation. Keeping both goals in one
+            # generator call avoids rebuilding the complete dependency graph.
+            ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release
+                --target all MLIRExecutionEngineShared --parallel ${DEP_PARALLEL_JOBS}
     )
     message(STATUS "   Triton LLVM smart ccache segment=triton_llvm shape=${TRITON_LLVM_SHAPE_KEY}")
 
