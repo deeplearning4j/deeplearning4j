@@ -785,6 +785,9 @@
         "classifierTokens": [
           "linux-x86_64"
         ],
+        "unclassifiedArtifactIds": [
+          "nd4j-vulkan-preset"
+        ],
         "includeMetadata": true
       },
       "build": {
@@ -839,6 +842,9 @@
         ],
         "classifierTokens": [
           "linux-x86_64-compile"
+        ],
+        "unclassifiedArtifactIds": [
+          "nd4j-vulkan-preset"
         ],
         "includeMetadata": true
       },
