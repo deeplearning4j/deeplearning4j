@@ -1676,7 +1676,7 @@ function(setup_triton)
     # dynamic-linking and MLIR correctness patches and partitions dependency caches.
     # Bump the recipe whenever the managed install contract changes; this prevents
     # incomplete LLVM/MLIR archives from being restored from the shared cache.
-    set(_TRITON_MANAGED_RECIPE_REVISION "managed-llvm-patches-v7")
+    set(_TRITON_MANAGED_RECIPE_REVISION "managed-llvm-patches-v8")
     set(_TRITON_LLVM_INSTALL_MARKER
         "${TRITON_LLVM_INSTALL_DIR}/.sd-${_TRITON_MANAGED_RECIPE_REVISION}")
     if(_TRITON_BUILDS_COMPILER)
@@ -2189,6 +2189,10 @@ function(setup_triton)
                 -DLLVM_DYLIB_COMPONENTS=all
                 -DMLIR_BUILD_MLIR_DYLIB=ON
                 -DMLIR_LINK_MLIR_DYLIB=ON
+                # Cross-compiling Android makes LLVM_NATIVE_ARCH differ from
+                # the target list, which otherwise disables MLIR's execution
+                # engine (and its shared runtime target) by default.
+                -DMLIR_ENABLE_EXECUTION_ENGINE=ON
                 -DMLIR_ENABLE_BINDINGS_PYTHON=OFF
                 # Disable tests — mlir-translate/mlir-query link against test dialect
                 # libraries (TestDialect, SymbolOp) that fail to build.
