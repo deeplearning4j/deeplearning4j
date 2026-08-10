@@ -134,23 +134,34 @@ public final class SharedCompilerRuntime {
         }
 
         String compiler = null;
-        try (BufferedReader reader = Files.newBufferedReader(
-                toolchain, StandardCharsets.UTF_8)) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.isEmpty() || line.startsWith("#")) {
-                    continue;
+        String requestedCompiler = System.getProperty("javacpp.platform.compiler");
+        if (properties.getProperty("platform").startsWith("android")
+                && requestedCompiler != null
+                && !requestedCompiler.isEmpty()) {
+            // Android JavaCPP compilation is cross-compilation. The CMake manifest
+            // describes the host compiler used to build the shared runtime, while
+            // JavaCPP must use the API-specific NDK target wrapper selected by the
+            // release shard.
+            compiler = requestedCompiler;
+        } else {
+            try (BufferedReader reader = Files.newBufferedReader(
+                    toolchain, StandardCharsets.UTF_8)) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.isEmpty() || line.startsWith("#")) {
+                        continue;
+                    }
+                    String prefix = "platform.compiler=";
+                    if (!line.startsWith(prefix) || compiler != null) {
+                        throw new IllegalStateException(
+                                "Invalid JavaCPP build toolchain metadata " + toolchain);
+                    }
+                    compiler = line.substring(prefix.length());
                 }
-                String prefix = "platform.compiler=";
-                if (!line.startsWith(prefix) || compiler != null) {
-                    throw new IllegalStateException(
-                            "Invalid JavaCPP build toolchain metadata " + toolchain);
-                }
-                compiler = line.substring(prefix.length());
+            } catch (IOException e) {
+                throw new IllegalStateException(
+                        "Cannot read JavaCPP build toolchain metadata " + toolchain, e);
             }
-        } catch (IOException e) {
-            throw new IllegalStateException(
-                    "Cannot read JavaCPP build toolchain metadata " + toolchain, e);
         }
 
         if (compiler == null || compiler.isEmpty()) {
