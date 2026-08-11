@@ -258,17 +258,23 @@ def load_plan(path: Path) -> dict[str, Any]:
         if not shard.get("worker") or not variants:
             raise ValueError(f"shard {shard_id} has no worker or build variants")
         if shard.get("os") == "windows":
-            unsupported = [
-                str(variant.get("name") or "<unnamed>")
-                for variant in variants
-                if isinstance(variant, dict)
-                and (
-                    variant.get("mlir")
-                    or variant.get("triton")
-                    or variant.get("name") == "compile"
-                    or str(variant.get("name", "")).endswith("-compile")
+            unsupported = []
+            for variant in variants:
+                if not isinstance(variant, dict):
+                    continue
+                name = str(variant.get("name") or "<unnamed>")
+                native_compile = variant.get("windowsNativeCompile") is True
+                managed_llvm = variant.get("mlir") or variant.get("triton")
+                managed_compile_name = name == "compile" or name.endswith("-compile")
+                invalid_native_compile = native_compile and (
+                    name != "compile"
+                    or variant.get("extension") != "compile"
+                    or variant.get("suffix") != "-compile"
+                    or managed_llvm
+                    or variant.get("helper")
                 )
-            ]
+                if invalid_native_compile or (not native_compile and (managed_llvm or managed_compile_name)):
+                    unsupported.append(name)
             if unsupported:
                 raise ValueError(
                     f"Windows shard {shard_id} requests managed LLVM/MLIR variants "
@@ -1369,16 +1375,15 @@ def file_digest(path: Path) -> str:
 
 
 def publish_test_repository(
-    s3, bucket: str, run_prefix: str, repository: Path, repository_manifest: Path,
+    s3, bucket: str, repository_prefix: str, repository: Path, repository_manifest: Path,
     run_id: str, version: str, commit: str, complete_matrix: bool,
 ) -> dict[str, Any]:
-    """Publish an exploded Maven 2 layout, with the readiness marker written last."""
-    repository_prefix = f"{run_prefix}maven-repository/"
-    paginator = s3.get_paginator("list_objects_v2")
-    for page in paginator.paginate(Bucket=bucket, Prefix=repository_prefix):
-        stale = [{"Key": item["Key"]} for item in page.get("Contents", [])]
-        if stale:
-            s3.delete_objects(Bucket=bucket, Delete={"Objects": stale, "Quiet": True})
+    """Upsert a stable exploded Maven 2 layout, writing readiness last.
+
+    The stable prefix lets partial classifier publishes replace the same Maven
+    coordinates without deleting unrelated versions or classifiers.
+    """
+    repository_prefix = repository_prefix.strip("/") + "/"
     files = sorted(path for path in repository.rglob("*") if path.is_file())
     for path in files:
         relative = path.relative_to(repository).as_posix()
@@ -1386,6 +1391,15 @@ def publish_test_repository(
             str(path), bucket, repository_prefix + relative,
             ExtraArgs={"ServerSideEncryption": "AES256"},
         )
+        if path.name == "index.html":
+            directory = relative[: -len("index.html")]
+            s3.upload_file(
+                str(path), bucket, repository_prefix + directory,
+                ExtraArgs={
+                    "ServerSideEncryption": "AES256",
+                    "ContentType": "text/html; charset=utf-8",
+                },
+            )
     metadata_prefix = repository_prefix + ".dl4j/"
     s3.upload_file(
         str(repository_manifest), bucket, metadata_prefix + "repository-manifest.json",
@@ -1425,6 +1439,7 @@ def collect(args: argparse.Namespace) -> None:
     plan = load_plan(args.plan)
     _, region, _, _, s3, _, _ = session_clients(args.region, allow_wizard=not getattr(args, "no_wizard", False))
     prefix = f"{plan.get('artifactPrefix', 'deeplearning4j/releases')}/{args.run_id}/"
+    repository_prefix = f"{plan.get('artifactPrefix', 'deeplearning4j/releases').rstrip('/')}/maven-repository/"
     paginator = s3.get_paginator("list_objects_v2")
     objects = [item for page in paginator.paginate(Bucket=args.bucket, Prefix=prefix) for item in page.get("Contents", [])]
     if not objects:
@@ -1504,7 +1519,7 @@ def collect(args: argparse.Namespace) -> None:
             materialize_command.extend(("--input", str(archive)))
         subprocess.run(materialize_command, check=True)
         test_repository_info = publish_test_repository(
-            s3, args.bucket, prefix, test_repository, test_repository_manifest,
+            s3, args.bucket, repository_prefix, test_repository, test_repository_manifest,
             args.run_id, args.version, args.commit, not selected,
         )
         manifest = {

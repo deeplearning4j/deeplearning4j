@@ -56,12 +56,15 @@ if(NOT SDX_TEST_FEATURE_ENABLED)
     message(FATAL_ERROR "explicit ON was not honored")
 endif()
 
-# The standalone SDK and every platform binding must receive the exact shared
-# runtime closure published by BuildSDX (currently LLVM + MLIR for Triton).
+# The SDK and every platform binding must receive the exact shared runtime
+# closure for either a standalone or monolithic Triton-enabled target.
 file(READ "${SDX_SOURCE_DIR}/cmake/MainBuildFlow.cmake" _sdx_main_build_flow)
 set(_sdx_packaging_contract_fragments
     [=[get_target_property(_sdx_runtime_dependency_targets]=]
     [=[SDX_RUNTIME_DEPENDENCY_TARGETS]=]
+    [=[if(_sdx_sdk_uses_monolithic AND HAVE_TRITON AND]=]
+    [=[triton_mlir_shared triton_llvm_shared]=]
+    [=[set_property(TARGET ${_sdx_sdk_target} PROPERTY]=]
     [=[list(JOIN _sdx_sdk_shared_runtime_files "|"]=]
     [=[RUNTIME_LIBRARIES_PIPE=${_sdx_sdk_shared_runtime_files_pipe}]=]
     [=[${_sdx_shared_runtime_stage_cmds}]=]

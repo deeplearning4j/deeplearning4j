@@ -25,12 +25,14 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Breadcrumb test for the create-op freeze bug in native-only (monolithic) CUDA graph capture.
@@ -131,6 +133,32 @@ public class DspCreateOpFreezeTest {
         return g;
     }
 
+    /**
+     * Fixed-width decode fixture: range(step, step + 1) always has shape [1],
+     * while its value changes every token. This distinguishes value drift from
+     * shape drift and reproduces the composite-gap invalidation seen in decoder
+     * graphs.
+     */
+    private SameDiff buildFixedWidthRangeGraph(int dim) {
+        SameDiff g = SameDiff.create();
+
+        SDVariable step = g.placeHolder("step", DataType.INT64);
+        SDVariable x = g.placeHolder("x", DataType.FLOAT, 1, dim);
+        SDVariable one = g.constant("one", Nd4j.scalar(DataType.INT64, 1L));
+        SDVariable limit = g.math().add("limit", step, one);
+        SDVariable range = g.range("range_pos", step, limit, one, DataType.INT64);
+        SDVariable position = g.castTo("position", range, DataType.FLOAT);
+        SDVariable position2d = g.reshape("position_2d", position, 1, 1);
+        SDVariable shifted = g.math().add("shifted", x, position2d);
+
+        INDArray identity = Nd4j.eye(dim).castTo(DataType.FLOAT);
+        SDVariable weight = g.var("W", identity);
+        SDVariable projected = g.mmul("projected", shifted, weight);
+        g.math().sum("out", projected, false);
+
+        return g;
+    }
+
     private void configureMode(SameDiff g, GraphExecutionMode mode) {
         g.getSessions().clear();
         g.setGraphExecutionMode(mode);
@@ -214,6 +242,30 @@ public class DspCreateOpFreezeTest {
      * {@code sum} = step*(step+1)/2. With the fix, {@code pos_embed} in the output increases
      * each step. With the bug, it's frozen at the capture-time value.</p>
      */
+    @Test
+    @DisplayName("fixed-width range remains live across Triton composite replay")
+    void testFixedWidthRangeRemainsLiveInTritonCompositeReplay() {
+        assumeTrue(Nd4j.getBackendDeviceType() == DeviceType.CUDA_GPU
+                        || Nd4j.getBackendDeviceType() == DeviceType.GPU,
+                "CUDA backend required for Triton composite replay");
+
+        final int dim = 16;
+        sd = buildFixedWidthRangeGraph(dim);
+        configureMode(sd, GraphExecutionMode.TRITON);
+
+        INDArray fixedX = Nd4j.zeros(DataType.FLOAT, 1, dim);
+        for (int step = 1; step <= 18; step++) {
+            Map<String, INDArray> inputs = new LinkedHashMap<>();
+            inputs.put("step", Nd4j.scalar(DataType.INT64, (long) step));
+            inputs.put("x", fixedX);
+
+            double actual = sd.output(inputs, "out").get("out").getDouble(0);
+            double expected = dim * (double) step;
+            assertEquals(expected, actual, 1e-3,
+                    "Fixed-shape range value was stale at decode step " + step);
+        }
+    }
+
     @Test
     @DisplayName("range(0, stepCount, 1) position signal increases monotonically with stepCount")
     void testPositionSignalMonotonic() {

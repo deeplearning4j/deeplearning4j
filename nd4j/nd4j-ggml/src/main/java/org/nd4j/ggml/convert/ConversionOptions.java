@@ -22,6 +22,7 @@ package org.nd4j.ggml.convert;
 
 import lombok.Builder;
 import lombok.Data;
+import org.nd4j.common.config.ND4JInferenceWeightDataType;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.factory.Nd4j;
@@ -138,6 +139,16 @@ public class ConversionOptions {
         DEQUANTIZE_TO_BFLOAT16,
 
         /**
+         * Convert quantized weights to FP8 E4M3
+         */
+        DEQUANTIZE_TO_FLOAT8_E4M3,
+
+        /**
+         * Convert quantized weights to FP8 E5M2
+         */
+        DEQUANTIZE_TO_FLOAT8_E5M2,
+
+        /**
          * Preserve quantization metadata in SDZ for later reconstruction
          */
         PRESERVE_QUANTIZATION,
@@ -148,29 +159,66 @@ public class ConversionOptions {
         HYBRID,
 
         /**
-         * Keep supported quantization types (Q8_0, Q4_K, Q6_K) as packed INT8 bytes
+         * Keep supported quantization types (Q8_0, Q4_K, Q6_K) as packed bytes
          * and insert ggml_qmatmul ops at every linear layer that uses them.
-         * Unsupported types fall back to DEQUANTIZE_TO_FLOAT16.
-         * Default is OFF to preserve byte-identical behavior; enable via
-         * system property nd4j.ggml.runtimeQuant=true or this mode.
+         * Incompatible linear weights are rejected rather than dequantized.
          */
-        RUNTIME_QUANTIZED_MATMUL
+        RUNTIME_QUANTIZED_MATMUL,
+
+        /**
+         * Require Q8_0 packed linear weights and runtime quantized matmul.
+         */
+        RUNTIME_QUANTIZED_INT8,
+
+        /**
+         * Require the Q4_K family of packed linear weights and runtime quantized matmul.
+         * Q6_K tensors are accepted because GGUF Q4_K_M profiles use them for selected layers.
+         */
+        RUNTIME_QUANTIZED_INT4
     }
 
     /**
-     * Create default options for inference.
-     * Uses FP32 on all backends. FP16 weights with explicit cast ops cause
-     * cumulative precision loss over many transformer layers (669 HALF↔FLOAT32
-     * round-trips on a 24-layer model produce wrong logits). cuBLAS and
-     * rms_norm already use FP32 accumulation internally, so FP32 weights
-     * avoid unnecessary casts while maintaining the same compute precision.
+     * Create default options for inference. FP16 is the default weight storage
+     * dtype; {@code nd4j.optimizer.weightDtype} can select a different policy.
      */
     public static ConversionOptions forInference() {
-        return ConversionOptions.builder()
-                .forTraining(false)
-                .quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT32)
-                .targetDataType(DataType.FLOAT)
-                .build();
+        return forInference(ND4JInferenceWeightDataType.resolve());
+    }
+
+    /**
+     * Create inference options for an explicit weight storage policy.
+     *
+     * <p>INT8 and INT4 select strict packed GGUF execution. They do not cast dense
+     * weights to integer arrays and they do not silently dequantize incompatible
+     * linear weights.</p>
+     */
+    public static ConversionOptions forInference(ND4JInferenceWeightDataType weightType) {
+        ConversionOptionsBuilder builder = ConversionOptions.builder().forTraining(false);
+        switch (weightType) {
+            case FLOAT32:
+                return builder.quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT32)
+                        .targetDataType(DataType.FLOAT).build();
+            case FLOAT16:
+                return builder.quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT16)
+                        .targetDataType(DataType.HALF).build();
+            case BFLOAT16:
+                return builder.quantizationMode(QuantizationMode.DEQUANTIZE_TO_BFLOAT16)
+                        .targetDataType(DataType.BFLOAT16).build();
+            case FLOAT8_E4M3:
+                return builder.quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT8_E4M3)
+                        .targetDataType(DataType.FLOAT8).build();
+            case FLOAT8_E5M2:
+                return builder.quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT8_E5M2)
+                        .targetDataType(DataType.FLOAT8_E5M2).build();
+            case INT8:
+                return builder.quantizationMode(QuantizationMode.RUNTIME_QUANTIZED_INT8)
+                        .targetDataType(DataType.HALF).build();
+            case INT4:
+                return builder.quantizationMode(QuantizationMode.RUNTIME_QUANTIZED_INT4)
+                        .targetDataType(DataType.HALF).build();
+            default:
+                throw new IllegalArgumentException("Unsupported inference weight dtype: " + weightType);
+        }
     }
 
     /**
@@ -215,10 +263,9 @@ public class ConversionOptions {
 
     /**
      * Create options for runtime quantized matmul.
-     * Supported types (Q8_0, Q4_K, Q6_K) are kept as raw INT8 packed bytes;
+     * Supported types (Q8_0, Q4_K, Q6_K) are kept as raw packed bytes;
      * ggml_qmatmul ops are wired in place of normal matmuls for those weights.
-     * Unsupported types fall back to FP16 dequantization.
-     * Existing default conversion behavior is NOT changed when this is not used.
+     * Incompatible linear weights fail conversion instead of falling back.
      */
     public static ConversionOptions runtimeQuantizedMatmul() {
         return ConversionOptions.builder()
@@ -237,7 +284,7 @@ public class ConversionOptions {
      *       packed as raw INT8 bytes; the graph emits {@code ggml_qmatmul} ops for them.
      *       A 13 GB Q8_0 GGUF stays roughly 13 GB on disk and in memory — NOT 50 GB of
      *       dense FP32 shards.</li>
-     *   <li>Unsupported quantization types fall back to FP16 dequantization (hybrid graph).</li>
+     *   <li>Unsupported quantized linear weights fail conversion instead of creating a mixed graph.</li>
      *   <li>{@code forTraining=true} marks weight variables as trainable in SameDiff so that
      *       a {@code PeftModel} can freeze the base weights and attach LoRA adapter parameters.</li>
      *   <li>Working dtype is FP16 so activations and LoRA adapters share a compact dtype.</li>
@@ -268,7 +315,9 @@ public class ConversionOptions {
      * Returns true if this ConversionOptions is configured for runtime quantized matmul.
      */
     public boolean isRuntimeQuantizedMatmul() {
-        return quantizationMode == QuantizationMode.RUNTIME_QUANTIZED_MATMUL;
+        return quantizationMode == QuantizationMode.RUNTIME_QUANTIZED_MATMUL
+                || quantizationMode == QuantizationMode.RUNTIME_QUANTIZED_INT8
+                || quantizationMode == QuantizationMode.RUNTIME_QUANTIZED_INT4;
     }
 
     /**

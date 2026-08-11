@@ -17,12 +17,13 @@
  ******************************************************************************/
 package org.eclipse.deeplearning4j.sdx.aot;
 
-import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.ObjectHandle;
 import org.graalvm.nativeimage.ObjectHandles;
 import org.graalvm.nativeimage.UnmanagedMemory;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
+import org.graalvm.nativeimage.c.function.CFunctionPointer;
+import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CCharPointerPointer;
 import org.graalvm.nativeimage.c.type.CIntPointer;
@@ -31,6 +32,8 @@ import org.graalvm.nativeimage.c.type.WordPointer;
 import org.graalvm.word.WordFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 /**
  * C ABI of {@code libsdx_llm} — the AOT-compiled LLM surface of the SDX SDK.
@@ -44,7 +47,7 @@ import java.nio.charset.StandardCharsets;
 public final class SdxLlmCApi {
 
     /** Keep in sync with SDX_LLM_ABI_VERSION in sdx_llm_c.h. */
-    static final int ABI_VERSION = 1;
+    static final int ABI_VERSION = 2;
 
     /* Status codes — mirrors the sdx_status_t subset used by this ABI. */
     static final int OK = 0;
@@ -69,6 +72,53 @@ public final class SdxLlmCApi {
     @CEntryPoint(name = "sdxLlmAbiVersion")
     public static int sdxLlmAbiVersion(IsolateThread runtime) {
         return ABI_VERSION;
+    }
+
+    /* ── Canonical model preparation/resolution ─────────────────────────── */
+
+    @CEntryPoint(name = "sdxLlmPrepareGguf")
+    public static int sdxLlmPrepareGguf(IsolateThread runtime, CCharPointer sourceGguf,
+                                        CCharPointer tokenizerPath, CCharPointer targetProfile,
+                                        CCharPointer cacheDirectory, CCharPointer optionsJson,
+                                        CCharPointerPointer outJson) {
+        try {
+            SdxNativeLibs.bootstrap();
+            String source = toJavaString(sourceGguf);
+            String target = toJavaString(targetProfile);
+            String cache = toJavaString(cacheDirectory);
+            if (source == null || target == null || cache == null || outJson.isNull()) {
+                lastError = "source_gguf, target_profile, cache_directory and out_json must not be null";
+                return INVALID_ARGUMENT;
+            }
+            outJson.write(toCString(SdxGgufModelPreparer.prepare(source,
+                    toJavaString(tokenizerPath), target, cache, toJavaString(optionsJson))));
+            return OK;
+        } catch (Throwable t) {
+            lastError = describe(t);
+            return statusFor(t);
+        }
+    }
+
+    @CEntryPoint(name = "sdxLlmResolveModelBundle")
+    public static int sdxLlmResolveModelBundle(IsolateThread runtime, CCharPointer sourceSdz,
+                                               CCharPointer targetProfile,
+                                               CCharPointer cacheDirectory,
+                                               CCharPointerPointer outJson) {
+        try {
+            SdxNativeLibs.bootstrap();
+            String source = toJavaString(sourceSdz);
+            String target = toJavaString(targetProfile);
+            String cache = toJavaString(cacheDirectory);
+            if (source == null || target == null || cache == null || outJson.isNull()) {
+                lastError = "source_sdz, target_profile, cache_directory and out_json must not be null";
+                return INVALID_ARGUMENT;
+            }
+            outJson.write(toCString(SdxGgufModelPreparer.resolve(source, target, cache)));
+            return OK;
+        } catch (Throwable t) {
+            lastError = describe(t);
+            return statusFor(t);
+        }
     }
 
     /* ── Model lifecycle ────────────────────────────────────────────────── */
@@ -97,10 +147,34 @@ public final class SdxLlmCApi {
         }
     }
 
+    /** Open a resolver-produced accelerator bundle through the shared SDX runtime. */
+    @CEntryPoint(name = "sdxLlmLoadCompiledModel")
+    public static ObjectHandle sdxLlmLoadCompiledModel(IsolateThread runtime,
+                                                       CCharPointer bundlePath,
+                                                       CCharPointer tokenizerPath,
+                                                       CCharPointer targetProfile,
+                                                       CCharPointer optionsJson) {
+        try {
+            SdxNativeLibs.bootstrap();
+            String bundle = toJavaString(bundlePath);
+            String target = toJavaString(targetProfile);
+            if (bundle == null || target == null) {
+                lastError = "bundle_path and target_profile must not be null";
+                return WordFactory.zero();
+            }
+            SdxCompiledLlmCore core = SdxCompiledLlmCore.load(bundle,
+                    toJavaString(tokenizerPath), target, toJavaString(optionsJson));
+            return ObjectHandles.getGlobal().create(core);
+        } catch (Throwable t) {
+            lastError = describe(t);
+            return WordFactory.zero();
+        }
+    }
+
     @CEntryPoint(name = "sdxLlmUnloadModel")
     public static int sdxLlmUnloadModel(IsolateThread runtime, ObjectHandle model) {
         try {
-            SdxLlmCore core = resolve(model);
+            SdxLlmModel core = resolve(model);
             if (core == null) {
                 return INVALID_ARGUMENT;
             }
@@ -124,14 +198,157 @@ public final class SdxLlmCApi {
     public static int sdxLlmGenerate(IsolateThread runtime, ObjectHandle model, CCharPointer prompt,
                                      CCharPointer optionsJson, CCharPointerPointer outText) {
         try {
-            SdxLlmCore core = resolve(model);
+            SdxLlmModel core = resolve(model);
             String promptText = toJavaString(prompt);
             if (core == null || promptText == null || outText.isNull()) {
                 lastError = "model, prompt and out_text must not be null";
                 return INVALID_ARGUMENT;
             }
-            GenerationResult result = core.generate(promptText, toJavaString(optionsJson));
-            outText.write(toCString(result.getText()));
+            outText.write(toCString(core.generateText(promptText, toJavaString(optionsJson))));
+            return OK;
+        } catch (Throwable t) {
+            lastError = describe(t);
+            return EXECUTION_FAILED;
+        }
+    }
+
+    /** C callback receiving one complete UTF-8 text chunk. */
+    public interface ChunkCallback extends CFunctionPointer {
+        @InvokeCFunctionPointer
+        void invoke(CCharPointer chunk);
+    }
+
+    /** C callback returning non-zero when cooperative cancellation is requested. */
+    public interface CancelCallback extends CFunctionPointer {
+        @InvokeCFunctionPointer
+        int invoke();
+    }
+
+    @CEntryPoint(name = "sdxLlmGenerateStreaming")
+    public static int sdxLlmGenerateStreaming(IsolateThread runtime, ObjectHandle model,
+                                              CCharPointer prompt, CCharPointer optionsJson,
+                                              ChunkCallback onChunk,
+                                              CancelCallback shouldCancel,
+                                              CCharPointerPointer outText) {
+        try {
+            SdxLlmModel core = resolve(model);
+            String promptText = toJavaString(prompt);
+            if (core == null || promptText == null || outText.isNull()) {
+                lastError = "model, prompt and out_text must not be null";
+                return INVALID_ARGUMENT;
+            }
+            Consumer<String> consumer = onChunk.isNull()
+                    ? null : new NativeChunkConsumer(onChunk.rawValue());
+            BooleanSupplier cancel = shouldCancel.isNull()
+                    ? null : new NativeCancelSupplier(shouldCancel.rawValue());
+            outText.write(toCString(core.generateStreaming(promptText,
+                    toJavaString(optionsJson), consumer, cancel)));
+            return OK;
+        } catch (Throwable t) {
+            lastError = describe(t);
+            return EXECUTION_FAILED;
+        }
+    }
+
+    /**
+     * Graal native words cannot be captured by Java lambdas. Store only the raw
+     * address in an ordinary Java object and reconstruct the function pointer at
+     * the invocation boundary.
+     */
+    private static final class NativeChunkConsumer implements Consumer<String> {
+        private final long callbackAddress;
+
+        private NativeChunkConsumer(long callbackAddress) {
+            this.callbackAddress = callbackAddress;
+        }
+
+        @Override
+        public void accept(String chunk) {
+            CCharPointer nativeChunk = toCString(chunk);
+            try {
+                ChunkCallback callback = WordFactory.pointer(callbackAddress);
+                callback.invoke(nativeChunk);
+            } finally {
+                UnmanagedMemory.free(nativeChunk);
+            }
+        }
+    }
+
+    private static final class NativeCancelSupplier implements BooleanSupplier {
+        private final long callbackAddress;
+
+        private NativeCancelSupplier(long callbackAddress) {
+            this.callbackAddress = callbackAddress;
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            CancelCallback callback = WordFactory.pointer(callbackAddress);
+            return callback.invoke() != 0;
+        }
+    }
+
+    /**
+     * Generate a structured chat result. The imported tokenizer/model owns
+     * rendering, reasoning-block normalization, and tool-call decoding.
+     */
+    @CEntryPoint(name = "sdxLlmGenerateChat")
+    public static int sdxLlmGenerateChat(IsolateThread runtime, ObjectHandle model,
+                                         CCharPointer requestJson,
+                                         CCharPointer optionsJson,
+                                         CCharPointerPointer outJson) {
+        try {
+            SdxLlmModel core = resolve(model);
+            String request = toJavaString(requestJson);
+            if (core == null || request == null || outJson.isNull()) {
+                lastError = "model, request_json and out_json must not be null";
+                return INVALID_ARGUMENT;
+            }
+            outJson.write(toCString(core.generateChat(
+                    request, toJavaString(optionsJson))));
+            return OK;
+        } catch (Throwable t) {
+            lastError = describe(t);
+            return EXECUTION_FAILED;
+        }
+    }
+
+    /** Decode streamed assistant text with the imported model's chat protocol. */
+    @CEntryPoint(name = "sdxLlmParseChatResult")
+    public static int sdxLlmParseChatResult(IsolateThread runtime, ObjectHandle model,
+                                            CCharPointer requestJson,
+                                            CCharPointer rawText,
+                                            CCharPointerPointer outJson) {
+        try {
+            SdxLlmModel core = resolve(model);
+            String request = toJavaString(requestJson);
+            String raw = toJavaString(rawText);
+            if (core == null || request == null || raw == null || outJson.isNull()) {
+                lastError = "model, request_json, raw_text and out_json must not be null";
+                return INVALID_ARGUMENT;
+            }
+            outJson.write(toCString(core.parseChatResult(request, raw)));
+            return OK;
+        } catch (Throwable t) {
+            lastError = describe(t);
+            return EXECUTION_FAILED;
+        }
+    }
+
+    /** Render the tokenizer/model-owned template from a message array or full context object. */
+    @CEntryPoint(name = "sdxLlmRenderChatPrompt")
+    public static int sdxLlmRenderChatPrompt(IsolateThread runtime, ObjectHandle model,
+                                             CCharPointer messagesOrContextJson,
+                                             int addGenerationPrompt,
+                                             CCharPointerPointer outPrompt) {
+        try {
+            SdxLlmModel core = resolve(model);
+            String context = toJavaString(messagesOrContextJson);
+            if (core == null || context == null || outPrompt.isNull()) {
+                lastError = "model, chat context and out_prompt must not be null";
+                return INVALID_ARGUMENT;
+            }
+            outPrompt.write(toCString(core.renderChatPrompt(context, addGenerationPrompt != 0)));
             return OK;
         } catch (Throwable t) {
             lastError = describe(t);
@@ -143,7 +360,7 @@ public final class SdxLlmCApi {
     @CEntryPoint(name = "sdxLlmLastResultJson")
     public static int sdxLlmLastResultJson(IsolateThread runtime, ObjectHandle model, CCharPointerPointer outJson) {
         try {
-            SdxLlmCore core = resolve(model);
+            SdxLlmModel core = resolve(model);
             if (core == null || outJson.isNull()) {
                 lastError = "model and out_json must not be null";
                 return INVALID_ARGUMENT;
@@ -160,7 +377,7 @@ public final class SdxLlmCApi {
     @CEntryPoint(name = "sdxLlmInfoJson")
     public static int sdxLlmInfoJson(IsolateThread runtime, ObjectHandle model, CCharPointerPointer outJson) {
         try {
-            SdxLlmCore core = resolve(model);
+            SdxLlmModel core = resolve(model);
             if (core == null || outJson.isNull()) {
                 lastError = "model and out_json must not be null";
                 return INVALID_ARGUMENT;
@@ -183,7 +400,7 @@ public final class SdxLlmCApi {
     public static int sdxLlmTokenize(IsolateThread runtime, ObjectHandle model, CCharPointer text,
                                      int addSpecialTokens, WordPointer outIds, CIntPointer outCount) {
         try {
-            SdxLlmCore core = resolve(model);
+            SdxLlmModel core = resolve(model);
             String input = toJavaString(text);
             if (core == null || input == null || outIds.isNull() || outCount.isNull()) {
                 lastError = "model, text, out_ids and out_count must not be null";
@@ -208,7 +425,7 @@ public final class SdxLlmCApi {
     public static int sdxLlmDetokenize(IsolateThread runtime, ObjectHandle model, CIntPointer ids,
                                        int count, int skipSpecialTokens, CCharPointerPointer outText) {
         try {
-            SdxLlmCore core = resolve(model);
+            SdxLlmModel core = resolve(model);
             if (core == null || ids.isNull() || count < 0 || outText.isNull()) {
                 lastError = "model, ids and out_text must not be null (count >= 0)";
                 return INVALID_ARGUMENT;
@@ -304,12 +521,12 @@ public final class SdxLlmCApi {
 
     /* ── Helpers ────────────────────────────────────────────────────────── */
 
-    private static SdxLlmCore resolve(ObjectHandle handle) {
+    private static SdxLlmModel resolve(ObjectHandle handle) {
         if (handle.equal(WordFactory.zero())) {
             return null;
         }
         Object o = ObjectHandles.getGlobal().get(handle);
-        return o instanceof SdxLlmCore ? (SdxLlmCore) o : null;
+        return o instanceof SdxLlmModel ? (SdxLlmModel) o : null;
     }
 
     private static String toJavaString(CCharPointer pointer) {
@@ -330,5 +547,13 @@ public final class SdxLlmCApi {
     private static String describe(Throwable t) {
         String message = t.getMessage();
         return t.getClass().getSimpleName() + (message == null ? "" : ": " + message);
+    }
+
+    private static int statusFor(Throwable t) {
+        if (t instanceof IllegalArgumentException || t instanceof NullPointerException) {
+            return INVALID_ARGUMENT;
+        }
+        if (t instanceof java.io.IOException) return IO_ERROR;
+        return EXECUTION_FAILED;
     }
 }

@@ -30,6 +30,8 @@ use std::slice;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
+use minijinja::{Environment, Error as MiniJinjaError, ErrorKind};
+use serde_json::{Map as JsonMap, Value as JsonValue};
 use tokenizers::tokenizer::{
     DecodeStream, DecoderWrapper, ModelWrapper, NormalizerWrapper, PostProcessorWrapper,
     PreTokenizerWrapper,
@@ -60,6 +62,159 @@ fn clear_error() {
     LAST_ERROR.with(|e| {
         *e.lock().unwrap() = None;
     });
+}
+
+fn required_utf8(value: *const c_char, name: &str) -> Result<String, String> {
+    if value.is_null() {
+        return Err(format!("{} cannot be null", name));
+    }
+    unsafe { CStr::from_ptr(value) }
+        .to_str()
+        .map(str::to_owned)
+        .map_err(|error| format!("{} is not valid UTF-8: {}", name, error))
+}
+
+fn normalize_special_token_values(context: &mut JsonMap<String, JsonValue>) {
+    for (name, value) in context.iter_mut() {
+        if !name.ends_with("_token") {
+            continue;
+        }
+        let content = value
+            .as_object()
+            .and_then(|object| object.get("content"))
+            .and_then(JsonValue::as_str)
+            .map(str::to_owned);
+        if let Some(content) = content {
+            *value = JsonValue::String(content);
+        }
+    }
+}
+
+fn validate_chat_messages(messages: &JsonValue) -> Result<(), String> {
+    let messages_array = messages
+        .as_array()
+        .ok_or_else(|| "chat template context.messages must be an array".to_string())?;
+    if messages_array.is_empty() {
+        return Err("chat template context.messages must contain at least one message".to_string());
+    }
+    for (index, message) in messages_array.iter().enumerate() {
+        let object = message
+            .as_object()
+            .ok_or_else(|| format!("messages[{}] must be an object", index))?;
+        if object
+            .get("role")
+            .and_then(JsonValue::as_str)
+            .filter(|role| !role.trim().is_empty())
+            .is_none()
+        {
+            return Err(format!("messages[{}].role must be a string", index));
+        }
+        if !object.contains_key("content") && !object.contains_key("tool_calls") {
+            return Err(format!(
+                "messages[{}] must define content or tool_calls",
+                index
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn render_chat_template_context(
+    context_json: &str,
+    tokenizer_config_json: &str,
+    current_date: &str,
+) -> Result<String, String> {
+    let runtime: JsonValue = serde_json::from_str(context_json)
+        .map_err(|error| format!("chat template context JSON is invalid: {}", error))?;
+    let runtime = runtime
+        .as_object()
+        .cloned()
+        .ok_or_else(|| "chat template context JSON must contain an object".to_string())?;
+    let messages = runtime
+        .get("messages")
+        .ok_or_else(|| "chat template context must define messages".to_string())?;
+    validate_chat_messages(messages)?;
+
+    let config: JsonValue = serde_json::from_str(tokenizer_config_json)
+        .map_err(|error| format!("tokenizer_config.json is invalid: {}", error))?;
+    let mut context = config
+        .as_object()
+        .cloned()
+        .ok_or_else(|| "tokenizer_config.json must contain a JSON object".to_string())?;
+    let template = context
+        .get("chat_template")
+        .and_then(JsonValue::as_str)
+        .filter(|value| !value.trim().is_empty())
+        .map(str::to_owned)
+        .ok_or_else(|| {
+            "tokenizer_config.json must define a non-empty string chat_template".to_string()
+        })?;
+    normalize_special_token_values(&mut context);
+    for (name, value) in runtime {
+        if name != "chat_template" {
+            context.insert(name, value);
+        }
+    }
+    context
+        .entry("tools".to_string())
+        .or_insert(JsonValue::Null);
+    context
+        .entry("documents".to_string())
+        .or_insert(JsonValue::Null);
+    context
+        .entry("add_generation_prompt".to_string())
+        .or_insert(JsonValue::Bool(false));
+    context
+        .entry("continue_final_message".to_string())
+        .or_insert(JsonValue::Bool(false));
+    context
+        .entry("date_string".to_string())
+        .or_insert_with(|| JsonValue::String(current_date.to_string()));
+
+    // Hugging Face uses Jinja's default undefined behavior for chat templates.
+    // Optional message members such as reasoning_content and tool_calls must be
+    // falsey when absent; model-authored raise_exception calls still fail below.
+    let mut environment = Environment::new();
+    environment.set_unknown_method_callback(minijinja_contrib::pycompat::unknown_method_callback);
+    environment.add_function(
+        "raise_exception",
+        |message: String| -> Result<String, MiniJinjaError> {
+            Err(MiniJinjaError::new(ErrorKind::InvalidOperation, message))
+        },
+    );
+    let compiled = environment
+        .template_from_str(&template)
+        .map_err(|error| format!("chat_template could not be compiled: {:#}", error))?;
+    compiled
+        .render(JsonValue::Object(context))
+        .map_err(|error| format!("chat_template could not be rendered: {:#}", error))
+}
+
+fn render_chat_template(
+    messages_json: &str,
+    tokenizer_config_json: &str,
+    current_date: &str,
+    add_generation_prompt: bool,
+) -> Result<String, String> {
+    let messages: JsonValue = serde_json::from_str(messages_json)
+        .map_err(|error| format!("messages JSON is invalid: {}", error))?;
+    let mut context = JsonMap::new();
+    context.insert("messages".to_string(), messages);
+    context.insert("tools".to_string(), JsonValue::Null);
+    context.insert("documents".to_string(), JsonValue::Null);
+    context.insert(
+        "add_generation_prompt".to_string(),
+        JsonValue::Bool(add_generation_prompt),
+    );
+    context.insert(
+        "continue_final_message".to_string(),
+        JsonValue::Bool(false),
+    );
+    render_chat_template_context(
+        &JsonValue::Object(context).to_string(),
+        tokenizer_config_json,
+        current_date,
+    )
 }
 
 /// Opaque tokenizer handle
@@ -201,6 +356,125 @@ pub extern "C" fn ffi_tokenizer_get_vocab_size(handle: *const TokenizerHandle) -
 
     let tokenizer = unsafe { &(*handle).tokenizer };
     tokenizer.get_vocab_size(true)
+}
+
+/// Resolve an exact vocabulary token to its ID without running normalization,
+/// pre-tokenization, or unknown-token substitution.
+#[no_mangle]
+pub extern "C" fn ffi_tokenizer_token_to_id(
+    handle: *const TokenizerHandle,
+    token: *const c_char,
+    token_id: *mut u32,
+) -> bool {
+    clear_error();
+    if handle.is_null() {
+        set_error("Tokenizer handle is null".to_string());
+        return false;
+    }
+    if token.is_null() {
+        set_error("Token cannot be null".to_string());
+        return false;
+    }
+    if token_id.is_null() {
+        set_error("Token ID output cannot be null".to_string());
+        return false;
+    }
+
+    let token = match unsafe { CStr::from_ptr(token) }.to_str() {
+        Ok(value) => value,
+        Err(error) => {
+            set_error(format!("Invalid UTF-8 in token: {}", error));
+            return false;
+        }
+    };
+    let tokenizer = unsafe { &(*handle).tokenizer };
+    match tokenizer.token_to_id(token) {
+        Some(id) => {
+            unsafe { *token_id = id };
+            true
+        }
+        None => false,
+    }
+}
+
+/// Render a Hugging Face tokenizer_config.json chat_template with MiniJinja.
+///
+/// The returned UTF-8 string is owned by the caller and must be released with
+/// ffi_tokenizer_free_string. The full tokenizer configuration is used as the
+/// template context so model-specific special tokens remain authoritative.
+#[no_mangle]
+pub extern "C" fn ffi_tokenizer_apply_chat_template(
+    messages_json: *const c_char,
+    tokenizer_config_json: *const c_char,
+    current_date: *const c_char,
+    add_generation_prompt: bool,
+) -> *mut c_char {
+    clear_error();
+    let rendered = (|| {
+        let messages_json = required_utf8(messages_json, "messages JSON")?;
+        let tokenizer_config_json =
+            required_utf8(tokenizer_config_json, "tokenizer_config.json")?;
+        let current_date = required_utf8(current_date, "current date")?;
+        render_chat_template(
+            &messages_json,
+            &tokenizer_config_json,
+            &current_date,
+            add_generation_prompt,
+        )
+    })();
+
+    match rendered {
+        Ok(rendered) => match CString::new(rendered) {
+            Ok(value) => value.into_raw(),
+            Err(error) => {
+                set_error(format!("rendered chat prompt contains a NUL byte: {}", error));
+                ptr::null_mut()
+            }
+        },
+        Err(error) => {
+            set_error(error);
+            ptr::null_mut()
+        }
+    }
+}
+
+/// Render a Hugging Face chat template from its complete runtime context.
+///
+/// Unlike ffi_tokenizer_apply_chat_template, this entry point preserves
+/// structured messages, tools, documents, and future template keyword
+/// arguments instead of projecting the request down to role/content strings.
+#[no_mangle]
+pub extern "C" fn ffi_tokenizer_apply_chat_template_context(
+    context_json: *const c_char,
+    tokenizer_config_json: *const c_char,
+    current_date: *const c_char,
+) -> *mut c_char {
+    clear_error();
+    let rendered = (|| {
+        let context_json = required_utf8(context_json, "chat template context JSON")?;
+        let tokenizer_config_json =
+            required_utf8(tokenizer_config_json, "tokenizer_config.json")?;
+        let current_date = required_utf8(current_date, "current date")?;
+        render_chat_template_context(
+            &context_json,
+            &tokenizer_config_json,
+            &current_date,
+        )
+    })();
+
+    match rendered {
+        Ok(rendered) => match CString::new(rendered) {
+            Ok(value) => value.into_raw(),
+            Err(error) => {
+                set_error(format!("rendered chat prompt contains a NUL byte: {}", error));
+                ptr::null_mut()
+            }
+        },
+        Err(error) => {
+            set_error(error);
+            ptr::null_mut()
+        }
+    }
 }
 
 // ============================================================================
@@ -476,4 +750,112 @@ pub extern "C" fn ffi_tokenizer_clear_error() {
 pub extern "C" fn ffi_tokenizer_get_version() -> *const c_char {
     static VERSION: &[u8] = b"0.21.0\0";
     VERSION.as_ptr() as *const c_char
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{render_chat_template, render_chat_template_context};
+
+    #[test]
+    fn renders_qwen_chatml_with_generation_prompt() {
+        let template = "{% for message in messages %}<|im_start|>{{ message['role'] }}\n{{ message['content'] }}<|im_end|>\n{% endfor %}{% if add_generation_prompt %}<|im_start|>assistant\n{% endif %}";
+        let rendered = render_chat_template(
+            r#"[{"role":"system","content":"Be brief."},{"role":"user","content":"Hello"}]"#,
+            &format!(r#"{{"eos_token":"<|im_end|>","chat_template":{}}}"#,
+                     serde_json::to_string(template).unwrap()),
+            "19 Jul 2026",
+            true,
+        )
+        .unwrap();
+        assert_eq!(
+            rendered,
+            "<|im_start|>system\nBe brief.<|im_end|>\n<|im_start|>user\nHello<|im_end|>\n<|im_start|>assistant\n"
+        );
+    }
+
+    #[test]
+    fn normalizes_added_token_objects_and_exposes_current_date() {
+        let rendered = render_chat_template(
+            r#"[{"role":"user","content":"quoted \"value\""}]"#,
+            r#"{"bos_token":{"content":"<s>","special":true},"chat_template":"{{ bos_token }}{{ date_string }}: {{ messages[0]['content'] }}"}"#,
+            "19 Jul 2026",
+            true,
+        )
+        .unwrap();
+        assert_eq!(rendered, "<s>19 Jul 2026: quoted \"value\"");
+    }
+
+    #[test]
+    fn matches_hugging_face_optional_chat_context_semantics() {
+        let template = "{% if tools is defined and tools is none %}no-tools|{% endif %}{% if documents is defined and documents is none %}no-documents|{% endif %}{% for message in messages %}{% if message.reasoning_content %}{{ message.reasoning_content }}|{% endif %}{{ message.content }}{% if message.tool_calls %}|tool-calls{% endif %}{% if not loop.last %}|{% endif %}{% endfor %}";
+        let rendered = render_chat_template(
+            r#"[{"role":"user","content":"Question"},{"role":"assistant","content":"Answer"},{"role":"user","content":"Continue"}]"#,
+            &format!(r#"{{"chat_template":{}}}"#, serde_json::to_string(template).unwrap()),
+            "19 Jul 2026",
+            true,
+        )
+        .unwrap();
+        assert_eq!(rendered, "no-tools|no-documents|Question|Answer|Continue");
+    }
+
+    #[test]
+    fn preserves_tools_and_structured_multi_turn_messages() {
+        let template = "{{ tools | tojson }}|{{ messages[1].tool_calls | tojson }}|{% if messages[1].content is none %}null-content{% endif %}|{{ messages[2].tool_call_id }}|{% if add_generation_prompt %}generate{% endif %}";
+        let context = r#"{
+            "messages": [
+                {"role":"user","content":"Weather?"},
+                {"role":"assistant","content":null,"tool_calls":[
+                    {"id":"call-1","type":"function","function":{"name":"weather","arguments":{"city":"Tokyo"}}}
+                ]},
+                {"role":"tool","content":"sunny","tool_call_id":"call-1"}
+            ],
+            "tools":[{
+                "type":"function",
+                "function":{
+                    "name":"weather",
+                    "description":"Get weather",
+                    "parameters":{
+                        "type":"object",
+                        "properties":{"city":{"type":"string"}},
+                        "required":["city"]
+                    }
+                }
+            }],
+            "add_generation_prompt":true
+        }"#;
+        let rendered = render_chat_template_context(
+            context,
+            &format!(r#"{{"chat_template":{}}}"#, serde_json::to_string(template).unwrap()),
+            "19 Jul 2026",
+        )
+        .unwrap();
+
+        assert!(rendered.contains(r#""name":"weather""#));
+        assert!(rendered.contains(r#""city":"Tokyo""#));
+        assert!(rendered.ends_with("|null-content|call-1|generate"));
+    }
+
+    #[test]
+    fn supports_hugging_face_python_compatible_string_methods() {
+        let rendered = render_chat_template(
+            r#"[{"role":"user","content":"ignored"}]"#,
+            r#"{"chat_template":"{{ 'prefix-value-suffix'.startswith('prefix') }}|{{ 'prefix-value-suffix'.endswith('suffix') }}|{{ 'before</think>\\nafter'.split('</think>')[-1].lstrip('\\n') }}"}"#,
+            "19 Jul 2026",
+            true,
+        )
+        .unwrap();
+        assert_eq!(rendered, "true|true|after");
+    }
+
+    #[test]
+    fn propagates_template_rejections() {
+        let error = render_chat_template(
+            r#"[{"role":"tool","content":"result"}]"#,
+            r#"{"chat_template":"{{ raise_exception('unsupported role') }}"}"#,
+            "19 Jul 2026",
+            true,
+        )
+        .unwrap_err();
+        assert!(error.contains("unsupported role"));
+    }
 }

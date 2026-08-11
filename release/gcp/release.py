@@ -68,17 +68,23 @@ def load_plan(path: Path) -> dict[str, Any]:
         if not variants:
             raise ValueError(f"shard {shard['id']} has no build variants")
         if shard.get("os") == "windows":
-            unsupported = [
-                str(variant.get("name") or "<unnamed>")
-                for variant in variants
-                if isinstance(variant, dict)
-                and (
-                    variant.get("mlir")
-                    or variant.get("triton")
-                    or variant.get("name") == "compile"
-                    or str(variant.get("name", "")).endswith("-compile")
+            unsupported = []
+            for variant in variants:
+                if not isinstance(variant, dict):
+                    continue
+                name = str(variant.get("name") or "<unnamed>")
+                native_compile = variant.get("windowsNativeCompile") is True
+                managed_llvm = variant.get("mlir") or variant.get("triton")
+                managed_compile_name = name == "compile" or name.endswith("-compile")
+                invalid_native_compile = native_compile and (
+                    name != "compile"
+                    or variant.get("extension") != "compile"
+                    or variant.get("suffix") != "-compile"
+                    or managed_llvm
+                    or variant.get("helper")
                 )
-            ]
+                if invalid_native_compile or (not native_compile and (managed_llvm or managed_compile_name)):
+                    unsupported.append(name)
             if unsupported:
                 raise ValueError(
                     f"Windows shard {shard['id']} requests managed LLVM/MLIR variants "
@@ -1469,6 +1475,7 @@ def collect(args: argparse.Namespace) -> None:
     if not executions:
         raise RuntimeError("no selected execution outputs")
     prefix = f"{plan['artifactPrefix'].strip('/')}/{args.run_id}"
+    repository_prefix = f"{plan['artifactPrefix'].strip('/')}/maven-repository"
     with tempfile.TemporaryDirectory(prefix="dl4j-gcp-collect-") as temp:
         directory = Path(temp)
         existing_manifest = None
@@ -1524,12 +1531,22 @@ def collect(args: argparse.Namespace) -> None:
         for archive in sorted(maven_archives):
             command.extend(["--input", str(archive)])
         subprocess.run(command, check=True)
-        repository_prefix = f"{prefix}/maven2"
+        # The Maven repository is shared across runs. Uploading a shard
+        # replaces only the coordinates it materialized and leaves other
+        # classifiers and versions intact.
         for path in sorted(repository_dir.rglob("*")):
             if path.is_file():
+                relative = path.relative_to(repository_dir).as_posix()
                 content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-                bucket.blob(f"{repository_prefix}/{path.relative_to(repository_dir).as_posix()}").upload_from_filename(str(path), content_type=content_type)
-        bucket.blob(f"{repository_prefix}/.dl4j/manifest.json").upload_from_filename(str(repository_manifest), content_type="application/json")
+                bucket.blob(f"{repository_prefix}/{relative}").upload_from_filename(str(path), content_type=content_type)
+                if path.name == "index.html":
+                    directory = relative[: -len("index.html")]
+                    bucket.blob(f"{repository_prefix}/{directory}").upload_from_filename(
+                        str(path), content_type="text/html; charset=utf-8"
+                    )
+        bucket.blob(f"{repository_prefix}/.dl4j/repository-manifest.json").upload_from_filename(str(repository_manifest), content_type="application/json")
+        manifest_checksum = Path(str(repository_manifest) + ".sha256")
+        bucket.blob(f"{repository_prefix}/.dl4j/repository-manifest.json.sha256").upload_from_filename(str(manifest_checksum), content_type="text/plain")
         current_shards = sorted(item["shard"]["id"] for item in executions)
         aws_plan = json.loads((ROOT / "release/aws/release-plan.json").read_text(encoding="utf-8"))
         expected_matrix = matrix_coverage(aws_plan, [item["id"] for item in aws_plan["shards"]])
@@ -1562,7 +1579,7 @@ def collect(args: argparse.Namespace) -> None:
             "missingMatrixEntries": missing_matrix,
             "missingWorkflows": sorted(plan.get("unsupportedWorkflows", {})) if any(value.startswith("macos-14-arm64-cpu--") for value in missing_matrix) else [],
             "testMavenRepository": {
-                "uri": f"gs://{bucket.name}/{repository_prefix}", "layout": "maven2", "ready": True,
+                "uri": f"gs://{bucket.name}/{repository_prefix}/", "layout": "maven2", "ready": True,
                 "completeMatrix": not current_missing_matrix, "missingMatrixEntries": current_missing_matrix,
             },
             "assets": sorted(combined_assets.values(), key=lambda value: value["fileName"]),

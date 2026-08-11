@@ -325,7 +325,22 @@ class ReleasePlanTests(unittest.TestCase):
         self.assertTrue(windows)
         for shard in windows:
             variants = shard["build"]["variants"]
-            self.assertNotIn("compile", [item["name"] for item in variants], shard["id"])
+            compile_variants = [item for item in variants if item["name"] == "compile"]
+            if shard["id"] == "windows-x86_64-cpu" or (
+                shard["build"]["backend"] == "cuda" and not shard["build"].get("zludaVersion")
+            ):
+                self.assertEqual(1, len(compile_variants), shard["id"])
+                self.assertTrue(compile_variants[0].get("windowsNativeCompile"))
+                self.assertEqual("compile", compile_variants[0].get("extension"))
+                self.assertEqual("-compile", compile_variants[0].get("suffix"))
+                if shard["build"]["backend"] == "cuda":
+                    self.assertEqual(
+                        f"-cuda-{shard['build']['cudaVersion']}-compile",
+                        compile_variants[0].get("classifierSuffix"),
+                    )
+                    self.assertEqual("-compile", compile_variants[0].get("platformExtension"))
+            else:
+                self.assertFalse(compile_variants, shard["id"])
             self.assertFalse(
                 any(item.get("mlir") or item.get("triton") for item in variants),
                 shard["id"],
@@ -363,6 +378,52 @@ class ReleasePlanTests(unittest.TestCase):
         self.assertEqual(mac, expected - azure_only)
         self.assertEqual(expected, azure_only | mac)
         self.assertEqual(4, len(mac))
+
+    def test_maven_repository_matrix_coverage_reads_stable_prefix(self):
+        prefix = "deeplearning4j/releases/maven-repository"
+        self.assertEqual(prefix, release.stable_maven_repository_prefix(self.azure))
+        container = mock.Mock()
+        container.list_blobs.return_value = [
+            SimpleNamespace(
+                name=(
+                    f"{prefix}/org/nd4j/nd4j-native/1.0.0-SNAPSHOT/"
+                    "nd4j-native-1.0.0-SNAPSHOT-linux-x86_64.jar"
+                )
+            ),
+            SimpleNamespace(
+                name=(
+                    f"{prefix}/org/nd4j/nd4j-native/1.0.0-SNAPSHOT/"
+                    "nd4j-native-1.0.0-SNAPSHOT-linux-x86_64-avx2.jar"
+                )
+            ),
+            SimpleNamespace(
+                name=(
+                    f"{prefix}/org/nd4j/nd4j-native/1.0.0-SNAPSHOT/"
+                    "nd4j-native-1.0.0-SNAPSHOT-windows-x86_64.jar"
+                )
+            ),
+            SimpleNamespace(
+                name=(
+                    f"{prefix}/org/nd4j/nd4j-cuda-12.9/1.0.0-SNAPSHOT/"
+                    "nd4j-cuda-12.9-1.0.0-SNAPSHOT-linux-x86_64.jar"
+                )
+            ),
+        ]
+
+        covered = release.maven_repository_matrix_coverage(
+            container, prefix, self.aws, "1.0.0-SNAPSHOT"
+        )
+
+        self.assertEqual(
+            {
+                "linux-x86_64-cpu--base",
+                "linux-x86_64-cpu--avx2",
+                "windows-x86_64-cpu--base",
+                "linux-x86_64-cuda-12-9--base",
+            },
+            covered,
+        )
+        container.list_blobs.assert_called_once_with(name_starts_with=f"{prefix}/")
 
     def test_provider_merge_is_azure_only_or_hybrid(self):
         self.assertEqual("azure", release.merged_release_provider(None))
@@ -3971,7 +4032,9 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertIn("sccache archive SHA-256 mismatch", worker)
         self.assertIn("$script:WindowsTarExe = Join-Path $env:SystemRoot 'System32\\tar.exe'", worker)
         self.assertIn("& $script:WindowsTarExe -xzf $SccacheArchive -C $env:TEMP", worker)
-        self.assertIn("& $script:WindowsTarExe -C $MavenOutput -czf", worker)
+        self.assertIn("Publish-MavenRepository $MavenOutput", worker)
+        self.assertIn("mavenRepositoryPrefix", worker)
+        self.assertNotIn("Maven repository packaging", worker)
         self.assertIn("& $script:WindowsTarExe -C $SdkOutput -czf", worker)
         self.assertNotRegex(worker, r"(?m)^\s+tar (?:-xzf|-C)")
         self.assertIn("$null = $Process.Handle", worker)
@@ -4843,7 +4906,7 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
         )
         self.assertEqual(4, fence.call_count)
 
-    def test_publisher_replaces_stale_tree_and_writes_marker_last(self):
+    def test_publisher_upserts_stable_tree_and_writes_marker_last(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             repository = root / "repository"
@@ -4858,25 +4921,18 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
             checksum = Path(str(manifest) + ".sha256")
             checksum.write_text("digest  repository-manifest.json\n", encoding="ascii")
 
-            prefix = "deeplearning4j/releases/run/maven-repository/"
-            stale = [prefix + ".dl4j/complete.json", prefix + "stale.jar"]
+            prefix = "deeplearning4j/releases/maven-repository/"
             container = mock.Mock()
             container.list_blobs.return_value = [
-                SimpleNamespace(name=name, etag=f'"etag-{index}"')
-                for index, name in enumerate(stale)
+                SimpleNamespace(name=prefix + "org/nd4j/example/1.0.0/example-1.0.0.jar"),
+                SimpleNamespace(name=prefix + "org/nd4j/example/1.0.0/example-1.0.0.pom"),
             ]
-            legacy_marker = "deeplearning4j/releases/run/maven2/.dl4j/complete.json"
 
             def get_blob_client(name):
                 client = mock.Mock()
-                if name == legacy_marker:
-                    client.get_blob_properties.return_value = SimpleNamespace(
-                        etag='"legacy-etag"'
-                    )
-                else:
-                    missing = RuntimeError("missing")
-                    missing.status_code = 404
-                    client.get_blob_properties.side_effect = missing
+                missing = RuntimeError("missing")
+                missing.status_code = 404
+                client.get_blob_properties.side_effect = missing
                 return client
 
             container.get_blob_client.side_effect = get_blob_client
@@ -4906,7 +4962,7 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
                 modules,
                 account_name="account",
                 container_name="releases",
-                run_prefix="deeplearning4j/releases/run",
+                repository_prefix="deeplearning4j/releases/maven-repository",
                 repository=repository,
                 repository_manifest=manifest,
                 run_id="run",
@@ -4924,27 +4980,14 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
             release.finalize_maven_repository(
                 container,
                 modules,
-                run_prefix="deeplearning4j/releases/run",
+                repository_prefix="deeplearning4j/releases/maven-repository",
                 repository_info=result,
                 marker_lease=marker_lease,
                 fence_check=fence,
             )
 
-        container.delete_blob.assert_called_once_with(
-            "deeplearning4j/releases/run/maven2/.dl4j/complete.json",
-            delete_snapshots="include",
-            etag='"legacy-etag"',
-            match_condition="if-not-modified",
-        )
-        container.delete_blobs.assert_called_once_with(
-            {
-                "name": prefix + "stale.jar",
-                "etag": '"etag-1"',
-                "match_condition": "if-not-modified",
-            },
-            delete_snapshots="include",
-            raise_on_any_failure=True,
-        )
+        container.delete_blob.assert_not_called()
+        container.delete_blobs.assert_not_called()
         names = [item[0] for item in uploads]
         self.assertEqual(
             [
@@ -4952,10 +4995,25 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
                 prefix + "org/nd4j/example/1.0.0/example-1.0.0.pom",
                 prefix + ".dl4j/repository-manifest.json",
                 prefix + ".dl4j/repository-manifest.json.sha256",
+                prefix + "index.html",
+                prefix,
+                prefix + "org/index.html",
+                prefix + "org/",
+                prefix + "org/nd4j/index.html",
+                prefix + "org/nd4j/",
+                prefix + "org/nd4j/example/index.html",
+                prefix + "org/nd4j/example/",
+                prefix + "org/nd4j/example/1.0.0/index.html",
+                prefix + "org/nd4j/example/1.0.0/",
                 prefix + ".dl4j/complete.json",
             ],
             names,
         )
+        root_index = next(
+            payload for name, payload, *_ in uploads if name == prefix + "index.html"
+        )
+        self.assertNotIn(b"\\n", root_index)
+        self.assertIn(b"\n", root_index)
         self.assertTrue(all(item[2] for item in uploads[:-1]))
         self.assertFalse(uploads[-1][2])
         self.assertTrue(all(item[3]["overwrite"] is False for item in uploads[:-1]))
@@ -4963,16 +5021,27 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
         marker = json.loads(uploads[-1][1])
         self.assertTrue(marker["ready"])
         self.assertEqual(2, marker["repositoryFiles"])
+        self.assertEqual(2, marker["publishedRepositoryFiles"])
+        self.assertEqual(2, marker["preexistingRepositoryFiles"])
+        self.assertEqual(0, marker["newRepositoryFiles"])
+        self.assertEqual(2, marker["overwrittenRepositoryFiles"])
+        self.assertEqual(
+            [
+                "org/nd4j/example/1.0.0/example-1.0.0.jar",
+                "org/nd4j/example/1.0.0/example-1.0.0.pom",
+            ],
+            marker["overwrittenBlobs"],
+        )
         self.assertFalse(marker["completeMatrix"])
         self.assertEqual(
             "https://account.blob.core.windows.net/releases/"
-            "deeplearning4j/releases/run/maven-repository/",
+            "deeplearning4j/releases/maven-repository/",
             result["uri"],
         )
         self.assertTrue(result["completionMarker"].endswith("/.dl4j/complete.json"))
         self.assertGreater(fence.call_count, len(uploads))
 
-    def test_publisher_deletes_stale_blobs_in_bounded_batches(self):
+    def test_publisher_preserves_existing_stable_tree(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             repository = root / "repository"
@@ -4989,15 +5058,13 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
             container = mock.Mock()
             container.list_blobs.return_value = [
                 SimpleNamespace(
-                    name=f"prefix/maven-repository/stale-{index}",
-                    etag=f'"etag-{index}"',
+                    name="prefix/maven-repository/org/nd4j/old/old-1.0.0.jar",
+                    etag='"etag-old"',
                 )
-                for index in range(257)
             ]
             missing = RuntimeError("missing")
             missing.status_code = 404
             container.get_blob_client.return_value.get_blob_properties.side_effect = missing
-            container.delete_blobs.return_value = iter(())
             container.upload_blob.side_effect = (
                 lambda name, data, **options: data.read()
                 if hasattr(data, "read")
@@ -5013,7 +5080,7 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
                 modules,
                 account_name="account",
                 container_name="releases",
-                run_prefix="prefix",
+                repository_prefix="prefix/maven-repository",
                 repository=repository,
                 repository_manifest=manifest,
                 run_id="run",
@@ -5023,10 +5090,7 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
                 fence_check=mock.Mock(),
             )
 
-        self.assertEqual(2, container.delete_blobs.call_count)
-        first, second = container.delete_blobs.call_args_list
-        self.assertEqual(256, len(first.args))
-        self.assertEqual(1, len(second.args))
+        container.delete_blobs.assert_not_called()
 
     def test_lost_lease_prevents_readiness_marker(self):
         container = mock.Mock()
@@ -5050,7 +5114,7 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
             release.finalize_maven_repository(
                 container,
                 modules,
-                run_prefix="prefix",
+                repository_prefix="prefix",
                 repository_info=repository_info,
                 marker_lease=marker_lease,
                 fence_check=mock.Mock(side_effect=RuntimeError("lease lost")),

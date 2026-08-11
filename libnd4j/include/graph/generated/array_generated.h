@@ -70,6 +70,7 @@ enum DType : int8_t {
   DType_QINT8 = 15,
   DType_QINT16 = 16,
   DType_BFLOAT16 = 17,
+  DType_FLOAT8_E5M2 = 19,
   DType_UTF8 = 50,
   DType_UTF16 = 51,
   DType_UTF32 = 52,
@@ -77,7 +78,7 @@ enum DType : int8_t {
   DType_MAX = DType_UTF32
 };
 
-inline const DType (&EnumValuesDType())[21] {
+inline const DType (&EnumValuesDType())[22] {
   static const DType values[] = {
     DType_INHERIT,
     DType_BOOL,
@@ -97,6 +98,7 @@ inline const DType (&EnumValuesDType())[21] {
     DType_QINT8,
     DType_QINT16,
     DType_BFLOAT16,
+    DType_FLOAT8_E5M2,
     DType_UTF8,
     DType_UTF16,
     DType_UTF32
@@ -125,7 +127,7 @@ inline const char * const *EnumNamesDType() {
     "QINT16",
     "BFLOAT16",
     "",
-    "",
+    "FLOAT8_E5M2",
     "",
     "",
     "",

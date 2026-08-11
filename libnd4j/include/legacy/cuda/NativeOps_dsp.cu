@@ -65,22 +65,6 @@
 using namespace sd;
 using namespace sd::graph;
 
-// ─── Loaded model handle wrapper ─────────────────────────────────────────────
-
-struct LoadedModelHandle {
-  SdnbReader::LoadedModel model;
-  SdnbReader* sdnbReader;    // Non-null if loaded from SDNB
-  SdzReader* sdzReader;      // Non-null if loaded from SDZ
-
-  LoadedModelHandle() : sdnbReader(nullptr), sdzReader(nullptr) {}
-
-  ~LoadedModelHandle() {
-    // model.variables are freed by LoadedModel's destructor
-    delete sdnbReader;
-    delete sdzReader;
-  }
-};
-
 // ─── Plan compilation and execution ──────────────────────────────────────────
 
 sd::Pointer compileDynamicShapePlan(sd::Pointer serializedPlan, sd::LongType planSize) {
@@ -133,9 +117,10 @@ int executeDynamicShapePlan(
 
     auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
 
-    // Read inputs/outputs from the context's fastpath vectors
+    // Read inputs/outputs from the context's fastpath vectors.
     int numInputs = static_cast<int>(opContext->width());
-    int numOutputs = static_cast<int>(opContext->outputWidth());
+    const int boundOutputCount = static_cast<int>(opContext->outputWidth());
+    const int numOutputs = plan->resolveExecutionOutputCount(boundOutputCount);
 
     // Validate input/output counts
     if (numInputs != plan->getNumExternalInputs()) {
@@ -146,10 +131,10 @@ int executeDynamicShapePlan(
       setError(2, buf);
       return 2;
     }
-    if (numOutputs != plan->getNumRequestedOutputs()) {
+    if (numOutputs < 0) {
       char buf[256];
       snprintf(buf, sizeof(buf), "executeDynamicShapePlan: output count mismatch: got %d, expected %d",
-               numOutputs, plan->getNumRequestedOutputs());
+               boundOutputCount, plan->getNumRequestedOutputs());
       DSP_DIAG(EXECUTE, "%s", buf);
       setError(3, buf);
       return 3;
@@ -597,132 +582,6 @@ int getPlanSegmentCount(sd::Pointer planHandle) {
 // isPlanCompilationSealed / getPlanMidExecutionCompileCount / resetPlanMidExecutionCompileCount
 // live in legacy/impl/NativeOps_dsp_shared.cpp so they are shared between CPU and CUDA builds.
 
-// ─── Model loading (SDZ/SDNB) ───────────────────────────────────────────────
-
-sd::Pointer loadModelFromFile(const char* filePath) {
-  try {
-    if (filePath == nullptr) {
-      DSP_DIAG(COMPILE, "loadModelFromFile: null file path");
-      return nullptr;
-    }
-
-    auto* handle = new LoadedModelHandle();
-
-    // Determine file type by extension
-    std::string path(filePath);
-    std::string pathLower = path;
-    std::transform(pathLower.begin(), pathLower.end(), pathLower.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    bool isSdz = pathLower.size() > 4 && pathLower.substr(pathLower.size() - 4) == ".sdz";
-    bool isSdnb = pathLower.size() > 5 && pathLower.substr(pathLower.size() - 5) == ".sdnb";
-
-    if (isSdz) {
-      handle->sdzReader = SdzReader::openFile(filePath);
-      if (!handle->sdzReader) {
-        DSP_DIAG(COMPILE, "loadModelFromFile: failed to open SDZ file: %s", filePath);
-        delete handle;
-        return nullptr;
-      }
-      handle->model = handle->sdzReader->load();
-    } else if (isSdnb) {
-      handle->sdnbReader = SdnbReader::openFile(filePath);
-      if (!handle->sdnbReader) {
-        DSP_DIAG(COMPILE, "loadModelFromFile: failed to open SDNB file: %s", filePath);
-        delete handle;
-        return nullptr;
-      }
-      handle->model = handle->sdnbReader->loadAll();
-    } else {
-      // Try SDZ first, then SDNB
-      handle->sdzReader = SdzReader::openFile(filePath);
-      if (handle->sdzReader) {
-        handle->model = handle->sdzReader->load();
-      } else {
-        handle->sdnbReader = SdnbReader::openFile(filePath);
-        if (!handle->sdnbReader) {
-          DSP_DIAG(COMPILE, "loadModelFromFile: cannot open file as SDZ or SDNB: %s", filePath);
-          delete handle;
-          return nullptr;
-        }
-        handle->model = handle->sdnbReader->loadAll();
-      }
-    }
-
-    if (!handle->model.graph) {
-      DSP_DIAG(COMPILE, "loadModelFromFile: file did not yield a valid FlatGraph: %s", filePath);
-      delete handle;
-      return nullptr;
-    }
-
-    DSP_DIAG(COMPILE, "loaded model: %d vars, %d placeholders from %s",
-             static_cast<int>(handle->model.variables.size()),
-             static_cast<int>(handle->model.placeholderNames.size()),
-             filePath);
-
-    return reinterpret_cast<sd::Pointer>(handle);
-  } catch (const std::exception& e) {
-    DSP_DIAG(COMPILE, "loadModelFromFile: exception: %s", e.what());
-    return nullptr;
-  }
-}
-
-OpaqueNDArray getLoadedModelVariable(sd::Pointer modelHandle, const char* variableName) {
-  if (modelHandle == nullptr || variableName == nullptr) return nullptr;
-  auto* handle = reinterpret_cast<LoadedModelHandle*>(modelHandle);
-  auto it = handle->model.variables.find(variableName);
-  return it == handle->model.variables.end() ? nullptr : it->second;
-}
-
-sd::Pointer compileModelPlan(
-    sd::Pointer modelHandle,
-    sd::Pointer requestedOutputNames, int numOutputs) {
-  try {
-    if (modelHandle == nullptr) {
-      DSP_DIAG(COMPILE, "compileModelPlan: null model handle");
-      return nullptr;
-    }
-
-    auto* handle = reinterpret_cast<LoadedModelHandle*>(modelHandle);
-
-    if (!handle->model.graph) {
-      DSP_DIAG(COMPILE, "compileModelPlan: model has no graph");
-      return nullptr;
-    }
-
-    // Collect requested output names - cast from opaque pointer to char**
-    auto** outputNames = reinterpret_cast<const char**>(requestedOutputNames);
-    std::vector<std::string> outputs;
-    for (int i = 0; i < numOutputs; i++) {
-      if (outputNames[i]) {
-        outputs.emplace_back(outputNames[i]);
-      }
-    }
-
-    auto* plan = NativeDynamicShapePlan::fromFlatGraph(
-        handle->model.graph, handle->model.variables, outputs);
-
-    if (!plan) {
-      DSP_DIAG(COMPILE, "compileModelPlan: failed to compile plan");
-      return nullptr;
-    }
-
-    DSP_DIAG(COMPILE, "compiled model plan: %d slots, %d outputs",
-             plan->getNumSlots(), plan->getNumRequestedOutputs());
-
-    return reinterpret_cast<sd::Pointer>(plan);
-  } catch (const std::exception& e) {
-    DSP_DIAG(COMPILE, "compileModelPlan: exception: %s", e.what());
-    return nullptr;
-  }
-}
-
-void freeLoadedModel(sd::Pointer modelHandle) {
-  if (modelHandle != nullptr) {
-    auto* handle = reinterpret_cast<LoadedModelHandle*>(modelHandle);
-    delete handle;
-  }
-}
-
 // ─── Plan introspection ──────────────────────────────────────────────────────
 
 int getPlanNumExternalInputs(sd::Pointer planHandle) {
@@ -784,26 +643,6 @@ void setPlanRuntimeArtifactDirectory(sd::Pointer planHandle, const char* directo
   if (planHandle != nullptr) {
     reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setRuntimeArtifactDirectory(
         directory == nullptr ? std::string() : std::string(directory));
-  }
-}
-
-void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
-  if (planHandle != nullptr) {
-    auto requested = static_cast<sd::graph::GraphExecutionMode>(mode);
-    auto gem = requested;
-    // Clamp to valid range
-    if (gem < sd::graph::GraphExecutionMode::GEM_AUTO || gem > sd::graph::GraphExecutionMode::GEM_PORTABLE_REPLAY) {
-      gem = sd::graph::GraphExecutionMode::GEM_AUTO;
-    }
-    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setGraphExecutionMode(gem);
-
-    const char* requestedName =
-        sd::graph::ModeContract::modeName(static_cast<int>(requested));
-    const char* appliedName =
-        sd::graph::ModeContract::modeName(static_cast<int>(gem));
-
-    DSP_DIAG(BACKEND, "setPlanGraphExecutionMode: requested=%d(%s) applied=%d(%s)",
-             mode, requestedName, static_cast<int>(gem), appliedName);
   }
 }
 
@@ -1927,6 +1766,10 @@ int dspDiagGetEnabledMask() {
 void dspDiagSetLevel(int level) {
     sd::graph::DspDiagnostics::getInstance().setLevel(
         static_cast<sd::graph::DspDiagLevel>(level));
+}
+
+int dspDiagGetLevel() {
+    return static_cast<int>(sd::graph::DspDiagnostics::getInstance().getLevel());
 }
 
 void dspDiagSetJsonPath(const char* path) {

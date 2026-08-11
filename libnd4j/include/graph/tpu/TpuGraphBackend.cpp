@@ -67,6 +67,17 @@ bool TpuGraphBackend::isAvailable() const {
   return true;
 }
 
+bool TpuGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_TPU ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO;
+}
+
+int TpuGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_TPU ? 1000 : 400;
+}
+
 // ── Segment Fusion Check ────────────────────────────────────────────────────
 
 bool TpuGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {

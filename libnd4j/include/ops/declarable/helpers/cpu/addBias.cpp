@@ -1059,9 +1059,6 @@ void addBias(sd::graph::Context& block, NDArray& input, NDArray& bias, NDArray& 
                         SD_FLOAT_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE( void addBias_,
-                      (NDArray& input, NDArray& bias, NDArray& output, const bool isNCHW), SD_FLOAT_TYPES,
-                      SD_FLOAT_TYPES);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

@@ -19,6 +19,7 @@
 #ifndef LIBND4J_VULKAN_SEGMENT_RECORDER_H
 #define LIBND4J_VULKAN_SEGMENT_RECORDER_H
 
+#include <graph/GraphBackend.h>
 #include <system/common.h>
 
 #if defined(HAVE_VULKAN) && HAVE_VULKAN
@@ -72,7 +73,9 @@ class SD_LIB_EXPORT VulkanSegmentRecorder {
    * @param handle  The VulkanReplayHandle that owns this recorder.
    *                Must outlive this recorder.
    */
-  explicit VulkanSegmentRecorder(VulkanReplayHandle* handle);
+  explicit VulkanSegmentRecorder(
+      VulkanReplayHandle* handle,
+      GraphCompilationPolicy compilationPolicy = {});
   ~VulkanSegmentRecorder();
 
   // Non-copyable, non-movable
@@ -199,6 +202,7 @@ class SD_LIB_EXPORT VulkanSegmentRecorder {
   // ── Members ────────────────────────────────────────────────────────────────
 
   VulkanReplayHandle* handle_;                // owning handle (not owned by us)
+  GraphCompilationPolicy compilationPolicy_;  // explicit artifact policy
 
   // Unique DataBuffer bindings accumulated across recordOp() calls. A graph
   // value retains one VkBuffer across producer and consumer dispatches.

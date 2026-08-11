@@ -22,6 +22,7 @@ import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.vlm.model.encoder.EmbeddingMerger;
@@ -83,11 +84,6 @@ final class SdxVlm {
 
     // Standard SmolDocling tile size (matches preprocessor_config.json target_height/width).
     private static final int DEFAULT_TILE_SIZE = 512;
-
-    // SmolDocling chat template (Idefics3 format).
-    private static final String CHAT_PROMPT_SUFFIX =
-            "<end_of_utterance>\nAssistant:";
-    private static final String CHAT_PROMPT_PREFIX = "<|im_start|>User:";
 
     /**
      * Run VLM document extraction on an image or PDF.
@@ -215,8 +211,12 @@ final class SdxVlm {
                 int seqPerFrame = (int) (visionEmbeddings.size(1) / frames);
                 String imagePrompt = ImagePromptBuilder.buildImagePromptString(
                         split.numRows, split.numCols, seqPerFrame);
-                String chatPrompt = CHAT_PROMPT_PREFIX + imagePrompt
-                        + userPrompt + CHAT_PROMPT_SUFFIX;
+                ChatTemplate.Message promptMessage = ChatTemplate.Message.userMultimodal(
+                        List.of(
+                                ChatTemplate.ContentPart.image(imagePrompt),
+                                ChatTemplate.ContentPart.text(userPrompt)));
+                String chatPrompt = tokenizer.applyChatTemplate(
+                        List.of(promptMessage), true);
 
                 // 9e. Encode prompt tokens and merge embeddings
                 int[] promptTokenIds = tokenizer.encode(chatPrompt, false).getIds();

@@ -258,5 +258,52 @@
                 <javacpp.platform>macosx-arm64</javacpp.platform>
             </properties>
         </profile>
+
+        <!-- Keep this profile after host defaults so its explicit platform wins when
+             Maven activates both models during a cross-build. -->
+        <profile>
+            <id>android-arm64</id>
+            <properties>
+                <!-- The retained mobile helper is an implementation detail of this
+                     Maven producer; do not also run the host-native execution. -->
+                <javacpp.platform>android-arm64</javacpp.platform>
+                <libtokenizers.cpu.compile.skip>true</libtokenizers.cpu.compile.skip>
+                <libtokenizers.classifier>android-arm64</libtokenizers.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>build-android-arm64-tokenizers</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                    <arguments>
+                                        <argument>${project.basedir}/build-mobile-tokenizers.sh</argument>
+                                        <argument>--platform</argument>
+                                        <argument>android-arm64</argument>
+                                        <argument>--android-ndk</argument>
+                                        <argument>${android.ndk}</argument>
+                                        <argument>--android-api</argument>
+                                        <argument>${android.api}</argument>
+                                        <argument>--output-dir</argument>
+                                        <argument>${project.build.directory}/mobile/android-arm64-v8a</argument>
+                                        <argument>--jobs</argument>
+                                        <argument>${libtokenizers.mobile.jobs}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

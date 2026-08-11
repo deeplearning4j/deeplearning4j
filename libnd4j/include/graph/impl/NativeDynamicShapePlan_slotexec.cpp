@@ -27,6 +27,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/ModeContract.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspThreadState.h>
 #include <graph/gpu/DspCudaDispatch.h>
 #include <graph/DspHashUtils.h>
 #include <graph/DspVerifyUtils.h>
@@ -39,6 +40,7 @@
 #include <system/Environment.h>
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <helpers/ConstantShapeHelper.h>
+#include <helpers/ShapeBuilders.h>
 #include <ops/declarable/OpRegistrator.h>
 
 #include <algorithm>
@@ -47,25 +49,6 @@
 
 namespace sd {
 namespace graph {
-
-// Deferred deletion list for discardCachedSlotArray — inline delete during slot
-// execution causes heap corruption (freed chunk is reused by the allocator for
-// the next op's output, corrupting adjacent Workspace metadata).  Flushed at the
-// end of each executeSlot() call, after the slot has completely finished.
-static thread_local std::vector<NDArray*> tl_slotExecDeferredDeletes;
-
-// RAII guard: flushes tl_slotExecDeferredDeletes when the guard goes out of scope.
-// Used at the top of executeSlot() so every return path is covered automatically.
-struct SlotExecDeferredDeleteGuard {
-  ~SlotExecDeferredDeleteGuard() {
-    if (tl_slotExecDeferredDeletes.empty()) return;
-    std::vector<NDArray*> pending;
-    pending.swap(tl_slotExecDeferredDeletes);
-    for (NDArray* arr : pending) {
-      delete arr;
-    }
-  }
-};
 
 // ── SlotSyncGuard: RAII wrapper for prepareSpecialUse / registerSpecialUse ───
 // Consolidates the scattered needsSync() → prepare → execute → register pattern
@@ -1039,14 +1022,9 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
   }
 
   int refreshedCount = 0;
-  // Defer deletion of old view NDArrays until after the entire loop completes.
-  // In deep view chains (e.g., 8+ sequential permute/reshape ops), interleaving
-  // delete/new within the loop causes heap fragmentation where freed memory is
-  // immediately reused for the next view, and a subtle heap metadata corruption
-  // can manifest later as a SIGSEGV in Workspace::allocateBytes during op
-  // execution.  Batching deletes after all new views are installed avoids this.
-  static thread_local std::vector<NDArray*> deferredDeletes;
-  deferredDeletes.clear();
+  // Retire old view wrappers into the plan-owned queue. They must survive not
+  // only this refresh loop but the rest of the plan traversal; the queue drains
+  // at the established post-execution boundary.
 
   for (int stepIdx = seg.def.startSlot;
        stepIdx <= seg.def.endSlot && stepIdx < numSlots_; stepIdx++) {
@@ -1163,7 +1141,7 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
           &newView, &viewOffset);
 
       if (vcr != VIEW_CREATED || newView == nullptr) {
-        if (newView != nullptr) deferredDeletes.push_back(newView);  // Defer: inline delete during loop causes heap corruption
+        if (newView != nullptr) deferredSlotDeletes_.push_back(newView);  // Defer: inline delete during loop causes heap corruption
 
         // VIEW_NOT_POSSIBLE means the input is no longer contiguous enough for a
         // zero-copy view (e.g., a permute upstream changed strides).  Demote this
@@ -1192,7 +1170,7 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
           newView->dataType() == cached->dataType() &&
           shape::shapeEquals(newView->shapeInfo(), cached->shapeInfo()) &&
           shape::strideEquals(newView->shapeInfo(), cached->shapeInfo())) {
-        deferredDeletes.push_back(newView);  // Defer: inline delete during loop causes heap corruption (freed chunk reused by next iteration's tryCreateViewForSlot)
+        deferredSlotDeletes_.push_back(newView);  // Defer: inline delete during loop causes heap corruption (freed chunk reused by next iteration's tryCreateViewForSlot)
         continue;
       }
 
@@ -1210,11 +1188,11 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       // cachedDb->isValid() additionally checks the DataBuffer magic number and
       // closed flag. A GC-destroyed DataBuffer has MAGIC_DESTROYED magic, so
       // isValid()=false even when closed reads as false (garbage from freed memory).
-      // Without this guard, a view with a destroyed DataBuffer gets pushed to
-      // deferredDeletes and deleted at line 1259, producing heap corruption that
-      // manifests as Workspace::allocateBytes SIGSEGV with this=0xDEADBEEFCAFEBABE.
+      // Without this guard, a view with a destroyed DataBuffer would reach the
+      // post-execution delete queue and corrupt the heap when its destructor
+      // touches the already-destroyed DataBuffer.
       if (cachedValid && cachedDb != nullptr && cachedDb->isValid()) {
-        deferredDeletes.push_back(cached);
+        deferredSlotDeletes_.push_back(cached);
       }
       // If !cachedValid or DataBuffer is invalid/destroyed, skip delete —
       // the destructor would SIGSEGV reading corrupt _shapeInfo or DataBuffer.
@@ -1299,38 +1277,6 @@ int NativeDynamicShapePlan::refreshStaleViewWrappersInSegment(
       refreshedCount++;
     }
   }
-
-  // Deferred deletion: free old view NDArrays now that ALL new views are
-  // installed and all outputSlots_ entries point to the new views.
-  // This separation ensures that no `new NDArray(...)` allocation in the loop
-  // above can reuse memory that was just freed by a `delete` in the same loop
-  // iteration, preventing heap metadata corruption in deep view chains.
-  // Alias-safe drain: identity/alias publications place the SAME NDArray* in
-  // multiple output slots, so an old view replaced at its producer slot may
-  // still be referenced by a downstream alias slot. Skip those — the swap that
-  // removes the last reference enqueues the pointer again and deletes it then.
-  // Dedup ORDER-PRESERVING: deletion order is allocator-visible (free-list
-  // layout feeds capture-baked addresses downstream); keep FIFO order exactly.
-  std::unordered_set<NDArray*> seenDeferred;
-  for (NDArray* old : deferredDeletes) {
-    if (old == nullptr) continue;
-    if (!seenDeferred.insert(old).second) continue;
-    bool stillReferenced = false;
-    for (int i = 0; i < totalOutputSlots_; i++) {
-      if (outputSlots_[i] == old) {
-        stillReferenced = true;
-        break;
-      }
-    }
-    if (stillReferenced) {
-      DSP_DIAG(MEMORY,
-               "VIEW_REFRESH_DELETE_SKIP_ALIASED: arr=%p still referenced by an output slot",
-               (void*)old);
-      continue;
-    }
-    delete old;
-  }
-  deferredDeletes.clear();
 
   // SELF-CONTAINED arg invalidation (single source of truth): if we refreshed or
   // demoted ANY view wrapper, the slot's device addresses changed, so the cached
@@ -1922,6 +1868,14 @@ LongType NativeDynamicShapePlan::computeShapeKey(
   // stale cached output shapes. Line 2171 in executeSegmentSlotBySlot then
   // recomputes and verifies shapes match for the VALUE_DEP_KEY_UPDATE path.
   if (slot.flags.outputShapeDependsOnInputValues) {
+    // Composite/direct replay suppresses generic D2H traffic because ordinary
+    // frozen-shape ops only need cached shapes. Value-dependent shape functions
+    // are the exception: their small integral control tensors may have just been
+    // produced on the DSP stream, and calculateOutputShape reads their literal
+    // values on the host. Temporarily lift replay suppression for only those
+    // bounded controls; the normal graph-capture guard still forbids D2H while a
+    // CUDA graph is actually being captured.
+    DspReplayGuard valueShapeHostReadGuard(false);
     for (int i = 0; i < numInputs; i++) {
       if (inputs[i] == nullptr) continue;
       auto dt = inputs[i]->dataType();
@@ -2012,7 +1966,6 @@ static void dspPropagateSlotError(int stepIdx, const NativeSlot& slot,
 
 Status NativeDynamicShapePlan::executeSlot(
     int stepIdx, NDArray** externalArrays, int numExt, void* stream) {
-  SlotExecDeferredDeleteGuard deferredDeleteGuard;  // flushes deferred deletes on any exit path
   NativeSlot& slot = slots_[stepIdx];
   auto* execCtx = static_cast<PlanExecutionContext*>(activeExecutionContext());
   const bool frozenSlotBySlot =
@@ -2356,7 +2309,7 @@ Status NativeDynamicShapePlan::executeSlot(
               currentOut->dataType() == ffNewView->dataType() &&
               shape::shapeEquals(currentOut->shapeInfo(), ffNewView->shapeInfo()) &&
               shape::strideEquals(currentOut->shapeInfo(), ffNewView->shapeInfo())) {
-            tl_slotExecDeferredDeletes.push_back(ffNewView);  // Defer: inline delete during slot execution causes heap corruption
+            deferredSlotDeletes_.push_back(ffNewView);  // Defer: inline delete during slot execution causes heap corruption
             backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
             return Status::OK;
           }
@@ -2762,7 +2715,7 @@ Status NativeDynamicShapePlan::executeSlot(
       // object, the allocator's free-list metadata update corrupts the
       // Workspace, producing SIGSEGV in Workspace::allocateBytes with a
       // garbage `this` pointer full of ASCII string data.
-      tl_slotExecDeferredDeletes.push_back(cached);
+      deferredSlotDeletes_.push_back(cached);
       DSP_DIAG(MEMORY, "discardCachedSlotArray: slot=%d tag=%s deferred-delete=%p",
                slotIdx, tag, (void*)cached);
     } else {
@@ -2786,8 +2739,15 @@ Status NativeDynamicShapePlan::executeSlot(
     if (!safeHasValidShapeInfo(cached)) return nullptr;
     auto* db = cached->dataBuffer();
     bool invalid = (db == nullptr) || db->isClosed() || !db->isValid();
-    if (!invalid && !platformValidateReusableSlotBuffer(cached)) {
+    // A reusable CUDA output can be structurally valid yet belong to the
+    // device used by an earlier segment. Check provenance during warmup/
+    // first-decode, when a segment device transition is expected; later
+    // executions keep the hot path free of per-slot cudaGetDevice calls.
+    bool platformInvalid = false;
+    if (!invalid && executeCount_ <= 1 &&
+        !platformValidateReusableSlotBuffer(cached)) {
       invalid = true;
+      platformInvalid = true;
     }
     // Ext-fed view slots: the cached wrapper is only current while the
     // EXTERNAL it aliases is still the same DataBuffer OBJECT. When the
@@ -2826,7 +2786,8 @@ Status NativeDynamicShapePlan::executeSlot(
     // the empty-scalar path). At executeCount_==1 the cached array has
     // db==nullptr — treat as cache miss so the op re-executes and populates
     // the buffer. This is safe because CONST_GEN outputs are input-independent.
-    if (slot.isViewCapableOp() ||
+    if (platformInvalid ||
+        slot.isViewCapableOp() ||
         slot.flags.outputShapeDependsOnInputValues ||
         slot.hasOpTrait(sd::ops::OP_TRAIT_CONSTANT_GENERATION) ||
         executeCount_ == 0) {
@@ -3414,7 +3375,7 @@ Status NativeDynamicShapePlan::executeSlot(
                                              tracedInputs, 1, tracedOutputs, 1,
                                              executeCount_, planLifecycle_.displayName());
               }
-              tl_slotExecDeferredDeletes.push_back(newView);  // Defer: inline delete during slot execution causes heap corruption
+              deferredSlotDeletes_.push_back(newView);  // Defer: inline delete during slot execution causes heap corruption
               backfillCachedOutputShapes(slot, outputSlots_, totalOutputSlots_);
               return Status::OK;
             }
@@ -4150,6 +4111,42 @@ Status NativeDynamicShapePlan::executeSlot(
     }
   }
 
+  // A value-dependent shape op can follow a captured segment whose integral
+  // control output was produced asynchronously on the plan-owned stream. The
+  // subsequent host D2H in computeShapeKey must not race that producer. Actuality
+  // counters tell us whether a plan-internal control has a newer device value;
+  // synchronize the producer stream once at that precise graph-to-host boundary.
+  // External host-authoritative controls and graph-capture execution do not need
+  // (and during capture must not perform) this synchronization.
+  if (slot.flags.outputShapeDependsOnInputValues &&
+      !dspStreamIsCapturing(dspGetExecutionStream())) {
+    bool hasPendingInternalControl = false;
+    for (int i = 0; i < slot.wiring.numInputs; i++) {
+      if (slot.wiring.inputSourceIndices[i] < 0 ||
+          !isSmallIntegralControlArray(shapeValueInputs[i])) {
+        continue;
+      }
+      auto* controlBuffer = shapeValueInputs[i]->dataBuffer();
+      if (controlBuffer != nullptr && !controlBuffer->isClosed() &&
+          controlBuffer->isSpecialActual() && !controlBuffer->isPrimaryActual()) {
+        hasPendingInternalControl = true;
+        break;
+      }
+    }
+    if (hasPendingInternalControl) {
+      void* executionStream = dspGetExecutionStream();
+      if (executionStream != nullptr && !dspSynchronizeStream(executionStream)) {
+        DSP_DIAG_SLOT(STREAM_SYNC, stepIdx,
+            "VALUE_SHAPE_PRODUCER_SYNC_FAILED: slot=%d op=%s stream=%p exec=%d",
+            stepIdx, slot.ident.opName.c_str(), executionStream, executeCount_);
+        return Status::KERNEL_FAILURE;
+      }
+      DSP_DIAG_SLOT(STREAM_SYNC, stepIdx,
+          "VALUE_SHAPE_PRODUCER_SYNC: slot=%d op=%s stream=%p exec=%d",
+          stepIdx, slot.ident.opName.c_str(), executionStream, executeCount_);
+    }
+  }
+
   // ── Step 2: Shape inference ──────────────────────────────────────────────
   LongType shapeKey = 0;
   bool cacheHit;
@@ -4803,6 +4800,69 @@ Status NativeDynamicShapePlan::executeSlot(
   // Zero-init all entries (resize doesn't zero for pointers)
   for (int i = 0; i < numActualOutputs; i++) outputs[i] = nullptr;
   bool outputsReady = false;
+  // Some ops (notably inference-only flash attention) keep their logical output
+  // positions for ABI compatibility while explicitly opting out of materialization.
+  // Optional masks/cache placeholders are runtime values, so re-check them after
+  // input binding instead of treating every extra input position as live.
+  auto hasRuntimeData = [](NDArray* array) {
+    return array != nullptr && !array->isEmpty() && array->lengthOf() > 0;
+  };
+  auto hasRuntimeValue = [&hasRuntimeData](NDArray* array) {
+    return hasRuntimeData(array) && array->rankOf() > 0;
+  };
+  auto inputAt = [](int index) -> NDArray* {
+    return index >= 0 && index < static_cast<int>(inputs.size()) ? inputs[index] : nullptr;
+  };
+  bool omitAttentionAuxOutputs = slot.ident.opName == "dot_product_attention_v2";
+  if (omitAttentionAuxOutputs) {
+    // qMask/vMask are inputs 3/4. A non-empty mask forces the fallback path,
+    // which requires scores/logits for its softmax and dropout bookkeeping.
+    if (hasRuntimeValue(inputAt(3)) || hasRuntimeValue(inputAt(4))) {
+      omitAttentionAuxOutputs = false;
+    }
+    // Inputs 5/6/7 are key cache, value cache, and cache position. The fused
+    // cache-write/decode path also requires the auxiliary outputs to remain live.
+    if (hasRuntimeValue(inputAt(5)) && hasRuntimeValue(inputAt(6)) &&
+        hasRuntimeData(inputAt(7))) {
+      omitAttentionAuxOutputs = false;
+    }
+  }
+  auto isOptionalOutput = [&slot, omitAttentionAuxOutputs](int outputIndex) {
+    return omitAttentionAuxOutputs && outputIndex >= 0 && outputIndex < slot.wiring.numOutputs &&
+           slot.wiring.optionalOutputMask != nullptr &&
+           slot.wiring.optionalOutputMask[outputIndex] != 0;
+  };
+  auto makeOptionalOutputPlaceholder = [&](int outputIndex) -> NDArray* {
+    const LongType* expectedShape = outputShapes[outputIndex];
+    int outputSlot = (outputIndex < numWiredOutputs)
+                         ? slot.wiring.outputSlotIndices[outputIndex]
+                         : -1;
+    if (outputSlot >= 0 && outputSlot < totalOutputSlots_) {
+      NDArray* existing = outputSlots_[outputSlot];
+      if (existing != nullptr && existing->hasValidShapeInfo() &&
+          existing->isEmpty() &&
+          shape::equalsSoft(existing->shapeInfo(), expectedShape) &&
+          ArrayOptions::dataType(existing->shapeInfo()) ==
+              ArrayOptions::dataType(expectedShape)) {
+        return existing;
+      }
+    }
+    // Keep the logical output shape and dtype visible to DeclarableOp while
+    // marking the array empty. This lets fastpath validation and tracing run
+    // without allocating the quadratic scores/logits buffers.
+    LongType* emptyShape = ShapeBuilders::copyShapeInfo(expectedShape, true, nullptr);
+    ArrayOptions::setPropertyBit(emptyShape, ARRAY_EMPTY);
+    NDArray* placeholder =
+        new NDArray(nullptr, emptyShape, LaunchContext::defaultContext(), false, 0);
+    delete[] emptyShape;
+    if (outputSlot >= 0 && outputSlot < totalOutputSlots_) {
+      writeOutputSlot(outputSlot, placeholder, "optional-output-placeholder");
+      outputSlots_[outputSlot] = placeholder;
+      DSP_DIAG_SLOT_WRITE(outputSlot, slot.ident.opName.c_str(), 0, stream,
+                          "optional-output-placeholder");
+    }
+    return placeholder;
+  };
 
   // ── In-place fusion: reuse input buffer as output ──
   // Guard on the input *index* (always non-negative for valid in-place ops),
@@ -4827,6 +4887,10 @@ Status NativeDynamicShapePlan::executeSlot(
         }
 
         for (int i = 1; i < numActualOutputs; i++) {
+          if (isOptionalOutput(i)) {
+            outputs[i] = makeOptionalOutputPlaceholder(i);
+            continue;
+          }
           int si = (i < numWiredOutputs) ? slot.wiring.outputSlotIndices[i] : -1;
           if (si < 0) {
             int cacheIdx = stepIdx * MAX_OUTPUTS_PER_SLOT + i;
@@ -4848,7 +4912,7 @@ Status NativeDynamicShapePlan::executeSlot(
                          "(required=%zu available=%zu) — reallocating",
                          stepIdx, i, requiredBytes, availableBytes);
               }
-              tl_slotExecDeferredDeletes.push_back(cached);
+              deferredSlotDeletes_.push_back(cached);
               untrackedOutputCache_[cacheIdx] = nullptr;
               if (sd::Environment::getInstance().isDebug()) {
                 scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
@@ -5039,7 +5103,7 @@ Status NativeDynamicShapePlan::executeSlot(
             // already living at this slot. Drop the new wrapper and reuse the
             // existing one — that keeps the slot pointer (and the snapshot
             // identity captured later in execute()) stable across replays.
-            tl_slotExecDeferredDeletes.push_back(view);  // Defer: inline delete during slot execution causes heap corruption
+            deferredSlotDeletes_.push_back(view);  // Defer: inline delete during slot execution causes heap corruption
             view = existing;
             outputs[0] = existing;
             // outputSlots_[slotIdx] already == existing; no write needed.
@@ -5076,6 +5140,10 @@ Status NativeDynamicShapePlan::executeSlot(
         }
 
         for (int i = 1; i < numActualOutputs; i++) {
+          if (isOptionalOutput(i)) {
+            outputs[i] = makeOptionalOutputPlaceholder(i);
+            continue;
+          }
           int si = (i < numWiredOutputs) ? slot.wiring.outputSlotIndices[i] : -1;
           const LongType* shapeInfo = outputShapes[i];
           auto dt = ArrayOptions::dataType(shapeInfo);
@@ -5115,7 +5183,7 @@ Status NativeDynamicShapePlan::executeSlot(
             // cache as untracked so it can be reused across steps.
             int cacheIdx = stepIdx * MAX_OUTPUTS_PER_SLOT + i;
             if (cacheIdx < untrackedOutputCacheSize_) {
-              tl_slotExecDeferredDeletes.push_back(untrackedOutputCache_[cacheIdx]);  // Defer: inline delete during slot execution causes heap corruption
+              deferredSlotDeletes_.push_back(untrackedOutputCache_[cacheIdx]);  // Defer: inline delete during slot execution causes heap corruption
               untrackedOutputCache_[cacheIdx] = outputs[i];
             }
           }
@@ -5129,6 +5197,10 @@ Status NativeDynamicShapePlan::executeSlot(
   // ── Step 3: Allocate outputs (skip if in-place or view already set them) ──
   if (!outputsReady)
   for (int i = 0; i < numActualOutputs; i++) {
+    if (isOptionalOutput(i)) {
+      outputs[i] = makeOptionalOutputPlaceholder(i);
+      continue;
+    }
     // Guard: outputSlotIndices only has numWiredOutputs entries.
     // Overflow outputs (from shape function returning more than graph wires)
     // are treated as untracked (slotIdx = -1).
@@ -5139,7 +5211,7 @@ Status NativeDynamicShapePlan::executeSlot(
         NDArray* cached = untrackedOutputCache_[cacheIdx];
         if (cached != nullptr) {
           if (!cached->hasValidShapeInfo()) {
-            tl_slotExecDeferredDeletes.push_back(cached);
+            deferredSlotDeletes_.push_back(cached);
             untrackedOutputCache_[cacheIdx] = nullptr;
             if (sd::Environment::getInstance().isDebug()) {
               scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
@@ -5162,7 +5234,7 @@ Status NativeDynamicShapePlan::executeSlot(
                        "(required=%zu available=%zu) — reallocating",
                        stepIdx, i, requiredBytes, availableBytes);
             }
-            tl_slotExecDeferredDeletes.push_back(cached);
+            deferredSlotDeletes_.push_back(cached);
             untrackedOutputCache_[cacheIdx] = nullptr;
             if (sd::Environment::getInstance().isDebug()) {
               scanAllSlotsForCorruption(outputSlots_, totalOutputSlots_,
@@ -5481,6 +5553,9 @@ Status NativeDynamicShapePlan::executeSlot(
     ctx.setInputArray(i, inputs[i]);
   }
 
+  // All output entries remain non-null: optional attention auxiliaries use
+  // shape-preserving empty placeholders so the normal context validation and
+  // tracing paths stay intact.
   for (int i = 0; i < numActualOutputs; i++) {
     ctx.setOutputArray(i, outputs[i]);
   }

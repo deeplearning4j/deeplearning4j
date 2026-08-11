@@ -25,15 +25,12 @@
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
 #include <cnpy/cnpy.h>
-#include <graph/GraphExecutioner.h>
 #include <graph/Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <gtest/gtest.h>
 #include <helpers/shape.h>
 #include <legacy/NativeOps.h>
-#include <memory/MemoryTracker.h>
-#include <ops/gemm.h>
 #include <ops/ops.h>
 #include <system/common.h>
 

@@ -27,6 +27,7 @@
 #include <string>
 #include <math/templatemath.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <graph/DspDiagnostics.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <system/op_boilerplate.h>
@@ -36,11 +37,51 @@
 
 #include <atomic>
 #include <cstring>
+#include <mutex>
+#include <unordered_map>
 
 #include "../Workspace.h"
 
 namespace sd {
 namespace memory {
+
+namespace {
+constexpr LongType kLargeWorkspaceHostAllocationDiagThreshold = 64LL * 1024LL * 1024LL;
+std::mutex largeWorkspaceHostAllocationsMutex;
+std::unordered_map<void*, LongType> largeWorkspaceHostAllocations;
+
+void trackLargeWorkspaceHostAllocation(void* workspace, void* pointer, LongType requestedBytes,
+                                       LongType actualBytes, const char* kind) {
+  if (!DSP_DIAG_ENABLED(MEMORY) || requestedBytes < kLargeWorkspaceHostAllocationDiagThreshold) return;
+  {
+    std::lock_guard<std::mutex> lock(largeWorkspaceHostAllocationsMutex);
+    largeWorkspaceHostAllocations[pointer] = requestedBytes;
+  }
+  DSP_DIAG(MEMORY,
+           "CUDA_WORKSPACE_HOST_ALLOC: workspace=%p ptr=%p requestedBytes=%lld actualBytes=%lld kind=%s",
+           workspace, pointer, static_cast<long long>(requestedBytes),
+           static_cast<long long>(actualBytes), kind);
+}
+
+void recordLargeWorkspaceHostFree(void* workspace, void* pointer, const char* kind, cudaError_t result) {
+  if (!DSP_DIAG_ENABLED(MEMORY)) return;
+  LongType requestedBytes = 0;
+  {
+    std::lock_guard<std::mutex> lock(largeWorkspaceHostAllocationsMutex);
+    auto allocation = largeWorkspaceHostAllocations.find(pointer);
+    if (allocation != largeWorkspaceHostAllocations.end()) {
+      requestedBytes = allocation->second;
+      largeWorkspaceHostAllocations.erase(allocation);
+    }
+  }
+  if (requestedBytes > 0) {
+    DSP_DIAG(MEMORY,
+             "CUDA_WORKSPACE_HOST_FREE: workspace=%p ptr=%p requestedBytes=%lld kind=%s result=%d",
+             workspace, pointer, static_cast<long long>(requestedBytes), kind,
+             static_cast<int>(result));
+  }
+}
+}  // namespace
 
 // Helper: get the current CUDA compute stream (never nullptr unless no context).
 static cudaStream_t currentStream() {
@@ -88,6 +129,8 @@ Workspace::Workspace(LongType primarySize, LongType secondarySize, bool secondar
         std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
         THROW_EXCEPTION(msg.c_str());
       }
+      trackLargeWorkspaceHostAllocation(this, _ptrHost, secondarySize,
+                                        secondarySize + CANARY_SIZE, "base-constructor");
     }
 
     // Host memory is CPU-accessible, use memset directly
@@ -165,8 +208,10 @@ void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
     if (this->_allocatedHost && !_externalized) {
       if (_secondaryUsePlainMalloc)
         free((void *)this->_ptrHost);
-      else
-        cudaFreeHost((void *)this->_ptrHost);
+      else {
+        auto freeResult = cudaFreeHost((void *)this->_ptrHost);
+        recordLargeWorkspaceHostFree(this, (void *)this->_ptrHost, "base-resize", freeResult);
+      }
     }
 
     if (_secondaryUsePlainMalloc) {
@@ -182,6 +227,8 @@ void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
         std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
         THROW_EXCEPTION(msg.c_str());
       }
+      trackLargeWorkspaceHostAllocation(this, _ptrHost, secondaryBytes,
+                                        secondaryBytes + CANARY_SIZE, "base-resize");
     }
 
     // Host memory is CPU-accessible, use memset directly
@@ -225,8 +272,10 @@ void Workspace::freeSpills() {
     for (auto v : _spillsSecondary) {
       if (_secondaryUsePlainMalloc)
         free(v);
-      else
-        cudaFreeHost(v);
+      else {
+        auto freeResult = cudaFreeHost(v);
+        recordLargeWorkspaceHostFree(this, v, "spill", freeResult);
+      }
     }
     _spillsSecondary.clear();
   }
@@ -236,8 +285,10 @@ Workspace::~Workspace() {
   if (this->_allocatedHost && !_externalized) {
     if (_secondaryUsePlainMalloc)
       free((void *)this->_ptrHost);
-    else
-      cudaFreeHost((void *)this->_ptrHost);
+    else {
+      auto freeResult = cudaFreeHost((void *)this->_ptrHost);
+      recordLargeWorkspaceHostFree(this, (void *)this->_ptrHost, "base-destructor", freeResult);
+    }
   }
 
   if (this->_allocatedDevice && !_externalized) {
@@ -341,6 +392,8 @@ void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
             std::string msg = "Can't allocate [HOST] memory; Error code: [" + std::to_string(res) + "]";
             THROW_EXCEPTION(msg.c_str());
           }
+          trackLargeWorkspaceHostAllocation(this, p, numBytes,
+                                            numBytes + SD_ALLOC_PADDING, "spill");
         }
 
         _mutexSpills.lock();

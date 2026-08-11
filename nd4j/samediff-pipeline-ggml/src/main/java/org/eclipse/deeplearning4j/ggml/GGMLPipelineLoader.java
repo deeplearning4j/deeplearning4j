@@ -24,18 +24,17 @@ import org.eclipse.deeplearning4j.pipeline.ModelFormat;
 import org.eclipse.deeplearning4j.pipeline.ModelManifest;
 import org.eclipse.deeplearning4j.pipeline.PipelineLoader;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.config.ND4JInferenceWeightDataType;
 import org.nd4j.ggml.GGMLImportException;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGUFHeader;
 import org.nd4j.ggml.format.GGUFReader;
-import org.nd4j.linalg.api.buffer.DataType;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -108,39 +107,30 @@ public class GGMLPipelineLoader implements PipelineLoader {
         }
     }
 
-    private static ConversionOptions conversionOptions(LoadConfig config) throws IOException {
-        ConversionOptions.ConversionOptionsBuilder builder = ConversionOptions.builder()
-                .useMemoryMapping(config.useMmap());
-
+    static ConversionOptions conversionOptions(LoadConfig config) throws IOException {
         if (!config.dequantize()) {
-            return builder
+            return ConversionOptions.builder()
+                    .useMemoryMapping(config.useMmap())
                     .quantizationMode(ConversionOptions.QuantizationMode.PRESERVE_QUANTIZATION)
                     .build();
         }
 
-        String requestedType = config.getDataType() == null
-                ? "float32"
-                : config.getDataType().toLowerCase(Locale.ROOT).replace("_", "").replace("-", "");
-        if (config.convertToFloat32() || "float".equals(requestedType)
-                || "float32".equals(requestedType) || "fp32".equals(requestedType)) {
-            return builder
-                    .quantizationMode(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT32)
-                    .targetDataType(DataType.FLOAT)
-                    .build();
-        }
-        if ("half".equals(requestedType) || "float16".equals(requestedType) || "fp16".equals(requestedType)) {
-            return builder
-                    .quantizationMode(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16)
-                    .targetDataType(DataType.HALF)
-                    .build();
-        }
-        if ("bfloat16".equals(requestedType) || "bf16".equals(requestedType)) {
-            return builder
-                    .quantizationMode(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_BFLOAT16)
-                    .targetDataType(DataType.BFLOAT16)
-                    .build();
+        final ND4JInferenceWeightDataType requestedType;
+        try {
+            requestedType = config.getDataType() == null
+                    ? ND4JInferenceWeightDataType.resolve()
+                    : ND4JInferenceWeightDataType.fromString(config.getDataType());
+        } catch (IllegalArgumentException e) {
+            throw new IOException(e.getMessage(), e);
         }
 
-        throw new IOException("Unsupported GGUF target data type: " + config.getDataType());
+        if (config.convertToFloat32() && requestedType != ND4JInferenceWeightDataType.FLOAT32) {
+            throw new IOException("Conflicting GGUF load configuration: dataType="
+                    + requestedType.canonicalName() + " but convertToFloat32=true");
+        }
+
+        ConversionOptions options = ConversionOptions.forInference(requestedType);
+        options.setUseMemoryMapping(config.useMmap());
+        return options;
     }
 }

@@ -58,6 +58,17 @@ bool NvrtcGraphBackend::isAvailable() const {
   return true;
 }
 
+bool NvrtcGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_NVRTC_JIT ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO;
+}
+
+int NvrtcGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_NVRTC_JIT ? 1000 : 600;
+}
+
 // ---- Compute arch ----
 
 std::string NvrtcGraphBackend::getComputeArch() {

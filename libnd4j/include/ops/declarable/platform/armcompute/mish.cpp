@@ -18,6 +18,8 @@
  *  *****************************************************************************
  */
 
+#include <cmath>
+
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
@@ -34,12 +36,17 @@ PLATFORM_IMPL(mish, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  // ARM Compute has MISH activation in newer versions
-  arm_compute::ActivationLayerInfo info(arm_compute::ActivationLayerInfo::ActivationFunction::MISH);
+  // The bundled Arm Compute version does not expose a MISH activation.
+  // Keep the operation in the ARM/CPU tier with a stable scalar fallback
+  // instead of referencing an optional vendor enum.
+  auto inPtr = input->bufferAsT<float>();
+  auto outPtr = output->bufferAsT<float>();
 
-  ArmFunction<arm_compute::NEActivationLayer> activation;
-  activation.configure(input, output, Arm_DataLayout::UNKNOWN, info);
-  activation.run();
+  for (sd::LongType i = 0; i < input->lengthOf(); ++i) {
+    const float x = inPtr[i];
+    const float softplus = x > 20.0f ? x : std::log1p(std::exp(x));
+    outPtr[i] = x * std::tanh(softplus);
+  }
 
   return sd::Status::OK;
 }

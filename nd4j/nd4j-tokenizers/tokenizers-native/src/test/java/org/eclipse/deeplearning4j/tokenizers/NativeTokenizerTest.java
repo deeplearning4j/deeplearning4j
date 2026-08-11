@@ -14,6 +14,8 @@ package org.eclipse.deeplearning4j.tokenizers;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,6 +46,9 @@ public class NativeTokenizerTest {
         NativeTokenizer tokenizer = NativeTokenizer.fromJson(TOKENIZER_JSON);
         assertTrue(tokenizer.isValid());
         assertEquals(3L, tokenizer.vocabSize());
+        assertEquals(0, tokenizer.tokenToId("[UNK]"));
+        assertEquals(1, tokenizer.tokenToId("hello"));
+        assertEquals(-1, tokenizer.tokenToId("missing"));
         assertArrayEquals(new int[] {1, 2},
                 tokenizer.encode("hello world", false));
         assertArrayEquals(new long[] {1L, 2L},
@@ -94,5 +99,80 @@ public class NativeTokenizerTest {
                 IllegalStateException.class,
                 () -> NativeTokenizer.fromJson("{not-json}"));
         assertTrue(error.getMessage().contains("load tokenizer JSON failed"));
+    }
+
+    @Test
+    public void rendersModelOwnedHuggingFaceChatTemplate() {
+        String config = "{"
+                + "\"bos_token\":{\"content\":\"<s>\",\"special\":true},"
+                + "\"chat_template\":\"{{ bos_token }}{% for message in messages %}"
+                + "{{ message['role'] }}:{{ message['content'] }}\\n{% endfor %}"
+                + "{% if add_generation_prompt %}assistant:{% endif %}\""
+                + "}";
+        try (NativeTokenizer tokenizer = NativeTokenizer.fromJson(TOKENIZER_JSON)) {
+            String rendered = tokenizer.applyChatTemplate(
+                    config,
+                    List.of(
+                            NativeTokenizer.ChatMessage.system("Be concise."),
+                            NativeTokenizer.ChatMessage.user("quoted \"value\"")),
+                    true);
+            assertEquals(
+                    "<s>system:Be concise.\nuser:quoted \"value\"\nassistant:",
+                    rendered);
+        }
+    }
+
+    @Test
+    public void rendersAndroidSmokeChatContextWithoutLosingMessages() {
+        String config = "{"
+                + "\"bos_token\":\"<s>\","
+                + "\"chat_template\":\"{{ bos_token }}{% for message in messages %}"
+                + "{{ message['role'] }}:{{ message['content'] }}\\n{% endfor %}"
+                + "tools={{ tools | length }};choice={{ tool_choice }};"
+                + "{% if add_generation_prompt %}assistant:{% endif %}\""
+                + "}";
+        String androidContext = "{"
+                + "\"messages\":[{\"role\":\"user\",\"content\":\"Reply with OK.\"}],"
+                + "\"tools\":[],"
+                + "\"tool_choice\":\"none\","
+                + "\"add_generation_prompt\":true"
+                + "}";
+
+        assertEquals(
+                "<s>user:Reply with OK.\ntools=0;choice=none;assistant:",
+                NativeTokenizer.renderChatTemplateContext(config, androidContext));
+    }
+
+    @Test
+    public void rendersChatTemplateWithoutAllocatingTokenizerHandle() {
+        String config = "{"
+                + "\"bos_token\":\"<s>\","
+                + "\"chat_template\":\"{{ bos_token }}{% for message in messages %}"
+                + "{% if message['role'] == 'system' %}<SYS>{% endif %}"
+                + "{{ message['content'] }}{% if message['role'] == 'system' %}</SYS>{% endif %}"
+                + "{% endfor %}{% if add_generation_prompt %}<A>{% endif %}\""
+                + "}";
+
+        assertEquals(
+                "<s><SYS>rules</SYS>hello<A>",
+                NativeTokenizer.renderChatTemplate(
+                        config,
+                        List.of(
+                                NativeTokenizer.ChatMessage.system("rules"),
+                                NativeTokenizer.ChatMessage.user("hello")),
+                        true));
+    }
+
+    @Test
+    public void rejectsIncompleteTokenizerChatConfiguration() {
+        try (NativeTokenizer tokenizer = NativeTokenizer.fromJson(TOKENIZER_JSON)) {
+            IllegalStateException error = assertThrows(
+                    IllegalStateException.class,
+                    () -> tokenizer.applyChatTemplate(
+                            "{}",
+                            List.of(NativeTokenizer.ChatMessage.user("hello")),
+                            true));
+            assertTrue(error.getMessage().contains("chat_template"));
+        }
     }
 }

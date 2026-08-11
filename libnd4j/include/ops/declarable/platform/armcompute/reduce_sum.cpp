@@ -40,7 +40,10 @@ PLATFORM_IMPL(reduce_sum, ENGINE_CPU) {
       dimensions.push_back(axisVector->e<int>(i));
     }
   } else if (block.getIArguments()->size() > 0) {
-    dimensions = *block.getIArguments();
+    // IArguments are LongType on Android, while ARM Compute expects int axes.
+    for (auto axis : *block.getIArguments()) {
+      dimensions.push_back(static_cast<int>(axis));
+    }
   }
 
   bool keepDims = block.getBArguments()->size() > 0 ? B_ARG(0) : false;
@@ -109,7 +112,10 @@ PLATFORM_CHECK(reduce_sum, ENGINE_CPU) {
       dimensions.push_back(axisVector->e<int>(i));
     }
   } else if (block.getIArguments()->size() > 0) {
-    dimensions = *block.getIArguments();
+    // IArguments are LongType on Android, while ARM Compute expects int axes.
+    for (auto axis : *block.getIArguments()) {
+      dimensions.push_back(static_cast<int>(axis));
+    }
   }
 
   Requirements req("ARMCOMPUTE REDUCE_SUM OP");

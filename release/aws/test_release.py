@@ -279,7 +279,22 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertTrue(windows)
         for shard in windows:
             variants = shard["build"]["variants"]
-            self.assertNotIn("compile", [item["name"] for item in variants], shard["id"])
+            compile_variants = [item for item in variants if item["name"] == "compile"]
+            if shard["id"] == "windows-x86_64-cpu" or (
+                shard["build"]["backend"] == "cuda" and not shard["build"].get("zludaVersion")
+            ):
+                self.assertEqual(1, len(compile_variants), shard["id"])
+                self.assertTrue(compile_variants[0].get("windowsNativeCompile"))
+                self.assertEqual("compile", compile_variants[0].get("extension"))
+                self.assertEqual("-compile", compile_variants[0].get("suffix"))
+                if shard["build"]["backend"] == "cuda":
+                    self.assertEqual(
+                        f"-cuda-{shard['build']['cudaVersion']}-compile",
+                        compile_variants[0].get("classifierSuffix"),
+                    )
+                    self.assertEqual("-compile", compile_variants[0].get("platformExtension"))
+            else:
+                self.assertFalse(compile_variants, shard["id"])
             self.assertFalse(
                 any(item.get("mlir") or item.get("triton") for item in variants),
                 shard["id"],
@@ -643,15 +658,15 @@ class ReleaseValidationTest(unittest.TestCase):
         namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
         direct_modules = {node.text for node in pom.findall("m:modules/m:module", namespace)}
         expected_profiles = {
-            "cuda": {"nd4j-cuda", "nd4j-cuda-preset", "nd4j-cuda-platform"},
+            "cuda": {"nd4j-cuda-backend-common", "nd4j-cuda", "nd4j-cuda-preset", "nd4j-cuda-platform"},
             "metal": {"nd4j-metal", "nd4j-metal-preset"},
             "tpu": {"nd4j-tpu", "nd4j-tpu-preset"},
             "hexagon": {"nd4j-hexagon", "nd4j-hexagon-preset"},
             "vulkan": {"nd4j-vulkan", "nd4j-vulkan-preset", "nd4j-vulkan-platform"},
-            "zluda": {"nd4j-zluda"},
+            "zluda": {"nd4j-cuda-backend-common", "nd4j-zluda"},
             "zluda-platform": {"nd4j-zluda-platform"},
-            "zluda-amd": {"nd4j-zluda"},
-            "zluda-intel": {"nd4j-zluda"},
+            "zluda-amd": {"nd4j-cuda-backend-common", "nd4j-zluda"},
+            "zluda-intel": {"nd4j-cuda-backend-common", "nd4j-zluda"},
         }
         profiles = {}
         for profile in pom.findall("m:profiles/m:profile", namespace):
@@ -682,6 +697,14 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual(
             "false",
             pom.findtext("m:properties/m:skipPublishing", namespaces=namespace),
+        )
+        self.assertEqual(
+            "12.9",
+            pom.findtext("m:properties/m:cuda.version", namespaces=namespace),
+        )
+        self.assertEqual(
+            "nd4j-cuda-${cuda.version}",
+            pom.findtext("m:properties/m:nd4j.backend", namespaces=namespace),
         )
         direct_dependencies = pom.findall("m:dependencies/m:dependency", namespace)
         self.assertEqual(1, len(direct_dependencies))
@@ -714,7 +737,7 @@ class ReleaseValidationTest(unittest.TestCase):
             dependencies = profile.findall("m:dependencies/m:dependency", namespace)
             self.assertEqual(1, len(dependencies))
             self.assertEqual(
-                "nd4j-cuda-12.9",
+                "${nd4j.backend}",
                 dependencies[0].findtext("m:artifactId", namespaces=namespace),
             )
             self.assertEqual(
@@ -759,6 +782,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 "platform": "linux-x86_64",
                 "profiles": ["cuda", "sdx", "zluda", "zluda-platform"],
                 "modules": {
+                    ":nd4j-cuda-backend-common",
                     ":nd4j-cuda-12.9",
                     ":nd4j-cuda-12.9-preset",
                     ":nd4j-zluda",
@@ -766,25 +790,44 @@ class ReleaseValidationTest(unittest.TestCase):
                     ":libnd4j",
                 },
                 "artifactIds": {
+                    "nd4j-cuda-backend-common",
                     "nd4j-cuda-12.9",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda",
                     "nd4j-zluda-platform",
                 },
-                "unclassifiedArtifactIds": ["nd4j-zluda", "nd4j-zluda-platform"],
+                "unclassifiedArtifactIds": [
+                    "nd4j-cuda-backend-common",
+                    "nd4j-cuda-12.9-preset",
+                    "nd4j-zluda",
+                    "nd4j-zluda-platform",
+                ],
             },
             "windows-x86_64-zluda": {
                 "os": "windows",
                 "platform": "windows-x86_64",
-                "profiles": ["cuda", "sdx", "zluda"],
+                "profiles": ["cuda", "sdx", "zluda", "zluda-platform"],
                 "modules": {
+                    ":nd4j-cuda-backend-common",
                     ":nd4j-cuda-12.9",
                     ":nd4j-cuda-12.9-preset",
                     ":nd4j-zluda",
+                    ":nd4j-zluda-platform",
                     ":libnd4j",
                 },
-                "artifactIds": {"nd4j-cuda-12.9", "nd4j-cuda-12.9-preset"},
-                "unclassifiedArtifactIds": [],
+                "artifactIds": {
+                    "nd4j-cuda-backend-common",
+                    "nd4j-cuda-12.9",
+                    "nd4j-cuda-12.9-preset",
+                    "nd4j-zluda",
+                    "nd4j-zluda-platform",
+                },
+                "unclassifiedArtifactIds": [
+                    "nd4j-cuda-backend-common",
+                    "nd4j-cuda-12.9-preset",
+                    "nd4j-zluda",
+                    "nd4j-zluda-platform",
+                ],
             },
         }
         for provider in ("aws", "gcp", "azure"):
@@ -885,6 +928,9 @@ class ReleaseValidationTest(unittest.TestCase):
         gpu_backend = (
             root / "libnd4j/include/graph/impl/NativeDynamicShapePlan_gpubackend.cpp"
         ).read_text(encoding="utf-8")
+        backend_catalog = (
+            root / "libnd4j/include/graph/impl/NativeDynamicShapePlan_segments.cpp"
+        ).read_text(encoding="utf-8")
         miopen_bridge = (
             root / "libnd4j/include/ops/declarable/platform/miopen/miopenBridge.cpp"
         ).read_text(encoding="utf-8")
@@ -948,9 +994,10 @@ class ReleaseValidationTest(unittest.TestCase):
         )
         self.assertNotIn(old_hip_gate, replay_factory)
         self.assertNotIn(old_hip_gate, gpu_backend)
+        self.assertNotIn(old_hip_gate, backend_catalog)
         self.assertNotIn(old_hip_gate, direct_hip_sources)
         self.assertIn("#if defined(SD_HIP)", replay_factory)
-        self.assertIn("#if defined(SD_HIP)", gpu_backend)
+        self.assertIn("#if defined(SD_HIP)", backend_catalog)
         self.assertEqual(6, direct_hip_sources.count("#if defined(SD_HIP)"))
 
         setup_call = configuration.index("setup_zluda_amd()")

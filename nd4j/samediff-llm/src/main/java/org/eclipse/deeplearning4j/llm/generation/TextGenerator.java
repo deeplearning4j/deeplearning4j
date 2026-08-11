@@ -277,16 +277,10 @@ public class TextGenerator {
         long firstTokenMs = firstTokenLatencyNanos / 1_000_000;
         int[] tokenIdArray = generatedTokenIds.stream().mapToInt(Integer::intValue).toArray();
 
-        // Decode the full generated token sequence for proper handling of special tokens.
-        // Individual token decoding can miss multi-token patterns and special token boundaries.
-        // Strip <think>...</think> blocks from the output — these are internal reasoning.
+        // Decode the complete generated sequence verbatim. Completion generation has no
+        // authority to guess chat delimiters or reasoning syntax; generateChat performs
+        // model-template-aware normalization at the structured boundary.
         String fullText = tokenIdArray.length > 0 ? tokenizer.decode(tokenIdArray, false) : "";
-        // Remove thinking blocks: <think>...\n</think>\n
-        fullText = fullText.replaceAll("(?s)<think>.*?</think>\\s*", "");
-        // Remove any remaining special tokens
-        fullText = fullText.replace("<|im_end|>", "").replace("<|im_start|>", "")
-                .replace("<|endoftext|>", "");
-        fullText = fullText.trim();
 
         return GenerationResult.builder()
                 .text(fullText)

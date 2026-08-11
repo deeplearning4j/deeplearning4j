@@ -46,8 +46,8 @@ namespace graph {
  * name is retained for source compatibility; device execution belongs to each
  * dedicated device backend and is never selected or invoked here.
  *
- * Integration: Used by NativeDynamicShapePlan when running on ARM targets.
- * Priority in getCpuGraphBackend():
+ * Integration: Registered in NativeDynamicShapePlan's shared backend catalog
+ * on ARM targets. Resolution priority is backend-owned:
  *   ACL (ARM Compute Library) > ARM MLIR > generic MLIR CPU
  */
 class ArmHybridGraphBackend : public GraphBackend {
@@ -57,6 +57,8 @@ class ArmHybridGraphBackend : public GraphBackend {
 
   const char* name() const override { return "ARM MLIR CPU"; }
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,

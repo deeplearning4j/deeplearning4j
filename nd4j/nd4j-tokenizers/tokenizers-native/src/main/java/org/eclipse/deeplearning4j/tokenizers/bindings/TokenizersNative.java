@@ -137,6 +137,52 @@ public native @Cast("bool") @Name("tokenizer_is_valid") boolean tokenizerIsValid
  */
 public native @Cast("size_t") @Name("get_vocab_size") long getVocabSize(OpaqueTokenizer tokenizer);
 
+/**
+ * \brief Resolve an exact vocabulary token without encoding it
+ * @param tokenizer Tokenizer instance
+ * @param token Exact token string
+ * @param token_id Receives the token ID when found
+ * @return true when the token exists, false when it does not or input is invalid
+ */
+public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") String token, @Cast("uint32_t*") IntPointer token_id);
+public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") BytePointer token, @Cast("uint32_t*") IntBuffer token_id);
+public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") String token, @Cast("uint32_t*") int[] token_id);
+public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") BytePointer token, @Cast("uint32_t*") IntPointer token_id);
+public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") String token, @Cast("uint32_t*") IntBuffer token_id);
+public native @Cast("bool") @Name("get_token_id") boolean getTokenId(OpaqueTokenizer tokenizer, @Cast("char*") BytePointer token, @Cast("uint32_t*") int[] token_id);
+
+/**
+ * \brief Render a Hugging Face tokenizer_config.json chat template
+ * @param messages_json JSON array of role/content message objects
+ * @param tokenizer_config_json Full normalized tokenizer_config.json
+ * @param current_date Current date exposed as date_string
+ * @param add_generation_prompt Whether to append the assistant prompt
+ * @return Rendered prompt, or NULL on failure (must be freed with free_string)
+ */
+public native @Name("apply_chat_template") @Cast("char*") String applyChatTemplate(@Cast("char*") String messages_json,
+                          @Cast("char*") String tokenizer_config_json,
+                          @Cast("char*") String current_date,
+                          @Cast("bool") boolean add_generation_prompt);
+public native @Name("apply_chat_template") @Cast("char*") BytePointer applyChatTemplate(@Cast("char*") BytePointer messages_json,
+                          @Cast("char*") BytePointer tokenizer_config_json,
+                          @Cast("char*") BytePointer current_date,
+                          @Cast("bool") boolean add_generation_prompt);
+
+/**
+ * \brief Render a chat template from a complete Hugging Face runtime context
+ * @param context_json JSON object containing messages, tools, documents, flags,
+ *                     and optional model-specific template arguments
+ * @param tokenizer_config_json Full normalized tokenizer_config.json
+ * @param current_date Current date exposed as date_string when not overridden
+ * @return Rendered prompt, or NULL on failure (must be freed with free_string)
+ */
+public native @Name("apply_chat_template_context") @Cast("char*") String applyChatTemplateContext(@Cast("char*") String context_json,
+                                  @Cast("char*") String tokenizer_config_json,
+                                  @Cast("char*") String current_date);
+public native @Name("apply_chat_template_context") @Cast("char*") BytePointer applyChatTemplateContext(@Cast("char*") BytePointer context_json,
+                                  @Cast("char*") BytePointer tokenizer_config_json,
+                                  @Cast("char*") BytePointer current_date);
+
 // =============================================================================
 // Encoding Functions
 // =============================================================================

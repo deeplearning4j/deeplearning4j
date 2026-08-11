@@ -168,16 +168,16 @@ python3 release/aws/release.py collect \
 The collector verifies status, shard identity, platform workload completeness and hashes before uploading every Maven/SDK archive and manifest to a draft GitHub Release. It also merges all Maven shards, rejects conflicting paths, validates every component, generates Maven checksums, and publishes an exploded Maven 2 repository at:
 
 ```text
-s3://dl4j-release-ACCOUNT-REGION/deeplearning4j/releases/RUN_ID/maven-repository/
+s3://dl4j-release-ACCOUNT-REGION/deeplearning4j/releases/maven-repository/
 ```
 
-The repository is private. The collector uploads `.dl4j/complete.json` last; only use the layout when that marker exists and its `ready` value is `true`. `completeMatrix` distinguishes a full collection from a deliberately partial `--shard` collection. `.dl4j/repository-manifest.json` binds every repository file to its size and SHA-256 digest.
+The repository is private and stable across runs. Matching Maven coordinates are overwritten in place; unrelated classifiers and versions are preserved. The publisher also writes `index.html` and trailing-slash aliases at the repository root and every coordinate directory so the S3 prefix is browsable without a listing service. The collector uploads `.dl4j/complete.json` last; only use the layout when that marker exists and its `ready` value is `true`. `completeMatrix` distinguishes a full collection from a deliberately partial `--shard` collection. `.dl4j/repository-manifest.json` binds every Maven artifact and metadata file to its size and SHA-256 digest; browse indexes are derived presentation files.
 
 For local Maven testing, sync it with the normal AWS credential chain and use the downloaded directory as a `file://` repository:
 
 ```bash
 aws s3 sync \
-  s3://dl4j-release-ACCOUNT-REGION/deeplearning4j/releases/RUN_ID/maven-repository/ \
+  s3://dl4j-release-ACCOUNT-REGION/deeplearning4j/releases/maven-repository/ \
   ./dl4j-test-repository
 
 test -f ./dl4j-test-repository/.dl4j/complete.json

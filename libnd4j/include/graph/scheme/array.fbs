@@ -44,6 +44,7 @@ enum DType:byte {
     QINT8,
     QINT16,
     BFLOAT16 = 17,
+    FLOAT8_E5M2 = 19,
     UTF8 = 50,
     UTF16 = 51,
     UTF32 = 52,
@@ -81,7 +82,7 @@ table FlatArray {
     isExternal:bool = false;           // Flag indicating if data is stored externally
 
     // For C++ native reader - offset/length of appended data in SDNB file
-    appendedDataOffset:long;           // Byte offset from start of SDNB file
+    appendedDataOffset:long;           // Byte offset relative to SDNB raw-data section
     appendedDataLength:long;           // Byte length of appended data
 }
 

@@ -627,6 +627,11 @@ PRINT_MATH="${PRINT_MATH:-OFF}"
 KEEP_NVCC="${KEEP_NVCC:-OFF}"
 PREPROCESS="${PREPROCESS:-ON}"
 CMAKE_ARGUMENTS="${CMAKE_ARGUMENTS:-}"
+# Per-build ccache accounting is enabled by default. The trace is isolated
+# under the selected build directory and never mutates shared ccache counters.
+CCACHE_TRACE="${CCACHE_TRACE:-ON}"
+CCACHE_TRACE_VERBOSE="${CCACHE_TRACE_VERBOSE:-OFF}"
+CCACHE_TRACE_RUN_ID="${CCACHE_TRACE_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 PTXAS_INFO="${PTXAS_INFO:-OFF}"
 BUILD_PPSTEP="${BUILD_PPSTEP:-OFF}"
 EXTRACT_INSTANTIATIONS="${EXTRACT_INSTANTIATIONS:-OFF}"
@@ -2322,7 +2327,7 @@ esac
 # google-tpu is reserved for the Android Tensor variant added alongside NNAPI.
 DEVICE_ONLY_ACCELERATOR=false
 case "$CHIP" in
-  vulkan|hexagon|tpu|google-tpu) DEVICE_ONLY_ACCELERATOR=true ;;
+  vulkan|hexagon|tpu|google-tpu|nnapi) DEVICE_ONLY_ACCELERATOR=true ;;
 esac
 
 if [ "$CHIP" == "vulkan" ]; then
@@ -2720,6 +2725,15 @@ configure_primary_backend() {
         tpu)
             BLAS_ARG="$disabled_backends -DSD_TPU=ON -DBLAS=FALSE"
             ;;
+        nnapi)
+            # Tensor G3 uses the CPU-family graph library as the canonical
+            # NNAPI/ACL/replay runtime. It is device-only and must never
+            # acquire a BLAS or generic CPU execution path.
+            BLAS_ARG="$disabled_backends -DSD_CPU=ON -DBLAS=FALSE -DSD_NNAPI_ACCELERATOR_ONLY=ON -DSD_NNAPI_TENSOR_G3_HYBRID=ON -DHELPERS_nnapi=ON"
+            if [ -n "${SD_NNAPI_REQUIRED_DEVICE_NAME:-}" ]; then
+                BLAS_ARG="$BLAS_ARG -DSD_NNAPI_REQUIRED_DEVICE_NAME=${SD_NNAPI_REQUIRED_DEVICE_NAME}"
+            fi
+            ;;
         hexagon)
             BLAS_ARG="$disabled_backends -DSD_HEXAGON=ON -DBLAS=FALSE"
             ;;
@@ -2756,6 +2770,8 @@ if [ -z "$NAME" ]; then
         NAME="nd4jaurora"
     elif [ "$CHIP" == "tpu" ]; then
         NAME="nd4jtpu"
+    elif [ "$CHIP" == "nnapi" ]; then
+        NAME="nd4jnnapi"
     elif [ "$CHIP" == "hexagon" ]; then
         NAME="nd4jhexagon"
     elif [ "$CHIP" == "vulkan" ]; then
@@ -2831,7 +2847,9 @@ if [ "$MINIFIER" == "true" ]; then
 fi
 
 if [ "$TESTS" == "true" ]; then
-    MINIFIER_ARG="-DSD_BUILD_MINIFIER=true"
+    # Native tests include the full graph execution API and cannot be built
+    # against the minified source set.
+    MINIFIER_ARG="-DSD_BUILD_MINIFIER=false"
     TESTS_ARG="-DSD_BUILD_TESTS=ON"
 fi
 
@@ -3129,6 +3147,141 @@ echo MAKEJ               = "$MAKEJ"
 mkbuilddir
 pwd
 
+# Android provider builds are incremental and may outlive changes to PATH (for
+# example, activating Conda after CMake originally selected Linuxbrew ccache).
+# Keep the cache binary pinned to the existing CMake build tree unless the
+# caller explicitly selects a different DL4J_COMPILER_CACHE. Always pass the
+# resolved path back to CMake so its cache, generated smart wrapper, trace
+# collector, and post-configure validator agree on one executable.
+if [[ "$OS" == android-* ]]; then
+    ANDROID_COMPILER_CACHE_SOURCE="environment"
+    if [ -z "${DL4J_COMPILER_CACHE:-}" ]; then
+        CACHED_ANDROID_COMPILER_CACHE=""
+        if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
+            CACHED_ANDROID_COMPILER_CACHE="$(
+                grep '^CCACHE_PROGRAM:FILEPATH=' "$BUILD_DIR/CMakeCache.txt" 2>/dev/null |
+                    cut -d= -f2- || true
+            )"
+        fi
+        if [ -n "$CACHED_ANDROID_COMPILER_CACHE" ] && [ -x "$CACHED_ANDROID_COMPILER_CACHE" ]; then
+            DL4J_COMPILER_CACHE="$CACHED_ANDROID_COMPILER_CACHE"
+            ANDROID_COMPILER_CACHE_SOURCE="CMakeCache"
+        else
+            DL4J_COMPILER_CACHE="$(command -v ccache 2>/dev/null || true)"
+            ANDROID_COMPILER_CACHE_SOURCE="PATH"
+        fi
+    elif [[ "$DL4J_COMPILER_CACHE" != /* ]]; then
+        DL4J_COMPILER_CACHE="$(command -v "$DL4J_COMPILER_CACHE" 2>/dev/null || true)"
+    fi
+
+    if [ -z "${DL4J_COMPILER_CACHE:-}" ] || [ ! -x "$DL4J_COMPILER_CACHE" ]; then
+        print_colored "red" "❌ ERROR: Android builds require an executable ccache binary"
+        print_colored "yellow" "   Set DL4J_COMPILER_CACHE to an absolute ccache path, or install ccache on PATH."
+        exit 1
+    fi
+    if [ "$(basename "$DL4J_COMPILER_CACHE")" != "ccache" ]; then
+        print_colored "red" "❌ ERROR: Android smart-cache contract requires ccache, got: $DL4J_COMPILER_CACHE"
+        exit 1
+    fi
+    if [ -n "${SD_USE_SCCACHE:-}" ]; then
+        print_colored "red" "❌ ERROR: SD_USE_SCCACHE conflicts with the Android smart-ccache contract"
+        exit 1
+    fi
+
+    export DL4J_COMPILER_CACHE
+    CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DCCACHE_PROGRAM:FILEPATH=$DL4J_COMPILER_CACHE"
+    print_colored "cyan" "Android compiler cache: source=$ANDROID_COMPILER_CACHE_SOURCE path=$DL4J_COMPILER_CACHE"
+fi
+
+case "${CCACHE_TRACE^^}" in
+    ON|TRUE|1)
+        CCACHE_TRACE=ON
+        ;;
+    OFF|FALSE|0)
+        CCACHE_TRACE=OFF
+        ;;
+    *)
+        print_colored "red" "❌ ERROR: CCACHE_TRACE must be ON or OFF, got '$CCACHE_TRACE'"
+        exit 1
+        ;;
+esac
+case "${CCACHE_TRACE_VERBOSE^^}" in
+    ON|TRUE|1)
+        CCACHE_TRACE_VERBOSE=ON
+        ;;
+    OFF|FALSE|0)
+        CCACHE_TRACE_VERBOSE=OFF
+        ;;
+    *)
+        print_colored "red" "❌ ERROR: CCACHE_TRACE_VERBOSE must be ON or OFF, got '$CCACHE_TRACE_VERBOSE'"
+        exit 1
+        ;;
+esac
+
+if [ -n "${CCACHE_DISABLE:-}" ]; then
+    print_colored "red" "❌ ERROR: CCACHE_DISABLE is set; refusing a build that bypasses compiler caching"
+    exit 1
+fi
+if [ -n "${CCACHE_RECACHE:-}" ]; then
+    print_colored "red" "❌ ERROR: CCACHE_RECACHE is inherited by the build; refusing an accidental full recache"
+    exit 1
+fi
+
+CCACHE_TRACE_SAFE_RUN_ID="${CCACHE_TRACE_RUN_ID//[^A-Za-z0-9_.-]/_}"
+CCACHE_TRACE_DIR="$BUILD_DIR/.ccache_trace/$CCACHE_TRACE_SAFE_RUN_ID"
+CCACHE_TRACE_START_MS="$(date +%s%3N 2>/dev/null || date +%s)"
+CCACHE_TRACE_FINALIZED=0
+CCACHE_TRACE_CCACHE_BIN="${DL4J_COMPILER_CACHE:-ccache}"
+if [ ! -x "$CCACHE_TRACE_CCACHE_BIN" ]; then
+    CCACHE_TRACE_CCACHE_BIN="$(command -v "$CCACHE_TRACE_CCACHE_BIN" 2>/dev/null || true)"
+fi
+
+ccache_trace_finalize() {
+    local status="${1:-0}"
+    if [ "$CCACHE_TRACE" != "ON" ] || [ "$CCACHE_TRACE_FINALIZED" -eq 1 ]; then
+        return 0
+    fi
+    CCACHE_TRACE_FINALIZED=1
+    local finish_ms
+    finish_ms="$(date +%s%3N 2>/dev/null || date +%s)"
+    {
+        printf 'finish_ms=%s\n' "$finish_ms"
+        printf 'exit_status=%s\n' "$status"
+    } >> "$CCACHE_TRACE_DIR/build-metadata.txt" 2>/dev/null || true
+
+    if [ -f "$CCACHE_TRACE_DIR/ccache-stats.log" ] && [ -n "$CCACHE_TRACE_CCACHE_BIN" ]; then
+        env CCACHE_STATSLOG="$CCACHE_TRACE_DIR/ccache-stats.log" "$CCACHE_TRACE_CCACHE_BIN" --format json --print-log-stats > "$CCACHE_TRACE_DIR/ccache-stats.json" 2> "$CCACHE_TRACE_DIR/ccache-stats.error" || true
+        env CCACHE_STATSLOG="$CCACHE_TRACE_DIR/ccache-stats.log" "$CCACHE_TRACE_CCACHE_BIN" --show-log-stats > "$CCACHE_TRACE_DIR/ccache-stats.txt" 2>> "$CCACHE_TRACE_DIR/ccache-stats.error" || true
+    fi
+    print_colored "cyan" "ccache trace: $CCACHE_TRACE_DIR"
+}
+
+if [ "$CCACHE_TRACE" == "ON" ]; then
+    mkdir -p "$CCACHE_TRACE_DIR"
+    export CCACHE_STATSLOG="$CCACHE_TRACE_DIR/ccache-stats.log"
+    if [ "$CCACHE_TRACE_VERBOSE" == "ON" ]; then
+        export CCACHE_LOGFILE="$CCACHE_TRACE_DIR/ccache-debug.log"
+    fi
+    {
+        printf 'run_id=%s\n' "$CCACHE_TRACE_SAFE_RUN_ID"
+        printf 'start_ms=%s\n' "$CCACHE_TRACE_START_MS"
+        printf 'build_dir=%s\n' "$BUILD_DIR"
+        printf 'chip=%s\n' "$CHIP"
+        printf 'platform=%s\n' "$OS"
+        printf 'android_abi=%s\n' "$ANDROID_ABI"
+        printf 'android_api=%s\n' "$ANDROID_API"
+        printf 'compiler_cache=%s\n' "${DL4J_COMPILER_CACHE:-}"
+        printf 'trace_verbose=%s\n' "$CCACHE_TRACE_VERBOSE"
+        printf 'cmake_arguments=%s\n' "$CMAKE_ARGUMENTS"
+    } > "$CCACHE_TRACE_DIR/build-metadata.txt"
+    print_colored "cyan" "📊 ccache trace directory: $CCACHE_TRACE_DIR"
+else
+    unset CCACHE_STATSLOG CCACHE_LOGFILE
+fi
+trap 'ccache_trace_finalize "$?"' EXIT
+
+CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DSD_CCACHE_TRACE=$CCACHE_TRACE -DSD_CCACHE_TRACE_VERBOSE=$CCACHE_TRACE_VERBOSE -DSD_CCACHE_TRACE_RUN_ID=$CCACHE_TRACE_SAFE_RUN_ID"
+
 # ----------------------- CMake Configuration -----------------------
 
 # Configure compiler if specified
@@ -3294,6 +3447,7 @@ run_cmake_configure() {
         $MLIR_ARG \
         $TRITON_CMAKE \
         $SDX_STANDALONE_CMAKE \
+        $CMAKE_ARGUMENTS \
         $UNITY_BUILD_CMAKE \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
@@ -3322,6 +3476,61 @@ run_cmake_configure_logged() {
     fi
 }
 
+read_cmake_cache_value() {
+    local key="$1"
+    local cache_file="$BUILD_DIR/CMakeCache.txt"
+    if [ ! -f "$cache_file" ]; then
+        return 1
+    fi
+    grep "^${key}:" "$cache_file" 2>/dev/null | cut -d= -f2-
+}
+
+validate_compiler_cache_contract() {
+    local cache_file="$BUILD_DIR/CMakeCache.txt"
+    local expected_launcher="$BUILD_DIR/smart_ccache.sh"
+    local launcher_c="$(read_cmake_cache_value CMAKE_C_COMPILER_LAUNCHER || true)"
+    local launcher_cxx="$(read_cmake_cache_value CMAKE_CXX_COMPILER_LAUNCHER || true)"
+    local require_cache="$(read_cmake_cache_value SD_REQUIRE_COMPILER_CACHE || true)"
+    local expected_cache="${DL4J_COMPILER_CACHE:-ccache}"
+
+    if [ ! -f "$cache_file" ]; then
+        print_colored "red" "❌ ERROR: CMake did not produce CMakeCache.txt; compiler-cache validation cannot continue"
+        exit 1
+    fi
+    if [[ "$expected_cache" != */* ]]; then
+        expected_cache="$(command -v "$expected_cache" 2>/dev/null || true)"
+    fi
+    if [ -z "$expected_cache" ] || [ ! -x "$expected_cache" ]; then
+        print_colored "red" "❌ ERROR: Expected compiler cache is unavailable: ${DL4J_COMPILER_CACHE:-ccache}"
+        exit 1
+    fi
+    if [ "$require_cache" != "ON" ]; then
+        print_colored "red" "❌ ERROR: SD_REQUIRE_COMPILER_CACHE is not ON (value: ${require_cache:-missing})"
+        exit 1
+    fi
+    if [ "$launcher_c" != "$expected_launcher" ] || [ "$launcher_cxx" != "$expected_launcher" ]; then
+        print_colored "red" "❌ ERROR: CMake compiler launcher contract failed"
+        print_colored "yellow" "   C launcher: ${launcher_c:-missing}"
+        print_colored "yellow" "   CXX launcher: ${launcher_cxx:-missing}"
+        print_colored "yellow" "   Expected: $expected_launcher"
+        exit 1
+    fi
+    if ! grep -Fq "CCACHE=\"$expected_cache\"" "$expected_launcher"; then
+        print_colored "red" "❌ ERROR: Generated smart ccache wrapper does not invoke the expected cache binary"
+        print_colored "yellow" "   Expected: $expected_cache"
+        exit 1
+    fi
+    if [ "$CCACHE_TRACE" == "ON" ]; then
+        {
+            printf 'verified_cache=%s\n' "$expected_cache"
+            printf 'verified_launcher_c=%s\n' "$launcher_c"
+            printf 'verified_launcher_cxx=%s\n' "$launcher_cxx"
+            printf 'required_cache=%s\n' "$require_cache"
+        } >> "$CCACHE_TRACE_DIR/build-metadata.txt"
+    fi
+    print_colored "green" "✅ Compiler cache contract verified: C/CXX → smart_ccache.sh → $expected_cache"
+}
+
 run_compiler_dependency_bootstrap() {
     local bootstrap_command
     bootstrap_command="\"$CMAKE_EXECUTABLE\" --build \"$BUILD_DIR\" --target sd_compiler_dependencies_bootstrap --parallel \"$MAKEJ\""
@@ -3347,6 +3556,7 @@ else
     run_cmake_configure_logged "OFF"
 fi
 
+validate_compiler_cache_contract
 
 if [[ "$EXTRACT_INSTANTIATIONS" == "ON" ]]; then
     INST_DIR="${DIR}/blasbuild/${CHIP}/instantiation_analysis"

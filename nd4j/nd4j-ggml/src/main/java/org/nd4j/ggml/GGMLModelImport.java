@@ -114,6 +114,44 @@ public class GGMLModelImport {
     }
 
     /**
+     * Import a GGML/GGUF model together with the model-owned metadata needed by
+     * downstream generation. Returning the graph alone loses tokenizer protocol
+     * information such as EOS and the chat template at the import boundary.
+     *
+     * @param file the GGML/GGUF file
+     * @param options conversion options
+     * @return the converted SameDiff graph and its source metadata
+     * @throws GGMLImportException if inspection or import fails
+     */
+    public static ImportedModel importModelWithMetadata(File file, ConversionOptions options)
+            throws GGMLImportException {
+        GGMLMetadata metadata = inspectModel(file);
+        SameDiff model = importModel(file, options);
+        return new ImportedModel(model, metadata);
+    }
+
+    /**
+     * Immutable result of a metadata-preserving GGML/GGUF import.
+     */
+    public static final class ImportedModel {
+        private final SameDiff model;
+        private final GGMLMetadata metadata;
+
+        private ImportedModel(SameDiff model, GGMLMetadata metadata) {
+            this.model = model;
+            this.metadata = metadata;
+        }
+
+        public SameDiff getModel() {
+            return model;
+        }
+
+        public GGMLMetadata getMetadata() {
+            return metadata;
+        }
+    }
+
+    /**
      * Import a GGML/GGUF model from an input stream
      *
      * @param inputStream the input stream

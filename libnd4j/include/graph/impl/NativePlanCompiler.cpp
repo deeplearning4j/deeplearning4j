@@ -16,10 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+#include <array/ByteOrderUtils.h>
+#include <array/DataTypeConversions.h>
+#include <array/DataTypeUtils.h>
 #include <graph/NativePlanCompiler.h>
 #include <graph/PlanDefinition.h>
 #include <graph/ExecutionState.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/Node.h>
 #include <graph/generated/graph_generated.h>
 #include <helpers/helper_hash.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -27,6 +31,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstring>
+#include <functional>
 #include <queue>
 #include <unordered_set>
 
@@ -36,12 +41,92 @@ using namespace ::graph;
 namespace sd {
 namespace graph {
 
+int legacyOpTypeForFlatOp(::graph::OpType opType, int numInputs) noexcept {
+  switch (opType) {
+    case ::graph::OpType_TRANSFORM_FLOAT:
+      return numInputs > 1 ? LEGACY_PAIRWISE_TRANSFORM
+                           : LEGACY_TRANSFORM_FLOAT;
+    case ::graph::OpType_TRANSFORM_SAME:
+      return numInputs > 1 ? LEGACY_PAIRWISE_TRANSFORM
+                           : LEGACY_TRANSFORM_SAME;
+    case ::graph::OpType_TRANSFORM_STRICT:
+      return numInputs > 1 ? LEGACY_PAIRWISE_TRANSFORM
+                           : LEGACY_TRANSFORM_STRICT;
+    case ::graph::OpType_TRANSFORM_ANY:
+      return numInputs > 1 ? LEGACY_PAIRWISE_TRANSFORM
+                           : LEGACY_TRANSFORM_ANY;
+    case ::graph::OpType_TRANSFORM_BOOL:
+      return LEGACY_TRANSFORM_BOOL;
+    case ::graph::OpType_PAIRWISE:
+      return LEGACY_PAIRWISE_TRANSFORM;
+    case ::graph::OpType_PAIRWISE_BOOL:
+      return LEGACY_PAIRWISE_BOOL;
+    case ::graph::OpType_SCALAR:
+      return LEGACY_SCALAR;
+    case ::graph::OpType_SCALAR_BOOL:
+      return LEGACY_SCALAR_BOOL;
+    case ::graph::OpType_REDUCE_FLOAT:
+      return LEGACY_REDUCE_FLOAT;
+    case ::graph::OpType_REDUCE_SAME:
+      return LEGACY_REDUCE_SAME;
+    case ::graph::OpType_REDUCE_BOOL:
+      return LEGACY_REDUCE_BOOL;
+    case ::graph::OpType_REDUCE_LONG:
+      return LEGACY_REDUCE_LONG;
+    case ::graph::OpType_REDUCE_3:
+      return LEGACY_REDUCE3;
+    case ::graph::OpType_SUMMARYSTATS:
+      return LEGACY_STATS;
+    case ::graph::OpType_INDEX_REDUCE:
+      return LEGACY_INDEX_REDUCE;
+    case ::graph::OpType_BROADCAST:
+      return LEGACY_BROADCAST;
+    case ::graph::OpType_BROADCAST_BOOL:
+      return LEGACY_BROADCAST_BOOL;
+    case ::graph::OpType_RANDOM:
+      return LEGACY_RANDOM;
+    default:
+      return LEGACY_NOT_SET;
+  }
+}
+
 namespace {
 std::string normalizeOpName(const std::string& opName) {
   std::string normalized = opName;
   std::transform(normalized.begin(), normalized.end(), normalized.begin(),
                  [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   return normalized;
+}
+
+bool flatScalarAsDouble(const ::graph::FlatArray* flatScalar, double* value,
+                        std::string* errorMessage) {
+  if (flatScalar == nullptr || value == nullptr) {
+    if (errorMessage != nullptr) *errorMessage = "FlatNode scalar is null";
+    return false;
+  }
+  auto* buffer = flatScalar->buffer();
+  if (buffer == nullptr) {
+    if (errorMessage != nullptr) *errorMessage = "FlatNode scalar has no data buffer";
+    return false;
+  }
+
+  try {
+    const auto dataType = sd::DataTypeUtils::fromFlatDataType(flatScalar->dtype());
+    const auto elementSize = sd::DataTypeUtils::sizeOf(dataType);
+    if (elementSize == 0 || buffer->size() < elementSize) {
+      if (errorMessage != nullptr) {
+        *errorMessage = "FlatNode scalar buffer is smaller than its declared data type";
+      }
+      return false;
+    }
+    sd::DataTypeConversions<double>::convertType(
+        value, const_cast<int8_t*>(buffer->data()), dataType,
+        sd::ByteOrderUtils::fromFlatByteOrder(flatScalar->byteOrder()), 1);
+    return true;
+  } catch (const std::exception& error) {
+    if (errorMessage != nullptr) *errorMessage = error.what();
+    return false;
+  }
 }
 }  // namespace
 
@@ -59,27 +144,46 @@ static bool hasOpTrait(sd::ops::DeclarableOp* op, uint32_t trait) {
 NativeDynamicShapePlan* NativePlanCompiler::compile(
     const ::graph::FlatGraph* graph,
     const std::unordered_map<std::string, NDArray*>& variables,
-    const std::vector<std::string>& requestedOutputs) {
+    const std::vector<std::string>& requestedOutputs,
+    GraphExecutionMode mode,
+    std::string* errorMessage,
+    const NativePlanCompileOptions& compileOptions) {
 
-  if (!graph) return nullptr;
+  if (errorMessage != nullptr) errorMessage->clear();
+  auto fail = [&](const std::string& message) -> NativeDynamicShapePlan* {
+    if (errorMessage != nullptr) *errorMessage = message;
+    DSP_DIAG(COMPILE, "NativePlanCompiler::compile: %s", message.c_str());
+    return nullptr;
+  };
+
+  if (!graph) return fail("FlatGraph is null");
 
   auto* nodes = graph->nodes();
   auto* flatVars = graph->variables();
-  if (!nodes || nodes->size() == 0) return nullptr;
+  if (!nodes || nodes->size() == 0) return fail("FlatGraph has no nodes");
 
   DSP_DIAG(COMPILE, "NativePlanCompiler::compile: ENTER nodes=%d vars=%d requestedOutputs=%d",
            (int)nodes->size(), flatVars ? (int)flatVars->size() : 0, (int)requestedOutputs.size());
 
-  // ── Step 1: Build variable type maps ──────────────────────────────────────
+  // ── Step 1: Build variable type and exact identity maps ───────────────────
   std::unordered_set<std::string> constants;
   std::unordered_set<std::string> placeholders;
   std::unordered_set<std::string> variableNames;
+
+  auto pairKey = [](int first, int second) -> uint64_t {
+    return (static_cast<uint64_t>(static_cast<uint32_t>(first)) << 32U) |
+           static_cast<uint32_t>(second);
+  };
+  std::unordered_map<uint64_t, const ::graph::FlatVariable*> variableByPair;
 
   if (flatVars) {
     for (unsigned int i = 0; i < flatVars->size(); i++) {
       auto* fv = flatVars->Get(i);
       if (!fv || !fv->name()) continue;
       std::string name = fv->name()->str();
+      if (fv->id()) {
+        variableByPair[pairKey(fv->id()->first(), fv->id()->second())] = fv;
+      }
       auto vtype = fv->variabletype();
       switch (vtype) {
         case VarType_CONSTANT: constants.insert(name); break;
@@ -90,22 +194,249 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
   }
 
-  // ── Step 2: Filter to actual execution ops ────────────────────────────────
-  std::vector<const FlatNode*> opNodes;
+  // ── Step 2: Index executable nodes and their exact outputs ────────────────
+  std::vector<const FlatNode*> serializedOpNodes;
+  std::unordered_map<int, const FlatNode*> nodeById;
+  std::unordered_map<const FlatNode*, int> serializedIndex;
   for (unsigned int i = 0; i < nodes->size(); i++) {
     auto* node = nodes->Get(i);
     if (!node) continue;
     auto opType = node->opType();
     // Skip VARIABLE and LOGIC types
     if (opType == OpType_VARIABLE || opType == OpType_LOGIC) continue;
-    opNodes.push_back(node);
+    if (nodeById.find(node->id()) != nodeById.end()) {
+      return fail("duplicate executable node id: " + std::to_string(node->id()));
+    }
+    serializedIndex[node] = static_cast<int>(serializedOpNodes.size());
+    nodeById[node->id()] = node;
+    serializedOpNodes.push_back(node);
   }
 
-  if (opNodes.empty()) return nullptr;
+  if (serializedOpNodes.empty()) {
+    return fail("FlatGraph has no executable operation nodes");
+  }
 
-  int numSteps = static_cast<int>(opNodes.size());
+  auto outputCountFor = [](const FlatNode* node) -> int {
+    auto* names = node->outputNames();
+    return names != nullptr && names->size() > 0
+               ? static_cast<int>(names->size())
+               : 1;
+  };
+  auto outputNameFor = [&](const FlatNode* node, int outputIndex) -> std::string {
+    auto* names = node->outputNames();
+    if (names != nullptr && outputIndex >= 0 &&
+        outputIndex < static_cast<int>(names->size()) &&
+        names->Get(outputIndex) != nullptr) {
+      return names->Get(outputIndex)->str();
+    }
+    auto variableIt = variableByPair.find(pairKey(node->id(), outputIndex));
+    if (variableIt != variableByPair.end() && variableIt->second->name()) {
+      return variableIt->second->name()->str();
+    }
+    std::string name = node->name() ? node->name()->str()
+                                    : ("node_" + std::to_string(node->id()));
+    if (outputIndex > 0) name += ":" + std::to_string(outputIndex);
+    return name;
+  };
 
-  // ── Step 3: Build external input index map ────────────────────────────────
+  std::unordered_map<uint64_t, const FlatNode*> producerByPair;
+  std::unordered_map<std::string, const FlatNode*> producerByOutputName;
+  std::unordered_map<const FlatNode*, std::vector<std::string>> nodeOutputNames;
+  for (const auto* node : serializedOpNodes) {
+    auto& outputNames = nodeOutputNames[node];
+    const int outputCount = outputCountFor(node);
+    outputNames.reserve(outputCount);
+    for (int outputIndex = 0; outputIndex < outputCount; outputIndex++) {
+      const auto name = outputNameFor(node, outputIndex);
+      if (name.empty()) {
+        return fail("empty output variable name for node id " +
+                    std::to_string(node->id()));
+      }
+      if (producerByOutputName.find(name) != producerByOutputName.end()) {
+        return fail("duplicate output variable name: " + name);
+      }
+      const auto key = pairKey(node->id(), outputIndex);
+      if (producerByPair.find(key) != producerByPair.end()) {
+        return fail("duplicate executable output identity (" +
+                    std::to_string(node->id()) + "," +
+                    std::to_string(outputIndex) + ")");
+      }
+      outputNames.push_back(name);
+      producerByOutputName[name] = node;
+      producerByPair[key] = node;
+    }
+  }
+
+  struct InputBinding {
+    bool valid = false;
+    int sourceId = 0;
+    int outputIndex = 0;
+    std::string name;
+    const FlatNode* producer = nullptr;
+    const ::graph::FlatVariable* variable = nullptr;
+  };
+
+  auto inputCountFor = [](const FlatNode* node) -> int {
+    auto* paired = node->inputPaired();
+    if (paired != nullptr && paired->size() > 0) {
+      return static_cast<int>(paired->size());
+    }
+    auto* legacy = node->input();
+    return legacy != nullptr ? static_cast<int>(legacy->size()) : 0;
+  };
+
+  auto resolveInput = [&](const FlatNode* node, int inputIndex) -> InputBinding {
+    InputBinding binding;
+    auto* paired = node->inputPaired();
+    if (paired != nullptr && paired->size() > 0) {
+      if (inputIndex < 0 || inputIndex >= static_cast<int>(paired->size()) ||
+          paired->Get(inputIndex) == nullptr) {
+        return binding;
+      }
+      binding.sourceId = paired->Get(inputIndex)->first();
+      binding.outputIndex = paired->Get(inputIndex)->second();
+    } else {
+      auto* legacy = node->input();
+      if (legacy == nullptr || inputIndex < 0 ||
+          inputIndex >= static_cast<int>(legacy->size())) {
+        return binding;
+      }
+      binding.sourceId = legacy->Get(inputIndex);
+      binding.outputIndex = 0;
+    }
+
+    const auto key = pairKey(binding.sourceId, binding.outputIndex);
+    auto variableIt = variableByPair.find(key);
+    if (variableIt != variableByPair.end()) {
+      binding.variable = variableIt->second;
+      // PLACEHOLDER/CONSTANT/VARIABLE identities are external even when their
+      // first ID collides with an executable node ID. ARRAY identities describe
+      // operation outputs and therefore defer to an exact producer when present.
+      if (binding.variable->variabletype() != VarType_ARRAY) {
+        binding.name = binding.variable->name() ? binding.variable->name()->str() : "";
+        binding.valid = !binding.name.empty();
+        return binding;
+      }
+    }
+
+    auto producerIt = producerByPair.find(key);
+    if (producerIt != producerByPair.end()) {
+      binding.producer = producerIt->second;
+      const auto& names = nodeOutputNames.at(binding.producer);
+      if (binding.outputIndex >= 0 &&
+          binding.outputIndex < static_cast<int>(names.size())) {
+        binding.name = names[binding.outputIndex];
+        binding.valid = true;
+        return binding;
+      }
+    }
+
+    if (binding.variable != nullptr && binding.variable->name()) {
+      binding.name = binding.variable->name()->str();
+      binding.valid = !binding.name.empty();
+    }
+    return binding;
+  };
+
+  // ── Step 3: Retain only operations needed by the requested outputs ────────
+  std::unordered_set<const FlatNode*> reachable;
+  std::vector<const FlatNode*> pending;
+  if (requestedOutputs.empty()) {
+    pending = serializedOpNodes;
+  } else {
+    pending.reserve(requestedOutputs.size());
+    for (const auto& output : requestedOutputs) {
+      auto producerIt = producerByOutputName.find(output);
+      if (producerIt == producerByOutputName.end()) {
+        return fail("requested output is not produced by the graph: " + output);
+      }
+      pending.push_back(producerIt->second);
+    }
+  }
+  while (!pending.empty()) {
+    const FlatNode* node = pending.back();
+    pending.pop_back();
+    if (!reachable.insert(node).second) continue;
+    const int inputCount = inputCountFor(node);
+    for (int inputIndex = 0; inputIndex < inputCount; inputIndex++) {
+      const auto binding = resolveInput(node, inputIndex);
+      if (!binding.valid) {
+        return fail("cannot resolve input " + std::to_string(inputIndex) +
+                    " of node id " + std::to_string(node->id()));
+      }
+      if (binding.producer != nullptr && binding.producer != node) {
+        pending.push_back(binding.producer);
+      }
+    }
+  }
+
+  // Stable Kahn ordering preserves serialized order for independent operations
+  // while guaranteeing that every ordinary producer precedes its consumers.
+  std::vector<int> indegree(serializedOpNodes.size(), 0);
+  std::vector<std::vector<int>> consumers(serializedOpNodes.size());
+  for (const auto* node : serializedOpNodes) {
+    if (!reachable.count(node)) continue;
+    const int consumerIndex = serializedIndex.at(node);
+    std::unordered_set<int> uniqueProducers;
+    const int inputCount = inputCountFor(node);
+    for (int inputIndex = 0; inputIndex < inputCount; inputIndex++) {
+      const auto binding = resolveInput(node, inputIndex);
+      if (binding.producer == nullptr || binding.producer == node ||
+          !reachable.count(binding.producer)) {
+        continue;
+      }
+      const int producerIndex = serializedIndex.at(binding.producer);
+      if (uniqueProducers.insert(producerIndex).second) {
+        indegree[consumerIndex]++;
+        consumers[producerIndex].push_back(consumerIndex);
+      }
+    }
+  }
+
+  std::priority_queue<int, std::vector<int>, std::greater<int>> ready;
+  for (int index = 0; index < static_cast<int>(serializedOpNodes.size()); index++) {
+    if (reachable.count(serializedOpNodes[index]) && indegree[index] == 0) {
+      ready.push(index);
+    }
+  }
+  std::vector<const FlatNode*> opNodes;
+  opNodes.reserve(reachable.size());
+  while (!ready.empty()) {
+    const int index = ready.top();
+    ready.pop();
+    opNodes.push_back(serializedOpNodes[index]);
+    for (const int consumer : consumers[index]) {
+      if (--indegree[consumer] == 0) ready.push(consumer);
+    }
+  }
+  if (opNodes.size() != reachable.size()) {
+    bool hasControlFlowCycle = false;
+    for (int index = 0; index < static_cast<int>(serializedOpNodes.size()); index++) {
+      if (!reachable.count(serializedOpNodes[index]) || indegree[index] == 0) continue;
+      const auto* node = serializedOpNodes[index];
+      const auto name = normalizeOpName(
+          node->opName() ? node->opName()->str()
+                         : (node->name() ? node->name()->str() : ""));
+      if (name == "switch" || name == "merge" || name == "enter" ||
+          name == "exit" || name == "next_iteration" || name == "loop_cond") {
+        hasControlFlowCycle = true;
+        break;
+      }
+    }
+    if (!hasControlFlowCycle) {
+      return fail("cycle detected while topologically ordering requested graph operations");
+    }
+    // Control-flow loop backedges are intentionally cyclic. Keep the acyclic
+    // prefix and append the remaining loop operations in serialized order.
+    std::unordered_set<const FlatNode*> alreadyOrdered(opNodes.begin(), opNodes.end());
+    for (const auto* node : serializedOpNodes) {
+      if (reachable.count(node) && !alreadyOrdered.count(node)) opNodes.push_back(node);
+    }
+  }
+
+  const int numSteps = static_cast<int>(opNodes.size());
+
+  // ── Step 4: Build external input index map on first reachable use ─────────
   std::vector<std::string> externalInputKeys;
   std::unordered_map<std::string, int> externalIndexMap;
 
@@ -118,56 +449,32 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     return idx;
   };
 
-  // Pre-register all constants, variables, placeholders
-  for (auto& name : constants) addExternal(name);
-  for (auto& name : variableNames) addExternal(name);
-  for (auto& name : placeholders) addExternal(name);
-
-  // ── Step 4: Assign output slot indices ────────────────────────────────────
+  // ── Step 5: Assign output slot indices ────────────────────────────────────
   std::unordered_map<std::string, int> varToOutputSlot;
   int totalOutputSlots = 0;
 
   for (int stepIdx = 0; stepIdx < numSteps; stepIdx++) {
     auto* node = opNodes[stepIdx];
-    auto* outputNames = node->outputNames();
-    if (outputNames) {
-      for (unsigned int i = 0; i < outputNames->size(); i++) {
-        std::string name = outputNames->Get(i)->str();
-        varToOutputSlot[name] = totalOutputSlots;
-        totalOutputSlots++;
-      }
-    } else {
-      // Single unnamed output
-      std::string name = node->name() ? node->name()->str() :
-                          ("node_" + std::to_string(node->id()));
+    for (const auto& name : nodeOutputNames.at(node)) {
       varToOutputSlot[name] = totalOutputSlots;
       totalOutputSlots++;
     }
   }
 
-  // ── Step 5: Pre-build lookup maps for O(1) input resolution ─────────────
-  // Maps node ID → FlatNode* for fast producer lookup (avoids O(N) per input)
-  std::unordered_map<int, const FlatNode*> nodeById;
-  for (unsigned int n = 0; n < nodes->size(); n++) {
-    auto* srcNode = nodes->Get(n);
-    if (srcNode) nodeById[srcNode->id()] = srcNode;
-  }
-  // Maps variable ID (first element of IntPair) → FlatVariable* for fast var lookup
-  std::unordered_map<int, const ::graph::FlatVariable*> varById;
-  if (flatVars) {
-    for (unsigned int v = 0; v < flatVars->size(); v++) {
-      auto* fv = flatVars->Get(v);
-      if (fv && fv->id()) varById[fv->id()->first()] = fv;
-    }
-  }
-
   // ── Step 6: Build slots ───────────────────────────────────────────────────
   auto* plan = new NativeDynamicShapePlan();
+  plan->setGraphExecutionMode(mode);
+  plan->setRuntimeCompilationAllowed(
+      compileOptions.runtimeCompilationAllowed);
+  plan->setRuntimeArtifactDirectory(
+      compileOptions.runtimeArtifactDirectory);
+  plan->setDeviceCompilationCacheDirectory(
+      compileOptions.deviceCompilationCacheDirectory);
+  plan->setDeviceCompilationCacheModelKey(
+      compileOptions.deviceCompilationCacheModelKey);
   plan->numSlots_ = numSteps;
   plan->totalOutputSlots_ = totalOutputSlots;
   plan->dirtySlotGenerations_.resize(totalOutputSlots, 0);
-  plan->numExternalInputs_ = static_cast<int>(externalInputKeys.size());
-  plan->externalInputNames_ = externalInputKeys;
   plan->slots_ = new NativeSlot[numSteps];
 
   std::vector<int> slotLastConsumerStep(totalOutputSlots, -1);
@@ -182,7 +489,13 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     slot.ident.opHash = serializedOpHash;
     slot.ident.opName = node->opName() ? node->opName()->str() :
                   (node->name() ? node->name()->str() : "unknown");
+    const int numInputs = inputCountFor(node);
     slot.flags.isCustomOp = (node->opType() == OpType_CUSTOM);
+    slot.legacy.legacyOpType =
+        legacyOpTypeForFlatOp(node->opType(), numInputs);
+    slot.legacy.legacyOpNum = slot.legacy.legacyOpType != LEGACY_NOT_SET
+                                  ? static_cast<int>(node->opNum())
+                                  : -1;
 
     // Early control flow detection — CF ops are not registered as declarable ops
     // in OpRegistrator, so we must identify them before op resolution.
@@ -206,10 +519,34 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       }
     }
 
-    // Resolve op — skip for control flow ops (they're handled by CF dispatch,
-    // not as declarable ops, and may not be registered in OpRegistrator).
+    // Resolve op — legacy FlatGraph families carry an enum op number, not a
+    // declarable-op hash. Construct their wrapper explicitly and retain it for
+    // the lifetime of the compiled plan. Control-flow nodes are data routing.
     slot.ident.op = nullptr;
-    if (slot.cf.controlFlowType == CF_NONE) {
+    if (slot.cf.controlFlowType == CF_NONE &&
+        slot.legacy.legacyOpType != LEGACY_NOT_SET) {
+      auto legacyFlatOpType = node->opType();
+      if (slot.legacy.legacyOpType == LEGACY_PAIRWISE_TRANSFORM) {
+        legacyFlatOpType = OpType_PAIRWISE;
+      }
+      try {
+        slot.ident.op = Node::buildOpByType(
+            legacyFlatOpType, numInputs, 0, 0,
+            slot.legacy.legacyOpNum, nullptr);
+      } catch (...) {
+        slot.ident.op = nullptr;
+      }
+      if (!slot.ident.op) {
+        delete plan;
+        return fail("cannot construct legacy operation '" + slot.ident.opName +
+                    "' (flat op type " +
+                    std::to_string(static_cast<int>(node->opType())) +
+                    ", op number " +
+                    std::to_string(slot.legacy.legacyOpNum) + ")");
+      }
+      plan->ownedLegacyOps_.push_back(slot.ident.op);
+      slot.ident.opHash = slot.ident.op->getOpDescriptor()->getHash();
+    } else if (slot.cf.controlFlowType == CF_NONE) {
       if (!slot.ident.opName.empty()) {
         slot.ident.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.ident.opName.c_str());
       }
@@ -221,7 +558,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         DSP_DIAG(COMPILE, "NativePlanCompiler: cannot resolve op hash=%lld name=%s",
                   serializedOpHash, slot.ident.opName.c_str());
         delete plan;
-        return nullptr;
+        return fail("cannot resolve operation '" + slot.ident.opName +
+                    "' (serialized hash " +
+                    std::to_string(serializedOpHash) + ")");
       }
       slot.ident.opHash = slot.ident.op->getOpDescriptor()->getHash();
     } else {
@@ -239,9 +578,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     std::memset(slot.fusedChain.fusedChainSlots, 0, sizeof(slot.fusedChain.fusedChainSlots));
     std::fill(std::begin(slot.fusedChain.fusedChainSecondaryInputSources), std::end(slot.fusedChain.fusedChainSecondaryInputSources), INT32_MIN);
 
-    // Build input wiring from inputPaired
-    auto* inputPaired = node->inputPaired();
-    int numInputs = inputPaired ? inputPaired->size() : 0;
+    // Build input wiring from exact paired identities or legacy node IDs.
 
     // Copy intrinsic classification from the resolved operation. The descriptor
     // is the single source of truth; opName remains diagnostics-only.
@@ -261,100 +598,44 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
 
     bool hasIntLong = false;
     for (int i = 0; i < numInputs; i++) {
-      auto* pair = inputPaired->Get(i);
-      int nodeId = pair->first();
-      int outIdx = pair->second();
-
-      // Build the variable name for this input using pre-built maps (O(1) lookup)
-      std::string inputName;
-      bool found = false;
-
-      // Look up producing node by ID (O(1) via nodeById map)
-      auto nodeIt = nodeById.find(nodeId);
-      if (nodeIt != nodeById.end()) {
-        auto* srcNode = nodeIt->second;
-        auto* srcOutputNames = srcNode->outputNames();
-        if (srcOutputNames && outIdx < static_cast<int>(srcOutputNames->size())) {
-          inputName = srcOutputNames->Get(outIdx)->str();
-        } else if (srcNode->name()) {
-          inputName = srcNode->name()->str();
-          if (outIdx > 0) inputName += ":" + std::to_string(outIdx);
-        }
-        found = true;
+      const auto binding = resolveInput(node, i);
+      if (!binding.valid) {
+        delete plan;
+        return fail("cannot resolve input " + std::to_string(i) +
+                    " of node id " + std::to_string(node->id()));
+      }
+      if (!hasIntLong && binding.variable != nullptr) {
+        auto dt = binding.variable->dtype();
+        if (dt == DType_INT32 || dt == DType_INT64) hasIntLong = true;
       }
 
-      // Look up variable by ID (O(1) via varById map)
-      if (!found) {
-        auto varIt = varById.find(nodeId);
-        if (varIt != varById.end()) {
-          auto* fv = varIt->second;
-          if (fv->name()) inputName = fv->name()->str();
-          // Check FlatVariable dtype for INT/LONG detection
-          if (!hasIntLong) {
-            auto dt = fv->dtype();
-            if (dt == DType_INT32 || dt == DType_INT64) {
-              hasIntLong = true;
-            }
-          }
-          found = true;
-        }
-      }
-
-      // Look up in output slot map or external
-      auto slotIt = varToOutputSlot.find(inputName);
-      // If not found by exact name, try with baseName (strip :N suffix) — mirrors Java compiler logic
-      if (slotIt == varToOutputSlot.end()) {
-        auto colonPos = inputName.rfind(':');
-        if (colonPos != std::string::npos) {
-          std::string baseName = inputName.substr(0, colonPos);
-          slotIt = varToOutputSlot.find(baseName);
-        }
-      }
-      // Guard against self-reference: if resolved slot is one of THIS step's own outputs, treat as external
-      bool isSelfRef = false;
+      auto slotIt = binding.producer != nullptr && binding.producer != node
+                        ? varToOutputSlot.find(binding.name)
+                        : varToOutputSlot.end();
       if (slotIt != varToOutputSlot.end()) {
-        auto* myOutputNames = node->outputNames();
-        if (myOutputNames) {
-          for (unsigned int oi = 0; oi < myOutputNames->size(); oi++) {
-            std::string myOut = myOutputNames->Get(oi)->str();
-            auto myIt = varToOutputSlot.find(myOut);
-            if (myIt != varToOutputSlot.end() && myIt->second == slotIt->second) {
-              isSelfRef = true;
-              DSP_DIAG(COMPILE, "NativePlanCompiler: self-reference at step %d (op %s): input '%s' -> slot %d == own output '%s' slot %d",
-                       stepIdx, slot.ident.opName.c_str(), inputName.c_str(), slotIt->second, myOut.c_str(), myIt->second);
-              break;
-            }
-          }
-        }
-        // Also check: if the input resolves to a slot produced by THIS step (same stepIdx), it's self-referential
-        if (!isSelfRef) {
-          int resolvedSlot = slotIt->second;
-          if (resolvedSlot >= 0 && resolvedSlot < (int)slotProducerStep.size() && slotProducerStep[resolvedSlot] == stepIdx) {
-            isSelfRef = true;
-            DSP_DIAG(COMPILE, "NativePlanCompiler: self-reference (producer match) at step %d (op %s): input '%s' -> slot %d produced at same step",
-                     stepIdx, slot.ident.opName.c_str(), inputName.c_str(), resolvedSlot);
-          }
-        }
-      }
-      if (slotIt != varToOutputSlot.end() && !isSelfRef) {
         slot.wiring.inputSourceIndices[i] = slotIt->second;
         slot.wiring.inputSourceTypes[i] = SOURCE_OP_OUTPUT;
         if (stepIdx > slotLastConsumerStep[slotIt->second]) {
           slotLastConsumerStep[slotIt->second] = stepIdx;
         }
       } else {
-        int extIdx = addExternal(inputName);
+        if (binding.producer != nullptr && binding.producer != node) {
+          delete plan;
+          return fail("reachable producer output was not assigned a slot: " +
+                      binding.name);
+        }
+        int extIdx = addExternal(binding.name);
         slot.wiring.inputSourceIndices[i] = -(extIdx + 1);
-        if (constants.count(inputName)) {
+        if (constants.count(binding.name)) {
           slot.wiring.inputSourceTypes[i] = SOURCE_CONSTANT;
-        } else if (variableNames.count(inputName)) {
+        } else if (variableNames.count(binding.name)) {
           slot.wiring.inputSourceTypes[i] = SOURCE_VARIABLE;
         } else {
           slot.wiring.inputSourceTypes[i] = SOURCE_PLACEHOLDER;
         }
         // Check external input NDArray dtype for INT/LONG detection
         if (!hasIntLong) {
-          auto varIt2 = variables.find(inputName);
+          auto varIt2 = variables.find(binding.name);
           if (varIt2 != variables.end() && varIt2->second != nullptr) {
             auto dt = varIt2->second->dataType();
             if (dt == INT32 || dt == INT64) {
@@ -374,19 +655,14 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     slot.flags.outputShapeDependsOnInputValues =
         slot.hasOpTrait(sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE);
 
-    // Build output wiring
-    auto* outputNames = node->outputNames();
-    int numOutputs = outputNames ? outputNames->size() : 1;
+    // Build output wiring from the same exact names used for dependency binding.
+    const auto& outputNames = nodeOutputNames.at(node);
+    int numOutputs = static_cast<int>(outputNames.size());
     slot.wiring.numOutputs = numOutputs;
     slot.wiring.outputSlotIndices = new int[numOutputs];
 
     for (int i = 0; i < numOutputs; i++) {
-      std::string outName;
-      if (outputNames && i < static_cast<int>(outputNames->size())) {
-        outName = outputNames->Get(i)->str();
-      } else {
-        outName = node->name() ? node->name()->str() : ("node_" + std::to_string(node->id()));
-      }
+      const std::string& outName = outputNames[i];
       auto it = varToOutputSlot.find(outName);
       slot.wiring.outputSlotIndices[i] = (it != varToOutputSlot.end()) ? it->second : -1;
       if (it != varToOutputSlot.end()) {
@@ -431,11 +707,23 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
 
     auto* extraParams = node->extraParams();
-    if (extraParams && extraParams->size() > 0) {
-      slot.args.numTArgs = extraParams->size();
+    auto* flatScalar = node->scalar();
+    const int scalarArgCount = flatScalar == nullptr ? 0 : 1;
+    const int extraParamCount =
+        extraParams == nullptr ? 0 : static_cast<int>(extraParams->size());
+    if (scalarArgCount + extraParamCount > 0) {
+      slot.args.numTArgs = scalarArgCount + extraParamCount;
       slot.args.tArgs = new double[slot.args.numTArgs];
-      for (int i = 0; i < slot.args.numTArgs; i++) {
-        slot.args.tArgs[i] = extraParams->Get(i);
+      if (flatScalar != nullptr) {
+        std::string scalarError;
+        if (!flatScalarAsDouble(flatScalar, &slot.args.tArgs[0], &scalarError)) {
+          delete plan;
+          return fail("cannot decode serialized scalar for node id " +
+                      std::to_string(node->id()) + ": " + scalarError);
+        }
+      }
+      for (int i = 0; i < extraParamCount; i++) {
+        slot.args.tArgs[scalarArgCount + i] = extraParams->Get(i);
       }
     }
 
@@ -515,6 +803,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
   }
 
+  plan->numExternalInputs_ = static_cast<int>(externalInputKeys.size());
+  plan->externalInputNames_ = externalInputKeys;
+
   // ── Step 5b: Buffer aliasing — mark unary elementwise ops for in-place execution.
   // When an op is UNARY_ELEMENTWISE | FULLY_WRITING and its single op-output input
   // has only one consumer (this op), the op can write directly into its input buffer
@@ -555,10 +846,11 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       int srcSlot = sl.wiring.inputSourceIndices[0];
       if (srcSlot < 0 || srcSlot >= totalOutputSlots) continue;
       // Multi-GPU: in-place aliasing reuses the INPUT slot's buffer as this op's output.
-      // If assignDevices() placed this op and its input slot on different GPUs, the alias
-      // would bind the output to a buffer on the wrong device (and the input is migrated
-      // per-segment, so the alias target moves). Only alias same-device producer/consumer.
-      if (sl.targetDeviceId != plan->slots_[srcSlot].targetDeviceId) continue;
+      // Output slot IDs and plan-step IDs are different domains for multi-output ops;
+      // resolve the producer step before comparing device placement.
+      const int producerStep = slotProducerStep[srcSlot];
+      if (producerStep < 0 || producerStep >= numSteps) continue;
+      if (sl.targetDeviceId != plan->slots_[producerStep].targetDeviceId) continue;
       // Input slot must have only this op as consumer (safe to overwrite)
       if (slotConsumerCount[srcSlot] != 1) continue;
       // Skip if this slot is already marked (e.g., from fusion pass)

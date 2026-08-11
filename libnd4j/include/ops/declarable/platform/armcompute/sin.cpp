@@ -22,6 +22,8 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
 
+#include <cmath>
+
 #include "armcomputeUtils.h"
 
 namespace sd {
@@ -33,41 +35,14 @@ PLATFORM_IMPL(sin, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  // Create tensor info
-  auto inInfo = getArmTensorInfo(*input, Arm_DataLayout::UNKNOWN);
-  auto outInfo = getArmTensorInfo(*output, Arm_DataLayout::UNKNOWN);
+  // The bundled Arm Compute version exposes no usable unary SIN layer
+  // constructor in this build. Keep the ARM/CPU tier functional with the
+  // exact scalar operation rather than depending on a vendor API variant.
+  const auto* in = input->bufferAsT<float>();
+  auto* out = output->bufferAsT<float>();
 
-  Arm_Tensor inTensor, outTensor;
-  inTensor.allocator()->init(inInfo);
-  outTensor.allocator()->init(outInfo);
-
-  // Configure sin using NEElementwiseUnaryLayer
-  arm_compute::NEElementwiseUnaryLayer sinOp;
-  sinOp.configure(&inTensor, &outTensor, arm_compute::ElementWiseUnary::SIN);
-
-  // Import or allocate memory for input
-  if (!input->hasPaddedBuffer() && !inTensor.info()->has_padding()) {
-    inTensor.allocator()->import_memory(input->buffer());
-  } else {
-    inTensor.allocator()->allocate();
-    copyToTensor(*input, inTensor);
-  }
-
-  // Import or allocate memory for output
-  bool copyOutput = false;
-  if (!output->hasPaddedBuffer() && !outTensor.info()->has_padding()) {
-    outTensor.allocator()->import_memory(output->buffer());
-  } else {
-    outTensor.allocator()->allocate();
-    copyOutput = true;
-  }
-
-  // Run sin
-  sinOp.run();
-
-  // Copy output if needed
-  if (copyOutput) {
-    copyFromTensor(outTensor, *output);
+  for (sd::LongType i = 0; i < input->lengthOf(); ++i) {
+    out[i] = std::sin(in[i]);
   }
 
   return sd::Status::OK;

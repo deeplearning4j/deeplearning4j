@@ -5,8 +5,11 @@
 package org.eclipse.deeplearning4j.sdx.aot;
 
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
+import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.nd4j.dsp.model.SdxTargetProfile;
+import org.nd4j.dsp.runtime.SdxRuntime;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
@@ -15,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -221,5 +225,60 @@ class SdxLlmCoreTokenizerTest {
                 "<|im_end|> must tokenize to exactly 1 id (was " + imEndIds.length + ")");
         assertEquals(151645, imEndIds[0],
                 "<|im_end|> must have id=151645");
+    }
+
+    @Test
+    void structuredChatRequestPreservesToolsCallsAndResults() throws Exception {
+        String requestJson = "{"
+                + "\"messages\":["
+                + "{\"role\":\"user\",\"content\":\"Find Alice\"},"
+                + "{\"role\":\"assistant\",\"content\":\"raw\",\"tool_calls\":[{"
+                + "\"id\":\"c1\",\"type\":\"function\",\"function\":{"
+                + "\"name\":\"graph_search\",\"arguments\":{\"query\":\"Alice\"}}}]},"
+                + "{\"role\":\"tool\",\"content\":\"{}\","
+                + "\"tool_call_id\":\"c1\",\"name\":\"graph_search\"}],"
+                + "\"tools\":[{\"name\":\"graph_search\",\"description\":\"Search\","
+                + "\"parameters\":{\"type\":\"object\"}}],"
+                + "\"tool_choice\":\"required\"}";
+
+        ChatTemplate.Request request = SdxLlmCore.parseChatRequest(requestJson);
+
+        assertEquals(ChatTemplate.ToolChoice.REQUIRED, request.getToolChoice());
+        assertEquals("graph_search", request.getTools().get(0).getName());
+        assertEquals("graph_search",
+                request.getMessages().get(1).getToolCalls().get(0).getName());
+        assertEquals("c1", request.getMessages().get(2).getToolCallId());
+        assertEquals("tool", request.getMessages().get(2).getRole());
+    }
+
+    @Test
+    void structuredChatRequestRejectsMissingMessages() {
+        assertThrows(IllegalArgumentException.class,
+                () -> SdxLlmCore.parseChatRequest("{\"tools\":[]}"));
+    }
+
+    @Test
+    void abiV2ExportsCanonicalPreparationCompiledLoadAndStreaming() {
+        Set<String> exports = java.util.Arrays.stream(SdxLlmCApi.class.getDeclaredMethods())
+                .map(java.lang.reflect.Method::getName)
+                .collect(Collectors.toSet());
+        assertEquals(2, SdxLlmCApi.ABI_VERSION);
+        assertTrue(exports.contains("sdxLlmPrepareGguf"));
+        assertTrue(exports.contains("sdxLlmResolveModelBundle"));
+        assertTrue(exports.contains("sdxLlmLoadCompiledModel"));
+        assertTrue(exports.contains("sdxLlmGenerateStreaming"));
+        assertTrue(exports.contains("sdxLlmRenderChatPrompt"));
+        assertTrue(exports.contains("sdxLlmParseChatResult"));
+        assertEquals("sdx-prepared-text-model-v2", SdxGgufModelPreparer.PREPARED_SCHEMA);
+    }
+
+    @Test
+    void tensorG3AliasSelectsStrictNnapiWithoutRuntimeJit() {
+        SdxTargetProfile target = SdxTargetProfile.fromId("tensor-g3");
+        SdxRuntime.ModelOptions options = SdxCompiledLlmCore.runtimeOptions(target);
+        assertEquals(SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR, target);
+        assertEquals(SdxRuntime.SDX_BACKEND_NNAPI, options.backend);
+        assertEquals(1, options.strict_backend);
+        assertEquals(0, options.allow_runtime_jit);
     }
 }

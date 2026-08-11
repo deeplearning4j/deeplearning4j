@@ -276,6 +276,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 break;
             case UBYTE: //Fall through
             case BYTE:
+            case FLOAT8:
+            case FLOAT8_E5M2:
                 temp = new BytePointer(buffer);
                 break;
             case BOOL:
@@ -404,6 +406,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 indexer = UByteIndexer.create((BytePointer) pointer);
                 break;
             case BYTE:
+            case FLOAT8:
+            case FLOAT8_E5M2:
                 this.pointer = new CudaPointer(hostPointer, length, 0).asBytePointer();
                 indexer = ByteIndexer.create((BytePointer) pointer);
                 break;
@@ -2060,7 +2064,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         } else if (t == DataType.UBYTE) {
             pointer = new PagedPointer(cptr, length).asBytePointer();
             setIndexer(UByteIndexer.create((BytePointer) pointer));
-        } else if (t == DataType.BYTE) {
+        } else if ((t == DataType.BYTE || t == DataType.FLOAT8 || t == DataType.FLOAT8_E5M2)) {
             pointer = new PagedPointer(cptr, length).asBytePointer();
             setIndexer(ByteIndexer.create((BytePointer) pointer));
         } else if (t == DataType.UINT16) {
@@ -2185,6 +2189,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 case UTF8:
                 case BYTE:
                 case UBYTE:
+                case FLOAT8:
+                case FLOAT8_E5M2:
                     pointer = nPtr.asBytePointer();
                     indexer = ByteIndexer.create((BytePointer) pointer);
                     break;

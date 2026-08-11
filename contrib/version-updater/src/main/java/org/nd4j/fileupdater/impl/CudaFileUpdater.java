@@ -23,7 +23,9 @@ public class CudaFileUpdater implements FileUpdater {
                 || inputPath.getParentFile().getName().equals("target")) {
             return false;
         }
-        return inputPath.getName().equals("pom.xml");
+        String name = inputPath.getName();
+        return name.equals("pom.xml") || name.equals("release-plan.json")
+                || name.endsWith(".yml") || name.endsWith(".yaml");
     }
 
     @Override
@@ -33,6 +35,14 @@ public class CudaFileUpdater implements FileUpdater {
         // module names, display names, and backend properties. Suffixes such as
         // -preset and -platform remain intact.
         ret.put("nd4j-cuda-[0-9]+(?:\\.[0-9]+)+", String.format("nd4j-cuda-%s", cudaVersion));
+        // Release-plan variants use classifierSuffix values such as
+        // -cuda-12.9-compile rather than the artifact-id token above.
+        ret.put("-cuda-[0-9]+(?:\\.[0-9]+)+(?=-|\")", String.format("-cuda-%s", cudaVersion));
+        // Keep the machine-readable plan's selected CUDA version in sync with
+        // the POMs.  This is deliberately scoped to the camel-case JSON key so
+        // image tags and unrelated text are not rewritten.
+        ret.put("\"cudaVersion\"\\s*:\\s*\"[0-9]+(?:\\.[0-9]+)+\"",
+                String.format("\"cudaVersion\": \"%s\"", cudaVersion));
         ret.put( "\\<cuda.version\\>[0-9\\.]*<\\/cuda.version\\>",String.format("<cuda.version>%s</cuda.version>",cudaVersion));
         ret.put( "\\<cudnn.version\\>[0-9\\.]*\\<\\/cudnn.version\\>",String.format("<cudnn.version>%s</cudnn.version>",cudnnVersion));
         ret.put( "\\<javacpp-presets.cuda.version\\>[0-9\\.]*<\\/javacpp-presets.cuda.version\\>",String.format("<javacpp-presets.cuda.version>%s</javacpp-presets.cuda.version>",javacppVersion));

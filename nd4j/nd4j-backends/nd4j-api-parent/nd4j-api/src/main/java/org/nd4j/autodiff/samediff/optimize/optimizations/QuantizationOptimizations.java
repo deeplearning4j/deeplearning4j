@@ -35,7 +35,7 @@ import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
-import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.common.config.ND4JInferenceWeightDataType;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
@@ -53,19 +53,19 @@ import java.util.*;
 public class QuantizationOptimizations extends BaseOptimizerSet {
 
     /**
-     * Optimizer that quantizes FP32 constant and variable arrays to FP16 or BF16.
-     * This provides ~2x memory reduction for model weights with minimal accuracy loss.
+     * Applies the configured inference weight storage policy to eligible dense FP32
+     * constants and variables.
      *
-     * FP16 quantization is OFF by default (mixed-type execution not yet correct for all ops).
-     * Enable with:
-     * - {@code -Dnd4j.optimizer.fp16=true}
+     * <p>{@code nd4j.optimizer.weightDtype} accepts fp32, fp16, bf16, fp8,
+     * fp8_e5m2, int8, and int4. FP16 is the default. The legacy fp16/bf16
+     * booleans are honored only when the explicit dtype is absent.</p>
      *
-     * BF16 is opt-in (requires hardware support):
-     * - {@code -Dnd4j.optimizer.bf16=true}
+     * <p>INT8 and INT4 are packed representations, not dense integer casts. A
+     * format-aware importer must create their packed arrays, scale/layout metadata,
+     * and quantized matmul nodes before this pass runs. Dense FP32 weights with an
+     * integer policy are rejected instead of silently falling back.</p>
      *
-     * Only one mode can be active. BF16 takes precedence if both are set.
-     *
-     * Runs once on the first op encountered (quantizes all constants/variables at once).
+     * Runs once on the first op encountered.
      */
     public static class QuantizeConstantsToFP16 implements Optimizer {
 
@@ -75,22 +75,29 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
         public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
                                      ArrayHolder constantArrays, ArrayHolder variablesArrays) {
             if (applied) return false;
-            // FP16 defaults to OFF; enable with -Dnd4j.optimizer.fp16=true
-            String fp16Prop = System.getProperty(ND4JSystemProperties.OPTIMIZER_FP16);
-            boolean fp16Enabled = "true".equalsIgnoreCase(fp16Prop);
-            boolean bf16Enabled = "true".equalsIgnoreCase(System.getProperty(ND4JSystemProperties.OPTIMIZER_BF16));
-            if (!fp16Enabled && !bf16Enabled) {
-                applied = true;
+            applied = true;
+
+            ND4JInferenceWeightDataType weightType = ND4JInferenceWeightDataType.resolve();
+            if (weightType == ND4JInferenceWeightDataType.FLOAT32) {
                 return false;
             }
-            // BF16 is opt-in and takes precedence over FP16 default
-            applied = true;
-            DataType targetType = bf16Enabled ? DataType.BFLOAT16 : DataType.HALF;
-            String modeName = targetType == DataType.BFLOAT16 ? "BF16" : "FP16";
+            if (weightType.isPackedInteger()) {
+                long denseWeightCount = countEligibleFp32Weights(sd);
+                if (denseWeightCount > 0) {
+                    throw new IllegalStateException("Weight dtype " + weightType.canonicalName()
+                            + " requires a format-aware packed-weight importer; found "
+                            + denseWeightCount + " eligible dense FP32 arrays");
+                }
+                log.info("Packed {} weight policy already satisfied by the imported graph",
+                        weightType.canonicalName().toUpperCase(Locale.ROOT));
+                return false;
+            }
 
+            DataType targetType = toDataType(weightType);
             int count = quantizeAllToType(sd, targetType);
             if (count > 0) {
-                log.info("Full {} quantization: {} arrays converted to {}", modeName, count, targetType);
+                log.info("Full {} weight conversion: {} arrays converted to {}",
+                        weightType.canonicalName().toUpperCase(Locale.ROOT), count, targetType);
                 return true;
             }
             return false;
@@ -114,30 +121,86 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
          * Convert all FP32 CONSTANT and VARIABLE arrays to a target low-precision dtype.
          *
          * FP16 is broadly supported on CUDA tensor-core paths.
-         * BF16 support depends on backend/hardware capabilities and is best used
-         * when the runtime path has explicit BF16 kernels enabled.
+         * BF16 and FP8 support depend on backend/hardware capabilities and are best used
+         * when the runtime path has matching kernels enabled.
          *
          * Integer-typed arrays (LONG, INT, etc.) are not affected.
          *
          * Minimum number of elements for an array to be quantized to low precision.
-         * Only large 2D+ weight matrices benefit from FP16/BF16.
+         * Only large 2D+ weight matrices benefit from reduced precision.
          * Small arrays (biases, normalization gammas/betas, scalars) stay FP32
-         * because element-wise ops may not handle mixed HALF+FLOAT correctly
-         * and the memory savings are negligible.
+         * because element-wise ops may not handle mixed low-precision and FLOAT
+         * correctly and the memory savings are negligible.
          */
         private static final long MIN_ELEMENTS_FOR_LOW_PRECISION = 1024;
 
+        private static DataType toDataType(ND4JInferenceWeightDataType weightType) {
+            switch (weightType) {
+                case FLOAT16:
+                    return DataType.HALF;
+                case BFLOAT16:
+                    return DataType.BFLOAT16;
+                case FLOAT8_E4M3:
+                    return DataType.FLOAT8;
+                case FLOAT8_E5M2:
+                    return DataType.FLOAT8_E5M2;
+                default:
+                    throw new IllegalArgumentException("Weight dtype cannot be represented as a dense floating array: "
+                            + weightType.canonicalName());
+            }
+        }
+
+        private static long countEligibleFp32Weights(SameDiff sd) {
+            long count = 0;
+            for (String name : sd.getConstantArrays().arrayNames()) {
+                if (isEligibleDenseFp32Weight(sd.getConstantArrays().getArray(name))) {
+                    count++;
+                }
+            }
+            for (String name : sd.getVariablesArrays().arrayNames()) {
+                if (isEligibleDenseFp32Weight(sd.getVariablesArrays().getArray(name))) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        private static boolean isEligibleDenseFp32Weight(INDArray array) {
+            return array != null
+                    && array.dataType() == DataType.FLOAT
+                    && array.rank() >= 2
+                    && array.length() >= MIN_ELEMENTS_FOR_LOW_PRECISION;
+        }
+
+        private static String modeName(DataType targetType) {
+            if (targetType == DataType.HALF) {
+                return "FP16";
+            }
+            if (targetType == DataType.BFLOAT16) {
+                return "BF16";
+            }
+            if (targetType == DataType.FLOAT8) {
+                return "FP8_E4M3";
+            }
+            if (targetType == DataType.FLOAT8_E5M2) {
+                return "FP8_E5M2";
+            }
+            throw new IllegalArgumentException("Unsupported floating weight dtype: " + targetType);
+        }
+
         /**
-         * Quantize all large FP32 constants/variables to a low-precision target type.
+         * Quantize all large FP32 constants/variables to a low-precision floating target type.
          *
-         * <p>Constants are converted in-place to HALF/BFLOAT16 for ~2x memory savings.
-         * Element-wise ops (add, mul, etc.) automatically upcast HALF→FLOAT via
-         * {@code pickPairwiseResultType}, so no dequant Cast nodes are needed.
-         * Matmul ops handle mixed HALF+FLOAT natively via cuBLAS.</p>
+         * <p>Constants are converted in-place to the selected floating storage dtype.
+         * Model implementations may promote accumulation or numerically sensitive operations
+         * to FP32 while retaining the reduced weight footprint.</p>
          */
         public static int quantizeAllToType(SameDiff sd, DataType targetType) {
-            if (targetType != DataType.HALF && targetType != DataType.BFLOAT16) {
-                throw new IllegalArgumentException("Unsupported low-precision target type: " + targetType);
+            if (targetType != DataType.HALF
+                    && targetType != DataType.BFLOAT16
+                    && targetType != DataType.FLOAT8
+                    && targetType != DataType.FLOAT8_E5M2) {
+                throw new IllegalArgumentException("Unsupported low-precision floating target type: " + targetType);
             }
             ArrayHolder constantArrays = sd.getConstantArrays();
             ArrayHolder variableArrays = sd.getVariablesArrays();
@@ -145,7 +208,7 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             int skippedCount = 0;
             long fp32Bytes = 0;
             long quantizedBytes = 0;
-            String modeName = targetType == DataType.BFLOAT16 ? "BF16" : "FP16";
+            String modeName = modeName(targetType);
 
             for (String name : new ArrayList<>(constantArrays.arrayNames())) {
                 INDArray arr = constantArrays.getArray(name);

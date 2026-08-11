@@ -311,6 +311,10 @@ public class SDZSerializer {
             }
         }
 
+        // Keep archive layout deterministic and put the graph shard (shard0)
+        // ahead of variable-only shards. Native readers must still tolerate arbitrary
+        // ZIP entry order, but canonical writers should not create that ambiguity.
+        validFiles.sort(java.util.Comparator.comparing(File::getName));
         return validFiles;
     }
 

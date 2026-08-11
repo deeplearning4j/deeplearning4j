@@ -97,6 +97,14 @@ public:
      * @return Number of tokens in vocabulary
      */
     size_t get_vocab_size() const;
+
+    /**
+     * @brief Resolve an exact vocabulary token without encoding it
+     * @param token Token string to resolve
+     * @param token_id Receives the token ID when found
+     * @return true when the exact token exists in the tokenizer vocabulary
+     */
+    bool token_to_id(const std::string& token, uint32_t& token_id) const;
     
     /**
      * @brief Check if the tokenizer is valid and ready to use

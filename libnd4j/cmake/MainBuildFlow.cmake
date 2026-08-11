@@ -1050,6 +1050,33 @@ function(configure_cpu_linking main_target_name)
         message(WARNING "⚠️ zlib not found - SDZ reader supports STORED ZIP entries only")
     endif()
 
+    # Keep CPU JavaCPP bindings aligned with the native build's managed runtime
+    # dependencies. Plain CPU builds have no project-managed runtime DSOs, but they
+    # still must emit an explicit zero-entry manifest; JavaCPP treats a missing
+    # manifest as an invalid native build. CPU Triton builds add the same pinned
+    # LLVM/MLIR DSOs that are staged by the CUDA path.
+    set(_cpu_shared_runtimes "")
+    if(HAVE_TRITON_CPU)
+        foreach(_triton_runtime_target IN ITEMS triton_mlir_shared triton_llvm_shared)
+            if(NOT TARGET ${_triton_runtime_target})
+                message(FATAL_ERROR
+                    "Triton CPU requires normalized shared runtime target ${_triton_runtime_target}")
+            endif()
+            list(APPEND _cpu_shared_runtimes
+                "$<TARGET_FILE:${_triton_runtime_target}>")
+        endforeach()
+    endif()
+    list(JOIN _cpu_shared_runtimes "|" _cpu_shared_runtimes_pipe)
+    add_custom_command(TARGET ${main_target_name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            "-DRUNTIME_LIBRARIES_PIPE=${_cpu_shared_runtimes_pipe}"
+            "-DREADELF=${CMAKE_READELF}"
+            "-DOTOOL=${CMAKE_OTOOL}"
+            "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
+            "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${main_target_name}>"
+            -P "${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
+        VERBATIM)
+
     install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
@@ -1810,7 +1837,18 @@ else()
 endif()
 get_filename_component(OP_OUTPUT_DIRECTORY "${OP_OUTPUT_FILE}" DIRECTORY)
 file(MAKE_DIRECTORY "${OP_OUTPUT_DIRECTORY}")
-file(WRITE "${OP_OUTPUT_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
+set(OP_DEFINITIONS_FILE_CONTENT
+    "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
+set(EXISTING_OP_DEFINITIONS_FILE_CONTENT "")
+if(EXISTS "${OP_OUTPUT_FILE}")
+    file(READ "${OP_OUTPUT_FILE}" EXISTING_OP_DEFINITIONS_FILE_CONTENT)
+endif()
+# This header is transitively included by nearly every op translation unit.
+# Preserve its timestamp when op selection is unchanged so a routine CMake
+# configure does not invalidate the entire native object graph.
+if(NOT "${EXISTING_OP_DEFINITIONS_FILE_CONTENT}" STREQUAL "${OP_DEFINITIONS_FILE_CONTENT}")
+    file(WRITE "${OP_OUTPUT_FILE}" "${OP_DEFINITIONS_FILE_CONTENT}")
+endif()
 
 # --- Phase 3: Enhanced Selective Rendering Setup ---
 print_status_colored("INFO" "=== 3. CONFIGURING ENHANCED SELECTIVE RENDERING ===")
@@ -2101,21 +2139,36 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
             COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_TOKENIZER_LIBRARY_FILE}" "${_sdx_sdk_lib_dir}")
     endif()
 
-    # Use standalone SDX library when available, otherwise fall back to monolithic
+    # Use standalone SDX library when available, otherwise fall back to monolithic.
+    set(_sdx_sdk_uses_monolithic FALSE)
     if(SD_BUILD_SDX_STANDALONE AND DEFINED SDX_STANDALONE_TARGET AND TARGET ${SDX_STANDALONE_TARGET})
         set(_sdx_sdk_target ${SDX_STANDALONE_TARGET})
     else()
         set(_sdx_sdk_target ${SD_LIBRARY_NAME})
+        set(_sdx_sdk_uses_monolithic TRUE)
     endif()
 
-    # Standalone compiler-enabled runtimes publish their normalized shared
-    # dependency targets through a target property. Stage that exact closure
-    # into the SDK and pass it to each platform package.
+    # Compiler-enabled runtimes publish their normalized shared dependency
+    # targets through a target property. Stage that exact closure into the SDK
+    # and pass it to each platform package.
     get_target_property(_sdx_runtime_dependency_targets
         ${_sdx_sdk_target} SDX_RUNTIME_DEPENDENCY_TARGETS)
     if(_sdx_runtime_dependency_targets STREQUAL
        "_sdx_runtime_dependency_targets-NOTFOUND")
         set(_sdx_runtime_dependency_targets "")
+    endif()
+
+    # The normal monolithic target links Triton through its object/final link
+    # configuration rather than BuildSDX, so it does not pass through the
+    # standalone helper that publishes this runtime closure. Publish the same
+    # normalized targets here before the generic SDK packaging path consumes it.
+    if(_sdx_sdk_uses_monolithic AND HAVE_TRITON AND
+       NOT _sdx_runtime_dependency_targets)
+        set(_sdx_runtime_dependency_targets
+            triton_mlir_shared triton_llvm_shared)
+        set_property(TARGET ${_sdx_sdk_target} PROPERTY
+            SDX_RUNTIME_DEPENDENCY_TARGETS
+            "${_sdx_runtime_dependency_targets}")
     endif()
 
     set(_sdx_sdk_shared_runtime_files "")
@@ -2319,7 +2372,9 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         set(_sdx_enable_apple_xcframework 1)
     endif()
 
-    if(SD_HEXAGON)
+    if(SD_NNAPI_ACCELERATOR_ONLY AND SD_NNAPI_TENSOR_G3_HYBRID)
+        set(_sdx_runtime_variants "tensor-g3")
+    elseif(SD_HEXAGON)
         set(_sdx_runtime_variants "hexagon")
     elseif(SD_TPU)
         set(_sdx_runtime_variants "tpu")
@@ -2355,7 +2410,7 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         # Host BLAS is valid only for the Android CPU/reference runtime. Device
         # variants must never acquire a host execution path through packaging.
         if(NOT SD_HEXAGON AND NOT SD_TPU AND NOT SD_VULKAN AND
-           DEFINED OPENBLAS_LIBRARIES)
+           NOT SD_NNAPI_ACCELERATOR_ONLY AND DEFINED OPENBLAS_LIBRARIES)
             foreach(_sdx_dependency_candidate IN LISTS OPENBLAS_LIBRARIES)
                 if(IS_ABSOLUTE "${_sdx_dependency_candidate}" AND
                    EXISTS "${_sdx_dependency_candidate}")
@@ -2368,6 +2423,31 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
            IS_ABSOLUTE "${OpenMP_omp_LIBRARY}" AND
            EXISTS "${OpenMP_omp_LIBRARY}")
             list(APPEND _sdx_runtime_dependency_files "${OpenMP_omp_LIBRARY}")
+        endif()
+        # The main Tensor G3 runtime uses c++_static, but the pinned ARM
+        # Compute DSO is a c++_shared consumer. Package the NDK runtime whenever
+        # either the provider itself or its deferred ARM dependency requires it.
+        if("${_sdx_android_stl}" STREQUAL "c++_shared" OR
+           TARGET armcompute_external)
+            set(_sdx_cxx_shared_library "")
+            foreach(_sdx_implicit_link_directory IN LISTS
+                    CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES)
+                if(EXISTS
+                   "${_sdx_implicit_link_directory}/libc++_shared.so")
+                    set(_sdx_cxx_shared_library
+                        "${_sdx_implicit_link_directory}/libc++_shared.so")
+                    break()
+                endif()
+            endforeach()
+            if(NOT IS_ABSOLUTE "${_sdx_cxx_shared_library}" OR
+               NOT EXISTS "${_sdx_cxx_shared_library}")
+                message(FATAL_ERROR
+                    "Android libc++_shared.so was not found in the C++ "
+                    "toolchain's implicit link directories: "
+                    "${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES}")
+            endif()
+            list(APPEND _sdx_runtime_dependency_files
+                "${_sdx_cxx_shared_library}")
         endif()
 
         # Vendor accelerator adapters are supplied by the build environment and
@@ -2387,16 +2467,27 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
             "${_sdx_extra_runtime_dependency_files}")
         foreach(_sdx_dependency_candidate IN LISTS
                 _sdx_extra_runtime_dependency_files)
-            if(NOT IS_ABSOLUTE "${_sdx_dependency_candidate}" OR
-               NOT EXISTS "${_sdx_dependency_candidate}" OR
-               IS_DIRECTORY "${_sdx_dependency_candidate}")
-                message(FATAL_ERROR
-                    "Invalid SDX extra runtime dependency: ${_sdx_dependency_candidate}")
-            endif()
             get_filename_component(_sdx_dependency_name
                 "${_sdx_dependency_candidate}" NAME)
             string(TOLOWER "${_sdx_dependency_name}" _sdx_dependency_name_lower)
-            if((SD_HEXAGON OR SD_TPU OR SD_VULKAN) AND
+            # ARM Compute is an ExternalProject artifact. Its install directory
+            # is created by the build before sdx_runtime_bindings runs, so allow
+            # the two known Tensor G3 shared objects to be absent at configure
+            # time while retaining strict validation for every other dependency.
+            set(_sdx_deferred_armcompute_dependency FALSE)
+            if(TARGET armcompute_external AND
+               _sdx_dependency_name_lower MATCHES
+               "^libarm_compute(_graph)?\\.so$")
+                set(_sdx_deferred_armcompute_dependency TRUE)
+            endif()
+            if(NOT IS_ABSOLUTE "${_sdx_dependency_candidate}" OR
+               IS_DIRECTORY "${_sdx_dependency_candidate}" OR
+               (NOT EXISTS "${_sdx_dependency_candidate}" AND
+                NOT _sdx_deferred_armcompute_dependency))
+                message(FATAL_ERROR
+                    "Invalid SDX extra runtime dependency: ${_sdx_dependency_candidate}")
+            endif()
+            if((SD_HEXAGON OR SD_TPU OR SD_VULKAN OR SD_NNAPI_ACCELERATOR_ONLY) AND
                _sdx_dependency_name_lower MATCHES
                "openblas|mkl|gfortran|quadmath")
                 message(FATAL_ERROR
@@ -2424,6 +2515,13 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
             set(_sdx_default_accelerator "QUALCOMM_HEXAGON_HTP")
         elseif(_sdx_variant STREQUAL "tpu")
             set(_sdx_default_accelerator "PJRT_TPU")
+        elseif(_sdx_variant STREQUAL "tensor-g3")
+            set(_sdx_default_accelerator "NNAPI_ACCELERATOR_ONLY")
+        endif()
+
+        set(_sdx_required_accelerator_device "")
+        if(SD_NNAPI_ACCELERATOR_ONLY AND DEFINED SD_NNAPI_REQUIRED_DEVICE_NAME)
+            set(_sdx_required_accelerator_device "${SD_NNAPI_REQUIRED_DEVICE_NAME}")
         endif()
 
         list(APPEND _sdx_binding_package_cmds
@@ -2439,6 +2537,7 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
                 "-DSDX_VARIANT=${_sdx_variant}"
                 "-DSDX_DEFAULT_GPU_TARGET=${_sdx_default_gpu_target}"
                 "-DSDX_DEFAULT_ACCELERATOR=${_sdx_default_accelerator}"
+                "-DSDX_REQUIRED_ACCELERATOR_DEVICE=${_sdx_required_accelerator_device}"
                 "-DSDX_LIBRARY_FILE=$<TARGET_FILE:${_sdx_sdk_target}>"
                 "-DSDX_LINKER_FILE=$<TARGET_LINKER_FILE:${_sdx_sdk_target}>"
                 "-DSDX_HEADER_FILE=${SDX_RUNTIME_HEADER}"
@@ -2476,6 +2575,9 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
             COMMENT "Packaging platform-specific SDX runtime bindings for ${_sdx_platform_id}"
             VERBATIM
         )
+        if(TARGET armcompute_external)
+            add_dependencies(sdx_runtime_bindings armcompute_external)
+        endif()
     endif()
 
     install(FILES "${SDX_RUNTIME_HEADER}" DESTINATION include/dsp/runtime)

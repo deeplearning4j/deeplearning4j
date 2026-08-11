@@ -23,6 +23,11 @@ import org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative.Tokenizer
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -33,6 +38,9 @@ import java.util.Objects;
  * copies results into Java values, and guarantees matching native free calls.</p>
  */
 public final class NativeTokenizer implements AutoCloseable {
+
+    private static final DateTimeFormatter CHAT_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
 
     private final TokenizersNative api;
     private OpaqueTokenizer handle;
@@ -127,6 +135,137 @@ public final class NativeTokenizer implements AutoCloseable {
             result[i] = Integer.toUnsignedLong(tokenIds[i]);
         }
         return result;
+    }
+
+    /**
+     * Renders the chat template carried by a complete tokenizer_config.json.
+     *
+     * <p>The native tokenizer stack owns Jinja compatibility as well as token
+     * encoding. Keeping both behind this facade prevents Android and desktop
+     * consumers from drifting into model-specific prompt implementations.</p>
+     *
+     * @param tokenizerConfigJson full tokenizer_config.json document
+     * @param messages ordered chat messages
+     * @param addGenerationPrompt whether to append the assistant generation turn
+     * @return the exact prompt text to encode with special-token insertion disabled
+     */
+    public synchronized String applyChatTemplate(
+            String tokenizerConfigJson,
+            List<ChatMessage> messages,
+            boolean addGenerationPrompt) {
+        requireOpen();
+        return renderChatTemplate(api, tokenizerConfigJson, messages, addGenerationPrompt);
+    }
+
+    /**
+     * Renders the model-owned chat template from the complete Hugging Face
+     * runtime context. The context is an object containing {@code messages} and
+     * may also contain {@code tools}, {@code documents}, generation flags, and
+     * model-specific template arguments.
+     */
+    public synchronized String applyChatTemplateContext(
+            String tokenizerConfigJson,
+            String contextJson) {
+        requireOpen();
+        return renderChatTemplateContext(api, tokenizerConfigJson, contextJson);
+    }
+
+    /**
+     * Renders a Hugging Face chat template without creating an otherwise-unused
+     * tokenizer handle. Template evaluation only consumes tokenizer_config.json;
+     * keeping that fact explicit lets SDX share the native MiniJinja implementation
+     * while its generation tokenizer remains owned by the LLM pipeline.
+     */
+    public static String renderChatTemplate(
+            String tokenizerConfigJson,
+            List<ChatMessage> messages,
+            boolean addGenerationPrompt) {
+        return renderChatTemplate(
+                new TokenizersNative(), tokenizerConfigJson, messages, addGenerationPrompt);
+    }
+
+    /**
+     * Renders a complete Hugging Face chat-template runtime context without
+     * creating a tokenizer handle.
+     */
+    public static String renderChatTemplateContext(
+            String tokenizerConfigJson,
+            String contextJson) {
+        return renderChatTemplateContext(
+                new TokenizersNative(), tokenizerConfigJson, contextJson);
+    }
+
+    private static String renderChatTemplate(
+            TokenizersNative api,
+            String tokenizerConfigJson,
+            List<ChatMessage> messages,
+            boolean addGenerationPrompt) {
+        Objects.requireNonNull(tokenizerConfigJson, "tokenizerConfigJson");
+        Objects.requireNonNull(messages, "messages");
+        if (tokenizerConfigJson.isBlank()) {
+            throw new IllegalArgumentException(
+                    "tokenizerConfigJson must not be blank");
+        }
+        if (messages.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "messages must contain at least one chat turn");
+        }
+
+        String messagesJson = messagesJson(messages);
+        String currentDate = LocalDate.now(ZoneOffset.UTC)
+                .format(CHAT_DATE_FORMAT);
+        try (BytePointer nativeMessages = new BytePointer(messagesJson);
+             BytePointer nativeConfig = new BytePointer(tokenizerConfigJson);
+             BytePointer nativeDate = new BytePointer(currentDate)) {
+            BytePointer rendered = api.applyChatTemplate(
+                    nativeMessages,
+                    nativeConfig,
+                    nativeDate,
+                    addGenerationPrompt);
+            if (isNull(rendered)) {
+                throw failure(api, "render tokenizer chat template");
+            }
+            try {
+                return rendered.getString();
+            } finally {
+                api.freeString(rendered);
+            }
+        }
+    }
+
+    private static String renderChatTemplateContext(
+            TokenizersNative api,
+            String tokenizerConfigJson,
+            String contextJson) {
+        Objects.requireNonNull(tokenizerConfigJson, "tokenizerConfigJson");
+        Objects.requireNonNull(contextJson, "contextJson");
+        if (tokenizerConfigJson.isBlank()) {
+            throw new IllegalArgumentException(
+                    "tokenizerConfigJson must not be blank");
+        }
+        if (contextJson.isBlank()) {
+            throw new IllegalArgumentException(
+                    "contextJson must not be blank");
+        }
+
+        String currentDate = LocalDate.now(ZoneOffset.UTC)
+                .format(CHAT_DATE_FORMAT);
+        try (BytePointer nativeContext = new BytePointer(contextJson);
+             BytePointer nativeConfig = new BytePointer(tokenizerConfigJson);
+             BytePointer nativeDate = new BytePointer(currentDate)) {
+            BytePointer rendered = api.applyChatTemplateContext(
+                    nativeContext,
+                    nativeConfig,
+                    nativeDate);
+            if (isNull(rendered)) {
+                throw failure(api, "render tokenizer chat template context");
+            }
+            try {
+                return rendered.getString();
+            } finally {
+                api.freeString(rendered);
+            }
+        }
     }
 
     /**
@@ -238,10 +377,62 @@ public final class NativeTokenizer implements AutoCloseable {
     }
 
     /**
+     * Dependency-free message value accepted by the native chat renderer.
+     */
+    public static final class ChatMessage {
+        private final String role;
+        private final String content;
+
+        public ChatMessage(String role, String content) {
+            this.role = Objects.requireNonNull(role, "role");
+            this.content = Objects.requireNonNull(content, "content");
+            if (role.isBlank()) {
+                throw new IllegalArgumentException("role must not be blank");
+            }
+        }
+
+        public String role() {
+            return role;
+        }
+
+        public String content() {
+            return content;
+        }
+
+        public static ChatMessage system(String content) {
+            return new ChatMessage("system", content);
+        }
+
+        public static ChatMessage user(String content) {
+            return new ChatMessage("user", content);
+        }
+
+        public static ChatMessage assistant(String content) {
+            return new ChatMessage("assistant", content);
+        }
+
+        public static ChatMessage tool(String content) {
+            return new ChatMessage("tool", content);
+        }
+    }
+
+    /**
      * Returns the tokenizer vocabulary size.
      */
     public synchronized long vocabSize() {
         return api.getVocabSize(requireOpen());
+    }
+
+    /**
+     * Resolves an exact tokenizer vocabulary entry without applying normalization,
+     * pre-tokenization, or unknown-token substitution.
+     *
+     * @return the token ID, or {@code -1} when the exact token is absent
+     */
+    public synchronized int tokenToId(String token) {
+        Objects.requireNonNull(token, "token");
+        int[] tokenId = new int[1];
+        return api.getTokenId(requireOpen(), token, tokenId) ? tokenId[0] : -1;
     }
 
     /**
@@ -275,6 +466,67 @@ public final class NativeTokenizer implements AutoCloseable {
             throw new IllegalStateException("Tokenizer is closed");
         }
         return handle;
+    }
+
+    private static String messagesJson(List<ChatMessage> messages) {
+        StringBuilder json = new StringBuilder();
+        json.append('[');
+        for (int i = 0; i < messages.size(); i++) {
+            ChatMessage message = Objects.requireNonNull(
+                    messages.get(i), "messages[" + i + "]");
+            if (i > 0) {
+                json.append(',');
+            }
+            json.append("{\"role\":");
+            appendJsonString(json, message.role());
+            json.append(",\"content\":");
+            appendJsonString(json, message.content());
+            json.append('}');
+        }
+        json.append(']');
+        return json.toString();
+    }
+
+    private static void appendJsonString(StringBuilder output, String value) {
+        output.append('"');
+        for (int i = 0; i < value.length(); i++) {
+            char character = value.charAt(i);
+            switch (character) {
+                case '"':
+                    output.append("\\\"");
+                    break;
+                case '\\':
+                    output.append("\\\\");
+                    break;
+                case '\b':
+                    output.append("\\b");
+                    break;
+                case '\f':
+                    output.append("\\f");
+                    break;
+                case '\n':
+                    output.append("\\n");
+                    break;
+                case '\r':
+                    output.append("\\r");
+                    break;
+                case '\t':
+                    output.append("\\t");
+                    break;
+                default:
+                    if (character < 0x20) {
+                        output.append("\\u");
+                        String hex = Integer.toHexString(character);
+                        for (int padding = hex.length(); padding < 4; padding++) {
+                            output.append('0');
+                        }
+                        output.append(hex);
+                    } else {
+                        output.append(character);
+                    }
+            }
+        }
+        output.append('"');
     }
 
     private static boolean isNull(org.bytedeco.javacpp.Pointer pointer) {

@@ -361,18 +361,27 @@ public class TestArchitectureOutputDegeneracy {
         String prompt = formatPrompt(arch);
         log.info("Formatted prompt: {}", prompt.substring(0, Math.min(100, prompt.length())) + "...");
 
-        // Import model and load tokenizer
-        var sd = GGMLModelImport.importModel(ggufPath, ConversionOptions.forInference());
+        // Import the source model by default. A staged path allows the same prompt,
+        // tokenizer, optimizer, DSP, and quality gate to validate graph serialization.
+        String stagedModelPath = System.getProperty("ggml.staged.model.path");
+        var sd = stagedModelPath == null || stagedModelPath.isBlank()
+                ? GGMLModelImport.importModel(ggufPath, ConversionOptions.forInference())
+                : org.nd4j.autodiff.samediff.SameDiff.load(new File(stagedModelPath), false);
+        log.info("Model execution source: {}", stagedModelPath == null || stagedModelPath.isBlank()
+                ? "direct GGUF import" : stagedModelPath);
         Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.getAbsolutePath());
         assertTrue(tokenizer.isValid(), "Tokenizer should be valid");
 
         int maxTokens = 50;
+        boolean graphOptimizerEnabled = Boolean.parseBoolean(
+                System.getProperty("ggml.graph.optimizer.enabled", "false"));
+        log.info("Graph optimizer enabled: {}", graphOptimizerEnabled);
         GenerationPipelineConfig pipelineConfig = GenerationPipelineConfig.builder()
                 .decoder(sd)
                 .tokenizer(tokenizer)
                 .samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(maxTokens)
-                .graphOptimizerEnabled(false)
+                .graphOptimizerEnabled(graphOptimizerEnabled)
                 .dspEnabled(true)
                 .build();
 

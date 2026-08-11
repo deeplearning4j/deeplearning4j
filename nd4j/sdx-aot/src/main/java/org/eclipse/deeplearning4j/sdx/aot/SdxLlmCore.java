@@ -18,10 +18,12 @@
 package org.eclipse.deeplearning4j.sdx.aot;
 
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.generation.ChatGenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipeline;
 import org.eclipse.deeplearning4j.llm.generation.GenerationPipelineConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
+import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
@@ -52,7 +54,7 @@ import java.util.Set;
  * reflection) so the C ABI stays stable while options evolve. See ADR 0109.</p>
  */
 @Slf4j
-public final class SdxLlmCore implements AutoCloseable {
+public final class SdxLlmCore implements SdxLlmModel {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -238,12 +240,31 @@ public final class SdxLlmCore implements AutoCloseable {
                 modelPath, tokens.size(), merges.size(), tokenizerModel, bosId, eosId, controlCount);
 
         String json = buildBpeTokenizerJson(tokens, merges, bosId, eosId, tokenizerModel, tokenTypes);
+        String tokenizerConfigJson = embeddedTokenizerConfigJson(raw, tokens, bosId, eosId);
         try {
-            return HuggingFaceTokenizer.fromJson(json);
+            return HuggingFaceTokenizer.fromJson(json, tokenizerConfigJson);
         } catch (Exception e) {
             throw new IOException("GGUF-embedded tokenizer construction failed for " + modelPath
                     + " — vocab=" + tokens.size() + " merges=" + merges.size(), e);
         }
+    }
+
+    static String embeddedTokenizerConfigJson(Map<String, Object> metadata,
+                                                      List<String> tokens,
+                                                      int bosId, int eosId) {
+        Object template = metadata.get("tokenizer.chat_template");
+        if (!(template instanceof String) || ((String) template).isBlank()) {
+            return null;
+        }
+        ObjectNode config = MAPPER.createObjectNode();
+        config.put("chat_template", (String) template);
+        if (bosId >= 0 && bosId < tokens.size()) config.put("bos_token", tokens.get(bosId));
+        if (eosId >= 0 && eosId < tokens.size()) config.put("eos_token", tokens.get(eosId));
+        Object addBos = metadata.get("tokenizer.ggml.add_bos_token");
+        Object addEos = metadata.get("tokenizer.ggml.add_eos_token");
+        if (addBos instanceof Boolean) config.put("add_bos_token", (Boolean) addBos);
+        if (addEos instanceof Boolean) config.put("add_eos_token", (Boolean) addEos);
+        return config.toString();
     }
 
     /**
@@ -427,6 +448,210 @@ public final class SdxLlmCore implements AutoCloseable {
         GenerationResult result = pipeline.generate(prompt, maxNewTokens, sampling);
         lastResult = result;
         return result;
+    }
+
+    @Override
+    public String generateText(String prompt, String optionsJson) throws IOException {
+        return generate(prompt, optionsJson).getText();
+    }
+
+    /**
+     * Run one complete structured chat turn. The imported tokenizer owns prompt
+     * rendering, output normalization, reasoning blocks, and tool-call syntax.
+     */
+    public String generateChat(String requestJson, String optionsJson) throws IOException {
+        ChatTemplate.Request request = parseChatRequest(requestJson);
+        int maxNewTokens = defaultMaxNewTokens;
+        SamplingConfig sampling = defaultSampling;
+        if (optionsJson != null && !optionsJson.isEmpty()) {
+            JsonNode opts = MAPPER.readTree(optionsJson);
+            maxNewTokens = opts.path("maxNewTokens").asInt(maxNewTokens);
+            if (opts.has("sampling")) {
+                sampling = parseSampling(opts.get("sampling"));
+            }
+        }
+        ChatGenerationResult result = pipeline.generateChat(request, maxNewTokens, sampling);
+        return chatResultJson(result);
+    }
+
+    /** Decode streamed/raw assistant output through the imported model protocol. */
+    public String parseChatResult(String requestJson, String rawText) throws IOException {
+        ChatGenerationResult result = pipeline.parseChatOutput(
+                parseChatRequest(requestJson), rawText);
+        return chatResultJson(result);
+    }
+
+    static ChatTemplate.Request parseChatRequest(String requestJson) throws IOException {
+        if (requestJson == null || requestJson.isBlank()) {
+            throw new IllegalArgumentException("chat request JSON must not be blank");
+        }
+        JsonNode root = MAPPER.readTree(requestJson);
+        if (root == null || !root.isObject()) {
+            throw new IllegalArgumentException("chat request must be a JSON object");
+        }
+        JsonNode messagesNode = root.get("messages");
+        if (messagesNode == null || !messagesNode.isArray()) {
+            throw new IllegalArgumentException("chat request messages must be an array");
+        }
+
+        List<ChatTemplate.Message> messages = new ArrayList<>();
+        for (JsonNode messageNode : messagesNode) {
+            if (!messageNode.isObject()) {
+                throw new IllegalArgumentException("chat message must be an object");
+            }
+            String role = requiredText(messageNode, "role");
+            String content = messageNode.hasNonNull("content")
+                    ? messageNode.get("content").asText() : null;
+            List<ChatTemplate.ToolCall> calls = parseToolCalls(messageNode.get("tool_calls"));
+            String toolCallId = optionalText(messageNode, "tool_call_id");
+            String toolName = optionalText(messageNode, "name");
+            messages.add(new ChatTemplate.Message(
+                    role, content, null, calls, toolCallId, toolName));
+        }
+
+        List<ChatTemplate.Tool> tools = new ArrayList<>();
+        JsonNode toolsNode = root.get("tools");
+        if (toolsNode != null && !toolsNode.isNull()) {
+            if (!toolsNode.isArray()) {
+                throw new IllegalArgumentException("chat request tools must be an array");
+            }
+            for (JsonNode toolNode : toolsNode) {
+                JsonNode function = toolNode.has("function") ? toolNode.get("function") : toolNode;
+                if (function == null || !function.isObject()) {
+                    throw new IllegalArgumentException("chat tool must be an object");
+                }
+                String name = requiredText(function, "name");
+                String description = optionalText(function, "description");
+                Map<String, Object> parameters = function.has("parameters")
+                        ? MAPPER.convertValue(function.get("parameters"), Map.class)
+                        : Map.of();
+                tools.add(ChatTemplate.Tool.function(name, description, parameters));
+            }
+        }
+
+        ChatTemplate.Request.Builder builder = ChatTemplate.Request.builder()
+                .messages(messages)
+                .tools(tools)
+                .addGenerationPrompt(root.path("add_generation_prompt").asBoolean(true))
+                .toolChoice(parseEnum(root, "tool_choice", ChatTemplate.ToolChoice.class,
+                        ChatTemplate.ToolChoice.AUTO));
+        if (root.hasNonNull("tool_definition_format")) {
+            builder.toolDefinitionFormat(parseEnum(
+                    root, "tool_definition_format", ChatTemplate.ToolDefinitionFormat.class, null));
+        }
+        if (root.hasNonNull("tool_call_format")) {
+            builder.toolCallFormat(parseEnum(
+                    root, "tool_call_format", ChatTemplate.ToolCallFormat.class, null));
+        }
+        if (root.has("template_arguments") && root.get("template_arguments").isObject()) {
+            builder.templateArguments(MAPPER.convertValue(
+                    root.get("template_arguments"), Map.class));
+        }
+        return builder.build();
+    }
+
+    private static List<ChatTemplate.ToolCall> parseToolCalls(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return List.of();
+        }
+        if (!node.isArray()) {
+            throw new IllegalArgumentException("message tool_calls must be an array");
+        }
+        List<ChatTemplate.ToolCall> calls = new ArrayList<>();
+        for (JsonNode callNode : node) {
+            JsonNode function = callNode.has("function") ? callNode.get("function") : callNode;
+            if (function == null || !function.isObject()) {
+                throw new IllegalArgumentException("message tool call must be an object");
+            }
+            String name = requiredText(function, "name");
+            JsonNode args = function.has("arguments")
+                    ? function.get("arguments") : function.get("args");
+            Map<String, Object> arguments;
+            if (args == null || args.isNull()) {
+                arguments = Map.of();
+            } else if (args.isTextual()) {
+                try {
+                    JsonNode parsed = MAPPER.readTree(args.asText());
+                    if (parsed == null || !parsed.isObject()) {
+                        throw new IllegalArgumentException("tool call arguments must be a JSON object");
+                    }
+                    arguments = MAPPER.convertValue(parsed, Map.class);
+                } catch (IOException e) {
+                    throw new IllegalArgumentException("tool call arguments were not valid JSON", e);
+                }
+            } else if (args.isObject()) {
+                arguments = MAPPER.convertValue(args, Map.class);
+            } else {
+                throw new IllegalArgumentException("tool call arguments must be an object");
+            }
+            calls.add(ChatTemplate.ToolCall.function(
+                    optionalText(callNode, "id"), name, arguments));
+        }
+        return List.copyOf(calls);
+    }
+
+    static String chatResultJson(ChatGenerationResult result) {
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("rawText", result.getRawText());
+        root.put("content", result.getContent());
+        root.put("reasoningContent", result.getReasoningContent());
+        ArrayNode calls = root.putArray("toolCalls");
+        for (ChatTemplate.ToolCall call : result.getToolCalls()) {
+            ObjectNode value = calls.addObject();
+            if (call.getId() != null) value.put("id", call.getId());
+            value.put("name", call.getName());
+            value.set("arguments", MAPPER.valueToTree(call.getArguments()));
+        }
+        ArrayNode errors = root.putArray("protocolErrors");
+        for (String error : result.getParseErrors()) {
+            errors.add(error);
+        }
+        return root.toString();
+    }
+
+    private static String requiredText(JsonNode node, String field) {
+        String value = optionalText(node, field);
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(field + " must not be blank");
+        }
+        return value;
+    }
+
+    private static String optionalText(JsonNode node, String field) {
+        JsonNode value = node == null ? null : node.get(field);
+        return value == null || value.isNull() ? null : value.asText();
+    }
+
+    private static <E extends Enum<E>> E parseEnum(
+            JsonNode root, String field, Class<E> type, E defaultValue) {
+        JsonNode value = root.get(field);
+        if (value == null || value.isNull() || value.asText().isBlank()) {
+            return defaultValue;
+        }
+        return Enum.valueOf(type, value.asText().trim().toUpperCase(Locale.ROOT));
+    }
+
+    /**
+     * Render either an ordered message array or a complete structured chat context
+     * through the tokenizer/model-owned MiniJinja template engine.
+     */
+    public String renderChatPrompt(String messagesOrContextJson,
+                                   boolean addGenerationPrompt) throws IOException {
+        if (messagesOrContextJson == null || messagesOrContextJson.isBlank()) {
+            throw new IllegalArgumentException("chat messages/context JSON must not be blank");
+        }
+        JsonNode input = MAPPER.readTree(messagesOrContextJson);
+        ObjectNode context;
+        if (input.isArray()) {
+            context = MAPPER.createObjectNode();
+            context.set("messages", input);
+        } else if (input.isObject()) {
+            context = ((ObjectNode) input).deepCopy();
+        } else {
+            throw new IllegalArgumentException("chat input must be a JSON message array or context object");
+        }
+        context.put("add_generation_prompt", addGenerationPrompt);
+        return tokenizer.applyChatTemplateContext(context.toString());
     }
 
     public int[] tokenize(String text, boolean addSpecialTokens) {

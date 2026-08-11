@@ -424,6 +424,8 @@ void* DataBuffer::primaryAtOffset(const LongType offset) {
 
 #define PRIMARYOFFSET(T) template void* DataBuffer::primaryAtOffset<GET_SECOND(T)>(const LongType offset);
 ITERATE_LIST((SD_COMMON_TYPES),PRIMARYOFFSET)
+template void* DataBuffer::primaryAtOffset<float8>(const LongType offset);
+template void* DataBuffer::primaryAtOffset<float8_e5m2>(const LongType offset);
 
 template <typename T>
 void* DataBuffer::specialAtOffset(const LongType offset) {
@@ -435,6 +437,8 @@ void* DataBuffer::specialAtOffset(const LongType offset) {
 
 #define SPECIALOFFSET(T) template void* DataBuffer::specialAtOffset<GET_SECOND(T)>(const LongType offset);
 ITERATE_LIST((SD_COMMON_TYPES),SPECIALOFFSET)
+template void* DataBuffer::specialAtOffset<float8>(const LongType offset);
+template void* DataBuffer::specialAtOffset<float8_e5m2>(const LongType offset);
 
 void DataBuffer::waitForSpecialWriteEvent(void* stream) const {
   // No write events on CPU

@@ -63,7 +63,7 @@ Passes execute in the order listed. Ordering matters — fusion passes depend on
 | Pass | What it does |
 |---|---|
 | `RematerializationOptimizations` | Duplicate cheap ops to shorten live ranges |
-| `QuantizationOptimizations` | Redundant cast removal, FP16 weight pre-casting |
+| `QuantizationOptimizations` | Redundant cast removal and configurable low-precision weight storage (FP16 by default) |
 | `CuDNNFunctionOptimizations` | Route patterns to cuDNN-backed ops |
 
 ### Integration with DSP
@@ -80,7 +80,11 @@ The optimizer runs during `DynamicShapePlanCompiler.compile()` before the DAG is
 | `nd4j.optimizer.enabled` | `true` | Enable/disable optimizer |
 | `nd4j.optimizer.maxIterations` | `3` | Fixed-point iteration limit |
 | `nd4j.optimizer.skip` | (none) | Comma-separated pass names to skip |
-| `nd4j.optimizer.fp16` | `false` | FP16 weight pre-casting |
+| `nd4j.optimizer.weightDtype` | `fp16` | Weight storage policy: `fp32`, `fp16`, `bf16`, `fp8`, `fp8_e5m2`, `int8`, or `int4` |
+| `nd4j.optimizer.fp16` | `true` | Legacy compatibility flag used only when `weightDtype` is unset; `false` selects FP32 |
+| `nd4j.optimizer.bf16` | `false` | Legacy compatibility flag used only when `weightDtype` is unset |
+
+INT8 and INT4 are packed execution policies rather than dense integer casts. They require an importer such as GGUF to preserve compatible quantized weights and attach quantized-matmul metadata. The optimizer rejects eligible dense FP32 weights under these policies instead of silently changing representation or precision.
 
 ## Consequences
 

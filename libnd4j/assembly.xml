@@ -32,9 +32,11 @@
             <useDefaultExcludes>true</useDefaultExcludes>
             <excludes>
                 <exclude>**/target/**</exclude>
+                <!-- Root build/ contains generated mobile/native worktrees, not release inputs. -->
+                <exclude>build/**</exclude>
                 <!-- Atomic writers create short-lived <name>.tmp.<pid>.<nonce> files.
                      Exclude them so the archiver cannot race a rename after scanning. -->
-                <exclude>**/*.tmp.*</exclude>
+                <exclude>**/*.tmp*</exclude>
                 <!-- Compiler scratch files are created and removed while the archive is scanned. -->
                 <exclude>**/compiler_tmp/**</exclude>
                 <exclude>**/CMakeFiles/**</exclude>

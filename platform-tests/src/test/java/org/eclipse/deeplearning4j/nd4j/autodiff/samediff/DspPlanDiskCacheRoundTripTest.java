@@ -60,7 +60,7 @@ public class DspPlanDiskCacheRoundTripTest {
 
     // DynamicShapePlan.DSP_MAGIC ("DSP1") + current version, little-endian.
     private static final int DSP_MAGIC = 0x44535031;
-    private static final int DSP_VERSION = 5;
+    private static final int DSP_VERSION = 7;
 
     /** Minimal byte payload that passes DynamicShapePlan.isValidSerializedPlan(). */
     private static byte[] fakePlanBytes() {

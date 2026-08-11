@@ -52,6 +52,8 @@ struct ModeContract {
   bool isSlotBySlot = false;
   bool isShapeInferenceOnly = false;
   bool forcesSyncOnFrozen = false;
+  bool requiresShapePrePass = false;
+  bool requiresSuccessfulShapePrePass = false;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Factory
@@ -123,9 +125,9 @@ struct ModeContract {
         return c;
 
       case 9: // GEM_HIP_GRAPHS
-        // Routed through getGpuGraphBackend() to HipGraphBackend (like TPU/
-        // Hexagon/Triton), which captures islands during compileSegment() —
-        // so the mode needs the JIT-backend dispatch path, unlike
+        // HipGraphBackend participates in the same resolver and lowering
+        // lifecycle as TPU/Hexagon/Triton. It captures islands in its backend
+        // implementation, unlike
         // GEM_CUDA_GRAPHS whose capture lives in the replay-handle machinery.
         c.requiresCompilation = true;
         c.needsJitBackend = true;
@@ -139,10 +141,16 @@ struct ModeContract {
         return c;
 
       case 10: // GEM_LEVELZERO
-      case 11: // GEM_VULKAN
       case 12: // GEM_METAL
         c.usesGraphCapture = true;
         c.allowsFrozenFastPath = true;
+        return c;
+
+      case 11: // GEM_VULKAN
+        c.usesGraphCapture = true;
+        c.allowsFrozenFastPath = true;
+        c.requiresShapePrePass = true;
+        c.requiresSuccessfulShapePrePass = true;
         return c;
 
       case 6:  // GEM_MLX

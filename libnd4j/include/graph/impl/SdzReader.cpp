@@ -25,8 +25,16 @@
 #include <cstring>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
+
+#if !defined(_WIN32)
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 #ifdef HAVE_ZLIB
 #include <zlib.h>
@@ -61,6 +69,13 @@
 
 namespace {
 
+struct ByteView {
+  const uint8_t* bytes = nullptr;
+  size_t length = 0;
+  const uint8_t* data() const { return bytes; }
+  size_t size() const { return length; }
+};
+
 bool endsWithIgnoreCase(const std::string& value, const char* suffix) {
   const size_t suffixLen = std::strlen(suffix);
   if (value.size() < suffixLen) return false;
@@ -83,8 +98,8 @@ bool hasSdnbMagic(const uint8_t* data, size_t size) {
   return size >= 4 && std::memcmp(data, kSdnbMagic, 4) == 0;
 }
 
-template <typename T>
-bool readPod(const std::vector<uint8_t>& data, size_t offset, T* out) {
+template <typename Container, typename T>
+bool readPod(const Container& data, size_t offset, T* out) {
   if (offset + sizeof(T) > data.size()) return false;
   std::memcpy(out, data.data() + offset, sizeof(T));
   return true;
@@ -94,7 +109,8 @@ bool readPod(const std::vector<uint8_t>& data, size_t offset, T* out) {
 // central-directory entry. Per APPNOTE 4.5.3, only the fields saturated at
 // 0xFFFFFFFF (or 0xFFFF for diskStart) in the fixed record are present, in
 // the fixed order: uncompressed size, compressed size, local header offset.
-bool parseZip64ExtraField(const std::vector<uint8_t>& data, size_t extraOffset, uint16_t extraLen,
+template <typename Container>
+bool parseZip64ExtraField(const Container& data, size_t extraOffset, uint16_t extraLen,
                           uint32_t rawUncompressed, uint32_t rawCompressed, uint32_t rawLocalOffset,
                           uint64_t* uncompressedSize, uint64_t* compressedSize,
                           uint64_t* localHeaderOffset) {
@@ -253,13 +269,37 @@ struct Zip64EndOfCentralDir {
 SdzReader::~SdzReader() = default;
 
 SdzReader* SdzReader::openFile(const char* zipPath) {
+#if !defined(_WIN32)
+  const int fd = ::open(zipPath, O_RDONLY | O_CLOEXEC);
+  if (fd < 0) {
+    DSP_DIAG(COMPILE, "SdzReader: cannot open %s", zipPath);
+    return nullptr;
+  }
+  struct stat st {};
+  if (::fstat(fd, &st) != 0 || st.st_size <= 0) {
+    ::close(fd);
+    DSP_DIAG(COMPILE, "SdzReader: cannot stat %s", zipPath);
+    return nullptr;
+  }
+  const size_t fileSize = static_cast<size_t>(st.st_size);
+  void* mapping = ::mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
+  ::close(fd);
+  if (mapping == MAP_FAILED) {
+    DSP_DIAG(COMPILE, "SdzReader: mmap failed for %s", zipPath);
+    return nullptr;
+  }
+  std::shared_ptr<void> fileOwner(mapping, [fileSize](void* ptr) {
+    if (ptr != nullptr) ::munmap(ptr, fileSize);
+  });
+  ByteView fileData{static_cast<const uint8_t*>(mapping), fileSize};
+#else
   std::ifstream file(zipPath, std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
     DSP_DIAG(COMPILE, "SdzReader: cannot open %s", zipPath);
     return nullptr;
   }
 
-  const auto fileSize = static_cast<size_t>(file.tellg());
+  const size_t fileSize = static_cast<size_t>(file.tellg());
   file.seekg(0, std::ios::beg);
 
   if (fileSize < sizeof(ZipEndOfCentralDir)) {
@@ -267,9 +307,13 @@ SdzReader* SdzReader::openFile(const char* zipPath) {
     return nullptr;
   }
 
-  std::vector<uint8_t> fileData(fileSize);
-  file.read(reinterpret_cast<char*>(fileData.data()), fileSize);
+  auto fileBytes = std::make_shared<std::vector<uint8_t>>(fileSize);
+  file.read(reinterpret_cast<char*>(fileBytes->data()),
+            static_cast<std::streamsize>(fileSize));
   file.close();
+  std::shared_ptr<void> fileOwner = fileBytes;
+  ByteView fileData{fileBytes->data(), fileBytes->size()};
+#endif
 
   // ZIP comment can be up to 65535 bytes; EOCD must be within that trailing window.
   const size_t maxCommentLen = 0xFFFF;
@@ -403,27 +447,27 @@ SdzReader* SdzReader::openFile(const char* zipPath) {
           }
 
           if (nameMatchesSdnb || magicMatchesSdnb || (!nameMatchesSdnb && entry.compression != 0)) {
-            std::vector<uint8_t> entryData;
+            SdnbEntry indexedEntry;
+            indexedEntry.filename = filename;
+            indexedEntry.compression = entry.compression;
             bool extracted = false;
 
             if (entry.compression == 0) {
-              // STORED (no compression)
-              entryData.assign(fileData.data() + dataOffset,
-                               fileData.data() + dataOffset + compressedSize);
+              // STORED entries borrow directly from the read-only archive map.
+              indexedEntry.data = fileData.data() + dataOffset;
+              indexedEntry.size = compressedSize;
+              indexedEntry.fileBacked = true;
+              indexedEntry.backingOwner = fileOwner;
               extracted = true;
             } else if (entry.compression == 8) {
-#ifdef HAVE_ZLIB
-              std::string inflateError;
-              extracted = inflateDeflateRaw(fileData.data() + dataOffset, compressedSize,
-                                            uncompressedSize, &entryData, &inflateError);
-              if (!extracted) {
-                DSP_DIAG(COMPILE, "SdzReader: failed to inflate '%s': %s", filename.c_str(),
-                         inflateError.c_str());
-              }
-#else
-              DSP_DIAG(COMPILE, "SdzReader: deflated entry '%s' requires zlib support (HAVE_ZLIB)",
-                       filename.c_str());
-#endif
+              // Index compressed model shards without inflating them. Strict
+              // callers can reject them before allocating uncompressed bytes;
+              // compatibility callers inflate lazily in load().
+              indexedEntry.data = fileData.data() + dataOffset;
+              indexedEntry.size = compressedSize;
+              indexedEntry.uncompressedSize = uncompressedSize;
+              indexedEntry.backingOwner = fileOwner;
+              extracted = nameMatchesSdnb || filename == "model";
             } else {
               DSP_DIAG(COMPILE, "SdzReader: unsupported ZIP compression method %u for '%s'",
                        static_cast<unsigned>(entry.compression), filename.c_str());
@@ -431,8 +475,10 @@ SdzReader* SdzReader::openFile(const char* zipPath) {
 
             if (extracted) {
               // Final check: verify SDNB magic if we weren't sure by filename
-              if (nameMatchesSdnb || hasSdnbMagic(entryData.data(), entryData.size())) {
-                reader->sdnbEntries_.emplace_back(filename, std::move(entryData));
+              if (nameMatchesSdnb || filename == "model" ||
+                  hasSdnbMagic(indexedEntry.data, indexedEntry.size)) {
+                reader->sdnbEntries_.push_back(std::move(indexedEntry));
+                auto& stored = reader->sdnbEntries_.back();
               }
             }
           }
@@ -623,20 +669,57 @@ bool SdzReader::extractArchive(const char* zipPath, const char* destDir, std::st
 #endif  // SDZ_HAS_FILESYSTEM
 }
 
-SdnbReader::LoadedModel SdzReader::load() const {
+SdnbReader::LoadedModel SdzReader::load(bool inferenceOnly,
+                                        bool requireFileBacked) const {
   SdnbReader::LoadedModel combined;
 
-  for (auto& entry : sdnbEntries_) {
-    auto* sdnb = SdnbReader::open(entry.second.data(), entry.second.size());
+  for (const auto& entry : sdnbEntries_) {
+    if (requireFileBacked && !entry.fileBacked) {
+      DSP_DIAG(COMPILE,
+               "SdzReader: strict file-backed load rejected compressed SDNB "
+               "entry '%s'",
+               entry.filename.c_str());
+      combined.graph = nullptr;
+      return combined;
+    }
+
+    const uint8_t* entryData = entry.data;
+    size_t entrySize = entry.size;
+    std::shared_ptr<void> owner = entry.backingOwner;
+    if (entry.compression == 8) {
+#ifdef HAVE_ZLIB
+      auto inflated = std::make_shared<std::vector<uint8_t>>();
+      std::string inflateError;
+      if (!inflateDeflateRaw(entry.data, entry.size, entry.uncompressedSize,
+                             inflated.get(), &inflateError)) {
+        DSP_DIAG(COMPILE, "SdzReader: failed to inflate '%s': %s",
+                 entry.filename.c_str(), inflateError.c_str());
+        continue;
+      }
+      entryData = inflated->data();
+      entrySize = inflated->size();
+      owner = inflated;
+#else
+      DSP_DIAG(COMPILE,
+               "SdzReader: deflated entry '%s' requires zlib support",
+               entry.filename.c_str());
+      continue;
+#endif
+    }
+    auto* sdnb = SdnbReader::openOwned(entryData, entrySize, owner,
+                                       entry.fileBacked);
     if (!sdnb) {
-      DSP_DIAG(COMPILE, "SdzReader: failed to parse SDNB entry '%s'", entry.first.c_str());
+      DSP_DIAG(COMPILE, "SdzReader: failed to parse SDNB entry '%s'",
+               entry.filename.c_str());
       continue;
     }
 
-    auto model = sdnb->loadAll();
+    auto model = sdnb->loadAllOwned(inferenceOnly, requireFileBacked);
 
     // Merge variables
     for (auto& pair : model.variables) {
+      auto existing = combined.variables.find(pair.first);
+      if (existing != combined.variables.end()) delete existing->second;
       combined.variables[pair.first] = pair.second;
       pair.second = nullptr;  // Transfer ownership
     }
@@ -646,9 +729,24 @@ SdnbReader::LoadedModel SdzReader::load() const {
       combined.placeholderNames.push_back(ph);
     }
 
-    // Use the graph from the first SDNB entry
-    if (!combined.graph) {
+    // Variable-only shards also contain a valid FlatGraph envelope, but no
+    // executable nodes. Archive entry order is not a format guarantee, so retain
+    // the first graph-bearing shard instead of blindly retaining the first shard.
+    const bool combinedHasNodes =
+        combined.graph != nullptr && combined.graph->nodes() != nullptr &&
+        combined.graph->nodes()->size() > 0;
+    const bool modelHasNodes =
+        model.graph != nullptr && model.graph->nodes() != nullptr &&
+        model.graph->nodes()->size() > 0;
+    if (combined.graph == nullptr || (!combinedHasNodes && modelHasNodes)) {
       combined.graph = model.graph;
+    }
+
+    combined.fileBackedBytes += model.fileBackedBytes;
+    combined.heapOwnedBytes += model.heapOwnedBytes;
+    combined.largeHeapOwnedBytes += model.largeHeapOwnedBytes;
+    for (auto& backing : model.backingOwners) {
+      combined.backingOwners.push_back(std::move(backing));
     }
 
     delete sdnb;

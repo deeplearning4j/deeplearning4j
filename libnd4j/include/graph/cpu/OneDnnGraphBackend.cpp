@@ -107,6 +107,18 @@ bool OneDnnGraphBackend::isAvailable() const {
   return sd::ops::platforms::onednn::OnednnVersionProvider::hasGraphApi();
 }
 
+bool OneDnnGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_AUTO ||
+         request.executionMode == GraphExecutionMode::GEM_PORTABLE_REPLAY;
+}
+
+int OneDnnGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  (void)request;
+  return 500;
+}
+
 // ─── Op kind mapping ────────────────────────────────────────────────────────
 //
 // STRICT mapping: only ops that oneDNN Graph API can genuinely compile and

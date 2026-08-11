@@ -103,7 +103,7 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
 
     // Create ARM tensors for inputs
     std::vector<Arm_Tensor> inputTensors(numOfNonEmptyArrs);
-    std::vector<arm_compute::ITensor*> inputTensorPtrs(numOfNonEmptyArrs);
+    std::vector<const arm_compute::ITensor*> inputTensorPtrs(numOfNonEmptyArrs);
     std::vector<NDArray*> inputNdsForCopy;
 
     for (int i = 0; i < numOfNonEmptyArrs; ++i) {

@@ -21,10 +21,12 @@
 
 package org.eclipse.deeplearning4j.ggml;
 
+import org.eclipse.deeplearning4j.pipeline.PipelineLoader;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.common.config.ND4JInferenceWeightDataType;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -115,6 +117,93 @@ class QLoRAConversionOptionsTest {
         assertTrue(opts.isRuntimeQuantizedMatmul());
         assertFalse(opts.isForTraining(),
                 "runtimeQuantizedMatmul() is the inference preset; forTraining must be false");
+    }
+
+    @Test
+    @DisplayName("inference weight dtype policies map to explicit conversion modes")
+    void testInferenceWeightDataTypePolicies() {
+        assertInferencePolicy(ND4JInferenceWeightDataType.FLOAT32,
+                ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT32, DataType.FLOAT, false);
+        assertInferencePolicy(ND4JInferenceWeightDataType.FLOAT16,
+                ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16, DataType.HALF, false);
+        assertInferencePolicy(ND4JInferenceWeightDataType.BFLOAT16,
+                ConversionOptions.QuantizationMode.DEQUANTIZE_TO_BFLOAT16, DataType.BFLOAT16, false);
+        assertInferencePolicy(ND4JInferenceWeightDataType.FLOAT8_E4M3,
+                ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT8_E4M3, DataType.FLOAT8, false);
+        assertInferencePolicy(ND4JInferenceWeightDataType.FLOAT8_E5M2,
+                ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT8_E5M2, DataType.FLOAT8_E5M2, false);
+        assertInferencePolicy(ND4JInferenceWeightDataType.INT8,
+                ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_INT8, DataType.HALF, true);
+        assertInferencePolicy(ND4JInferenceWeightDataType.INT4,
+                ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_INT4, DataType.HALF, true);
+    }
+
+    private static void assertInferencePolicy(ND4JInferenceWeightDataType weightType,
+                                              ConversionOptions.QuantizationMode expectedMode,
+                                              DataType expectedTargetType,
+                                              boolean runtimeQuantized) {
+        ConversionOptions options = ConversionOptions.forInference(weightType);
+        assertEquals(expectedMode, options.getQuantizationMode());
+        assertEquals(expectedTargetType, options.getTargetDataType());
+        assertEquals(runtimeQuantized, options.isRuntimeQuantizedMatmul());
+        assertFalse(options.isForTraining());
+    }
+
+    @Test
+    @DisplayName("load configuration defaults to FP16 and keeps dtype controls consistent")
+    void testPipelineLoadConfigWeightDataTypes() throws IOException {
+        String previousWeightDtype = System.getProperty("nd4j.optimizer.weightDtype");
+        String previousFp16 = System.getProperty("nd4j.optimizer.fp16");
+        String previousBf16 = System.getProperty("nd4j.optimizer.bf16");
+        try {
+            System.clearProperty("nd4j.optimizer.weightDtype");
+            System.clearProperty("nd4j.optimizer.fp16");
+            System.clearProperty("nd4j.optimizer.bf16");
+
+            PipelineLoader.LoadConfig defaults = PipelineLoader.LoadConfig.defaults();
+            assertEquals("fp16", defaults.getDataType());
+            assertFalse(defaults.convertToFloat32());
+
+            PipelineLoader.LoadConfig fp8 = PipelineLoader.LoadConfig.builder()
+                    .dataType("float8_e4m3")
+                    .build();
+            assertEquals("fp8", fp8.getDataType());
+            assertFalse(fp8.convertToFloat32());
+            assertEquals(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT8_E4M3,
+                    GGMLPipelineLoader.conversionOptions(fp8).getQuantizationMode());
+
+            PipelineLoader.LoadConfig int4 = PipelineLoader.LoadConfig.builder()
+                    .dataType("q4_k")
+                    .build();
+            assertEquals("int4", int4.getDataType());
+            assertEquals(ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_INT4,
+                    GGMLPipelineLoader.conversionOptions(int4).getQuantizationMode());
+
+            PipelineLoader.LoadConfig fp32 = PipelineLoader.LoadConfig.builder()
+                    .convertToFloat32(true)
+                    .build();
+            assertEquals("fp32", fp32.getDataType());
+            assertTrue(fp32.convertToFloat32());
+        } finally {
+            restoreProperty("nd4j.optimizer.weightDtype", previousWeightDtype);
+            restoreProperty("nd4j.optimizer.fp16", previousFp16);
+            restoreProperty("nd4j.optimizer.bf16", previousBf16);
+        }
+    }
+
+    @Test
+    @DisplayName("weight dtype parser supports aliases and rejects unknown values")
+    void testWeightDataTypeAliases() {
+        assertEquals(ND4JInferenceWeightDataType.FLOAT16,
+                ND4JInferenceWeightDataType.fromString("half"));
+        assertEquals(ND4JInferenceWeightDataType.FLOAT8_E5M2,
+                ND4JInferenceWeightDataType.fromString("fp8-e5m2"));
+        assertEquals(ND4JInferenceWeightDataType.INT8,
+                ND4JInferenceWeightDataType.fromString("q8_0"));
+        assertEquals(ND4JInferenceWeightDataType.INT4,
+                ND4JInferenceWeightDataType.fromString("q4-k"));
+        assertThrows(IllegalArgumentException.class,
+                () -> ND4JInferenceWeightDataType.fromString("automatic"));
     }
 
     // =========================================================================
@@ -324,28 +413,80 @@ class QLoRAConversionOptionsTest {
     }
 
     // =========================================================================
-    // Contrast: forInference dequantizes Q8_0 to FP32 (not INT8)
+    // Inference storage policies
     // =========================================================================
 
     @Test
-    @DisplayName("forInference: Q8_0 weight is dequantized (NOT INT8) — contrast with forTrainingQuantized")
-    void testQ8_0WeightDequantizedWithForInference() throws IOException, GGMLImportException {
+    @DisplayName("forInference: FP16 is a dense dequantized weight")
+    void testQ8_0WeightDequantizedToFp16ForInference() throws IOException, GGMLImportException {
         File gguf = createTinyQ8_0GGUFFile();
 
-        ConversionOptions opts = ConversionOptions.forInference(); // DEQUANTIZE_TO_FLOAT32
+        ConversionOptions opts = ConversionOptions.forInference(ND4JInferenceWeightDataType.FLOAT16);
         SameDiff sd = GGMLModelImport.importModel(gguf, opts);
-        assertNotNull(sd);
+        INDArray weightArr = sd.getVariable("blk_0_attn_q_weight").getArr();
 
-        SDVariable weightVar = sd.getVariable("blk_0_attn_q_weight");
-        assertNotNull(weightVar, "Weight variable must exist even when dequantized");
-
-        INDArray weightArr = weightVar.getArr();
-        assertNotNull(weightArr);
-        // forInference dequantizes to FP32 — must NOT be INT8
-        assertNotEquals(DataType.INT8, weightArr.dataType(),
-                "forInference() must dequantize Q8_0 — should be FP32, not INT8");
-        // Shape should be [32,32] after dequantization (from GGUF [32,32] reversed to [32,32])
+        assertEquals(DataType.HALF, weightArr.dataType());
         assertArrayEquals(new long[]{32L, 32L}, weightArr.shape(),
                 "Dequantized weight must have the logical tensor shape, not raw byte shape");
+    }
+
+    @Test
+    @DisplayName("forInference: FP8 stores dense FP8 weights")
+    void testQ8_0WeightDequantizedToFp8ForInference() throws IOException, GGMLImportException {
+        File gguf = createTinyQ8_0GGUFFile();
+
+        ConversionOptions opts = ConversionOptions.forInference(ND4JInferenceWeightDataType.FLOAT8_E4M3);
+        SameDiff sd = GGMLModelImport.importModel(gguf, opts);
+        INDArray weightArr = sd.getVariable("blk_0_attn_q_weight").getArr();
+
+        assertEquals(DataType.FLOAT8, weightArr.dataType());
+        assertArrayEquals(new long[]{32L, 32L}, weightArr.shape());
+    }
+
+    @Test
+    @DisplayName("forInference: FP8 E5M2 stores dense FP8 weights")
+    void testQ8_0WeightDequantizedToFp8E5M2ForInference() throws IOException, GGMLImportException {
+        File gguf = createTinyQ8_0GGUFFile();
+
+        ConversionOptions opts = ConversionOptions.forInference(ND4JInferenceWeightDataType.FLOAT8_E5M2);
+        SameDiff sd = GGMLModelImport.importModel(gguf, opts);
+        INDArray weightArr = sd.getVariable("blk_0_attn_q_weight").getArr();
+
+        assertEquals(DataType.FLOAT8_E5M2, weightArr.dataType());
+        assertArrayEquals(new long[]{32L, 32L}, weightArr.shape());
+    }
+
+    @Test
+    @DisplayName("forInference: INT8 keeps compatible Q8_0 linear weights packed")
+    void testQ8_0WeightRemainsPackedForInt8Inference() throws IOException, GGMLImportException {
+        File gguf = createTinyQ8_0GGUFFile();
+
+        ConversionOptions opts = ConversionOptions.forInference(ND4JInferenceWeightDataType.INT8);
+        SameDiff sd = GGMLModelImport.importModel(gguf, opts);
+        INDArray weightArr = sd.getVariable("blk_0_attn_q_weight").getArr();
+
+        assertEquals(DataType.INT8, weightArr.dataType());
+        assertEquals(1088L, weightArr.length());
+        assertNotNull(sd.getVariable("blk_0_attn_q_weight___q__"));
+    }
+
+    @Test
+    @DisplayName("forInference: INT4 rejects a Q8_0 linear weight instead of dequantizing it")
+    void testInt4RejectsIncompatibleQ8_0Weight() throws IOException {
+        File gguf = createTinyQ8_0GGUFFile();
+        ConversionOptions opts = ConversionOptions.forInference(ND4JInferenceWeightDataType.INT4);
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
+                () -> GGMLModelImport.importModel(gguf, opts));
+        assertTrue(exception.getMessage().contains("unsupported GGUF type"));
+        assertTrue(exception.getMessage().contains("GGML_TYPE_Q8_0"));
+    }
+
+    private static void restoreProperty(String name, String previousValue) {
+        if (previousValue == null) {
+            System.clearProperty(name);
+        } else {
+            System.setProperty(name, previousValue);
+        }
     }
 }

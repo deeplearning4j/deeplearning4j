@@ -285,6 +285,19 @@
                 </dependency>
             </dependencies>
         </profile>
+
+        <!-- Keep this cross profile after host defaults so the requested platform
+             remains stable when Maven also activates the current host profile. -->
+        <profile>
+            <id>android-arm64</id>
+            <properties>
+                <!-- The preset contributes Java metadata to the Android wrapper;
+                     tokenizers-native owns the only JNI compilation in this reactor. -->
+                <javacpp.platform>android-arm64</javacpp.platform>
+                <javacpp.parser.skip>true</javacpp.parser.skip>
+                <javacpp.compiler.skip>true</javacpp.compiler.skip>
+            </properties>
+        </profile>
     </profiles>
 
 </project>

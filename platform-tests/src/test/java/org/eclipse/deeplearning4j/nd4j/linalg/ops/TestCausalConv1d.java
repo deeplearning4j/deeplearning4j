@@ -461,6 +461,61 @@ public class TestCausalConv1d {
     }
 
     @Test
+    public void testFloatActivationWithHalfWeightsMatchesFloatWeights() {
+        int B = 1, L = 3, D = 2, K = 2;
+        INDArray xFloat = Nd4j.createFromArray(new float[]{
+                1f, 2f,
+                3f, 4f,
+                5f, 6f
+        }).reshape(B, L, D);
+        INDArray weightFloat = Nd4j.createFromArray(new float[]{
+                0.5f, 1f,
+                -0.25f, 0.75f
+        }).reshape(D, K);
+        INDArray biasFloat = Nd4j.createFromArray(new float[]{0.125f, -0.5f});
+        INDArray stateFloat = Nd4j.createFromArray(new float[]{0.25f, -0.75f})
+                .reshape(B, D, K - 1);
+        INDArray actualLength = Nd4j.scalar(DataType.INT64, L);
+
+        INDArray[] expectedFloat = Nd4j.exec(new CausalConv1d(
+                xFloat, weightFloat, biasFloat, stateFloat, actualLength, 0, 0));
+        INDArray[] actualFloat = Nd4j.exec(new CausalConv1d(
+                xFloat, weightFloat.castTo(DataType.HALF), biasFloat,
+                stateFloat.castTo(DataType.HALF), actualLength, 0, 0));
+
+        assertEquals(DataType.FLOAT, actualFloat[0].dataType());
+        assertEquals(DataType.HALF, actualFloat[1].dataType());
+        for (long i = 0; i < expectedFloat[0].length(); i++) {
+            assertEquals(expectedFloat[0].getFloat(i), actualFloat[0].getFloat(i), 1e-5f,
+                    "FLOAT activation with HALF weight/state output mismatch at flat index " + i);
+        }
+        for (long i = 0; i < expectedFloat[1].length(); i++) {
+            assertEquals(expectedFloat[1].getFloat(i), actualFloat[1].getFloat(i), 1e-5f,
+                    "FLOAT activation with HALF weight/state update mismatch at flat index " + i);
+        }
+
+        INDArray xHalf = xFloat.castTo(DataType.HALF);
+        INDArray weightHalf = weightFloat.castTo(DataType.HALF);
+        INDArray biasHalf = biasFloat.castTo(DataType.HALF);
+        INDArray[] expectedHalf = Nd4j.exec(new CausalConv1d(
+                xHalf, weightHalf, biasHalf, stateFloat.castTo(DataType.HALF),
+                actualLength, 0, 0));
+        INDArray[] actualHalf = Nd4j.exec(new CausalConv1d(
+                xHalf, weightHalf, biasHalf, stateFloat, actualLength, 0, 0));
+
+        assertEquals(DataType.HALF, actualHalf[0].dataType());
+        assertEquals(DataType.FLOAT, actualHalf[1].dataType());
+        for (long i = 0; i < expectedHalf[0].length(); i++) {
+            assertEquals(expectedHalf[0].getFloat(i), actualHalf[0].getFloat(i), 1e-3f,
+                    "HALF activation with FLOAT state output mismatch at flat index " + i);
+        }
+        for (long i = 0; i < expectedHalf[1].length(); i++) {
+            assertEquals(expectedHalf[1].getFloat(i), actualHalf[1].getFloat(i), 1e-3f,
+                    "HALF activation with FLOAT state update mismatch at flat index " + i);
+        }
+    }
+
+    @Test
     public void testActualLengthStopsStateUpdate() {
         int B = 1, L = 5, D = 2, K = 3;
         INDArray x = Nd4j.createFromArray(new float[]{

@@ -50,6 +50,7 @@
         <sdx.android.variant>vulkan</sdx.android.variant>
         <android.api>24</android.api>
         <sdx.model.jar>${project.basedir}/../nd4j-sdx-model/target/nd4j-sdx-model-${project.version}.jar</sdx.model.jar>
+        <sdx.preset.jar>${project.basedir}/../nd4j-sdx-preset/target/nd4j-sdx-preset-${project.version}.jar</sdx.preset.jar>
     </properties>
 
     <dependencies>
@@ -73,6 +74,33 @@
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-sdx-model</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <!-- Desktop execution-gate dependencies. The large model test is property-gated. -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-llm</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-ggml</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${project.version}</version>
+            <classifier>linux-x86_64</classifier>
+            <scope>test</scope>
         </dependency>
         <!--
             Surefire 3.3.0 uses JUnit Platform APIs newer than the repository's
@@ -259,6 +287,7 @@
                 <sdx.android.native.aar>${libnd4j.outputPath}/sdx-runtime-sdk/dist/sdx-runtime-android-arm64-${sdx.android.variant}.aar</sdx.android.native.aar>
                 <tokenizers.android.module>${project.basedir}/../../../nd4j-tokenizers/tokenizers-native</tokenizers.android.module>
                 <tokenizers.android.base.jar>${tokenizers.android.module}/target/tokenizers-native-${project.version}.jar</tokenizers.android.base.jar>
+                <tokenizers.android.preset.jar>${tokenizers.android.module}/../tokenizers-native-preset/target/tokenizers-native-preset-${project.version}.jar</tokenizers.android.preset.jar>
                 <tokenizers.android.native.jar>${tokenizers.android.module}/target/tokenizers-native-${project.version}-android-arm64.jar</tokenizers.android.native.jar>
                 <sdx.android.aar.stage>${project.build.directory}/android-aar-${sdx.android.variant}</sdx.android.aar.stage>
                 <sdx.android.aar.output>${project.build.directory}/sdx-runtime-${project.version}-android-arm64-${sdx.android.variant}.aar</sdx.android.aar.output>
@@ -288,6 +317,11 @@
                                                 <not><available file="${tokenizers.android.base.jar}"/></not>
                                             </condition>
                                         </fail>
+                                        <fail message="Tokenizer JavaCPP preset JAR not found: ${tokenizers.android.preset.jar}">
+                                            <condition>
+                                                <not><available file="${tokenizers.android.preset.jar}"/></not>
+                                            </condition>
+                                        </fail>
                                         <fail message="Android tokenizers-native classifier not found: ${tokenizers.android.native.jar}">
                                             <condition>
                                                 <not><available file="${tokenizers.android.native.jar}"/></not>
@@ -297,6 +331,11 @@
                                         <fail message="Shared SDX model-cache JAR not found: ${sdx.model.jar}">
                                             <condition>
                                                 <not><available file="${sdx.model.jar}"/></not>
+                                            </condition>
+                                        </fail>
+                                        <fail message="SDX JavaCPP preset JAR not found: ${sdx.preset.jar}">
+                                            <condition>
+                                                <not><available file="${sdx.preset.jar}"/></not>
                                             </condition>
                                         </fail>
 
@@ -320,6 +359,12 @@
                                                 <exclude name="org/nd4j/dsp/runtime/SdxLlm*.class"/>
                                             </patternset>
                                         </unzip>
+                                        <unzip src="${sdx.preset.jar}"
+                                               dest="${sdx.android.aar.stage}/classes">
+                                            <patternset>
+                                                <include name="org/nd4j/dsp/runtime/presets/**/*.class"/>
+                                            </patternset>
+                                        </unzip>
                                         <unzip src="${sdx.model.jar}"
                                                dest="${sdx.android.aar.stage}/classes">
                                             <patternset>
@@ -330,6 +375,12 @@
                                                dest="${sdx.android.aar.stage}/classes">
                                             <patternset>
                                                 <include name="org/eclipse/deeplearning4j/tokenizers/**/*.class"/>
+                                            </patternset>
+                                        </unzip>
+                                        <unzip src="${tokenizers.android.preset.jar}"
+                                               dest="${sdx.android.aar.stage}/classes">
+                                            <patternset>
+                                                <include name="org/eclipse/deeplearning4j/tokenizers/presets/**/*.class"/>
                                             </patternset>
                                         </unzip>
                                         <zip destfile="${sdx.android.aar.stage}/root/classes.jar"

@@ -86,6 +86,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return createDouble(buffer.length(), init);
             case BFLOAT16:
                 return createBfloat16(buffer.length(), init);
+            case FLOAT8:
+                return new CudaFloat8DataBuffer(buffer.length(), init);
+            case FLOAT8_E5M2:
+                return new CudaFloat8E5M2DataBuffer(buffer.length(), init);
             case HALF:
                 return createHalf(buffer.length(), init);
             default:
@@ -111,6 +115,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return createDouble(buffer.length(), init, workspace);
             case BFLOAT16:
                 return createBfloat16(buffer.length(), init, workspace);
+            case FLOAT8:
+                return new CudaFloat8DataBuffer(buffer.length(), init, workspace);
+            case FLOAT8_E5M2:
+                return new CudaFloat8E5M2DataBuffer(buffer.length(), init, workspace);
             case HALF:
                 return createHalf(buffer.length(), init, workspace);
             default:
@@ -210,6 +218,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaBfloat16DataBuffer(length, initialize);
             case HALF:
                 return new CudaHalfDataBuffer(length, initialize);
+            case FLOAT8:
+                return new CudaFloat8DataBuffer(length, initialize);
+            case FLOAT8_E5M2:
+                return new CudaFloat8E5M2DataBuffer(length, initialize);
             case BOOL:
                 return new CudaBoolDataBuffer(length, initialize);
             case UTF8:
@@ -249,6 +261,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaHalfDataBuffer(length, initialize, workspace);
             case BFLOAT16:
                 return new CudaBfloat16DataBuffer(length, initialize, workspace);
+            case FLOAT8:
+                return new CudaFloat8DataBuffer(length, initialize, workspace);
+            case FLOAT8_E5M2:
+                return new CudaFloat8E5M2DataBuffer(length, initialize, workspace);
             case BOOL:
                 return new CudaBoolDataBuffer(length, initialize, workspace);
             default:
@@ -541,6 +557,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaHalfDataBuffer(pointer, indexer, length);
             case BFLOAT16:
                 return new CudaBfloat16DataBuffer(pointer, indexer, length);
+            case FLOAT8:
+                return new CudaFloat8DataBuffer(pointer, indexer, length);
+            case FLOAT8_E5M2:
+                return new CudaFloat8E5M2DataBuffer(pointer, indexer, length);
             case BOOL:
                 return new CudaBoolDataBuffer(pointer, indexer, length);
         }
@@ -575,6 +595,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaHalfDataBuffer(pointer, specialPointer, indexer, length);
             case BFLOAT16:
                 return new CudaBfloat16DataBuffer(pointer, specialPointer, indexer, length);
+            case FLOAT8:
+                return new CudaFloat8DataBuffer(pointer, specialPointer, indexer, length);
+            case FLOAT8_E5M2:
+                return new CudaFloat8E5M2DataBuffer(pointer, specialPointer, indexer, length);
             case BOOL:
                 return new CudaBoolDataBuffer(pointer, specialPointer, indexer, length);
         }
@@ -623,6 +647,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaHalfDataBuffer(underlyingBuffer, dataType, length);
             case BFLOAT16:
                 return new CudaBfloat16DataBuffer(underlyingBuffer, dataType, length);
+            case FLOAT8:
+                return new CudaFloat8DataBuffer(underlyingBuffer, dataType, length);
+            case FLOAT8_E5M2:
+                return new CudaFloat8E5M2DataBuffer(underlyingBuffer, dataType, length);
             case LONG:
                 return new CudaLongDataBuffer(underlyingBuffer, dataType, length);
             case INT:
@@ -659,6 +687,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaHalfDataBuffer(underlyingBuffer, dataType, length, true);
             case BFLOAT16:
                 return new CudaBfloat16DataBuffer(underlyingBuffer, dataType, length, true);
+            case FLOAT8:
+                return new CudaFloat8DataBuffer(underlyingBuffer, dataType, length, true);
+            case FLOAT8_E5M2:
+                return new CudaFloat8E5M2DataBuffer(underlyingBuffer, dataType, length, true);
             case LONG:
                 return new CudaLongDataBuffer(underlyingBuffer, dataType, length, true);
             case INT:

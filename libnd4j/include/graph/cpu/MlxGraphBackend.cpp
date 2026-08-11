@@ -78,6 +78,18 @@ bool MlxGraphBackend::isAvailable() const {
   return available_;
 }
 
+bool MlxGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_MLX ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO ||
+         request.executionMode == GraphExecutionMode::GEM_PORTABLE_REPLAY;
+}
+
+int MlxGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_MLX ? 1000 : 700;
+}
+
 bool MlxGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   if (end < start) return false;
   int segSize = end - start + 1;

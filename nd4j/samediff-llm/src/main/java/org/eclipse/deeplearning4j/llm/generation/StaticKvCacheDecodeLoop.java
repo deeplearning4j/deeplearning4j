@@ -283,12 +283,11 @@ public class StaticKvCacheDecodeLoop {
         log.info("  Decoder input names: {}", decoderInputNames);
 
         // Resolve stop tokens
-        int eosTokenId = tokenizer.getEosTokenId();
+        int eosTokenId = samplingConfig.getEosTokenId() >= 0
+                ? samplingConfig.getEosTokenId() : tokenizer.getEosTokenId();
         Set<Integer> stopTokenIds = new HashSet<>();
-        stopTokenIds.add(eosTokenId);
-        Integer endOfUtteranceTokenId = tokenizer.getTokenId("<end_of_utterance>");
-        if (endOfUtteranceTokenId != null) {
-            stopTokenIds.add(endOfUtteranceTokenId);
+        if (eosTokenId >= 0) {
+            stopTokenIds.add(eosTokenId);
         }
         if (additionalStopTokenIds != null) {
             stopTokenIds.addAll(additionalStopTokenIds);

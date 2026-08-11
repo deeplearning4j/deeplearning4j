@@ -21,6 +21,7 @@ export enum DType {
   QINT8 = 15,
   QINT16 = 16,
   BFLOAT16 = 17,
+  FLOAT8_E5M2 = 19,
   UTF8 = 50,
   UTF16 = 51,
   UTF32 = 52

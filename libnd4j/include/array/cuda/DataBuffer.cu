@@ -473,6 +473,8 @@ void* DataBuffer::specialAtOffset(const LongType offset) {
 // (ITERATE_LIST macro doesn't work with MSVC old preprocessor on Windows CUDA)
 template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<bool>(sd::LongType offset);
 template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<float16>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<float8>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<float8_e5m2>(sd::LongType offset);
 template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<bfloat16>(sd::LongType offset);
 template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<float>(sd::LongType offset);
 template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<double>(sd::LongType offset);
@@ -487,6 +489,8 @@ template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<uint64_t>(sd::LongType 
 
 template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<bool>(sd::LongType offset);
 template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<float16>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<float8>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<float8_e5m2>(sd::LongType offset);
 template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<bfloat16>(sd::LongType offset);
 template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<float>(sd::LongType offset);
 template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<double>(sd::LongType offset);

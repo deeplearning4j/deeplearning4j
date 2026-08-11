@@ -110,15 +110,18 @@ unzip -q "$AAR" -d "$TMP_DIR"
 
 NATIVE_DIR="$TMP_DIR/jni/arm64-v8a"
 BINDING_JSON="$TMP_DIR/binding.json"
+PROVIDER_JSON="$TMP_DIR/provider.json"
 CLASSES_JAR="$TMP_DIR/classes.jar"
 MAIN_LIBRARY="$NATIVE_DIR/lib$NATIVE_LIBRARY.so"
+JNI_SDX_LIBRARY="$NATIVE_DIR/libjnisdx.so"
 
 REQUIRED_FILES=(
     "$TMP_DIR/AndroidManifest.xml"
     "$BINDING_JSON"
+    "$PROVIDER_JSON"
     "$CLASSES_JAR"
     "$MAIN_LIBRARY"
-    "$NATIVE_DIR/libjnisdx.so"
+    "$JNI_SDX_LIBRARY"
     "$NATIVE_DIR/libjnitokenizers.so"
     "$NATIVE_DIR/libtokenizers_wrapper.so"
     "$NATIVE_DIR/libtokenizers_ffi.so"
@@ -130,14 +133,26 @@ for required_file in "${REQUIRED_FILES[@]}"; do
     fi
 done
 
-python3 - "$BINDING_JSON" "$VARIANT" "$NATIVE_LIBRARY" "$ACCELERATOR" \
+# The Java runtime facade and JavaCPP transport are one ABI unit. This exact
+# setter is used by Android before model loading; catching it here turns a
+# device-only UnsatisfiedLinkError into an actionable provider build failure.
+JNI_CACHE_DIRECTORY_SETTER="Java_org_nd4j_dsp_runtime_bindings_SdxNative_00024sdx_1model_1options_1t_device_1compilation_1cache_1directory"
+JNI_SDX_SYMBOLS="$("$READELF" --dyn-syms --wide "$JNI_SDX_LIBRARY")"
+if ! grep -Fq "$JNI_CACHE_DIRECTORY_SETTER" <<<"$JNI_SDX_SYMBOLS"; then
+    echo "SDX Java/native ABI mismatch: libjnisdx.so is missing the device compilation cache-directory setter" >&2
+    echo "Missing JNI symbol prefix: $JNI_CACHE_DIRECTORY_SETTER" >&2
+    exit 1
+fi
+
+python3 - "$BINDING_JSON" "$PROVIDER_JSON" "$VARIANT" "$NATIVE_LIBRARY" "$ACCELERATOR" \
            "$GPU_TARGET" "$DEVICE_READY" "$ADAPTER_NAME" <<'PY'
 import json
 import pathlib
 import sys
 
-path, variant, native_library, accelerator, gpu_target, device_ready, adapter_name = sys.argv[1:]
+path, provider_path, variant, native_library, accelerator, gpu_target, device_ready, adapter_name = sys.argv[1:]
 data = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+provider = json.loads(pathlib.Path(provider_path).read_text(encoding="utf-8"))
 
 assert data.get("formatVersion") == 1, data
 assert data.get("runtimeAbi") == 1, data
@@ -154,10 +169,45 @@ assert data.get("defaultGpuTarget") == gpu_target, data
 if gpu_target != "AUTO":
     assert gpu_target in data.get("supportedGpuTargets", []), data
 
+contracts = {
+    "vulkan": ("sdx.vulkan.v1", "sdx-vulkan-plan", "Android_Vulkan_1_1"),
+    "hexagon": ("sdx.hexagon-htp.v1", "sdx-htp-context", "SM8650"),
+    "tensor-g3": ("sdx.nnapi-tensor-g3.v1", "sdx-nnapi-plan", "Tensor_G3"),
+}
+assert variant in contracts, variant
+provider_id, artifact_format, target_soc = contracts[variant]
+platform_provider = data.get("platformProvider", {})
+assert platform_provider.get("id") == provider_id, platform_provider
+assert platform_provider.get("abiVersion") == 1, platform_provider
+assert platform_provider.get("artifactFormat") == artifact_format, platform_provider
+assert platform_provider.get("artifactFormatVersion") == 1, platform_provider
+assert platform_provider.get("defaultTargetSoc") == target_soc, platform_provider
+assert platform_provider.get("requiresAotArtifact") is True, platform_provider
+assert platform_provider.get("allowRuntimeJit") is False, platform_provider
+assert platform_provider.get("allowCpuFallback") is False, platform_provider
+
+expected_provider = {
+    "formatVersion": 1,
+    "coreAbi": 1,
+    "providerId": provider_id,
+    "providerAbi": 1,
+    "artifactFormat": artifact_format,
+    "artifactFormatVersion": 1,
+    "platformId": "android-arm64",
+    "architecture": "arm64",
+    "defaultTargetSoc": target_soc,
+    "runtimeLibrary": f"lib{native_library}.so",
+    "requiresAotArtifact": True,
+    "allowRuntimeJit": False,
+    "allowCpuFallback": False,
+}
+for key, value in expected_provider.items():
+    assert provider.get(key) == value, (key, value, provider)
+
 deps = data.get("runtimeDependencies", [])
 banned = (
     "openblas", "mkl", "gfortran", "quadmath", "libc.so.6", "ld-linux",
-    "nd4jcpu", "neuralnetworks",
+    "nd4jcpu",
 )
 assert not any(any(token in dep.lower() for token in banned) for dep in deps), deps
 if device_ready == "1" and adapter_name:
@@ -165,19 +215,43 @@ if device_ready == "1" and adapter_name:
 PY
 
 AAR_ENTRIES="$(unzip -Z1 "$AAR")"
-if grep -Eiq 'openblas|mkl|gfortran|quadmath|libc[.]so[.]6|ld-linux|nd4jcpu|neuralnetworks' <<<"$AAR_ENTRIES"; then
+if grep -Eiq 'openblas|mkl|gfortran|quadmath|libc[.]so[.]6|ld-linux|nd4jcpu' <<<"$AAR_ENTRIES"; then
     echo "AAR contains a forbidden host/BLAS runtime" >&2
     exit 1
 fi
 
 CLASS_ENTRIES="$(unzip -Z1 "$CLASSES_JAR")"
 for class_name in \
-    org/nd4j/dsp/model/SdxModelCache.class \
-    org/nd4j/dsp/model/SdxTargetProfile.class \
-    org/nd4j/dsp/runtime/SdxRuntime.class \
-    org/nd4j/dsp/runtime/SdxTextSession.class \
-    org/nd4j/dsp/runtime/bindings/SdxNative.class \
-    org/eclipse/deeplearning4j/tokenizers/NativeTokenizer.class; do
+    'org/nd4j/dsp/model/HuggingFaceGgmlResolver.class' \
+    'org/nd4j/dsp/model/HuggingFaceGgmlResolver$Candidate.class' \
+    'org/nd4j/dsp/model/HuggingFaceGgmlResolver$Discovery.class' \
+    'org/nd4j/dsp/model/HuggingFaceGgmlResolver$Kind.class' \
+    'org/nd4j/dsp/model/HuggingFaceGgmlResolver$Reference.class' \
+    'org/nd4j/dsp/model/HuggingFaceGgmlResolver$RepositoryFile.class' \
+    'org/nd4j/dsp/model/ResumableModelDownloader.class' \
+    'org/nd4j/dsp/model/ResumableModelDownloader$CancellationHandle.class' \
+    'org/nd4j/dsp/model/ResumableModelDownloader$DownloadCancelledException.class' \
+    'org/nd4j/dsp/model/ResumableModelDownloader$DownloadPolicy.class' \
+    'org/nd4j/dsp/model/ResumableModelDownloader$DownloadRequest.class' \
+    'org/nd4j/dsp/model/ResumableModelDownloader$DownloadResult.class' \
+    'org/nd4j/dsp/model/ResumableModelDownloader$EventType.class' \
+    'org/nd4j/dsp/model/ResumableModelDownloader$ProgressEvent.class' \
+    'org/nd4j/dsp/model/ResumableModelDownloader$ProgressListener.class' \
+    'org/nd4j/dsp/model/SdxCompiledModel.class' \
+    'org/nd4j/dsp/model/SdxLlmNative.class' \
+    'org/nd4j/dsp/model/SdxLlmNative$CancelCallback.class' \
+    'org/nd4j/dsp/model/SdxLlmNative$ChunkCallback.class' \
+    'org/nd4j/dsp/model/SdxModelCache.class' \
+    'org/nd4j/dsp/model/SdxTargetProfile.class' \
+    'org/nd4j/dsp/model/SdxTextModelAssets.class' \
+    'org/nd4j/dsp/runtime/SdxRuntime.class' \
+    'org/nd4j/dsp/runtime/SdxRuntime$ModelOptions.class' \
+    'org/nd4j/dsp/runtime/SdxTextSession.class' \
+    'org/nd4j/dsp/runtime/bindings/SdxNative.class' \
+    'org/nd4j/dsp/runtime/presets/SdxRuntimePresets.class' \
+    'org/eclipse/deeplearning4j/tokenizers/NativeTokenizer.class' \
+    'org/eclipse/deeplearning4j/tokenizers/NativeTokenizer$ChatMessage.class' \
+    'org/eclipse/deeplearning4j/tokenizers/presets/TokenizersPresets.class'; do
     if ! grep -Fxq "$class_name" <<<"$CLASS_ENTRIES"; then
         echo "Required Java API class missing: $class_name" >&2
         exit 1
@@ -188,7 +262,8 @@ if grep -Eq '^org/nd4j/dsp/runtime/SdxLlm[^/]*[.]class$' <<<"$CLASS_ENTRIES"; th
     exit 1
 fi
 
-if ! "$READELF" -h "$MAIN_LIBRARY" | grep -Eq 'Machine:[[:space:]]+AArch64'; then
+MAIN_ELF_HEADER="$("$READELF" -h "$MAIN_LIBRARY")"
+if ! grep -Eq 'Machine:[[:space:]]+AArch64' <<<"$MAIN_ELF_HEADER"; then
     echo "Primary runtime is not an Android AArch64 ELF: $MAIN_LIBRARY" >&2
     exit 1
 fi
@@ -224,13 +299,19 @@ if [[ "$GPU_TARGET" == "VULKAN" ]]; then
         echo "Vulkan runtime links an alternate NNAPI/CPU backend" >&2
         exit 1
     fi
+elif [[ "$ACCELERATOR" == "NNAPI_ACCELERATOR_ONLY" ]]; then
+    if ! grep -Eq 'Shared library: \[libneuralnetworks[.]so\]' <<<"$MAIN_NEEDED"; then
+        echo "NNAPI runtime is not linked to Android's libneuralnetworks.so" >&2
+        exit 1
+    fi
 fi
 
 is_android_system_library() {
     case "$1" in
         libc.so|libdl.so|libm.so|liblog.so|libz.so|libandroid.so|\
-        libvulkan.so|libEGL.so|libGLESv2.so|libjnigraphics.so|\
-        libmediandk.so|libnativewindow.so|libOpenSLES.so|libaaudio.so)
+        libneuralnetworks.so|libvulkan.so|libEGL.so|libGLESv2.so|\
+        libjnigraphics.so|libmediandk.so|libnativewindow.so|\
+        libOpenSLES.so|libaaudio.so)
             return 0
             ;;
     esac
@@ -246,7 +327,8 @@ if [[ ${#NATIVE_LIBRARIES[@]} -eq 0 ]]; then
 fi
 
 for native_file in "${NATIVE_LIBRARIES[@]}"; do
-    if ! "$READELF" -h "$native_file" | grep -Eq 'Machine:[[:space:]]+AArch64'; then
+    native_elf_header="$("$READELF" -h "$native_file")"
+    if ! grep -Eq 'Machine:[[:space:]]+AArch64' <<<"$native_elf_header"; then
         echo "Non-AArch64 native dependency in AAR: $native_file" >&2
         exit 1
     fi

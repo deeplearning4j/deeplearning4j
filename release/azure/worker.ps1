@@ -52,6 +52,7 @@ if ($Register) {
 $ConfigB64 = '__DL4J_WORKER_CONFIG_B64__'
 $BuildDriverB64 = '__DL4J_BUILD_DRIVER_B64__'
 $CloudIoB64 = '__DL4J_CLOUD_IO_B64__'
+$NativePlatformScriptB64 = '__DL4J_NATIVE_PLATFORM_SCRIPT_B64__'
 $ToolchainRoot = Join-Path $WorkRoot 'toolchains'
 $SourceRoot = Join-Path $WorkRoot 'sources'
 $OutputRoot = Join-Path $WorkRoot 'outputs'
@@ -330,6 +331,36 @@ function Upload-IfPresent([string]$Path, [string]$Name) {
   return $true
 }
 
+function Publish-MavenRepository([string]$Path) {
+  $Prefix = ([string]$Config.mavenRepositoryPrefix).TrimEnd('/')
+  if ([string]::IsNullOrWhiteSpace($Prefix)) {
+    throw 'Azure worker received no stable Maven repository prefix'
+  }
+  $RootFull = ([IO.Path]::GetFullPath($Path)).TrimEnd('\') + '\'
+  $Published = @()
+  foreach ($File in @(Get-ChildItem -LiteralPath $Path -Recurse -File | Sort-Object FullName)) {
+    $Relative = ([IO.Path]::GetFullPath($File.FullName)).Substring($RootFull.Length).Replace('\', '/')
+    $Object = "$Prefix/$Relative"
+    & $script:PythonExe $CloudIo upload --bucket $Config.bucket --object $Object --file $File.FullName --client-id $Config.managedIdentityClientId
+    if ($LASTEXITCODE -ne 0) {
+      throw "Stable Maven upload failed for $Relative"
+    }
+    $Published += $Relative
+  }
+  $AccountingPath = Join-Path $OutputDir 'maven-publish.json'
+  @{
+    schemaVersion=1
+    mode='stable-maven-upsert'
+    repositoryPrefix=$Prefix
+    runId=$Config.runId
+    shard=$Shard.id
+    releaseVersion=$Config.releaseVersion
+    commit=$Config.commit
+    publishedBlobs=@($Published)
+  } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $AccountingPath
+  return $AccountingPath
+}
+
 function Write-ShardStatus([int]$FinalCode) {
   $StatusPath = Join-Path $OutputDir 'status.json'
   @{
@@ -442,7 +473,7 @@ function Complete-Shard([int]$RequestedExitCode) {
 
     $Artifacts = @(
       [pscustomobject]@{Path=$BuildLog; Name='build.log'},
-      [pscustomobject]@{Path=(Join-Path $OutputDir 'maven-repository.tar.gz'); Name='maven-repository.tar.gz'},
+      [pscustomobject]@{Path=(Join-Path $OutputDir 'maven-publish.json'); Name='maven-publish.json'},
       [pscustomobject]@{Path=(Join-Path $OutputDir 'sdk-assets.tar.gz'); Name='sdk-assets.tar.gz'},
       [pscustomobject]@{Path=(Join-Path $OutputDir 'shard-manifest.json'); Name='shard-manifest.json'}
     )
@@ -564,7 +595,10 @@ function Import-VisualStudioEnvironment {
 function Install-CommonToolchains {
   Write-Phase 'toolchain-packages' 'started'
   Invoke-NativeChecked -Description 'Chocolatey toolchain installation' -SuccessCodes @(0, 1641, 3010) -Command {
-    choco install -y --no-progress cmake git maven ninja temurin11 7zip msys2 rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
+    choco install -y --no-progress cmake git maven ninja temurin11 7zip rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
+  }
+  Invoke-NativeChecked -Description 'Chocolatey MSYS2 installation' -SuccessCodes @(0, 1641, 3010) -Command {
+    choco install -y --no-progress msys2 --params "/NoUpdate"
   }
   Write-Phase 'toolchain-packages' 'complete'
   Import-VisualStudioEnvironment
@@ -591,7 +625,7 @@ function Install-CommonToolchains {
   }
   Write-Phase 'msys-toolchain' 'started'
   Invoke-NativeChecked -Description 'MSYS2 toolchain installation' -Command {
-    & C:\tools\msys64\usr\bin\bash.exe -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja"
+    & C:\tools\msys64\usr\bin\bash.exe -lc "pacman-key --init && pacman-key --populate msys2 && pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja"
   }
   Write-Phase 'msys-toolchain' 'complete'
   $RustBinCandidates = @((Join-Path $env:CARGO_HOME 'bin'))
@@ -713,22 +747,26 @@ function Invoke-ShardBuild {
   Install-ShardCuda
   Write-Phase 'source-checkout' 'started' "shard=$($Shard.id) commit=$($Config.commit)"
   Invoke-NativeChecked -Description 'Source clone' -Command {
-    git -c core.autocrlf=false clone --filter=blob:none $Config.repository $SourceDir
+    git -c core.autocrlf=false clone --filter=blob:none $Config.repository $SourceDir 2>&1
   }
   Invoke-NativeChecked -Description 'Source line-ending configuration' -Command {
-    git -C $SourceDir config core.autocrlf false
+    git -C $SourceDir config core.autocrlf false 2>&1
   }
   Invoke-NativeChecked -Description 'Pinned commit fetch' -Command {
-    git -C $SourceDir fetch --depth=1 origin $Config.commit
+    git -C $SourceDir fetch --depth=1 origin $Config.commit 2>&1
   }
   Invoke-NativeChecked -Description 'Pinned commit checkout' -Command {
-    git -C $SourceDir checkout --detach $Config.commit
+    git -C $SourceDir checkout --detach $Config.commit 2>&1
   }
   $Actual = Invoke-NativeChecked -Description 'Pinned commit resolution' -Command {
-    git -C $SourceDir rev-parse HEAD
+    git -C $SourceDir rev-parse HEAD 2>&1
   }
   if ($Actual.Trim() -ne $Config.commit) { throw "Commit mismatch: $Actual" }
-  Write-Phase 'source-checkout' 'complete' "shard=$($Shard.id) commit=$($Config.commit)"
+  # The controller embeds the local release script so a run uses the exact
+  # release logic being tested even when the source commit predates it.
+  $NativePlatformScript = Join-Path $SourceDir 'build-scripts/release/native-platform.sh'
+  [IO.File]::WriteAllBytes($NativePlatformScript, [Convert]::FromBase64String($NativePlatformScriptB64))
+  Write-Phase 'source-checkout' 'complete' "shard=$($Shard.id) commit=$($Config.commit) releaseScript=embedded"
 
   $MavenOutput = Join-Path $OutputDir 'maven-repository'
   $SdkOutput = Join-Path $OutputDir 'sdk-assets'
@@ -761,10 +799,11 @@ function Invoke-ShardBuild {
   if ($BuildExitCode -ne 0) { throw "Build failed with exit code $BuildExitCode" }
   Write-Phase 'matrix-build' 'complete' "shard=$($Shard.id)"
 
+  Write-Phase 'maven-publish' 'started' "shard=$($Shard.id) repository=$($Config.mavenRepositoryPrefix)"
+  $MavenAccounting = Publish-MavenRepository $MavenOutput
+  Write-Phase 'maven-publish' 'complete' "shard=$($Shard.id) accounting=$MavenAccounting"
+
   Write-Phase 'artifact-packaging' 'started' "shard=$($Shard.id)"
-  Invoke-NativeChecked -Description 'Maven repository packaging' -Command {
-    & $script:WindowsTarExe -C $MavenOutput -czf (Join-Path $OutputDir 'maven-repository.tar.gz') .
-  }
   Invoke-NativeChecked -Description 'SDK asset packaging' -Command {
     & $script:WindowsTarExe -C $SdkOutput -czf (Join-Path $OutputDir 'sdk-assets.tar.gz') .
   }
@@ -843,6 +882,7 @@ try {
   [IO.File]::WriteAllBytes($ConfigFile, [Convert]::FromBase64String($ConfigB64))
   [IO.File]::WriteAllBytes($BuildDriver, [Convert]::FromBase64String($BuildDriverB64))
   [IO.File]::WriteAllBytes($CloudIo, [Convert]::FromBase64String($CloudIoB64))
+  if ([string]::IsNullOrWhiteSpace($NativePlatformScriptB64)) { throw 'native-platform.sh payload is missing' }
   $Config = Get-Content -Raw $ConfigFile | ConvertFrom-Json
   $Shards = if ($Config.shards) { @($Config.shards) } else { @($Config.shard) }
   if ($Shards.Count -eq 0) { throw 'Azure lane worker received no shards' }

@@ -87,7 +87,7 @@ public final class SdxModelCache {
         }
         if (configured == null || configured.trim().isEmpty()) {
             String home = System.getProperty("user.home", ".");
-            configured = Path.of(home, ".kompile", "cache", "sdx", "models").toString();
+            configured = Path.of(home, ".cache", "nd4j", "sdx", "models").toString();
         }
         return new SdxModelCache(Path.of(configured));
     }
@@ -98,6 +98,55 @@ public final class SdxModelCache {
 
     public SdxSourceIdentity identify(Path sourceModel) throws IOException {
         return SdxSourceIdentity.identify(sourceModel);
+    }
+
+    /**
+     * Consume a generated canonical SDZ/SDNB and admit it directly into the
+     * content-addressed source cache.
+     *
+     * <p>The caller should create {@code generatedSource} below {@link #root()}
+     * so the final admission is an atomic same-filesystem move. If identical
+     * content is already present, the redundant generated file is deleted. The
+     * returned path is the only persistent canonical copy.</p>
+     */
+    public Path admitGeneratedSource(Path generatedSource) throws IOException {
+        Path source = requireSource(generatedSource);
+        if (Files.isSymbolicLink(source)) {
+            throw new IOException("Generated SDX source must not be a symlink: " + source);
+        }
+        SdxSourceIdentity identity = identify(source);
+        Path destination = sourceDirectory(identity).resolve(identity.sourceFileName());
+        if (source.equals(destination)) {
+            return destination;
+        }
+
+        Files.createDirectories(destination.getParent());
+        if (Files.exists(destination)) {
+            requireMatchingSourceIdentity(destination, identity);
+            Files.delete(source);
+            return destination;
+        }
+
+        try {
+            moveWithoutReplace(source, destination);
+            // Atomic same-filesystem admission preserves the bytes that were identified above;
+            // do not stream a multi-gigabyte SDZ a second time after a successful move.
+            return destination;
+        } catch (java.nio.file.FileAlreadyExistsException raced) {
+            requireMatchingSourceIdentity(destination, identity);
+            Files.deleteIfExists(source);
+            return destination;
+        }
+    }
+
+    private static void requireMatchingSourceIdentity(
+            Path source, SdxSourceIdentity expected) throws IOException {
+        SdxSourceIdentity actual = SdxSourceIdentity.identify(source);
+        if (!expected.sha256().equals(actual.sha256())
+                || expected.logicalBytes() != actual.logicalBytes()) {
+            throw new IOException(
+                    "Content-addressed SDX source cache entry is corrupted: " + source);
+        }
     }
 
     /**
@@ -258,6 +307,7 @@ public final class SdxModelCache {
             Path staging,
             String runtimeRelativePath,
             String tokenizerRelativePath,
+            String tokenizerConfigRelativePath,
             String textConfigRelativePath,
             String quantizationRelativePath) throws IOException {
         requireSha256(compileKey, "compileKey");
@@ -283,6 +333,9 @@ public final class SdxModelCache {
         manifest.put("compilerVersion64", encodeText(compilerVersion));
         if (tokenizerRelativePath != null) {
             manifest.put("tokenizerPath64", encodePath(tokenizerRelativePath));
+        }
+        if (tokenizerConfigRelativePath != null) {
+            manifest.put("tokenizerConfigPath64", encodePath(tokenizerConfigRelativePath));
         }
         if (textConfigRelativePath != null) {
             manifest.put("textConfigPath64", encodePath(textConfigRelativePath));
@@ -499,6 +552,7 @@ public final class SdxModelCache {
         }
 
         Path tokenizer = optionalPath(object, manifest.get("tokenizerPath64"));
+        Path tokenizerConfig = optionalPath(object, manifest.get("tokenizerConfigPath64"));
         Path textConfig = optionalPath(object, manifest.get("textConfigPath64"));
         Path quantization = optionalPath(object, manifest.get("quantizationPath64"));
         String compilerId = decodeText(required(manifest, "compilerId64"));
@@ -518,6 +572,7 @@ public final class SdxModelCache {
                 object,
                 runtimePath,
                 tokenizer,
+                tokenizerConfig,
                 textConfig,
                 quantization,
                 identity,

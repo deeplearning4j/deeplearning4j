@@ -20,6 +20,10 @@
 
 package org.eclipse.deeplearning4j.llm.generation.constraint;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.function.IntFunction;
 
 /**
@@ -132,9 +136,52 @@ public class ConstraintMasker {
             float[] logits,
             int eosTokenId,
             IntFunction<String> idToPiece) {
+        Set<Integer> stopTokenIds = eosTokenId >= 0
+                ? Collections.singleton(eosTokenId)
+                : Collections.emptySet();
+        return maskLogits(logits, stopTokenIds, idToPiece);
+    }
+
+    /**
+     * Applies the constraint mask while gating every configured terminal token.
+     *
+     * <p>Models commonly expose multiple stop sentinels (for example both
+     * {@code <|tool_call_end|>} and {@code <|im_end|>}). Treating only the primary EOS
+     * specially lets another stop sentinel leak through while a quoted argument is still
+     * open, because it is otherwise just another text piece to the automaton. All terminal
+     * tokens are therefore suppressed until the constraint reaches an accepting state.</p>
+     *
+     * @param logits       raw vocabulary logits
+     * @param stopTokenIds all tokens that terminate generation
+     * @param idToPiece    token-ID to decoded-piece mapping
+     * @return masked logits
+     */
+    public float[] maskLogits(
+            float[] logits,
+            Set<Integer> stopTokenIds,
+            IntFunction<String> idToPiece) {
+        return maskLogits(logits, stopTokenIds, Collections.emptySet(), idToPiece);
+    }
+
+    /**
+     * Applies terminal gating and blocks tokenizer-declared special tokens unless
+     * the active constraint explicitly owns that token at the current state.
+     */
+    public float[] maskLogits(
+            float[] logits,
+            Set<Integer> stopTokenIds,
+            Set<Integer> specialTokenIds,
+            IntFunction<String> idToPiece) {
 
         int vocabSize = logits.length;
         boolean accepting = constraint.isAccepting(emittedText);
+        Set<Integer> terminals = stopTokenIds == null
+                ? Collections.emptySet()
+                : stopTokenIds;
+        Set<Integer> specials = specialTokenIds == null
+                ? Collections.emptySet()
+                : specialTokenIds;
+        List<String> specialPieces = specialTokenPieces(specials, idToPiece);
 
         // Get the allowed-token mask from the cache for the current emitted text.
         boolean[] allowed = cache.getAllowedTokens(constraint, emittedText, vocabSize, idToPiece);
@@ -143,11 +190,11 @@ public class ConstraintMasker {
         int k = Math.min(evalTopK, vocabSize);
         int[] topKIndices = topKIndices(logits, k);
 
-        // Check how many top-K candidates are allowed (ignoring EOS for now).
+        // Check how many top-K candidates are allowed (ignoring terminals for now).
         boolean anyTopKAllowed = false;
         for (int idx : topKIndices) {
-            if (idx == eosTokenId) continue; // handle EOS separately
-            if (allowed[idx]) {
+            if (idx < 0 || terminals.contains(idx)) continue;
+            if (isAllowedToken(idx, allowed, specials, specialPieces, idToPiece)) {
                 anyTopKAllowed = true;
                 break;
             }
@@ -162,30 +209,101 @@ public class ConstraintMasker {
                 masked[i] = Float.NEGATIVE_INFINITY;
             }
             for (int idx : topKIndices) {
-                if (idx == eosTokenId) continue;
-                if (allowed[idx]) {
+                if (idx < 0 || terminals.contains(idx)) continue;
+                if (isAllowedToken(idx, allowed, specials, specialPieces, idToPiece)) {
                     masked[idx] = logits[idx];
                 }
             }
         } else {
             // Mask strategy B: widen to full vocab — mask only disallowed tokens.
             for (int i = 0; i < vocabSize; i++) {
-                masked[i] = allowed[i] ? logits[i] : Float.NEGATIVE_INFINITY;
+                masked[i] = isAllowedToken(i, allowed, specials, specialPieces, idToPiece)
+                        ? logits[i] : Float.NEGATIVE_INFINITY;
             }
         }
 
-        // EOS gating: only permit EOS when the constraint is in an accepting state.
-        if (eosTokenId >= 0 && eosTokenId < vocabSize) {
-            if (accepting) {
-                // Restore EOS logit so the sampler can stop.
-                masked[eosTokenId] = logits[eosTokenId];
-            } else {
-                // Suppress EOS — we are not done yet.
-                masked[eosTokenId] = Float.NEGATIVE_INFINITY;
+        // Terminal gating: a constraint-owned terminal may be the transition that completes its
+        // envelope (for example <|tool_call_end|>). Other stop tokens remain blocked until the
+        // constraint is already accepting.
+        for (Integer terminal : terminals) {
+            if (terminal == null || terminal < 0 || terminal >= vocabSize) {
+                continue;
             }
+            String piece = idToPiece.apply(terminal);
+            boolean ownedTransition = constraint.allowsSpecialToken(emittedText, piece)
+                    && constraint.canExtend(emittedText, piece);
+            masked[terminal] = accepting || ownedTransition
+                    ? logits[terminal]
+                    : Float.NEGATIVE_INFINITY;
         }
 
         return masked;
+    }
+
+    private boolean isAllowedToken(
+            int tokenId,
+            boolean[] allowed,
+            Set<Integer> specialTokenIds,
+            List<String> specialPieces,
+            IntFunction<String> idToPiece) {
+        if (!allowed[tokenId]) {
+            return false;
+        }
+        String piece = idToPiece.apply(tokenId);
+        if (specialTokenIds.contains(tokenId)) {
+            return constraint.allowsSpecialToken(emittedText, piece);
+        }
+        return !completesUnownedSpecialToken(emittedText, piece, specialPieces);
+    }
+
+    private static List<String> specialTokenPieces(
+            Set<Integer> specialTokenIds,
+            IntFunction<String> idToPiece) {
+        if (specialTokenIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> pieces = new ArrayList<>(specialTokenIds.size());
+        for (Integer tokenId : specialTokenIds) {
+            if (tokenId == null || tokenId < 0) {
+                continue;
+            }
+            String piece = idToPiece.apply(tokenId);
+            if (piece != null && !piece.isEmpty() && !pieces.contains(piece)) {
+                pieces.add(piece);
+            }
+        }
+        return pieces;
+    }
+
+    /**
+     * Token-ID gating is insufficient when an ordinary-token sequence can spell the same control
+     * lexeme. Reject the token that would complete such a lexeme unless the constraint owns that
+     * exact protocol transition. This remains tokenizer-driven and does not hard-code model tokens.
+     */
+    private boolean completesUnownedSpecialToken(
+            String currentText,
+            String piece,
+            List<String> specialPieces) {
+        if (piece == null || piece.isEmpty() || specialPieces.isEmpty()) {
+            return false;
+        }
+        String current = currentText == null ? "" : currentText;
+        String candidate = current + piece;
+        int boundary = current.length();
+        for (String special : specialPieces) {
+            int searchFrom = Math.max(0, boundary - special.length() + 1);
+            int occurrence = candidate.indexOf(special, searchFrom);
+            while (occurrence >= 0) {
+                int end = occurrence + special.length();
+                if (end > boundary
+                        && !constraint.allowsSpecialToken(
+                                candidate.substring(0, occurrence), special)) {
+                    return true;
+                }
+                occurrence = candidate.indexOf(special, occurrence + 1);
+            }
+        }
+        return false;
     }
 
     // -------------------------------------------------------------------------
@@ -207,6 +325,43 @@ public class ConstraintMasker {
         if (piece != null && !piece.isEmpty()) {
             emittedText += piece;
         }
+    }
+
+    /**
+     * Validates the exact text produced by decoding the complete candidate token sequence.
+     * Singleton token decoding is only an efficient vocabulary approximation and is not
+     * compositionally equivalent for every tokenizer.
+     */
+    public boolean allowsDecodedText(String decodedText, List<String> specialPieces) {
+        if (decodedText == null
+                || (!constraint.canExtend("", decodedText)
+                && !constraint.isAccepting(decodedText))) {
+            return false;
+        }
+        List<String> specials = specialPieces == null
+                ? Collections.emptyList() : specialPieces;
+        for (String special : specials) {
+            if (special == null || special.isEmpty()) {
+                continue;
+            }
+            int occurrence = decodedText.indexOf(special);
+            while (occurrence >= 0) {
+                if (!constraint.allowsSpecialToken(
+                        decodedText.substring(0, occurrence), special)) {
+                    return false;
+                }
+                occurrence = decodedText.indexOf(special, occurrence + 1);
+            }
+        }
+        return true;
+    }
+
+    /** Replaces approximate per-token state with the tokenizer's exact sequence decode. */
+    public void decodedTextEmitted(String decodedText) {
+        if (decodedText == null) {
+            throw new IllegalArgumentException("decodedText must not be null");
+        }
+        emittedText = decodedText;
     }
 
     // -------------------------------------------------------------------------

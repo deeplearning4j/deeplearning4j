@@ -41,6 +41,7 @@ import java.util.Map;
  *   sdx-llm generate --model model.gguf --prompt "..." [--tokenizer dir] [--max-new-tokens N]
  *                    [--temperature T --top-k K --top-p P --seed S | --greedy]
  *                    [--chat [--system "..."]] [--stats]
+ *   sdx-llm chat     --model model.gguf --request-file request.json [generation options]
  *   sdx-llm import   --model model.gguf --output model.sdz
  *   sdx-llm tokenize --model model.gguf --text "..." [--no-special]
  *   sdx-llm info     --model model.gguf
@@ -80,6 +81,8 @@ public final class SdxLlmCli {
         switch (command) {
             case "generate":
                 return generate(opts);
+            case "chat":
+                return chat(opts);
             case "import":
                 return importModel(opts);
             case "tokenize":
@@ -165,6 +168,26 @@ public final class SdxLlmCli {
             if (opts.containsKey("stats")) {
                 System.err.println(core.lastResultJson());
             }
+        }
+        return 0;
+    }
+
+    private static int chat(Map<String, String> opts) throws Exception {
+        String model = required(opts, "model");
+        String requestJson = opts.get("request");
+        if (requestJson == null && opts.containsKey("request-file")) {
+            requestJson = new String(
+                    Files.readAllBytes(Paths.get(opts.get("request-file"))),
+                    StandardCharsets.UTF_8);
+        }
+        if (requestJson == null || requestJson.isBlank()) {
+            throw new IllegalArgumentException(
+                    "chat requires --request or --request-file");
+        }
+        String optionsJson = buildOptionsJson(opts);
+        try (SdxLlmCore core = SdxLlmCore.load(
+                model, opts.get("tokenizer"), optionsJson)) {
+            System.out.println(core.generateChat(requestJson, optionsJson));
         }
         return 0;
     }
@@ -278,6 +301,7 @@ public final class SdxLlmCli {
                 "",
                 "Commands:",
                 "  generate   --model <path> --prompt <text> [options]   Run text generation",
+                "  chat       --model <path> --request-file <json>       Run structured model-owned chat",
                 "  import     --model <in.gguf> --output <out.sdz>       Convert GGUF to SDZ for the C runtime",
                 "  tokenize   --model <path>|--tokenizer <path> --text <text> [--no-special]",
                 "  info       --model <path> [--tokenizer <path>]        Print model/tokenizer summary JSON",

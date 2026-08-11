@@ -58,9 +58,9 @@ PLATFORM_IMPL(gemm, ENGINE_CPU) {
   cTensor.allocator()->init(cInfo);
 
   arm_compute::NEGEMM gemm;
+  // GEMMInfo defaults both reshape flags to false.  The setter methods were
+  // removed from newer ARM Compute releases, so keep this API-version-neutral.
   arm_compute::GEMMInfo gemmInfo;
-  gemmInfo.set_is_a_reshaped(false);
-  gemmInfo.set_is_b_reshaped(false);
 
   gemm.configure(&aTensor, &bTensor, nullptr, &cTensor, alpha, beta, gemmInfo);
 

@@ -87,6 +87,40 @@ bool tokenizer_is_valid(OpaqueTokenizer* tokenizer);
  */
 size_t get_vocab_size(OpaqueTokenizer* tokenizer);
 
+/**
+ * @brief Resolve an exact vocabulary token without encoding it
+ * @param tokenizer Tokenizer instance
+ * @param token Exact token string
+ * @param token_id Receives the token ID when found
+ * @return true when the token exists, false when it does not or input is invalid
+ */
+bool get_token_id(OpaqueTokenizer* tokenizer, const char* token, uint32_t* token_id);
+
+/**
+ * @brief Render a Hugging Face tokenizer_config.json chat template
+ * @param messages_json JSON array of role/content message objects
+ * @param tokenizer_config_json Full normalized tokenizer_config.json
+ * @param current_date Current date exposed as date_string
+ * @param add_generation_prompt Whether to append the assistant prompt
+ * @return Rendered prompt, or NULL on failure (must be freed with free_string)
+ */
+char* apply_chat_template(const char* messages_json,
+                          const char* tokenizer_config_json,
+                          const char* current_date,
+                          bool add_generation_prompt);
+
+/**
+ * @brief Render a chat template from a complete Hugging Face runtime context
+ * @param context_json JSON object containing messages, tools, documents, flags,
+ *                     and optional model-specific template arguments
+ * @param tokenizer_config_json Full normalized tokenizer_config.json
+ * @param current_date Current date exposed as date_string when not overridden
+ * @return Rendered prompt, or NULL on failure (must be freed with free_string)
+ */
+char* apply_chat_template_context(const char* context_json,
+                                  const char* tokenizer_config_json,
+                                  const char* current_date);
+
 // =============================================================================
 // Encoding Functions
 // =============================================================================

@@ -36,6 +36,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/OpExecutionLogger.h>
 #include <graph/OpContextLifecycleTracker.h>
+#include <graph/DspDiagnostics.h>
 #include <ops/specials_cuda.h>
 #include <system/buffer.h>
 #include <helpers/ConstantHelper.h>
@@ -62,6 +63,8 @@
 #include <loops/special_kernels.h>
 #include <system/selective_rendering.h>
 #include <execution/LaunchContext.h>
+#include <unordered_map>
+
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
 int blockLimit = 128;
@@ -70,6 +73,10 @@ bool allowedP2P = false;
 bool supportedP2P = false;
 
 namespace {
+constexpr sd::LongType kLargeHostAllocationDiagThreshold = 64LL * 1024LL * 1024LL;
+std::mutex largeHostAllocationsMutex;
+std::unordered_map<void*, sd::LongType> largeHostAllocations;
+
 std::mutex configuredCudaDevicesMutex;
 std::vector<int> configuredCudaDevices;
 
@@ -438,6 +445,15 @@ sd::Pointer mallocHost(sd::LongType memorySize, int flags) {
   if (res != 0) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaHostAlloc failed");
+  } else if (DSP_DIAG_ENABLED(MEMORY) && memorySize >= kLargeHostAllocationDiagThreshold) {
+    {
+      std::lock_guard<std::mutex> lock(largeHostAllocationsMutex);
+      largeHostAllocations[pointer] = memorySize;
+    }
+    DSP_DIAG(MEMORY,
+             "CUDA_HOST_ALLOC: ptr=%p requestedBytes=%lld actualBytes=%lld flags=%d",
+             pointer, static_cast<long long>(memorySize),
+             static_cast<long long>(memorySize + 8), flags);
   }
 
   return reinterpret_cast<int8_t *>(pointer);
@@ -482,7 +498,21 @@ int freeHost(sd::Pointer pointer) {
     return 1L;
   }
 
+  sd::LongType largeAllocationBytes = 0;
+  if (DSP_DIAG_ENABLED(MEMORY)) {
+    std::lock_guard<std::mutex> lock(largeHostAllocationsMutex);
+    auto allocation = largeHostAllocations.find(pointer);
+    if (allocation != largeHostAllocations.end()) {
+      largeAllocationBytes = allocation->second;
+      largeHostAllocations.erase(allocation);
+    }
+  }
+
   auto res = cudaFreeHost(reinterpret_cast<void *>(pointer));
+  if (largeAllocationBytes > 0) {
+    DSP_DIAG(MEMORY, "CUDA_HOST_FREE: ptr=%p requestedBytes=%lld result=%d",
+             pointer, static_cast<long long>(largeAllocationBytes), static_cast<int>(res));
+  }
   if (res != 0) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaFreeHost failed");

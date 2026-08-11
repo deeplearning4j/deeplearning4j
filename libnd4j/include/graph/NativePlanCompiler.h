@@ -19,6 +19,7 @@
 #ifndef LIBND4J_NATIVE_PLAN_COMPILER_H
 #define LIBND4J_NATIVE_PLAN_COMPILER_H
 
+#include <graph/LegacyOpTypeCodes.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/generated/graph_generated.h>
 
@@ -28,6 +29,14 @@
 
 namespace sd {
 namespace graph {
+
+/**
+ * Map a serialized FlatGraph operation family to the stable legacy-op wire
+ * code used by NativeSlot. Multi-input transform-family nodes are pairwise
+ * operations in legacy SameDiff graphs.
+ */
+SD_LIB_EXPORT int legacyOpTypeForFlatOp(::graph::OpType opType,
+                                        int numInputs) noexcept;
 
 /**
  * Compiles a FlatGraph into a NativeDynamicShapePlan for native C++ execution.
@@ -58,7 +67,11 @@ class SD_LIB_EXPORT NativePlanCompiler {
   static NativeDynamicShapePlan* compile(
       const ::graph::FlatGraph* graph,
       const std::unordered_map<std::string, NDArray*>& variables,
-      const std::vector<std::string>& requestedOutputs);
+      const std::vector<std::string>& requestedOutputs,
+      GraphExecutionMode mode = GraphExecutionMode::GEM_AUTO,
+      std::string* errorMessage = nullptr,
+      const NativePlanCompileOptions& compileOptions =
+          NativePlanCompileOptions());
 
  private:
   // Op classification is driven directly by each registered op's OpDescriptor traits.

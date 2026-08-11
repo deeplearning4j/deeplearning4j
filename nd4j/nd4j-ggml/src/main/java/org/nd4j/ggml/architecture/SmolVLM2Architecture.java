@@ -770,7 +770,7 @@ public class SmolVLM2Architecture implements ModelArchitecture {
 
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
-        boolean needsCast = (input.dataType() == DataType.HALF || input.dataType() == DataType.BFLOAT16);
+        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
         SDVariable computeInput = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
 
         SDVariable squared = computeInput.mul(computeInput);
@@ -793,7 +793,7 @@ public class SmolVLM2Architecture implements ModelArchitecture {
 
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
-        boolean needsCast = (input.dataType() == DataType.HALF || input.dataType() == DataType.BFLOAT16);
+        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
         SDVariable computeInput = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
 
         SDVariable mean = computeInput.mean(true, -1);
@@ -823,7 +823,7 @@ public class SmolVLM2Architecture implements ModelArchitecture {
      * Matmul in FP32 to avoid HALF overflow on large dot products, then cast back to dtype.
      */
     private SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b, DataType dtype) {
-        if (dtype == DataType.HALF || dtype == DataType.BFLOAT16) {
+        if (QuantizedLinear.requiresFp32Accumulation(dtype)) {
             SDVariable aF32 = a.castTo(name + "_a_f32", DataType.FLOAT);
             SDVariable bF32 = b.castTo(name + "_b_f32", DataType.FLOAT);
             SDVariable result = sd.mmul(name + "_f32", aF32, bF32);

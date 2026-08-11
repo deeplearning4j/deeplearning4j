@@ -48,17 +48,19 @@ PLATFORM_IMPL(maxpool1d, ENGINE_CPU) {
   sd::LongType oW = isNCW ? output->sizeAt(2) : output->sizeAt(1);
 
   // Reshape for 2D pooling [bS, iC, 1, iW] or [bS, 1, iW, iC]
-  auto input4D = input->reshape(input->ordering(),
-                                isNCW ? std::vector<sd::LongType>{bS, iC, 1, iW}
-                                      : std::vector<sd::LongType>{bS, 1, iW, iC});
-  auto output4D = output->reshape(output->ordering(),
-                                  isNCW ? std::vector<sd::LongType>{bS, iC, 1, oW}
-                                        : std::vector<sd::LongType>{bS, 1, oW, iC});
+  std::vector<sd::LongType> inputShape =
+      isNCW ? std::vector<sd::LongType>{bS, iC, 1, iW}
+            : std::vector<sd::LongType>{bS, 1, iW, iC};
+  std::vector<sd::LongType> outputShape =
+      isNCW ? std::vector<sd::LongType>{bS, iC, 1, oW}
+            : std::vector<sd::LongType>{bS, 1, oW, iC};
+  auto input4D = input->reshape(input->ordering(), inputShape);
+  auto output4D = output->reshape(output->ordering(), outputShape);
 
   Arm_DataLayout layout = isNCW ? Arm_DataLayout::NCHW : Arm_DataLayout::NHWC;
 
-  auto inInfo = getArmTensorInfo(input4D, layout);
-  auto outInfo = getArmTensorInfo(output4D, layout);
+  auto inInfo = getArmTensorInfo(*input4D, layout);
+  auto outInfo = getArmTensorInfo(*output4D, layout);
 
   Arm_Tensor inTensor, outTensor;
   inTensor.allocator()->init(inInfo);
@@ -72,16 +74,16 @@ PLATFORM_IMPL(maxpool1d, ENGINE_CPU) {
   arm_compute::NEPoolingLayer pool;
   pool.configure(&inTensor, &outTensor, poolInfo);
 
-  if (!input4D.hasPaddedBuffer() && !inTensor.info()->has_padding()) {
-    inTensor.allocator()->import_memory(input4D.buffer());
+  if (!input4D->hasPaddedBuffer() && !inTensor.info()->has_padding()) {
+    inTensor.allocator()->import_memory(input4D->buffer());
   } else {
     inTensor.allocator()->allocate();
-    copyToTensor(input4D, inTensor);
+    copyToTensor(*input4D, inTensor);
   }
 
   bool copyOutput = false;
-  if (!output4D.hasPaddedBuffer() && !outTensor.info()->has_padding()) {
-    outTensor.allocator()->import_memory(output4D.buffer());
+  if (!output4D->hasPaddedBuffer() && !outTensor.info()->has_padding()) {
+    outTensor.allocator()->import_memory(output4D->buffer());
   } else {
     outTensor.allocator()->allocate();
     copyOutput = true;
@@ -90,7 +92,7 @@ PLATFORM_IMPL(maxpool1d, ENGINE_CPU) {
   pool.run();
 
   if (copyOutput) {
-    copyFromTensor(outTensor, output4D);
+    copyFromTensor(outTensor, *output4D);
   }
 
   return sd::Status::OK;
@@ -130,17 +132,19 @@ PLATFORM_IMPL(avgpool1d, ENGINE_CPU) {
   sd::LongType oW = isNCW ? output->sizeAt(2) : output->sizeAt(1);
 
   // Reshape for 2D pooling
-  auto input4D = input->reshape(input->ordering(),
-                                isNCW ? std::vector<sd::LongType>{bS, iC, 1, iW}
-                                      : std::vector<sd::LongType>{bS, 1, iW, iC});
-  auto output4D = output->reshape(output->ordering(),
-                                  isNCW ? std::vector<sd::LongType>{bS, iC, 1, oW}
-                                        : std::vector<sd::LongType>{bS, 1, oW, iC});
+  std::vector<sd::LongType> inputShape =
+      isNCW ? std::vector<sd::LongType>{bS, iC, 1, iW}
+            : std::vector<sd::LongType>{bS, 1, iW, iC};
+  std::vector<sd::LongType> outputShape =
+      isNCW ? std::vector<sd::LongType>{bS, iC, 1, oW}
+            : std::vector<sd::LongType>{bS, 1, oW, iC};
+  auto input4D = input->reshape(input->ordering(), inputShape);
+  auto output4D = output->reshape(output->ordering(), outputShape);
 
   Arm_DataLayout layout = isNCW ? Arm_DataLayout::NCHW : Arm_DataLayout::NHWC;
 
-  auto inInfo = getArmTensorInfo(input4D, layout);
-  auto outInfo = getArmTensorInfo(output4D, layout);
+  auto inInfo = getArmTensorInfo(*input4D, layout);
+  auto outInfo = getArmTensorInfo(*output4D, layout);
 
   Arm_Tensor inTensor, outTensor;
   inTensor.allocator()->init(inInfo);
@@ -154,16 +158,16 @@ PLATFORM_IMPL(avgpool1d, ENGINE_CPU) {
   arm_compute::NEPoolingLayer pool;
   pool.configure(&inTensor, &outTensor, poolInfo);
 
-  if (!input4D.hasPaddedBuffer() && !inTensor.info()->has_padding()) {
-    inTensor.allocator()->import_memory(input4D.buffer());
+  if (!input4D->hasPaddedBuffer() && !inTensor.info()->has_padding()) {
+    inTensor.allocator()->import_memory(input4D->buffer());
   } else {
     inTensor.allocator()->allocate();
-    copyToTensor(input4D, inTensor);
+    copyToTensor(*input4D, inTensor);
   }
 
   bool copyOutput = false;
-  if (!output4D.hasPaddedBuffer() && !outTensor.info()->has_padding()) {
-    outTensor.allocator()->import_memory(output4D.buffer());
+  if (!output4D->hasPaddedBuffer() && !outTensor.info()->has_padding()) {
+    outTensor.allocator()->import_memory(output4D->buffer());
   } else {
     outTensor.allocator()->allocate();
     copyOutput = true;
@@ -172,7 +176,7 @@ PLATFORM_IMPL(avgpool1d, ENGINE_CPU) {
   pool.run();
 
   if (copyOutput) {
-    copyFromTensor(outTensor, output4D);
+    copyFromTensor(outTensor, *output4D);
   }
 
   return sd::Status::OK;

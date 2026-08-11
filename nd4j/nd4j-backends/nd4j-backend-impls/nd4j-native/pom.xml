@@ -50,6 +50,7 @@
         <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
         <platform.functrace.libs.unix>-ldl -lunwind -lbfd -ldw</platform.functrace.libs.unix>
         <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cpu</libnd4j.outputPath>
+        <shared.runtime.manifest>shared-runtime-manifest.txt</shared.runtime.manifest>
         <!-- Default libnd4jhome for include paths - can be overridden by LIBND4J_HOME env var or libnd4j-assembly profile -->
         <libnd4jhome>${project.build.directory}/../../../../../libnd4j</libnd4jhome>
         <!-- NDK specific: https://github.com/android/ndk/issues/1690-->
@@ -210,6 +211,34 @@
                                     </fileset>
                                 </copy>
                             </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-shared-runtime-manifest</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${javacpp.build.output.path}</outputDirectory>
+                            <overwrite>true</overwrite>
+                            <resources>
+                                <resource>
+                                    <directory>${libnd4j.outputPath}</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>${shared.runtime.manifest}</include>
+                                    </includes>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>

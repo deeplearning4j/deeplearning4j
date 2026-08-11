@@ -108,6 +108,7 @@ class SD_LIB_EXPORT DspBufferColorMap {
                NDArray** outputSlots,
                int totalOutputSlots,
                const SlotBufferInfo* ownership,
+               const std::unordered_set<NDArray*>& planOwnedArrays,
                const std::unordered_set<int>& requestedOutputSlots);
 
   /**
@@ -115,13 +116,16 @@ class SD_LIB_EXPORT DspBufferColorMap {
    * For each color, the "master" slot keeps its buffer.  All other slots
    * in the same color get a new NDArray wrapping the master's DataBuffer.
    * Acquires master buffers from the pool if needed (fresh allocation).
+   * Replaced wrappers are appended to deferredDeletes and must be drained only
+   * after the current plan execution has reached its safe cleanup boundary.
    *
-   * @return Number of buffers consolidated (freed).
+   * @return Number of buffers consolidated (retired for deferred deletion).
    */
   int apply(NDArray** outputSlots,
             SlotBufferInfo* ownership,
             std::unordered_set<NDArray*>& planOwnedArrays,
-            DspBufferPool& pool);
+            DspBufferPool& pool,
+            std::vector<NDArray*>& deferredDeletes);
 
   /**
    * Undo coloring — restore per-slot dedicated buffers.
@@ -130,14 +134,16 @@ class SD_LIB_EXPORT DspBufferColorMap {
    *   2. Copy current data from shared buffer to new dedicated buffer
    *   3. Replace outputSlots[slotIdx] with new NDArray wrapping fresh buffer
    *   4. Update ownership and planOwnedArrays
-   * Release old shared buffers back to pool.
+   * Replaced wrappers are appended to deferredDeletes for cleanup at the
+   * caller's post-execution safe boundary.
    *
    * @return Number of slots restored to dedicated buffers.
    */
   int eject(NDArray** outputSlots,
             SlotBufferInfo* ownership,
             std::unordered_set<NDArray*>& planOwnedArrays,
-            DspBufferPool& pool);
+            DspBufferPool& pool,
+            std::vector<NDArray*>& deferredDeletes);
 
   // ── Validation ─────────────────────────────────────────────────────────
 
@@ -217,6 +223,10 @@ class SD_LIB_EXPORT DspBufferColorMap {
   // State flags
   bool computed_ = false;
   bool applied_ = false;
+
+  // Tracks which non-master slots were actually replaced. apply() can fail
+  // partway through; eject() must roll back only the completed replacements.
+  std::vector<bool> appliedSlots_;
 
   // Per-color metadata
   struct ColorInfo {

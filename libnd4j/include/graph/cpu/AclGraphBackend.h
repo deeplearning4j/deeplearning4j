@@ -59,6 +59,8 @@ class AclGraphBackend : public GraphBackend {
 
   const char* name() const override { return "ARM ACL"; }
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,

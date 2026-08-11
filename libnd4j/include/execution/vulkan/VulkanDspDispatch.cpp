@@ -311,6 +311,21 @@ void* dspStreamPtrToValue(void* streamPtr) {
   return stream;
 }
 
+bool dspSynchronizeStream(void* stream) {
+  if (stream == nullptr) return true;
+  auto* resolved = VulkanExecutionStream::fromOpaque(stream, false);
+  if (resolved == nullptr) {
+    fail(kDispatchInvalidResource);
+    return false;
+  }
+  if (!resolved->synchronize()) {
+    fail(kDispatchSubmissionFailed);
+    return false;
+  }
+  succeed();
+  return true;
+}
+
 void* dspGetExecutionStream() { return tl_dspExecutionStream; }
 
 void dspSetExecutionStream(void* stream) {
@@ -413,7 +428,7 @@ void dspTritonClearFailedCache() {
   // through the Vulkan recorder/catalog boundary.
 }
 
-GraphBackend* dspTritonGetBackendIfAvailable() { return nullptr; }
+GraphBackend* dspGetTritonBackend() { return nullptr; }
 
 }  // namespace vulkan
 }  // namespace graph

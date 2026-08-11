@@ -47,17 +47,12 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Reuse CUDA backend infrastructure -->
+        <!-- Shared Java-side CUDA implementation, including the generated Java
+             binding. Native payloads are supplied only by -platform. -->
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-cuda-12.9</artifactId>
+            <artifactId>nd4j-cuda-backend-common</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <!-- JavaCPP for native bindings -->
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>javacpp</artifactId>
         </dependency>
 
         <!-- Logging -->

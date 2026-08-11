@@ -205,9 +205,19 @@ def restore_remote_dependency_cache(
         target = targets[0]
     host = snapshots.get("host")
     if not isinstance(host, dict) or not isinstance(target, dict):
-        raise RuntimeError(
-            f"managed dependency snapshots are incomplete for {javacpp_platform}/{native_backend}"
+        # A managed snapshot is an optimization, not a prerequisite for a
+        # release build.  The cache index is populated asynchronously by
+        # successful MLIR builds, so a new platform/backend combination can
+        # legitimately have no target snapshot yet.  Let the normal release
+        # scripts build the dependency locally in that case; failing before
+        # the first compiler invocation makes the first build impossible and
+        # prevents it from ever seeding the snapshot for subsequent runs.
+        print(
+            "[dl4j-dep-cache] no exact managed dependency snapshot for "
+            f"{javacpp_platform}/{native_backend}; continuing with local dependency build",
+            flush=True,
         )
+        return
 
     cache_root = Path.home() / ".libnd4j"
     cache_dir = cache_root / "dep-cache"
@@ -1331,6 +1341,20 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_CUDA_VERSION": str(build.get("cudaVersion", "")),
             "DL4J_ZLUDA_TARGET": zluda_target(build),
         })
+        if family == "vulkan-mlir" and variant.get("mlir"):
+            # native-platform.sh uses platform.classifier for the JavaCPP
+            # platform, but the compile-only Vulkan/MLIR lane also needs the
+            # matching platform extension and libnd4j classifier.  Inject
+            # these through the shared Maven flags so the Azure worker can
+            # apply the fix without requiring a pushed source commit.
+            existing_mvn_flags = variant_env.get("DL4J_MVN_FLAGS", "").strip()
+            compile_flags = (
+                "-Djavacpp.platform.extension=-compile "
+                "-Dlibnd4j.classifier=linux-x86_64-compile"
+            )
+            variant_env["DL4J_MVN_FLAGS"] = (
+                f"{existing_mvn_flags} {compile_flags}".strip()
+            )
         if build["javacppPlatform"].startswith("android-"):
             variant_env["DL4J_ANDROID_API"] = str(android_api_level(variant))
             variant_env["DL4J_CMAKE_ARGS"] = android_cmake_args(source, build, variant, variant_env)

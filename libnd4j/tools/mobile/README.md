@@ -6,8 +6,8 @@ Core rules:
 
 - The application and public SDK accept one canonical SameDiff model format: `.sdz`.
 - Hardware objects such as SPIR-V, Hexagon kernels, Metal libraries, and LiteRT-LM packages are compiler/cache internals, never formats selected by the app.
-- Accelerator profiles are device-only. They disable BLAS and reject CPU, slot-by-slot, NNAPI, and host fallback.
-- Vulkan and Qualcomm lowering/replay stay in SDX/libnd4j. Tensor G5 uses Google's direct LiteRT-LM NPU ABI.
+- Accelerator profiles disable BLAS and reject implicit slot-by-slot or application-level host fallback. Tensor G3 alone uses an explicit mixed-backend policy: EdgeTPU through NNAPI first, ACL/NEON for supported CPU segments, then bounded functional replay.
+- Vulkan, Qualcomm, and Tensor G3 lowering/replay stay in SDX/libnd4j. Tensor G5 uses Google's direct LiteRT-LM NPU ABI.
 - JavaCPP is transport only. Execution, tokenizer/KV state, sampling, streaming, compilation, and cache ownership remain in SDX or the selected native provider.
 - Offline mode requires all source, Maven, Cargo, npm/Bazel, LFS, SDK, and vendor inputs to be pre-cached.
 - AAR verifiers check AArch64 ELF closure, provider symbols, JavaCPP APIs, the common SDZ cache API, AOT policy, and forbidden host/BLAS dependencies.
@@ -68,6 +68,21 @@ Build the BLAS-free device-only Vulkan SDX AAR with the NDK:
 
 The AAR links Android's system Vulkan loader and packages libnd4jvulkan, libjnisdx, functional replay, and the Java/JavaCPP runtime. Production sessions require cached AOT SPIR-V, capture the lowered command sequence once, and replay it for later tokens. Unsupported or unrecordable operations fail closed.
 
+## Google Tensor G3 NNAPI
+
+Build and publish the canonical Pixel Tensor G3 provider from the checkout:
+
+    tools/mobile/build-android-accelerator.sh \
+      --profile tools/mobile/profiles/tensor-g3-nnapi.env \
+      --android-ndk /path/to/android-ndk-r28b-or-newer \
+      --offline
+
+The default command builds and installs the tokenizer preset, generated tokenizer bindings, SDX preset, model compiler/cache API, native runtime, and JavaCPP bridge in dependency order. The promoted AAR includes `binding.json`, `provider.json`, the complete Java class contract, and the exact AArch64 native dependency closure. Its verifier cross-checks the provider ID, artifact format, target SoC, runtime library, execution policy, Java APIs, and ELF dependencies before writing the SHA-256 sidecar.
+
+`--skip-native` is only for an incremental provider rebuild. It requires the native AAR bytes, variant, canonical path, and SHA-256 to match the atomic `.build-receipt` produced by a completed non-skipped build. A missing or stale receipt fails closed; rerun without `--skip-native` instead of selecting an intermediate AAR manually.
+
+Tensor G3 segment placement is explicit and observable: EdgeTPU-capable NNAPI segments have first precedence, ACL/NEON handles supported CPU segments, and functional replay is the bounded final degradation path. There is no implicit whole-graph slot-by-slot fallback.
+
 ## Qualcomm Hexagon/HTP
 
 Build the runtime contract:
@@ -125,6 +140,7 @@ The default build root is `libnd4j/build/mobile/<variant>`. Its `dist` directory
 
 - `sdx-runtime-android-arm64-vulkan.aar`
 - `sdx-runtime-android-arm64-hexagon.aar`
+- `sdx-runtime-android-arm64-tensor-g3.aar`
 - `sdx-chat-runtime-android-arm64-google-tensor-g5.aar`
 
 Models remain separate `.sdz` inputs; licensed vendor adapters remain external inputs.

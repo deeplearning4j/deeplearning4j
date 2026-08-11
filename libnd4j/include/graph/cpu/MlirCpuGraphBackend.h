@@ -49,7 +49,7 @@ namespace graph {
  * data movement (gather, concat, tile, scatter_nd, split), shape
  * manipulation (permute, reshape), constant generation, and convolution.
  *
- * Priority in getCpuGraphBackend():
+ * Resolution priority in the shared backend catalog:
  *   oneDNN (Intel-optimized) > ACL (ARM-optimized) > MLIR JIT (universal)
  */
 class MlirCpuGraphBackend : public GraphBackend {
@@ -59,6 +59,8 @@ class MlirCpuGraphBackend : public GraphBackend {
 
   const char* name() const override { return "MLIR CPU JIT"; }
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,

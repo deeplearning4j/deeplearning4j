@@ -87,9 +87,6 @@ std::atomic<uint64_t> VulkanPipelineCache::totalCacheHits_{0};
 
 namespace {
 
-thread_local bool gAllowRuntimeCompilation = true;
-thread_local std::string gRuntimeArtifactDirectory;
-
 #if defined(HAVE_MLIR) && HAVE_MLIR
 class VulkanAttachSPIRVEntryPointABIPass final
     : public mlir::PassWrapper<VulkanAttachSPIRVEntryPointABIPass,
@@ -199,19 +196,6 @@ std::string pipelineCacheKey(const std::string& opName,
 
 }  // namespace
 
-VulkanPipelineCache::ScopedCompilationPolicy::ScopedCompilationPolicy(
-    bool allowRuntimeCompilation, const std::string& artifactDirectory)
-    : previousAllowRuntimeCompilation_(gAllowRuntimeCompilation),
-      previousArtifactDirectory_(gRuntimeArtifactDirectory) {
-  gAllowRuntimeCompilation = allowRuntimeCompilation;
-  gRuntimeArtifactDirectory = artifactDirectory;
-}
-
-VulkanPipelineCache::ScopedCompilationPolicy::~ScopedCompilationPolicy() {
-  gAllowRuntimeCompilation = previousAllowRuntimeCompilation_;
-  gRuntimeArtifactDirectory = previousArtifactDirectory_;
-}
-
 // ── Constructor / Destructor ─────────────────────────────────────────────────
 
 VulkanPipelineCache::VulkanPipelineCache(VkDevice device, VkPhysicalDevice physDevice,
@@ -255,12 +239,22 @@ VulkanPipelineCache::~VulkanPipelineCache() {
 VkPipeline VulkanPipelineCache::getOrCompile(
     const std::string& opName, const std::string& mlirModuleStr,
     VkDevice device, uint32_t pushConstantBytes) {
+  return getOrCompile(opName, mlirModuleStr, device, GraphCompilationPolicy{},
+                      pushConstantBytes);
+}
+
+VkPipeline VulkanPipelineCache::getOrCompile(
+    const std::string& opName, const std::string& mlirModuleStr,
+    VkDevice device, const GraphCompilationPolicy& compilationPolicy,
+    uint32_t pushConstantBytes) {
   std::lock_guard<std::mutex> guard(mutex_);
 
   const VulkanSpirvDiskCache::DeviceCapsKey capsKey{
       apiVersion_, fp16_, storage16_, fp64_, int64_, int8_};
-  const bool allowRuntimeCompilation = gAllowRuntimeCompilation;
-  const std::string artifactDirectory = gRuntimeArtifactDirectory;
+  const bool allowRuntimeCompilation =
+      compilationPolicy.runtimeCompilationAllowed;
+  const std::string& artifactDirectory =
+      compilationPolicy.runtimeArtifactDirectory;
   const bool diskCacheActive =
       allowRuntimeCompilation && VulkanSpirvDiskCache::active();
 

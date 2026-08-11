@@ -238,10 +238,16 @@
         "artifactIds": [
           "nd4j-cuda-12.6",
           "nd4j-cuda-12.6-preset",
-          "nd4j-cuda-12.6-platform"
+          "nd4j-cuda-12.6-platform",
+          "nd4j-cuda-backend-common"
         ],
         "classifierTokens": [
           "linux-x86_64"
+        ],
+        "unclassifiedArtifactIds": [
+          "nd4j-cuda-12.6",
+          "nd4j-cuda-12.6-preset",
+          "nd4j-cuda-backend-common"
         ],
         "includeMetadata": true
       },
@@ -257,7 +263,8 @@
           ":nd4j-cuda-12.6",
           ":nd4j-cuda-12.6-preset",
           ":libnd4j",
-          ":nd4j-cuda-12.6-platform"
+          ":nd4j-cuda-12.6-platform",
+          ":nd4j-cuda-backend-common"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0"
@@ -306,12 +313,18 @@
       "artifactRules": {
         "mode": "classifier",
         "artifactIds": [
+          "nd4j-cuda-backend-common",
           "nd4j-cuda-12.9",
           "nd4j-cuda-12.9-preset",
           "nd4j-cuda-12.9-platform"
         ],
         "classifierTokens": [
           "linux-x86_64"
+        ],
+        "unclassifiedArtifactIds": [
+          "nd4j-cuda-backend-common",
+          "nd4j-cuda-12.9",
+          "nd4j-cuda-12.9-preset"
         ],
         "includeMetadata": true
       },
@@ -324,6 +337,7 @@
           "sdx"
         ],
         "modules": [
+          ":nd4j-cuda-backend-common",
           ":nd4j-cuda-12.9",
           ":nd4j-cuda-12.9-preset",
           ":libnd4j",
@@ -384,7 +398,8 @@
         ],
         "classifierTokens": [
           "windows-x86_64"
-        ]
+        ],
+        "includeMetadata": true
       },
       "build": {
         "backend": "cpu",
@@ -431,6 +446,12 @@
             "helper": "onednn",
             "extension": "avx512",
             "suffix": "-onednn-avx512"
+          },
+          {
+            "name": "compile",
+            "extension": "compile",
+            "suffix": "-compile",
+            "windowsNativeCompile": true
           }
         ],
         "buildThreads": 48
@@ -459,11 +480,18 @@
         "artifactIds": [
           "nd4j-cuda-12.6",
           "nd4j-cuda-12.6-preset",
-          "nd4j-cuda-12.6-platform"
+          "nd4j-cuda-12.6-platform",
+          "nd4j-cuda-backend-common"
         ],
         "classifierTokens": [
           "windows-x86_64"
-        ]
+        ],
+        "unclassifiedArtifactIds": [
+          "nd4j-cuda-12.6",
+          "nd4j-cuda-12.6-preset",
+          "nd4j-cuda-backend-common"
+        ],
+        "includeMetadata": true
       },
       "build": {
         "backend": "cuda",
@@ -477,7 +505,8 @@
           ":nd4j-cuda-12.6",
           ":nd4j-cuda-12.6-preset",
           ":libnd4j",
-          ":nd4j-cuda-12.6-platform"
+          ":nd4j-cuda-12.6-platform",
+          ":nd4j-cuda-backend-common"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",
@@ -494,6 +523,14 @@
             "helper": "cudnn",
             "classifierSuffix": "-cuda-12.6-cudnn",
             "platformExtension": "-cudnn"
+          },
+          {
+            "name": "compile",
+            "extension": "compile",
+            "suffix": "-compile",
+            "classifierSuffix": "-cuda-12.6-compile",
+            "platformExtension": "-compile",
+            "windowsNativeCompile": true
           }
         ],
         "buildThreads": 48
@@ -522,11 +559,18 @@
         "artifactIds": [
           "nd4j-cuda-12.9",
           "nd4j-cuda-12.9-preset",
-          "nd4j-cuda-12.9-platform"
+          "nd4j-cuda-12.9-platform",
+          "nd4j-cuda-backend-common"
         ],
         "classifierTokens": [
           "windows-x86_64"
-        ]
+        ],
+        "unclassifiedArtifactIds": [
+          "nd4j-cuda-12.9",
+          "nd4j-cuda-12.9-preset",
+          "nd4j-cuda-backend-common"
+        ],
+        "includeMetadata": true
       },
       "build": {
         "backend": "cuda",
@@ -540,7 +584,8 @@
           ":nd4j-cuda-12.9",
           ":nd4j-cuda-12.9-preset",
           ":libnd4j",
-          ":nd4j-cuda-12.9-platform"
+          ":nd4j-cuda-12.9-platform",
+          ":nd4j-cuda-backend-common"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",
@@ -557,6 +602,14 @@
             "helper": "cudnn",
             "classifierSuffix": "-cuda-12.9-cudnn",
             "platformExtension": "-cudnn"
+          },
+          {
+            "name": "compile",
+            "extension": "compile",
+            "suffix": "-compile",
+            "classifierSuffix": "-cuda-12.9-compile",
+            "platformExtension": "-compile",
+            "windowsNativeCompile": true
           }
         ],
         "buildThreads": 48
@@ -658,8 +711,7 @@
       "machineClass": "x86",
       "worker": "worker.sh",
       "workloads": [
-        "maven",
-        "sdk"
+        "maven"
       ],
       "artifactRules": {
         "mode": "classifier",
@@ -671,6 +723,7 @@
           "android-arm64"
         ],
         "unclassifiedArtifactIds": [
+          "nd4j-vulkan",
           "nd4j-vulkan-preset"
         ],
         "includeMetadata": true
@@ -848,6 +901,7 @@
           "linux-x86_64"
         ],
         "unclassifiedArtifactIds": [
+          "nd4j-vulkan",
           "nd4j-vulkan-preset"
         ],
         "includeMetadata": true
@@ -906,6 +960,7 @@
           "linux-x86_64-compile"
         ],
         "unclassifiedArtifactIds": [
+          "nd4j-vulkan",
           "nd4j-vulkan-preset"
         ],
         "includeMetadata": true
@@ -954,16 +1009,20 @@
       "workloads": [
         "maven"
       ],
-      "artifactRules": {
-        "mode": "classifier",
-        "artifactIds": [
-          "nd4j-hexagon",
-          "nd4j-hexagon-preset"
-        ],
-        "classifierTokens": [
-          "linux-x86_64"
-        ],
-        "includeMetadata": true
+        "artifactRules": {
+          "mode": "classifier",
+          "artifactIds": [
+            "nd4j-hexagon",
+            "nd4j-hexagon-preset"
+          ],
+          "classifierTokens": [
+            "linux-x86_64"
+          ],
+          "unclassifiedArtifactIds": [
+            "nd4j-hexagon",
+            "nd4j-hexagon-preset"
+          ],
+          "includeMetadata": true
       },
       "build": {
         "backend": "hexagon",
@@ -1008,16 +1067,20 @@
       "workloads": [
         "maven"
       ],
-      "artifactRules": {
-        "mode": "classifier",
-        "artifactIds": [
-          "nd4j-tpu",
-          "nd4j-tpu-preset"
-        ],
-        "classifierTokens": [
-          "linux-x86_64"
-        ],
-        "includeMetadata": true
+        "artifactRules": {
+          "mode": "classifier",
+          "artifactIds": [
+            "nd4j-tpu",
+            "nd4j-tpu-preset"
+          ],
+          "classifierTokens": [
+            "linux-x86_64"
+          ],
+          "unclassifiedArtifactIds": [
+            "nd4j-tpu",
+            "nd4j-tpu-preset"
+          ],
+          "includeMetadata": true
       },
       "build": {
         "backend": "tpu",
@@ -1069,12 +1132,15 @@
           "nd4j-cuda-12.9",
           "nd4j-cuda-12.9-preset",
           "nd4j-zluda",
-          "nd4j-zluda-platform"
+          "nd4j-zluda-platform",
+          "nd4j-cuda-backend-common"
         ],
         "classifierTokens": [
           "linux-x86_64-zluda"
         ],
         "unclassifiedArtifactIds": [
+          "nd4j-cuda-backend-common",
+          "nd4j-cuda-12.9-preset",
           "nd4j-zluda",
           "nd4j-zluda-platform"
         ],
@@ -1102,7 +1168,8 @@
           ":nd4j-cuda-12.9-preset",
           ":nd4j-zluda",
           ":nd4j-zluda-platform",
-          ":libnd4j"
+          ":libnd4j",
+          ":nd4j-cuda-backend-common"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",
@@ -1138,11 +1205,20 @@
       "artifactRules": {
         "mode": "classifier",
         "artifactIds": [
+          "nd4j-cuda-backend-common",
           "nd4j-cuda-12.9",
-          "nd4j-cuda-12.9-preset"
+          "nd4j-cuda-12.9-preset",
+          "nd4j-zluda",
+          "nd4j-zluda-platform"
         ],
         "classifierTokens": [
           "windows-x86_64-zluda"
+        ],
+        "unclassifiedArtifactIds": [
+          "nd4j-cuda-backend-common",
+          "nd4j-cuda-12.9-preset",
+          "nd4j-zluda",
+          "nd4j-zluda-platform"
         ],
         "includeMetadata": true
       },
@@ -1154,12 +1230,15 @@
         "profiles": [
           "cuda",
           "sdx",
-          "zluda"
+          "zluda",
+          "zluda-platform"
         ],
         "modules": [
+          ":nd4j-cuda-backend-common",
           ":nd4j-cuda-12.9",
           ":nd4j-cuda-12.9-preset",
           ":nd4j-zluda",
+          ":nd4j-zluda-platform",
           ":libnd4j"
         ],
         "mavenArgs": [

@@ -917,7 +917,9 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
   this->_shapeInfo = constShapeInfo->primary();
   this->_shapeInfoD = constShapeInfo->special();
   _buffer = buffer;
-  _ownsBuffer = false;  // External buffer - don't delete
+  // This overload is the explicit DataBuffer ownership-transfer constructor.
+  // Borrowing callers pass isBuffAlloc=false; pool consumers pass true.
+  _ownsBuffer = isBuffAlloc && !isView;
   _offset = offset;
   RECORD_NDARRAY_ALLOCATION();
 }
@@ -2752,6 +2754,15 @@ void *NDArray::buffer() {
   if (dataType() == DataType::UTF8 || dataType() == DataType::UTF16 || dataType() == DataType::UTF32) {
     return _bufferWithOffset<int8_t>(0, getDataBuffer());
   }
+  // FP8 storage is intentionally excluded from SD_COMMON_TYPES_ALL to avoid
+  // expanding every generic kernel. Buffer access still needs exact element
+  // sizing, so dispatch both supported FP8 formats explicitly.
+  if (dataType() == DataType::FLOAT8) {
+    return _bufferWithOffset<float8>(offset(), getDataBuffer());
+  }
+  if (dataType() == DataType::FLOAT8_E5M2) {
+    return _bufferWithOffset<float8_e5m2>(offset(), getDataBuffer());
+  }
   BUILD_SINGLE_SELECTOR(dataType(), return _bufferWithOffset, (offset(),getDataBuffer()),SD_COMMON_TYPES_ALL);
   // If BUILD_SINGLE_SELECTOR didn't match any type, throw instead of returning nullptr
   THROW_EXCEPTION("NDArray::buffer(): dataType() did not match any known type");
@@ -2759,6 +2770,8 @@ void *NDArray::buffer() {
 
 // Explicit template instantiation for _bufferWithOffset used by buffer()
 BUILD_SINGLE_TEMPLATE(void* _bufferWithOffset, (LongType, DataBuffer*), SD_COMMON_TYPES_ALL);
+template void* _bufferWithOffset<float8>(LongType, DataBuffer*);
+template void* _bufferWithOffset<float8_e5m2>(LongType, DataBuffer*);
 
 //////////////////////////////////////////////////////////////////////////
 void *NDArray::bufferWithOffset(sd::LongType offset) {
@@ -3902,6 +3915,18 @@ T *NDArray::bufferasTWithOffset(sd::LongType offset) {
 
 BUILD_SINGLE_UNCHAINED_TEMPLATE(  SD_LIB_EXPORT, * NDArray::bufferasTWithOffset(sd::LongType),
                                   SD_COMMON_TYPES_ALL);
+
+// FP8 is deliberately excluded from SD_COMMON_TYPES_ALL to prevent a global
+// template explosion, but targeted cast/assign helpers still require typed
+// host and special buffer access. Emit only those low-level accessors here.
+template SD_LIB_EXPORT float8 *NDArray::specialBufferasTWithOffset<float8>(LongType);
+template SD_LIB_EXPORT float8_e5m2 *NDArray::specialBufferasTWithOffset<float8_e5m2>(LongType);
+template SD_LIB_EXPORT float8 *NDArray::specialBufferasT<float8>();
+template SD_LIB_EXPORT float8_e5m2 *NDArray::specialBufferasT<float8_e5m2>();
+template SD_LIB_EXPORT float8 *NDArray::bufferAsT<float8>();
+template SD_LIB_EXPORT float8_e5m2 *NDArray::bufferAsT<float8_e5m2>();
+template SD_LIB_EXPORT float8 *NDArray::bufferasTWithOffset<float8>(LongType);
+template SD_LIB_EXPORT float8_e5m2 *NDArray::bufferasTWithOffset<float8_e5m2>(LongType);
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>

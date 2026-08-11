@@ -37,6 +37,7 @@
 #include <ops/declarable/LegacyScalarBoolOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
 #include <ops/declarable/LegacyStatsOp.h>
+#include <ops/declarable/LegacyTransformAnyOp.h>
 #include <ops/declarable/LegacyTransformBoolOp.h>
 #include <ops/declarable/LegacyTransformFloatOp.h>
 #include <ops/declarable/LegacyTransformSameOp.h>
@@ -633,6 +634,9 @@ void sd::graph::Node::deleteOpByType(::graph::OpType opType, void* op) {
       case ::graph::OpType_TRANSFORM_BOOL:
         delete reinterpret_cast<sd::ops::LegacyTransformBoolOp*>(op);
         break;
+      case ::graph::OpType_TRANSFORM_ANY:
+        delete reinterpret_cast<sd::ops::LegacyTransformAnyOp*>(op);
+        break;
       case ::graph::OpType_SCALAR:
         delete reinterpret_cast<sd::ops::LegacyScalarOp*>(op);
         break;
@@ -695,6 +699,8 @@ sd::ops::DeclarableOp* sd::graph::Node::buildOpByType(::graph::OpType opType, in
       return new sd::ops::LegacyTransformFloatOp(opNum);
     case ::graph::OpType_TRANSFORM_BOOL:
       return new sd::ops::LegacyTransformBoolOp(opNum);
+    case ::graph::OpType_TRANSFORM_ANY:
+      return new sd::ops::LegacyTransformAnyOp(opNum);
     case ::graph::OpType_SCALAR:
       return scalar == nullptr ? new sd::ops::LegacyScalarOp(opNum) : new sd::ops::LegacyScalarOp(opNum, *scalar);
     case ::graph::OpType_SCALAR_BOOL:

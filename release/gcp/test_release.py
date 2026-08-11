@@ -114,7 +114,22 @@ class ReleasePlanTests(unittest.TestCase):
         self.assertTrue(windows)
         for shard in windows:
             variants = shard["build"]["variants"]
-            self.assertNotIn("compile", [item["name"] for item in variants], shard["id"])
+            compile_variants = [item for item in variants if item["name"] == "compile"]
+            if shard["id"] == "windows-x86_64-cpu" or (
+                shard["build"]["backend"] == "cuda" and not shard["build"].get("zludaVersion")
+            ):
+                self.assertEqual(1, len(compile_variants), shard["id"])
+                self.assertTrue(compile_variants[0].get("windowsNativeCompile"))
+                self.assertEqual("compile", compile_variants[0].get("extension"))
+                self.assertEqual("-compile", compile_variants[0].get("suffix"))
+                if shard["build"]["backend"] == "cuda":
+                    self.assertEqual(
+                        f"-cuda-{shard['build']['cudaVersion']}-compile",
+                        compile_variants[0].get("classifierSuffix"),
+                    )
+                    self.assertEqual("-compile", compile_variants[0].get("platformExtension"))
+            else:
+                self.assertFalse(compile_variants, shard["id"])
             self.assertFalse(
                 any(item.get("mlir") or item.get("triton") for item in variants),
                 shard["id"],

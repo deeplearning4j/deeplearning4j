@@ -127,6 +127,8 @@ struct sdx_model {
   bool strict_backend = false;
   bool allow_runtime_jit = false;
   std::string runtime_artifact_directory;
+  std::string device_compilation_cache_directory;
+  std::string device_compilation_cache_model_key;
   std::string tokenizer_path;
   std::string text_generation_config_path;
 };
@@ -237,7 +239,7 @@ namespace {
 
 constexpr int kSdxAbiVersion = SDX_RUNTIME_ABI_VERSION;
 constexpr int kMinBackend = static_cast<int>(SDX_BACKEND_AUTO);
-constexpr int kMaxBackend = static_cast<int>(SDX_BACKEND_HEXAGON);
+constexpr int kMaxBackend = static_cast<int>(SDX_BACKEND_OPENVINO);
 constexpr int kMinGpuTarget = static_cast<int>(SDX_GPU_TARGET_AUTO);
 constexpr int kMaxGpuTarget = static_cast<int>(SDX_GPU_TARGET_METAL);
 
@@ -254,6 +256,8 @@ struct BundleManifestData {
   std::string hexagon_kernel_directory;
   std::string tokenizer_path;
   std::string text_generation_config_path;
+  std::string device_compilation_cache_model_key;
+  std::vector<std::string> targets;
 };
 
 // Sniff the 4-byte local-file-header magic that identifies a packed (ZIP)
@@ -477,6 +481,96 @@ bool extractJsonStringField(const std::string& json, const std::string& field, s
   return true;
 }
 
+bool extractJsonStringArrayField(const std::string& json,
+                                 const std::string& field,
+                                 std::vector<std::string>* out,
+                                 std::string* errorOut) {
+  out->clear();
+  const std::string key = "\"" + field + "\"";
+  const size_t keyPos = json.find(key);
+  if (keyPos == std::string::npos) return true;
+
+  const size_t colonPos = json.find(':', keyPos + key.size());
+  const size_t arrayStart =
+      colonPos == std::string::npos ? std::string::npos
+                                    : json.find('[', colonPos + 1);
+  if (arrayStart == std::string::npos) {
+    *errorOut = "Bundle manifest field " + field + " must be a string array";
+    return false;
+  }
+
+  size_t cursor = arrayStart + 1;
+  while (cursor < json.size()) {
+    while (cursor < json.size() &&
+           std::isspace(static_cast<unsigned char>(json[cursor]))) {
+      cursor++;
+    }
+    if (cursor >= json.size()) break;
+    if (json[cursor] == ']') return true;
+    if (json[cursor] != '"') {
+      *errorOut = "Bundle manifest field " + field +
+                  " contains a non-string value";
+      return false;
+    }
+
+    const size_t quoteStart = ++cursor;
+    bool escaped = false;
+    for (; cursor < json.size(); cursor++) {
+      const char c = json[cursor];
+      if (escaped) {
+        escaped = false;
+      } else if (c == '\\') {
+        escaped = true;
+      } else if (c == '"') {
+        break;
+      }
+    }
+    if (cursor >= json.size()) {
+      *errorOut = "Bundle manifest field " + field +
+                  " has an unterminated string";
+      return false;
+    }
+    out->push_back(jsonUnescape(
+        json.substr(quoteStart, cursor - quoteStart)));
+    cursor++;
+    while (cursor < json.size() &&
+           std::isspace(static_cast<unsigned char>(json[cursor]))) {
+      cursor++;
+    }
+    if (cursor < json.size() && json[cursor] == ',') {
+      cursor++;
+      continue;
+    }
+    if (cursor < json.size() && json[cursor] == ']') return true;
+    *errorOut = "Bundle manifest field " + field +
+                " must separate target strings with commas";
+    return false;
+  }
+
+  *errorOut = "Bundle manifest field " + field + " is unterminated";
+  return false;
+}
+
+std::string requiredBundleTarget(int backend, int gpuTarget) {
+  if (backend == static_cast<int>(SDX_BACKEND_VULKAN) ||
+      gpuTarget == static_cast<int>(SDX_GPU_TARGET_VULKAN)) {
+    return "android-arm64-vulkan";
+  }
+  if (backend == static_cast<int>(SDX_BACKEND_HEXAGON)) {
+    return "android-arm64-hexagon-htp";
+  }
+  if (backend == static_cast<int>(SDX_BACKEND_NNAPI) ||
+      backend == static_cast<int>(SDX_BACKEND_ARM_HYBRID)) {
+    return "android-arm64-nnapi-accelerator";
+  }
+  if (backend == static_cast<int>(SDX_BACKEND_METAL) ||
+      backend == static_cast<int>(SDX_BACKEND_MLX) ||
+      gpuTarget == static_cast<int>(SDX_GPU_TARGET_METAL)) {
+    return "ios-arm64-metal";
+  }
+  return std::string();
+}
+
 std::string resolveManifestRelativePath(const std::string& manifestPath,
                                         const std::string& assetPath) {
   if (assetPath.empty() || assetPath.front() == '/' ||
@@ -578,6 +672,13 @@ bool parseBundleManifest(const std::filesystem::path& manifestPath, BundleManife
       return false;
     }
     out->gpu_target = parsedTarget;
+  }
+
+  extractJsonStringField(json, "compileKey",
+                         &out->device_compilation_cache_model_key);
+  if (!extractJsonStringArrayField(json, "targets", &out->targets,
+                                   errorOut)) {
+    return false;
   }
 
   return true;
@@ -713,6 +814,13 @@ bool parseBundleManifest(const std::string& manifestPath, BundleManifestData* ou
       return false;
     }
     out->gpu_target = parsedTarget;
+  }
+
+  extractJsonStringField(json, "compileKey",
+                         &out->device_compilation_cache_model_key);
+  if (!extractJsonStringArrayField(json, "targets", &out->targets,
+                                   errorOut)) {
+    return false;
   }
 
   return true;
@@ -945,6 +1053,7 @@ SDX_API sdx_status_t sdxLoadBundle(
   int gpuTarget = static_cast<int>(SDX_GPU_TARGET_AUTO);
   bool strictBackend = false;
   bool allowRuntimeJit = false;
+  std::string deviceCompilationCacheDirectory;
 
   if (options != nullptr) {
     const uint32_t optSize = options->struct_size;
@@ -953,6 +1062,16 @@ SDX_API sdx_status_t sdxLoadBundle(
     allowRuntimeJit = options->allow_runtime_jit != 0;
     if (optionHasField(optSize, offsetof(sdx_model_options_t, gpu_target), sizeof(int32_t))) {
       gpuTarget = options->gpu_target;
+    }
+    // A zero struct_size is accepted for the original fixed-width ABI only. Do
+    // not read an appended pointer from a legacy caller whose allocation may be
+    // smaller than the current structure.
+    if (optSize != 0 &&
+        optionHasField(optSize,
+                       offsetof(sdx_model_options_t, device_compilation_cache_directory),
+                       sizeof(const char*)) &&
+        options->device_compilation_cache_directory != nullptr) {
+      deviceCompilationCacheDirectory = options->device_compilation_cache_directory;
     }
   }
 
@@ -974,6 +1093,27 @@ SDX_API sdx_status_t sdxLoadBundle(
 
   if (options == nullptr || gpuTarget == static_cast<int>(SDX_GPU_TARGET_AUTO)) {
     gpuTarget = manifestData.gpu_target;
+  }
+
+  const std::string requiredTarget = requiredBundleTarget(backend, gpuTarget);
+  if (strictBackend && !requiredTarget.empty() && !manifestData.targets.empty() &&
+      std::find(manifestData.targets.begin(), manifestData.targets.end(),
+                requiredTarget) == manifestData.targets.end()) {
+#if HAS_FILESYSTEM
+    if (!manifestData.extracted_dir.empty()) {
+      std::error_code cleanupEc;
+      std::filesystem::remove_all(manifestData.extracted_dir, cleanupEc);
+    }
+#endif
+    std::string declaredTargets;
+    for (size_t i = 0; i < manifestData.targets.size(); i++) {
+      if (i > 0) declaredTargets += ", ";
+      declaredTargets += manifestData.targets[i];
+    }
+    setLastError(runtime, "Bundle target mismatch: strict backend requires " +
+                              requiredTarget + "; manifest declares [" +
+                              declaredTargets + "]");
+    return SDX_STATUS_MODEL_LOAD_FAILED;
   }
 
   const bool precompiledOnlyVulkan =
@@ -1022,7 +1162,13 @@ SDX_API sdx_status_t sdxLoadBundle(
   // Without std::filesystem, skip existence check — loadModelFromFile will fail if missing
 #endif
 
-  sd::Pointer modelHandle = loadModelFromFile(modelPathStr.c_str());
+  const bool requireFileBacked =
+      strictBackend ||
+      backend == static_cast<int>(SDX_BACKEND_NNAPI) ||
+      backend == static_cast<int>(SDX_BACKEND_HEXAGON) ||
+      backend == static_cast<int>(SDX_BACKEND_VULKAN);
+  sd::Pointer modelHandle =
+      loadModelFromFileWithOptions(modelPathStr.c_str(), requireFileBacked);
   if (modelHandle == nullptr) {
     const char* err = lastErrorMessage();
     if (err != nullptr && err[0] != '\0') {
@@ -1047,6 +1193,10 @@ SDX_API sdx_status_t sdxLoadBundle(
       backend == static_cast<int>(SDX_BACKEND_HEXAGON)
           ? manifestData.hexagon_kernel_directory
           : manifestData.vulkan_spirv_directory;
+  model->device_compilation_cache_directory =
+      std::move(deviceCompilationCacheDirectory);
+  model->device_compilation_cache_model_key =
+      manifestData.device_compilation_cache_model_key;
   model->tokenizer_path = manifestData.tokenizer_path;
   model->text_generation_config_path =
       manifestData.text_generation_config_path;
@@ -1116,8 +1266,12 @@ static sdx_status_t createContextInternal(
           ? nullptr
           : reinterpret_cast<sd::Pointer>(mutableOutputNames.data());
 
-  sd::Pointer planHandle =
-      compileModelPlan(model->model_handle, outputNamesPtr, num_requested_outputs);
+  sd::Pointer planHandle = compileModelPlanWithRuntimeOptions(
+      model->model_handle, outputNamesPtr, num_requested_outputs,
+      model->backend, model->allow_runtime_jit,
+      model->runtime_artifact_directory.c_str(),
+      model->device_compilation_cache_directory.c_str(),
+      model->device_compilation_cache_model_key.c_str());
 
   if (planHandle == nullptr) {
     const char* err = lastErrorMessage();
@@ -1127,14 +1281,6 @@ static sdx_status_t createContextInternal(
       setLastError(model->runtime, "compileModelPlan failed");
     }
     return SDX_STATUS_EXECUTION_FAILED;
-  }
-
-  setPlanGraphExecutionMode(planHandle, model->backend);
-  setPlanRuntimeCompilationAllowed(planHandle, model->allow_runtime_jit);
-  setPlanRuntimeArtifactDirectory(
-      planHandle, model->runtime_artifact_directory.c_str());
-  if (!model->allow_runtime_jit) {
-    setPlanJitMode(planHandle, 0);
   }
 
   OpaqueContext* graphContext = createGraphContext(0);

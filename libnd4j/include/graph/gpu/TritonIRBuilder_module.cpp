@@ -1094,6 +1094,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         arg.isOutput = true;
         if (outputSlots && outIdx < totalOutputSlots && outputSlots[outIdx]) {
           arg.dtype = outputSlots[outIdx]->dataType();
+          arg.shapeKnown = true;
           auto& arr = *outputSlots[outIdx];
           for (int d = 0; d < arr.rankOf(); d++) {
             arg.shape.push_back(arr.sizeAt(d));
@@ -1104,6 +1105,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           auto cit = cachedShapeInfoMap.find(outIdx);
           if (cit != cachedShapeInfoMap.end() && cit->second) {
             arg.dtype = ArrayOptions::dataType(cit->second);
+            arg.shapeKnown = true;
             LongType rank = shape::rank(cit->second);
             for (int d = 0; d < rank; d++) arg.shape.push_back(shape::shapeOf(cit->second)[d]);
           } else {
@@ -1129,6 +1131,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               int inputSrc = slots[i].wiring.inputSourceIndices[0];
               auto inputShape = resolveShapeLocal(inputSrc);
               if (!inputShape.empty()) {
+                arg.shapeKnown = true;
                 arg.shape = inputShape;
               }
             }
@@ -4436,13 +4439,12 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     // Cast SSA value to match output element type if needed
     mlir::Value storeVal = castTo(builder, loc, ssaIt->second, elemType);
 
-    // Per-output mask: use the output's actual element count to prevent buffer overflow
+    // Per-output mask: use the output's actual element count to prevent buffer overflow.
+    // Rank-0 scalars have an empty dimension vector but a known element count of one;
+    // do not confuse them with unresolved shapes and fall back to the global mask.
     mlir::Value storeMask = mask;  // Default: global mask (offsets < n_elements)
-    LongType outElements = 1;
-    for (auto d : arg.shape) outElements *= d;
-    // Only apply per-output mask when shape is known (non-empty) AND smaller than max.
-    // Empty shape means shape was unknown at compile time — use global mask.
-    if (!arg.shape.empty() && outElements > 0 && outElements < static_cast<LongType>(maxOutputElements)) {
+    LongType outElements = arg.elementCount();
+    if (outElements > 0 && outElements < static_cast<LongType>(maxOutputElements)) {
       // This output is smaller than the largest — use a tighter mask
       auto outN = builder.create<mlir::arith::ConstantIntOp>(
           loc, static_cast<int>(std::min(outElements, static_cast<LongType>(2147483647))), 32);
@@ -4959,6 +4961,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         arg.isOutput = true;
         if (outputSlots && outIdx < totalOutputSlots && outputSlots[outIdx]) {
           arg.dtype = outputSlots[outIdx]->dataType();
+          arg.shapeKnown = true;
           auto& arr = *outputSlots[outIdx];
           for (int d = 0; d < arr.rankOf(); d++) {
             arg.shape.push_back(arr.sizeAt(d));
@@ -4969,6 +4972,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           auto cit = cachedShapeInfoMap.find(outIdx);
           if (cit != cachedShapeInfoMap.end() && cit->second) {
             arg.dtype = ArrayOptions::dataType(cit->second);
+            arg.shapeKnown = true;
             LongType rank = shape::rank(cit->second);
             for (int d = 0; d < rank; d++) arg.shape.push_back(shape::shapeOf(cit->second)[d]);
           } else {
@@ -4986,6 +4990,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               int inputSrc = slots[i].wiring.inputSourceIndices[0];
               auto inputShape = resolveShape(inputSrc);
               if (!inputShape.empty()) {
+                arg.shapeKnown = true;
                 arg.shape = inputShape;
               }
             }
@@ -8858,6 +8863,7 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
         arg.isOutput = true;
         if (outputSlots && outIdx < totalOutputSlots && outputSlots[outIdx]) {
           arg.dtype = outputSlots[outIdx]->dataType();
+          arg.shapeKnown = true;
           auto& arr = *outputSlots[outIdx];
           for (int d = 0; d < arr.rankOf(); d++) {
             arg.shape.push_back(arr.sizeAt(d));
@@ -8877,6 +8883,7 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
             int inputSrc = slots[i].wiring.inputSourceIndices[0];
             NDArray* inputArr = resolveArray(inputSrc);
             if (inputArr) {
+              arg.shapeKnown = true;
               for (int d = 0; d < inputArr->rankOf(); d++) {
                 arg.shape.push_back(inputArr->sizeAt(d));
               }

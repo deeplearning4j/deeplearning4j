@@ -36,6 +36,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import org.eclipse.deeplearning4j.llm.generation.kvcache.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
@@ -78,6 +79,73 @@ public class TestGenerationPipeline {
 
         assertEquals("1000000000000000019884624838656", config.getModelMaxLength().toString());
         assertTrue(config.hasChatTemplate());
+    }
+
+    @Test
+    @DisplayName("In-graph native handoff consumes the sampled token at the advanced position")
+    public void testInGraphNativeDecodeHandoffAdvancesTokenAndPosition() {
+        INDArray inputIds = Nd4j.createFromArray(10L).reshape(1, 1);
+        INDArray positionOffset = Nd4j.scalar(DataType.INT64, 531L);
+        INDArray cachePosition = Nd4j.scalar(DataType.INT64, 531L);
+        try {
+            GenerationPipeline.prepareInGraphNativeDecodeHandoff(
+                    inputIds, positionOffset, cachePosition, 568, 532L);
+
+            assertEquals(568L, inputIds.getLong(0, 0),
+                    "native decode must consume the token sampled by Java warmup");
+            assertEquals(532L, positionOffset.getLong(0),
+                    "RoPE position must advance past the warmup write");
+            assertEquals(532L, cachePosition.getLong(0),
+                    "KV write position must advance past the warmup write");
+        } finally {
+            inputIds.close();
+            positionOffset.close();
+            cachePosition.close();
+        }
+    }
+
+    @Test
+    @DisplayName("Fixed-buffer prefill mask keeps padded FP16 softmax rows finite")
+    public void testPaddedPrefillMaskKeepsFp16SoftmaxFinite() {
+        int actualLength = 2;
+        int paddedLength = 4;
+        int maxKvLength = 6;
+        INDArray mask = GenerationPipeline.buildPaddedPrefillCausalMask(
+                actualLength, paddedLength, maxKvLength, DataType.HALF);
+        INDArray paddedScores = null;
+        INDArray probabilities = null;
+        try {
+            assertArrayEquals(new long[]{1, 1, paddedLength, maxKvLength}, mask.shape());
+            for (int query = 0; query < actualLength; query++) {
+                for (int key = 0; key <= query; key++) {
+                    assertEquals(0.0f, mask.getFloat(0, 0, query, key), 0.0f);
+                }
+                for (int key = query + 1; key < maxKvLength; key++) {
+                    assertTrue(mask.getFloat(0, 0, query, key) < 0.0f);
+                }
+            }
+            for (int query = actualLength; query < paddedLength; query++) {
+                assertEquals(0.0f, mask.getFloat(0, 0, query, 0), 0.0f,
+                        "Padding queries need one finite attention target");
+                for (int key = 1; key < maxKvLength; key++) {
+                    assertTrue(mask.getFloat(0, 0, query, key) < 0.0f);
+                }
+            }
+
+            paddedScores = mask.get(
+                    org.nd4j.linalg.indexing.NDArrayIndex.point(0),
+                    org.nd4j.linalg.indexing.NDArrayIndex.point(0),
+                    org.nd4j.linalg.indexing.NDArrayIndex.point(actualLength),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all()).dup();
+            probabilities = Transforms.softmax(paddedScores, true);
+            assertFalse(probabilities.isNaN().any(),
+                    "FP16 softmax over a padded query row must remain finite");
+            assertEquals(1.0, probabilities.sumNumber().doubleValue(), 1.0e-3);
+        } finally {
+            if (probabilities != null && !probabilities.wasClosed()) probabilities.close();
+            if (paddedScores != null && !paddedScores.wasClosed()) paddedScores.close();
+            if (!mask.wasClosed()) mask.close();
+        }
     }
 
     @Test

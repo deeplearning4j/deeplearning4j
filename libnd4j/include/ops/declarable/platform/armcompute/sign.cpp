@@ -33,41 +33,15 @@ PLATFORM_IMPL(sign, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  // Create tensor info
-  auto inInfo = getArmTensorInfo(*input, Arm_DataLayout::UNKNOWN);
-  auto outInfo = getArmTensorInfo(*output, Arm_DataLayout::UNKNOWN);
+  // The bundled Arm Compute version does not expose a SIGN unary
+  // operation. Keep this operation on the ARM/CPU tier with the exact
+  // scalar semantics instead of depending on an optional vendor enum.
+  const auto* in = input->bufferAsT<float>();
+  auto* out = output->bufferAsT<float>();
 
-  Arm_Tensor inTensor, outTensor;
-  inTensor.allocator()->init(inInfo);
-  outTensor.allocator()->init(outInfo);
-
-  // Configure sign using NEElementwiseUnaryLayer with SIGN
-  arm_compute::NEElementwiseUnaryLayer sign;
-  sign.configure(&inTensor, &outTensor, arm_compute::ElementWiseUnary::SIGN);
-
-  // Import or allocate memory for input
-  if (!input->hasPaddedBuffer() && !inTensor.info()->has_padding()) {
-    inTensor.allocator()->import_memory(input->buffer());
-  } else {
-    inTensor.allocator()->allocate();
-    copyToTensor(*input, inTensor);
-  }
-
-  // Import or allocate memory for output
-  bool copyOutput = false;
-  if (!output->hasPaddedBuffer() && !outTensor.info()->has_padding()) {
-    outTensor.allocator()->import_memory(output->buffer());
-  } else {
-    outTensor.allocator()->allocate();
-    copyOutput = true;
-  }
-
-  // Run sign
-  sign.run();
-
-  // Copy output if needed
-  if (copyOutput) {
-    copyFromTensor(outTensor, *output);
+  for (sd::LongType i = 0; i < input->lengthOf(); ++i) {
+    const float value = in[i];
+    out[i] = (value > 0.0f) - (value < 0.0f);
   }
 
   return sd::Status::OK;

@@ -106,6 +106,9 @@ public class LFM2Architecture implements ModelArchitecture {
         // KV cache placeholders (same as LLaMA)
         SDVariable positionOffset = sd.placeHolder("position_offset", DataType.INT64);
         SDVariable cachePosition = sd.placeHolder("cache_position", DataType.INT64);
+        // Real (unpadded) sequence length. The fixed-buffer generation path right-pads input_ids,
+        // so both recurrent-state updates and last-token logits must use this runtime value.
+        SDVariable actualSequenceLength = sd.placeHolder("actual_sequence_length", DataType.INT64);
         SDVariable causalMask = sd.placeHolder("_causal_mask", DataType.FLOAT, -1, -1, -1, -1);
 
         // Per-layer state placeholders:
@@ -147,7 +150,7 @@ public class LFM2Architecture implements ModelArchitecture {
         List<String> outputNames = new ArrayList<>();
         for (int layer = 0; layer < numLayers; layer++) {
             hidden = buildTransformerBlock(sd, hidden, layer, config, weights, dtype,
-                    positionOffset, cachePosition, causalMask,
+                    positionOffset, cachePosition, actualSequenceLength, causalMask,
                     keyCachePlaceholders.get(layer),
                     valueCachePlaceholders.get(layer),
                     convStatePlaceholders.get(layer));
@@ -171,9 +174,26 @@ public class LFM2Architecture implements ModelArchitecture {
         }
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
 
-        // Logits in FP32 to prevent overflow
-        SDVariable logits = QuantizedLinear.matMul(sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
+        // Logits in FP32 to prevent overflow.
+        QuantizedLinear.matMulFloatOutput(
+                sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
         outputNames.add("lm_logits");
+
+        // Project only the real final token for fixed-buffer prefill. Using shape(S)-1 here would
+        // select a right-padding token whenever actualSequenceLength < S and would corrupt the
+        // first sampled token even though the attention mask excludes padded keys.
+        SDVariable batchSize = sd.sizeAt(hidden, 0);
+        SDVariable hiddenDim = sd.sizeAt(hidden, 2);
+        SDVariable one = sd.constant(Nd4j.scalar(DataType.INT64, 1L));
+        SDVariable zero = sd.constant(Nd4j.scalar(DataType.INT64, 0L));
+        SDVariable actualLast = actualSequenceLength.sub(one);
+        SDVariable beginVec = sd.stack("lm_last_begin", 0, zero, actualLast, zero);
+        SDVariable sizeVec = sd.stack("lm_last_size", 0, batchSize, one, hiddenDim);
+        SDVariable hiddenLast = sd.slice("hidden_last", hidden, beginVec, sizeVec);
+        QuantizedLinear.matMulFloatOutput(
+                sd, "lm_logits_last", hiddenLast, lmHead, weights, "output.weight", dtype);
+        outputNames.add("lm_logits_last");
+
         sd.setOutputs(outputNames);
 
         return sd;
@@ -186,8 +206,8 @@ public class LFM2Architecture implements ModelArchitecture {
     private SDVariable buildTransformerBlock(SameDiff sd, SDVariable input, int layerIdx,
                                               ArchitectureConfig config, Map<String, INDArray> weights,
                                               DataType dtype, SDVariable positionOffset,
-                                              SDVariable cachePosition, SDVariable causalMask,
-                                              SDVariable keyCache, SDVariable valueCache,
+                                              SDVariable cachePosition, SDVariable actualSequenceLength,
+                                              SDVariable causalMask, SDVariable keyCache, SDVariable valueCache,
                                               SDVariable convStateIn) {
         String prefix = "blk." + layerIdx;
 
@@ -202,7 +222,8 @@ public class LFM2Architecture implements ModelArchitecture {
             blockOut = buildGQAAttention(sd, normed, layerIdx, config, weights, dtype,
                     positionOffset, cachePosition, causalMask, keyCache, valueCache);
         } else {
-            blockOut = buildGatedShortConvBlock(sd, normed, layerIdx, config, weights, dtype, convStateIn);
+            blockOut = buildGatedShortConvBlock(
+                    sd, normed, layerIdx, config, weights, dtype, convStateIn, actualSequenceLength);
         }
 
         // Residual
@@ -359,7 +380,7 @@ public class LFM2Architecture implements ModelArchitecture {
     private SDVariable buildGatedShortConvBlock(SameDiff sd, SDVariable input, int layerIdx,
                                                  ArchitectureConfig config,
                                                  Map<String, INDArray> weights, DataType dtype,
-                                                 SDVariable convStateIn) {
+                                                 SDVariable convStateIn, SDVariable actualSequenceLength) {
         String prefix = "blk." + layerIdx;
         String convPrefix = "model.layers." + layerIdx + ".short_conv.";
 
@@ -388,7 +409,8 @@ public class LFM2Architecture implements ModelArchitecture {
         INDArray convWeight = weights.get(prefix + ".shortconv.conv.weight");
         if (convWeight != null) {
             SDVariable wConv = sd.var(convPrefix + "conv.weight", convWeight);
-            SDVariable[] convResult = new CausalConv1d(sd, bx, wConv, null, convStateIn, 0).outputVariables();
+            SDVariable[] convResult = new CausalConv1d(
+                    sd, bx, wConv, null, convStateIn, actualSequenceLength, 0, 0).outputVariables();
             bx = convResult[0];
             sd.updateVariableNameAndReference(bx, "conv_path_" + layerIdx);
             // Name the state output so GenerationPipeline can discover and feed it back
@@ -444,7 +466,7 @@ public class LFM2Architecture implements ModelArchitecture {
     // ========================================================================
 
     private SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b, DataType dtype) {
-        if (dtype == DataType.HALF || dtype == DataType.BFLOAT16) {
+        if (QuantizedLinear.requiresFp32Accumulation(dtype)) {
             SDVariable aF32 = a.castTo(name + "_a_f32", DataType.FLOAT);
             SDVariable bF32 = b.castTo(name + "_b_f32", DataType.FLOAT);
             SDVariable result = sd.mmul(name + "_f32", aF32, bF32);
@@ -470,7 +492,7 @@ public class LFM2Architecture implements ModelArchitecture {
 
         // Upcast to FLOAT32 for squaring to prevent HALF overflow
         SDVariable computeInput;
-        boolean needsCast = (input.dataType() == DataType.HALF || input.dataType() == DataType.BFLOAT16);
+        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
         if (needsCast) {
             computeInput = input.castTo(outputName + "_f32", DataType.FLOAT);
         } else {
@@ -498,7 +520,7 @@ public class LFM2Architecture implements ModelArchitecture {
                                       INDArray normWeight, float eps) {
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
         SDVariable computeInput;
-        boolean needsCast = (input.dataType() == DataType.HALF || input.dataType() == DataType.BFLOAT16);
+        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
         if (needsCast) {
             computeInput = input.castTo(outputName + "_f32", DataType.FLOAT);
         } else {

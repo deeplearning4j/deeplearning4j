@@ -227,6 +227,17 @@ public class GenerationPipelineConfig {
      */
     private final String chatTemplate;
 
+    /** Shape used when exposing tool definitions to the active template. */
+    @Builder.Default
+    private final org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolDefinitionFormat toolDefinitionFormat =
+            org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolDefinitionFormat.STANDARD;
+
+    /**
+     * Optional tool-call envelope override. When null, the imported tokenizer/model
+     * chat template selects its own protocol.
+     */
+    private final org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat toolCallFormat;
+
     // ── Rotating KV cache (StreamingLLM-style attention sinks + sliding window) ─────────────────
 
     /**

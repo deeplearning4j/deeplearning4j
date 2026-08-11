@@ -15,11 +15,14 @@
   "properties": {
     "formatVersion": {
       "type": "integer",
-      "const": 1
+      "enum": [1, 2]
     },
     "profile": {
       "type": "string",
-      "const": "causal-lm-in-graph-kv-v1"
+      "enum": [
+        "causal-lm-in-graph-kv-v1",
+        "causal-lm-in-graph-state-v2"
+      ]
     },
     "io": {
       "type": "object",
@@ -69,6 +72,10 @@
         },
         "prefillValueOutputs": {
           "$ref": "#/$defs/tensorNameArray"
+        },
+        "recurrentStates": {
+          "$ref": "#/$defs/recurrentStateArray",
+          "description": "Explicit recurrent input/output bindings. Required by formatVersion 2 and forbidden by formatVersion 1."
         }
       },
       "additionalProperties": false
@@ -244,6 +251,48 @@
       "description": "Optional bundle-relative chat template. Tokenizer ownership remains in the reusable tokenizer layer."
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "formatVersion": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "profile": {
+            "const": "causal-lm-in-graph-kv-v1"
+          },
+          "io": {
+            "not": {
+              "required": ["recurrentStates"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "formatVersion": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "profile": {
+            "const": "causal-lm-in-graph-state-v2"
+          },
+          "io": {
+            "required": ["recurrentStates"]
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "tensorName": {
       "type": "string",
@@ -255,6 +304,45 @@
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/tensorName"
+      }
+    },
+    "recurrentStateArray": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "input",
+          "output",
+          "kind",
+          "dataType",
+          "shape"
+        ],
+        "properties": {
+          "input": {
+            "$ref": "#/$defs/tensorName"
+          },
+          "output": {
+            "$ref": "#/$defs/tensorName"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["GDN", "CONV"]
+          },
+          "dataType": {
+            "type": "string",
+            "enum": ["FLOAT32", "FLOAT16", "BFLOAT16", "INT8"]
+          },
+          "shape": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            }
+          }
+        },
+        "additionalProperties": false
       }
     }
   },

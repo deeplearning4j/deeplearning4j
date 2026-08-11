@@ -24,8 +24,12 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.TokenizerConfig;
 import org.eclipse.deeplearning4j.model.download.ModelDownloader;
+import org.eclipse.deeplearning4j.tokenizers.NativeTokenizer;
+import org.nd4j.shade.jackson.databind.JsonNode;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.*;
 
 /**
@@ -77,6 +81,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
     private static final boolean NATIVE_AVAILABLE;
     private static final String NATIVE_VERSION;
     private static final String NATIVE_LOAD_ERROR;
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     static {
         boolean nativeAvailable = false;
@@ -106,14 +111,26 @@ public class HuggingFaceTokenizer implements Tokenizer {
     // Delegate to native implementation
     private final NativeTokenizerImpl impl;
     @Getter private TokenizerConfig config;
+    private final String tokenizerConfigJson;
+    private final Map<String, Integer> addedTokenIdsByContent;
+    private final Map<Integer, String> addedTokensById;
+    private final Set<Integer> addedSpecialTokenIds;
     private volatile boolean closed = false;
 
     /**
      * Private constructor - use factory methods.
      */
-    private HuggingFaceTokenizer(NativeTokenizerImpl impl, TokenizerConfig config) {
+    private HuggingFaceTokenizer(NativeTokenizerImpl impl, TokenizerConfig config,
+                                 String tokenizerConfigJson, String tokenizerJson) {
         this.impl = impl;
         this.config = config;
+        this.tokenizerConfigJson = tokenizerConfigJson;
+        this.addedTokenIdsByContent = parseAddedTokenIds(tokenizerJson);
+        Map<Integer, String> byId = new LinkedHashMap<>();
+        this.addedTokenIdsByContent.forEach((content, id) -> byId.put(id, content));
+        this.addedTokensById = Collections.unmodifiableMap(byId);
+        this.addedSpecialTokenIds = parseSpecialTokenIds(tokenizerJson);
+        this.impl.initializeSpecialTokens(config);
     }
 
     /**
@@ -185,27 +202,108 @@ public class HuggingFaceTokenizer implements Tokenizer {
         }
 
         TokenizerConfig config = null;
+        String tokenizerConfigJson = null;
         File parentDir = file.getParentFile();
         if (parentDir != null) {
-            config = loadTokenizerConfig(parentDir);
+            tokenizerConfigJson = loadTokenizerConfigJson(parentDir);
+            if (tokenizerConfigJson != null) {
+                try {
+                    config = TokenizerConfig.fromJson(tokenizerConfigJson);
+                } catch (Exception e) {
+                    throw new TokenizerException("Invalid tokenizer_config.json: " + e.getMessage(), e);
+                }
+            }
         }
 
+        String tokenizerJson;
+        try {
+            tokenizerJson = Files.readString(file.toPath());
+        } catch (Exception e) {
+            throw new TokenizerException("Could not load tokenizer.json: " + e.getMessage(), e);
+        }
         NativeTokenizerImpl impl = NativeTokenizerImpl.fromFile(file.getAbsolutePath());
         log.debug("Created native tokenizer from: {}", file.getAbsolutePath());
 
-        return new HuggingFaceTokenizer(impl, config);
+        return new HuggingFaceTokenizer(impl, config, tokenizerConfigJson, tokenizerJson);
     }
 
-    private static TokenizerConfig loadTokenizerConfig(File parentDir) {
+    private static String loadTokenizerConfigJson(File parentDir) {
         File configFile = new File(parentDir, "tokenizer_config.json");
         if (!configFile.exists()) {
             return null;
         }
         try {
-            return TokenizerConfig.fromFile(configFile);
+            return Files.readString(configFile.toPath());
         } catch (Exception e) {
-            log.warn("Could not load tokenizer_config.json: {}", e.getMessage());
-            return null;
+            throw new TokenizerException("Could not load tokenizer_config.json: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Parse all added tokens that tokenizer.json marks as special. This is the
+     * tokenizer-owned protocol vocabulary; it must not be inferred from model
+     * names or hard-coded token strings in generation code.
+     */
+    static Set<Integer> parseSpecialTokenIds(String tokenizerJson) {
+        if (tokenizerJson == null || tokenizerJson.isBlank()) {
+            return Collections.emptySet();
+        }
+        try {
+            JsonNode addedTokens = JSON_MAPPER.readTree(tokenizerJson).path("added_tokens");
+            if (!addedTokens.isArray()) {
+                return Collections.emptySet();
+            }
+            Set<Integer> ids = new LinkedHashSet<>();
+            for (JsonNode token : addedTokens) {
+                JsonNode id = token.get("id");
+                if (token.path("special").asBoolean(false)
+                        && id != null && id.canConvertToInt() && id.asInt() >= 0) {
+                    ids.add(id.asInt());
+                }
+            }
+            return Collections.unmodifiableSet(ids);
+        } catch (Exception e) {
+            throw new TokenizerException("Invalid tokenizer.json special-token metadata: "
+                    + e.getMessage(), e);
+        }
+    }
+
+    /** Retain every tokenizer-declared added token, including decodable protocol delimiters. */
+    static Map<String, Integer> parseAddedTokenIds(String tokenizerJson) {
+        if (tokenizerJson == null || tokenizerJson.isBlank()) {
+            return Collections.emptyMap();
+        }
+        try {
+            JsonNode addedTokens = JSON_MAPPER.readTree(tokenizerJson).path("added_tokens");
+            if (!addedTokens.isArray()) {
+                return Collections.emptyMap();
+            }
+            Map<String, Integer> byContent = new LinkedHashMap<>();
+            Map<Integer, String> byId = new LinkedHashMap<>();
+            for (JsonNode token : addedTokens) {
+                JsonNode idNode = token.get("id");
+                JsonNode contentNode = token.get("content");
+                if (idNode == null || !idNode.canConvertToInt() || idNode.asInt() < 0
+                        || contentNode == null || !contentNode.isTextual()) {
+                    continue;
+                }
+                int id = idNode.asInt();
+                String content = contentNode.asText();
+                Integer priorId = byContent.putIfAbsent(content, id);
+                String priorContent = byId.putIfAbsent(id, content);
+                if ((priorId != null && priorId != id)
+                        || (priorContent != null && !priorContent.equals(content))) {
+                    throw new TokenizerException(
+                            "Conflicting tokenizer.json added-token metadata for id=" + id
+                                    + " content=" + content);
+                }
+            }
+            return Collections.unmodifiableMap(byContent);
+        } catch (TokenizerException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new TokenizerException("Invalid tokenizer.json added-token metadata: "
+                    + e.getMessage(), e);
         }
     }
 
@@ -225,7 +323,28 @@ public class HuggingFaceTokenizer implements Tokenizer {
         NativeTokenizerImpl impl = NativeTokenizerImpl.fromJson(json);
         log.debug("Created native tokenizer from JSON");
 
-        return new HuggingFaceTokenizer(impl, null);
+        return new HuggingFaceTokenizer(impl, null, null, json);
+    }
+
+    /**
+     * Create a tokenizer from tokenizer.json plus its complete model-owned
+     * tokenizer_config.json. This is used by importers that reconstruct tokenizer
+     * assets from a container such as GGUF.
+     */
+    public static HuggingFaceTokenizer fromJson(String tokenizerJson,
+                                                String tokenizerConfigJson) {
+        requireNative();
+        TokenizerConfig config = null;
+        if (tokenizerConfigJson != null && !tokenizerConfigJson.isBlank()) {
+            try {
+                config = TokenizerConfig.fromJson(tokenizerConfigJson);
+            } catch (Exception e) {
+                throw new TokenizerException("Invalid tokenizer_config.json: " + e.getMessage(), e);
+            }
+        }
+        NativeTokenizerImpl impl = NativeTokenizerImpl.fromJson(tokenizerJson);
+        log.debug("Created native tokenizer from JSON with model chat configuration");
+        return new HuggingFaceTokenizer(impl, config, tokenizerConfigJson, tokenizerJson);
     }
 
     /**
@@ -329,19 +448,38 @@ public class HuggingFaceTokenizer implements Tokenizer {
     @Override
     public Integer getTokenId(String token) {
         checkNotClosed();
+        Integer addedId = addedTokenIdsByContent.get(token);
+        if (addedId != null) {
+            return addedId;
+        }
         return impl.getTokenId(token);
     }
 
     @Override
     public String getToken(int id) {
         checkNotClosed();
+        String addedToken = addedTokensById.get(id);
+        if (addedToken != null) {
+            return addedToken;
+        }
         return impl.getToken(id);
     }
 
     @Override
     public Map<String, Integer> getVocab() {
         checkNotClosed();
-        return impl.getVocab();
+        Map<String, Integer> nativeVocab = impl.getVocab();
+        if (nativeVocab == null || nativeVocab.isEmpty()) {
+            return addedTokenIdsByContent;
+        }
+        Map<String, Integer> merged = new LinkedHashMap<>(nativeVocab);
+        merged.putAll(addedTokenIdsByContent);
+        return Collections.unmodifiableMap(merged);
+    }
+
+    @Override
+    public Map<String, Integer> getAddedTokens() {
+        return addedTokenIdsByContent;
     }
 
     @Override
@@ -365,6 +503,13 @@ public class HuggingFaceTokenizer implements Tokenizer {
     }
 
     @Override
+    public Set<Integer> getSpecialTokenIds() {
+        Set<Integer> ids = new LinkedHashSet<>(addedSpecialTokenIds);
+        ids.addAll(Tokenizer.super.getSpecialTokenIds());
+        return Collections.unmodifiableSet(ids);
+    }
+
+    @Override
     public boolean isValid() {
         return !closed && impl.isValid();
     }
@@ -381,6 +526,42 @@ public class HuggingFaceTokenizer implements Tokenizer {
     @Override
     public String getChatTemplate() {
         return config != null ? config.getChatTemplate() : null;
+    }
+
+    @Override
+    public String applyChatTemplate(List<ChatTemplate.Message> messages,
+                                    boolean addGenerationPrompt) {
+        return applyChatTemplate(ChatTemplate.Request.builder()
+                .messages(messages)
+                .addGenerationPrompt(addGenerationPrompt)
+                .build(), null);
+    }
+
+    @Override
+    public String applyChatTemplate(ChatTemplate.Request request,
+                                    String chatTemplateOverride) {
+        checkNotClosed();
+        if (chatTemplateOverride != null && !chatTemplateOverride.isBlank()) {
+            return Tokenizer.super.applyChatTemplate(request, chatTemplateOverride);
+        }
+        if (tokenizerConfigJson == null || tokenizerConfigJson.isBlank()
+                || config == null || !config.hasChatTemplate()) {
+            throw new IllegalStateException(
+                    "Tokenizer import does not provide tokenizer_config.json with a chat_template");
+        }
+        return NativeTokenizer.renderChatTemplateContext(
+                tokenizerConfigJson, ChatTemplate.requestContextJson(request));
+    }
+
+    @Override
+    public String applyChatTemplateContext(String contextJson) {
+        checkNotClosed();
+        if (tokenizerConfigJson == null || tokenizerConfigJson.isBlank()
+                || config == null || !config.hasChatTemplate()) {
+            throw new IllegalStateException(
+                    "Tokenizer import does not provide tokenizer_config.json with a chat_template");
+        }
+        return NativeTokenizer.renderChatTemplateContext(tokenizerConfigJson, contextJson);
     }
 
     @Override
@@ -494,9 +675,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
                     throw new TokenizerException("Failed to create native tokenizer from file (null handle): " + path);
                 }
 
-                NativeTokenizerImpl impl = new NativeTokenizerImpl(nativeLib, handle);
-                impl.initializeSpecialTokens();
-                return impl;
+                return new NativeTokenizerImpl(nativeLib, handle);
             } catch (TokenizerException e) {
                 throw e;
             } catch (Exception e) {
@@ -525,9 +704,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
                     throw new TokenizerException("Failed to create native tokenizer from JSON (null handle)");
                 }
 
-                NativeTokenizerImpl impl = new NativeTokenizerImpl(nativeLib, handle);
-                impl.initializeSpecialTokens();
-                return impl;
+                return new NativeTokenizerImpl(nativeLib, handle);
             } catch (TokenizerException e) {
                 throw e;
             } catch (Exception e) {
@@ -550,28 +727,16 @@ public class HuggingFaceTokenizer implements Tokenizer {
             return "unknown";
         }
 
-        private void initializeSpecialTokens() {
-            // Resolve special token IDs by encoding known special token strings.
-            // The native tokenizer knows about added_tokens from tokenizer.json,
-            // so encoding them (without adding extra special tokens) returns their IDs.
-            bosTokenId = resolveSpecialToken("<|im_start|>");
-            eosTokenId = resolveSpecialToken("<|im_end|>");
-            padTokenId = resolveSpecialToken("<|im_end|>"); // Often same as EOS
-            // Try common fallbacks if the above didn't resolve
-            if (eosTokenId < 0) {
-                eosTokenId = resolveSpecialToken("<|endoftext|>");
-            }
-            if (bosTokenId < 0) {
-                bosTokenId = resolveSpecialToken("<s>");
-            }
-            if (eosTokenId < 0) {
-                eosTokenId = resolveSpecialToken("</s>");
-            }
+        private void initializeSpecialTokens(TokenizerConfig config) {
+            if (config == null) return;
+            bosTokenId = resolveSpecialToken(config.getBosToken());
+            eosTokenId = resolveSpecialToken(config.getEosToken());
+            padTokenId = resolveSpecialToken(config.getPadToken());
+            unkTokenId = resolveSpecialToken(config.getUnkToken());
         }
 
         private int resolveSpecialToken(String tokenStr) {
-            // Strategy 1: encode without special token processing — native tokenizer
-            // resolves added_tokens (like <|im_end|>) to their single IDs directly.
+            if (tokenStr == null || tokenStr.isEmpty()) return -1;
             try {
                 Encoding enc = encode(tokenStr, false);
                 int[] ids = enc.getIds();
@@ -579,18 +744,7 @@ public class HuggingFaceTokenizer implements Tokenizer {
                     return ids[0];
                 }
             } catch (Exception e) {
-                // Token not in vocabulary - try fallback
-            }
-            // Strategy 2: encode WITH special tokens enabled — some tokenizer configs
-            // only resolve added_tokens when addSpecialTokens=true.
-            try {
-                Encoding enc = encode(tokenStr, true);
-                int[] ids = enc.getIds();
-                if (ids != null && ids.length == 1) {
-                    return ids[0];
-                }
-            } catch (Exception e) {
-                // Token not in vocabulary
+                log.debug("Configured special token is not resolvable: {}", tokenStr);
             }
             return -1;
         }

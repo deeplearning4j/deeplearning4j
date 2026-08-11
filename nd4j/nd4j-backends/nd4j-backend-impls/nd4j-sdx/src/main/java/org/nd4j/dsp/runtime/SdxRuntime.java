@@ -63,6 +63,7 @@ public final class SdxRuntime implements AutoCloseable {
     public static final int SDX_BACKEND_METAL = SdxNative.SDX_BACKEND_METAL;
     public static final int SDX_BACKEND_TPU = SdxNative.SDX_BACKEND_TPU;
     public static final int SDX_BACKEND_HEXAGON = SdxNative.SDX_BACKEND_HEXAGON;
+    public static final int SDX_BACKEND_OPENVINO = SdxNative.SDX_BACKEND_OPENVINO;
 
     public static final int SDX_DEVICE_HOST = SdxNative.SDX_DEVICE_HOST;
     public static final int SDX_DEVICE_CUDA = SdxNative.SDX_DEVICE_CUDA;
@@ -85,6 +86,7 @@ public final class SdxRuntime implements AutoCloseable {
         /** Runtime compilation is opt-in. Mobile bundles remain AOT-only by default. */
         public int allow_runtime_jit;
         public int gpu_target = SDX_GPU_TARGET_AUTO;
+        public String device_compilation_cache_directory;
 
         public static ModelOptions mobileVulkan() {
             return new ModelOptions()
@@ -111,6 +113,24 @@ public final class SdxRuntime implements AutoCloseable {
                     .gpuTarget(SDX_GPU_TARGET_AUTO);
         }
 
+        /** Android NNAPI accelerator-only execution for Tensor-class devices. */
+        public static ModelOptions mobileNnapiAccelerator() {
+            return new ModelOptions()
+                    .backend(SDX_BACKEND_NNAPI)
+                    .strictBackend(true)
+                    .allowRuntimeJit(false)
+                    .gpuTarget(SDX_GPU_TARGET_AUTO);
+        }
+
+        /** Desktop CPU graph execution through OpenVINO, with runtime graph compilation enabled. */
+        public static ModelOptions desktopOpenVino() {
+            return new ModelOptions()
+                    .backend(SDX_BACKEND_OPENVINO)
+                    .strictBackend(true)
+                    .allowRuntimeJit(true)
+                    .gpuTarget(SDX_GPU_TARGET_AUTO);
+        }
+
         public ModelOptions backend(int value) {
             backend = value;
             return this;
@@ -128,6 +148,11 @@ public final class SdxRuntime implements AutoCloseable {
 
         public ModelOptions gpuTarget(int value) {
             gpu_target = value;
+            return this;
+        }
+
+        public ModelOptions deviceCompilationCacheDirectory(String value) {
+            device_compilation_cache_directory = value;
             return this;
         }
     }
@@ -164,6 +189,18 @@ public final class SdxRuntime implements AutoCloseable {
         public static RunOptions mobileHexagon() {
             return new RunOptions()
                     .backend(SDX_BACKEND_HEXAGON)
+                    .gpuTarget(SDX_GPU_TARGET_AUTO);
+        }
+
+        public static RunOptions mobileNnapiAccelerator() {
+            return new RunOptions()
+                    .backend(SDX_BACKEND_NNAPI)
+                    .gpuTarget(SDX_GPU_TARGET_AUTO);
+        }
+
+        public static RunOptions desktopOpenVino() {
+            return new RunOptions()
+                    .backend(SDX_BACKEND_OPENVINO)
                     .gpuTarget(SDX_GPU_TARGET_AUTO);
         }
 
@@ -319,10 +356,10 @@ public final class SdxRuntime implements AutoCloseable {
         ensureOpen();
         Objects.requireNonNull(bundlePath, "bundlePath");
         ModelOptions effective = options == null ? new ModelOptions() : options;
-        try (sdx_model_options_t nativeOptions = toNative(effective)) {
+        try (NativeModelOptions nativeOptions = new NativeModelOptions(effective)) {
             sdx_model_t outModel = new sdx_model_t();
             int status = SdxNative.sdxLoadBundle(
-                    runtimeHandle, bundlePath, nativeOptions, outModel);
+                    runtimeHandle, bundlePath, nativeOptions.value, outModel);
             checkStatus(status, "sdxLoadBundle");
             if (Pointer.isNull(outModel)) {
                 throw new IllegalStateException("sdxLoadBundle returned a null model");
@@ -681,15 +718,39 @@ public final class SdxRuntime implements AutoCloseable {
         }
     }
 
-    private static sdx_model_options_t toNative(ModelOptions options) {
-        sdx_model_options_t nativeOptions = new sdx_model_options_t();
-        nativeOptions
-                .struct_size(nativeOptions.sizeof())
-                .backend(options.backend)
-                .strict_backend(options.strict_backend)
-                .allow_runtime_jit(options.allow_runtime_jit)
-                .gpu_target(options.gpu_target);
-        return nativeOptions;
+    /** Owns native model options and every pointer referenced by that struct. */
+    private static final class NativeModelOptions implements AutoCloseable {
+        private final sdx_model_options_t value;
+        private final BytePointer deviceCompilationCacheDirectory;
+
+        private NativeModelOptions(ModelOptions options) {
+            value = new sdx_model_options_t();
+            value.struct_size(value.sizeof())
+                    .backend(options.backend)
+                    .strict_backend(options.strict_backend)
+                    .allow_runtime_jit(options.allow_runtime_jit)
+                    .gpu_target(options.gpu_target);
+            if (options.device_compilation_cache_directory != null
+                    && !options.device_compilation_cache_directory.isBlank()) {
+                deviceCompilationCacheDirectory =
+                        new BytePointer(options.device_compilation_cache_directory);
+                value.device_compilation_cache_directory(deviceCompilationCacheDirectory);
+            } else {
+                deviceCompilationCacheDirectory = null;
+                value.device_compilation_cache_directory((BytePointer) null);
+            }
+        }
+
+        @Override
+        public void close() {
+            try {
+                value.close();
+            } finally {
+                if (deviceCompilationCacheDirectory != null) {
+                    deviceCompilationCacheDirectory.close();
+                }
+            }
+        }
     }
 
     private static sdx_context_options_t toNative(ContextOptions options) {

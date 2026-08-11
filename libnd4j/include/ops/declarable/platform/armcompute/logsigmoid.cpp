@@ -49,7 +49,9 @@ PLATFORM_IMPL(logsigmoid, ENGINE_CPU) {
   sigmoidLayer.configure(&inTensor, &sigmoidTensor, sigmoidInfo);
 
   // Then compute log
-  arm_compute::NELog logLayer;
+  // ARM Compute exposes LOG through the templated unary-layer alias.
+  // NELog was removed from newer releases.
+  arm_compute::NELogLayer logLayer;
   logLayer.configure(&sigmoidTensor, &outTensor);
 
   // Allocate tensors

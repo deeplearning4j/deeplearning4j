@@ -31,9 +31,14 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(space_to_batch, ENGINE_CPU) {
   auto input = INPUT_VARIABLE(0);
+  auto padding = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
 
-  int blockSize = INT_ARG(0);
+  const int blockSize = static_cast<int>(INT_ARG(0));
+  const int padBottom = static_cast<int>(padding->e<LongType>(0, 0));
+  const int padTop = static_cast<int>(padding->e<LongType>(0, 1));
+  const int padLeft = static_cast<int>(padding->e<LongType>(1, 0));
+  const int padRight = static_cast<int>(padding->e<LongType>(1, 1));
 
   auto inInfo = getArmTensorInfo(*input, Arm_DataLayout::NHWC);
   auto outInfo = getArmTensorInfo(*output, Arm_DataLayout::NHWC);
@@ -43,7 +48,9 @@ PLATFORM_IMPL(space_to_batch, ENGINE_CPU) {
   outTensor.allocator()->init(outInfo);
 
   arm_compute::NESpaceToBatchLayer spaceToBatch;
-  spaceToBatch.configure(&inTensor, blockSize, blockSize, &outTensor);
+  const arm_compute::Size2D paddingLeft(padLeft, padBottom);
+  const arm_compute::Size2D paddingRight(padRight, padTop);
+  spaceToBatch.configure(&inTensor, blockSize, blockSize, paddingLeft, paddingRight, &outTensor);
 
   if (!input->hasPaddedBuffer() && !inTensor.info()->has_padding()) {
     inTensor.allocator()->import_memory(input->buffer());

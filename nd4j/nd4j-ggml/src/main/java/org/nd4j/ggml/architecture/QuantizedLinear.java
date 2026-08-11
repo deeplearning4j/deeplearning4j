@@ -35,8 +35,8 @@ import java.util.Map;
  * as a packed INT8 ({@link DataType#BYTE}) tensor with a companion {@code "<ggufName>.__q__"}
  * {@code LONG[3] = [quantType, N, K]} entry in the raw weights map (see
  * {@code GGMLToSameDiffConverter}). This helper emits a single {@code ggml_qmatmul} op that
- * dequantizes the packed weight on the fly (fp32 accumulation). For every other (dense) weight it
- * falls back to a plain fp32-accumulated matmul with the weight permuted {@code [N,K] -> [K,N]}.</p>
+ * dequantizes the packed weight on the fly (fp32 accumulation). Dense floating weights use a
+ * plain fp32-accumulated matmul with the weight permuted {@code [N,K] -> [K,N]}.</p>
  *
  * <p>This is what makes runtime-quantized inference and QLoRA (LoRA attached to {@code ggml_qmatmul})
  * work across all architectures. The dispatch previously existed only as an unused private method
@@ -116,8 +116,20 @@ public final class QuantizedLinear {
     }
 
     /**
-     * FP32-accumulated matmul. Upcasts HALF/BFLOAT16 operands to FLOAT to avoid overflow on long
-     * dot products, then casts the result back. For FLOAT inputs it is a plain matmul.
+     * Whether this floating storage dtype should use FP32 accumulation for numerically
+     * sensitive operations.
+     */
+    public static boolean requiresFp32Accumulation(DataType dataType) {
+        return dataType == DataType.HALF
+                || dataType == DataType.BFLOAT16
+                || dataType == DataType.FLOAT8
+                || dataType == DataType.FLOAT8_E5M2;
+    }
+
+    /**
+     * FP32-accumulated matmul. Upcasts low-precision floating operands to FLOAT to avoid
+     * overflow on long dot products, then casts the result back. For FLOAT inputs it is
+     * a plain matmul.
      */
     public static SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b, DataType dtype) {
         return fp32Mmul(sd, name, a, b, dtype, dtype);
@@ -126,7 +138,7 @@ public final class QuantizedLinear {
     private static SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b,
                                        DataType computeDtype, DataType outputDtype) {
         boolean outputFloat = outputDtype == DataType.FLOAT;
-        boolean needsFloatCompute = outputFloat || computeDtype == DataType.HALF || computeDtype == DataType.BFLOAT16;
+        boolean needsFloatCompute = outputFloat || requiresFp32Accumulation(computeDtype);
         if (needsFloatCompute) {
             SDVariable aF32 = a.dataType() == DataType.FLOAT ? a : a.castTo(name + "_a_f32", DataType.FLOAT);
             SDVariable bF32 = b.dataType() == DataType.FLOAT ? b : b.castTo(name + "_b_f32", DataType.FLOAT);

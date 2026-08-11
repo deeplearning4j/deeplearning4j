@@ -152,8 +152,19 @@ struct TritonKernelArg {
   int outputIndex = 0;
   bool isOutput = false;
   DataType dtype = FLOAT32;
+  // An empty shape is ambiguous: it is the valid shape of a rank-0 scalar,
+  // but it was also historically used when shape resolution failed. Keep the
+  // provenance explicit so scalar outputs receive a one-element bounds mask.
+  bool shapeKnown = false;
   std::vector<LongType> shape;
   std::vector<LongType> strides;
+
+  LongType elementCount() const {
+    if (!shapeKnown) return -1;
+    LongType count = 1;  // Rank-0 scalar has one element.
+    for (auto dim : shape) count *= dim;
+    return count;
+  }
 
   bool isNonContiguous() const {
     if (strides.empty() || shape.empty()) return false;

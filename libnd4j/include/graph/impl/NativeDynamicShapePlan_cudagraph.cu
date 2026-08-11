@@ -2155,7 +2155,8 @@ Status NativeDynamicShapePlan::replayMonolithicGraph(
   // after the segment is successfully replayed in the normal path.
   if (seg.exec.needsArgRefresh()) {
 #if HAVE_TRITON
-    auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
+    auto* tritonBackend =
+        dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend);
     if (tritonBackend != nullptr) {
       tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
                                                outputSlots_, totalOutputSlots_,
@@ -2340,14 +2341,82 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     }
   }
 
-  // One-time allocation — fixed size, never resized.
-  if (placeholderStagingBuffers_ == nullptr) {
-    placeholderStagingBuffers_ = new NDArray*[numExt]();  // zero-initialized
+  // Staging storage is owned per CUDA device. A single NDArray cannot safely
+  // serve graph islands captured on different GPUs: its specialBuffer() may
+  // lazily rebind when the active device changes, invalidating a captured
+  // pointer. Keep the device-0 raw array for compatibility and use vectors for
+  // secondary devices; activeStagingBuffers_ is the only array consumed below.
+  int currentDevice = 0;
+  auto deviceStatus = cudaGetDevice(&currentDevice);
+  if (deviceStatus != cudaSuccess) {
+    DSP_DIAG(MEMORY, "STAGING_DEVICE: cudaGetDevice failed: %s",
+             cudaGetErrorString(deviceStatus));
+    return nullptr;
+  }
+  if (activeStagingDevice_ != -1 && activeStagingDevice_ != currentDevice) {
+    // Address checks are per-device; comparing a dev0 capture against a dev1
+    // capture is a false positive even when both buffers are stable.
+    prevStagingAddresses_.clear();
+  }
+  activeStagingDevice_ = currentDevice;
+
+  if (currentDevice == 0) {
+    if (placeholderStagingBuffers_ == nullptr) {
+      placeholderStagingBuffers_ = new NDArray*[numExt]();  // zero-initialized
+    }
+    activeStagingBuffers_ = placeholderStagingBuffers_;
+  } else {
+    auto& perDevice = deviceStagingBuffers_[currentDevice];
+    if (perDevice.size() != static_cast<size_t>(numExt)) {
+      perDevice.resize(static_cast<size_t>(numExt), nullptr);
+    }
+    activeStagingBuffers_ = perDevice.data();
+  }
+  if (effectiveExternals_ == nullptr) {
     effectiveExternals_ = new NDArray*[numExt]();
   }
 
   auto isPlanManagedDeviceBuffer = [&](NDArray* ext) -> bool {
     return isDeviceManagedExternalInput(ext);
+  };
+
+  // Host-side shape/control ops execute between captured device segments during
+  // composite replay. Their small integral placeholder inputs must therefore be
+  // coherent in BOTH memory spaces. The staging D2D below refreshes special(),
+  // but DataBuffer::syncToPrimary intentionally skips D2H while DSP replay is
+  // active; without this host copy, a dynamic slice can keep reading the scalar
+  // value from capture even though downstream device kernels see fresh data.
+  //
+  // Copy only when the external host value is authoritative. readPrimary()
+  // records that the copied host value is current without invalidating the
+  // equally-current special buffer populated by the D2D copy.
+  auto refreshHostVisibleControl = [&](NDArray* staging, NDArray* ext) {
+    if (staging == nullptr || ext == nullptr || ext->isEmpty()) return;
+    const auto dataType = ext->dataType();
+    if ((dataType != DataType::INT32 && dataType != DataType::INT64 &&
+         dataType != DataType::BOOL) ||
+        ext->lengthOf() <= 0 || ext->lengthOf() > 32) {
+      return;
+    }
+
+    auto* srcData = ext->dataBuffer();
+    auto* dstData = staging->dataBuffer();
+    if (srcData == nullptr || dstData == nullptr || !srcData->isPrimaryActual()) {
+      return;
+    }
+
+    void* srcPrimary = srcData->primary();
+    if (srcPrimary == nullptr) return;
+    dstData->allocatePrimary();
+    void* dstPrimary = dstData->primary();
+    if (dstPrimary == nullptr) return;
+
+    const size_t bytes = static_cast<size_t>(ext->lengthOf()) * ext->sizeOfT();
+    std::memcpy(dstPrimary, srcPrimary, bytes);
+    dstData->readPrimary();
+    DSP_DIAG(STREAM_SYNC,
+             "STAGING_CONTROL_HOST[%lld]: refreshed %zu host bytes dtype=%d",
+             (long long)ext->lengthOf(), bytes, static_cast<int>(dataType));
   };
 
   // Fast path: after first call, only iterate variable input indices
@@ -2363,7 +2432,7 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
         allStagingAllocated = false;
         break;
       }
-      if (placeholderStagingBuffers_[i] == nullptr &&
+      if (activeStagingBuffers_[i] == nullptr &&
           !isPlanManagedDeviceBuffer(externalArrays[i])) {
         allStagingAllocated = false;
         break;
@@ -2402,7 +2471,7 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
         continue;
       }
 
-      NDArray* staging = placeholderStagingBuffers_[i];
+      NDArray* staging = activeStagingBuffers_[i];
 
       // If JNI wrote directly to staging via writeDeviceBuffer*, skip D2D overwrite
       // — the staging buffer already has the fresh data from the JNI write.
@@ -2435,7 +2504,67 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
           // actual strides, routed onto cudaStr (the staging/replay stream, which getCudaStream()
           // honors via tl_dspGapStream) so it stays ordered with the graph replay.
           if (shape::strideDescendingCAscendingF(ext->shapeInfo())) {
-            cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+            // External inputs can be allocated on a different GPU from this
+            // graph island. A raw DeviceToDevice copy is only valid for
+            // same-device pointers, so use peer transfer or bounded pinned
+            // host chunks as appropriate.
+            cudaPointerAttributes srcAttrs;
+            auto srcAttrErr = cudaPointerGetAttributes(&srcAttrs, srcBuf);
+            int sourceDevice = (srcAttrErr == cudaSuccess &&
+                                srcAttrs.type == cudaMemoryTypeDevice)
+                ? srcAttrs.device : currentDevice;
+            cudaError_t copyErr = cudaSuccess;
+            if (sourceDevice == currentDevice) {
+              auto copyKind = (srcAttrErr == cudaSuccess &&
+                               srcAttrs.type == cudaMemoryTypeHost)
+                  ? cudaMemcpyHostToDevice : cudaMemcpyDeviceToDevice;
+              copyErr = cudaMemcpyAsync(dstBuf, srcBuf, bytes, copyKind, cudaStr);
+            } else {
+              int canAccessForward = 0;
+              int canAccessReverse = 0;
+              cudaDeviceCanAccessPeer(&canAccessForward, currentDevice, sourceDevice);
+              cudaDeviceCanAccessPeer(&canAccessReverse, sourceDevice, currentDevice);
+              if (canAccessForward && canAccessReverse) {
+                copyErr = cudaMemcpyPeerAsync(dstBuf, currentDevice, srcBuf,
+                                              sourceDevice, bytes, cudaStr);
+              } else {
+                void* hostStage = nullptr;
+                const size_t chunkBytes = std::min(bytes, static_cast<size_t>(64) * 1024 * 1024);
+                if (cudaMallocHost(&hostStage, chunkBytes) != cudaSuccess) {
+                  copyErr = cudaErrorMemoryAllocation;
+                } else {
+                  for (size_t offset = 0; offset < bytes; offset += chunkBytes) {
+                    const size_t chunk = std::min(chunkBytes, bytes - offset);
+                    cudaSetDevice(sourceDevice);
+                    copyErr = cudaMemcpy(hostStage,
+                                         static_cast<const char*>(srcBuf) + offset,
+                                         chunk, cudaMemcpyDeviceToHost);
+                    if (copyErr != cudaSuccess) break;
+                    cudaSetDevice(currentDevice);
+                    copyErr = cudaMemcpy(static_cast<char*>(dstBuf) + offset,
+                                         hostStage, chunk, cudaMemcpyHostToDevice);
+                    if (copyErr != cudaSuccess) break;
+                  }
+                  cudaSetDevice(currentDevice);
+                  cudaFreeHost(hostStage);
+                }
+              }
+              DSP_DIAG(MULTI_DEVICE,
+                       "STAGING_D2D[%d]: cross-device copy source=%d target=%d "
+                       "p2p=%d bytes=%zu err=%s",
+                       i, sourceDevice, currentDevice,
+                       canAccessForward && canAccessReverse ? 1 : 0,
+                       bytes, cudaGetErrorString(copyErr));
+            }
+            if (copyErr != cudaSuccess) {
+              DSP_DIAG(MULTI_DEVICE,
+                       "STAGING_D2D[%d]: transfer failed source=%d target=%d "
+                       "bytes=%zu err=%s",
+                       i, sourceDevice, currentDevice, bytes,
+                       cudaGetErrorString(copyErr));
+              cudaGetLastError();
+              return nullptr;
+            }
           } else {
             ScopedDspGapStream gapToCudaStr(cudaStr);
             staging->assign(ext);
@@ -2452,6 +2581,7 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       }
 
       staging->dataBuffer()->writeSpecial();
+      refreshHostVisibleControl(staging, ext);
       DSP_LIFECYCLE_EVENT(executeCount_, i, "STAGING_D2D_DST_AFTER", staging);
 
       // ── Shape corruption detector ─────────────────────────────────
@@ -2551,10 +2681,15 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       continue;
     }
 
-    // Record this as a variable index for the fast path on subsequent calls
-    cachedVariableExtIndices_.push_back(i);
+    // Record this as a variable index for the fast path on subsequent calls.
+    // A newly activated secondary device enters this slow path too, so do not
+    // append duplicates to the plan-wide index cache.
+    if (std::find(cachedVariableExtIndices_.begin(), cachedVariableExtIndices_.end(), i)
+        == cachedVariableExtIndices_.end()) {
+      cachedVariableExtIndices_.push_back(i);
+    }
 
-    NDArray* staging = placeholderStagingBuffers_[i];
+    NDArray* staging = activeStagingBuffers_[i];
 
     // Allocate staging buffer on first use. Shapes are frozen — this
     // allocation happens exactly once per variable input. The staging
@@ -2563,7 +2698,7 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
     if (staging == nullptr) {
       staging = new NDArray(ext->ordering(), *ext->getShapeAsVector(),
                             ext->dataType(), LaunchContext::defaultContext());
-      placeholderStagingBuffers_[i] = staging;
+      activeStagingBuffers_[i] = staging;
       DSP_DIAG(MEMORY,
                "STAGING_ALLOC: ext[%d] name='%s' dtype=%d len=%lld bytes=%lld "
                "srcBuf=%p dstBuf=%p — first-time staging buffer allocated",
@@ -2612,7 +2747,67 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
           // MaxDiff bug). Contiguous → raw byte copy (fast); view → stride-aware assign routed
           // onto cudaStr (getCudaStream honors tl_dspGapStream) so it is ordered with replay.
           if (shape::strideDescendingCAscendingF(ext->shapeInfo())) {
-            cudaMemcpyAsync(dstBuf, srcBuf, bytes, cudaMemcpyDeviceToDevice, cudaStr);
+            // External inputs can be allocated on a different GPU from this
+            // graph island. A raw DeviceToDevice copy is only valid for
+            // same-device pointers, so use peer transfer or bounded pinned
+            // host chunks as appropriate.
+            cudaPointerAttributes srcAttrs;
+            auto srcAttrErr = cudaPointerGetAttributes(&srcAttrs, srcBuf);
+            int sourceDevice = (srcAttrErr == cudaSuccess &&
+                                srcAttrs.type == cudaMemoryTypeDevice)
+                ? srcAttrs.device : currentDevice;
+            cudaError_t copyErr = cudaSuccess;
+            if (sourceDevice == currentDevice) {
+              auto copyKind = (srcAttrErr == cudaSuccess &&
+                               srcAttrs.type == cudaMemoryTypeHost)
+                  ? cudaMemcpyHostToDevice : cudaMemcpyDeviceToDevice;
+              copyErr = cudaMemcpyAsync(dstBuf, srcBuf, bytes, copyKind, cudaStr);
+            } else {
+              int canAccessForward = 0;
+              int canAccessReverse = 0;
+              cudaDeviceCanAccessPeer(&canAccessForward, currentDevice, sourceDevice);
+              cudaDeviceCanAccessPeer(&canAccessReverse, sourceDevice, currentDevice);
+              if (canAccessForward && canAccessReverse) {
+                copyErr = cudaMemcpyPeerAsync(dstBuf, currentDevice, srcBuf,
+                                              sourceDevice, bytes, cudaStr);
+              } else {
+                void* hostStage = nullptr;
+                const size_t chunkBytes = std::min(bytes, static_cast<size_t>(64) * 1024 * 1024);
+                if (cudaMallocHost(&hostStage, chunkBytes) != cudaSuccess) {
+                  copyErr = cudaErrorMemoryAllocation;
+                } else {
+                  for (size_t offset = 0; offset < bytes; offset += chunkBytes) {
+                    const size_t chunk = std::min(chunkBytes, bytes - offset);
+                    cudaSetDevice(sourceDevice);
+                    copyErr = cudaMemcpy(hostStage,
+                                         static_cast<const char*>(srcBuf) + offset,
+                                         chunk, cudaMemcpyDeviceToHost);
+                    if (copyErr != cudaSuccess) break;
+                    cudaSetDevice(currentDevice);
+                    copyErr = cudaMemcpy(static_cast<char*>(dstBuf) + offset,
+                                         hostStage, chunk, cudaMemcpyHostToDevice);
+                    if (copyErr != cudaSuccess) break;
+                  }
+                  cudaSetDevice(currentDevice);
+                  cudaFreeHost(hostStage);
+                }
+              }
+              DSP_DIAG(MULTI_DEVICE,
+                       "STAGING_D2D[%d]: cross-device copy source=%d target=%d "
+                       "p2p=%d bytes=%zu err=%s",
+                       i, sourceDevice, currentDevice,
+                       canAccessForward && canAccessReverse ? 1 : 0,
+                       bytes, cudaGetErrorString(copyErr));
+            }
+            if (copyErr != cudaSuccess) {
+              DSP_DIAG(MULTI_DEVICE,
+                       "STAGING_D2D[%d]: transfer failed source=%d target=%d "
+                       "bytes=%zu err=%s",
+                       i, sourceDevice, currentDevice, bytes,
+                       cudaGetErrorString(copyErr));
+              cudaGetLastError();
+              return nullptr;
+            }
           } else {
             ScopedDspGapStream gapToCudaStr(cudaStr);
             staging->assign(ext);
@@ -2636,6 +2831,9 @@ NDArray** NativeDynamicShapePlan::ensureAndSyncStagingBuffers(
       }
     }
     staging->dataBuffer()->writeSpecial();
+    if (!jniWritten) {
+      refreshHostVisibleControl(staging, ext);
+    }
 
     // ── Shape corruption detector (slow path) ──────────────────────
     if (staging->shapeInfo() != nullptr) {

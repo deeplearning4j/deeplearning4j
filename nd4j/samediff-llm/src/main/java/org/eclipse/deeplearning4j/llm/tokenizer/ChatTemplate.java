@@ -23,9 +23,12 @@ package org.eclipse.deeplearning4j.llm.tokenizer;
 import lombok.Builder;
 import lombok.Data;
 import org.eclipse.deeplearning4j.llm.config.TokenizerConfig;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -55,12 +58,21 @@ import java.util.regex.Pattern;
  */
 public class ChatTemplate {
 
+    /** Canonical native tool-call delimiters used by model templates such as LFM. */
+    public static final String NATIVE_TOOL_CALL_START = "<|tool_call_start|>";
+    public static final String NATIVE_TOOL_CALL_END = "<|tool_call_end|>";
+    /** Canonical reasoning delimiters, enabled only when they occur in the imported template. */
+    public static final String THINKING_START = "<think>";
+    public static final String THINKING_END = "</think>";
+
     private final String template;
     private final String bosToken;
     private final String eosToken;
 
     // Compiled pattern for simple variable substitution
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{\\s*(\\w+)\\s*}}");
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper()
+            .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
 
     /**
      * Create a chat template from a Jinja2-style template string.
@@ -83,7 +95,7 @@ public class ChatTemplate {
      */
     public static ChatTemplate fromConfig(TokenizerConfig config) {
         if (config == null || !config.hasChatTemplate()) {
-            return chatML(); // Default fallback
+            throw new IllegalArgumentException("Tokenizer configuration does not declare a chat template");
         }
         return new ChatTemplate(
                 config.getChatTemplate(),
@@ -125,6 +137,200 @@ public class ChatTemplate {
 
         // Generic simple processing
         return applyGeneric(messages, addGenerationPrompt);
+    }
+
+    /**
+     * Apply a complete structured request. Tool definitions are made visible to
+     * the template as a deterministic system-side JSON block while preserving
+     * the original ordered conversation and tool-call messages.
+     */
+    public String apply(Request request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Chat request must not be null");
+        }
+        List<Message> messages = new ArrayList<>(request.getMessages());
+        if (!request.getTools().isEmpty()) {
+            ToolDefinitionFormat format = request.getToolDefinitionFormat() == null
+                    ? ToolDefinitionFormat.STANDARD : request.getToolDefinitionFormat();
+            boolean lfmNativeProtocol = usesLfmNativeToolProtocol();
+            String definitions = renderToolDefinitions(
+                    request.getTools(), format, lfmNativeProtocol);
+            int system = -1;
+            for (int i = 0; i < messages.size(); i++) {
+                if ("system".equals(messages.get(i).getRole())) {
+                    system = i;
+                    break;
+                }
+            }
+            if (system >= 0) {
+                Message original = messages.get(system);
+                String systemContent = original.getContent() == null
+                        ? "" : original.getContent();
+                messages.set(system, new Message("system", lfmNativeProtocol
+                        ? appendSection(systemContent, definitions)
+                        : definitions + systemContent));
+            } else {
+                messages.add(0, Message.system(definitions));
+            }
+        }
+        return apply(messages, request.isAddGenerationPrompt());
+    }
+
+    private boolean usesLfmNativeToolProtocol() {
+        return toolCallFormat() == ToolCallFormat.NATIVE;
+    }
+
+    /**
+     * Resolve the tool-call envelope from the imported model template. An explicit
+     * request/config value may still override this, but callers never need to inspect
+     * model names or protocol sentinels themselves.
+     */
+    public ToolCallFormat toolCallFormat() {
+        return template.contains(NATIVE_TOOL_CALL_START)
+                && template.contains(NATIVE_TOOL_CALL_END)
+                ? ToolCallFormat.NATIVE : ToolCallFormat.JSON;
+    }
+
+    /**
+     * Parse model-owned terminal and reasoning delimiters without leaking those
+     * details into callers. Only delimiters declared by this imported template are
+     * active; ordinary answer text is otherwise left untouched.
+     */
+    public AssistantOutput parseAssistantOutput(String rawText) {
+        String raw = rawText == null ? "" : rawText;
+        String value = stripTerminalToken(raw, eosToken).trim();
+        List<String> errors = new ArrayList<>();
+        String reasoning = "";
+        if (template.contains(THINKING_START) && template.contains(THINKING_END)
+                && value.startsWith(THINKING_START)) {
+            int end = value.indexOf(THINKING_END, THINKING_START.length());
+            if (end < 0) {
+                errors.add("incomplete model reasoning block");
+                return new AssistantOutput(raw, "", "", errors);
+            }
+            reasoning = value.substring(THINKING_START.length(), end).trim();
+            value = value.substring(end + THINKING_END.length()).trim();
+        }
+        return new AssistantOutput(raw, value, reasoning, errors);
+    }
+
+    private static String stripTerminalToken(String value, String terminalToken) {
+        if (value == null || value.isEmpty() || terminalToken == null || terminalToken.isEmpty()) {
+            return value == null ? "" : value;
+        }
+        String result = value;
+        while (result.endsWith(terminalToken)) {
+            result = result.substring(0, result.length() - terminalToken.length()).stripTrailing();
+        }
+        return result;
+    }
+
+    /** Model-normalized assistant output with reasoning kept separate from answer content. */
+    public static final class AssistantOutput {
+        private final String rawText;
+        private final String content;
+        private final String reasoningContent;
+        private final List<String> errors;
+
+        public AssistantOutput(String rawText, String content, String reasoningContent,
+                               List<String> errors) {
+            this.rawText = rawText == null ? "" : rawText;
+            this.content = content == null ? "" : content;
+            this.reasoningContent = reasoningContent == null ? "" : reasoningContent;
+            this.errors = errors == null ? List.of() : List.copyOf(errors);
+        }
+
+        public String getRawText() { return rawText; }
+        public String getContent() { return content; }
+        public String getReasoningContent() { return reasoningContent; }
+        public List<String> getErrors() { return errors; }
+    }
+
+    /** Serialize the complete request for the native model-owned MiniJinja renderer. */
+    public static String requestContextJson(Request request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Chat request must not be null");
+        }
+        Map<String, Object> context = new LinkedHashMap<>(request.getTemplateArguments());
+        List<Object> messages = new ArrayList<>();
+        for (Message message : request.getMessages()) {
+            Map<String, Object> value = new LinkedHashMap<>();
+            value.put("role", message.getRole());
+            value.put("content", message.getContent());
+            if (!message.getToolCalls().isEmpty()) {
+                List<Object> calls = new ArrayList<>();
+                for (ToolCall call : message.getToolCalls()) {
+                    Map<String, Object> function = new LinkedHashMap<>();
+                    function.put("name", call.getName());
+                    function.put("arguments", call.getArguments());
+                    Map<String, Object> encoded = new LinkedHashMap<>();
+                    if (call.getId() != null) encoded.put("id", call.getId());
+                    encoded.put("type", "function");
+                    encoded.put("function", function);
+                    calls.add(encoded);
+                }
+                value.put("tool_calls", calls);
+            }
+            if (message.getToolCallId() != null) value.put("tool_call_id", message.getToolCallId());
+            if (message.getToolName() != null) value.put("name", message.getToolName());
+            messages.add(value);
+        }
+        context.put("messages", messages);
+
+        List<Object> tools = new ArrayList<>();
+        ToolDefinitionFormat definitionFormat = request.getToolDefinitionFormat() == null
+                ? ToolDefinitionFormat.STANDARD : request.getToolDefinitionFormat();
+        for (Tool tool : request.getTools()) {
+            Map<String, Object> function = new LinkedHashMap<>();
+            function.put("name", tool.getName());
+            function.put("description", tool.getDescription());
+            function.put("parameters", tool.getParameters());
+            tools.add(definitionFormat == ToolDefinitionFormat.FLAT
+                    ? function : Map.of("type", "function", "function", function));
+        }
+        context.put("tools", tools.isEmpty() ? null : tools);
+        context.put("add_generation_prompt", request.isAddGenerationPrompt());
+        context.put("tool_choice", request.getToolChoice().name().toLowerCase(java.util.Locale.ROOT));
+        return toJson(context);
+    }
+
+    private static String renderToolDefinitions(
+            List<Tool> tools,
+            ToolDefinitionFormat format,
+            boolean lfmNativeProtocol) {
+        List<String> definitions = new ArrayList<>(tools.size());
+        for (Tool tool : tools) {
+            Map<String, Object> function = new LinkedHashMap<>();
+            function.put("name", tool.getName());
+            function.put("description", tool.getDescription());
+            function.put("parameters", tool.getParameters());
+            Object definition = format == ToolDefinitionFormat.FLAT
+                    ? function
+                    : Map.of("type", "function", "function", function);
+            definitions.add(toJson(definition));
+        }
+        if (lfmNativeProtocol) {
+            return "List of tools: [" + String.join(", ", definitions) + "]";
+        }
+        return "Available tools:\n" + String.join("\n", definitions) + "\n";
+    }
+
+    private static String appendSection(String first, String second) {
+        if (first == null || first.isBlank()) {
+            return second;
+        }
+        if (second == null || second.isBlank()) {
+            return first;
+        }
+        return first + "\n" + second;
+    }
+
+    private static String toJson(Object value) {
+        try {
+            return JSON_MAPPER.writeValueAsString(value);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Tool schema is not JSON serializable", e);
+        }
     }
 
     /**
@@ -372,6 +578,149 @@ public class ChatTemplate {
         );
     }
 
+    /** Shape used when function tools are exposed to a model-owned template. */
+    public enum ToolDefinitionFormat {
+        STANDARD,
+        FLAT
+    }
+
+    /** Output envelope selected by a model's native chat protocol. */
+    public enum ToolCallFormat {
+        NATIVE,
+        JSON
+    }
+
+    /** Whether tools are optional, required, or disabled for this turn. */
+    public enum ToolChoice {
+        AUTO,
+        REQUIRED,
+        NONE
+    }
+
+    /** A portable function tool definition. */
+    public static final class Tool {
+        private final String name;
+        private final String description;
+        private final Map<String, Object> parameters;
+
+        public Tool(String name, String description, Map<String, Object> parameters) {
+            if (name == null || name.isBlank()) {
+                throw new IllegalArgumentException("Tool name must not be blank");
+            }
+            this.name = name;
+            this.description = description == null ? "" : description;
+            this.parameters = parameters == null ? Map.of() : Map.copyOf(parameters);
+        }
+
+        public static Tool function(String name, String description,
+                                    Map<String, Object> parameters) {
+            return new Tool(name, description, parameters);
+        }
+
+        public String getName() { return name; }
+        public String getDescription() { return description; }
+        public Map<String, Object> getParameters() { return parameters; }
+        public Map<String, Object> getArgumentsSchema() { return parameters; }
+    }
+
+    /** A parsed model tool call. */
+    public static final class ToolCall {
+        private final String id;
+        private final String name;
+        private final Map<String, Object> arguments;
+
+        public ToolCall(String id, String name, Map<String, Object> arguments) {
+            if (name == null || name.isBlank()) {
+                throw new IllegalArgumentException("Tool-call name must not be blank");
+            }
+            this.id = id;
+            this.name = name;
+            this.arguments = arguments == null ? Map.of() : Map.copyOf(arguments);
+        }
+
+        public static ToolCall function(String id, String name,
+                                        Map<String, Object> arguments) {
+            return new ToolCall(id, name, arguments);
+        }
+
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public String getToolName() { return name; }
+        public Map<String, Object> getArguments() { return arguments; }
+        public Map<String, Object> getArgs() { return arguments; }
+    }
+
+    /** Complete runtime input to the model-owned chat template. */
+    public static final class Request {
+        private final List<Message> messages;
+        private final List<Tool> tools;
+        private final boolean addGenerationPrompt;
+        private final ToolDefinitionFormat toolDefinitionFormat;
+        private final ToolCallFormat toolCallFormat;
+        private final ToolChoice toolChoice;
+        private final Map<String, Object> templateArguments;
+
+        private Request(Builder builder) {
+            this.messages = builder.messages == null ? List.of() : List.copyOf(builder.messages);
+            this.tools = builder.tools == null ? List.of() : List.copyOf(builder.tools);
+            this.addGenerationPrompt = builder.addGenerationPrompt;
+            this.toolDefinitionFormat = builder.toolDefinitionFormat;
+            this.toolCallFormat = builder.toolCallFormat;
+            this.toolChoice = builder.toolChoice == null ? ToolChoice.AUTO : builder.toolChoice;
+            this.templateArguments = builder.templateArguments == null
+                    ? Map.of() : Map.copyOf(builder.templateArguments);
+        }
+
+        public static Builder builder() { return new Builder(); }
+        public List<Message> getMessages() { return messages; }
+        public List<Tool> getTools() { return tools; }
+        public boolean isAddGenerationPrompt() { return addGenerationPrompt; }
+        public ToolDefinitionFormat getToolDefinitionFormat() { return toolDefinitionFormat; }
+        public ToolCallFormat getToolCallFormat() { return toolCallFormat; }
+        public ToolChoice getToolChoice() { return toolChoice; }
+        public Map<String, Object> getTemplateArguments() { return templateArguments; }
+
+        public static final class Builder {
+            private List<Message> messages = List.of();
+            private List<Tool> tools = List.of();
+            private boolean addGenerationPrompt = true;
+            private ToolDefinitionFormat toolDefinitionFormat;
+            private ToolCallFormat toolCallFormat;
+            private ToolChoice toolChoice = ToolChoice.AUTO;
+            private Map<String, Object> templateArguments = Map.of();
+
+            public Builder messages(List<Message> value) {
+                this.messages = value == null ? List.of() : value;
+                return this;
+            }
+            public Builder tools(List<Tool> value) {
+                this.tools = value == null ? List.of() : value;
+                return this;
+            }
+            public Builder addGenerationPrompt(boolean value) {
+                this.addGenerationPrompt = value;
+                return this;
+            }
+            public Builder toolDefinitionFormat(ToolDefinitionFormat value) {
+                this.toolDefinitionFormat = value;
+                return this;
+            }
+            public Builder toolCallFormat(ToolCallFormat value) {
+                this.toolCallFormat = value;
+                return this;
+            }
+            public Builder toolChoice(ToolChoice value) {
+                this.toolChoice = value == null ? ToolChoice.AUTO : value;
+                return this;
+            }
+            public Builder templateArguments(Map<String, Object> value) {
+                this.templateArguments = value == null ? Map.of() : value;
+                return this;
+            }
+            public Request build() { return new Request(this); }
+        }
+    }
+
     /**
      * Represents a content part in a multimodal message.
      * Used by Idefics3/SmolDocling templates where message content is an array
@@ -413,12 +762,23 @@ public class ChatTemplate {
         private final String role;
         private final String content;
         private final List<ContentPart> contentParts;
+        private final List<ToolCall> toolCalls;
+        private final String toolCallId;
+        private final String toolName;
 
         @Builder
         public Message(String role, String content, List<ContentPart> contentParts) {
+            this(role, content, contentParts, List.of(), null, null);
+        }
+
+        public Message(String role, String content, List<ContentPart> contentParts,
+                       List<ToolCall> toolCalls, String toolCallId, String toolName) {
             this.role = role;
             this.content = content;
             this.contentParts = contentParts;
+            this.toolCalls = toolCalls == null ? List.of() : List.copyOf(toolCalls);
+            this.toolCallId = toolCallId;
+            this.toolName = toolName;
         }
 
         public Message(String role, String content) {
@@ -469,6 +829,27 @@ public class ChatTemplate {
          */
         public static Message assistant(String content) {
             return new Message("assistant", content);
+        }
+
+        public static Message assistantToolCalls(String rawContent, List<ToolCall> calls) {
+            return new Message("assistant", rawContent, null,
+                    calls == null ? List.of() : calls, null, null);
+        }
+
+        public static Message toolResult(String toolCallId, String toolName, String content) {
+            return new Message("tool", content, null, List.of(), toolCallId, toolName);
+        }
+
+        public List<ToolCall> getToolCalls() {
+            return toolCalls;
+        }
+
+        public String getToolCallId() {
+            return toolCallId;
+        }
+
+        public String getToolName() {
+            return toolName;
         }
 
         /**

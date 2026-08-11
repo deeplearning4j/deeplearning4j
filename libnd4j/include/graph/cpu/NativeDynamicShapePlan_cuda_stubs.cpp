@@ -33,6 +33,7 @@
 #include <graph/ModeContract.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/GraphBackend.h>
+#include <graph/GraphBackendResolver.h>
 #include <graph/GraphReplayHandle.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
 #include <graph/DspPhaseUtils.h>
@@ -50,9 +51,6 @@
 #endif
 #if HAVE_OPENVINO
 #include <graph/cpu/OpenVinoGraphBackend.h>
-#endif
-#ifdef HAVE_HEXAGON_MLIR
-#include <graph/hexagon/HexagonGraphBackend.h>
 #endif
 
 namespace sd {
@@ -123,60 +121,37 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     if (seg.def.selectedBackend == SelectedBackend::EMULATED_REPLAY) {
       status = executeSegmentEmulatedReplay(
           seg, externalInputs, numExternalInputs, stream);
-    } else if (seg.resolvedCpuBackend != nullptr) {
+    } else if (seg.resolvedGraphBackend != nullptr) {
       // Fast path: backend already compiled — execute via executeSegmentWithSpecificBackend
       // which installs the NativeSlotExecutor for native-deferred ops (rope, attention).
       // Calling backend->executeSegment() directly would skip NativeSlotExecutor setup
       // and cause native-deferred ops to fail with KERNEL_FAILURE.
       status = executeSegmentWithSpecificBackend(
-          seg, seg.resolvedCpuBackend, externalInputs, numExternalInputs, stream);
+          seg, seg.resolvedGraphBackend, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
-        if (graphExecutionMode_ == GraphExecutionMode::GEM_PORTABLE_REPLAY) {
-          DSP_DIAG(EXECUTE,
-                   "CPU_FROZEN: backend failed seg[%d-%d], switching portable replay "
-                   "to the functional recorder",
-                   seg.def.startSlot, seg.def.endSlot);
-          status = executePortableFunctionalFallback(
-              seg, "portable_cpu_frozen_backend_failed");
-        } else {
-          // Backend that was working now failed — this is a real bug.
-          // Preserve the existing AUTO/DSP terminal fallback behavior.
-          SegmentLifecycle::markFailed(seg.exec, "cpu_frozen_backend_failed",
-                                       seg.def.startSlot, seg.def.endSlot);
-          DSP_DIAG(EXECUTE, "CPU_FROZEN: backend failed seg[%d-%d], marked FAILED via lifecycle, "
-                   "falling back to slot-by-slot",
-                   seg.def.startSlot, seg.def.endSlot);
-          status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
-        }
+        DSP_DIAG(EXECUTE,
+                 "CPU_FROZEN: resolved graph backend failed seg[%d-%d], switching to explicit replay",
+                 seg.def.startSlot, seg.def.endSlot);
+        status = executePortableFunctionalFallback(
+            seg, "frozen_graph_backend_failed");
       }
-    } else if (seg.def.selectedBackend == SelectedBackend::CPU_GRAPH &&
+    } else if (seg.def.selectedBackend == SelectedBackend::GRAPH_BACKEND &&
                !seg.exec.compilationFailed && !seg.exec.noFusibleOps) {
       // Lazy compile path: backend not yet resolved. Call the full cascade
-      // (warmup → compile → execute) which populates resolvedCpuBackend.
+      // (warmup → compile → execute) which populates resolvedGraphBackend.
       // This happens when platformPrecompileSegments skips segments with
       // executionCount==0 after freeze resets them.
-      status = executeSegmentWithCpuGraph(seg, externalInputs, numExternalInputs, stream);
+      status = executeSegmentWithGraphBackend(seg, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) {
-        if (graphExecutionMode_ == GraphExecutionMode::GEM_PORTABLE_REPLAY) {
-          DSP_DIAG(EXECUTE,
-                   "CPU_FROZEN: cascade rejected seg[%d-%d], switching portable replay "
-                   "to the functional recorder",
-                   seg.def.startSlot, seg.def.endSlot);
-          status = executePortableFunctionalFallback(
-              seg, "portable_cpu_frozen_cascade_failed");
-        } else {
-          SegmentLifecycle::markFailed(seg.exec, "cpu_frozen_cascade_failed",
-                                       seg.def.startSlot, seg.def.endSlot);
-          DSP_DIAG(EXECUTE, "CPU_FROZEN: cascade failed seg[%d-%d], marked FAILED via lifecycle, "
-                   "falling back to slot-by-slot",
-                   seg.def.startSlot, seg.def.endSlot);
-          status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
-        }
+        DSP_DIAG(EXECUTE,
+                 "CPU_FROZEN: graph backend cascade rejected seg[%d-%d], switching to explicit replay",
+                 seg.def.startSlot, seg.def.endSlot);
+        status = executePortableFunctionalFallback(
+            seg, "frozen_graph_backend_cascade_failed");
       }
-    } else if (graphExecutionMode_ == GraphExecutionMode::GEM_PORTABLE_REPLAY &&
-               seg.def.selectedBackend == SelectedBackend::CPU_GRAPH) {
+    } else if (seg.def.selectedBackend == SelectedBackend::GRAPH_BACKEND) {
       status = executePortableFunctionalFallback(
-          seg, "portable_cpu_frozen_terminal_backend");
+          seg, "frozen_graph_backend_terminal");
     } else {
       status = executeSegmentSlotBySlot(seg, externalInputs, numExternalInputs, stream);
     }
@@ -216,37 +191,34 @@ bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& 
   return false;
 }
 
-// ── Eager precompilation: compile all CPU graph backend segments ─────────────
+// ── Eager precompilation: compile all resolved graph-backend segments ────────
 //
 // On GPU, this triggers parallel Triton/NVRTC compilation. On CPU, we eagerly
-// resolve and compile CPU graph backends (OneDNN, OpenVINO, MLIR, etc.) for
+// resolve and compile graph backends (oneDNN, OpenVINO, NNAPI, ACL, etc.) for
 // all segments during phaseCompile() instead of lazily on second execution.
 // This moves compilation latency out of the hot path.
 
 void NativeDynamicShapePlan::platformPrecompileSegments(
     NDArray** externalInputs, int numExternalInputs) {
   DSP_REQUIRE_PLAN_PHASE_AT_MOST(PlanPhase::SHAPES_FROZEN, "platformPrecompileSegments");
-#ifdef HAVE_HEXAGON_MLIR
-  HexagonGraphBackend::ScopedCompilationPolicy hexagonPolicy(
-      runtimeCompilationAllowed_, runtimeArtifactDirectory_);
-#endif
 
-  const auto& chain = getCpuGraphBackendChain();
+  const auto& chain = getGraphBackendCandidates();
+  const GraphBackendRequest request = makeGraphBackendRequest();
   if (chain.empty()) {
-    DSP_DIAG(COMPILE, "platformPrecompileSegments: no CPU graph backends available, skipping");
+    DSP_DIAG(COMPILE, "platformPrecompileSegments: no graph backends resolved, skipping");
     return;
   }
 
   int compiled = 0, skipped = 0, failed = 0;
   for (auto& seg : segments_) {
     // CPU precompilation is only valid for segments explicitly resolved to
-    // CPU_GRAPH.
-    if (seg.def.selectedBackend != SelectedBackend::CPU_GRAPH) {
+    // GRAPH_BACKEND.
+    if (seg.def.selectedBackend != SelectedBackend::GRAPH_BACKEND) {
       skipped++;
       continue;
     }
     // Skip segments that already have a resolved backend
-    if (seg.resolvedCpuBackend != nullptr) {
+    if (seg.resolvedGraphBackend != nullptr) {
       skipped++;
       continue;
     }
@@ -261,35 +233,27 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
       continue;
     }
 
-    // Try each backend in priority order
-    bool resolved = false;
-    for (size_t i = 0; i < chain.size(); i++) {
-      GraphBackend* backend = chain[i];
-      if (!backend->canFuseSegment(slots_, seg.def.startSlot, seg.def.endSlot)) {
-        continue;
-      }
+    const LongType segShapeKey =
+        computeSegmentShapeKey(seg, externalInputs, numExternalInputs);
+    seg.def.shapeKeyState.recordComputed(segShapeKey);
 
-      // Compute shape key for compilation
-      LongType segShapeKey = computeSegmentShapeKey(seg, externalInputs, numExternalInputs);
-      seg.def.shapeKeyState.recordComputed(segShapeKey);
-
-      if (backend->compileSegment(seg, slots_, externalInputs, numExternalInputs,
-                                   outputSlots_, totalOutputSlots_, segShapeKey,
-                                   numSlots_, requestedOutputSlotIndices_,
-                                   numRequestedOutputs_)) {
-        seg.resolvedCpuBackend = backend;
-        seg.exec.cachedShapeKey = segShapeKey;
-        seg.def.shapeKeyState.markCompiled(segShapeKey);
-        compiled++;
-        resolved = true;
-        DSP_DIAG(COMPILE, "platformPrecompileSegments: seg[%d-%d] compiled by %s",
-                 seg.def.startSlot, seg.def.endSlot, backend->name());
-        break;
-      }
-    }
-    if (!resolved) {
+    const auto lowering = GraphBackendResolver::lowerSegment(
+        request, chain, seg.resolvedGraphBackend, seg, slots_,
+        seg.def.startSlot, seg.def.endSlot, externalInputs, numExternalInputs,
+        outputSlots_, totalOutputSlots_, segShapeKey, numSlots_,
+        requestedOutputSlotIndices_, numRequestedOutputs_);
+    if (lowering.succeeded()) {
+      seg.setResolvedGraphBackend(lowering.backend, request);
+      seg.exec.cachedShapeKey = segShapeKey;
+      seg.def.shapeKeyState.markCompiled(segShapeKey);
+      compiled++;
+      DSP_DIAG(COMPILE,
+               "platformPrecompileSegments: seg[%d-%d] compiled by %s",
+               seg.def.startSlot, seg.def.endSlot, lowering.backend->name());
+    } else {
       failed++;
-      DSP_DIAG(COMPILE, "platformPrecompileSegments: seg[%d-%d] no backend accepted",
+      DSP_DIAG(COMPILE,
+               "platformPrecompileSegments: seg[%d-%d] no backend accepted",
                seg.def.startSlot, seg.def.endSlot);
     }
   }
@@ -309,9 +273,10 @@ void NativeDynamicShapePlan::platformRestoreSegmentDevice() {
 
 // ── Cross-device migration: no-op on CPU ────────────────────────────────────
 
-void NativeDynamicShapePlan::platformMigrateSegmentInputs(
+Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     const GraphSegment& seg, NDArray** externalInputs, int numExternalInputs) {
   // No cross-device migration needed on CPU
+  return Status::OK;
 }
 
 void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
@@ -340,11 +305,11 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
   (void)externalArrays; (void)effectiveArrays; (void)numExt; (void)stream; (void)diagTag;
 }
 
-// ── Graph eligibility: check CPU graph backends ─────────────────────────────
+// ── Graph eligibility: check the resolved backend cascade ───────────────────
 
 bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment) {
   if (!segment.def.isCapturable) return false;
-  return segment.def.selectedBackend == SelectedBackend::CPU_GRAPH;
+  return segment.def.selectedBackend == SelectedBackend::GRAPH_BACKEND;
 }
 
 // ── Segment execution: Cascading CPU dispatch ───────────────────────────────
@@ -372,48 +337,36 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
            segment.exec.executionCount);
 
   switch (segment.def.selectedBackend) {
-    case SelectedBackend::CPU_GRAPH: {
-      // Use the full CPU graph backend cascade: warmup → compile → execute.
-      // executeSegmentWithCpuGraph() handles the complete lifecycle:
+    case SelectedBackend::GRAPH_BACKEND: {
+      // Use the resolved graph-backend cascade: warmup → compile → execute.
+      // executeSegmentWithGraphBackend() handles the complete lifecycle:
       //   - First call: runs slot-by-slot warmup to establish output shapes
       //   - Second call: tries each backend (OneDNN, OpenVINO, ...) in priority order
       //   - Subsequent calls: reuses the resolved backend directly
-      // This is the ONLY correct way to dispatch CPU_GRAPH — never bypass it
-      // with direct resolvedCpuBackend calls (the backend may not be compiled yet).
+      // This is the ONLY correct way to dispatch GRAPH_BACKEND — never bypass it
+      // with direct resolvedGraphBackend calls (the backend may not be compiled yet).
       if (!segment.exec.compilationFailed && !segment.exec.noFusibleOps) {
-        Status st = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
+        Status st = executeSegmentWithGraphBackend(segment, externalInputs, numExternalInputs, stream);
         if (st == Status::OK) {
-          usedGraph = (segment.resolvedCpuBackend != nullptr);
+          usedGraph = (segment.resolvedGraphBackend != nullptr);
           return Status::OK;
         }
-        // PORTABLE_REPLAY treats the CPU graph chain as the preferred recorder,
-        // not a requirement. If this segment is unsupported, switch only this
-        // segment to the functional recorder. AUTO/DSP retain their existing
-        // terminal slot-by-slot behavior.
-        if (graphExecutionMode_ == GraphExecutionMode::GEM_PORTABLE_REPLAY) {
-          DSP_DIAG(BACKEND,
-                   "NativeDSP::execute: CPU_GRAPH cascade rejected seg[%d-%d], "
-                   "switching portable replay to the functional recorder",
-                   segment.def.startSlot, segment.def.endSlot);
-          return executePortableFunctionalFallback(
-              "portable_cpu_graph_cascade_failed");
-        }
-        // Cascade returned KERNEL_FAILURE = no backend could fuse this segment.
-        // Mark failed via lifecycle so we don't retry the cascade on every call.
-        SegmentLifecycle::markFailed(segment.exec, "cpu_graph_cascade_failed",
-                                     segment.def.startSlot, segment.def.endSlot);
-        DSP_DIAG(BACKEND, "NativeDSP::execute: CPU_GRAPH cascade failed seg[%d-%d], "
-                 "marked FAILED via lifecycle, falling back to slot-by-slot",
+        DSP_DIAG(BACKEND,
+                 "NativeDSP::execute: GRAPH_BACKEND cascade rejected seg[%d-%d], switching to explicit replay",
                  segment.def.startSlot, segment.def.endSlot);
+        return executePortableFunctionalFallback(
+            "graph_backend_cascade_failed");
       }
-      segment.exec.compiledByBackend = "slot-by-slot";
-      return executeSegmentSlotBySlot(
-          segment, externalInputs, numExternalInputs, stream);
+      return executePortableFunctionalFallback(
+          "graph_backend_terminal");
     }
 
-    case SelectedBackend::GPU_COMPILER:
-    case SelectedBackend::DEVICE_REPLAY:
     case SelectedBackend::EMULATED_REPLAY:
+      segment.exec.compiledByBackend = "explicit-replay";
+      return executeSegmentEmulatedReplay(
+          segment, externalInputs, numExternalInputs, stream);
+
+    case SelectedBackend::DEVICE_REPLAY:
     case SelectedBackend::SLOT_BY_SLOT:
     default:
       segment.exec.compiledByBackend = "slot-by-slot";
@@ -455,7 +408,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
   seg.exec.compositeReplaySchedule.units.clear();
   seg.exec.markArgsStale();
   seg.exec.gapOpsCapturedInGraph = false;
-  seg.resolvedCpuBackend = nullptr;
+  seg.resetGraphBackend();
 }
 
 // ── Plan resource cleanup: reset replayHandles on CPU ───────────────────────
@@ -470,7 +423,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     seg.exec.compositeReplaySchedule.units.clear();
     seg.exec.markArgsStale();
     seg.exec.gapOpsCapturedInGraph = false;
-    seg.resolvedCpuBackend = nullptr;
+    seg.resetGraphBackend();
   }
   // Free cached steady-state execution context (CPU analog of GPU's context reuse)
   if (steadyStateExecCtx_ != nullptr) {
@@ -615,39 +568,17 @@ void NativeDynamicShapePlan::platformTraceSlotValues(const GraphSegment& seg, vo
   // GPU diagnostic only
 }
 
-SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCapture) const {
-  // On CPU builds, graph capture (CUDA/HIP graphs) is not available natively.
-  // However, when a CPU graph backend is available (OneDNN, OpenVINO, etc.),
-  // honor the user's intent: "use the best graph backend" maps to CPU_GRAPH.
-  // This ensures CUDA_GRAPHS mode works meaningfully on CPU by routing to OneDNN
-  // instead of silently falling back to SLOT_BY_SLOT.
-#if HAVE_ONEDNN || HAVE_OPENVINO || HAVE_ARMCOMPUTE || HAVE_MLIR || HAVE_NNAPI || HAVE_MLX
-  return SelectedBackend::CPU_GRAPH;
-#else
-  // No CPU graph backends available — use emulated replay for ALL non-SLOT_BY_SLOT
-  // modes. EMULATED_REPLAY correctly handles the replay lifecycle on CPU
-  // (shape freezing, pointer stability tracking, segment timing) without
-  // requiring actual hardware graph capture. Previously, isGraphCapture=true
-  // returned SLOT_BY_SLOT, but the plan-level mode (GEM_CUDA_GRAPHS) still
-  // dispatched to phaseReplay, which expected EMULATED_REPLAY segments.
-  // The backend mismatch caused phaseReplay to hit the fallback path with
-  // wrong lifecycle state, corrupting execution.
-  return SelectedBackend::EMULATED_REPLAY;
-#endif
+SelectedBackend NativeDynamicShapePlan::platformResolveBackend(
+    bool isGraphCapture) const {
+  (void)isGraphCapture;
+  auto* mutablePlan = const_cast<NativeDynamicShapePlan*>(this);
+  return mutablePlan->getGraphBackendCandidates().empty()
+             ? SelectedBackend::EMULATED_REPLAY
+             : SelectedBackend::GRAPH_BACKEND;
 }
 
 SelectedBackend NativeDynamicShapePlan::platformResolvePortableReplayBackend() const {
-#if HAVE_ONEDNN || HAVE_OPENVINO || HAVE_ARMCOMPUTE || HAVE_MLIR || HAVE_NNAPI || HAVE_MLX
-  // Compile-time availability is not enough: optional runtimes can still be
-  // absent on the current machine. Build the normal CPU backend chain now and
-  // use functional replay when no backend is actually operational.
-  auto* mutablePlan = const_cast<NativeDynamicShapePlan*>(this);
-  return mutablePlan->getCpuGraphBackendChain().empty()
-             ? SelectedBackend::EMULATED_REPLAY
-             : SelectedBackend::CPU_GRAPH;
-#else
-  return SelectedBackend::EMULATED_REPLAY;
-#endif
+  return platformResolveBackend(false);
 }
 
 size_t NativeDynamicShapePlan::platformEstimateCaptureBudget() const {

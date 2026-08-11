@@ -50,21 +50,24 @@ PLATFORM_IMPL(deconv1d, ENGINE_CPU) {
   sd::LongType oW = isNCW ? output->sizeAt(2) : output->sizeAt(1);
 
   // Reshape for 2D deconvolution
-  auto input4D = input->reshape(input->ordering(),
-                                isNCW ? std::vector<sd::LongType>{bS, iC, 1, iW}
-                                      : std::vector<sd::LongType>{bS, 1, iW, iC});
-  auto output4D = output->reshape(output->ordering(),
-                                  isNCW ? std::vector<sd::LongType>{bS, oC, 1, oW}
-                                        : std::vector<sd::LongType>{bS, 1, oW, oC});
+  std::vector<sd::LongType> inputShape =
+      isNCW ? std::vector<sd::LongType>{bS, iC, 1, iW}
+            : std::vector<sd::LongType>{bS, 1, iW, iC};
+  std::vector<sd::LongType> outputShape =
+      isNCW ? std::vector<sd::LongType>{bS, oC, 1, oW}
+            : std::vector<sd::LongType>{bS, 1, oW, oC};
+  auto input4D = input->reshape(input->ordering(), inputShape);
+  auto output4D = output->reshape(output->ordering(), outputShape);
 
   // Weights: [kW, oC, iC] -> [1, kW, oC, iC]
-  auto weights4D = weights->reshape(weights->ordering(), {1, kW, oC, iC});
+  std::vector<sd::LongType> weightsShape = {1, kW, oC, iC};
+  auto weights4D = weights->reshape(weights->ordering(), weightsShape);
 
   Arm_DataLayout layout = isNCW ? Arm_DataLayout::NCHW : Arm_DataLayout::NHWC;
 
-  auto inInfo = getArmTensorInfo(input4D, layout);
-  auto wInfo = getArmTensorInfo(weights4D, Arm_DataLayout::UNKNOWN);
-  auto outInfo = getArmTensorInfo(output4D, layout);
+  auto inInfo = getArmTensorInfo(*input4D, layout);
+  auto wInfo = getArmTensorInfo(*weights4D, Arm_DataLayout::UNKNOWN);
+  auto outInfo = getArmTensorInfo(*output4D, layout);
 
   Arm_Tensor inTensor, wTensor, bTensor, outTensor;
   inTensor.allocator()->init(inInfo);
@@ -85,18 +88,18 @@ PLATFORM_IMPL(deconv1d, ENGINE_CPU) {
   deconv.configure(&inTensor, &wTensor, biasPtr, &outTensor, padInfo);
 
   // Allocate and copy
-  if (!input4D.hasPaddedBuffer() && !inTensor.info()->has_padding()) {
-    inTensor.allocator()->import_memory(input4D.buffer());
+  if (!input4D->hasPaddedBuffer() && !inTensor.info()->has_padding()) {
+    inTensor.allocator()->import_memory(input4D->buffer());
   } else {
     inTensor.allocator()->allocate();
-    copyToTensor(input4D, inTensor);
+    copyToTensor(*input4D, inTensor);
   }
 
-  if (!weights4D.hasPaddedBuffer() && !wTensor.info()->has_padding()) {
-    wTensor.allocator()->import_memory(weights4D.buffer());
+  if (!weights4D->hasPaddedBuffer() && !wTensor.info()->has_padding()) {
+    wTensor.allocator()->import_memory(weights4D->buffer());
   } else {
     wTensor.allocator()->allocate();
-    copyToTensor(weights4D, wTensor);
+    copyToTensor(*weights4D, wTensor);
   }
 
   if (bias) {
@@ -109,8 +112,8 @@ PLATFORM_IMPL(deconv1d, ENGINE_CPU) {
   }
 
   bool copyOutput = false;
-  if (!output4D.hasPaddedBuffer() && !outTensor.info()->has_padding()) {
-    outTensor.allocator()->import_memory(output4D.buffer());
+  if (!output4D->hasPaddedBuffer() && !outTensor.info()->has_padding()) {
+    outTensor.allocator()->import_memory(output4D->buffer());
   } else {
     outTensor.allocator()->allocate();
     copyOutput = true;
@@ -119,7 +122,7 @@ PLATFORM_IMPL(deconv1d, ENGINE_CPU) {
   deconv.run();
 
   if (copyOutput) {
-    copyFromTensor(outTensor, output4D);
+    copyFromTensor(outTensor, *output4D);
   }
 
   return sd::Status::OK;

@@ -57,7 +57,7 @@ public class DspPlanDiskCache {
     private static final String DEFAULT_OVERRIDE_SUBDIR = ".kompile/cache/dsp/dsp_plan_override";
 
     // Current DSP serialization version — must match DynamicShapePlan.DSP_VERSION
-    private static final int CURRENT_DSP_VERSION = 5;
+    private static final int CURRENT_DSP_VERSION = 7;
 
     /**
      * Per-build native library fingerprint, computed once from buildInfo().

@@ -67,6 +67,66 @@ struct ArgMapping {
   bool isOutput;
 };
 
+// ─── Backend-neutral output materialization analysis ──────────────────────────
+
+/**
+ * Compute the slot outputs that a compiled graph range must materialize.
+ *
+ * An output is visible when it is consumed outside [startSlot, endSlot], was
+ * explicitly requested by the caller, or is terminal (not consumed by any
+ * slot). Outputs consumed only inside the range stay backend-local. This is a
+ * pure NativeSlot dataflow operation shared by CPU compiler backends and NNAPI;
+ * backend-specific operand/node construction happens only after this decision.
+ */
+inline std::unordered_set<int> computeExternallyVisibleOutputSlots(
+    NativeSlot* slots, int startSlot, int endSlot, int totalSlots,
+    const int* requestedOutputSlotIndices = nullptr,
+    int numRequestedOutputs = 0) {
+  std::unordered_set<int> segmentOutputs;
+  std::unordered_set<int> externallyVisible;
+  std::unordered_set<int> consumedAnywhere;
+
+  if (slots == nullptr || startSlot < 0 || endSlot < startSlot) {
+    return externallyVisible;
+  }
+  if (totalSlots <= endSlot) totalSlots = endSlot + 1;
+
+  for (int slot = startSlot; slot <= endSlot; ++slot) {
+    for (int output = 0; output < slots[slot].wiring.numOutputs; ++output) {
+      segmentOutputs.insert(slots[slot].wiring.outputSlotIndices[output]);
+    }
+  }
+
+  for (int slot = 0; slot < totalSlots; ++slot) {
+    const bool outsideRange = slot < startSlot || slot > endSlot;
+    for (int input = 0; input < slots[slot].wiring.numInputs; ++input) {
+      const int source = slots[slot].wiring.inputSourceIndices[input];
+      if (source < 0) continue;
+      consumedAnywhere.insert(source);
+      if (outsideRange && segmentOutputs.count(source) != 0) {
+        externallyVisible.insert(source);
+      }
+    }
+  }
+
+  if (requestedOutputSlotIndices != nullptr) {
+    for (int requested = 0; requested < numRequestedOutputs; ++requested) {
+      const int source = requestedOutputSlotIndices[requested];
+      if (segmentOutputs.count(source) != 0) externallyVisible.insert(source);
+    }
+  }
+
+  for (int source : segmentOutputs) {
+    if (consumedAnywhere.count(source) == 0) externallyVisible.insert(source);
+  }
+
+  DSP_DIAG(SEGMENT,
+           "computeExternallyVisibleOutputSlots: [%d-%d] produced=%d materialized=%d",
+           startSlot, endSlot, static_cast<int>(segmentOutputs.size()),
+           static_cast<int>(externallyVisible.size()));
+  return externallyVisible;
+}
+
 // ─── 3-phase argument reconstruction ─────────────────────────────────────────
 //
 // All MLIR-based backends build kernel arguments in the same order:

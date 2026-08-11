@@ -49,7 +49,9 @@ import org.nd4j.ggml.format.GGUFHeader;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.File;
 import java.util.Arrays;
@@ -388,16 +390,21 @@ class TestLFM2Architecture {
 
         assertNotNull(sd);
         assertNotNull(sd.getVariable("lm_logits"));
+        assertNotNull(sd.getVariable("lm_logits_last"));
 
-        // Verify conv state placeholder exists for the conv layer
+        // Verify conv state and real-length placeholders exist for fixed-buffer execution.
         List<String> graphInputs = sd.inputs();
+        assertTrue(graphInputs.contains("actual_sequence_length"),
+                "Fixed-buffer LFM2 graphs must expose the real unpadded sequence length");
         assertTrue(graphInputs.contains("past_conv_state.0"),
                 "Conv layer 0 should have past_conv_state.0 placeholder. Inputs: " + graphInputs);
         assertFalse(graphInputs.contains("past_conv_state.1"),
                 "Attention layer 1 should NOT have conv state placeholder");
 
-        // Verify conv_state_out is a registered output
+        // Verify conv_state_out and last-real-token logits are registered outputs.
         List<String> graphOutputs = sd.outputs();
+        assertTrue(graphOutputs.contains("lm_logits_last"),
+                "LFM2 must expose single-position logits for stable prefill/decode plans");
         assertTrue(graphOutputs.contains("conv_state_out_0"),
                 "Conv layer 0 should produce conv_state_out_0. Outputs: " + graphOutputs);
 
@@ -407,32 +414,67 @@ class TestLFM2Architecture {
         assertTrue(graphOutputs.contains("k_rope_1"),
                 "Attention layer 1 should produce k_rope_1 output");
 
-        // Forward pass with conv state input
+        // Forward pass with two real tokens in a four-token fixed buffer.
         int seqLen = 4;
+        int actualLength = 2;
         INDArray inputIds = Nd4j.create(DataType.INT64, 1, seqLen);
-        for (int i = 0; i < seqLen; i++) inputIds.putScalar(new int[]{0, i}, i + 1);
+        for (int i = 0; i < actualLength; i++) inputIds.putScalar(new int[]{0, i}, i + 1);
 
         Map<String, INDArray> inputs = buildInputs(inputIds, seqLen, layerTypes, kvHeadsPerLayer);
+        inputs.put("actual_sequence_length", Nd4j.scalar(DataType.INT64, actualLength));
         // Add conv state placeholder input: [batch, convDim, kernelSize-1]
         inputs.put("past_conv_state.0",
-                Nd4j.zeros(DataType.FLOAT, 1, HIDDEN_SIZE, CONV_KERNEL_SIZE - 1));
+                Nd4j.zeros(DataType.HALF, 1, HIDDEN_SIZE, CONV_KERNEL_SIZE - 1));
 
-        // Request both logits and conv state output
-        Map<String, INDArray> outputs = sd.output(inputs, "lm_logits", "conv_state_out_0");
+        // Request full logits, fixed-shape last-real-token logits, and recurrent state.
+        Map<String, INDArray> outputs = sd.output(
+                inputs,
+                "lm_logits",
+                "lm_logits_last",
+                "conv_state_out_0",
+                "model.norm",
+                "hidden_last");
         INDArray logits = outputs.get("lm_logits");
+        INDArray lastLogits = outputs.get("lm_logits_last");
         INDArray convStateOut = outputs.get("conv_state_out_0");
+        INDArray hidden = outputs.get("model.norm");
+        INDArray hiddenLast = outputs.get("hidden_last");
 
         assertNotNull(logits, "Logits should not be null");
         assertArrayEquals(new long[]{1, seqLen, VOCAB_SIZE}, logits.shape(),
                 "Logits should be [batch, seq, vocab]");
         assertFalse(logits.isNaN().any(),
                 "Logits should not contain NaN values");
+        assertArrayEquals(new long[]{1, 1, VOCAB_SIZE}, lastLogits.shape(),
+                "Last logits should remain [batch, 1, vocab] for prefill and decode");
+        INDArray expectedHiddenLast = hidden.get(
+                NDArrayIndex.all(),
+                NDArrayIndex.interval(actualLength - 1, actualLength),
+                NDArrayIndex.all());
+        assertEquals(expectedHiddenLast, hiddenLast,
+                "hidden_last must slice actual_sequence_length-1, not the padded buffer tail");
+
+        INDArray expectedLast = logits.get(
+                NDArrayIndex.all(),
+                NDArrayIndex.interval(actualLength - 1, actualLength),
+                NDArrayIndex.all());
+        INDArray projectionDifference = lastLogits.sub(expectedLast);
+        double maxAbsDifference =
+                Transforms.abs(projectionDifference, false).maxNumber().doubleValue();
+        double referenceScale =
+                Transforms.abs(expectedLast, false).maxNumber().doubleValue();
+        double tolerance = Math.max(1e-5, referenceScale * 1e-3);
+        assertTrue(maxAbsDifference <= tolerance,
+                "Single-position and full-sequence projections diverged beyond normal CUDA GEMM "
+                        + "ordering tolerance: maxAbsDifference=" + maxAbsDifference
+                        + ", referenceScale=" + referenceScale
+                        + ", tolerance=" + tolerance);
 
         // Verify conv state output shape and non-zero content
         assertNotNull(convStateOut, "conv_state_out_0 should not be null");
         assertArrayEquals(new long[]{1, HIDDEN_SIZE, CONV_KERNEL_SIZE - 1}, convStateOut.shape(),
                 "Conv state output should be [batch, D, K-1]");
-        // After processing 4 tokens, state should be non-zero (it captured the input history)
+        // After processing real tokens, state should be non-zero (it captured the input history)
         assertFalse(convStateOut.eq(0).all(),
                 "Conv state output should be non-zero after processing tokens (captures history)");
     }
@@ -932,6 +974,7 @@ class TestLFM2Architecture {
         inputs.put("input_ids", inputIds);
         inputs.put("position_offset", Nd4j.scalar(DataType.INT64, 0));
         inputs.put("cache_position", Nd4j.scalar(DataType.INT64, 0));
+        inputs.put("actual_sequence_length", Nd4j.scalar(DataType.INT64, seqLen));
 
         // Causal mask: [1, 1, seqLen, seqLen] — all zeros (no masking for prefill)
         inputs.put("_causal_mask", Nd4j.zeros(DataType.FLOAT, 1, 1, seqLen, seqLen));
@@ -941,13 +984,13 @@ class TestLFM2Architecture {
             int kvHeads = kvHeadsPerLayer.get(i);
             if (kvHeads > 0 && "attention".equals(type)) {
                 inputs.put("past_key_values." + i + ".key",
-                        Nd4j.zeros(DataType.FLOAT, 1, seqLen, kvHeads, HEAD_DIM));
+                        Nd4j.zeros(DataType.HALF, 1, seqLen, kvHeads, HEAD_DIM));
                 inputs.put("past_key_values." + i + ".value",
-                        Nd4j.zeros(DataType.FLOAT, 1, seqLen, kvHeads, HEAD_DIM));
+                        Nd4j.zeros(DataType.HALF, 1, seqLen, kvHeads, HEAD_DIM));
             } else if ("short_conv".equals(type)) {
                 // Conv state: [batch, convDim, kernelSize-1]
                 inputs.put("past_conv_state." + i,
-                        Nd4j.zeros(DataType.FLOAT, 1, HIDDEN_SIZE, CONV_KERNEL_SIZE - 1));
+                        Nd4j.zeros(DataType.HALF, 1, HIDDEN_SIZE, CONV_KERNEL_SIZE - 1));
             }
         }
         return inputs;
@@ -959,10 +1002,10 @@ class TestLFM2Architecture {
      */
     private Map<String, INDArray> createSyntheticWeights(int numLayers, List<String> layerTypes) {
         Map<String, INDArray> weights = new HashMap<>();
-        DataType dtype = DataType.FLOAT;
+        DataType dtype = DataType.HALF;
 
         // Token embedding: [vocab_size, hidden_size]
-        weights.put("token_embd.weight", Nd4j.rand(dtype, VOCAB_SIZE, HIDDEN_SIZE).muli(0.02));
+        weights.put("token_embd.weight", Nd4j.randn(dtype, VOCAB_SIZE, HIDDEN_SIZE).muli(0.02));
 
         // Output norm (token_embd_norm in GGUF — the post-stack norm)
         weights.put("token_embd_norm.weight", Nd4j.ones(dtype, HIDDEN_SIZE));
@@ -978,10 +1021,10 @@ class TestLFM2Architecture {
                 int qDim = NUM_HEADS * HEAD_DIM;       // 32 * 64 = 2048
                 int kvDim = NUM_KV_HEADS * HEAD_DIM;    // 8 * 64 = 512
 
-                weights.put(prefix + ".attn_q.weight", Nd4j.rand(dtype, qDim, HIDDEN_SIZE).muli(0.02));
-                weights.put(prefix + ".attn_k.weight", Nd4j.rand(dtype, kvDim, HIDDEN_SIZE).muli(0.02));
-                weights.put(prefix + ".attn_v.weight", Nd4j.rand(dtype, kvDim, HIDDEN_SIZE).muli(0.02));
-                weights.put(prefix + ".attn_output.weight", Nd4j.rand(dtype, HIDDEN_SIZE, qDim).muli(0.02));
+                weights.put(prefix + ".attn_q.weight", Nd4j.randn(dtype, qDim, HIDDEN_SIZE).muli(0.02));
+                weights.put(prefix + ".attn_k.weight", Nd4j.randn(dtype, kvDim, HIDDEN_SIZE).muli(0.02));
+                weights.put(prefix + ".attn_v.weight", Nd4j.randn(dtype, kvDim, HIDDEN_SIZE).muli(0.02));
+                weights.put(prefix + ".attn_output.weight", Nd4j.randn(dtype, HIDDEN_SIZE, qDim).muli(0.02));
 
                 // Per-head QK RMSNorm weights: [head_dim]
                 weights.put(prefix + ".attn_q_norm.weight", Nd4j.ones(dtype, HEAD_DIM));
@@ -990,22 +1033,22 @@ class TestLFM2Architecture {
                 // Short-conv block with actual GGUF tensor names
                 // Fused in_proj: [3*hidden, hidden] (3x expansion, splits into B, C, x)
                 weights.put(prefix + ".shortconv.in_proj.weight",
-                        Nd4j.rand(dtype, 3 * HIDDEN_SIZE, HIDDEN_SIZE).muli(0.02));
+                        Nd4j.randn(dtype, 3 * HIDDEN_SIZE, HIDDEN_SIZE).muli(0.02));
                 // Out proj: [hidden, hidden]
                 weights.put(prefix + ".shortconv.out_proj.weight",
-                        Nd4j.rand(dtype, HIDDEN_SIZE, HIDDEN_SIZE).muli(0.02));
+                        Nd4j.randn(dtype, HIDDEN_SIZE, HIDDEN_SIZE).muli(0.02));
                 // Depthwise conv kernel: [D, K] after GGUF shape reversal
                 weights.put(prefix + ".shortconv.conv.weight",
-                        Nd4j.rand(dtype, HIDDEN_SIZE, CONV_KERNEL_SIZE).muli(0.02));
+                        Nd4j.randn(dtype, HIDDEN_SIZE, CONV_KERNEL_SIZE).muli(0.02));
             }
 
             // Post-block FFN norm (all layers)
             weights.put(prefix + ".ffn_norm.weight", Nd4j.ones(dtype, HIDDEN_SIZE));
 
             // SwiGLU FFN (all layers)
-            weights.put(prefix + ".ffn_gate.weight", Nd4j.rand(dtype, INTERMEDIATE_SIZE, HIDDEN_SIZE).muli(0.02));
-            weights.put(prefix + ".ffn_up.weight", Nd4j.rand(dtype, INTERMEDIATE_SIZE, HIDDEN_SIZE).muli(0.02));
-            weights.put(prefix + ".ffn_down.weight", Nd4j.rand(dtype, HIDDEN_SIZE, INTERMEDIATE_SIZE).muli(0.02));
+            weights.put(prefix + ".ffn_gate.weight", Nd4j.randn(dtype, INTERMEDIATE_SIZE, HIDDEN_SIZE).muli(0.02));
+            weights.put(prefix + ".ffn_up.weight", Nd4j.randn(dtype, INTERMEDIATE_SIZE, HIDDEN_SIZE).muli(0.02));
+            weights.put(prefix + ".ffn_down.weight", Nd4j.randn(dtype, HIDDEN_SIZE, INTERMEDIATE_SIZE).muli(0.02));
         }
 
         return weights;

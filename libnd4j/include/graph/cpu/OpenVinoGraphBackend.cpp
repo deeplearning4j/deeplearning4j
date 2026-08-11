@@ -24,11 +24,13 @@
 #include <graph/DspDiagnostics.h>
 #include <helpers/shape.h>
 #include <array/ArrayOptions.h>
+#include <ops/declarable/helpers/causal_conv1d.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 #include <unordered_set>
 #include <openvino/runtime/properties.hpp>
@@ -154,6 +156,18 @@ bool OpenVinoGraphBackend::isAvailable() const {
     return false;
   }
   return false;
+}
+
+bool OpenVinoGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_OPENVINO ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO ||
+         request.executionMode == GraphExecutionMode::GEM_PORTABLE_REPLAY;
+}
+
+int OpenVinoGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_OPENVINO ? 1000 : 600;
 }
 
 // ─── Data type mapping ──────────────────────────────────────────────────────
@@ -519,13 +533,14 @@ uint64_t OpenVinoGraphBackend::computeIslandTopologyHash(
 
 // ─── buildIsland ────────────────────────────────────────────────────────────
 // Builds an OV model from a contiguous range of OV-compilable slots.
-// segStartSlot/segEndSlot define the outer segment boundary for context.
 
 OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
     NativeSlot* slots, int startSlot, int endSlot,
     NDArray** externalInputs, int numExternalInputs,
     NDArray** outputSlots, int totalOutputSlots,
-    int segStartSlot, int segEndSlot) {
+    int totalSlots,
+    const int* requestedOutputSlotIndices,
+    int numRequestedOutputs) {
 
   OvIsland result;
   result.startSlot = startSlot;
@@ -2212,23 +2227,34 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
               std::vector<int64_t>{0, 0, 0});
           auto pad_val = std::make_shared<ov::op::v0::Constant>(dtype, ov::Shape{}, std::vector<float>{0.0f});
 
-          ov::Output<ov::Node> x_padded;
-          // If state_in is provided (inputs[2] with rank 3 or inputs[3]), concat it
-          bool hasStateIn = false;
-          ov::Output<ov::Node> stateInNode;
-          if (inputs.size() >= 4) {
-            stateInNode = inputs[3];
-            hasStateIn = true;
-          } else if (inputs.size() == 3) {
-            // Check if input[2] is state_in (rank 3) or bias (rank 1)
-            // At graph build time, use the partial shape to distinguish
-            auto rank2 = inputs[2].get_partial_shape().rank();
-            if (rank2.is_static() && rank2.get_length() == 3) {
-              stateInNode = inputs[2];
-              hasStateIn = true;
-            }
+          // Resolve the backend-neutral op contract first, then lower the
+          // resulting semantic roles into OpenVINO nodes. NNAPI and future graph
+          // backends can reuse the same resolver without sharing OV tensor types.
+          sd::ops::helpers::CausalConv1dInputRoles inputRoles;
+          std::string resolutionFailure;
+          const bool inputsResolved = sd::ops::helpers::resolveCausalConv1dInputRoles(
+              static_cast<int>(inputs.size()),
+              [&](int inputIndex) {
+                const auto rank = inputs[inputIndex].get_partial_shape().rank();
+                return rank.is_static() ? static_cast<int>(rank.get_length()) : -1;
+              },
+              inputRoles, &resolutionFailure);
+          if (!inputsResolved) {
+            throw std::runtime_error("OpenVINO causal_conv1d contract is not resolvable: " +
+                                     resolutionFailure);
           }
 
+          const bool hasBias = inputRoles.bias >= 0;
+          const bool hasStateIn = inputRoles.stateIn >= 0;
+          const bool hasActualLen = inputRoles.actualLen >= 0;
+          ov::Output<ov::Node> biasNode;
+          ov::Output<ov::Node> stateInNode;
+          ov::Output<ov::Node> actualLenNode;
+          if (hasBias) biasNode = inputs[inputRoles.bias];
+          if (hasStateIn) stateInNode = inputs[inputRoles.stateIn];
+          if (hasActualLen) actualLenNode = inputs[inputRoles.actualLen];
+
+          ov::Output<ov::Node> x_padded;
           if (hasStateIn) {
             // Concat state_in [B,D,K-1] with x_bdl [B,D,L] along axis 2
             if (stateInNode.get_element_type() != dtype) {
@@ -2252,19 +2278,6 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
               x_padded, w_grouped, conv_strides, conv_pads_begin, conv_pads_end, conv_dilations);
           ov::Output<ov::Node> convOut = conv->output(0);  // [B,D,L]
 
-          // Optional bias: inputs[2] if rank 1
-          bool hasBias = false;
-          ov::Output<ov::Node> biasNode;
-          if (inputs.size() >= 4) {
-            biasNode = inputs[2];
-            hasBias = true;
-          } else if (inputs.size() == 3) {
-            auto rank2 = inputs[2].get_partial_shape().rank();
-            if (rank2.is_static() && rank2.get_length() == 1) {
-              biasNode = inputs[2];
-              hasBias = true;
-            }
-          }
           if (hasBias) {
             if (biasNode.get_element_type() != dtype) {
               biasNode = std::make_shared<ov::op::v0::Convert>(biasNode, dtype)->output(0);
@@ -2295,12 +2308,40 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
           auto P_val = std::make_shared<ov::op::v8::Gather>(xp_shape_node,
               std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{1}, std::vector<int64_t>{2}),
               axis_0)->output(0);
-          auto start_state = std::make_shared<ov::op::v1::Subtract>(P_val, km1)->output(0);
-          // Pad start/stop/step to rank-3 [0,0,start] / [0,0,P] / [1,1,1]
+
+          ov::Output<ov::Node> start_state;
+          if (hasActualLen) {
+            // Native causal_conv1d clamps actualLen to [0,L] and uses it only
+            // to choose the state_out window. x_padded starts with K-1 history
+            // values, so [actualLen, actualLen + K-1) is exactly the final
+            // history after consuming actualLen real input timesteps.
+            if (actualLenNode.get_element_type() != ov::element::i64) {
+              actualLenNode =
+                  std::make_shared<ov::op::v0::Convert>(actualLenNode, ov::element::i64)->output(0);
+            }
+            auto scalar_as_vector_shape = std::make_shared<ov::op::v0::Constant>(
+                ov::element::i64, ov::Shape{1}, std::vector<int64_t>{1});
+            auto actual_len_vector = std::make_shared<ov::op::v1::Reshape>(
+                actualLenNode, scalar_as_vector_shape, false)->output(0);
+            auto x_shape_node = std::make_shared<ov::op::v3::ShapeOf>(x_bdl);
+            auto L_val = std::make_shared<ov::op::v8::Gather>(x_shape_node,
+                std::make_shared<ov::op::v0::Constant>(
+                    ov::element::i64, ov::Shape{1}, std::vector<int64_t>{2}),
+                axis_0)->output(0);
+            auto non_negative_len =
+                std::make_shared<ov::op::v1::Maximum>(actual_len_vector, zero_i)->output(0);
+            start_state =
+                std::make_shared<ov::op::v1::Minimum>(non_negative_len, L_val)->output(0);
+          } else {
+            start_state = std::make_shared<ov::op::v1::Subtract>(P_val, km1)->output(0);
+          }
+          auto end_state = std::make_shared<ov::op::v1::Add>(start_state, km1)->output(0);
+
+          // Pad start/stop/step to rank-3 [0,0,start] / [0,0,end] / [1,1,1]
           auto ss_begin = std::make_shared<ov::op::v0::Concat>(
               ov::OutputVector{zero_i, zero_i, start_state}, 0)->output(0);
           auto ss_end = std::make_shared<ov::op::v0::Concat>(
-              ov::OutputVector{zero_i, zero_i, P_val}, 0)->output(0);
+              ov::OutputVector{zero_i, zero_i, end_state}, 0)->output(0);
           auto ss_step = std::make_shared<ov::op::v0::Constant>(ov::element::i64, ov::Shape{3},
               std::vector<int64_t>{1, 1, 1});
           // begin_mask/end_mask: mask dims 0,1 (batch, channel) so they pass through fully
@@ -2317,8 +2358,8 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
           }
 
           DSP_DIAG(COMPILE, "OpenVINO: causal_conv1d slot %d: activation=%d wFormat=%d hasBias=%d hasState=%d "
-                   "x_input=%s w_dk=%s x_bdl=%s convOut=%s output0=%s output1=%s",
-                   s, activation, wFormat, hasBias, hasStateIn,
+                   "hasActualLen=%d x_input=%s w_dk=%s x_bdl=%s convOut=%s output0=%s output1=%s",
+                   s, activation, wFormat, hasBias, hasStateIn, hasActualLen,
                    x_input.get_partial_shape().to_string().c_str(),
                    w_dk.get_partial_shape().to_string().c_str(),
                    x_bdl.get_partial_shape().to_string().c_str(),
@@ -2347,59 +2388,65 @@ OpenVinoGraphBackend::OvIsland OpenVinoGraphBackend::buildIsland(
     }
   }
 
-  // Determine which outputs are externally visible (consumed outside the segment or are plan outputs)
-  std::unordered_set<int> externallyConsumed;
-  // All slot outputs that might be used outside this segment
-  for (int s = startSlot; s <= endSlot; s++) {
-    for (int o = 0; o < slots[s].wiring.numOutputs; o++) {
-      int outIdx = slots[s].wiring.outputSlotIndices[o];
-      externallyConsumed.insert(outIdx);  // conservatively mark all as external
-    }
-  }
+  // Materialize only values that cross this island boundary, are requested
+  // graph outputs, or are terminal. Keeping island-internal values in OpenVINO
+  // avoids writes into view/constant storage and reduces result binding overhead.
+  const auto externallyConsumed = computeExternallyVisibleOutputSlots(
+      slots, startSlot, endSlot, totalSlots,
+      requestedOutputSlotIndices, numRequestedOutputs);
+  std::unordered_set<int> emittedOutputs;
 
-  // Create Results for externally visible outputs.
+  // Create Results in producer order. Deterministic ordering is required because
+  // topology-equivalent islands share CompiledModels across transformer layers.
   // If the graph's compute type diverged from the expected output type (e.g. f32
   // intermediates from RMSNorm but output NDArray is f16), insert a Convert node
   // before the Result. This is a graph-level cast — OpenVINO fuses it into the
   // last kernel so there's no runtime temporary buffer.
-  for (int outIdx : externallyConsumed) {
-    auto it = tensorMap.find(outIdx);
-    if (it == tensorMap.end()) continue;
+  for (int s = startSlot; s <= endSlot; ++s) {
+    for (int o = 0; o < slots[s].wiring.numOutputs; ++o) {
+      const int outIdx = slots[s].wiring.outputSlotIndices[o];
+      if (externallyConsumed.count(outIdx) == 0 ||
+          !emittedOutputs.insert(outIdx).second) {
+        continue;
+      }
+      auto it = tensorMap.find(outIdx);
+      if (it == tensorMap.end()) continue;
 
-    auto graphOutput = it->second;
-    auto graphType = graphOutput.get_element_type();
+      auto graphOutput = it->second;
+      auto graphType = graphOutput.get_element_type();
 
-    // Determine expected output type from the NDArray that warmup populated
-    NDArray* outArr = (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots)
-                      ? outputSlots[outIdx] : nullptr;
-    if (outArr != nullptr) {
-      auto expectedType = mapDataType(outArr->dataType());
-      if (graphType != expectedType) {
-        // When the CPU lacks native FP16 ISA (kCpuHasNativeFp16==false), the entire
-        // island computes in f32 (ISA promotion). Inserting a Convert(f32→f16) here
-        // would re-introduce f16 at island output boundaries: transformer intermediate
-        // values (matmul products, attention scores) easily exceed f16 max (65504),
-        // causing inf→NaN cascades through 24+ layers until logits are all NaN.
-        //
-        // Instead: leave the Result as f32. The runtime output binding (executeSegment)
-        // detects the model-f32/NDArray-f16 mismatch and performs a saturating copy
-        // (clamping to [-65504, 65504]) to fill the f16 NDArray buffer safely.
-        bool skipConvert = (!kCpuHasNativeFp16
-                            && graphType == ov::element::f32
-                            && expectedType == ov::element::f16);
-        if (skipConvert) {
-          DSP_DIAG(COMPILE, "OpenVINO: output slot %d: skipping Convert(f32→f16) — no native FP16 ISA, "
-                   "runtime will saturate-copy f32→f16", outIdx);
-        } else {
-          DSP_DIAG(COMPILE, "OpenVINO: output slot %d type mismatch: graph=%s expected=%s, inserting Convert",
-                   outIdx, graphType.get_type_name().c_str(), expectedType.get_type_name().c_str());
-          graphOutput = std::make_shared<ov::op::v0::Convert>(graphOutput, expectedType)->output(0);
+      // Determine expected output type from the NDArray that warmup populated
+      NDArray* outArr = (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots)
+                        ? outputSlots[outIdx] : nullptr;
+      if (outArr != nullptr) {
+        auto expectedType = mapDataType(outArr->dataType());
+        if (graphType != expectedType) {
+          // When the CPU lacks native FP16 ISA (kCpuHasNativeFp16==false), the entire
+          // island computes in f32 (ISA promotion). Inserting a Convert(f32→f16) here
+          // would re-introduce f16 at island output boundaries: transformer intermediate
+          // values (matmul products, attention scores) easily exceed f16 max (65504),
+          // causing inf→NaN cascades through 24+ layers until logits are all NaN.
+          //
+          // Instead: leave the Result as f32. The runtime output binding (executeSegment)
+          // detects the model-f32/NDArray-f16 mismatch and performs a saturating copy
+          // (clamping to [-65504, 65504]) to fill the f16 NDArray buffer safely.
+          bool skipConvert = (!kCpuHasNativeFp16
+                              && graphType == ov::element::f32
+                              && expectedType == ov::element::f16);
+          if (skipConvert) {
+            DSP_DIAG(COMPILE, "OpenVINO: output slot %d: skipping Convert(f32→f16) — no native FP16 ISA, "
+                     "runtime will saturate-copy f32→f16", outIdx);
+          } else {
+            DSP_DIAG(COMPILE, "OpenVINO: output slot %d type mismatch: graph=%s expected=%s, inserting Convert",
+                     outIdx, graphType.get_type_name().c_str(), expectedType.get_type_name().c_str());
+            graphOutput = std::make_shared<ov::op::v0::Convert>(graphOutput, expectedType)->output(0);
+          }
         }
       }
-    }
 
-    results.push_back(std::make_shared<ov::op::v0::Result>(graphOutput));
-    outputSourceMap.push_back(outIdx);
+      results.push_back(std::make_shared<ov::op::v0::Result>(graphOutput));
+      outputSourceMap.push_back(outIdx);
+    }
   }
 
   if (params.empty() || results.empty()) {
@@ -2533,7 +2580,8 @@ bool OpenVinoGraphBackend::compileSegment(
         island = buildIsland(slots, islandStart, islandEnd,
                              externalInputs, numExternalInputs,
                              outputSlots, totalOutputSlots,
-                             segStart, segEnd);
+                             totalSlots, requestedOutputSlotIndices,
+                             numRequestedOutputs);
       } catch (const std::exception& e) {
         DSP_DIAG(COMPILE, "OpenVINO: buildIsland[%d-%d] exception: %s",
                  islandStart, islandEnd, e.what());

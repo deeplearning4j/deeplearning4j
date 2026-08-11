@@ -33,16 +33,6 @@ using namespace sd::graph;
 
 
 namespace {
-struct LoadedModelHandle {
-  SdnbReader::LoadedModel model;
-  SdnbReader* sdnbReader = nullptr;
-  SdzReader* sdzReader = nullptr;
-  ~LoadedModelHandle() {
-    delete sdnbReader;
-    delete sdzReader;
-  }
-};
-
 inline NativeDynamicShapePlan* planOf(sd::Pointer handle) {
   return reinterpret_cast<NativeDynamicShapePlan*>(handle);
 }
@@ -221,7 +211,8 @@ int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
 
     auto* plan = planOf(planHandle);
     const int numInputs = static_cast<int>(opContext->width());
-    const int numOutputs = static_cast<int>(opContext->outputWidth());
+    const int boundOutputCount = static_cast<int>(opContext->outputWidth());
+    const int numOutputs = plan->resolveExecutionOutputCount(boundOutputCount);
     if (numInputs != plan->getNumExternalInputs()) {
       char message[256];
       std::snprintf(message, sizeof(message),
@@ -230,11 +221,11 @@ int executeDynamicShapePlan(sd::Pointer planHandle, OpaqueContext* opContext,
       setPlanError(2, message);
       return 2;
     }
-    if (numOutputs != plan->getNumRequestedOutputs()) {
+    if (numOutputs < 0) {
       char message[256];
       std::snprintf(message, sizeof(message),
                     "executeDynamicShapePlan: output count mismatch: got %d, expected %d",
-                    numOutputs, plan->getNumRequestedOutputs());
+                    boundOutputCount, plan->getNumRequestedOutputs());
       setPlanError(3, message);
       return 3;
     }
@@ -408,58 +399,6 @@ int releaseGpuIntermediates(sd::Pointer handle) {
   return handle == nullptr ? 0 : planOf(handle)->releaseGpuIntermediates();
 }
 
-sd::Pointer loadModelFromFile(const char* filePath) {
-  try {
-    if (filePath == nullptr) return nullptr;
-    auto* handle = new LoadedModelHandle();
-    std::string path(filePath);
-    std::transform(path.begin(), path.end(), path.begin(),
-                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    if (path.size() > 4 && path.substr(path.size() - 4) == ".sdz") {
-      handle->sdzReader = SdzReader::openFile(filePath);
-      if (handle->sdzReader != nullptr) handle->model = handle->sdzReader->load();
-    } else {
-      handle->sdnbReader = SdnbReader::openFile(filePath);
-      if (handle->sdnbReader != nullptr) handle->model = handle->sdnbReader->loadAll();
-    }
-    if (!handle->model.graph) {
-      delete handle;
-      return nullptr;
-    }
-    return reinterpret_cast<sd::Pointer>(handle);
-  } catch (const std::exception& e) {
-    setPlanError(-1, e.what());
-    return nullptr;
-  }
-}
-
-OpaqueNDArray getLoadedModelVariable(sd::Pointer modelHandle, const char* variableName) {
-  if (modelHandle == nullptr || variableName == nullptr) return nullptr;
-  auto* handle = reinterpret_cast<LoadedModelHandle*>(modelHandle);
-  auto it = handle->model.variables.find(variableName);
-  return it == handle->model.variables.end() ? nullptr : it->second;
-}
-
-sd::Pointer compileModelPlan(sd::Pointer modelHandle,
-                             sd::Pointer requestedOutputNames, int numOutputs) {
-  try {
-    if (modelHandle == nullptr) return nullptr;
-    auto* model = reinterpret_cast<LoadedModelHandle*>(modelHandle);
-    auto** names = reinterpret_cast<const char**>(requestedOutputNames);
-    std::vector<std::string> outputs;
-    for (int i = 0; i < numOutputs; ++i)
-      if (names != nullptr && names[i] != nullptr) outputs.emplace_back(names[i]);
-    return reinterpret_cast<sd::Pointer>(NativeDynamicShapePlan::fromFlatGraph(
-        model->model.graph, model->model.variables, outputs));
-  } catch (const std::exception& e) {
-    setPlanError(-1, e.what());
-    return nullptr;
-  }
-}
-void freeLoadedModel(sd::Pointer handle) {
-  delete reinterpret_cast<LoadedModelHandle*>(handle);
-}
-
 int getPlanNumExternalInputs(sd::Pointer h) { return h ? planOf(h)->getNumExternalInputs() : -1; }
 const char* getPlanExternalInputName(sd::Pointer h, int i) {
   if (!h || i < 0 || i >= planOf(h)->getNumExternalInputs()) return nullptr;
@@ -492,15 +431,6 @@ void setPlanRuntimeArtifactDirectory(sd::Pointer h, const char* directory) {
     planOf(h)->setRuntimeArtifactDirectory(
         directory == nullptr ? std::string() : std::string(directory));
   }
-}
-void setPlanGraphExecutionMode(sd::Pointer h, int mode) {
-  if (!h) return;
-  auto value = static_cast<GraphExecutionMode>(mode);
-  if (value < GraphExecutionMode::GEM_AUTO ||
-      value > GraphExecutionMode::GEM_PORTABLE_REPLAY) {
-    value = GraphExecutionMode::GEM_AUTO;
-  }
-  planOf(h)->setGraphExecutionMode(value);
 }
 void setPlanOutputSlotMaxSizes(sd::Pointer h, sd::LongType n,
                                const int* slots, const sd::LongType* sizes) {
@@ -1002,6 +932,7 @@ void dspDiagEnableCategories(int m) { DspDiagnostics::getInstance().enableCatego
 void dspDiagDisableCategories(int m) { DspDiagnostics::getInstance().disableCategories(static_cast<uint32_t>(m)); }
 int dspDiagGetEnabledMask() { return static_cast<int>(DspDiagnostics::getInstance().getEnabledMask()); }
 void dspDiagSetLevel(int l) { DspDiagnostics::getInstance().setLevel(static_cast<DspDiagLevel>(l)); }
+int dspDiagGetLevel() { return static_cast<int>(DspDiagnostics::getInstance().getLevel()); }
 void dspDiagSetJsonPath(const char* p) { if (p) DspDiagnostics::getInstance().setJsonPath(p); }
 void dspDiagRecordJavaEvent(int c, int slot, int seg, const char* op,
                             sd::LongType us, const char* msg) {

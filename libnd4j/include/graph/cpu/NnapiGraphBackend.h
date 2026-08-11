@@ -52,9 +52,8 @@ namespace graph {
  * executed repeatedly with near-zero dispatch overhead.
  *
  * Op mapping: nd4j ops are mapped to NNAPI operation codes
- * (ANEURALNETWORKS_*). Ops without NNAPI equivalents cause the segment
- * to be rejected (canFuseSegment returns false), falling back to the
- * next backend in getCpuGraphBackend() priority.
+ * (ANEURALNETWORKS_*). Per-op capability is exposed to the shared resolver,
+ * which partitions segments when the ordered capable-backend set changes.
  *
  * API level requirements:
  *   - API 27 (NNAPI 1.0): add, sub, mul, div, relu, sigmoid, tanh, softmax,
@@ -64,8 +63,8 @@ namespace graph {
  *     pad, tile, split, gather, transpose, space_to_batch, batch_to_space
  *   - API 30 (NNAPI 1.3): batch_matmul, quantized signed ops
  *
- * Priority in getCpuGraphBackend():
- *   ACL > NNAPI > ARM Hybrid (MLIR) > generic MLIR CPU
+ * Resolution, lifecycle hints, and segment admission are exposed through the
+ * shared GraphBackend contract.
  */
 class NnapiGraphBackend : public GraphBackend {
  public:
@@ -74,6 +73,14 @@ class NnapiGraphBackend : public GraphBackend {
 
   const char* name() const override { return "Android NNAPI"; }
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
+  GraphBackendPlanningPolicy planningPolicy(
+      const GraphBackendRequest& request) const override;
+  bool canResolveSlot(const GraphBackendRequest& request, NativeSlot* slots,
+                      int slotIndex) override;
+  bool canResolveSegment(const GraphBackendRequest& request, NativeSlot* slots,
+                         int start, int end) override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
@@ -115,6 +122,13 @@ class NnapiGraphBackend : public GraphBackend {
 
   // Minimum API level required for a given op. Returns 27 for basic ops.
   static int getMinApiLevel(const std::string& opName);
+
+  // Validate the concrete wiring/parameter contract consumed by addImplicitParams.
+  // Admission and model construction must share this guard so a mapped operation
+  // can never reach vendor compilation with an ambiguous lowering.
+  static bool validateSlotContract(const NativeSlot& slot, int nnapiOp,
+                                   std::string& reason);
+  bool isSlotResolvable(NativeSlot* slots, int slotIndex) const;
 
   // Compiled NNAPI model for a segment
   struct CompiledModel {
@@ -184,7 +198,9 @@ class NnapiGraphBackend : public GraphBackend {
                   NativeSlot* slots, int startSlot, int endSlot,
                   NDArray** externalInputs, int numExternalInputs,
                   NDArray** outputSlots, int totalOutputSlots,
-                  int totalSlots);
+                  int totalSlots,
+                  const int* requestedOutputSlotIndices,
+                  int numRequestedOutputs);
 
   // Add an NDArray as an NNAPI operand and return its operand index.
   // If the array is non-contiguous, it will be dup()'d to a contiguous copy.

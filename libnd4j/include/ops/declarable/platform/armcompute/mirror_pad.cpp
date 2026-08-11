@@ -85,7 +85,7 @@ PLATFORM_IMPL(mirror_pad, ENGINE_CPU) {
       }
 
       // Clamp to valid range
-      coord = std::max(0LL, std::min(coord, inShape[d] - 1));
+      coord = std::max<sd::LongType>(0, std::min(coord, inShape[d] - 1));
       inCoord[d] = coord;
     }
 

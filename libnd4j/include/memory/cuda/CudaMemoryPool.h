@@ -117,6 +117,15 @@ class SD_LIB_EXPORT CudaMemoryPool {
   void* allocate(size_t size, int deviceId, cudaStream_t stream = nullptr, int* actualDeviceId = nullptr);
 
   /**
+   * Track allocation requests made by the current thread. The DSP capture warmup
+   * uses the peak request to preserve enough device headroom for direct execution
+   * if CUDA graph instantiation would otherwise consume the remaining memory.
+   * Tracking is nestable; the outermost begin resets the peak.
+   */
+  void beginAllocationRequestTracking();
+  size_t endAllocationRequestTracking();
+
+  /**
    * Allocate a PERSISTENT device buffer whose lifetime is independent of the async
    * pool's per-stream ordering, the CUDA graph capture workspace, and any CUDA graph.
    *

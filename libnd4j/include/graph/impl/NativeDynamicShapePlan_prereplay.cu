@@ -99,7 +99,9 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
 
   // ── CHECK 1: Staging buffer content matches source ────────────────────
   // If staging buffers exist, verify D2D actually copied the right data.
-  if (effectiveExternals_ != nullptr && placeholderStagingBuffers_ != nullptr) {
+  NDArray** stagingBuffers = activeStagingBuffers_ != nullptr
+      ? activeStagingBuffers_ : placeholderStagingBuffers_;
+  if (effectiveExternals_ != nullptr && stagingBuffers != nullptr) {
     for (int idx : varIndices) {
       if (idx < 0 || idx >= numExt) continue;
       NDArray* ext = externalArrays[idx];
@@ -140,10 +142,10 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
   // If staging buffers exist, their device addresses must not have changed
   // since the graph was captured. The CUDA graph bakes in device addresses —
   // if a staging buffer was reallocated, the graph reads from the old address.
-  if (placeholderStagingBuffers_ != nullptr && !prevStagingAddresses_.empty()) {
+  if (stagingBuffers != nullptr && !prevStagingAddresses_.empty()) {
     for (int idx : varIndices) {
       if (idx < 0 || idx >= numExt) continue;
-      NDArray* staging = placeholderStagingBuffers_[idx];
+      NDArray* staging = stagingBuffers[idx];
       if (staging == nullptr) continue;
 
       void* currentAddr = staging->specialBuffer();
@@ -166,11 +168,11 @@ void NativeDynamicShapePlan::verifyStagingNotStale(
   }
 
   // Record current staging addresses for next step's check 3
-  if (placeholderStagingBuffers_ != nullptr) {
+  if (stagingBuffers != nullptr) {
     prevStagingAddresses_.clear();
     for (int idx : varIndices) {
       if (idx < 0 || idx >= numExt) continue;
-      NDArray* staging = placeholderStagingBuffers_[idx];
+      NDArray* staging = stagingBuffers[idx];
       if (staging == nullptr) continue;
       prevStagingAddresses_[idx] = staging->specialBuffer();
     }
@@ -229,6 +231,25 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
                            target == ExecTarget::GRAPH_REPLAY);
   bool needsStaging     = (target == ExecTarget::GRAPH_CAPTURE ||
                            target == ExecTarget::GRAPH_REPLAY);
+
+  // A single plan can dispatch adjacent graph segments on different CUDA
+  // devices.  The per-execution sync phase is otherwise deduplicated across
+  // those segments, which would leave effectiveExternals_ pointing at the
+  // previous device's staging vector.  Reset the phase before the next
+  // device's replay so ensureAndSyncStagingBuffers selects/copies into that
+  // device's stable buffers and the graph address check starts a new device
+  // epoch.  This does not reload the plan or rebuild already-captured graphs.
+  int currentDevice = -1;
+  if (cudaGetDevice(&currentDevice) == cudaSuccess &&
+      needsStaging &&
+      (activeStagingDevice_ == -1 || activeStagingDevice_ != currentDevice)) {
+    const int previousDevice = activeStagingDevice_;
+    execCtx->resetSyncPhase();
+    effectiveExternals_ = nullptr;
+    DSP_DIAG(STREAM_SYNC,
+             "%s device transition %d->%d: reset per-device staging sync",
+             diagTag, previousDevice, currentDevice);
+  }
 
   DSP_DIAG(EXECUTE,
            "%s performPreReplaySync: execTarget=%s syncPhase=%s",
@@ -442,6 +463,23 @@ NDArray** NativeDynamicShapePlan::performPreReplaySync(
           DSP_DIAG(STREAM_SYNC,
                    "%s: GRAPH_CAPTURE: D2D staging ordered on capture stream=%p "
                    "(no blocking stream sync)",
+                   diagTag, (void*)cudaStr);
+        }
+        // Slot-by-slot warmup/replay kernels can resolve their own NDArray context
+        // stream rather than the DSP staging stream.  Complete the staging stream
+        // at this boundary so a consumer on any context stream cannot race the
+        // freshly copied external value.
+        if (target == ExecTarget::GRAPH_REPLAY && cudaStr != nullptr) {
+          const auto stagingSyncErr = cudaStreamSynchronize(cudaStr);
+          if (stagingSyncErr != cudaSuccess) {
+            DSP_DIAG(STREAM_SYNC,
+                     "%s: staging stream synchronization failed stream=%p err=%s",
+                     diagTag, (void*)cudaStr, cudaGetErrorString(stagingSyncErr));
+            cudaGetLastError();
+            return externalArrays;
+          }
+          DSP_DIAG(STREAM_SYNC,
+                   "%s: staging stream synchronized before slot dispatch stream=%p",
                    diagTag, (void*)cudaStr);
         }
         DSP_DIAG(EXECUTE, "%s: staging buffers synced for %d ext inputs — "

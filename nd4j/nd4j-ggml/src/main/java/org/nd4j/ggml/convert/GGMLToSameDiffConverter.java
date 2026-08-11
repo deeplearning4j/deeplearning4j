@@ -42,6 +42,7 @@ import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -278,6 +279,7 @@ public class GGMLToSameDiffConverter {
                 totalTensors, context != null ? "enabled" : "disabled");
 
         for (GGMLTensorInfo info : tensorInfos) {
+            validateRuntimeWeightPolicy(info);
             INDArray array;
             if (info.getDataType().isQuantized()) {
                 // Quantized tensors need dequantization or runtime-packed matmul storage.
@@ -324,17 +326,50 @@ public class GGMLToSameDiffConverter {
     }
 
     private boolean shouldUseRuntimeQuantizedMatmul(GGMLTensorInfo info) {
-        if (options.getQuantizationMode() != ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_MATMUL
-                || !info.getDataType().isRuntimeQMatMulSupported()) {
-            return false;
+        return options.isRuntimeQuantizedMatmul()
+                && isLinearWeight(info)
+                && isRuntimeQuantizationTypeAllowed(info.getDataType());
+    }
+
+    private void validateRuntimeWeightPolicy(GGMLTensorInfo info) {
+        if (!options.isRuntimeQuantizedMatmul() || !isLinearWeight(info)) {
+            return;
         }
+        if (!info.getDataType().isQuantized()) {
+            throw new IllegalStateException("Packed " + options.getQuantizationMode()
+                    + " requested, but linear weight " + info.getName()
+                    + " is stored as " + info.getDataType());
+        }
+        if (!isRuntimeQuantizationTypeAllowed(info.getDataType())) {
+            throw new IllegalStateException("Packed " + options.getQuantizationMode()
+                    + " requested, but linear weight " + info.getName()
+                    + " uses unsupported GGUF type " + info.getDataType());
+        }
+    }
+
+    private boolean isRuntimeQuantizationTypeAllowed(GGMLDataType dataType) {
+        switch (options.getQuantizationMode()) {
+            case RUNTIME_QUANTIZED_INT8:
+                return dataType == GGMLDataType.GGML_TYPE_Q8_0;
+            case RUNTIME_QUANTIZED_INT4:
+                return dataType == GGMLDataType.GGML_TYPE_Q4_K
+                        || dataType == GGMLDataType.GGML_TYPE_Q6_K;
+            case RUNTIME_QUANTIZED_MATMUL:
+                return dataType.isRuntimeQMatMulSupported();
+            default:
+                return false;
+        }
+    }
+
+    private static boolean isLinearWeight(GGMLTensorInfo info) {
         String name = info.getName();
-        if (name == null) {
+        long[] shape = info.getShape();
+        if (name == null || shape == null || shape.length != 2) {
             return false;
         }
-        // Embedding tables are consumed by gather, not ggml_qmatmul. Packed bytes would collapse
-        // gather output to byte storage shape instead of [batch, seq, hidden].
-        return !"token_embd.weight".equals(name);
+        String normalizedName = name.toLowerCase(Locale.ROOT);
+        // Embedding tables are consumed by gather rather than matrix multiplication.
+        return !normalizedName.contains("embd") && !normalizedName.contains("embedding");
     }
 
     /**
@@ -355,8 +390,18 @@ public class GGMLToSameDiffConverter {
                 totalTensors, context != null ? "enabled" : "disabled");
 
         for (GGMLTensorInfo info : tensorInfos) {
+            validateRuntimeWeightPolicy(info);
             byte[] data = reader.readTensorData(info);
-            INDArray array = convertTensorData(data, info);
+            boolean runtimePackedMatmul = shouldUseRuntimeQuantizedMatmul(info);
+            INDArray array = convertTensorData(data, info, runtimePackedMatmul);
+            if (runtimePackedMatmul) {
+                long[] shape = reverseShape(info.getShape());
+                long N = shape[0];
+                long K = shape[1];
+                int ggmlQuantType = info.getDataType().toGgmlQuantType();
+                weights.put(info.getName() + ".__q__",
+                        Nd4j.createFromArray(new long[]{ggmlQuantType, N, K}));
+            }
             weights.put(info.getName(), array);
 
             // Register with loading context for batch GPU transfer
@@ -373,10 +418,6 @@ public class GGMLToSameDiffConverter {
         }
 
         return weights;
-    }
-
-    private INDArray convertTensorData(byte[] data, GGMLTensorInfo info) {
-        return convertTensorData(data, info, true);
     }
 
     private INDArray convertTensorData(byte[] data, GGMLTensorInfo info, boolean allowRuntimePackedMatmul) {
@@ -419,36 +460,36 @@ public class GGMLToSameDiffConverter {
 
         switch (options.getQuantizationMode()) {
             case PRESERVE_QUANTIZATION:
-                // Store raw quantized data - caller needs to handle dequantization
                 log.debug("Preserving quantized data for type: {}", dataType);
                 return Nd4j.create(data, new long[]{data.length}, DataType.INT8);
 
             case RUNTIME_QUANTIZED_MATMUL:
-                // For supported types: keep raw bytes; ggml_qmatmul will dequant at runtime.
-                // For unsupported types: fall back to FP16 dequantization.
-                if (allowRuntimePackedMatmul && dataType.isRuntimeQMatMulSupported()) {
+            case RUNTIME_QUANTIZED_INT8:
+            case RUNTIME_QUANTIZED_INT4:
+                if (allowRuntimePackedMatmul) {
                     log.debug("Runtime quantized matmul: preserving raw bytes for {}", dataType);
                     return Nd4j.create(data, new long[]{data.length}, DataType.INT8);
                 }
-                log.debug("Runtime quantized matmul: dequantizing {} for non-matmul or unsupported tensor", dataType);
-                if (DequantizerFactory.hasDequantizer(dataType)) {
-                    return DequantizerFactory.dequantizeToArray(data, dataType, shape, DataType.HALF);
-                } else {
-                    log.warn("No dequantizer for type {}, storing as raw bytes", dataType);
-                    return Nd4j.create(data, new long[]{data.length}, DataType.INT8);
-                }
+                // Embeddings and other non-matmul tensors need their logical dense shape.
+                return dequantizeRequired(data, dataType, shape, targetType);
 
             case DEQUANTIZE_TO_FLOAT32:
             case DEQUANTIZE_TO_FLOAT16:
             case DEQUANTIZE_TO_BFLOAT16:
+            case DEQUANTIZE_TO_FLOAT8_E4M3:
+            case DEQUANTIZE_TO_FLOAT8_E5M2:
+            case HYBRID:
             default:
-                if (DequantizerFactory.hasDequantizer(dataType)) {
-                    return DequantizerFactory.dequantizeToArray(data, dataType, shape, targetType);
-                } else {
-                    log.warn("No dequantizer for type {}, storing as raw bytes", dataType);
-                    return Nd4j.create(data, new long[]{data.length}, DataType.INT8);
-                }
+                return dequantizeRequired(data, dataType, shape, targetType);
         }
+    }
+
+    private static INDArray dequantizeRequired(byte[] data, GGMLDataType dataType,
+                                               long[] shape, DataType targetType) {
+        if (!DequantizerFactory.hasDequantizer(dataType)) {
+            throw new IllegalStateException("No dequantizer is registered for GGUF tensor type " + dataType);
+        }
+        return DequantizerFactory.dequantizeToArray(data, dataType, shape, targetType);
     }
 
     /**
@@ -478,12 +519,7 @@ public class GGMLToSameDiffConverter {
         Nd4j.getAffinityManager().ensureLocation(array,
                 org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
 
-        // Cast to target dtype if needed (e.g. F16 norm weights → F32)
-        if (targetType != null && targetType != nd4jType) {
-            array = array.castTo(targetType);
-        }
-
-        return array;
+        return castFloatingTarget(array, nd4jType, targetType);
     }
 
     private INDArray handleNonQuantizedTensor(byte[] data, GGMLDataType dataType, long[] shape) {
@@ -514,7 +550,7 @@ public class GGMLToSameDiffConverter {
             case FLOAT: {
                 float[] floatData = new float[(int) numElements];
                 bb.asFloatBuffer().get(floatData);
-                return Nd4j.create(floatData, shape, 'c');
+                return castFloatingTarget(Nd4j.create(floatData, shape, 'c'), nd4jType, targetType);
             }
             case HALF: {
                 // F16: raw bytes are IEEE 754 half-precision bit patterns.
@@ -531,20 +567,15 @@ public class GGMLToSameDiffConverter {
                 // Force device→host sync so host has correct data for later host→device transfers
                 Nd4j.getAffinityManager().ensureLocation(array,
                         org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
-                // Cast F16 tensors to target dtype (usually FLOAT32) to avoid mixed-precision
-                // errors in the SameDiff graph — e.g. F16 norm weights vs F32 activations
-                if (targetType != DataType.HALF && targetType != null) {
-                    array = array.castTo(targetType);
-                }
-                return array;
+                return castFloatingTarget(array, nd4jType, targetType);
             }
             case DOUBLE: {
                 double[] doubleData = new double[(int) numElements];
                 bb.asDoubleBuffer().get(doubleData);
-                return Nd4j.create(doubleData, shape, 'c');
+                return castFloatingTarget(Nd4j.create(doubleData, shape, 'c'), nd4jType, targetType);
             }
             default: {
-                // Fallback for other types: use direct buffer approach.
+                // Other primitive types use the direct buffer path.
                 // Construct with the exact GGUF shape so rank-0 scalars, rank-1 vectors, and N-D
                 // tensors all produce consistent shape info (see HALF case above).
                 ByteBuffer directBuffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.LITTLE_ENDIAN);
@@ -554,6 +585,13 @@ public class GGMLToSameDiffConverter {
                 return Nd4j.create(rawDataBuffer, shape, Nd4j.getStrides(shape, 'c'), 0, 'c');
             }
         }
+    }
+
+    private static INDArray castFloatingTarget(INDArray array, DataType sourceType, DataType targetType) {
+        if (sourceType.isFPType() && targetType != null && targetType != sourceType) {
+            return array.castTo(targetType);
+        }
+        return array;
     }
 
     private DataType getTargetDataType() {

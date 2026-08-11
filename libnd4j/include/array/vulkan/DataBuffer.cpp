@@ -750,6 +750,8 @@ void* DataBuffer::specialAtOffset(const LongType offset) {
 
 MAKE_OFFSET_INST(bool)
 MAKE_OFFSET_INST(float16)
+MAKE_OFFSET_INST(float8)
+MAKE_OFFSET_INST(float8_e5m2)
 MAKE_OFFSET_INST(bfloat16)
 MAKE_OFFSET_INST(float)
 MAKE_OFFSET_INST(double)

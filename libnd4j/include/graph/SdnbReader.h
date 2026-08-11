@@ -24,6 +24,7 @@
 #include <system/common.h>
 
 #include <string>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -52,7 +53,11 @@ class SD_LIB_EXPORT SdnbReader {
   struct LoadedModel {
     std::unordered_map<std::string, NDArray*> variables;  // Constants + variables (owned)
     std::vector<std::string> placeholderNames;
-    const ::graph::FlatGraph* graph;                                // Points into reader's data
+    const ::graph::FlatGraph* graph;  // Points into one of backingOwners
+    std::vector<std::shared_ptr<void>> backingOwners;
+    size_t fileBackedBytes = 0;
+    size_t heapOwnedBytes = 0;
+    size_t largeHeapOwnedBytes = 0;
 
     ~LoadedModel() {
       for (auto& pair : variables) {
@@ -68,8 +73,16 @@ class SD_LIB_EXPORT SdnbReader {
     LoadedModel(LoadedModel&& other) noexcept
         : variables(std::move(other.variables)),
           placeholderNames(std::move(other.placeholderNames)),
-          graph(other.graph) {
+          graph(other.graph),
+          backingOwners(std::move(other.backingOwners)),
+          fileBackedBytes(other.fileBackedBytes),
+          heapOwnedBytes(other.heapOwnedBytes),
+          largeHeapOwnedBytes(other.largeHeapOwnedBytes) {
       other.graph = nullptr;
+      other.variables.clear();
+      other.fileBackedBytes = 0;
+      other.heapOwnedBytes = 0;
+      other.largeHeapOwnedBytes = 0;
     }
 
     LoadedModel& operator=(LoadedModel&& other) noexcept {
@@ -81,7 +94,15 @@ class SD_LIB_EXPORT SdnbReader {
         variables = std::move(other.variables);
         placeholderNames = std::move(other.placeholderNames);
         graph = other.graph;
+        backingOwners = std::move(other.backingOwners);
+        fileBackedBytes = other.fileBackedBytes;
+        heapOwnedBytes = other.heapOwnedBytes;
+        largeHeapOwnedBytes = other.largeHeapOwnedBytes;
         other.graph = nullptr;
+        other.variables.clear();
+        other.fileBackedBytes = 0;
+        other.heapOwnedBytes = 0;
+        other.largeHeapOwnedBytes = 0;
       }
       return *this;
     }
@@ -95,7 +116,14 @@ class SD_LIB_EXPORT SdnbReader {
   static SdnbReader* open(const void* data, size_t size);
 
   /**
-   * Open from file path (reads entire file into memory).
+   * Open bytes whose lifetime is held by owner. fileBacked must only be true
+   * when data is a read-only file mapping suitable for borrowed weight buffers.
+   */
+  static SdnbReader* openOwned(const void* data, size_t size,
+                               std::shared_ptr<void> owner, bool fileBacked);
+
+  /**
+   * Open from file path using a read-only mapping where supported.
    */
   static SdnbReader* openFile(const char* path);
 
@@ -137,23 +165,37 @@ class SD_LIB_EXPORT SdnbReader {
    */
   LoadedModel loadAll() const;
 
+  /**
+   * Load all variables while retaining the underlying storage in the returned
+   * model. In inference mode, contiguous tensors may borrow mapped file bytes.
+   * Strict mode rejects any large tensor that would require a heap copy.
+   */
+  LoadedModel loadAllOwned(bool inferenceOnly = false,
+                           bool requireFileBacked = false) const;
+
  private:
   SdnbReader();
 
   const uint8_t* data_;
   size_t size_;
-  bool ownsData_;
+  std::shared_ptr<void> backingOwner_;
+  bool fileBacked_;
 
   // Parsed FlatGraph (points into data_)
   const ::graph::FlatGraph* flatGraph_;
 
-  // File offsets (from SDNB header)
+  // File offsets derived from the SDNB header and FlatArray metadata.
   long flatBufferOffset_;
+  size_t appendedDataBaseOffset_;
+  bool hasAppendedDataBaseOffset_;
 
   /**
    * Load NDArray from a FlatArray, handling inline, chunked, and appended data.
    */
-  NDArray* loadFlatArray(const ::graph::FlatArray* fa) const;
+  NDArray* loadFlatArray(const ::graph::FlatArray* fa, bool allowBorrowed,
+                         bool requireFileBacked, size_t* fileBackedBytes,
+                         size_t* heapOwnedBytes,
+                         size_t* largeHeapOwnedBytes) const;
 
   /**
    * Convert FlatBuffer DType to native DataType.

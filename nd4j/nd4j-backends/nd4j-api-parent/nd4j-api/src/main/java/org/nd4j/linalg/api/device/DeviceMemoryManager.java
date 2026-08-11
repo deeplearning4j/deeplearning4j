@@ -819,6 +819,27 @@ public class DeviceMemoryManager {
     }
 
     /**
+     * Return the bytes currently occupied by the native allocator pool for one GPU.
+     * This is the process-owned CUDA-pool signal used by memory watchdogs; it is
+     * deliberately distinct from driver-wide used memory and from pool-aware free memory.
+     *
+     * @param deviceIndex GPU device index
+     * @return native pool used bytes, or {@code -1} when the backend cannot report it
+     */
+    public long getNativePoolUsedMemory(int deviceIndex) {
+        try {
+            var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            org.bytedeco.javacpp.LongPointer usedPtr = new org.bytedeco.javacpp.LongPointer(1);
+            org.bytedeco.javacpp.LongPointer reservedPtr = new org.bytedeco.javacpp.LongPointer(1);
+            nativeOps.getMemoryPoolStats(deviceIndex, usedPtr, reservedPtr);
+            return Math.max(0L, usedPtr.get());
+        } catch (Exception e) {
+            log.debug("getNativePoolUsedMemory({}) failed: {}", deviceIndex, e.getMessage());
+            return -1L;
+        }
+    }
+
+    /**
      * Select the device to fail an allocation over to when its current GPU is full.
      *
      * <p>This is the single failover entry point. It consults live, pool-aware device memory

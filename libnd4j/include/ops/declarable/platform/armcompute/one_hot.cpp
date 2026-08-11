@@ -88,7 +88,14 @@ PLATFORM_IMPL(onehot, ENGINE_CPU) {
           outIdx++;
         }
       }
-      output->p(outCoords, on_value);
+      // NDArray::p accepts a logical linear index, not a coordinate vector.
+      // The platform check requires C-order output, so flatten coordinates in
+      // row-major order before writing.
+      sd::LongType linearIndex = 0;
+      for (int d = 0; d < output->rankOf(); d++) {
+        linearIndex = linearIndex * output->sizeAt(d) + outCoords[d];
+      }
+      output->p(linearIndex, on_value);
     }
   }
 

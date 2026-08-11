@@ -17,17 +17,22 @@ struct DecodeStreamState {
 
 }  // namespace
 
-// Thread-local error storage
+// Thread-local error storage. Own the message so caught exception text never
+// leaves a dangling pointer in TokenizerResult.
+thread_local std::string last_error_message;
 thread_local TokenizerResult last_error = {TOKENIZER_SUCCESS, nullptr};
 
 // Helper function to set error
 static void set_error(TokenizerError code, const char* message) {
+    last_error_message = message ? message : "";
     last_error.error_code = code;
-    last_error.error_message = message;
+    last_error.error_message =
+            last_error_message.empty() ? nullptr : last_error_message.c_str();
 }
 
 // Helper function to clear error
 static void clear_error() {
+    last_error_message.clear();
     last_error.error_code = TOKENIZER_SUCCESS;
     last_error.error_message = nullptr;
 }
@@ -103,6 +108,93 @@ size_t get_vocab_size(OpaqueTokenizer* tokenizer) {
         set_error(TOKENIZER_ERROR_UNKNOWN, e.what());
         return 0;
     }
+}
+
+bool get_token_id(OpaqueTokenizer* tokenizer, const char* token, uint32_t* token_id) {
+    if (!tokenizer || !token || !token_id) {
+        set_error(TOKENIZER_ERROR_INVALID_INPUT,
+                  "Tokenizer, token, and token ID output are required");
+        return false;
+    }
+
+    try {
+        clear_error();
+        auto* wrapper = reinterpret_cast<tokenizers::TokenizerWrapper*>(tokenizer);
+        return wrapper->token_to_id(token, *token_id);
+    } catch (const std::exception& e) {
+        set_error(TOKENIZER_ERROR_UNKNOWN, e.what());
+        return false;
+    }
+}
+
+char* apply_chat_template(const char* messages_json,
+                          const char* tokenizer_config_json,
+                          const char* current_date,
+                          bool add_generation_prompt) {
+    if (!messages_json || !tokenizer_config_json || !current_date) {
+        set_error(TOKENIZER_ERROR_INVALID_INPUT,
+                  "Messages, tokenizer config, and current date are required");
+        return nullptr;
+    }
+
+    clear_error();
+    char* rendered = ffi_tokenizer_apply_chat_template(
+            messages_json,
+            tokenizer_config_json,
+            current_date,
+            add_generation_prompt);
+    if (!rendered) {
+        const char* error = ffi_tokenizer_get_last_error();
+        set_error(TOKENIZER_ERROR_INVALID_INPUT,
+                  error ? error : "Failed to render tokenizer chat template");
+        return nullptr;
+    }
+
+    const size_t length = std::strlen(rendered);
+    auto* copy = new (std::nothrow) char[length + 1];
+    if (!copy) {
+        ffi_tokenizer_free_string(rendered);
+        set_error(TOKENIZER_ERROR_MEMORY_ALLOCATION,
+                  "Failed to allocate rendered chat prompt");
+        return nullptr;
+    }
+    std::memcpy(copy, rendered, length + 1);
+    ffi_tokenizer_free_string(rendered);
+    return copy;
+}
+
+char* apply_chat_template_context(const char* context_json,
+                                  const char* tokenizer_config_json,
+                                  const char* current_date) {
+    if (!context_json || !tokenizer_config_json || !current_date) {
+        set_error(TOKENIZER_ERROR_INVALID_INPUT,
+                  "Chat template context, tokenizer config, and current date are required");
+        return nullptr;
+    }
+
+    clear_error();
+    char* rendered = ffi_tokenizer_apply_chat_template_context(
+            context_json,
+            tokenizer_config_json,
+            current_date);
+    if (!rendered) {
+        const char* error = ffi_tokenizer_get_last_error();
+        set_error(TOKENIZER_ERROR_INVALID_INPUT,
+                  error ? error : "Failed to render tokenizer chat template context");
+        return nullptr;
+    }
+
+    const size_t length = std::strlen(rendered);
+    auto* copy = new (std::nothrow) char[length + 1];
+    if (!copy) {
+        ffi_tokenizer_free_string(rendered);
+        set_error(TOKENIZER_ERROR_MEMORY_ALLOCATION,
+                  "Failed to allocate rendered chat prompt");
+        return nullptr;
+    }
+    std::memcpy(copy, rendered, length + 1);
+    ffi_tokenizer_free_string(rendered);
+    return copy;
 }
 
 // =============================================================================

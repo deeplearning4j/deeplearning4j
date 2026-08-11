@@ -3,14 +3,19 @@ function(dump_type_macros_to_disk)
     message(STATUS "🔍 Extracting macro values: ${output_file}")
 
     # ========================================================================
-    # Generate config.h BEFORE extraction (required by op_boilerplate.h)
-    # This is the same logic as PostBuild.cmake but runs earlier
+    # Generate an extractor-private config.h (required by op_boilerplate.h).
+    #
+    # Do not write the real ${CMAKE_CURRENT_BINARY_DIR}/include/config.h here:
+    # PostBuild.cmake is its sole producer. Touching that widely included header
+    # during every configure invalidates nearly every native object even when
+    # the final bytes are unchanged.
     # ========================================================================
     set(CONFIG_H_IN "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in")
-    set(CONFIG_H_OUT "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
+    set(TYPE_REGISTRY_EXTRACTION_INCLUDE_DIR
+            "${CMAKE_CURRENT_BINARY_DIR}/type_registry_extraction/include")
+    set(CONFIG_H_OUT "${TYPE_REGISTRY_EXTRACTION_INCLUDE_DIR}/config.h")
 
-    # Ensure include directory exists
-    file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include")
+    file(MAKE_DIRECTORY "${TYPE_REGISTRY_EXTRACTION_INCLUDE_DIR}")
 
     # Read the template
     file(READ "${CONFIG_H_IN}" CONFIG_H_CONTENT)
@@ -179,9 +184,10 @@ function(dump_type_macros_to_disk)
     # Substitute TYPE_DEFINES
     string(REPLACE "@TYPE_DEFINES@" "${TYPE_DEFINES}" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 
-    # Write config.h
+    # This private header may be rewritten on each configure; it is not a
+    # dependency of the native build and therefore cannot invalidate objects.
     file(WRITE "${CONFIG_H_OUT}" "${CONFIG_H_CONTENT}")
-    message(STATUS "✅ Generated config.h: ${CONFIG_H_OUT}")
+    message(STATUS "✅ Generated extraction config.h: ${CONFIG_H_OUT}")
 
     # Create a stub header that blocks CUDA includes
     set(stub_header "${CMAKE_BINARY_DIR}/cuda_stub.h")
@@ -258,6 +264,7 @@ SD_STRING_TYPES
     # Get basic include paths
     set(include_flags
             "-I${CMAKE_CURRENT_SOURCE_DIR}/include"
+            "-I${TYPE_REGISTRY_EXTRACTION_INCLUDE_DIR}"
             "-I${CMAKE_CURRENT_BINARY_DIR}/include"
             "-I${CMAKE_CURRENT_BINARY_DIR}"
     )

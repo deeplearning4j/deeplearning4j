@@ -83,7 +83,8 @@ typedef enum {
   SDX_BACKEND_VULKAN = 11,
   SDX_BACKEND_METAL = 12,
   SDX_BACKEND_TPU = 13,
-  SDX_BACKEND_HEXAGON = 14
+  SDX_BACKEND_HEXAGON = 14,
+  SDX_BACKEND_OPENVINO = 15
 } sdx_backend_t;
 
 typedef enum {
@@ -113,6 +114,9 @@ typedef struct {
    * or compiledArtifacts.hexagonKernels); an artifact miss is a hard failure. */
   int32_t allow_runtime_jit;
   int32_t gpu_target;
+  /* App-owned writable directory for persistent device/compiler artifacts.
+   * sdxLoadBundle copies this path before returning; callers retain ownership. */
+  const char* device_compilation_cache_directory;
 } sdx_model_options_t;
 
 typedef struct {
@@ -188,6 +192,17 @@ typedef struct {
   uint64_t prefill_time_ns;
   uint64_t decode_time_ns;
   double decode_tokens_per_second;
+  /** Non-zero when backend evidence was read from the executed decode context. */
+  int32_t backend_report_available;
+  int32_t requested_backend;
+  int32_t applied_backend;
+  int32_t backend_status_code;
+  /** 1 = host/capture fallback observed, 0 = requested path, -1 = unknown. */
+  int32_t used_fallback;
+  int32_t requested_gpu_target;
+  int32_t applied_gpu_target;
+  int32_t plan_phase;
+  int32_t execution_count;
 } sdx_generation_report_t;
 
 typedef struct {
@@ -245,9 +260,11 @@ SDX_API const char* sdxGetTextGenerationConfigPath(const sdx_model_t* model);
 
 /**
  * Create a reusable, metadata-driven generation session over a loaded model.
- * The model must outlive the session. The first supported mobile profile is
- * causal-lm-in-graph-kv-v1: batch 1, fixed prefill/decode envelopes, BSHD KV,
- * and plan-owned in-graph KV writes. Unsupported profiles fail explicitly.
+ * The model must outlive the session. Supported mobile profiles are
+ * causal-lm-in-graph-kv-v1 and causal-lm-in-graph-state-v2: batch 1, fixed
+ * prefill/decode envelopes, BSHD KV, plan-owned in-graph KV writes, and
+ * metadata-declared recurrent state feedback for v2. Unsupported profiles fail
+ * explicitly.
  */
 SDX_API sdx_status_t sdxCreateGenerationSession(
     sdx_model_t* model,

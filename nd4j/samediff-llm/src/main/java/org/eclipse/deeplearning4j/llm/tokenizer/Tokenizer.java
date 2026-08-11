@@ -67,9 +67,11 @@ public interface Tokenizer extends AutoCloseable {
     }
 
     /**
-     * Encode a user prompt for generation, applying the configured chat template when available.
+     * Encode a raw user prompt for generation, applying the configured chat template when available.
+     * Pre-rendered chat text must be passed explicitly to {@link #encode(String, boolean)} with
+     * special-token insertion disabled; this method never guesses protocol state from prompt text.
      *
-     * @param prompt raw user prompt or an already formatted chat prompt
+     * @param prompt raw user prompt
      * @return encoded prompt
      */
     default Encoding encodePrompt(String prompt) {
@@ -77,9 +79,9 @@ public interface Tokenizer extends AutoCloseable {
     }
 
     /**
-     * Encode a user prompt for generation with an optional chat-template override.
+     * Encode a raw user prompt for generation with an optional chat-template override.
      *
-     * @param prompt raw user prompt or an already formatted chat prompt
+     * @param prompt raw user prompt
      * @param chatTemplateOverride template to use instead of the tokenizer configuration, or null
      * @return encoded prompt
      */
@@ -87,19 +89,13 @@ public interface Tokenizer extends AutoCloseable {
         String template = chatTemplateOverride == null || chatTemplateOverride.isBlank()
                 ? getChatTemplate()
                 : chatTemplateOverride;
-        boolean alreadyFormatted = prompt.contains("<|im_start|>") || prompt.contains("[INST]");
-        if (template != null && !template.isBlank() && !alreadyFormatted) {
-            String formatted = new ChatTemplate(template, getBosToken(), getEosToken())
-                    .apply(java.util.Collections.singletonList(ChatTemplate.Message.user(prompt)), true);
+        if (template != null && !template.isBlank()) {
+            ChatTemplate.Request request = ChatTemplate.Request.builder()
+                    .messages(java.util.Collections.singletonList(ChatTemplate.Message.user(prompt)))
+                    .addGenerationPrompt(true)
+                    .build();
+            String formatted = applyChatTemplate(request, chatTemplateOverride);
             return ensureLeadingBos(encode(formatted, false));
-        }
-        if (alreadyFormatted) {
-            // Pre-formatted chat markup is encoded without the tokenizer's special-token
-            // post-processor (it would wrap the whole conversation). That also drops the
-            // leading BOS for models whose convention requires one (e.g. LFM2's template
-            // starts with {{- bos_token -}}; Qwen's does not). Re-apply it per the
-            // tokenizer's own convention.
-            return ensureLeadingBos(encode(prompt, false));
         }
         return encode(prompt, true);
     }
@@ -273,11 +269,65 @@ public interface Tokenizer extends AutoCloseable {
     }
 
     /**
+     * Apply the tokenizer's configured chat template to a structured request,
+     * retaining tool definitions and tool-call replay state.
+     */
+    default String applyChatTemplate(ChatTemplate.Request request) {
+        return applyChatTemplate(request, null);
+    }
+
+    /**
+     * Apply a structured request with an optional chat-template override.
+     *
+     * <p>This mirrors {@link #encodePrompt(String, String)}: a non-blank
+     * pipeline/model override takes precedence, otherwise the tokenizer-owned
+     * template is used.</p>
+     *
+     * @param request structured chat request
+     * @param chatTemplateOverride template to use instead of tokenizer configuration, or null
+     * @return formatted chat prompt
+     */
+    default String applyChatTemplate(ChatTemplate.Request request, String chatTemplateOverride) {
+        String template = chatTemplateOverride == null || chatTemplateOverride.isBlank()
+                ? getChatTemplate()
+                : chatTemplateOverride;
+        if (template == null || template.isBlank()) {
+            throw new IllegalStateException("Neither the pipeline nor tokenizer provides a chat template");
+        }
+        return new ChatTemplate(template, getBosToken(), getEosToken()).apply(request);
+    }
+
+    /**
+     * Render a complete model chat-template context. Tokenizers backed by a full
+     * Hugging Face template engine override this method; there is intentionally no
+     * lossy role/content fallback for structured tools or model-specific arguments.
+     */
+    default String applyChatTemplateContext(String contextJson) {
+        throw new UnsupportedOperationException(
+                "Tokenizer does not provide native structured chat-template rendering");
+    }
+
+    /**
      * Get the full vocabulary mapping.
      *
      * @return map from token strings to token IDs
      */
     Map<String, Integer> getVocab();
+
+    /**
+     * Get tokens explicitly declared by the tokenizer as added vocabulary.
+     *
+     * <p>Added tokens are not synonymous with special tokens: model protocols may
+     * deliberately keep a delimiter decodable while still declaring it as one
+     * atomic vocabulary item. Importers and generation code must retain that
+     * distinction instead of discarding entries whose {@code special} flag is
+     * false.</p>
+     *
+     * @return immutable mapping from added-token text to token ID
+     */
+    default Map<String, Integer> getAddedTokens() {
+        return java.util.Collections.emptyMap();
+    }
 
     /**
      * Get the padding token ID.
@@ -306,6 +356,27 @@ public interface Tokenizer extends AutoCloseable {
      * @return the UNK token ID, or -1 if not defined
      */
     int getUnkTokenId();
+
+    /**
+     * Get every token ID that the tokenizer declares as special/control syntax.
+     * Constraints use this set to prevent model protocol markers from being
+     * accepted as ordinary content. Implementations with richer tokenizer
+     * metadata should override this method and include all added special tokens.
+     *
+     * @return immutable set of special token IDs
+     */
+    default java.util.Set<Integer> getSpecialTokenIds() {
+        java.util.Set<Integer> ids = new java.util.LinkedHashSet<>();
+        int pad = getPadTokenId();
+        int bos = getBosTokenId();
+        int eos = getEosTokenId();
+        int unk = getUnkTokenId();
+        if (pad >= 0) ids.add(pad);
+        if (bos >= 0) ids.add(bos);
+        if (eos >= 0) ids.add(eos);
+        if (unk >= 0) ids.add(unk);
+        return java.util.Collections.unmodifiableSet(ids);
+    }
 
     /**
      * Check if the tokenizer is still valid and usable.

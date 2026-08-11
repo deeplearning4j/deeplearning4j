@@ -53,6 +53,37 @@ bool ffi_tokenizer_is_valid(const struct TokenizerHandle *handle);
 uintptr_t ffi_tokenizer_get_vocab_size(const struct TokenizerHandle *handle);
 
 /**
+ * Resolve an exact vocabulary token to its ID without running normalization,
+ * pre-tokenization, or unknown-token substitution.
+ */
+bool ffi_tokenizer_token_to_id(const struct TokenizerHandle *handle,
+                               const char *token,
+                               uint32_t *token_id);
+
+/**
+ * Render a Hugging Face tokenizer_config.json chat_template with MiniJinja.
+ *
+ * The returned UTF-8 string is owned by the caller and must be released with
+ * ffi_tokenizer_free_string. The full tokenizer configuration is used as the
+ * template context so model-specific special tokens remain authoritative.
+ */
+char *ffi_tokenizer_apply_chat_template(const char *messages_json,
+                                        const char *tokenizer_config_json,
+                                        const char *current_date,
+                                        bool add_generation_prompt);
+
+/**
+ * Render a Hugging Face chat template from its complete runtime context.
+ *
+ * Unlike ffi_tokenizer_apply_chat_template, this entry point preserves
+ * structured messages, tools, documents, and future template keyword
+ * arguments instead of projecting the request down to role/content strings.
+ */
+char *ffi_tokenizer_apply_chat_template_context(const char *context_json,
+                                                const char *tokenizer_config_json,
+                                                const char *current_date);
+
+/**
  * Encode text into tokens
  */
 struct EncodingHandle *ffi_tokenizer_encode(const struct TokenizerHandle *handle,

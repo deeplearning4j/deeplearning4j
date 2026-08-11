@@ -5493,6 +5493,11 @@ public native int dspDiagGetEnabledMask();
 public native void dspDiagSetLevel(int level);
 
 /**
+ * Get the active DSP diagnostic output level.
+ */
+public native int dspDiagGetLevel();
+
+/**
  * Set DSP diagnostic JSON output file path.
  */
 public native void dspDiagSetJsonPath(@Cast("char*") String path);

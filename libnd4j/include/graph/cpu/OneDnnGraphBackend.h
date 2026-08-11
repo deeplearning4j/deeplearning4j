@@ -57,6 +57,8 @@ class OneDnnGraphBackend : public GraphBackend {
 
   const char* name() const override { return "OneDNN Graph"; }
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   // Type for a callback that executes a native slot range [startSlot, endSlot].
@@ -65,8 +67,8 @@ class OneDnnGraphBackend : public GraphBackend {
 
   // Set the executor callback for native (non-OneDNN) op ranges inside mixed segments.
   // Must be set before executeSegment() for any mixed-segment to succeed.
-  void setNativeSlotExecutor(NativeSlotExecutor executor);
-  void clearNativeSlotExecutor();
+  void setNativeSlotExecutor(NativeSlotExecutor executor) override;
+  void clearNativeSlotExecutor() override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
                       NDArray** externalInputs, int numExternalInputs,

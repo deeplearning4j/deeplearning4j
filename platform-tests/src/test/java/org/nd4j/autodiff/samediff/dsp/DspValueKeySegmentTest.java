@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Map;
@@ -294,6 +295,62 @@ public class DspValueKeySegmentTest {
                     "Step " + step + ": NaN detected in output");
             assertFalse(Double.isInfinite(result.sumNumber().doubleValue()),
                     "Step " + step + ": Inf detected in output");
+        }
+    }
+
+    /**
+     * Reproduces the LFM2 last-real-token path while alternating between the
+     * prefill and decode plans. The slice begin/size vectors are plan-internal
+     * GPU-produced controls; replay must refresh their host values before shape
+     * inference instead of reading the previous plan's stale primary buffer.
+     */
+    @Test
+    @DisplayName("LFM2 sizeAt → stack → slice controls survive prefill/decode plan reuse")
+    public void testInternalSliceControlsAcrossPlanSwitches() {
+        SameDiff sd = SameDiff.create();
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+
+        int hiddenSize = 16;
+        SDVariable hidden = sd.placeHolder("hidden", DataType.FLOAT, -1, -1, hiddenSize);
+        SDVariable actualLength = sd.placeHolder("actual_sequence_length", DataType.INT64);
+        SDVariable transformed = hidden.mul(2.0).add(1.0);
+
+        SDVariable batchSize = sd.sizeAt(transformed, 0);
+        SDVariable hiddenDim = sd.sizeAt(transformed, 2);
+        SDVariable zero = sd.constant(Nd4j.scalar(DataType.INT64, 0L));
+        SDVariable one = sd.constant(Nd4j.scalar(DataType.INT64, 1L));
+        SDVariable actualLast = actualLength.sub(one);
+        SDVariable begin = sd.stack("last_begin", 0, zero, actualLast, zero);
+        SDVariable size = sd.stack("last_size", 0, batchSize, one, hiddenDim);
+        SDVariable hiddenLast = sd.slice("hidden_last", transformed, begin, size);
+        SDVariable output = hiddenLast.mul("output", 3.0);
+
+        int[] sequenceLengths = {8, 1, 8, 1, 8, 1, 8};
+        int[] actualLengths = {5, 1, 6, 1, 7, 1, 4};
+        for (int execution = 0; execution < sequenceLengths.length; execution++) {
+            int sequenceLength = sequenceLengths[execution];
+            int realLength = actualLengths[execution];
+            INDArray hiddenArray = Nd4j.arange(
+                            1L * sequenceLength * hiddenSize)
+                    .castTo(DataType.FLOAT)
+                    .reshape(1, sequenceLength, hiddenSize);
+
+            INDArray result = sd.outputSingle(
+                    Map.of(
+                            "hidden", hiddenArray,
+                            "actual_sequence_length", Nd4j.scalar(DataType.INT64, realLength)),
+                    "output");
+
+            assertArrayEquals(new long[]{1, 1, hiddenSize}, result.shape(),
+                    "Execution " + execution + ": slice size control was corrupted");
+            INDArray expected = hiddenArray.get(
+                            NDArrayIndex.all(),
+                            NDArrayIndex.interval(realLength - 1, realLength),
+                            NDArrayIndex.all())
+                    .mul(2.0).add(1.0).mul(3.0);
+            assertEquals(expected, result,
+                    "Execution " + execution + ": slice begin control selected the wrong token");
         }
     }
 }

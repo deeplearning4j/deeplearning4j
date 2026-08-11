@@ -153,6 +153,20 @@ class TestGGMLDequantize {
         f32.close();
     }
 
+    @Test
+    @DisplayName("Direct unsupported FP8 output is rejected instead of silently using FLOAT32")
+    void testDirectFp8OutputRejected() {
+        INDArray rawBytes = Nd4j.zeros(DataType.INT8, 34);
+        try {
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                    () -> new GGMLDequantize(rawBytes, GGMLDequantize.QUANT_Q8_0,
+                            DataType.FLOAT8, new long[]{32}));
+            assertTrue(exception.getMessage().contains("only supports direct"));
+        } finally {
+            rawBytes.close();
+        }
+    }
+
     /**
      * Test Q4_K dequantization produces non-zero reasonable values.
      * Uses synthetic block data with known scale.

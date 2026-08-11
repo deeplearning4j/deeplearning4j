@@ -4,6 +4,7 @@
  */
 package org.nd4j.dsp.model;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
@@ -20,6 +21,7 @@ public final class SdxCompiledModel {
     private final Path cacheEntry;
     private final Path runtimeModelPath;
     private final Path tokenizerPath;
+    private final Path tokenizerConfigPath;
     private final Path textGenerationConfigPath;
     private final Path quantizationConfigPath;
     private final SdxSourceIdentity sourceIdentity;
@@ -33,6 +35,7 @@ public final class SdxCompiledModel {
             Path cacheEntry,
             Path runtimeModelPath,
             Path tokenizerPath,
+            Path tokenizerConfigPath,
             Path textGenerationConfigPath,
             Path quantizationConfigPath,
             SdxSourceIdentity sourceIdentity,
@@ -44,6 +47,7 @@ public final class SdxCompiledModel {
         this.cacheEntry = Objects.requireNonNull(cacheEntry, "cacheEntry");
         this.runtimeModelPath = Objects.requireNonNull(runtimeModelPath, "runtimeModelPath");
         this.tokenizerPath = tokenizerPath;
+        this.tokenizerConfigPath = tokenizerConfigPath;
         this.textGenerationConfigPath = textGenerationConfigPath;
         this.quantizationConfigPath = quantizationConfigPath;
         this.sourceIdentity = Objects.requireNonNull(sourceIdentity, "sourceIdentity");
@@ -67,6 +71,24 @@ public final class SdxCompiledModel {
 
     public Optional<Path> tokenizerPath() {
         return Optional.ofNullable(tokenizerPath);
+    }
+
+    /**
+     * Returns the Hugging Face-compatible tokenizer configuration snapshot used
+     * when this cache entry was compiled. It carries special-token and chat-template
+     * semantics that are not represented by {@code tokenizer.json} itself.
+     */
+    public Optional<Path> tokenizerConfigPath() {
+        return Optional.ofNullable(tokenizerConfigPath);
+    }
+
+    /**
+     * Validates and returns the complete immutable asset set required by a text
+     * generation consumer. Generic graph consumers may continue to use the
+     * optional accessors above.
+     */
+    public SdxTextModelAssets requireTextModelAssets() throws IOException {
+        return SdxTextModelAssets.require(this);
     }
 
     public Optional<Path> textGenerationConfigPath() {

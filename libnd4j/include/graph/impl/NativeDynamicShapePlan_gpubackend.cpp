@@ -19,7 +19,6 @@
 // NativeDynamicShapePlan_gpubackend.cpp — Platform-agnostic GPU backend dispatch.
 //
 // Contains:
-//   - getGpuGraphBackend(): selects the best available GPU compiler backend
 //   - segDispatchWarmup(): slot-by-slot warmup before compilation
 //   - segDispatchCompile(): backend compilation and audit
 //   - cleanupSegmentForRebuild(): segment cleanup with diagnostics
@@ -29,6 +28,7 @@
 // NativeDynamicShapePlan_gpubackend.cu, compiled only by NVCC.
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/GraphBackendResolver.h>
 #include <graph/ModeContract.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspSegmentLifecycle.h>
@@ -36,16 +36,6 @@
 #include <system/op_boilerplate.h>
 #include <system/Environment.h>
 #include <config.h>
-
-#ifdef SD_TPU
-#include <graph/tpu/TpuGraphBackend.h>
-#endif
-#ifdef HAVE_HEXAGON_MLIR
-#include <graph/hexagon/HexagonGraphBackend.h>
-#endif
-#if defined(SD_HIP)
-#include <graph/hip/HipGraphBackend.h>
-#endif
 
 #include <algorithm>
 #include <cstdio>
@@ -136,10 +126,11 @@ void NativeDynamicShapePlan::dumpSegmentGraphState(const char* tag) const {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// hasCompositeHandles — check if merged captures are ready for replay
+// hasCompositeHandles — check if a composite schedule is ready for replay
 // ═══════════════════════════════════════════════════════════════════════════════
 bool NativeDynamicShapePlan::hasCompositeHandles(const GraphSegment& seg) const {
   auto& sched = seg.exec.compositeReplaySchedule;
+  bool hasIslandUnits = false;
   // Check merged replay handles — at least one merged group must be ready
   for (auto& h : sched.mergedReplayHandles) {
     if (h != nullptr && h->isReady()) return true;
@@ -147,13 +138,25 @@ bool NativeDynamicShapePlan::hasCompositeHandles(const GraphSegment& seg) const 
   // Fallback: check individual composite handles (backward compat)
   for (auto& u : sched.units) {
     if (u.kind == REPLAY_UNIT_TRITON_ISLAND && u.mergedGroupId < 0) {
+      hasIslandUnits = true;
       int idx = u.islandIndex;
       if (idx >= 0 && idx < static_cast<int>(sched.compositeReplayHandles.size()) &&
           sched.compositeReplayHandles[idx] != nullptr &&
           sched.compositeReplayHandles[idx]->isReady()) {
         return true;
       }
+    } else if (u.kind == REPLAY_UNIT_TRITON_ISLAND) {
+      hasIslandUnits = true;
     }
+  }
+
+  // A sealed schedule with no islands is an intentional live-gap-only
+  // composite plan. It has no CUDA replay handles by construction: every unit
+  // executes live in program order. Treat it as replay-ready so it cannot fall
+  // through to monolithic capture and bake value-dependent range/create data.
+  if (!sched.units.empty() && !hasIslandUnits && seg.exec.segPhase.isSealed() &&
+      seg.exec.replayUnitCount == static_cast<int>(sched.units.size())) {
+    return true;
   }
   return false;
 }
@@ -173,141 +176,6 @@ static const char* sourceTypeName(int8_t st) {
 
 void NativeDynamicShapePlan::clearGpuBackendFailedCache() {
   dspTritonClearFailedCache();
-}
-
-GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
-  if (gpuGraphBackendChecked_) return gpuGraphBackend_;
-  gpuGraphBackendChecked_ = true;
-
-  // Modes that don't need a JIT compilation backend (pure replay or slot-by-slot).
-  if (!ModeContract::forMode(graphExecutionMode_).needsJitBackend) {
-    gpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-    auto* triton = dspTritonGetBackendIfAvailable();
-    if (triton != nullptr) {
-      gpuGraphBackend_ = triton;
-      DSP_DIAG(BACKEND, "using Triton GPU compiler backend");
-      return gpuGraphBackend_;
-    }
-    if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON) {
-      DSP_DIAG(BACKEND, "Triton backend requested but not available");
-      gpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-    DSP_DIAG(BACKEND, "Triton unavailable in AUTO mode, trying NVRTC/PTX backends");
-  }
-
-  if (dspIsCudaBuild()) {
-    if (graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT ||
-        graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-      auto* nvrtc = dspGetNvrtcBackend();
-      if (nvrtc != nullptr && nvrtc->isAvailable()) {
-        gpuGraphBackend_ = nvrtc;
-        DSP_DIAG(BACKEND, "using NVRTC GPU compiler backend");
-        return gpuGraphBackend_;
-      }
-      if (graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT) {
-        DSP_DIAG(BACKEND, "NVRTC backend requested but not available");
-        gpuGraphBackend_ = nullptr;
-        return nullptr;
-      }
-    }
-
-    if (graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT ||
-        graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-      auto* ptx = dspGetPtxBackend();
-      if (ptx != nullptr && ptx->isAvailable()) {
-        gpuGraphBackend_ = ptx;
-        DSP_DIAG(BACKEND, "using PTX template GPU compiler backend");
-        return gpuGraphBackend_;
-      }
-      if (graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT) {
-        DSP_DIAG(BACKEND, "PTX backend requested but not available");
-        gpuGraphBackend_ = nullptr;
-        return nullptr;
-      }
-    }
-  }
-
-#ifdef SD_TPU
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_TPU ||
-     graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-   auto& tpu = TpuGraphBackend::getInstance();
-   if (tpu.isAvailable()) {
-     gpuGraphBackend_ = &tpu;
-     DSP_DIAG(BACKEND, "using TPU HLO compiler backend");
-     return gpuGraphBackend_;
-   }
-   if (graphExecutionMode_ == GraphExecutionMode::GEM_TPU) {
-     DSP_DIAG(BACKEND, "TPU backend requested but not available");
-     gpuGraphBackend_ = nullptr;
-     return nullptr;
-   }
- }
-#else
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_TPU) {
-    DSP_DIAG(BACKEND, "TPU backend requested but not compiled (SD_TPU=0)");
-    gpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-#ifdef HAVE_HEXAGON_MLIR
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_HEXAGON ||
-     graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-   auto& hexagon = HexagonGraphBackend::getInstance();
-   if (hexagon.isAvailable()) {
-     gpuGraphBackend_ = &hexagon;
-     DSP_DIAG(BACKEND, "using Hexagon MLIR NPU compiler backend");
-     return gpuGraphBackend_;
-   }
-   if (graphExecutionMode_ == GraphExecutionMode::GEM_HEXAGON) {
-     DSP_DIAG(BACKEND, "Hexagon backend requested but not available");
-     gpuGraphBackend_ = nullptr;
-     return nullptr;
-   }
- }
-#else
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_HEXAGON) {
-    DSP_DIAG(BACKEND, "Hexagon backend requested but not compiled (HAVE_HEXAGON_MLIR=0)");
-    gpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-#if defined(SD_HIP)
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_HIP_GRAPHS ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-    // Native HIP builds own the direct libamdhip64 graph-capture path.
-    // CUDA/ZLUDA builds use CUDA graph APIs and let ZLUDA translate them.
-    auto& hip = HipGraphBackend::getInstance();
-    if (hip.isAvailable()) {
-      gpuGraphBackend_ = &hip;
-      DSP_DIAG(BACKEND, "using HIP (ROCm) graph capture backend");
-      return gpuGraphBackend_;
-    }
-    if (graphExecutionMode_ == GraphExecutionMode::GEM_HIP_GRAPHS) {
-      DSP_DIAG(BACKEND, "HIP graphs backend requested but not available "
-               "(libamdhip64.so not loadable)");
-      gpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-  }
-#else
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_HIP_GRAPHS) {
-    DSP_DIAG(BACKEND, "HIP graphs backend requested but not compiled "
-             "(needs a native SD_HIP build)");
-    gpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-  gpuGraphBackend_ = nullptr;
-  return nullptr;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -438,15 +306,86 @@ Status NativeDynamicShapePlan::segDispatchWarmup(
 Status NativeDynamicShapePlan::segDispatchCompile(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream,
     LongType& segShapeKey) {
-  auto* backend = getGpuGraphBackend();
+  const GraphBackendRequest request = makeGraphBackendRequest();
+  const auto& resolvedCandidates = getGraphBackendCandidates();
+  GraphBackend* backend = seg.resolvedGraphBackend;
+  if (backend == nullptr && !resolvedCandidates.empty()) {
+    backend = resolvedCandidates.front();
+  }
   if (backend == nullptr) {
     return Status::KERNEL_FAILURE;
   }
   const char* backendName = backend->name();
 
+  auto collectInputSignatures = [&]() {
+    std::vector<std::string> signatures;
+    std::unordered_set<int> segmentOutputs;
+    std::unordered_set<int64_t> seenSources;
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int i = 0; i < slot.wiring.numOutputs; i++) {
+        segmentOutputs.insert(slot.wiring.outputSlotIndices[i]);
+      }
+    }
+    for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
+      const NativeSlot& slot = slots_[s];
+      for (int i = 0; i < slot.wiring.numInputs; i++) {
+        const int srcIdx = slot.wiring.inputSourceIndices[i];
+        const bool isExternal = srcIdx < 0;
+        const int resolvedIdx = isExternal ? -(srcIdx + 1) : srcIdx;
+        if (!isExternal && segmentOutputs.find(resolvedIdx) != segmentOutputs.end()) {
+          continue;
+        }
+        const int64_t sourceId = isExternal
+            ? -(static_cast<int64_t>(resolvedIdx) + 1)
+            : static_cast<int64_t>(resolvedIdx) + 1;
+        if (!seenSources.insert(sourceId).second) {
+          continue;
+        }
+        NDArray* arr = nullptr;
+        std::string label;
+        if (isExternal) {
+          label = "ext[" + std::to_string(resolvedIdx) + "]";
+          if (resolvedIdx >= 0 && resolvedIdx < static_cast<int>(externalInputNames_.size()) &&
+              !externalInputNames_[resolvedIdx].empty()) {
+            label += ":" + externalInputNames_[resolvedIdx];
+          }
+          if (resolvedIdx >= 0 && resolvedIdx < numExt && externalArrays != nullptr) {
+            arr = externalArrays[resolvedIdx];
+          }
+        } else {
+          label = "slot[" + std::to_string(resolvedIdx) + "]";
+          if (resolvedIdx >= 0 && resolvedIdx < totalOutputSlots_ && outputSlots_ != nullptr) {
+            arr = outputSlots_[resolvedIdx];
+          }
+        }
+        std::string signature = label + "=";
+        if (arr == nullptr || !arr->hasValidShapeInfo()) {
+          signature += "<null-or-invalid>";
+        } else {
+          signature += "[";
+          const LongType* shapeInfo = arr->shapeInfo();
+          const int rank = shape::rank(shapeInfo);
+          for (int d = 0; d < rank; d++) {
+            if (d > 0) signature += ",";
+            signature += std::to_string(static_cast<long long>(shapeInfo[d + 1]));
+          }
+          signature += "]";
+          signature += ";dtype=" + std::to_string(static_cast<int>(arr->dataType()));
+          signature += ";len=" + std::to_string(static_cast<long long>(arr->lengthOf()));
+        }
+        signatures.emplace_back(std::move(signature));
+      }
+    }
+    return signatures;
+  };
+
   seg.def.shapeKeyState.recordComputed(segShapeKey);
   bool needsCompile = seg.exec.segPhase.needsCompile() ||
                       seg.def.shapeKeyState.hasDrifted();
+  if (seg.resolvedGraphBackend == nullptr) {
+    needsCompile = true;
+  }
 
   // Phase guard: compilation must not happen during REPLAYING
   if (needsCompile && planLifecycle_.isReplaying()) {
@@ -468,6 +407,31 @@ Status NativeDynamicShapePlan::segDispatchCompile(
   if (needsCompile) {
     bool isRecompileDueToShapeChange = (seg.exec.executionCount > 1) && seg.def.shapeKeyState.hasDrifted();
     if (isRecompileDueToShapeChange) {
+      if (DSP_DIAG_ENABLED(LIFECYCLE)) {
+        const auto currentSignatures = collectInputSignatures();
+        const auto& compiledSignatures = seg.def.shapeKeyState.compiledInputSignatures;
+        DSP_DIAG(LIFECYCLE,
+                 "SHAPE_KEY_DRIFT_INPUTS: seg[%d-%d] compiledKey=%lld currentKey=%lld "
+                 "compiledInputs=%zu currentInputs=%zu",
+                 seg.def.startSlot, seg.def.endSlot,
+                 (long long)seg.def.shapeKeyState.compiledShapeKey, (long long)segShapeKey,
+                 compiledSignatures.size(), currentSignatures.size());
+        const size_t common = std::min(compiledSignatures.size(), currentSignatures.size());
+        for (size_t i = 0; i < common; i++) {
+          if (compiledSignatures[i] != currentSignatures[i]) {
+            DSP_DIAG(LIFECYCLE, "SHAPE_KEY_DRIFT_INPUT[%zu]: compiled={%s} current={%s}",
+                     i, compiledSignatures[i].c_str(), currentSignatures[i].c_str());
+          }
+        }
+        for (size_t i = common; i < compiledSignatures.size(); i++) {
+          DSP_DIAG(LIFECYCLE, "SHAPE_KEY_DRIFT_INPUT[%zu]: compiled={%s} current={<missing>}",
+                   i, compiledSignatures[i].c_str());
+        }
+        for (size_t i = common; i < currentSignatures.size(); i++) {
+          DSP_DIAG(LIFECYCLE, "SHAPE_KEY_DRIFT_INPUT[%zu]: compiled={<missing>} current={%s}",
+                   i, currentSignatures[i].c_str());
+        }
+      }
       char reasonBuf[128];
       std::snprintf(reasonBuf, sizeof(reasonBuf),
                     "shape-change recompile (shapeKey %lld->%lld, executionCount=%d)",
@@ -500,36 +464,57 @@ Status NativeDynamicShapePlan::segDispatchCompile(
                         "recomputed shapeKey=%lld", seg.def.startSlot, seg.def.endSlot, segShapeKey);
     }
 
-    DSP_SEG_EVENT(seg, COMPILE_START, "backend=%s", backendName);
-    if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
-                                 outputSlots_, totalOutputSlots_, segShapeKey,
-                                 numSlots_, requestedOutputSlotIndices_,
-                                 numRequestedOutputs_)) {
-      // Fetch audit even on failure — it contains per-op detail about what failed
-      auto failAudit = backend->getLastCompilationAudit();
-      lastCompilationAudit_ = failAudit;
+    DSP_SEG_EVENT(seg, COMPILE_START,
+                  "resolver-cascade candidates=%d preferred=%s",
+                  static_cast<int>(resolvedCandidates.size()),
+                  seg.resolvedGraphBackend != nullptr
+                      ? seg.resolvedGraphBackend->name()
+                      : "<none>");
+    const auto lowering = GraphBackendResolver::lowerSegment(
+        request, resolvedCandidates, seg.resolvedGraphBackend, seg, slots_,
+        seg.def.startSlot, seg.def.endSlot, externalArrays, numExt,
+        outputSlots_, totalOutputSlots_, segShapeKey, numSlots_,
+        requestedOutputSlotIndices_, numRequestedOutputs_);
+
+    std::string cascadeFailures;
+    for (const auto& attempt : lowering.attempts) {
+      lastCompilationAudit_ = attempt.audit;
+      if (attempt.succeeded) {
+        continue;
+      }
       std::string failedOps;
-      int failCount = 0;
-      for (const auto& entry : failAudit) {
+      for (const auto& entry : attempt.audit) {
         if (!entry.wasCompiled && !entry.isNativeHandled) {
           if (!failedOps.empty()) failedOps += ", ";
-          failedOps += "slot " + std::to_string(entry.slotIndex) + " (" + entry.opName + "): " + entry.reason;
-          failCount++;
+          failedOps += "slot " + std::to_string(entry.slotIndex) + " (" +
+                       entry.opName + "): " + entry.reason;
         }
       }
       if (failedOps.empty()) {
-        // No audit entries — list the ops in the segment for context
         for (int s = seg.def.startSlot; s <= seg.def.endSlot; s++) {
           if (!failedOps.empty()) failedOps += ", ";
           failedOps += slots_[s].ident.opName;
         }
-        failedOps = "segment ops: " + failedOps + " (no per-op audit available)";
+        failedOps =
+            "segment ops: " + failedOps + " (no per-op audit available)";
       }
-      DSP_SEG_EVENT(seg, COMPILE_FAILED, "backend=%s failedOps=[%s]", backendName, failedOps.c_str());
-      // Store the failure detail so DSP_THROW_SEG can include it
-      lastCompileFailureDetail_ = failedOps;
+      if (!cascadeFailures.empty()) cascadeFailures += " | ";
+      cascadeFailures +=
+          std::string(attempt.backend->name()) + ": " + failedOps;
+      DSP_SEG_EVENT(seg, COMPILE_FAILED, "backend=%s failedOps=[%s]",
+                    attempt.backend->name(), failedOps.c_str());
+    }
+
+    if (!lowering.succeeded()) {
+      lastCompileFailureDetail_ = cascadeFailures.empty()
+          ? "no resolver candidate admitted the segment"
+          : cascadeFailures;
       return Status::KERNEL_FAILURE;
     }
+    backend = lowering.backend;
+    seg.setResolvedGraphBackend(backend, request);
+    backendName = backend->name();
+    lastCompilationAudit_ = lowering.attempts.back().audit;
     DSP_SEG_EVENT(seg, COMPILE_DONE, "backend=%s", backendName);
     {
       int lcSegIdx = -1;
@@ -561,6 +546,11 @@ Status NativeDynamicShapePlan::segDispatchCompile(
     // on non-compilation execs with a new shape key (e.g. KV cache grew),
     // causing KERNEL_FAILURE on the Triton cache lookup.
     seg.def.shapeKeyState.markCompiled(segShapeKey);
+    if (DSP_DIAG_ENABLED(LIFECYCLE)) {
+      seg.def.shapeKeyState.compiledInputSignatures = collectInputSignatures();
+    } else {
+      seg.def.shapeKeyState.compiledInputSignatures.clear();
+    }
     DSP_SEG_EVENT(seg, SHAPE_KEY_STORED, "compilation complete");
   }
 

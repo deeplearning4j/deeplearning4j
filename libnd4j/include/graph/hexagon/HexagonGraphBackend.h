@@ -70,25 +70,6 @@ class SD_LIB_EXPORT HexagonGraphBackend : public GraphBackend {
    */
   static HexagonGraphBackend& getInstance();
 
-  /**
-   * Thread-scoped compilation policy inherited from NativeDynamicShapePlan.
-   * A strict mobile session sets allowRuntimeCompilation=false and supplies the
-   * bundle's compiledArtifacts.hexagonKernels directory.
-   */
-  class SD_LIB_EXPORT ScopedCompilationPolicy {
-   public:
-    ScopedCompilationPolicy(bool allowRuntimeCompilation,
-                            const std::string& artifactDirectory);
-    ~ScopedCompilationPolicy();
-
-    ScopedCompilationPolicy(const ScopedCompilationPolicy&) = delete;
-    ScopedCompilationPolicy& operator=(const ScopedCompilationPolicy&) = delete;
-
-   private:
-    bool previousAllowRuntimeCompilation_;
-    std::string previousArtifactDirectory_;
-  };
-
   // ── GraphBackend interface ─────────────────────────────────────────────
 
   const char* name() const override { return "Hexagon MLIR"; }
@@ -99,6 +80,8 @@ class SD_LIB_EXPORT HexagonGraphBackend : public GraphBackend {
    * at least one NPU device is present.
    */
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
 
   /**
    * Check if a contiguous range of slots can be fused into an HVX kernel.
@@ -107,6 +90,8 @@ class SD_LIB_EXPORT HexagonGraphBackend : public GraphBackend {
    *   2. The estimated working set fits within TCM_CAPACITY
    */
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
+  bool canResolveSegment(const GraphBackendRequest& request,
+                         NativeSlot* slots, int start, int end) override;
 
   /**
    * Compile a graph segment into an HVX kernel.
@@ -121,6 +106,13 @@ class SD_LIB_EXPORT HexagonGraphBackend : public GraphBackend {
                       int totalSlots = 0,
                       int* requestedOutputSlotIndices = nullptr,
                       int numRequestedOutputs = 0) override;
+  bool compileSegment(const GraphBackendRequest& request,
+                      GraphSegment& seg, NativeSlot* slots,
+                      NDArray** externalInputs, int numExternalInputs,
+                      NDArray** outputSlots, int totalOutputSlots,
+                      LongType shapeKey, int totalSlots,
+                      int* requestedOutputSlotIndices,
+                      int numRequestedOutputs) override;
 
   /**
    * Execute a previously compiled segment on the Hexagon NPU.
@@ -129,6 +121,11 @@ class SD_LIB_EXPORT HexagonGraphBackend : public GraphBackend {
    *   3. DMA output tensors from NPU TCM back to host DDR
    */
   Status executeSegment(GraphSegment& seg, NativeSlot* slots,
+                        NDArray** externalInputs, int numExternalInputs,
+                        NDArray** outputSlots, int totalOutputSlots,
+                        void* stream) override;
+  Status executeSegment(const GraphBackendRequest& request,
+                        GraphSegment& seg, NativeSlot* slots,
                         NDArray** externalInputs, int numExternalInputs,
                         NDArray** outputSlots, int totalOutputSlots,
                         void* stream) override;

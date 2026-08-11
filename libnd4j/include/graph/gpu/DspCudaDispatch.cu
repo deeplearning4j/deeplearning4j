@@ -244,6 +244,11 @@ void* dspStreamPtrToValue(void* streamPtr) {
              : nullptr;
 }
 
+bool dspSynchronizeStream(void* stream) {
+  if (stream == nullptr) return true;
+  return cudaStreamSynchronize(reinterpret_cast<cudaStream_t>(stream)) == cudaSuccess;
+}
+
 void* dspGetExecutionStream() {
   return tl_dspExecutionStream;
 }
@@ -318,10 +323,9 @@ void dspTritonClearFailedCache() {
 #endif
 }
 
-GraphBackend* dspTritonGetBackendIfAvailable() {
+GraphBackend* dspGetTritonBackend() {
 #if HAVE_TRITON
-  auto& triton = TritonGraphBackend::getInstance();
-  return triton.isAvailable() ? &triton : nullptr;
+  return &TritonGraphBackend::getInstance();
 #else
   return nullptr;
 #endif

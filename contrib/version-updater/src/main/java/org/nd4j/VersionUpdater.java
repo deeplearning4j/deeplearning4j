@@ -2,7 +2,6 @@ package org.nd4j;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
-import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.nd4j.fileupdater.FileUpdater;
 import org.nd4j.fileupdater.impl.CudaFileUpdater;
@@ -48,7 +47,11 @@ public class VersionUpdater implements Callable<Integer> {
                     break;
             }
 
-            for (File f : FileUtils.listFilesAndDirs(filePath, new RegexFileFilter("pom.xml"), new IOFileFilter() {
+            // CUDA versioned module names and classifier suffixes also live in the
+            // cloud release plans and workflow manifests.  Walk every file here and
+            // let the selected updater decide which names are in its scope; the
+            // directory filter still prevents touching generated target trees.
+            for (File f : FileUtils.listFilesAndDirs(filePath, TrueFileFilter.INSTANCE, new IOFileFilter() {
                 @Override
                 public boolean accept(File file) {
                     return !file.getName().equals("target");

@@ -443,7 +443,9 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
     @Test
     public void testParameterBoundContextHidesWeightsAndRuns() throws Exception {
         INDArray w = Nd4j.createFromArray(1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f).reshape(4, 2);
-        File sdzFile = saveSdz(buildMatmulModel(w), "sdx-capi-bound-");
+        SameDiff modelGraph = buildMatmulModel(w);
+        modelGraph.math().square("output_squared", modelGraph.getVariable("output"));
+        File sdzFile = saveSdz(modelGraph, "sdx-capi-bound-");
 
         PointerByReference outRuntime = new PointerByReference();
         RuntimeOptions runtimeOptions = new RuntimeOptions();
@@ -470,7 +472,7 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
                 PointerByReference outContext = new PointerByReference();
                 assertEquals(SDX_STATUS_OK,
                         api.sdxCreateContextWithOptions(model,
-                                new StringArray(new String[]{"output"}), 1,
+                                new StringArray(new String[]{"output", "output_squared"}), 2,
                                 contextOptions, outContext),
                         "sdxCreateContextWithOptions failed: " + lastError(runtime));
                 Pointer context = outContext.getValue();
@@ -481,51 +483,68 @@ public class SdxCApiEndToEndTest extends BaseND4JTest {
                     assertEquals("x", api.sdxGetInputName(context, 0).getString(0));
                     assertNull(api.sdxGetInputName(context, 1));
 
-                    float[] x = {1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f};
-                    Memory inputData = floatsToMemory(x);
-                    Memory outputData = new Memory(4L * Float.BYTES);
-                    Memory[] inputShapeOwners = new Memory[1];
-                    Memory[] outputShapeOwners = new Memory[1];
-                    TensorView[] inputs = hostTensorArray(
-                            new Memory[]{inputData}, new long[][]{{2, 4}}, inputShapeOwners);
-                    TensorView[] outputs = hostTensorArray(
-                            new Memory[]{outputData}, new long[][]{{2, 2}}, outputShapeOwners);
-                    RunOptions runOptions = new RunOptions();
-                    runOptions.write();
-
-                    assertEquals(SDX_STATUS_OK,
-                            api.sdxRun(context, inputs, 1, outputs, 1, runOptions),
-                            "parameter-bound sdxRun failed: " + lastError(runtime));
-                    float[] actual = new float[4];
-                    outputData.read(0, actual, 0, actual.length);
-                    float[] expected = {50f, 60f, 114f, 140f};
-                    assertArrayEquals(expected, actual, 1e-4f);
-
-                    Pointer outputName = api.sdxGetOutputName(context, 0);
-                    assertNotNull(outputName);
-                    assertEquals("output", outputName.getString(0));
-                    assertNull(api.sdxGetOutputName(context, 1));
+                    assertEquals(2, api.sdxGetNumOutputs(context));
+                    assertEquals("output", api.sdxGetOutputName(context, 0).getString(0));
+                    assertEquals("output_squared", api.sdxGetOutputName(context, 1).getString(0));
+                    assertNull(api.sdxGetOutputName(context, 2));
                     assertNull(api.sdxGetTokenizerPath(model));
                     assertNull(api.sdxGetTextGenerationConfigPath(model));
 
+                    float[] x = {1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f};
+                    float[] expected = {50f, 60f, 114f, 140f};
+                    float[] expectedSquared = {2500f, 3600f, 12996f, 19600f};
+                    Memory inputData = floatsToMemory(x);
+                    Memory[] inputShapeOwners = new Memory[1];
+                    TensorView[] inputs = hostTensorArray(
+                            new Memory[]{inputData}, new long[][]{{2, 4}}, inputShapeOwners);
+                    RunOptions runOptions = new RunOptions();
+                    runOptions.write();
+
+                    // Android text generation enters through this exact contract: the
+                    // first execution has no caller-provided output slots, so the plan
+                    // must allocate all requested outputs itself.
                     assertEquals(SDX_STATUS_OK,
                             api.sdxRunAllocating(context, inputs, 1, runOptions),
-                            "sdxRunAllocating failed: " + lastError(runtime));
-                    TensorView dynamicOutput = new TensorView();
-                    dynamicOutput.write();
+                            "fresh-context sdxRunAllocating failed: " + lastError(runtime));
+                    for (int outputIndex = 0; outputIndex < 2; outputIndex++) {
+                        TensorView dynamicOutput = new TensorView();
+                        dynamicOutput.write();
+                        assertEquals(SDX_STATUS_OK,
+                                api.sdxGetOutputTensor(context, outputIndex, dynamicOutput),
+                                "sdxGetOutputTensor(" + outputIndex + ") failed: " + lastError(runtime));
+                        dynamicOutput.read();
+                        assertEquals(2, dynamicOutput.rank);
+                        assertArrayEquals(new long[]{2, 2},
+                                dynamicOutput.shape.getLongArray(0, dynamicOutput.rank));
+                        assertEquals(SDX_DTYPE_FLOAT, dynamicOutput.dtype);
+                        assertEquals(4L * Float.BYTES, dynamicOutput.bytes);
+                        assertEquals(SDX_DEVICE_HOST, dynamicOutput.device_type);
+                        assertArrayEquals(outputIndex == 0 ? expected : expectedSquared,
+                                dynamicOutput.data.getFloatArray(0, expected.length), 1e-4f);
+                    }
+
+                    Memory outputData = new Memory(4L * Float.BYTES);
+                    Memory squaredOutputData = new Memory(4L * Float.BYTES);
+                    Memory[] outputShapeOwners = new Memory[2];
+                    TensorView[] outputs = hostTensorArray(
+                            new Memory[]{outputData, squaredOutputData},
+                            new long[][]{{2, 2}, {2, 2}}, outputShapeOwners);
+
+                    assertNotEquals(SDX_STATUS_OK,
+                            api.sdxRun(context, inputs, 1, outputs, 1, runOptions),
+                            "caller-buffer mode must reject a nonzero output-count mismatch");
+                    assertTrue(lastError(runtime).contains("Output tensor count mismatch"),
+                            lastError(runtime));
+
                     assertEquals(SDX_STATUS_OK,
-                            api.sdxGetOutputTensor(context, 0, dynamicOutput),
-                            "sdxGetOutputTensor failed: " + lastError(runtime));
-                    dynamicOutput.read();
-                    assertEquals(2, dynamicOutput.rank);
-                    assertArrayEquals(new long[]{2, 2},
-                            dynamicOutput.shape.getLongArray(0, dynamicOutput.rank));
-                    assertEquals(SDX_DTYPE_FLOAT, dynamicOutput.dtype);
-                    assertEquals(4L * Float.BYTES, dynamicOutput.bytes);
-                    assertEquals(SDX_DEVICE_HOST, dynamicOutput.device_type);
-                    assertArrayEquals(expected,
-                            dynamicOutput.data.getFloatArray(0, expected.length),
-                            1e-4f);
+                            api.sdxRun(context, inputs, 1, outputs, 2, runOptions),
+                            "parameter-bound sdxRun failed: " + lastError(runtime));
+                    float[] actual = new float[4];
+                    float[] actualSquared = new float[4];
+                    outputData.read(0, actual, 0, actual.length);
+                    squaredOutputData.read(0, actualSquared, 0, actualSquared.length);
+                    assertArrayEquals(expected, actual, 1e-4f);
+                    assertArrayEquals(expectedSquared, actualSquared, 1e-4f);
                 } finally {
                     api.sdxDestroyContext(context);
                 }

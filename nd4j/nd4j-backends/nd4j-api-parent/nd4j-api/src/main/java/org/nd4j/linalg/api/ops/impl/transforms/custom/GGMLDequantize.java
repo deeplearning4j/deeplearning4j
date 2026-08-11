@@ -169,7 +169,8 @@ public class GGMLDequantize extends DynamicCustomOp {
             case BFLOAT16:
                 return OUTPUT_BF16;
             default:
-                return OUTPUT_F32;
+                throw new IllegalArgumentException(
+                        "ggml_dequantize only supports direct FLOAT, HALF, or BFLOAT16 output, got: " + dt);
         }
     }
 }

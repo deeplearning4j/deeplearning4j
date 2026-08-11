@@ -237,6 +237,9 @@ public class DynamicShapePlanExecutor implements Closeable {
     private int cachedEffectiveGraphModeCode = -1;   // -1 = leave default
     private final Set<Long> configuredHandleAddresses = new HashSet<>();
 
+    /** Cache pins owned by this executor, including both sides of a frozen prefill/decode switch. */
+    private final Map<Long, Pointer> pinnedPlanHandles = new HashMap<>();
+
     /**
      * External inputs that are mutable at runtime even though their SameDiff
      * variable type is VARIABLE rather than PLACEHOLDER. Training parameters use
@@ -424,16 +427,32 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
-     * Resolve the home device for an external input array. Prefer
-     * {@link AffinityManager#getDeviceForArray}, which reads the stable
-     * AllocationPoint metadata populated at buffer creation time. If that
-     * returns an out-of-range value (e.g. host-only arrays that haven't been
-     * synced to any GPU), fall back to {@code fallbackDevice}, which is the
-     * device we will run on anyway — treating "unknown" as "already correct"
-     * avoids needless replication and the syncToSpecial() on the producing
-     * device that follows the first kernel launch will then settle it there.
+     * Resolve the physical home device for an external input array.
+     *
+     * <p>Prefer {@link NativeOps#dbDeviceId}, which queries the owning device of an
+     * existing CUDA special pointer. The AllocationPoint metadata returned by
+     * {@link AffinityManager#getDeviceForArray} is only a logical hint and may be
+     * stale after allocator routing or replication. Using that hint first can make
+     * a newly compiled plan migrate an already-resident model to another GPU.
+     * On asymmetric systems that can select a device which cannot hold the plan.
+     *
+     * <p>For host-only arrays with no placed special pointer, dbDeviceId falls back
+     * to DataBuffer metadata. If neither source yields a valid device, use
+     * {@code fallbackDevice}.
      */
     private int resolveArrayDevice(INDArray arr, int numDevices, int fallbackDevice) {
+        try {
+            if (arr.data() != null && arr.data().opaqueBuffer() != null) {
+                NativeOps nOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                int dbDevice = nOps.dbDeviceId(arr.data().opaqueBuffer());
+                if (dbDevice >= 0 && dbDevice < numDevices) {
+                    return dbDevice;
+                }
+            }
+        } catch (Exception ignored) {
+            // A host-only, closed, or poisoned buffer may not have a queryable
+            // native allocation. Fall through to logical metadata.
+        }
         try {
             Integer devIdObj = Nd4j.getAffinityManager().getDeviceForArray(arr);
             if (devIdObj != null) {
@@ -445,20 +464,6 @@ public class DynamicShapePlanExecutor implements Closeable {
         } catch (Exception ignored) {
             // AffinityManager may throw on arrays whose allocation point is
             // gone (closed, poisoned). Treat as unknown.
-        }
-        // Fallback: check native DataBuffer device ID which tracks the actual CUDA
-        // device the buffer was allocated on. AffinityManager.getDeviceForArray()
-        // reads AllocationPoint metadata which may not be updated after
-        // replicateToDevice(), but dbDeviceId() reflects the real device.
-        try {
-            if (arr.data() != null && arr.data().opaqueBuffer() != null) {
-                NativeOps nOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                int dbDevice = nOps.dbDeviceId(arr.data().opaqueBuffer());
-                if (dbDevice >= 0 && dbDevice < numDevices) {
-                    return dbDevice;
-                }
-            }
-        } catch (Exception ignored) {
         }
         return fallbackDevice;
     }
@@ -1652,16 +1657,10 @@ public class DynamicShapePlanExecutor implements Closeable {
      * has cached the serialized plan bytes and output/placeholder key lists.
      *
      * @param isShapeChangeExpected true when caller detected that the placeholder shape hash
-     *        changed since the last dispatch. When true, the C++ cache will return a DIFFERENT
-     *        plan handle than the current nativePlanHandle (frozen multi-plan switch). In that
-     *        case the returned plan may have been previously borrowed by another executor
-     *        (e.g., a prior generation with different KV buffers). Passing newBorrower=1 for
-     *        this case triggers plan->invalidateExternalViewSlotsOnReacquire() in C++, which
-     *        clears any view-output slots that still point to the prior borrower's device memory.
-     *        Without this, view slots for KV-fed ops (permute/reshape over past_key_values)
-     *        retain stale pointers from the previous generation, causing the attention kernels
-     *        to silently compute attention over old K/V data and produce the previous generation's
-     *        token continuation (the KV prefix-cache contamination bug, #testPartialPrefixHit).
+     *        changed since the last dispatch. When true, the C++ cache may return a different
+     *        plan handle for this executor's frozen multi-plan switch. This remains the same
+     *        borrower: the executor pins every acquired handle until reset, and the native
+     *        staging path refreshes runtime inputs without discarding captured plan state.
      */
     private void redispatchForCurrentShapes(Map<String, INDArray> placeholderArrays,
                                             boolean isShapeChangeExpected) {
@@ -1671,6 +1670,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 "compileNativePlan() must run before executeNative().");
         }
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        requireCurrentDispatchAbi(nativeOps);
         Pointer cache = sd.getOrCreateNativePlanCache();
 
         BytePointer planBytes = new BytePointer(cachedSerializedPlan);
@@ -1717,22 +1717,18 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Pass mode as part of cache key — each mode gets its own plan (one flow).
             int modeForDispatch = cachedEffectiveGraphModeCode >= 0
                     ? cachedEffectiveGraphModeCode : 0;
-            // Set newBorrower=1 when:
-            //   (a) First dispatch from this executor (nativePlanHandle is null) — the
-            //       C++ cache may return a plan previously frozen by another executor,
-            //       so view-output slots could point to the prior executor's arrays.
-            //   (b) A shape change is expected (isShapeChangeExpected=true from the caller,
-            //       e.g. prefill→decode switch during warmup). In this case the cache returns
-            //       a DIFFERENT plan handle (the decode plan). That plan was last frozen by
-            //       the PREVIOUS generation's executor with different KV buffers. Without
-            //       newBorrower=1, view slots for permute/reshape ops over past_key_values
-            //       retain the previous generation's device addresses, causing the attention
-            //       kernels to read stale K/V data and produce the prior generation's token
-            //       continuation (root cause of the KV prefix-cache contamination bug).
-            // For same-shape re-dispatches (isShapeChangeExpected=false, nativePlanHandle
-            // non-null) pass 0 — same plan, same borrower, no stale slots to clear.
-            int newBorrower = (nativePlanHandle == null || nativePlanHandle.isNull()
-                    || isShapeChangeExpected) ? 1 : 0;
+            // newBorrower is an executor-lifecycle boundary, not a plan-shape boundary.
+            // Mark only the first dispatch from this Java executor. A cache hit can then
+            // contain external-fed views minted by a previous executor and native code must
+            // validate them. Prefill/decode shape switches after that are same-borrower
+            // re-dispatches: both handles stay pinned by this executor and invalidating either
+            // plan would discard its captures, force a full warmup allocation on every A/B/A
+            // switch, and eventually exhaust CUDA memory.
+            //
+            // This intentionally matches the native binding contract. Runtime input contents
+            // and same-shape replacement arrays are refreshed through the external-input
+            // staging path; they do not constitute a borrower change.
+            int newBorrower = (nativePlanHandle == null || nativePlanHandle.isNull()) ? 1 : 0;
             Pointer newHandle = nativeOps.dispatchNativePlan(
                     cache,
                     planBytes, cachedSerializedPlan.length,
@@ -1759,6 +1755,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                     " placeholders=" + phPtrs.size() +
                     " hexDump:" + hex);
             }
+            // Track every cache pin acquired by dispatchNativePlan. Frozen multi-plan
+            // switches intentionally retain both handles until the executor is reset.
+            pinnedPlanHandles.put(newHandle.address(), newHandle);
             // Swap handle if the cache returned a different plan for current shapes.
             // The C++ cache owns plan lifetimes, so we don't free the old one.
             boolean swapped = nativePlanHandle == null
@@ -1793,7 +1792,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                         // FROZEN MULTI-PLAN SWITCH: shapes changed while frozen. This is the
                         // VLM multi-page pattern (prefill seq=N ↔ decode seq=1). The C++ cache
                         // returned a different plan for the new shape — accept it. Both handles
-                        // stay pinned in the C++ cache so we can switch between them freely.
+                        // stay pinned in the C++ cache so we can switch between them freely;
+                        // pinnedPlanHandles records both so reset/close can release them.
                         log.info("redispatchForCurrentShapes: frozen multi-plan switch from {} to {} " +
                                 "(shapeHash {} → {}, shapesFrozen={}, executionCount={})",
                                 Long.toHexString(nativePlanHandle.address()),
@@ -1801,10 +1801,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 lastDispatchedShapeHash, currentShapeHash,
                                 shapesFrozen, executionCount);
                         nativePlanHandle = newHandle;
-                        // Clear per-shape caches — the new plan has different input mappings
+                        // Clear per-shape caches — the new plan has different input mappings.
+                        // Keep the wrappers currently installed in cachedOpContext strongly reachable
+                        // until executeNative() has populated every replacement and atomically swaps
+                        // contextInputRefs. Clearing them here creates a raw-pointer UAF window during
+                        // prefill/decode plan switches.
                         cachedInputArrays = null;
                         cachedInputOpaques = null;
-                        contextInputRefs = null;
                         inputIsPlaceholder = null;
                         frozenExtInputsWorkingCopy = null;
                         frozenExtBufferSnapshot = null;
@@ -1839,6 +1842,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                         // This is a cache key instability bug. Suppress the swap to prevent
                         // cascading performance loss.
                         nativeOps.unpinNativePlan(cache, newHandle);
+                        pinnedPlanHandles.remove(newHandle.address());
+                        configuredHandleAddresses.remove(newHandle.address());
+                        mutableExternalInputsConfiguredHandleAddresses.remove(newHandle.address());
                         log.warn("redispatchForCurrentShapes: SUPPRESSED plan swap from {} to {} " +
                                 "(wasEverFrozen=true, shapesFrozen={}, executionCount={}). " +
                                 "Keeping existing plan to preserve graph replay state.",
@@ -1853,16 +1859,20 @@ public class DynamicShapePlanExecutor implements Closeable {
                         // getOrInsert already did) to avoid dangling pointers — the
                         // old plan's GPU resources are freed on eviction.
                         nativeOps.unpinNativePlan(cache, nativePlanHandle);
+                        pinnedPlanHandles.remove(nativePlanHandle.address());
+                        configuredHandleAddresses.remove(nativePlanHandle.address());
+                        mutableExternalInputsConfiguredHandleAddresses.remove(nativePlanHandle.address());
                         log.info("redispatchForCurrentShapes: plan swapped from {} to {} — resetting frozen state",
                                 nativePlanHandle.address(), newHandle.address());
                         frozenOutputsInitialized = false;
                         frozenCallCount = 0;
                         closeZeroCopyOutputCache();
                         // Clear cached input arrays: the new plan may have different
-                        // external input mappings or slot assignments.
+                        // external input mappings or slot assignments. cachedOpContext survives the
+                        // plan swap, so retain its current wrappers until the next full population
+                        // atomically replaces contextInputRefs.
                         cachedInputArrays = null;
                         cachedInputOpaques = null;
-                        contextInputRefs = null;
                         inputIsPlaceholder = null;
                         nativePlanHandle = newHandle;
                     }
@@ -1874,6 +1884,32 @@ public class DynamicShapePlanExecutor implements Closeable {
             applySettingsIfNewHandle(nativeOps, newHandle);
         } finally {
             planBytes.close();
+        }
+    }
+
+    private static void requireCurrentDispatchAbi(NativeOps nativeOps) {
+        try {
+            java.lang.reflect.Method dispatch = nativeOps.getClass().getMethod(
+                    "dispatchNativePlan",
+                    Pointer.class, Pointer.class, long.class,
+                    Pointer.class, long.class, Pointer.class, long.class,
+                    int.class, int.class);
+            if (dispatch.getDeclaringClass() == NativeOps.class) {
+                Package bindingPackage = nativeOps.getClass().getPackage();
+                String implementationVersion = bindingPackage == null
+                        ? null : bindingPackage.getImplementationVersion();
+                throw new IllegalStateException(
+                        "Mixed or stale ND4J native artifacts: active binding "
+                                + nativeOps.getClass().getName()
+                                + " does not override the current 9-argument dispatchNativePlan ABI"
+                                + (implementationVersion == null ? "" : " (version " + implementationVersion + ")")
+                                + ". Rebuild nd4j-api, the native preset, backend, and platform classifier "
+                                + "from the same commit.");
+            }
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException(
+                    "ND4J native binding does not expose the current dispatchNativePlan ABI: "
+                            + nativeOps.getClass().getName(), e);
         }
     }
 
@@ -2646,6 +2682,27 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Retain the exact OpaqueNDArray wrapper most recently installed at an input index in
+     * {@link #cachedOpContext}. The native context stores a raw NDArray pointer; retaining an older
+     * wrapper for the same INDArray is insufficient because every OpaqueNDArray wrapper owns a
+     * distinct native NDArray object.
+     */
+    private void retainContextInputRef(int index, OpaqueNDArray opaque, int inputCount) {
+        if (opaque == null || index < 0 || index >= inputCount) {
+            return;
+        }
+        if (contextInputRefs == null || contextInputRefs.length != inputCount) {
+            OpaqueNDArray[] retained = new OpaqueNDArray[inputCount];
+            if (contextInputRefs != null) {
+                System.arraycopy(contextInputRefs, 0, retained, 0,
+                        Math.min(contextInputRefs.length, retained.length));
+            }
+            contextInputRefs = retained;
+        }
+        contextInputRefs[index] = opaque;
+    }
+
+    /**
      * Execute the plan entirely in C++ via a single JNI call.
      *
      * <p>Requires a previously compiled native plan handle (via {@link #compileNativePlan(DynamicShapePlan, GraphExecutionMode, boolean)}
@@ -3012,12 +3069,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // model constants (~5GB) get replicated to it.
                 // Tiebreaker: most free memory among devices with equal data.
                 //
-                // We use AffinityManager.getDeviceForArray() instead of dbDeviceId()
-                // because dbDeviceId queries the CUDA device pointer which may be null
-                // for Java-allocated arrays that haven't been synced to device yet.
-                // getDeviceForArray() reads the AllocationPoint metadata that the
-                // allocator sets at buffer creation time — it's always populated and
-                // reflects the logical home device for the buffer.
+                // resolveArrayDevice() prefers actual native pointer ownership.
+                // AllocationPoint metadata is only the fallback for host-only inputs:
+                // allocator routing and replication can leave that logical metadata
+                // pointing at a different device than the resident CUDA allocation.
                 long[] deviceBytes = new long[numDevices];
                 for (INDArray arr : extInputs) {
                     if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
@@ -3404,6 +3459,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         if (arr != null && isArrayLive(arr)) {
                             OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                             nativeOps.setGraphContextInputArray(opContext, pi, opaqueIn);
+                            retainContextInputRef(pi, opaqueIn, extInputs.length);
                             cachedInputOpaques[pi] = opaqueIn;
                             cachedInputArrays[pi] = arr;
                         }
@@ -3417,6 +3473,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         extInputs[di] = arr;
                         OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                         nativeOps.setGraphContextInputArray(opContext, di, opaqueIn);
+                        retainContextInputRef(di, opaqueIn, extInputs.length);
                         cachedInputOpaques[di] = opaqueIn;
                         cachedInputArrays[di] = arr;
                     }
@@ -3429,6 +3486,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             extInputs[ci] = arr;
                             OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                             nativeOps.setGraphContextInputArray(opContext, ci, opaqueIn);
+                            retainContextInputRef(ci, opaqueIn, extInputs.length);
                             cachedInputOpaques[ci] = opaqueIn;
                             cachedInputArrays[ci] = arr;
                         }
@@ -3444,6 +3502,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             if (arr != null && isArrayLive(arr)) {
                                 OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                                 nativeOps.setGraphContextInputArray(opContext, ci, opaqueIn);
+                                retainContextInputRef(ci, opaqueIn, extInputs.length);
                                 cachedInputOpaques[ci] = opaqueIn;
                                 DspDiagnostics.record(DspDiagnostics.MEMORY,
                                     "Java: FROZEN_FAST_PATH re-set stale constant ext[" + ci + "] '" + extKeys[ci] + "'");
@@ -3470,6 +3529,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
                         OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
                         nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
+                        retainContextInputRef(i, opaqueIn, extInputs.length);
                         cachedInputOpaques[i] = opaqueIn;
                         cachedInputArrays[i] = arr;
                         genericRebindCount++;
@@ -3509,6 +3569,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                             }
                             OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arrToSet);
                             nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
+                            retainContextInputRef(i, opaqueIn, extInputs.length);
                             cachedInputOpaques[i] = opaqueIn;
                             cachedInputArrays[i] = extInputs[i];
                         }
@@ -3798,6 +3859,47 @@ public class DynamicShapePlanExecutor implements Closeable {
                 DspDiagnostics.recordTimed(DspDiagnostics.FALLBACK, -1, -1, "executeNative",
                         execMs * 1000, "Java: native execution FAILED status=" + status +
                         " msg=" + errMsg + planSlotContext + " executionCount=" + executionCount);
+                if (DspDiagnostics.isEnabled(DspDiagnostics.LIFECYCLE)) {
+                    try {
+                        String lifecycleReport = DspDiagnostics.getPlanReport();
+                        if (lifecycleReport != null && !lifecycleReport.isBlank()) {
+                            log.error("DSP lifecycle diagnostics captured at native failure:\n{}", lifecycleReport);
+                        }
+                        String lifecycleJson = DspDiagnostics.getJsonReport();
+                        if (lifecycleJson != null && !lifecycleJson.isBlank()) {
+                            Deque<String> transitions = new ArrayDeque<>();
+                            for (String line : lifecycleJson.split("\\R")) {
+                                String upper = line.toUpperCase(Locale.ROOT);
+                                if (upper.contains("RESET_FOR_WARMUP")
+                                        || upper.contains("SEGMENT_EXEC_RESET")
+                                        || upper.contains("INVALIDAT")
+                                        || upper.contains("EVICT")
+                                        || upper.contains("REACTIVATE")
+                                        || upper.contains("REBIND")
+                                        || upper.contains("PROTECTED_EXT")
+                                        || upper.contains("POINTERS_UNSTABLE")
+                                        || upper.contains("NEW_BORROWER")
+                                        || upper.contains("UNSEAL")
+                                        || upper.contains("OOM")) {
+                                    // A large plan can emit one UNSEAL event per slot. Keep enough
+                                    // history to retain the single causal rebind event that precedes
+                                    // those transitions instead of logging only the resulting churn.
+                                    if (transitions.size() == 1000) {
+                                        transitions.removeFirst();
+                                    }
+                                    transitions.addLast(line);
+                                }
+                            }
+                            if (!transitions.isEmpty()) {
+                                log.error("DSP lifecycle transitions preceding native failure:\n{}",
+                                        String.join(System.lineSeparator(), transitions));
+                            }
+                        }
+                    } catch (Throwable diagnosticsError) {
+                        log.warn("Unable to capture DSP lifecycle diagnostics after native failure: {}",
+                                diagnosticsError.getMessage());
+                    }
+                }
                 if (status == NATIVE_STATUS_STALE_BUFFER) {
                     // C++ detected a closed/destroyed DataBuffer. This means a constant or
                     // variable was GC'd between Java's input resolution and C++ execution.
@@ -4320,22 +4422,36 @@ public class DynamicShapePlanExecutor implements Closeable {
             } catch (Exception ignored) {}
             cachedOpContext = null;
         }
-        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
-            // Plan lifetime is managed by sd::graph::NativePlanCache (C++) — do NOT free directly.
-            // The cache evicts (and deletes) entries under LRU + memory budget policy.
-            // SameDiff.close() frees the cache via freeNativePlanCache(), which releases all entries.
-            // Unpin so this plan becomes eligible for eviction when the cache needs space.
-            try {
-                Pointer cache = sd.getOrCreateNativePlanCache();
-                if (cache != null && !cache.isNull()) {
-                    NativeOps nativeOps2 = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                    nativeOps2.unpinNativePlan(cache, nativePlanHandle);
+        // Plan lifetime is managed by sd::graph::NativePlanCache (C++) — do NOT free directly.
+        // The cache evicts (and deletes) entries under LRU + memory budget policy.
+        // Release every pin owned by this executor. This matters for frozen prefill/decode
+        // switching, where the previous plan remains pinned while the new shape is active.
+        try {
+            Pointer cache = sd.getOrCreateNativePlanCache();
+            if (cache != null && !cache.isNull()) {
+                NativeOps nativeOps2 = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                List<Pointer> handles = new ArrayList<>(pinnedPlanHandles.values());
+                if (handles.isEmpty() && nativePlanHandle != null && !nativePlanHandle.isNull()) {
+                    // Backward-compatible fallback for a handle acquired before lease tracking.
+                    handles.add(nativePlanHandle);
                 }
-            } catch (Exception e) {
-                log.debug("    freeNativePlanHandle: unpin failed (non-fatal): {}", e.getMessage());
+                int released = 0;
+                for (Pointer handle : handles) {
+                    if (handle == null || handle.isNull()) continue;
+                    try {
+                        nativeOps2.unpinNativePlan(cache, handle);
+                        released++;
+                    } catch (Exception e) {
+                        log.debug("    freeNativePlanHandle: unpin failed for handle={} (non-fatal): {}",
+                                handle.address(), e.getMessage());
+                    }
+                }
+                log.info("    freeNativePlanHandle: released {} cache pin(s)", released);
             }
-            log.info("    freeNativePlanHandle: handle={} is cache-owned, unpinned", nativePlanHandle);
+        } catch (Exception e) {
+            log.debug("    freeNativePlanHandle: cache cleanup failed (non-fatal): {}", e.getMessage());
         }
+        pinnedPlanHandles.clear();
         nativePlanHandle = null;
         nativePlanSource = null;
         configuredGraphExecutionMode = GraphExecutionMode.AUTO;

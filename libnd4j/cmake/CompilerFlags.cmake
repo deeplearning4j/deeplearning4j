@@ -508,8 +508,13 @@ if(SD_SANITIZE)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${SANITIZE_LINK_FLAGS}" CACHE STRING "Shared linker flags" FORCE)
     endif()
     if(SD_CUDA)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZE_FLAGS} --relocatable-device-code=true" CACHE STRING "C++ flags" FORCE)
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${SANITIZE_FLAGS}" CACHE STRING "CUDA flags" FORCE)
+        # CUDA builds still compile the native runtime's ordinary .cpp sources with
+        # CMAKE_CXX_FLAGS. Keep NVCC-only options out of that flag set. Also scrub
+        # the legacy cached value so switching an existing build tree to ASan works.
+        string(REPLACE "--relocatable-device-code=true" "" CUDA_HOST_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        set(CMAKE_CXX_FLAGS "${CUDA_HOST_CXX_FLAGS} ${SANITIZE_FLAGS}" CACHE STRING "C++ flags" FORCE)
+        # The shared-library ASan runtime intercepts allocations made by CUDA host
+        # code too; device code itself is checked with compute-sanitizer.
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZE_LINK_FLAGS}" CACHE STRING "Exe linker flags" FORCE)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${SANITIZE_LINK_FLAGS}" CACHE STRING "Shared linker flags" FORCE)
     endif()

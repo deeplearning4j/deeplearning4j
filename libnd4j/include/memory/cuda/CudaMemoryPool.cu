@@ -47,6 +47,11 @@ SD_INLINE cudaStream_t resolveCaptureStream(cudaStream_t stream) {
 // which calls CudaMemoryPool::allocate() → infinite recursion.
 static thread_local bool tl_resolvingContextStream = false;
 
+// Per-thread peak allocation request tracking. This is intentionally scoped by
+// callers so persistent model loads do not inflate execution headroom estimates.
+static thread_local int tl_allocationRequestTrackingDepth = 0;
+static thread_local size_t tl_peakAllocationRequestBytes = 0;
+
 // Resolve nullptr stream to a valid CUDA stream. Priority:
 // 1. DSP execution stream (set during DSP plan execution)
 // 2. LaunchContext default stream (if not re-entrant)
@@ -70,6 +75,23 @@ CudaMemoryPool& CudaMemoryPool::getInstance() {
     instance = new CudaMemoryPool();
   });
   return *instance;
+}
+
+void CudaMemoryPool::beginAllocationRequestTracking() {
+  if (tl_allocationRequestTrackingDepth++ == 0) {
+    tl_peakAllocationRequestBytes = 0;
+  }
+}
+
+size_t CudaMemoryPool::endAllocationRequestTracking() {
+  if (tl_allocationRequestTrackingDepth <= 0) {
+    return 0;
+  }
+  const size_t peak = tl_peakAllocationRequestBytes;
+  if (--tl_allocationRequestTrackingDepth == 0) {
+    tl_peakAllocationRequestBytes = 0;
+  }
+  return peak;
 }
 
 void CudaMemoryPool::setMemoryPressureCallback(MemoryPressureCallback callback) {
@@ -271,6 +293,10 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
 
 
 void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, int* actualDeviceId) {
+  if (tl_allocationRequestTrackingDepth > 0 && size > tl_peakAllocationRequestBytes) {
+    tl_peakAllocationRequestBytes = size;
+  }
+
   // After releaseAll(), the pool is torn down. Return nullptr.
   if (released_.load(std::memory_order_acquire)) {
     return nullptr;

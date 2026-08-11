@@ -837,6 +837,7 @@ public class DynamicShapePlanCompiler {
                     .inputVarNames(inputVarNames)
                     .outputSlotIndices(outputSlotIndices)
                     .outputVarNames(outputVarNames)
+                    .optionalOutputMask(new boolean[numOutputs])
                     .iArgs(iArgs)
                     .tArgs(tArgs)
                     .bArgs(bArgs)
@@ -950,6 +951,44 @@ public class DynamicShapePlanCompiler {
                 // Don't release final outputs
                 slotLastConsumerStep[slot] = Integer.MAX_VALUE;
             }
+        }
+
+        // Demand-aware attention outputs: inference-only flash attention does not need
+        // its scores/logits when those logical outputs have no consumers. Keep the
+        // logical output positions intact, but tell native slot execution not to
+        // allocate the O(sequence^2) tensors. Training, dropout, masked fallback, or
+        // an explicitly requested/consumed aux output remains fully materialized.
+        int optionalAttentionOutputs = 0;
+        for (DynamicShapeSlot slot : slots) {
+            if (slot == null || !"dot_product_attention_v2".equals(slot.getOpName())) {
+                continue;
+            }
+            boolean[] bArgs = slot.getBArgs();
+            boolean training = bArgs != null && bArgs.length > 1 && bArgs[1];
+            boolean useFlash = bArgs == null || bArgs.length <= 2 || bArgs[2];
+            double[] tArgs = slot.getTArgs();
+            boolean hasDropout = tArgs != null && tArgs.length > 1 && tArgs[1] > 0.0;
+            // Optional masks and KV-cache placeholders are runtime values. The native
+            // executor rechecks those arrays after shape/input binding before omitting
+            // auxiliaries; keep the demand bit in the plan so empty placeholders do not
+            // force quadratic allocations while non-empty masks/caches remain correct.
+            if (training || !useFlash || hasDropout) {
+                continue;
+            }
+            int[] outputSlotsForOp = slot.getOutputSlotIndices();
+            boolean[] optionalMask = slot.getOptionalOutputMask();
+            for (int output = 1; output <= 2 && output < outputSlotsForOp.length
+                    && output < optionalMask.length; output++) {
+                int outputSlot = outputSlotsForOp[output];
+                if (outputSlot >= 0 && slotLastConsumerStep[outputSlot] < 0) {
+                    optionalMask[output] = true;
+                    optionalAttentionOutputs++;
+                }
+            }
+        }
+        if (optionalAttentionOutputs > 0) {
+            log.info("DSP compile: eliding {} dead dot_product_attention_v2 score/logit outputs",
+                    optionalAttentionOutputs);
         }
 
         // Step 6: Build releaseAtStep[][] from liveness analysis

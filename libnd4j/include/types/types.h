@@ -56,6 +56,7 @@
 // These names should be safe on all platforms
 static constexpr auto INHERIT = sd::DataType::INHERIT;
 static constexpr auto FLOAT8 = sd::DataType::FLOAT8;
+static constexpr auto FLOAT8_E5M2 = sd::DataType::FLOAT8_E5M2;
 static constexpr auto HALF2 = sd::DataType::HALF2;
 static constexpr auto FLOAT32 = sd::DataType::FLOAT32;
 static constexpr auto QINT8 = sd::DataType::QINT8;
@@ -225,6 +226,7 @@ using PlatformUInt64 = sd::PlatformUInt64;
 #define HAS_DOUBLE 1
 #define HAS_FLOAT16 1
 #define HAS_FLOAT32 1
+#define HAS_FLOAT8 1
 #define HAS_INT16 1
 #define HAS_INT32 1
 #define HAS_INT8 1
@@ -308,7 +310,7 @@ using PlatformUInt64 = sd::PlatformUInt64;
 #endif
 
 // Float8 E4M3 type
-#if SD_SINGLE_TYPE_2_COMPILED
+#if SD_SINGLE_TYPE_2_COMPILED || defined(HAS_FLOAT8)
   #define HAS_FLOAT8 1
   #define TTYPE_FLOAT8 , (FLOAT8, float8)
 #else
@@ -767,7 +769,7 @@ using PlatformUInt64 = sd::PlatformUInt64;
   #define TTYPE_BOOL
 #endif
 
-#if SD_SINGLE_TYPE_2_COMPILED
+#if SD_SINGLE_TYPE_2_COMPILED || defined(ORIGINAL_HAS_FLOAT8)
   #define HAS_FLOAT8 1
   #define TTYPE_FLOAT8 , (FLOAT8, float8)
 #else

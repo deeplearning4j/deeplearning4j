@@ -54,6 +54,7 @@
 #endif
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/GraphBackendResolver.h>
 #include <graph/ModeContract.h>
 #include <graph/NativePlanCompiler.h>
 #include <graph/DspDiagnostics.h>
@@ -89,6 +90,7 @@ namespace sd { namespace cuda { void clearCudaGraphSchedulerCache(); } }
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <cstdint>
 #include <future>
 #include <thread>
 #include <atomic>
@@ -786,7 +788,7 @@ bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& 
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Platform dispatch: Parallel precompilation
+// Platform dispatch: Bounded precompilation
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformPrecompileSegments(
@@ -805,9 +807,10 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
     return;
   }
 
-  auto* gpuBackend = getGpuGraphBackend();
-  if (gpuBackend == nullptr) {
-    DSP_DIAG(COMPILE, "platformPrecompileSegments: no GPU backend available");
+  const GraphBackendRequest backendRequest = makeGraphBackendRequest();
+  const auto& backendCandidates = getGraphBackendCandidates();
+  if (backendCandidates.empty()) {
+    DSP_DIAG(COMPILE, "platformPrecompileSegments: no graph backend available");
     return;
   }
 
@@ -822,7 +825,10 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
     if (seg.exec.compilationFailed) continue;
     bool tryCapture = seg.def.isCapturable || (!planLifecycle_.isSlotBySlot() && executeCount_ > 0);
     if (!tryCapture) continue;
-    if (!gpuBackend->canFuseSegment(slots_, seg.def.startSlot, seg.def.endSlot)) continue;
+    const auto admitted = GraphBackendResolver::resolveSegment(
+        backendRequest, backendCandidates, slots_, seg.def.startSlot,
+        seg.def.endSlot, seg.resolvedGraphBackend);
+    if (admitted.empty()) continue;
     LongType segShapeKey = computeSegmentShapeKey(seg, externalInputs, numExternalInputs);
     int currentDev = 0;
     cudaGetDevice(&currentDev);
@@ -836,151 +842,80 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
 
   if (tasks.empty()) return;
 
-  // Determine thread count for parallel precompilation.
-  // Inner sub-segment parallelism is handled by compileSegment (DEFAULT_MAX_PARALLEL_COMPILATIONS).
-  // Outer segment-level parallelism is safe because:
-  // - Each compilation creates its own MLIRContext (via getMlirContextMutex-protected factory)
-  // - cuModuleLoadDataEx is serialized via loadModuleMtx
-  // - LLVM init is done via std::once_flag
-  //
-  // NOTE: The previous `tasks.size() <= 1` guard skipped compilation entirely
-  // for single-segment plans (common at decode: one mega-segment after
-  // freeze-merge), causing Triton islands to only be compiled lazily during
-  // execution rather than eagerly at seal time.  Now we handle all task counts.
-  int numThreads = std::min(8, static_cast<int>(tasks.size()));
-  DSP_DIAG(COMPILE, "NativeDSP::execute: parallel precompilation of %d segments using %d threads "
-           "(executeCount=%d)",
-           static_cast<int>(tasks.size()), numThreads, executeCount_);
+  // compileSegment() already owns the configured inner compilation worker pool.
+  // Do not invoke it concurrently for multiple segments: GPU graph backends are
+  // process-wide singletons and publish per-call state such as the most recent
+  // compilation audit.  Concurrent outer calls raced those shared containers
+  // and multiplied the configured inner worker budget (for example, 3 segments
+  // x 8 Triton workers).  Serialize the outer calls across plans while retaining
+  // eager compilation for every segment, including single-segment decode plans.
+  DSP_DIAG(COMPILE, "NativeDSP::execute: serialized outer precompilation of %d segments "
+           "with one active compileSegment call (executeCount=%d)",
+           static_cast<int>(tasks.size()), executeCount_);
   auto precompileStart = Clock::now();
 
-  // Force-initialize static singleton tables on the main thread BEFORE
-  // any worker threads start.
+  // Force-initialize static singleton tables before compilation starts.
   (void)sd::graph::getOpCategoryTable();
 
-  std::atomic<int> precompileOk{0};
-  std::atomic<int> precompileFail{0};
-  std::atomic<size_t> nextTask{0};
+  static std::mutex precompileCoordinatorMtx;
+  std::unique_lock<std::mutex> coordinatorLock(precompileCoordinatorMtx);
 
-  auto workerFn = [&]() {
-    while (true) {
-      size_t i = nextTask.fetch_add(1);
-      if (i >= tasks.size()) break;
+  int precompileOk = 0;
+  int precompileFail = 0;
+  int previousDevice = -1;
+  cudaGetDevice(&previousDevice);
 
-      const auto& task = tasks[i];
-      cudaError_t setDevErr = cudaSetDevice(task.targetDevice);
-      if (setDevErr != cudaSuccess) {
-        DSP_DIAG(COMPILE, "NativeDSP::precompile: cudaSetDevice(%d) failed for segment %d: %s",
-                 task.targetDevice, task.segIdx, cudaGetErrorString(setDevErr));
-        cudaGetLastError();
-        precompileFail++;
-        continue;
-      }
-      auto& seg = segments_[task.segIdx];
-      bool ok = gpuBackend->compileSegment(seg, slots_, externalInputs, numExternalInputs,
-                                            outputSlots_, totalOutputSlots_, task.shapeKey,
-                                            numSlots_, requestedOutputSlotIndices_,
-                                            numRequestedOutputs_);
-      if (ok) {
-        segments_[task.segIdx].def.shapeKeyState.markCompiled(task.shapeKey);
-        precompileOk++;
-      } else {
-        precompileFail++;
-      }
-    }
-  };
-
-  // Launch worker threads with 64 MB stack — compileSegment() calls into
-  // Triton MLIR passes whose recursive SSA traversal can exceed the default
-  // 8 MB std::thread stack.  Inner compile workers already use this size
-  // (TRITON_COMPILE_WORKER_STACK_SIZE in TritonGraphBackend_compile.cu);
-  // outer workers need it too since they call compileSegment() directly.
-  static constexpr size_t PRECOMPILE_WORKER_STACK_SIZE = 64 * 1024 * 1024;
-#ifdef _WIN32
-  {
-    struct WinWorkerArg { std::function<void()>* fn; };
-    auto fnObj = std::function<void()>(workerFn);
-
-    std::vector<HANDLE> threadHandles(numThreads);
-    std::vector<WinWorkerArg> args(numThreads);
-    std::vector<std::thread> fallbackThreads;
-
-    for (int t = 0; t < numThreads; t++) {
-      args[t].fn = &fnObj;
-      threadHandles[t] = CreateThread(
-          nullptr,
-          PRECOMPILE_WORKER_STACK_SIZE,
-          [](LPVOID arg) -> DWORD {
-            auto* wa = static_cast<WinWorkerArg*>(arg);
-            (*wa->fn)();
-            return 0;
-          }, &args[t], STACK_SIZE_PARAM_IS_A_RESERVATION, nullptr);
-      if (threadHandles[t] == nullptr) {
-        fallbackThreads.emplace_back(workerFn);
-      }
+  for (const auto& task : tasks) {
+    cudaError_t setDevErr = cudaSetDevice(task.targetDevice);
+    if (setDevErr != cudaSuccess) {
+      DSP_DIAG(COMPILE, "NativeDSP::precompile: cudaSetDevice(%d) failed for segment %d: %s",
+               task.targetDevice, task.segIdx, cudaGetErrorString(setDevErr));
+      cudaGetLastError();
+      precompileFail++;
+      continue;
     }
 
-    for (int t = 0; t < numThreads; t++) {
-      if (threadHandles[t] != nullptr) {
-        WaitForSingleObject(threadHandles[t], INFINITE);
-        CloseHandle(threadHandles[t]);
-      }
-    }
-    for (auto& ft : fallbackThreads) {
-      ft.join();
+    auto& seg = segments_[task.segIdx];
+    const auto lowering = GraphBackendResolver::lowerSegment(
+        backendRequest, backendCandidates, seg.resolvedGraphBackend, seg,
+        slots_, seg.def.startSlot, seg.def.endSlot, externalInputs,
+        numExternalInputs, outputSlots_, totalOutputSlots_, task.shapeKey,
+        numSlots_, requestedOutputSlotIndices_, numRequestedOutputs_);
+    if (lowering.succeeded()) {
+      seg.setResolvedGraphBackend(lowering.backend, backendRequest);
+      seg.def.shapeKeyState.markCompiled(task.shapeKey);
+      precompileOk++;
+    } else {
+      precompileFail++;
     }
   }
-#else
-  {
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, PRECOMPILE_WORKER_STACK_SIZE);
 
-    struct WorkerArg { std::function<void()>* fn; };
-    auto fnObj = std::function<void()>(workerFn);
-
-    std::vector<pthread_t> threads(numThreads, 0);
-    std::vector<WorkerArg> args(numThreads);
-    int inlineFallbackCount = 0;  // number of workers that must run on calling thread
-
-    for (int t = 0; t < numThreads; t++) {
-      args[t].fn = &fnObj;
-      int rc = pthread_create(&threads[t], &attr,
-          [](void* arg) -> void* {
-            auto* wa = static_cast<WorkerArg*>(arg);
-            (*wa->fn)();
-            return nullptr;
-          }, &args[t]);
-      if (rc != 0) {
-        threads[t] = 0;
-        inlineFallbackCount++;
-        DSP_DIAG(COMPILE,
-                 "NativeDSP::precompile: pthread_create failed for outer worker %d (rc=%d), "
-                 "will run inline on calling thread", t, rc);
-      }
-    }
-    pthread_attr_destroy(&attr);
-
-    for (int t = 0; t < numThreads; t++) {
-      if (threads[t] != 0) pthread_join(threads[t], nullptr);
-    }
-    // Run inline fallback iterations on the calling thread instead of spawning
-    // std::thread (which would also throw std::system_error when resources are
-    // exhausted, crashing the process).  workerFn is a work-stealing loop that
-    // drains the shared task queue, so calling it once per failed pthread
-    // consumes all remaining tasks.
-    for (int i = 0; i < inlineFallbackCount; i++) {
-      workerFn();
+  if (previousDevice >= 0) {
+    cudaError_t restoreErr = cudaSetDevice(previousDevice);
+    if (restoreErr != cudaSuccess) {
+      DSP_DIAG(COMPILE, "NativeDSP::precompile: failed to restore CUDA device %d: %s",
+               previousDevice, cudaGetErrorString(restoreErr));
+      cudaGetLastError();
     }
   }
-#endif
 
   auto precompileMs = std::chrono::duration_cast<std::chrono::milliseconds>(
       Clock::now() - precompileStart).count();
-  DSP_DIAG(COMPILE, "NativeDSP::execute: parallel precompilation done in %lld ms "
+  DSP_DIAG(COMPILE, "NativeDSP::execute: serialized outer precompilation done in %lld ms "
            "(ok=%d, failed=%d)",
-           static_cast<long long>(precompileMs), precompileOk.load(), precompileFail.load());
+           static_cast<long long>(precompileMs), precompileOk, precompileFail);
 
 #if HAVE_TRITON
+  // Triton-specific maintenance is selected from the same per-segment backend
+  // resolution used by admission, compilation, and execution. There is no
+  // process-global "GPU backend" selector.
+  TritonGraphBackend* tritonBackend = nullptr;
+  for (const auto& task : tasks) {
+    tritonBackend =
+        dynamic_cast<TritonGraphBackend*>(segments_[task.segIdx].resolvedGraphBackend);
+    if (tritonBackend != nullptr) break;
+  }
+
   // Batched module preload (task #4): walk the cache once and make sure every
   // CompiledKernel has a live CUmodule loaded into GPU memory.  This avoids
   // paying lazy-load latency on the first replay of each segment and gives us
@@ -989,7 +924,6 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
   // every device that any task targeted so cross-device caches are warmed up
   // before execution begins.
   {
-    auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(gpuBackend);
     if (tritonBackend != nullptr) {
       std::unordered_set<int> devicesToPreload;
       for (const auto& task : tasks) {
@@ -1022,7 +956,6 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
 
   // Report per-device Triton module memory budget
   {
-    auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(gpuBackend);
     if (tritonBackend != nullptr) {
       int numDevices = 0;
       cudaGetDeviceCount(&numDevices);
@@ -1111,14 +1044,14 @@ void NativeDynamicShapePlan::platformRestoreSegmentDevice() {
 // Platform dispatch: Cross-device input migration
 // ═══════════════════════════════════════════════════════════════════════════════
 
-void NativeDynamicShapePlan::platformMigrateSegmentInputs(
+Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     const GraphSegment& seg, NDArray** externalInputs, int numExternalInputs) {
   // Get target device for this segment
   int targetDevice = -1;
   if (seg.def.startSlot >= 0 && seg.def.startSlot < numSlots_) {
     targetDevice = slots_[seg.def.startSlot].targetDeviceId;
   }
-  if (targetDevice < 0) return;  // Auto device — no migration needed
+  if (targetDevice < 0) return Status::OK;  // Auto device — no migration needed
 
   migratedInputs_.clear();
 
@@ -1171,37 +1104,65 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
       cudaGetDevice(&activeDev);
       sourceDevice = activeDev;
     }
-    if (sourceDevice == targetDevice) continue;  // Same device, no migration needed
 
-    DSP_DIAG(MULTI_DEVICE,
-             "migrateSlotInputsToTargetDevice: slot=%d dev%d->dev%d isView=%d rank=%d len=%lld",
-             slotIdx, sourceDevice, targetDevice, (int)arr->isView(), arr->rankOf(),
-             (long long)arr->lengthOf());
-
-    // Migrate device-to-device without a host-side synchronization.
     int savedDevice = -1;
     cudaGetDevice(&savedDevice);
 
     cudaSetDevice(sourceDevice);
+
+    // Slot placement is a plan hint, not authoritative pointer metadata. Validate the
+    // original allocation before materializing a view so a stale slot device cannot make
+    // NDArray::dup allocate the temporary on the wrong GPU.
+    void* originalDev = (arr->dataBuffer() != nullptr) ? arr->dataBuffer()->special() : nullptr;
+    cudaPointerAttributes originalAttrs;
+    auto originalAttrErr = originalDev != nullptr
+        ? cudaPointerGetAttributes(&originalAttrs, originalDev)
+        : cudaErrorInvalidValue;
+    if (originalDev == nullptr || originalAttrErr != cudaSuccess ||
+        originalAttrs.type != cudaMemoryTypeDevice) {
+      DSP_DIAG(MULTI_DEVICE,
+               "migrateSlotInputsToTargetDevice: source pointer validation failed slot=%d "
+               "ptr=%p metadataDevice=%d attrErr=%s",
+               slotIdx, originalDev, sourceDevice, cudaGetErrorString(originalAttrErr));
+      cudaGetLastError();
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return Status::KERNEL_FAILURE;
+    }
+    if (originalAttrs.device != sourceDevice) {
+      DSP_DIAG(MULTI_DEVICE,
+               "migrateSlotInputsToTargetDevice: correcting stale source device slot=%d "
+               "metadata=%d actual=%d",
+               slotIdx, sourceDevice, originalAttrs.device);
+      sourceDevice = originalAttrs.device;
+      cudaSetDevice(sourceDevice);
+    }
+    if (sourceDevice == targetDevice) {
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      continue;  // Same device, no migration needed
+    }
+
     // If the cross-segment input is a VIEW, its DataBuffer is the PARENT's — copying the raw
     // buffer would migrate the parent's layout, not the view's permuted/sliced layout, silently
     // corrupting the consumer on the target device. Materialize the view into a contiguous array
-    // (on the source device, in the view's logical order) and migrate THAT. The temp is freed at
-    // segment cleanup via a slot-less migratedInputs_ entry (its buffer is read by the async peer
-    // copy below; cleanup runs after the segment dispatch, ordered after the copy on the stream).
+    // (on the validated source device, in the view's logical order) and migrate THAT. The temp is
+    // freed at segment cleanup via a slot-less migratedInputs_ entry.
     NDArray* srcArr = arr;
     NDArray* srcMat = nullptr;
     static thread_local cudaEvent_t tl_inputDupEvent = nullptr;
     if (arr->isView()) {
-      srcMat = arr->dup(arr->ordering());
+      try {
+        srcMat = arr->dup(arr->ordering());
+      } catch (...) {
+        DSP_DIAG(MEMORY,
+                 "migrateSlotInputsToTargetDevice: view materialization failed slot=%d "
+                 "sourceDevice=%d targetDevice=%d",
+                 slotIdx, sourceDevice, targetDevice);
+        if (savedDevice >= 0) cudaSetDevice(savedDevice);
+        return Status::KERNEL_FAILURE;
+      }
       srcArr = srcMat;
-      // NDArray::dup materializes via `new NDArray(order,shape,dtype,getContext()); assign(this)`
-      // (NDArray.hXX ~5273) — the fill runs on srcMat's CONTEXT stream, NOT the target peer-copy
-      // stream. Record it on a REUSABLE event (never destroyed — a per-call destroy invalidates
-      // the copy stream's enqueued wait and hangs) so the copy below waits for the dup; otherwise
-      // it races the still-filling buffer and migrates zeros. (The output path avoids this by
-      // using copyStrides with no dup, but a view INPUT shares its parent buffer so it must be
-      // materialized here.)
+      // NDArray::dup fills on srcMat's context stream, not the target peer-copy stream. Record
+      // a reusable event so the copy below waits for the materialization.
       if (tl_inputDupEvent == nullptr)
         cudaEventCreateWithFlags(&tl_inputDupEvent, cudaEventDisableTiming);
       auto* dupStreamPtr =
@@ -1210,43 +1171,200 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
     }
     std::vector<NDArray*> reads{srcArr};
     NDArray::prepareSpecialUse({}, reads);
+    // The producer segment may have queued its final writes on a stream that is
+    // different from the target device's peer-copy stream.  Complete the source
+    // device before exposing the allocation to cudaMemcpyPeerAsync; otherwise the
+    // consumer can observe a partially written boundary buffer.
+    const auto sourceSyncErr = cudaDeviceSynchronize();
+    if (sourceSyncErr != cudaSuccess) {
+      DSP_DIAG(MULTI_DEVICE,
+               "migrateSlotInputsToTargetDevice: source synchronization failed slot=%d "
+               "sourceDevice=%d targetDevice=%d err=%s",
+               slotIdx, sourceDevice, targetDevice, cudaGetErrorString(sourceSyncErr));
+      cudaGetLastError();
+      if (srcMat != nullptr) delete srcMat;
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return Status::KERNEL_FAILURE;
+    }
     void* srcDev = (srcArr->dataBuffer() != nullptr) ? srcArr->dataBuffer()->special() : nullptr;
+
+    // Validate the materialized pointer as well; this also protects against a context that
+    // changes device while a view is being duplicated.
+    cudaPointerAttributes srcAttrs;
+    auto srcAttrErr = srcDev != nullptr
+        ? cudaPointerGetAttributes(&srcAttrs, srcDev)
+        : cudaErrorInvalidValue;
+    if (srcDev == nullptr || srcAttrErr != cudaSuccess || srcAttrs.type != cudaMemoryTypeDevice ||
+        srcAttrs.device != sourceDevice) {
+      DSP_DIAG(MULTI_DEVICE,
+               "migrateSlotInputsToTargetDevice: source pointer validation failed slot=%d "
+               "ptr=%p expectedDevice=%d actualDevice=%d attrErr=%s",
+               slotIdx, srcDev, sourceDevice,
+               srcAttrErr == cudaSuccess ? srcAttrs.device : -1,
+               cudaGetErrorString(srcAttrErr));
+      cudaGetLastError();
+      if (srcMat != nullptr) delete srcMat;
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return Status::KERNEL_FAILURE;
+    }
+    auto srcLength = srcArr->lengthOf();
+    auto elementBytes = DataTypeUtils::sizeOf(srcArr->dataType());
+    if (srcLength < 0 || elementBytes == 0 ||
+        static_cast<unsigned long long>(srcLength) >
+            static_cast<unsigned long long>(SIZE_MAX / elementBytes)) {
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: invalid transfer length slot=%d length=%lld "
+               "elementBytes=%zu",
+               slotIdx, static_cast<long long>(srcLength), elementBytes);
+      if (srcMat != nullptr) delete srcMat;
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return Status::KERNEL_FAILURE;
+    }
+    const size_t srcLen = static_cast<size_t>(srcLength) * elementBytes;
+
+    DSP_DIAG(MULTI_DEVICE,
+             "migrateSlotInputsToTargetDevice: slot=%d dev%d->dev%d isView=%d rank=%d len=%lld",
+             slotIdx, sourceDevice, targetDevice, (int)arr->isView(), arr->rankOf(),
+             (long long)arr->lengthOf());
 
     cudaSetDevice(targetDevice);
 
+    // Do not let an allocation attempt turn into a later invalid-argument
+    // copy. Account for both driver-visible free memory and reusable pool
+    // memory, then reject the migration with a diagnosable status.
+    size_t freeBytes = 0;
+    size_t totalBytes = 0;
+    size_t poolUsed = 0;
+    size_t poolReserved = 0;
+    auto memInfoErr = cudaMemGetInfo(&freeBytes, &totalBytes);
+    try {
+      memory::CudaMemoryPool::getInstance().getStats(targetDevice, poolUsed, poolReserved);
+    } catch (...) {
+      poolUsed = 0;
+      poolReserved = 0;
+    }
+    size_t poolReusable = poolReserved > poolUsed ? poolReserved - poolUsed : 0;
+    size_t availableBytes = freeBytes;
+    if (poolReusable <= SIZE_MAX - availableBytes) availableBytes += poolReusable;
+    if (memInfoErr == cudaSuccess && availableBytes < srcLen) {
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: destination capacity rejected slot=%d "
+               "sourceDevice=%d targetDevice=%d bytes=%zu free=%zu poolReusable=%zu total=%zu",
+               slotIdx, sourceDevice, targetDevice, srcLen, freeBytes, poolReusable, totalBytes);
+      if (srcMat != nullptr) delete srcMat;
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return Status::KERNEL_FAILURE;
+    }
+
     // Create new array on target device with same shape and data type
     std::vector<LongType> shapeVec(*srcArr->getShapeAsVector());
-    auto* copy = new NDArray(srcArr->ordering(), shapeVec, srcArr->dataType(),
-                             LaunchContext::defaultContext());
+    NDArray* copy = nullptr;
+    try {
+      copy = new NDArray(srcArr->ordering(), shapeVec, srcArr->dataType(),
+                         LaunchContext::defaultContext());
+    } catch (...) {
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: destination allocation threw slot=%d "
+               "targetDevice=%d bytes=%zu free=%zu poolReusable=%zu",
+               slotIdx, targetDevice, srcLen, freeBytes, poolReusable);
+      if (srcMat != nullptr) delete srcMat;
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return Status::KERNEL_FAILURE;
+    }
+    if (copy == nullptr) {
+      if (srcMat != nullptr) delete srcMat;
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return Status::KERNEL_FAILURE;
+    }
 
     std::vector<NDArray*> writes{copy};
     NDArray::prepareSpecialUse(writes, {});
     void* dstDev = copy->dataBuffer() != nullptr ? copy->dataBuffer()->special() : nullptr;
-    auto srcLen = srcArr->lengthOf() * DataTypeUtils::sizeOf(srcArr->dataType());
-    if (srcLen > 0 && srcDev != nullptr && dstDev != nullptr) {
+    cudaPointerAttributes dstAttrs;
+    auto dstAttrErr = dstDev != nullptr
+        ? cudaPointerGetAttributes(&dstAttrs, dstDev)
+        : cudaErrorInvalidValue;
+    if (dstDev == nullptr || dstAttrErr != cudaSuccess ||
+        dstAttrs.type != cudaMemoryTypeDevice || dstAttrs.device != targetDevice) {
+      DSP_DIAG(MEMORY,
+               "migrateSlotInputsToTargetDevice: destination pointer validation failed slot=%d "
+               "targetDevice=%d ptr=%p actualDevice=%d attrErr=%s bytes=%zu",
+               slotIdx, targetDevice, dstDev,
+               dstAttrErr == cudaSuccess ? dstAttrs.device : -1,
+               cudaGetErrorString(dstAttrErr), srcLen);
+      delete copy;
+      if (srcMat != nullptr) delete srcMat;
+      cudaGetLastError();
+      if (savedDevice >= 0) cudaSetDevice(savedDevice);
+      return Status::KERNEL_FAILURE;
+    }
+    if (srcLen > 0) {
       auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
       cudaStream_t cudaStr = (streamPtr != nullptr) ? *streamPtr : nullptr;
-      // Order the peer copy after the materialization dup (view inputs only — see above).
-      if (srcMat != nullptr) cudaStreamWaitEvent(cudaStr, tl_inputDupEvent, 0);
-      auto copyErr = cudaMemcpyPeerAsync(dstDev, targetDevice, srcDev, sourceDevice,
-                                         static_cast<size_t>(srcLen), cudaStr);
+      int canAccessForward = 0;
+      int canAccessReverse = 0;
+      cudaDeviceCanAccessPeer(&canAccessForward, targetDevice, sourceDevice);
+      cudaDeviceCanAccessPeer(&canAccessReverse, sourceDevice, targetDevice);
+      cudaError_t copyErr = cudaSuccess;
+      if (canAccessForward && canAccessReverse) {
+        // Order the peer copy after the materialization dup (view inputs only).
+        if (srcMat != nullptr) cudaStreamWaitEvent(cudaStr, tl_inputDupEvent, 0);
+        copyErr = cudaMemcpyPeerAsync(dstDev, targetDevice, srcDev, sourceDevice,
+                                      srcLen, cudaStr);
+        // Segment execution uses a per-thread DSP stream, while the migration is
+        // submitted to the target context stream.  Synchronize that stream before
+        // handing the migrated array to the consumer segment so its first kernel
+        // cannot race the peer transfer.
+        if (copyErr == cudaSuccess)
+          copyErr = cudaStreamSynchronize(cudaStr);
+      } else {
+        // Non-P2P pairs must use bounded pinned-host staging. A single huge
+        // staging allocation would recreate the same memory-pressure failure
+        // this guard is meant to prevent.
+        if (srcMat != nullptr) {
+          auto dupSyncErr = cudaEventSynchronize(tl_inputDupEvent);
+          if (dupSyncErr != cudaSuccess) copyErr = dupSyncErr;
+        }
+        void* staging = nullptr;
+        const size_t chunkBytes = std::min(srcLen, static_cast<size_t>(64) * 1024 * 1024);
+        if (copyErr == cudaSuccess && cudaMallocHost(&staging, chunkBytes) != cudaSuccess) {
+          copyErr = cudaErrorMemoryAllocation;
+        }
+        if (copyErr == cudaSuccess) {
+          for (size_t offset = 0; offset < srcLen; offset += chunkBytes) {
+            const size_t bytes = std::min(chunkBytes, srcLen - offset);
+            cudaSetDevice(sourceDevice);
+            copyErr = cudaMemcpy(staging, static_cast<char*>(srcDev) + offset, bytes,
+                                 cudaMemcpyDeviceToHost);
+            if (copyErr != cudaSuccess) break;
+            cudaSetDevice(targetDevice);
+            copyErr = cudaMemcpy(static_cast<char*>(dstDev) + offset, staging, bytes,
+                                 cudaMemcpyHostToDevice);
+            if (copyErr != cudaSuccess) break;
+          }
+        }
+        if (staging != nullptr) cudaFreeHost(staging);
+      }
       if (copyErr != cudaSuccess) {
         DSP_DIAG(MULTI_DEVICE,
-                 "migrateSlotInputsToTargetDevice: cudaMemcpyPeerAsync failed srcDev=%d dstDev=%d bytes=%lld err=%s",
-                 sourceDevice, targetDevice, (long long)srcLen, cudaGetErrorString(copyErr));
+                 "migrateSlotInputsToTargetDevice: transfer failed srcDev=%d dstDev=%d "
+                 "bytes=%zu p2p=%d err=%s",
+                 sourceDevice, targetDevice, srcLen,
+                 canAccessForward && canAccessReverse ? 1 : 0,
+                 cudaGetErrorString(copyErr));
         cudaGetLastError();
         delete copy;
         if (srcMat != nullptr) delete srcMat;
         if (savedDevice >= 0) cudaSetDevice(savedDevice);
-        continue;
+        return Status::KERNEL_FAILURE;
       }
     }
     NDArray::registerSpecialUse(writes, reads);
 
-    // Restore to target device (should already be there)
-    if (savedDevice != targetDevice) {
-      cudaSetDevice(targetDevice);
-    }
+    // Restore the caller's device. Leaving the thread on the secondary device
+    // makes the next plan/request allocate on the wrong GPU and amplifies pool
+    // retention across timed-out generations.
+    if (savedDevice >= 0) cudaSetDevice(savedDevice);
 
     // Record migration and replace in outputSlots_. mi.original is the ORIGINAL input (restored
     // at cleanup); the materialized-view temp (if any) is a slot-less entry, just freed.
@@ -1272,10 +1390,33 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
              "for seg[%d-%d] (host-staged D→H→D)",
              migrated, targetDevice, seg.def.startSlot, seg.def.endSlot);
   }
+  return Status::OK;
 }
 
 void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
   if (migratedInputs_.empty()) return;
+
+  // Segment kernels may run on a CUDA context stream that differs from the
+  // migration/default stream.  The migrated NDArray is therefore still a live
+  // kernel input when this function is reached.  Do not release its backing
+  // allocation until all work on the target device has completed; otherwise
+  // cudaFreeAsync/pool reuse can turn the next synchronization into a deferred
+  // illegal-memory-access error.
+  int currentDevice = -1;
+  cudaGetDevice(&currentDevice);
+  const auto syncErr = cudaDeviceSynchronize();
+  if (syncErr != cudaSuccess) {
+    DSP_DIAG(MULTI_DEVICE,
+             "platformCleanupMigratedInputs: target device synchronization failed "
+             "device=%d err=%s; preserving CUDA error for post-segment validation",
+             currentDevice, cudaGetErrorString(syncErr));
+  } else {
+    DSP_DIAG(MULTI_DEVICE,
+             "platformCleanupMigratedInputs: target device synchronized before releasing "
+             "migrated buffers device=%d count=%d",
+             currentDevice, static_cast<int>(migratedInputs_.size()));
+  }
+
   // Restore original arrays in outputSlots_ and delete migrated copies
   for (auto& mi : migratedInputs_) {
     if (outputSlots_ != nullptr && mi.outputSlotIdx >= 0 && mi.outputSlotIdx < totalOutputSlots_) {
@@ -1297,6 +1438,12 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   // Fast path: no array, or array is empty — nothing to migrate.
   if (arr == nullptr || arr->isEmpty()) return arr;
 
+  int callerDevice = 0;
+  cudaGetDevice(&callerDevice);
+  auto restoreCallerDevice = [&]() {
+    if (callerDevice >= 0) cudaSetDevice(callerDevice);
+  };
+
   // Find the device that produced this output slot.
   // Linear scan across slots is O(numSlots * maxOutputs/slot) but only invoked
   // O(numRequestedOutputs) times per execute() — acceptable for 1-4 outputs.
@@ -1314,7 +1461,10 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   found_producing_slot:;
 
   // Fast path: output already on primary device.
-  if (sourceDevice == 0) return arr;
+  if (sourceDevice == 0) {
+    restoreCallerDevice();
+    return arr;
+  }
 
   // ── Async copy from sourceDevice to device-0 ────────────────────────────────
   // 1. Switch to sourceDevice and ensure its stream has committed the write.
@@ -1323,14 +1473,47 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
     std::vector<NDArray*> reads{arr};
     NDArray::prepareSpecialUse({}, reads);
   }
-  // Preserve arr's EXACT layout (shape + strides + order) in the device-0 copy. cudaMemcpyPeerAsync
-  // is a raw byte copy that ignores strides: a permute/transpose output is F-ordered (strides like
-  // [1,16]) even when mislabeled order='c', so creating the copy with CANONICAL strides would
-  // relabel those bytes as a different layout (the transpose) — a deterministic wrong result.
-  // copyStrides=true clones arr's strides, making the migrated output bit-identical to single-GPU.
-  // No dup is used: arr's buffer already holds the correct bytes (produced by the device kernels,
-  // ordered by the prepareSpecialUse(arr) above), which avoids an async dup-on-unknown-stream race.
-  auto* db = arr->dataBuffer();
+  // Output extraction is the device boundary: producer kernels may have been
+  // queued on the producer's DSP stream while the caller is already on the
+  // primary device.  Complete that producer stream before issuing the peer
+  // copy; otherwise a logically correct view/materialized array can still copy
+  // its pre-write bytes.
+  const auto sourceSyncErr = cudaDeviceSynchronize();
+  if (sourceSyncErr != cudaSuccess) {
+    DSP_DIAG(MULTI_DEVICE,
+             "platformGetOutputForDevice0: source device synchronization failed "
+             "output[%d] slotIdx=%d sourceDevice=%d err=%s",
+             outputIdx, slotIdx, sourceDevice, cudaGetErrorString(sourceSyncErr));
+    cudaGetLastError();
+    restoreCallerDevice();
+    return arr;
+  }
+
+  // A view's logical elements are strided and are not represented by a
+  // contiguous byte range. Materialize views on their producer device before
+  // crossing the device boundary; copying the view's base bytes directly was
+  // the source of the large deterministic maxAbsDiff in view replay tests.
+  NDArray* sourceForCopy = arr;
+  NDArray* materializedView = nullptr;
+  if (arr->isView()) {
+    materializedView = arr->dup('c');
+    if (materializedView == nullptr) {
+      restoreCallerDevice();
+      return arr;
+    }
+    materializedView->syncToDevice();
+    std::vector<NDArray*> reads{materializedView};
+    NDArray::prepareSpecialUse({}, reads);
+    // dup() may enqueue a gather on the producer stream. Complete it before
+    // submitting the cross-device transfer, then retain the temporary until
+    // the destination stream has consumed it.
+    cudaDeviceSynchronize();
+    sourceForCopy = materializedView;
+  }
+
+  // For materialized views the source is canonical C-order. Non-view outputs
+  // retain their exact shape/stride layout as before.
+  auto* db = sourceForCopy->dataBuffer();
   void* srcDev = (db != nullptr) ? db->special() : nullptr;
   DSP_DIAG(MULTI_DEVICE,
            "platformGetOutputForDevice0: output[%d] slotIdx=%d isView=%d layout-preserving copy",
@@ -1340,8 +1523,11 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   cudaSetDevice(0);
   // Current device is 0 here (cudaSetDevice(0) above), so defaultContext() returns the device-0
   // context, binding both the destination NDArray and the copy stream to device 0.
-  auto* copy = new NDArray(const_cast<LongType*>(arr->shapeInfo()), /*copyStrides=*/true,
-                           LaunchContext::defaultContext(), /*nullify=*/false);
+  NDArray* copy = materializedView != nullptr
+      ? new NDArray('c', *sourceForCopy->getShapeAsVector(), sourceForCopy->dataType(),
+                    LaunchContext::defaultContext())
+      : new NDArray(const_cast<LongType*>(arr->shapeInfo()), /*copyStrides=*/true,
+                    LaunchContext::defaultContext(), /*nullify=*/false);
   {
     std::vector<NDArray*> writes{copy};
     NDArray::prepareSpecialUse(writes, {});
@@ -1349,8 +1535,8 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
   auto* copyDb = copy->dataBuffer();
   void* dstDev = (copyDb != nullptr) ? copyDb->special() : nullptr;
 
-  auto srcLen = static_cast<size_t>(arr->lengthOf()) *
-                DataTypeUtils::sizeOf(arr->dataType());
+  auto srcLen = static_cast<size_t>(sourceForCopy->lengthOf()) *
+                DataTypeUtils::sizeOf(sourceForCopy->dataType());
 
   if (srcLen > 0 && srcDev != nullptr && dstDev != nullptr) {
     // 3. Enqueue the peer copy on device-0's stream (async, no device-wide sync).
@@ -1365,12 +1551,35 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
     auto err = cudaMemcpyPeerAsync(dstDev, 0, srcDev, sourceDevice,
                                    srcLen, copyStream);
     if (err == cudaSuccess) {
+      // The source output remains plan-owned and may be recycled as soon as this
+      // execute() returns. Complete the destination transfer before returning the
+      // device-0 copy; otherwise the next replay can overwrite/free the producer
+      // allocation while cudaMemcpyPeerAsync is still reading it.
+      const auto copySyncErr = copyStream != nullptr
+          ? cudaStreamSynchronize(copyStream)
+          : cudaDeviceSynchronize();
+      if (copySyncErr != cudaSuccess) {
+        DSP_DIAG(MULTI_DEVICE,
+                 "platformGetOutputForDevice0: destination synchronization failed "
+                 "output[%d] slotIdx=%d sourceDevice=%d err=%s",
+                 outputIdx, slotIdx, sourceDevice, cudaGetErrorString(copySyncErr));
+        cudaGetLastError();
+        if (materializedView != nullptr) delete materializedView;
+        delete copy;
+        restoreCallerDevice();
+        return arr;
+      }
       std::vector<NDArray*> writes{copy};
-      std::vector<NDArray*> reads{arr};
+      std::vector<NDArray*> reads{sourceForCopy};
       NDArray::registerSpecialUse(writes, reads);
+      if (materializedView != nullptr) {
+        // The temporary source is not plan-owned and the transfer is complete.
+        delete materializedView;
+      }
+      restoreCallerDevice();
       DSP_DIAG(MULTI_DEVICE,
                "platformGetOutputForDevice0: output[%d] slotIdx=%d migrated dev%d→dev0 "
-               "bytes=%zu async on dev0-stream", outputIdx, slotIdx, sourceDevice, srcLen);
+               "bytes=%zu completed on dev0-stream", outputIdx, slotIdx, sourceDevice, srcLen);
       // Return the device-0 copy; Java takes ownership and will eventually delete it.
       // outputSlots_[slotIdx] is intentionally NOT changed: the plan keeps the device-N
       // buffer in place so subsequent executions can overwrite it without pointer churn.
@@ -1383,7 +1592,13 @@ NDArray* NativeDynamicShapePlan::platformGetOutputForDevice0(NDArray* arr, int s
              "dev%d→dev0 err=%s", outputIdx, slotIdx, sourceDevice, cudaGetErrorString(err));
   }
 
+  if (materializedView != nullptr) {
+    auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+    if (streamPtr != nullptr && *streamPtr != nullptr) cudaStreamSynchronize(*streamPtr);
+    delete materializedView;
+  }
   delete copy;
+  restoreCallerDevice();
   return arr;  // Fallback: callers still get a valid pointer even if on wrong device.
 }
 
@@ -1420,26 +1635,10 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
   // (cuBLAS, element-wise, Triton-compiled, etc.). A segment with 0 Triton
   // sub-kernels is still graph-capturable via monolithic capture. Triton is just
   // another kernel type — segments do NOT need it to be replayable.
-  bool hasBackend = (segment.def.selectedBackend == SelectedBackend::GPU_COMPILER ||
+  bool hasBackend = (segment.def.selectedBackend == SelectedBackend::GRAPH_BACKEND ||
                      segment.def.selectedBackend == SelectedBackend::DEVICE_REPLAY);
   bool canCapture = !segment.exec.compilationFailed &&
                     !isTerminalOutcome(segment.exec.outcome) && hasBackend;
-
-  if (!canCapture && planLifecycle_.isInFrozenOrReplayState() && !mode.allowsFallback) {
-    // Terminal outcomes are normal — the segment had no GPU work or can't be fused.
-    // It permanently executes slot-by-slot. This is NOT a mode violation.
-    if (!isTerminalOutcome(segment.exec.outcome)) {
-      REQUIRE_TRUE(false, 0,
-                   "DSP MODE VIOLATION: seg[%d-%d] capturable but cannot graph-execute. "
-                   "mode=%d compilFailed=%d backend=%d outcome=%d. "
-                   "Graph mode requires capture/replay — silent fallback is banned.",
-                   segment.def.startSlot, segment.def.endSlot,
-                   static_cast<int>(graphExecutionMode_),
-                   static_cast<int>(segment.exec.compilationFailed),
-                   static_cast<int>(segment.def.selectedBackend),
-                   static_cast<int>(segment.exec.outcome));
-    }
-  }
 
   if (!canCapture) {
     DSP_DIAG_SEG(EXECUTE, segment.def.startSlot,
@@ -1466,14 +1665,15 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
            segment.exec.executionCount, segment.exec.displayPhaseName());
 
   switch (segment.def.selectedBackend) {
-    case SelectedBackend::GPU_COMPILER: {
-      auto* gpuBackend = getGpuGraphBackend();
-      if (!gpuBackend) {
-        // GPU_COMPILER was selected but no backend is available at runtime.
+    case SelectedBackend::GRAPH_BACKEND: {
+      const GraphBackendRequest backendRequest = makeGraphBackendRequest();
+      const auto& backendCandidates = getGraphBackendCandidates();
+      if (backendCandidates.empty()) {
+        // A graph backend was requested but none is available at runtime.
         // This is a configuration error — throw rather than silently degrading.
         DSP_THROW_SEG(COMPILE, segment.def.startSlot,
-                      "NativeDSP::execute: seg[%d-%d] selectedBackend=GPU_COMPILER but "
-                      "getGpuGraphBackend() returned null. No GPU backend available.",
+                      "NativeDSP::execute: seg[%d-%d] selectedBackend=GRAPH_BACKEND but "
+                      "the shared resolver returned no candidates.",
                       segment.def.startSlot, segment.def.endSlot);
       }
 
@@ -1481,22 +1681,17 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       // gate for graph eligibility.  If we reach here, it returned true, which
       // implies compilationFailed == false.
 
-      // ── Fusibility pre-check ──────────────────────────────────────────────
-      // canFuseSegment() returns false when the segment contains ops that cannot
-      // be expressed in the JIT backend's 1D element-wise kernel model (e.g.
-      // reshape, permute, gather, concat — any op not in isNvrtcJittable).
-      // Such segments must fall back to slot-by-slot execution; this is NOT a
-      // compilation failure and must NOT set compilationFailed. If it did, the
-      // segment would be permanently dead and throw on every subsequent call.
-      //
-      // This check is placed here (not inside executeSegmentWithGpuGraph) so
-      // that the "not fusible" case does NOT propagate through the generic
-      // KERNEL_FAILURE path below (which marks compilationFailed and throws).
-      if (!gpuBackend->canFuseSegment(slots_, segment.def.startSlot, segment.def.endSlot)) {
+      // Apply the same backend-neutral admission gate used by CPU,
+      // accelerator, and precompile paths. Rejection is not a compilation
+      // failure; it requests explicit plan-level execution.
+      const auto admitted = GraphBackendResolver::resolveSegment(
+          backendRequest, backendCandidates, slots_, segment.def.startSlot,
+          segment.def.endSlot, segment.resolvedGraphBackend);
+      if (admitted.empty()) {
         DSP_DIAG(BACKEND,
-                 "platformExecuteSegmentWithBackends: backend=%s cannot fuse seg[%d-%d] "
+                 "platformExecuteSegmentWithBackends: no backend can resolve seg[%d-%d] "
                  "(falling back to slot-by-slot)",
-                 gpuBackend->name(), segment.def.startSlot, segment.def.endSlot);
+                 segment.def.startSlot, segment.def.endSlot);
         SegmentLifecycle::markNotFusible(
             segment.exec, "gpu_compiler_not_fusible",
             segment.def.startSlot, segment.def.endSlot);
@@ -1552,9 +1747,12 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
       // must actually engage), exactly like the CUDA_GRAPHS path below.
       SegmentLifecycle::markFailed(segment.exec, "gpu_backend_exec_failed", segment.def.startSlot, segment.def.endSlot);
       DSP_THROW_SEG(COMPILE, segment.def.startSlot,
-                    "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d. "
-                    "GPU compilation/capture failed — fix the root cause.",
-                    executeCount_, segment.def.startSlot, segment.def.endSlot, gpuBackend->name(),
+                    "NativeDSP::execute: exec%d seg[%d-%d] graphBackend=%s FAILED status=%d. "
+                    "Graph backend compilation/capture failed — fix the root cause.",
+                    executeCount_, segment.def.startSlot, segment.def.endSlot,
+                    segment.resolvedGraphBackend != nullptr
+                        ? segment.resolvedGraphBackend->name()
+                        : "<unresolved>",
                     static_cast<int>(status));
     }
 
@@ -1582,11 +1780,6 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
 
     case SelectedBackend::SLOT_BY_SLOT:
       DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "backend_slot_by_slot");
-      return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-
-    case SelectedBackend::CPU_GRAPH:
-      // CPU graph backend not applicable on CUDA build — treat as slot-by-slot
-      DSP_SET_SEG_PHASE(segment, ExecutionPhase::SLOT_BY_SLOT, "cpu_graph_on_cuda_build");
       return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
 
     default:
@@ -1694,7 +1887,7 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
   seg.exec.compositeReplaySchedule.compositeReplayHandles.clear();
   seg.exec.gapOpsCapturedInGraph = false;
   seg.exec.markArgsStale();
-  seg.resolvedCpuBackend = nullptr;
+  seg.resetGraphBackend();
 
   // Release graph-baked address pins for the segment being invalidated — but ONLY the
   // plan-owned intermediates (externalOwned=false). Their now-dead graph will not read them,
@@ -1910,25 +2103,18 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
     }
     seg.exec.markArgsStale();
     seg.exec.gapOpsCapturedInGraph = false;
-    seg.resolvedCpuBackend = nullptr;
+    seg.resetGraphBackend();
     delete seg.exec.jitKernel;
     seg.exec.jitKernel = nullptr;
   }
 
-  // Release capture workspace reference. If this is the per-device global shared workspace
-  // (used by multiple plans on the same device), we don't free it — it persists for other plans.
-  // Only free if it's a plan-private workspace (legacy or non-global).
+  // Destroy replay handles before releasing the plan-owned arena whose
+  // addresses they retain. The workspace is allocated with cudaMalloc, so use
+  // the matching backend release path (which also unregisters its range).
   if (sharedCaptureWorkspace_ != nullptr) {
-    const bool isGlobal = sd::graph::dspIsGlobalCaptureWorkspace(sharedCaptureWorkspace_);
-    if (isGlobal) {
-      DSP_DIAG(MEMORY, "platformFreePlanResources: releasing reference to GLOBAL capture workspace %zuMB on device %d (NOT freeing)",
-               sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
-    } else {
-      memory::CudaMemoryPool::getInstance().unregisterCaptureWorkspace(sharedCaptureWorkspace_);
-      memory::CudaMemoryPool::getInstance().free(sharedCaptureWorkspace_, sharedCaptureWorkspaceDevice_);
-      DSP_DIAG(MEMORY, "platformFreePlanResources: pool.free private capture workspace %zuMB on device %d",
-               sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
-    }
+    sd::graph::dspFreeWorkspaceOnPool(sharedCaptureWorkspace_);
+    DSP_DIAG(MEMORY, "platformFreePlanResources: freed PLAN-OWNED capture workspace %zuMB on device %d",
+             sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
     sharedCaptureWorkspace_ = nullptr;
     sharedCaptureWorkspaceBytes_ = 0;
     sharedCaptureWorkspaceDevice_ = -1;
@@ -2018,14 +2204,9 @@ int NativeDynamicShapePlan::platformCountCapturedGraphSegments() const {
 
 void NativeDynamicShapePlan::platformFreeCaptureWorkspace() {
   if (sharedCaptureWorkspace_ != nullptr) {
-    if (sd::graph::dspIsGlobalCaptureWorkspace(sharedCaptureWorkspace_)) {
-      DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: releasing reference to GLOBAL capture workspace %zuMB (NOT freeing)",
-               sharedCaptureWorkspaceBytes_ / (1024*1024));
-    } else {
-      sd::graph::dspFreeWorkspaceOnPool(sharedCaptureWorkspace_);
-      DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed SHARED capture workspace %zuMB on device %d",
-               sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
-    }
+    sd::graph::dspFreeWorkspaceOnPool(sharedCaptureWorkspace_);
+    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed PLAN-OWNED capture workspace %zuMB on device %d",
+             sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
     sharedCaptureWorkspace_ = nullptr;
     sharedCaptureWorkspaceBytes_ = 0;
     sharedCaptureWorkspaceDevice_ = -1;
@@ -3036,7 +3217,8 @@ void NativeDynamicShapePlan::platformTraceSlotValues(const GraphSegment& seg, vo
 }
 
 SelectedBackend NativeDynamicShapePlan::platformResolveBackend(bool isGraphCapture) const {
-  return isGraphCapture ? SelectedBackend::DEVICE_REPLAY : SelectedBackend::GPU_COMPILER;
+  return isGraphCapture ? SelectedBackend::DEVICE_REPLAY
+                        : SelectedBackend::GRAPH_BACKEND;
 }
 
 SelectedBackend NativeDynamicShapePlan::platformResolvePortableReplayBackend() const {
@@ -3343,9 +3525,11 @@ void NativeDynamicShapePlan::platformMigrateWeightsAndClearCaches() {
 }
 
 int NativeDynamicShapePlan::copyStagingToBuffer(int extIdx, sd::DataBuffer* dstDataBuffer) {
-  if (placeholderStagingBuffers_ == nullptr || extIdx < 0 || extIdx >= numExternalInputs_)
+  NDArray** stagingBuffers = activeStagingBuffers_ != nullptr
+      ? activeStagingBuffers_ : placeholderStagingBuffers_;
+  if (stagingBuffers == nullptr || extIdx < 0 || extIdx >= numExternalInputs_)
     return -1;
-  NDArray* staging = placeholderStagingBuffers_[extIdx];
+  NDArray* staging = stagingBuffers[extIdx];
   if (staging == nullptr) return -1;
 
   auto* srcDb = staging->dataBuffer();

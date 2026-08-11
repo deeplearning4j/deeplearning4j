@@ -20,6 +20,8 @@ The profile selects an accelerator-only variant. CPU and BLAS-backed profiles ar
 rejected. Set MVN_CMD to choose a Maven executable. Qualcomm device-ready builds
 also require HEXAGON_ADAPTER_LIBRARY to point at libhexagon_mlir_runtime.so.
 Vulkan uses Android's system loader and requires no bundled vendor adapter.
+Set SDX_NATIVE_OOM_MEMORY_THRESHOLD to override the serialized native-build
+host-memory threshold (default: 90).
 USAGE
 }
 
@@ -28,9 +30,11 @@ LIBND4J_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REPO_ROOT="$(cd "$LIBND4J_DIR/.." && pwd)"
 TOKENIZER_ROOT="$REPO_ROOT/nd4j/nd4j-tokenizers"
 TOKENIZER_BUILD="$TOKENIZER_ROOT/libtokenizers/build-mobile-tokenizers.sh"
+TOKENIZER_PRESET_MODULE="$TOKENIZER_ROOT/tokenizers-native-preset"
 TOKENIZER_MODULE="$TOKENIZER_ROOT/tokenizers-native"
 SDX_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx"
 SDX_MODEL_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model"
+SDX_PRESET_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset"
 VERIFY_SCRIPT="$SCRIPT_DIR/verify-android-accelerator-aar.sh"
 
 PROFILE=""
@@ -131,7 +135,7 @@ if [[ "$SDX_DEVICE_ONLY" != "1" || "$SDX_EXPECT_BLAS" != "0" ||
     exit 1
 fi
 case "$SDX_CHIP" in
-    vulkan|hexagon|google-tpu) ;;
+    vulkan|hexagon|google-tpu|nnapi) ;;
     *)
         echo "Unsupported Android device accelerator chip: $SDX_CHIP" >&2
         exit 1
@@ -152,7 +156,7 @@ if ! command -v "$MVN_CMD" >/dev/null 2>&1; then
     echo "Maven executable not found: $MVN_CMD" >&2
     exit 1
 fi
-for command_name in cmake cargo rustup unzip zip sha256sum; do
+for command_name in cmake cargo rustup unzip zip sha256sum realpath mktemp; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
         echo "Required build command not found: $command_name" >&2
         exit 1
@@ -188,6 +192,14 @@ fi
 if [[ "$SDX_VARIANT" == "vulkan" ]]; then
     DEVICE_READY=1
 fi
+if [[ "$SDX_VARIANT" == "tensor-g3" ]]; then
+    export SD_NNAPI_REQUIRED_DEVICE_NAME="${SDX_REQUIRED_ACCELERATOR_DEVICE:-google-edgetpu}"
+    # Tensor G3 uses the prevalidated Android/NDK ACL DSO. The generic
+    # armcompute_install artifact is the Linux/libstdc++ package and cannot
+    # satisfy an Android libc++ consumer. Keep the pipe escaped because
+    # buildnativeoperations.sh evaluates CMAKE_ARGUMENTS as shell words.
+    export CMAKE_ARGUMENTS="${CMAKE_ARGUMENTS:-} -DHELPERS_armcompute=ON -DSDX_NNAPI_TENSOR_G3_HYBRID=ON -DSDX_EXTRA_RUNTIME_DEPENDENCY_FILES:STRING=$NATIVE_BUILD_DIR/tensor_g3_armcompute_install/lib/armv8a-neon/libarm_compute.so"
+fi
 
 if [[ "$SKIP_TOKENIZERS" != "1" ]]; then
     "$TOKENIZER_BUILD" \
@@ -197,15 +209,28 @@ if [[ "$SKIP_TOKENIZERS" != "1" ]]; then
         --jobs "$JOBS" \
         "${TOKENIZER_OFFLINE[@]}"
 
+    # The parser runs from tokenizers-native but loads its preset as a Maven
+    # dependency. Install the preset from this checkout first so generated Java
+    # cannot silently lag the header/Rust ABI behind a stale mavenLocal copy.
+    "$MVN_CMD" "${MAVEN_OFFLINE[@]}" \
+        -f "$TOKENIZER_PRESET_MODULE/pom.xml" \
+        -DskipTests clean install
+
     "$MVN_CMD" "${MAVEN_OFFLINE[@]}" \
         -f "$TOKENIZER_MODULE/pom.xml" \
-        -Pandroid-arm64 clean package \
+        -Pandroid-arm64 clean install \
         -DskipTests \
         -Dandroid.ndk="$ANDROID_NDK_ARG" \
         -Dandroid.api="$SDX_ANDROID_API"
 fi
 
+NATIVE_AAR="$NATIVE_BUILD_DIR/sdx-runtime-sdk/dist/sdx-runtime-android-arm64-$SDX_VARIANT.aar"
+NATIVE_RECEIPT="$NATIVE_AAR.build-receipt"
+
 if [[ "$SKIP_NATIVE" != "1" ]]; then
+    # A failed or interrupted native rebuild must not leave an older receipt
+    # authorizing whatever bytes happen to remain at the stable output path.
+    rm -f -- "$NATIVE_RECEIPT"
     NATIVE_ARGS=(
         --platform android-arm64
         --android-abi "$SDX_ANDROID_ABI"
@@ -214,8 +239,15 @@ if [[ "$SKIP_NATIVE" != "1" ]]; then
         --build-type release
         --output-path "$NATIVE_BUILD_DIR"
         --preprocess OFF
+        # Mobile provider builds are deliberately serialized. The generic 80%
+        # host-wide threshold can otherwise terminate a cache-hit-only build
+        # because of unrelated workloads while tens of GiB remain available.
+        --oom-memory-threshold "${SDX_NATIVE_OOM_MEMORY_THRESHOLD:-90}"
         -j "$JOBS"
     )
+    if [[ "$SDX_VARIANT" == "tensor-g3" ]]; then
+        NATIVE_ARGS+=(--helpers nnapi,armcompute)
+    fi
     if [[ -n "${SDX_DATATYPES:-}" ]]; then
         NATIVE_ARGS+=(--datatypes "$SDX_DATATYPES")
     fi
@@ -234,21 +266,69 @@ if [[ "$SKIP_NATIVE" != "1" ]]; then
         --parallel "$JOBS"
 fi
 
-NATIVE_AAR="$NATIVE_BUILD_DIR/sdx-runtime-sdk/dist/sdx-runtime-android-arm64-$SDX_VARIANT.aar"
 if [[ ! -s "$NATIVE_AAR" ]]; then
     echo "Native SDX AAR was not produced: $NATIVE_AAR" >&2
     exit 1
 fi
 
+NATIVE_AAR_REAL="$(realpath -e -- "$NATIVE_AAR")"
+NATIVE_AAR_SHA256="$(sha256sum "$NATIVE_AAR_REAL" | cut -d ' ' -f 1)"
+if [[ "$SKIP_NATIVE" != "1" ]]; then
+    NATIVE_RECEIPT_TMP="$(mktemp "$NATIVE_RECEIPT.tmp.XXXXXX")"
+    {
+        printf 'format=1\n'
+        printf 'variant=%s\n' "$SDX_VARIANT"
+        printf 'artifact=%s\n' "$NATIVE_AAR_REAL"
+        printf 'sha256=%s\n' "$NATIVE_AAR_SHA256"
+    } >"$NATIVE_RECEIPT_TMP"
+    mv -f -- "$NATIVE_RECEIPT_TMP" "$NATIVE_RECEIPT"
+    echo "Native build receipt: $NATIVE_RECEIPT"
+else
+    if [[ ! -s "$NATIVE_RECEIPT" ]]; then
+        echo "--skip-native requires a completed native build receipt: $NATIVE_RECEIPT" >&2
+        echo "Rerun without --skip-native to rebuild and authorize the native AAR." >&2
+        exit 1
+    fi
+    RECEIPT_FORMAT=""
+    RECEIPT_VARIANT=""
+    RECEIPT_ARTIFACT=""
+    RECEIPT_SHA256=""
+    while IFS='=' read -r receipt_key receipt_value; do
+        case "$receipt_key" in
+            format) RECEIPT_FORMAT="$receipt_value" ;;
+            variant) RECEIPT_VARIANT="$receipt_value" ;;
+            artifact) RECEIPT_ARTIFACT="$receipt_value" ;;
+            sha256) RECEIPT_SHA256="$receipt_value" ;;
+        esac
+    done <"$NATIVE_RECEIPT"
+    if [[ "$RECEIPT_FORMAT" != "1" ||
+          "$RECEIPT_VARIANT" != "$SDX_VARIANT" ||
+          "$RECEIPT_ARTIFACT" != "$NATIVE_AAR_REAL" ||
+          "$RECEIPT_SHA256" != "$NATIVE_AAR_SHA256" ]]; then
+        echo "Native build receipt does not authorize the current AAR: $NATIVE_RECEIPT" >&2
+        echo "Rerun without --skip-native to rebuild and refresh the receipt." >&2
+        exit 1
+    fi
+    echo "Verified native build receipt: $NATIVE_RECEIPT"
+fi
+
 if [[ "$SKIP_JAVA" != "1" ]]; then
-    # Mainline the source-SDZ compile/cache API into every provider AAR.
+    # JavaCPP-generated bindings name their preset classes directly. Build the
+    # preset from this checkout and package it into the AAR so R8 and Android do
+    # not depend on whatever happens to be present in Maven local.
+    "$MVN_CMD" "${MAVEN_OFFLINE[@]}" \
+        -f "$SDX_PRESET_MODULE/pom.xml" \
+        -DskipTests clean install
+
+    # Mainline the source-SDZ compile/cache API into every provider AAR. Clean
+    # first so removed classes cannot linger in the stable target JAR.
     "$MVN_CMD" "${MAVEN_OFFLINE[@]}" \
         -f "$SDX_MODEL_MODULE/pom.xml" \
-        -DskipTests install
+        -DskipTests clean install
 
     "$MVN_CMD" "${MAVEN_OFFLINE[@]}" \
         -f "$SDX_MODULE/pom.xml" \
-        -Pandroid-arm64 clean package \
+        -Pandroid-arm64 clean install \
         -DskipTests \
         -Dandroid.ndk="$ANDROID_NDK_ARG" \
         -Dandroid.api="$SDX_ANDROID_API" \

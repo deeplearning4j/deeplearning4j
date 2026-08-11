@@ -79,6 +79,11 @@
             <artifactId>nd4j-ggml</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-sdx</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <!-- VLM (SmolDocling document extraction) — pulls samediff-import-onnx and
              javacv/ffmpeg (natives side-loaded like everything else). -->
         <dependency>

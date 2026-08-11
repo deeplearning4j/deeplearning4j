@@ -2702,4 +2702,135 @@ public class DspExtInputDecoderPatternTest {
                 + "Root: permute view-producer slot rejected by strideEquals @ slotexec.cpp:5384 "
                 + "→ slot stays unwritten zeros → K/V=0 into attention → decode garbage (firstToken=11126).");
     }
+
+    @ParameterizedTest(name = "frozenMultiPlanMutableScalarSlice mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"CUDA_GRAPHS", "TRITON"})
+    @DisplayName("Frozen multi-plan replay must refresh a mutable scalar used by a dynamic last-token slice")
+    void testFrozenMultiPlanMutableScalarSliceRefresh(GraphExecutionMode mode) {
+        sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.HALF, 1, -1, 8);
+        SDVariable actualLength = sd.placeHolder("actual_sequence_length", DataType.INT64);
+        SDVariable zero = sd.constant("zero", Nd4j.scalar(DataType.INT64, 0L));
+        SDVariable one = sd.constant("one", Nd4j.scalar(DataType.INT64, 1L));
+        SDVariable eight = sd.constant("eight", Nd4j.scalar(DataType.INT64, 8L));
+        SDVariable actualLast = actualLength.sub("actual_last", one);
+        SDVariable begin = sd.stack("last_begin", 0, zero, actualLast, zero);
+        SDVariable size = sd.stack("last_size", 0, one, one, eight);
+        SDVariable hiddenLast = sd.slice("hidden_last", input, begin, size).reshape(1, 8);
+        SDVariable weights = sd.var("weights", Nd4j.ones(DataType.HALF, 8, 4));
+        sd.mmul("out", hiddenLast, weights);
+        configureMode(sd, mode);
+        sd.setDspFallbackToAutoIfTritonUnavailable(false);
+
+        INDArray prefill = Nd4j.create(DataType.HALF, 1, 4, 8);
+        INDArray prefillLength = Nd4j.scalar(DataType.INT64, 2L);
+        Map<String, INDArray> prefillInputs = new LinkedHashMap<>();
+        prefillInputs.put("input", prefill);
+        prefillInputs.put("actual_sequence_length", prefillLength);
+
+        INDArray decode = Nd4j.create(DataType.HALF, 1, 1, 8);
+        INDArray decodeLength = Nd4j.scalar(DataType.INT64, 1L);
+        Map<String, INDArray> decodeInputs = new LinkedHashMap<>();
+        decodeInputs.put("input", decode);
+        decodeInputs.put("actual_sequence_length", decodeLength);
+
+        prefill.assign(0);
+        for (int position = 0; position < 4; position++) {
+            prefill.get(NDArrayIndex.point(0), NDArrayIndex.point(position), NDArrayIndex.all()).assign(position);
+        }
+        Nd4j.getExecutioner().commit();
+        assertEquals(8.0, sd.output(prefillInputs, "out").get("out").getDouble(0, 0), 0.05);
+        decode.assign(5.0);
+        Nd4j.getExecutioner().commit();
+        assertEquals(40.0, sd.output(decodeInputs, "out").get("out").getDouble(0, 0), 0.05);
+        sd.setDspShapesFrozen(true);
+
+        int[] actualLengths = {3, 4, 2, 3, 4, 2};
+        for (int generation = 1; generation <= actualLengths.length; generation++) {
+            int currentLength = actualLengths[generation - 1];
+            prefillLength.assign(currentLength);
+            for (int position = 0; position < 4; position++) {
+                prefill.get(NDArrayIndex.point(0), NDArrayIndex.point(position), NDArrayIndex.all())
+                        .assign(generation * 10.0 + position);
+            }
+            Nd4j.getExecutioner().commit();
+            double expected = (generation * 10.0 + currentLength - 1) * 8.0;
+            INDArray prefillOut = sd.output(prefillInputs, "out").get("out");
+
+            // Inspect the live DSP intermediates without adding requested outputs, which would
+            // alter segmentation/capture. This distinguishes stale placeholder staging from a
+            // stale scalar-to-slice control chain at the exact replay boundary.
+            DspHandle prefillHandle = sd.dsp();
+            INDArray actualLastSlot = prefillHandle.getSlotOutput("subtract");
+            long observedActualLast = actualLastSlot != null ? actualLastSlot.getLong(0) : Long.MIN_VALUE;
+            long observedBeginPosition = Long.MIN_VALUE;
+            for (int stackSlotIdx : prefillHandle.allSlotsForOp("stack")) {
+                INDArray stackSlot = prefillHandle.getSlotOutput(stackSlotIdx);
+                // last_begin=[0, actualLast, 0]; last_size=[1, 1, 8].
+                if (stackSlot != null && stackSlot.length() >= 3
+                        && stackSlot.getLong(0) == 0L && stackSlot.getLong(2) == 0L) {
+                    observedBeginPosition = stackSlot.getLong(1);
+                    break;
+                }
+            }
+            log.info("[MUTABLE_SCALAR_SLICE] mode={} generation={} inputLength={} "
+                            + "actualLastSlot={} beginPosition={} out={}",
+                    mode, generation, currentLength, observedActualLast,
+                    observedBeginPosition, prefillOut.getDouble(0, 0));
+            assertEquals(currentLength - 1L, observedActualLast,
+                    mode + ": scalar arithmetic slot was stale at prefill generation " + generation);
+            assertEquals(currentLength - 1L, observedBeginPosition,
+                    mode + ": slice-begin stack slot was stale at prefill generation " + generation);
+
+            assertEquals(expected, prefillOut.getDouble(0, 0), 0.5,
+                    mode + ": stale actual_sequence_length at prefill generation " + generation
+                            + " (length=" + currentLength + ")");
+
+            decode.assign(100.0 + generation);
+            Nd4j.getExecutioner().commit();
+            INDArray decodeOut = sd.output(decodeInputs, "out").get("out");
+            assertEquals((100.0 + generation) * 8.0, decodeOut.getDouble(0, 0), 0.5,
+                    mode + ": stale decode input after scalar-controlled prefill generation " + generation);
+        }
+    }
+
+    @ParameterizedTest(name = "frozenMultiPlanFp16MutableInput mode={0}")
+    @EnumSource(value = GraphExecutionMode.class, names = {"CUDA_GRAPHS", "TRITON"})
+    @DisplayName("Frozen multi-plan replay must refresh a stable FP16 input buffer after every shape switch")
+    void testFrozenMultiPlanFp16MutableInputRefresh(GraphExecutionMode mode) {
+        sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.HALF, 1, -1, 8);
+        SDVariable sequenceMean = sd.mean("sequence_mean", input, 1);
+        SDVariable weights = sd.var("weights", Nd4j.ones(DataType.HALF, 8, 4));
+        sd.mmul("out", sequenceMean, weights);
+        configureMode(sd, mode);
+
+        // GenerationPipeline reuses one stable, maximum-sized input for prefill and a second
+        // stable input for decode. Alternate their shape plans while changing contents in place.
+        INDArray prefill = Nd4j.create(DataType.HALF, 1, 4, 8);
+        INDArray decode = Nd4j.create(DataType.HALF, 1, 1, 8);
+        Map<String, INDArray> prefillInputs = singlePh("input", prefill);
+        Map<String, INDArray> decodeInputs = singlePh("input", decode);
+
+        prefill.assign(1.0);
+        assertEquals(8.0, sd.output(prefillInputs, "out").get("out").getDouble(0, 0), 0.05);
+        decode.assign(2.0);
+        assertEquals(16.0, sd.output(decodeInputs, "out").get("out").getDouble(0, 0), 0.05);
+        sd.setDspShapesFrozen(true);
+        assertTrue(sd.isDspShapesFrozen(), "The active decode plan must be frozen before multi-plan reuse");
+
+        for (int generation = 1; generation <= 6; generation++) {
+            double prefillValue = generation + 10.0;
+            prefill.assign(prefillValue);
+            INDArray prefillOut = sd.output(prefillInputs, "out").get("out");
+            assertEquals(prefillValue * 8.0, prefillOut.getDouble(0, 0), 0.15,
+                    mode + ": stale prefill external input after shape switch at generation " + generation);
+
+            double decodeValue = generation + 100.0;
+            decode.assign(decodeValue);
+            INDArray decodeOut = sd.output(decodeInputs, "out").get("out");
+            assertEquals(decodeValue * 8.0, decodeOut.getDouble(0, 0), 0.5,
+                    mode + ": stale decode external input after shape switch at generation " + generation);
+        }
+    }
 }

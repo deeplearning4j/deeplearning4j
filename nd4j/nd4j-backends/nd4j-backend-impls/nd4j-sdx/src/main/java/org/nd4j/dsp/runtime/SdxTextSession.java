@@ -201,6 +201,15 @@ public final class SdxTextSession implements AutoCloseable {
         private final long prefillTimeNanos;
         private final long decodeTimeNanos;
         private final double decodeTokensPerSecond;
+        private final boolean backendReportAvailable;
+        private final int requestedBackend;
+        private final int appliedBackend;
+        private final int backendStatusCode;
+        private final int usedFallback;
+        private final int requestedGpuTarget;
+        private final int appliedGpuTarget;
+        private final int planPhase;
+        private final int executionCount;
 
         private GenerationReport(sdx_generation_report_t source) {
             nativeFinishReason = source.finish_reason();
@@ -213,6 +222,15 @@ public final class SdxTextSession implements AutoCloseable {
             prefillTimeNanos = source.prefill_time_ns();
             decodeTimeNanos = source.decode_time_ns();
             decodeTokensPerSecond = source.decode_tokens_per_second();
+            backendReportAvailable = source.backend_report_available() != 0;
+            requestedBackend = source.requested_backend();
+            appliedBackend = source.applied_backend();
+            backendStatusCode = source.backend_status_code();
+            usedFallback = source.used_fallback();
+            requestedGpuTarget = source.requested_gpu_target();
+            appliedGpuTarget = source.applied_gpu_target();
+            planPhase = source.plan_phase();
+            executionCount = source.execution_count();
         }
 
         public FinishReason finishReason() {
@@ -253,6 +271,44 @@ public final class SdxTextSession implements AutoCloseable {
 
         public double decodeTokensPerSecond() {
             return decodeTokensPerSecond;
+        }
+
+        /** True only when evidence was copied from a context that executed. */
+        public boolean backendReportAvailable() {
+            return backendReportAvailable;
+        }
+
+        public int requestedBackend() {
+            return requestedBackend;
+        }
+
+        public int appliedBackend() {
+            return appliedBackend;
+        }
+
+        public int backendStatusCode() {
+            return backendStatusCode;
+        }
+
+        /** 1 means fallback occurred, 0 means no fallback, and -1 means unknown. */
+        public int usedFallback() {
+            return usedFallback;
+        }
+
+        public int requestedGpuTarget() {
+            return requestedGpuTarget;
+        }
+
+        public int appliedGpuTarget() {
+            return appliedGpuTarget;
+        }
+
+        public int planPhase() {
+            return planPhase;
+        }
+
+        public int executionCount() {
+            return executionCount;
         }
     }
 

@@ -49,6 +49,18 @@ bool MlirCpuGraphBackend::isAvailable() const {
   return sd::mlir_runtime::MLIREngine::getInstance().initialize();
 }
 
+bool MlirCpuGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_AUTO ||
+         request.executionMode == GraphExecutionMode::GEM_PORTABLE_REPLAY;
+}
+
+int MlirCpuGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  (void)request;
+  return 100;
+}
+
 bool MlirCpuGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   if (end < start) return false;
   int segSize = end - start + 1;

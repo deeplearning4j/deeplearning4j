@@ -192,10 +192,10 @@ gs://dl4j-release-PROJECT-REGION/deeplearning4j/releases/RUN_ID/SHARD/
 It includes `maven-repository.tar.gz`, `sdk-assets.tar.gz` when applicable, `shard-manifest.json`, `status.json`, and `build.log`. `collect` validates status/identity, materializes the repository through `release/central/repository.py`, and publishes a valid Maven 2 layout at:
 
 ```text
-gs://BUCKET/deeplearning4j/releases/RUN_ID/maven2/
+gs://BUCKET/deeplearning4j/releases/maven-repository/
 ```
 
-A `.dl4j/complete.json` marker is written last. `collect` also creates or updates the draft GitHub release with the existing injected `gh` credentials; use `--no-github` for a GCS-only collection:
+The stable Maven tree is updated in place: matching coordinates overwrite the same-version files and unrelated classifiers/versions remain. The publisher also writes `index.html` and trailing-slash aliases at the repository root and every coordinate directory so the GCS prefix is browsable without a listing service. A `.dl4j/complete.json` marker is written last. `collect` also creates or updates the draft GitHub release with the existing injected `gh` credentials; use `--no-github` for a GCS-only collection:
 
 ```bash
 python3 release/gcp/release.py collect \

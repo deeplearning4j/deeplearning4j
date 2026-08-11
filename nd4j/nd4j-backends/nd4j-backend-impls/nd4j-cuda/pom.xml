@@ -55,6 +55,11 @@
     <dependencies>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-cuda-backend-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>libnd4j</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -281,6 +286,7 @@
                             </propertyKeysAndValues>
                             <classPaths>
                                 <classPath>${project.build.outputDirectory}</classPath>
+                                <classPath>${project.basedir}/../nd4j-cuda-backend-common/target/classes</classPath>
                             </classPaths>
                             <includePaths>
                                 <includePath>${libnd4jhome}/blasbuild/cuda/include</includePath>
@@ -306,18 +312,6 @@
                                 <compilerOption>-L${libnd4jhome}/blasbuild/cuda</compilerOption> </compilerOptions>
                         </configuration>
                         <executions>
-                            <execution>
-                                <id>javacpp-parser</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>build</goal>
-                                </goals>
-                                <configuration>
-                                    <skip>${javacpp.parser.skip}</skip>
-                                    <deleteJniFiles>false</deleteJniFiles>
-                                    <outputDirectory>${project.build.sourceDirectory}</outputDirectory> <classOrPackageName>org.nd4j.presets.cuda.Nd4jCudaPresets</classOrPackageName>
-                                </configuration>
-                            </execution>
                             <execution>
                                 <id>javacpp-compiler</id>
                                 <phase>process-classes</phase>
@@ -397,6 +391,7 @@
                             </propertyKeysAndValues>
                             <classPaths>
                                 <classPath>${project.build.outputDirectory}</classPath>
+                                <classPath>${project.basedir}/../nd4j-cuda-backend-common/target/classes</classPath>
                             </classPaths>
                             <includePaths>
                                 <includePath>${libnd4jhome}/blasbuild/cuda/include</includePath>
@@ -424,19 +419,6 @@
 
                         </configuration>
                         <executions>
-                            <execution>
-                                <id>javacpp-parser</id>
-                                <phase>generate-sources</phase>
-                                <goals>
-                                    <goal>build</goal>
-                                </goals>
-                                <configuration>
-                                    <skip>${javacpp.parser.skip}</skip>
-                                    <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                                    <classOrPackageName>org.nd4j.presets.cuda.Nd4jCudaPresets</classOrPackageName>
-                                    <deleteJniFiles>false</deleteJniFiles>
-                                </configuration>
-                            </execution>
                             <execution>
                                 <id>javacpp-compiler</id>
                                 <phase>process-classes</phase>

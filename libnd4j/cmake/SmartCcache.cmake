@@ -7,6 +7,10 @@
 
 option(SD_SMART_CCACHE "Enable smart ccache wrapper that detects file changes" ON)
 option(SD_CCACHE_DEBUG "Enable debug output for smart ccache" OFF)
+option(SD_CCACHE_TRACE "Record per-build ccache statistics and invocation reasons" ON)
+option(SD_CCACHE_TRACE_VERBOSE "Enable ccache's verbose compiler decision log" OFF)
+option(SD_CCACHE_VERIFY_DEPENDENCIES "Rehash project headers in the smart ccache wrapper for stale-manifest verification" OFF)
+set(SD_CCACHE_TRACE_RUN_ID "manual" CACHE STRING "Per-build ccache trace identifier")
 
 # Detect Windows robustly by checking if cmd.exe exists, since WIN32/MSVC/CMAKE_HOST_SYSTEM_NAME
 # may not be set correctly under MSYS2/MinGW cmake.
@@ -37,6 +41,26 @@ if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
 
         set(SMART_CCACHE_SCRIPT "${CMAKE_BINARY_DIR}/smart_ccache.sh")
 
+        if(SD_CCACHE_TRACE)
+            string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" _SD_CCACHE_TRACE_RUN_ID "${SD_CCACHE_TRACE_RUN_ID}")
+            if(_SD_CCACHE_TRACE_RUN_ID STREQUAL "")
+                set(_SD_CCACHE_TRACE_RUN_ID "manual")
+            endif()
+            set(SD_CCACHE_TRACE_DIR "${CMAKE_BINARY_DIR}/.ccache_trace/${_SD_CCACHE_TRACE_RUN_ID}")
+            file(MAKE_DIRECTORY "${SD_CCACHE_TRACE_DIR}")
+            file(WRITE "${SD_CCACHE_TRACE_DIR}/cmake-config.txt"
+                 "run_id=${_SD_CCACHE_TRACE_RUN_ID}\n"
+                 "binary_dir=${CMAKE_BINARY_DIR}\n"
+                 "ccache=${CCACHE_PATH}\n"
+                 "cmake_version=${CMAKE_VERSION}\n"
+                 "generator=${CMAKE_GENERATOR}\n"
+                 "build_type=${CMAKE_BUILD_TYPE}\n"
+                 "compiler_launcher_c=${CMAKE_C_COMPILER_LAUNCHER}\n"
+                 "compiler_launcher_cxx=${CMAKE_CXX_COMPILER_LAUNCHER}\n")
+        else()
+            set(SD_CCACHE_TRACE_DIR "")
+        endif()
+
         # Generate wrapper script — used by BOTH Windows (MSYS2 bash) and Linux/macOS
         file(WRITE "${SMART_CCACHE_SCRIPT}" "#!/bin/bash
 # Smart ccache wrapper - forces recompile for modified source files
@@ -55,6 +79,22 @@ CCACHE=\"${CCACHE_PATH}\"
 HASH_CACHE_DIR=\"${FILE_HASH_CACHE_DIR}\"
 BUILD_DIR=\"${CMAKE_BINARY_DIR}\"
 DEBUG=${SD_CCACHE_DEBUG}
+TRACE_ENABLED=${SD_CCACHE_TRACE}
+TRACE_VERBOSE=${SD_CCACHE_TRACE_VERBOSE}
+VERIFY_DEPENDENCIES=${SD_CCACHE_VERIFY_DEPENDENCIES}
+TRACE_DIR=\"${SD_CCACHE_TRACE_DIR}\"
+TRACE_EVENTS_FILE=\"${SD_CCACHE_TRACE_DIR}/events.tsv\"
+TRACE_STATS_FILE=\"${SD_CCACHE_TRACE_DIR}/ccache-stats.log\"
+TRACE_DEBUG_FILE=\"${SD_CCACHE_TRACE_DIR}/ccache-debug.log\"
+TRACE_INITIAL_RECACHE=\"\${CCACHE_RECACHE:-}\"
+
+if [[ \"\$TRACE_ENABLED\" == \"ON\" ]]; then
+    mkdir -p \"\$TRACE_DIR\" 2>/dev/null
+    export CCACHE_STATSLOG=\"\$TRACE_STATS_FILE\"
+    if [[ \"\$TRACE_VERBOSE\" == \"ON\" ]]; then
+        export CCACHE_LOGFILE=\"\$TRACE_DEBUG_FILE\"
+    fi
+fi
 
 # Detect Windows/MSYS2
 IS_MSYS=0
@@ -275,6 +315,34 @@ dep_file_is_valid() {
     LC_ALL=C grep -q '^[^:][^:]*:' \"\$d_file\" || return 1
 }
 
+TRACE_FORCE_REASON=\"\"
+if [[ -n \"\$TRACE_INITIAL_RECACHE\" ]]; then
+    TRACE_FORCE_REASON=\"inherited_recache\"
+fi
+
+trace_event() {
+    [[ \"\$TRACE_ENABLED\" == \"ON\" ]] || return 0
+
+    local now source output reason
+    now=\"\$(date +%s%3N 2>/dev/null || date +%s)\"
+    source=\"\$SOURCE_FILE\"
+    output=\"\$OUTPUT_FILE\"
+    reason=\"\${TRACE_FORCE_REASON:-none}\"
+
+    if command -v flock >/dev/null 2>&1; then
+        {
+            flock -x 9
+            printf 'wall_ms=%s\\tpid=%s\\tsource=%s\\toutput=%s\\tinitial_recache=%s\\tforced_recache=%s\\tforce_reason=%s\\tccache_exit=%s\\n' \\
+                \"\$now\" \"\$BASHPID\" \"\$source\" \"\$output\" \"\$TRACE_INITIAL_RECACHE\" \\
+                \"\${CCACHE_RECACHE:-}\" \"\$reason\" \"\$_CCACHE_EXIT\" >> \"\$TRACE_EVENTS_FILE\"
+        } 9>\"\${TRACE_EVENTS_FILE}.lock\"
+    else
+        printf 'wall_ms=%s\\tpid=%s\\tsource=%s\\toutput=%s\\tinitial_recache=%s\\tforced_recache=%s\\tforce_reason=%s\\tccache_exit=%s\\n' \\
+            \"\$now\" \"\$BASHPID\" \"\$source\" \"\$output\" \"\$TRACE_INITIAL_RECACHE\" \\
+            \"\${CCACHE_RECACHE:-}\" \"\$reason\" \"\$_CCACHE_EXIT\" >> \"\$TRACE_EVENTS_FILE\"
+    fi
+}
+
 if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
     # Force recache for files with known stale ccache direct-mode manifests.
     # This ensures header-level renames (member variables) are picked up even when
@@ -282,6 +350,7 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
     case \"\$SOURCE_FILE\" in
         *NativeDynamicShapePlan.cpp|*NativeDynamicShapePlan_gpubackend.cu|*NativeDynamicShapePlan_slotexec.cpp|*NativeDynamicShapePlan_cuda_stubs.cpp|*VulkanPipelineCache.cpp|*VulkanReplayHandle.cpp)
             export CCACHE_RECACHE=1
+            TRACE_FORCE_REASON=\"stale_manifest\"
             ;;
     esac
 
@@ -308,10 +377,11 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
                     echo \"[SMART_CCACHE] File changed, forcing recompile: \$SOURCE_FILE\" >&2
                 fi
                 export CCACHE_RECACHE=1
+                TRACE_FORCE_REASON=\"source_changed\"
                 echo \"\$CURRENT_HASH\" > \"\$HASH_FILE\" 2>/dev/null
             else
                 # Source unchanged — check if any included headers changed
-                if [[ -n \"\$DEP_FILE\" && -f \"\$DEP_FILE\" && -f \"\$DEP_HASH_FILE\" ]]; then
+                if [[ \"\$VERIFY_DEPENDENCIES\" == \"ON\" && -n \"\$DEP_FILE\" && -f \"\$DEP_FILE\" && -f \"\$DEP_HASH_FILE\" ]]; then
                     STORED_DEP_HASH=\"\$(cat \"\$DEP_HASH_FILE\" 2>/dev/null)\"
                     CURRENT_DEP_HASH=\"\$(hash_deps_from_d_file \"\$DEP_FILE\")\"
                     if [[ -n \"\$CURRENT_DEP_HASH\" && \"\$CURRENT_DEP_HASH\" != \"\$STORED_DEP_HASH\" ]]; then
@@ -319,6 +389,7 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
                             echo \"[SMART_CCACHE] Header deps changed, forcing recompile: \$SOURCE_FILE\" >&2
                         fi
                         export CCACHE_RECACHE=1
+                        TRACE_FORCE_REASON=\"header_dependencies_changed\"
                         echo \"\$CURRENT_DEP_HASH\" > \"\$DEP_HASH_FILE\" 2>/dev/null
                     else
                         if [[ \"\$DEBUG\" == \"ON\" ]]; then
@@ -342,7 +413,7 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
         fi
 
         # Set vars for post-compile dep hash update (done after ccache call below)
-        if [[ -n \"\$DEP_FILE\" ]]; then
+        if [[ \"\$VERIFY_DEPENDENCIES\" == \"ON\" && -n \"\$DEP_FILE\" ]]; then
             _UPDATE_DEP_HASH_FILE=\"\$DEP_HASH_FILE\"
             _UPDATE_DEP_D_FILE=\"\$DEP_FILE\"
         fi
@@ -421,6 +492,9 @@ if [[ \$_CCACHE_EXIT -eq 0 && \$DEP_FILE_REQUESTED -eq 1 ]] &&
     echo \"[SMART_CCACHE] Invalid dependency file from cache; recaching: \$DEP_FILE\" >&2
     _CACHE_RESULT_INVALID=1
 fi
+if [[ \$_CACHE_RESULT_INVALID -eq 1 ]]; then
+    TRACE_FORCE_REASON=\"invalid_cache_output\"
+fi
 
 if [[ \$_CCACHE_EXIT -eq 0 && \$_CACHE_RESULT_INVALID -eq 1 ]]; then
     [[ -n \"\$OUTPUT_FILE\" ]] && rm -f \"\$OUTPUT_FILE\"
@@ -439,6 +513,8 @@ if [[ \$_CCACHE_EXIT -eq 0 && \$_CACHE_RESULT_INVALID -eq 1 ]]; then
         _CCACHE_EXIT=1
     fi
 fi
+
+trace_event
 
 # Update dep hash after compile (exec would skip this)
 if [[ -n \"\$_UPDATE_DEP_D_FILE\" && -f \"\$_UPDATE_DEP_D_FILE\" ]]; then

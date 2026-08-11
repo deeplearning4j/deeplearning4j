@@ -43,6 +43,8 @@ using sd::LongType;
 using sd::NDArray;
 using sd::NDArrayFactory;
 using sd::dsp::runtime::detail::TextGenerationMetadata;
+using sd::dsp::runtime::detail::TextGenerationRecurrentState;
+using sd::dsp::runtime::detail::TextGenerationRecurrentStateKind;
 using sd::ops::helpers::AutoregressiveDecodeConfig;
 using sd::ops::helpers::TokenSampleConfig;
 using sd::ops::helpers::TokenSampleResult;
@@ -521,6 +523,60 @@ bool copyPrefillKv(
   return true;
 }
 
+bool validateRecurrentArray(
+    NDArray* array,
+    const TextGenerationRecurrentState& state,
+    std::string* error) {
+  if (array == nullptr) {
+    if (error != nullptr) {
+      *error = "recurrent state output is null: " + state.output;
+    }
+    return false;
+  }
+  if (array->dataType() != state.dataType) {
+    if (error != nullptr) {
+      *error = "recurrent state dtype does not match metadata: " + state.output;
+    }
+    return false;
+  }
+  if (array->rankOf() != static_cast<LongType>(state.shape.size())) {
+    if (error != nullptr) {
+      *error = "recurrent state rank does not match metadata: " + state.output;
+    }
+    return false;
+  }
+  for (size_t i = 0; i < state.shape.size(); ++i) {
+    if (array->sizeAt(static_cast<int>(i)) !=
+        static_cast<LongType>(state.shape[i])) {
+      if (error != nullptr) {
+        *error = "recurrent state shape does not match metadata: " + state.output;
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
+std::unique_ptr<NDArray> createRecurrentArray(
+    const TextGenerationRecurrentState& state) {
+  std::vector<LongType> shape(state.shape.begin(), state.shape.end());
+  auto result = createArray(shape, state.dataType);
+  assignScalar(result.get(), 0.0);
+  return result;
+}
+
+bool copyRecurrentArray(
+    NDArray* source,
+    const TextGenerationRecurrentState& state,
+    std::unique_ptr<NDArray>* out,
+    std::string* error) {
+  if (!validateRecurrentArray(source, state, error)) return false;
+  auto destination = createRecurrentArray(state);
+  destination->assign(source);
+  *out = std::move(destination);
+  return true;
+}
+
 }  // namespace
 
 struct sdx_generation_session {
@@ -538,6 +594,10 @@ struct sdx_generation_session {
 
   std::vector<int> decodeKvPlanIndices;
   std::vector<NDArray*> decodeKvPlanArrays;
+  std::vector<int> decodeGdnStatePlanIndices;
+  std::vector<int> decodeGdnStateOutputIndices;
+  std::vector<int> decodeConvStatePlanIndices;
+  std::vector<int> decodeConvStateOutputIndices;
   int decodeInputIdsPlanIndex = -1;
   int decodeCausalMaskPlanIndex = -1;
   int decodePositionOffsetPlanIndex = -1;
@@ -558,6 +618,8 @@ struct sdx_generation_session {
   std::vector<LongType> history;
 
   uint64_t lastPrefillNanos = 0;
+  bool hasExecutionReport = false;
+  sdx_execution_report_t lastExecutionReport{};
 };
 
 namespace {
@@ -569,12 +631,28 @@ void destroyContext(sdx_context_t** context) {
   }
 }
 
+void captureExecutionReport(
+    sdx_generation_session_t* session,
+    const sdx_context_t* context) {
+  if (session == nullptr || context == nullptr) return;
+  sdx_execution_report_t report{};
+  report.struct_size = sizeof(report);
+  if (sdxGetExecutionReport(context, &report) == SDX_STATUS_OK) {
+    session->lastExecutionReport = report;
+    session->hasExecutionReport = true;
+  }
+}
+
 void clearExecutionState(sdx_generation_session_t* session) {
   if (session == nullptr) return;
   destroyContext(&session->decodeContext);
   destroyContext(&session->prefillContext);
   session->decodeKvPlanArrays.clear();
   session->decodeKvPlanIndices.clear();
+  session->decodeGdnStatePlanIndices.clear();
+  session->decodeGdnStateOutputIndices.clear();
+  session->decodeConvStatePlanIndices.clear();
+  session->decodeConvStateOutputIndices.clear();
   session->decodePublic.clear();
   session->decodeOwned.clear();
   session->prefillPublic.clear();
@@ -596,6 +674,8 @@ void clearExecutionState(sdx_generation_session_t* session) {
   session->totalGenerated = 0;
   session->history.clear();
   session->lastPrefillNanos = 0;
+  session->hasExecutionReport = false;
+  session->lastExecutionReport = {};
 }
 
 sdx_status_t fail(
@@ -666,6 +746,32 @@ void fillReport(
           ? 0.0
           : static_cast<double>(generatedThisCall) * 1.0e9 /
                 static_cast<double>(decode);
+  report.backend_report_available = 0;
+  report.requested_backend = static_cast<int32_t>(SDX_BACKEND_AUTO);
+  report.applied_backend = static_cast<int32_t>(SDX_BACKEND_AUTO);
+  report.backend_status_code = static_cast<int32_t>(SDX_STATUS_OK);
+  report.used_fallback = -1;
+  report.requested_gpu_target = static_cast<int32_t>(SDX_GPU_TARGET_AUTO);
+  report.applied_gpu_target = static_cast<int32_t>(SDX_GPU_TARGET_AUTO);
+  report.plan_phase = -1;
+  report.execution_count = 0;
+
+  // A route name or requested model option is not proof of execution. The
+  // report is captured immediately after native execution and retained even
+  // when the short-lived prefill context is destroyed before a one-token call
+  // returns.
+  if (session->hasExecutionReport) {
+    const auto& execution = session->lastExecutionReport;
+    report.backend_report_available = 1;
+    report.requested_backend = execution.requested_backend;
+    report.applied_backend = execution.applied_backend;
+    report.backend_status_code = execution.status_code;
+    report.used_fallback = execution.used_fallback;
+    report.requested_gpu_target = execution.requested_gpu_target;
+    report.applied_gpu_target = execution.applied_gpu_target;
+    report.plan_phase = execution.plan_phase;
+    report.execution_count = execution.execution_count;
+  }
 
   size_t destinationSize = outReport->struct_size;
   if (destinationSize == 0) destinationSize = sizeof(report);
@@ -746,6 +852,15 @@ bool addPrefillInputs(
       return false;
     }
   }
+  for (const auto& state : metadata.recurrentStates) {
+    if (!addNamed(
+            &session->prefillOwned,
+            state.input,
+            createRecurrentArray(state),
+            error)) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -767,7 +882,8 @@ sdx_status_t runPrefill(
   std::vector<std::string> outputNames;
   outputNames.reserve(
       1 + session->metadata.prefillKeyOutputs.size() +
-      session->metadata.prefillValueOutputs.size());
+      session->metadata.prefillValueOutputs.size() +
+      session->metadata.recurrentStates.size());
   outputNames.push_back(session->metadata.prefillLogits);
   outputNames.insert(
       outputNames.end(),
@@ -777,6 +893,9 @@ sdx_status_t runPrefill(
       outputNames.end(),
       session->metadata.prefillValueOutputs.begin(),
       session->metadata.prefillValueOutputs.end());
+  for (const auto& state : session->metadata.recurrentStates) {
+    outputNames.push_back(state.output);
+  }
 
   sdx_status_t status =
       createBoundContext(session->model, outputNames, &session->prefillContext);
@@ -792,6 +911,7 @@ sdx_status_t runPrefill(
   status = sd::dsp::runtime::detail::runOwnedArrays(
       session->prefillContext, session->prefillPublic);
   if (status != SDX_STATUS_OK) return status;
+  captureExecutionReport(session, session->prefillContext);
   if (cancellationRequested(session, callbacks)) {
     session->lastPrefillNanos = elapsedNanos(start, Clock::now());
     return SDX_STATUS_OK;
@@ -868,6 +988,29 @@ sdx_status_t runPrefill(
     fullKv.push_back(std::move(destination));
   }
 
+  std::vector<std::unique_ptr<NDArray>> recurrentStates;
+  recurrentStates.reserve(session->metadata.recurrentStates.size());
+  for (const auto& state : session->metadata.recurrentStates) {
+    int32_t index = -1;
+    if (!outputIndexByName(session->prefillContext, state.output, &index)) {
+      return fail(
+          session,
+          SDX_STATUS_EXECUTION_FAILED,
+          "prefill recurrent output is absent from the compiled graph: " +
+              state.output);
+    }
+    std::unique_ptr<NDArray> destination;
+    if (!copyRecurrentArray(
+            sd::dsp::runtime::detail::contextOutputArray(
+                session->prefillContext, index),
+            state,
+            &destination,
+            &error)) {
+      return fail(session, SDX_STATUS_EXECUTION_FAILED, error);
+    }
+    recurrentStates.push_back(std::move(destination));
+  }
+
   destroyContext(&session->prefillContext);
   session->prefillPublic.clear();
   session->prefillOwned.clear();
@@ -887,6 +1030,15 @@ sdx_status_t runPrefill(
             &session->decodeOwned,
             name,
             std::move(fullKv[kv++]),
+            &error)) {
+      return fail(session, SDX_STATUS_INVALID_ARGUMENT, error);
+    }
+  }
+  for (size_t i = 0; i < session->metadata.recurrentStates.size(); ++i) {
+    if (!addNamed(
+            &session->decodeOwned,
+            session->metadata.recurrentStates[i].input,
+            std::move(recurrentStates[i]),
             &error)) {
       return fail(session, SDX_STATUS_INVALID_ARGUMENT, error);
     }
@@ -1005,6 +1157,31 @@ bool resolveDecodePlanBindings(
     session->decodeKvPlanArrays.push_back(array);
   }
 
+  session->decodeGdnStatePlanIndices.clear();
+  session->decodeGdnStateOutputIndices.clear();
+  session->decodeConvStatePlanIndices.clear();
+  session->decodeConvStateOutputIndices.clear();
+  for (const auto& state : session->metadata.recurrentStates) {
+    int inputIndex = -1;
+    int32_t outputIndex = -1;
+    if (!planIndex(state.input, &inputIndex)) return false;
+    if (!outputIndexByName(
+            session->decodeContext, state.output, &outputIndex)) {
+      if (error != nullptr) {
+        *error = "decode recurrent output is absent from the compiled graph: " +
+                 state.output;
+      }
+      return false;
+    }
+    if (state.kind == TextGenerationRecurrentStateKind::GDN) {
+      session->decodeGdnStatePlanIndices.push_back(inputIndex);
+      session->decodeGdnStateOutputIndices.push_back(outputIndex);
+    } else {
+      session->decodeConvStatePlanIndices.push_back(inputIndex);
+      session->decodeConvStateOutputIndices.push_back(outputIndex);
+    }
+  }
+
   if (!outputIndexByName(
           session->decodeContext,
           session->metadata.logits,
@@ -1031,9 +1208,13 @@ sdx_status_t warmDecode(
     return fail(session, SDX_STATUS_INVALID_ARGUMENT, error);
   }
 
+  std::vector<std::string> outputNames{session->metadata.logits};
+  for (const auto& state : session->metadata.recurrentStates) {
+    outputNames.push_back(state.output);
+  }
   sdx_status_t status = createBoundContext(
       session->model,
-      std::vector<std::string>{session->metadata.logits},
+      outputNames,
       &session->decodeContext);
   if (status != SDX_STATUS_OK) return status;
   if (!orderPublicInputs(
@@ -1081,10 +1262,22 @@ sdx_status_t warmDecode(
     status = sdxMarkInputVariable(session->decodeContext, publicIndex);
     if (status != SDX_STATUS_OK) return status;
   }
+  for (const auto& state : session->metadata.recurrentStates) {
+    if (!inputIndexByName(
+            session->decodeContext, state.input, &publicIndex)) {
+      return fail(
+          session,
+          SDX_STATUS_INVALID_ARGUMENT,
+          "decode graph is missing recurrent state input: " + state.input);
+    }
+    status = sdxMarkInputVariable(session->decodeContext, publicIndex);
+    if (status != SDX_STATUS_OK) return status;
+  }
 
   status = sd::dsp::runtime::detail::runOwnedArrays(
       session->decodeContext, session->decodePublic);
   if (status != SDX_STATUS_OK) return status;
+  captureExecutionReport(session, session->decodeContext);
 
   NDArray* logits =
       sd::dsp::runtime::detail::contextOutputArray(
@@ -1104,6 +1297,31 @@ sdx_status_t warmDecode(
 
   if (!resolveDecodePlanBindings(session, &error)) {
     return fail(session, SDX_STATUS_EXECUTION_FAILED, error);
+  }
+  for (const auto& state : session->metadata.recurrentStates) {
+    const int inputIndex =
+        sd::dsp::runtime::detail::contextPlanInputIndex(
+            session->decodeContext, state.input);
+    int32_t outputIndex = -1;
+    if (inputIndex < 0 ||
+        !outputIndexByName(
+            session->decodeContext, state.output, &outputIndex)) {
+      return fail(
+          session,
+          SDX_STATUS_EXECUTION_FAILED,
+          "failed to resolve recurrent state feedback: " + state.input);
+    }
+    NDArray* source =
+        sd::dsp::runtime::detail::contextOutputArray(
+            session->decodeContext, outputIndex);
+    NDArray* destination =
+        sd::dsp::runtime::detail::contextPlanInputArray(
+            session->decodeContext, inputIndex);
+    if (!validateRecurrentArray(source, state, &error) ||
+        !validateRecurrentArray(destination, state, &error)) {
+      return fail(session, SDX_STATUS_EXECUTION_FAILED, error);
+    }
+    destination->assign(source);
   }
   status = sdxFreezeShapes(session->decodeContext);
   if (status != SDX_STATUS_OK) return status;
@@ -1232,6 +1450,26 @@ sdx_status_t runNativeDecode(
   config.actualSequenceLengthExtIdx =
       session->decodeActualSequenceLengthPlanIndex;
   config.planOwnsKvScatter = true;
+  config.gdnStateExtIndices =
+      session->decodeGdnStatePlanIndices.empty()
+          ? nullptr
+          : session->decodeGdnStatePlanIndices.data();
+  config.gdnStateOutputIndices =
+      session->decodeGdnStateOutputIndices.empty()
+          ? nullptr
+          : session->decodeGdnStateOutputIndices.data();
+  config.numGdnStatePairs =
+      static_cast<int>(session->decodeGdnStatePlanIndices.size());
+  config.convStateExtIndices =
+      session->decodeConvStatePlanIndices.empty()
+          ? nullptr
+          : session->decodeConvStatePlanIndices.data();
+  config.convStateOutputIndices =
+      session->decodeConvStateOutputIndices.empty()
+          ? nullptr
+          : session->decodeConvStateOutputIndices.data();
+  config.numConvStatePairs =
+      static_cast<int>(session->decodeConvStatePlanIndices.size());
   config.sampleConfig =
       sampleConfig(
           policy, session->metadata, session->totalGenerated);
@@ -1458,14 +1696,6 @@ SDX_API sdx_status_t sdxCreateGenerationSession(
     sd::dsp::runtime::detail::setModelError(model, error);
     return SDX_STATUS_UNSUPPORTED;
   }
-  if (session->metadata.profile != "causal-lm-in-graph-kv-v1") {
-    sd::dsp::runtime::detail::setModelError(
-        model,
-        "unsupported text-generation profile: " +
-            session->metadata.profile);
-    return SDX_STATUS_UNSUPPORTED;
-  }
-
   sd::dsp::runtime::detail::setModelError(model, "");
   *outSession = session.release();
   return SDX_STATUS_OK;

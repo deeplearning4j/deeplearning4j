@@ -143,6 +143,19 @@ class MavenMetadataTests(unittest.TestCase):
                 snapshot_versions,
             )
 
+            root_index = output / "index.html"
+            coordinate_index = (
+                output / "org/eclipse/deeplearning4j/nd4j-cuda-12.9/index.html"
+            )
+            self.assertTrue(root_index.is_file())
+            self.assertTrue(coordinate_index.is_file())
+            root_html = root_index.read_text(encoding="utf-8")
+            coordinate_html = coordinate_index.read_text(encoding="utf-8")
+            self.assertIn('href="org/"', root_html)
+            self.assertIn('href="1.0.0-SNAPSHOT/"', coordinate_html)
+            self.assertNotIn(r"\n", root_html)
+            self.assertIn("\n", root_html)
+
             for metadata_path in (artifact_metadata_path, version_metadata_path):
                 for algorithm in repository.CHECKSUMS:
                     checksum_path = Path(str(metadata_path) + f".{algorithm}")

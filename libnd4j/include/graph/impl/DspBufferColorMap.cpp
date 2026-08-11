@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
@@ -72,6 +73,7 @@ void DspBufferColorMap::compute(
     NDArray** outputSlots,
     int totalOutputSlots,
     const SlotBufferInfo* ownership,
+    const std::unordered_set<NDArray*>& planOwnedArrays,
     const std::unordered_set<int>& requestedOutputSlots) {
 
   DSP_DIAG(MEMORY, "COLORING_COMPUTE_START: totalSlots=%d", totalOutputSlots);
@@ -93,24 +95,48 @@ void DspBufferColorMap::compute(
   totalOutputSlots_ = totalOutputSlots;
   colorOf_ = new int[totalOutputSlots];
   std::memset(colorOf_, -1, sizeof(int) * totalOutputSlots);  // -1 = uncolored
+  appliedSlots_.assign(totalOutputSlots, false);
 
-  // Step 1: Determine eligibility
-  // A slot is eligible for coloring if:
-  //   - It is SLOT_OWNED (not a view, not a weight, not workspace)
-  //   - It has no VIEW_OF_SLOT children (viewRefCount == 0)
-  //   - It is NOT a requested output slot
-  //   - It has valid liveness data (producerStep >= 0 and lastConsumerStep >= 0)
-  //   - It has a non-null output array
+  // Step 1: Determine eligibility.
+  // Ownership metadata is necessary but not sufficient here: warmup operations
+  // can publish aliases without going through the central slot writer, leaving a
+  // stale SLOT_OWNED classification. Count the actual final wrapper and
+  // DataBuffer identities as an independent safety check.
+  std::unordered_map<NDArray*, int> arrayRefCounts;
+  std::unordered_map<DataBuffer*, int> bufferRefCounts;
+  for (int i = 0; i < totalOutputSlots; i++) {
+    NDArray* arr = outputSlots[i];
+    if (arr == nullptr) continue;
+    arrayRefCounts[arr]++;
+    if (arr->dataBuffer() != nullptr) {
+      bufferRefCounts[arr->dataBuffer()]++;
+    }
+  }
 
   std::vector<bool> eligible(totalOutputSlots, false);
-  int numViews = 0, numViewParents = 0, numOutputs = 0, numNoLiveness = 0, numNull = 0;
+  int numViews = 0;
+  int numViewParents = 0;
+  int numOutputs = 0;
+  int numNoLiveness = 0;
+  int numNull = 0;
+  int numBorrowed = 0;
+  int numAliased = 0;
 
   for (int i = 0; i < totalOutputSlots; i++) {
-    if (outputSlots[i] == nullptr) { numNull++; continue; }
+    NDArray* arr = outputSlots[i];
+    if (arr == nullptr || arr->dataBuffer() == nullptr) { numNull++; continue; }
     if (ownership[i].ownership != BufferOwnership::SLOT_OWNED) { numViews++; continue; }
     if (ownership[i].viewRefCount > 0) { numViewParents++; continue; }
+    if (planOwnedArrays.count(arr) == 0) { numBorrowed++; continue; }
+    if (arrayRefCounts[arr] > 1 || bufferRefCounts[arr->dataBuffer()] > 1) {
+      numAliased++;
+      continue;
+    }
     if (requestedOutputSlots.count(i) > 0) { numOutputs++; continue; }
-    if (liveness.producerStep[i] < 0 || liveness.lastConsumerStep[i] < 0) { numNoLiveness++; continue; }
+    if (liveness.producerStep[i] < 0 || liveness.lastConsumerStep[i] < 0) {
+      numNoLiveness++;
+      continue;
+    }
     eligible[i] = true;
   }
 
@@ -120,9 +146,9 @@ void DspBufferColorMap::compute(
   }
 
   DSP_DIAG(MEMORY, "COLORING_ELIGIBILITY: eligible=%d (null=%d views=%d viewParents=%d "
-           "outputs=%d noLiveness=%d) of total=%d",
-           numEligible, numNull, numViews, numViewParents, numOutputs, numNoLiveness,
-           totalOutputSlots);
+           "borrowed=%d aliased=%d outputs=%d noLiveness=%d) of total=%d",
+           numEligible, numNull, numViews, numViewParents, numBorrowed, numAliased,
+           numOutputs, numNoLiveness, totalOutputSlots);
 
   if (numEligible == 0) {
     computed_ = true;
@@ -332,11 +358,58 @@ void DspBufferColorMap::compute(
 
 // ─── apply() ─────────────────────────────────────────────────────────────────
 
+// Replace a colored slot without trusting SlotBufferInfo as a deletion permit.
+// The wrapper must be plan-owned, and no live slot may still reference the same
+// wrapper. During apply, also retain a storage-owning wrapper while any slot
+// still borrows its DataBuffer.
+static void replaceColoredSlot(
+    NDArray** outputSlots,
+    int totalOutputSlots,
+    int slotIdx,
+    NDArray* replacement,
+    std::unordered_set<NDArray*>& planOwnedArrays,
+    bool preserveSharedBufferOwner,
+    std::vector<NDArray*>& deferredDeletes) {
+  NDArray* oldArr = outputSlots[slotIdx];
+  outputSlots[slotIdx] = replacement;
+  if (replacement != nullptr) {
+    planOwnedArrays.insert(replacement);
+  }
+
+  if (oldArr == nullptr || oldArr == replacement ||
+      planOwnedArrays.count(oldArr) == 0) {
+    return;
+  }
+
+  DataBuffer* oldDb = oldArr->dataBuffer();
+  for (int i = 0; i < totalOutputSlots; i++) {
+    NDArray* live = outputSlots[i];
+    if (live == nullptr) continue;
+    if (live == oldArr ||
+        (preserveSharedBufferOwner && oldDb != nullptr &&
+         live->dataBuffer() == oldDb)) {
+      DSP_DIAG(MEMORY,
+               "COLORING_RETAIN_OWNER: replacedSlot=%d old=%p db=%p "
+               "stillReferencedBy=%d",
+               slotIdx, (void*)oldArr, (void*)oldDb, i);
+      return;
+    }
+  }
+
+  planOwnedArrays.erase(oldArr);
+  // Coloring runs inside NativeDynamicShapePlan::execute(). Deleting a slot
+  // wrapper here mutates allocator state while adjacent plan slots are still
+  // being traversed and has produced timing-sensitive fasttop corruption.
+  // Retire through the same post-execution queue used by writeOutputSlot().
+  deferredDeletes.push_back(oldArr);
+}
+
 int DspBufferColorMap::apply(
     NDArray** outputSlots,
     SlotBufferInfo* ownership,
     std::unordered_set<NDArray*>& planOwnedArrays,
-    DspBufferPool& pool) {
+    DspBufferPool& pool,
+    std::vector<NDArray*>& deferredDeletes) {
 
   if (!computed_) {
     THROW_EXCEPTION("DspBufferColorMap::apply(): compute() not called yet");
@@ -386,11 +459,13 @@ int DspBufferColorMap::apply(
         THROW_EXCEPTION(msg);
       }
 
-      // Replace in plan
-      planOwnedArrays.erase(oldArr);
-      delete oldArr;
-      outputSlots[i] = newArr;
-      planOwnedArrays.insert(newArr);
+      // Publish the borrowing wrapper before deleting anything. If stale
+      // metadata hid an alias, replaceColoredSlot retains the actual storage
+      // owner until the last DataBuffer borrower is gone.
+      replaceColoredSlot(outputSlots, totalOutputSlots_, i, newArr,
+                         planOwnedArrays, true, deferredDeletes);
+      appliedSlots_[i] = true;
+      applied_ = true;
 
       // Update ownership to reflect shared buffer
       ownership[i].dataBuffer = masterDb;
@@ -399,7 +474,7 @@ int DspBufferColorMap::apply(
     }
   }
 
-  applied_ = true;
+  applied_ = consolidated > 0;
 
   DSP_DIAG(MEMORY, "COLORING_APPLY_DONE: consolidated=%d, saved %zuMB",
            consolidated, bytesSaved_ / (1024 * 1024));
@@ -413,7 +488,8 @@ int DspBufferColorMap::eject(
     NDArray** outputSlots,
     SlotBufferInfo* ownership,
     std::unordered_set<NDArray*>& planOwnedArrays,
-    DspBufferPool& pool) {
+    DspBufferPool& pool,
+    std::vector<NDArray*>& deferredDeletes) {
 
   if (!applied_) {
     return 0;  // Nothing to eject
@@ -425,9 +501,10 @@ int DspBufferColorMap::eject(
     if (colorInfos_[c].memberCount <= 1) continue;
     int masterIdx = colorInfos_[c].masterSlotIdx;
 
-    // For each non-master member, give it a fresh dedicated buffer
+    // For each non-master member that apply() actually replaced, give
+    // it a fresh dedicated buffer. This also makes partial-apply rollback safe.
     for (int i = 0; i < totalOutputSlots_; i++) {
-      if (colorOf_[i] != c || i == masterIdx) continue;
+      if (colorOf_[i] != c || i == masterIdx || !appliedSlots_[i]) continue;
 
       auto* oldArr = outputSlots[i];
       if (oldArr == nullptr) continue;
@@ -435,34 +512,40 @@ int DspBufferColorMap::eject(
       LongType numElements = oldArr->lengthOf();
       DataType dtype = oldArr->dataType();
 
-      // Acquire fresh buffer from pool
-      DataBuffer* freshDb = pool.acquire(numElements, dtype);
+      // acquire() transfers ownership to the caller. Keep an RAII owner until
+      // the NDArray ownership-transfer constructor succeeds.
+      std::unique_ptr<DataBuffer> freshDb(pool.acquire(numElements, dtype));
 
-      // Copy current data from shared buffer to new dedicated buffer
-      // This preserves correctness mid-execution
+      // Copy current data from shared buffer to new dedicated buffer.
       auto* sharedDb = oldArr->dataBuffer();
       if (sharedDb != nullptr && freshDb != nullptr) {
         size_t bytes = numElements * DataTypeUtils::sizeOfElement(dtype);
-        // Copy on host side
         if (sharedDb->primary() != nullptr && freshDb->primary() != nullptr) {
           std::memcpy(freshDb->primary(), sharedDb->primary(), bytes);
         }
-        // Copy on device side (no-op on CPU via dispatch stub)
+        // No-op on CPU via the dispatch stub.
         dspMemcpyD2DDefaultStream(freshDb->special(), sharedDb->special(), bytes);
       }
 
-      // Create new NDArray with dedicated buffer
-      auto* shapeInfo = const_cast<LongType*>(oldArr->shapeInfo());
-      auto* newArr = new NDArray(freshDb, shapeInfo, LaunchContext::defaultContext(), 0);
+      std::vector<LongType> shape(oldArr->rankOf());
+      for (int d = 0; d < oldArr->rankOf(); d++) {
+        shape[d] = oldArr->sizeAt(d);
+      }
+      auto* newArr = new NDArray(
+          freshDb.get(), oldArr->ordering(), shape, dtype, oldArr->getContext(),
+          true, false, 0);
+      DataBuffer* installedDb = freshDb.release();
 
-      // Replace in plan
-      planOwnedArrays.erase(oldArr);
-      delete oldArr;
-      outputSlots[i] = newArr;
-      planOwnedArrays.insert(newArr);
+      // Colored wrappers created by apply() borrow the master's DataBuffer.
+      // They can be deleted once their exact wrapper identity is unpublished.
+      replaceColoredSlot(outputSlots, totalOutputSlots_, i, newArr,
+                         planOwnedArrays, false, deferredDeletes);
+      appliedSlots_[i] = false;
 
-      // Update ownership
-      ownership[i].dataBuffer = freshDb;
+      ownership[i].ownership = BufferOwnership::SLOT_OWNED;
+      ownership[i].parentSlotIdx = -1;
+      ownership[i].viewRefCount = 0;
+      ownership[i].dataBuffer = installedDb;
 
       restored++;
     }
@@ -623,6 +706,7 @@ void DspBufferColorMap::reset() {
   bytesSaved_ = 0;
   computed_ = false;
   applied_ = false;
+  appliedSlots_.clear();
   colorInfos_.clear();
 
   DSP_DIAG(MEMORY, "COLORING_RESET: cleared %d colors", oldColors);

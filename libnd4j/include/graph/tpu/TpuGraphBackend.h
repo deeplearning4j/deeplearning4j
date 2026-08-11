@@ -60,6 +60,8 @@ class SD_LIB_EXPORT TpuGraphBackend : public GraphBackend {
    * Returns true if PjrtClientManager can create a client and devices exist.
    */
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
 
   /**
    * Check if all ops in the slot range [start, end) can be fused into HLO.

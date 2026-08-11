@@ -56,7 +56,7 @@ extern "C" {
 #endif
 
 enum {
-  SDX_LLM_ABI_VERSION = 1
+  SDX_LLM_ABI_VERSION = 2
 };
 
 /* Opaque handles. sdx_llm_runtime_t is a GraalVM isolate thread; sdx_llm_model_t
@@ -85,6 +85,25 @@ SDX_LLM_API int sdxLlmDestroyRuntime(sdx_llm_runtime_t* runtime);
 /* ABI version compiled into the library (compare with SDX_LLM_ABI_VERSION). */
 SDX_LLM_API int sdxLlmAbiVersion(sdx_llm_runtime_t* runtime);
 
+/* Convert one verified GGUF into the canonical SDZ cache, compile/resolve the
+ * selected target, and return sdx-prepared-text-model-v2 JSON. */
+SDX_LLM_API sdx_llm_status_t sdxLlmPrepareGguf(
+    sdx_llm_runtime_t* runtime,
+    const char* source_gguf,
+    const char* tokenizer_path,
+    const char* target_profile,
+    const char* cache_directory,
+    const char* options_json,
+    char** out_json);
+
+/* Resolve a canonical SDZ already present in the immutable target cache. */
+SDX_LLM_API sdx_llm_status_t sdxLlmResolveModelBundle(
+    sdx_llm_runtime_t* runtime,
+    const char* source_sdz,
+    const char* target_profile,
+    const char* cache_directory,
+    char** out_json);
+
 /* ── Model lifecycle ──────────────────────────────────────────────────── */
 
 /*
@@ -104,6 +123,15 @@ SDX_LLM_API sdx_llm_model_t* sdxLlmLoadModel(
     const char* tokenizer_path,
     const char* options_json);
 
+/* Open a resolver-produced immutable bundle through the shared SDX text
+ * session. target_profile selects strict backend-specific runtime options. */
+SDX_LLM_API sdx_llm_model_t* sdxLlmLoadCompiledModel(
+    sdx_llm_runtime_t* runtime,
+    const char* bundle_path,
+    const char* tokenizer_path,
+    const char* target_profile,
+    const char* options_json);
+
 SDX_LLM_API sdx_llm_status_t sdxLlmUnloadModel(sdx_llm_runtime_t* runtime, sdx_llm_model_t* model);
 
 /* ── Generation ───────────────────────────────────────────────────────── */
@@ -120,6 +148,50 @@ SDX_LLM_API sdx_llm_status_t sdxLlmGenerate(
     const char* prompt,
     const char* options_json,
     char** out_text);
+
+typedef void (*sdx_llm_chunk_callback_t)(const char* utf8_chunk);
+typedef int32_t (*sdx_llm_cancel_callback_t)(void);
+
+/* Stream complete UTF-8 chunks while returning the final complete text in
+ * out_text. Callbacks execute synchronously on the calling thread. */
+SDX_LLM_API sdx_llm_status_t sdxLlmGenerateStreaming(
+    sdx_llm_runtime_t* runtime,
+    sdx_llm_model_t* model,
+    const char* prompt,
+    const char* options_json,
+    sdx_llm_chunk_callback_t on_chunk,
+    sdx_llm_cancel_callback_t should_cancel,
+    char** out_text);
+
+/* Generate one structured chat turn. request_json contains messages, tools,
+ * tool_choice, and optional template arguments. out_json contains rawText,
+ * content, reasoningContent, toolCalls, and protocolErrors. The imported
+ * tokenizer/model owns all protocol rendering and parsing. */
+SDX_LLM_API sdx_llm_status_t sdxLlmGenerateChat(
+    sdx_llm_runtime_t* runtime,
+    sdx_llm_model_t* model,
+    const char* request_json,
+    const char* options_json,
+    char** out_json);
+
+/* Decode already-generated (for example streamed) assistant text through the
+ * imported model protocol and return the same structured result contract. */
+SDX_LLM_API sdx_llm_status_t sdxLlmParseChatResult(
+    sdx_llm_runtime_t* runtime,
+    sdx_llm_model_t* model,
+    const char* request_json,
+    const char* raw_text,
+    char** out_json);
+
+/* Render the tokenizer/model-owned chat template. The JSON input may be an
+ * ordered message array or a complete context object containing messages,
+ * tools, documents, flags, and model-specific template arguments. */
+SDX_LLM_API sdx_llm_status_t sdxLlmRenderChatPrompt(
+    sdx_llm_runtime_t* runtime,
+    sdx_llm_model_t* model,
+    const char* messages_or_context_json,
+    int32_t add_generation_prompt,
+    char** out_prompt);
 
 /* Stats JSON of the most recent sdxLlmGenerate on this model: token counts,
  * timings, tok/s, finish reason. Caller frees *out_json with sdxLlmFree. */

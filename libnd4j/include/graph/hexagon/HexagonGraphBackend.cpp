@@ -35,15 +35,13 @@ namespace sd {
 namespace graph {
 namespace {
 
-thread_local bool gAllowRuntimeCompilation = true;
-thread_local std::string gRuntimeArtifactDirectory;
-
-std::string artifactPathForSegment(int startSlot, int endSlot,
+std::string artifactPathForSegment(const std::string& artifactDirectory,
+                                   int startSlot, int endSlot,
                                    LongType shapeKey) {
   std::ostringstream name;
-  if (!gRuntimeArtifactDirectory.empty()) {
-    name << gRuntimeArtifactDirectory;
-    const char last = gRuntimeArtifactDirectory.back();
+  if (!artifactDirectory.empty()) {
+    name << artifactDirectory;
+    const char last = artifactDirectory.back();
     if (last != '/' && last != '\\') name << '/';
   }
   name << "hexagon_" << startSlot << '_' << endSlot << '_'
@@ -65,19 +63,6 @@ bool readBinaryArtifact(const std::string& path, std::vector<uint8_t>* bytes) {
 }
 
 }  // namespace
-
-HexagonGraphBackend::ScopedCompilationPolicy::ScopedCompilationPolicy(
-    bool allowRuntimeCompilation, const std::string& artifactDirectory)
-    : previousAllowRuntimeCompilation_(gAllowRuntimeCompilation),
-      previousArtifactDirectory_(gRuntimeArtifactDirectory) {
-  gAllowRuntimeCompilation = allowRuntimeCompilation;
-  gRuntimeArtifactDirectory = artifactDirectory;
-}
-
-HexagonGraphBackend::ScopedCompilationPolicy::~ScopedCompilationPolicy() {
-  gAllowRuntimeCompilation = previousAllowRuntimeCompilation_;
-  gRuntimeArtifactDirectory = previousArtifactDirectory_;
-}
 
 // ── Singleton ────────────────────────────────────────────────────────────────
 
@@ -127,9 +112,26 @@ bool HexagonGraphBackend::isAvailable() const {
   return runtime.isAvailable() && runtime.getDeviceCount() > 0;
 }
 
+bool HexagonGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_HEXAGON ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO;
+}
+
+int HexagonGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_HEXAGON ? 1000 : 300;
+}
+
 // ── Segment Fusion Check ─────────────────────────────────────────────────────
 
 bool HexagonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
+  return canResolveSegment(
+      GraphBackendRequest{GraphExecutionMode::GEM_AUTO}, slots, start, end);
+}
+
+bool HexagonGraphBackend::canResolveSegment(
+    const GraphBackendRequest& request, NativeSlot* slots, int start, int end) {
   if (slots == nullptr || start > end) return false;
 
   int totalOps = end - start + 1;
@@ -145,7 +147,8 @@ bool HexagonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) 
   // for op coverage; the exact shape-keyed artifact is verified during compile.
   float fraction = static_cast<float>(mappableOps) / static_cast<float>(totalOps);
   const bool strictAot =
-      !gAllowRuntimeCompilation && !gRuntimeArtifactDirectory.empty();
+      !request.runtimeCompilationAllowed &&
+      !request.runtimeArtifactDirectory.empty();
   if (!strictAot && fraction < MIN_MAPPABLE_FRACTION) {
     DSP_DIAG(SEGMENT, "HexagonGraphBackend::canFuseSegment: [%d, %d] only %.0f%% "
              "mappable (%d/%d), need %.0f%%",
@@ -190,10 +193,22 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                           int totalSlots,
                                           int* requestedOutputSlotIndices,
                                           int numRequestedOutputs) {
+  return compileSegment(
+      GraphBackendRequest{GraphExecutionMode::GEM_AUTO}, seg, slots,
+      externalInputs, numExternalInputs, outputSlots, totalOutputSlots,
+      shapeKey, totalSlots, requestedOutputSlotIndices, numRequestedOutputs);
+}
+
+bool HexagonGraphBackend::compileSegment(
+    const GraphBackendRequest& request, GraphSegment& seg, NativeSlot* slots,
+    NDArray** externalInputs, int numExternalInputs, NDArray** outputSlots,
+    int totalOutputSlots, LongType shapeKey, int totalSlots,
+    int* requestedOutputSlotIndices, int numRequestedOutputs) {
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot, shapeKey,
-                      gAllowRuntimeCompilation, gRuntimeArtifactDirectory};
+                      request.runtimeCompilationAllowed,
+                      request.runtimeArtifactDirectory};
 
   // Check negative cache
   if (failedCache_.find(key) != failedCache_.end()) {
@@ -226,9 +241,10 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   // considering runtime compilation. The artifact name is part of the public
   // SDX bundle contract and includes segment range plus the canonical shape key.
   const std::string artifactPath = artifactPathForSegment(
-      seg.def.startSlot, seg.def.endSlot, shapeKey);
+      request.runtimeArtifactDirectory, seg.def.startSlot, seg.def.endSlot,
+      shapeKey);
   std::vector<uint8_t> aotKernel;
-  if (!gRuntimeArtifactDirectory.empty() &&
+  if (!request.runtimeArtifactDirectory.empty() &&
       readBinaryArtifact(artifactPath, &aotKernel)) {
     kernelHandle = runtime.loadKernel(npuContext_, aotKernel.data(),
                                       aotKernel.size());
@@ -241,7 +257,7 @@ bool HexagonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
   }
 
-  if (kernelHandle == nullptr && !gAllowRuntimeCompilation) {
+  if (kernelHandle == nullptr && !request.runtimeCompilationAllowed) {
     DSP_DIAG(COMPILE,
              "HexagonGraphBackend::compileSegment: [%d, %d] strict AOT "
              "artifact unavailable or rejected: %s",
@@ -315,13 +331,23 @@ Status HexagonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                             NDArray** outputSlots,
                                             int totalOutputSlots,
                                             void* stream) {
+  return executeSegment(
+      GraphBackendRequest{GraphExecutionMode::GEM_AUTO}, seg, slots,
+      externalInputs, numExternalInputs, outputSlots, totalOutputSlots, stream);
+}
+
+Status HexagonGraphBackend::executeSegment(
+    const GraphBackendRequest& request, GraphSegment& seg, NativeSlot* slots,
+    NDArray** externalInputs, int numExternalInputs, NDArray** outputSlots,
+    int totalOutputSlots, void* stream) {
   std::lock_guard<std::mutex> lock(cacheMtx_);
 
   // Resolve the exact kernel domain. A strict AOT context must never reuse a
   // process-wide entry created by a JIT-enabled context with the same shapes.
   SegmentCacheKey key{seg.def.startSlot, seg.def.endSlot,
                       seg.def.shapeKeyState.compiledShapeKey,
-                      gAllowRuntimeCompilation, gRuntimeArtifactDirectory};
+                      request.runtimeCompilationAllowed,
+                      request.runtimeArtifactDirectory};
   auto compiledIt = cache_.find(key);
   CompiledKernel* compiled =
       compiledIt == cache_.end() ? nullptr : &compiledIt->second;

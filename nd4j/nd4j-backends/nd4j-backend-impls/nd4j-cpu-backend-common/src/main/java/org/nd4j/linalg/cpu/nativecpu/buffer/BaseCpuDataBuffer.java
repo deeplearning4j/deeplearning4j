@@ -125,7 +125,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
 
             setIndexer(ShortIndexer.create((ShortPointer) pointer));
-        } else if (dataType() == DataType.BYTE) {
+        } else if ((dataType() == DataType.BYTE || dataType() == DataType.FLOAT8 || dataType() == DataType.FLOAT8_E5M2)) {
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBytePointer();
 
             setIndexer(ByteIndexer.create((BytePointer) pointer));
@@ -190,6 +190,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                 break;
             case UBYTE: //Fall through
             case BYTE:
+            case FLOAT8:
+            case FLOAT8_E5M2:
                 temp = new BytePointer(buffer);
                 break;
             case BOOL:
@@ -319,7 +321,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
             if (initialize)
                 fillPointerWithZero();
-        } else if (dataType() == DataType.BYTE) {
+        } else if ((dataType() == DataType.BYTE || dataType() == DataType.FLOAT8 || dataType() == DataType.FLOAT8_E5M2)) {
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBytePointer();
 
             setIndexer(ByteIndexer.create((BytePointer) pointer));
@@ -399,7 +401,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         } else if (t == DataType.UBYTE) {
             pointer = new PagedPointer(cptr, length).asBytePointer();
             setIndexer(UByteIndexer.create((BytePointer) pointer));
-        } else if (t == DataType.BYTE) {
+        } else if ((t == DataType.BYTE || t == DataType.FLOAT8 || t == DataType.FLOAT8_E5M2)) {
             pointer = new PagedPointer(cptr, length).asBytePointer();
             setIndexer(ByteIndexer.create((BytePointer) pointer));
         } else if (t == DataType.UINT16) {
@@ -552,7 +554,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asLongPointer();
             setIndexer(LongIndexer.create((LongPointer) pointer));
-        } else if (dataType() == DataType.BYTE) {
+        } else if ((dataType() == DataType.BYTE || dataType() == DataType.FLOAT8 || dataType() == DataType.FLOAT8_E5M2)) {
             attached = true;
             parentWorkspace = workspace;
 
@@ -842,6 +844,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                 case UTF8:
                 case BYTE:
                 case UBYTE:
+                case FLOAT8:
+                case FLOAT8_E5M2:
                     pointer = nPtr.asBytePointer();
                     indexer = ByteIndexer.create((BytePointer) pointer);
                     break;
@@ -898,6 +902,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                 case UTF8:
                 case BYTE:
                 case UBYTE:
+                case FLOAT8:
+                case FLOAT8_E5M2:
                     pointer = nPtr.asBytePointer();
                     indexer = ByteIndexer.create((BytePointer) pointer);
                     break;

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-// Wired into NativeDynamicShapePlan::getGpuGraphBackend() only for native
+// Registered in NativeDynamicShapePlan's shared backend catalog only for native
 // SD_HIP artifacts. CUDA/ZLUDA artifacts own CUDA graph handles and rely on
 // ZLUDA to translate that CUDA ABI; they must not load a second HIP graph path.
 
@@ -119,6 +119,8 @@ class SD_LIB_EXPORT HipGraphBackend : public GraphBackend {
    * Always false on non-AMD / non-ROCm hosts.
    */
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
 
   /**
    * Returns true if the range [start, end) contains at least one slot that

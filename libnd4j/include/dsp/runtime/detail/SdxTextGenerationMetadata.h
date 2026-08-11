@@ -38,8 +38,22 @@ struct TextGenerationSamplingDefaults {
   int64_t seed = 0;
 };
 
+enum class TextGenerationRecurrentStateKind {
+  GDN,
+  CONV
+};
+
+struct TextGenerationRecurrentState {
+  std::string input;
+  std::string output;
+  TextGenerationRecurrentStateKind kind =
+      TextGenerationRecurrentStateKind::GDN;
+  DataType dataType = DataType::FLOAT32;
+  std::vector<int64_t> shape;
+};
+
 /**
- * Strict metadata for the first portable mobile causal-LM profile.
+ * Strict metadata for portable mobile causal-LM profiles.
  *
  * Every graph name is bundle-authored. Runtime name guessing is intentionally
  * prohibited because it makes AOT artifact selection and mobile failures
@@ -60,6 +74,7 @@ struct TextGenerationMetadata {
   std::vector<std::string> kvValueInputs;
   std::vector<std::string> prefillKeyOutputs;
   std::vector<std::string> prefillValueOutputs;
+  std::vector<TextGenerationRecurrentState> recurrentStates;
 
   std::string kvLayout;
   DataType kvDataType = DataType::FLOAT32;

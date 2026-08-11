@@ -195,6 +195,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <modules>
+                <module>nd4j-cuda-backend-common</module>
                 <module>nd4j-cuda</module>
                 <module>nd4j-cuda-preset</module>
                 <module>nd4j-cuda-platform</module>
@@ -229,6 +230,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <modules>
+                <module>nd4j-cuda-backend-common</module>
                 <module>nd4j-zluda</module>
             </modules>
 
@@ -248,6 +250,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <modules>
+                <module>nd4j-cuda-backend-common</module>
                 <module>nd4j-zluda</module>
             </modules>
             <properties>
@@ -261,6 +264,7 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <modules>
+                <module>nd4j-cuda-backend-common</module>
                 <module>nd4j-zluda</module>
             </modules>
             <properties>

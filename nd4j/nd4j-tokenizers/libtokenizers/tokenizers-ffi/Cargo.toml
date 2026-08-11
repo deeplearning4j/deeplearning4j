@@ -19,6 +19,9 @@ portable-regex = ["tokenizers/fancy-regex"]
 [dependencies]
 tokenizers = { version = "0.21", default-features = false }
 libc = "0.2"
+minijinja = { version = "=2.21.0", features = ["json", "loop_controls", "unicode"] }
+minijinja-contrib = { version = "=2.21.0", default-features = false, features = ["pycompat"] }
+serde_json = "1.0"
 
 [build-dependencies]
 cbindgen = "0.26"

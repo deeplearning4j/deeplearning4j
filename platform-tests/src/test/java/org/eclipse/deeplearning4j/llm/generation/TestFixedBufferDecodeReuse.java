@@ -249,7 +249,7 @@ public class TestFixedBufferDecodeReuse {
         float[] values = new float[paddedLength * keys];
         for (int query = 0; query < paddedLength; query++) {
             int row = query * keys;
-            int firstMaskedKey = query < actualLength ? query + 1 : 0;
+            int firstMaskedKey = query < actualLength ? query + 1 : 1;
             for (int key = firstMaskedKey; key < keys; key++) {
                 values[row + key] = maskValue;
             }

@@ -19,9 +19,19 @@
 #include <graph/SdnbReader.h>
 #include <graph/DspDiagnostics.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <limits>
+#include <memory>
+
+#if !defined(_WIN32)
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 using namespace ::graph;
 
@@ -29,6 +39,8 @@ namespace sd {
 namespace graph {
 
 namespace {
+
+constexpr size_t kLargeTensorBytes = 1024U * 1024U;
 
 uint8_t* prepareWritablePrimary(NDArray* array, size_t bytes) {
   if (array == nullptr) return nullptr;
@@ -49,14 +61,11 @@ uint8_t* prepareWritablePrimary(NDArray* array, size_t bytes) {
 }  // namespace
 
 SdnbReader::SdnbReader()
-    : data_(nullptr), size_(0), ownsData_(false),
-      flatGraph_(nullptr), flatBufferOffset_(0) {}
+    : data_(nullptr), size_(0), backingOwner_(), fileBacked_(false),
+      flatGraph_(nullptr), flatBufferOffset_(0), appendedDataBaseOffset_(0),
+      hasAppendedDataBaseOffset_(false) {}
 
-SdnbReader::~SdnbReader() {
-  if (ownsData_ && data_) {
-    delete[] data_;
-  }
-}
+SdnbReader::~SdnbReader() = default;
 
 DataType SdnbReader::convertDType(::graph::DType fbDtype) {
   switch (fbDtype) {
@@ -97,12 +106,19 @@ static const ::graph::FlatGraph* tryParseFlatGraphAt(const uint8_t* buf, size_t 
 }
 
 SdnbReader* SdnbReader::open(const void* data, size_t size) {
+  return openOwned(data, size, std::shared_ptr<void>(), false);
+}
+
+SdnbReader* SdnbReader::openOwned(const void* data, size_t size,
+                                  std::shared_ptr<void> owner,
+                                  bool fileBacked) {
   if (!data || size < 4) return nullptr;
 
   auto* reader = new SdnbReader();
   reader->data_ = static_cast<const uint8_t*>(data);
   reader->size_ = size;
-  reader->ownsData_ = false;
+  reader->backingOwner_ = std::move(owner);
+  reader->fileBacked_ = fileBacked;
 
   // ── SDNB header-aware parsing ──
   // Java's SameDiffSerializer writes SDNB files with a 32-byte header:
@@ -120,8 +136,8 @@ SdnbReader* SdnbReader::open(const void* data, size_t size) {
     const uint8_t* hdr = reader->data_;
 
     // Version at offset 4 (4 bytes, big-endian int32)
-    // ManifestOffset at offset 8 (8 bytes, big-endian int64) — unused here
-    // ManifestLength at offset 16 (8 bytes, big-endian int64) — unused here
+    // ManifestOffset at offset 8 (8 bytes, big-endian int64)
+    // ManifestLength at offset 16 (8 bytes, big-endian int64)
     // MetadataOffset at offset 24 (8 bytes, big-endian int64) = FlatBuffer start
     auto readBigEndianInt64 = [](const uint8_t* p) -> int64_t {
       return (static_cast<int64_t>(p[0]) << 56) | (static_cast<int64_t>(p[1]) << 48) |
@@ -130,17 +146,80 @@ SdnbReader* SdnbReader::open(const void* data, size_t size) {
              (static_cast<int64_t>(p[6]) << 8)  |  static_cast<int64_t>(p[7]);
     };
 
-    int64_t metadataOffset = readBigEndianInt64(hdr + 24);
-    if (metadataOffset < 0 || static_cast<size_t>(metadataOffset) >= size) {
-      DSP_DIAG(COMPILE, "SdnbReader::open: invalid metadataOffset %lld in SDNB header",
-               static_cast<long long>(metadataOffset));
+    const int64_t manifestOffset = readBigEndianInt64(hdr + 8);
+    const int64_t manifestLength = readBigEndianInt64(hdr + 16);
+    const int64_t metadataOffset = readBigEndianInt64(hdr + 24);
+    if (metadataOffset < 0 || static_cast<size_t>(metadataOffset) >= size ||
+        manifestOffset < metadataOffset || manifestLength < 0 ||
+        static_cast<uint64_t>(manifestOffset) > size ||
+        static_cast<uint64_t>(manifestLength) >
+            size - static_cast<size_t>(manifestOffset)) {
+      DSP_DIAG(COMPILE,
+               "SdnbReader::open: invalid SDNB offsets metadata=%lld manifest=%lld length=%lld size=%llu",
+               static_cast<long long>(metadataOffset),
+               static_cast<long long>(manifestOffset),
+               static_cast<long long>(manifestLength),
+               static_cast<unsigned long long>(size));
       delete reader;
       return nullptr;
     }
 
-    size_t fbOffset = static_cast<size_t>(metadataOffset);
+    const size_t fbOffset = static_cast<size_t>(metadataOffset);
     auto* graph = tryParseFlatGraphAt(reader->data_, size, fbOffset);
     if (graph) {
+      size_t maxAppendedExtent = 0;
+      bool hasAppendedData = false;
+      if (graph->variables() != nullptr) {
+        for (unsigned int i = 0; i < graph->variables()->size(); i++) {
+          const auto* variable = graph->variables()->Get(i);
+          const auto* array = variable == nullptr ? nullptr : variable->ndarray();
+          if (array == nullptr || array->appendedDataLength() <= 0) continue;
+
+          const int64_t relativeOffset = array->appendedDataOffset();
+          const int64_t length = array->appendedDataLength();
+          if (relativeOffset < 0 ||
+              static_cast<uint64_t>(relativeOffset) >
+                  std::numeric_limits<size_t>::max() ||
+              static_cast<uint64_t>(length) >
+                  std::numeric_limits<size_t>::max() -
+                      static_cast<size_t>(relativeOffset)) {
+            DSP_DIAG(COMPILE,
+                     "SdnbReader::open: invalid appended range offset=%lld length=%lld",
+                     static_cast<long long>(relativeOffset),
+                     static_cast<long long>(length));
+            delete reader;
+            return nullptr;
+          }
+          hasAppendedData = true;
+          maxAppendedExtent = std::max(
+              maxAppendedExtent,
+              static_cast<size_t>(relativeOffset) + static_cast<size_t>(length));
+        }
+      }
+
+      if (hasAppendedData) {
+        const size_t manifestStart = static_cast<size_t>(manifestOffset);
+        if (maxAppendedExtent > manifestStart) {
+          DSP_DIAG(COMPILE,
+                   "SdnbReader::open: appended data extent %llu exceeds manifest offset %llu",
+                   static_cast<unsigned long long>(maxAppendedExtent),
+                   static_cast<unsigned long long>(manifestStart));
+          delete reader;
+          return nullptr;
+        }
+        const size_t appendedDataBase = manifestStart - maxAppendedExtent;
+        if (appendedDataBase < fbOffset) {
+          DSP_DIAG(COMPILE,
+                   "SdnbReader::open: appended data base %llu precedes metadata offset %llu",
+                   static_cast<unsigned long long>(appendedDataBase),
+                   static_cast<unsigned long long>(fbOffset));
+          delete reader;
+          return nullptr;
+        }
+        reader->appendedDataBaseOffset_ = appendedDataBase;
+        reader->hasAppendedDataBaseOffset_ = true;
+      }
+
       reader->flatGraph_ = graph;
       reader->flatBufferOffset_ = static_cast<long>(fbOffset);
       return reader;
@@ -166,6 +245,33 @@ SdnbReader* SdnbReader::open(const void* data, size_t size) {
 }
 
 SdnbReader* SdnbReader::openFile(const char* path) {
+#if !defined(_WIN32)
+  const int fd = ::open(path, O_RDONLY | O_CLOEXEC);
+  if (fd < 0) {
+    DSP_DIAG(COMPILE, "SdnbReader::openFile: cannot open %s", path);
+    return nullptr;
+  }
+
+  struct stat st {};
+  if (::fstat(fd, &st) != 0 || st.st_size <= 0) {
+    ::close(fd);
+    DSP_DIAG(COMPILE, "SdnbReader::openFile: cannot stat %s", path);
+    return nullptr;
+  }
+
+  const size_t fileSize = static_cast<size_t>(st.st_size);
+  void* mapping = ::mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
+  ::close(fd);
+  if (mapping == MAP_FAILED) {
+    DSP_DIAG(COMPILE, "SdnbReader::openFile: mmap failed for %s", path);
+    return nullptr;
+  }
+
+  std::shared_ptr<void> owner(mapping, [fileSize](void* ptr) {
+    if (ptr != nullptr) ::munmap(ptr, fileSize);
+  });
+  return openOwned(mapping, fileSize, std::move(owner), true);
+#else
   std::ifstream file(path, std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
     DSP_DIAG(COMPILE, "SdnbReader::openFile: cannot open %s", path);
@@ -175,17 +281,16 @@ SdnbReader* SdnbReader::openFile(const char* path) {
   auto fileSize = file.tellg();
   file.seekg(0, std::ios::beg);
 
-  auto* buffer = new uint8_t[fileSize];
-  file.read(reinterpret_cast<char*>(buffer), fileSize);
+  const size_t size = static_cast<size_t>(fileSize);
+  auto* buffer = new uint8_t[size];
+  file.read(reinterpret_cast<char*>(buffer), static_cast<std::streamsize>(size));
   file.close();
 
-  auto* reader = open(buffer, fileSize);
-  if (reader) {
-    reader->ownsData_ = true;
-  } else {
-    delete[] buffer;
-  }
-  return reader;
+  std::shared_ptr<void> owner(buffer, [](void* ptr) {
+    delete[] static_cast<uint8_t*>(ptr);
+  });
+  return openOwned(buffer, size, std::move(owner), false);
+#endif
 }
 
 int SdnbReader::numVariables() const {
@@ -198,33 +303,70 @@ int SdnbReader::numNodes() const {
   return flatGraph_->nodes()->size();
 }
 
-NDArray* SdnbReader::loadFlatArray(const ::graph::FlatArray* fa) const {
+NDArray* SdnbReader::loadFlatArray(const ::graph::FlatArray* fa,
+                                   bool allowBorrowed,
+                                   bool requireFileBacked,
+                                   size_t* fileBackedBytes,
+                                   size_t* heapOwnedBytes,
+                                   size_t* largeHeapOwnedBytes) const {
   if (!fa) return nullptr;
 
   // Get shape
   auto* shapeVec = fa->shape();
-  if (!shapeVec || shapeVec->size() == 0) return nullptr;
-
-  int rank = 0;
   std::vector<LongType> shape;
 
   // Shape vector from FlatArray is the full shape info buffer
   // We need to extract rank and dimensions
   // The shape is stored as raw dimensions, not a full shapeInfo buffer
-  for (unsigned int i = 0; i < shapeVec->size(); i++) {
-    shape.push_back(shapeVec->Get(i));
+  if (shapeVec != nullptr) {
+    for (unsigned int i = 0; i < shapeVec->size(); i++) {
+      shape.push_back(shapeVec->Get(i));
+    }
   }
 
-  if (shape.empty()) return nullptr;
-  rank = static_cast<int>(shape.size());
-
   auto dtype = convertDType(fa->dtype());
+  size_t elements = 1;
+  for (LongType dim : shape) {
+    if (dim < 0 || (dim > 0 &&
+        elements > std::numeric_limits<size_t>::max() / static_cast<size_t>(dim))) {
+      return nullptr;
+    }
+    elements *= static_cast<size_t>(dim);
+  }
+  const size_t elementSize = DataTypeUtils::sizeOfElement(dtype);
+  if (elementSize == 0 ||
+      elements > std::numeric_limits<size_t>::max() / elementSize) {
+    return nullptr;
+  }
+  const size_t bytesNeeded = elements * elementSize;
+
+  auto recordHeapCopy = [&](size_t bytes) {
+    if (heapOwnedBytes != nullptr) *heapOwnedBytes += bytes;
+    if (largeHeapOwnedBytes != nullptr && bytes >= kLargeTensorBytes) {
+      *largeHeapOwnedBytes += bytes;
+    }
+  };
+  auto borrowedArray = [&](const uint8_t* bytes, size_t available) -> NDArray* {
+    if (!allowBorrowed || !fileBacked_ || !backingOwner_ ||
+        available < bytesNeeded || bytes == nullptr) {
+      return nullptr;
+    }
+    if (fileBackedBytes != nullptr) *fileBackedBytes += bytesNeeded;
+    return new NDArray(const_cast<uint8_t*>(bytes), 'c', shape, dtype,
+                       LaunchContext::defaultContext(), false);
+  };
+  auto strictCopyRejected = [&]() {
+    return requireFileBacked && bytesNeeded >= kLargeTensorBytes;
+  };
 
   // Check for inline buffer data
   auto* buffer = fa->buffer();
   if (buffer && buffer->size() > 0) {
+    if (auto* borrowed = borrowedArray(buffer->Data(), buffer->size())) {
+      return borrowed;
+    }
+    if (strictCopyRejected()) return nullptr;
     auto* arr = new NDArray('c', shape, dtype);
-    size_t bytesNeeded = arr->lengthOf() * arr->sizeOfT();
     size_t bytesAvailable = buffer->size();
     size_t bytesToCopy = std::min(bytesNeeded, bytesAvailable);
     auto* destination = prepareWritablePrimary(arr, bytesNeeded);
@@ -234,14 +376,15 @@ NDArray* SdnbReader::loadFlatArray(const ::graph::FlatArray* fa) const {
     }
     std::memcpy(destination, buffer->Data(), bytesToCopy);
     arr->tickWriteHost();
+    recordHeapCopy(bytesNeeded);
     return arr;
   }
 
   // Check for chunked buffer data
   auto* chunks = fa->bufferChunks();
   if (chunks && chunks->size() > 0) {
+    if (strictCopyRejected()) return nullptr;
     auto* arr = new NDArray('c', shape, dtype);
-    size_t bytesNeeded = arr->lengthOf() * arr->sizeOfT();
     auto* destination = prepareWritablePrimary(arr, bytesNeeded);
     if (destination == nullptr) {
       delete arr;
@@ -260,30 +403,47 @@ NDArray* SdnbReader::loadFlatArray(const ::graph::FlatArray* fa) const {
       }
     }
     arr->tickWriteHost();
+    recordHeapCopy(bytesNeeded);
     return arr;
   }
 
-  // Check for appended data (new format via appendedDataOffset/appendedDataLength)
-  long appendedOffset = fa->appendedDataOffset();
-  long appendedLength = fa->appendedDataLength();
-  if (appendedOffset > 0 && appendedLength > 0) {
-    if (static_cast<size_t>(appendedOffset + appendedLength) <= size_) {
-      auto* arr = new NDArray('c', shape, dtype);
-      size_t bytesNeeded = arr->lengthOf() * arr->sizeOfT();
-      size_t bytesToCopy = std::min(bytesNeeded, static_cast<size_t>(appendedLength));
-      auto* destination = prepareWritablePrimary(arr, bytesNeeded);
-      if (destination == nullptr) {
-        delete arr;
-        return nullptr;
+  // Appended offsets in Java SDNB metadata are relative to the beginning of
+  // the raw-data section. Offset zero is valid and identifies its first tensor.
+  const int64_t appendedOffset = fa->appendedDataOffset();
+  const int64_t appendedLength = fa->appendedDataLength();
+  if (appendedOffset >= 0 && appendedLength > 0 &&
+      hasAppendedDataBaseOffset_) {
+    const size_t relativeOffset = static_cast<size_t>(appendedOffset);
+    const size_t length = static_cast<size_t>(appendedLength);
+    if (relativeOffset <=
+            std::numeric_limits<size_t>::max() - appendedDataBaseOffset_) {
+      const size_t absoluteOffset = appendedDataBaseOffset_ + relativeOffset;
+      if (absoluteOffset <= size_ && length <= size_ - absoluteOffset) {
+        const auto* appended = data_ + absoluteOffset;
+        if (auto* borrowed = borrowedArray(appended, length)) {
+          return borrowed;
+        }
+        if (strictCopyRejected()) return nullptr;
+        auto* arr = new NDArray('c', shape, dtype);
+        const size_t bytesToCopy = std::min(bytesNeeded, length);
+        auto* destination = prepareWritablePrimary(arr, bytesNeeded);
+        if (destination == nullptr) {
+          delete arr;
+          return nullptr;
+        }
+        std::memcpy(destination, appended, bytesToCopy);
+        arr->tickWriteHost();
+        recordHeapCopy(bytesNeeded);
+        return arr;
       }
-      std::memcpy(destination, data_ + appendedOffset, bytesToCopy);
-      arr->tickWriteHost();
-      return arr;
     }
   }
 
   // Empty array (no data)
-  return new NDArray('c', shape, dtype);
+  if (strictCopyRejected()) return nullptr;
+  auto* empty = new NDArray('c', shape, dtype);
+  recordHeapCopy(bytesNeeded);
+  return empty;
 }
 
 NDArray* SdnbReader::loadVariable(const char* name) const {
@@ -293,7 +453,8 @@ NDArray* SdnbReader::loadVariable(const char* name) const {
   for (unsigned int i = 0; i < vars->size(); i++) {
     auto* fv = vars->Get(i);
     if (fv && fv->name() && fv->name()->str() == name) {
-      return loadFlatArray(fv->ndarray());
+      return loadFlatArray(fv->ndarray(), false, false, nullptr, nullptr,
+                           nullptr);
     }
   }
   return nullptr;
@@ -306,12 +467,27 @@ NDArray* SdnbReader::loadVariable(int index) const {
   if (index < 0 || index >= static_cast<int>(vars->size())) return nullptr;
 
   auto* fv = vars->Get(index);
-  return fv ? loadFlatArray(fv->ndarray()) : nullptr;
+  return fv ? loadFlatArray(fv->ndarray(), false, false, nullptr, nullptr,
+                            nullptr)
+            : nullptr;
 }
 
 SdnbReader::LoadedModel SdnbReader::loadAll() const {
+  return loadAllOwned(false, false);
+}
+
+SdnbReader::LoadedModel SdnbReader::loadAllOwned(
+    bool inferenceOnly, bool requireFileBacked) const {
   LoadedModel model;
+  if (requireFileBacked && (!fileBacked_ || !backingOwner_)) {
+    DSP_DIAG(COMPILE,
+             "SdnbReader::loadAllOwned: strict file-backed loading requested "
+             "for non-mapped storage");
+    return model;
+  }
+
   model.graph = flatGraph_;
+  if (backingOwner_) model.backingOwners.push_back(backingOwner_);
 
   if (!flatGraph_ || !flatGraph_->variables()) return model;
 
@@ -326,13 +502,29 @@ SdnbReader::LoadedModel SdnbReader::loadAll() const {
     if (vtype == VarType_PLACEHOLDER) {
       model.placeholderNames.push_back(name);
     } else if (vtype == VarType_CONSTANT || vtype == VarType_VARIABLE) {
-      auto* arr = loadFlatArray(fv->ndarray());
+      auto* arr = loadFlatArray(
+          fv->ndarray(), inferenceOnly, requireFileBacked,
+          &model.fileBackedBytes, &model.heapOwnedBytes,
+          &model.largeHeapOwnedBytes);
       if (arr) {
         model.variables[name] = arr;
+      } else if (requireFileBacked && fv->ndarray() != nullptr) {
+        DSP_DIAG(COMPILE,
+                 "SdnbReader::loadAllOwned: strict loading rejected variable %s",
+                 name.c_str());
+        model.graph = nullptr;
+        return model;
       }
     }
   }
 
+  DSP_DIAG(COMPILE,
+           "SdnbReader::loadAllOwned: vars=%d mappedBytes=%llu heapBytes=%llu "
+           "largeHeapBytes=%llu",
+           static_cast<int>(model.variables.size()),
+           static_cast<unsigned long long>(model.fileBackedBytes),
+           static_cast<unsigned long long>(model.heapOwnedBytes),
+           static_cast<unsigned long long>(model.largeHeapOwnedBytes));
   return model;
 }
 

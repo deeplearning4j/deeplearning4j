@@ -66,6 +66,20 @@ public interface TextConstraint {
     boolean canExtend(String currentText, String piece);
 
     /**
+     * Whether a tokenizer-declared special/control token is legal at this exact
+     * constraint state. Special tokens are rejected by default so protocol
+     * sentinels cannot be consumed as ordinary string content. Constraints that
+     * own an explicit protocol envelope may opt in only to that envelope.
+     *
+     * @param currentText text emitted so far
+     * @param piece decoded special-token piece
+     * @return true only when this special token is part of the constraint protocol
+     */
+    default boolean allowsSpecialToken(String currentText, String piece) {
+        return false;
+    }
+
+    /**
      * Returns {@code true} if {@code currentText} is in a complete, accepting state —
      * i.e., generation may legally stop here.
      *

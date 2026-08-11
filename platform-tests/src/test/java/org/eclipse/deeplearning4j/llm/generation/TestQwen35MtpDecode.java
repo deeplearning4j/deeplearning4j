@@ -836,7 +836,8 @@ public class TestQwen35MtpDecode {
             if (q < actualLen) {
                 for (int k = q + 1; k < k0; k++) data[rowOffset + k] = maskVal;
             } else {
-                for (int k = 0; k < k0; k++) data[rowOffset + k] = maskVal;
+                // Keep one safe attention target so FP16 softmax never receives an all-masked row.
+                for (int k = 1; k < k0; k++) data[rowOffset + k] = maskVal;
             }
         }
         INDArray mask = Nd4j.create(data, new long[]{1, 1, paddedLen, maxKvLen}, 'c');

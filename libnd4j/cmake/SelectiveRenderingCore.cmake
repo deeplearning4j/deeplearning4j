@@ -1723,7 +1723,7 @@ function(srcore_generate_javacpp_header combinations_2 combinations_3 output_dir
     string(APPEND javacpp_content "} // namespace functions\n\n")
     string(APPEND javacpp_content "#endif // SD_JAVACPP_INSTANTIATIONS_H\n")
 
-    file(WRITE "${javacpp_header_file}" "${javacpp_content}")
+    _srcore_write_if_different("${javacpp_header_file}" "${javacpp_content}")
 
     list(LENGTH combinations_2 total_pairs)
     list(LENGTH combinations_3 total_triples)
@@ -1782,6 +1782,7 @@ endfunction()
 function(_internal_srcore_generate_validity_header active_indices type_enums type_cpp_types combinations_2 combinations_3 output_dir)
     file(MAKE_DIRECTORY "${output_dir}/system")
     set(header_file "${output_dir}/system/selective_rendering.h")
+    set(base_header_file "${output_dir}/system/selective_rendering.h.base")
 
     # Helper function to convert enum value to integer
     function(enum_to_int_value enum_value output_var)
@@ -2406,8 +2407,10 @@ function(_internal_srcore_generate_validity_header active_indices type_enums typ
     # Close the header guard
     string(APPEND header_content "#endif // SD_SELECTIVE_RENDERING_H\n")
 
-    # Write the master header file
-    _srcore_write_if_different("${header_file}" "${header_content}")
+    # Stage the base master header for the runtime-dispatch pass below. Writing
+    # this incomplete form to the real header would make it differ from the
+    # final enhanced form on every configure and invalidate the object graph.
+    _srcore_write_if_different("${base_header_file}" "${header_content}")
 
     # Report generation results
     list(LENGTH all_triple_keys total_triple_combinations)
@@ -2954,26 +2957,30 @@ endfunction()
 
 function(_internal_srcore_append_runtime_dispatch_to_header active_indices type_enums type_cpp_types combinations_2 combinations_3 output_dir)
     set(header_file "${output_dir}/system/selective_rendering.h")
+    set(base_header_file "${output_dir}/system/selective_rendering.h.base")
 
     _internal_srcore_generate_helper_macros(helper_macros)
 
-    if(EXISTS "${header_file}")
-        file(READ "${header_file}" existing_content)
+    if(EXISTS "${base_header_file}")
+        file(READ "${base_header_file}" base_content)
 
-        string(REGEX REPLACE "\n#endif // SD_SELECTIVE_RENDERING_H\n?$" "" content_without_endif "${existing_content}")
+        string(REGEX REPLACE "\n#endif // SD_SELECTIVE_RENDERING_H\n?$" "" content_without_endif "${base_content}")
 
         set(new_content "${content_without_endif}")
         string(APPEND new_content "\n${dispatch_macros}")
         string(APPEND new_content "${helper_macros}")
         string(APPEND new_content "#endif // SD_SELECTIVE_RENDERING_H\n")
 
-        file(WRITE "${header_file}" "${new_content}")
+        # The master header is included by nearly every native translation unit.
+        # Preserve its timestamp when the generated dispatch content is unchanged.
+        _srcore_write_if_different("${header_file}" "${new_content}")
+        file(REMOVE "${base_header_file}")
 
         list(LENGTH combinations_3 total_triple_combinations)
         list(LENGTH combinations_2 total_pair_combinations)
         message(STATUS "Enhanced selective_rendering.h with runtime dispatch - ${total_pair_combinations} pair dispatches, ${total_triple_combinations} triple dispatches")
     else()
-        message(FATAL_ERROR "Cannot append runtime dispatch - header file does not exist: ${header_file}")
+        message(FATAL_ERROR "Cannot append runtime dispatch - staged base header does not exist: ${base_header_file}")
     endif()
 endfunction()
 

@@ -57,6 +57,17 @@ bool PtxGraphBackend::isAvailable() const {
   return true;  // Always available on CUDA builds
 }
 
+bool PtxGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_PTX_JIT ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO;
+}
+
+int PtxGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_PTX_JIT ? 1000 : 500;
+}
+
 // ---- SM version ----
 
 int PtxGraphBackend::getSmVersion() {

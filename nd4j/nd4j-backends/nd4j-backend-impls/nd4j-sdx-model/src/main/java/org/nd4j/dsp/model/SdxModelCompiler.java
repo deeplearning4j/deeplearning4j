@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,7 +40,7 @@ import java.util.stream.Stream;
  * Applications never select or parse provider file formats.</p>
  */
 public final class SdxModelCompiler {
-    public static final String COMPILER_ABI = "sdx-model-compiler-v1";
+    public static final String COMPILER_ABI = "sdx-model-compiler-v5";
 
     private final SdxModelCache cache;
 
@@ -66,10 +67,31 @@ public final class SdxModelCompiler {
 
         Path source = sourceModel.toAbsolutePath().normalize();
         SdxSourceIdentity identity = cache.identify(source);
-        cache.ensureSourceCached(source, identity);
-        String compileKey = compileKey(source, identity, target, compiler, options);
+        Path cachedSource = cache.ensureSourceCached(source, identity);
+        CompileInputSnapshot snapshot = createInputSnapshot(
+                cachedSource,
+                identity,
+                options,
+                compiler.requiresIsolatedSourceSnapshot());
+        try {
+            CompileOptions compileOptions = snapshot.options();
+            SdxQuantizationContract quantization =
+                    compileOptions.quantizationConfig == null
+                            ? null
+                            : SdxQuantizationContract.load(
+                                    compileOptions.quantizationConfig);
+            if (quantization != null) {
+                quantization.validateForCompilation(
+                        identity, target, compileOptions.targetSoc());
+            }
+            String compileKey = compileKey(
+                    snapshot.sourceModel(),
+                    identity,
+                    target,
+                    compiler,
+                    compileOptions);
 
-        return cache.withCompileLock(compileKey, () -> {
+            return cache.withCompileLock(compileKey, () -> {
             java.util.Optional<SdxCompiledModel> existing =
                     cache.resolveByCompileKey(source, identity, target, compileKey);
             if (existing.isPresent()) {
@@ -82,40 +104,97 @@ public final class SdxModelCompiler {
             Files.createDirectory(work);
             try {
                 Path suggestedOutput = suggestedCompilerOutput(work, target);
+                Path suggestedModelOutput = suggestedCompilerModelOutput(work);
                 CompilationContext context = new CompilationContext(
-                        source,
+                        snapshot.sourceModel(),
                         identity,
                         target,
                         work,
-                        suggestedOutput);
+                        suggestedOutput,
+                        suggestedModelOutput,
+                        compileOptions);
+                SdxPlatformProviderDescriptor provider = target.platformProvider();
                 Path compiledArtifact = compiler.compile(context);
-                if (compiledArtifact == null) {
-                    throw new IOException(
-                            "SDX target compiler returned no artifact for " + target.id());
-                }
-                Path artifact = compiledArtifact.toAbsolutePath().normalize();
-                validateArtifact(target, artifact);
-
                 Path payloadRoot = staging.resolve(
                         target.runtimeKind() == SdxTargetProfile.RuntimeKind.SDX_BUNDLE
                                 ? "bundle"
                                 : "payload");
-                Path artifactDestination =
-                        payloadRoot.resolve(target.artifactRelativePath());
-                copyArtifact(artifact, artifactDestination, target.artifactKind());
+                Path artifactDestination = null;
+                if (provider.requiresAotArtifact()) {
+                    if (compiledArtifact == null) {
+                        throw new IOException(
+                                "SDX target compiler returned no artifact for " + target.id());
+                    }
+                    Path artifact = compiledArtifact.toAbsolutePath().normalize();
+                    artifactDestination = payloadRoot.resolve(target.artifactRelativePath());
+                    copyArtifact(artifact, artifactDestination, target.artifactKind());
+                } else {
+                    if (target.artifactKind() != SdxTargetProfile.ArtifactKind.NONE) {
+                        throw new IOException(
+                                "Runtime-specialized target declares a bundle-owned artifact: "
+                                        + target.id());
+                    }
+                    if (compiledArtifact != null) {
+                        throw new IOException(
+                                "Runtime-specialized target " + target.id()
+                                        + " must not emit a model-owned accelerator artifact");
+                    }
+                }
+                snapshot.verifyUnchanged(identity);
+
+                SdxSourceIdentity compiledModelIdentity = copyOptionalCompiledModel(
+                        context.suggestedModelOutput(), payloadRoot);
+                if (quantization != null
+                        && target == SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR) {
+                    if (compiledModelIdentity == null) {
+                        throw new IOException(
+                                "NNAPI quantization must emit the derived SDZ at "
+                                        + context.suggestedModelOutput());
+                    }
+                    if (identity.sha256().equals(compiledModelIdentity.sha256())) {
+                        throw new IOException(
+                                "NNAPI quantization emitted an unchanged derived SDZ; "
+                                        + "a real graph rewrite is required");
+                    }
+                }
+
+                // Validate the private staged copy. A compiler output can be
+                // concurrently replaced; only bytes admitted to the immutable
+                // cache are authoritative.
+                if (artifactDestination != null) {
+                    validateArtifact(
+                            target,
+                            artifactDestination,
+                            identity,
+                            compiledModelIdentity,
+                            compileOptions);
+                    if (quantization != null) {
+                        quantization.validateArtifact(artifactDestination);
+                    }
+                }
+
+                String runtimeModelRelative = compiledModelIdentity == null
+                        ? "../../../sources/" + identity.sha256()
+                                + "/" + identity.sourceFileName()
+                        : "graph/model.sdz";
 
                 String tokenizerRelative = copyOptionalAsset(
-                        options.tokenizer,
+                        compileOptions.tokenizer,
                         payloadRoot,
                         "assets/tokenizer/tokenizer.json",
                         staging);
+                String tokenizerConfigRelative = copyOptionalAsset(
+                        compileOptions.tokenizerConfig,
+                        payloadRoot,
+                        "assets/tokenizer/tokenizer_config.json",
+                        staging);
                 String textConfigRelative = copyOptionalAsset(
-                        options.textGenerationConfig,
+                        compileOptions.textGenerationConfig,
                         payloadRoot,
                         "metadata/text-generation.json",
                         staging);
                 String quantizationRelative = copyOptionalAsset(
-                        options.quantizationConfig,
+                        compileOptions.quantizationConfig,
                         payloadRoot,
                         "metadata/quantization.json",
                         staging);
@@ -128,10 +207,12 @@ public final class SdxModelCompiler {
                             target,
                             compileKey,
                             compiler,
+                            runtimeModelRelative,
+                            compiledModelIdentity,
                             tokenizerRelative,
                             textConfigRelative,
                             quantizationRelative,
-                            options);
+                            compileOptions);
                     runtimeRelative = "bundle";
                 } else {
                     runtimeRelative =
@@ -148,6 +229,7 @@ public final class SdxModelCompiler {
                         staging,
                         runtimeRelative,
                         tokenizerRelative,
+                        tokenizerConfigRelative,
                         textConfigRelative,
                         quantizationRelative);
             } catch (Throwable failure) {
@@ -160,7 +242,160 @@ public final class SdxModelCompiler {
             } finally {
                 SdxModelCache.deleteTree(work);
             }
-        });
+            });
+        } finally {
+            snapshot.close();
+        }
+    }
+
+    private static CompileInputSnapshot createInputSnapshot(
+            Path cachedSource,
+            SdxSourceIdentity identity,
+            CompileOptions options,
+            boolean isolateSource) throws IOException {
+        Path root = cachedSource.resolveSibling(
+                "." + UUID.randomUUID() + ".compiler-inputs");
+        Files.createDirectory(root);
+        try {
+            Path source = cachedSource;
+            if (isolateSource) {
+                source = root.resolve(identity.sourceFileName());
+                Files.copy(cachedSource, source);
+                SdxSourceIdentity copiedSource = SdxSourceIdentity.identify(source);
+                if (!identity.sha256().equals(copiedSource.sha256())
+                        || identity.logicalBytes() != copiedSource.logicalBytes()) {
+                    throw new IOException(
+                            "Canonical SDZ cache does not match the requested source identity");
+                }
+            }
+
+            Path tokenizer = copySnapshotInput(root, "tokenizer", options.tokenizer);
+            Path tokenizerConfig = copySnapshotInput(
+                    root, "tokenizer-config", options.tokenizerConfig);
+            Path textConfig = copySnapshotInput(
+                    root, "text-generation", options.textGenerationConfig);
+            Path quantization = copySnapshotInput(
+                    root, "quantization", options.quantizationConfig);
+            CompileOptions.Builder builder = CompileOptions.builder()
+                    .modelId(options.modelId)
+                    .targetSoc(options.targetSoc);
+            if (tokenizer != null) {
+                builder.tokenizer(tokenizer);
+            }
+            if (tokenizerConfig != null) {
+                builder.tokenizerConfig(tokenizerConfig);
+            }
+            if (textConfig != null) {
+                builder.textGenerationConfig(textConfig);
+            }
+            if (quantization != null) {
+                builder.quantizationConfig(quantization);
+            }
+            for (Map.Entry<String, String> entry
+                    : options.cacheKeyProperties.entrySet()) {
+                builder.cacheKeyProperty(entry.getKey(), entry.getValue());
+            }
+
+            CompileOptions snapshottedOptions = builder.build();
+            Map<Path, String> fingerprints = new LinkedHashMap<>();
+            addSnapshotFingerprint(fingerprints, tokenizer);
+            addSnapshotFingerprint(fingerprints, tokenizerConfig);
+            addSnapshotFingerprint(fingerprints, textConfig);
+            addSnapshotFingerprint(fingerprints, quantization);
+            return new CompileInputSnapshot(
+                    root, source, snapshottedOptions, fingerprints, isolateSource);
+        } catch (IOException | RuntimeException | Error failure) {
+            try {
+                SdxModelCache.deleteTree(root);
+            } catch (IOException cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            throw failure;
+        }
+    }
+
+    private static Path copySnapshotInput(Path root, String label, Path input)
+            throws IOException {
+        if (input == null) {
+            return null;
+        }
+        Path source = input.toAbsolutePath().normalize();
+        if (Files.isSymbolicLink(source)
+                || !Files.isRegularFile(source)
+                || Files.size(source) <= 0L) {
+            throw new IOException("Compiler input is missing, empty, or a symlink: " + source);
+        }
+        Path directory = root.resolve(label);
+        Files.createDirectory(directory);
+        Path destination = directory.resolve(source.getFileName().toString());
+        Files.copy(source, destination);
+        return destination;
+    }
+
+    private static void addSnapshotFingerprint(
+            Map<Path, String> fingerprints, Path input) throws IOException {
+        if (input != null) {
+            fingerprints.put(input, inputFingerprint(input));
+        }
+    }
+
+    private static String inputFingerprint(Path input) throws IOException {
+        if (!Files.isRegularFile(input) || Files.isSymbolicLink(input)) {
+            throw new IOException("Snapshotted compiler input is unavailable: " + input);
+        }
+        return Files.size(input) + ":" + SdxSourceIdentity.sha256(input);
+    }
+
+    private static final class CompileInputSnapshot implements AutoCloseable {
+        private final Path root;
+        private final Path sourceModel;
+        private final CompileOptions options;
+        private final Map<Path, String> fingerprints;
+        private final boolean verifySourceIdentity;
+
+        private CompileInputSnapshot(
+                Path root,
+                Path sourceModel,
+                CompileOptions options,
+                Map<Path, String> fingerprints,
+                boolean verifySourceIdentity) {
+            this.root = root;
+            this.sourceModel = sourceModel;
+            this.options = options;
+            this.fingerprints = fingerprints;
+            this.verifySourceIdentity = verifySourceIdentity;
+        }
+
+        private Path sourceModel() {
+            return sourceModel;
+        }
+
+        private CompileOptions options() {
+            return options;
+        }
+
+        private void verifyUnchanged(SdxSourceIdentity expectedSource)
+                throws IOException {
+            if (verifySourceIdentity) {
+                SdxSourceIdentity current = SdxSourceIdentity.identify(sourceModel);
+                if (!expectedSource.sha256().equals(current.sha256())
+                        || expectedSource.logicalBytes() != current.logicalBytes()) {
+                    throw new IOException("Target compiler modified its canonical SDZ input");
+                }
+            }
+            for (Map.Entry<Path, String> entry : fingerprints.entrySet()) {
+                if (!entry.getValue().equals(inputFingerprint(entry.getKey()))) {
+                    throw new IOException(
+                            "Target compiler modified a snapshotted input: "
+                                    + entry.getKey());
+                }
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            SdxModelCache.deleteTree(root);
+        }
     }
 
     public String compileKey(
@@ -175,6 +410,13 @@ public final class SdxModelCompiler {
         material.put("sourceSha256", identity.sha256());
         material.put("sourceLogicalBytes", Long.toString(identity.logicalBytes()));
         material.put("target", target.id());
+        SdxPlatformProviderDescriptor provider = target.platformProvider();
+        material.put("providerId", provider.providerId());
+        material.put("providerAbiVersion", Integer.toString(provider.providerAbiVersion()));
+        material.put("artifactFormat", provider.artifactFormat());
+        material.put(
+                "artifactFormatVersion",
+                Integer.toString(provider.artifactFormatVersion()));
         material.put("compilerId", requireSingleLine(compiler.id(), "compiler id"));
         material.put("compilerVersion", requireSingleLine(
                 compiler.version(), "compiler version"));
@@ -182,10 +424,19 @@ public final class SdxModelCompiler {
                 compiler.cacheKeyMaterial(sourceModel, target, options),
                 "compiler cache-key material"));
         addOptionalDigest(material, "tokenizer", options.tokenizer);
+        addOptionalDigest(material, "tokenizerConfig", options.tokenizerConfig);
         addOptionalDigest(
                 material, "textGenerationConfig", options.textGenerationConfig);
         addOptionalDigest(
                 material, "quantizationConfig", options.quantizationConfig);
+        if (options.modelId != null) {
+            material.put("modelId", requireSingleLine(options.modelId, "model id"));
+        }
+        if (options.targetSoc != null) {
+            material.put(
+                    "targetSoc",
+                    requireSingleLine(options.targetSoc, "target SoC"));
+        }
         for (Map.Entry<String, String> entry : options.cacheKeyProperties.entrySet()) {
             material.put(
                     "option." + requireKey(entry.getKey()),
@@ -218,9 +469,32 @@ public final class SdxModelCompiler {
 
     private static Path suggestedCompilerOutput(
             Path work, SdxTargetProfile target) throws IOException {
-        Path output = work.resolve("compiled").resolve(target.artifactRelativePath());
+        Path output = target.hasPackagedArtifact()
+                ? work.resolve("compiled").resolve(target.artifactRelativePath())
+                : work.resolve("compiled").resolve("runtime-specialization.no-artifact");
         Files.createDirectories(output.getParent());
         return output;
+    }
+
+    private static Path suggestedCompilerModelOutput(Path work) throws IOException {
+        Path output = work.resolve("compiled").resolve("graph/model.sdz");
+        Files.createDirectories(output.getParent());
+        return output;
+    }
+
+    private static SdxSourceIdentity copyOptionalCompiledModel(
+            Path input, Path payloadRoot) throws IOException {
+        if (!Files.exists(input)) {
+            return null;
+        }
+        if (!Files.isRegularFile(input) || Files.size(input) <= 0L) {
+            throw new IOException("Target compiler emitted an invalid derived SDZ: " + input);
+        }
+        SdxSourceIdentity identity = SdxSourceIdentity.identify(input);
+        Path destination = payloadRoot.resolve("graph/model.sdz");
+        Files.createDirectories(destination.getParent());
+        Files.copy(input, destination, StandardCopyOption.REPLACE_EXISTING);
+        return identity;
     }
 
     private static String copyOptionalAsset(
@@ -276,11 +550,32 @@ public final class SdxModelCompiler {
     }
 
     private static void validateArtifact(
-            SdxTargetProfile target, Path artifact) throws IOException {
+            SdxTargetProfile target,
+            Path artifact,
+            SdxSourceIdentity sourceIdentity,
+            SdxSourceIdentity derivedModelIdentity,
+            CompileOptions options) throws IOException {
         if (target.artifactKind() == SdxTargetProfile.ArtifactKind.FILE) {
             if (!Files.isRegularFile(artifact) || Files.size(artifact) <= 0L) {
                 throw new IOException(
                         "Target compiler produced no file for " + target.id());
+            }
+            if (target == SdxTargetProfile.ANDROID_ARM64_GOOGLE_TENSOR_G5) {
+                if (!artifact.getFileName().toString()
+                        .toLowerCase(java.util.Locale.ROOT)
+                        .endsWith(".litertlm")) {
+                    throw new IOException(
+                            "Tensor G5 compiler artifact must use the .litertlm extension: "
+                                    + artifact);
+                }
+                LiteRtLmPackageValidator.validate(artifact);
+            } else if (target
+                    == SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR) {
+                SdxNnapiDevicePolicy.load(artifact).validateFor(
+                        target,
+                        options.targetSoc(),
+                        sourceIdentity,
+                        derivedModelIdentity);
             }
             return;
         }
@@ -389,21 +684,30 @@ public final class SdxModelCompiler {
             SdxTargetProfile target,
             String compileKey,
             TargetCompiler compiler,
+            String runtimeModelRelative,
+            SdxSourceIdentity compiledModelIdentity,
             String tokenizerRelative,
             String textConfigRelative,
             String quantizationRelative,
             CompileOptions options) throws IOException {
         Files.createDirectories(bundleRoot);
-        String sourceRelative = "../../../sources/" + identity.sha256()
-                + "/" + identity.sourceFileName();
-        String artifactWithinBundle = target.artifactRelativePath();
+        SdxPlatformProviderDescriptor provider = target.platformProvider();
 
-        String compiledArtifact;
-        if (target.artifactKind() == SdxTargetProfile.ArtifactKind.FILE
-                && target == SdxTargetProfile.ANDROID_ARM64_GOOGLE_TENSOR_G5) {
-            compiledArtifact = "{\"path\":\"" + json(artifactWithinBundle) + "\"}";
+        String compiledArtifactsJson;
+        if (!provider.requiresAotArtifact()) {
+            compiledArtifactsJson =
+                    "{\"canonicalSdzSha256\":\"" + identity.sha256() + "\"}";
         } else {
-            compiledArtifact = "\"" + json(artifactWithinBundle) + "\"";
+            String artifactWithinBundle = target.artifactRelativePath();
+            String compiledArtifact;
+            if (target.artifactKind() == SdxTargetProfile.ArtifactKind.FILE
+                    && target == SdxTargetProfile.ANDROID_ARM64_GOOGLE_TENSOR_G5) {
+                compiledArtifact = "{\"path\":\"" + json(artifactWithinBundle) + "\"}";
+            } else {
+                compiledArtifact = "\"" + json(artifactWithinBundle) + "\"";
+            }
+            compiledArtifactsJson =
+                    "{\"" + json(target.manifestArtifactKey()) + "\":" + compiledArtifact + "}";
         }
 
         StringBuilder manifest = new StringBuilder();
@@ -416,16 +720,36 @@ public final class SdxModelCompiler {
                 .append("  \"producer\": {\"tool\": \"SdxModelCompiler\", ")
                 .append("\"version\": \"").append(COMPILER_ABI).append("\"},\n")
                 .append("  \"modelPath\": \"")
-                .append(json(sourceRelative)).append("\",\n")
+                .append(json(runtimeModelRelative)).append("\",\n")
                 .append("  \"targets\": [\"")
                 .append(json(target.id())).append("\"],\n")
                 .append("  \"preferredBackends\": [\"")
                 .append(json(target.backend())).append("\"],\n")
                 .append("  \"gpuTarget\": \"")
                 .append(json(target.gpuTarget())).append("\",\n")
-                .append("  \"compiledArtifacts\": {\"")
-                .append(json(target.manifestArtifactKey())).append("\":")
-                .append(compiledArtifact).append("},\n")
+                .append("  \"platformProvider\": {\"id\":\"")
+                .append(json(provider.providerId()))
+                .append("\",\"providerAbiVersion\":")
+                .append(provider.providerAbiVersion())
+                .append(",\"artifactFormat\":\"")
+                .append(json(provider.artifactFormat()))
+                .append("\",\"artifactFormatVersion\":")
+                .append(provider.artifactFormatVersion())
+                .append(",\"platform\":\"")
+                .append(provider.platform().name().toLowerCase(Locale.ROOT))
+                .append("\",\"architecture\":\"")
+                .append(json(provider.architecture()))
+                .append("\",\"accelerator\":\"")
+                .append(provider.accelerator().name().toLowerCase(Locale.ROOT))
+                .append("\",\"requiresAotArtifact\":")
+                .append(provider.requiresAotArtifact())
+                .append(",\"allowRuntimeJit\":")
+                .append(provider.allowsRuntimeJit())
+                .append(",\"allowCpuFallback\":")
+                .append(provider.allowsCpuFallback())
+                .append("},\n")
+                .append("  \"compiledArtifacts\": ")
+                .append(compiledArtifactsJson).append(",\n")
                 .append("  \"textGeneration\": ");
 
         if (tokenizerRelative == null && textConfigRelative == null) {
@@ -461,8 +785,15 @@ public final class SdxModelCompiler {
                 .append("  \"source\": {\"sha256\": \"")
                 .append(identity.sha256())
                 .append("\", \"logicalBytes\": ")
-                .append(identity.logicalBytes()).append("},\n")
-                .append("  \"compileCache\": {\"abi\": \"")
+                .append(identity.logicalBytes()).append("},\n");
+        if (compiledModelIdentity != null) {
+            manifest.append("  \"compiledModel\": {\"sha256\": \"")
+                    .append(compiledModelIdentity.sha256())
+                    .append("\", \"logicalBytes\": ")
+                    .append(compiledModelIdentity.logicalBytes())
+                    .append("},\n");
+        }
+        manifest.append("  \"compileCache\": {\"abi\": \"")
                 .append(SdxModelCache.CACHE_ABI)
                 .append("\", \"compileKey\": \"")
                 .append(compileKey)
@@ -592,6 +923,16 @@ public final class SdxModelCompiler {
         String version();
 
         /**
+         * Whether the compiler needs a private full-model source snapshot.
+         * External and graph-rewriting compilers are isolated by default. A
+         * trusted policy-only compiler may return false when it never reads or
+         * mutates model bytes, avoiding a second multi-gigabyte SDZ copy.
+         */
+        default boolean requiresIsolatedSourceSnapshot() {
+            return true;
+        }
+
+        /**
          * Deterministic material that changes whenever compiler configuration,
          * calibration, SoC constraints, or other code-generation inputs change.
          */
@@ -603,6 +944,8 @@ public final class SdxModelCompiler {
         /**
          * Compile the canonical source and return the generated target artifact.
          * The implementation should write to {@link CompilationContext#suggestedOutput()}.
+         * A runtime-specialized provider returns {@code null}; that is accepted only when its
+         * target descriptor explicitly forbids a bundle-owned AOT artifact.
          */
         Path compile(CompilationContext context) throws Exception;
     }
@@ -613,18 +956,24 @@ public final class SdxModelCompiler {
         private final SdxTargetProfile target;
         private final Path workDirectory;
         private final Path suggestedOutput;
+        private final Path suggestedModelOutput;
+        private final CompileOptions options;
 
         private CompilationContext(
                 Path sourceModel,
                 SdxSourceIdentity sourceIdentity,
                 SdxTargetProfile target,
                 Path workDirectory,
-                Path suggestedOutput) {
+                Path suggestedOutput,
+                Path suggestedModelOutput,
+                CompileOptions options) {
             this.sourceModel = sourceModel;
             this.sourceIdentity = sourceIdentity;
             this.target = target;
             this.workDirectory = workDirectory;
             this.suggestedOutput = suggestedOutput;
+            this.suggestedModelOutput = suggestedModelOutput;
+            this.options = options;
         }
 
         public Path sourceModel() {
@@ -646,20 +995,38 @@ public final class SdxModelCompiler {
         public Path suggestedOutput() {
             return suggestedOutput;
         }
+
+        /**
+         * Optional target-derived canonical SDZ. Compilers that rewrite or
+         * quantize the SameDiff graph write this path; otherwise it stays absent.
+         */
+        public Path suggestedModelOutput() {
+            return suggestedModelOutput;
+        }
+
+        public CompileOptions options() {
+            return options;
+        }
     }
 
     public static final class CompileOptions {
         private final Path tokenizer;
+        private final Path tokenizerConfig;
         private final Path textGenerationConfig;
         private final Path quantizationConfig;
         private final String modelId;
+        private final String targetSoc;
         private final Map<String, String> cacheKeyProperties;
 
         private CompileOptions(Builder builder) {
             this.tokenizer = normalize(builder.tokenizer);
+            this.tokenizerConfig = normalize(builder.tokenizerConfig);
             this.textGenerationConfig = normalize(builder.textGenerationConfig);
             this.quantizationConfig = normalize(builder.quantizationConfig);
             this.modelId = builder.modelId;
+            this.targetSoc = builder.targetSoc == null
+                    ? null
+                    : requireSingleLine(builder.targetSoc, "target SoC").trim();
             this.cacheKeyProperties = Collections.unmodifiableMap(
                     new TreeMap<>(builder.cacheKeyProperties));
         }
@@ -670,6 +1037,10 @@ public final class SdxModelCompiler {
 
         public Path tokenizer() {
             return tokenizer;
+        }
+
+        public Path tokenizerConfig() {
+            return tokenizerConfig;
         }
 
         public Path textGenerationConfig() {
@@ -684,6 +1055,10 @@ public final class SdxModelCompiler {
             return modelId;
         }
 
+        public String targetSoc() {
+            return targetSoc;
+        }
+
         public Map<String, String> cacheKeyProperties() {
             return cacheKeyProperties;
         }
@@ -694,14 +1069,21 @@ public final class SdxModelCompiler {
 
         public static final class Builder {
             private Path tokenizer;
+            private Path tokenizerConfig;
             private Path textGenerationConfig;
             private Path quantizationConfig;
             private String modelId;
+            private String targetSoc;
             private final Map<String, String> cacheKeyProperties =
                     new LinkedHashMap<>();
 
             public Builder tokenizer(Path value) {
                 tokenizer = value;
+                return this;
+            }
+
+            public Builder tokenizerConfig(Path value) {
+                tokenizerConfig = value;
                 return this;
             }
 
@@ -720,6 +1102,11 @@ public final class SdxModelCompiler {
                 return this;
             }
 
+            public Builder targetSoc(String value) {
+                targetSoc = value;
+                return this;
+            }
+
             public Builder cacheKeyProperty(String key, String value) {
                 cacheKeyProperties.put(
                         requireKey(key),
@@ -730,6 +1117,192 @@ public final class SdxModelCompiler {
             public CompileOptions build() {
                 return new CompileOptions(this);
             }
+        }
+    }
+
+    /**
+     * Selects the in-process compiler used by every Java, Graal AOT, desktop, and mobile
+     * staging entry point for a canonical SDZ. Container ingestion is deliberately absent
+     * from this decision: GGUF, Hugging Face, and project flows all hand the same SDZ to this
+     * method after import.
+     *
+     * @param target target runtime profile
+     * @param targetSoc explicit SoC, or {@code null}/{@code blank} for the provider default
+     * @param quantizationRequested whether compilation must rewrite the canonical SDZ
+     * @return a built-in compiler when this distribution owns the target implementation
+     */
+    public static Optional<TargetCompiler> builtInTargetCompiler(
+            SdxTargetProfile target,
+            String targetSoc,
+            boolean quantizationRequested) {
+        Objects.requireNonNull(target, "target");
+        String soc = targetSoc == null || targetSoc.isBlank()
+                ? target.platformProvider().defaultTargetSoc()
+                : requireSingleLine(targetSoc, "target SoC").trim();
+        if (!quantizationRequested && target == SdxTargetProfile.IOS_ARM64_METAL) {
+            return Optional.of(metalDeviceCompilationPolicy(soc));
+        }
+        if (target == SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR) {
+            if (!quantizationRequested) {
+                return Optional.of(nnapiDeviceCompilationPolicy(soc));
+            }
+            if (SdxTensorG3NnapiCompiler.TARGET_SOC.equals(soc)) {
+                return Optional.of(new SdxTensorG3NnapiCompiler());
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Fail-closed form of {@link #builtInTargetCompiler(SdxTargetProfile, String, boolean)}
+     * for self-contained/AOT entry points that cannot delegate to an external toolchain.
+     */
+    public static TargetCompiler requireBuiltInTargetCompiler(
+            SdxTargetProfile target,
+            String targetSoc,
+            boolean quantizationRequested) {
+        return builtInTargetCompiler(target, targetSoc, quantizationRequested)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No built-in SDX target compiler is available for " + target.id()
+                                + " (targetSoc="
+                                + (targetSoc == null || targetSoc.isBlank()
+                                        ? target.platformProvider().defaultTargetSoc()
+                                        : targetSoc.trim())
+                                + ", quantizationRequested=" + quantizationRequested + ")"));
+    }
+
+    /**
+     * Staging policy for the production Apple MLX/Metal provider.
+     *
+     * <p>No raw metallib is produced or accepted here. The canonical SDZ and text assets are
+     * content-addressed by the host cache, then the shared libnd4j MLX/DSP replay runtime
+     * specializes shapes into the app-owned device compilation cache. The separately gated
+     * {@code sdx.metal-aot.v1} provider owns raw metallibs and fixed Metal plans.</p>
+     */
+    public static TargetCompiler metalDeviceCompilationPolicy(String targetSoc) {
+        String soc = requireSingleLine(targetSoc, "Metal target SoC").trim();
+        return new TargetCompiler() {
+            @Override
+            public String id() {
+                return "sdx-mlx-device-compilation";
+            }
+
+            @Override
+            public String version() {
+                return "1";
+            }
+
+            @Override
+            public String cacheKeyMaterial(
+                    Path sourceModel,
+                    SdxTargetProfile target,
+                    CompileOptions options) throws IOException {
+                requireMetalRuntimeTarget(target, options, soc);
+                return "policyAbi:sdx-mlx-device-compilation-v1;targetSoc:" + soc;
+            }
+
+            @Override
+            public Path compile(CompilationContext context) throws IOException {
+                requireMetalRuntimeTarget(context.target(), context.options(), soc);
+                return null;
+            }
+        };
+    }
+
+    private static void requireMetalRuntimeTarget(
+            SdxTargetProfile target,
+            CompileOptions options,
+            String expectedSoc) throws IOException {
+        if (target != SdxTargetProfile.IOS_ARM64_METAL) {
+            throw new IOException(
+                    "MLX device compilation policy cannot stage target " + target.id());
+        }
+        if (options.quantizationConfig() != null) {
+            throw new IOException(
+                    "MLX device compilation policy cannot quantize the canonical SDZ. "
+                            + "Stage an already-quantized SDZ or configure a graph-rewrite compiler.");
+        }
+        if (options.targetSoc() != null && !expectedSoc.equals(options.targetSoc())) {
+            throw new IOException(
+                    "MLX policy SoC " + expectedSoc
+                            + " does not match requested SoC " + options.targetSoc());
+        }
+    }
+
+    /**
+     * Built-in policy compiler for unquantized SameDiff models that are compiled
+     * by Android's NNAPI driver on the target device.
+     *
+     * <p>The generated artifact is an auditable, content-addressed policy rather
+     * than a fabricated host AOT blob. The accelerator-only native runtime pins
+     * compilation to one {@code DEVICE_ACCELERATOR}, requires complete graph
+     * support, and uses NNAPI's persistent device compilation cache. Quantized
+     * graphs require a real target compiler that rewrites the canonical SDZ with
+     * explicit quantization metadata and are therefore rejected here.</p>
+     */
+    public static TargetCompiler nnapiDeviceCompilationPolicy(String targetSoc) {
+        String soc = requireSingleLine(targetSoc, "NNAPI target SoC").trim();
+        return new TargetCompiler() {
+            @Override
+            public String id() {
+                return "sdx-nnapi-device-policy";
+            }
+
+            @Override
+            public String version() {
+                return "1";
+            }
+
+            @Override
+            public boolean requiresIsolatedSourceSnapshot() {
+                return false;
+            }
+
+            @Override
+            public String cacheKeyMaterial(
+                    Path sourceModel,
+                    SdxTargetProfile target,
+                    CompileOptions options) throws IOException {
+                requireUnquantizedNnapiTarget(target, options);
+                requireMatchingTargetSoc(options, soc);
+                return "policyAbi:" + SdxNnapiDevicePolicy.POLICY_ABI
+                        + ";targetSoc:" + soc;
+            }
+
+            @Override
+            public Path compile(CompilationContext context) throws IOException {
+                requireUnquantizedNnapiTarget(context.target(), context.options());
+                requireMatchingTargetSoc(context.options(), soc);
+                Path output = context.suggestedOutput();
+                SdxNnapiDevicePolicy.create(
+                        context.target(), soc, context.sourceIdentity()).write(output);
+                return output;
+            }
+        };
+    }
+
+    private static void requireUnquantizedNnapiTarget(
+            SdxTargetProfile target,
+            CompileOptions options) throws IOException {
+        if (target != SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR) {
+            throw new IOException(
+                    "NNAPI device compilation policy cannot compile target " + target.id());
+        }
+        if (options.quantizationConfig() != null) {
+            throw new IOException(
+                    "NNAPI device compilation policy cannot quantize a model. "
+                            + "Configure an SDX target compiler that rewrites the canonical SDZ "
+                            + "with explicit per-channel scale and zero-point metadata.");
+        }
+    }
+
+    private static void requireMatchingTargetSoc(
+            CompileOptions options, String expectedSoc) throws IOException {
+        if (options.targetSoc() != null
+                && !expectedSoc.equals(options.targetSoc())) {
+            throw new IOException(
+                    "NNAPI policy SoC " + expectedSoc
+                            + " does not match requested SoC " + options.targetSoc());
         }
     }
 
@@ -770,7 +1343,10 @@ public final class SdxModelCompiler {
 
     /**
      * Host-only toolchain adapter. No shell is involved: arguments are passed
-     * directly to the executable followed by --input/--target/--output.
+     * directly to the executable. The canonical SDZ, target, output, optional
+     * quantization/tokenizer/tokenizer-configuration/generation inputs, and
+     * cache-key options are all
+     * forwarded to the target compiler in the same invocation.
      */
     public static TargetCompiler externalCommand(
             List<String> command,
@@ -813,6 +1389,33 @@ public final class SdxModelCompiler {
                 invocation.add(context.target().id());
                 invocation.add("--output");
                 invocation.add(context.suggestedOutput().toString());
+                invocation.add("--source-sha256");
+                invocation.add(context.sourceIdentity().sha256());
+                invocation.add("--model-output");
+                invocation.add(context.suggestedModelOutput().toString());
+                CompileOptions options = context.options();
+                addOptionalCompilerInput(
+                        invocation, "--quantization-config", options.quantizationConfig());
+                addOptionalCompilerInput(
+                        invocation, "--tokenizer", options.tokenizer());
+                addOptionalCompilerInput(
+                        invocation, "--tokenizer-config", options.tokenizerConfig());
+                addOptionalCompilerInput(
+                        invocation, "--text-generation-config",
+                        options.textGenerationConfig());
+                if (options.targetSoc() != null) {
+                    invocation.add("--target-soc");
+                    invocation.add(options.targetSoc());
+                }
+                if (options.modelId() != null && !options.modelId().trim().isEmpty()) {
+                    invocation.add("--model-id");
+                    invocation.add(options.modelId());
+                }
+                for (Map.Entry<String, String> entry
+                        : options.cacheKeyProperties().entrySet()) {
+                    invocation.add("--option");
+                    invocation.add(entry.getKey() + "=" + entry.getValue());
+                }
 
                 ProcessBuilder builder = new ProcessBuilder(invocation);
                 builder.directory(context.workDirectory().toFile());
@@ -850,5 +1453,13 @@ public final class SdxModelCompiler {
                 return context.suggestedOutput();
             }
         };
+    }
+
+    private static void addOptionalCompilerInput(
+            List<String> invocation, String flag, Path value) {
+        if (value != null) {
+            invocation.add(flag);
+            invocation.add(value.toString());
+        }
     }
 }

@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
+import org.nd4j.common.config.ND4JInferenceWeightDataType;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.*;
@@ -205,17 +206,10 @@ public class SameDiffOptimizationCache {
     /**
      * Return the conventional optimized SDZ cache file for a source artifact.
      *
-     * <p>The filename encodes the fp16 optimizer setting so that fp16=true and fp16=false
-     * optimizer runs produce separate cache files. Without this, a CPU run with fp16=false
-     * would load a stale fp16=true model from cache, causing catastrophically slow inference
-     * due to software HALF emulation on CPU (no Tensor Core acceleration).</p>
-     *
-     * <p>Examples:
-     * <ul>
-     *   <li>fp16=true  → {@code smoldocling-decoder.opt.sdz} (backward-compatible with existing cache)</li>
-     *   <li>fp16=false → {@code smoldocling-decoder.nofp16.opt.sdz} (CPU float-weight variant)</li>
-     * </ul>
-     * </p>
+     * <p>The filename encodes the resolved optimizer weight dtype so cached graphs
+     * from different storage policies cannot cross-contaminate. FP16 retains the
+     * historical {@code .opt.sdz} name and FP32 retains {@code .nofp16.opt.sdz};
+     * other policies use their canonical dtype as a suffix.</p>
      */
     public static File getOptimizedSdzCacheFile(File sourceFile) {
         String name = sourceFile.getName();
@@ -226,15 +220,16 @@ public class SameDiffOptimizationCache {
         } else {
             baseName = name;
         }
-        // Encode the fp16 optimizer setting in the cache filename so that fp16=true and
-        // fp16=false builds produce separate cache entries and never cross-contaminate.
-        // Naming convention preserves backward compatibility with existing .opt.sdz files
-        // (which were always built with fp16=true):
-        //   fp16=true  → <base>.opt.sdz        (existing cache files — no migration needed)
-        //   fp16=false → <base>.nofp16.opt.sdz (new CPU-float cache — built on first CPU run)
-        boolean fp16Enabled = "true".equalsIgnoreCase(System.getProperty("nd4j.optimizer.fp16", "true"));
-        String fp16Suffix = fp16Enabled ? "" : ".nofp16";
-        return new File(sourceFile.getParentFile(), baseName + fp16Suffix + ".opt.sdz");
+        ND4JInferenceWeightDataType weightType = ND4JInferenceWeightDataType.resolve();
+        String dtypeSuffix;
+        if (weightType == ND4JInferenceWeightDataType.FLOAT16) {
+            dtypeSuffix = "";
+        } else if (weightType == ND4JInferenceWeightDataType.FLOAT32) {
+            dtypeSuffix = ".nofp16";
+        } else {
+            dtypeSuffix = "." + weightType.canonicalName();
+        }
+        return new File(sourceFile.getParentFile(), baseName + dtypeSuffix + ".opt.sdz");
     }
 
     /**

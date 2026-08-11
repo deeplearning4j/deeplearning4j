@@ -28,6 +28,8 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.autodiff.samediff.serde.SameDiffSerializer;
 import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.graph.FlatGraph;
+import org.nd4j.graph.FlatVariable;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Environment;
@@ -38,6 +40,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
@@ -103,6 +107,58 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
             assertArrayEquals("Loaded appended array shape mismatch", original.shape(), loadedArray.shape());
             assertEquals("Loaded appended array data type mismatch", original.dataType(), loadedArray.dataType());
             assertTrue("Loaded appended array values changed", original.equalsWithEps(loadedArray, 1e-5));
+        } finally {
+            deleteShardFiles(baseFile);
+            baseFile.delete();
+            tempDir.delete();
+        }
+    }
+
+    @Test
+    public void testShardedAppenderWritesNativeFlatArrayDescriptorForMetadataStub() throws IOException {
+        File tempDir = new File(System.getProperty("java.io.tmpdir"), "sdnb-native-descriptor-" + UUID.randomUUID());
+        assertTrue("Could not create temporary directory: " + tempDir.getAbsolutePath(), tempDir.mkdirs());
+        File baseFile = new File(tempDir, "native-descriptor.sd");
+
+        try {
+            SameDiff sd = SameDiff.create();
+            int appendedElements = 300_000; // 1.2MB, above the append threshold.
+            INDArray original = Nd4j.rand(DataType.FLOAT, 1, appendedElements);
+            sd.var("first_appended_weight", original.dup());
+
+            SameDiffSerializer.saveSharded(sd, baseFile, false, 2, Collections.emptyMap());
+            File variableShard = new File(tempDir, "native-descriptor.shard1-of-2.sdnb");
+            assertTrue("Variable shard was not created: " + variableShard.getAbsolutePath(), variableShard.isFile());
+
+            long metadataOffset;
+            try (RandomAccessFile raf = new RandomAccessFile(variableShard, "r")) {
+                raf.seek(24);
+                metadataOffset = raf.readLong();
+            }
+            byte[] fileBytes = Files.readAllBytes(variableShard.toPath());
+            assertTrue("Metadata offset is outside the SDNB file",
+                    metadataOffset >= 32 && metadataOffset < fileBytes.length);
+
+            ByteBuffer metadata = ByteBuffer.wrap(fileBytes);
+            metadata.position((int) metadataOffset);
+            FlatGraph flatGraph = FlatGraph.getRootAsFlatGraph(metadata);
+            FlatVariable flatVariable = null;
+            for (int i = 0; i < flatGraph.variablesLength(); i++) {
+                FlatVariable candidate = flatGraph.variables(i);
+                if ("first_appended_weight".equals(candidate.name())) {
+                    flatVariable = candidate;
+                    break;
+                }
+            }
+
+            assertNotNull("Variable metadata is missing from the variable shard", flatVariable);
+            assertNotNull("Native FlatArray descriptor is missing for the appended tensor",
+                    flatVariable.ndarray());
+            assertEquals("The first tensor must use raw-data-relative offset zero",
+                    0L, flatVariable.ndarray().appendedDataOffset());
+            assertEquals("Native FlatArray descriptor has the wrong byte length",
+                    original.length() * original.dataType().width(),
+                    flatVariable.ndarray().appendedDataLength());
         } finally {
             deleteShardFiles(baseFile);
             baseFile.delete();

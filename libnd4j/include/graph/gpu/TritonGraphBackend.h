@@ -68,6 +68,12 @@ class TritonGraphBackend : public GraphBackend {
 
   const char* name() const override { return "Triton GPU"; }
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
+  GraphBackendPlanningPolicy planningPolicy(
+      const GraphBackendRequest& request) const override;
+  GraphBackendExecutionPolicy executionPolicy(
+      const GraphBackendRequest& request) const override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
@@ -100,6 +106,13 @@ class TritonGraphBackend : public GraphBackend {
    * without invalidating another plan that happens to use the same slot range.
    */
   void invalidateCacheForSegments(const std::vector<const GraphSegment*>& segmentInstances);
+
+  /**
+   * Roll back resources temporarily transferred to an unsuccessful CUDA graph
+   * capture while retaining the compiled kernels and loaded GPU modules.
+   */
+  bool rollbackCaptureOwnershipForSegments(
+      const std::vector<const GraphSegment*>& segmentInstances);
 
   std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
 

@@ -300,36 +300,26 @@ public class TestOptimizerOutputRedirect extends BaseNd4jTestWithBackends {
     }
 
     /**
-     * Verify that QuantizationOptimizations does NOT convert FP32 weights to FP16
-     * when FP16 quantization is explicitly disabled via the system property.
-     * The Javadoc for QuantizationOptimizations.QuantizeConstantsToFP16 documents
-     * that FP16 is "OFF by default" — this test confirms the off-path leaves all
-     * FP32 weights intact.
-     *
-     * Note: the test saves and restores the system property after the check to avoid
-     * polluting other tests.
+     * The default graph optimizer contract includes FP16 weight pre-casting without
+     * requiring a second precision flag.
      */
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testQuantizationOptDefaultOff(Nd4jBackend nd4jBackend) {
-        // Explicitly disable FP16 so the optimizer skips quantization — this is
-        // the intended "default off" semantics described in the Javadoc.
+    public void testQuantizationOptDefaultsToFp16(Nd4jBackend nd4jBackend) {
+        String previousWeightDtype = System.getProperty("nd4j.optimizer.weightDtype");
         String previousFp16 = System.getProperty("nd4j.optimizer.fp16");
         String previousBf16 = System.getProperty("nd4j.optimizer.bf16");
-        System.setProperty("nd4j.optimizer.fp16", "false");
+        System.clearProperty("nd4j.optimizer.weightDtype");
+        System.clearProperty("nd4j.optimizer.fp16");
         System.clearProperty("nd4j.optimizer.bf16");
 
         try {
             SameDiff sd = SameDiff.create();
-
             SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 32);
-            // Large 2-D weight (32x64 = 2048 elements) — above MIN_ELEMENTS_FOR_LOW_PRECISION
-            // so it would be quantized if FP16 were enabled.
             SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 32, 64));
-            SDVariable result = sd.mmul("result", x, w);
+            sd.mmul("result", x, w);
             sd.setOutputs("result");
 
-            // Collect the FP32 weight before optimization
             INDArray wBefore = sd.getVariablesArrays().getArray("w");
             assertNotNull("Weight 'w' must exist before optimization", wBefore);
             assertEquals("Weight 'w' must be FP32 before optimization",
@@ -337,23 +327,118 @@ public class TestOptimizerOutputRedirect extends BaseNd4jTestWithBackends {
 
             SameDiff optimized = GraphOptimizer.optimize(sd, "result");
 
-            // With FP16 disabled, the weight must remain FP32 after optimization
             INDArray wAfter = optimized.getVariablesArrays().getArray("w");
             assertNotNull("Weight 'w' must still exist in the optimized graph", wAfter);
-            assertEquals(
-                    "QuantizationOptimizations must NOT convert FP32 weights to FP16 "
-                    + "when nd4j.optimizer.fp16=false (documented 'default off' behaviour)",
+            assertEquals("GraphOptimizer must pre-cast eligible FP32 weights to FP16 by default",
+                    DataType.HALF, wAfter.dataType());
+        } finally {
+            restoreProperty("nd4j.optimizer.weightDtype", previousWeightDtype);
+            restoreProperty("nd4j.optimizer.fp16", previousFp16);
+            restoreProperty("nd4j.optimizer.bf16", previousBf16);
+        }
+    }
+
+    /**
+     * An explicit false remains the opt-out for CPU and exact-precision workloads.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testQuantizationOptExplicitlyDisabled(Nd4jBackend nd4jBackend) {
+        String previousWeightDtype = System.getProperty("nd4j.optimizer.weightDtype");
+        String previousFp16 = System.getProperty("nd4j.optimizer.fp16");
+        String previousBf16 = System.getProperty("nd4j.optimizer.bf16");
+        System.clearProperty("nd4j.optimizer.weightDtype");
+        System.setProperty("nd4j.optimizer.fp16", "false");
+        System.clearProperty("nd4j.optimizer.bf16");
+
+        try {
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 32);
+            SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 32, 64));
+            sd.mmul("result", x, w);
+            sd.setOutputs("result");
+
+            SameDiff optimized = GraphOptimizer.optimize(sd, "result");
+
+            INDArray wAfter = optimized.getVariablesArrays().getArray("w");
+            assertNotNull("Weight 'w' must still exist in the optimized graph", wAfter);
+            assertEquals("Explicit nd4j.optimizer.fp16=false must preserve FP32 weights",
                     DataType.FLOAT, wAfter.dataType());
         } finally {
-            // Restore original property state to avoid leaking into subsequent tests
-            if (previousFp16 != null) {
-                System.setProperty("nd4j.optimizer.fp16", previousFp16);
-            } else {
-                System.clearProperty("nd4j.optimizer.fp16");
-            }
-            if (previousBf16 != null) {
-                System.setProperty("nd4j.optimizer.bf16", previousBf16);
-            }
+            restoreProperty("nd4j.optimizer.weightDtype", previousWeightDtype);
+            restoreProperty("nd4j.optimizer.fp16", previousFp16);
+            restoreProperty("nd4j.optimizer.bf16", previousBf16);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testQuantizationOptAcceptsExplicitFp8(Nd4jBackend nd4jBackend) {
+        String previousWeightDtype = System.getProperty("nd4j.optimizer.weightDtype");
+        try {
+            System.setProperty("nd4j.optimizer.weightDtype", "fp8");
+
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 32);
+            SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 32, 64));
+            sd.mmul("result", x, w);
+            sd.setOutputs("result");
+
+            SameDiff optimized = GraphOptimizer.optimize(sd, "result");
+            assertEquals(DataType.FLOAT8,
+                    optimized.getVariablesArrays().getArray("w").dataType());
+        } finally {
+            restoreProperty("nd4j.optimizer.weightDtype", previousWeightDtype);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testQuantizationOptAcceptsExplicitFp8E5M2(Nd4jBackend nd4jBackend) {
+        String previousWeightDtype = System.getProperty("nd4j.optimizer.weightDtype");
+        try {
+            System.setProperty("nd4j.optimizer.weightDtype", "fp8_e5m2");
+
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 32);
+            SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 32, 64));
+            sd.mmul("result", x, w);
+            sd.setOutputs("result");
+
+            SameDiff optimized = GraphOptimizer.optimize(sd, "result");
+            assertEquals(DataType.FLOAT8_E5M2,
+                    optimized.getVariablesArrays().getArray("w").dataType());
+        } finally {
+            restoreProperty("nd4j.optimizer.weightDtype", previousWeightDtype);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testQuantizationOptRejectsDenseInt4Weights(Nd4jBackend nd4jBackend) {
+        String previousWeightDtype = System.getProperty("nd4j.optimizer.weightDtype");
+        try {
+            System.setProperty("nd4j.optimizer.weightDtype", "int4");
+
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 32);
+            SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 32, 64));
+            sd.mmul("result", x, w);
+            sd.setOutputs("result");
+
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                    () -> GraphOptimizer.optimize(sd, "result"));
+            assertTrue(exception.getMessage().contains("format-aware packed-weight importer"));
+        } finally {
+            restoreProperty("nd4j.optimizer.weightDtype", previousWeightDtype);
+        }
+    }
+
+    private static void restoreProperty(String name, String previousValue) {
+        if (previousValue == null) {
+            System.clearProperty(name);
+        } else {
+            System.setProperty(name, previousValue);
         }
     }
 }

@@ -64,8 +64,9 @@ PLATFORM_IMPL(crop_and_resize, ENGINE_CPU) {
       arm_compute::InterpolationPolicy::BILINEAR :
       arm_compute::InterpolationPolicy::NEAREST_NEIGHBOR;
 
+  arm_compute::Coordinates2D cropDimensions{cropSize->e<int>(0), cropSize->e<int>(1)};
   cropResize.configure(&imageTensor, &boxesTensor, &boxIndicesTensor, &outTensor,
-                        interpolation, extrapolationValue);
+                        cropDimensions, interpolation, extrapolationValue);
 
   // Allocate tensors
   if (!image->hasPaddedBuffer() && !imageTensor.info()->has_padding()) {

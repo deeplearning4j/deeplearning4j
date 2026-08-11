@@ -765,7 +765,8 @@ public class SameDiffSerializer {
 
         // 2. Serialize Metadata FlatBuffer
         ByteBuffer metadataBuffer = serializeMetadataFlatBuffer(sameDiff, saveUpdaterState, metadata,
-                largeArrayNamesForMetadata, smallInlineArrayNamesForMetadata, appendedDataOffsets);
+                largeArrayNamesForMetadata, smallInlineArrayNamesForMetadata, appendedDataOffsets,
+                externalArraysToAppend == null ? Collections.emptyMap() : externalArraysToAppend);
         int metadataLength = metadataBuffer.remaining();
         if (metadataLength <= 0 && (sameDiff.variables().size() > 0 || sameDiff.getOps().size() > 0)) {
             log.warn("Serialization produced empty metadata buffer for non-empty SameDiff instance {}. File may be invalid.", file.getName());
@@ -2003,7 +2004,8 @@ public class SameDiffSerializer {
 
                 // Serialize sub-instance metadata to a nested FlatBuffer
                 ByteBuffer subInstanceBuffer = serializeMetadataFlatBuffer(subInstance, false, null,
-                        subLargeArrayNames, subSmallArrayNames, Collections.emptyMap());
+                        subLargeArrayNames, subSmallArrayNames, Collections.emptyMap(),
+                        Collections.emptyMap());
 
                 if (subInstanceBuffer == null || subInstanceBuffer.remaining() == 0) {
                     log.warn("Failed to serialize sub-instance '{}' metadata. Skipping.", subInstanceName);
@@ -2478,7 +2480,8 @@ public class SameDiffSerializer {
             Map<String, String> metadata,
             @NonNull Set<String> largeArrayNamesToExcludeData,
             @NonNull Set<String> smallArrayNamesToIncludeData,
-            @NonNull Map<String, Pair<Long, Long>> appendedDataOffsets) throws IOException {
+            @NonNull Map<String, Pair<Long, Long>> appendedDataOffsets,
+            @NonNull Map<String, INDArray> appendedArrays) throws IOException {
 
         ExecutorConfiguration configuration = ExecutorConfiguration.builder().outputMode(OutputMode.VARIABLE_SPACE)
                 .executionMode(org.nd4j.autodiff.execution.conf.ExecutionMode.SEQUENTIAL)
@@ -2602,17 +2605,25 @@ public class SameDiffSerializer {
             int arrayOffset = 0;
             int idOffset = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
             byte varTypeByte = FlatBuffersMapper.toVarType(variable.getVariableType());
+            INDArray appendedArray = appendedArrays.get(varName);
             DataType dtype = variable.dataType();
             if (dtype == DataType.UNKNOWN && variable.getArr() != null)
                 dtype = variable.getArr().dataType();
+            if (dtype == DataType.UNKNOWN && appendedArray != null)
+                dtype = appendedArray.dataType();
             if (dtype == DataType.UNKNOWN)
                 dtype = DataType.FLOAT;
             byte dtypeByte = FlatBuffersMapper.getDataTypeAsByte(dtype);
             long[] shape = variable.getShape();
             // Fall back to actual array shape if SDVariable metadata doesn't have it
-            // (e.g., after optimizer replaces array data without updating variable metadata)
+            // (e.g., after optimizer replaces array data without updating variable metadata).
+            // Variable-only shards deliberately keep metadata stubs without associated
+            // arrays, so consult the externally appended array as the second source.
             if (shape == null && variable.getArr() != null && !variable.getArr().isEmpty()) {
                 shape = variable.getArr().shape();
+            }
+            if (shape == null && appendedArray != null && !appendedArray.isEmpty()) {
+                shape = appendedArray.shape();
             }
             if (shape != null) shapeOffset = FlatVariable.createShapeVector(bufferBuilder, shape);
 
@@ -2637,17 +2648,18 @@ public class SameDiffSerializer {
                 Pair<Long, Long> offsetAndLen = appendedDataOffsets.get(varName);
                 long appendOffset = offsetAndLen.getFirst();
                 long appendLength = offsetAndLen.getSecond();
-                INDArray arr = variable.getArr();
-                if (arr != null && shape != null) {
+                if (appendedArray != null && shape != null && appendLength > 0) {
                     int faShapeOffset = FlatArray.createShapeVector(bufferBuilder, shape);
-                    byte faDtype = FlatBuffersMapper.getDataTypeAsByte(arr.dataType());
-                    byte faOrder = (byte)(arr.ordering() == 'c' ? 0 : 1);
+                    byte faDtype = FlatBuffersMapper.getDataTypeAsByte(appendedArray.dataType());
+                    byte faOrder = (byte)(appendedArray.ordering() == 'c' ? 0 : 1);
                     arrayOffset = FlatArray.createFlatArray(bufferBuilder,
                             faShapeOffset, 0, faDtype, faOrder,
                             0, appendLength, 0, false,
                             appendOffset, appendLength);
                     log.debug("Created FlatArray stub for appended '{}': relativeOffset={}, length={}", varName, appendOffset, appendLength);
                 } else {
+                    log.warn("Cannot create native FlatArray descriptor for appended '{}': array={}, shape={}, length={}",
+                            varName, appendedArray != null, shape == null ? null : Arrays.toString(shape), appendLength);
                     arrayOffset = 0;
                 }
             } else {

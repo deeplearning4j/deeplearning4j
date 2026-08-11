@@ -98,6 +98,10 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new HalfBuffer(length, initialize);
             case BFLOAT16:
                 return new BFloat16Buffer(length, initialize);
+            case FLOAT8:
+                return new Float8Buffer(length, initialize);
+            case FLOAT8_E5M2:
+                return new Float8E5M2Buffer(length, initialize);
             case LONG:
                 return new LongBuffer(length, initialize);
             case INT:
@@ -134,6 +138,10 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new BFloat16Buffer(length, initialize, workspace);
             case HALF:
                 return new HalfBuffer(length, initialize, workspace);
+            case FLOAT8:
+                return new Float8Buffer(length, initialize, workspace);
+            case FLOAT8_E5M2:
+                return new Float8E5M2Buffer(length, initialize, workspace);
             case LONG:
                 return new LongBuffer(length, initialize, workspace);
             case INT:
@@ -550,6 +558,10 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new HalfBuffer(pointer, indexer, length);
             case BFLOAT16:
                 return new BFloat16Buffer(pointer, indexer, length);
+            case FLOAT8:
+                return new Float8Buffer(pointer, indexer, length);
+            case FLOAT8_E5M2:
+                return new Float8E5M2Buffer(pointer, indexer, length);
             case FLOAT:
                 return new FloatBuffer(pointer, indexer, length);
             case DOUBLE:
@@ -614,6 +626,10 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
                 return new HalfBuffer(underlyingBuffer, dataType, length);
             case BFLOAT16:
                 return new BFloat16Buffer(underlyingBuffer, dataType, length);
+            case FLOAT8:
+                return new Float8Buffer(underlyingBuffer, dataType, length);
+            case FLOAT8_E5M2:
+                return new Float8E5M2Buffer(underlyingBuffer, dataType, length);
             case LONG:
                 return new LongBuffer(underlyingBuffer, dataType, length);
             case INT:

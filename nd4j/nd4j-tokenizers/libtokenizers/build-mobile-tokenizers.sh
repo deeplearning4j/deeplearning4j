@@ -23,6 +23,9 @@ usage() {
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+# shellcheck source=../../../build-scripts/android-compiler-cache.sh
+source "${REPO_ROOT}/build-scripts/android-compiler-cache.sh"
 FFI_DIR="${SCRIPT_DIR}/tokenizers-ffi"
 PLATFORM=""
 ANDROID_NDK="${ANDROID_NDK:-}"
@@ -101,7 +104,17 @@ case "${PLATFORM}" in
 esac
 
 OUTPUT_DIR="${OUTPUT_DIR:-${DEFAULT_OUTPUT}}"
-BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/build/mobile-tokenizers/${PLATFORM}}"
+if [[ -z "${BUILD_DIR}" ]]; then
+    if [[ "${PLATFORM}" == "android-arm64" ]]; then
+        # CMake and Cargo both cache the selected linker/toolchain. Isolate those
+        # caches by NDK and API so switching r27/r28 can never silently reuse a
+        # wrapper configured against another NDK.
+        NDK_CACHE_ID="$(basename "${ANDROID_NDK}")"
+        BUILD_DIR="${SCRIPT_DIR}/build/mobile-tokenizers/${PLATFORM}-ndk${NDK_CACHE_ID}-api${ANDROID_API}"
+    else
+        BUILD_DIR="${SCRIPT_DIR}/build/mobile-tokenizers/${PLATFORM}-ios${IOS_MIN}"
+    fi
+fi
 
 command -v cargo >/dev/null 2>&1 || {
     echo "cargo is required" >&2
@@ -141,11 +154,26 @@ if [[ "${PLATFORM}" == "android-arm64" ]]; then
         exit 1
     fi
 
+    dl4j_enable_android_compiler_cache_environment "Android tokenizer builds"
+    export DL4J_COMPILER_CACHE
+    CACHE_WRAPPER_DIR="${BUILD_DIR}/compiler-cache"
+    mkdir -p "${CACHE_WRAPPER_DIR}"
+    ANDROID_CACHED_CC="${CACHE_WRAPPER_DIR}/aarch64-linux-android-clang"
+    ANDROID_CACHED_CXX="${CACHE_WRAPPER_DIR}/aarch64-linux-android-clang++"
+    dl4j_write_android_compiler_cache_wrapper "${ANDROID_CACHED_CC}" "${ANDROID_CC}"
+    dl4j_write_android_compiler_cache_wrapper "${ANDROID_CACHED_CXX}" "${ANDROID_CXX}"
+    export DL4J_ANDROID_COMPILER="${ANDROID_CACHED_CXX}"
+    export DL4J_ANDROID_REAL_COMPILER="${ANDROID_CXX}"
+    if [[ -z "${RUSTC_WRAPPER:-}" &&
+          "$(basename "${DL4J_COMPILER_CACHE}")" == sccache* ]]; then
+        export RUSTC_WRAPPER="${DL4J_COMPILER_CACHE}"
+    fi
+
     export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="${ANDROID_CC}"
     export CARGO_TARGET_AARCH64_LINUX_ANDROID_AR="${ANDROID_AR}"
     export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="${CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS:-} -C link-arg=-Wl,-soname,libtokenizers_ffi.so"
-    export CC_aarch64_linux_android="${ANDROID_CC}"
-    export CXX_aarch64_linux_android="${ANDROID_CXX}"
+    export CC_aarch64_linux_android="${ANDROID_CACHED_CC}"
+    export CXX_aarch64_linux_android="${ANDROID_CACHED_CXX}"
     export AR_aarch64_linux_android="${ANDROID_AR}"
 else
     if [[ "$(uname -s)" != "Darwin" ]]; then
@@ -214,6 +242,8 @@ if [[ "${PLATFORM}" == "android-arm64" ]]; then
         -DANDROID_PLATFORM="android-${ANDROID_API}" \
         -DANDROID_NATIVE_API_LEVEL="${ANDROID_API}" \
         -DANDROID_STL=c++_static \
+        -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH="${DL4J_COMPILER_CACHE}" \
+        -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH="${DL4J_COMPILER_CACHE}" \
         -DPLATFORM=android \
         -DARCH=arm64 \
         -DJAVACPP_PLATFORM=android-arm64 \

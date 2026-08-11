@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -214,6 +216,136 @@ class ConstraintAutomatonTest {
     }
 
     // =========================================================================
+    // NativeToolCallConstraint — native sentinel/function syntax
+    // =========================================================================
+
+    @Test
+    void nativeToolCall_forcesExactDeclaredNameAndAcceptsNamedArguments() {
+        NativeToolCallConstraint c =
+                new NativeToolCallConstraint("record_graph_verdict");
+        String full = "<|tool_call_start|>[record_graph_verdict("
+                + "candidate_id=\"issue-1\", disposition=\"DENY\", "
+                + "statement=\"The status is \\\"Do not use\\\".\")]<|tool_call_end|>";
+
+        for (int i = 0; i < full.length(); i++) {
+            assertTrue(c.canExtend(
+                            full.substring(0, i), full.substring(i, i + 1)),
+                    "native constraint rejected valid character at index " + i);
+        }
+        assertTrue(c.isAccepting(full));
+    }
+
+    @Test
+    void nativeToolCall_rejectsCorruptedFunctionName() {
+        NativeToolCallConstraint c =
+                new NativeToolCallConstraint("record_graph_verdict");
+        String prefix = "<|tool_call_start|>[record_g";
+
+        assertFalse(c.canExtend(prefix, "_g_"),
+                "a token that diverges from every declared name must be masked");
+    }
+
+    @Test
+    void nativeToolCall_allowsNestedArgumentValuesAndPartialCloseToken() {
+        NativeToolCallConstraint c = new NativeToolCallConstraint("submit");
+        String beforeClose = "<|tool_call_start|>[submit("
+                + "delta={\"entities\":[{\"name\":\"A\"}]})";
+
+        assertTrue(c.canExtend(beforeClose.substring(
+                        0, beforeClose.length() - 1), ")"));
+        assertFalse(c.isAccepting(beforeClose));
+        assertTrue(c.canExtend(beforeClose, "]"));
+        String completeCore = beforeClose + "]";
+        assertFalse(c.isAccepting(completeCore),
+                "the core function call is incomplete until the native end marker");
+        assertTrue(c.allowsSpecialToken(completeCore, "<|tool_call_end|>"));
+        assertTrue(c.canExtend(completeCore, "<|tool_call_end|>"));
+        assertTrue(c.isAccepting(completeCore + "<|tool_call_end|>"));
+    }
+
+    @Test
+    void nativeToolCall_structuralWhitespaceCannotSelfLoop() {
+        Map<String, Object> nameSchema = Map.of("type", "string", "maxLength", 160);
+        Map<String, Object> namesSchema = Map.of(
+                "type", "array",
+                "items", nameSchema,
+                "maxItems", 32);
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of("names", namesSchema),
+                "required", List.of("names"));
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit_entities"),
+                Map.of("submit_entities", List.of("names")),
+                Map.of(),
+                Map.of("submit_entities", parameters));
+
+        String arrayPrefix = "<|tool_call_start|>[submit_entities(names=[";
+        assertTrue(constraint.canExtend(arrayPrefix, " "),
+                "one optional structural separator remains legal");
+        assertFalse(constraint.canExtend(arrayPrefix + " ", "\n\t\u2009"),
+                "whitespace-only pieces must not leave the parser in the same structural state");
+        assertTrue(constraint.canExtend(arrayPrefix + " ", "\"Revenue\""),
+                "masking a whitespace self-loop must leave value tokens selectable");
+
+        String quotedValue = arrayPrefix + "\"Net income ";
+        assertTrue(constraint.canExtend(quotedValue, " "),
+                "whitespace inside a quoted value is data, not structural padding");
+
+        String valid = arrayPrefix + "\"M. Chen\"])]<|tool_call_end|>";
+        assertTrue(constraint.isAccepting(valid));
+        assertFalse(constraint.isAccepting(arrayPrefix + "\"M. Chen\"]?)]"),
+                "a JSON value followed by trailing garbage must never become accepting");
+        assertFalse(constraint.canExtend(arrayPrefix + "\"M. Chen\"]", "?)]"),
+                "trailing non-JSON tokens must be masked before the native call closes");
+    }
+
+    @Test
+    void nativeToolCall_schemaForcesEachRequiredArgumentExactlyOnceInOrder() {
+        List<String> required =
+                List.of("candidate_id", "disposition", "rule_id", "statement");
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("record_graph_verdict"),
+                Map.of("record_graph_verdict", required),
+                Map.of("record_graph_verdict", Map.of(
+                        "candidate_id", List.of("issue-1"),
+                        "disposition", List.of("ALLOW", "DENY", "REVIEW"))));
+
+        String prefix = "<|tool_call_start|>[record_graph_verdict(";
+        assertFalse(constraint.canExtend(prefix, "candidate_id=\"issue-2"),
+                "schema enum values must constrain native argument text");
+        assertTrue(constraint.canExtend(prefix, "candidate_id=\"issue-1"),
+                "declared schema enum value must remain selectable");
+        String candidateComplete = prefix + "candidate_id=\"issue-1\"";
+        assertFalse(constraint.canExtend(candidateComplete, " "),
+                "a completed enum literal must not enter a whitespace self-loop");
+        assertTrue(constraint.canExtend(candidateComplete, ", "),
+                "the next field separator must remain selectable");
+
+        String first = candidateComplete + ", ";
+        assertFalse(constraint.canExtend(first, "candidate_id="),
+                "a repeated first field must be masked");
+        assertTrue(constraint.canExtend(first, "disposition="),
+                "the next declared field must remain available");
+        assertFalse(constraint.canExtend(first, "disposition=\"DENY: extra"),
+                "enum-constrained values may not absorb narration");
+        assertTrue(constraint.canExtend(first, "disposition=\"DENY\""),
+                "an exact enum value must remain selectable");
+        assertFalse(constraint.canExtend(first, "rule_id="),
+                "required fields may not be skipped");
+
+        String missing = first + "disposition=\"DENY\")]";
+        assertFalse(constraint.isAccepting(missing),
+                "the native call may not close before all required fields");
+
+        String complete = first
+                + "disposition=\"DENY\", "
+                + "rule_id=\"fpna.status.not-usable\", "
+                + "statement=\"Do not use for reporting.\")]<|tool_call_end|>";
+        assertTrue(constraint.isAccepting(complete));
+    }
+
+    // =========================================================================
     // ConstraintMasker — maskLogits
     // =========================================================================
 
@@ -255,6 +387,158 @@ class ConstraintAutomatonTest {
         float[] masked = masker.maskLogits(logits, 1, id -> (id == 0 ? "," : null));
         // EOS should now be permitted.
         assertEquals(logits[1], masked[1], "EOS should be unmasked in accepting state");
+    }
+
+    @Test
+    void masker_blocksEveryStopTokenUntilNativeCallIsComplete() {
+        NativeToolCallConstraint constraint =
+                new NativeToolCallConstraint("record_graph_verdict");
+        ConstraintMasker masker = new ConstraintMasker(constraint, 256);
+
+        String unterminated = "<|tool_call_start|>[record_graph_verdict("
+                + "candidate_id=\"issue-1";
+        masker.tokenEmitted(0, id -> unterminated);
+
+        // Vocab: 0=prefix, 1=<|im_end|>, 2=<|tool_call_end|>, 3=valid close.
+        // Both terminal sentinels have high logits and are valid quoted text at the character
+        // level, but neither may terminate before the native envelope itself is accepting.
+        float[] logits = {0.0f, 9.0f, 8.0f, 1.0f};
+        Set<Integer> stops = Set.of(1, 2);
+        float[] masked = masker.maskLogits(logits, stops, id -> {
+            switch (id) {
+                case 1: return "<|im_end|>";
+                case 2: return "<|tool_call_end|>";
+                case 3: return "\")]";
+                default: return unterminated;
+            }
+        });
+
+        assertEquals(Float.NEGATIVE_INFINITY, masked[1]);
+        assertEquals(Float.NEGATIVE_INFINITY, masked[2]);
+        assertTrue(Float.isFinite(masked[3]), "valid native-call closure must remain selectable");
+
+        masker.tokenEmitted(3, id -> "\")]");
+        assertFalse(masker.isComplete());
+        float[] closeMask = masker.maskLogits(logits, stops, id -> {
+            if (id == 1) return "<|im_end|>";
+            if (id == 2) return "<|tool_call_end|>";
+            return id == 3 ? "\")]" : unterminated;
+        });
+        assertEquals(Float.NEGATIVE_INFINITY, closeMask[1],
+                "ordinary EOS remains blocked before the full native envelope");
+        assertEquals(logits[2], closeMask[2],
+                "the constraint-owned terminal must be allowed to complete the envelope");
+
+        masker.tokenEmitted(2, id -> "<|tool_call_end|>");
+        assertTrue(masker.isComplete());
+    }
+
+    @Test
+    void maskerAllowsOnlyConstraintOwnedSpecialTokens() {
+        NativeToolCallConstraint constraint =
+                new NativeToolCallConstraint("record_graph_verdict");
+        ConstraintMasker masker = new ConstraintMasker(constraint, 256);
+
+        float[] initialLogits = {9.0f, 8.0f, 1.0f};
+        Set<Integer> specialTokens = Set.of(0, 1);
+        float[] initialMask = masker.maskLogits(
+                initialLogits, Set.of(), specialTokens, id -> {
+                    if (id == 0) return "<|tool_call_start|>";
+                    if (id == 1) return "<|im_end|>";
+                    return "x";
+                });
+
+        assertTrue(Float.isFinite(initialMask[0]),
+                "the native envelope sentinel is owned by the constraint");
+        assertEquals(Float.NEGATIVE_INFINITY, initialMask[1],
+                "unrelated control tokens must not start the call");
+
+        masker.tokenEmitted(0, id -> "<|tool_call_start|>");
+        masker.tokenEmitted(2, id -> "[record_graph_verdict(candidate_id=\"");
+        float[] valueMask = masker.maskLogits(
+                initialLogits, Set.of(), specialTokens, id -> {
+                    if (id == 0) return "issue-1";
+                    if (id == 1) return "<|im_end|>";
+                    return "issue-2";
+                });
+        assertEquals(Float.NEGATIVE_INFINITY, valueMask[1],
+                "a control token must not be accepted as quoted argument content");
+        assertTrue(Float.isFinite(valueMask[2]),
+                "ordinary quoted argument content must remain selectable");
+    }
+
+    @Test
+    void maskerBlocksControlLexemesSpelledByOrdinaryTokens() {
+        NativeToolCallConstraint constraint =
+                new NativeToolCallConstraint("record_graph_verdict");
+        ConstraintMasker masker = new ConstraintMasker(constraint, 256);
+        String quotedPrefix = "<|tool_call_start|>[record_graph_verdict("
+                + "candidate_id=\"<|pad|";
+        masker.tokenEmitted(2, id -> quotedPrefix);
+
+        // Token 0 is the tokenizer-declared PAD token. Token 1 is an ordinary token that would
+        // complete the exact same control lexeme from ordinary pieces; both must be blocked.
+        float[] valueMask = masker.maskLogits(
+                new float[]{9.0f, 8.0f, 1.0f}, Set.of(), Set.of(0), id -> {
+                    if (id == 0) return "<|pad|>";
+                    if (id == 1) return ">";
+                    return "x";
+                });
+        assertEquals(Float.NEGATIVE_INFINITY, valueMask[0]);
+        assertEquals(Float.NEGATIVE_INFINITY, valueMask[1],
+                "ordinary tokens must not spell a control lexeme inside argument content");
+        assertTrue(Float.isFinite(valueMask[2]));
+    }
+
+    @Test
+    void maskerAllowsOwnedEnvelopeSpelledByOrdinaryTokens() {
+        NativeToolCallConstraint constraint =
+                new NativeToolCallConstraint("record_graph_verdict");
+        ConstraintMasker masker = new ConstraintMasker(constraint, 256);
+        Set<Integer> specialTokens = Set.of(0, 3);
+
+        float[] initialMask = masker.maskLogits(
+                new float[]{7.0f, 8.0f, 6.0f, 5.0f}, Set.of(), specialTokens, id -> {
+                    if (id == 0) return "<|tool_call_start|>";
+                    if (id == 1) return "<";
+                    if (id == 2) return "|tool_call_start|>";
+                    return "<|pad|>";
+                });
+        assertTrue(Float.isFinite(initialMask[1]),
+                "an owned envelope may begin through an ordinary-token decomposition");
+
+        masker.tokenEmitted(1, id -> "<");
+        float[] completionMask = masker.maskLogits(
+                new float[]{7.0f, 8.0f, 6.0f, 5.0f}, Set.of(), specialTokens, id -> {
+                    if (id == 0) return "<|tool_call_start|>";
+                    if (id == 1) return "<";
+                    if (id == 2) return "|tool_call_start|>";
+                    return "<|pad|>";
+                });
+        assertTrue(Float.isFinite(completionMask[2]),
+                "the tokenizer-owned envelope remains legal when split across ordinary tokens");
+    }
+
+    @Test
+    void maskerValidatesAndStoresExactFullSequenceDecode() {
+        NativeToolCallConstraint constraint =
+                new NativeToolCallConstraint("submit_entities");
+        ConstraintMasker masker = new ConstraintMasker(constraint, 256);
+        String complete = "<|tool_call_start|>[submit_entities(names=[\"Revenue\"])]"
+                + "<|tool_call_end|>";
+
+        assertTrue(masker.allowsDecodedText(complete,
+                List.of("<|tool_call_start|>", "<|tool_call_end|>", "<|pad|>")));
+        assertFalse(masker.allowsDecodedText(
+                "<|tool_call_start|>[submit_entities(names=[\"<|pad|>\"])]"
+                        + "<|tool_call_end|>",
+                List.of("<|tool_call_start|>", "<|tool_call_end|>", "<|pad|>")),
+                "an unowned tokenizer control lexeme must fail exact sequence validation");
+
+        masker.tokenEmitted(0, id -> "incorrect singleton decode");
+        masker.decodedTextEmitted(complete);
+        assertEquals(complete, masker.getEmittedText());
+        assertTrue(masker.isComplete());
     }
 
     @Test
@@ -351,6 +635,20 @@ class ConstraintAutomatonTest {
         assertEquals("tool_call", c.type());
         assertTrue(c.isAccepting("{\"tool\": \"tool_a\", \"args\": {}}"));
         assertFalse(c.isAccepting("{\"tool\": \"tool_c\", \"args\": {}}"));
+    }
+
+    @Test
+    void constraintConfig_nativeToolCallFactory() {
+        ConstraintConfig cfg =
+                ConstraintConfig.nativeToolCall("record_graph_verdict");
+        assertEquals(NativeToolCallConstraint.TYPE, cfg.getType());
+        TextConstraint c = cfg.buildConstraint();
+        assertTrue(c.isAccepting(
+                "<|tool_call_start|>[record_graph_verdict(candidate_id=\"x\")]"
+                        + "<|tool_call_end|>"));
+        assertFalse(c.isAccepting(
+                "<|tool_call_start|>[record_g_g_verdict(candidate_id=\"x\")]"
+                        + "<|tool_call_end|>"));
     }
 
     @Test

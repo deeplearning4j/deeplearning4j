@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintMasker;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 
 import java.util.ArrayList;
@@ -190,6 +191,7 @@ class InGraphKvState implements AutoCloseable {
     List<Integer> generatedSoFar;
     Random rng;
     SamplingConfig sampling;
+    ConstraintMasker constraintMasker;
     Set<Integer> stopTokenIds;
     int eosTokenId;
 

@@ -22,6 +22,7 @@
 #include <graph/SdnbReader.h>
 
 #include <string>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -63,7 +64,8 @@ class SD_LIB_EXPORT SdzReader {
    * Load the model from the ZIP-packed SDNB files.
    * Returns the loaded model with all variables.
    */
-  SdnbReader::LoadedModel load() const;
+  SdnbReader::LoadedModel load(bool inferenceOnly = false,
+                               bool requireFileBacked = false) const;
 
   /**
    * Get the number of SDNB entries in the ZIP.
@@ -73,8 +75,18 @@ class SD_LIB_EXPORT SdzReader {
  private:
   SdzReader() = default;
 
-  // Extracted SDNB file data: (filename, data)
-  std::vector<std::pair<std::string, std::vector<uint8_t>>> sdnbEntries_;
+  struct SdnbEntry {
+    std::string filename;
+    const uint8_t* data = nullptr;
+    size_t size = 0;
+    size_t uncompressedSize = 0;
+    uint16_t compression = 0;
+    bool fileBacked = false;
+    std::shared_ptr<void> backingOwner;
+    std::vector<uint8_t> ownedData;
+  };
+
+  std::vector<SdnbEntry> sdnbEntries_;
 };
 
 }  // namespace graph

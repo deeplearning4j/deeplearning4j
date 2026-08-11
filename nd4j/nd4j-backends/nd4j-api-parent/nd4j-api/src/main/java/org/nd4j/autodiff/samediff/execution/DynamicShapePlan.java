@@ -486,8 +486,8 @@ public class DynamicShapePlan implements Closeable {
 
     /** Magic bytes identifying a serialized DSP plan. */
     private static final int DSP_MAGIC = 0x44535031;  // "DSP1" in big-endian
-    /** Serialization format version. V2 adds legacy ops. V3 adds control flow. V4 adds external names. V5 adds string args. V6 adds static zero-input output shapes. */
-    private static final int DSP_VERSION = 6;
+    /** Serialization format version. V2 adds legacy ops. V3 adds control flow. V4 adds external names. V5 adds string args. V6 adds static zero-input output shapes. V7 adds output demand masks. */
+    private static final int DSP_VERSION = 7;
 
     /**
      * Serialize this plan into a compact binary format for the native C++ executor.
@@ -500,6 +500,7 @@ public class DynamicShapePlan implements Closeable {
      *             inputSourceIndices[numInputs](int32),
      *             inputSourceTypes[numInputs](int8),
      *             outputSlotIndices[numOutputs](int32),
+     *             optionalOutputMask[numOutputs](byte),
      *             numIArgs(int32), iArgs[](int64),
      *             numTArgs(int32), tArgs[](double),
      *             numBArgs(int32), bArgs[](byte),
@@ -540,6 +541,7 @@ public class DynamicShapePlan implements Closeable {
             size += slot.getInputSourceIndices().length * 4;  // inputSourceIndices
             size += slot.getInputSourceTypes().length;          // inputSourceTypes (bytes)
             size += slot.getOutputSlotIndices().length * 4;     // outputSlotIndices
+            size += slot.getOutputSlotIndices().length;        // optionalOutputMask
             size += 20; // 5 arg counts (int each)
             size += (slot.getIArgs() != null ? slot.getIArgs().length : 0) * 8;  // iArgs (long)
             size += (slot.getTArgs() != null ? slot.getTArgs().length : 0) * 8;  // tArgs (double)
@@ -608,6 +610,11 @@ public class DynamicShapePlan implements Closeable {
             for (int idx : slot.getInputSourceIndices()) buf.putInt(idx);
             for (byte type : slot.getInputSourceTypes()) buf.put(type);
             for (int idx : slot.getOutputSlotIndices()) buf.putInt(idx);
+            boolean[] optionalOutputMask = slot.getOptionalOutputMask();
+            for (int i = 0; i < slot.getOutputSlotIndices().length; i++) {
+                buf.put(optionalOutputMask != null && i < optionalOutputMask.length && optionalOutputMask[i]
+                        ? (byte) 1 : (byte) 0);
+            }
 
             long[] iArgs = slot.getIArgs();
             double[] tArgs = slot.getTArgs();
@@ -746,7 +753,7 @@ public class DynamicShapePlan implements Closeable {
         ByteBuffer buf = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
         int magic = buf.getInt();
         int version = buf.getInt();
-        return magic == DSP_MAGIC && (version >= 1 && version <= 5);
+        return magic == DSP_MAGIC && (version >= 1 && version <= DSP_VERSION);
     }
 
     /**

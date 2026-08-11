@@ -364,17 +364,23 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   auto training = block.numB() > 1 ? B_ARG(1) : false;
   auto useFlashAttention = block.numB() > 2 ? B_ARG(2) : true;
 
-  // Get output variables
+  // Get output variables. The DSP executor may leave inference-only auxiliary
+  // outputs null when their logical values are not consumed; preserve output
+  // numbering while allowing the fused path to avoid quadratic allocations.
   auto applyScoresOut = OUTPUT_VARIABLE(0);
-  auto attentionScores = OUTPUT_VARIABLE(1);
-  auto attentionLogits = OUTPUT_VARIABLE(2);
-  auto dropoutMask = dropout > 0.0 ? OUTPUT_VARIABLE(3) : nullptr;
+  NDArray* attentionScores = block.width() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
+  NDArray* attentionLogits = block.width() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
+  auto dropoutMask = dropout > 0.0 && block.width() > 3 ? OUTPUT_VARIABLE(3) : nullptr;
 
   // Reshape outputs for rank 2 case
   if(reshapedQ) {
     applyScoresOut->reshapei('c', {1, applyScoresOut->sizeAt(0), applyScoresOut->sizeAt(1)});
-    attentionLogits->reshapei('c', {1, attentionLogits->sizeAt(0), attentionLogits->sizeAt(1)});
-    attentionScores->reshapei('c', {1, attentionScores->sizeAt(0), attentionScores->sizeAt(1)});
+    if (attentionLogits != nullptr) {
+      attentionLogits->reshapei('c', {1, attentionLogits->sizeAt(0), attentionLogits->sizeAt(1)});
+    }
+    if (attentionScores != nullptr) {
+      attentionScores->reshapei('c', {1, attentionScores->sizeAt(0), attentionScores->sizeAt(1)});
+    }
   }
 
   // Setup FlashAttentionHelper config
@@ -508,21 +514,21 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   bool canUseFlashFast = useFlashAttention && !hasInputMasks && dropout == 0.0;
 
   if (canUseFlashFast) {
-    // Always materialize attentionScores (softmax weights) and attentionLogits (pre-softmax logits)
-    // so that the backward op (dot_product_attention_v2_bp) has correct non-zero values when
-    // computing gradients via softmax_bp and matmul_bp. Passing nullptr here leaves those output
-    // arrays at their DSP-initialized zero values, which causes the backward pass to produce
-    // dLdq = dLdv = dLdk = 0 via the zero-softmax path.
+    // Materialize auxiliary arrays when demanded by the graph. The DSP executor supplies
+    // shape-preserving empty placeholders for dead inference-only outputs; the fused helper
+    // treats those placeholders as not requested and avoids quadratic storage.
     FlashAttentionHelper::forward(queries, keys, values, applyScoresOut, config,
                                   nullptr, attentionScores, attentionLogits,
                                   block.launchContext(), attentionBias);
   } else if (!hasInputMasks && dropout == 0.0) {
     // Non-flash or debug path: still use helper implementation so additive attention bias
-    // remains supported, and materialize scores/logits outputs for diagnostics.
+    // remains supported. Auxiliary outputs are materialized when demanded.
     FlashAttentionHelper::forward(queries, keys, values, applyScoresOut, config,
                                   nullptr, attentionScores, attentionLogits,
                                   block.launchContext(), attentionBias);
   } else {
+    REQUIRE_TRUE(attentionScores != nullptr && attentionLogits != nullptr, 0,
+                 "dot_product_attention_v2: scores/logits outputs are required for masked, fallback, or dropout execution");
     REQUIRE_TRUE(!hasAttentionBias, 0,
                  "dot_product_attention_v2: additive attention bias with query/value masks or dropout is not "
                  "supported in this path yet");

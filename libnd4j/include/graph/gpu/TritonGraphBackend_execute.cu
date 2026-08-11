@@ -1751,6 +1751,64 @@ void TritonGraphBackend::invalidateCache() {
   lastCompilationAudit_.clear();
 }
 
+bool TritonGraphBackend::rollbackCaptureOwnershipForSegments(
+    const std::vector<const GraphSegment*>& segmentInstances) {
+  std::lock_guard<std::mutex> lock(cacheMtx_);
+  const std::unordered_set<const GraphSegment*> owners(segmentInstances.begin(),
+                                                       segmentInstances.end());
+  auto& memPool = sd::memory::CudaMemoryPool::getInstance();
+  int restoredHostTables = 0;
+  int rolledBackModules = 0;
+  bool restored = true;
+
+  for (auto& entry : cache_) {
+    if (owners.count(entry.first.segmentInstance) == 0) continue;
+    auto& compiledSegment = entry.second;
+#ifdef SD_CUDA
+    if (compiledSegment.consolidatedArgTableCaptureOwned) {
+      void* replacement = memPool.allocatePinnedHost(compiledSegment.consolidatedArgTableBytes);
+      compiledSegment.consolidatedArgTableHostPinned = replacement;
+      if (replacement != nullptr) {
+        compiledSegment.consolidatedArgTableCaptureOwned = false;
+        for (size_t ki = 0; ki < compiledSegment.subKernels.size(); ki++) {
+          const size_t offset = ki < compiledSegment.consolidatedArgTableOffsets.size()
+              ? compiledSegment.consolidatedArgTableOffsets[ki]
+              : 0;
+          compiledSegment.subKernels[ki].cachedArgTableHostPinned =
+              static_cast<char*>(replacement) + offset;
+        }
+        restoredHostTables++;
+      } else {
+        restored = false;
+      }
+    }
+#endif
+    for (auto& kernel : compiledSegment.subKernels) {
+      if (!compiledSegment.useConsolidatedArgTable && kernel.cachedArgTableCaptureOwned) {
+        void* replacement = memPool.allocatePinnedHost(kernel.cachedArgTableHostPinnedBytes);
+        kernel.cachedArgTableHostPinned = replacement;
+        if (replacement != nullptr) {
+          kernel.cachedArgTableCaptureOwned = false;
+          restoredHostTables++;
+        } else {
+          restored = false;
+        }
+      }
+      if (kernel.moduleCaptureOwned) {
+        kernel.moduleCaptureOwned = false;
+        rolledBackModules++;
+      }
+    }
+  }
+
+  DSP_DIAG(MEMORY,
+           "TritonGraphBackend: rolled back failed capture ownership for %zu segments "
+           "(hostTables=%d modules=%d restored=%d); compiled cache %s",
+           segmentInstances.size(), restoredHostTables, rolledBackModules,
+           restored ? 1 : 0, restored ? "retained" : "must be invalidated");
+  return restored;
+}
+
 void TritonGraphBackend::invalidateCacheForSegments(
     const std::vector<const GraphSegment*>& segmentInstances) {
   std::lock_guard<std::mutex> lock(cacheMtx_);

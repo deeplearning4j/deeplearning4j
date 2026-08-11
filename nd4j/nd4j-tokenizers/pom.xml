@@ -130,6 +130,17 @@
                 <javacpp.platform>macosx-arm64</javacpp.platform>
             </properties>
         </profile>
+
+        <!-- Maven owns the mobile tokenizer producer lifecycle. Keep this profile
+             after host defaults so its cross-platform selection wins consistently. -->
+        <profile>
+            <id>android-arm64</id>
+            <properties>
+                <javacpp.platform>android-arm64</javacpp.platform>
+                <android.api>24</android.api>
+                <libtokenizers.mobile.jobs>4</libtokenizers.mobile.jobs>
+            </properties>
+        </profile>
     </profiles>
 
 </project>

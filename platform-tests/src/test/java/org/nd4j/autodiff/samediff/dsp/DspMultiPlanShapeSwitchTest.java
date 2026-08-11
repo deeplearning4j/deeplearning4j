@@ -190,6 +190,42 @@ public class DspMultiPlanShapeSwitchTest {
         }
     }
 
+    private static Object readExecutorField(
+            DynamicShapePlanExecutor executor, String fieldName) throws Exception {
+        java.lang.reflect.Field field = DynamicShapePlanExecutor.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(executor);
+    }
+
+    /**
+     * Every wrapper installed in the persistent native context must have the exact same Java
+     * wrapper retained strongly. Retaining another wrapper around the same INDArray does not work:
+     * each OpaqueNDArray owns a distinct native NDArray object.
+     */
+    private static void assertPlaceholderContextRefsRetained(
+            SameDiff sd, String phase) throws Exception {
+        InferenceSession session = sd.getOrCreateSession();
+        DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+        assertNotNull(executor, phase + ": missing DSP executor");
+
+        Object[] cached = (Object[]) readExecutorField(executor, "cachedInputOpaques");
+        Object[] retained = (Object[]) readExecutorField(executor, "contextInputRefs");
+        boolean[] placeholders = (boolean[]) readExecutorField(executor, "inputIsPlaceholder");
+        assertNotNull(cached, phase + ": missing frozen wrapper cache");
+        assertNotNull(retained, phase + ": native context has no strong wrapper references");
+        assertNotNull(placeholders, phase + ": missing placeholder classification");
+        assertEquals(cached.length, retained.length, phase + ": wrapper retention size mismatch");
+
+        for (int i = 0; i < placeholders.length; i++) {
+            if (!placeholders[i]) {
+                continue;
+            }
+            assertNotNull(cached[i], phase + ": placeholder " + i + " has no cached wrapper");
+            assertTrue(cached[i] == retained[i],
+                    phase + ": placeholder " + i + " native wrapper is not the strongly retained wrapper");
+        }
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // TEST 1: Basic shape-keyed plan switch round-trip (A → B → A)
     // ═════════════════════════════════════════════════════════════════════════
@@ -592,6 +628,48 @@ public class DspMultiPlanShapeSwitchTest {
             Map<String, INDArray> result = sd.output(ph, "y");
             assertOutputsMatch(label, expected, result);
         }
+    }
+
+    @Test
+    @DisplayName("Frozen context retains rebound wrappers across prefill/decode switches")
+    void testFrozenContextRetainsReboundWrappersAcrossShapeSwitches() throws Exception {
+        int dim = 64;
+        SameDiff sd = buildDynamicSeqGraph(dim);
+        configureDsp(sd);
+
+        INDArray prefill = Nd4j.randn(DataType.FLOAT, 1, 8, dim);
+        INDArray decode = Nd4j.randn(DataType.FLOAT, 1, 1, dim);
+        Map<String, INDArray> prefillInputs = new LinkedHashMap<>();
+        Map<String, INDArray> decodeInputs = new LinkedHashMap<>();
+        prefillInputs.put("x", prefill);
+        decodeInputs.put("x", decode);
+
+        // Establish both shape-keyed plans and enter frozen execution.
+        for (int i = 0; i < 4; i++) {
+            sd.output(prefillInputs, "y");
+            sd.output(decodeInputs, "y");
+        }
+
+        for (int cycle = 0; cycle < 8; cycle++) {
+            Map<String, INDArray> inputs = (cycle & 1) == 0 ? prefillInputs : decodeInputs;
+
+            // First call switches plans and fully repopulates the persistent native context.
+            sd.output(inputs, "y");
+            // Second same-shape call takes the frozen fast path and replaces the placeholder
+            // OpaqueNDArray wrapper. That exact replacement must be retained before a GC or
+            // the next shape switch can delete the native NDArray behind the raw context pointer.
+            sd.output(inputs, "y");
+            assertPlaceholderContextRefsRetained(sd, "cycle " + cycle);
+
+            System.gc();
+            Map<String, INDArray> result = sd.output(inputs, "y");
+            assertNotNull(result.get("y"), "cycle " + cycle + ": output missing after GC");
+            assertTrue(!result.get("y").isNaN().any(),
+                    "cycle " + cycle + ": output corrupted after wrapper GC pressure");
+        }
+
+        DspPlanAssertions.assertNoCaptureFailures(sd, "opaque-context wrapper retention");
+        DspPlanAssertions.assertNoPhaseContractViolations(sd, "opaque-context wrapper retention");
     }
 
     // ═════════════════════════════════════════════════════════════════════════

@@ -170,6 +170,12 @@ void dspStreamWaitEvent(void* stream, void* event);
 /** Canonicalize an execute/dispatch stream pointer for the active backend. */
 void* dspStreamPtrToValue(void* streamPtr);
 
+/**
+ * Block until all work queued on a canonical backend stream value completes.
+ * Returns false when the backend reports a synchronization failure.
+ */
+bool dspSynchronizeStream(void* stream);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // TLS stream access
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -240,8 +246,8 @@ void dspCopyCublasHandle(LaunchContext* dst, LaunchContext* src);
 /** Clear the CUDA Triton backend cache when that compiler backend is active. */
 void dspTritonClearFailedCache();
 
-/** Get TritonGraphBackend singleton as GraphBackend*. Returns nullptr if unavailable. */
-GraphBackend* dspTritonGetBackendIfAvailable();
+/** Return the compiled TritonGraphBackend, or nullptr when Triton is not built. */
+GraphBackend* dspGetTritonBackend();
 
 #if defined(SD_CUDA)
 }  // namespace cuda
@@ -271,6 +277,7 @@ using cuda::dspDestroyEvent;
 using cuda::dspEventRecord;
 using cuda::dspStreamWaitEvent;
 using cuda::dspStreamPtrToValue;
+using cuda::dspSynchronizeStream;
 using cuda::dspGetExecutionStream;
 using cuda::dspSetExecutionStream;
 using cuda::dspGetGapStream;
@@ -285,7 +292,7 @@ using cuda::dspGetNvrtcBackend;
 using cuda::dspGetPtxBackend;
 using cuda::dspCopyCublasHandle;
 using cuda::dspTritonClearFailedCache;
-using cuda::dspTritonGetBackendIfAvailable;
+using cuda::dspGetTritonBackend;
 #elif defined(SD_VULKAN)
 }  // namespace vulkan
 using vulkan::dspBuffer;
@@ -314,6 +321,7 @@ using vulkan::dspDestroyEvent;
 using vulkan::dspEventRecord;
 using vulkan::dspStreamWaitEvent;
 using vulkan::dspStreamPtrToValue;
+using vulkan::dspSynchronizeStream;
 using vulkan::dspGetExecutionStream;
 using vulkan::dspSetExecutionStream;
 using vulkan::dspGetGapStream;
@@ -328,7 +336,7 @@ using vulkan::dspGetNvrtcBackend;
 using vulkan::dspGetPtxBackend;
 using vulkan::dspCopyCublasHandle;
 using vulkan::dspTritonClearFailedCache;
-using vulkan::dspTritonGetBackendIfAvailable;
+using vulkan::dspGetTritonBackend;
 #endif
 
 #else  // ═══════════════ Host-only dispatch ═══════════════════════════════════
@@ -370,6 +378,7 @@ static inline void  dspEventRecord(void*, void*) {}
 static inline void  dspStreamWaitEvent(void*, void*) {}
 
 static inline void* dspStreamPtrToValue(void* streamPtr) { return streamPtr; }
+static inline bool  dspSynchronizeStream(void*) { return true; }
 static inline void* dspGetExecutionStream() { return nullptr; }
 static inline void  dspSetExecutionStream(void*) {}
 static inline void* dspGetGapStream() { return nullptr; }
@@ -388,7 +397,7 @@ static inline GraphBackend* dspGetPtxBackend() { return nullptr; }
 static inline void dspCopyCublasHandle(LaunchContext*, LaunchContext*) {}
 
 static inline void dspTritonClearFailedCache() {}
-static inline GraphBackend* dspTritonGetBackendIfAvailable() { return nullptr; }
+static inline GraphBackend* dspGetTritonBackend() { return nullptr; }
 
 #endif
 

@@ -209,9 +209,9 @@ public class LLaMAArchitecture implements ModelArchitecture {
         outputNames.add("lm_logits");
 
         // Last-position logits: [batch, 1, vocab_size] — TTFT optimisation.
-        // Slice the hidden states at position S-1 (shape-derived, NOT a baked constant)
-        // BEFORE the lm_head matmul so that for prefill (S>1) DSP can skip computing
-        // logits for all S positions and only compute the single last-position result.
+        // Slice the hidden states at actual_sequence_length-1 (runtime-derived, NOT a baked
+        // constant) BEFORE the lm_head matmul so fixed-buffer right padding is ignored and DSP
+        // can skip computing logits for all padded sequence positions.
         // For decode (S=1) this is identical to lm_logits[:, 0, :]; both outputs resolve
         // to the same value and DSP will naturally merge them via shared computation.
         //
@@ -219,13 +219,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // begin = [0, S-1, 0], size = [B, 1, H] — all shape-derived via sizeAt.
         {
             SDVariable batchSize = sd.sizeAt(hidden, 0);
-            SDVariable seqLen    = sd.sizeAt(hidden, 1);
             SDVariable hiddenDim = sd.sizeAt(hidden, 2);
             SDVariable one       = sd.constant(Nd4j.scalar(DataType.INT64, 1L));
-            SDVariable seqMinus1 = seqLen.sub(one);
+            SDVariable actualLast = actualSequenceLength.sub(one);
             SDVariable zero      = sd.constant(Nd4j.scalar(DataType.INT64, 0L));
-            // begin: [0, S-1, 0]  — shape [3], dtype INT64
-            SDVariable beginVec = sd.stack("lm_last_begin", 0, zero, seqMinus1, zero);
+            // begin: [0, actual_sequence_length-1, 0] — ignore fixed-buffer right padding.
+            SDVariable beginVec = sd.stack("lm_last_begin", 0, zero, actualLast, zero);
             // size:  [B, 1, H]    — shape [3], dtype INT64
             SDVariable sizeVec  = sd.stack("lm_last_size",  0, batchSize, one, hiddenDim);
             SDVariable hiddenLast = sd.slice("hidden_last", hidden, beginVec, sizeVec);
@@ -464,7 +463,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
      * @return         result in {@code dtype}, shape [... , M, N]
      */
     private SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b, DataType dtype) {
-        if (dtype == DataType.HALF || dtype == DataType.BFLOAT16) {
+        if (QuantizedLinear.requiresFp32Accumulation(dtype)) {
             SDVariable aF32 = a.castTo(name + "_a_f32", DataType.FLOAT);
             SDVariable bF32 = b.castTo(name + "_b_f32", DataType.FLOAT);
             SDVariable result = sd.mmul(name + "_f32", aF32, bF32);
@@ -543,7 +542,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Skip the upcast/downcast when the input is already FP32 — this avoids creating
         // redundant cast ops that add per-step overhead on CPU.
         SDVariable computeInput;
-        boolean needsCast = (input.dataType() == DataType.HALF || input.dataType() == DataType.BFLOAT16);
+        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
         if (needsCast) {
             computeInput = input.castTo(outputName + "_f32", DataType.FLOAT);
         } else {
@@ -575,7 +574,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Upcast to FLOAT32 for squaring to prevent HALF overflow (values > 256 overflow when squared).
         // Skip cast when input is already FP32.
         SDVariable computeInput;
-        boolean needsCast = (input.dataType() == DataType.HALF || input.dataType() == DataType.BFLOAT16);
+        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
         if (needsCast) {
             computeInput = input.castTo(outputName + "_f32", DataType.FLOAT);
         } else {

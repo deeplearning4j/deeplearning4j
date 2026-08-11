@@ -170,6 +170,14 @@ elseif (SD_CUDA)
     file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.cu ./*.h)
 endif()
 
+if (SD_TEST_SOURCE_FILTER)
+    list(FILTER TEST_SOURCES INCLUDE REGEX "${SD_TEST_SOURCE_FILTER}$")
+    if (NOT TEST_SOURCES)
+        message(FATAL_ERROR "SD_TEST_SOURCE_FILTER matched no native test sources: ${SD_TEST_SOURCE_FILTER}")
+    endif()
+    message(STATUS "Native test source filter: ${SD_TEST_SOURCE_FILTER}")
+endif()
+
 # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
 set (EXCLUDE_DIR "/CMakeFiles/")
 foreach (TMP_PATH ${TEST_SOURCES})
@@ -185,7 +193,7 @@ if (SD_CPU OR SD_AURORA)
     endif()
 
     add_executable(runtests ${TEST_SOURCES})
-    target_link_libraries(runtests samediff_obj   ${ONEDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN}  ${BLAS_LIBRARIES}  ${ARMCOMPUTE_LIBRARIES}  gtest gtest_main)
+    target_link_libraries(runtests ${SD_LIBRARY_NAME} ${ONEDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} ${BLAS_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} gtest gtest_main)
 elseif(SD_CUDA)
 
     add_executable(runtests ${TEST_SOURCES})
@@ -204,7 +212,7 @@ elseif(SD_CUDA)
     endif()
     # note cuda and cudart are for the driver api access needed for using the driver api for setting things like attributes
     # with the DeviceValidator
-    target_link_libraries(runtests samediff_obj  cuda cudart ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} gtest gtest_main)
+    target_link_libraries(runtests ${SD_LIBRARY_NAME} cuda cudart ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${EXTERNAL_DEPENDENCY_LIBS} ${ONEDNN} gtest gtest_main)
 endif()
 
 

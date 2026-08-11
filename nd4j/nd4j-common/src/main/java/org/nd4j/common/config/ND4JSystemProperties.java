@@ -1171,16 +1171,28 @@ public class ND4JSystemProperties {
     public static final String OPTIMIZER_ENABLED = "nd4j.optimizer.enabled";
 
     /**
-     * Applicability: SameDiff graph optimizer<br>
-     * Description: Enable FP16 optimizations in the graph optimizer.
+     * Applicability: SameDiff graph optimizer and inference model loaders<br>
+     * Description: Weight storage data type. Supported values are fp32, fp16, bf16,
+     * fp8, fp8_e5m2, int8, and int4. Integer modes require a format-aware packed
+     * weight importer and compatible quantized matmul kernels.
      * <p>
-     * Default: false
+     * Default: fp16
+     */
+    public static final String OPTIMIZER_WEIGHT_DTYPE = "nd4j.optimizer.weightDtype";
+
+    /**
+     * Applicability: SameDiff graph optimizer<br>
+     * Description: Legacy FP16 enable/disable flag used only when
+     * {@link #OPTIMIZER_WEIGHT_DTYPE} is unset.
+     * <p>
+     * Default: true (set false to select fp32)
      */
     public static final String OPTIMIZER_FP16 = "nd4j.optimizer.fp16";
 
     /**
      * Applicability: SameDiff graph optimizer<br>
-     * Description: Enable BF16 optimizations in the graph optimizer. Takes precedence over FP16 if both are set.
+     * Description: Legacy BF16 flag used only when {@link #OPTIMIZER_WEIGHT_DTYPE}
+     * is unset. Takes precedence over the legacy FP16 flag.
      * <p>
      * Default: false
      */

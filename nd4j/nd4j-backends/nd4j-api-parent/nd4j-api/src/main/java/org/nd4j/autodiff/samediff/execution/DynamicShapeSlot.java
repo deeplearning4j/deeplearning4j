@@ -80,6 +80,15 @@ public class DynamicShapeSlot {
     /** Variable names for each output (for result collection). */
     private final String[] outputVarNames;
 
+    /**
+     * Per-output demand mask. A true entry means the native executor may omit
+     * materializing that output when it is not consumed by the compiled graph.
+     * The output remains in the op's logical output list so output numbering and
+     * backward-compatible wiring are unchanged.
+     */
+    @Builder.Default
+    private final boolean[] optionalOutputMask = new boolean[0];
+
     /** Frozen integer arguments. */
     private final long[] iArgs;
 

@@ -114,6 +114,17 @@ enum class GraphExecutionMode : int {
   GEM_PORTABLE_REPLAY = 19       // Best executable replay recorder; never selects Triton/NVRTC/PTX
 };
 
+/**
+ * Runtime-owned configuration that must be installed before segment discovery
+ * and backend compilation begin.
+ */
+struct NativePlanCompileOptions {
+  bool runtimeCompilationAllowed = true;
+  std::string runtimeArtifactDirectory;
+  std::string deviceCompilationCacheDirectory;
+  std::string deviceCompilationCacheModelKey;
+};
+
 // Close namespace before including ModeContract.h — it opens its own sd::graph namespace.
 // Including inside an open namespace would create sd::graph::sd::graph.
 }  // namespace graph
@@ -125,18 +136,16 @@ namespace sd {
 namespace graph {
 
 /**
- * SelectedBackend — resolved once at build time, stored per-segment.
- * Each GraphExecutionMode maps to exactly one SelectedBackend.
- * GEM_AUTO resolves to the best available backend at build time.
- * After resolution, dispatch is a simple switch — no cascade.
+ * SelectedBackend — selects a backend family once per segment.
+ * GRAPH_BACKEND delegates concrete implementation choice to the shared
+ * GraphBackendResolver and caches the successful implementation per segment.
  */
 enum class SelectedBackend : uint8_t {
   SLOT_BY_SLOT = 0,    // Execute each op individually (no fusion, no graphs)
-  DEVICE_REPLAY = 1,   // Platform-native device replay (CUDA graphs, HIP graphs, etc.)
-  GPU_COMPILER = 2,    // Triton/NVRTC/PTX/TPU/Hexagon compiler backend
-  CPU_GRAPH = 3,       // CPU graph backend (oneDNN/ACL/MLIR/MLX/NNAPI/ARM)
+  DEVICE_REPLAY = 1,   // Platform-native replay without a compiler/recorder backend
+  GRAPH_BACKEND = 3,   // Resolver-selected compiler or recorder backend
   EMULATED_REPLAY = 4, // Emulated graph replay: slot-by-slot with replay lifecycle tracking
-  VULKAN_REPLAY = 5,   // Vulkan command-buffer capture/replay with real compute dispatches
+  VULKAN_REPLAY = 5,   // Legacy Vulkan replay path pending GraphBackend migration
 };
 
 /**
@@ -256,28 +265,31 @@ struct SlotWiring {
   int8_t* inputSourceTypes = nullptr;    // NativeSourceType values
   int numOutputs = 0;
   int* outputSlotIndices = nullptr;      // Flat slot indices for each output
+  uint8_t* optionalOutputMask = nullptr; // 1: output is logically declared but not demanded
 
   ~SlotWiring() {
     delete[] inputSourceIndices;
     delete[] inputSourceTypes;
     delete[] outputSlotIndices;
+    delete[] optionalOutputMask;
   }
   SlotWiring() = default;
   SlotWiring(SlotWiring&& o) noexcept
       : numInputs(o.numInputs), inputSourceIndices(o.inputSourceIndices),
         inputSourceTypes(o.inputSourceTypes), numOutputs(o.numOutputs),
-        outputSlotIndices(o.outputSlotIndices) {
+        outputSlotIndices(o.outputSlotIndices), optionalOutputMask(o.optionalOutputMask) {
     o.numInputs = 0; o.inputSourceIndices = nullptr; o.inputSourceTypes = nullptr;
-    o.numOutputs = 0; o.outputSlotIndices = nullptr;
+    o.numOutputs = 0; o.outputSlotIndices = nullptr; o.optionalOutputMask = nullptr;
   }
   SlotWiring& operator=(SlotWiring&& o) noexcept {
     if (this != &o) {
       delete[] inputSourceIndices; delete[] inputSourceTypes; delete[] outputSlotIndices;
+      delete[] optionalOutputMask;
       numInputs = o.numInputs; inputSourceIndices = o.inputSourceIndices;
       inputSourceTypes = o.inputSourceTypes; numOutputs = o.numOutputs;
-      outputSlotIndices = o.outputSlotIndices;
+      outputSlotIndices = o.outputSlotIndices; optionalOutputMask = o.optionalOutputMask;
       o.numInputs = 0; o.inputSourceIndices = nullptr; o.inputSourceTypes = nullptr;
-      o.numOutputs = 0; o.outputSlotIndices = nullptr;
+      o.numOutputs = 0; o.outputSlotIndices = nullptr; o.optionalOutputMask = nullptr;
     }
     return *this;
   }
@@ -589,6 +601,18 @@ struct NativeSlot {
     return true;
   }
 
+  // ── Compiler backend eligibility ─────────────────────────────────
+  // Compiler backends (OpenVINO, NNAPI, MLX, ARM, TPU, Hexagon) lower a
+  // segment instead of recording its slot-by-slot execution. Host reads in a
+  // slot implementation therefore do not make an op ineligible: the backend's
+  // canResolveSegment()/lowering checks decide whether the op is supported.
+  // Control flow and truly dynamic output extents still require plan-level
+  // execution and cannot be admitted as an ordinary compiled segment.
+  bool isCompilerBackendEligible() const {
+    if (cf.controlFlowType != CF_NONE) return false;
+    return !hasDynamicOutputSize();
+  }
+
   // ── Capturability (single source of truth) ────────────────────────
   // Returns true if this slot can live inside a CUDA graph capture.
   //
@@ -604,11 +628,11 @@ struct NativeSlot {
     // Ops with dynamic output size (e.g. single-arg Where, Unique, NonZero, NMS)
     // require host synchronization during execution to determine output tensor
     // dimensions. This invalidates CUDA graph capture streams (cudaStreamCaptureStatusInvalidated).
-    // Note: DATA_DEPENDENT alone is NOT sufficient — reshape, concat, argmax etc.
-    // are DATA_DEPENDENT (shape fn reads tensor data) but their execution is
-    // regular GPU kernels safe for capture. Only DYNAMIC_OUTPUT_SIZE ops actually
-    // perform host sync during execution.
-    if (hasDynamicOutputSize()) return false;
+    // DATA_DEPENDENT alone is not sufficient: reshape, concat, and argmax can
+    // still execute as regular GPU kernels. Slice-family ops are different: their
+    // execution reads begin/size tensors on the host (asVectorT), so capturing
+    // them would either invalidate capture or bake stale control values.
+    if (hasDynamicOutputSize() || hasOpTrait(sd::ops::OP_TRAIT_SLICE)) return false;
     if (!mergeViews && (isViewCapableOp() || isIdentityOp() || frozenConstantSlot()))
       return false;
     return true;
@@ -680,6 +704,12 @@ struct ShapeKeyState {
   /// Zero means "not cached" — must compute fresh.
   LongType frozenCacheKey = 0;
 
+  /// Diagnostic snapshot of the unique cross-segment input signatures used by
+  /// the last successful GPU compilation. Populated only when LIFECYCLE
+  /// diagnostics are enabled, so the shape-drift path can identify the exact
+  /// input that changed without adding steady-state overhead.
+  std::vector<std::string> compiledInputSignatures;
+
   /// Returns true if shapes have been compiled and current key matches.
   bool isStable() const {
     return compiledShapeKey != 0 && lastComputedKey == compiledShapeKey;
@@ -707,6 +737,7 @@ struct ShapeKeyState {
     compiledShapeKey = 0;
     lastComputedKey = 0;
     frozenCacheKey = 0;
+    compiledInputSignatures.clear();
   }
 
   /// Diagnostic string for logging.
@@ -721,6 +752,9 @@ struct ShapeKeyState {
 struct GraphSegmentDef {
   int startSlot = 0;  // Inclusive slot index.
   int endSlot = 0;    // Inclusive slot index.
+  // Legacy name: for graph-capture modes this means CUDA-capturable; for
+  // compile-only modes it means eligible for backend admission. In both cases
+  // false routes the segment to the explicit plan-level execution path.
   bool isCapturable = false;
   bool hasValueDepOps = false;         // True if any slot has outputShapeDependsOnInputValues
   /// Structured shape key lifecycle. All shape key reads/writes go through this.
@@ -737,8 +771,8 @@ struct GraphSegmentDef {
   bool allFrozenConstants = false;
 
   // Resolved backend — set once at buildSegments() time, never changes.
-  // For non-capturable segments, always SLOT_BY_SLOT.
-  // For capturable: resolved from graphExecutionMode_ at build time.
+  // Ineligible segments use the explicit SLOT_BY_SLOT plan path. Eligible
+  // segments resolve from graphExecutionMode_ at build time.
   SelectedBackend selectedBackend = SelectedBackend::SLOT_BY_SLOT;
 
   /**
@@ -984,6 +1018,11 @@ struct GraphSegmentExec {
   // Kept as fields during migration; will be removed when all callers use segPhase.
   int captureOomRetries = 0;
   int captureRetryAfterExec = 0;
+
+  // Largest CUDA-pool allocation requested by a pre-capture execution. Graph
+  // instantiation must leave at least this much execution headroom available,
+  // otherwise the compiled backend is preserved and graph capture is deferred.
+  size_t peakWarmupAllocationBytes = 0;
 
   // LRU tracking: last executeCount_ at which this segment was replayed.
   // Used by proactive eviction to target least-recently-used graphs.
@@ -1348,13 +1387,12 @@ struct GraphSegment {
   GraphSegmentDef def;
   GraphSegmentExec exec;
 
-  // Per-segment resolved CPU backend — set on first successful compile via cascade.
-  // Subsequent executions reuse this without re-cascading.
-  GraphBackend* resolvedCpuBackend = nullptr;
-
-  // Cached backend type to avoid dynamic_cast per token in frozen path.
-  // Set once when resolvedCpuBackend is assigned.
-  enum class CpuBackendType { UNKNOWN, ONEDNN, OPENVINO } resolvedCpuBackendType = CpuBackendType::UNKNOWN;
+  // Concrete implementation selected by the shared resolver and successfully
+  // lowered for this segment. Subsequent executions reuse it directly. The
+  // exact backend lifecycle policy is captured at the same transition so generic
+  // plan logic never infers mechanics from platform or backend names.
+  GraphBackend* resolvedGraphBackend = nullptr;
+  GraphBackendPlanningPolicy resolvedGraphBackendPolicy;
 
   // Pointer to NativeDynamicShapePlan slot array cache — allows GPU backends
   // to update the slot cache when pre-allocating output arrays.
@@ -1364,8 +1402,19 @@ struct GraphSegment {
   static int maxOomRetries();
   static int retryInterval();
 
-  // Reset resolvedCpuBackend when exec state is reset (e.g., shape change rebuild)
-  void resetCpuBackend() { resolvedCpuBackend = nullptr; }
+  void setResolvedGraphBackend(GraphBackend* backend,
+                               const GraphBackendRequest& request) {
+    resolvedGraphBackend = backend;
+    resolvedGraphBackendPolicy =
+        backend != nullptr ? backend->planningPolicy(request)
+                           : GraphBackendPlanningPolicy{};
+  }
+
+  // Reset backend identity and policy together on shape-change rebuild.
+  void resetGraphBackend() {
+    resolvedGraphBackend = nullptr;
+    resolvedGraphBackendPolicy = GraphBackendPlanningPolicy{};
+  }
 
   // Unified lifecycle accessor — delegates to exec.graphNodePhase().
   GraphNodePhase graphNodePhase() const { return exec.graphNodePhase(); }
@@ -1427,7 +1476,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   static NativeDynamicShapePlan* fromFlatGraph(
       const ::graph::FlatGraph* graph,
       const std::unordered_map<std::string, NDArray*>& variables,
-      const std::vector<std::string>& requestedOutputs);
+      const std::vector<std::string>& requestedOutputs,
+      GraphExecutionMode mode = GraphExecutionMode::GEM_AUTO,
+      std::string* errorMessage = nullptr,
+      const NativePlanCompileOptions& compileOptions =
+          NativePlanCompileOptions());
 
   ~NativeDynamicShapePlan();
 
@@ -1746,11 +1799,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     return count;
   }
 
-  /** Device address of the plan-owned staging buffer for ext[extIdx], or 0 if none. */
+  /** Device address of the current-device plan-owned staging buffer for ext[extIdx], or 0 if none. */
   long long getStagingBufferAddress(int extIdx) const {
-    if (placeholderStagingBuffers_ == nullptr || extIdx < 0 || extIdx >= numExternalInputs_)
+    NDArray** stagingBuffers = activeStagingBuffers_ != nullptr
+        ? activeStagingBuffers_ : placeholderStagingBuffers_;
+    if (stagingBuffers == nullptr || extIdx < 0 || extIdx >= numExternalInputs_)
       return 0;
-    NDArray* staging = placeholderStagingBuffers_[extIdx];
+    NDArray* staging = stagingBuffers[extIdx];
     if (staging == nullptr) return 0;
     return reinterpret_cast<long long>(staging->specialBuffer());
   }
@@ -1762,8 +1817,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       NDArray* eff = effectiveExternals_[extIdx];
       if (eff != nullptr) return reinterpret_cast<long long>(eff->specialBuffer());
     }
-    if (placeholderStagingBuffers_ != nullptr && extIdx >= 0 && extIdx < numExternalInputs_) {
-      NDArray* staging = placeholderStagingBuffers_[extIdx];
+    NDArray** stagingBuffers = activeStagingBuffers_ != nullptr
+        ? activeStagingBuffers_ : placeholderStagingBuffers_;
+    if (stagingBuffers != nullptr && extIdx >= 0 && extIdx < numExternalInputs_) {
+      NDArray* staging = stagingBuffers[extIdx];
       if (staging != nullptr) return reinterpret_cast<long long>(staging->specialBuffer());
     }
     return 0;
@@ -1771,10 +1828,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   /** Number of variable ext inputs with allocated staging buffers. */
   int getNumStagingBuffers() const {
-    if (placeholderStagingBuffers_ == nullptr) return 0;
+    NDArray** stagingBuffers = activeStagingBuffers_ != nullptr
+        ? activeStagingBuffers_ : placeholderStagingBuffers_;
+    if (stagingBuffers == nullptr) return 0;
     int count = 0;
     for (int i = 0; i < numExternalInputs_; i++) {
-      if (placeholderStagingBuffers_[i] != nullptr) count++;
+      if (stagingBuffers[i] != nullptr) count++;
     }
     return count;
   }
@@ -1850,6 +1909,19 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Get the number of requested outputs.
    */
   int getNumRequestedOutputs() const { return numRequestedOutputs_; }
+
+  /**
+   * Resolve the output-vector arity for a NativeOps execution adapter.
+   *
+   * A zero bound-output count is the runtime-allocation contract used by
+   * sdxRunAllocating: the plan owns output allocation, so the adapter must pass
+   * one null slot per requested output. A nonzero count is caller-buffer mode
+   * and must match the serialized plan exactly. Returns -1 on mismatch.
+   */
+  int resolveExecutionOutputCount(int boundOutputCount) const {
+    return boundOutputCount == 0 || boundOutputCount == numRequestedOutputs_
+        ? numRequestedOutputs_ : -1;
+  }
 
   /**
    * Get the total number of slots (ops) in the plan.
@@ -2032,6 +2104,36 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   }
   const std::string& getRuntimeArtifactDirectory() const {
     return runtimeArtifactDirectory_;
+  }
+
+  void setDeviceCompilationCacheDirectory(const std::string& directory) {
+    if (!planLifecycle_.isSlotBySlot()) {
+      DSP_DIAG(EXECUTE,
+               "DSP PHASE VIOLATION: setDeviceCompilationCacheDirectory "
+               "called in phase %s",
+               planLifecycle_.displayName());
+      assert(false && "DSP phase violation: setDeviceCompilationCacheDirectory");
+      return;
+    }
+    deviceCompilationCacheDirectory_ = directory;
+  }
+  const std::string& getDeviceCompilationCacheDirectory() const {
+    return deviceCompilationCacheDirectory_;
+  }
+
+  void setDeviceCompilationCacheModelKey(const std::string& modelKey) {
+    if (!planLifecycle_.isSlotBySlot()) {
+      DSP_DIAG(EXECUTE,
+               "DSP PHASE VIOLATION: setDeviceCompilationCacheModelKey "
+               "called in phase %s",
+               planLifecycle_.displayName());
+      assert(false && "DSP phase violation: setDeviceCompilationCacheModelKey");
+      return;
+    }
+    deviceCompilationCacheModelKey_ = modelKey;
+  }
+  const std::string& getDeviceCompilationCacheModelKey() const {
+    return deviceCompilationCacheModelKey_;
   }
 
   void setGraphExecutionMode(GraphExecutionMode mode);
@@ -2563,14 +2665,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   LongType getKvCachePosition() const;
 
   /**
-   * Validate that a compiled CPU graph (oneDNN/ACL) covers all ops in the segment.
-   * Returns true if every op was compiled by the backend.
+   * Validate that a compiled graph backend covers all ops in the segment.
+   * Returns true if every op was compiled by the resolved implementation.
    * When any ops are missing, logs warnings and returns false.
    *
    * @param segmentIndex  Which segment to validate (-1 for all segments)
    * @return true if all ops were compiled, false if any were skipped
    */
-  bool validateCompiledCpuGraph(int segmentIndex = -1) const;
+  bool validateCompiledGraphBackend(int segmentIndex = -1) const;
 
   // Segment cleanup — public so SegmentLifecycle::invalidateForRebuild can call it.
   void cleanupSegmentForRebuild(GraphSegment& seg, const char* reason);
@@ -2787,8 +2889,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     return (static_cast<uint64_t>(start) << 32) | static_cast<uint64_t>(end);
   }
 
-  // pendingClose_ and deferredClose_ REMOVED: arrays persist (one array per slot).
-  // View wrappers deleted inline in slotexec when replaced. No batched close needed.
+  // Retired plan-owned NDArray wrappers from every slot/view/coloring path.
+  // Deletion is deferred until the whole plan execution has finished; deleting
+  // at a per-slot or per-segment boundary can corrupt adjacent allocator metadata.
+  std::vector<NDArray*> deferredSlotDeletes_;
+  void flushDeferredSlotDeletes();
 
   // Protected DataBuffers: model weights and shapeStatic outputs whose
   // DataBuffers must NEVER be freed during cleanup. Built on first execute().
@@ -2842,6 +2947,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // the historical compile-on-miss behavior; the SDX C runtime overrides it.
   bool runtimeCompilationAllowed_ = true;
   std::string runtimeArtifactDirectory_;
+  std::string deviceCompilationCacheDirectory_;
+  std::string deviceCompilationCacheModelKey_;
 
   // Graph execution mode (controls which backend to use)
   GraphExecutionMode graphExecutionMode_;
@@ -2949,7 +3056,13 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // execute, NEVER resized. Same ownership pattern as outputSlots_.
   // Staging buffers are plan-owned NDArrays; effectiveExternals_ contains
   // staging pointers for variable inputs, original pointers for non-variable.
+  // Device-0 staging array retained for compatibility with CPU/Vulkan paths.
+  // CUDA switches activeStagingBuffers_ to a per-device vector before each
+  // segment, so graph captures never reuse a pointer allocated on another GPU.
   NDArray** placeholderStagingBuffers_ = nullptr;
+  NDArray** activeStagingBuffers_ = nullptr;
+  int activeStagingDevice_ = -1;
+  std::unordered_map<int, std::vector<NDArray*>> deviceStagingBuffers_;
   // True only during an execute() whose pre-replay sync ran (or intra-exec
   // deduped) the staging D2D — i.e., staging content matches THIS exec's
   // external inputs. Reset at every execute() entry. Gates the staging
@@ -3028,7 +3141,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::vector<sd::cuda::CaptureAuditEntry> lastCaptureAudit_;
 #endif
 
-  // Compilation audit: per-op compilation status for CPU graph backends
+  // Compilation audit: per-op compilation status for graph backends
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
 
   // Human-readable detail of last compile failure (for error messages)
@@ -3062,7 +3175,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
   void buildSegments();
   void resegmentForFreeze();
-  SelectedBackend resolveBackendForSegment(bool isCapturable) const;
+  SelectedBackend resolveBackendForSegment(bool isBackendEligible);
 
   // ── Slot execution (NativeDynamicShapePlan_slotexec.cpp) ──
   Status executeSlot(int slotIdx, NDArray** externalArrays, int numExt, void* stream);
@@ -3158,9 +3271,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       // a view minted over it reads a PREVIOUS iteration's values forever
       // (deepAttentionQKV varying#4: bit-identical wrong output across NVRTC/PTX,
       // views object-matched to the exec-1 staging buffer at every later exec).
+      NDArray** stagingBuffers = activeStagingBuffers_ != nullptr
+          ? activeStagingBuffers_ : placeholderStagingBuffers_;
       if (stagingMaintainedThisExec_ &&
-          placeholderStagingBuffers_ != nullptr && extIdx < numExternalInputs_) {
-        NDArray* staging = placeholderStagingBuffers_[extIdx];
+          stagingBuffers != nullptr && extIdx < numExternalInputs_) {
+        NDArray* staging = stagingBuffers[extIdx];
         if (staging != nullptr && staging->dataBuffer() != nullptr
             && staging->dataBuffer()->isValid() && staging->specialBuffer() != nullptr) {
           return staging;
@@ -3208,9 +3323,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Unified pre-segment zero pass — zeroes outputs for slots with needsZeroedOutput.
   // Safe to call during CUDA graph capture (memsets get recorded into the graph).
   void prezeroSegmentOutputs(const GraphSegment& seg, void* stream);
-  Status executeSegmentWithCpuGraph(GraphSegment& seg, NDArray** externalArrays,
+  Status executeSegmentWithGraphBackend(GraphSegment& seg, NDArray** externalArrays,
                                     int numExt, void* stream);
-  const std::vector<GraphBackend*>& getCpuGraphBackendChain();
+  GraphBackendRequest makeGraphBackendRequest() const;
+  const std::vector<GraphBackend*>& getGraphBackendCandidates();
+  GraphBackendPlanningPolicy getResolvedGraphBackendPlanningPolicy();
+  GraphBackendExecutionPolicy getResolvedGraphBackendExecutionPolicy();
   Status executeSegmentWithSpecificBackend(GraphSegment& seg, GraphBackend* backend,
                                            NDArray** externalArrays, int numExt, void* stream);
 
@@ -3274,7 +3392,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Restore the plan-primary execution state (stream/workspace TLS + CUDA device) after a
   // secondary-device segment bound by platformBindSegmentDevice. No-op for single-GPU segments.
   void platformRestoreSegmentDevice();
-  void platformMigrateSegmentInputs(const GraphSegment& seg, NDArray** externalInputs, int numExternalInputs);
+  // Migrate internal segment inputs to the segment's target device. Callers
+  // must not dispatch a segment when a source pointer, destination allocation,
+  // or cross-device transfer cannot be validated.
+  Status platformMigrateSegmentInputs(const GraphSegment& seg, NDArray** externalInputs, int numExternalInputs);
   void platformCleanupMigratedInputs();
   /**
    * When op-segment sharding places the producer of a requested output on a secondary
@@ -3377,10 +3498,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void platformLogSlotOutput(int stepIdx, const char* opName, const char* tag,
                               const int* outputSlotIndices, int numOutputs);
 
-  // ── GPU graph backend (NativeDynamicShapePlan_gpubackend.cpp) ──
+  // ── Device graph execution (NativeDynamicShapePlan_gpubackend.cpp) ──
   Status executeSegmentWithGpuGraph(GraphSegment& seg, NDArray** externalArrays,
                                     int numExt, void* stream);
-  GraphBackend* getGpuGraphBackend();
   void clearGpuBackendFailedCache();
 
   // ── Segment lifecycle dispatch methods ──
@@ -3441,17 +3561,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                          NDArray** externalArrays, int numExt, void* stream);
 #endif
 
-  // CPU graph backend (oneDNN Graph or ACL Dynamic Fusion)
-  GraphBackend* cpuGraphBackend_;
-  bool cpuGraphBackendChecked_;
-
-  // Prioritized chain of all available CPU graph backends for per-segment cascade
-  std::vector<GraphBackend*> cpuGraphBackendChain_;
-  bool cpuGraphBackendChainBuilt_ = false;
-
-  // GPU graph backend (Triton GPU compiler)
-  GraphBackend* gpuGraphBackend_;
-  bool gpuGraphBackendChecked_;
+  // Resolver-ordered implementations available for this execution request.
+  std::vector<GraphBackend*> graphBackendCandidates_;
+  bool graphBackendCandidatesBuilt_ = false;
 
   // Backend priority order (user-configurable)
   std::vector<std::string> backendPriority_;
@@ -3475,7 +3587,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void abortCapture(GraphSegment& seg, bool freeHostPtrs, bool didPushCtx, int captureDevice,
                     cudaStream_t prevCaptureStream,
                     const std::vector<SlotPhase>& savedSlotPhases,
-                    void* stream);
+                    void* stream, bool preserveCompiledBackend = false);
 #endif
 
 #if defined(SD_VULKAN)
@@ -3564,17 +3676,16 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     int batchedGemmGroupIdx;    // only valid for BATCHED_GEMM action
     int outputSlotIdx;          // first output slot for tick actions
   };
-  // Per-gap-unit cache keyed by startSlot. Each gap unit in the composite
-  // replay schedule gets its own cached active slot list.
-  std::unordered_map<int, std::vector<ActiveGapSlot>> cachedActiveGapSlotsMap_;
-  std::unordered_set<int> activeGapSlotsCachedSet_;
+  // Per-gap-unit cache keyed by the complete [startSlot, endSlot] interval.
+  // Schedule recapture can retain a start slot while expanding or shrinking the
+  // gap, so startSlot alone is not a stable cache identity.
+  std::unordered_map<uint64_t, std::vector<ActiveGapSlot>> cachedActiveGapSlotsMap_;
+  std::unordered_set<uint64_t> activeGapSlotsCachedSet_;
 
-  // Shared capture workspace: all segments share one 128MB workspace
-  // instead of each allocating their own. Since segments execute sequentially
-  // and the workspace is scratch space (offset resets each capture), sharing
-  // is safe. The pointer is baked into CUDA graph nodes during capture,
-  // so all segments must capture with the same address (guaranteed by
-  // allocating once and reusing).
+  // Plan-owned capture workspace: segments of this plan share one arena
+  // because they execute sequentially. The arena is never shared with another
+  // live plan: CUDA graph nodes retain addresses and capture-time state within
+  // it for the entire cached-plan lifetime.
   void* sharedCaptureWorkspace_ = nullptr;
   size_t sharedCaptureWorkspaceBytes_ = 0;
   int sharedCaptureWorkspaceDevice_ = -1;

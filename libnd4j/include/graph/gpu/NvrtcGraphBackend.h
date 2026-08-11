@@ -49,6 +49,14 @@ class NvrtcGraphBackend : public GraphBackend {
 
   const char* name() const override { return "NVRTC"; }
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
+  GraphBackendPlanningPolicy planningPolicy(
+      const GraphBackendRequest& request) const override {
+    auto policy = GraphBackend::planningPolicy(request);
+    policy.requiresPlatformReplayHandle = true;
+    return policy;
+  }
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,

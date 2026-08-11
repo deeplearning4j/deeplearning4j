@@ -22,6 +22,7 @@ package org.nd4j.autodiff.samediff.diagnostics;
 
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,6 +109,10 @@ public class DspDiagnostics {
         initialized = true;
 
         try {
+            NativeOps nativeOps = Nd4j.getNativeOps();
+            int requestedMask = NONE;
+            int requestedLevel = LEVEL_SUMMARY;
+
             // Read system properties
             String categories = System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS);
             // Fallback to env var (surefire passes properties as env vars)
@@ -115,33 +120,71 @@ public class DspDiagnostics {
                 categories = System.getenv("ND4J_DSP_DIAGNOSTICS");
             }
             if (categories != null && !categories.isEmpty()) {
-                int mask = parseCategories(categories);
-                Nd4j.getNativeOps().dspDiagSetCategories(mask);
-                cachedMask = mask;
-                log.info("DSP diagnostics enabled: {} (mask=0x{}) ",
-                         categories, Integer.toHexString(mask));
+                requestedMask = parseCategories(categories);
+                nativeOps.dspDiagSetCategories(requestedMask);
             }
 
             String level = System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL);
             if (level == null) level = System.getenv("ND4J_DSP_DIAGNOSTICS_LEVEL");
             if (level != null) {
-                int lvl = parseLevelString(level);
-                Nd4j.getNativeOps().dspDiagSetLevel(lvl);
+                requestedLevel = parseLevelString(level);
+            } else {
+                // A caller may configure diagnostics programmatically before the lazy bridge
+                // initialization runs (for example BenchmarkConfigApplier). Preserve that
+                // explicit runtime choice instead of falsely treating it as a rejected
+                // SUMMARY write that Java never made.
+                requestedLevel = nativeOps.dspDiagGetLevel();
             }
+            // Always exercise the setter/getter round trip so ABI validation remains strict.
+            nativeOps.dspDiagSetLevel(requestedLevel);
 
             String file = System.getProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_FILE);
             if (file == null) file = System.getenv("ND4J_DSP_DIAGNOSTICS_FILE");
             if (file != null && !file.isEmpty()) {
-                Nd4j.getNativeOps().dspDiagSetJsonPath(file);
+                nativeOps.dspDiagSetJsonPath(file);
             }
 
             // Also apply legacy flag mapping (done in C++ constructor too, but
             // Java-side properties need explicit forwarding)
             applyLegacyProperties();
 
-            cachedMask = Nd4j.getNativeOps().dspDiagGetEnabledMask();
-        } catch (Exception e) {
-            log.warn("Failed to initialize DSP diagnostics: {}", e.getMessage());
+            cachedMask = nativeOps.dspDiagGetEnabledMask();
+            if ((cachedMask & requestedMask) != requestedMask) {
+                throw new IllegalStateException("Native DSP diagnostics bridge rejected mask 0x"
+                        + Integer.toHexString(requestedMask) + "; accepted 0x"
+                        + Integer.toHexString(cachedMask) + " for " + nativeOps.getClass().getName());
+            }
+            int nativeLevel = nativeOps.dspDiagGetLevel();
+            if (nativeLevel != requestedLevel) {
+                throw new IllegalStateException("Native DSP diagnostics bridge rejected level "
+                        + requestedLevel + "; accepted " + nativeLevel + " for "
+                        + nativeOps.getClass().getName());
+            }
+
+            // Validate the complete Java-to-native event path. Previously the interface's
+            // default no-op methods allowed this class to report diagnostics as enabled while
+            // the native ring buffer remained empty.
+            if (cachedMask != NONE) {
+                int probeCategory = (cachedMask & MEMORY) != 0 ? MEMORY : Integer.lowestOneBit(cachedMask);
+                long beforeProbe = nativeOps.dspDiagGetTotalEventCount();
+                nativeOps.dspDiagRecordJavaEvent(probeCategory, -1, -1, null, 0,
+                        "JAVA_DIAGNOSTICS_BRIDGE_READY");
+                long afterProbe = nativeOps.dspDiagGetTotalEventCount();
+                if (afterProbe <= beforeProbe) {
+                    throw new IllegalStateException("Native DSP diagnostics bridge did not record its initialization probe for "
+                            + nativeOps.getClass().getName());
+                }
+            }
+
+            if (categories != null && !categories.isEmpty()) {
+                log.info("DSP diagnostics enabled: {} (requestedMask=0x{}, nativeMask=0x{}, level={}, backend={})",
+                        categories, Integer.toHexString(requestedMask), Integer.toHexString(cachedMask),
+                        nativeLevel, nativeOps.getClass().getName());
+            }
+        } catch (RuntimeException e) {
+            initialized = false;
+            cachedMask = NONE;
+            throw e;
         }
     }
 

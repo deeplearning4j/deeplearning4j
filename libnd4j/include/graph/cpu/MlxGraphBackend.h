@@ -51,7 +51,7 @@ namespace graph {
  *   LLM:    RoPE (mx::fast::rope), GQA, flash attention, sliding window attention,
  *           fused_rms_norm_swiglu, KV cache update, embedding lookup, top-k
  *
- * Priority in getCpuGraphBackend():
+ * Resolution priority in the shared backend catalog:
  *   MLX (Apple Silicon) > oneDNN (Intel) > ACL (ARM) > MLIR JIT (universal)
  *
  * This is the highest-priority CPU backend on macOS/Apple Silicon.
@@ -63,6 +63,8 @@ class MlxGraphBackend : public GraphBackend {
 
   const char* name() const override { return "MLX Apple Silicon"; }
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,

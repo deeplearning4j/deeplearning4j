@@ -280,7 +280,9 @@
                 <executions>
                     <execution>
                         <id>copy-wrapper-lib</id>
-                        <phase>prepare-package</phase>
+                        <!-- Tests must load the wrapper built from this checkout, not a
+                             stale transitive libtokenizers resource with the same SONAME. -->
+                        <phase>process-resources</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>
@@ -328,7 +330,9 @@
                 <javacpp.platform>android-arm64</javacpp.platform>
                 <javacpp.platform.build>android-arm64</javacpp.platform.build>
                 <javacpp.platform.root>${android.ndk}</javacpp.platform.root>
-                <javacpp.platform.compiler>${android.ndk}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${android.api}-clang++</javacpp.platform.compiler>
+                <!-- Android object compilation is fail-closed through the shared
+                     sccache/ccache wrapper; release and standalone mobile drivers export it. -->
+                <javacpp.platform.compiler>${env.DL4J_ANDROID_COMPILER}</javacpp.platform.compiler>
                 <javacpp.platform.sysroot>--sysroot=${android.ndk}/toolchains/llvm/prebuilt/linux-x86_64/sysroot</javacpp.platform.sysroot>
                 <tokenizers.include.path>${project.basedir}/../libtokenizers/target/mobile/android-arm64-v8a/include</tokenizers.include.path>
                 <tokenizers.native.path>${project.basedir}/../libtokenizers/target/mobile/android-arm64-v8a/lib</tokenizers.native.path>

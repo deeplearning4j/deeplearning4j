@@ -56,6 +56,13 @@ static bool isDenseCOrder(NDArray* arr) {
          shape::strideDescendingCAscendingF(arr->shapeInfo());
 }
 
+// NNAPI vendor compilation is synchronous on Android. Keep admission bounded
+// so a large transformer graph cannot monopolize the runtime until the IPC
+// watchdog kills the worker. Larger graphs must be split or explicitly replayed.
+// 32 keeps individual vendor compilations small enough for the Tensor G3 deadline
+// while still allowing useful arithmetic islands to remain on the accelerator.
+static constexpr int kMaxNnapiSegmentOps = 32;
+
 // ─── Data type support ──────────────────────────────────────────────────────
 
 int32_t NnapiGraphBackend::toNnapiOperandType(DataType dt) {
@@ -255,6 +262,183 @@ int NnapiGraphBackend::getMinApiLevel(const std::string& opName) {
   return 27;
 }
 
+// ─── Concrete lowering contract ──────────────────────────────────────────────
+
+bool NnapiGraphBackend::validateSlotContract(const NativeSlot& slot, int nnapiOp,
+                                             std::string& reason) {
+  const auto& wiring = slot.wiring;
+  const auto& args = slot.args;
+
+  if (wiring.numInputs < 0 || wiring.numOutputs < 0 || args.numIArgs < 0 ||
+      args.numTArgs < 0 || args.numBArgs < 0 || args.numDArgs < 0 ||
+      args.numSArgs < 0) {
+    reason = "negative wiring or argument count";
+    return false;
+  }
+  if ((wiring.numInputs > 0 && wiring.inputSourceIndices == nullptr) ||
+      (wiring.numOutputs > 0 && wiring.outputSlotIndices == nullptr) ||
+      (args.numIArgs > 0 && args.iArgs == nullptr) ||
+      (args.numTArgs > 0 && args.tArgs == nullptr) ||
+      (args.numBArgs > 0 && args.bArgs == nullptr) ||
+      (args.numDArgs > 0 && args.dArgs == nullptr) ||
+      (args.numSArgs > 0 && args.sArgs == nullptr)) {
+    reason = "non-zero count has a null backing buffer";
+    return false;
+  }
+
+  auto fail = [&](const char* message) {
+    reason = message;
+    return false;
+  };
+  auto oneOutput = [&]() {
+    return wiring.numOutputs == 1 || fail("lowering requires exactly one output");
+  };
+  auto noArgs = [&]() {
+    return (args.numIArgs == 0 && args.numTArgs == 0 && args.numBArgs == 0 &&
+            args.numDArgs == 0 && args.numSArgs == 0) ||
+           fail("unexpected op arguments are not consumed by the lowering");
+  };
+  auto exactInputs = [&](int count) {
+    return wiring.numInputs == count || fail("unexpected data-input count");
+  };
+
+  const bool binary =
+      nnapiOp == ANEURALNETWORKS_ADD || nnapiOp == ANEURALNETWORKS_SUB ||
+      nnapiOp == ANEURALNETWORKS_MUL || nnapiOp == ANEURALNETWORKS_DIV ||
+      nnapiOp == ANEURALNETWORKS_MAXIMUM || nnapiOp == ANEURALNETWORKS_MINIMUM ||
+      nnapiOp == ANEURALNETWORKS_POW || nnapiOp == ANEURALNETWORKS_LESS ||
+      nnapiOp == ANEURALNETWORKS_LESS_EQUAL || nnapiOp == ANEURALNETWORKS_GREATER ||
+      nnapiOp == ANEURALNETWORKS_GREATER_EQUAL || nnapiOp == ANEURALNETWORKS_EQUAL ||
+      nnapiOp == ANEURALNETWORKS_NOT_EQUAL || nnapiOp == ANEURALNETWORKS_LOGICAL_AND ||
+      nnapiOp == ANEURALNETWORKS_LOGICAL_OR;
+  if (binary) return exactInputs(2) && oneOutput() && noArgs();
+
+  const bool unary =
+      nnapiOp == ANEURALNETWORKS_RELU || nnapiOp == ANEURALNETWORKS_RELU6 ||
+      nnapiOp == ANEURALNETWORKS_LOGISTIC || nnapiOp == ANEURALNETWORKS_TANH ||
+      nnapiOp == ANEURALNETWORKS_FLOOR || nnapiOp == ANEURALNETWORKS_ABS ||
+      nnapiOp == ANEURALNETWORKS_EXP || nnapiOp == ANEURALNETWORKS_LOG ||
+      nnapiOp == ANEURALNETWORKS_NEG || nnapiOp == ANEURALNETWORKS_SQRT ||
+      nnapiOp == ANEURALNETWORKS_RSQRT || nnapiOp == ANEURALNETWORKS_SIN;
+  if (unary) return exactInputs(1) && oneOutput() && noArgs();
+
+  if (nnapiOp == ANEURALNETWORKS_LOGICAL_NOT)
+    return exactInputs(1) && oneOutput() && noArgs();
+  if (nnapiOp == ANEURALNETWORKS_SELECT)
+    return exactInputs(3) && oneOutput() && noArgs();
+
+  if (nnapiOp == ANEURALNETWORKS_SOFTMAX) {
+    if (!exactInputs(1) || !oneOutput()) return false;
+    if (args.numIArgs != 0 || args.numBArgs != 0 || args.numDArgs != 0 ||
+        args.numSArgs != 0 || args.numTArgs > 1)
+      return fail("softmax lowering accepts only an optional beta scalar");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_BATCH_MATMUL) {
+    if (!exactInputs(2) || !oneOutput()) return false;
+    if (args.numBArgs > 2 || args.numIArgs != 0 || args.numTArgs != 0 ||
+        args.numDArgs != 0 || args.numSArgs != 0)
+      return fail("batch matmul lowering accepts at most two transpose flags");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_FULLY_CONNECTED)
+    return exactInputs(3) && oneOutput() && noArgs();
+
+  if (nnapiOp == ANEURALNETWORKS_CONCATENATION) {
+    if (wiring.numInputs < 2 || !oneOutput()) return false;
+    if (args.numIArgs != 1 || args.numTArgs != 0 || args.numBArgs != 0 ||
+        args.numDArgs != 0 || args.numSArgs != 0)
+      return fail("concat lowering requires exactly one integer axis");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_RESHAPE) {
+    if (!exactInputs(1) || !oneOutput()) return false;
+    if (args.numTArgs != 0 || args.numBArgs != 0 || args.numDArgs != 0 ||
+        args.numSArgs != 0)
+      return fail("reshape lowering cannot consume non-integer parameters");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_TRANSPOSE) {
+    if (!exactInputs(1) || !oneOutput()) return false;
+    if (args.numIArgs <= 0 || args.numTArgs != 0 || args.numBArgs != 0 ||
+        args.numDArgs != 0 || args.numSArgs != 0)
+      return fail("transpose lowering requires an explicit permutation");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_GATHER) {
+    if (!exactInputs(2) || !oneOutput()) return false;
+    if (args.numIArgs != 1 || args.numTArgs != 0 || args.numBArgs != 0 ||
+        args.numDArgs != 0 || args.numSArgs != 0)
+      return fail("gather lowering requires exactly one integer axis");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_SQUEEZE) {
+    if (!exactInputs(1) || !oneOutput()) return false;
+    if (args.numTArgs != 0 || args.numBArgs != 0 || args.numDArgs != 0 ||
+        args.numSArgs != 0)
+      return fail("squeeze lowering accepts only integer axes");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_EXPAND_DIMS) {
+    if (!exactInputs(1) || !oneOutput()) return false;
+    if (args.numIArgs != 1 || args.numTArgs != 0 || args.numBArgs != 0 ||
+        args.numDArgs != 0 || args.numSArgs != 0)
+      return fail("expand_dims lowering requires exactly one integer axis");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_MEAN || nnapiOp == ANEURALNETWORKS_REDUCE_SUM ||
+      nnapiOp == ANEURALNETWORKS_REDUCE_MAX || nnapiOp == ANEURALNETWORKS_REDUCE_MIN ||
+      nnapiOp == ANEURALNETWORKS_REDUCE_PROD || nnapiOp == ANEURALNETWORKS_REDUCE_ANY ||
+      nnapiOp == ANEURALNETWORKS_REDUCE_ALL) {
+    if (!exactInputs(1) || !oneOutput()) return false;
+    if (args.numIArgs <= 0 || args.numBArgs > 1 || args.numTArgs != 0 ||
+        args.numDArgs != 0 || args.numSArgs != 0)
+      return fail("reduce lowering requires explicit axes and an optional keep-dims flag");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_ARGMAX || nnapiOp == ANEURALNETWORKS_ARGMIN) {
+    if (!exactInputs(1) || !oneOutput()) return false;
+    if (args.numIArgs != 1 || args.numTArgs != 0 || args.numBArgs != 0 ||
+        args.numDArgs != 0 || args.numSArgs != 0)
+      return fail("arg reduction lowering requires exactly one integer axis");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_TILE) {
+    if (!exactInputs(1) || !oneOutput()) return false;
+    if (args.numIArgs <= 0 || args.numTArgs != 0 || args.numBArgs != 0 ||
+        args.numDArgs != 0 || args.numSArgs != 0)
+      return fail("tile lowering requires integer multiples");
+    return true;
+  }
+
+  if (nnapiOp == ANEURALNETWORKS_SPACE_TO_DEPTH ||
+      nnapiOp == ANEURALNETWORKS_DEPTH_TO_SPACE) {
+    if (!exactInputs(1) || !oneOutput()) return false;
+    if (args.numIArgs != 1 || args.numTArgs != 0 || args.numBArgs != 0 ||
+        args.numDArgs != 0 || args.numSArgs != 0)
+      return fail("space/depth lowering requires one integer block size");
+    return true;
+  }
+
+  // These mappings are retained for explicit replay and future lowerers, but
+  // their current parameter forms are not byte-for-byte equivalent to nd4j
+  // (layout, dilation, masks, runtime shape tensors, or output-type operands).
+  // Rejecting them here prevents a vendor compiler from receiving a plausible
+  // but semantically wrong operation.
+  reason = "mapped operation has no verified concrete NNAPI parameter contract";
+  return false;
+}
+
 // ─── Construction / singleton ───────────────────────────────────────────────
 
 NnapiGraphBackend::NnapiGraphBackend() {
@@ -284,19 +468,85 @@ bool NnapiGraphBackend::isAvailable() const {
   return nnapiAvailable_;
 }
 
+bool NnapiGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_NNAPI ||
+         request.executionMode == GraphExecutionMode::GEM_ARM_HYBRID ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO ||
+         request.executionMode == GraphExecutionMode::GEM_PORTABLE_REPLAY;
+}
+
+int NnapiGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  if (request.executionMode == GraphExecutionMode::GEM_NNAPI ||
+      request.executionMode == GraphExecutionMode::GEM_ARM_HYBRID) {
+    return 1000;
+  }
+  return 300;
+}
+
+GraphBackendPlanningPolicy NnapiGraphBackend::planningPolicy(
+    const GraphBackendRequest& request) const {
+  GraphBackendPlanningPolicy policy;
+  policy.requiresShapePrePass = true;
+  policy.requiresSuccessfulShapePrePass = true;
+  policy.precompileBeforeFirstExecution = true;
+  policy.allowsShapeOnlyWarmup = true;
+  policy.requiresCapabilityPartitioning = true;
+  policy.requiresCompleteLowering =
+      request.executionMode == GraphExecutionMode::GEM_NNAPI;
+  policy.preferredMaxSegmentOps = kMaxNnapiSegmentOps;
+  return policy;
+}
+
 // ─── Segment analysis ───────────────────────────────────────────────────────
+
+bool NnapiGraphBackend::isSlotResolvable(NativeSlot* slots,
+                                         int slotIndex) const {
+  if (slots == nullptr || slotIndex < 0) return false;
+  const int opCode = getNnapiOpCode(slots[slotIndex].ident.opName);
+  if (opCode < 0 || apiLevel_ < getMinApiLevel(slots[slotIndex].ident.opName)) {
+    return false;
+  }
+
+  std::string contractReason;
+  if (!validateSlotContract(slots[slotIndex], opCode, contractReason)) {
+    DSP_DIAG(BACKEND, "NNAPI admission rejected slot %d (%s): %s",
+             slotIndex, slots[slotIndex].ident.opName.c_str(),
+             contractReason.c_str());
+    return false;
+  }
+  return true;
+}
+
+bool NnapiGraphBackend::canResolveSlot(const GraphBackendRequest& request,
+                                       NativeSlot* slots, int slotIndex) {
+  (void)request;
+  return isSlotResolvable(slots, slotIndex);
+}
+
+bool NnapiGraphBackend::canResolveSegment(const GraphBackendRequest& request,
+                                          NativeSlot* slots, int start,
+                                          int end) {
+  if (start == end && request.executionMode == GraphExecutionMode::GEM_NNAPI) {
+    return isSlotResolvable(slots, start);
+  }
+  return canFuseSegment(slots, start, end);
+}
 
 bool NnapiGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   if (end < start) return false;
-  if (end - start + 1 < 2) return false;
+  const int segmentOps = end - start + 1;
+  if (segmentOps < 2) return false;
+  if (segmentOps > kMaxNnapiSegmentOps) {
+    DSP_DIAG(BACKEND,
+             "NNAPI admission rejected seg[%d-%d]: %d ops exceeds bounded limit %d; explicit replay",
+             start, end, segmentOps, kMaxNnapiSegmentOps);
+    return false;
+  }
 
   for (int i = start; i <= end; i++) {
-    int opCode = getNnapiOpCode(slots[i].ident.opName);
-    if (opCode < 0) return false;
-
-    // Check that this device's API level supports this op
-    int minApi = getMinApiLevel(slots[i].ident.opName);
-    if (apiLevel_ < minApi) return false;
+    if (!isSlotResolvable(slots, i)) return false;
   }
   return true;
 }
@@ -901,7 +1151,9 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
                                     NativeSlot* slots, int startSlot, int endSlot,
                                     NDArray** externalInputs, int numExternalInputs,
                                     NDArray** outputSlots, int totalOutputSlots,
-                                    int totalSlots) {
+                                    int totalSlots,
+                                    const int* requestedOutputSlotIndices,
+                                    int numRequestedOutputs) {
   uint32_t nextOperand = 0;
 
   // Persistent storage for vector operand data (must outlive ANeuralNetworksModel_finish)
@@ -920,30 +1172,11 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     }
   }
 
-  // Identify externally visible outputs (consumed outside segment or are final)
-  std::unordered_set<int> externalOutputSet;
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].wiring.numOutputs; o++) {
-      int outIdx = slots[i].wiring.outputSlotIndices[o];
-      // Check if any slot outside this segment consumes this output
-      bool foundConsumer = false;
-      for (int j = endSlot + 1; j < totalSlots && !foundConsumer; j++) {
-        for (int inp = 0; inp < slots[j].wiring.numInputs; inp++) {
-          if (slots[j].wiring.inputSourceIndices[inp] == outIdx) {
-            externalOutputSet.insert(outIdx);
-            foundConsumer = true;
-            break;  // Found a consumer, move to next output
-          }
-        }
-      }
-    }
-  }
-  // If no external consumers found, treat all final slot outputs as external
-  if (externalOutputSet.empty()) {
-    for (int o = 0; o < slots[endSlot].wiring.numOutputs; o++) {
-      externalOutputSet.insert(slots[endSlot].wiring.outputSlotIndices[o]);
-    }
-  }
+  // Use the same backend-neutral dataflow contract as other graph backends.
+  // NNAPI-specific operand construction begins only after visibility is resolved.
+  const auto externalOutputSet = computeExternallyVisibleOutputSlots(
+      slots, startSlot, endSlot, totalSlots,
+      requestedOutputSlotIndices, numRequestedOutputs);
 
   // Phase 1: Add input operands (external inputs + pre-segment intermediates)
   for (int i = startSlot; i <= endSlot; i++) {
@@ -980,6 +1213,14 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     if (nnapiOp < 0) {
       DSP_DIAG(FALLBACK, "NnapiGraphBackend: unmappable op '%s' at slot %d",
                 slots[i].ident.opName.c_str(), i);
+      return false;
+    }
+
+    std::string contractReason;
+    if (!validateSlotContract(slots[i], nnapiOp, contractReason)) {
+      DSP_DIAG(FALLBACK,
+               "NnapiGraphBackend: refusing unverified contract for '%s' at slot %d: %s",
+               slots[i].ident.opName.c_str(), i, contractReason.c_str());
       return false;
     }
 
@@ -1094,6 +1335,16 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                         int numRequestedOutputs) {
   int startSlot = seg.def.startSlot;
   int endSlot = seg.def.endSlot;
+  DSP_DIAG(COMPILE, "NNAPI_PHASE compile_admission_begin seg[%d-%d] ops=%d shapeKey=%lld",
+            startSlot, endSlot, endSlot - startSlot + 1,
+            static_cast<long long>(shapeKey));
+  const int segmentOps = endSlot - startSlot + 1;
+  if (segmentOps > kMaxNnapiSegmentOps) {
+    DSP_DIAG(COMPILE,
+             "NnapiGraphBackend: compile admission rejected seg[%d-%d]: %d ops exceeds bounded limit %d; explicit replay",
+             startSlot, endSlot, segmentOps, kMaxNnapiSegmentOps);
+    return false;
+  }
 
   // Check cache
   SegmentCacheKey key{startSlot, endSlot, shapeKey};
@@ -1102,11 +1353,13 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     auto it = cache_.find(key);
     if (it != cache_.end() && it->second.valid) {
       lastCompilationAudit_ = it->second.compilationAudit;
+      DSP_DIAG(COMPILE, "NNAPI_PHASE compile_cache_hit seg[%d-%d]", startSlot, endSlot);
       return true;
     }
   }
 
   // Create NNAPI model
+  DSP_DIAG(COMPILE, "NNAPI_PHASE model_create_begin seg[%d-%d]", startSlot, endSlot);
   ANeuralNetworksModel* model = nullptr;
   int result = ANeuralNetworksModel_create(&model);
   if (result != ANEURALNETWORKS_NO_ERROR || !model) {
@@ -1118,16 +1371,23 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   compiled.shapeKey = shapeKey;
 
   // Build the model graph
+  DSP_DIAG(COMPILE, "NNAPI_PHASE model_build_begin seg[%d-%d]", startSlot, endSlot);
   if (!buildModel(model, compiled, slots, startSlot, endSlot,
                   externalInputs, numExternalInputs,
-                  outputSlots, totalOutputSlots, totalSlots)) {
+                  outputSlots, totalOutputSlots, totalSlots,
+                  requestedOutputSlotIndices, numRequestedOutputs)) {
     ANeuralNetworksModel_free(model);
     return false;
   }
 
   compiled.model = model;
+  DSP_DIAG(COMPILE, "NNAPI_PHASE model_build_done seg[%d-%d] inputs=%d outputs=%d",
+            startSlot, endSlot,
+            static_cast<int>(compiled.inputMappings.size()),
+            static_cast<int>(compiled.outputMappings.size()));
 
   // Compile the model
+  DSP_DIAG(COMPILE, "NNAPI_PHASE compilation_create_begin seg[%d-%d]", startSlot, endSlot);
   ANeuralNetworksCompilation* compilation = nullptr;
   result = ANeuralNetworksCompilation_create(model, &compilation);
   if (result != ANEURALNETWORKS_NO_ERROR || !compilation) {
@@ -1138,6 +1398,7 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   ANeuralNetworksCompilation_setPreference(compilation, preference_);
 
+  DSP_DIAG(COMPILE, "NNAPI_PHASE compilation_finish_begin seg[%d-%d]", startSlot, endSlot);
   result = ANeuralNetworksCompilation_finish(compilation);
   if (result != ANEURALNETWORKS_NO_ERROR) {
     DSP_DIAG(COMPILE, "NnapiGraphBackend: compilation finish failed: %d", result);
@@ -1148,6 +1409,7 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   compiled.compilation = compilation;
   compiled.valid = true;
+  DSP_DIAG(COMPILE, "NNAPI_PHASE compilation_finish_done seg[%d-%d]", startSlot, endSlot);
 
   // Build compilation audit
   for (int i = startSlot; i <= endSlot; i++) {
@@ -1304,6 +1566,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   // Execute synchronously via startCompute + wait
+  DSP_DIAG(EXECUTE, "NNAPI_PHASE start_compute_begin seg[%d-%d]", startSlot, endSlot);
   ANeuralNetworksEvent* event = nullptr;
   result = ANeuralNetworksExecution_startCompute(execution, &event);
   if (result != ANEURALNETWORKS_NO_ERROR) {
@@ -1312,7 +1575,10 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     return Status::KERNEL_FAILURE;
   }
 
+  DSP_DIAG(EXECUTE, "NNAPI_PHASE event_wait_begin seg[%d-%d]", startSlot, endSlot);
   result = ANeuralNetworksEvent_wait(event);
+  DSP_DIAG(EXECUTE, "NNAPI_PHASE event_wait_done seg[%d-%d] status=%d",
+            startSlot, endSlot, result);
   ANeuralNetworksEvent_free(event);
   ANeuralNetworksExecution_free(execution);
 
@@ -1332,6 +1598,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
   }
 
+  DSP_DIAG(EXECUTE, "NNAPI_PHASE execute_done seg[%d-%d]", startSlot, endSlot);
   return Status::OK;
 }
 

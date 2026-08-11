@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -31,6 +32,9 @@ class TestSameDiffOptimizationCache {
     private static final String TEST_FINGERPRINT = "sha256:test-cache-fingerprint";
 
     private String previousOptimizerEnabled;
+    private String previousWeightDtype;
+    private String previousFp16;
+    private String previousBf16;
     private String previousFingerprint;
 
     @TempDir
@@ -39,7 +43,13 @@ class TestSameDiffOptimizationCache {
     @BeforeEach
     void setUp() throws Exception {
         previousOptimizerEnabled = System.getProperty(OPTIMIZER_ENABLED_PROPERTY);
+        previousWeightDtype = System.getProperty("nd4j.optimizer.weightDtype");
+        previousFp16 = System.getProperty("nd4j.optimizer.fp16");
+        previousBf16 = System.getProperty("nd4j.optimizer.bf16");
         System.clearProperty(OPTIMIZER_ENABLED_PROPERTY);
+        System.clearProperty("nd4j.optimizer.weightDtype");
+        System.clearProperty("nd4j.optimizer.fp16");
+        System.clearProperty("nd4j.optimizer.bf16");
         Field field = optimizerFingerprintField();
         previousFingerprint = (String) field.get(null);
         field.set(null, TEST_FINGERPRINT);
@@ -52,6 +62,9 @@ class TestSameDiffOptimizationCache {
         } else {
             System.setProperty(OPTIMIZER_ENABLED_PROPERTY, previousOptimizerEnabled);
         }
+        restoreProperty("nd4j.optimizer.weightDtype", previousWeightDtype);
+        restoreProperty("nd4j.optimizer.fp16", previousFp16);
+        restoreProperty("nd4j.optimizer.bf16", previousBf16);
         optimizerFingerprintField().set(null, previousFingerprint);
     }
 
@@ -74,6 +87,30 @@ class TestSameDiffOptimizationCache {
         assertFalse(SameDiffOptimizationCache.hasValidOptimizedCache(files.onnx, files.baseSdz, false));
     }
 
+    @Test
+    void cacheFileNameIncludesResolvedWeightDataType() {
+        File source = tempDir.resolve("model.onnx").toFile();
+
+        assertEquals("model.opt.sdz",
+                SameDiffOptimizationCache.getOptimizedSdzCacheFile(source).getName());
+
+        System.setProperty("nd4j.optimizer.weightDtype", "fp32");
+        assertEquals("model.nofp16.opt.sdz",
+                SameDiffOptimizationCache.getOptimizedSdzCacheFile(source).getName());
+
+        System.setProperty("nd4j.optimizer.weightDtype", "bf16");
+        assertEquals("model.bf16.opt.sdz",
+                SameDiffOptimizationCache.getOptimizedSdzCacheFile(source).getName());
+
+        System.setProperty("nd4j.optimizer.weightDtype", "fp8_e5m2");
+        assertEquals("model.fp8_e5m2.opt.sdz",
+                SameDiffOptimizationCache.getOptimizedSdzCacheFile(source).getName());
+
+        System.setProperty("nd4j.optimizer.weightDtype", "int4");
+        assertEquals("model.int4.opt.sdz",
+                SameDiffOptimizationCache.getOptimizedSdzCacheFile(source).getName());
+    }
+
     private CacheFiles cacheFiles() throws Exception {
         File onnx = tempDir.resolve("model.onnx").toFile();
         File baseSdz = tempDir.resolve("model.sdz").toFile();
@@ -87,6 +124,14 @@ class TestSameDiffOptimizationCache {
         assertTrue(baseSdz.setLastModified(now - 1000));
         assertTrue(optSdz.setLastModified(now));
         return new CacheFiles(onnx, baseSdz, optSdz);
+    }
+
+    private static void restoreProperty(String name, String previousValue) {
+        if (previousValue == null) {
+            System.clearProperty(name);
+        } else {
+            System.setProperty(name, previousValue);
+        }
     }
 
     private static File metaFile(File cacheFile) {

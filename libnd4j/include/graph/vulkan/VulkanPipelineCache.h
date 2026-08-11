@@ -19,6 +19,7 @@
 #ifndef LIBND4J_VULKAN_PIPELINE_CACHE_H
 #define LIBND4J_VULKAN_PIPELINE_CACHE_H
 
+#include <graph/GraphBackend.h>
 #include <system/common.h>
 
 #if defined(HAVE_VULKAN) && HAVE_VULKAN
@@ -99,25 +100,6 @@ class SD_LIB_EXPORT VulkanPipelineCache {
   VulkanPipelineCache& operator=(const VulkanPipelineCache&) = delete;
 
   /**
-   * Thread-scoped policy used while one DSP segment executes. It applies to
-   * recorder and eager Vulkan paths, so warmup cannot compile behind the
-   * portable runtime's back.
-   */
-  class SD_LIB_EXPORT ScopedCompilationPolicy {
-   public:
-    ScopedCompilationPolicy(bool allowRuntimeCompilation,
-                            const std::string& artifactDirectory);
-    ~ScopedCompilationPolicy();
-
-    ScopedCompilationPolicy(const ScopedCompilationPolicy&) = delete;
-    ScopedCompilationPolicy& operator=(const ScopedCompilationPolicy&) = delete;
-
-   private:
-    bool previousAllowRuntimeCompilation_;
-    std::string previousArtifactDirectory_;
-  };
-
-  /**
    * Return a compute VkPipeline for the given MLIR module, compiling on the
    * first call and returning the cached pipeline on subsequent calls.
    *
@@ -135,6 +117,17 @@ class SD_LIB_EXPORT VulkanPipelineCache {
   VkPipeline getOrCompile(const std::string& opName,
                           const std::string& mlirModuleStr,
                           VkDevice device,
+                          uint32_t pushConstantBytes = 0);
+
+  /**
+   * Resolve or compile a pipeline under an explicit DSP artifact policy.
+   * Plan execution uses this overload; eager callers use the permissive
+   * overload above. No compilation policy is read from hidden thread state.
+   */
+  VkPipeline getOrCompile(const std::string& opName,
+                          const std::string& mlirModuleStr,
+                          VkDevice device,
+                          const GraphCompilationPolicy& compilationPolicy,
                           uint32_t pushConstantBytes = 0);
 
   /**

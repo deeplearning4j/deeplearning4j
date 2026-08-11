@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.pipeline;
 
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.config.ND4JInferenceWeightDataType;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,32 +63,56 @@ public interface PipelineLoader {
     }
 
     class DefaultLoadConfig implements LoadConfig {
-        @Override public String getDataType() { return "float32"; }
+        @Override public String getDataType() {
+            return ND4JInferenceWeightDataType.resolve().canonicalName();
+        }
         @Override public String getDevice() { return "cpu"; }
         @Override public boolean useMmap() { return true; }
         @Override public boolean cacheConvertedModel() { return true; }
         @Override public File getCacheDirectory() {
             return new File(System.getProperty("user.home"), ".cache/samediff/models");
         }
-        @Override public boolean convertToFloat32() { return true; }
+        @Override public boolean convertToFloat32() {
+            return ND4JInferenceWeightDataType.resolve() == ND4JInferenceWeightDataType.FLOAT32;
+        }
         @Override public boolean dequantize() { return true; }
     }
 
     class LoadConfigBuilder {
-        private String dataType = "float32";
+        private String dataType;
         private String device = "cpu";
         private boolean useMmap = true;
         private boolean cacheConvertedModel = true;
         private File cacheDirectory;
-        private boolean convertToFloat32 = true;
+        private boolean convertToFloat32;
         private boolean dequantize = true;
 
-        public LoadConfigBuilder dataType(String dataType) { this.dataType = dataType; return this; }
+        public LoadConfigBuilder() {
+            ND4JInferenceWeightDataType defaultType = ND4JInferenceWeightDataType.resolve();
+            this.dataType = defaultType.canonicalName();
+            this.convertToFloat32 = defaultType == ND4JInferenceWeightDataType.FLOAT32;
+        }
+
+        public LoadConfigBuilder dataType(String dataType) {
+            ND4JInferenceWeightDataType parsed = ND4JInferenceWeightDataType.fromString(dataType);
+            this.dataType = parsed.canonicalName();
+            this.convertToFloat32 = parsed == ND4JInferenceWeightDataType.FLOAT32;
+            return this;
+        }
         public LoadConfigBuilder device(String device) { this.device = device; return this; }
         public LoadConfigBuilder useMmap(boolean useMmap) { this.useMmap = useMmap; return this; }
         public LoadConfigBuilder cacheConvertedModel(boolean cache) { this.cacheConvertedModel = cache; return this; }
         public LoadConfigBuilder cacheDirectory(File dir) { this.cacheDirectory = dir; return this; }
-        public LoadConfigBuilder convertToFloat32(boolean convert) { this.convertToFloat32 = convert; return this; }
+        public LoadConfigBuilder convertToFloat32(boolean convert) {
+            this.convertToFloat32 = convert;
+            if (convert) {
+                this.dataType = ND4JInferenceWeightDataType.FLOAT32.canonicalName();
+            } else if (ND4JInferenceWeightDataType.fromString(this.dataType)
+                    == ND4JInferenceWeightDataType.FLOAT32) {
+                this.dataType = ND4JInferenceWeightDataType.FLOAT16.canonicalName();
+            }
+            return this;
+        }
         public LoadConfigBuilder dequantize(boolean dequantize) { this.dequantize = dequantize; return this; }
 
         public LoadConfig build() {

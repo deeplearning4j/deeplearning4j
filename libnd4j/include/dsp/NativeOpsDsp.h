@@ -293,6 +293,13 @@ SD_LIB_EXPORT int getSegmentExecutorPhase(sd::Pointer planHandle, int segIdx);
 SD_LIB_EXPORT sd::Pointer loadModelFromFile(const char* filePath);
 
 /**
+ * Load a model with an optional hard requirement that large inference tensors
+ * remain backed by read-only file mappings.
+ */
+SD_LIB_EXPORT sd::Pointer loadModelFromFileWithOptions(
+    const char* filePath, bool requireFileBacked);
+
+/**
  * Look up a constant or variable owned by a loaded model.
  *
  * @param modelHandle  Handle from loadModelFromFile()
@@ -314,6 +321,18 @@ SD_LIB_EXPORT OpaqueNDArray getLoadedModelVariable(
 SD_LIB_EXPORT sd::Pointer compileModelPlan(
     sd::Pointer modelHandle,
     sd::Pointer requestedOutputNames, int numOutputs);
+
+/**
+ * Compile a model after installing backend and cache identity options. These
+ * options are applied before segment discovery or backend compilation.
+ */
+SD_LIB_EXPORT sd::Pointer compileModelPlanWithRuntimeOptions(
+    sd::Pointer modelHandle,
+    sd::Pointer requestedOutputNames, int numOutputs,
+    int graphExecutionMode, bool runtimeCompilationAllowed,
+    const char* runtimeArtifactDirectory,
+    const char* deviceCompilationCacheDirectory,
+    const char* deviceCompilationCacheModelKey);
 
 /**
  * Free a loaded model.
@@ -1014,6 +1033,12 @@ SD_LIB_EXPORT int dspDiagGetEnabledMask();
  * @param level  0=SUMMARY (stats only), 1=DETAILED (per-step), 2=FULL (echo all to stdout)
  */
 SD_LIB_EXPORT void dspDiagSetLevel(int level);
+
+/**
+ * Get the active DSP diagnostic output level.
+ * @return 0=SUMMARY, 1=DETAILED, 2=FULL
+ */
+SD_LIB_EXPORT int dspDiagGetLevel();
 
 /**
  * Set DSP diagnostic JSON output file path.

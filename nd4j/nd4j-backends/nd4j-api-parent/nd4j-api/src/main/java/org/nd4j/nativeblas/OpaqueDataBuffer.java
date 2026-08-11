@@ -465,7 +465,7 @@ public class OpaqueDataBuffer extends Pointer {
                         // retry there. This is the automatic "one GPU full -> use the other"
                         // failover; it fires only on the slow OOM path, so the common case is
                         // unaffected. Cross-device data is handled by DeviceAwareOpExecutioner.
-                        if (!failedOver) {
+                        if (shouldAttemptCrossDeviceFailover(failedOver)) {
                             int failedDevice = (selectedDevice != null && selectedDevice.getDeviceType().isGpu())
                                     ? selectedDevice.getDeviceIndex()
                                     : memoryManager.getCurrentDeviceId();
@@ -597,7 +597,7 @@ public class OpaqueDataBuffer extends Pointer {
                         // retry there. This is the automatic "one GPU full -> use the other"
                         // failover; it fires only on the slow OOM path, so the common case is
                         // unaffected. Cross-device data is handled by DeviceAwareOpExecutioner.
-                        if (!failedOver) {
+                        if (shouldAttemptCrossDeviceFailover(failedOver)) {
                             int failedDevice = (selectedDevice != null && selectedDevice.getDeviceType().isGpu())
                                     ? selectedDevice.getDeviceIndex()
                                     : memoryManager.getCurrentDeviceId();
@@ -1187,6 +1187,16 @@ public class OpaqueDataBuffer extends Pointer {
      */
     public static boolean isCrossDeviceRoutingSuppressed() {
         return tl_suppressCrossDeviceRouting.get() || globalSuppressCrossDeviceRouting;
+    }
+
+    /**
+     * Returns whether an allocation retry may move to another GPU.
+     * The argument is the per-allocation failover state: once an allocation has
+     * already failed over, it must remain pinned to that device for subsequent
+     * retries. Graph capture/replay also pins allocations to the current device.
+     */
+    public static boolean shouldAttemptCrossDeviceFailover(boolean failedOver) {
+        return !failedOver && !isCrossDeviceRoutingSuppressed();
     }
 
     private static DeviceDescriptor selectDeviceForAllocation(long bytes, DeviceMemoryManager memoryManager) {

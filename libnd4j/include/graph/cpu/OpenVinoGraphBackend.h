@@ -63,6 +63,8 @@ class OpenVinoGraphBackend : public GraphBackend {
 
   const char* name() const override { return "OpenVINO"; }
   bool isAvailable() const override;
+  bool isResolvable(const GraphBackendRequest& request) const override;
+  int resolutionPriority(const GraphBackendRequest& request) const override;
   bool canFuseSegment(NativeSlot* slots, int start, int end) override;
 
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
@@ -83,8 +85,8 @@ class OpenVinoGraphBackend : public GraphBackend {
   std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
 
   // Native slot executor management (thread-local, set by the plan executor)
-  void setNativeSlotExecutor(NativeSlotExecutor executor);
-  void clearNativeSlotExecutor();
+  void setNativeSlotExecutor(NativeSlotExecutor executor) override;
+  void clearNativeSlotExecutor() override;
 
   static OpenVinoGraphBackend& getInstance();
 
@@ -196,11 +198,14 @@ class OpenVinoGraphBackend : public GraphBackend {
   // Map NDArray DataType to OpenVINO element type
   static ov::element::Type mapDataType(DataType dt);
 
-  // Build an OV model from a contiguous range of OV-compilable slots
+  // Build an OV model from a contiguous range of OV-compilable slots.
+  // Output materialization is selected by backend-neutral NativeSlot dataflow.
   OvIsland buildIsland(NativeSlot* slots, int startSlot, int endSlot,
                        NDArray** externalInputs, int numExternalInputs,
                        NDArray** outputSlots, int totalOutputSlots,
-                       int segStartSlot, int segEndSlot);
+                       int totalSlots,
+                       const int* requestedOutputSlotIndices,
+                       int numRequestedOutputs);
 };
 
 }  // namespace graph

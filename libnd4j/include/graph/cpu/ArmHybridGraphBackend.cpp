@@ -54,6 +54,18 @@ bool ArmHybridGraphBackend::isAvailable() const {
   return sd::mlir_runtime::MLIREngine::getInstance().initialize();
 }
 
+bool ArmHybridGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_ARM_HYBRID ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO ||
+         request.executionMode == GraphExecutionMode::GEM_PORTABLE_REPLAY;
+}
+
+int ArmHybridGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_ARM_HYBRID ? 800 : 200;
+}
+
 bool ArmHybridGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   if (end < start) return false;
   int segSize = end - start + 1;

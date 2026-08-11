@@ -42,23 +42,24 @@ CUSTOM_OP_IMPL(causal_conv1d, 2, 2, false, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);   // [B, L, D]
     auto stateOut = OUTPUT_VARIABLE(1); // [B, D, K-1]
 
-    NDArray* bias = nullptr;
-    NDArray* stateIn = nullptr;
-    NDArray* actualLen = nullptr;
+    helpers::CausalConv1dInputRoles inputRoles;
+    std::string resolutionFailure;
+    const bool inputsResolved = helpers::resolveCausalConv1dInputRoles(
+        block.width(),
+        [&](int inputIndex) { return INPUT_VARIABLE(inputIndex)->rankOf(); },
+        inputRoles, &resolutionFailure);
+    REQUIRE_TRUE(inputsResolved, 0, "causal_conv1d: invalid input contract: %s",
+                 resolutionFailure.c_str());
 
-    for (int i = 2; i < block.width(); ++i) {
-        auto input = INPUT_VARIABLE(i);
-        if (input->rankOf() == 0) {
-            actualLen = input;
-        } else if (input->rankOf() == 1) {
-            bias = input;
-        } else {
-            stateIn = input;
-        }
-    }
+    NDArray* bias = inputRoles.bias >= 0 ? INPUT_VARIABLE(inputRoles.bias) : nullptr;
+    NDArray* stateIn = inputRoles.stateIn >= 0 ? INPUT_VARIABLE(inputRoles.stateIn) : nullptr;
+    NDArray* actualLen =
+        inputRoles.actualLen >= 0 ? INPUT_VARIABLE(inputRoles.actualLen) : nullptr;
 
     REQUIRE_TRUE(actualLen == nullptr || actualLen->dataType() == DataType::INT64, 0,
                  "causal_conv1d: actualLen input must be INT64 scalar");
+    REQUIRE_TRUE(bias == nullptr || bias->dataType() == x->dataType(), 0,
+                 "causal_conv1d: bias dtype must match activation dtype");
 
     int activation = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
     int wFormat = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
@@ -80,18 +81,30 @@ DECLARE_SHAPE_FN(causal_conv1d) {
     auto xShape = inputShape->at(0);       // [B, L, D]
     auto weightShape = inputShape->at(1);  // [D, K]
 
+    helpers::CausalConv1dInputRoles inputRoles;
+    std::string resolutionFailure;
+    const bool inputsResolved = helpers::resolveCausalConv1dInputRoles(
+        block.width(),
+        [&](int inputIndex) { return shape::rank(inputShape->at(inputIndex)); },
+        inputRoles, &resolutionFailure);
+    REQUIRE_TRUE(inputsResolved, 0, "causal_conv1d: invalid input contract: %s",
+                 resolutionFailure.c_str());
+
     int wFormat = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
 
     auto B = shape::sizeAt(xShape, 0);
     auto L = shape::sizeAt(xShape, 1);
     auto D = shape::sizeAt(xShape, 2);
     auto K = (wFormat == 0) ? shape::sizeAt(weightShape, 1) : shape::sizeAt(weightShape, 0);
+    const auto stateType = inputRoles.stateIn >= 0
+        ? ArrayOptions::dataType(inputShape->at(inputRoles.stateIn))
+        : ArrayOptions::dataType(xShape);
 
     auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(
         ArrayOptions::dataType(xShape), 'c', {B, L, D});
 
     auto stateShape = ConstantShapeHelper::getInstance().createShapeInfo(
-        ArrayOptions::dataType(xShape), 'c', {B, D, K - 1});
+        stateType, 'c', {B, D, K - 1});
 
     return SHAPELIST(outputShape, stateShape);
 }

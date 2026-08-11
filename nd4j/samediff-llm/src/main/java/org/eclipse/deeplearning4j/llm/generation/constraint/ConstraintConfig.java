@@ -25,7 +25,9 @@ import lombok.Data;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Configuration carrier for structured-output / constrained decoding.
@@ -39,9 +41,12 @@ import java.util.List;
  * <ul>
  *   <li>{@code "json_object"} — enforce a syntactically valid JSON object;
  *       use the factory {@link #jsonObject()}.</li>
- *   <li>{@code "tool_call"} — enforce the canonical tool-call shape
+ *   <li>{@code "tool_call"} — enforce the canonical JSON tool-call shape
  *       {@code {"tool": "<name>", "args": {...}}}; use the factory
  *       {@link #toolCall(String...)}.</li>
+ *   <li>{@code "native_tool_call"} — enforce the native function-call envelope
+ *       {@code <|tool_call_start|>[name(key=value)]}; use the factory
+ *       {@link #nativeToolCall(String...)}.</li>
  * </ul>
  *
  * <h2>Top-K evaluation cap</h2>
@@ -89,6 +94,35 @@ public class ConstraintConfig {
     private List<String> toolNames = Collections.emptyList();
 
     /**
+     * Ordered required argument names for native tools, keyed by tool name.
+     *
+     * <p>An empty map preserves the generic native-call constraint. When populated, the
+     * automaton requires each tool's declared arguments exactly once and in schema order,
+     * preventing small models from repeating one field and stuffing the remaining values
+     * into it.</p>
+     */
+    @Builder.Default
+    private Map<String, List<String>> toolArgumentNames = Collections.emptyMap();
+
+    /**
+     * Optional exact string values from each argument's JSON-schema enum/const.
+     */
+    @Builder.Default
+    private Map<String, Map<String, List<String>>> toolArgumentValues =
+            Collections.emptyMap();
+
+    /**
+     * Complete JSON parameter schema for each native tool.
+     *
+     * <p>The native constraint uses this schema while masking tokens so value
+     * types and collection bounds are not lost after the chat template renders
+     * the tool declaration.</p>
+     */
+    @Builder.Default
+    private Map<String, Map<String, Object>> toolParameterSchemas =
+            Collections.emptyMap();
+
+    /**
      * Top-K cap for constraint evaluation.
      *
      * <p>Only the top {@code evalTopK} logit positions are checked against the
@@ -123,11 +157,96 @@ public class ConstraintConfig {
      * @throws IllegalArgumentException if no names are provided
      */
     public static ConstraintConfig toolCall(String... names) {
-        if (names == null || names.length == 0) {
-            throw new IllegalArgumentException("toolCall() requires at least one tool name");
+        return namedToolConstraint(ToolCallConstraint.TYPE, "toolCall", names);
+    }
+
+    /**
+     * Creates a constraint for the native sentinel/function-call protocol.
+     *
+     * @param names one or more valid tool names
+     * @return a native tool-call constraint configuration
+     */
+    public static ConstraintConfig nativeToolCall(String... names) {
+        return namedToolConstraint(NativeToolCallConstraint.TYPE, "nativeToolCall", names);
+    }
+
+    /**
+     * Creates a schema-aware native tool-call constraint.
+     *
+     * @param argumentNamesByTool ordered required argument names keyed by tool name
+     * @return a native constraint that enforces both tool and argument names
+     */
+    public static ConstraintConfig nativeToolCall(
+            Map<String, List<String>> argumentNamesByTool) {
+        return nativeToolCall(argumentNamesByTool, Collections.emptyMap());
+    }
+
+    public static ConstraintConfig nativeToolCall(
+            Map<String, List<String>> argumentNamesByTool,
+            Map<String, Map<String, List<String>>> argumentValuesByTool) {
+        return nativeToolCall(
+                argumentNamesByTool, argumentValuesByTool, Collections.emptyMap());
+    }
+
+    public static ConstraintConfig nativeToolCall(
+            Map<String, List<String>> argumentNamesByTool,
+            Map<String, Map<String, List<String>>> argumentValuesByTool,
+            Map<String, Map<String, Object>> parameterSchemasByTool) {
+        if (argumentNamesByTool == null || argumentNamesByTool.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "nativeToolCall() requires at least one tool schema");
+        }
+        Map<String, List<String>> copied = new LinkedHashMap<>();
+        argumentNamesByTool.forEach((name, arguments) -> {
+            if (name == null || name.isBlank()) {
+                throw new IllegalArgumentException("Native tool names must not be blank");
+            }
+            copied.put(name, arguments == null ? List.of() : List.copyOf(arguments));
+        });
+
+        Map<String, Map<String, List<String>>> copiedValues = new LinkedHashMap<>();
+        if (argumentValuesByTool != null) {
+            argumentValuesByTool.forEach((toolName, valuesByArgument) -> {
+                if (!copied.containsKey(toolName) || valuesByArgument == null) {
+                    return;
+                }
+                Map<String, List<String>> toolValues = new LinkedHashMap<>();
+                valuesByArgument.forEach((argumentName, values) -> {
+                    if (argumentName != null && values != null && !values.isEmpty()) {
+                        toolValues.put(argumentName, List.copyOf(values));
+                    }
+                });
+                if (!toolValues.isEmpty()) {
+                    copiedValues.put(toolName, Collections.unmodifiableMap(toolValues));
+                }
+            });
+        }
+        Map<String, Map<String, Object>> copiedSchemas = new LinkedHashMap<>();
+        if (parameterSchemasByTool != null) {
+            parameterSchemasByTool.forEach((toolName, schema) -> {
+                if (copied.containsKey(toolName) && schema != null) {
+                    copiedSchemas.put(toolName,
+                            Collections.unmodifiableMap(new LinkedHashMap<>(schema)));
+                }
+            });
         }
         return ConstraintConfig.builder()
-                .type(ToolCallConstraint.TYPE)
+                .type(NativeToolCallConstraint.TYPE)
+                .toolNames(List.copyOf(copied.keySet()))
+                .toolArgumentNames(Collections.unmodifiableMap(copied))
+                .toolArgumentValues(Collections.unmodifiableMap(copiedValues))
+                .toolParameterSchemas(Collections.unmodifiableMap(copiedSchemas))
+                .build();
+    }
+
+    private static ConstraintConfig namedToolConstraint(
+            String type, String factoryName, String... names) {
+        if (names == null || names.length == 0) {
+            throw new IllegalArgumentException(
+                    factoryName + "() requires at least one tool name");
+        }
+        return ConstraintConfig.builder()
+                .type(type)
                 .toolNames(Arrays.asList(names))
                 .build();
     }
@@ -147,14 +266,22 @@ public class ConstraintConfig {
         if (JsonObjectConstraint.TYPE.equals(type)) {
             return new JsonObjectConstraint();
         }
-        if (ToolCallConstraint.TYPE.equals(type)) {
+        if (ToolCallConstraint.TYPE.equals(type)
+                || NativeToolCallConstraint.TYPE.equals(type)) {
             if (toolNames == null || toolNames.isEmpty()) {
                 throw new IllegalArgumentException(
-                        "ConstraintConfig with type=\"tool_call\" requires at least one toolName");
+                        "ConstraintConfig with type=\"" + type
+                                + "\" requires at least one toolName");
             }
-            return new ToolCallConstraint(toolNames);
+            return ToolCallConstraint.TYPE.equals(type)
+                    ? new ToolCallConstraint(toolNames)
+                    : new NativeToolCallConstraint(
+                            toolNames, toolArgumentNames, toolArgumentValues,
+                            toolParameterSchemas);
         }
         throw new IllegalArgumentException(
-                "Unknown constraint type: \"" + type + "\". Supported: \"json_object\", \"tool_call\"");
+                "Unknown constraint type: \"" + type
+                        + "\". Supported: \"json_object\", \"tool_call\", "
+                        + "\"native_tool_call\"");
     }
 }

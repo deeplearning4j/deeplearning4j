@@ -115,12 +115,20 @@ public class DequantizerFactory {
 
     /**
      * Dequantize data to INDArray using the native ggml_dequantize op.
-     * Dequantizes directly to the target type (F32, F16, BF16) without
-     * intermediate allocations when the native op supports the target type.
-     * Falls back to Java dequantizers if the native op fails or the type
-     * is not supported.
+     * Dequantizes directly to the target type when the native op supports it
+     * (F32, F16, BF16). Other floating-point storage types are produced by an
+     * explicit cast from the native F32 result; the native op is never given an
+     * unsupported output type. Quantized formats without a native implementation
+     * use their registered Java dequantizer as an explicit route. Native execution
+     * failures are surfaced and are never silently retried through another path.
      */
     public static INDArray dequantizeToArray(byte[] data, GGMLDataType type, long[] shape, DataType targetType) {
+        if (targetType == null || !targetType.isFPType()) {
+            throw new IllegalArgumentException("GGML dequantization requires a floating-point target type, got: "
+                    + targetType);
+        }
+
+        DataType nativeTargetType = directNativeTargetType(targetType);
         int nativeType = mapToNativeQuantType(type);
         // Q5_0 and Q5_1: skip native op path because the GPU kernel currently falls to a
         // zero-fill branch for these types. Use the correct Java dequantizer directly.
@@ -129,34 +137,43 @@ public class DequantizerFactory {
             nativeType = -1;
         }
         if (nativeType >= 0) {
+            INDArray nativeResult;
+            try (INDArray rawBytes = Nd4j.createFromArray(data).castTo(DataType.INT8)) {
+                GGMLDequantize op = new GGMLDequantize(rawBytes, nativeType, nativeTargetType, shape);
+                nativeResult = Nd4j.exec(op)[0];
+            }
+
+            if (nativeTargetType == targetType) {
+                return nativeResult;
+            }
             try {
-                INDArray rawBytes = Nd4j.createFromArray(data).castTo(DataType.INT8);
-                GGMLDequantize op = new GGMLDequantize(rawBytes, nativeType, targetType, shape);
-                INDArray result = Nd4j.exec(op)[0];
-                rawBytes.close();
-                return result;
-            } catch (Exception e) {
-                long numElements = 1;
-                for (long dim : shape) numElements *= dim;
-                if (numElements > Integer.MAX_VALUE) {
-                    throw new RuntimeException(
-                        "Native ggml_dequantize failed for " + type + " with " + numElements +
-                        " elements. Java fallback cannot handle tensors this large. " +
-                        "Native error: " + e.getMessage(), e);
-                }
-                log.debug("Native ggml_dequantize failed for {}, falling back to Java dequantizer: {}",
-                          type, e.getMessage());
+                return nativeResult.castTo(targetType);
+            } finally {
+                nativeResult.close();
             }
         }
 
-        // Fallback: Java dequantizer (always produces F32, then cast)
+        // Explicit Java implementation route for quantized formats without a native kernel.
         INDArray fp32 = getDequantizer(type).dequantizeToArray(data, shape, DataType.FLOAT);
         if (targetType == DataType.FLOAT) {
             return fp32;
         }
-        INDArray result = fp32.castTo(targetType);
-        fp32.close();
-        return result;
+        try {
+            return fp32.castTo(targetType);
+        } finally {
+            fp32.close();
+        }
+    }
+
+    private static DataType directNativeTargetType(DataType targetType) {
+        switch (targetType) {
+            case FLOAT:
+            case HALF:
+            case BFLOAT16:
+                return targetType;
+            default:
+                return DataType.FLOAT;
+        }
     }
 
     /**

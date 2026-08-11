@@ -34,13 +34,28 @@ static constexpr uintptr_t PTR_MIN_VALID = 0x10000UL;
 static constexpr uintptr_t PTR_MAX_VALID = 0xffffffffUL;
 #endif
 
+namespace pointer_validation {
+
+SD_INLINE uintptr_t addressForValidation(const void* ptr) {
+  const auto addr = reinterpret_cast<uintptr_t>(ptr);
+#if defined(__ANDROID__) && defined(__aarch64__)
+  // Android uses top-byte-ignore for tagged heap pointers. The allocation tag
+  // is metadata, not part of the virtual address used for range validation.
+  return addr & 0x00ffffffffffffffULL;
+#else
+  return addr;
+#endif
+}
+
+}  // namespace pointer_validation
+
 SD_INLINE bool isValidPointer(const void* ptr) {
-  auto addr = reinterpret_cast<uintptr_t>(ptr);
+  const auto addr = pointer_validation::addressForValidation(ptr);
   return addr >= PTR_MIN_VALID && addr <= PTR_MAX_VALID;
 }
 
 SD_INLINE bool isAlignedPointer(const void* ptr, size_t alignment) {
-  return (reinterpret_cast<uintptr_t>(ptr) % alignment) == 0;
+  return (pointer_validation::addressForValidation(ptr) % alignment) == 0;
 }
 
 #define SD_VALIDATE_PTR(ptr, context) \

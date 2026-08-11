@@ -135,7 +135,7 @@ public class JZludaBackend extends Nd4jBackend {
         try {
             return Class.forName("org.nd4j.linalg.jcublas.JCublasNDArray");
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("CUDA NDArray class not found - nd4j-cuda dependency required", e);
+            throw new RuntimeException("Shared CUDA NDArray class not found - nd4j-cuda-backend-common dependency required", e);
         }
     }
 

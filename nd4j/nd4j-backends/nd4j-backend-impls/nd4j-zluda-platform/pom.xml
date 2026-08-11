@@ -36,6 +36,10 @@
 
     <properties>
         <skipPublishing>false</skipPublishing>
+        <!-- The native ZLUDA payload is produced by the versioned CUDA module;
+             this POM is the platform-specific dependency aggregator. -->
+        <cuda.version>12.9</cuda.version>
+        <nd4j.backend>nd4j-cuda-${cuda.version}</nd4j.backend>
     </properties>
 
     <dependencies>
@@ -58,7 +62,7 @@
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
-                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
                     <classifier>linux-x86_64-zluda</classifier>
                 </dependency>
@@ -75,7 +79,7 @@
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
-                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
                     <classifier>linux-x86_64-zluda</classifier>
                 </dependency>
@@ -92,7 +96,7 @@
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
-                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
                     <classifier>windows-x86_64-zluda</classifier>
                 </dependency>
@@ -109,7 +113,7 @@
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
-                    <artifactId>nd4j-cuda-12.9</artifactId>
+                    <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
                     <classifier>windows-x86_64-zluda</classifier>
                 </dependency>

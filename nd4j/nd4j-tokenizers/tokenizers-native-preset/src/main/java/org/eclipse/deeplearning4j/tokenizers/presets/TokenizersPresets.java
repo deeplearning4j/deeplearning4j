@@ -144,6 +144,8 @@ public class TokenizersPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("free_tokenizer").javaNames("freeTokenizer"))
                 .put(new Info("tokenizer_is_valid").javaNames("tokenizerIsValid"))
                 .put(new Info("get_vocab_size").javaNames("getVocabSize"))
+                .put(new Info("apply_chat_template").javaNames("applyChatTemplate"))
+                .put(new Info("apply_chat_template_context").javaNames("applyChatTemplateContext"))
                 .put(new Info("encode_text").javaNames("encodeText"))
                 .put(new Info("free_encoding").javaNames("freeEncoding"))
                 .put(new Info("encoding_get_length").javaNames("encodingGetLength"))

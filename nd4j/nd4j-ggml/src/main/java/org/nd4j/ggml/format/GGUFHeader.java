@@ -302,14 +302,23 @@ public class GGUFHeader {
      * Get the BOS (beginning of sequence) token ID
      */
     public int getBosTokenId() {
-        return getMetadataInt(KEY_TOKENIZER_BOS_ID, 1);
+        return getMetadataInt(KEY_TOKENIZER_BOS_ID, -1);
     }
 
     /**
      * Get the EOS (end of sequence) token ID
      */
     public int getEosTokenId() {
-        return getMetadataInt(KEY_TOKENIZER_EOS_ID, 2);
+        return getMetadataInt(KEY_TOKENIZER_EOS_ID, -1);
+    }
+
+    /**
+     * Get the padding token ID declared by the model metadata.
+     *
+     * @return the padding token ID, or {@code -1} when the model does not declare one
+     */
+    public int getPadTokenId() {
+        return getMetadataInt(KEY_TOKENIZER_PAD_ID, -1);
     }
 
     /**

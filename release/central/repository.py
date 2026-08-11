@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import base64
 from datetime import datetime
+import html
 import hashlib
 import json
 import os
@@ -84,6 +85,8 @@ def repository_files(root: Path) -> Iterable[Path]:
         if not path.is_file():
             continue
         relative = path.relative_to(root)
+        if relative.name == "index.html":
+            continue
         if relative.name in {"shard-manifest.json", "release-build-manifest.json"}:
             continue
         is_eclipse_dl4j = relative.parts[:3] == ("org", "eclipse", "deeplearning4j")
@@ -215,6 +218,70 @@ def write_checksums(paths: Iterable[Path]) -> None:
             Path(str(path) + f".{algorithm}").write_text(
                 digest(path, algorithm) + "\n", encoding="ascii"
             )
+
+
+def render_browse_index(directory: str, children: dict[str, bool]) -> str:
+    """Render a small static directory index for object-store browsing."""
+    title = "DL4J Maven Repository"
+    if directory:
+        title += f" / {directory}"
+    rows = []
+    if directory:
+        rows.append('<li><a href="../">../</a></li>')
+    for name, is_directory in sorted(children.items(), key=lambda item: (not item[1], item[0].lower())):
+        label = name + ("/" if is_directory else "")
+        href = urllib.parse.quote(label, safe="/-_.~")
+        rows.append(
+            f'<li><a href="{html.escape(href, quote=True)}">'
+            f"{html.escape(label)}</a></li>"
+        )
+    listing = "\n".join(rows) or "<li><em>(empty)</em></li>"
+    return (
+        "<!doctype html>\n"
+        '<html lang="en"><head><meta charset="utf-8">'
+        f"<title>{html.escape(title)}</title></head><body>\n"
+        f"<h1>{html.escape(title)}</h1>\n<ul>\n{listing}\n</ul>\n"
+        "</body></html>\n"
+    )
+
+
+def write_browse_indexes(repository: Path) -> list[Path]:
+    """Write index.html in the root and every directory of a Maven tree."""
+    files = [
+        path
+        for path in repository.rglob("*")
+        if path.is_file() and path.name != "index.html"
+    ]
+    directories: set[Path] = {Path(".")}
+    children: dict[Path, dict[str, bool]] = {}
+    for path in files:
+        relative = path.relative_to(repository)
+        parent = relative.parent
+        directories.add(parent)
+        for ancestor in parent.parents:
+            directories.add(ancestor)
+        children.setdefault(parent, {})[relative.name] = False
+        current = parent
+        while current != Path("."):
+            child = current.name
+            parent_of_current = current.parent
+            children.setdefault(parent_of_current, {})[child] = True
+            current = parent_of_current
+
+    written: list[Path] = []
+    for directory in sorted(directories, key=lambda value: value.as_posix()):
+        target_directory = repository / directory
+        target_directory.mkdir(parents=True, exist_ok=True)
+        target = target_directory / "index.html"
+        target.write_text(
+            render_browse_index(
+                "" if directory == Path(".") else directory.as_posix(),
+                children.get(directory, {}),
+            ),
+            encoding="utf-8",
+        )
+        written.append(target)
+    return written
 
 
 def metadata_element() -> ET.Element:
@@ -391,6 +458,11 @@ def materialize_test_repository(
         f"{digest(manifest_path)}  {manifest_path.name}\n", encoding="ascii"
     )
     verify(output, manifest_path, release_version, commit)
+    # The Maven tree is also served from object storage, where directory
+    # listings are not generated automatically.  Keep a browsable index at
+    # the root and at every coordinate directory alongside the normal Maven
+    # metadata/checksum files.
+    write_browse_indexes(output)
     scratch_manifest.unlink(missing_ok=True)
     Path(str(scratch_manifest) + ".sha256").unlink(missing_ok=True)
     return manifest

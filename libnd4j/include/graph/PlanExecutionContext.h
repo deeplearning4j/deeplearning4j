@@ -197,8 +197,8 @@ struct PlanExecutionContext {
   bool needsFullSync = true;
 
   /**
-   * Master gate for Triton CUDA graph capture/replay.
-   * Derived from: tritonGraphCapture() && frozen && !tritonSkipKernels().
+   * Master gate for platform graph capture/replay.
+   * Derived from the execution mode plus backend-owned execution policy.
    * Used in executeSegmentWithGpuGraph and segDispatchCaptureOrDirect.
    */
   bool allowGraphCaptureReplay = false;
@@ -211,8 +211,8 @@ struct PlanExecutionContext {
   bool useVariableFilter = false;
 
   /**
-   * Whether tritonSkipKernels forced slot-by-slot override.
-   * When true, graphExecutionMode_ was overridden to GEM_SLOT_BY_SLOT.
+   * Whether backend policy forced the portable slot-by-slot path.
+   * When true, graphExecutionMode_ was normalized to GEM_SLOT_BY_SLOT.
    */
   bool forcedSlotBySlot = false;
 
@@ -237,15 +237,15 @@ struct PlanExecutionContext {
   bool diagAnyEnabled = false;
 
   /**
-   * Whether triton kernel verification is enabled this step.
-   * Derived from: Environment::getInstance().tritonVerifyKernels().
-   * Read in compositeReplay, segment dispatch, arg table refresh.
+   * Whether compiled-backend verification is enabled this step.
+   * The selected backend translates any backend-specific switch into the
+   * shared execution-policy contract.
    */
-  bool tritonVerifyEnabled = false;
+  bool verifyCompiledExecutionEnabled = false;
 
   /**
    * The graph execution mode for this execution.
-   * Snapshot of graphExecutionMode_ at entry (after tritonSkipKernels override).
+   * Snapshot of graphExecutionMode_ after backend execution-policy normalization.
    * Avoids reading the mutable plan field mid-execution.
    */
   int graphExecutionMode = 0;  // GraphExecutionMode value
@@ -575,8 +575,8 @@ struct PlanExecutionContext {
    */
   SD_INLINE void populateDerivedState(
       bool shapesFrozen, int executeCount, int gemMode,
-      bool tritonSkipKernels, bool tritonGraphCapture,
-      bool tritonVerify, bool hasVariableList,
+      bool bypassCompiledExecution, bool allowPlatformGraphReplay,
+      bool verifyCompiledExecution, bool hasVariableList,
       bool execTimingEnabled,
       bool anySegmentInWarmup) {
 
@@ -604,8 +604,9 @@ struct PlanExecutionContext {
     // Mode contract — computed once, read by the slot-by-slot override and capture gate.
     const ModeContract modeContract = ModeContract::forMode(gemMode);
 
-    // tritonSkipKernels override
-    forcedSlotBySlot = tritonSkipKernels && !modeContract.isSlotBySlot;
+    // Backend-neutral compiled-execution bypass.
+    forcedSlotBySlot =
+        bypassCompiledExecution && !modeContract.isSlotBySlot;
     graphExecutionMode = forcedSlotBySlot
         ? static_cast<int>(GraphExecutionMode::GEM_SLOT_BY_SLOT) : gemMode;
 
@@ -613,17 +614,18 @@ struct PlanExecutionContext {
     // GEM_SLOT_BY_SLOT never captures regardless of phase (mirrors the gpubackend gate —
     // without it SLOT_BY_SLOT composite-captured the prefill and OOM-crashed once shapes
     // froze). usesGraphCapture lets an explicit graph mode (CUDA_GRAPHS/NVRTC_JIT/PTX_JIT/
-    // TRITON/AUTO) capture even when tritonGraphCapture is false (BenchmarkConfigApplier
-    // resets it for non-Triton configs).
-    allowGraphCaptureReplay = (tritonGraphCapture || modeContract.usesGraphCapture)
+    // compiler/AUTO) capture even when the backend does not independently
+    // request a platform replay wrapper.
+    allowGraphCaptureReplay =
+        (allowPlatformGraphReplay || modeContract.usesGraphCapture)
                               && !modeContract.isSlotBySlot
-                              && shapesFrozen && !tritonSkipKernels;
+                              && shapesFrozen && !bypassCompiledExecution;
 
     // Variable/weight filter for performPreReplaySync H2D
     useVariableFilter = shapesFrozen && hasVariableList;
 
-    // Triton verify flag
-    tritonVerifyEnabled = tritonVerify;
+    // Compiled-backend verification flag
+    verifyCompiledExecutionEnabled = verifyCompiledExecution;
 
     // Diagnostic gates — check if any diagnostic category is active
     diagAnyEnabled = DspDiagnostics::getInstance().isEnabled(0xFFFFFFFF);

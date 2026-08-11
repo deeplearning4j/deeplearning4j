@@ -51,7 +51,7 @@ PLATFORM_IMPL(stack, ENGINE_CPU) {
 
   // Create input tensors
   std::vector<Arm_Tensor> inTensors(numInputs);
-  std::vector<const arm_compute::ITensor*> inPtrs(numInputs);
+  std::vector<arm_compute::ITensor*> inPtrs(numInputs);
 
   for (int i = 0; i < numInputs; i++) {
     auto input = INPUT_VARIABLE(i);

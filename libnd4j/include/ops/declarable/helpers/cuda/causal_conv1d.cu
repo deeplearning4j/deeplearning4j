@@ -34,14 +34,15 @@ struct AccType { using type = float; };
 template <>
 struct AccType<double> { using type = double; };
 
-// One thread per (batch, time, channel) element
-template <typename T>
+// One thread per (batch, time, channel) element. Activations/state/output use X;
+// weights may use a lower-precision storage type W.
+template <typename X, typename W, typename S>
 SD_KERNEL void causalConv1dKernel(
-    const T* __restrict__ x,
-    const T* __restrict__ weight,
-    const T* __restrict__ bias,
-    const T* __restrict__ stateIn,
-    T* __restrict__ out,
+    const X* __restrict__ x,
+    const W* __restrict__ weight,
+    const X* __restrict__ bias,
+    const S* __restrict__ stateIn,
+    X* __restrict__ out,
     const LongType B, const LongType L, const LongType D, const LongType K,
     const int activation,
     const LongType xS0, const LongType xS1, const LongType xS2,
@@ -49,7 +50,7 @@ SD_KERNEL void causalConv1dKernel(
     const LongType oS0, const LongType oS1, const LongType oS2,
     const LongType siS0, const LongType siS1, const LongType siS2) {
 
-    using AccT = typename AccType<T>::type;
+    using AccT = typename AccType<X>::type;
 
     const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
     const LongType total = B * L * D;
@@ -86,16 +87,16 @@ SD_KERNEL void causalConv1dKernel(
         sum = sum * sig;
     }
 
-    out[b * oS0 + t * oS1 + d * oS2] = static_cast<T>(sum);
+    out[b * oS0 + t * oS1 + d * oS2] = static_cast<X>(sum);
 }
 
 // Update conv state: store last K-1 timesteps per channel
-template <typename T>
+template <typename X, typename S>
 SD_KERNEL void convStateUpdateKernel(
-    const T* __restrict__ x,
-    const T* __restrict__ stateIn,
+    const X* __restrict__ x,
+    const S* __restrict__ stateIn,
     const LongType* __restrict__ actualLen,
-    T* __restrict__ stateOut,
+    S* __restrict__ stateOut,
     const LongType B, const LongType L, const LongType D, const LongType K,
     const LongType xS0, const LongType xS1, const LongType xS2,
     const LongType siS0, const LongType siS1, const LongType siS2,
@@ -116,21 +117,23 @@ SD_KERNEL void convStateUpdateKernel(
         if (effectiveLen > L) effectiveLen = L;
     }
     LongType srcT = effectiveLen - (K - 1) + kk;
-    T val = static_cast<T>(0);
+    S val = static_cast<S>(0);
     if (srcT >= 0) {
-        val = x[b * xS0 + srcT * xS1 + d * xS2];
+        val = static_cast<S>(x[b * xS0 + srcT * xS1 + d * xS2]);
     } else if (stateIn != nullptr) {
         LongType stateIdx = (K - 1) + srcT;
-        if (stateIdx >= 0) val = stateIn[b * siS0 + d * siS1 + stateIdx * siS2];
+        if (stateIdx >= 0) {
+            val = stateIn[b * siS0 + d * siS1 + stateIdx * siS2];
+        }
     }
     stateOut[b * soS0 + d * soS1 + kk * soS2] = val;
 }
 
-template <typename T>
+template <typename X, typename W, typename S>
 static void launchCausalConv1d(
-    const T* x, const T* weight, const T* bias, const T* stateIn,
+    const X* x, const W* weight, const X* bias, const S* stateIn,
     const LongType* actualLen,
-    T* out, T* stateOut,
+    X* out, S* stateOut,
     LongType B, LongType L, LongType D, LongType K, int activation,
     LongType xS0, LongType xS1, LongType xS2,
     LongType wChanStride, LongType wDimStride,
@@ -143,7 +146,7 @@ static void launchCausalConv1d(
 
     LongType total = B * L * D;
     int numBlocks = (total + threadsPerBlock - 1) / threadsPerBlock;
-    causalConv1dKernel<T><<<numBlocks, threadsPerBlock, 0, stream>>>(
+    causalConv1dKernel<X, W, S><<<numBlocks, threadsPerBlock, 0, stream>>>(
         x, weight, bias, stateIn, out, B, L, D, K, activation,
         xS0, xS1, xS2, wChanStride, wDimStride, oS0, oS1, oS2, siS0, siS1, siS2);
     DebugHelper::checkGlobalErrorCode("causalConv1dKernel failed");
@@ -151,33 +154,26 @@ static void launchCausalConv1d(
     LongType stateTotal = B * D * (K - 1);
     if (stateTotal > 0) {
         int stateBlocks = (stateTotal + threadsPerBlock - 1) / threadsPerBlock;
-        convStateUpdateKernel<T><<<stateBlocks, threadsPerBlock, 0, stream>>>(
+        convStateUpdateKernel<X, S><<<stateBlocks, threadsPerBlock, 0, stream>>>(
             x, stateIn, actualLen, stateOut, B, L, D, K,
             xS0, xS1, xS2, siS0, siS1, siS2, soS0, soS1, soS2);
         DebugHelper::checkGlobalErrorCode("convStateUpdateKernel failed");
     }
 }
 
-// No explicit instantiation needed — launchCausalConv1d is file-local and called via type switch below.
+// No explicit instantiation needed — the selector below instantiates this file-local launcher.
 
-void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
-                   NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
-                   int activation, int wFormat) {
+template <typename X, typename W, typename S>
+static void launchCausalConv1dFromArrays(
+    LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
+    NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
+    int activation, int wFormat) {
     const auto B = x->sizeAt(0);
     const auto L = x->sizeAt(1);
     const auto D = x->sizeAt(2);
     const auto K = (wFormat == 0) ? weight->sizeAt(1) : weight->sizeAt(0);
-
-    // wFormat=0 [D,K]: wChanStride=strideAt(0), wDimStride=strideAt(1)
-    // wFormat=1 [K,D]: wDimStride=strideAt(0), wChanStride=strideAt(1)
     const LongType wChanStride = (wFormat == 0) ? weight->strideAt(0) : weight->strideAt(1);
-    const LongType wDimStride  = (wFormat == 0) ? weight->strideAt(1) : weight->strideAt(0);
-
-    NDArray::prepareSpecialUse({output, stateOut}, {x, weight, bias, actualLen});
-    if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
-
-    auto stream = context->getCudaStream();
-    auto dtype = x->dataType();
+    const LongType wDimStride = (wFormat == 0) ? weight->strideAt(1) : weight->strideAt(0);
 
     LongType siS0 = 0, siS1 = 0, siS2 = 0;
     if (stateIn != nullptr) {
@@ -186,57 +182,34 @@ void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* 
         siS2 = stateIn->strideAt(2);
     }
 
-    if (dtype == DataType::FLOAT32) {
-        launchCausalConv1d<float>(
-            reinterpret_cast<const float*>(x->specialBuffer()),
-            reinterpret_cast<const float*>(weight->specialBuffer()),
-            bias ? reinterpret_cast<const float*>(bias->specialBuffer()) : nullptr,
-            stateIn ? reinterpret_cast<const float*>(stateIn->specialBuffer()) : nullptr,
-            actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
-            reinterpret_cast<float*>(output->specialBuffer()),
-            reinterpret_cast<float*>(stateOut->specialBuffer()),
-            B, L, D, K, activation,
-            x->strideAt(0), x->strideAt(1), x->strideAt(2),
-            wChanStride, wDimStride,
-            output->strideAt(0), output->strideAt(1), output->strideAt(2),
-            siS0, siS1, siS2,
-            stateOut->strideAt(0), stateOut->strideAt(1), stateOut->strideAt(2),
-            *stream);
-    } else if (dtype == DataType::DOUBLE) {
-        launchCausalConv1d<double>(
-            reinterpret_cast<const double*>(x->specialBuffer()),
-            reinterpret_cast<const double*>(weight->specialBuffer()),
-            bias ? reinterpret_cast<const double*>(bias->specialBuffer()) : nullptr,
-            stateIn ? reinterpret_cast<const double*>(stateIn->specialBuffer()) : nullptr,
-            actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
-            reinterpret_cast<double*>(output->specialBuffer()),
-            reinterpret_cast<double*>(stateOut->specialBuffer()),
-            B, L, D, K, activation,
-            x->strideAt(0), x->strideAt(1), x->strideAt(2),
-            wChanStride, wDimStride,
-            output->strideAt(0), output->strideAt(1), output->strideAt(2),
-            siS0, siS1, siS2,
-            stateOut->strideAt(0), stateOut->strideAt(1), stateOut->strideAt(2),
-            *stream);
-    } else if (dtype == DataType::HALF) {
-        launchCausalConv1d<float16>(
-            reinterpret_cast<const float16*>(x->specialBuffer()),
-            reinterpret_cast<const float16*>(weight->specialBuffer()),
-            bias ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
-            stateIn ? reinterpret_cast<const float16*>(stateIn->specialBuffer()) : nullptr,
-            actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
-            reinterpret_cast<float16*>(output->specialBuffer()),
-            reinterpret_cast<float16*>(stateOut->specialBuffer()),
-            B, L, D, K, activation,
-            x->strideAt(0), x->strideAt(1), x->strideAt(2),
-            wChanStride, wDimStride,
-            output->strideAt(0), output->strideAt(1), output->strideAt(2),
-            siS0, siS1, siS2,
-            stateOut->strideAt(0), stateOut->strideAt(1), stateOut->strideAt(2),
-            *stream);
-    } else {
-        THROW_EXCEPTION("causalConv1d: Unsupported data type");
-    }
+    launchCausalConv1d<X, W, S>(
+        reinterpret_cast<const X*>(x->specialBuffer()),
+        reinterpret_cast<const W*>(weight->specialBuffer()),
+        bias ? reinterpret_cast<const X*>(bias->specialBuffer()) : nullptr,
+        stateIn ? reinterpret_cast<const S*>(stateIn->specialBuffer()) : nullptr,
+        actualLen ? reinterpret_cast<const LongType*>(actualLen->specialBuffer()) : nullptr,
+        reinterpret_cast<X*>(output->specialBuffer()),
+        reinterpret_cast<S*>(stateOut->specialBuffer()),
+        B, L, D, K, activation,
+        x->strideAt(0), x->strideAt(1), x->strideAt(2),
+        wChanStride, wDimStride,
+        output->strideAt(0), output->strideAt(1), output->strideAt(2),
+        siS0, siS1, siS2,
+        stateOut->strideAt(0), stateOut->strideAt(1), stateOut->strideAt(2),
+        *context->getCudaStream());
+}
+
+void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
+                   NDArray* stateIn, NDArray* actualLen, NDArray* output, NDArray* stateOut,
+                   int activation, int wFormat) {
+    NDArray::prepareSpecialUse({output, stateOut}, {x, weight, bias, actualLen});
+    if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
+
+    const auto stateType = stateIn != nullptr ? stateIn->dataType() : x->dataType();
+    BUILD_TRIPLE_SELECTOR(
+        x->dataType(), weight->dataType(), stateType, launchCausalConv1dFromArrays,
+        (context, x, weight, bias, stateIn, actualLen, output, stateOut, activation, wFormat),
+        SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({output, stateOut}, {x, weight, bias, actualLen});
     if (stateIn != nullptr) NDArray::registerSpecialUse({}, {stateIn});

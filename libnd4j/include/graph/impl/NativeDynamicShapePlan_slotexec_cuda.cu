@@ -33,6 +33,7 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/DspThreadState.h>
 #include <graph/DspVerifyUtils.h>
 #include <graph/gpu/DspCudaDispatch.h>
 #include <helpers/MmulHelper.h>
@@ -44,6 +45,71 @@ namespace graph {
 
 Status NativeDynamicShapePlan::platformExecuteSlot(const NativeSlot& slot,
                                                    Context& context) {
+  // During warmup, record the CUDA provenance of every pointer handed to the op.
+  // This is intentionally diagnostic-only: it identifies cross-device slot
+  // allocation before the asynchronous kernel can report an opaque error 700.
+  if (DSP_DIAG_ENABLED(EXECUTE)) {
+    int currentDevice = -1;
+    const auto deviceStatus = cudaGetDevice(&currentDevice);
+    if (deviceStatus != cudaSuccess) {
+      DSP_DIAG(EXECUTE, "SLOT_POINTER_PROVENANCE: cudaGetDevice failed op=%s err=%s",
+               slot.ident.opName.c_str(), cudaGetErrorString(deviceStatus));
+      cudaGetLastError();
+    }
+
+    auto logPointer = [&](const char* kind, int index, NDArray* array) {
+      if (array == nullptr || array->isEmpty()) return;
+      auto* buffer = array->dataBuffer();
+      void* pointer = array->specialBuffer();
+      if (buffer == nullptr || pointer == nullptr) {
+        DSP_DIAG(EXECUTE,
+                 "SLOT_POINTER_PROVENANCE op=%s kind=%s[%d] ptr=%p currentDevice=%d "
+                 "bufferDevice=%d attrs=unavailable",
+                 slot.ident.opName.c_str(), kind, index, pointer, currentDevice,
+                 buffer == nullptr ? -1 : buffer->deviceId());
+        return;
+      }
+
+      cudaPointerAttributes attributes{};
+      const auto pointerStatus = cudaPointerGetAttributes(&attributes, pointer);
+      if (pointerStatus == cudaSuccess) {
+        DSP_DIAG(EXECUTE,
+                 "SLOT_POINTER_PROVENANCE op=%s kind=%s[%d] ptr=%p currentDevice=%d "
+                 "bufferDevice=%d pointerDevice=%d pointerType=%d bytes=%lld",
+                 slot.ident.opName.c_str(), kind, index, pointer, currentDevice,
+                 buffer->deviceId(), attributes.device, static_cast<int>(attributes.type),
+                 static_cast<long long>(buffer->getLenInBytes()));
+      } else {
+        DSP_DIAG(EXECUTE,
+                 "SLOT_POINTER_PROVENANCE op=%s kind=%s[%d] ptr=%p currentDevice=%d "
+                 "bufferDevice=%d attrsError=%s bytes=%lld",
+                 slot.ident.opName.c_str(), kind, index, pointer, currentDevice,
+                 buffer->deviceId(), cudaGetErrorString(pointerStatus),
+                 static_cast<long long>(buffer->getLenInBytes()));
+        cudaGetLastError();
+      }
+    };
+
+    auto& inputs = context.fastpath_in();
+    for (int i = 0; i < static_cast<int>(inputs.size()); i++) {
+      logPointer("input", i, inputs[i]);
+    }
+    auto& outputs = context.fastpath_out();
+    for (int i = 0; i < static_cast<int>(outputs.size()); i++) {
+      logPointer("output", i, outputs[i]);
+    }
+  }
+
+  // Slice-family ops materialize begin/size tensors on the host inside execute().
+  // Composite replay normally suppresses D2H synchronization, which leaves these
+  // controls at the previous plan invocation's host values. They are deliberately
+  // non-capturable (NativeSlot::isCapturable), so it is safe and required to lift
+  // replay suppression while this live slot consumes its bounded control tensors.
+  if (slot.hasOpTrait(sd::ops::OP_TRAIT_SLICE)) {
+    DspReplayGuard valueDependentHostReadGuard(false);
+    return slot.ident.op->execute(&context);
+  }
+
   return slot.ident.op->execute(&context);
 }
 
@@ -251,10 +317,35 @@ bool NativeDynamicShapePlan::platformValidateReusableSlotBuffer(NDArray* cached)
   if (cached == nullptr) return true;
   auto* db = cached->dataBuffer();
   if (db == nullptr) return true;
-  // On CUDA, a non-empty array with null special (device) buffer is invalid
+  // On CUDA, a non-empty array with null special (device) buffer is invalid.
   if (db->special() == nullptr && !cached->isEmpty()) {
     return false;
   }
+
+  // A plan may allocate a slot while device 0 is current and later execute
+  // that slot in a secondary-device segment. The NDArray remains structurally
+  // valid, but using its device-0 pointer from device 1 causes a deferred
+  // illegal access in the consumer kernel. Treat this as a warmup cache miss;
+  // the caller will discard the wrapper and allocate it after the segment
+  // device has been bound.
+  int currentDevice = -1;
+  const auto deviceStatus = cudaGetDevice(&currentDevice);
+  if (deviceStatus != cudaSuccess) {
+    DSP_DIAG(MEMORY,
+             "REUSABLE_SLOT_DEVICE_CHECK_FAILED: ptr=%p bufferDevice=%d err=%s",
+             db->special(), db->deviceId(), cudaGetErrorString(deviceStatus));
+    cudaGetLastError();
+    return false;
+  }
+  if (db->deviceId() != currentDevice) {
+    DSP_DIAG(MEMORY,
+             "REUSABLE_SLOT_DEVICE_MISMATCH: ptr=%p bufferDevice=%d currentDevice=%d "
+             "bytes=%lld — forcing device-local reallocation",
+             db->special(), db->deviceId(), currentDevice,
+             static_cast<long long>(db->getLenInBytes()));
+    return false;
+  }
+
   return true;
 }
 

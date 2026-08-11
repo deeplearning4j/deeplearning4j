@@ -46,7 +46,19 @@ AclGraphBackend::~AclGraphBackend() = default;
 // ─── Availability ───────────────────────────────────────────────────────────
 
 bool AclGraphBackend::isAvailable() const {
-  return sd::ops::platforms::ArmComputeVersionProvider::isAvailable();
+  return sd::ops::platforms::armcompute::ArmComputeVersionProvider::isAvailable();
+}
+
+bool AclGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_ARM_HYBRID ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO ||
+         request.executionMode == GraphExecutionMode::GEM_PORTABLE_REPLAY;
+}
+
+int AclGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_ARM_HYBRID ? 900 : 400;
 }
 
 // ─── Data type mapping ──────────────────────────────────────────────────────
@@ -125,29 +137,43 @@ bool AclGraphBackend::canFuseActivation(NativeSlot* slots, int idx, int endSlot)
 // ─── Segment fusibility check ───────────────────────────────────────────────
 
 bool AclGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
-  if (!isAvailable()) return false;
+  if (!isAvailable() || !slots || end < start) return false;
 
-  // Check if we have at least one ACL-accelerable pattern
-  int aclOps = 0;
+  // ACL buildFunctions is currently all-or-nothing at segment scope. Do
+  // not claim a mixed segment merely because it contains two supported ops:
+  // buildFunctions would leave unsupported slots uncovered and the audit layer
+  // would throw instead of allowing the next backend/fallback to run.
+  int supportedOps = 0;
   for (int i = start; i <= end; i++) {
     const auto& name = slots[i].ident.opName;
-    // ACL supports these as individual functions
-    if (name == "matmul" || name == "mmul" || name == "MatMul" ||
+    const bool supported =
+        name == "matmul" || name == "mmul" || name == "MatMul" ||
         name == "add" || name == "Add" ||
-        name == "subtract" || name == "Sub" ||
         name == "multiply" || name == "Mul" ||
-        name == "relu" || name == "Relu" ||
-        name == "sigmoid" || name == "Sigmoid" ||
-        name == "tanh" || name == "Tanh" ||
         name == "softmax" || name == "Softmax" ||
-        name == "batchnorm" || name == "BatchNorm" ||
-        name == "conv2d" || name == "Conv2D") {
-      aclOps++;
+        mapActivation(name) != arm_compute::ActivationLayerInfo::ActivationFunction::IDENTITY;
+    if (!supported) {
+      DSP_DIAG(BACKEND,
+               "ACL admission rejected mixed seg[%d-%d]: unsupported op %s at slot %d",
+               start, end, name.c_str(), i);
+      return false;
     }
+
+    const bool needsTwoInputs =
+        name == "matmul" || name == "mmul" || name == "MatMul" ||
+        name == "add" || name == "Add" || name == "multiply" || name == "Mul";
+    const int requiredInputs = needsTwoInputs ? 2 : 1;
+    if (slots[i].wiring.numInputs < requiredInputs || slots[i].wiring.numOutputs < 1) {
+      DSP_DIAG(BACKEND,
+               "ACL admission rejected seg[%d-%d]: malformed wiring for %s at slot %d (inputs=%d outputs=%d)",
+               start, end, name.c_str(), i, slots[i].wiring.numInputs,
+               slots[i].wiring.numOutputs);
+      return false;
+    }
+    supportedOps++;
   }
 
-  // Need at least 2 ACL-able ops with at least one fusible pattern
-  return aclOps >= 2;
+  return supportedOps >= 2;
 }
 
 // ─── Build ACL functions ────────────────────────────────────────────────────
@@ -236,7 +262,7 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
         outTensor = getOrCreateTensor(actOutSlot, actOutArr);
       }
 
-      FunctionEntry entry;
+      AclFunctionGroup::FunctionEntry entry;
       bool built = false;
 
       if (slot.ident.opName == "matmul" || slot.ident.opName == "mmul" || slot.ident.opName == "MatMul") {

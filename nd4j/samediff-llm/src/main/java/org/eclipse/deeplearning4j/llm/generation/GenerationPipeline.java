@@ -62,7 +62,6 @@ import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
-import org.nd4j.autodiff.samediff.optimize.OptimizerSet;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.bytedeco.javacpp.Pointer;
 
@@ -71,9 +70,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -84,7 +85,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.stream.Collectors;
 
 /**
  * Unified LLM inference pipeline that eliminates all manual wiring boilerplate.
@@ -167,6 +167,15 @@ public class GenerationPipeline implements AutoCloseable {
     private final SameDiff embedTokens;
 
     private final Tokenizer tokenizer;
+
+    /** Metadata retained by the model importer instead of being discarded with the source container. */
+    private final ModelMetadata modelMetadata;
+
+    /** Tokenizer/importer-owned control-token vocabulary used by constrained decoding. */
+    private final Set<Integer> specialTokenIds;
+
+    /** Decoded control-token lexemes, retained because added tokens may not support string-to-id lookup. */
+    private final List<String> specialTokenPieces;
 
     @Getter
     private final ModelIOConfig ioConfig;
@@ -259,13 +268,12 @@ public class GenerationPipeline implements AutoCloseable {
     private static final String MTP_LOGITS_NAME = "mtp_logits";
 
     /**
-     * FORWARD-FIX (fixed-buffer decode reuse): the {@link InGraphKvState} from the previous one-shot
-     * {@code generate()} on this pipeline, retained so the next compatible generate reuses its frozen
-     * DSP plan + captured CUDA graph + stable-address buffers instead of re-warming (~130s/gen). Only
-     * the fixed-buffer path ({@code maxPrefillLength > 0}) populates it. Invalidated when a
-     * {@link GenerationSession} opens (the session takes over the decoder's executor) and freed in
-     * {@link #close()}. Thread-confined to the pipeline's decode thread (generate() is single-threaded
-     * per pipeline).
+     * Fixed-buffer decode state retained between independent one-shot generations and continuation
+     * sessions. Ownership transfers back to the pipeline when a session closes, then to the next
+     * compatible caller. Keeping the same state preserves the frozen DSP plan, captured CUDA graph,
+     * and every external-input device address; the next prefill overwrites the retained buffers in
+     * place. Only {@code maxPrefillLength > 0} populates this cache. Freed in {@link #close()}.
+     * Thread-confined to the pipeline's decode thread.
      */
     private InGraphKvState cachedFixedBufferState;
 
@@ -281,6 +289,7 @@ public class GenerationPipeline implements AutoCloseable {
             SameDiff decoder, boolean ownsDecoder,
             SameDiff embedTokens, boolean ownsEmbedTokens,
             Tokenizer tokenizer,
+            ModelMetadata modelMetadata,
             ModelIOConfig ioConfig,
             INDArray embeddingTable,
             long hiddenSize,
@@ -293,6 +302,21 @@ public class GenerationPipeline implements AutoCloseable {
         this.embedTokens = embedTokens;
         this.ownsEmbedTokens = ownsEmbedTokens;
         this.tokenizer = tokenizer;
+        this.modelMetadata = modelMetadata == null ? ModelMetadata.empty() : modelMetadata;
+        Set<Integer> protocolTokens = new HashSet<>(tokenizer.getSpecialTokenIds());
+        protocolTokens.addAll(this.modelMetadata.getSpecialTokenIds());
+        Map<String, Integer> addedTokens = tokenizer.getAddedTokens();
+        Integer nativeStartId = addedTokens.get(
+                org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.NATIVE_TOOL_CALL_START);
+        Integer nativeEndId = addedTokens.get(
+                org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.NATIVE_TOOL_CALL_END);
+        if (nativeStartId != null && nativeStartId >= 0
+                && nativeEndId != null && nativeEndId >= 0) {
+            protocolTokens.add(nativeStartId);
+            protocolTokens.add(nativeEndId);
+        }
+        this.specialTokenIds = Collections.unmodifiableSet(protocolTokens);
+        this.specialTokenPieces = decodeSpecialTokenPieces(tokenizer, protocolTokens);
         this.ioConfig = ioConfig;
         this.embeddingTable = embeddingTable;
         this.hiddenSize = hiddenSize;
@@ -423,22 +447,24 @@ public class GenerationPipeline implements AutoCloseable {
         }
         // embedTokens may be null here — single-model mode uses decoder for embeddings
 
-        // 1b. Run graph optimizer (sigmoid*x→swish/silu, SwiGLU fusion, etc.)
-        // Controlled via GenerationPipelineConfig.graphOptimizerEnabled (default: false).
-        // Default is false because OnnxModelCache already runs the full optimizer during import.
-        // Excludes QuantizationOptimizations (FP16 weight quantization handled separately).
+        ModelMetadata modelMetadata = ModelMetadata.empty();
+        if (modelLoader != null && config.getDecoderPath() != null) {
+            ModelMetadata imported = modelLoader.getModelMetadata(config.getDecoderPath());
+            if (imported != null) {
+                modelMetadata = imported;
+            }
+        }
+
+        // 1b. Run the complete default graph optimizer pipeline. This includes automatic
+        // FP16 weight pre-casting; nd4j.optimizer.fp16=false is the explicit opt-out.
         if (config.isGraphOptimizerEnabled()) {
             int opsBefore = decoder.getOps().size();
             long optStart = System.currentTimeMillis();
             List<String> outputs = decoder.outputs() != null
                     ? new ArrayList<>(decoder.outputs()) : new ArrayList<>();
-            List<OptimizerSet> optimizations =
-                    GraphOptimizer.defaultOptimizations().stream()
-                            .filter(s -> !(s instanceof org.nd4j.autodiff.samediff.optimize.optimizations.QuantizationOptimizations))
-                            .collect(Collectors.toList());
             SameDiff originalDecoder = decoder;
             boolean ownsOriginalDecoder = ownsDecoder;
-            SameDiff optimizedDecoder = GraphOptimizer.optimize(decoder, outputs, optimizations);
+            SameDiff optimizedDecoder = GraphOptimizer.optimize(decoder, outputs);
             if (optimizedDecoder != originalDecoder) {
                 if (ownsOriginalDecoder) {
                     try {
@@ -587,6 +613,7 @@ public class GenerationPipeline implements AutoCloseable {
                 decoder, ownsDecoder,
                 embedTokens, ownsEmbedTokens,
                 config.getTokenizer(),
+                modelMetadata,
                 ioConfig,
                 embeddingTable,
                 resolvedHiddenSize,
@@ -667,6 +694,10 @@ public class GenerationPipeline implements AutoCloseable {
      * @return generation result with text, token IDs, timing, and throughput metrics
      */
     public GenerationResult generate(String prompt, int maxNewTokens) {
+        return generateTokenIds(encodePromptToIds(prompt), maxNewTokens);
+    }
+
+    private GenerationResult generateTokenIds(int[] promptTokenIds, int maxNewTokens) {
         int restoreDevice = switchToDecoderDevice("text-generation");
         // Suppress cross-device routing for the entire generation. Model weights,
         // prompt tensors, and KV caches must stay on the decoder's execution device.
@@ -675,7 +706,7 @@ public class GenerationPipeline implements AutoCloseable {
         // routing. The pool handles actual OOM via trim+retry.
         OpaqueDataBuffer.suppressCrossDeviceRouting(true);
         try {
-            return generateInternal(prompt, maxNewTokens);
+            return generateInternal(promptTokenIds, maxNewTokens);
         } finally {
             OpaqueDataBuffer.suppressCrossDeviceRouting(false);
             restoreDevice(restoreDevice, "text-generation");
@@ -703,6 +734,274 @@ public class GenerationPipeline implements AutoCloseable {
         } finally {
             this.activeSamplingConfig = prev;
         }
+    }
+
+    /**
+     * Generate one structured chat turn using the pipeline-configured template,
+     * falling back to the tokenizer-owned template when no override is configured.
+     *
+     * <p>The request is rendered once, the already-loaded pipeline is reused, and
+     * generated token IDs are decoded with special tokens retained so native
+     * tool sentinels remain available to the parser.</p>
+     */
+    public ChatGenerationResult generateChat(
+            org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request request,
+            int maxNewTokens,
+            SamplingConfig sampling) {
+        if (request == null) {
+            throw new IllegalArgumentException("Chat request must not be null");
+        }
+        if (maxNewTokens <= 0) {
+            throw new IllegalArgumentException("maxNewTokens must be positive");
+        }
+        org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request effective =
+                resolveChatRequest(request);
+        String prompt = tokenizer.applyChatTemplate(effective, effectiveChatTemplateText());
+        SamplingConfig chatSampling = samplingForChat(effective, sampling);
+        SamplingConfig previous = this.activeSamplingConfig;
+        this.activeSamplingConfig = chatSampling;
+        GenerationResult generated;
+        try {
+            generated = generateTokenIds(encodeFormattedChatToIds(prompt), maxNewTokens);
+        } finally {
+            this.activeSamplingConfig = previous;
+        }
+        String raw = generated.getText();
+        int[] ids = generated.getTokenIds();
+        if (ids != null && ids.length > 0) {
+            raw = tokenizer.decode(ids, false);
+        }
+        return parseEffectiveChatOutput(effective, raw);
+    }
+
+    /**
+     * Decode an already-generated assistant string with the same imported
+     * template/protocol contract used by {@link #generateChat}.
+     */
+    public ChatGenerationResult parseChatOutput(
+            org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request request,
+            String rawText) {
+        if (request == null) {
+            throw new IllegalArgumentException("Chat request must not be null");
+        }
+        return parseEffectiveChatOutput(resolveChatRequest(request), rawText);
+    }
+
+    private ChatGenerationResult parseEffectiveChatOutput(
+            org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request effective,
+            String rawText) {
+        org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate activeTemplate =
+                activeChatTemplate();
+        org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.AssistantOutput normalized =
+                activeTemplate.parseAssistantOutput(rawText);
+        return new ChatGenerationResult(rawText, normalized, effective.getTools(),
+                effective.getToolCallFormat(), effective.getToolChoice());
+    }
+
+    private org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request resolveChatRequest(
+            org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request request) {
+        org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolChoice toolChoice =
+                request.getToolChoice() == null
+                        ? org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolChoice.AUTO
+                        : request.getToolChoice();
+        List<org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Tool> effectiveTools =
+                toolChoice == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolChoice.NONE
+                        ? List.of() : request.getTools();
+        org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat toolCallFormat =
+                request.getToolCallFormat() != null ? request.getToolCallFormat()
+                        : config.getToolCallFormat() != null ? config.getToolCallFormat()
+                        : modelToolCallFormat();
+        return org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request.builder()
+                .messages(request.getMessages())
+                .tools(effectiveTools)
+                .addGenerationPrompt(request.isAddGenerationPrompt())
+                .toolDefinitionFormat(request.getToolDefinitionFormat() == null
+                        ? config.getToolDefinitionFormat() : request.getToolDefinitionFormat())
+                .toolCallFormat(toolCallFormat)
+                .toolChoice(toolChoice)
+                .templateArguments(request.getTemplateArguments())
+                .build();
+    }
+
+    private org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat
+            modelToolCallFormat() {
+        org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat templateFormat =
+                activeChatTemplate().toolCallFormat();
+        Integer nativeStartId = tokenizer.getTokenId(
+                org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.NATIVE_TOOL_CALL_START);
+        Integer nativeEndId = tokenizer.getTokenId(
+                org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.NATIVE_TOOL_CALL_END);
+        return selectModelToolCallFormat(
+                templateFormat, nativeStartId, nativeEndId, specialTokenIds,
+                specialTokenPieces);
+    }
+
+    static org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat
+            selectModelToolCallFormat(
+                    org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat
+                            templateFormat,
+                    Integer nativeStartId,
+                    Integer nativeEndId,
+                    Set<Integer> specialTokenIds) {
+        return selectModelToolCallFormat(
+                templateFormat, nativeStartId, nativeEndId, specialTokenIds,
+                Collections.emptyList());
+    }
+
+    static org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat
+            selectModelToolCallFormat(
+                    org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat
+                            templateFormat,
+                    Integer nativeStartId,
+                    Integer nativeEndId,
+                    Set<Integer> specialTokenIds,
+                    Collection<String> specialTokenPieces) {
+        if (templateFormat
+                == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.NATIVE) {
+            return templateFormat;
+        }
+        Set<Integer> specials = specialTokenIds == null
+                ? Collections.emptySet() : specialTokenIds;
+        if (nativeStartId != null && nativeStartId >= 0
+                && nativeEndId != null && nativeEndId >= 0
+                && specials.contains(nativeStartId) && specials.contains(nativeEndId)) {
+            return org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.NATIVE;
+        }
+        Collection<String> pieces = specialTokenPieces == null
+                ? Collections.emptyList() : specialTokenPieces;
+        if (pieces.contains(org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.NATIVE_TOOL_CALL_START)
+                && pieces.contains(org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.NATIVE_TOOL_CALL_END)) {
+            return org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.NATIVE;
+        }
+        return org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.JSON;
+    }
+
+    private String effectiveChatTemplateText() {
+        if (config.getChatTemplate() != null && !config.getChatTemplate().isBlank()) {
+            return config.getChatTemplate();
+        }
+        if (modelMetadata.getChatTemplate() != null
+                && !modelMetadata.getChatTemplate().isBlank()) {
+            return modelMetadata.getChatTemplate();
+        }
+        return tokenizer.getChatTemplate();
+    }
+
+    private org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate activeChatTemplate() {
+        String activeTemplateText = effectiveChatTemplateText();
+        if (activeTemplateText == null || activeTemplateText.isBlank()) {
+            throw new IllegalStateException(
+                    "Neither the model import nor pipeline provides a chat template");
+        }
+        return new org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate(
+                activeTemplateText, tokenizer.getBosToken(), tokenizer.getEosToken());
+    }
+
+    static SamplingConfig samplingForChat(
+            org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request request,
+            SamplingConfig sampling) {
+        SamplingConfig base = sampling == null
+                ? SamplingConfig.defaultConfig() : sampling;
+        org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolChoice choice =
+                request.getToolChoice() == null
+                        ? org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolChoice.AUTO
+                        : request.getToolChoice();
+        if (choice != org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolChoice.REQUIRED) {
+            return base;
+        }
+        if (request.getTools() == null || request.getTools().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "ChatTemplate.ToolChoice.REQUIRED requires at least one declared tool");
+        }
+        if (base.hasConstraint()) {
+            return base;
+        }
+
+        String[] toolNames = request.getTools().stream()
+                .map(org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Tool::getName)
+                .toArray(String[]::new);
+        boolean nativeFormat = request.getToolCallFormat()
+                == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.NATIVE;
+        ConstraintConfig constraint;
+        if (nativeFormat) {
+            Map<String, List<String>> argumentNamesByTool = new LinkedHashMap<>();
+            Map<String, Map<String, List<String>>> argumentValuesByTool =
+                    new LinkedHashMap<>();
+            Map<String, Map<String, Object>> parameterSchemasByTool =
+                    new LinkedHashMap<>();
+            for (org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Tool tool
+                    : request.getTools()) {
+                argumentNamesByTool.put(
+                        tool.getName(), requiredNativeToolArgumentNames(tool));
+                parameterSchemasByTool.put(tool.getName(), tool.getParameters());
+                Map<String, List<String>> allowedValues =
+                        nativeToolArgumentValues(tool);
+                if (!allowedValues.isEmpty()) {
+                    argumentValuesByTool.put(tool.getName(), allowedValues);
+                }
+            }
+            constraint = ConstraintConfig.nativeToolCall(
+                    argumentNamesByTool, argumentValuesByTool,
+                    parameterSchemasByTool);
+        } else {
+            constraint = ConstraintConfig.toolCall(toolNames);
+        }
+        return base.toBuilder().constraintConfig(constraint).build();
+    }
+
+    private static List<String> requiredNativeToolArgumentNames(
+            org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Tool tool) {
+        Object required = tool.getParameters().get("required");
+        if (!(required instanceof Collection<?>)) {
+            return List.of();
+        }
+        List<String> names = new ArrayList<>();
+        for (Object value : (Collection<?>) required) {
+            if (value instanceof String && !((String) value).isBlank()) {
+                names.add((String) value);
+            }
+        }
+        return List.copyOf(names);
+    }
+
+    private static Map<String, List<String>> nativeToolArgumentValues(
+            org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Tool tool) {
+        Object propertiesObject = tool.getParameters().get("properties");
+        if (!(propertiesObject instanceof Map<?, ?>)) {
+            return Map.of();
+        }
+        Map<?, ?> properties = (Map<?, ?>) propertiesObject;
+        Map<String, List<String>> allowedValues = new LinkedHashMap<>();
+        for (String argumentName : requiredNativeToolArgumentNames(tool)) {
+            Object schemaObject = properties.get(argumentName);
+            if (!(schemaObject instanceof Map<?, ?>)) {
+                continue;
+            }
+            Map<?, ?> schema = (Map<?, ?>) schemaObject;
+            List<String> values = new ArrayList<>();
+            Object enumObject = schema.get("enum");
+            if (enumObject instanceof Collection<?>) {
+                for (Object value : (Collection<?>) enumObject) {
+                    if (value instanceof String) {
+                        values.add((String) value);
+                    }
+                }
+            }
+            Object constObject = schema.get("const");
+            if (constObject instanceof String) {
+                values.add((String) constObject);
+            }
+            if (!values.isEmpty()) {
+                allowedValues.put(argumentName, List.copyOf(values));
+            }
+        }
+        return Collections.unmodifiableMap(allowedValues);
+    }
+
+    public ChatGenerationResult generateChat(
+            org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request request,
+            int maxNewTokens) {
+        return generateChat(request, maxNewTokens, getSamplingConfig());
     }
 
     /**
@@ -869,9 +1168,7 @@ public class GenerationPipeline implements AutoCloseable {
                         sampling.getXtcThreshold());
     }
 
-    private GenerationResult generateInternal(String prompt, int maxNewTokens) {
-        int[] promptTokenIds = encodePromptToIds(prompt);
-
+    private GenerationResult generateInternal(int[] promptTokenIds, int maxNewTokens) {
         // Single-model mode: no separate embedTokens model was provided.
         // The decoder handles its own embedding lookup internally
         // (input_ids → gather → transformer → logits).
@@ -1018,18 +1315,18 @@ public class GenerationPipeline implements AutoCloseable {
                 // re-prefills in place into the retained (stable-address) buffers.
                 log.info("[Lifecycle] Reusing cached fixed-buffer state — keep plan, in-place re-prefill (maxPrefill={})", maxPrefill);
             } else {
-                // Fixed-size buffers: skip DSP reset — reuse the frozen plan.
-                // Shapes are identical across calls since everything is pre-allocated
-                // at maxPrefillLength. Only reset session state (KV caches, recurrent
-                // states) — the plan itself stays intact.
+                // A frozen fixed-buffer plan is reusable only together with the state that owns its
+                // captured external-input addresses. Reaching this branch without reuseState means
+                // that ownership was lost (for example after an incompatible-capacity handoff).
+                // Tear the stale session down completely; clearNodeOutputsOnly() is not a reset — it
+                // closes the Java DynamicShapePlan while leaving native cached allocations behind.
                 InferenceSession existSession = decoder.getOrCreateSession();
                 if (existSession != null) {
                     DynamicShapePlanExecutor existExecutor = existSession.getDynamicShapePlanExecutor();
                     if (existExecutor != null && existExecutor.isShapesFrozen()) {
-                        log.info("[Lifecycle] Reusing frozen DSP plan (fixedBuffers=true, maxPrefill={})", maxPrefill);
-                        // Clear node outputs but keep the plan — we need fresh KV/state
-                        // buffers but the compiled execution plan is shape-stable.
-                        existSession.clearNodeOutputsOnly();
+                        log.warn("[Lifecycle] Frozen fixed-buffer DSP plan has no retained state; resetting it before fresh prefill");
+                        decoder.resetSession();
+                        decoder.clearDynamicShapePlanCache();
                     }
                 }
             }
@@ -1051,10 +1348,10 @@ public class GenerationPipeline implements AutoCloseable {
             }
         }
 
-        int eosTokenId = tokenizer.getEosTokenId();
-        Set<Integer> stopTokenIds = buildStopTokenIds();
-
         SamplingConfig sampling = activeDecodeSampling();
+        int eosTokenId = resolveEosTokenId(sampling);
+        Set<Integer> stopTokenIds = buildStopTokenIds(eosTokenId);
+
         DecodePolicy decodePolicy = activeDecodePolicy();
         requireNativeSubstrateAvailable(decodePolicy, sampling);
         Random rng = sampling.getSeed() != null ? new Random(sampling.getSeed()) : new Random();
@@ -1099,14 +1396,24 @@ public class GenerationPipeline implements AutoCloseable {
             effectiveTokenIds = promptTokenIds;
         }
 
-        long maxKvLen = prefillSeqLen + maxNewTokens;
+        int kvCap = config.getMaxKvCacheLength();
+        if (kvCap > 0 && prefillSeqLen >= kvCap) {
+            throw new IllegalArgumentException(
+                    "Prompt token count "
+                            + prefillSeqLen
+                            + " leaves no room for generation within "
+                            + "maxKvCacheLength="
+                            + kvCap
+            );
+        }
+
+        long maxKvLen =
+                prefillSeqLen + maxNewTokens;
         // Cap to configured KV cache length to keep buffer shapes stable across
         // calls with different maxNewTokens — avoids plan recompilation.
-        int kvCap = config.getMaxKvCacheLength();
         if (kvCap > 0 && maxKvLen > kvCap) {
+            maxNewTokens = kvCap - prefillSeqLen;
             maxKvLen = kvCap;
-            maxNewTokens = (int) (maxKvLen - prefillSeqLen);
-            if (maxNewTokens < 1) maxNewTokens = 1;
         }
         int numLayers = kvInputNames.keyNames.size();
 
@@ -1139,30 +1446,42 @@ public class GenerationPipeline implements AutoCloseable {
             // Reuse path: overwrite in place, keep every address stable.
             prefillInputMap = reuseState.prefillInputMap;
             prefillInputIds = prefillInputMap.get(inputIdsName);
+            INDArray freshMask = null;
             try (INDArray freshIds = Nd4j.createFromArray(effectiveTokenIds)
                     .reshape(1, prefillSeqLen).castTo(DataType.INT64)) {
                 prefillInputIds.assign(freshIds);
+                if (posOffsetName != null && prefillInputMap.containsKey(posOffsetName)) {
+                    prefillInputMap.get(posOffsetName).assign(0);
+                }
+                if (cachePosName != null && prefillInputMap.containsKey(cachePosName)) {
+                    prefillInputMap.get(cachePosName).assign(0);
+                }
+                if (prefillInputMap.containsKey(ACTUAL_SEQUENCE_LENGTH_NAME)) {
+                    prefillInputMap.get(ACTUAL_SEQUENCE_LENGTH_NAME).assign(actualPrefillLen);
+                }
+                if (causalMaskName != null && prefillInputMap.containsKey(causalMaskName)) {
+                    freshMask = fixedBuffers
+                            ? buildPaddedPrefillCausalMask(actualPrefillLen, prefillSeqLen, maxKvLen, maskDtype)
+                            : DecoderInputBuilder.buildInGraphCausalMask(prefillSeqLen, maxKvLen, maskDtype);
+                    prefillInputMap.get(causalMaskName).assign(freshMask);
+                }
+                // Empty-KV sentinels reused as-is (no content). Re-zero recurrent state inputs (no history).
+                for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
+                    INDArray st = prefillInputMap.get(pair.inputName);
+                    if (st != null) st.assign(0);
+                }
+
+                // CUDA assignment is asynchronous. Keep both source buffers alive through commit;
+                // closing either one earlier lets the allocator reuse its device memory while the
+                // copy into the stable captured-plan input is still queued.
+                Nd4j.getExecutioner().commit();
+            } finally {
+                if (freshMask != null && !freshMask.wasClosed()) freshMask.close();
             }
-            if (posOffsetName != null && prefillInputMap.containsKey(posOffsetName)) {
-                prefillInputMap.get(posOffsetName).assign(0);
-            }
-            if (cachePosName != null && prefillInputMap.containsKey(cachePosName)) {
-                prefillInputMap.get(cachePosName).assign(0);
-            }
-            if (prefillInputMap.containsKey(ACTUAL_SEQUENCE_LENGTH_NAME)) {
-                prefillInputMap.get(ACTUAL_SEQUENCE_LENGTH_NAME).assign(actualPrefillLen);
-            }
-            if (causalMaskName != null && prefillInputMap.containsKey(causalMaskName)) {
-                INDArray freshMask = fixedBuffers
-                        ? buildPaddedPrefillCausalMask(actualPrefillLen, prefillSeqLen, maxKvLen, maskDtype)
-                        : DecoderInputBuilder.buildInGraphCausalMask(prefillSeqLen, maxKvLen, maskDtype);
-                prefillInputMap.get(causalMaskName).assign(freshMask);
-                freshMask.close();
-            }
-            // Empty-KV sentinels reused as-is (no content). Re-zero recurrent state inputs (no history).
-            for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
-                INDArray st = prefillInputMap.get(pair.inputName);
-                if (st != null) st.assign(0);
+            for (INDArray input : prefillInputMap.values()) {
+                if (input != null && !input.wasClosed() && input.length() > 0) {
+                    input.syncToDevice();
+                }
             }
         } else {
             prefillInputIds = Nd4j.createFromArray(effectiveTokenIds)
@@ -1226,20 +1545,20 @@ public class GenerationPipeline implements AutoCloseable {
         // that skips the all-positions vocab projection and only computes the last-pos result —
         // a TTFT win proportional to (S-1) for large S. Decode (S=1) is unchanged.
         // Imported GGUF graphs that do NOT have "lm_logits_last" fall back silently.
-        // Fixed-buffer path (S=prefillSeqLen, padded): the lm_logits_last slice is at
-        // position prefillSeqLen-1 (the last padded position); since the causal mask zeros out
-        // padding contributions this is still the correct last-real-token distribution.
+        // Fixed-buffer-compatible graphs derive lm_logits_last from actual_sequence_length-1,
+        // not from the padded buffer tail, so the optimized projection still samples the final
+        // real token while preserving a stable output shape.
         final String LAST_POS_LOGITS_NAME = "lm_logits_last";
         boolean usePrefillLastPos = config.isEffectivePrefillLastPositionLogitsEnabled()
                 && prefillSeqLen > 1
                 && decoder.hasVariable(LAST_POS_LOGITS_NAME)
                 && decoder.outputs().contains(LAST_POS_LOGITS_NAME);
         // The effective logits output name for prefill: either "lm_logits_last" or the full one.
-        String prefillLogitsRequestName = usePrefillLastPos ? LAST_POS_LOGITS_NAME : logitsName;
+        String effectiveLogitsName = usePrefillLastPos ? LAST_POS_LOGITS_NAME : logitsName;
 
         // Request outputs: logits + per-layer KV outputs + recurrent state outputs
         List<String> prefillOutputNames = new ArrayList<>();
-        prefillOutputNames.add(prefillLogitsRequestName);
+        prefillOutputNames.add(effectiveLogitsName);
         if (useNativeMtp) prefillOutputNames.add(TARGET_HIDDEN_STATES_NAME);
         for (int i = 0; i < numLayers; i++) {
             int layerIdx = extractLayerIndex(kvInputNames.keyNames.get(i));
@@ -1270,9 +1589,9 @@ public class GenerationPipeline implements AutoCloseable {
         // When fixedBuffers is active, the logits tensor has shape [1, prefillSeqLen, vocab]
         // where prefillSeqLen includes padding. The real last token is at actualPrefillLen-1.
         // When usePrefillLastPos=true, the shape is [B, 1, vocab] and the only valid index is 0.
-        INDArray prefillLogits = prefillOutputs.get(prefillLogitsRequestName);
+        INDArray prefillLogits = prefillOutputs.get(effectiveLogitsName);
         if (prefillLogits == null) {
-            throw new RuntimeException("[GGUF-KV] Prefill logits '" + prefillLogitsRequestName
+            throw new RuntimeException("[GGUF-KV] Prefill logits '" + effectiveLogitsName
                     + "' not found in outputs: " + prefillOutputs.keySet());
         }
         // Clamp to the actual logits seq dim (see generateNative): no-op for the padded
@@ -1297,8 +1616,18 @@ public class GenerationPipeline implements AutoCloseable {
             lastPosLogits.close();
         }
         List<Integer> generatedSoFar = new ArrayList<>();
+        ConstraintMasker constraintMasker = null;
+        if (sampling.hasConstraint()) {
+            ConstraintConfig constraintConfig = sampling.getConstraintConfig();
+            constraintMasker = new ConstraintMasker(
+                    constraintConfig.buildConstraint(), constraintConfig.getEvalTopK());
+            log.info("[Constraint] Constrained in-graph KV decoding active: type={} evalTopK={}",
+                    constraintConfig.getType(), constraintConfig.getEvalTopK());
+        }
         suppressStopsUnderFloor(prefillLogits, logitsSamplePos, sampling, generatedSoFar.size(), stopTokenIds);
-        int firstTokenId = sampleToken(prefillLogits, logitsSamplePos, sampling, generatedSoFar, rng);
+        int firstTokenId = sampleToken(
+                prefillLogits, logitsSamplePos, sampling, generatedSoFar, rng,
+                constraintMasker, tokenizer, stopTokenIds);
         generatedSoFar.add(firstTokenId);
         prefillLogits.close();
         // prefillInputIds is retained in prefillInputMap (cached in the InGraphKvState) for the
@@ -1310,7 +1639,7 @@ public class GenerationPipeline implements AutoCloseable {
         log.info("[GGUF-KV] First token: {} (eos={})", firstTokenId, stopTokenIds.contains(firstTokenId));
 
         if (stopTokenIds.contains(firstTokenId)) {
-            closePrefillOutputs(prefillOutputs, prefillLogitsRequestName);
+            closePrefillOutputs(prefillOutputs, effectiveLogitsName);
             // Non-reuse owns prefillInputMap and frees it here; on reuse it is the retained state's own
             // field and is freed by the caller via reuseState.close() (the caller drops the cache).
             if (reuseState == null) {
@@ -1652,12 +1981,10 @@ public class GenerationPipeline implements AutoCloseable {
                 decodeInputMap.put(entry.getKey(), entry.getValue());
             }
         }
-        List<String> decodeOutputNames = new ArrayList<>();
-        decodeOutputNames.add(logitsName);
-        if (useNativeMtp) decodeOutputNames.add(TARGET_HIDDEN_STATES_NAME);
-        for (ModelIOConfig.RecurrentStatePair pair : recurrentStates) {
-            decodeOutputNames.add(pair.outputName);
-        }
+        // Prefill and decode must request the identical ordered output contract. DSP keys its
+        // native plan by this list; dropping K/V outputs or switching logits names here destroys
+        // the prefill plan and reloads the model-sized plan on every phase transition.
+        List<String> decodeOutputNames = new ArrayList<>(prefillOutputNames);
         int kvBufCount = (isQuantizedV2 && quantizedKvBuffers != null) ? quantizedKvBuffers.size()
                 : (staticKvBuffers != null ? staticKvBuffers.size() : 0);
         log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers (V2={}), {} recurrent state buffers, {} inputs",
@@ -1676,12 +2003,22 @@ public class GenerationPipeline implements AutoCloseable {
             throw new IllegalStateException("Bundled MTP graph did not return " + TARGET_HIDDEN_STATES_NAME
                     + " during target warmup");
         }
-        INDArray decodeLogits = decodeOutputs.get(logitsName);
+        INDArray decodeLogits = decodeOutputs.get(effectiveLogitsName);
         suppressStopsUnderFloor(decodeLogits, 0, sampling, generatedSoFar.size(), stopTokenIds);
-        int secondTokenId = sampleToken(decodeLogits, 0, sampling, generatedSoFar, rng);
+        int secondTokenId = sampleToken(
+                decodeLogits, 0, sampling, generatedSoFar, rng,
+                constraintMasker, tokenizer);
         generatedSoFar.add(secondTokenId);
         log.info("[GGUF-KV] STEP 3 second token: {}", secondTokenId);
         decodeLogits.close();
+
+        // The warmup consumed firstTokenId and sampled secondTokenId. The native loop starts at the
+        // following cache position, so its first execution must consume secondTokenId with matching
+        // position/cache scalars. The ONNX path performs this same handoff before entering native
+        // decode; omitting it here replays stale warmup inputs during DSP phase transitions.
+        prepareInGraphNativeDecodeHandoff(
+                decodeInputIds, decodePositionOffset, decodeCachePosition,
+                secondTokenId, firstDecodePos + 1L);
 
         // Reading the sampled token is the existing host-visible completion boundary for warmup. The
         // prefill-copy sources (and any prior two-token run's deferred warmup sources) are now safe to
@@ -1715,8 +2052,16 @@ public class GenerationPipeline implements AutoCloseable {
                 }
             }
         }
+        if (!warmupRecurrentCopyDonors.isEmpty()) {
+            // assign() is queued on the array's backend stream, while the native decode plan
+            // executes on its dedicated DSP stream. Establish a one-time completion boundary
+            // before handing these device-managed recurrent inputs to the native loop; retaining
+            // the donors protects their lifetime but does not order work between the two streams.
+            Nd4j.getExecutioner().commit();
+        }
 
         if (!nativePlanAvailable) {
+            closeGeneratedKvOutputs(decodeOutputs, kvInputNames);
             if (targetPrefillHidden != null && !targetPrefillHidden.wasClosed()) targetPrefillHidden.close();
             if (targetWarmupHidden != null && !targetWarmupHidden.wasClosed()) targetWarmupHidden.close();
             log.warn("Native plan handle not available for GGUF -- returning partial result");
@@ -1769,13 +2114,17 @@ public class GenerationPipeline implements AutoCloseable {
             }
         }
 
+        // Decode requested K/V outputs only to keep the DSP output contract identical to prefill.
+        // The native loop updates the retained KV inputs in-place, so these one-step arrays are not owners.
+        closeGeneratedKvOutputs(decodeOutputs, kvInputNames);
+
         int inputIdsExtIdx = resolveExtInputIdx(executor, inputIdsName);
         int causalMaskExtIdx = causalMaskName != null ? resolveExtInputIdx(executor, causalMaskName) : -1;
         int posOffsetExtIdx = posOffsetName != null ? resolveExtInputIdx(executor, posOffsetName) : -1;
         int cachePosExtIdx = cachePosName != null ? resolveExtInputIdx(executor, cachePosName) : -1;
         int actualSeqLenExtIdx = decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME)
                 ? resolveExtInputIdx(executor, ACTUAL_SEQUENCE_LENGTH_NAME) : -1;
-        int logitsOutputIdx = resolveOutputIdx(executor, logitsName);
+        int logitsOutputIdx = resolveOutputIdx(executor, effectiveLogitsName);
         int targetHiddenOutputIdx = useNativeMtp
                 ? resolveOutputIdx(executor, TARGET_HIDDEN_STATES_NAME) : -1;
 
@@ -1915,6 +2264,7 @@ public class GenerationPipeline implements AutoCloseable {
         state.generatedSoFar = generatedSoFar;   // holds [firstToken, secondToken] at this point
         state.rng = rng;
         state.sampling = sampling;
+        state.constraintMasker = constraintMasker;
         state.stopTokenIds = stopTokenIds;
         state.eosTokenId = eosTokenId;
         state.maxKvLen = maxKvLen;
@@ -1936,7 +2286,7 @@ public class GenerationPipeline implements AutoCloseable {
         }
         // else: rotating disabled — rotatingSlotMap stays null (default); all existing paths unchanged.
         state.inputIdsName = inputIdsName;
-        state.logitsName = logitsName;
+        state.logitsName = effectiveLogitsName;
         state.causalMaskName = causalMaskName;
         state.posOffsetName = posOffsetName;
         state.cachePosName = cachePosName;
@@ -1954,11 +2304,47 @@ public class GenerationPipeline implements AutoCloseable {
     }
 
     /**
+     * Move the Java warmup result into the address-stable arrays consumed by native in-graph decode.
+     * Package-private for the handoff regression test.
+     */
+    static void prepareInGraphNativeDecodeHandoff(
+            INDArray decodeInputIds,
+            INDArray decodePositionOffset,
+            INDArray decodeCachePosition,
+            int nextInputTokenId,
+            long nextCachePosition) {
+        decodeInputIds.putScalar(new long[]{0, 0}, nextInputTokenId);
+        if (decodePositionOffset != null) {
+            decodePositionOffset.putScalar(new long[]{}, nextCachePosition);
+        }
+        if (decodeCachePosition != null) {
+            decodeCachePosition.putScalar(new long[]{}, nextCachePosition);
+        }
+
+        // Preserve the stable array identities used by the frozen plan while making the Java writes
+        // visible before the native loop switches to its dedicated DSP stream.
+        Nd4j.getExecutioner().commit();
+        decodeInputIds.syncToDevice();
+        if (decodePositionOffset != null) decodePositionOffset.syncToDevice();
+        if (decodeCachePosition != null) decodeCachePosition.syncToDevice();
+    }
+
+    /**
      * Tokenize a prompt using the tokenizer-owned chat-template handling.
      * Shared by generation, streaming, and continuation sessions.
      */
     private int[] encodePromptToIds(String prompt) {
-        int[] promptTokenIds = tokenizer.encodePrompt(prompt, config.getChatTemplate()).getIds();
+        int[] promptTokenIds = tokenizer.encodePrompt(prompt, effectiveChatTemplateText()).getIds();
+        return requirePromptTokenIds(promptTokenIds);
+    }
+
+    private int[] encodeFormattedChatToIds(String formattedPrompt) {
+        int[] promptTokenIds = tokenizer.ensureLeadingBos(
+                tokenizer.encode(formattedPrompt, false)).getIds();
+        return requirePromptTokenIds(promptTokenIds);
+    }
+
+    private static int[] requirePromptTokenIds(int[] promptTokenIds) {
         if (promptTokenIds == null || promptTokenIds.length == 0) {
             throw new IllegalArgumentException("Prompt encoding produced no tokens");
         }
@@ -2160,9 +2546,9 @@ public class GenerationPipeline implements AutoCloseable {
             if (maxNewTokens < 1) maxNewTokens = 1;
         }
         int numLayers = kvInputNames.keyNames.size();
-        int eosTokenId = tokenizer.getEosTokenId();
-        Set<Integer> stopTokenIds = buildStopTokenIds();
         SamplingConfig sampling = activeDecodeSampling();
+        int eosTokenId = resolveEosTokenId(sampling);
+        Set<Integer> stopTokenIds = buildStopTokenIds(eosTokenId);
         DecodePolicy decodePolicy = activeDecodePolicy();
         requireNativeSubstrateAvailable(decodePolicy, sampling);
         java.util.Random rng = sampling.getSeed() != null
@@ -2766,8 +3152,26 @@ public class GenerationPipeline implements AutoCloseable {
         // captured decode plan replays (no per-generate re-warm). The reuse path keeps the plan, refills
         // the retained (stable-address) buffers in place, and skips the re-freeze. Fresh path otherwise.
         boolean fixedBuffers = config.getMaxPrefillLength() > 0;
-        InGraphKvState reuse = (fixedBuffers && cachedFixedBufferState != null && !cachedFixedBufferState.closed)
-                ? cachedFixedBufferState : null;
+        InGraphKvState reuse = null;
+        if (fixedBuffers && cachedFixedBufferState != null) {
+            InGraphKvState candidate = cachedFixedBufferState;
+            long requestedMaxKvLen = (long) config.getMaxPrefillLength() + maxNewTokens;
+            int configuredKvCap = config.getMaxKvCacheLength();
+            if (configuredKvCap > 0 && requestedMaxKvLen > configuredKvCap) {
+                requestedMaxKvLen = configuredKvCap;
+            }
+            if (!candidate.closed && candidate.maxKvLen == requestedMaxKvLen) {
+                reuse = candidate;
+            } else {
+                // maxNewTokens participates in the frozen causal-mask/KV shapes. Reusing a
+                // different-capacity state makes the in-place prefill assignment shape-invalid.
+                cachedFixedBufferState = null;
+                candidate.close();
+                log.info("[Lifecycle] Discarded incompatible cached fixed-buffer state "
+                                + "(cachedMaxKvLen={}, requestedMaxKvLen={})",
+                        candidate.maxKvLen, requestedMaxKvLen);
+            }
+        }
         InGraphKvState state = prefillWarmupAndFreeze(promptTokenIds, maxNewTokens, kvInputNames, startTime, reuse);
         if (state.terminalResult != null) {
             // Terminal (early-EOS / no plan handle): the reused state is spent — close it and drop the
@@ -2899,6 +3303,11 @@ public class GenerationPipeline implements AutoCloseable {
         }
         for (INDArray rsBuf : state.recurrentStateBuffers.values()) rsBuf.syncToDevice();
 
+        if (state.constraintMasker != null) {
+            return runInGraphConstrainedDecode(
+                    state, remainingTokens, isContinuation, startTime);
+        }
+
         int firstTokenId = !state.generatedSoFar.isEmpty() ? state.generatedSoFar.get(0) : state.lastGeneratedToken;
         int secondTokenId = state.generatedSoFar.size() > 1 ? state.generatedSoFar.get(1) : state.lastGeneratedToken;
 
@@ -3012,12 +3421,13 @@ public class GenerationPipeline implements AutoCloseable {
                         totalAccepted += nativeTimingInfo.getInt(8);
                         speculativeSteps += nativeTimingInfo.getInt(9);
                     }
+                    int tok = stepCount > 0 ? (int) nativeTokenIds.getLong(0) : 0;
 
+                    closeOutputs(results);
                     dummyEmbeddings.close();
                     dummyEmbTable.close();
 
                     if (stepCount <= 0) break;
-                    int tok = (int) nativeTokenIds.getLong(0);
                     nativeTokens.add(tok);
                     nativeCount++;
                     state.cachePosition++;
@@ -3137,6 +3547,7 @@ public class GenerationPipeline implements AutoCloseable {
                     speculativeSteps = nativeTimingInfo.getInt(9);
                 }
 
+                closeOutputs(results);
                 dummyEmbeddings.close();
                 dummyEmbTable.close();
             }
@@ -3170,7 +3581,7 @@ public class GenerationPipeline implements AutoCloseable {
         boolean hitEos = tokenIds.length > 0 && state.stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
         state.eosReached = state.eosReached || hitEos;
 
-        String text = tokenizer.decode(tokenIds, false);
+        String text = decodeGeneratedText(tokenIds, state.stopTokenIds);
         long timeMs = System.currentTimeMillis() - startTime;
         log.info("[GGUF-KV] decode complete (continuation={}): nativeCount={} callTokens={} cachePosition={} eos={}",
                 isContinuation, nativeCount, callTokens.size(), state.cachePosition, hitEos);
@@ -3191,6 +3602,216 @@ public class GenerationPipeline implements AutoCloseable {
                 .averageAcceptanceRate(totalSpeculative > 0 ? (double) totalAccepted / totalSpeculative : 0.0)
                 .effectiveTokensPerSecond(timeMs > 0 ? (tokenIds.length * 1000.0 / timeMs) : 0.0)
                 .sessionId(state.sessionId)   // 0 for one-shot state; the real id for any session call
+                .build();
+    }
+
+    /**
+     * Decode an in-graph KV state with token-level structural masking.
+     *
+     * <p>The native autoregressive loop cannot invoke the Java constraint automaton between
+     * tokens, so constrained requests execute the already-frozen decode graph one token at a
+     * time through {@link SameDiff#outputDirect(Map, String...)}. This is still the configured
+     * DSP plan and the same retained KV/recurrent buffers; only token selection stays in Java
+     * so invalid tool names or envelopes are never sampled.</p>
+     */
+    private GenerationResult runInGraphConstrainedDecode(
+            InGraphKvState state,
+            int remainingTokens,
+            boolean isContinuation,
+            long startTime) {
+        if (state.decodeInputIds.size(1) != 1) {
+            throw new IllegalStateException(
+                    "Constrained in-graph decoding requires the scalar decode substrate; got width="
+                            + state.decodeInputIds.size(1));
+        }
+
+        List<Integer> callGenerated = new ArrayList<>();
+        Map<String, INDArray> liveKv =
+                state.isQuantizedV2 ? state.quantizedKvBuffers : state.staticKvBuffers;
+        int steps = Math.max(0, remainingTokens);
+
+        log.info("[Constraint] Entering constrained in-graph KV decode loop: remainingTokens={}",
+                steps);
+        for (int step = 0; step < steps; step++) {
+            if (state.stopTokenIds.contains(state.lastGeneratedToken)
+                    || state.cachePosition >= state.maxKvLen) {
+                break;
+            }
+
+            state.decodeInputIds.assign(0);
+            state.decodeInputIds.putScalar(
+                    new long[]{0, 0}, state.lastGeneratedToken);
+
+            if (state.decodeCausalMask != null) {
+                INDArray freshMask;
+                if (state.rotatingSlotMap != null) {
+                    float maskValue =
+                            state.maskDtype == DataType.HALF
+                                    || state.maskDtype == DataType.FLOAT16
+                                    ? -65504.0f : -1e9f;
+                    float[] maskData = state.rotatingSlotMap.buildRotatingDecodeMask(
+                            state.cachePosition, maskValue);
+                    freshMask = Nd4j.create(
+                            maskData, new long[]{1, 1, 1, state.maxKvLen}, 'c');
+                    if (state.maskDtype != DataType.FLOAT) {
+                        INDArray cast = freshMask.castTo(state.maskDtype);
+                        freshMask.close();
+                        freshMask = cast;
+                    }
+                } else {
+                    freshMask = DecoderInputBuilder.buildInGraphDecodeMask(
+                            state.cachePosition - 1, state.maxKvLen, state.maskDtype);
+                }
+                state.decodeCausalMask.assign(freshMask);
+                freshMask.close();
+            }
+            if (state.decodePositionOffset != null) {
+                state.decodePositionOffset.putScalar(
+                        new long[]{}, (long) state.cachePosition);
+            }
+            if (state.decodeCachePosition != null) {
+                long physicalSlot = state.rotatingSlotMap != null
+                        ? state.rotatingSlotMap.physicalSlot(state.cachePosition)
+                        : state.cachePosition;
+                state.decodeCachePosition.putScalar(new long[]{}, physicalSlot);
+            }
+            if (state.decodeActualSequenceLength != null) {
+                state.decodeActualSequenceLength.putScalar(new long[]{}, 1L);
+            }
+
+            Nd4j.getExecutioner().commit();
+            state.decodeInputIds.syncToDevice();
+            if (state.decodeCausalMask != null) {
+                state.decodeCausalMask.syncToDevice();
+            }
+            if (state.decodePositionOffset != null) {
+                state.decodePositionOffset.syncToDevice();
+            }
+            if (state.decodeCachePosition != null) {
+                state.decodeCachePosition.syncToDevice();
+            }
+            if (state.decodeActualSequenceLength != null) {
+                state.decodeActualSequenceLength.syncToDevice();
+            }
+            if (liveKv != null) {
+                for (INDArray kvBuffer : liveKv.values()) {
+                    if (kvBuffer != null && !kvBuffer.wasClosed()) {
+                        kvBuffer.syncToDevice();
+                    }
+                }
+            }
+            for (INDArray recurrentBuffer : state.recurrentStateBuffers.values()) {
+                recurrentBuffer.syncToDevice();
+            }
+
+            Map<String, INDArray> decodeInputs = new HashMap<>();
+            decodeInputs.put(state.inputIdsName, state.decodeInputIds);
+            if (state.causalMaskName != null && state.decodeCausalMask != null) {
+                decodeInputs.put(state.causalMaskName, state.decodeCausalMask);
+            }
+            if (state.posOffsetName != null && state.decodePositionOffset != null) {
+                decodeInputs.put(state.posOffsetName, state.decodePositionOffset);
+            }
+            if (state.cachePosName != null && state.decodeCachePosition != null) {
+                decodeInputs.put(state.cachePosName, state.decodeCachePosition);
+            }
+            if (state.actualSeqLenName != null
+                    && state.decodeActualSequenceLength != null) {
+                decodeInputs.put(
+                        state.actualSeqLenName, state.decodeActualSequenceLength);
+            }
+            if (liveKv != null) {
+                for (Map.Entry<String, INDArray> entry : liveKv.entrySet()) {
+                    if (decoder.hasVariable(entry.getKey())) {
+                        decodeInputs.put(entry.getKey(), entry.getValue());
+                    }
+                }
+            }
+            for (Map.Entry<String, INDArray> entry
+                    : state.recurrentStateBuffers.entrySet()) {
+                if (decoder.hasVariable(entry.getKey())) {
+                    decodeInputs.put(entry.getKey(), entry.getValue());
+                }
+            }
+
+            Map<String, INDArray> outputs = decoder.outputDirect(
+                    decodeInputs, state.decodeOutputNames.toArray(new String[0]));
+            INDArray logits = outputs.get(state.logitsName);
+            if (logits == null) {
+                throw new IllegalStateException(
+                        "Constrained decode did not return logits '" + state.logitsName
+                                + "': " + outputs.keySet());
+            }
+            suppressStopsUnderFloor(
+                    logits, 0, state.sampling, state.generatedSoFar.size(),
+                    state.stopTokenIds);
+            int nextToken = sampleToken(
+                    logits, 0, state.sampling, state.generatedSoFar, state.rng,
+                    state.constraintMasker, tokenizer, state.stopTokenIds);
+            logits.close();
+
+            boolean copiedRecurrentState = false;
+            for (ModelIOConfig.RecurrentStatePair pair : state.recurrentStates) {
+                INDArray updated = outputs.get(pair.outputName);
+                INDArray retained = state.recurrentStateBuffers.get(pair.inputName);
+                if (updated != null && retained != null) {
+                    retained.assign(updated);
+                    copiedRecurrentState = true;
+                }
+            }
+            if (copiedRecurrentState) {
+                Nd4j.getExecutioner().commit();
+            }
+            closeGeneratedKvOutputs(outputs, state.kvInputNames);
+            for (INDArray output : outputs.values()) {
+                if (output != null && !output.wasClosed()) {
+                    output.close();
+                }
+            }
+
+            state.releaseRecurrentCopyDonors();
+            state.cachePosition++;
+            state.lastGeneratedToken = nextToken;
+            state.generatedSoFar.add(nextToken);
+            callGenerated.add(nextToken);
+
+            if (state.stopTokenIds.contains(nextToken)) {
+                break;
+            }
+        }
+
+        List<Integer> callTokens = isContinuation
+                ? callGenerated
+                : new ArrayList<>(state.generatedSoFar);
+        int[] tokenIds = callTokens.stream().mapToInt(Integer::intValue).toArray();
+        boolean hitEos = tokenIds.length > 0
+                && state.stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
+        state.eosReached = state.eosReached || hitEos;
+
+        String text = decodeGeneratedText(tokenIds, state.stopTokenIds);
+        long timeMs = System.currentTimeMillis() - startTime;
+        log.info("[Constraint] Constrained in-graph KV decode complete: "
+                        + "callTokens={} cachePosition={} eos={} emittedText={}",
+                callTokens.size(), state.cachePosition, hitEos,
+                state.constraintMasker.getEmittedText());
+
+        return GenerationResult.builder()
+                .text(text)
+                .tokenIds(tokenIds)
+                .generatedTokenCount(tokenIds.length)
+                .promptTokenCount(state.promptTokenCount)
+                .totalTokenCount(state.promptTokenCount + state.generatedSoFar.size())
+                .finishReason(hitEos
+                        ? GenerationResult.FinishReason.EOS
+                        : GenerationResult.FinishReason.MAX_TOKENS)
+                .generationTimeMs(timeMs)
+                .tokensPerSecond(
+                        timeMs > 0 ? tokenIds.length * 1000.0 / timeMs : 0.0)
+                .steadyStateTokensPerSecond(0.0)
+                .lateSteadyStateTokensPerSecond(0.0)
+                .effectiveTokensPerSecond(
+                        timeMs > 0 ? tokenIds.length * 1000.0 / timeMs : 0.0)
+                .sessionId(state.sessionId)
                 .build();
     }
 
@@ -3251,21 +3872,38 @@ public class GenerationPipeline implements AutoCloseable {
             if (activeSession.get() != null) {
                 throw new IllegalStateException("A GenerationSession is already active on this pipeline; close it first.");
             }
-            // A session takes over the decoder's executor + frozen plan; drop any cached one-shot
-            // fixed-buffer state so it cannot alias the session's plan/buffers.
-            if (cachedFixedBufferState != null) {
-                cachedFixedBufferState.close();
-                cachedFixedBufferState = null;
-            }
-
             int[] promptTokenIds = encodePromptToIds(prompt);
             int resolvedCapacity = resolveSessionCapacity(capacity, promptTokenIds.length);
             long startTime = System.currentTimeMillis();
             ModelIOConfig.KVCacheNames kvInputNames = ModelIOConfig.findKVCacheInputNames(decoder);
 
+            // Transfer a compatible fixed-buffer state from the pipeline cache into this session.
+            // Capacity participates in the native plan shape, so a mismatch requires a full teardown;
+            // identical capacities reuse the plan, CUDA graph, KV/recurrent buffers, and input addresses.
+            boolean fixedBuffers = config.getMaxPrefillLength() > 0;
+            InGraphKvState reuseState = null;
+            if (cachedFixedBufferState != null) {
+                InGraphKvState candidate = cachedFixedBufferState;
+                cachedFixedBufferState = null;
+                long requestedMaxKvLen = (long) config.getMaxPrefillLength() + resolvedCapacity;
+                int configuredKvCap = config.getMaxKvCacheLength();
+                if (configuredKvCap > 0 && requestedMaxKvLen > configuredKvCap) {
+                    requestedMaxKvLen = configuredKvCap;
+                }
+                if (fixedBuffers && !candidate.closed && candidate.maxKvLen == requestedMaxKvLen) {
+                    reuseState = candidate;
+                    log.info("[GenerationSession] reusing fixed-buffer DSP state (maxKvLen={})",
+                            requestedMaxKvLen);
+                } else {
+                    candidate.close();
+                }
+            }
+
             // ── Prefix cache lookup for session start ──────────────────────────────────────────
+            // A retained fixed-buffer state is the stronger cache: it preserves captured addresses
+            // and refills the complete prompt in place, so do not replace it with a suffix plan.
             InGraphKvState state = null;
-            if (prefixBlockPool != null) {
+            if (prefixBlockPool != null && reuseState == null) {
                 List<ModelIOConfig.RecurrentStatePair> recurrentStates =
                         ModelIOConfig.findRecurrentStatePairs(decoder, ioConfig);
                 long roughMaxKvLen = (long) promptTokenIds.length + resolvedCapacity;
@@ -3278,7 +3916,11 @@ public class GenerationPipeline implements AutoCloseable {
                 }
             }
             if (state == null) {
-                state = prefillWarmupAndFreeze(promptTokenIds, resolvedCapacity, kvInputNames, startTime, null);
+                state = prefillWarmupAndFreeze(
+                        promptTokenIds, resolvedCapacity, kvInputNames, startTime, reuseState);
+                if (state.terminalResult != null && reuseState != null && state != reuseState) {
+                    reuseState.close();
+                }
                 // Store completed prefill in prefix cache for future reuse
                 if (prefixBlockPool != null && state.staticKvBuffers != null && state.terminalResult == null) {
                     List<ModelIOConfig.RecurrentStatePair> recurrentStates =
@@ -3467,6 +4109,7 @@ public class GenerationPipeline implements AutoCloseable {
                         updated.close();
                     }
                 }
+                closeGeneratedKvOutputs(outputs, state.kvInputNames);
                 state.cachePosition += 1;
             }
             for (int t : tokens) state.generatedSoFar.add(t);
@@ -3478,12 +4121,26 @@ public class GenerationPipeline implements AutoCloseable {
         }
     }
 
-    /** Device-guarded teardown of a session's retained buffers. */
+    /**
+     * End a logical session. Fixed-buffer state is returned to the pipeline cache instead of being
+     * destroyed, because the frozen DSP plan captures its device addresses. Variable-shape and
+     * terminal states are released immediately.
+     */
     void closeSession(GenerationSession session, InGraphKvState state) {
         clearActiveSession(session);
         int restoreDevice = switchToDecoderDevice("session-close");
         try {
-            state.close();
+            if (config.getMaxPrefillLength() > 0
+                    && !state.closed
+                    && state.terminalResult == null) {
+                InGraphKvState previous = cachedFixedBufferState;
+                cachedFixedBufferState = state;
+                if (previous != null && previous != state) previous.close();
+                log.info("[GenerationSession] returned fixed-buffer DSP state to pipeline cache (maxKvLen={})",
+                        state.maxKvLen);
+            } else {
+                state.close();
+            }
         } finally {
             restoreDevice(restoreDevice, "session-close");
         }
@@ -3502,35 +4159,45 @@ public class GenerationPipeline implements AutoCloseable {
      * {@link #generate(int)} runs the initial decode (prefill + warmup happened at start); subsequent
      * {@link #generate(int)} / {@link #continueGeneration(int)} continue from the retained cache. See the
      * continuation contract and threading notes on {@code startSession}. Always {@link #close()} the
-     * session (try-with-resources) to release native buffers.</p>
+     * session (try-with-resources) to release or return its native buffers to the fixed-buffer pool.</p>
      */
     public static final class GenerationSession implements AutoCloseable {
         private final GenerationPipeline pipeline;
         private final InGraphKvState state;
+        private final long sessionId;
         private boolean firstGenerateDone;
+        private boolean closed;
 
         GenerationSession(GenerationPipeline pipeline, InGraphKvState state, long createTime) {
             this.pipeline = pipeline;
             this.state = state;
+            this.sessionId = state.sessionId;
         }
 
         /** Opaque id used by {@link GenerationPipeline#continueFrom(GenerationResult, int)}. */
-        public long getSessionId() { return state.sessionId; }
+        public long getSessionId() { return sessionId; }
         /** True once a real EOS / stop token has been produced — continuation is then refused. */
-        public boolean isEosReached() { return state.eosReached; }
+        public boolean isEosReached() { requireOpen(); return state.eosReached; }
         /** Absolute position of the next-fed token in the KV buffer. */
-        public int getCachePosition() { return state.cachePosition; }
+        public int getCachePosition() { requireOpen(); return state.cachePosition; }
         /** New-token capacity remaining before the KV buffer is full. */
-        public int getRemainingCapacity() { return Math.max(0, state.remainingCapacity()); }
+        public int getRemainingCapacity() { requireOpen(); return Math.max(0, state.remainingCapacity()); }
         /** All tokens generated so far across every call in this session (prompt excluded). */
         public int[] getAllTokens() {
+            requireOpen();
             return state.generatedSoFar == null ? new int[0]
                     : state.generatedSoFar.stream().mapToInt(Integer::intValue).toArray();
         }
         /** The clean cumulative text of the whole session (decoded from all tokens at once). */
         public String getFullText() { return pipeline.tokenizer.decode(getAllTokens(), false); }
         /** Cooperatively stop a running {@link #continueToCompletion(int)} loop at the next boundary. */
-        public void cancel() { state.cancelRequested = true; }
+        public void cancel() { requireOpen(); state.cancelRequested = true; }
+
+        private void requireOpen() {
+            if (closed || state.closed) {
+                throw new IllegalStateException("GenerationSession is closed.");
+            }
+        }
 
         private void checkThread() {
             if (Thread.currentThread().getId() != state.ownerThreadId) {
@@ -3547,7 +4214,7 @@ public class GenerationPipeline implements AutoCloseable {
          */
         public GenerationResult generate(int maxNewTokens) {
             checkThread();
-            if (state.closed) throw new IllegalStateException("GenerationSession is closed.");
+            requireOpen();
             if (!firstGenerateDone) {
                 firstGenerateDone = true;
                 if (state.terminalResult != null) {
@@ -3566,7 +4233,7 @@ public class GenerationPipeline implements AutoCloseable {
          */
         public GenerationResult continueGeneration(int maxNewTokens) {
             checkThread();
-            if (state.closed) throw new IllegalStateException("GenerationSession is closed.");
+            requireOpen();
             if (!firstGenerateDone) {
                 throw new IllegalStateException("Call generate() first to run the initial decode.");
             }
@@ -3588,7 +4255,7 @@ public class GenerationPipeline implements AutoCloseable {
         /** As {@link #continueToCompletion(int)} but with an explicit degenerate-loop guard. */
         public GenerationResult continueToCompletion(int stepTokens, RepetitionGuard guard) {
             checkThread();
-            if (state.closed) throw new IllegalStateException("GenerationSession is closed.");
+            requireOpen();
             if (stepTokens <= 0) stepTokens = 1;
             List<Integer> loopTokens = new ArrayList<>();
             long start = System.currentTimeMillis();
@@ -3612,7 +4279,7 @@ public class GenerationPipeline implements AutoCloseable {
             int[] ids = loopTokens.stream().mapToInt(Integer::intValue).toArray();
             long timeMs = System.currentTimeMillis() - start;
             return GenerationResult.builder()
-                    .text(pipeline.tokenizer.decode(ids, false))
+                    .text(pipeline.decodeGeneratedText(ids, state.stopTokenIds))
                     .tokenIds(ids).generatedTokenCount(ids.length)
                     .promptTokenCount(state.promptTokenCount)
                     .totalTokenCount(state.promptTokenCount + state.generatedSoFar.size())
@@ -3630,7 +4297,7 @@ public class GenerationPipeline implements AutoCloseable {
          */
         public void append(int[] tokens) {
             checkThread();
-            if (state.closed) throw new IllegalStateException("GenerationSession is closed.");
+            requireOpen();
             if (!firstGenerateDone) throw new IllegalStateException("Call generate() before append().");
             if (state.eosReached) throw new IllegalStateException("Session reached EOS; cannot append.");
             pipeline.appendInSession(state, tokens);
@@ -3641,6 +4308,7 @@ public class GenerationPipeline implements AutoCloseable {
          * Returns 0 if no buffers have been allocated yet.
          */
         public long getStaticKvTotalBytes() {
+            requireOpen();
             if (state.staticKvBuffers == null) return 0L;
             long total = 0L;
             for (INDArray a : state.staticKvBuffers.values()) {
@@ -3654,6 +4322,7 @@ public class GenerationPipeline implements AutoCloseable {
          * Returns 0 when {@code kvCacheStrategy != QUANTIZED} or before prefill completes.
          */
         public long getQuantizedKvTotalBytes() {
+            requireOpen();
             if (state.quantizedKvBuffers == null) return 0L;
             long total = 0L;
             for (INDArray a : state.quantizedKvBuffers.values()) {
@@ -3666,6 +4335,7 @@ public class GenerationPipeline implements AutoCloseable {
          * The KV quantization format active for this session (0 = not quantized, 1 = INT8, etc.).
          */
         public int getKvQuantFormat() {
+            requireOpen();
             return state.kvQuantFormat;
         }
 
@@ -3677,6 +4347,7 @@ public class GenerationPipeline implements AutoCloseable {
          * is measurably smaller than an equivalent STATIC session.
          */
         public boolean isQuantizedV2() {
+            requireOpen();
             return state.isQuantizedV2;
         }
 
@@ -3685,6 +4356,7 @@ public class GenerationPipeline implements AutoCloseable {
          * Returns 0 when not in V2 mode.
          */
         public long getKvScaleTotalBytes() {
+            requireOpen();
             if (state.kvScaleBuffers == null) return 0L;
             long total = 0L;
             for (INDArray a : state.kvScaleBuffers.values()) {
@@ -3693,10 +4365,16 @@ public class GenerationPipeline implements AutoCloseable {
             return total;
         }
 
-        /** Release all retained native buffers. Idempotent. Must be called on the creating thread. */
+        /**
+         * End this logical session. Idempotent and thread-confined. In fixed-buffer mode ownership of
+         * the retained native buffers transfers back to the pipeline for the next compatible request;
+         * the state is physically released when replaced or when the pipeline closes.
+         */
         @Override
         public void close() {
+            if (closed) return;
             checkThread();
+            closed = true;
             pipeline.closeSession(this, state);
         }
     }
@@ -3830,15 +4508,53 @@ public class GenerationPipeline implements AutoCloseable {
     }
 
     /**
-     * Resolve and validate the EOS token ID from the tokenizer, building the stop token set.
+     * Select the request-level EOS token when one is configured; otherwise use
+     * the tokenizer metadata. Package-private for lightweight precedence tests.
      */
-    private Set<Integer> buildStopTokenIds() {
-        int eosTokenId = tokenizer.getEosTokenId();
-        log.info("[Generation] Resolved eosTokenId={} from tokenizer", eosTokenId);
+    static int selectEosTokenId(SamplingConfig sampling, int tokenizerEosTokenId) {
+        return selectEosTokenId(sampling, -1, tokenizerEosTokenId);
+    }
+
+    /**
+     * EOS precedence is request override, imported model metadata, then tokenizer metadata.
+     * The importer value is distinct because a source container can carry protocol metadata
+     * that is not present in a separately supplied tokenizer.json.
+     */
+    static int selectEosTokenId(
+            SamplingConfig sampling,
+            int importedEosTokenId,
+            int tokenizerEosTokenId) {
+        if (sampling != null && sampling.getEosTokenId() >= 0) {
+            return sampling.getEosTokenId();
+        }
+        return importedEosTokenId >= 0 ? importedEosTokenId : tokenizerEosTokenId;
+    }
+
+    private int resolveEosTokenId(SamplingConfig sampling) {
+        int tokenizerEosTokenId = tokenizer.getEosTokenId();
+        int importedEosTokenId = modelMetadata.getEosTokenId();
+        int eosTokenId = selectEosTokenId(
+                sampling, importedEosTokenId, tokenizerEosTokenId);
+        if (sampling != null && sampling.getEosTokenId() >= 0) {
+            log.info("[Generation] Resolved eosTokenId={} from active sampling config", eosTokenId);
+        } else if (importedEosTokenId >= 0) {
+            log.info("[Generation] Resolved eosTokenId={} from imported model metadata", eosTokenId);
+        } else {
+            log.info("[Generation] Resolved eosTokenId={} from tokenizer", eosTokenId);
+        }
+        return eosTokenId;
+    }
+
+    /**
+     * Build the stop-token set from the already-resolved EOS token and configured
+     * additional stop tokens.
+     */
+    private Set<Integer> buildStopTokenIds(int eosTokenId) {
         Set<Integer> stopTokenIds = new HashSet<>();
         if (eosTokenId >= 0) {
             stopTokenIds.add(eosTokenId);
         }
+        stopTokenIds.addAll(modelMetadata.getStopTokenIds());
         if (config.getAdditionalStopTokenIds() != null) {
             stopTokenIds.addAll(config.getAdditionalStopTokenIds());
         }
@@ -3852,8 +4568,10 @@ public class GenerationPipeline implements AutoCloseable {
      * so they don't corrupt attention scores.
      *
      * <p>Shape: [1, 1, prefillSeqLen, maxKvLen] — same as the un-padded mask
-     * from {@link DecoderInputBuilder#buildInGraphCausalMask}, but positions
-     * actualPrefillLen..prefillSeqLen-1 have ALL-MASK rows.</p>
+     * from {@link DecoderInputBuilder#buildInGraphCausalMask}. Padding queries retain key 0 as a
+     * numerically safe attention target; fully masked rows become all {@code -Infinity} after an
+     * FP32 mask is cast inside FP16 attention, and softmax over such a row is undefined. Real query
+     * rows still mask every future and padding key, so padding cannot affect real-token outputs.</p>
      *
      * @param actualLen  real token count (un-padded)
      * @param paddedLen  padded prefill length (= maxPrefillLength)
@@ -3861,8 +4579,8 @@ public class GenerationPipeline implements AutoCloseable {
      * @param dtype      mask data type (FLOAT or HALF)
      * @return attention bias [1, 1, paddedLen, maxKvLen]
      */
-    private static INDArray buildPaddedPrefillCausalMask(int actualLen, int paddedLen,
-                                                          long maxKvLen, DataType dtype) {
+    static INDArray buildPaddedPrefillCausalMask(int actualLen, int paddedLen,
+                                                  long maxKvLen, DataType dtype) {
         int Q = paddedLen;
         int K = (int) maxKvLen;
         float maskVal = (dtype == DataType.HALF || dtype == DataType.FLOAT16) ? -65504.0f : -1e9f;
@@ -3876,8 +4594,10 @@ public class GenerationPipeline implements AutoCloseable {
                     data[rowOffset + k] = maskVal;
                 }
             } else {
-                // Padding row: fully masked so padding tokens produce zero-contribution logits
-                for (int k = 0; k < K; k++) {
+                // Padding outputs are discarded, but their softmax must remain numerically defined.
+                // Leave key 0 unmasked and mask every other key. Real rows above still mask all
+                // padding keys, so this cannot feed padding content back into a real-token output.
+                for (int k = 1; k < K; k++) {
                     data[rowOffset + k] = maskVal;
                 }
             }
@@ -4261,6 +4981,29 @@ public class GenerationPipeline implements AutoCloseable {
     }
 
     /**
+     * Close the per-step GGUF K/V outputs requested solely to keep prefill and decode on one DSP plan.
+     * Retained cache ownership belongs to the past_key_values input buffers, not these output arrays.
+     */
+    private static void closeGeneratedKvOutputs(
+            Map<String, INDArray> outputs, ModelIOConfig.KVCacheNames kvInputNames) {
+        if (outputs == null || kvInputNames == null) return;
+        for (String keyInputName : kvInputNames.keyNames) {
+            int layerIdx = extractLayerIndex(keyInputName);
+            closeOutput(outputs.get("k_rope_" + layerIdx));
+            closeOutput(outputs.get("v_heads_" + layerIdx));
+        }
+    }
+
+    private static void closeOutput(INDArray array) {
+        if (array != null && !array.wasClosed()) array.close();
+    }
+
+    private static void closeOutputs(INDArray[] arrays) {
+        if (arrays == null) return;
+        for (INDArray array : arrays) closeOutput(array);
+    }
+
+    /**
      * Sample a token from logits at a specific sequence position using the full sampling pipeline.
      *
      * <p>When {@code sampling.isGreedy()}, performs argmax. Otherwise applies:
@@ -4277,7 +5020,7 @@ public class GenerationPipeline implements AutoCloseable {
      * @param rng            random number generator (ignored for greedy)
      * @return sampled token ID
      */
-    private static int sampleToken(INDArray logits, long seqPos, SamplingConfig sampling,
+    private int sampleToken(INDArray logits, long seqPos, SamplingConfig sampling,
                                    List<Integer> generatedSoFar, Random rng) {
         return sampleToken(logits, seqPos, sampling, generatedSoFar, rng, null, null);
     }
@@ -4304,29 +5047,54 @@ public class GenerationPipeline implements AutoCloseable {
      * @param tokenizer      tokenizer, used to decode token pieces for the masker; may be null when masker is null
      * @return sampled token ID
      */
-    private static int sampleToken(INDArray logits, long seqPos, SamplingConfig sampling,
+    private int sampleToken(INDArray logits, long seqPos, SamplingConfig sampling,
                                    List<Integer> generatedSoFar, Random rng,
                                    ConstraintMasker masker, Tokenizer tokenizer) {
+        return sampleToken(
+                logits, seqPos, sampling, generatedSoFar, rng, masker, tokenizer, null);
+    }
+
+    private int sampleToken(INDArray logits, long seqPos, SamplingConfig sampling,
+                                   List<Integer> generatedSoFar, Random rng,
+                                   ConstraintMasker masker, Tokenizer tokenizer,
+                                   Set<Integer> stopTokenIds) {
         INDArray slice = logits.get(
                 NDArrayIndex.point(0),
                 NDArrayIndex.point(seqPos),
                 NDArrayIndex.all()).dup();
 
+        int eosId = sampling.getEosTokenId();
+        Set<Integer> effectiveStopTokenIds = stopTokenIds != null
+                ? stopTokenIds
+                : (eosId >= 0 ? Collections.singleton(eosId) : Collections.emptySet());
+
         // Apply constraint masking before all other sampling transforms.
         if (masker != null && tokenizer != null) {
             float[] rawLogits = slice.toFloatVector();
-            int eosId = sampling.getEosTokenId();
-            float[] masked = masker.maskLogits(rawLogits, eosId, id -> tokenizer.getToken(id));
+            float[] masked = masker.maskLogits(
+                    rawLogits, effectiveStopTokenIds, specialTokenIds,
+                    id -> constraintTokenPiece(tokenizer, id));
             INDArray maskedSlice = Nd4j.create(masked, new long[]{masked.length}, slice.dataType());
             slice.close();
             slice = maskedSlice;
         }
 
         if (sampling.isGreedy()) {
-            int token = SamplerUtils.argmax(slice);
-            slice.close();
-            if (masker != null && tokenizer != null) masker.tokenEmitted(token, id -> tokenizer.getToken(id));
-            return token;
+            while (true) {
+                int token = SamplerUtils.argmax(slice);
+                double selectedLogit = slice.getDouble(token);
+                if (!Double.isFinite(selectedLogit)) {
+                    slice.close();
+                    throw new IllegalStateException(
+                            "Constraint rejected every candidate token after exact sequence decode");
+                }
+                if (acceptConstraintCandidate(
+                        token, generatedSoFar, masker, tokenizer, effectiveStopTokenIds)) {
+                    slice.close();
+                    return token;
+                }
+                slice.putScalar(token, Double.NEGATIVE_INFINITY);
+            }
         }
 
         // Apply seen-token penalties
@@ -4382,13 +5150,84 @@ public class GenerationPipeline implements AutoCloseable {
             slice = filtered;
         }
 
-        // Convert to probabilities and sample
-        INDArray probs = SamplerUtils.softmax(slice);
-        int token = SamplerUtils.multinomialSample(probs, rng);
-        probs.close();
-        slice.close();
-        if (masker != null && tokenizer != null) masker.tokenEmitted(token, id -> tokenizer.getToken(id));
-        return token;
+        // Convert to probabilities and sample. If exact full-sequence decoding rejects the
+        // sampled candidate, remove it and resample from the renormalized distribution.
+        while (true) {
+            double bestLogit = slice.maxNumber().doubleValue();
+            if (!Double.isFinite(bestLogit)) {
+                slice.close();
+                throw new IllegalStateException(
+                        "Constraint rejected every candidate token after exact sequence decode");
+            }
+            INDArray probs = SamplerUtils.softmax(slice);
+            int token = SamplerUtils.multinomialSample(probs, rng);
+            probs.close();
+            if (acceptConstraintCandidate(
+                    token, generatedSoFar, masker, tokenizer, stopTokenIds)) {
+                slice.close();
+                return token;
+            }
+            slice.putScalar(token, Double.NEGATIVE_INFINITY);
+        }
+    }
+
+    private boolean acceptConstraintCandidate(
+            int token,
+            List<Integer> generatedSoFar,
+            ConstraintMasker masker,
+            Tokenizer tokenizer,
+            Set<Integer> stopTokenIds) {
+        if (masker == null || tokenizer == null) {
+            return true;
+        }
+        Set<Integer> terminals = stopTokenIds == null
+                ? Collections.emptySet() : stopTokenIds;
+        if (terminals.contains(token) && masker.isComplete()) {
+            return true;
+        }
+        int size = generatedSoFar == null ? 0 : generatedSoFar.size();
+        int[] candidateIds = new int[size + 1];
+        for (int index = 0; index < size; index++) {
+            candidateIds[index] = generatedSoFar.get(index);
+        }
+        candidateIds[size] = token;
+        String decoded = tokenizer.decode(candidateIds, false);
+        if (!masker.allowsDecodedText(decoded, specialTokenPieces)) {
+            return false;
+        }
+        masker.decodedTextEmitted(decoded);
+        return true;
+    }
+
+    /**
+     * Resolve the text actually contributed by one token. Added/special tokens are often absent
+     * from {@link Tokenizer#getToken(int)} even though decode retains them; native tool sentinels
+     * are one such case in LFM2.5. Prefer the cheap vocabulary lookup and fall back to a one-token
+     * decode so a valid sentinel is never mistaken for an unavailable constraint transition.
+     */
+    private static String constraintTokenPiece(Tokenizer tokenizer, int tokenId) {
+        String piece = tokenizer.getToken(tokenId);
+        return piece == null || piece.isEmpty()
+                ? tokenizer.decode(new int[]{tokenId}, false)
+                : piece;
+    }
+
+    private static List<String> decodeSpecialTokenPieces(
+            Tokenizer tokenizer, Collection<Integer> tokenIds) {
+        if (tokenizer == null || tokenIds == null || tokenIds.isEmpty()) {
+            return List.of();
+        }
+        List<String> pieces = new ArrayList<>(tokenIds.size());
+        for (Integer tokenId : tokenIds) {
+            if (tokenId == null || tokenId < 0) {
+                continue;
+            }
+            String piece = constraintTokenPiece(tokenizer, tokenId);
+            if (piece != null && !piece.isEmpty() && !pieces.contains(piece)) {
+                pieces.add(piece);
+            }
+        }
+        return List.copyOf(pieces);
     }
 
     private GenerationResult buildResult(List<Integer> generatedTokens, int[] promptTokenIds,
@@ -4547,13 +5386,38 @@ public class GenerationPipeline implements AutoCloseable {
         }
     }
 
+    /**
+     * Stop tokens remain in tokenIds for protocol-aware consumers, but plain generated
+     * text excludes trailing terminal tokens at the token boundary. This avoids every
+     * caller re-parsing model-specific marker strings.
+     */
+    static int contentTokenLength(int[] tokenIds, Set<Integer> stopTokenIds) {
+        if (tokenIds == null) {
+            return 0;
+        }
+        Set<Integer> stops = stopTokenIds == null
+                ? Collections.emptySet() : stopTokenIds;
+        int length = tokenIds.length;
+        while (length > 0 && stops.contains(tokenIds[length - 1])) {
+            length--;
+        }
+        return length;
+    }
+
+    private String decodeGeneratedText(int[] tokenIds, Set<Integer> stopTokenIds) {
+        int contentLength = contentTokenLength(tokenIds, stopTokenIds);
+        int[] contentIds = contentLength == tokenIds.length
+                ? tokenIds : Arrays.copyOf(tokenIds, contentLength);
+        return tokenizer.decode(contentIds, false);
+    }
+
     private GenerationResult buildResult(List<Integer> generatedTokens, int[] promptTokenIds,
                                           Set<Integer> stopTokenIds, long startTime, long firstTokenMs,
                                           double steadyStateTokPerSec) {
         long endTime = System.currentTimeMillis();
         long timeMs = endTime - startTime;
         int[] tokenIds = generatedTokens.stream().mapToInt(Integer::intValue).toArray();
-        String text = tokenizer.decode(tokenIds, false);
+        String text = decodeGeneratedText(tokenIds, stopTokenIds);
         boolean hitEos = tokenIds.length > 0 && stopTokenIds.contains(tokenIds[tokenIds.length - 1]);
 
         return GenerationResult.builder()
@@ -4735,15 +5599,16 @@ public class GenerationPipeline implements AutoCloseable {
                 DynamicShapePlanExecutor existingExecutor = existingSession.getDynamicShapePlanExecutor();
                 if (existingExecutor != null && existingExecutor.isShapesFrozen()) {
                     log.info("[Lifecycle] Reusing frozen DSP plan for native generation (fixedBuffers=true, maxPrefill={})", maxPrefill);
-                    // Snapshot ext inputs BEFORE clearing node outputs — these are the
-                    // arrays whose device pointers the native plan tracks for stability.
+                    // Keep both the plan and its node-output buffers alive. The captured graph tracks
+                    // these external-input addresses, so overwrite the retained arrays in place below.
+                    // clearNodeOutputsOnly() must not be used here: despite its name it closes the
+                    // session DynamicShapePlan and forces a new native borrower on the next dispatch.
                     frozenExtInputSnapshot = existingExecutor.getExternalInputsSnapshot();
                     DynamicShapePlan frozenPlan = existingExecutor.getCurrentPlan();
                     frozenExtInputKeys = frozenPlan != null ? frozenPlan.getExternalInputKeys() : null;
                     reusingFrozenPlan = frozenExtInputSnapshot != null && frozenExtInputSnapshot.length > 0
                             && frozenExtInputKeys != null
                             && frozenExtInputKeys.length == frozenExtInputSnapshot.length;
-                    existingSession.clearNodeOutputsOnly();
                     if (reusingFrozenPlan) {
                         log.info("[Lifecycle] Captured {} ext input arrays for pointer-stable reuse",
                                 frozenExtInputSnapshot.length);
@@ -4774,24 +5639,13 @@ public class GenerationPipeline implements AutoCloseable {
             }
         }
 
-        // Resolve EOS token and stop tokens — add eosTokenId unconditionally.
-        // The buildStopTokenIds() helper suppresses tokens < 100, but SmolDocling
-        // uses eosTokenId=2 which is valid. The native AutoregressiveDecode op
-        // needs both EOS and <end_of_utterance> in the stop set.
-        int eosTokenId = tokenizer.getEosTokenId();
-        Set<Integer> stopTokenIds = new HashSet<>();
-        stopTokenIds.add(eosTokenId);
-        Integer endOfUtteranceTokenId = tokenizer.getTokenId("<end_of_utterance>");
-        if (endOfUtteranceTokenId != null) {
-            stopTokenIds.add(endOfUtteranceTokenId);
-        }
-        if (config.getAdditionalStopTokenIds() != null) {
-            stopTokenIds.addAll(config.getAdditionalStopTokenIds());
-        }
-
         // Resolve decode policy and sampling config. Greedy/sample use the current scalar native op;
         // speculative/contrastive/beam require the ADR 0106 masked multi-position native substrate.
         SamplingConfig sampling = activeDecodeSampling();
+
+        int eosTokenId = resolveEosTokenId(sampling);
+        Set<Integer> stopTokenIds = buildStopTokenIds(eosTokenId);
+
         DecodePolicy decodePolicy = activeDecodePolicy();
         requireNativeSubstrateAvailable(decodePolicy, sampling);
         Random rng = sampling.getSeed() != null ? new Random(sampling.getSeed()) : new Random();
@@ -4850,15 +5704,25 @@ public class GenerationPipeline implements AutoCloseable {
             effectiveEmbeddings = prefillEmbeddings;
         }
 
-        long maxKvLen = prefillSeqLen + maxNewTokens;
+        int kvCap = config.getMaxKvCacheLength();
+        if (kvCap > 0 && prefillSeqLen >= kvCap) {
+            throw new IllegalArgumentException(
+                    "Prompt token count "
+                            + prefillSeqLen
+                            + " leaves no room for generation within "
+                            + "maxKvCacheLength="
+                            + kvCap
+            );
+        }
+
+        long maxKvLen =
+                prefillSeqLen + maxNewTokens;
+
         // Cap to configured KV cache length to keep buffer shapes stable across
         // calls with different maxNewTokens — avoids plan recompilation.
-        int kvCap = config.getMaxKvCacheLength();
         if (kvCap > 0 && maxKvLen > kvCap) {
+            maxNewTokens = kvCap - prefillSeqLen;
             maxKvLen = kvCap;
-            // Clamp maxNewTokens so the decode loop doesn't run past the buffer
-            maxNewTokens = (int) (maxKvLen - prefillSeqLen);
-            if (maxNewTokens < 1) maxNewTokens = 1;
         }
         boolean dspActive = decoder.isDspAutoCompileEnabled();
         List<String> decoderInputNames = decoder.inputs();
@@ -5267,7 +6131,7 @@ public class GenerationPipeline implements AutoCloseable {
             }
 
             int[] tokenIds = tokens.stream().mapToInt(Integer::intValue).toArray();
-            String text = tokenizer.decode(tokenIds, false);
+            String text = decodeGeneratedText(tokenIds, stopTokenIds);
             long endTime = System.currentTimeMillis();
             long timeMs = endTime - startTime;
 
@@ -5483,7 +6347,7 @@ public class GenerationPipeline implements AutoCloseable {
                     INDArray stepLogits = stepOutputs.get(ioConfig.getLogitsOutputName());
                     suppressStopsUnderFloor(stepLogits, 0, sampling, allTokens.size(), stopTokenIds);
                     int nextToken = sampleToken(stepLogits, 0, sampling, allTokens, rng,
-                            constraintMasker, tokenizer);
+                            constraintMasker, tokenizer, stopTokenIds);
                     stepLogits.close();
 
                     // Scatter KV outputs back into static buffers.
@@ -5563,6 +6427,8 @@ public class GenerationPipeline implements AutoCloseable {
                 allTokens.add(tid);
                 if (stopTokenIds.contains(tid)) break;
             }
+            closeOutput(nativeTokenIds);
+            closeOutput(nativeTokenCountArr);
             log.info("[Perf] Decoder after native loop: planPhase={} pointersStable={}",
                     executor.getPlanPhase(), executor.arePointersStable());
             logDspReplayState("after native loop");
@@ -5611,9 +6477,10 @@ public class GenerationPipeline implements AutoCloseable {
                 ? (decodeSteps * 1000.0 / decodeLoopMs) : 0;
         float lateSteadyTokPerSec = nativeTimingInfo != null && nativeTimingInfo.length() > 5
                 ? nativeTimingInfo.getFloat(5) : (float) tokPerSec;
+        closeOutput(nativeTimingInfo);
 
         int[] tokenIds = allTokens.stream().mapToInt(Integer::intValue).toArray();
-        String text = tokenizer.decode(tokenIds, false);
+        String text = decodeGeneratedText(tokenIds, stopTokenIds);
         long endTime = System.currentTimeMillis();
         long timeMs = endTime - startTime;
 
@@ -6132,6 +6999,97 @@ public class GenerationPipeline implements AutoCloseable {
     @FunctionalInterface
     public interface ModelLoader {
         SameDiff load(String path) throws IOException;
+
+        /**
+         * Return metadata retained while loading {@code path}. Loaders that import
+         * container formats should override this instead of discarding protocol
+         * metadata when returning the SameDiff graph.
+         */
+        default ModelMetadata getModelMetadata(String path) throws IOException {
+            return ModelMetadata.empty();
+        }
+    }
+
+    /**
+     * Model-owned generation metadata preserved across an import boundary.
+     */
+    public static final class ModelMetadata {
+        private static final ModelMetadata EMPTY = new ModelMetadata(
+                -1, -1, -1, null, Collections.emptySet(), Collections.emptySet());
+
+        private final int bosTokenId;
+        private final int eosTokenId;
+        private final int padTokenId;
+        private final String chatTemplate;
+        private final Set<Integer> stopTokenIds;
+        private final Set<Integer> specialTokenIds;
+
+        private ModelMetadata(
+                int bosTokenId,
+                int eosTokenId,
+                int padTokenId,
+                String chatTemplate,
+                Set<Integer> stopTokenIds,
+                Set<Integer> specialTokenIds) {
+            this.bosTokenId = bosTokenId;
+            this.eosTokenId = eosTokenId;
+            this.padTokenId = padTokenId;
+            this.chatTemplate = chatTemplate;
+            this.stopTokenIds = immutableTokenIds(stopTokenIds);
+            this.specialTokenIds = immutableTokenIds(specialTokenIds);
+        }
+
+        public static ModelMetadata empty() {
+            return EMPTY;
+        }
+
+        public static ModelMetadata of(
+                int bosTokenId,
+                int eosTokenId,
+                int padTokenId,
+                String chatTemplate,
+                Set<Integer> stopTokenIds,
+                Set<Integer> specialTokenIds) {
+            return new ModelMetadata(bosTokenId, eosTokenId, padTokenId,
+                    chatTemplate, stopTokenIds, specialTokenIds);
+        }
+
+        private static Set<Integer> immutableTokenIds(Set<Integer> tokenIds) {
+            if (tokenIds == null || tokenIds.isEmpty()) {
+                return Collections.emptySet();
+            }
+            Set<Integer> valid = new LinkedHashSet<>();
+            for (Integer tokenId : tokenIds) {
+                if (tokenId != null && tokenId >= 0) {
+                    valid.add(tokenId);
+                }
+            }
+            return Collections.unmodifiableSet(valid);
+        }
+
+        public int getBosTokenId() {
+            return bosTokenId;
+        }
+
+        public int getEosTokenId() {
+            return eosTokenId;
+        }
+
+        public int getPadTokenId() {
+            return padTokenId;
+        }
+
+        public String getChatTemplate() {
+            return chatTemplate;
+        }
+
+        public Set<Integer> getStopTokenIds() {
+            return stopTokenIds;
+        }
+
+        public Set<Integer> getSpecialTokenIds() {
+            return specialTokenIds;
+        }
     }
 
     /**

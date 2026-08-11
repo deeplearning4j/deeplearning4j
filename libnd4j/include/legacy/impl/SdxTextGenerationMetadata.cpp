@@ -20,6 +20,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -464,6 +465,141 @@ bool parseDataType(const std::string& raw, DataType* out) {
   return false;
 }
 
+bool parseCanonicalRecurrentDataType(
+    const std::string& raw, DataType* out) {
+  if (raw == "FLOAT32") {
+    *out = DataType::FLOAT32;
+    return true;
+  }
+  if (raw == "FLOAT16") {
+    *out = DataType::HALF;
+    return true;
+  }
+  if (raw == "BFLOAT16") {
+    *out = DataType::BFLOAT16;
+    return true;
+  }
+  if (raw == "INT8") {
+    *out = DataType::INT8;
+    return true;
+  }
+  return false;
+}
+
+bool parseRecurrentStates(
+    const JsonValue& io,
+    int32_t formatVersion,
+    std::vector<TextGenerationRecurrentState>* out,
+    std::string* error) {
+  const JsonValue* states = member(io, "recurrentStates");
+  if (formatVersion == 1) {
+    if (states != nullptr) {
+      if (error != nullptr) {
+        *error =
+            "metadata field 'io.recurrentStates' requires text-generation "
+            "formatVersion 2";
+      }
+      return false;
+    }
+    out->clear();
+    return true;
+  }
+  if (states == nullptr) {
+    if (error != nullptr) {
+      *error =
+          "metadata field 'io.recurrentStates' is required for formatVersion 2";
+    }
+    return false;
+  }
+  if (states->kind != JsonKind::Array) {
+    if (error != nullptr) {
+      *error = "metadata field 'io.recurrentStates' must be an array";
+    }
+    return false;
+  }
+
+  out->clear();
+  std::unordered_set<std::string> inputs;
+  std::unordered_set<std::string> outputs;
+  static const std::unordered_set<std::string> supportedFields{
+      "input", "output", "kind", "dataType", "shape"};
+
+  for (size_t index = 0; index < states->array.size(); ++index) {
+    const JsonValue& value = states->array[index];
+    const std::string prefix =
+        "metadata field 'io.recurrentStates[" + std::to_string(index) + "]'";
+    if (value.kind != JsonKind::Object) {
+      if (error != nullptr) *error = prefix + " must be an object";
+      return false;
+    }
+    for (const auto& entry : value.object) {
+      if (supportedFields.count(entry.first) == 0) {
+        if (error != nullptr) {
+          *error = prefix + " contains unsupported field '" + entry.first + "'";
+        }
+        return false;
+      }
+    }
+
+    TextGenerationRecurrentState state;
+    std::string kind;
+    std::string dataType;
+    if (!readString(value, "input", true, &state.input, error) ||
+        !readString(value, "output", true, &state.output, error) ||
+        !readString(value, "kind", true, &kind, error) ||
+        !readString(value, "dataType", true, &dataType, error)) {
+      return false;
+    }
+    if (kind == "GDN") {
+      state.kind = TextGenerationRecurrentStateKind::GDN;
+    } else if (kind == "CONV") {
+      state.kind = TextGenerationRecurrentStateKind::CONV;
+    } else {
+      if (error != nullptr) *error = prefix + " kind is unsupported: " + kind;
+      return false;
+    }
+    if (!parseCanonicalRecurrentDataType(dataType, &state.dataType)) {
+      if (error != nullptr) {
+        *error = prefix + " dataType is unsupported: " + dataType;
+      }
+      return false;
+    }
+
+    const JsonValue* shape = member(value, "shape");
+    if (shape == nullptr || shape->kind != JsonKind::Array ||
+        shape->array.empty()) {
+      if (error != nullptr) *error = prefix + " shape must be a non-empty array";
+      return false;
+    }
+    state.shape.reserve(shape->array.size());
+    for (const auto& dimension : shape->array) {
+      if (dimension.kind != JsonKind::Number ||
+          !std::isfinite(dimension.number) ||
+          std::floor(dimension.number) != dimension.number ||
+          dimension.number <= 0.0 ||
+          dimension.number >= 9223372036854775808.0) {
+        if (error != nullptr) *error = prefix + " contains an invalid dimension";
+        return false;
+      }
+      state.shape.push_back(static_cast<int64_t>(dimension.number));
+    }
+    if (!inputs.insert(state.input).second) {
+      if (error != nullptr) {
+        *error = "duplicate recurrent state input: " + state.input;
+      }
+      return false;
+    }
+    if (!outputs.insert(state.output).second) {
+      if (error != nullptr) {
+        *error = "duplicate recurrent state output: " + state.output;
+      }
+      return false;
+    }
+    out->push_back(std::move(state));
+  }
+  return true;
+}
+
 bool validatePositive(const char* field, int32_t value, std::string* error) {
   if (value > 0) return true;
   if (error != nullptr) *error = std::string("metadata field '") + field + "' must be > 0";
@@ -503,17 +639,27 @@ bool loadTextGenerationMetadata(
   }
 
   TextGenerationMetadata metadata;
-  if (!readInt32(root, "formatVersion", true, &metadata.formatVersion, error) ||
-      metadata.formatVersion != 1) {
-    if (error != nullptr && metadata.formatVersion != 1) {
+  if (!readInt32(root, "formatVersion", true, &metadata.formatVersion, error)) {
+    return false;
+  }
+  if (metadata.formatVersion != 1 && metadata.formatVersion != 2) {
+    if (error != nullptr) {
       *error = "unsupported text-generation formatVersion: " +
                std::to_string(metadata.formatVersion);
     }
     return false;
   }
   if (!readString(root, "profile", true, &metadata.profile, error)) return false;
-  if (metadata.profile != "causal-lm-in-graph-kv-v1") {
-    if (error != nullptr) *error = "unsupported text-generation profile: " + metadata.profile;
+  const std::string expectedProfile =
+      metadata.formatVersion == 1
+          ? "causal-lm-in-graph-kv-v1"
+          : "causal-lm-in-graph-state-v2";
+  if (metadata.profile != expectedProfile) {
+    if (error != nullptr) {
+      *error = "text-generation formatVersion " +
+               std::to_string(metadata.formatVersion) +
+               " requires profile '" + expectedProfile + "'";
+    }
     return false;
   }
 
@@ -536,6 +682,13 @@ bool loadTextGenerationMetadata(
     return false;
   }
   if (metadata.prefillLogits.empty()) metadata.prefillLogits = metadata.logits;
+  if (!parseRecurrentStates(
+          *io,
+          metadata.formatVersion,
+          &metadata.recurrentStates,
+          error)) {
+    return false;
+  }
 
   const size_t layers = metadata.kvKeyInputs.size();
   if (layers == 0 || metadata.kvValueInputs.size() != layers ||
@@ -559,11 +712,11 @@ bool loadTextGenerationMetadata(
     return false;
   }
   if (upper(metadata.kvLayout) != "BSHD") {
-    if (error != nullptr) *error = "causal-lm-in-graph-kv-v1 requires BSHD KV layout";
+    if (error != nullptr) *error = metadata.profile + " requires BSHD KV layout";
     return false;
   }
   if (!metadata.planOwnsKvScatter) {
-    if (error != nullptr) *error = "causal-lm-in-graph-kv-v1 requires planOwnsKvScatter=true";
+    if (error != nullptr) *error = metadata.profile + " requires planOwnsKvScatter=true";
     return false;
   }
   if (!parseDataType(kvDtype, &metadata.kvDataType) ||
@@ -598,7 +751,9 @@ bool loadTextGenerationMetadata(
     return false;
   }
   if (metadata.maxBatchSize != 1) {
-    if (error != nullptr) *error = "causal-lm-in-graph-kv-v1 supports maxBatchSize=1 only";
+    if (error != nullptr) {
+      *error = metadata.profile + " supports maxBatchSize=1 only";
+    }
     return false;
   }
 

@@ -370,6 +370,7 @@ public class GGMLMetadata {
                     .tokens(header.getTokens())
                     .bosTokenId(header.getBosTokenId())
                     .eosTokenId(header.getEosTokenId())
+                    .padTokenId(header.getPadTokenId())
                     .chatTemplate(header.getChatTemplate())
                     .build();
         }

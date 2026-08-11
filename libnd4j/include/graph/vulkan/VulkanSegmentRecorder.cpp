@@ -49,6 +49,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace sd {
 namespace graph {
@@ -57,8 +58,9 @@ namespace graph {
 //  Constructor / Destructor
 // ─────────────────────────────────────────────────────────────────────────────
 
-VulkanSegmentRecorder::VulkanSegmentRecorder(VulkanReplayHandle* handle)
-    : handle_(handle) {}
+VulkanSegmentRecorder::VulkanSegmentRecorder(
+    VulkanReplayHandle* handle, GraphCompilationPolicy compilationPolicy)
+    : handle_(handle), compilationPolicy_(std::move(compilationPolicy)) {}
 
 VulkanSegmentRecorder::~VulkanSegmentRecorder() {
   if (handle_ == nullptr) return;
@@ -7236,7 +7238,8 @@ bool VulkanSegmentRecorder::recordOp(const NativeSlot& slot,
   const std::string pipelineKey = emitterPipelineKey(slot);
   if (pipelineKey.empty()) return false;
   VkDevice dev = handle_->getDevice();
-  VkPipeline pipeline = cache->getOrCompile(pipelineKey, mlir, dev);
+  VkPipeline pipeline =
+      cache->getOrCompile(pipelineKey, mlir, dev, compilationPolicy_);
   if (pipeline == VK_NULL_HANDLE) {
     DSP_DIAG(GRAPH_REPLAY,
              "VulkanSegmentRecorder: pipeline compilation failed opName=%s",

@@ -70,7 +70,7 @@ PLATFORM_IMPL(cos, ENGINE_CPU) {
   add.run();
 
   // Apply sin to get cos
-  arm_compute::NEElementwiseUnaryLayer sinOp;
+  arm_compute::NEElementwiseUnaryLayer<arm_compute::ElementWiseUnary::SIN> sinOp;
   bool copyOutput = false;
   if (!output->hasPaddedBuffer() && !outTensor.info()->has_padding()) {
     outTensor.allocator()->import_memory(output->buffer());
@@ -79,7 +79,7 @@ PLATFORM_IMPL(cos, ENGINE_CPU) {
     copyOutput = true;
   }
 
-  sinOp.configure(&shiftedTensor, &outTensor, arm_compute::ElementWiseUnary::SIN);
+  sinOp.configure(&shiftedTensor, &outTensor);
   sinOp.run();
 
   if (copyOutput) {

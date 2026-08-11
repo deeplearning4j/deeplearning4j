@@ -115,6 +115,37 @@ bool TritonGraphBackend::isAvailable() const {
   return TritonTargetDispatch::isReady();
 }
 
+bool TritonGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_TRITON ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO;
+}
+
+int TritonGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_TRITON ? 1000 : 700;
+}
+
+GraphBackendPlanningPolicy TritonGraphBackend::planningPolicy(
+    const GraphBackendRequest& request) const {
+  auto policy = GraphBackend::planningPolicy(request);
+  policy.requiresPlatformReplayHandle = true;
+  policy.separateMatrixMultiplySegments =
+      Environment::getInstance().dspMatmulSegmentation();
+  return policy;
+}
+
+GraphBackendExecutionPolicy TritonGraphBackend::executionPolicy(
+    const GraphBackendRequest& request) const {
+  (void)request;
+  auto& environment = Environment::getInstance();
+  GraphBackendExecutionPolicy policy;
+  policy.bypassCompiledExecution = environment.tritonSkipKernels();
+  policy.allowPlatformGraphReplay = environment.tritonGraphCapture();
+  policy.verifyCompiledExecution = environment.tritonVerifyKernels();
+  return policy;
+}
+
 // ─── Check if all ops in a range are Triton-mappable ────────────────────────
 
 bool TritonGraphBackend::areAllOpsMappable(NativeSlot* slots, int start, int end) {

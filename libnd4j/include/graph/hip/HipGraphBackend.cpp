@@ -54,6 +54,17 @@ bool HipGraphBackend::isAvailable() const {
   return HipRuntimeManager::getInstance().isAvailable();
 }
 
+bool HipGraphBackend::isResolvable(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_HIP_GRAPHS ||
+         request.executionMode == GraphExecutionMode::GEM_AUTO;
+}
+
+int HipGraphBackend::resolutionPriority(
+    const GraphBackendRequest& request) const {
+  return request.executionMode == GraphExecutionMode::GEM_HIP_GRAPHS ? 1000 : 200;
+}
+
 // ── GraphBackend::canFuseSegment ─────────────────────────────────────────────
 
 bool HipGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {

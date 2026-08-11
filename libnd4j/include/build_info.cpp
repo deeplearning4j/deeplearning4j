@@ -73,6 +73,8 @@ std::string typeToScriptFormat(const std::string& typeName) {
   if (lower == "double" || lower == "float64") return "double";
   if (lower == "float16" || lower == "half") return "float16";
   if (lower == "bfloat16" || lower == "bfloat") return "bfloat16";
+  if (lower == "float8" || lower == "float8_e4m3" || lower == "float8_e5m2" ||
+      lower == "fp8" || lower == "fp8_e4m3" || lower == "fp8_e5m2") return "float8";
   if (lower == "bool") return "bool";
 
   // String types
@@ -130,6 +132,10 @@ std::vector<std::string> buildSupportedTypes() {
 #endif
 #if defined(HAS_BFLOAT16) || defined(HAS_BFLOAT)
   types.push_back("bfloat16");
+#endif
+#if defined(HAS_FLOAT8)
+  types.push_back("float8");
+  types.push_back("float8_e5m2");
 #endif
 
   // String types - check if string operations are enabled
@@ -242,6 +248,7 @@ std::string typeToCMakeFormat(const std::string& typeName) {
   if (lower == "float64") return "double";
   if (lower == "float16" || lower == "half") return "float16";
   if (lower == "bfloat16" || lower == "bfloat") return "bfloat16";
+  if (lower == "float8" || lower == "float8_e4m3" || lower == "float8_e5m2") return "float8";
   if (lower == "bool") return "bool";
 
   // String types

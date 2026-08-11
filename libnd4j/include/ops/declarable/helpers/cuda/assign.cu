@@ -76,6 +76,85 @@ SD_HOST static void assignCudaLauncher(const int blocksPerGrid, const int thread
   DebugHelper::checkGlobalErrorCode("assignKernel(...) failed");
 }
 
+template <typename X>
+SD_HOST static void assignToFloat8E4M3CudaLauncher(
+    const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream,
+    const void* vx, const LongType* xShapeInfo, void* vz, const LongType* zShapeInfo,
+    const LongType xOffset, const LongType zOffset) {
+  assignCudaLauncher<X, float8>(blocksPerGrid, threadsPerBlock, sharedMem, stream, vx, xShapeInfo, vz, zShapeInfo,
+                                xOffset, zOffset);
+}
+
+template <typename X>
+SD_HOST static void assignToFloat8E5M2CudaLauncher(
+    const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream,
+    const void* vx, const LongType* xShapeInfo, void* vz, const LongType* zShapeInfo,
+    const LongType xOffset, const LongType zOffset) {
+  assignCudaLauncher<X, float8_e5m2>(blocksPerGrid, threadsPerBlock, sharedMem, stream, vx, xShapeInfo, vz, zShapeInfo,
+                                     xOffset, zOffset);
+}
+
+template <typename Z>
+SD_HOST static void assignFromFloat8E4M3CudaLauncher(
+    const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream,
+    const void* vx, const LongType* xShapeInfo, void* vz, const LongType* zShapeInfo,
+    const LongType xOffset, const LongType zOffset) {
+  assignCudaLauncher<float8, Z>(blocksPerGrid, threadsPerBlock, sharedMem, stream, vx, xShapeInfo, vz, zShapeInfo,
+                                xOffset, zOffset);
+}
+
+template <typename Z>
+SD_HOST static void assignFromFloat8E5M2CudaLauncher(
+    const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream,
+    const void* vx, const LongType* xShapeInfo, void* vz, const LongType* zShapeInfo,
+    const LongType xOffset, const LongType zOffset) {
+  assignCudaLauncher<float8_e5m2, Z>(blocksPerGrid, threadsPerBlock, sharedMem, stream, vx, xShapeInfo, vz, zShapeInfo,
+                                     xOffset, zOffset);
+}
+
+#define ASSIGN_CUDA_ARGS                                                                                              \
+  (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), source->specialBuffer(),                     \
+   source->specialShapeInfo(), target->specialBuffer(), target->specialShapeInfo(), source->offset(), target->offset())
+
+static bool assignFp8Cuda(DataType xType, DataType zType, dim3 launchDims, LaunchContext* context, NDArray* source,
+                          NDArray* target) {
+  if (zType == DataType::FLOAT8) {
+    if (xType == DataType::FLOAT8) {
+      assignCudaLauncher<float8, float8> ASSIGN_CUDA_ARGS;
+    } else if (xType == DataType::FLOAT8_E5M2) {
+      assignCudaLauncher<float8_e5m2, float8> ASSIGN_CUDA_ARGS;
+    } else {
+      BUILD_SINGLE_SELECTOR(xType, assignToFloat8E4M3CudaLauncher, ASSIGN_CUDA_ARGS, SD_COMMON_TYPES);
+    }
+    return true;
+  }
+
+  if (zType == DataType::FLOAT8_E5M2) {
+    if (xType == DataType::FLOAT8) {
+      assignCudaLauncher<float8, float8_e5m2> ASSIGN_CUDA_ARGS;
+    } else if (xType == DataType::FLOAT8_E5M2) {
+      assignCudaLauncher<float8_e5m2, float8_e5m2> ASSIGN_CUDA_ARGS;
+    } else {
+      BUILD_SINGLE_SELECTOR(xType, assignToFloat8E5M2CudaLauncher, ASSIGN_CUDA_ARGS, SD_COMMON_TYPES);
+    }
+    return true;
+  }
+
+  if (xType == DataType::FLOAT8) {
+    BUILD_SINGLE_SELECTOR(zType, assignFromFloat8E4M3CudaLauncher, ASSIGN_CUDA_ARGS, SD_COMMON_TYPES);
+    return true;
+  }
+
+  if (xType == DataType::FLOAT8_E5M2) {
+    BUILD_SINGLE_SELECTOR(zType, assignFromFloat8E5M2CudaLauncher, ASSIGN_CUDA_ARGS, SD_COMMON_TYPES);
+    return true;
+  }
+
+  return false;
+}
+
+#undef ASSIGN_CUDA_ARGS
+
 void assign(sd::LaunchContext* context, sd::NDArray* target, sd::NDArray* source) {
   if (target->lengthOf() != source->lengthOf()) {
     std::string errorMsg = "assign helper: Source and target arrays must have the same length. ";
@@ -95,12 +174,14 @@ void assign(sd::LaunchContext* context, sd::NDArray* target, sd::NDArray* source
 
   PointersManager manager(context, "helpers::assign");
 
-  BUILD_DOUBLE_SELECTOR(xType, zType, assignCudaLauncher,
-                        (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(),
-                         source->specialBuffer(), source->specialShapeInfo(),
-                         target->specialBuffer(), target->specialShapeInfo(),
-                         source->offset(), target->offset()),
-                        SD_COMMON_TYPES, SD_COMMON_TYPES);
+  if (!assignFp8Cuda(xType, zType, launchDims, context, source, target)) {
+    BUILD_DOUBLE_SELECTOR(xType, zType, assignCudaLauncher,
+                          (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(),
+                           source->specialBuffer(), source->specialShapeInfo(),
+                           target->specialBuffer(), target->specialShapeInfo(),
+                           source->offset(), target->offset()),
+                          SD_COMMON_TYPES, SD_COMMON_TYPES);
+  }
 
   manager.synchronize();
   NDArray::registerSpecialUse({target}, {source});

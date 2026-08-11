@@ -2642,37 +2642,57 @@ public interface NativeOps {
    * Set the enabled diagnostic categories (replaces current mask).
    * @param mask bitfield of DspDiagCategory values
    */
-  default void dspDiagSetCategories(int mask) {}
+  default void dspDiagSetCategories(int mask) {
+      throw new UnsupportedOperationException("DSP diagnostics categories are not implemented by " + getClass().getName());
+  }
 
   /**
    * Enable additional diagnostic categories (OR with current mask).
    * @param mask bitfield of DspDiagCategory values to enable
    */
-  default void dspDiagEnableCategories(int mask) {}
+  default void dspDiagEnableCategories(int mask) {
+      throw new UnsupportedOperationException("DSP diagnostics categories are not implemented by " + getClass().getName());
+  }
 
   /**
    * Disable specific diagnostic categories (AND NOT with current mask).
    * @param mask bitfield of DspDiagCategory values to disable
    */
-  default void dspDiagDisableCategories(int mask) {}
+  default void dspDiagDisableCategories(int mask) {
+      throw new UnsupportedOperationException("DSP diagnostics categories are not implemented by " + getClass().getName());
+  }
 
   /**
    * Get the currently enabled diagnostic category mask.
    * @return bitfield of enabled DspDiagCategory values
    */
-  default int dspDiagGetEnabledMask() { return 0; }
+  default int dspDiagGetEnabledMask() {
+      throw new UnsupportedOperationException("DSP diagnostics mask is not implemented by " + getClass().getName());
+  }
 
   /**
    * Set the diagnostic detail level.
    * @param level 0=SUMMARY, 1=DETAILED, 2=FULL
    */
-  default void dspDiagSetLevel(int level) {}
+  default void dspDiagSetLevel(int level) {
+      throw new UnsupportedOperationException("DSP diagnostics level is not implemented by " + getClass().getName());
+  }
+
+  /**
+   * Get the active diagnostic detail level.
+   * @return 0=SUMMARY, 1=DETAILED, 2=FULL
+   */
+  default int dspDiagGetLevel() {
+      throw new UnsupportedOperationException("DSP diagnostics level is not implemented by " + getClass().getName());
+  }
 
   /**
    * Set the file path for JSON diagnostic output.
    * @param path absolute file path, or null to disable
    */
-  default void dspDiagSetJsonPath(String path) {}
+  default void dspDiagSetJsonPath(String path) {
+      throw new UnsupportedOperationException("DSP diagnostics output is not implemented by " + getClass().getName());
+  }
 
   /**
    * Record a diagnostic event from Java code into the C++ ring buffer.
@@ -2684,41 +2704,55 @@ public interface NativeOps {
    * @param message event message
    */
   default void dspDiagRecordJavaEvent(int category, int slotId, int segmentId,
-                                       String opName, long timingUs, String message) {}
+                                       String opName, long timingUs, String message) {
+      throw new UnsupportedOperationException("DSP diagnostic events are not implemented by " + getClass().getName());
+  }
 
   /**
    * Get the structured text plan report from the C++ diagnostics singleton.
    * @return formatted diagnostic report, or empty string if no data
    */
-  default String dspDiagGetPlanReport() { return ""; }
+  default String dspDiagGetPlanReport() {
+      throw new UnsupportedOperationException("DSP diagnostic reports are not implemented by " + getClass().getName());
+  }
 
   /**
    * Get the JSON plan report from the C++ diagnostics singleton.
    * @return JSON string, or empty string if no data
    */
-  default String dspDiagGetJsonReport() { return ""; }
+  default String dspDiagGetJsonReport() {
+      throw new UnsupportedOperationException("DSP diagnostic reports are not implemented by " + getClass().getName());
+  }
 
   /**
    * Clear all diagnostic events and stats.
    */
-  default void dspDiagClear() {}
+  default void dspDiagClear() {
+      throw new UnsupportedOperationException("DSP diagnostic state is not implemented by " + getClass().getName());
+  }
 
   /**
    * Get the total number of steps executed by the diagnostic singleton.
    */
-  default int dspDiagGetStepCount() { return 0; }
+  default int dspDiagGetStepCount() {
+      throw new UnsupportedOperationException("DSP diagnostic counters are not implemented by " + getClass().getName());
+  }
 
   /**
    * Get the total event count across all diagnostic categories.
    */
-  default long dspDiagGetTotalEventCount() { return 0; }
+  default long dspDiagGetTotalEventCount() {
+      throw new UnsupportedOperationException("DSP diagnostic counters are not implemented by " + getClass().getName());
+  }
 
   /**
    * Get the event count for a specific diagnostic category by index (0..18).
    * @param categoryIndex  index into the category stats array
    * @return event count, 0 for invalid indices
    */
-  default long dspDiagGetCategoryEventCount(int categoryIndex) { return 0; }
+  default long dspDiagGetCategoryEventCount(int categoryIndex) {
+      throw new UnsupportedOperationException("DSP diagnostic counters are not implemented by " + getClass().getName());
+  }
 
   /**
    * Validate plan outputs after execution. Checks each output for NaN, Inf, all-zeros, or null.

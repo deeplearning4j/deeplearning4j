@@ -781,8 +781,7 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
 
         SDVariable gamma = sd.var(outputName + ".weight", normW);
 
-        boolean needsCast = (input.dataType() == DataType.HALF
-                || input.dataType() == DataType.BFLOAT16);
+        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
         SDVariable x = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
 
         SDVariable squared    = x.mul(x);
@@ -815,8 +814,7 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
 
         SDVariable gamma = sd.var(outputName + ".weight", normW);
 
-        boolean needsCast = (input.dataType() == DataType.HALF
-                || input.dataType() == DataType.BFLOAT16);
+        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
         SDVariable x = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
 
         SDVariable mean = x.mean(true, -1);
@@ -845,8 +843,7 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
                                       INDArray normWeight, float eps) {
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
-        boolean needsCast = (input.dataType() == DataType.HALF
-                || input.dataType() == DataType.BFLOAT16);
+        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
         SDVariable x = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
 
         SDVariable squared    = x.mul(x);
@@ -875,7 +872,7 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
      */
     private SDVariable fp32Mmul(SameDiff sd, String name,
                                  SDVariable a, SDVariable b, DataType dtype) {
-        if (dtype == DataType.HALF || dtype == DataType.BFLOAT16) {
+        if (QuantizedLinear.requiresFp32Accumulation(dtype)) {
             SDVariable aF32 = a.castTo(name + "_a_f32", DataType.FLOAT);
             SDVariable bF32 = b.castTo(name + "_b_f32", DataType.FLOAT);
             SDVariable res  = sd.mmul(name + "_f32", aF32, bF32);

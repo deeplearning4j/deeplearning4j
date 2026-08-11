@@ -101,6 +101,13 @@ public:
         }
         return ffi_tokenizer_get_vocab_size(handle);
     }
+
+    bool token_to_id(const std::string& token, uint32_t& token_id) const {
+        if (!valid || !handle) {
+            return false;
+        }
+        return ffi_tokenizer_token_to_id(handle, token.c_str(), &token_id);
+    }
 };
 
 // TokenizerWrapper implementation
@@ -160,6 +167,10 @@ size_t TokenizerWrapper::get_vocab_size() const {
         return 0;
     }
     return pImpl->get_vocab_size();
+}
+
+bool TokenizerWrapper::token_to_id(const std::string& token, uint32_t& token_id) const {
+    return pImpl && pImpl->token_to_id(token, token_id);
 }
 
 bool TokenizerWrapper::is_valid() const {

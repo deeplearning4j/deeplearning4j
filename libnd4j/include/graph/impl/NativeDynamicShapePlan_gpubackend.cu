@@ -25,12 +25,13 @@
 //   - LRU graph eviction and proactive memory cleanup
 //
 // This translation unit is compiled only when SD_CUDA is defined.
-// CPU-facing dispatch (getGpuGraphBackend, segDispatchWarmup, segDispatchCompile,
+// CPU-facing dispatch (shared resolver, segDispatchWarmup, segDispatchCompile,
 // hasCompositeHandles, cleanupSegmentForRebuild) remains in _gpubackend.cpp.
 
 #ifdef SD_CUDA
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/GraphBackendResolver.h>
 #include <graph/PlanExecutionContext.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/gpu/CapturedModuleRegistry.h>
@@ -96,14 +97,11 @@ static bool dsp_disable_workspace_skip() {
 namespace sd {
 namespace graph {
 
-// ── Per-device shared capture workspace ──────────────────────────────────
-// CUDA graph capture is serialized by DeviceCaptureGuard (only one plan
-// captures at a time per device). So the capture workspace can be shared
-// globally across all plan instances on the SAME device. This avoids OOM
-// when multiple concurrent plans each try to allocate their own 512 MB
-// workspace. The maps are keyed by CUDA device id to support multi-GPU
-// sharding: device 1 never overwrites device 0's workspace entry.
-// Protected by g_globalCaptureWorkspaceMtx on all reads and writes.
+// ── Legacy process-global capture-workspace registry ──────────────────────
+// Kept for the backend dispatch ABI while plan-owned workspace migration is
+// in flight. New plans deliberately never publish into these maps: CUDA graph
+// nodes retain workspace addresses for the lifetime of the cached plan, so a
+// workspace may be shared by segments of one plan but never by live plans.
 std::mutex g_globalCaptureWorkspaceMtx;
 std::unordered_map<int, void*> g_globalCaptureWorkspaceByDevice;
 std::unordered_map<int, size_t> g_globalCaptureWorkspaceBytesByDevice;
@@ -383,7 +381,8 @@ void NativeDynamicShapePlan::abortCapture(GraphSegment& seg,
                                           bool didPushCtx, int captureDevice,
                                           cudaStream_t prevCaptureStream,
                                           const std::vector<SlotPhase>& savedSlotPhases,
-                                          void* stream) {
+                                          void* stream,
+                                          bool preserveCompiledBackend) {
   DSP_DIAG(EXECUTE, "abortCapture: seg[%d-%d] freeHostPtrs=%d didPushCtx=%d captureDevice=%d "
            "tl_graphExecutionActive=%d tl_cublasWorkspacePtr=%p/%zu",
            seg.def.startSlot, seg.def.endSlot, (int)freeHostPtrs, (int)didPushCtx, captureDevice,
@@ -397,7 +396,28 @@ void NativeDynamicShapePlan::abortCapture(GraphSegment& seg,
       slots_[s].slotPhase = savedSlotPhases[s - seg.def.startSlot];  // PRIMARY restore
     }
   }
-  cleanupSegmentForRebuild(seg, "capture_abort");
+  bool compiledBackendRestored = preserveCompiledBackend;
+#if HAVE_TRITON
+  if (preserveCompiledBackend) {
+    // TLS cleanup released the failed capture's old pinned sources and module
+    // handle refs. Recreate pinned arg tables and clear temporary ownership
+    // marks without discarding compiled kernels or unloading their modules.
+    compiledBackendRestored =
+        TritonGraphBackend::getInstance().rollbackCaptureOwnershipForSegments({&seg});
+  }
+#endif
+  if (compiledBackendRestored) {
+    // The holder handle only references the shared capture workspace. Destroy
+    // graph state and reset replay identity without invalidating Triton cache.
+    seg.exec.replayHandle.reset();
+    seg.exec.resetCaptureKeys();
+    seg.exec.clearGraphContentFlags("capture_abort_preserve_compiled");
+    seg.exec.markArgsStale();
+  } else {
+    cleanupSegmentForRebuild(seg, preserveCompiledBackend
+        ? "capture_abort_restore_failed"
+        : "capture_abort");
+  }
 }
 
 // ── Slot state save/restore helpers ───────────────────────────────────────
@@ -455,13 +475,38 @@ static void dumpSegFinalArgmax(const GraphSegment& seg,
            (long long)out->lengthOf(), DSP_BUF(out), execCount);
 }
 
+class ScopedCudaAllocationRequestTracking {
+ public:
+  ScopedCudaAllocationRequestTracking()
+      : pool_(memory::CudaMemoryPool::getInstance()) {
+    pool_.beginAllocationRequestTracking();
+  }
+
+  ~ScopedCudaAllocationRequestTracking() {
+    if (active_) pool_.endAllocationRequestTracking();
+  }
+
+  size_t finish() {
+    if (!active_) return peakBytes_;
+    peakBytes_ = pool_.endAllocationRequestTracking();
+    active_ = false;
+    return peakBytes_;
+  }
+
+ private:
+  memory::CudaMemoryPool& pool_;
+  size_t peakBytes_ = 0;
+  bool active_ = true;
+};
+
 static bool instantiateAndStoreMergedCapture(
     const char* diagPrefix,
     sd::cuda::CudaGraphHandle* nativeHandle,
     std::unique_ptr<GraphReplayHandle>& handle,
     ReplaySchedule& sched,
     int mergedGroupId, int startSlot, int endSlot,
-    size_t nodeCount, cudaStream_t cudaStr) {
+    size_t nodeCount, size_t executionHeadroomBytes,
+    bool* captureHeadroomLimited, cudaStream_t cudaStr) {
 
   // ── Node type breakdown ──────────────────────────────────────────────
   // Log the full graph composition so crashes are self-diagnosing.
@@ -513,24 +558,23 @@ static bool instantiateAndStoreMergedCapture(
 
   // ── Pre-instantiation memory gate ──────────────────────────────────────
   // Each cudaGraphExec_t instantiation reserves GPU memory for graph metadata,
-  // kernel arguments, and dependency tables. With many composite islands (e.g. 76
-  // in the vision encoder), cumulative memory can exhaust the GPU, causing
-  // error 700 during subsequent gap ops that need workspace allocations.
-  // Check free memory BEFORE instantiation to bail out cleanly.
+  // kernel arguments, and dependency tables. Preserve the largest allocation
+  // observed during the real pre-capture execution in addition to metadata
+  // safety. Otherwise capture can succeed while leaving too little memory for
+  // the same compiled segment to execute on the next prompt.
+  const size_t metadataSafetyBytes = static_cast<size_t>(
+      Environment::getInstance().dsp().graphMetadataSafetyMb()) * 1024ULL * 1024ULL;
+  const size_t requiredSafetyBytes = metadataSafetyBytes + executionHeadroomBytes +
+                                     (nodeCount * 4096ULL);
   {
     size_t gpuFree = 0, gpuTotal = 0;
     cudaMemGetInfo(&gpuFree, &gpuTotal);
-    // Reserve enough headroom for gap op workspaces (xw_plus_b needs ~12MB each,
-    // cuBLAS workspace is ~256MB). Use configurable safety threshold, default 384MB.
-    size_t perIslandSafetyBytes = static_cast<size_t>(
-        Environment::getInstance().dsp().graphMetadataSafetyMb()) * 1024ULL * 1024ULL;
-    // Scale safety by node count — larger graphs need more instantiation memory
-    size_t scaledSafety = perIslandSafetyBytes + (nodeCount * 4096ULL);
-    if (gpuFree < scaledSafety) {
-      DSP_DIAG(MEMORY, "%s: group=%d PRE-INSTANTIATE OOM GATE: gpuFree=%zuMB < safety=%zuMB "
-               "(nodes=%zu, perIslandSafety=%zuMB). Bailing out cleanly to prevent error 700.",
-               diagPrefix, mergedGroupId, gpuFree / (1024*1024), scaledSafety / (1024*1024),
-               nodeCount, perIslandSafetyBytes / (1024*1024));
+    if (gpuFree < requiredSafetyBytes) {
+      if (captureHeadroomLimited != nullptr) *captureHeadroomLimited = true;
+      DSP_DIAG(MEMORY, "%s: group=%d PRE-INSTANTIATE HEADROOM GATE: gpuFree=%zuMB < required=%zuMB "
+               "(nodes=%zu, metadata=%zuMB, warmupPeak=%zuMB). Preserving compiled backend.",
+               diagPrefix, mergedGroupId, gpuFree / (1024*1024), requiredSafetyBytes / (1024*1024),
+               nodeCount, metadataSafetyBytes / (1024*1024), executionHeadroomBytes / (1024*1024));
       return false;
     }
   }
@@ -544,6 +588,22 @@ static bool instantiateAndStoreMergedCapture(
              nativeHandle->wasLastInstantiateOom() ? 1 : 0, nodeCount);
     return false;
   }
+
+  // Instantiation itself can consume enough memory to cross the threshold,
+  // including on the final merged group where no later pre-gate would run.
+  {
+    size_t gpuFree = 0, gpuTotal = 0;
+    cudaMemGetInfo(&gpuFree, &gpuTotal);
+    if (gpuFree < requiredSafetyBytes) {
+      if (captureHeadroomLimited != nullptr) *captureHeadroomLimited = true;
+      DSP_DIAG(MEMORY, "%s: group=%d POST-INSTANTIATE HEADROOM GATE: gpuFree=%zuMB < required=%zuMB "
+               "(metadata=%zuMB, warmupPeak=%zuMB). Discarding capture, retaining compilation.",
+               diagPrefix, mergedGroupId, gpuFree / (1024*1024), requiredSafetyBytes / (1024*1024),
+               metadataSafetyBytes / (1024*1024), executionHeadroomBytes / (1024*1024));
+      return false;
+    }
+  }
+
   // Node autopsy: print every node's identity — for MEMCPY nodes the BAKED
   // src/dst addresses. A replay that SIGSEGVs inside cudaGraphLaunch means one
   // of these baked resources died; the src address names its allocator.
@@ -962,8 +1022,8 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
   //   - cuBLAS/external-workspace gaps are live by default; the opt-in capture
   //     path uses the explicit capture workspace and the same replay checks
   //   - Gather indices change per step but pointer args don't (data changes, not addresses)
-  //   - VALUE_DEPENDENT_SHAPE capture is guarded by the create-value replay key:
-  //     stable values replay; changed graph-baked values invalidate and rebuild.
+  //   - Slice-family ops are excluded by NativeSlot::isCapturable(): their
+  //     begin/size tensors are read on the host during execution and must stay live.
   //   - Native attention is intentionally excluded below. If attention was not
   //     compiled as a Triton island, keep its helper live rather than capturing
   //     its multi-output/scratch/KV composition as generic gap glue.
@@ -999,6 +1059,23 @@ static bool isGapRangeCaptureSafe(NativeSlot* slots, int startSlot, int endSlot,
     }
     // Zero-compute ops (view/identity/frozen) are always safe — no GPU kernel nodes.
     if (slots[s].aliasesInput() || slots[s].frozenConstantSlot()) continue;
+
+    // Value-dependent constant-generation ops (range, create, lin_space) must
+    // remain live. Their output shape can stay fixed while their generated values
+    // change every decode step. Merging them into a captured gap bakes those
+    // control values into the CUDA graph, forcing a capture/invalidate cycle
+    // instead of allowing the composite schedule to refresh them before replay.
+    const bool valueDependentConstantGeneration =
+        slots[s].hasOpTrait(sd::ops::OP_TRAIT_CONSTANT_GENERATION) &&
+        slots[s].hasOpTrait(sd::ops::OP_TRAIT_VALUE_DEPENDENT_SHAPE);
+    if (valueDependentConstantGeneration) {
+      DSP_DIAG(SEGMENT,
+               "isGapRangeCaptureSafe [%d-%d] UNSAFE: slot=%d op='%s' has "
+               "CONSTANT_GENERATION+VALUE_DEPENDENT_SHAPE (effective=live_gap)",
+               startSlot, endSlot, s, slots[s].ident.opName.c_str());
+      return false;
+    }
+
     bool usesExternalWorkspace = slots[s].hasOpTrait(sd::ops::OP_TRAIT_EXTERNAL_WORKSPACE);
     if (slots[s].hasOpTrait(sd::ops::OP_TRAIT_ATTENTION)) {
       DSP_DIAG(SEGMENT,
@@ -1493,7 +1570,8 @@ Status NativeDynamicShapePlan::compositeReplay(
                        !Environment::getInstance().tritonVerifyKernels();
 #if HAVE_TRITON
   if (!useFastReplay) {
-   auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
+   auto* tritonBackend =
+       dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend);
    if (tritonBackend != nullptr) {
      auto refreshStatus = tritonBackend->refreshArgTablesForReplay(
          seg, effectiveExternals, numExt, outputSlots_, totalOutputSlots_, stream);
@@ -1682,7 +1760,8 @@ Status NativeDynamicShapePlan::compositeReplay(
       if (gapSlotsExecutedSinceArgCopy) {
         auto tAR0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
 #if HAVE_TRITON
-        auto* tritonBackend2 = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
+        auto* tritonBackend2 =
+            dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend);
         if (tritonBackend2 != nullptr) {
           tritonBackend2->refreshArgTablesForReplay(
               seg, effectiveExternals, numExt, outputSlots_, totalOutputSlots_, stream);
@@ -1887,13 +1966,17 @@ Status NativeDynamicShapePlan::compositeReplay(
       // ── Active gap slot cache: skip 97% of slot iterations in steady state ──
       // On the first frozen+steady pass, classify every slot and cache only those
       // that need work. On subsequent steps, iterate over the compact cached list.
-      // NOTE: cache is per-gap-unit keyed by startSlot.
-      bool useCachedActiveSlots = activeGapSlotsCachedSet_.count(unit.startSlot)
+      // A schedule recapture can change endSlot without changing startSlot, so
+      // cache identity must include both interval boundaries.
+      const uint64_t gapCacheKey =
+          (static_cast<uint64_t>(static_cast<uint32_t>(unit.startSlot)) << 32) |
+          static_cast<uint32_t>(unit.endSlot);
+      bool useCachedActiveSlots = activeGapSlotsCachedSet_.count(gapCacheKey)
                                   && !planLifecycle_.isSlotBySlot() && executeCount_ >= 3;
 
       if (useCachedActiveSlots) {
         // ── FAST PATH: iterate only over pre-classified active slots ──
-        auto& cachedSlots = cachedActiveGapSlotsMap_[unit.startSlot];
+        auto& cachedSlots = cachedActiveGapSlotsMap_[gapCacheKey];
         for (auto& active : cachedSlots) {
           switch (active.action) {
             case ActiveSlotAction::IDENTITY_TICK: {
@@ -2016,10 +2099,10 @@ Status NativeDynamicShapePlan::compositeReplay(
       } else {
         // ── CLASSIFICATION PATH: run full logic, optionally build cache ──
         bool buildingCache = !planLifecycle_.isSlotBySlot() && executeCount_ >= 2
-                             && !activeGapSlotsCachedSet_.count(unit.startSlot);
+                             && !activeGapSlotsCachedSet_.count(gapCacheKey);
         if (buildingCache) {
-          cachedActiveGapSlotsMap_[unit.startSlot].clear();
-          cachedActiveGapSlotsMap_[unit.startSlot].reserve(128);  // ~82 expected
+          cachedActiveGapSlotsMap_[gapCacheKey].clear();
+          cachedActiveGapSlotsMap_[gapCacheKey].reserve(128);  // ~82 expected
         }
 
       for (int s = unit.startSlot; s <= unit.endSlot; s++) {
@@ -2037,7 +2120,7 @@ Status NativeDynamicShapePlan::compositeReplay(
                 outputSlots_[si]->tickWriteDevice();
               }
               if (buildingCache) {
-                cachedActiveGapSlotsMap_[unit.startSlot].push_back({s, ActiveSlotAction::IDENTITY_TICK, -1, si});
+                cachedActiveGapSlotsMap_[gapCacheKey].push_back({s, ActiveSlotAction::IDENTITY_TICK, -1, si});
               }
             }
             continue;
@@ -2070,7 +2153,7 @@ Status NativeDynamicShapePlan::compositeReplay(
                 }
               }
               if (buildingCache) {
-                cachedActiveGapSlotsMap_[unit.startSlot].push_back({s, ActiveSlotAction::BATCHED_GEMM, bgIdx, -1});
+                cachedActiveGapSlotsMap_[gapCacheKey].push_back({s, ActiveSlotAction::BATCHED_GEMM, bgIdx, -1});
               }
               continue;
             } else {
@@ -2108,7 +2191,7 @@ Status NativeDynamicShapePlan::compositeReplay(
               currentOut->tickWriteDevice();
               dirtySlotGenerations_[outSi] = currentDirtyGeneration_;
               if (buildingCache) {
-                cachedActiveGapSlotsMap_[unit.startSlot].push_back({s, ActiveSlotAction::VIEW_TICK, -1, outSi});
+                cachedActiveGapSlotsMap_[gapCacheKey].push_back({s, ActiveSlotAction::VIEW_TICK, -1, outSi});
               }
               continue;
             }
@@ -2134,7 +2217,7 @@ Status NativeDynamicShapePlan::compositeReplay(
           gapOutputPointersChanged = true;
         }
         if (buildingCache) {
-          cachedActiveGapSlotsMap_[unit.startSlot].push_back({s, ActiveSlotAction::EXECUTE, -1, -1});
+          cachedActiveGapSlotsMap_[gapCacheKey].push_back({s, ActiveSlotAction::EXECUTE, -1, -1});
         }
         if (collectExecOpNames) {
           execOpCounts[slots_[s].ident.opName]++;
@@ -2142,12 +2225,12 @@ Status NativeDynamicShapePlan::compositeReplay(
       }
 
         if (buildingCache) {
-          activeGapSlotsCachedSet_.insert(unit.startSlot);
+          activeGapSlotsCachedSet_.insert(gapCacheKey);
           DSP_DIAG(EXECUTE, "COMPOSITE_REPLAY: gap[%d-%d] cached %d active gap slots out of %d total (%.1f%% skip rate)",
                    unit.startSlot, unit.endSlot,
-                   static_cast<int>(cachedActiveGapSlotsMap_[unit.startSlot].size()),
+                   static_cast<int>(cachedActiveGapSlotsMap_[gapCacheKey].size()),
                    unit.endSlot - unit.startSlot + 1,
-                   100.0 * (1.0 - static_cast<double>(cachedActiveGapSlotsMap_[unit.startSlot].size()) /
+                   100.0 * (1.0 - static_cast<double>(cachedActiveGapSlotsMap_[gapCacheKey].size()) /
                             std::max(1, unit.endSlot - unit.startSlot + 1)));
         }
       }  // end classification vs cached path
@@ -2192,7 +2275,8 @@ Status NativeDynamicShapePlan::compositeReplay(
       if (gapSlotsExecutedSinceArgCopy) {
         auto tAR0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point();
 #if HAVE_TRITON
-        auto* tritonBackend2 = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
+        auto* tritonBackend2 =
+            dynamic_cast<TritonGraphBackend*>(seg.resolvedGraphBackend);
         if (tritonBackend2 != nullptr) {
           tritonBackend2->refreshArgTablesForReplay(
               seg, effectiveExternals, numExt, outputSlots_, totalOutputSlots_, stream);
@@ -2507,14 +2591,12 @@ void NativeDynamicShapePlan::proactivePreCaptureMemoryCleanup(GraphSegment& seg,
   size_t gpuFree = 0, gpuTotal = 0;
   cudaMemGetInfo(&gpuFree, &gpuTotal);
 
-  // Estimate needed: capture workspace + cuBLAS workspace (if not allocated) + safety margin
+  // Estimate needed: the plan-owned capture workspace, cuBLAS workspace
+  // (when not allocated), and safety margin. A workspace referenced by a live
+  // cached CUDA graph cannot be borrowed from another plan.
   size_t neededBytes = 0;
-  // Only need workspace allocation if neither per-plan nor the per-device global workspace exists.
   if (sharedCaptureWorkspace_ == nullptr) {
-    std::lock_guard<std::mutex> lk(g_globalCaptureWorkspaceMtx);
-    if (g_globalCaptureWorkspaceByDevice.count(deviceId) == 0) {
-      neededBytes += tritonCaptureWorkspaceSize();
-    }
+    neededBytes += tritonCaptureWorkspaceSize();
   }
   if (cublasWorkspaceBuffer_ == nullptr) {
     neededBytes += Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL;
@@ -3015,7 +3097,14 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
   bool captureWindowSatisfiedNow = execCountInWindowNow || ctx.requiresOrderedGapCapture;
   // compilationFailed prevents re-capture of permanently failed segments
   // (distinct from platformShouldUseGraph which gates graph USAGE).
+  // Capture is legal only after the segment completed warmup and compilation.
+  // Replay-invariant invalidation can reset the lifecycle to WARMUP in this same
+  // invocation. Without this gate the function immediately re-captured anyway,
+  // produced a ready handle, then correctly refused to seal it because the
+  // lifecycle was not CAPTURING. That impossible state eventually tripped the
+  // strict no-fallback phase-stall guard.
   bool shouldCaptureTritonGraphNow = ctx.allowTritonCudaGraphReplay &&
+                                     seg.exec.segPhase.needsCapture() &&
                                      !hasReplayHandleNow &&
                                      replayHandleNullNow &&
                                      !seg.exec.compilationFailed &&
@@ -3062,81 +3151,67 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       int deviceId = 0;
       cudaGetDevice(&deviceId);
 
-      // Global shared workspace: allocate once globally, reuse across ALL plans.
-      // CUDA graph capture is serialized by DeviceCaptureGuard (only one plan
-      // captures at a time per device), so the global workspace is safe to share.
-      // This avoids OOM when multiple concurrent plans each try to allocate
-      // their own 512MB workspace.
+      // One workspace is shared by this plan's sequential segments, but it
+      // must remain exclusive to the plan. Merged CUDA graphs retain pointer
+      // tables and temporary addresses inside this arena after capture; sharing
+      // it with another live cached plan lets the second capture overwrite the
+      // first graph's retained state.
       if (sharedCaptureWorkspace_ == nullptr) {
-        // Try to reuse the per-device global workspace first (allocated by another plan).
-        {
-          std::lock_guard<std::mutex> lk(g_globalCaptureWorkspaceMtx);
-          auto wsIt = g_globalCaptureWorkspaceByDevice.find(deviceId);
-          if (wsIt != g_globalCaptureWorkspaceByDevice.end()) {
-            sharedCaptureWorkspace_ = wsIt->second;
-            sharedCaptureWorkspaceBytes_ = g_globalCaptureWorkspaceBytesByDevice.at(deviceId);
-            sharedCaptureWorkspaceDevice_ = deviceId;
+        // Trim pool to reclaim freed async memory before allocating.
+        memory::CudaMemoryPool::getInstance().trimPool(deviceId);
+
+        // Adaptive workspace sizing — scale down to fit available GPU memory.
+        size_t gpuFree = 0, gpuTotal = 0;
+        cudaMemGetInfo(&gpuFree, &gpuTotal);
+        // Reserve both graph-metadata headroom and the cuBLAS capture
+        // workspace that is allocated below. Reserving metadata alone lets the
+        // later cuBLAS allocation consume the entire safety margin, making the
+        // post-allocation gate fail deterministically on memory-tight plans.
+        const size_t graphSafetyBytes =
+            Environment::getInstance().dspGraphMetadataSafetyMb() * 1024ULL * 1024ULL;
+        const size_t cublasReserveBytes = cublasWorkspaceBuffer_ == nullptr
+            ? Environment::getInstance().dspCublasWorkspaceMb() * 1024ULL * 1024ULL
+            : 0;
+        size_t headroom = graphSafetyBytes + cublasReserveBytes;
+        size_t workspaceSize = tritonCaptureWorkspaceSize();
+        if (gpuFree > headroom) {
+          size_t availableForWs = gpuFree - headroom;
+          if (availableForWs < workspaceSize) {
+            workspaceSize = availableForWs;
+            DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
+                         "plan workspace scaled down: gpuFree=%zuMB headroom=%zuMB -> workspace=%zuMB (max=%zuMB)",
+                         gpuFree / (1024*1024), headroom / (1024*1024),
+                         workspaceSize / (1024*1024), tritonCaptureWorkspaceSize() / (1024*1024));
           }
+        } else {
+          workspaceSize = 32ULL * 1024 * 1024;
+          DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
+                       "plan workspace minimal: gpuFree=%zuMB < headroom=%zuMB -> workspace=32MB",
+                       gpuFree / (1024*1024), headroom / (1024*1024));
+        }
+
+        cudaError_t err = cudaMalloc(&sharedCaptureWorkspace_, workspaceSize);
+        if (err != cudaSuccess) {
+          cudaGetLastError();
+          sharedCaptureWorkspace_ = nullptr;
         }
         if (sharedCaptureWorkspace_ != nullptr) {
+          sharedCaptureWorkspaceBytes_ = workspaceSize;
+          sharedCaptureWorkspaceDevice_ = deviceId;
+          memory::CudaMemoryPool::getInstance().registerCaptureWorkspace(
+              sharedCaptureWorkspace_, sharedCaptureWorkspaceBytes_);
           DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                       "reusing GLOBAL capture workspace: %zuMB on device %d",
-                       sharedCaptureWorkspaceBytes_ / (1024*1024), deviceId);
+                       "allocated PLAN-OWNED capture workspace: %zuMB on device %d (max=%zuMB)",
+                       workspaceSize / (1024*1024), deviceId,
+                       tritonCaptureWorkspaceSize() / (1024*1024));
         } else {
-          // First plan on this device — allocate the global workspace.
-          // Trim pool to reclaim freed async memory before allocating.
-          memory::CudaMemoryPool::getInstance().trimPool(deviceId);
-
-          // Adaptive workspace sizing — scale down to fit available GPU memory.
-          size_t gpuFree = 0, gpuTotal = 0;
-          cudaMemGetInfo(&gpuFree, &gpuTotal);
-          size_t headroom = 256ULL * 1024 * 1024;
-          size_t workspaceSize = tritonCaptureWorkspaceSize();
-          if (gpuFree > headroom) {
-            size_t availableForWs = gpuFree - headroom;
-            if (availableForWs < workspaceSize) {
-              workspaceSize = availableForWs;
-              DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                           "global workspace scaled down: gpuFree=%zuMB headroom=%zuMB -> workspace=%zuMB (max=%zuMB)",
-                           gpuFree / (1024*1024), headroom / (1024*1024),
-                           workspaceSize / (1024*1024), tritonCaptureWorkspaceSize() / (1024*1024));
-            }
-          } else {
-            workspaceSize = 32ULL * 1024 * 1024;
-            DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                         "global workspace minimal: gpuFree=%zuMB < headroom=%zuMB -> workspace=32MB",
-                         gpuFree / (1024*1024), headroom / (1024*1024));
-          }
-
-          cudaError_t err = cudaMalloc(&sharedCaptureWorkspace_, workspaceSize);
-          if (err != cudaSuccess) {
-            cudaGetLastError();
-            sharedCaptureWorkspace_ = nullptr;
-          }
-          if (sharedCaptureWorkspace_ != nullptr) {
-            sharedCaptureWorkspaceBytes_ = workspaceSize;
-            sharedCaptureWorkspaceDevice_ = deviceId;
-            // Promote to per-device global so other plans on this device can reuse.
-            {
-              std::lock_guard<std::mutex> lk(g_globalCaptureWorkspaceMtx);
-              g_globalCaptureWorkspaceByDevice[deviceId] = sharedCaptureWorkspace_;
-              g_globalCaptureWorkspaceBytesByDevice[deviceId] = sharedCaptureWorkspaceBytes_;
-            }
-            memory::CudaMemoryPool::getInstance().registerCaptureWorkspace(
-                sharedCaptureWorkspace_, sharedCaptureWorkspaceBytes_);
-            DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                         "allocated GLOBAL capture workspace: %zuMB on device %d (max=%zuMB)",
-                         workspaceSize / (1024*1024), deviceId,
-                         tritonCaptureWorkspaceSize() / (1024*1024));
-          } else {
-            SegmentLifecycle::invalidateForRebuild(this, seg, "oom_shared_workspace");
+          SegmentLifecycle::invalidateForRebuild(this, seg, "oom_shared_workspace");
 #if HAVE_TRITON
-            tritonOrderedRangeGuard.active = false;
-            TritonGraphBackend::clearOrderedRangeExecutor();
+          tritonOrderedRangeGuard.active = false;
+          TritonGraphBackend::clearOrderedRangeExecutor();
 #endif
-            return reportOomError(seg, "shared_workspace_allocation",
-                                  workspaceSize, deviceId);
-          }
+          return reportOomError(seg, "shared_workspace_allocation",
+                                workspaceSize, deviceId);
         }
       } else {
         DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
@@ -3345,7 +3420,16 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           warmupSeg.def.endSlot = seg.def.endSlot;
           warmupSeg.exec.executionCount = seg.exec.executionCount;
           SegmentLifecycle::copyCompilationState(warmupSeg.exec, seg.exec);
+          ScopedCudaAllocationRequestTracking allocationTracker;
           warmupStatus = executeSegmentSlotBySlot(warmupSeg, externalArrays, numExt, stream);
+          const size_t warmupPeakBytes = allocationTracker.finish();
+          if (warmupPeakBytes > seg.exec.peakWarmupAllocationBytes) {
+            seg.exec.peakWarmupAllocationBytes = warmupPeakBytes;
+          }
+          DSP_DIAG(MEMORY,
+                   "PRE-CAPTURE WARMUP ALLOCATION PEAK: seg[%d-%d] current=%zuMB retained=%zuMB",
+                   seg.def.startSlot, seg.def.endSlot, warmupPeakBytes / (1024*1024),
+                   seg.exec.peakWarmupAllocationBytes / (1024*1024));
         }
         restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesWarmup);
 
@@ -3366,9 +3450,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 #endif
           return warmupStatus;
         }
-        // Decrement executionCount — the warmup was an extra execution that should
-        // not count toward the capture threshold.
-        if (seg.exec.executionCount > 0) seg.exec.executionCount--;
+        // warmupSeg is an ephemeral copy with its own execution counter. The
+        // parent segment's counter tracks logical invocations and must not be
+        // decremented here; doing so made capture attempts move the lifecycle
+        // backwards and prevented bounded OOM retries from making progress.
 
         DSP_DIAG(EXECUTE, "Triton pre-capture warmup for seg[%d-%d] queued on capture stream=%p "
                           "(no blocking stream sync)",
@@ -3549,9 +3634,34 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
       // Downstream segments see valid warmup data. Triton sub-kernel arg tables
       // reference warmup addresses, which are stable.
 
-      // POST-ALLOCATION MEMORY GATE: workspace + cuBLAS are allocated. Check that
-      // enough headroom remains for CUDA driver graph metadata before starting capture.
-      // This is tight and accurate — only graph metadata overhead remains.
+      // Warmup can issue many cudaFreeAsync calls for temporary intermediates.
+      // The proactive trim above runs before warmup, so without a second trim the
+      // CUDA pool still reserves those now-unused blocks and cudaMemGetInfo reports
+      // almost no memory for graph metadata. Synchronize the one-time warmup stream
+      // and return unused pool pages to the driver before the capture gate.
+      {
+        int postWarmupDevice = 0;
+        cudaGetDevice(&postWarmupDevice);
+        size_t freeBeforeTrim = 0, totalBeforeTrim = 0;
+        cudaMemGetInfo(&freeBeforeTrim, &totalBeforeTrim);
+        if (ctx.cudaStr != nullptr) {
+          memory::CudaMemoryPool::getInstance().trimPoolOnStream(
+              postWarmupDevice, ctx.cudaStr);
+        } else {
+          memory::CudaMemoryPool::getInstance().trimPool(postWarmupDevice);
+        }
+        size_t freeAfterTrim = 0, totalAfterTrim = 0;
+        cudaMemGetInfo(&freeAfterTrim, &totalAfterTrim);
+        DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
+                     "POST-WARMUP TRIM: free=%zuMB -> %zuMB on device %d for seg[%d-%d]",
+                     freeBeforeTrim / (1024*1024), freeAfterTrim / (1024*1024),
+                     postWarmupDevice, seg.def.startSlot, seg.def.endSlot);
+      }
+
+      // POST-ALLOCATION MEMORY GATE: workspace + cuBLAS are allocated. CUDA
+      // graph metadata is an optional optimization; insufficient metadata headroom
+      // must not invalidate a successfully compiled Triton segment or fail inference.
+      // The pre-capture warmup above has already produced the correct result.
       {
         size_t gpuFree = 0, gpuTotal = 0;
         cudaMemGetInfo(&gpuFree, &gpuTotal);
@@ -3559,17 +3669,62 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
         if (gpuFree < safetyBytes) {
           int deviceId = 0;
           cudaGetDevice(&deviceId);
+
+          const bool retriesRemain =
+              seg.exec.captureOomRetries < GraphSegment::maxOomRetries();
+          const int retryAfter = retriesRemain
+              ? seg.exec.executionCount + GraphSegment::retryInterval()
+              : INT_MAX;
+          SegmentLifecycle::markOomDeferred(seg.exec, retryAfter);
+
           DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                       "POST-ALLOC GATE FAILED: free=%zuMB < safety=%zuMB for seg[%d-%d]",
+                       "POST-ALLOC GATE DEFERRED: free=%zuMB < safety=%zuMB for seg[%d-%d] "
+                       "retry=%d/%d retryAfter=%d compiledBy=%s — preserving compiled plan",
                        gpuFree / (1024*1024), safetyBytes / (1024*1024),
-                       seg.def.startSlot, seg.def.endSlot);
-          SegmentLifecycle::invalidateForRebuild(this, seg, "oom_post_alloc_gate");
+                       seg.def.startSlot, seg.def.endSlot,
+                       seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
+                       retryAfter, seg.exec.compiledByBackend.c_str());
+
+          // Capture has not begun. Complete the queued warmup before releasing
+          // its pinned host sources, then tear down only capture-attempt state:
+          // retain compiled Triton kernels, shape key, composite schedule, output
+          // buffers, and shared workspaces for compiled direct execution.
+          cudaError_t warmupSyncErr = cudaStreamSynchronize(ctx.cudaStr);
+          cleanupCaptureTlsState(true, static_cast<void*>(prevCaptureStream));
+          popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
+          restoreCublasWorkspaceAfterCapture(stream);
+          restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
+          seg.exec.replayHandle.reset();
+
 #if HAVE_TRITON
-          // Deactivate guard: cleanup done; destructor must not double-clear.
           tritonOrderedRangeGuard.active = false;
           TritonGraphBackend::clearOrderedRangeExecutor();
 #endif
-          return reportOomError(seg, "post_alloc_gate", safetyBytes, deviceId);
+
+          if (warmupSyncErr != cudaSuccess) {
+            DSP_DIAG_SEG(EXECUTE, seg.def.startSlot,
+                         "POST-ALLOC DEFER warmup synchronization failed for seg[%d-%d]: "
+                         "cudaError=%d (%s)",
+                         seg.def.startSlot, seg.def.endSlot,
+                         static_cast<int>(warmupSyncErr),
+                         cudaGetErrorString(warmupSyncErr));
+            SegmentLifecycle::markFailed(
+                seg.exec, "capture_defer_warmup_sync_failed",
+                seg.def.startSlot, seg.def.endSlot);
+            return Status::KERNEL_FAILURE;
+          }
+
+          if (willUseCompositeCapture) {
+            // Composite preparation deliberately leaves warmup outputs intact.
+            // Count this logical invocation once and return those correct outputs.
+            seg.exec.executionCount++;
+            return Status::OK;
+          }
+
+          // Monolithic preparation may have batch-zeroed warmup outputs before this
+          // gate. Re-execute natively once so callers never observe zeroed data.
+          SyncOverride deferredCaptureSync(*this, "capture_headroom_deferred_sbs");
+          return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
         }
       }
 
@@ -3642,7 +3797,14 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
        // nativeOnlyGraphCapture=true when forceNativeCapture is set (e.g. gap slots
        // present) — in that case, ALL ops including gaps are baked into a single
        // monolithic CUDA graph; composite capture must NOT run here.
-       if (hasIslandUnits && !sched.units.empty() && !didCompositeCapture &&
+       // A non-empty schedule containing only live gaps is still a valid
+       // composite execution plan. This occurs after a value-dependent op
+       // changes an output pointer/shape and the rebuilt schedule can no longer
+       // form a safe Triton island. Letting that schedule fall through to the
+       // monolithic path bakes the live range/create values into a CUDA graph.
+       // Run and seal the ordered live schedule here instead; subsequent calls
+       // re-enter compositeReplay() and execute every component in program order.
+       if (!sched.units.empty() && !didCompositeCapture &&
            !ctx.nativeOnlyGraphCapture) {
          // Serialize composite capture per GPU — hold lock for entire composite capture.
          DeviceCaptureGuard compositeCaptureGuard;
@@ -3653,8 +3815,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_DEFER: seg[%d-%d] another thread capturing, will retry next exec",
                     seg.def.startSlot, seg.def.endSlot);
          } else {
-         DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_ENTER: seg[%d-%d] units=%d hasIsland=1 execCount=%d",
-                  seg.def.startSlot, seg.def.endSlot, (int)sched.units.size(), executeCount_);
+         DSP_DIAG(COMPILE,
+                  "COMPOSITE_CAPTURE_ENTER: seg[%d-%d] units=%d hasIsland=%d liveGapOnly=%d execCount=%d",
+                  seg.def.startSlot, seg.def.endSlot, (int)sched.units.size(),
+                  hasIslandUnits ? 1 : 0, hasIslandUnits ? 0 : 1, executeCount_);
          DSP_DIAG(EXECUTE, "COMPOSITE_CAPTURE_BEGIN: seg[%d-%d] units=%d "
                   "segPhase=%s shapesFrozen=%d planPhase=%s executeCount=%d "
                   "tl_graphExecutionActive=%d tl_cublasWorkspacePtr=%p/%zu",
@@ -3679,6 +3843,7 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          bool mergeViewsNow = Environment::getInstance().triton().mergedCaptureThroughViews();
 
          bool allIslandsOk = true;
+         bool captureHeadroomLimited = false;
          int deviceId = 0;
          cudaGetDevice(&deviceId);
 
@@ -3889,7 +4054,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                if (endOk && nodeCount > 0) {
                  if (!instantiateAndStoreMergedCapture("MERGED_CAPTURE", mergedNativeHandle,
                          mergedHandle, sched, mergedGroupId, mergedStartSlot, mergedEndSlot,
-                         nodeCount, ctx.cudaStr)) {
+                         nodeCount, seg.exec.peakWarmupAllocationBytes,
+                         &captureHeadroomLimited, ctx.cudaStr)) {
                    allIslandsOk = false;
                  }
                } else {
@@ -4036,8 +4202,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              // arg tables consistent with what the merged gap nodes read.
              setIslandFilterTls(unit.startSlot, unit.endSlot, "island_exec");
 
-              auto captureStatus = ctx.backend->executeSegment(seg, slots_, effectiveExternalsForCapture, numExt,
-                                                           outputSlots_, totalOutputSlots_, stream);
+              auto captureStatus = ctx.backend->executeSegment(
+                  makeGraphBackendRequest(), seg, slots_,
+                  effectiveExternalsForCapture, numExt, outputSlots_,
+                  totalOutputSlots_, stream);
 
                {
                  bool _islandInvalid = false;
@@ -4118,7 +4286,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
              if (endOk && nodeCount > 0) {
                if (!instantiateAndStoreMergedCapture("MERGED_CAPTURE", mergedNativeHandle,
                        mergedHandle, sched, mergedGroupId, mergedStartSlot, mergedEndSlot,
-                       nodeCount, ctx.cudaStr)) {
+                       nodeCount, seg.exec.peakWarmupAllocationBytes,
+                       &captureHeadroomLimited, ctx.cudaStr)) {
                  DSP_DIAG(COMPILE, "COMPOSITE_CAPTURE_FAIL: instantiateAndStore FAILED group=%d [%d-%d] nodes=%zu",
                           mergedGroupId, mergedStartSlot, mergedEndSlot, nodeCount);
                  allIslandsOk = false;
@@ -4154,7 +4323,8 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            if (endOk && nodeCount > 0) {
              if (!instantiateAndStoreMergedCapture("MERGED_CAPTURE_TAIL", mergedNativeHandle,
                      mergedHandle, sched, mergedGroupId, mergedStartSlot, mergedEndSlot,
-                     nodeCount, ctx.cudaStr)) {
+                     nodeCount, seg.exec.peakWarmupAllocationBytes,
+                     &captureHeadroomLimited, ctx.cudaStr)) {
                allIslandsOk = false;
              }
            } else {
@@ -4164,9 +4334,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
          }
 
          if (allIslandsOk) {
-           // All merged groups captured successfully.
+           // All merged groups captured successfully, or a live-gap-only
+           // schedule completed in order without creating a CUDA graph.
            // seg.exec.replayHandle is already created above (the sentinel).
-           // Merged replay uses mergedReplayHandles indexed by mergedGroupId.
+           // Merged replay uses mergedReplayHandles indexed by mergedGroupId;
+           // live-gap-only replay requires no native handles.
 
            // Record the cast-cache high-water mark.  During capture, merged
            // gap matmuls consumed tl_castA.index / tl_castB.index slots.  Those
@@ -4301,7 +4473,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                sched.mergedReplayHandles[0]->addCapturedModule(mod);
              }
            }
-           cleanupCaptureTlsState(false, static_cast<void*>(prevCaptureStream));  // false = do NOT free host ptrs
+           // A live-gap-only schedule never starts CUDA capture, so no replay
+           // handle can own the pinned capture workspace. Free it immediately.
+           // Captured island schedules transfer that ownership to their handle.
+           cleanupCaptureTlsState(!hasIslandUnits, static_cast<void*>(prevCaptureStream));
            popPrimaryCtxIfPushed(didPushCtx, tritonCaptureDevice);
            restoreCublasWorkspaceAfterCapture(stream);
            restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesTriton);
@@ -4344,8 +4519,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            // concurrent captures can exhaust GPU memory, causing cudaMallocAsync
            // to fail during capture, which poisons the capture stream (error 901).
            // In that case, defer and retry rather than permanently failing.
-           abortCapture(seg, false, didPushCtx, tritonCaptureDevice,
-                       prevCaptureStream, savedSlotPhasesTriton, stream);
+           abortCapture(seg, true, didPushCtx, tritonCaptureDevice,
+                       prevCaptureStream, savedSlotPhasesTriton, stream,
+                       true /* preserveCompiledBackend */);
            tritonOrderedRangeGuard.active = false;
            TritonGraphBackend::clearOrderedRangeExecutor();
 
@@ -4380,13 +4556,23 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
            // - CUDA driver internal contention
            // Only permanently fail after exhausting retries.
            if (seg.exec.captureOomRetries < GraphSegment::maxOomRetries()) {
-             int retryAfter = seg.exec.executionCount + GraphSegment::retryInterval();
+             const int retryAfter = captureHeadroomLimited
+                 ? INT_MAX
+                 : seg.exec.executionCount + GraphSegment::retryInterval();
              SegmentLifecycle::markOomDeferred(seg.exec, retryAfter);
-             DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
-                          "COMPOSITE_CAPTURE FAILED — retry %d/%d, gpuFree=%zuMB. "
-                          "retryAfterExec=%d. Falling through to slot-by-slot.",
-                          seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
-                          gpuFreeAtFail / (1024*1024), retryAfter);
+             if (captureHeadroomLimited) {
+               DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
+                            "COMPOSITE_CAPTURE DEFERRED FOR CAPACITY: gpuFree=%zuMB "
+                            "warmupPeak=%zuMB. Compiled backend retained; capture retry disabled.",
+                            gpuFreeAtFail / (1024*1024),
+                            seg.exec.peakWarmupAllocationBytes / (1024*1024));
+             } else {
+               DSP_DIAG_SEG(MEMORY, seg.def.startSlot,
+                            "COMPOSITE_CAPTURE FAILED — retry %d/%d, gpuFree=%zuMB. "
+                            "retryAfterExec=%d. Compiled backend retained.",
+                            seg.exec.captureOomRetries, GraphSegment::maxOomRetries(),
+                            gpuFreeAtFail / (1024*1024), retryAfter);
+             }
              // Prevent fallthrough to monolithic capture — the segment state
              // was already cleaned up by abortCapture. Monolithic would try to
              // capture again with a stale replayHandle and fail.
@@ -4534,8 +4720,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
 
         auto captureStatus = nativeOnlyCapture
             ? Status::KERNEL_FAILURE
-            : ctx.backend->executeSegment(seg, slots_, effectiveExternalsForCapture, numExt,
-                                          outputSlots_, totalOutputSlots_, stream);
+            : ctx.backend->executeSegment(
+                  makeGraphBackendRequest(), seg, slots_,
+                  effectiveExternalsForCapture, numExt, outputSlots_,
+                  totalOutputSlots_, stream);
 
         if (!nativeOnlyCapture) {
           DSP_DIAG(EXECUTE, "MONOLITHIC_CAPTURE: executeSegment returned status=%d for seg[%d-%d]",
@@ -5486,8 +5674,9 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
     prezeroSegmentOutputs(seg, stream);
 
     try {
-      status = ctx.backend->executeSegment(seg, slots_, directExternals, numExt,
-                                       outputSlots_, totalOutputSlots_, stream);
+      status = ctx.backend->executeSegment(
+          makeGraphBackendRequest(), seg, slots_, directExternals, numExt,
+          outputSlots_, totalOutputSlots_, stream);
     } catch (...) {
       restoreSlotStates(slots_, seg.def.startSlot, seg.def.endSlot, savedSlotPhasesNonCapture);
       throw;
@@ -5617,6 +5806,13 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
     tritonOrderedRangeGuard.active = false;
   }
 #endif
+  if (status == Status::OK && usedTritonGraphCapture) {
+    // Capture consumes one logical segment invocation. The pre-capture warmup
+    // executes through an ephemeral segment copy, so it does not update this
+    // counter itself.
+    seg.exec.executionCount++;
+    totalGraphReplays_++;
+  }
   return status;
 
 }  // segDispatchCaptureOrDirect
@@ -5701,7 +5897,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // which would skip H2D sync on the originals (staging buffers are device-
   // authoritative), leaving Java-side input data stranded on the host.
 
-  auto* backend = getGpuGraphBackend();
+  auto* backend = seg.resolvedGraphBackend;
+  if (backend == nullptr) {
+    const auto& candidates = getGraphBackendCandidates();
+    backend = candidates.empty() ? nullptr : candidates.front();
+  }
   if (backend == nullptr) {
     DSP_DIAG(BACKEND, "executeSegmentWithGpuGraph: no GPU backend selected for seg[%d-%d]",
              seg.def.startSlot, seg.def.endSlot);
@@ -5721,15 +5921,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     return Status::KERNEL_FAILURE;
   }
 
-  // Safety check: caller (platformExecuteSegmentWithBackends) already gates on
-  // canFuseSegment() before invoking this function. This secondary check defends
-  // against direct callers (phaseCompile, precompile) that may bypass the outer gate.
-  // Returns KERNEL_FAILURE so those callers can skip the segment without marking it
-  // as permanently compilationFailed.
-  if (!backend->canFuseSegment(slots_, seg.def.startSlot, seg.def.endSlot)) {
-    DSP_DIAG(BACKEND, "executeSegmentWithGpuGraph: backend=%s cannot fuse seg[%d-%d] "
-             "(should have been pre-checked by caller — reaching here is unexpected)",
-             backendName, seg.def.startSlot, seg.def.endSlot);
+  const GraphBackendRequest backendRequest = makeGraphBackendRequest();
+  const auto admitted = GraphBackendResolver::resolveSegment(
+      backendRequest, getGraphBackendCandidates(), slots_, seg.def.startSlot,
+      seg.def.endSlot, seg.resolvedGraphBackend);
+  if (admitted.empty()) {
+    DSP_DIAG(BACKEND,
+             "executeSegmentWithGpuGraph: no resolver candidate admits seg[%d-%d]",
+             seg.def.startSlot, seg.def.endSlot);
     return Status::KERNEL_FAILURE;
   }
 
@@ -6042,6 +6241,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                       static_cast<uint64_t>(compileStatus));
       return compileStatus;
     }
+    backend = seg.resolvedGraphBackend;
+    if (backend == nullptr) {
+      return Status::KERNEL_FAILURE;
+    }
+    backendName = backend->name();
+#if HAVE_TRITON
+    tritonBackend = dynamic_cast<TritonGraphBackend*>(backend);
+#endif
     // NOTE: shapeKeyState.markCompiled(segShapeKey) is now called inside
     // segDispatchCompile, only when compilation actually occurs. Previously
     // it was unconditional here, which on exec2 with changed shapes (KV cache
@@ -6170,6 +6377,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 
   bool captureWindowSatisfied = execCountInWindow || requiresOrderedGapCapture;
   shouldCaptureTritonGraph = allowTritonCudaGraphReplay &&
+                             seg.exec.segPhase.needsCapture() &&
                              !hasReplayHandle &&
                              replayHandleNull &&
                              notCaptureFailed &&
@@ -6191,6 +6399,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       DSP_DIAG(EXECUTE, "  BLOCKED: allowTritonCudaGraphReplay=false (tritonGraphCapture=%d OR planFrozen=%d OR tritonSkipKernels=%d)",
                Environment::getInstance().tritonGraphCapture() ? 1 : 0, planLifecycle_.isShapesFrozen() ? 1 : 0,
                Environment::getInstance().tritonSkipKernels() ? 1 : 0);
+    if (!seg.exec.segPhase.needsCapture())
+      DSP_DIAG(EXECUTE, "  BLOCKED: segment lifecycle=%s (capture requires BUILDING:CAPTURING)",
+               seg.exec.segPhase.displayName());
     if (!replayHandleNull)
       DSP_DIAG(EXECUTE, "  BLOCKED: replayHandle already exists (%s capture already done or in progress)",
                hasComposite ? "composite" : "monolithic");
@@ -6229,7 +6440,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   } else {
     segInputAddrKey = computeSegmentInputAddrKey(seg, externalArrays, numExt);
     // ── THE external-address-stability decision (single point of truth) ──
-    // For GPU_COMPILER (Triton), the graph captured against STAGING buffers
+    // For graph backends wrapped in platform replay (for example Triton), the
+    // graph is captured against STAGING buffers
     // (ensureAndSyncStagingBuffers) that are stable for the plan's lifetime. The RAW
     // external input addresses churn every step — fresh Java-side placeholder wrappers —
     // but the captured graph reads from the stable staging buffers, so that churn is
@@ -6243,7 +6455,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // addresses (e.g. CUDA_GRAPHS) snapshot them → compare via externalAddrsMatch; if no
     // snapshot exists, fall back to the legacy raw key. This was the root of "we keep
     // struggling with code paths": the address-stability answer differed by path/source.
-    if (seg.def.selectedBackend == SelectedBackend::GPU_COMPILER &&
+    if (seg.resolvedGraphBackend != nullptr &&
         seg.exec.capturedInputAddrKey != 0) {
       extAddrsStable = true;
     } else if (seg.exec.replayHandle &&

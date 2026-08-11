@@ -206,4 +206,63 @@ public class DspMarkVariableRecaptureTest {
         DspPlanAssertions.assertNoCaptureFailures(g, "after markVariable re-capture");
         DspPlanAssertions.assertNoPhaseContractViolations(g, "after markVariable re-capture");
     }
+
+    /**
+     * Reproduces the native autoregressive handoff more closely than test2:
+     * one execution auto-seals the plan, then the same address-stable input buffer is
+     * marked variable and overwritten in place on every step. The native decode loop
+     * does exactly this for input_ids, positions, masks, and recurrent state.
+     */
+    @Test
+    void test3_fixedAddressDeviceWrittenInputTracksImmediatelyAfterAutoSeal() {
+        final int dim = 64, layers = 6, steps = 16;
+        Nd4j.getRandom().setSeed(19);
+        SameDiff g = buildMixedGraph(dim, layers);
+        sd = g;
+
+        INDArray[] inputs = new INDArray[steps];
+        INDArray[] refs = new INDArray[steps];
+        Map<String, INDArray> ph = new LinkedHashMap<>();
+        configureMode(g, GraphExecutionMode.SLOT_BY_SLOT);
+        for (int i = 0; i < steps; i++) {
+            inputs[i] = Nd4j.randn(DataType.FLOAT, 1, dim).muli(0.1f);
+            ph.put("x", inputs[i]);
+            refs[i] = g.output(ph, "out").get("out").dup();
+        }
+
+        configureMode(g, GraphExecutionMode.AUTO);
+        INDArray fixedInput = Nd4j.create(DataType.FLOAT, 1, dim);
+        Object fixedDataBuffer = fixedInput.data();
+        ph.put("x", fixedInput);
+
+        fixedInput.assign(inputs[0]);
+        Nd4j.getExecutioner().commit();
+        INDArray first = g.output(ph, "out").get("out");
+        double firstDiff = Transforms.abs(first.sub(refs[0])).maxNumber().doubleValue();
+        assertTrue(firstDiff < 1e-3, "first auto-seal execution diverged: maxDiff=" + firstDiff);
+        assertEquals(1, DspPlanAssertions.getPlanPhase(g),
+                "one AUTO execution must leave this regression at SHAPES_FROZEN");
+
+        g.dsp().markVariable("x");
+        log.info("test3: marked fixed-address input variable immediately after auto-seal");
+
+        for (int i = 1; i < steps; i++) {
+            fixedInput.assign(inputs[i]);
+            Nd4j.getExecutioner().commit();
+            assertSame(fixedDataBuffer, fixedInput.data(),
+                    "fixed decode input DataBuffer identity changed at step " + i);
+
+            INDArray dspOut = g.output(ph, "out").get("out");
+            assertFalse(dspOut.isNaN().any(), "fixed-address step " + i + ": NaN");
+            double maxDiff = Transforms.abs(dspOut.sub(refs[i])).maxNumber().doubleValue();
+            assertTrue(maxDiff < 1e-3,
+                    "fixed-address device-written input was stale at step " + i
+                            + " immediately after auto-seal: maxDiff=" + maxDiff);
+        }
+
+        assertTrue(DspPlanAssertions.getTotalGraphReplays(g) > 0,
+                "fixed-address plan never reached replay after auto-seal invalidation");
+        DspPlanAssertions.assertNoCaptureFailures(g, "fixed-address post-auto-seal recapture");
+        DspPlanAssertions.assertNoPhaseContractViolations(g, "fixed-address post-auto-seal recapture");
+    }
 }

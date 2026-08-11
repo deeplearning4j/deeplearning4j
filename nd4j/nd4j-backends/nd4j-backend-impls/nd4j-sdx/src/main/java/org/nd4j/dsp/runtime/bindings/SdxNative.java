@@ -116,7 +116,8 @@ public static final int
   SDX_BACKEND_VULKAN = 11,
   SDX_BACKEND_METAL = 12,
   SDX_BACKEND_TPU = 13,
-  SDX_BACKEND_HEXAGON = 14;
+  SDX_BACKEND_HEXAGON = 14,
+  SDX_BACKEND_OPENVINO = 15;
 
 /** enum sdx_device_type_t */
 public static final int
@@ -177,6 +178,9 @@ public static class sdx_model_options_t extends Pointer {
    * or compiledArtifacts.hexagonKernels); an artifact miss is a hard failure. */
   public native @Cast("int32_t") int allow_runtime_jit(); public native sdx_model_options_t allow_runtime_jit(int setter);
   public native @Cast("int32_t") int gpu_target(); public native sdx_model_options_t gpu_target(int setter);
+  /* App-owned writable directory for persistent device/compiler artifacts.
+   * sdxLoadBundle copies this path before returning; callers retain ownership. */
+  public native @Cast("const char*") BytePointer device_compilation_cache_directory(); public native sdx_model_options_t device_compilation_cache_directory(BytePointer setter);
 }
 
 public static class sdx_context_options_t extends Pointer {
@@ -362,6 +366,17 @@ public static class sdx_generation_report_t extends Pointer {
   public native @Cast("uint64_t") long prefill_time_ns(); public native sdx_generation_report_t prefill_time_ns(long setter);
   public native @Cast("uint64_t") long decode_time_ns(); public native sdx_generation_report_t decode_time_ns(long setter);
   public native double decode_tokens_per_second(); public native sdx_generation_report_t decode_tokens_per_second(double setter);
+  /** Non-zero when backend evidence was read from the executed decode context. */
+  public native @Cast("int32_t") int backend_report_available(); public native sdx_generation_report_t backend_report_available(int setter);
+  public native @Cast("int32_t") int requested_backend(); public native sdx_generation_report_t requested_backend(int setter);
+  public native @Cast("int32_t") int applied_backend(); public native sdx_generation_report_t applied_backend(int setter);
+  public native @Cast("int32_t") int backend_status_code(); public native sdx_generation_report_t backend_status_code(int setter);
+  /** 1 = host/capture fallback observed, 0 = requested path, -1 = unknown. */
+  public native @Cast("int32_t") int used_fallback(); public native sdx_generation_report_t used_fallback(int setter);
+  public native @Cast("int32_t") int requested_gpu_target(); public native sdx_generation_report_t requested_gpu_target(int setter);
+  public native @Cast("int32_t") int applied_gpu_target(); public native sdx_generation_report_t applied_gpu_target(int setter);
+  public native @Cast("int32_t") int plan_phase(); public native sdx_generation_report_t plan_phase(int setter);
+  public native @Cast("int32_t") int execution_count(); public native sdx_generation_report_t execution_count(int setter);
 }
 
 public static class sdx_tensor_view_t extends Pointer {
@@ -462,9 +477,11 @@ public static native @Cast("const char*") BytePointer sdxGetTextGenerationConfig
 
 /**
  * Create a reusable, metadata-driven generation session over a loaded model.
- * The model must outlive the session. The first supported mobile profile is
- * causal-lm-in-graph-kv-v1: batch 1, fixed prefill/decode envelopes, BSHD KV,
- * and plan-owned in-graph KV writes. Unsupported profiles fail explicitly.
+ * The model must outlive the session. Supported mobile profiles are
+ * causal-lm-in-graph-kv-v1 and causal-lm-in-graph-state-v2: batch 1, fixed
+ * prefill/decode envelopes, BSHD KV, plan-owned in-graph KV writes, and
+ * metadata-declared recurrent state feedback for v2. Unsupported profiles fail
+ * explicitly.
  */
 public static native @Cast("sdx_status_t") int sdxCreateGenerationSession(
     sdx_model_t model,

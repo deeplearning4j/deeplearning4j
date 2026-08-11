@@ -108,7 +108,7 @@ void resetSegmentReplay(GraphSegment& segment) {
   segment.exec.compositeReplaySchedule.units.clear();
   segment.exec.markArgsStale();
   segment.exec.gapOpsCapturedInGraph = false;
-  segment.resolvedCpuBackend = nullptr;
+  segment.resetGraphBackend();
 }
 
 }  // namespace
@@ -256,11 +256,11 @@ void NativeDynamicShapePlan::platformRestoreSegmentDevice() {
   dspSetExecutionStream(saved.previousDspStream);
 }
 
-void NativeDynamicShapePlan::platformMigrateSegmentInputs(
+Status NativeDynamicShapePlan::platformMigrateSegmentInputs(
     const GraphSegment& segment, NDArray** externalInputs,
     int numExternalInputs) {
   const int target = targetDeviceFor(segment, slots_, numSlots_);
-  if (target < 0) return;
+  if (target < 0) return Status::OK;
 
   auto& pool = VulkanMemoryPool::getInstance();
   auto* targetStream = resolveExecutionStream(dspGetExecutionStream(), target);
@@ -422,6 +422,7 @@ void NativeDynamicShapePlan::platformMigrateSegmentInputs(
     platformCleanupMigratedInputs();
     throw;
   }
+  return Status::OK;
 }
 
 void NativeDynamicShapePlan::platformCleanupMigratedInputs() {
@@ -698,8 +699,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     return fail("vulkan_backend_mismatch");
   }
 
-  VulkanPipelineCache::ScopedCompilationPolicy compilationPolicy(
-      runtimeCompilationAllowed_, runtimeArtifactDirectory_);
+  const GraphBackendRequest backendRequest = makeGraphBackendRequest();
   const int deviceId = VulkanDeviceManager::currentDeviceId();
   // platformBindSegmentDevice routes the DSP stream to the segment's target
   // device. Keep warmup, capture, and replay on that same bound stream.
@@ -827,7 +827,8 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     return fail("vulkan_begin_capture_failed");
   }
 
-  auto recorder = std::make_unique<VulkanSegmentRecorder>(handle);
+  auto recorder = std::make_unique<VulkanSegmentRecorder>(
+      handle, backendRequest.compilationPolicy());
   for (int slotIndex = segment.def.startSlot;
        slotIndex <= segment.def.endSlot; ++slotIndex) {
     const NativeSlot& slot = slots_[slotIndex];

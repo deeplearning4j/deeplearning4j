@@ -16,6 +16,7 @@ import concurrent.futures
 import copy
 import datetime as dt
 import hashlib
+import html
 import itertools
 import json
 import math
@@ -31,12 +32,15 @@ import shutil
 import signal
 import subprocess
 import sys
+import tarfile
 import tempfile
 import threading
 import time
 from typing import Any, Callable, Iterable
 import urllib.request
+import urllib.parse
 import uuid
+import xml.etree.ElementTree as ET
 
 DEFAULT_REPOSITORY = "https://github.com/deeplearning4j/deeplearning4j.git"
 MANAGED_TAG = "dl4j-release-managed"
@@ -640,6 +644,107 @@ def execution_matrix_coverage(executions: Iterable[dict[str, Any]]) -> set[str]:
             for variant in shard["build"]["variants"]
         )
     return covered
+
+
+def maven_repository_matrix_coverage(
+    container: Any,
+    repository_prefix: str,
+    plan: dict[str, Any],
+    release_version: str,
+) -> set[str]:
+    """Infer published classifiers from the stable Maven repository prefix.
+
+    The completion marker is metadata and may be replaced by any partial run, so
+    it cannot be used as the source of truth for retained classifiers. The
+    primary classifier artifact for each planned shard is authoritative here;
+    companion artifacts are not universal across all release workflows.
+    """
+    names = {
+        name
+        for name in stable_maven_blob_names(container, repository_prefix)
+        if name.endswith(".jar")
+    }
+    covered: set[str] = set()
+    for shard in plan.get("shards", []):
+        rules = shard.get("artifactRules", {})
+        unclassified = set(rules.get("unclassifiedArtifactIds", []) or [])
+        classifier_artifacts = [
+            str(artifact_id)
+            for artifact_id in rules.get("artifactIds", []) or []
+            if artifact_id not in unclassified
+        ]
+        if not classifier_artifacts and not unclassified:
+            continue
+        platform = shard.get("build", {}).get("javacppPlatform")
+        if not platform:
+            continue
+        for variant in shard.get("build", {}).get("variants", []):
+            if not classifier_artifacts:
+                expected = {
+                    f"/{artifact_id}/{release_version}/{artifact_id}-{release_version}.jar"
+                    for artifact_id in unclassified
+                }
+                if any(
+                    any(name.endswith(candidate) for candidate in expected)
+                    for name in names
+                ):
+                    covered.add(f"{shard['id']}--{variant['name']}")
+                continue
+            primary_artifact = classifier_artifacts[0]
+            classifier_suffix = variant.get("classifierSuffix")
+            if classifier_suffix is None:
+                classifier_suffix = variant.get(
+                    "platformExtension", variant.get("suffix", "")
+                )
+            classifier_suffix = str(classifier_suffix)
+            # CUDA/ZLUDA artifactIds already contain the backend/version
+            # (for example ``nd4j-cuda-12.9``), while Maven classifiers use
+            # only the platform plus the variant extension (``-cudnn``,
+            # ``-compile``, or ``-zluda``).  Accept the historical spelling
+            # too, but make the actual published Maven2 layout authoritative.
+            classifier_suffixes = {classifier_suffix}
+            primary_backend = str(primary_artifact).removeprefix("nd4j-")
+            backend_suffix = f"-{primary_backend}"
+            if primary_backend and classifier_suffix.startswith(backend_suffix):
+                classifier_suffixes.add(
+                    classifier_suffix[len(backend_suffix):]
+                )
+            classifier_candidates = {
+                f"{platform}{suffix}" for suffix in classifier_suffixes
+            }
+            expected_marker = f"/{primary_artifact}/{release_version}/"
+            if any(
+                expected_marker in name
+                and any(name.endswith(f"-{candidate}.jar") for candidate in classifier_candidates)
+                for name in names
+            ):
+                covered.add(f"{shard['id']}--{variant['name']}")
+    return covered
+
+
+def stable_maven_repository_prefix(plan: dict[str, Any]) -> str:
+    """Return the one remote Maven repository root shared by every run."""
+    artifact_prefix = str(plan.get("artifactPrefix", "")).strip("/")
+    if not artifact_prefix:
+        raise ValueError("release plan must define a non-empty artifactPrefix")
+    return f"{artifact_prefix}/maven-repository"
+
+
+def stable_maven_blob_names(container: Any, repository_prefix: str) -> set[str]:
+    """List the actual Maven files retained under the one stable prefix."""
+    prefix = repository_prefix.strip("/") + "/"
+    metadata_prefix = prefix + ".dl4j/"
+    try:
+        blobs = container.list_blobs(name_starts_with=prefix)
+        return {
+            str(item.name)
+            for item in blobs
+            if not str(item.name).startswith(metadata_prefix)
+        }
+    except TypeError:
+        # Lightweight controller unit tests use a Mock container without a
+        # blob listing; an empty pre-run snapshot is the safe fallback.
+        return set()
 
 
 def merged_release_provider(existing_manifest: dict[str, Any] | None) -> str:
@@ -1367,12 +1472,20 @@ def ensure_storage(
                 "location": location,
                 "kind": "StorageV2",
                 "sku": {"name": "Standard_LRS"},
-                "allow_blob_public_access": False,
+                "allow_blob_public_access": True,
                 "minimum_tls_version": "TLS1_2",
                 "public_network_access": "Enabled",
                 "tags": {MANAGED_TAG: "true", "dl4j-provider": "azure"},
             },
         ).result(timeout=1800)
+    else:
+        # Keep the release container readable from a normal Maven/browser URL
+        # even when the account predates the public Maven repository layout.
+        storage.update(
+            group,
+            account_name,
+            {"allow_blob_public_access": True},
+        )
     keys = storage.list_keys(group, account_name)
     values = list(object_value(keys, "keys", []) or [])
     if not values:
@@ -1390,6 +1503,11 @@ def ensure_storage(
         except Exception as exc:
             if exc.__class__.__name__ not in {"ResourceExistsError", "ContainerAlreadyExists"}:
                 raise
+    # Blob access is read-only and does not grant listing, writes, deletes, or
+    # access to the controller's private control container.
+    service.get_container_client(artifact_container_name(plan)).set_container_access_policy(
+        public_access="blob"
+    )
     return account, service, key
 
 
@@ -2922,6 +3040,7 @@ def _run_parallel_lane(
                 f"{data['storageAccount']}/{control_container_name(plan)}"
             ),
             "artifactPrefix": plan["artifactPrefix"],
+            "mavenRepositoryPrefix": stable_maven_repository_prefix(plan),
             "runId": args.run_id,
             "releaseVersion": args.version,
             "snapshotVersion": args.snapshot_version,
@@ -3355,6 +3474,10 @@ def _start_under_controller_lease(
     else:
         if existing_manifest is not None:
             raise RuntimeError(f"Azure release run {run_id!r} already exists")
+        stable_repository_prefix = stable_maven_repository_prefix(plan)
+        stable_repository_before = sorted(
+            stable_maven_blob_names(artifact_container, stable_repository_prefix)
+        )
         run_manifest = {
             "schemaVersion": 1,
             "provider": "azure",
@@ -3374,6 +3497,11 @@ def _start_under_controller_lease(
             "status": "initializing",
             "managedIdentity": None,
             "compilerCache": compiler_cache_metadata(plan, account_name),
+            "mavenRepository": {
+                "prefix": stable_repository_prefix,
+                "beforeFiles": len(stable_repository_before),
+                "beforeBlobs": stable_repository_before,
+            },
             "parallel": True,
             "lanes": [],
             "executions": [],
@@ -3703,8 +3831,17 @@ def _start_under_controller_lease(
     print(json.dumps(run_manifest, indent=2))
 
 
-def automatic_collect_args(args: argparse.Namespace) -> argparse.Namespace:
-    """Build the Blob-only collection contract for a successful start/resume."""
+def automatic_collect_args(
+    args: argparse.Namespace,
+    successful_shards: list[str] | None = None,
+) -> argparse.Namespace:
+    """Build the Blob-only collection contract for completed shard outputs.
+
+    A run can have both successful and failed executions.  Passing the
+    successful execution ids explicitly makes automatic collection additive:
+    it publishes every usable shard without requiring the failed shard to be
+    re-run or pretending that the overall run succeeded.
+    """
     return argparse.Namespace(
         plan=args.plan,
         subscription=args.subscription,
@@ -3715,7 +3852,7 @@ def automatic_collect_args(args: argparse.Namespace) -> argparse.Namespace:
         version=args.version,
         commit=args.commit,
         github_repository="deeplearning4j/deeplearning4j",
-        shard=None,
+        shard=successful_shards,
         no_github=True,
         repository_only=True,
         resource_group=getattr(args, "resource_group", None),
@@ -3806,7 +3943,10 @@ def start(args: argparse.Namespace) -> None:
         )
     except BaseException as exc:
         primary_error = exc
-        raise
+        # Defer the failure until after cleanup and automatic collection.  A
+        # lane failure is terminal for that lane, but successful independent
+        # lanes still have publishable artifacts.  Re-raising here used to
+        # skip the collection step entirely.
     finally:
         owns_fence = True
         try:
@@ -3927,12 +4067,54 @@ def start(args: argparse.Namespace) -> None:
                 raise RuntimeError(message)
             print(message, file=sys.stderr)
 
-    if completed and getattr(args, "auto_collect", False):
-        print(
-            f"Publishing expanded Azure Maven repository to the stable root for run {run_id}",
-            flush=True,
-        )
-        collect(automatic_collect_args(args))
+    if getattr(args, "auto_collect", False) and not detached:
+        try:
+            run_for_collect = load_run(artifact_container, plan, run_id)
+            execution_records = run_for_collect.get("executions")
+            if not isinstance(execution_records, list) or not execution_records:
+                # Compatibility with manifests produced before execution
+                # records were persisted.  A completed run has no partial
+                # selection to make, so collect its complete output set.
+                successful_shards = None if completed else []
+            else:
+                successful_shards = [
+                    str(execution["id"])
+                    for execution in execution_records
+                    if isinstance(execution, dict)
+                    and execution.get("status") == "succeeded"
+                    and isinstance(execution.get("id"), str)
+                ]
+            if successful_shards is None or successful_shards:
+                scope = "expanded" if completed else "successful"
+                print(
+                    f"Publishing {scope} Azure Maven shard outputs to the stable root "
+                    f"for run {run_id}"
+                    + (f": {', '.join(successful_shards)}" if successful_shards else ""),
+                    flush=True,
+                )
+                collect(automatic_collect_args(args, successful_shards))
+            elif completed:
+                raise RuntimeError(
+                    f"Azure run {run_id!r} completed without successful shard outputs"
+                )
+            else:
+                print(
+                    f"No successful Azure shard outputs were available to collect for run {run_id}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+        except Exception as exc:
+            if primary_error is None:
+                raise
+            print(
+                "Azure automatic partial collection failed after the primary run failure: "
+                + str(exc),
+                file=sys.stderr,
+                flush=True,
+            )
+
+    if primary_error is not None and not detached:
+        raise primary_error
 
 
 def existing_storage(
@@ -4238,6 +4420,90 @@ def file_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
+def safe_archive_member_path(name: str) -> Path:
+    """Normalize and validate a tar member before writing it locally."""
+    relative = Path(name)
+    while relative.parts and relative.parts[0] == ".":
+        relative = Path(*relative.parts[1:])
+    if relative.is_absolute() or ".." in relative.parts:
+        raise RuntimeError(f"unsafe archive member: {name}")
+    return relative
+
+
+def extract_tar_archive(source: Path, destination: Path) -> None:
+    """Extract regular files from a worker archive with path traversal checks."""
+    destination.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(source, "r:gz") as archive:
+        for member in archive.getmembers():
+            if not member.isfile():
+                continue
+            relative = safe_archive_member_path(member.name)
+            target = destination / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            incoming = archive.extractfile(member)
+            if incoming is None:
+                raise RuntimeError(f"unable to read archive member: {member.name}")
+            with incoming, target.open("wb") as outgoing:
+                shutil.copyfileobj(incoming, outgoing)
+
+
+def missing_unclassified_maven_jars(
+    archive: Path, artifact_rules: dict[str, Any], version: str
+) -> list[str]:
+    """Return unclassified runtime JARs absent from a worker Maven archive."""
+    required = [
+        f"{artifact_id}-{version}.jar"
+        for artifact_id in artifact_rules.get("unclassifiedArtifactIds", []) or []
+    ]
+    if not required:
+        return []
+    with tarfile.open(archive, "r:gz") as bundle:
+        names = {safe_archive_member_path(member.name).name for member in bundle.getmembers()}
+    return [name for name in required if name not in names]
+
+
+def promote_sdk_jars_to_maven_repository(
+    repository: Path,
+    sdk_archive: Path,
+    artifact_rules: dict[str, Any],
+    version: str,
+) -> list[str]:
+    """Promote legacy SDK runtime JARs into their canonical Maven coordinates.
+
+    Some native modules publish an unclassified runtime JAR as an SDK asset
+    rather than placing it in the worker's Maven staging directory.  Treat the
+    SDK asset as the authoritative binary and materialize it next to the
+    module POM.  The central repository materializer then writes metadata and
+    all checksums normally; this is not a special release-specific upload.
+    """
+    artifact_ids = {
+        str(value)
+        for value in artifact_rules.get("unclassifiedArtifactIds", []) or []
+    }
+    if not artifact_ids:
+        return []
+    promoted: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="dl4j-sdk-jars-") as extracted:
+        sdk_root = Path(extracted)
+        extract_tar_archive(sdk_archive, sdk_root)
+        for artifact_id in sorted(artifact_ids):
+            filename = f"{artifact_id}-{version}.jar"
+            source = sdk_root / "jars" / filename
+            if not source.is_file():
+                continue
+            candidates = [
+                repository / "org/eclipse/deeplearning4j" / artifact_id / version,
+                repository / "org/nd4j" / artifact_id / version,
+            ]
+            target_dir = next((path for path in candidates if path.exists()), candidates[0])
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target = target_dir / filename
+            if not target.exists() or file_digest(target) != file_digest(source):
+                shutil.copy2(source, target)
+            promoted.append(target.relative_to(repository).as_posix())
+    return promoted
+
+
 def download_blob_to_path(
     container: Any,
     name: str,
@@ -4314,6 +4580,199 @@ def upload_local_blob(
         fence_check()
 
 
+def render_browse_index(directory: str, children: dict[str, bool]) -> str:
+    """Render a static directory index for the private Blob Maven tree."""
+    title = "DL4J Maven Repository"
+    if directory:
+        title += f" / {directory}"
+    rows = []
+    if directory:
+        rows.append('<li><a href="../">../</a></li>')
+    for name, is_directory in sorted(
+        children.items(), key=lambda item: (not item[1], item[0].lower())
+    ):
+        label = name + ("/" if is_directory else "")
+        href = urllib.parse.quote(label, safe="/-_.~")
+        rows.append(
+            f'<li><a href="{html.escape(href, quote=True)}">'
+            f"{html.escape(label)}</a></li>"
+        )
+    listing = "\n".join(rows) or "<li><em>(empty)</em></li>"
+    return (
+        "<!doctype html>\n"
+        '<html lang="en"><head><meta charset="utf-8">'
+        f"<title>{html.escape(title)}</title></head><body>\n"
+        f"<h1>{html.escape(title)}</h1>\n<ul>\n{listing}\n</ul>\n"
+        "</body></html>\n"
+    )
+
+
+def publish_maven_browse_indexes(
+    container: Any,
+    modules: dict[str, Any],
+    *,
+    repository_prefix: str,
+    fence_check: Callable[[], None] | None = None,
+) -> dict[str, Any]:
+    """Publish root and per-directory indexes from the accumulated Blob tree."""
+    if fence_check is not None:
+        fence_check()
+    object_prefix = repository_prefix.strip("/") + "/"
+    try:
+        listed = container.list_blobs(name_starts_with=object_prefix)
+        names = sorted(
+            str(item.name)
+            for item in listed
+            if str(item.name) != object_prefix + "index.html"
+            and not str(item.name).endswith("/")
+            and not str(item.name).endswith("/index.html")
+        )
+    except TypeError:
+        # Lightweight controller tests may use an unconfigured Mock container.
+        names = []
+    relative_names = [name[len(object_prefix):] for name in names]
+    directories: set[str] = {""}
+    children: dict[str, dict[str, bool]] = {}
+    for relative in relative_names:
+        if not relative:
+            continue
+        parts = relative.split("/")
+        parent_parts = parts[:-1]
+        parent = "/".join(parent_parts)
+        directories.add(parent)
+        children.setdefault(parent, {})[parts[-1]] = False
+        for index in range(1, len(parts)):
+            directory = "/".join(parts[:index])
+            directories.add(directory)
+            parent_directory = "/".join(parts[: index - 1])
+            children.setdefault(parent_directory, {})[parts[index - 1]] = True
+
+    published: list[str] = []
+    with tempfile.TemporaryDirectory(prefix="dl4j-maven-index-") as temporary:
+        root = Path(temporary)
+        for directory in sorted(directories):
+            target_directory = root / directory
+            target_directory.mkdir(parents=True, exist_ok=True)
+            target = target_directory / "index.html"
+            target.write_text(
+                render_browse_index(directory, children.get(directory, {})),
+                encoding="utf-8",
+            )
+            relative = f"{directory}/index.html" if directory else "index.html"
+            upload_local_blob(
+                container,
+                modules,
+                object_prefix + relative,
+                target,
+                content_type="text/html; charset=utf-8",
+                fence_check=fence_check,
+            )
+            published.append(relative)
+            # Azure Blob Storage does not route a directory URL ending in `/`
+            # to `index.html`.  Mirror the page at the directory-name blob so
+            # the normal Maven root and coordinate URLs are directly browsable.
+            alias = f"{directory}/" if directory else ""
+            upload_local_blob(
+                container,
+                modules,
+                object_prefix + alias,
+                target,
+                content_type="text/html; charset=utf-8",
+                fence_check=fence_check,
+            )
+            published.append(alias or "/")
+    return {"browseIndexCount": len(published), "browseIndexes": published}
+
+
+def merge_maven_metadata(existing: bytes, current: bytes) -> bytes:
+    """Merge partial-snapshot metadata without dropping older classifiers."""
+    def parse_metadata(payload: bytes) -> ET.Element:
+        try:
+            return ET.fromstring(payload)
+        except ET.ParseError:
+            # A pre-fix publisher could emit duplicate xmlns declarations.
+            # Normalize only duplicate namespace attributes on the root, then
+            # parse normally so the older classifiers remain recoverable.
+            text = payload.decode("utf-8", "replace")
+
+            def normalize_root(match: re.Match[str]) -> str:
+                attributes = match.group(1)
+                seen: set[str] = set()
+
+                def keep(attribute: re.Match[str]) -> str:
+                    name = attribute.group(1)
+                    if name in seen:
+                        return ""
+                    seen.add(name)
+                    return attribute.group(0)
+
+                attributes = re.sub(
+                    r'\s((?:xmlns(?::[^=\s]+)?)="[^"]*")',
+                    keep,
+                    attributes,
+                )
+                return "<metadata" + attributes + ">"
+
+            normalized = re.sub(
+                r"<metadata\b([^>]*)>", normalize_root, text, count=1
+            )
+            return ET.fromstring(normalized.encode("utf-8"))
+
+    try:
+        existing_root = parse_metadata(existing)
+        current_root = parse_metadata(current)
+    except ET.ParseError:
+        return current
+
+    namespace = ""
+    if current_root.tag.startswith("{"):
+        namespace = current_root.tag.split("}", 1)[0][1:]
+
+    def qname(name: str) -> str:
+        return f"{{{namespace}}}{name}" if namespace else name
+
+    def item_key(item: ET.Element, child_name: str) -> tuple[Any, ...]:
+        if child_name == "snapshotVersion":
+            # snapshotVersion elements have no distinguishing XML
+            # attributes; classifier plus extension is the Maven identity.
+            return (
+                item.findtext(qname("classifier"), default=""),
+                item.findtext(qname("extension"), default=""),
+            )
+        return (tuple(sorted(item.attrib.items())), (item.text or "").strip())
+
+    def merge_children(target: ET.Element, source: ET.Element, child_name: str) -> None:
+        current_items = {
+            item_key(item, child_name): item
+            for item in target.findall(qname(child_name))
+        }
+        for item in source.findall(qname(child_name)):
+            key = item_key(item, child_name)
+            if key not in current_items:
+                target.append(copy.deepcopy(item))
+                current_items[key] = target[-1]
+
+    existing_versioning = existing_root.find(qname("versioning"))
+    current_versioning = current_root.find(qname("versioning"))
+    if existing_versioning is not None and current_versioning is not None:
+        for child_name in ("versions", "snapshotVersions"):
+            existing_group = existing_versioning.find(qname(child_name))
+            current_group = current_versioning.find(qname(child_name))
+            if existing_group is None:
+                continue
+            if current_group is None:
+                current_group = ET.SubElement(current_versioning, qname(child_name))
+            entry_name = "version" if child_name == "versions" else "snapshotVersion"
+            merge_children(current_group, existing_group, entry_name)
+        current_updated = current_versioning.find(qname("lastUpdated"))
+        existing_updated = existing_versioning.find(qname("lastUpdated"))
+        if current_updated is None and existing_updated is not None:
+            existing_versioning.append(copy.deepcopy(existing_updated))
+
+    ET.register_namespace("", namespace)
+    return ET.tostring(current_root, encoding="utf-8", xml_declaration=True)
+
+
 def publish_maven_repository(
     container: Any,
     modules: dict[str, Any],
@@ -4340,59 +4799,127 @@ def publish_maven_repository(
     if fence_check is not None:
         fence_check()
 
+    metadata_prefix = object_prefix + ".dl4j/"
+    existing_blob_names = {
+        str(item.name)
+        for item in container.list_blobs(name_starts_with=object_prefix)
+        if not str(item.name).startswith(metadata_prefix)
+    }
     files = sorted(path for path in repository.rglob("*") if path.is_file())
-    for path in files:
-        relative = path.relative_to(repository).as_posix()
+    metadata_sources: dict[str, Path] = {}
+    metadata_checksums: dict[str, dict[str, Path]] = {}
+    with tempfile.TemporaryDirectory(prefix="dl4j-maven-metadata-") as metadata_tmp:
+        metadata_root = Path(metadata_tmp)
+        for path in files:
+            relative = path.relative_to(repository).as_posix()
+            if path.name != "maven-metadata.xml":
+                continue
+            object_name = object_prefix + relative
+            merged = path.read_bytes()
+            if object_name in existing_blob_names:
+                try:
+                    previous = container.get_blob_client(object_name).download_blob().readall()
+                    merged = merge_maven_metadata(previous, merged)
+                except Exception:
+                    merged = path.read_bytes()
+            target = metadata_root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(merged)
+            metadata_sources[relative] = target
+            checksums: dict[str, Path] = {}
+            for algorithm in ("md5", "sha1", "sha256", "sha512"):
+                checksum_path = target.with_name(target.name + f".{algorithm}")
+                checksum_path.write_text(
+                    hashlib.new(algorithm, merged).hexdigest(), encoding="utf-8"
+                )
+                checksums[algorithm] = checksum_path
+            metadata_checksums[relative] = checksums
+
+        def upload_source(path: Path, relative: str) -> Path:
+            if path.name == "maven-metadata.xml" and relative in metadata_sources:
+                return metadata_sources[relative]
+            for algorithm in ("md5", "sha1", "sha256", "sha512"):
+                suffix = f".maven-metadata.xml.{algorithm}"
+                if relative.endswith(suffix):
+                    base = relative[: -len(f".{algorithm}")]
+                    source = metadata_checksums.get(base, {}).get(algorithm)
+                    if source is not None:
+                        return source
+            return path
+
+        new_blobs: list[str] = []
+        overwritten_blobs: list[str] = []
+        for path in files:
+            relative = path.relative_to(repository).as_posix()
+            object_name = object_prefix + relative
+            if object_name in existing_blob_names:
+                overwritten_blobs.append(relative)
+            else:
+                new_blobs.append(relative)
+            upload_local_blob(
+                container,
+                modules,
+                object_name,
+                upload_source(path, relative),
+                fence_check=fence_check,
+            )
+
+        # Count the retained tree after the upserts, not just this run's local
+        # materialization. Partial classifier runs intentionally preserve
+        # unrelated coordinates already published under the stable prefix.
+        retained_files = sum(
+            1
+            for item in container.list_blobs(name_starts_with=object_prefix)
+            if not str(item.name).startswith(metadata_prefix)
+        )
         upload_local_blob(
             container,
             modules,
-            object_prefix + relative,
-            path,
+            metadata_prefix + "repository-manifest.json",
+            repository_manifest,
+            content_type="application/json",
             fence_check=fence_check,
         )
-
-    metadata_prefix = object_prefix + ".dl4j/"
-    upload_local_blob(
-        container,
-        modules,
-        metadata_prefix + "repository-manifest.json",
-        repository_manifest,
-        content_type="application/json",
-        fence_check=fence_check,
-    )
-    manifest_checksum = Path(str(repository_manifest) + ".sha256")
-    upload_local_blob(
-        container,
-        modules,
-        metadata_prefix + "repository-manifest.json.sha256",
-        manifest_checksum,
-        content_type="text/plain",
-        fence_check=fence_check,
-    )
-    marker = {
-        "schemaVersion": 1,
-        "layout": "maven2",
-        "ready": True,
-        "provider": "azure",
-        "runId": run_id,
-        "releaseVersion": version,
-        "commit": commit,
-        "repositoryFiles": len(files),
-        "manifestSha256": file_digest(repository_manifest),
-        **completion,
-    }
-    marker_name = metadata_prefix + "complete.json"
-    return {
-        "uri": (
-            f"https://{account_name}.blob.core.windows.net/"
-            f"{container_name}/{repository_prefix}/"
-        ),
-        "completionMarker": (
-            f"https://{account_name}.blob.core.windows.net/"
-            f"{container_name}/{marker_name}"
-        ),
-        **marker,
-    }
+        manifest_checksum = Path(str(repository_manifest) + ".sha256")
+        upload_local_blob(
+            container,
+            modules,
+            metadata_prefix + "repository-manifest.json.sha256",
+            manifest_checksum,
+            content_type="text/plain",
+            fence_check=fence_check,
+        )
+        marker = {
+            "schemaVersion": 1,
+            "layout": "maven2",
+            "ready": True,
+            "provider": "azure",
+            "runId": run_id,
+            "releaseVersion": version,
+            "commit": commit,
+            "repositoryFiles": retained_files,
+            "publishedRepositoryFiles": len(files),
+            "preexistingRepositoryFiles": len(existing_blob_names),
+            "newRepositoryFiles": len(new_blobs),
+            "overwrittenRepositoryFiles": len(overwritten_blobs),
+            "newBlobs": sorted(new_blobs),
+            "overwrittenBlobs": sorted(overwritten_blobs),
+            "publishMode": "stable-maven-upsert",
+            "manifestSha256": file_digest(repository_manifest),
+            **completion,
+        }
+        marker_name = metadata_prefix + "complete.json"
+        return {
+            "uri": (
+                f"https://{account_name}.blob.core.windows.net/"
+                f"{container_name}/{repository_prefix}/"
+            ),
+            "completionMarker": (
+                f"https://{account_name}.blob.core.windows.net/"
+                f"{container_name}/{marker_name}"
+            ),
+            **marker,
+        }
 
 
 def finalize_maven_repository(
@@ -4405,11 +4932,18 @@ def finalize_maven_repository(
     fence_check: Callable[[], None],
 ) -> None:
     """Publish readiness through the leased marker so a stale collector is rejected."""
+    browse_info = publish_maven_browse_indexes(
+        container,
+        modules,
+        repository_prefix=repository_prefix,
+        fence_check=fence_check,
+    )
     marker = {
         key: value
         for key, value in repository_info.items()
         if key not in {"uri", "completionMarker"}
     }
+    marker.update(browse_info)
     marker_name = (
         f"{repository_prefix.strip('/')}/.dl4j/complete.json"
     )
@@ -4786,6 +5320,7 @@ def _collect_under_controller_lease(
     if run.get("commit") != args.commit or run.get("releaseVersion") != args.version:
         raise RuntimeError("collect identity does not match run.json")
     executions = run.get("executions", [])
+    all_run_executions = list(executions)
     if args.shard:
         selected = set(args.shard)
         executions = [
@@ -4807,6 +5342,8 @@ def _collect_under_controller_lease(
         verified_existing_shards: set[str] = set()
         verified_existing_matrix: set[str] = set()
         maven_archives: dict[str, Path] = {}
+        maven_archive_items: dict[str, dict[str, Any]] = {}
+        direct_publish_infos: list[dict[str, Any]] = []
         release_exists = False
         if not args.no_github:
             release_exists = github_release_exists(
@@ -4883,6 +5420,26 @@ def _collect_under_controller_lease(
             ):
                 raise RuntimeError(f"shard {shard} manifest identity mismatch")
             for workload in item["shard"]["workloads"]:
+                if workload == "maven":
+                    direct_publish = get_json(
+                        container, f"{prefix}/{shard}/maven-publish.json"
+                    )
+                    if direct_publish is not None:
+                        direct_publish_infos.append(direct_publish)
+                        publish_path = directory / f"{shard}-maven-publish.json"
+                        publish_path.write_text(
+                            json.dumps(direct_publish, indent=2, sort_keys=True) + "\n",
+                            encoding="utf-8",
+                        )
+                        assets.append({
+                            "fileName": publish_path.name,
+                            "sha256": file_digest(publish_path),
+                            "size": publish_path.stat().st_size,
+                            "shard": shard,
+                            "provider": "azure",
+                            "sourceObject": f"{prefix}/{shard}/maven-publish.json",
+                        })
+                        continue
                 source_name = (
                     "maven-repository.tar.gz"
                     if workload == "maven"
@@ -4905,6 +5462,7 @@ def _collect_under_controller_lease(
                 verify_attested_file(manifest_value, source_name, output)
                 if workload == "maven":
                     maven_archives[output_name] = output
+                    maven_archive_items[output_name] = item
                 assets.append({
                     "fileName": output_name,
                     "sha256": file_digest(output),
@@ -4929,31 +5487,141 @@ def _collect_under_controller_lease(
         combined_assets = merge_release_assets(
             (existing_manifest or {}).get("assets", []), assets
         )
-        repository_dir = directory / "azure-maven-repository"
-        repository_manifest = directory / "azure-maven-repository-manifest.json"
-        central_tool = ROOT / "release/central/repository.py"
-        command = [
-            sys.executable,
-            str(central_tool),
-            "materialize-test-repository",
-            "--output", str(repository_dir),
-            "--manifest", str(repository_manifest),
-            "--release-version", args.version,
-            "--commit", args.commit,
-        ]
-        for archive in sorted(maven_archives.values()):
-            command.extend(["--input", str(archive)])
-        collector_lease.check()
-        subprocess.run(command, check=True)
-        collector_lease.check()
+        repository_dir: Path | None = None
+        repository_manifest: Path | None = None
+        if maven_archives:
+            repository_dir = directory / "azure-maven-repository"
+            repository_manifest = directory / "azure-maven-repository-manifest.json"
+            maven_inputs: list[Path] = []
+            for archive_name, archive in sorted(maven_archives.items()):
+                item = maven_archive_items.get(archive_name)
+                artifact_rules = (
+                    copy.deepcopy(item.get("shard", {}).get("artifactRules", {}))
+                    if item is not None
+                    else {}
+                )
+                if item is not None:
+                    planned_shard = next(
+                        (
+                            candidate
+                            for candidate in plan.get("shards", [])
+                            if candidate.get("id") == item["shard"].get("id")
+                        ),
+                        None,
+                    )
+                    # Older run manifests are immutable and may predate an
+                    # artifact-rule correction.  Use the current plan only
+                    # to recover its missing publication contract; identity,
+                    # status, and successful-shard selection still come from
+                    # the run manifest.
+                    if planned_shard is not None:
+                        planned_rules = planned_shard.get("artifactRules", {})
+                        for key in ("unclassifiedArtifactIds",):
+                            if key not in artifact_rules and key in planned_rules:
+                                artifact_rules[key] = copy.deepcopy(planned_rules[key])
+                missing_jars = missing_unclassified_maven_jars(
+                    archive, artifact_rules, args.version
+                )
+                if not missing_jars:
+                    maven_inputs.append(archive)
+                    continue
+                if item is None:
+                    raise RuntimeError(
+                        f"Maven archive {archive_name!r} is missing required runtime JARs: "
+                        + ", ".join(missing_jars)
+                    )
+                shard = item["shard"]["id"]
+                sdk_source = f"{prefix}/{shard}/sdk-assets.tar.gz"
+                sdk_attestation = attested_file_entry(
+                    get_json(container, f"{prefix}/{shard}/shard-manifest.json") or {},
+                    "sdk-assets.tar.gz",
+                )
+                sdk_archive = directory / f"sdk-assets-{shard}.tar.gz"
+                download_blob_to_path(
+                    container,
+                    sdk_source,
+                    sdk_archive,
+                    fence_check=collector_lease.check,
+                )
+                if file_digest(sdk_archive) != sdk_attestation["sha256"]:
+                    raise RuntimeError(
+                        f"SDK archive attestation mismatch for shard {shard!r}"
+                    )
+                maven_input = directory / f"maven-input-{shard}"
+                extract_tar_archive(archive, maven_input)
+                promoted = promote_sdk_jars_to_maven_repository(
+                    maven_input, sdk_archive, artifact_rules, args.version
+                )
+                still_missing = [
+                    name
+                    for name in missing_jars
+                    if not any(path.endswith("/" + name) for path in promoted)
+                ]
+                if still_missing:
+                    raise RuntimeError(
+                        f"SDK archive for shard {shard!r} did not contain required runtime JARs: "
+                        + ", ".join(still_missing)
+                    )
+                print(
+                    f"[dl4j-maven] promoted SDK runtime JARs for shard {shard}: "
+                    + ", ".join(promoted),
+                    flush=True,
+                )
+                maven_inputs.append(maven_input)
+            central_tool = ROOT / "release/central/repository.py"
+            command = [
+                sys.executable,
+                str(central_tool),
+                "materialize-test-repository",
+                "--output", str(repository_dir),
+                "--manifest", str(repository_manifest),
+                "--release-version", args.version,
+                "--commit", args.commit,
+            ]
+            for archive in maven_inputs:
+                command.extend(["--input", str(archive)])
+            collector_lease.check()
+            subprocess.run(command, check=True)
+            collector_lease.check()
+        elif not direct_publish_infos:
+            raise RuntimeError(
+                "no Maven repository archive or direct stable Maven publish was found"
+            )
+        repository_prefix = stable_maven_repository_prefix(plan)
         current_shards = sorted(item["shard"]["id"] for item in executions)
         expected_matrix = matrix_coverage(
             aws_plan, [item["id"] for item in aws_plan["shards"]]
         )
         current_matrix = execution_matrix_coverage(executions)
         current_missing_matrix = sorted(expected_matrix - current_matrix)
-        combined_shards = sorted(set(current_shards) | verified_existing_shards)
-        combined_matrix = current_matrix | verified_existing_matrix
+        failed_run_executions = []
+        for item in all_run_executions:
+            result = item.get("result") or {}
+            status_value = str(item.get("status", "unknown"))
+            exit_code = result.get("exitCode")
+            if status_value == "succeeded" and exit_code in (None, 0):
+                continue
+            failed_run_executions.append({
+                "id": item.get("id"),
+                "shard": item.get("shard", {}).get("id"),
+                "laneId": item.get("laneId"),
+                "status": status_value,
+                "exitCode": exit_code,
+                "failure": item.get("failure"),
+                "variants": result.get("variants", []),
+                "commit": result.get("commit", args.commit),
+            })
+        repository_matrix = maven_repository_matrix_coverage(
+            container, repository_prefix, aws_plan, args.version
+        )
+        combined_matrix = (
+            current_matrix | verified_existing_matrix | repository_matrix
+        )
+        combined_shards = sorted(
+            set(current_shards)
+            | verified_existing_shards
+            | {_selector_parts(item)[0] for item in repository_matrix}
+        )
         missing_matrix = sorted(expected_matrix - combined_matrix)
         missing_workflows = (
             sorted(plan.get("unsupportedWorkflows", {}))
@@ -4963,29 +5631,84 @@ def _collect_under_controller_lease(
             )
             else []
         )
-        repository_info = publish_maven_repository(
-            container,
-            context["modules"],
-            account_name=account.name,
-            container_name=artifact_container_name(plan),
-            repository_prefix=f"{plan['artifactPrefix'].strip('/')}/maven-repository",
-            repository=repository_dir,
-            repository_manifest=repository_manifest,
-            run_id=args.run_id,
-            version=args.version,
-            commit=args.commit,
-            completion={
-                "azureMatrixComplete": (
-                    len(executions) == len(run.get("executions", []))
+        completion = {
+            "azureMatrixComplete": (
+                len(executions) == len(run.get("executions", []))
+            ),
+            "accountingSource": "unified-maven-repository",
+            "runMatrixEntries": sorted(current_matrix),
+            "runMissingMatrixEntries": current_missing_matrix,
+            "failedRunExecutions": failed_run_executions,
+            "matrixEntries": sorted(combined_matrix),
+            "completeMatrix": not missing_matrix,
+            "missingMatrixEntries": missing_matrix,
+            "missingWorkflows": missing_workflows,
+        }
+        if repository_dir is not None and repository_manifest is not None:
+            repository_info = publish_maven_repository(
+                container,
+                context["modules"],
+                account_name=account.name,
+                container_name=artifact_container_name(plan),
+                repository_prefix=repository_prefix,
+                repository=repository_dir,
+                repository_manifest=repository_manifest,
+                run_id=args.run_id,
+                version=args.version,
+                commit=args.commit,
+                completion=completion,
+                fence_check=collector_lease.check,
+            )
+        else:
+            stable_names = stable_maven_blob_names(container, repository_prefix)
+            published_values: list[str] = []
+            for item in direct_publish_infos:
+                values = item.get("publishedBlobs", [])
+                if isinstance(values, str):
+                    values = [values]
+                published_values.extend(str(blob) for blob in values)
+            published_blobs = sorted(set(published_values))
+            before_blobs = set(
+                run.get("mavenRepository", {}).get("beforeBlobs", [])
+            )
+            published_object_names = {
+                f"{repository_prefix}/{blob}" for blob in published_blobs
+            }
+            new_blobs = sorted(published_object_names - before_blobs)
+            overwritten_blobs = sorted(published_object_names & before_blobs)
+            repository_info = {
+                "uri": (
+                    f"https://{account.name}.blob.core.windows.net/"
+                    f"{artifact_container_name(plan)}/{repository_prefix}/"
                 ),
-                "azureMissingMatrixEntries": current_missing_matrix,
-                "matrixEntries": sorted(combined_matrix),
-                "completeMatrix": not missing_matrix,
-                "missingMatrixEntries": missing_matrix,
-                "missingWorkflows": missing_workflows,
-            },
-            fence_check=collector_lease.check,
-        )
+                "completionMarker": (
+                    f"https://{account.name}.blob.core.windows.net/"
+                    f"{artifact_container_name(plan)}/{repository_prefix}/.dl4j/complete.json"
+                ),
+                "schemaVersion": 1,
+                "layout": "maven2",
+                "ready": True,
+                "provider": "azure",
+                "runId": args.run_id,
+                "releaseVersion": args.version,
+                "commit": args.commit,
+                "repositoryFiles": len(stable_names),
+                "publishedRepositoryFiles": len(published_blobs),
+                "preexistingRepositoryFiles": len(before_blobs),
+                "newRepositoryFiles": len(new_blobs),
+                "overwrittenRepositoryFiles": len(overwritten_blobs),
+                "newBlobs": [
+                    name.removeprefix(f"{repository_prefix}/")
+                    for name in new_blobs
+                ],
+                "overwrittenBlobs": [
+                    name.removeprefix(f"{repository_prefix}/")
+                    for name in overwritten_blobs
+                ],
+                "publishMode": "stable-maven-upsert",
+                "publishedBlobs": published_blobs,
+                **completion,
+            }
         current_workloads = {
             workload
             for item in executions
@@ -5014,6 +5737,10 @@ def _collect_under_controller_lease(
             "container": artifact_container_name(plan),
             "workloads": combined_workloads,
             "shards": combined_shards,
+            "accountingSource": "unified-maven-repository",
+            "runMatrixEntries": sorted(current_matrix),
+            "runMissingMatrixEntries": current_missing_matrix,
+            "failedRunExecutions": failed_run_executions,
             "matrixEntries": sorted(combined_matrix),
             "completeMatrix": not missing_matrix,
             "missingMatrixEntries": missing_matrix,
@@ -5052,7 +5779,7 @@ def _collect_under_controller_lease(
         finalize_maven_repository(
             container,
             context["modules"],
-            repository_prefix=f"{plan['artifactPrefix'].strip('/')}/maven-repository",
+            repository_prefix=repository_prefix,
             repository_info=repository_info,
             marker_lease=marker_lease,
             fence_check=collector_lease.check,
@@ -5143,12 +5870,19 @@ def collect(args: argparse.Namespace) -> None:
         if run.get("commit") != args.commit or run.get("releaseVersion") != args.version:
             raise RuntimeError("collect identity does not match run.json")
         run_prefix = f"{plan['artifactPrefix'].strip('/')}/{args.run_id}"
-        repository_prefix = f"{plan['artifactPrefix'].strip('/')}/maven-repository"
+        repository_prefix = stable_maven_repository_prefix(plan)
         marker_name = f"{repository_prefix}/.dl4j/complete.json"
+        existing_marker = get_json(artifact_container, marker_name)
+        marker_epoch = (
+            str(existing_marker.get("controllerEpoch"))
+            if isinstance(existing_marker, dict)
+            and existing_marker.get("controllerEpoch")
+            else primary_lease.epoch
+        )
         marker_lease = ControllerLease(
             artifact_container,
             marker_name,
-            epoch=primary_lease.epoch,
+            epoch=marker_epoch,
         ).acquire()
         active_lease = ControllerLeaseGroup(primary_lease, [marker_lease])
         put_json(
@@ -5185,6 +5919,78 @@ def collect(args: argparse.Namespace) -> None:
         release_errors = active_lease.release()
         if release_errors:
             message = "Azure collector lease cleanup failed: " + "; ".join(release_errors)
+            if primary_error is None:
+                raise RuntimeError(message)
+            print(message, file=sys.stderr)
+
+
+def repair_maven_indexes(args: argparse.Namespace) -> None:
+    """Reconcile browse pages and directory aliases for the retained Maven tree."""
+    plan = load_plan(args.plan)
+    context, location, group, account, service = existing_storage(args, plan)
+    control_container = service.get_container_client(control_container_name(plan))
+    artifact_container = service.get_container_client(artifact_container_name(plan))
+    primary_lease = ControllerLease(
+        control_container, controller_lock_blob(plan)
+    ).acquire()
+    repository_prefix = stable_maven_repository_prefix(plan)
+    marker_name = f"{repository_prefix}/.dl4j/complete.json"
+    existing_marker = get_json(artifact_container, marker_name)
+    marker_epoch = (
+        str(existing_marker.get("controllerEpoch"))
+        if isinstance(existing_marker, dict)
+        and existing_marker.get("controllerEpoch")
+        else primary_lease.epoch
+    )
+    marker_lease = ControllerLease(
+        artifact_container, marker_name, epoch=marker_epoch
+    ).acquire()
+    active_lease = ControllerLeaseGroup(primary_lease, [marker_lease])
+    primary_error: BaseException | None = None
+    try:
+        browse_info = publish_maven_browse_indexes(
+            artifact_container,
+            context["modules"],
+            repository_prefix=repository_prefix,
+            fence_check=active_lease.check,
+        )
+        marker = get_json(artifact_container, marker_name) or {
+            "schemaVersion": 1,
+            "layout": "maven2",
+            "ready": True,
+            "provider": "azure",
+        }
+        marker.update(browse_info)
+        marker["repositoryPrefix"] = repository_prefix
+        put_json(
+            artifact_container,
+            marker_name,
+            marker,
+            context["modules"],
+            controller_lease=marker_lease,
+        )
+        print(
+            json.dumps(
+                {
+                    "subscription": context["subscription"],
+                    "location": location,
+                    "resourceGroup": group,
+                    "storageAccount": str(object_value(account, "name", "")),
+                    "repositoryPrefix": repository_prefix,
+                    **browse_info,
+                },
+                indent=2,
+            )
+        )
+    except BaseException as exc:
+        primary_error = exc
+        raise
+    finally:
+        release_errors = active_lease.release()
+        if release_errors:
+            message = "Azure Maven index repair lease cleanup failed: " + "; ".join(
+                release_errors
+            )
             if primary_error is None:
                 raise RuntimeError(message)
             print(message, file=sys.stderr)
@@ -5611,6 +6417,13 @@ def parser() -> argparse.ArgumentParser:
     )
     add_storage_options(gather)
     gather.set_defaults(func=collect)
+
+    repair = sub.add_parser(
+        "repair-indexes",
+        help="reconcile browsable Maven index pages and directory aliases",
+    )
+    add_storage_options(repair)
+    repair.set_defaults(func=repair_maven_indexes)
 
     stop = sub.add_parser("stop-everything")
     stop.add_argument("--wait", action="store_true")

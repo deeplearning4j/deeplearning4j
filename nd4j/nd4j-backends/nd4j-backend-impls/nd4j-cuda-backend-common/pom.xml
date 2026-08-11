@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  * Shared Java-side CUDA backend implementation used by the CUDA and ZLUDA
+  ~  * providers.  Platform-native payloads belong to the concrete backend
+  ~  * artifacts and their -platform aggregators, not this module.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.eclipse.deeplearning4j</groupId>
+        <artifactId>nd4j-backend-impls</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>nd4j-cuda-backend-common</artifactId>
+    <packaging>jar</packaging>
+    <name>nd4j-cuda-backend-common</name>
+
+    <properties>
+        <skipPublishing>false</skipPublishing>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <module.name>nd4j.cuda.backend.common</module.name>
+        <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
+        <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
+    </properties>
+
+    <dependencies>
+        <!-- Reactor ordering only: the JavaCPP parser consumes headers generated
+             by libnd4j. Provided scope keeps this native build module out of the
+             common artifact's transitive runtime graph. -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>libnd4j</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
+        </dependency>
+        <!-- Keep only the platform-neutral preset/API graph. The preset POM also
+             declares host classifiers for its own build; those belong to the
+             concrete backend and -platform artifacts, not this common JAR. -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-cuda-12.9-preset</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-cuda-12.9-preset</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>cuda</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>javacpp</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>cuda</artifactId>
+            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.moditect</groupId>
+                <artifactId>moditect-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <!-- JavaCPP-generated bindings can contain non-ASCII bytes in
+                         copied C++ comments. They are generated, never hand-edited. -->
+                    <encoding>ISO-8859-1</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.eclipse.deeplearning4j</groupId>
+                        <artifactId>nd4j-cuda-12.9-preset</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.eclipse.deeplearning4j</groupId>
+                        <artifactId>nd4j-native-api</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>cuda</artifactId>
+                        <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+                        <classifier>${dependency.platform}</classifier>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <properties>${javacpp.platform}</properties>
+                    <propertyKeysAndValues>
+                        <property>
+                            <name>platform.nd4j.javacpp.phase</name>
+                            <value>parse</value>
+                        </property>
+                        <property>
+                            <name>platform.root</name>
+                            <value>${javacpp.platform.root}</value>
+                        </property>
+                        <property>
+                            <name>platform.compiler</name>
+                            <value>${javacpp.platform.compiler}</value>
+                        </property>
+                        <property>
+                            <name>platform.sysroot</name>
+                            <value>${javacpp.platform.sysroot}</value>
+                        </property>
+                    </propertyKeysAndValues>
+                    <includePaths>
+                        <includePath>${libnd4jhome}/blasbuild/cuda/include</includePath>
+                        <includePath>${libnd4jhome}/blasbuild/cuda/flatbuffers-src/include/</includePath>
+                        <includePath>${libnd4jhome}/blas</includePath>
+                        <includePath>${libnd4jhome}/include</includePath>
+                        <includePath>${libnd4jhome}/include/helpers</includePath>
+                        <includePath>${libnd4jhome}/include/array</includePath>
+                        <includePath>${libnd4jhome}/include/cnpy</includePath>
+                        <includePath>${libnd4jhome}/include/execution</includePath>
+                        <includePath>${libnd4jhome}/include/exceptions</includePath>
+                        <includePath>${libnd4jhome}/include/graph</includePath>
+                        <includePath>${libnd4jhome}/include/indexing</includePath>
+                        <includePath>${libnd4jhome}/include/memory</includePath>
+                        <includePath>${libnd4jhome}/include/performance</includePath>
+                    </includePaths>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>javacpp-parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>parse</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${javacpp.parser.skip}</skip>
+                            <deleteJniFiles>false</deleteJniFiles>
+                            <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
+                            <classOrPackageName>org.nd4j.presets.cuda.Nd4jCudaPresets</classOrPackageName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

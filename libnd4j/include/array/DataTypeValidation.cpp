@@ -62,6 +62,7 @@ namespace sd {
         typeNames_[DataType::INHERIT] = "INHERIT";
         typeNames_[DataType::BOOL] = "BOOL";
         typeNames_[DataType::FLOAT8] = "FLOAT8";
+        typeNames_[DataType::FLOAT8_E5M2] = "FLOAT8_E5M2";
         typeNames_[DataType::HALF] = "HALF";
         typeNames_[DataType::HALF2] = "HALF2";
         typeNames_[DataType::FLOAT32] = "FLOAT32";
@@ -108,6 +109,11 @@ namespace sd {
 
 #if defined(HAS_BFLOAT16) || defined(HAS_BFLOAT)
         registerCompiledType(DataType::BFLOAT16, "BFLOAT16");
+#endif
+
+#if defined(HAS_FLOAT8)
+        registerCompiledType(DataType::FLOAT8, "FLOAT8");
+        registerCompiledType(DataType::FLOAT8_E5M2, "FLOAT8_E5M2");
 #endif
 
         // Integer types - check both normalized (_T) and alias forms

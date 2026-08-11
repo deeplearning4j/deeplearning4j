@@ -150,6 +150,10 @@ import org.nd4j.presets.SharedCompilerRuntime;
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
                 @Platform(extension = {"-cudnn","-", "-compile"})})
 public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
+    private static final String JAVACPP_PHASE_PROPERTY =
+            "platform.nd4j.javacpp.phase";
+    private static final String JAVACPP_PARSE_PHASE = "parse";
+
     private Logger logger;
     private java.util.Properties properties;
     private String encoding;
@@ -172,13 +176,21 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         boolean funcTrace = calltraceProperty.equalsIgnoreCase("ON");
 
 
-        // CMake is the source of truth for the project-managed compiler runtimes.
-        // Run this during JavaCPP generation as well as application startup so copyLibs
-        // and the native loader consume the same manifest.
-        SharedCompilerRuntime.configure(
-                properties,
-                Nd4jCudaPresets.class,
-                "org/nd4j/linalg/jcublas/bindings/");
+        // Parsing only produces the platform-neutral Java binding now owned by
+        // nd4j-cuda-backend-common. Native compilation and runtime loading still
+        // require CMake's exact shared-runtime manifest.
+        String javacppPhase = this.properties == null
+                ? null
+                : this.properties.getProperty(JAVACPP_PHASE_PROPERTY);
+        if (javacppPhase == null) {
+            javacppPhase = properties.getProperty(JAVACPP_PHASE_PROPERTY);
+        }
+        if (!JAVACPP_PARSE_PHASE.equals(javacppPhase)) {
+            SharedCompilerRuntime.configure(
+                    properties,
+                    Nd4jCudaPresets.class,
+                    "org/nd4j/linalg/jcublas/bindings/");
+        }
 
         // Only apply the CUDA toolkit preloads at load time.
         if (!Loader.isLoadLibraries()) {
