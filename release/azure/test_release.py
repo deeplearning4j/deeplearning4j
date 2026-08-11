@@ -5098,7 +5098,9 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
             }],
         }
         properties = SimpleNamespace(
-            size=123, metadata={"dl4j_sha256": "b" * 64}
+            # Azure's REST response preserves/normalizes custom metadata casing;
+            # matching must therefore be case-insensitive.
+            size=123, metadata={"Dl4J_Sha256": "b" * 64}
         )
         container = mock.Mock()
         container.get_blob_client.return_value.get_blob_properties.return_value = (

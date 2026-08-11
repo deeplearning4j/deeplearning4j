@@ -4991,9 +4991,14 @@ def validate_direct_maven_publish(
         ).get_blob_properties()
         actual_size = object_value(properties, "size")
         metadata = object_value(properties, "metadata", {}) or {}
-        actual_digest = str(
-            object_value(metadata, "dl4j_sha256", "")
-        ).lower()
+        actual_digest = next(
+            (
+                str(value).lower()
+                for key, value in metadata.items()
+                if str(key).lower() == "dl4j_sha256"
+            ),
+            "",
+        )
         if actual_size != size or actual_digest != digest:
             raise RuntimeError(
                 f"direct Maven Blob attestation mismatch for shard {shard!r}: "
