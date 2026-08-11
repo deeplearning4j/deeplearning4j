@@ -1940,6 +1940,49 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertTrue(all(Path(call[0][1]).name == "cross-platform.sh" for call in calls))
         self.assertTrue(all(call[1]["DL4J_MAVEN_GOAL"] == "install" for call in calls))
 
+    def test_cross_platform_test_dependencies_follow_the_worker_platform(self):
+        root = Path(__file__).parents[2]
+        namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+        poms = (
+            root / "nd4j/samediff-llm/pom.xml",
+            root / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model/pom.xml",
+            root / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx/pom.xml",
+        )
+        for pom in poms:
+            dependencies = ET.parse(pom).getroot().findall(
+                "./m:dependencies/m:dependency", namespace
+            )
+            classified_native = [
+                dependency.find("m:classifier", namespace)
+                for dependency in dependencies
+                if dependency.findtext("m:artifactId", namespaces=namespace)
+                == "nd4j-native"
+                and dependency.find("m:classifier", namespace) is not None
+            ]
+            self.assertTrue(classified_native, pom)
+            self.assertEqual(
+                ["${javacpp.platform}"],
+                [classifier.text for classifier in classified_native],
+                pom,
+            )
+
+    def test_triton_cpu_patch_uses_raw_bits_when_gcc_lacks_float16(self):
+        root = Path(__file__).parents[2]
+        patch_script = (root / "libnd4j/cmake/patch_triton_cpu.cmake").read_text(
+            encoding="utf-8"
+        )
+        dependencies = (root / "libnd4j/cmake/Dependencies.cmake").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            'string(REPLACE "#ifdef FLT16_MAX" "#ifdef DL4J_NATIVE_FLOAT16"',
+            patch_script,
+        )
+        self.assertIn("#if defined(__clang__)", patch_script)
+        self.assertIn("defined(__GNUC__) && defined(__aarch64__)", patch_script)
+        self.assertIn("typedef uint16_t fp16_t", patch_script)
+        self.assertIn("managed-llvm-patches-v11", dependencies)
+
     def test_linux_cross_platform_java_command_does_not_infer_accelerator_profiles(self):
         root = Path(__file__).parents[2]
         environment = {

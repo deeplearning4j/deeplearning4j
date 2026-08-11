@@ -3331,6 +3331,72 @@ def retained_lane_resources(
     return expected
 
 
+def reconcile_resume_manifest_with_status_blobs(
+    run: dict[str, Any], container: Any, plan: dict[str, Any]
+) -> dict[str, Any]:
+    """Fold immutable terminal worker checkpoints into a detached run manifest.
+
+    A controller can disappear after a worker has written status.json but before
+    run.json records the terminal event.  Resume must adopt that checkpoint; using
+    the stale run.json status would provision a new VM and repeat completed or
+    failed work.
+    """
+    reconciled = copy.deepcopy(run)
+    prefix = f"{plan['artifactPrefix'].strip('/')}/{reconciled['runId']}"
+    execution_records = {
+        execution["id"]: execution for execution in reconciled["executions"]
+    }
+    for execution in reconciled["executions"]:
+        shard = execution["shard"]
+        status = get_json(container, f"{prefix}/{shard['id']}/status.json")
+        if status is None:
+            continue
+        expected = shard_status_identity(reconciled, shard)
+        if not shard_status_matches(status, expected):
+            print(
+                f"[{utc_now()}] ignoring stale Azure resume status for shard "
+                f"{shard['id']}",
+                file=sys.stderr,
+                flush=True,
+            )
+            continue
+        exit_code = status.get("exitCode")
+        if isinstance(exit_code, bool) or not isinstance(exit_code, int):
+            continue
+        execution["result"] = status
+        if exit_code == 0:
+            execution["status"] = "succeeded"
+            execution.pop("failure", None)
+        else:
+            execution["status"] = "failed"
+            execution["failure"] = (
+                f"retained worker checkpoint exited with code {exit_code}"
+            )
+
+    for lane in reconciled["lanes"]:
+        lane_executions = [
+            execution_records[execution_id]
+            for execution_id in lane["executionIds"]
+        ]
+        failed = [
+            execution for execution in lane_executions
+            if execution.get("status") == "failed"
+        ]
+        if failed:
+            lane["status"] = "failed"
+            lane["failure"] = "; ".join(
+                f"{execution['id']}: {execution['failure']}"
+                for execution in failed
+            )
+        elif lane_executions and all(
+            execution.get("status") == "succeeded"
+            for execution in lane_executions
+        ):
+            lane["status"] = "succeeded"
+            lane.pop("failure", None)
+    return reconciled
+
+
 def resume_controller_data(
     args: argparse.Namespace,
 ) -> tuple[dict[str, Any], Any, Any, str, dict[str, Any]]:
@@ -3350,6 +3416,9 @@ def resume_controller_data(
         account_name=account_name,
         plan=plan,
     )
+    run = reconcile_resume_manifest_with_status_blobs(
+        run, artifact_container, plan
+    )
     keys = context["storage"].storage_accounts.list_keys(group, account_name)
     values = list(object_value(keys, "keys", []) or [])
     if not values:
@@ -3364,7 +3433,8 @@ def resume_controller_data(
         pending_execution_ids = [
             execution_id
             for execution_id in execution_ids
-            if execution_records[execution_id].get("status") != "succeeded"
+            if execution_records[execution_id].get("status")
+            not in {"succeeded", "failed"}
         ]
         if not pending_execution_ids:
             continue
@@ -3458,7 +3528,10 @@ def _start_under_controller_lease(
             raise RuntimeError(
                 f"Azure release run {run_id!r} has its cancellation switch enabled"
             )
-        run_manifest = copy.deepcopy(existing_manifest)
+        # resume_controller_data already reconciled immutable worker status
+        # checkpoints.  Preserve those terminal execution/lane states instead of
+        # copying the stale run.json that existed when the controller detached.
+        run_manifest = copy.deepcopy(resume_manifest)
         run_manifest["status"] = "running"
         run_manifest["resumedAt"] = utc_now()
         run_manifest["resumeCount"] = int(run_manifest.get("resumeCount", 0)) + 1
@@ -3622,7 +3695,11 @@ def _start_under_controller_lease(
             for execution in run_manifest["executions"]
         }
         event_queue: queue.Queue[dict[str, Any]] = queue.Queue()
-        failures: dict[str, str] = {}
+        failures: dict[str, str] = {
+            lane["id"]: str(lane.get("failure", "retained lane failed"))
+            for lane in run_manifest["lanes"]
+            if lane.get("status") == "failed"
+        }
 
         def record_failure(lane_id: str, message: str) -> None:
             message = str(message)

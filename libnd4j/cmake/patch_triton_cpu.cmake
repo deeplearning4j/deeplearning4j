@@ -378,7 +378,7 @@ if(EXISTS "${_TARGET_INCL_CMAKE}")
 endif()
 
 # ══════════════════════════════════════════════════════════════════════════
-# 7. Fix _Float16 on ARM64 — GCC uses __fp16, not _Float16
+# 7. Select a half representation that the active C++ frontend supports
 # ══════════════════════════════════════════════════════════════════════════
 set(_CPU_RUNTIME "${SOURCE_DIR}/third_party/cpu/runtime/cpu_runtime.cpp")
 if(EXISTS "${_CPU_RUNTIME}")
@@ -387,17 +387,23 @@ if(EXISTS "${_CPU_RUNTIME}")
     if(NOT _float16_pos EQUAL -1)
         string(FIND "${_rt_content}" "PATCHED_FLOAT16" _patched_pos)
         if(_patched_pos EQUAL -1)
-            # Replace _Float16 with a portable typedef
+            # Triton's FLT16_MAX test is not sufficient for GCC's C++
+            # frontend: GCC 11 on x86_64 defines FLT16_MAX but rejects the
+            # _Float16 type.  Keep the native representation for Clang and
+            # GCC/AArch64, and deliberately select Triton's existing raw-bit
+            # conversion path everywhere else.
             string(REPLACE "_Float16" "fp16_t" _rt_content "${_rt_content}")
-            set(_float16_preamble [=[// PATCHED_FLOAT16: _Float16 is not available on all compilers (e.g. GCC on ARM64).
-// Use a portable typedef.
-#if defined(__clang__) || (defined(__GNUC__) && defined(__x86_64__))
+            string(REPLACE "#ifdef FLT16_MAX" "#ifdef DL4J_NATIVE_FLOAT16" _rt_content "${_rt_content}")
+            set(_float16_preamble [=[// PATCHED_FLOAT16: select a representation supported by the C++ frontend.
+#if defined(__clang__)
+  #define DL4J_NATIVE_FLOAT16 1
   typedef _Float16 fp16_t;
 #elif defined(__GNUC__) && defined(__aarch64__)
+  #define DL4J_NATIVE_FLOAT16 1
   typedef __fp16 fp16_t;
 #else
   #include <cstdint>
-  typedef uint16_t fp16_t;  // fallback: raw bits
+  typedef uint16_t fp16_t;  // Triton's portable raw-bit conversion path
 #endif
 ]=])
             string(PREPEND _rt_content "${_float16_preamble}")

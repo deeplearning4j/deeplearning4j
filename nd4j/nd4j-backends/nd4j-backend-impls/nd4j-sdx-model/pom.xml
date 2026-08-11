@@ -41,7 +41,7 @@
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-native</artifactId>
             <version>${project.version}</version>
-            <classifier>linux-x86_64</classifier>
+            <classifier>${javacpp.platform}</classifier>
             <scope>test</scope>
         </dependency>
         <dependency>

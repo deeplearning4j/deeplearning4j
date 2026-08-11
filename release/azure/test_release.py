@@ -2945,7 +2945,11 @@ class AzureSafetyTests(unittest.TestCase):
             release,
             "existing_storage",
             return_value=(context, "eastus2", "group", account, service),
-        ), mock.patch.object(release, "load_run", return_value=run):
+        ), mock.patch.object(release, "load_run", return_value=run), mock.patch.object(
+            release,
+            "reconcile_resume_manifest_with_status_blobs",
+            return_value=run,
+        ):
             data, actual_account, actual_service, key, actual_run = (
                 release.resume_controller_data(args)
             )
@@ -2960,6 +2964,48 @@ class AzureSafetyTests(unittest.TestCase):
         ])
         self.assertEqual(run["commit"], args.commit)
         self.assertEqual(run["releaseVersion"], args.version)
+
+    def test_resume_reconciles_terminal_failed_worker_without_restarting_it(self):
+        plan = release.load_plan(HERE / "release-plan.json")
+        shard = {
+            "id": "linux-x86_64-cpu--compile",
+            "lane": "linux-x86-64-jammy",
+            "worker": "worker.sh",
+            "contractDigest": "digest",
+            "build": {"variants": [{"name": "compile"}]},
+        }
+        run = {
+            "runId": "run",
+            "controllerEpoch": "b" * 32,
+            "repository": "repository",
+            "commit": "a" * 40,
+            "releaseVersion": "1.0.0",
+            "snapshotVersion": "1.0.0-SNAPSHOT",
+            "lanes": [{
+                "id": "linux-x86-64-jammy",
+                "executionIds": [shard["id"]],
+                "status": "running",
+            }],
+            "executions": [{
+                "id": shard["id"],
+                "laneId": "linux-x86-64-jammy",
+                "status": "running",
+                "shard": shard,
+            }],
+        }
+        status = {
+            **release.shard_status_identity(run, shard),
+            "exitCode": 17,
+        }
+        with mock.patch.object(release, "get_json", return_value=status):
+            reconciled = release.reconcile_resume_manifest_with_status_blobs(
+                run, mock.Mock(), plan
+            )
+
+        self.assertEqual("running", run["executions"][0]["status"])
+        self.assertEqual("failed", reconciled["executions"][0]["status"])
+        self.assertEqual("failed", reconciled["lanes"][0]["status"])
+        self.assertIn("code 17", reconciled["lanes"][0]["failure"])
 
     def test_resume_start_reuses_retained_epoch_and_detaches_safely(self):
         plan = release.load_plan(HERE / "release-plan.json")
