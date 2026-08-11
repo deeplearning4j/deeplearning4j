@@ -4909,6 +4909,30 @@ def merge_maven_metadata(existing: bytes, current: bytes) -> bytes:
     return ET.tostring(current_root, encoding="utf-8", xml_declaration=True)
 
 
+def direct_maven_blob_attestations(
+    publish_infos: Iterable[dict[str, Any]],
+) -> dict[str, set[tuple[int, str]]]:
+    """Return every stable Blob value attested by the selected worker set.
+
+    Multiple shards can legitimately upsert the same unclassified Maven path.
+    Collection validates the final last-writer Blob against the selected run's
+    complete attestation set instead of requiring it to equal every writer.
+    """
+    attestations: dict[str, set[tuple[int, str]]] = {}
+    for publish_info in publish_infos:
+        if int(publish_info.get("schemaVersion", 0)) != 2:
+            continue
+        for item in publish_info.get("publishedFiles", []):
+            if not isinstance(item, dict):
+                continue
+            path = str(item.get("path", ""))
+            size = item.get("size")
+            digest = str(item.get("sha256", "")).lower()
+            if path and isinstance(size, int) and re.fullmatch(r"[0-9a-f]{64}", digest):
+                attestations.setdefault(path, set()).add((size, digest))
+    return attestations
+
+
 def validate_direct_maven_publish(
     container: Any,
     value: dict[str, Any],
@@ -4918,6 +4942,7 @@ def validate_direct_maven_publish(
     shard: str,
     version: str,
     commit: str,
+    accepted_blob_attestations: dict[str, set[tuple[int, str]]] | None = None,
 ) -> dict[str, Any]:
     """Verify one worker's direct-to-Blob Maven publication accounting."""
     expected_identity = {
@@ -4999,7 +5024,15 @@ def validate_direct_maven_publish(
             ),
             "",
         )
-        if actual_size != size or actual_digest != digest:
+        expected_values = {(size, digest)}
+        if accepted_blob_attestations is not None:
+            expected_values = accepted_blob_attestations.get(relative, set())
+            if (size, digest) not in expected_values:
+                raise RuntimeError(
+                    f"direct Maven selected attestation set is incomplete for "
+                    f"shard {shard!r}: {relative}"
+                )
+        if (actual_size, actual_digest) not in expected_values:
             raise RuntimeError(
                 f"direct Maven Blob attestation mismatch for shard {shard!r}: "
                 f"{relative}"
@@ -5748,6 +5781,20 @@ def _collect_under_controller_lease(
                     and name.endswith(".tar.gz")
                 })
         assets: list[dict[str, Any]] = []
+        direct_publish_by_shard: dict[str, dict[str, Any]] = {}
+        for item in executions:
+            shard = item["shard"]["id"]
+            if "maven" not in item["shard"]["workloads"]:
+                continue
+            direct_publish = get_json(
+                container, f"{prefix}/{shard}/maven-publish.json"
+            )
+            if direct_publish is not None:
+                direct_publish_by_shard[shard] = direct_publish
+        selected_blob_attestations = direct_maven_blob_attestations(
+            direct_publish_by_shard.values()
+        )
+
         for item in executions:
             collector_lease.check()
             shard = item["shard"]["id"]
@@ -5784,9 +5831,7 @@ def _collect_under_controller_lease(
                 raise RuntimeError(f"shard {shard} manifest identity mismatch")
             for workload in item["shard"]["workloads"]:
                 if workload == "maven":
-                    direct_publish = get_json(
-                        container, f"{prefix}/{shard}/maven-publish.json"
-                    )
+                    direct_publish = direct_publish_by_shard.get(shard)
                     if direct_publish is not None:
                         direct_publish = validate_direct_maven_publish(
                             container,
@@ -5796,6 +5841,7 @@ def _collect_under_controller_lease(
                             shard=shard,
                             version=args.version,
                             commit=args.commit,
+                            accepted_blob_attestations=selected_blob_attestations,
                         )
                         direct_publish_infos.append(direct_publish)
                         publish_path = directory / f"{shard}-maven-publish.json"

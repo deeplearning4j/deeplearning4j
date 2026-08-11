@@ -5118,6 +5118,27 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
         )
 
         self.assertIs(info, validated)
+
+        # A later selected shard may legitimately overwrite this same stable
+        # unclassified path with its own fully attested value.
+        properties.size = 456
+        properties.metadata = {"Dl4J_Sha256": "c" * 64}
+        validated = release.validate_direct_maven_publish(
+            container,
+            info,
+            repository_prefix="prefix/maven-repository",
+            run_id="run",
+            shard="linux-x86_64-zluda--zluda",
+            version="1.0.0",
+            commit="a" * 40,
+            accepted_blob_attestations={
+                relative: {(123, "b" * 64), (456, "c" * 64)}
+            },
+        )
+        self.assertIs(info, validated)
+
+        properties.size = 123
+        properties.metadata = {"Dl4J_Sha256": "b" * 64}
         info["publishedFiles"][0]["size"] = 124
         with self.assertRaisesRegex(RuntimeError, "attestation mismatch"):
             release.validate_direct_maven_publish(
