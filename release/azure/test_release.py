@@ -3682,6 +3682,24 @@ class AzureSafetyTests(unittest.TestCase):
         finally:
             controller.release()
 
+    def test_controller_blob_lease_accepts_existing_leased_blob_initialization(self):
+        class LeaseIdMissingError(Exception):
+            status_code = 412
+            error_code = "LeaseIdMissing"
+
+        lease_client = mock.Mock()
+        blob = mock.Mock()
+        blob.upload_blob.side_effect = LeaseIdMissingError("existing leased blob")
+        blob.acquire_lease.return_value = lease_client
+        container = mock.Mock()
+        container.get_blob_client.return_value = blob
+
+        controller = release.ControllerLease(
+            container, "control/controller.lock"
+        ).acquire()
+        self.assertEqual([], controller.release())
+        blob.acquire_lease.assert_called_once_with(lease_duration=60)
+
     def test_controller_blob_lease_rejects_a_second_controller(self):
         class ConflictError(Exception):
             status_code = 409

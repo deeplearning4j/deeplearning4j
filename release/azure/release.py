@@ -2167,10 +2167,20 @@ class ControllerLease:
                 overwrite=False,
             )
         except Exception as exc:
-            if getattr(exc, "status_code", None) != 409 and exc.__class__.__name__ not in {
-                "ResourceExistsError",
-                "BlobAlreadyExists",
-            }:
+            # Creating an already-existing leased blob can report
+            # LeaseIdMissing (HTTP 412), not BlobAlreadyExists.  That still
+            # means initialization is complete; acquire_lease below is the
+            # authoritative active-controller check and may succeed as soon as
+            # a stale fixed-duration lease expires.
+            existing_error = (
+                getattr(exc, "status_code", None) == 409
+                or getattr(exc, "error_code", None) == "LeaseIdMissing"
+                or exc.__class__.__name__ in {
+                    "ResourceExistsError",
+                    "BlobAlreadyExists",
+                }
+            )
+            if not existing_error:
                 raise
         try:
             self.lease = self.blob.acquire_lease(lease_duration=self.duration)
