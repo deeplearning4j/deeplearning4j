@@ -135,7 +135,8 @@ being executed, and used `-Dtest=` class lists rather than the tag tiers.
 
 ### 3.2 nd4j-specific integration facts
 
-- The repo already had: `nd4j-zluda` module (SPI backend, priority 90, delegates to
+- The repo already had the `nd4j-zluda-<cuda.version>` artifact (source module
+  directory `nd4j-zluda`; SPI backend, priority 90, delegates to
   `JCublasNDArray`), reactor profiles `-Pzluda[-amd|-intel]`, `test-zluda` pom profile
   (env-activated by `ZLUDA_PATH`), a `ZLUDA_PATH` intercept in `JCublasBackend.canRun()`, and
   ADR 0087. What was missing: tagged tests (F2), and env wiring (below).
@@ -163,7 +164,7 @@ being executed, and used `-Dtest=` class lists rather than the tag tiers.
   AMD-provided self-hosted runners. Cheapest practical: a one-time ~$400 RDNA3 box (RX 7800 XT)
   registered as `[self-hosted, linux, amd-gpu]` with ROCm 6.4.
 - Workflow: downloads a pinned ZLUDA release (or `system`), normalizes layout, builds Java modules
-  + `nd4j-zluda` from source with CUDA snapshot jars, runs `-Ptest-zluda` (default
+  + the CUDA-versioned ZLUDA artifact from source with CUDA snapshot jars, runs `-Ptest-zluda` (default
   `-Dtest=ZludaSmokeTest`; broaden with `testGroups=smoke` → runs the generic smoke tier under the
   ZLUDA environment via the new `-Dzluda.test.groups` override).
 - Local: `ZLUDA_PATH=/opt/zluda platform-tests/run-zluda-smoke-tests.sh`.

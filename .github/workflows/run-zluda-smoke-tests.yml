@@ -178,7 +178,8 @@ jobs:
           fi
 
       # ZLUDA_PATH is now in the env, so the platform-tests test-zluda profile
-      # auto-activates and pulls nd4j-zluda; -Pzluda puts that module in the reactor.
+      # auto-activates and pulls nd4j-zluda-${cuda.version}; -Pzluda puts its
+      # source module in the reactor.
       - name: Build Java modules (native jars from snapshots)
         shell: bash
         run: |

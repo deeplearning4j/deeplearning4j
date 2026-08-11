@@ -941,10 +941,12 @@ build_libnd4j_cuda() {
     )
 }
 
-# build_libnd4j_rocm — ZLUDA/ROCm variant (AMD GPU)
+# build_libnd4j_rocm <cuda_version> — ZLUDA/ROCm variant (AMD GPU)
 build_libnd4j_rocm() {
+    local cuda_ver="$1"
     local zluda_target="${ZLUDA_TARGET:-AMD}"
 
+    change_cuda_version "${cuda_ver}"
     log "Building ROCm/ZLUDA backend (target=${zluda_target})..."
     (
         cd "${PROJECT_ROOT}"
@@ -954,7 +956,7 @@ build_libnd4j_rocm() {
             -DSD_ZLUDA=ON \
             -DZLUDA_TARGET="${zluda_target}" \
             clean install $(_common_flags) \
-            -pl :libnd4j,:nd4j-zluda
+            -pl :libnd4j,:nd4j-zluda-${cuda_ver}
     )
 }
 
@@ -1158,7 +1160,7 @@ build_platform() {
 
         # ---- Linux x86_64 ROCm/TPU ----
         linux-x86_64-rocm-zluda)
-            build_libnd4j_rocm || rc=1 ;;
+            build_libnd4j_rocm "12.9" || rc=1 ;;
 
         linux-x86_64-tpu-xla)
             build_libnd4j_tpu || rc=1 ;;

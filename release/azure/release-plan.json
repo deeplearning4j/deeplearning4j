@@ -1131,8 +1131,8 @@
         "artifactIds": [
           "nd4j-cuda-12.9",
           "nd4j-cuda-12.9-preset",
-          "nd4j-zluda",
-          "nd4j-zluda-platform",
+          "nd4j-zluda-12.9",
+          "nd4j-zluda-12.9-platform",
           "nd4j-cuda-backend-common"
         ],
         "classifierTokens": [
@@ -1141,8 +1141,8 @@
         "unclassifiedArtifactIds": [
           "nd4j-cuda-backend-common",
           "nd4j-cuda-12.9-preset",
-          "nd4j-zluda",
-          "nd4j-zluda-platform"
+          "nd4j-zluda-12.9",
+          "nd4j-zluda-12.9-platform"
         ],
         "includeMetadata": true
       },
@@ -1166,8 +1166,8 @@
         "modules": [
           ":nd4j-cuda-12.9",
           ":nd4j-cuda-12.9-preset",
-          ":nd4j-zluda",
-          ":nd4j-zluda-platform",
+          ":nd4j-zluda-12.9",
+          ":nd4j-zluda-12.9-platform",
           ":libnd4j",
           ":nd4j-cuda-backend-common"
         ],
@@ -1208,8 +1208,8 @@
           "nd4j-cuda-12.9",
           "nd4j-cuda-12.9-preset",
           "nd4j-cuda-backend-common",
-          "nd4j-zluda",
-          "nd4j-zluda-platform"
+          "nd4j-zluda-12.9",
+          "nd4j-zluda-12.9-platform"
         ],
         "classifierTokens": [
           "windows-x86_64-zluda"
@@ -1217,8 +1217,8 @@
         "unclassifiedArtifactIds": [
           "nd4j-cuda-backend-common",
           "nd4j-cuda-12.9-preset",
-          "nd4j-zluda",
-          "nd4j-zluda-platform"
+          "nd4j-zluda-12.9",
+          "nd4j-zluda-12.9-platform"
         ],
         "includeMetadata": true
       },
@@ -1236,10 +1236,10 @@
         "modules": [
           ":nd4j-cuda-12.9",
           ":nd4j-cuda-12.9-preset",
-          ":nd4j-zluda",
+          ":nd4j-zluda-12.9",
           ":libnd4j",
           ":nd4j-cuda-backend-common",
-          ":nd4j-zluda-platform"
+          ":nd4j-zluda-12.9-platform"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",

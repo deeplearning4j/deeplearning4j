@@ -5,7 +5,7 @@ name: ZLUDA Java Module Validation (no GPU / no CUDA build)
 # Three-part static gate that proves the ZLUDA path is viable on a standard
 # GitHub-hosted runner with zero GPU hardware:
 #
-#   a) Java module build — nd4j-zluda, nd4j-tpu-preset, nd4j-tpu compile against
+#   a) Java module build — nd4j-zluda-12.9, nd4j-tpu-preset, nd4j-tpu compile against
 #      snapshot deps; no native libnd4j compilation needed.
 #   b) PTX validation — the nd4j-cuda-12.9 linux-x86_64 classifier jar (published
 #      by the per-platform native build) must contain embedded PTX in libnd4jcuda.so.
@@ -41,6 +41,7 @@ on:
 
 env:
   MAVEN_OPTS: -Xmx2g
+  ZLUDA_ARTIFACT_ID: nd4j-zluda-12.9
 
 jobs:
   zluda-java-validation:
@@ -84,7 +85,7 @@ jobs:
           </settings>
           SETTINGS
 
-      # ── Step a: Build nd4j-zluda, nd4j-tpu-preset, nd4j-tpu ─────────────────
+      # ── Step a: Build the versioned ZLUDA module, nd4j-tpu-preset, nd4j-tpu ──
       # Native CUDA jars are resolved from the snapshot repo — no C++ compilation,
       # no nvcc, no GPU driver required.  -pl !:libnd4j keeps the C++ native module
       # out of the reactor; the nd4j-cuda-12.9 java-only jar is built from sources
@@ -94,7 +95,7 @@ jobs:
         run: |
           mvn install \
             -Pzluda,tpu \
-            -pl :nd4j-zluda,:nd4j-tpu-preset,:nd4j-tpu --also-make \
+            -pl :${ZLUDA_ARTIFACT_ID},:nd4j-tpu-preset,:nd4j-tpu --also-make \
             -pl '!:libnd4j' \
             -Dbackend.artifactId=${{ inputs.backendArtifactId }} \
             -Djavacpp.platform=linux-x86_64 \
@@ -110,11 +111,11 @@ jobs:
       - name: Verify JZludaBackend SPI registration
         shell: bash
         run: |
-          JAR=$(find ~/.m2 -path "*/nd4j-zluda/*.jar" \
+          JAR=$(find ~/.m2 -path "*/${ZLUDA_ARTIFACT_ID}/*.jar" \
                 ! -name "*sources*" ! -name "*javadoc*" ! -name "*tests*" \
                 | sort -V | tail -n 1)
           if [ -z "$JAR" ]; then
-            echo "::error::nd4j-zluda JAR not found in local Maven repository after build"
+            echo "::error::${ZLUDA_ARTIFACT_ID} JAR not found in local Maven repository after build"
             exit 1
           fi
           echo "Inspecting: $JAR"
@@ -155,7 +156,7 @@ jobs:
         run: |
           echo "── Resolving nd4j-cuda project version ──"
           PROJ_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout \
-            --no-transfer-progress -pl :nd4j-zluda 2>/dev/null \
+            --no-transfer-progress -pl :${ZLUDA_ARTIFACT_ID} 2>/dev/null \
             || grep -m1 '<version>' nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda/pom.xml \
                | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
           echo "Project version: ${PROJ_VERSION}"

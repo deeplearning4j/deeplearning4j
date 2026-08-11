@@ -30,12 +30,15 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-zluda</artifactId>
-    <name>nd4j-zluda</name>
+    <artifactId>nd4j-zluda-12.9</artifactId>
+    <name>nd4j-zluda-12.9</name>
     <description>ND4J ZLUDA Backend - Enables CUDA code to run on AMD and Intel GPUs via ZLUDA transpiler</description>
 
     <properties>
         <skipPublishing>false</skipPublishing>
+        <!-- ZLUDA executes binaries produced by this exact CUDA toolchain line.
+             Keep the version in the published Maven identity. -->
+        <cuda.version>12.9</cuda.version>
         <module.name>nd4j.zluda</module.name>
     </properties>
 

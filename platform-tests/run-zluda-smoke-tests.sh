@@ -7,8 +7,8 @@
 #   - ZLUDA_PATH env var pointing at a ZLUDA install
 #     (directory containing libcuda.so, or with a lib/ subdirectory)
 #   - ROCm installed for AMD, or oneAPI Level Zero for Intel
-#   - nd4j-zluda installed once:
-#       mvn install -DskipTests -Pzluda -pl :nd4j-zluda   (from the repo root)
+#   - the CUDA-versioned ZLUDA backend installed once:
+#       mvn install -DskipTests -Pzluda -pl :nd4j-zluda-12.9   (from the repo root)
 #   - CUDA backend jars available (default backend.artifactId=nd4j-cuda-12.9)
 #
 # Scope: core driver/runtime, PTX JIT and cuBLAS GEMM paths only. cuDNN and

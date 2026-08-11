@@ -31,8 +31,8 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>nd4j-zluda-platform</artifactId>
-    <name>nd4j-zluda-platform</name>
+    <artifactId>nd4j-zluda-12.9-platform</artifactId>
+    <name>nd4j-zluda-12.9-platform</name>
 
     <properties>
         <skipPublishing>false</skipPublishing>
@@ -45,7 +45,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>nd4j-zluda</artifactId>
+            <artifactId>nd4j-zluda-12.9</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

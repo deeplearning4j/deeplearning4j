@@ -778,7 +778,7 @@ class ReleaseValidationTest(unittest.TestCase):
         ).getroot()
 
         self.assertEqual(
-            "nd4j-zluda-platform",
+            "nd4j-zluda-12.9-platform",
             pom.findtext("m:artifactId", namespaces=namespace),
         )
         self.assertEqual(
@@ -796,7 +796,7 @@ class ReleaseValidationTest(unittest.TestCase):
         direct_dependencies = pom.findall("m:dependencies/m:dependency", namespace)
         self.assertEqual(1, len(direct_dependencies))
         self.assertEqual(
-            "nd4j-zluda",
+            "nd4j-zluda-12.9",
             direct_dependencies[0].findtext("m:artifactId", namespaces=namespace),
         )
         self.assertIsNone(
@@ -839,6 +839,28 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertNotIn("nd4j-cuda-12.9-platform", all_artifact_ids)
         self.assertNotIn("cuda-platform", all_artifact_ids)
 
+    def test_every_zluda_shard_publishes_cuda_versioned_maven_coordinates(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        for provider in ("aws", "azure", "gcp"):
+            plan = json.loads(
+                (repository_root / f"release/{provider}/release-plan.json").read_text(encoding="utf-8")
+            )
+            zluda_shards = [
+                shard for shard in plan["shards"] if shard["build"].get("zludaVersion")
+            ]
+            self.assertTrue(zluda_shards, provider)
+            for shard in zluda_shards:
+                cuda_version = shard["build"]["cudaVersion"]
+                backend = f"nd4j-zluda-{cuda_version}"
+                platform = f"{backend}-platform"
+                rules = shard["artifactRules"]
+                self.assertIn(backend, rules["artifactIds"], shard["id"])
+                self.assertIn(platform, rules["artifactIds"], shard["id"])
+                self.assertIn(backend, rules["unclassifiedArtifactIds"], shard["id"])
+                self.assertIn(platform, rules["unclassifiedArtifactIds"], shard["id"])
+                self.assertIn(f":{backend}", shard["build"]["modules"], shard["id"])
+                self.assertIn(f":{platform}", shard["build"]["modules"], shard["id"])
+
     def test_no_pom_has_duplicate_top_level_profiles_sections(self):
         repository_root = Path(__file__).resolve().parents[2]
         namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
@@ -872,22 +894,22 @@ class ReleaseValidationTest(unittest.TestCase):
                     ":nd4j-cuda-backend-common",
                     ":nd4j-cuda-12.9",
                     ":nd4j-cuda-12.9-preset",
-                    ":nd4j-zluda",
-                    ":nd4j-zluda-platform",
+                    ":nd4j-zluda-12.9",
+                    ":nd4j-zluda-12.9-platform",
                     ":libnd4j",
                 },
                 "artifactIds": {
                     "nd4j-cuda-backend-common",
                     "nd4j-cuda-12.9",
                     "nd4j-cuda-12.9-preset",
-                    "nd4j-zluda",
-                    "nd4j-zluda-platform",
+                    "nd4j-zluda-12.9",
+                    "nd4j-zluda-12.9-platform",
                 },
                 "unclassifiedArtifactIds": [
                     "nd4j-cuda-backend-common",
                     "nd4j-cuda-12.9-preset",
-                    "nd4j-zluda",
-                    "nd4j-zluda-platform",
+                    "nd4j-zluda-12.9",
+                    "nd4j-zluda-12.9-platform",
                 ],
             },
             "windows-x86_64-zluda": {
@@ -898,22 +920,22 @@ class ReleaseValidationTest(unittest.TestCase):
                     ":nd4j-cuda-backend-common",
                     ":nd4j-cuda-12.9",
                     ":nd4j-cuda-12.9-preset",
-                    ":nd4j-zluda",
-                    ":nd4j-zluda-platform",
+                    ":nd4j-zluda-12.9",
+                    ":nd4j-zluda-12.9-platform",
                     ":libnd4j",
                 },
                 "artifactIds": {
                     "nd4j-cuda-backend-common",
                     "nd4j-cuda-12.9",
                     "nd4j-cuda-12.9-preset",
-                    "nd4j-zluda",
-                    "nd4j-zluda-platform",
+                    "nd4j-zluda-12.9",
+                    "nd4j-zluda-12.9-platform",
                 },
                 "unclassifiedArtifactIds": [
                     "nd4j-cuda-backend-common",
                     "nd4j-cuda-12.9-preset",
-                    "nd4j-zluda",
-                    "nd4j-zluda-platform",
+                    "nd4j-zluda-12.9",
+                    "nd4j-zluda-12.9-platform",
                 ],
             },
         }
@@ -1331,14 +1353,14 @@ class ReleaseValidationTest(unittest.TestCase):
             output = root / "output"
             version = "1.0.0"
             artifacts = {
-                "nd4j-zluda": [
-                    f"nd4j-zluda-{version}.jar",
-                    f"nd4j-zluda-{version}-sources.jar",
-                    f"nd4j-zluda-{version}-wrong-classifier.jar",
+                "nd4j-zluda-12.9": [
+                    f"nd4j-zluda-12.9-{version}.jar",
+                    f"nd4j-zluda-12.9-{version}-sources.jar",
+                    f"nd4j-zluda-12.9-{version}-wrong-classifier.jar",
                 ],
-                "nd4j-zluda-platform": [
-                    f"nd4j-zluda-platform-{version}.jar",
-                    f"nd4j-zluda-platform-{version}-sources.jar",
+                "nd4j-zluda-12.9-platform": [
+                    f"nd4j-zluda-12.9-platform-{version}.jar",
+                    f"nd4j-zluda-12.9-platform-{version}-sources.jar",
                 ],
                 "nd4j-cuda-12.9": [
                     f"nd4j-cuda-12.9-{version}.jar",
@@ -1358,7 +1380,10 @@ class ReleaseValidationTest(unittest.TestCase):
                 "mode": "classifier",
                 "artifactIds": list(artifacts),
                 "classifierTokens": ["linux-x86_64-zluda"],
-                "unclassifiedArtifactIds": ["nd4j-zluda", "nd4j-zluda-platform"],
+                "unclassifiedArtifactIds": [
+                    "nd4j-zluda-12.9",
+                    "nd4j-zluda-12.9-platform",
+                ],
                 "includeMetadata": False,
             })
 
@@ -1368,18 +1393,18 @@ class ReleaseValidationTest(unittest.TestCase):
                 {f"{artifact_id}-{version}.pom" for artifact_id in artifacts},
                 staged_poms,
             )
-            self.assertIn(f"nd4j-zluda-{version}.jar", staged)
-            self.assertIn(f"nd4j-zluda-platform-{version}.jar", staged)
+            self.assertIn(f"nd4j-zluda-12.9-{version}.jar", staged)
+            self.assertIn(f"nd4j-zluda-12.9-platform-{version}.jar", staged)
             self.assertIn(f"nd4j-cuda-12.9-{version}-linux-x86_64-zluda.jar", staged)
             self.assertNotIn(f"nd4j-cuda-12.9-{version}.jar", staged)
-            self.assertNotIn(f"nd4j-zluda-{version}-sources.jar", staged)
-            self.assertNotIn(f"nd4j-zluda-platform-{version}-sources.jar", staged)
-            self.assertNotIn(f"nd4j-zluda-{version}-wrong-classifier.jar", staged)
+            self.assertNotIn(f"nd4j-zluda-12.9-{version}-sources.jar", staged)
+            self.assertNotIn(f"nd4j-zluda-12.9-platform-{version}-sources.jar", staged)
+            self.assertNotIn(f"nd4j-zluda-12.9-{version}-wrong-classifier.jar", staged)
             with self.assertRaisesRegex(ValueError, "must be a subset"):
                 build_platform.stage_repository(repository, output, {
                     "mode": "classifier",
                     "artifactIds": ["nd4j-cuda-12.9"],
-                    "unclassifiedArtifactIds": ["nd4j-zluda"],
+                    "unclassifiedArtifactIds": ["nd4j-zluda-12.9"],
                 })
 
     def test_zluda_unclassified_artifact_attestation_is_exact_and_complete(self):
@@ -1387,32 +1412,32 @@ class ReleaseValidationTest(unittest.TestCase):
             repository = Path(temporary_directory)
             version = "1.0.0"
             build = {
-                "modules": [":nd4j-zluda", ":nd4j-zluda-platform"],
+                "modules": [":nd4j-zluda-12.9", ":nd4j-zluda-12.9-platform"],
             }
             rules = {
                 "mode": "classifier",
-                "artifactIds": ["nd4j-zluda", "nd4j-zluda-platform"],
+                "artifactIds": ["nd4j-zluda-12.9", "nd4j-zluda-12.9-platform"],
                 "unclassifiedArtifactIds": [
-                    "nd4j-zluda",
-                    "nd4j-zluda-platform",
+                    "nd4j-zluda-12.9",
+                    "nd4j-zluda-12.9-platform",
                 ],
             }
             zluda_jar = (
                 repository
-                / "org/nd4j/nd4j-zluda"
+                / "org/nd4j/nd4j-zluda-12.9"
                 / version
-                / f"nd4j-zluda-{version}.jar"
+                / f"nd4j-zluda-12.9-{version}.jar"
             )
             platform_jar = (
                 repository
-                / "org/eclipse/deeplearning4j/nd4j-zluda-platform"
+                / "org/eclipse/deeplearning4j/nd4j-zluda-12.9-platform"
                 / version
-                / f"nd4j-zluda-platform-{version}.jar"
+                / f"nd4j-zluda-12.9-platform-{version}.jar"
             )
             zluda_jar.parent.mkdir(parents=True)
             zluda_jar.write_bytes(b"jar")
 
-            with self.assertRaisesRegex(RuntimeError, "nd4j-zluda-platform"):
+            with self.assertRaisesRegex(RuntimeError, "nd4j-zluda-12.9-platform"):
                 build_platform.attest_unclassified_artifacts(
                     repository,
                     build,
@@ -1434,9 +1459,10 @@ class ReleaseValidationTest(unittest.TestCase):
                 )
             self.assertIn(
                 "unclassified-artifacts="
-                "org/eclipse/deeplearning4j/nd4j-zluda-platform/"
-                f"{version}/nd4j-zluda-platform-{version}.jar,"
-                f"org/nd4j/nd4j-zluda/{version}/nd4j-zluda-{version}.jar",
+                "org/eclipse/deeplearning4j/nd4j-zluda-12.9-platform/"
+                f"{version}/nd4j-zluda-12.9-platform-{version}.jar,"
+                f"org/nd4j/nd4j-zluda-12.9/{version}/"
+                f"nd4j-zluda-12.9-{version}.jar",
                 output.getvalue(),
             )
 
@@ -1454,7 +1480,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 "does not include required modules",
             ):
                 build_platform.required_unclassified_artifact_ids(
-                    {"modules": [":nd4j-zluda"]},
+                    {"modules": [":nd4j-zluda-12.9"]},
                     rules,
                 )
 
@@ -1586,7 +1612,7 @@ class ReleaseValidationTest(unittest.TestCase):
             "zludaVersion": "v6",
             "javacppPlatform": "linux-x86_64",
             "profiles": ["cuda", "sdx", "zluda"],
-            "modules": [":nd4j-cuda-12.9", ":nd4j-zluda"],
+            "modules": [":nd4j-cuda-12.9", ":nd4j-zluda-12.9"],
             "mavenArgs": ["-Dlibnd4j.zluda=AMD"],
             "variants": [{
                 "name": "zluda",
@@ -2018,7 +2044,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Pvulkan", vulkan)
         self.assertIn("-Dplatform.classifier=linux-x86_64-compile", vulkan)
 
-        zluda = command(DL4J_FAMILY="zluda")
+        zluda = command(DL4J_FAMILY="zluda", DL4J_CUDA_VERSION="12.9")
         self.assertIn("-Dlibnd4j.zluda=AMD", zluda)
         self.assertIn("-Dlibnd4j.classifier=linux-x86_64-cuda-12.9-zluda", zluda)
         self.assertIn("-Djavacpp.platform.extension=-zluda", zluda)
@@ -2026,12 +2052,16 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Pzluda-platform", zluda)
         self.assertEqual(
             ":nd4j-cuda-backend-common,:nd4j-cuda-12.9,"
-            ":nd4j-cuda-12.9-preset,:nd4j-zluda,"
-            ":nd4j-zluda-platform,:libnd4j",
+            ":nd4j-cuda-12.9-preset,:nd4j-zluda-12.9,"
+            ":nd4j-zluda-12.9-platform,:libnd4j",
             zluda[zluda.index("-pl") + 1],
         )
 
-        windows_zluda = command(DL4J_FAMILY="windows-zluda", DL4J_ZLUDA_TARGET="AMD")
+        windows_zluda = command(
+            DL4J_FAMILY="windows-zluda",
+            DL4J_CUDA_VERSION="12.9",
+            DL4J_ZLUDA_TARGET="AMD",
+        )
         self.assertIn("-Dlibnd4j.classifier=windows-x86_64-cuda-12.9-zluda", windows_zluda)
         self.assertIn("-Djavacpp.platform=windows-x86_64", windows_zluda)
         self.assertIn("-Dlibnd4j.platform=windows-x86_64", windows_zluda)
@@ -2039,8 +2069,8 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Pzluda-platform", windows_zluda)
         self.assertEqual(
             ":nd4j-cuda-backend-common,:nd4j-cuda-12.9,"
-            ":nd4j-cuda-12.9-preset,:nd4j-zluda,"
-            ":nd4j-zluda-platform,:libnd4j",
+            ":nd4j-cuda-12.9-preset,:nd4j-zluda-12.9,"
+            ":nd4j-zluda-12.9-platform,:libnd4j",
             windows_zluda[windows_zluda.index("-pl") + 1],
         )
 

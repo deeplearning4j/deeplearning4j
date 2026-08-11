@@ -35,6 +35,10 @@ public class CudaFileUpdater implements FileUpdater {
         // module names, display names, and backend properties. Suffixes such as
         // -preset and -platform remain intact.
         ret.put("nd4j-cuda-[0-9]+(?:\\.[0-9]+)+", String.format("nd4j-cuda-%s", cudaVersion));
+        // ZLUDA artifacts are tied to the CUDA ABI/toolchain that produced their
+        // native payload and generated binding, so their Maven identity must move
+        // with the selected CUDA version as well.
+        ret.put("nd4j-zluda-[0-9]+(?:\\.[0-9]+)+", String.format("nd4j-zluda-%s", cudaVersion));
         // Release-plan variants use classifierSuffix values such as
         // -cuda-12.9-compile rather than the artifact-id token above.
         ret.put("-cuda-[0-9]+(?:\\.[0-9]+)+(?=-|\")", String.format("-cuda-%s", cudaVersion));

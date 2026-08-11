@@ -1312,8 +1312,9 @@ def attest_zluda_configuration(build: dict, env: dict[str, str]) -> None:
         failures.append("backend must be cuda")
     if "zluda" not in build.get("profiles", []):
         failures.append("zluda profile is missing")
-    if ":nd4j-zluda" not in build.get("modules", []):
-        failures.append(":nd4j-zluda module is missing")
+    zluda_artifact_id = f"nd4j-zluda-{build.get('cudaVersion', '')}"
+    if f":{zluda_artifact_id}" not in build.get("modules", []):
+        failures.append(f":{zluda_artifact_id} module is missing")
     variants = build.get("variants", [])
     expected_classifier_suffix = f"-cuda-{build.get('cudaVersion', '')}-zluda"
     if not variants or any(
@@ -1333,7 +1334,7 @@ def attest_zluda_configuration(build: dict, env: dict[str, str]) -> None:
         raise RuntimeError("ZLUDA configuration attestation failed: " + "; ".join(failures))
     print(
         f"[dl4j-attestation] zludaVersion={version} target={target} "
-        f"profile=zluda module=:nd4j-zluda path={zluda_path} runtime={runtime}",
+        f"profile=zluda module=:{zluda_artifact_id} path={zluda_path} runtime={runtime}",
         flush=True,
     )
 

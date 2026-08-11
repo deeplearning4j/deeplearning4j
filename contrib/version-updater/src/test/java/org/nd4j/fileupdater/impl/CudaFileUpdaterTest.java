@@ -15,6 +15,7 @@ public class CudaFileUpdaterTest {
     public void updatesPomAndReleasePlanCudaReferences() {
         CudaFileUpdater updater = new CudaFileUpdater("13.0", "1.6.0", "10.0");
         String input = "<artifactId>nd4j-cuda-12.9-platform</artifactId>\n"
+                + "<artifactId>nd4j-zluda-12.9-platform</artifactId>\n"
                 + "<cuda.version>12.9</cuda.version>\n"
                 + "<cudnn.version>9.10</cudnn.version>\n"
                 + "<javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>\n"
@@ -29,6 +30,7 @@ public class CudaFileUpdaterTest {
         }
 
         String expected = "<artifactId>nd4j-cuda-13.0-platform</artifactId>\n"
+                + "<artifactId>nd4j-zluda-13.0-platform</artifactId>\n"
                 + "<cuda.version>13.0</cuda.version>\n"
                 + "<cudnn.version>10.0</cudnn.version>\n"
                 + "<javacpp-presets.cuda.version>1.6.0</javacpp-presets.cuda.version>\n"
