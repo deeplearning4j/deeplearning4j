@@ -3909,6 +3909,38 @@ def _start_under_controller_lease(
     print(json.dumps(run_manifest, indent=2))
 
 
+def publishable_execution_ids(
+    container: Any, plan: dict[str, Any], run: dict[str, Any]
+) -> list[str]:
+    """Return complete shards plus failed shards with attested partial Maven output."""
+    prefix = f"{plan['artifactPrefix'].strip('/')}/{run['runId']}"
+    publishable: list[str] = []
+    for execution in run.get("executions", []):
+        if not isinstance(execution, dict) or not isinstance(execution.get("id"), str):
+            continue
+        if execution.get("status") == "succeeded":
+            publishable.append(execution["id"])
+            continue
+        if execution.get("status") != "failed":
+            continue
+        shard_id = execution.get("shard", {}).get("id")
+        if not isinstance(shard_id, str):
+            continue
+        manifest = get_json(container, f"{prefix}/{shard_id}/shard-manifest.json")
+        if (
+            not isinstance(manifest, dict)
+            or manifest.get("partial") is not True
+            or not manifest.get("variants")
+        ):
+            continue
+        try:
+            attested_file_entry(manifest, "maven-repository.tar.gz")
+        except RuntimeError:
+            continue
+        publishable.append(execution["id"])
+    return publishable
+
+
 def automatic_collect_args(
     args: argparse.Namespace,
     successful_shards: list[str] | None = None,
@@ -4155,13 +4187,9 @@ def start(args: argparse.Namespace) -> None:
                 # selection to make, so collect its complete output set.
                 successful_shards = None if completed else []
             else:
-                successful_shards = [
-                    str(execution["id"])
-                    for execution in execution_records
-                    if isinstance(execution, dict)
-                    and execution.get("status") == "succeeded"
-                    and isinstance(execution.get("id"), str)
-                ]
+                successful_shards = publishable_execution_ids(
+                    artifact_container, plan, run_for_collect
+                )
             if successful_shards is None or successful_shards:
                 scope = "expanded" if completed else "successful"
                 print(
@@ -5478,14 +5506,25 @@ def _collect_under_controller_lease(
             collector_lease.check()
             shard = item["shard"]["id"]
             status_value = get_json(container, f"{prefix}/{shard}/status.json")
-            if not status_value or int(status_value.get("exitCode", 1)) != 0:
-                raise RuntimeError(f"shard {shard} is incomplete or failed: {status_value}")
             manifest_value = get_json(
                 container, f"{prefix}/{shard}/shard-manifest.json"
             )
+            partial = bool(manifest_value and manifest_value.get("partial") is True)
+            if not status_value or (
+                int(status_value.get("exitCode", 1)) != 0
+                and not (getattr(args, "repository_only", False) and partial)
+            ):
+                raise RuntimeError(f"shard {shard} is incomplete or failed: {status_value}")
             expected_variants = {
                 variant["name"] for variant in item["shard"]["build"]["variants"]
             }
+            actual_variants = set((manifest_value or {}).get("variants", []))
+            variants_match = (
+                bool(actual_variants)
+                and actual_variants <= expected_variants
+                if partial
+                else actual_variants == expected_variants
+            )
             if (
                 not manifest_value
                 or manifest_value.get("runId") != args.run_id
@@ -5494,7 +5533,7 @@ def _collect_under_controller_lease(
                 or manifest_value.get("releaseVersion") != args.version
                 or set(manifest_value.get("workloads", []))
                 != set(item["shard"]["workloads"])
-                or set(manifest_value.get("variants", [])) != expected_variants
+                or not variants_match
             ):
                 raise RuntimeError(f"shard {shard} manifest identity mismatch")
             for workload in item["shard"]["workloads"]:

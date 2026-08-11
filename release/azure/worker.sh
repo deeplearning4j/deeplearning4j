@@ -390,15 +390,22 @@ run_shard() (
   setsid "${build[@]}" &
   build_pid=$!
   printf '%s\n' "${build_pid}" >"${BUILD_PID_FILE}"
+  set +e
   wait "${build_pid}"
+  build_code=$?
+  set -e
   rm -f "${BUILD_PID_FILE}"
   trap - EXIT
-  phase matrix-build complete "shard=${CURRENT_SHARD_ID}"
+  if [ "${build_code}" -eq 0 ]; then
+    phase matrix-build complete "shard=${CURRENT_SHARD_ID}"
+  else
+    phase matrix-build failed "shard=${CURRENT_SHARD_ID} exitCode=${build_code} packaging=partial"
+  fi
 
-  phase artifact-packaging started "shard=${CURRENT_SHARD_ID}"
+  phase artifact-packaging started "shard=${CURRENT_SHARD_ID} buildExitCode=${build_code}"
   tar -C "${output_dir}/maven-repository" -czf "${output_dir}/maven-repository.tar.gz" .
   tar -C "${output_dir}/sdk-assets" -czf "${output_dir}/sdk-assets.tar.gz" .
-  python3 - "${output_dir}" "${CURRENT_CONFIG_FILE}" <<'PY'
+  python3 - "${output_dir}" "${CURRENT_CONFIG_FILE}" "${build_code}" <<'PY'
 import hashlib
 import json
 import pathlib
@@ -417,6 +424,16 @@ for path in sorted(item for item in root.rglob("*") if item.is_file()):
     })
 config = json.load(open(sys.argv[2], encoding="utf-8"))
 shard = config["shard"]
+build_exit_code = int(sys.argv[3])
+progress_path = root / "build-result.json"
+if progress_path.is_file():
+    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+    variants = progress.get("completedVariants", [])
+else:
+    variants = (
+        [variant["name"] for variant in shard["build"]["variants"]]
+        if build_exit_code == 0 else []
+    )
 json.dump({
     "schemaVersion": 1,
     "provider": "azure",
@@ -428,11 +445,14 @@ json.dump({
     "os": shard["os"],
     "platform": shard["build"]["javacppPlatform"],
     "backend": shard["build"]["backend"],
-    "variants": [variant["name"] for variant in shard["build"]["variants"]],
+    "variants": variants,
+    "partial": build_exit_code != 0,
+    "buildExitCode": build_exit_code,
     "files": files,
 }, open(root / "shard-manifest.json", "w", encoding="utf-8"), indent=2, sort_keys=True)
 PY
-  phase artifact-packaging complete "shard=${CURRENT_SHARD_ID}"
+  phase artifact-packaging complete "shard=${CURRENT_SHARD_ID} buildExitCode=${build_code}"
+  return "${build_code}"
 )
 
 phase worker started "lane=${LANE_ID} pid=$$"

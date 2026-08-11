@@ -3007,6 +3007,39 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertEqual("failed", reconciled["lanes"][0]["status"])
         self.assertIn("code 17", reconciled["lanes"][0]["failure"])
 
+    def test_failed_execution_with_attested_partial_maven_output_is_publishable(self):
+        plan = release.load_plan(HERE / "release-plan.json")
+        run = {
+            "runId": "run",
+            "executions": [
+                {"id": "complete", "status": "succeeded", "shard": {"id": "complete"}},
+                {"id": "partial", "status": "failed", "shard": {"id": "partial"}},
+                {"id": "empty", "status": "failed", "shard": {"id": "empty"}},
+            ],
+        }
+        manifests = {
+            "partial": {
+                "partial": True,
+                "variants": ["base"],
+                "files": [{
+                    "path": "maven-repository.tar.gz",
+                    "sha256": "a" * 64,
+                    "size": 1,
+                }],
+            },
+            "empty": {"partial": True, "variants": [], "files": []},
+        }
+
+        def get_manifest(_container, name):
+            shard = name.split("/")[-2]
+            return manifests.get(shard)
+
+        with mock.patch.object(release, "get_json", side_effect=get_manifest):
+            self.assertEqual(
+                ["complete", "partial"],
+                release.publishable_execution_ids(mock.Mock(), plan, run),
+            )
+
     def test_resume_start_reuses_retained_epoch_and_detaches_safely(self):
         plan = release.load_plan(HERE / "release-plan.json")
         context = {"subscription": "subscription", "modules": {}}
@@ -4157,6 +4190,13 @@ class AzureSafetyTests(unittest.TestCase):
 
 
 class WorkerTransportTests(unittest.TestCase):
+    def test_linux_worker_packages_attested_variants_after_build_failure(self):
+        worker = (HERE / "worker.sh").read_text(encoding="utf-8")
+        self.assertIn("packaging=partial", worker)
+        self.assertIn('"partial": build_exit_code != 0', worker)
+        self.assertIn('return "${build_code}"', worker)
+        self.assertIn('progress.get("completedVariants", [])', worker)
+
     def test_bucket_parser_and_blob_url_are_azure_native(self):
         self.assertEqual(
             ("dl4jaccount", "releases"),

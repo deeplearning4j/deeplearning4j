@@ -586,6 +586,56 @@ class ReleaseValidationTest(unittest.TestCase):
             build_platform.build_native_platform(Path("/source"), shard, Path("/m2"), {}, None)
         self.assertEqual(["linux-x86_64.sh", "cross-platform.sh"], events)
 
+    def test_native_lane_checkpoints_each_variant_before_a_later_failure(self):
+        build = {
+            "javacppPlatform": "linux-x86_64",
+            "backend": "cpu",
+            "profiles": ["cpu"],
+            "modules": [":libnd4j"],
+            "variants": [{"name": "base"}, {"name": "compile"}],
+        }
+        shard = {
+            "id": "linux-x86_64-cpu",
+            "os": "linux",
+            "artifactRules": {},
+            "build": build,
+        }
+        calls = []
+
+        def run_variant(*_args):
+            calls.append("run")
+            if len(calls) == 2:
+                raise RuntimeError("compile failed")
+
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            progress = root / "build-result.json"
+            with patch.object(build_platform, "prepare_openblas"), patch.object(
+                build_platform, "run", side_effect=run_variant
+            ), patch.object(
+                build_platform, "attest_variant_classifier_artifacts"
+            ), patch.object(
+                build_platform, "attest_unclassified_artifacts"
+            ), patch.object(
+                build_platform, "stage_repository"
+            ) as stage:
+                with self.assertRaisesRegex(RuntimeError, "compile failed"):
+                    build_platform.build_native_platform(
+                        Path("/source"),
+                        shard,
+                        root / "m2",
+                        {},
+                        None,
+                        maven_output=root / "staged",
+                        progress_output=progress,
+                    )
+
+            self.assertEqual(1, stage.call_count)
+            self.assertEqual(
+                ["base"],
+                json.loads(progress.read_text(encoding="utf-8"))["completedVariants"],
+            )
+
     def test_android_release_disables_host_jvm_linking_and_selects_variant_api(self):
         source = Path("/source")
         build = {"javacppPlatform": "android-arm64"}

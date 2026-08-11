@@ -1317,14 +1317,31 @@ def attest_zluda_configuration(build: dict, env: dict[str, str]) -> None:
     )
 
 
+def write_build_result(path: Path | None, completed_variants: list[str]) -> None:
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {"schemaVersion": 1, "completedVariants": completed_variants},
+            indent=2,
+            sort_keys=True,
+        ) + "\n",
+        encoding="utf-8",
+    )
+
+
 def build_native_platform(source: Path, shard: dict, repository: Path, env: dict[str, str],
                           compiler_cache: str | None, release_version: str | None = None,
-                          config: dict | None = None) -> None:
+                          config: dict | None = None, maven_output: Path | None = None,
+                          progress_output: Path | None = None) -> None:
     """Invoke the exact shared scripts used by each GitHub platform workflow."""
     build, shard_id = shard["build"], shard["id"]
     rules = shard.get("artifactRules", {})
     reset_unclassified_artifacts(repository, build, rules, release_version)
     prepare_openblas(source, build, env)
+    completed_variants: list[str] = []
+    write_build_result(progress_output, completed_variants)
     for variant in build["variants"]:
         print(f"[dl4j-phase] shard={shard_id} phase=native variant={variant['name']}", flush=True)
         reset_variant_classifier_artifacts(
@@ -1370,6 +1387,19 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
         attest_variant_classifier_artifacts(
             repository, build, rules, variant, release_version, "local-repository"
         )
+        completed_variants.append(variant["name"])
+        if maven_output is not None:
+            maven_output.mkdir(parents=True, exist_ok=True)
+            stage_repository(repository, maven_output, rules)
+            attest_variant_classifier_artifacts(
+                maven_output,
+                build,
+                rules,
+                variant,
+                release_version,
+                "incremental-staged-repository",
+            )
+        write_build_result(progress_output, completed_variants)
         if compiler_cache:
             run([compiler_cache, "--show-stats"], source, env)
     attest_unclassified_artifacts(
@@ -1418,6 +1448,8 @@ def main() -> None:
                 compiler_cache,
                 config["releaseVersion"],
                 config,
+                args.maven_output,
+                args.maven_output.parent / "build-result.json",
             )
         print(f"[dl4j-phase] shard={shard['id']} phase=package", flush=True)
         args.maven_output.mkdir(parents=True, exist_ok=True)
@@ -1439,6 +1471,10 @@ def main() -> None:
             rules,
             config["releaseVersion"],
             "staged-repository",
+        )
+        write_build_result(
+            args.maven_output.parent / "build-result.json",
+            [variant["name"] for variant in build.get("variants", [])],
         )
         runtime_count = package_runtime_sdk(
             args.source, args.sdk_output, int(build.get("buildThreads", 16))
