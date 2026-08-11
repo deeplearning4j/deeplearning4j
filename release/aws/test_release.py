@@ -1232,6 +1232,50 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-DCMAKE_INSTALL_LIBDIR=${ONEDNN_LIB_DIR}", setup)
         self.assertNotIn("${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a", setup)
 
+    def test_openvino_static_link_response_includes_all_installed_archives(self):
+        project = Path(__file__).parents[2]
+        generator = project / "libnd4j/cmake/install_openvino.cmake"
+        dependencies = (
+            project / "libnd4j/cmake/Dependencies.cmake"
+        ).read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            install = Path(temporary_directory) / "openvino_install"
+            core = install / "runtime/lib/intel64"
+            third_party = install / "runtime/3rdparty/lib"
+            core.mkdir(parents=True)
+            third_party.mkdir(parents=True)
+            archives = [
+                core / "libopenvino.a",
+                core / "libopenvino_onednn_cpu.a",
+                third_party / "libpugixml.a",
+            ]
+            for archive in archives:
+                archive.write_bytes(b"!<arch>\n")
+            response = core / "openvino-static-link.rsp"
+
+            subprocess.run(
+                [
+                    "cmake",
+                    f"-DINSTALL_DIR={install}",
+                    f"-DRESPONSE_FILE={response}",
+                    "-P",
+                    str(generator),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            lines = response.read_text(encoding="utf-8").splitlines()
+            self.assertEqual("--start-group", lines[0])
+            self.assertEqual("--end-group", lines[len(archives) + 1])
+            for archive in archives:
+                self.assertIn(f'"{archive}"', lines)
+            self.assertIn("-ltbb", lines)
+            self.assertIn("-ltbbmalloc", lines)
+            self.assertIn('"-Wl,@${_ov_link_response}"', dependencies)
+            self.assertNotIn("libopenvino_onednn_cpu.a", dependencies)
+
     def test_managed_llvm_does_not_publish_private_zstd_dependency(self):
         root = Path(__file__).parents[2]
         dependencies = (
@@ -1273,6 +1317,9 @@ class ReleaseValidationTest(unittest.TestCase):
             for artifact_id, names in artifacts.items():
                 directory = repository / "org/nd4j" / artifact_id / version
                 directory.mkdir(parents=True)
+                (directory / f"{artifact_id}-{version}.pom").write_text(
+                    "<project/>", encoding="utf-8"
+                )
                 for name in names:
                     (directory / name).write_bytes(b"jar")
 
@@ -1285,6 +1332,11 @@ class ReleaseValidationTest(unittest.TestCase):
             })
 
             staged = {path.name for path in output.rglob("*.jar")}
+            staged_poms = {path.name for path in output.rglob("*.pom")}
+            self.assertEqual(
+                {f"{artifact_id}-{version}.pom" for artifact_id in artifacts},
+                staged_poms,
+            )
             self.assertIn(f"nd4j-zluda-{version}.jar", staged)
             self.assertIn(f"nd4j-zluda-platform-{version}.jar", staged)
             self.assertIn(f"nd4j-cuda-12.9-{version}-linux-x86_64-zluda.jar", staged)

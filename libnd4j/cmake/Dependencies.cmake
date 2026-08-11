@@ -3301,12 +3301,18 @@ function(setup_openvino)
     # Use a script step that tries both paths, succeeding if either exists.
     set(_TBB_DST_CMAKE "${OPENVINO_INSTALL_DIR}/runtime/3rdparty/tbb/lib64/cmake/TBB")
     ExternalProject_Add_Step(openvino_external copy_tbb_cmake
-        COMMENT "Copying TBB cmake config into OpenVINO install"
+        COMMENT "Finalizing the OpenVINO static link contract"
         COMMAND ${CMAKE_COMMAND} -E make_directory "${_TBB_DST_CMAKE}"
         COMMAND ${CMAKE_COMMAND}
             -DTBB_PREFIX=${OPENVINO_PREFIX}/tbb_install
             -DTBB_DST=${_TBB_DST_CMAKE}
             -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/copy_tbb_cmake.cmake
+        COMMAND ${CMAKE_COMMAND}
+            -DINSTALL_DIR=${OPENVINO_INSTALL_DIR}
+            -DRESPONSE_FILE=${OPENVINO_INSTALL_DIR}/runtime/lib/intel64/openvino-static-link.rsp
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/install_openvino.cmake
+        BYPRODUCTS
+            "${OPENVINO_INSTALL_DIR}/runtime/lib/intel64/openvino-static-link.rsp"
         DEPENDEES install
     )
 
@@ -3321,12 +3327,10 @@ function(setup_openvino)
             "${OPENVINO_INSTALL_DIR}/include"
         )
 
-        # Static OpenVINO install produces libs under runtime/lib/intel64/ (Linux x86_64).
-        # We link with --whole-archive for the core runtime to ensure plugin registration
-        # symbols are not stripped. All static deps (oneDNN, pugixml, TBB) are bundled.
+        # Static OpenVINO installs place their archives below runtime/. The
+        # generated response keeps all circular archive dependencies in one rescan
+        # group and links the separately installed oneTBB shared libraries.
         set(_OV_LIB_DIR "${OPENVINO_INSTALL_DIR}/runtime/lib/intel64")
-        set(_OV_LIB_DIR_ALT "${OPENVINO_INSTALL_DIR}/runtime/lib")
-        set(_OV_LIB_3P "${OPENVINO_INSTALL_DIR}/runtime/3rdparty/lib")
 
         if(WIN32)
             target_link_libraries(openvino_interface INTERFACE
@@ -3334,27 +3338,8 @@ function(setup_openvino)
                 "${_OV_LIB_DIR}/openvino_intel_cpu_plugin.lib"
             )
         else()
-            # Use a post-build step (install_openvino.cmake) to glob all static
-            # libs and create a proper link line. For now, link the known main libs.
-            # The install produces: libopenvino.a, libopenvino_intel_cpu_plugin.a,
-            # libopenvino_ir_frontend.a, libopenvino_reference.a, plus 3rdparty
-            # deps (libdnnl.a, libpugixml.a, libtbb.a, etc.)
-            set(_OV_STATIC_LIBS
-                "${_OV_LIB_DIR}/libopenvino.a"
-                "${_OV_LIB_DIR}/libopenvino_intel_cpu_plugin.a"
-                "${_OV_LIB_DIR}/libopenvino_ir_frontend.a"
-                "${_OV_LIB_DIR}/libopenvino_reference.a"
-                "${_OV_LIB_DIR}/libopenvino_shape_inference.a"
-            )
-            if(APPLE)
-                # Apple ld resolves circular deps automatically
-                target_link_libraries(openvino_interface INTERFACE
-                    ${_OV_STATIC_LIBS} -ldl -lm -lpthread)
-            else()
-                target_link_libraries(openvino_interface INTERFACE
-                    -Wl,--start-group ${_OV_STATIC_LIBS} -Wl,--end-group
-                    -lpthread -ldl -lm -lrt)
-            endif()
+            _openvino_link_static_response(
+                openvino_interface "${OPENVINO_INSTALL_DIR}")
         endif()
     endif()
 
@@ -3368,6 +3353,40 @@ function(setup_openvino)
     endif()
 
     message(STATUS "OpenVINO setup complete (HAVE_OPENVINO=ON, building from source)")
+endfunction()
+
+# Link every archive installed by a static OpenVINO build through a generated
+# GNU ld response file. The archive set is not stable across OpenVINO releases,
+# and the CPU plugin's PRIVATE dependencies are otherwise omitted when the
+# ExternalProject is configured before its package export exists.
+function(_openvino_link_static_response _target _install_dir)
+    set(_ov_link_response
+        "${_install_dir}/runtime/lib/intel64/openvino-static-link.rsp")
+    set(_ov_core_archive
+        "${_install_dir}/runtime/lib/intel64/libopenvino.a")
+
+    # Cached/reused installs already exist at configure time. Fresh
+    # ExternalProject builds generate the same response in copy_tbb_cmake after
+    # installation, and declare it as a byproduct above.
+    if(EXISTS "${_ov_core_archive}")
+        execute_process(
+            COMMAND ${CMAKE_COMMAND}
+                -DINSTALL_DIR=${_install_dir}
+                -DRESPONSE_FILE=${_ov_link_response}
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/install_openvino.cmake"
+            RESULT_VARIABLE _ov_link_response_result
+        )
+        if(NOT _ov_link_response_result EQUAL 0)
+            message(FATAL_ERROR
+                "Failed to generate the OpenVINO static linker response")
+        endif()
+    endif()
+
+    target_link_libraries(${_target} INTERFACE
+        "-Wl,@${_ov_link_response}"
+        -lpthread -ldl -lm -lrt)
+    set_property(TARGET ${_target} APPEND PROPERTY
+        INTERFACE_LINK_DEPENDS "${_ov_link_response}")
 endfunction()
 
 # Helper: create openvino_interface from an existing install directory.
@@ -3389,31 +3408,16 @@ function(_openvino_create_interface_from_install _install_dir)
     endforeach()
 
     if(_ov_cfg_found)
-        # Use OpenVINO's own cmake config — handles all transitive deps
+        # Load OpenVINO's package to validate the install and configure its
+        # bundled TBB package. The static CPU extension itself is linked by the
+        # complete response below because it is not part of openvino::runtime.
         find_package(OpenVINO REQUIRED CONFIG PATHS "${OpenVINO_DIR}" NO_DEFAULT_PATH)
-        target_link_libraries(openvino_interface INTERFACE openvino::runtime)
     else()
-        # Fallback: manual linking (shouldn't happen with proper install)
-        message(WARNING "OpenVINO cmake config not found, using manual linking")
-        set(_OV_LIB_DIR "${_install_dir}/runtime/lib/intel64")
-        if(WIN32)
-            target_link_libraries(openvino_interface INTERFACE
-                "${_OV_LIB_DIR}/openvino.lib")
-        else()
-            # Glob all .a files
-            file(GLOB _OV_ALL_LIBS "${_OV_LIB_DIR}/*.a")
-            if(_OV_ALL_LIBS)
-                if(APPLE)
-                    target_link_libraries(openvino_interface INTERFACE
-                        ${_OV_ALL_LIBS} -ldl -lm -lpthread)
-                else()
-                    target_link_libraries(openvino_interface INTERFACE
-                        -Wl,--start-group ${_OV_ALL_LIBS} -Wl,--end-group
-                        -lpthread -ldl -lm -lrt)
-                endif()
-            endif()
-        endif()
+        message(WARNING
+            "OpenVINO cmake config not found; using the installed static archives")
     endif()
+
+    _openvino_link_static_response(openvino_interface "${_install_dir}")
 
     # Add include dirs explicitly
     foreach(_ov_inc_dir

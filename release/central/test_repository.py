@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
+import zipfile
 
 HERE = Path(__file__).resolve().parent
 
@@ -221,6 +222,60 @@ class MavenMetadataTests(unittest.TestCase):
             )
             self.assertFalse((artifact_dir / version / "maven-metadata.xml").exists())
             repository.verify(output, manifest_path, version, "cafebabe")
+
+    def test_materializer_restores_the_component_pom_embedded_in_a_jar(self):
+        version = "1.0.0"
+        artifact_id = "libtokenizers"
+        embedded_pom = (
+            "<project xmlns=\"http://maven.apache.org/POM/4.0.0\">"
+            "<modelVersion>4.0.0</modelVersion>"
+            f"<groupId>org.eclipse.deeplearning4j</groupId>"
+            f"<artifactId>{artifact_id}</artifactId>"
+            f"<version>{version}</version>"
+            "</project>\n"
+        ).encode("utf-8")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = (
+                root
+                / "shard/org/eclipse/deeplearning4j"
+                / artifact_id
+                / version
+            )
+            source.mkdir(parents=True)
+            jar = source / f"{artifact_id}-{version}-linux-arm64.jar"
+            with zipfile.ZipFile(jar, "w") as archive:
+                archive.writestr(
+                    "META-INF/maven/org.eclipse.deeplearning4j/"
+                    f"{artifact_id}/pom.xml",
+                    embedded_pom,
+                )
+
+            output = root / "repository"
+            manifest_path = root / "repository-manifest.json"
+            manifest = repository.materialize_test_repository(
+                [root / "shard"],
+                output,
+                manifest_path,
+                version,
+                "feedface",
+                metadata_updated="20260811000000",
+            )
+
+            restored = (
+                output
+                / "org/eclipse/deeplearning4j"
+                / artifact_id
+                / version
+                / f"{artifact_id}-{version}.pom"
+            )
+            self.assertEqual(embedded_pom, restored.read_bytes())
+            self.assertTrue(Path(str(restored) + ".sha256").is_file())
+            self.assertIn(
+                restored.relative_to(output).as_posix(),
+                {item["path"] for item in manifest["files"]},
+            )
+            repository.verify(output, manifest_path, version, "feedface")
 
     def test_metadata_timestamp_must_be_maven_utc_format(self):
         with tempfile.TemporaryDirectory() as temporary:

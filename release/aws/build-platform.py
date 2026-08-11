@@ -1191,9 +1191,15 @@ def stage_repository(repository: Path, output: Path, rules: dict) -> None:
             if mode == "classifier":
                 if artifact_id not in artifact_ids:
                     continue
-                is_metadata = path.suffix == ".pom" or path.name.endswith(("-sources.jar", "-javadoc.jar", ".module"))
-                if is_metadata and not include_metadata:
+                # A Maven component is never publishable without its POM. Keep
+                # POMs with every classifier-owned artifact even when optional
+                # sources, javadocs, and Gradle module metadata are omitted.
+                is_optional_metadata = path.name.endswith(
+                    ("-sources.jar", "-javadoc.jar", ".module")
+                )
+                if is_optional_metadata and not include_metadata:
                     continue
+                is_metadata = path.suffix == ".pom" or is_optional_metadata
                 is_unclassified_runtime = (
                     artifact_id in unclassified_artifact_ids
                     and path.name == f"{artifact_id}-{path.parent.name}.jar"

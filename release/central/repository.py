@@ -96,6 +96,67 @@ def repository_files(root: Path) -> Iterable[Path]:
         yield path
 
 
+def restore_embedded_component_poms(root: Path) -> list[Path]:
+    """Restore a missing repository POM from Maven metadata embedded in its JAR.
+
+    Maven Archiver places the producing project's POM below
+    META-INF/maven/<groupId>/<artifactId>/pom.xml. Older classifier staging
+    omitted external POM files, so accepting that attested JAR without restoring
+    its own embedded descriptor would leave an invalid Maven repository.
+    """
+    version_dirs: dict[Path, list[Path]] = {}
+    for path in repository_files(root):
+        version_dirs.setdefault(path.parent, []).append(path)
+
+    restored: list[Path] = []
+    for directory, files in sorted(version_dirs.items()):
+        if any(path.suffix == ".pom" for path in files):
+            continue
+        artifact_id = directory.parent.name
+        version = directory.name
+        embedded_poms: dict[str, bytes] = {}
+        for jar in sorted(path for path in files if path.suffix == ".jar"):
+            try:
+                with zipfile.ZipFile(jar) as archive:
+                    for member in archive.namelist():
+                        parts = Path(member).parts
+                        if (
+                            len(parts) < 5
+                            or parts[:2] != ("META-INF", "maven")
+                            or parts[-2:] != (artifact_id, "pom.xml")
+                        ):
+                            continue
+                        content = archive.read(member)
+                        try:
+                            project = ET.fromstring(content)
+                        except ET.ParseError:
+                            continue
+                        embedded_artifact_id = next(
+                            (
+                                child.text
+                                for child in project
+                                if child.tag.rsplit("}", 1)[-1] == "artifactId"
+                            ),
+                            None,
+                        )
+                        if embedded_artifact_id != artifact_id:
+                            continue
+                        embedded_poms[hashlib.sha256(content).hexdigest()] = content
+            except zipfile.BadZipFile:
+                continue
+        if not embedded_poms:
+            continue
+        if len(embedded_poms) != 1:
+            raise ValueError(
+                "component JARs contain conflicting embedded POMs: "
+                f"{directory.relative_to(root)}"
+            )
+        destination = directory / f"{artifact_id}-{version}.pom"
+        destination.write_bytes(next(iter(embedded_poms.values())))
+        restored.append(destination)
+    return restored
+
+
 def merge(inputs: list[Path], output: Path, manifest_path: Path, release_version: str, commit: str) -> dict:
     output.mkdir(parents=True, exist_ok=True)
     ownership: dict[str, list[str]] = {}
@@ -103,6 +164,12 @@ def merge(inputs: list[Path], output: Path, manifest_path: Path, release_version
         scratch = Path(temporary)
         for source in inputs:
             root = extract_input(source, scratch)
+            for restored in restore_embedded_component_poms(root):
+                print(
+                    "[dl4j-maven] restored embedded component POM "
+                    + restored.relative_to(root).as_posix(),
+                    flush=True,
+                )
             candidates = list(repository_files(root))
             if not candidates:
                 raise ValueError(f"Maven shard has no DL4J repository files: {source}")
