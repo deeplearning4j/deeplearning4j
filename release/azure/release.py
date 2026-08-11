@@ -1506,6 +1506,7 @@ def ensure_storage(
     # Blob access is read-only and does not grant listing, writes, deletes, or
     # access to the controller's private control container.
     service.get_container_client(artifact_container_name(plan)).set_container_access_policy(
+        signed_identifiers={},
         public_access="blob"
     )
     return account, service, key
