@@ -743,21 +743,12 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
   // Clear stale CUDA errors
   cudaGetLastError();
 
-  // Clear only this plan's attention workspace scope when it has no cached graph.
-  // Each DSP plan owns a distinct CUDA stream, and captured attention kernels bake
-  // their scratch-buffer addresses into the graph. Clearing a thread-global workspace
-  // here invalidated sibling plans (prefill cleared decode immediately before replay).
-  {
-    bool anyGraphCached = false;
-    for (const auto& seg : segments_) {
-      if (seg.exec.replayHandle != nullptr && seg.exec.replayHandle->isReady()) { anyGraphCached = true; break; }
-    }
-    if (!anyGraphCached) {
-      auto* cudaStreamPtr = static_cast<cudaStream_t*>(stream);
-      void* workspaceScope = cudaStreamPtr != nullptr ? static_cast<void*>(*cudaStreamPtr) : nullptr;
-      AttentionWorkspace::getInstance()->clearScope(workspaceScope);
-    }
-  }
+  // Attention scratch is plan-scoped by the owned CUDA stream and must survive
+  // warmup through capture. Clearing it before every pre-replay execution reallocates
+  // buffers between lifecycle phases; captured kernels then retain addresses and shape
+  // metadata from a different allocation, producing unstable masked-attention output.
+  // Shape changes are handled by AttentionWorkspace::getBuffer(), and the complete
+  // scope is released after the plan stream is drained in platformFreePlanResources().
 
   // Clear any CUDA errors from workspace clear
   cudaGetLastError();

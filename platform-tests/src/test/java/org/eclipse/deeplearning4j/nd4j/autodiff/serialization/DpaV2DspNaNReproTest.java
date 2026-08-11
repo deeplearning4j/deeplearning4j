@@ -155,7 +155,9 @@ public class DpaV2DspNaNReproTest extends BaseND4JTest {
                             org.nd4j.linalg.profiler.ProfilerConfig.builder()
                                     .checkForNAN(false).checkForINF(false).build());
                 }
-                dirtyPoolWithNaNs();
+                if (!Boolean.getBoolean("dpa.repro.skipPoison")) {
+                    dirtyPoolWithNaNs();
+                }
                 if (nanPanic) {
                     Nd4j.getExecutioner().setProfilingConfig(
                             org.nd4j.linalg.profiler.ProfilerConfig.builder()

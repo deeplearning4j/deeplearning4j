@@ -35,11 +35,17 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.ArrayHolder;
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.ggml.architecture.*;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.ggml.convert.ConversionOptions;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -372,17 +378,27 @@ public class TestArchitectureOutputDegeneracy {
         Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile.getAbsolutePath());
         assertTrue(tokenizer.isValid(), "Tokenizer should be valid");
 
-        int maxTokens = 50;
+        int maxTokens = Integer.parseInt(System.getProperty("ggml.max.tokens", "50"));
         boolean graphOptimizerEnabled = Boolean.parseBoolean(
                 System.getProperty("ggml.graph.optimizer.enabled", "false"));
-        log.info("Graph optimizer enabled: {}", graphOptimizerEnabled);
+        String keepFp32Regex = System.getProperty("ggml.fp16.keepFp32Regex");
+        if (graphOptimizerEnabled && keepFp32Regex != null && !keepFp32Regex.isBlank()) {
+            List<String> graphOutputs = sd.outputs() == null
+                    ? new ArrayList<>() : new ArrayList<>(sd.outputs());
+            sd = GraphOptimizer.optimize(sd, graphOutputs);
+            int promoted = promoteMatchingWeightsToFloat(sd, keepFp32Regex);
+            log.info("FP16 localization: kept {} optimized weights FP32 using regex '{}'", promoted, keepFp32Regex);
+            graphOptimizerEnabled = false;
+        }
+        boolean dspEnabled = Boolean.parseBoolean(System.getProperty("ggml.dsp.enabled", "true"));
+        log.info("Graph optimizer enabled in pipeline: {}, DSP enabled: {}", graphOptimizerEnabled, dspEnabled);
         GenerationPipelineConfig pipelineConfig = GenerationPipelineConfig.builder()
                 .decoder(sd)
                 .tokenizer(tokenizer)
                 .samplingConfig(SamplingConfig.greedy())
                 .maxNewTokens(maxTokens)
                 .graphOptimizerEnabled(graphOptimizerEnabled)
-                .dspEnabled(true)
+                .dspEnabled(dspEnabled)
                 .build();
 
         try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig)) {
@@ -420,6 +436,26 @@ public class TestArchitectureOutputDegeneracy {
                 }
             }
         }
+    }
+
+    private int promoteMatchingWeightsToFloat(SameDiff sd, String regex) {
+        return promoteMatchingWeightsToFloat(sd.getConstantArrays(), regex)
+                + promoteMatchingWeightsToFloat(sd.getVariablesArrays(), regex);
+    }
+
+    private int promoteMatchingWeightsToFloat(ArrayHolder arrays, String regex) {
+        int promoted = 0;
+        for (String name : new ArrayList<>(arrays.arrayNames())) {
+            INDArray array = arrays.getArray(name);
+            if (array != null && array.dataType() == DataType.HALF && name.matches(regex)) {
+                INDArray fp32 = array.castTo(DataType.FLOAT);
+                arrays.removeArray(name);
+                arrays.setArray(name, fp32);
+                array.close();
+                promoted++;
+            }
+        }
+        return promoted;
     }
 
     /**
