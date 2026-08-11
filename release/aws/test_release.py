@@ -586,6 +586,23 @@ class ReleaseValidationTest(unittest.TestCase):
             build_platform.build_native_platform(Path("/source"), shard, Path("/m2"), {}, None)
         self.assertEqual(["linux-x86_64.sh", "cross-platform.sh"], events)
 
+    def test_classifier_only_native_lane_skips_cross_platform_java_reactor(self):
+        build = {
+            "javacppPlatform": "linux-x86_64",
+            "backend": "cpu",
+            "profiles": ["cpu", "sdx"],
+            "modules": [":libnd4j"],
+            "variants": [{"name": "compile", "suffix": "-compile", "mlir": True}],
+            "buildCrossPlatform": True,
+        }
+        shard = {"id": "linux-x86_64-cpu", "os": "linux", "build": build}
+        events = []
+        with patch.object(build_platform, "prepare_openblas"), \
+                patch.object(build_platform, "run", side_effect=lambda command, *_args: events.append(Path(command[1]).name)), \
+                patch.object(build_platform, "build_cross_platform", side_effect=lambda *_args: events.append("cross-platform.sh")):
+            build_platform.build_native_platform(Path("/source"), shard, Path("/m2"), {}, None)
+        self.assertEqual(["linux-x86_64.sh"], events)
+
     def test_native_lane_checkpoints_each_variant_before_a_later_failure(self):
         build = {
             "javacppPlatform": "linux-x86_64",

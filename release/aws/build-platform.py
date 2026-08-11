@@ -1411,9 +1411,19 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
     attest_unclassified_artifacts(
         repository, build, rules, release_version, "local-repository"
     )
-    if build.get("buildCrossPlatform"):
+    has_base_platform_variant = any(
+        variant_artifact_classifier(build, variant) == build["javacppPlatform"]
+        for variant in build["variants"]
+    )
+    if build.get("buildCrossPlatform") and has_base_platform_variant:
         print(f"[dl4j-phase] shard={shard_id} phase=cross-platform", flush=True)
         build_cross_platform(source, build, repository, env)
+    elif build.get("buildCrossPlatform"):
+        print(
+            f"[dl4j-phase] shard={shard_id} phase=cross-platform status=skipped "
+            "reason=no-base-platform-variant",
+            flush=True,
+        )
 
 
 def main() -> None:
