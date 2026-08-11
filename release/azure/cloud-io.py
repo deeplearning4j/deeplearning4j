@@ -140,7 +140,23 @@ def _block_id(index):
     return base64.b64encode(f"{index:08d}".encode("ascii")).decode("ascii")
 
 
-def upload_block_blob(bucket, name, chunks, content_type, client_id=None):
+def sha256_metadata_header(value):
+    if value is None:
+        return {}
+    value = str(value).lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", value):
+        raise ValueError("Azure Blob SHA-256 metadata must be 64 hexadecimal characters")
+    return {"x-ms-meta-dl4j_sha256": value}
+
+
+def upload_block_blob(
+    bucket,
+    name,
+    chunks,
+    content_type,
+    client_id=None,
+    metadata_sha256=None,
+):
     """Upload chunks as uncommitted blocks, then atomically publish their list."""
     url = blob_url(bucket, name)
     block_ids = []
@@ -177,19 +193,34 @@ def upload_block_blob(bucket, name, chunks, content_type, client_id=None):
         headers={
             "Content-Type": "application/xml; charset=utf-8",
             "x-ms-blob-content-type": content_type,
+            **sha256_metadata_header(metadata_sha256),
         },
         authenticated=True,
         client_id=client_id,
     )
 
 
-def upload_bytes(bucket, name, data, content_type="application/octet-stream", client_id=None):
+def upload_bytes(
+    bucket,
+    name,
+    data,
+    content_type="application/octet-stream",
+    client_id=None,
+    metadata_sha256=None,
+):
     if len(data) > SINGLE_PUT_LIMIT:
         chunks = (
             data[offset:offset + BLOCK_UPLOAD_SIZE]
             for offset in range(0, len(data), BLOCK_UPLOAD_SIZE)
         )
-        return upload_block_blob(bucket, name, chunks, content_type, client_id)
+        return upload_block_blob(
+            bucket,
+            name,
+            chunks,
+            content_type,
+            client_id,
+            metadata_sha256,
+        )
     return request(
         blob_url(bucket, name),
         method="PUT",
@@ -197,16 +228,31 @@ def upload_bytes(bucket, name, data, content_type="application/octet-stream", cl
         headers={
             "Content-Type": content_type,
             "x-ms-blob-type": "BlockBlob",
+            **sha256_metadata_header(metadata_sha256),
         },
         authenticated=True,
         client_id=client_id,
     )
 
 
-def upload_file(bucket, name, path, content_type="application/octet-stream", client_id=None):
+def upload_file(
+    bucket,
+    name,
+    path,
+    content_type="application/octet-stream",
+    client_id=None,
+    metadata_sha256=None,
+):
     path = pathlib.Path(path)
     if path.stat().st_size <= SINGLE_PUT_LIMIT:
-        return upload_bytes(bucket, name, path.read_bytes(), content_type, client_id)
+        return upload_bytes(
+            bucket,
+            name,
+            path.read_bytes(),
+            content_type,
+            client_id,
+            metadata_sha256,
+        )
 
     def chunks():
         with path.open("rb") as stream:
@@ -216,7 +262,14 @@ def upload_file(bucket, name, path, content_type="application/octet-stream", cli
                     return
                 yield chunk
 
-    return upload_block_blob(bucket, name, chunks(), content_type, client_id)
+    return upload_block_blob(
+        bucket,
+        name,
+        chunks(),
+        content_type,
+        client_id,
+        metadata_sha256,
+    )
 
 
 def download_bytes(bucket, name, client_id=None):
@@ -263,7 +316,14 @@ def append_bytes(bucket, name, data, position, client_id=None):
 def command_upload(args):
     path = pathlib.Path(args.file)
     content_type = args.content_type or mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-    upload_file(args.bucket, args.object, path, content_type, args.client_id)
+    upload_file(
+        args.bucket,
+        args.object,
+        path,
+        content_type,
+        args.client_id,
+        getattr(args, "metadata_sha256", None),
+    )
 
 
 def command_upload_json(args):
@@ -447,6 +507,7 @@ def parser():
     upload.add_argument("--object", required=True)
     upload.add_argument("--file", required=True)
     upload.add_argument("--content-type")
+    upload.add_argument("--metadata-sha256")
     add_identity_option(upload)
     upload.set_defaults(func=command_upload)
 

@@ -33,6 +33,7 @@ def load_module(name: str, path: Path):
 
 release = load_module("dl4j_azure_release", HERE / "release.py")
 cloud_io = load_module("dl4j_azure_cloud_io", HERE / "cloud-io.py")
+maven_publish = load_module("dl4j_azure_maven_publish", HERE / "maven-publish.py")
 
 
 class TokenizerNativeBuildScriptTests(unittest.TestCase):
@@ -437,7 +438,7 @@ class ReleasePlanTests(unittest.TestCase):
             "hybrid", release.merged_release_provider({"provider": "aws"})
         )
 
-    def test_zluda_limits_host_special_instantiations_for_windows_image_size(self):
+    def test_cuda_limits_host_special_instantiations_for_windows_image_size(self):
         root = Path(__file__).parents[2]
         processing = (
             root / "libnd4j/cmake/TemplateProcessing.cmake"
@@ -449,10 +450,9 @@ class ReleasePlanTests(unittest.TestCase):
 
         double_template = processing.index("set(SPECIALS_DOUBLE_TEMPLATE")
         double_gate = processing.rindex("if(NOT SD_CUDA)", 0, double_template)
-        single_gate = processing.index("if(NOT SD_CUDA OR HAVE_ZLUDA)")
         single_template = processing.index("set(SPECIALS_SINGLE_TEMPLATE")
         self.assertLess(double_gate, double_template)
-        self.assertLess(single_gate, single_template)
+        self.assertLess(double_template, single_template)
 
         cuda_branch = template.split("#if defined(SD_CUDA)", 1)[1].split(
             "#else", 1
@@ -2443,8 +2443,11 @@ class AzureSafetyTests(unittest.TestCase):
                 self.values = values
 
         generate = mock.Mock(return_value="?sv=1&sig=short-lived")
+        blob_service = mock.Mock()
+        blob_service.return_value.get_container_client.return_value.list_blobs.return_value = []
         context = {
             "modules": {
+                "BlobServiceClient": blob_service,
                 "ContainerSasPermissions": Permissions,
                 "generate_container_sas": generate,
             }
@@ -4112,6 +4115,11 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertIn("$script:WindowsTarExe = Join-Path $env:SystemRoot 'System32\\tar.exe'", worker)
         self.assertIn("& $script:WindowsTarExe -xzf $SccacheArchive -C $env:TEMP", worker)
         self.assertIn("Publish-MavenRepository $MavenOutput", worker)
+        self.assertLess(
+            worker.index("Publish-MavenRepository $MavenOutput"),
+            worker.index('if ($BuildExitCode -ne 0) { throw "Build failed'),
+        )
+        self.assertIn("$HasMavenOutput", worker)
         self.assertIn("mavenRepositoryPrefix", worker)
         self.assertNotIn("Maven repository packaging", worker)
         self.assertIn("& $script:WindowsTarExe -C $SdkOutput -czf", worker)
@@ -4197,6 +4205,52 @@ class WorkerTransportTests(unittest.TestCase):
         self.assertIn('return "${build_code}"', worker)
         self.assertIn('progress.get("completedVariants", [])', worker)
 
+    def test_workers_publish_maven_files_directly_without_repository_archives(self):
+        linux = (HERE / "worker.sh").read_text(encoding="utf-8")
+        windows = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        for worker in (linux, windows):
+            self.assertIn("maven-publish.py", worker)
+            self.assertIn("maven-publish.json", worker)
+            self.assertNotIn("maven-repository.tar.gz", worker)
+
+    def test_direct_maven_publisher_generates_primary_checksums_and_metadata(self):
+        central = maven_publish.load_module(
+            ROOT / "release/central/repository.py", "test_central_repository"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary) / "repository"
+            component = (
+                repository
+                / "org/eclipse/deeplearning4j/nd4j-cuda-backend-common/1.0.0"
+            )
+            component.mkdir(parents=True)
+            (component / "nd4j-cuda-backend-common-1.0.0.pom").write_text(
+                "<project/>", encoding="utf-8"
+            )
+            (component / "nd4j-cuda-backend-common-1.0.0.jar").write_bytes(
+                b"common"
+            )
+
+            published, metadata = maven_publish.prepare_repository(
+                repository, central, "1.0.0"
+            )
+
+        paths = {item["path"] for item in published}
+        self.assertIn(
+            "org/eclipse/deeplearning4j/nd4j-cuda-backend-common/1.0.0/"
+            "nd4j-cuda-backend-common-1.0.0.jar",
+            paths,
+        )
+        self.assertIn(
+            "org/eclipse/deeplearning4j/nd4j-cuda-backend-common/1.0.0/"
+            "nd4j-cuda-backend-common-1.0.0.jar.sha512",
+            paths,
+        )
+        self.assertEqual(1, len(metadata))
+        self.assertTrue(
+            all(item["path"].endswith("maven-metadata.xml") for item in metadata)
+        )
+
     def test_bucket_parser_and_blob_url_are_azure_native(self):
         self.assertEqual(
             ("dl4jaccount", "releases"),
@@ -4221,6 +4275,7 @@ class WorkerTransportTests(unittest.TestCase):
                 file=str(path),
                 content_type="application/test",
                 client_id="client",
+                metadata_sha256="a" * 64,
             )
             with mock.patch.object(
                 cloud_io, "request", return_value=b""
@@ -4236,6 +4291,9 @@ class WorkerTransportTests(unittest.TestCase):
         self.assertEqual(b"small", call.kwargs["data"])
         self.assertEqual("BlockBlob", call.kwargs["headers"]["x-ms-blob-type"])
         self.assertEqual("application/test", call.kwargs["headers"]["Content-Type"])
+        self.assertEqual(
+            "a" * 64, call.kwargs["headers"]["x-ms-meta-dl4j_sha256"]
+        )
 
     def test_large_file_upload_streams_ordered_blocks_then_commits_them(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -4247,6 +4305,7 @@ class WorkerTransportTests(unittest.TestCase):
                 file=str(path),
                 content_type="application/gzip",
                 client_id="client",
+                metadata_sha256="b" * 64,
             )
             with mock.patch.object(
                 cloud_io, "SINGLE_PUT_LIMIT", 4
@@ -4295,6 +4354,10 @@ class WorkerTransportTests(unittest.TestCase):
         self.assertEqual(
             "application/gzip",
             commit.kwargs["headers"]["x-ms-blob-content-type"],
+        )
+        self.assertEqual(
+            "b" * 64,
+            commit.kwargs["headers"]["x-ms-meta-dl4j_sha256"],
         )
 
     def test_missing_checkpoint_download_is_a_quiet_cache_miss(self):
@@ -4724,7 +4787,7 @@ class WorkerTransportTests(unittest.TestCase):
             "MSYS2 toolchain installation",
             "Rust GNU toolchain installation",
             "Source clone",
-            "Maven repository packaging",
+            "Direct stable Maven publication",
             "Shard manifest creation",
             "Python 3.12 installation",
         ):
@@ -4971,6 +5034,121 @@ Write-Output 'blob-put-probe-ok'
 
 
 class MavenRepositoryPublicationTests(unittest.TestCase):
+    @staticmethod
+    def _artifact_metadata(version: str) -> bytes:
+        return (
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<metadata xmlns="http://maven.apache.org/METADATA/1.1.0">'
+            '<groupId>org.eclipse.deeplearning4j</groupId>'
+            '<artifactId>nd4j-cuda-backend-common</artifactId>'
+            '<versioning><versions><version>'
+            + version
+            + '</version></versions><lastUpdated>20260811000000</lastUpdated>'
+            '</versioning></metadata>'
+        ).encode("utf-8")
+
+    def test_direct_publish_accounting_requires_blob_hash_and_size_attestation(self):
+        relative = (
+            "org/eclipse/deeplearning4j/nd4j-cuda-backend-common/1.0.0/"
+            "nd4j-cuda-backend-common-1.0.0.jar"
+        )
+        metadata_payload = self._artifact_metadata("1.0.0")
+        info = {
+            "schemaVersion": 2,
+            "mode": "stable-maven-upsert",
+            "repositoryPrefix": "prefix/maven-repository",
+            "runId": "run",
+            "shard": "linux-x86_64-zluda--zluda",
+            "releaseVersion": "1.0.0",
+            "commit": "a" * 40,
+            "publishedBlobs": [relative],
+            "publishedFiles": [{
+                "path": relative,
+                "sha256": "b" * 64,
+                "size": 123,
+            }],
+            "metadataFiles": [{
+                "path": (
+                    "org/eclipse/deeplearning4j/"
+                    "nd4j-cuda-backend-common/maven-metadata.xml"
+                ),
+                "sha256": hashlib.sha256(metadata_payload).hexdigest(),
+                "size": len(metadata_payload),
+                "contentBase64": release.base64.b64encode(
+                    metadata_payload
+                ).decode("ascii"),
+            }],
+        }
+        properties = SimpleNamespace(
+            size=123, metadata={"dl4j_sha256": "b" * 64}
+        )
+        container = mock.Mock()
+        container.get_blob_client.return_value.get_blob_properties.return_value = (
+            properties
+        )
+
+        validated = release.validate_direct_maven_publish(
+            container,
+            info,
+            repository_prefix="prefix/maven-repository",
+            run_id="run",
+            shard="linux-x86_64-zluda--zluda",
+            version="1.0.0",
+            commit="a" * 40,
+        )
+
+        self.assertIs(info, validated)
+        info["publishedFiles"][0]["size"] = 124
+        with self.assertRaisesRegex(RuntimeError, "attestation mismatch"):
+            release.validate_direct_maven_publish(
+                container,
+                info,
+                repository_prefix="prefix/maven-repository",
+                run_id="run",
+                shard="linux-x86_64-zluda--zluda",
+                version="1.0.0",
+                commit="a" * 40,
+            )
+
+    def test_direct_metadata_merge_preserves_existing_maven_versions(self):
+        relative = (
+            "org/eclipse/deeplearning4j/"
+            "nd4j-cuda-backend-common/maven-metadata.xml"
+        )
+        existing = self._artifact_metadata("1.0.0-SNAPSHOT")
+        current = self._artifact_metadata("1.0.0")
+        container = mock.Mock()
+        container.get_blob_client.return_value.download_blob.return_value.readall.return_value = (
+            existing
+        )
+        uploaded = {}
+
+        def capture(container_arg, modules, name, path, **unused):
+            uploaded[name] = path.read_bytes()
+
+        info = {
+            "metadataFiles": [{
+                "path": relative,
+                "contentBase64": release.base64.b64encode(current).decode("ascii"),
+            }]
+        }
+        with mock.patch.object(
+            release, "upload_local_blob", side_effect=capture
+        ):
+            published = release.publish_direct_maven_metadata(
+                container,
+                {},
+                repository_prefix="prefix/maven-repository",
+                publish_infos=[info],
+                fence_check=mock.Mock(),
+            )
+
+        metadata_name = "prefix/maven-repository/" + relative
+        self.assertIn(relative, published)
+        self.assertIn(relative + ".sha512", published)
+        self.assertIn(b"1.0.0-SNAPSHOT", uploaded[metadata_name])
+        self.assertIn(b"1.0.0", uploaded[metadata_name])
+
     def test_large_blob_download_is_streamed_to_disk_and_fenced(self):
         downloader = mock.Mock()
         downloader.chunks.return_value = iter((b"pay", b"load"))

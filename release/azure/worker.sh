@@ -66,6 +66,7 @@ RUN_ID=$(config runId)
 LANE_ID=$(config laneId)
 COMMIT=$(config commit)
 REPOSITORY=$(config repository)
+MAVEN_REPOSITORY_PREFIX=$(config mavenRepositoryPrefix)
 KILL_SWITCH_OBJECT=$(config killSwitchObject)
 RUN_KILL_SWITCH_OBJECT=$(config runKillSwitchObject)
 AZURE_CLIENT_ID=$(config managedIdentityClientId)
@@ -187,7 +188,7 @@ finalize_shard() {
     } >>"${CURRENT_BUILD_LOG}"
   fi
   local artifact
-  for artifact in build.log maven-repository.tar.gz sdk-assets.tar.gz shard-manifest.json; do
+  for artifact in build.log maven-publish.json sdk-assets.tar.gz shard-manifest.json; do
     if [ -e "${CURRENT_OUTPUT_DIR}/${artifact}" ]; then
       upload_object "${CURRENT_OBJECT_PREFIX}/${artifact}"         "${CURRENT_OUTPUT_DIR}/${artifact}" || final_code=1
     fi
@@ -402,8 +403,30 @@ run_shard() (
     phase matrix-build failed "shard=${CURRENT_SHARD_ID} exitCode=${build_code} packaging=partial"
   fi
 
+  if python3 - "${CURRENT_CONFIG_FILE}" <<'PY'
+import json
+import sys
+config = json.load(open(sys.argv[1], encoding="utf-8"))
+raise SystemExit(0 if "maven" in config["shard"].get("workloads", []) else 1)
+PY
+  then
+    phase maven-publish started "shard=${CURRENT_SHARD_ID} repository=${MAVEN_REPOSITORY_PREFIX}"
+    python3 "${source_dir}/release/azure/maven-publish.py" \
+      --repository "${output_dir}/maven-repository" \
+      --central-repository "${source_dir}/release/central/repository.py" \
+      --cloud-io "${CLOUD_IO}" \
+      --bucket "${BUCKET}" \
+      --repository-prefix "${MAVEN_REPOSITORY_PREFIX}" \
+      --client-id "${AZURE_CLIENT_ID}" \
+      --run-id "${RUN_ID}" \
+      --shard "${CURRENT_SHARD_ID}" \
+      --release-version "$(config releaseVersion)" \
+      --commit "${COMMIT}" \
+      --accounting "${output_dir}/maven-publish.json"
+    phase maven-publish complete "shard=${CURRENT_SHARD_ID} accounting=${output_dir}/maven-publish.json"
+  fi
+
   phase artifact-packaging started "shard=${CURRENT_SHARD_ID} buildExitCode=${build_code}"
-  tar -C "${output_dir}/maven-repository" -czf "${output_dir}/maven-repository.tar.gz" .
   tar -C "${output_dir}/sdk-assets" -czf "${output_dir}/sdk-assets.tar.gz" .
   python3 - "${output_dir}" "${CURRENT_CONFIG_FILE}" "${build_code}" <<'PY'
 import hashlib

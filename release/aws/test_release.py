@@ -1979,7 +1979,8 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Dlibnd4j.cmake=-DSD_BUILD_WITH_JAVA=OFF", android)
         self.assertIn(
             "-Djavacpp.platform.compiler=/opt/android/android-ndk-r27d/"
-            "toolchains/llvm/prebuilt/linux-x86_64/bin/clang++",
+            "toolchains/llvm/prebuilt/linux-x86_64/bin/"
+            "aarch64-linux-android27-clang++",
             android,
         )
 
@@ -1987,6 +1988,7 @@ class ReleaseValidationTest(unittest.TestCase):
             DL4J_FAMILY="android-x86_64",
             DL4J_ANDROID_API="21",
             DL4J_CMAKE_ARGS="-DSD_BUILD_WITH_JAVA=OFF",
+            ANDROID_NDK="/opt/android/android-ndk-r26d",
         )
         self.assertIn("-Dlibnd4j.android.api=21", android_x86)
         self.assertIn("-Dlibnd4j.build.with.java=OFF", android_x86)
@@ -2023,7 +2025,8 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Pzluda", zluda)
         self.assertIn("-Pzluda-platform", zluda)
         self.assertEqual(
-            ":nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda,"
+            ":nd4j-cuda-backend-common,:nd4j-cuda-12.9,"
+            ":nd4j-cuda-12.9-preset,:nd4j-zluda,"
             ":nd4j-zluda-platform,:libnd4j",
             zluda[zluda.index("-pl") + 1],
         )
@@ -2033,9 +2036,11 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Djavacpp.platform=windows-x86_64", windows_zluda)
         self.assertIn("-Dlibnd4j.platform=windows-x86_64", windows_zluda)
         self.assertIn("-Dlibnd4j.oom.killer=OFF", windows_zluda)
-        self.assertNotIn("-Pzluda-platform", windows_zluda)
+        self.assertIn("-Pzluda-platform", windows_zluda)
         self.assertEqual(
-            ":nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:nd4j-zluda,:libnd4j",
+            ":nd4j-cuda-backend-common,:nd4j-cuda-12.9,"
+            ":nd4j-cuda-12.9-preset,:nd4j-zluda,"
+            ":nd4j-zluda-platform,:libnd4j",
             windows_zluda[windows_zluda.index("-pl") + 1],
         )
 

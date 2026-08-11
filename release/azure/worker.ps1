@@ -336,28 +336,23 @@ function Publish-MavenRepository([string]$Path) {
   if ([string]::IsNullOrWhiteSpace($Prefix)) {
     throw 'Azure worker received no stable Maven repository prefix'
   }
-  $RootFull = ([IO.Path]::GetFullPath($Path)).TrimEnd('\') + '\'
-  $Published = @()
-  foreach ($File in @(Get-ChildItem -LiteralPath $Path -Recurse -File | Sort-Object FullName)) {
-    $Relative = ([IO.Path]::GetFullPath($File.FullName)).Substring($RootFull.Length).Replace('\', '/')
-    $Object = "$Prefix/$Relative"
-    & $script:PythonExe $CloudIo upload --bucket $Config.bucket --object $Object --file $File.FullName --client-id $Config.managedIdentityClientId
-    if ($LASTEXITCODE -ne 0) {
-      throw "Stable Maven upload failed for $Relative"
-    }
-    $Published += $Relative
-  }
   $AccountingPath = Join-Path $OutputDir 'maven-publish.json'
-  @{
-    schemaVersion=1
-    mode='stable-maven-upsert'
-    repositoryPrefix=$Prefix
-    runId=$Config.runId
-    shard=$Shard.id
-    releaseVersion=$Config.releaseVersion
-    commit=$Config.commit
-    publishedBlobs=@($Published)
-  } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $AccountingPath
+  $Publisher = Join-Path $SourceDir 'release\azure\maven-publish.py'
+  $CentralRepository = Join-Path $SourceDir 'release\central\repository.py'
+  Invoke-NativeChecked -Description 'Direct stable Maven publication' -Command {
+    & $script:PythonExe $Publisher `
+      --repository $Path `
+      --central-repository $CentralRepository `
+      --cloud-io $CloudIo `
+      --bucket $Config.bucket `
+      --repository-prefix $Prefix `
+      --client-id $Config.managedIdentityClientId `
+      --run-id $Config.runId `
+      --shard $Shard.id `
+      --release-version $Config.releaseVersion `
+      --commit $Config.commit `
+      --accounting $AccountingPath
+  }
   return $AccountingPath
 }
 
@@ -796,12 +791,25 @@ function Invoke-ShardBuild {
   Copy-NewLogContent $MatrixLog
   Copy-NewLogContent $MatrixError
   if ($null -eq $BuildExitCode) { throw 'Build process exited without an available exit code' }
-  if ($BuildExitCode -ne 0) { throw "Build failed with exit code $BuildExitCode" }
-  Write-Phase 'matrix-build' 'complete' "shard=$($Shard.id)"
+  if ($BuildExitCode -eq 0) {
+    Write-Phase 'matrix-build' 'complete' "shard=$($Shard.id)"
+  }
+  else {
+    Write-Phase 'matrix-build' 'failed' "shard=$($Shard.id) exitCode=$BuildExitCode"
+  }
 
-  Write-Phase 'maven-publish' 'started' "shard=$($Shard.id) repository=$($Config.mavenRepositoryPrefix)"
-  $MavenAccounting = Publish-MavenRepository $MavenOutput
-  Write-Phase 'maven-publish' 'complete' "shard=$($Shard.id) accounting=$MavenAccounting"
+  $HasMavenOutput = $null -ne (
+    Get-ChildItem -LiteralPath $MavenOutput -Recurse -File -ErrorAction SilentlyContinue |
+      Where-Object { $_.Extension -in @('.jar', '.pom') } |
+      Select-Object -First 1
+  )
+  if ((@($Shard.workloads) -contains 'maven') -and ($BuildExitCode -eq 0 -or $HasMavenOutput)) {
+    Write-Phase 'maven-publish' 'started' "shard=$($Shard.id) repository=$($Config.mavenRepositoryPrefix) buildExitCode=$BuildExitCode"
+    $MavenAccounting = Publish-MavenRepository $MavenOutput
+    Write-Phase 'maven-publish' 'complete' "shard=$($Shard.id) accounting=$MavenAccounting"
+  }
+
+  if ($BuildExitCode -ne 0) { throw "Build failed with exit code $BuildExitCode" }
 
   Write-Phase 'artifact-packaging' 'started' "shard=$($Shard.id)"
   Invoke-NativeChecked -Description 'SDK asset packaging' -Command {

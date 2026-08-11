@@ -668,11 +668,17 @@ def maven_repository_matrix_coverage(
     for shard in plan.get("shards", []):
         rules = shard.get("artifactRules", {})
         unclassified = set(rules.get("unclassifiedArtifactIds", []) or [])
-        classifier_artifacts = [
+        artifact_ids = [
             str(artifact_id)
             for artifact_id in rules.get("artifactIds", []) or []
-            if artifact_id not in unclassified
         ]
+        # A Maven artifact can intentionally have both an unclassified Java
+        # backend JAR and classified native JARs.  Do not subtract the
+        # unclassified set here: CUDA's primary artifact is published in both
+        # forms, and the classified file remains the matrix authority.
+        classifier_artifacts = (
+            artifact_ids if rules.get("classifierTokens") else []
+        )
         if not classifier_artifacts and not unclassified:
             continue
         platform = shard.get("build", {}).get("javacppPlatform")
@@ -4893,6 +4899,211 @@ def merge_maven_metadata(existing: bytes, current: bytes) -> bytes:
     return ET.tostring(current_root, encoding="utf-8", xml_declaration=True)
 
 
+def validate_direct_maven_publish(
+    container: Any,
+    value: dict[str, Any],
+    *,
+    repository_prefix: str,
+    run_id: str,
+    shard: str,
+    version: str,
+    commit: str,
+) -> dict[str, Any]:
+    """Verify one worker's direct-to-Blob Maven publication accounting."""
+    expected_identity = {
+        "mode": "stable-maven-upsert",
+        "repositoryPrefix": repository_prefix.strip("/"),
+        "runId": run_id,
+        "shard": shard,
+        "releaseVersion": version,
+        "commit": commit,
+    }
+    mismatches = [
+        key
+        for key, expected in expected_identity.items()
+        if value.get(key) != expected
+    ]
+    if mismatches:
+        raise RuntimeError(
+            f"direct Maven publish identity mismatch for shard {shard!r}: "
+            + ", ".join(mismatches)
+        )
+    schema = int(value.get("schemaVersion", 0))
+    if schema == 1:
+        # Retain collection support for already-completed Windows runs. New
+        # workers always emit schema 2 with hash/size and metadata attestations.
+        return value
+    if schema != 2:
+        raise RuntimeError(
+            f"unsupported direct Maven publish schema for shard {shard!r}: {schema}"
+        )
+
+    published_files = value.get("publishedFiles")
+    metadata_files = value.get("metadataFiles")
+    if not isinstance(published_files, list) or not published_files:
+        raise RuntimeError(f"direct Maven publish for shard {shard!r} has no files")
+    if not isinstance(metadata_files, list) or not metadata_files:
+        raise RuntimeError(
+            f"direct Maven publish for shard {shard!r} has no Maven metadata"
+        )
+
+    paths: set[str] = set()
+    object_prefix = repository_prefix.strip("/") + "/"
+    for item in published_files:
+        if not isinstance(item, dict):
+            raise RuntimeError(
+                f"direct Maven publish for shard {shard!r} has an invalid file entry"
+            )
+        relative = str(item.get("path", ""))
+        relative_path = Path(relative)
+        if (
+            not relative
+            or relative_path.is_absolute()
+            or ".." in relative_path.parts
+            or relative in paths
+            or not (
+                relative.startswith("org/eclipse/deeplearning4j/")
+                or relative.startswith("org/nd4j/")
+            )
+        ):
+            raise RuntimeError(
+                f"direct Maven publish for shard {shard!r} has unsafe path {relative!r}"
+            )
+        digest = str(item.get("sha256", "")).lower()
+        size = item.get("size")
+        if not re.fullmatch(r"[0-9a-f]{64}", digest) or not isinstance(size, int):
+            raise RuntimeError(
+                f"direct Maven publish for shard {shard!r} has invalid attestation "
+                f"for {relative!r}"
+            )
+        properties = container.get_blob_client(
+            object_prefix + relative
+        ).get_blob_properties()
+        actual_size = object_value(properties, "size")
+        metadata = object_value(properties, "metadata", {}) or {}
+        actual_digest = str(
+            object_value(metadata, "dl4j_sha256", "")
+        ).lower()
+        if actual_size != size or actual_digest != digest:
+            raise RuntimeError(
+                f"direct Maven Blob attestation mismatch for shard {shard!r}: "
+                f"{relative}"
+            )
+        paths.add(relative)
+
+    published_blobs = value.get("publishedBlobs")
+    if not isinstance(published_blobs, list) or set(published_blobs) != paths:
+        raise RuntimeError(
+            f"direct Maven publishedBlobs mismatch for shard {shard!r}"
+        )
+
+    metadata_paths: set[str] = set()
+    for item in metadata_files:
+        if not isinstance(item, dict):
+            raise RuntimeError(
+                f"direct Maven publish for shard {shard!r} has invalid metadata"
+            )
+        relative = str(item.get("path", ""))
+        if (
+            not relative.endswith("/maven-metadata.xml")
+            or relative in metadata_paths
+        ):
+            raise RuntimeError(
+                f"direct Maven publish for shard {shard!r} has invalid metadata "
+                f"path {relative!r}"
+            )
+        try:
+            payload = base64.b64decode(
+                str(item.get("contentBase64", "")), validate=True
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"direct Maven metadata is not valid base64: {relative}"
+            ) from exc
+        if (
+            len(payload) != item.get("size")
+            or hashlib.sha256(payload).hexdigest() != item.get("sha256")
+        ):
+            raise RuntimeError(
+                f"direct Maven metadata attestation mismatch: {relative}"
+            )
+        ET.fromstring(payload)
+        metadata_paths.add(relative)
+    return value
+
+
+def publish_direct_maven_metadata(
+    container: Any,
+    modules: dict[str, Any],
+    *,
+    repository_prefix: str,
+    publish_infos: Iterable[dict[str, Any]],
+    fence_check: Callable[[], None] | None = None,
+) -> list[str]:
+    """Merge worker-generated Maven metadata without transferring large JARs."""
+    payloads: dict[str, bytes] = {}
+    for publish_info in publish_infos:
+        for item in publish_info.get("metadataFiles", []):
+            relative = str(item["path"])
+            payload = base64.b64decode(item["contentBase64"], validate=True)
+            if relative in payloads:
+                payload = merge_maven_metadata(payloads[relative], payload)
+            payloads[relative] = payload
+    if not payloads:
+        return []
+
+    object_prefix = repository_prefix.strip("/") + "/"
+    published: list[str] = []
+    with tempfile.TemporaryDirectory(
+        prefix="dl4j-direct-maven-metadata-"
+    ) as temporary:
+        root = Path(temporary)
+        for relative, current in sorted(payloads.items()):
+            object_name = object_prefix + relative
+            try:
+                existing = (
+                    container.get_blob_client(object_name)
+                    .download_blob()
+                    .readall()
+                )
+            except Exception as exc:
+                if not is_not_found(exc):
+                    raise
+            else:
+                current = merge_maven_metadata(existing, current)
+
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(current)
+            upload_local_blob(
+                container,
+                modules,
+                object_name,
+                target,
+                content_type="application/xml",
+                fence_check=fence_check,
+            )
+            published.append(relative)
+            for algorithm in ("md5", "sha1", "sha256", "sha512"):
+                checksum_relative = relative + f".{algorithm}"
+                checksum = root / checksum_relative
+                checksum.parent.mkdir(parents=True, exist_ok=True)
+                checksum.write_text(
+                    hashlib.new(algorithm, current).hexdigest() + "\n",
+                    encoding="ascii",
+                )
+                upload_local_blob(
+                    container,
+                    modules,
+                    object_prefix + checksum_relative,
+                    checksum,
+                    content_type="text/plain",
+                    fence_check=fence_check,
+                )
+                published.append(checksum_relative)
+    return sorted(published)
+
+
 def publish_maven_repository(
     container: Any,
     modules: dict[str, Any],
@@ -5562,6 +5773,15 @@ def _collect_under_controller_lease(
                         container, f"{prefix}/{shard}/maven-publish.json"
                     )
                     if direct_publish is not None:
+                        direct_publish = validate_direct_maven_publish(
+                            container,
+                            direct_publish,
+                            repository_prefix=stable_maven_repository_prefix(plan),
+                            run_id=args.run_id,
+                            shard=shard,
+                            version=args.version,
+                            commit=args.commit,
+                        )
                         direct_publish_infos.append(direct_publish)
                         publish_path = directory / f"{shard}-maven-publish.json"
                         publish_path.write_text(
@@ -5725,6 +5945,13 @@ def _collect_under_controller_lease(
                 "no Maven repository archive or direct stable Maven publish was found"
             )
         repository_prefix = stable_maven_repository_prefix(plan)
+        direct_metadata_blobs = publish_direct_maven_metadata(
+            container,
+            context["modules"],
+            repository_prefix=repository_prefix,
+            publish_infos=direct_publish_infos,
+            fence_check=collector_lease.check,
+        )
         current_shards = sorted(item["shard"]["id"] for item in executions)
         expected_matrix = matrix_coverage(
             aws_plan, [item["id"] for item in aws_plan["shards"]]
@@ -5798,7 +6025,7 @@ def _collect_under_controller_lease(
             )
         else:
             stable_names = stable_maven_blob_names(container, repository_prefix)
-            published_values: list[str] = []
+            published_values: list[str] = list(direct_metadata_blobs)
             for item in direct_publish_infos:
                 values = item.get("publishedBlobs", [])
                 if isinstance(values, str):
