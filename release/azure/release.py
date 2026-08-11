@@ -4718,9 +4718,10 @@ def publish_maven_browse_indexes(
     modules: dict[str, Any],
     *,
     repository_prefix: str,
+    changed_paths: Iterable[str] | None = None,
     fence_check: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
-    """Publish root and per-directory indexes from the accumulated Blob tree."""
+    """Publish affected directory indexes from the accumulated Blob tree."""
     if fence_check is not None:
         fence_check()
     object_prefix = repository_prefix.strip("/") + "/"
@@ -4753,10 +4754,19 @@ def publish_maven_browse_indexes(
             parent_directory = "/".join(parts[: index - 1])
             children.setdefault(parent_directory, {})[parts[index - 1]] = True
 
+    selected_directories = directories
+    if changed_paths is not None:
+        affected: set[str] = {""}
+        for relative in changed_paths:
+            parts = str(relative).strip("/").split("/")
+            for index in range(1, len(parts)):
+                affected.add("/".join(parts[:index]))
+        selected_directories = directories & affected
+
     published: list[str] = []
     with tempfile.TemporaryDirectory(prefix="dl4j-maven-index-") as temporary:
         root = Path(temporary)
-        for directory in sorted(directories):
+        for directory in sorted(selected_directories):
             target_directory = root / directory
             target_directory.mkdir(parents=True, exist_ok=True)
             target = target_directory / "index.html"
@@ -4787,7 +4797,11 @@ def publish_maven_browse_indexes(
                 fence_check=fence_check,
             )
             published.append(alias or "/")
-    return {"browseIndexCount": len(published), "browseIndexes": published}
+    return {
+        "browseDirectoryCount": len(directories),
+        "browseIndexCount": len(published),
+        "browseIndexes": published,
+    }
 
 
 def merge_maven_metadata(existing: bytes, current: bytes) -> bytes:
@@ -5038,10 +5052,16 @@ def finalize_maven_repository(
     fence_check: Callable[[], None],
 ) -> None:
     """Publish readiness through the leased marker so a stale collector is rejected."""
+    changed_paths = {
+        str(path)
+        for key in ("newBlobs", "overwrittenBlobs", "publishedBlobs")
+        for path in repository_info.get(key, [])
+    }
     browse_info = publish_maven_browse_indexes(
         container,
         modules,
         repository_prefix=repository_prefix,
+        changed_paths=changed_paths or None,
         fence_check=fence_check,
     )
     marker = {

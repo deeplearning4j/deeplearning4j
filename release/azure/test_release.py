@@ -4992,6 +4992,42 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
         )
         self.assertEqual(4, fence.call_count)
 
+    def test_browse_index_refresh_only_uploads_changed_component_ancestors(self):
+        prefix = "prefix/maven-repository/"
+        container = mock.Mock()
+        container.list_blobs.return_value = [
+            SimpleNamespace(
+                name=prefix + "org/nd4j/old/1.0.0/old-1.0.0.jar"
+            ),
+            SimpleNamespace(
+                name=prefix + "org/nd4j/new/1.0.0/new-1.0.0.jar"
+            ),
+        ]
+        missing = RuntimeError("missing")
+        missing.status_code = 404
+        container.get_blob_client.return_value.get_blob_properties.side_effect = missing
+        uploaded: list[str] = []
+        container.upload_blob.side_effect = (
+            lambda name, data, **options: uploaded.append(name)
+        )
+        modules = {
+            "ContentSettings": lambda **values: SimpleNamespace(**values),
+            "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+        }
+
+        result = release.publish_maven_browse_indexes(
+            container,
+            modules,
+            repository_prefix="prefix/maven-repository",
+            changed_paths=["org/nd4j/new/1.0.0/new-1.0.0.jar"],
+            fence_check=mock.Mock(),
+        )
+
+        self.assertIn(prefix + "index.html", uploaded)
+        self.assertIn(prefix + "org/nd4j/new/1.0.0/index.html", uploaded)
+        self.assertNotIn(prefix + "org/nd4j/old/index.html", uploaded)
+        self.assertLess(result["browseIndexCount"], result["browseDirectoryCount"] * 2)
+
     def test_publisher_upserts_stable_tree_and_writes_marker_last(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
