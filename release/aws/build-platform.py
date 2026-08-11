@@ -571,6 +571,14 @@ def variant_artifact_classifier(build: dict, variant: dict) -> str:
     return f"{build['javacppPlatform']}{platform_extension}"
 
 
+def has_base_platform_variant(build: dict) -> bool:
+    """Return whether this selected slice owns the unextended platform output."""
+    return any(
+        variant_artifact_classifier(build, variant) == build["javacppPlatform"]
+        for variant in build.get("variants", [])
+    )
+
+
 def required_classifier_artifact_ids(build: dict, rules: dict) -> tuple[str, ...]:
     """Return the CPU/CUDA artifacts that must carry every planned classifier."""
     if rules.get("mode", "all") != "classifier":
@@ -1147,6 +1155,13 @@ def package_sdk_jars(repository: Path, output: Path, build: dict, rules: dict) -
 def build_aot(source: Path, output: Path, build: dict, repository: Path, env: dict[str, str]) -> int:
     if not build.get("buildAot"):
         return 0
+    if not has_base_platform_variant(build):
+        print(
+            "[dl4j-phase] phase=aot status=skipped "
+            "reason=no-base-platform-variant",
+            flush=True,
+        )
+        return 0
     graalvm_home = env.get("GRAALVM_HOME")
     native_image = Path(graalvm_home) / "bin/native-image" if graalvm_home else None
     if not native_image or not native_image.exists():
@@ -1411,11 +1426,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
     attest_unclassified_artifacts(
         repository, build, rules, release_version, "local-repository"
     )
-    has_base_platform_variant = any(
-        variant_artifact_classifier(build, variant) == build["javacppPlatform"]
-        for variant in build["variants"]
-    )
-    if build.get("buildCrossPlatform") and has_base_platform_variant:
+    if build.get("buildCrossPlatform") and has_base_platform_variant(build):
         print(f"[dl4j-phase] shard={shard_id} phase=cross-platform", flush=True)
         build_cross_platform(source, build, repository, env)
     elif build.get("buildCrossPlatform"):

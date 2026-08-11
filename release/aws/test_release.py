@@ -603,6 +603,20 @@ class ReleaseValidationTest(unittest.TestCase):
             build_platform.build_native_platform(Path("/source"), shard, Path("/m2"), {}, None)
         self.assertEqual(["linux-x86_64.sh"], events)
 
+    def test_classifier_only_native_lane_skips_base_aot_package(self):
+        build = {
+            "javacppPlatform": "linux-x86_64",
+            "backend": "cpu",
+            "variants": [{"name": "compile", "suffix": "-compile", "mlir": True}],
+            "buildAot": True,
+        }
+        with patch.object(build_platform, "run") as run:
+            produced = build_platform.build_aot(
+                Path("/source"), Path("/output"), build, Path("/m2"), {}
+            )
+        self.assertEqual(0, produced)
+        run.assert_not_called()
+
     def test_native_lane_checkpoints_each_variant_before_a_later_failure(self):
         build = {
             "javacppPlatform": "linux-x86_64",
