@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.15)
 # ============================================================================
 # COMPILER CACHE SETUP - Must be before project() for proper launcher setup
 # ============================================================================
+option(SD_REQUIRE_COMPILER_CACHE
+       "Fail configuration when the requested compiler cache is unavailable"
+       OFF)
+
 # Supports two cache backends:
 #   1. sccache (preferred for CI) — per-object distributed caching via GHA backend
 #   2. ccache  (fallback/local)  — directory-based caching
@@ -111,6 +115,12 @@ else()
         set(CMAKE_CXX_COMPILER_LAUNCHER "" CACHE STRING "C++ compiler launcher" FORCE)
         set(SD_COMPILER_CACHE "none")
     endif()
+endif()
+
+if(SD_REQUIRE_COMPILER_CACHE AND
+   (NOT CMAKE_C_COMPILER_LAUNCHER OR NOT CMAKE_CXX_COMPILER_LAUNCHER))
+    message(FATAL_ERROR
+        "SD_REQUIRE_COMPILER_CACHE=ON, but C/CXX compiler caching is unavailable")
 endif()
 
 if(WIN32 AND SD_CUDA)

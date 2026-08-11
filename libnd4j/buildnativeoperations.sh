@@ -3189,9 +3189,24 @@ if [[ "$OS" == android-* ]]; then
     fi
 
     export DL4J_COMPILER_CACHE
+    SD_REQUIRE_COMPILER_CACHE=ON
     CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DCCACHE_PROGRAM:FILEPATH=$DL4J_COMPILER_CACHE"
     print_colored "cyan" "Android compiler cache: source=$ANDROID_COMPILER_CACHE_SOURCE path=$DL4J_COMPILER_CACHE"
 fi
+
+case "${SD_REQUIRE_COMPILER_CACHE:-OFF}" in
+    ON|TRUE|true|1)
+        SD_REQUIRE_COMPILER_CACHE=ON
+        ;;
+    OFF|FALSE|false|0|"")
+        SD_REQUIRE_COMPILER_CACHE=OFF
+        ;;
+    *)
+        print_colored "red" "❌ ERROR: SD_REQUIRE_COMPILER_CACHE must be ON or OFF, got '$SD_REQUIRE_COMPILER_CACHE'"
+        exit 1
+        ;;
+esac
+CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DSD_REQUIRE_COMPILER_CACHE=$SD_REQUIRE_COMPILER_CACHE"
 
 case "${CCACHE_TRACE^^}" in
     ON|TRUE|1)
@@ -3492,10 +3507,15 @@ validate_compiler_cache_contract() {
     local launcher_cxx="$(read_cmake_cache_value CMAKE_CXX_COMPILER_LAUNCHER || true)"
     local require_cache="$(read_cmake_cache_value SD_REQUIRE_COMPILER_CACHE || true)"
     local expected_cache="${DL4J_COMPILER_CACHE:-ccache}"
+    local cache_name=""
 
     if [ ! -f "$cache_file" ]; then
         print_colored "red" "❌ ERROR: CMake did not produce CMakeCache.txt; compiler-cache validation cannot continue"
         exit 1
+    fi
+    if [ "$require_cache" != "ON" ]; then
+        print_colored "blue" "Compiler cache is optional for this build; strict cache validation skipped"
+        return 0
     fi
     if [[ "$expected_cache" != */* ]]; then
         expected_cache="$(command -v "$expected_cache" 2>/dev/null || true)"
@@ -3504,9 +3524,9 @@ validate_compiler_cache_contract() {
         print_colored "red" "❌ ERROR: Expected compiler cache is unavailable: ${DL4J_COMPILER_CACHE:-ccache}"
         exit 1
     fi
-    if [ "$require_cache" != "ON" ]; then
-        print_colored "red" "❌ ERROR: SD_REQUIRE_COMPILER_CACHE is not ON (value: ${require_cache:-missing})"
-        exit 1
+    cache_name="$(basename "$expected_cache")"
+    if [ "$cache_name" = "sccache" ] || [ "$cache_name" = "sccache.exe" ]; then
+        expected_launcher="$expected_cache"
     fi
     if [ "$launcher_c" != "$expected_launcher" ] || [ "$launcher_cxx" != "$expected_launcher" ]; then
         print_colored "red" "❌ ERROR: CMake compiler launcher contract failed"
@@ -3515,7 +3535,8 @@ validate_compiler_cache_contract() {
         print_colored "yellow" "   Expected: $expected_launcher"
         exit 1
     fi
-    if ! grep -Fq "CCACHE=\"$expected_cache\"" "$expected_launcher"; then
+    if [ "$cache_name" != "sccache" ] && [ "$cache_name" != "sccache.exe" ] &&
+       ! grep -Fq "CCACHE=\"$expected_cache\"" "$expected_launcher"; then
         print_colored "red" "❌ ERROR: Generated smart ccache wrapper does not invoke the expected cache binary"
         print_colored "yellow" "   Expected: $expected_cache"
         exit 1
@@ -3528,7 +3549,7 @@ validate_compiler_cache_contract() {
             printf 'required_cache=%s\n' "$require_cache"
         } >> "$CCACHE_TRACE_DIR/build-metadata.txt"
     fi
-    print_colored "green" "✅ Compiler cache contract verified: C/CXX → smart_ccache.sh → $expected_cache"
+    print_colored "green" "✅ Compiler cache contract verified: C/CXX → $expected_launcher"
 }
 
 run_compiler_dependency_bootstrap() {

@@ -383,6 +383,8 @@ class ReleaseValidationTest(unittest.TestCase):
                 self.assertEqual("all", environment["SCCACHE_MULTILEVEL_WRITE_ERROR_POLICY"])
                 self.assertEqual(str(source.resolve()), environment["SCCACHE_BASEDIRS"])
                 self.assertEqual("1", environment["SD_USE_SCCACHE"])
+                self.assertEqual("ON", environment["SD_REQUIRE_COMPILER_CACHE"])
+                self.assertEqual("/tools/sccache", environment["DL4J_COMPILER_CACHE"])
                 self.assertEqual(
                     ["/tools", "/existing/bin"], environment["PATH"].split(os.pathsep)
                 )
@@ -414,6 +416,8 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertEqual("/tools/sccache", executable)
             self.assertTrue(started)
             self.assertEqual("1", sccache_env["SD_USE_SCCACHE"])
+            self.assertEqual("ON", sccache_env["SD_REQUIRE_COMPILER_CACHE"])
+            self.assertEqual("/tools/sccache", sccache_env["DL4J_COMPILER_CACHE"])
             self.assertEqual(
                 ["/tools", "/existing/bin"], sccache_env["PATH"].split(os.pathsep)
             )
@@ -433,6 +437,8 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertEqual("/tools/ccache", executable)
             self.assertFalse(started)
             self.assertNotIn("SD_USE_SCCACHE", ccache_env)
+            self.assertEqual("ON", ccache_env["SD_REQUIRE_COMPILER_CACHE"])
+            self.assertEqual("/tools/ccache", ccache_env["DL4J_COMPILER_CACHE"])
             self.assertEqual("/existing/bin", ccache_env["PATH"])
             execute.assert_called_once_with(
                 ["/tools/ccache", "--zero-stats"], source, ccache_env

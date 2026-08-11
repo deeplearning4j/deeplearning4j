@@ -440,6 +440,8 @@ def _required_cache_value(settings: dict, name: str) -> str:
 
 def _configure_compiler_launchers(env: dict[str, str], compiler_cache: str) -> None:
     env.update({
+        "DL4J_COMPILER_CACHE": compiler_cache,
+        "SD_REQUIRE_COMPILER_CACHE": "ON",
         "CMAKE_C_COMPILER_LAUNCHER": compiler_cache,
         "CMAKE_CXX_COMPILER_LAUNCHER": compiler_cache,
         "CMAKE_CUDA_COMPILER_LAUNCHER": compiler_cache,
