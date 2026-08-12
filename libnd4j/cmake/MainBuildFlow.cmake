@@ -389,6 +389,15 @@ function(collect_all_sources out_source_list)
             list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_CUDNN_SOURCES})
         endif()
 
+        # ZLUDA's CUDA ABI does not expose stream-ordered allocation, so
+        # compile one SDK-isolated HIP bridge that forwards the underlying ZLUDA
+        # stream handle to hipMallocAsync/hipFreeAsync.
+        if(HAVE_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "AMD" AND ROCM_HIP_RUNTIME_LIBRARY)
+            list(APPEND ALL_SOURCES_LIST
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/cuda/ZludaHipMemoryBridge.cpp")
+            message(STATUS "✅ Added ROCm stream-ordered memory bridge for ZLUDA AMD")
+        endif()
+
         # ZLUDA MIOpen support for AMD GPUs (cuDNN alternative)
         if(HAVE_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "AMD" AND HAVE_MIOPEN)
             file(GLOB_RECURSE CUSTOMOPS_MIOPEN_SOURCES ./include/ops/declarable/platform/miopen/*.cpp)

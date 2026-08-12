@@ -130,15 +130,18 @@ void ContextBuffers::release() {
       switchedDevice = true;
     }
 
-    // Free workspace buffers — routed through the pool so that both
-    // cudaMallocAsync (primary path) and allocateDirect compatibility fallbacks
-    // allocations are freed correctly regardless of which path was taken.
+    // Free workspace buffers behind their consumer stream. On ZLUDA this
+    // forwards directly to hipFreeAsync on the same underlying HIP stream.
+    cudaStream_t releaseStream = nullptr;
+    if (_execStream != nullptr) {
+      releaseStream = *reinterpret_cast<cudaStream_t*>(_execStream);
+    }
     if (_allocationPointer != nullptr) {
-      memory::CudaMemoryPool::getInstance().free(_allocationPointer, _deviceId);
+      memory::CudaMemoryPool::getInstance().free(_allocationPointer, _deviceId, releaseStream);
     }
     if (_scalarPointer != nullptr) cudaFreeHost(_scalarPointer);
     if (_reductionPointer != nullptr) {
-      memory::CudaMemoryPool::getInstance().free(_reductionPointer, _deviceId);
+      memory::CudaMemoryPool::getInstance().free(_reductionPointer, _deviceId, releaseStream);
     }
 
     if (_execStream != nullptr) {
@@ -209,32 +212,12 @@ void ContextBuffers::initialize() {
   memory::CudaMemoryPool::getInstance().trimPool(_deviceId);
   cudaGetLastError();  // clear any error from trim
 
-  // Allocate workspace buffers using cudaMallocAsync on the default pool.
-  //  We must NOT use CudaMemoryPool::allocate() here because its
-  // allocateFailover() silently routes to a different device when the current
-  // device is low on memory. This creates a fatal mismatch: ContextBuffers
-  // workspace and streams end up on device 1, but ops use device 0 data,
-  // causing "illegal memory access" (error 700) and "invalid resource handle"
-  // (error 900) crashes. ContextBuffers MUST stay on the requested device.
-  //
-  // We use cudaMallocAsync instead of cudaMalloc because the CUDA memory pool
-  // may have reserved most of the device memory. cudaMalloc allocates from
-  // non-pool memory and will fail if the pool has reserved everything.
-  // cudaMallocAsync allocates FROM the pool and can use pool-reserved memory.
-  // We use stream 0 (default stream) to ensure the allocation is immediately
-  // available on any stream.
-  //
-  // If cudaMallocAsync is unavailable (cudaErrorNotSupported, returned by
-  // compatibility runtimes such as ZLUDA) or stream 0 cannot be used during
-  // capture (error 906), route through allocateDirect. That method preserves
-  // the async-pool path when available and uses a tracked cudaMalloc fallback
-  // when the runtime does not implement stream-ordered allocation.
-  auto res = cudaMallocAsync(&_reductionPointer, 1024 * 1024 * 8, 0);
-  if (res == cudaErrorNotSupported || res == 906) {
-    cudaGetLastError();  // clear the async-allocation error before fallback
-    _reductionPointer = memory::CudaMemoryPool::getInstance().allocateDirect(1024 * 1024 * 8, _deviceId);
-    res = (_reductionPointer != nullptr) ? cudaSuccess : cudaErrorMemoryAllocation;
-  }
+  // Context-local workspaces must remain on this device and retain stream
+  // ordering. allocateLocalAsync never performs cross-device/host failover and,
+  // for ZLUDA, calls hipMallocAsync directly on the underlying HIP stream.
+  _reductionPointer = memory::CudaMemoryPool::getInstance().allocateLocalAsync(
+      1024 * 1024 * 8, _deviceId, nullptr);
+  auto res = (_reductionPointer != nullptr) ? cudaSuccess : cudaErrorMemoryAllocation;
   if (res != cudaSuccess) {
     _reductionPointer = nullptr;
     // OOM on this device — log warning but do NOT throw.
@@ -289,13 +272,9 @@ void ContextBuffers::initialize() {
     return;
   }
 
-  res = cudaMallocAsync(&_allocationPointer, 1024 * 1024 * 8, 0);
-  if (res == cudaErrorNotSupported || res == 906) {
-    // Same compatibility/capture-safe fallback as _reductionPointer above.
-    cudaGetLastError();
-    _allocationPointer = memory::CudaMemoryPool::getInstance().allocateDirect(1024 * 1024 * 8, _deviceId);
-    res = (_allocationPointer != nullptr) ? cudaSuccess : cudaErrorMemoryAllocation;
-  }
+  _allocationPointer = memory::CudaMemoryPool::getInstance().allocateLocalAsync(
+      1024 * 1024 * 8, _deviceId, nullptr);
+  res = (_allocationPointer != nullptr) ? cudaSuccess : cudaErrorMemoryAllocation;
   if (res != cudaSuccess) {
     memory::CudaMemoryPool::getInstance().free(_reductionPointer, _deviceId);
     _reductionPointer = nullptr;
@@ -317,8 +296,8 @@ void ContextBuffers::initialize() {
     _initialized = true;
     return;
   }
-  // Sync default stream to ensure async allocations are complete before use.
-  cudaStreamSynchronize(0);
+  // No host synchronization is required: subsequently created blocking streams
+  // observe legacy-default-stream ordering, and DSP allocations use its exact stream.
 
   _execStream = new cudaStream_t();
   _specialStream = new cudaStream_t();

@@ -8,7 +8,7 @@
 
 #include "miopenBridge.h"
 
-// This is the sole AMD-native translation unit in the CUDA/ZLUDA artifact.
+// This is an isolated AMD-native translation unit in the CUDA/ZLUDA artifact.
 // It intentionally includes no ND4J or CUDA headers. The final shared library
 // may contain CUDA and ROCm objects; their type systems must not share a TU.
 #if defined(__HIP_PLATFORM_NVIDIA__)

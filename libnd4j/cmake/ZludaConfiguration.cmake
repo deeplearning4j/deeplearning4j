@@ -323,9 +323,19 @@ function(setup_zluda_amd)
         # Set up MIOpen for DNN operations (cuDNN replacement)
         setup_miopen()
 
-        # Only the SDK-neutral bridge implementation sees AMD HIP and MIOpen.
-        # All other ZLUDA sources remain CUDA-only, so CUDA and AMD HIP vector
-        # declarations can never collide in one translation unit.
+        # Only SDK-neutral bridge implementations see AMD HIP/MIOpen. All
+        # other ZLUDA sources remain CUDA-only, so CUDA and AMD HIP declarations
+        # can never collide in one translation unit.
+        if(ROCM_HIP_RUNTIME_LIBRARY)
+            set(_ZLUDA_HIP_MEMORY_BRIDGE_SOURCE
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/cuda/ZludaHipMemoryBridge.cpp")
+            set_source_files_properties("${_ZLUDA_HIP_MEMORY_BRIDGE_SOURCE}" PROPERTIES
+                COMPILE_DEFINITIONS "__HIP_PLATFORM_AMD__=1"
+                INCLUDE_DIRECTORIES "${ROCM_INCLUDE_DIR}"
+                SKIP_UNITY_BUILD_INCLUSION ON)
+            add_compile_definitions(HAVE_ZLUDA_HIP_MEMORY_BRIDGE=1)
+        endif()
+
         if(HAVE_MIOPEN)
             set(_ZLUDA_MIOPEN_BRIDGE_SOURCE
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/miopen/miopenBridge.cpp")
@@ -492,16 +502,15 @@ function(configure_zluda_linking target_name)
         message(STATUS "   Added ZLUDA lib path: ${ZLUDA_LIB_DIR}")
     endif()
 
-    # ROCm headers are attached only to miopenBridge.cpp. Its object calls
-    # both MIOpen and the AMD HIP runtime directly, so both libraries are
-    # private implementation dependencies of the final ZLUDA artifact.
+    # The stream-ordered memory bridge always calls the AMD HIP runtime;
+    # MIOpen is an additional optional private dependency.
+    if(ROCM_HIP_RUNTIME_LIBRARY)
+        target_link_libraries(${target_name} PRIVATE ${ROCM_HIP_RUNTIME_LIBRARY})
+        message(STATUS "   Linked isolated AMD HIP runtime: ${ROCM_HIP_RUNTIME_LIBRARY}")
+    endif()
     if(HAVE_MIOPEN)
         target_link_libraries(${target_name} PRIVATE ${MIOPEN_LIBRARY})
-        if(ROCM_HIP_RUNTIME_LIBRARY)
-            target_link_libraries(${target_name} PRIVATE ${ROCM_HIP_RUNTIME_LIBRARY})
-        endif()
         message(STATUS "   Linked isolated MIOpen runtime: ${MIOPEN_LIBRARY}")
-        message(STATUS "   Linked isolated AMD HIP runtime: ${ROCM_HIP_RUNTIME_LIBRARY}")
     endif()
 
     # Add ROCm library path privately for the AMD-only runtime dependency.

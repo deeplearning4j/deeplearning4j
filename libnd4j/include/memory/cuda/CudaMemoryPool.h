@@ -117,6 +117,15 @@ class SD_LIB_EXPORT CudaMemoryPool {
   void* allocate(size_t size, int deviceId, cudaStream_t stream = nullptr, int* actualDeviceId = nullptr);
 
   /**
+   * Allocate from this device's stream-ordered pool without cross-device or
+   * host-memory failover. The allocation is ordered on exactly `stream` and
+   * this method never performs a host/device synchronization. Context-local
+   * buffers and DSP capture workspaces use this contract because changing
+   * placement or execution mode would violate graph replay invariants.
+   */
+  void* allocateLocalAsync(size_t size, int deviceId, cudaStream_t stream = nullptr);
+
+  /**
    * Track allocation requests made by the current thread. The DSP capture warmup
    * uses the peak request to preserve enough device headroom for direct execution
    * if CUDA graph instantiation would otherwise consume the remaining memory.
@@ -136,14 +145,12 @@ class SD_LIB_EXPORT CudaMemoryPool {
    * read by softMaxCuda) MUST outlive the workspace, or replay reads freed memory →
    * CUDA err700. This method gives such buffers a standalone lifetime.
    *
-   * Implementation: cudaMallocAsync on a dedicated, per-device, NON-capturing allocation
-   * stream (never passed into a capture), then a one-time materializing sync. This
-   * produces a real pool-backed allocation with NO cudaGraphMemAllocNode (which would
-   * fail cudaGraphLaunch with "invalid argument" if issued on the capturing stream),
-   * and NO synchronous cudaMalloc (which is illegal during capture). The buffer is
-   * tracked so free() routes to cudaFreeAsync on the same allocation stream. It is freed
-   * only when the owner releases it (e.g. TAD cache eviction), never by workspace or
-   * graph teardown.
+   * NVIDIA uses cudaMallocAsync on a dedicated non-capturing stream and materializes
+   * it outside capture. ZLUDA forwards the exact DSP/LaunchContext stream handle to
+   * hipMallocAsync and never synchronizes; a mid-capture request is rejected because
+   * constants must already come from the capture arena. Both paths produce pool-backed
+   * storage with no synchronous allocation fallback. The buffer is tracked so free()
+   * remains stream ordered and is released only by its owner.
    *
    * @param size     bytes to allocate
    * @param deviceId device to allocate on
@@ -157,8 +164,8 @@ class SD_LIB_EXPORT CudaMemoryPool {
   // thread is capturing. Idempotent / no-op if already materialized or if a capture is active.
   void ensureCaptureArena(int deviceId);
   // Bump-allocate `size` bytes of capture-safe persistent constant memory from the per-device
-  // arena (ensures backing, then pointer-arithmetic bump). Returns nullptr if exhausted or not
-  // pre-materialized while capturing, so the caller can fall back/throw. Used by
+  // arena (ensures backing, then pointer-arithmetic bump). ZLUDA throws if the arena is
+  // unavailable or exhausted during capture rather than changing DSP execution mode. Used by
   // ConstantHelper::replicatePointer's capture branch.
   void* allocateFromCaptureArena(size_t size, int deviceId);
   // True if ptr lies within any device's capture arena (so free() must NOT cudaFree it).

@@ -17,8 +17,8 @@ namespace platforms {
 namespace miopen_bridge {
 
 // This header is deliberately SDK-neutral. CUDA/ZLUDA translation units include
-// it without seeing HIP or MIOpen declarations; miopenBridge.cpp is the only
-// translation unit that owns the native ROCm headers.
+// it without seeing HIP or MIOpen declarations; miopenBridge.cpp is an
+// isolated translation unit that owns the native ROCm/MIOpen headers.
 
 enum class DataType : int {
   FLOAT32,

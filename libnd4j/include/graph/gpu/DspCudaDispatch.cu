@@ -25,6 +25,9 @@
 #include <array/NDArray.h>
 #ifdef SD_CUDA
 #include <memory/cuda/CudaMemoryPool.h>
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+#include <memory/cuda/ZludaHipMemoryBridge.h>
+#endif
 #include <unordered_map>
 #include <mutex>
 #endif
@@ -142,9 +145,15 @@ bool dspEndStaleCapture(void* stream, const char* label) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void dspDeviceFree(void* ptr) {
-  if (ptr != nullptr) {
-    cudaFree(ptr);
-  }
+  if (ptr == nullptr) return;
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  memory::CudaMemoryPool::getInstance().free(
+      ptr, deviceId, reinterpret_cast<cudaStream_t>(tl_dspExecutionStream));
+#else
+  cudaFree(ptr);
+#endif
 }
 
 int dspMemcpyH2DAsync(void* dst, const void* src, size_t bytes, void* stream) {
@@ -165,11 +174,16 @@ void dspMemcpyD2DDefaultStream(void* dst, const void* src, size_t bytes) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 bool dspMemPoolTrim(int deviceId, size_t minBytes) {
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  return memory::zluda_hip::trimDefaultPool(deviceId, minBytes) ==
+         memory::zluda_hip::Status::SUCCESS;
+#else
   cudaMemPool_t pool = nullptr;
   if (cudaDeviceGetMemPool(&pool, deviceId) == cudaSuccess && pool != nullptr) {
     return cudaMemPoolTrimTo(pool, minBytes) == cudaSuccess;
   }
   return false;
+#endif
 }
 
 size_t dspGetDeviceTotalMemory() {
@@ -186,8 +200,11 @@ bool dspIsHostBuild() { return false; }
 
 void dspFreeWorkspaceOnPool(void* ptr) {
   if (ptr != nullptr) {
-    memory::CudaMemoryPool::getInstance().unregisterCaptureWorkspace(ptr);
-    cudaFree(ptr);
+    auto& pool = memory::CudaMemoryPool::getInstance();
+    pool.unregisterCaptureWorkspace(ptr);
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    pool.free(ptr, deviceId, reinterpret_cast<cudaStream_t>(tl_dspExecutionStream));
   }
 }
 

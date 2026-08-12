@@ -26,6 +26,9 @@
 #include <helpers/DebugHelper.h>
 #include <execution/LaunchContext.h>
 #include <graph/DspDiagnostics.h>
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+#include <memory/cuda/ZludaHipMemoryBridge.h>
+#endif
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
@@ -34,6 +37,45 @@
 
 namespace sd {
 namespace memory {
+
+SD_INLINE cudaError_t streamOrderedMalloc(void** ptr, size_t size, cudaStream_t stream) {
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  auto status = zluda_hip::mallocAsync(ptr, size, reinterpret_cast<void*>(stream));
+  switch (status) {
+    case zluda_hip::Status::SUCCESS: return cudaSuccess;
+    case zluda_hip::Status::OUT_OF_MEMORY: return cudaErrorMemoryAllocation;
+    case zluda_hip::Status::NOT_SUPPORTED: return cudaErrorNotSupported;
+    case zluda_hip::Status::INVALID_ARGUMENT: return cudaErrorInvalidValue;
+    default: return cudaErrorUnknown;
+  }
+#else
+  return cudaMallocAsync(ptr, size, stream);
+#endif
+}
+
+SD_INLINE cudaError_t streamOrderedFree(void* ptr, cudaStream_t stream) {
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  auto status = zluda_hip::freeAsync(ptr, reinterpret_cast<void*>(stream));
+  switch (status) {
+    case zluda_hip::Status::SUCCESS: return cudaSuccess;
+    case zluda_hip::Status::OUT_OF_MEMORY: return cudaErrorMemoryAllocation;
+    case zluda_hip::Status::NOT_SUPPORTED: return cudaErrorNotSupported;
+    case zluda_hip::Status::INVALID_ARGUMENT: return cudaErrorInvalidValue;
+    default: return cudaErrorUnknown;
+  }
+#else
+  return cudaFreeAsync(ptr, stream);
+#endif
+}
+
+SD_INLINE const char* streamOrderedErrorString(cudaError_t status) {
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  const char* detail = zluda_hip::lastError();
+  return detail != nullptr && detail[0] != '\0' ? detail : cudaGetErrorString(status);
+#else
+  return cudaGetErrorString(status);
+#endif
+}
 
 SD_INLINE cudaStream_t resolveCaptureStream(cudaStream_t stream) {
   if (tl_graphExecutionActive && stream == nullptr && tl_graphCaptureStream != nullptr) {
@@ -207,6 +249,11 @@ CudaMemoryPool::~CudaMemoryPool() {
 }
 
 bool CudaMemoryPool::checkSupport() {
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  // ZLUDA does not implement cuMemAllocAsync, but it forwards CUstream handles
+  // directly as hipStream_t. Query the underlying ROCm allocator instead.
+  return zluda_hip::memoryPoolsSupported(0);
+#else
   // Memory pools require CUDA 11.2+
   int driverVersion = 0;
   cudaDriverGetVersion(&driverVersion);
@@ -230,6 +277,7 @@ bool CudaMemoryPool::checkSupport() {
   cudaDeviceGetAttribute(&supportsMemoryPools, cudaDevAttrMemoryPoolsSupported, 0);
 
   return supportsMemoryPools != 0;
+#endif
 }
 
 bool CudaMemoryPool::initializeForDevice(int deviceId) {
@@ -260,14 +308,6 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
     if (needDeviceRestore) cudaSetDevice(savedDev);
   };
 
-  // Get the device's default memory pool
-  cudaError_t err = cudaDeviceGetDefaultMemPool(&pools_[deviceId], deviceId);
-  if (err != cudaSuccess) {
-    sd_debug("Failed to get default memory pool for device %d: %s\n", deviceId, cudaGetErrorString(err));
-    restoreDevice();
-    return false;
-  }
-
   // Configure the pool release threshold based on device memory ratio.
   // The pool holds reserved memory for reuse. Setting this to a fraction of total
   // GPU memory ensures the pool returns excess memory to the driver, leaving headroom
@@ -276,9 +316,19 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
   cudaMemGetInfo(&devFree, &devTotal);
   int releasePercent = Environment::getInstance().memory().poolReleaseThresholdPercent();
   uint64_t threshold = static_cast<uint64_t>(devTotal * (releasePercent / 100.0));
-  err = cudaMemPoolSetAttribute(pools_[deviceId], cudaMemPoolAttrReleaseThreshold, &threshold);
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  auto poolStatus = zluda_hip::configureDefaultPool(deviceId, threshold);
+  cudaError_t err = poolStatus == zluda_hip::Status::SUCCESS ? cudaSuccess : cudaErrorUnknown;
+#else
+  cudaError_t err = cudaDeviceGetDefaultMemPool(&pools_[deviceId], deviceId);
+  if (err == cudaSuccess) {
+    err = cudaMemPoolSetAttribute(pools_[deviceId], cudaMemPoolAttrReleaseThreshold, &threshold);
+  }
+#endif
   if (err != cudaSuccess) {
-    sd_debug("Warning: Could not set pool release threshold: %s\n", cudaGetErrorString(err), "");
+    sd_debug("Warning: Could not configure stream-ordered pool: %s\n", streamOrderedErrorString(err), "");
+    restoreDevice();
+    return false;
   } else {
     sd_debug("CudaMemoryPool: Device %d pool release threshold set to %zu MB (%d%% of %zu MB total)\n",
               deviceId, threshold / (1024*1024), releasePercent, devTotal / (1024*1024));
@@ -291,6 +341,35 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
   return true;
 }
 
+void* CudaMemoryPool::allocateLocalAsync(size_t size, int deviceId, cudaStream_t stream) {
+  if (released_.load(std::memory_order_acquire) || size == 0 ||
+      deviceId < 0 || deviceId >= MAX_DEVICES || !enabled_.load() || !supported_) {
+    return nullptr;
+  }
+
+  int savedDev = -1;
+  cudaError_t getDevErr = cudaGetDevice(&savedDev);
+  bool restore = getDevErr == cudaSuccess && savedDev != deviceId;
+  if (restore && cudaSetDevice(deviceId) != cudaSuccess) {
+    cudaGetLastError();
+    return nullptr;
+  }
+
+  if (!poolInitialized_[deviceId] && !initializeForDevice(deviceId)) {
+    if (restore) cudaSetDevice(savedDev);
+    return nullptr;
+  }
+
+  void* ptr = nullptr;
+  cudaError_t err = streamOrderedMalloc(&ptr, size, stream);
+  if (err != cudaSuccess || ptr == nullptr) {
+    sd_printf("CudaMemoryPool::allocateLocalAsync failed dev=%d size=%zu stream=%p: %s\n",
+              deviceId, size, reinterpret_cast<void*>(stream), streamOrderedErrorString(err));
+    ptr = nullptr;
+  }
+  if (restore) cudaSetDevice(savedDev);
+  return ptr;
+}
 
 void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, int* actualDeviceId) {
   if (tl_allocationRequestTrackingDepth > 0 && size > tl_peakAllocationRequestBytes) {
@@ -396,9 +475,11 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   // that device-0 buffer then fails with cudaErrorInvalidValue. We are already on deviceId
   // here, so use its per-thread stream to guarantee the allocation lands in device
   // `deviceId`'s VRAM. Device 0 keeps the resolved DSP stream (single-GPU hot path untouched).
+#if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
   if (deviceId != 0) {
     allocStream = cudaStreamPerThread;
   }
+#endif
 
   // ─── Proactive soft-limit check ───────────────────────────────────────────
   // When enabled, check device usage BEFORE attempting local allocation.
@@ -409,7 +490,11 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   //
   // Skipped during CUDA graph capture (tl_graphExecutionActive) because
   // failover is impossible during capture — stream sync would break it.
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  const int softLimit = 0;  // no cross-placement failover in the DSP/ZLUDA path
+#else
   int softLimit = softLimitPercent_.load(std::memory_order_relaxed);
+#endif
   if (softLimit > 0 && !tl_graphExecutionActive) {
     size_t freeMem = 0, totalMem = 0;
     cudaGetLastError();  // clear any sticky error before querying
@@ -446,13 +531,19 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
 
   // (allocStream resolved above, before the soft-limit block.)
 
-  // If pools not enabled or not supported, fall back to regular cudaMalloc
+  // ZLUDA/ROCm must retain the stream-ordered contract. If the native HIP
+  // allocator is unavailable, fail explicitly instead of switching to a
+  // synchronous CUDA allocation or a different execution/placement mode.
   if (!enabled_.load() || !supported_) {
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+    sd_printf("CudaMemoryPool::allocate: ROCm stream-ordered allocator is unavailable on device %d\n",
+              deviceId);
+    restoreDevice();
+    return nullptr;
+#else
     void* ptr = nullptr;
     if (tl_graphExecutionActive) {
-      // During CUDA graph capture, cudaMalloc (synchronous) breaks capture.
-      // Use cudaMallocAsync with the caller-provided stream (the captured stream).
-      cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
+      cudaError_t err = streamOrderedMalloc(&ptr, size, allocStream);
       if (err != cudaSuccess) {
         cudaGetLastError();
         restoreDevice();
@@ -461,9 +552,6 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       restoreDevice();
       return ptr;
     }
-    // A runtime that reports no memory-pool support cannot be expected to
-    // implement cudaMallocAsync. Use the CUDA-compatible synchronous allocator
-    // and register the pointer so free() routes it through cudaFree.
     cudaError_t err = cudaMalloc(&ptr, size);
     if (err == cudaSuccess && ptr != nullptr) {
       registerDirectAllocation(ptr, size);
@@ -472,40 +560,43 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     }
     sd_debug("cudaMalloc (pools-off path) failed: %s\n", cudaGetErrorString(err), "");
     auto result = allocateFailover(size, deviceId, actualDeviceId,
-                                 /*skipSameDeviceRetry=*/false, allocStream);
+                                   /*skipSameDeviceRetry=*/false, allocStream);
     restoreDevice();
     return result;
+#endif
   }
 
-  // Initialize pool for this device if needed
-  if (!poolInitialized_[deviceId]) {
-    if (!initializeForDevice(deviceId)) {
-      // Fall back to regular cudaMalloc
-      void* ptr = nullptr;
-      if (tl_graphExecutionActive) {
-        cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
-        if (err != cudaSuccess) {
-          cudaGetLastError();
-          restoreDevice();
-          return nullptr;
-        }
+  // Initialize pool for this device if needed.
+  if (!poolInitialized_[deviceId] && !initializeForDevice(deviceId)) {
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+    sd_printf("CudaMemoryPool::allocate: failed to initialize ROCm memory pool for device %d: %s\n",
+              deviceId, zluda_hip::lastError());
+    restoreDevice();
+    return nullptr;
+#else
+    void* ptr = nullptr;
+    if (tl_graphExecutionActive) {
+      cudaError_t err = streamOrderedMalloc(&ptr, size, allocStream);
+      if (err != cudaSuccess) {
+        cudaGetLastError();
         restoreDevice();
-        return ptr;
+        return nullptr;
       }
-      // The device's default pool could not be initialized. Use a tracked
-      // synchronous allocation instead of calling the unavailable async API.
-      cudaError_t err = cudaMalloc(&ptr, size);
-      if (err == cudaSuccess && ptr != nullptr) {
-        registerDirectAllocation(ptr, size);
-        restoreDevice();
-        return ptr;
-      }
-      sd_debug("cudaMalloc (uninit-device path) failed: %s\n", cudaGetErrorString(err), "");
-      auto result = allocateFailover(size, deviceId, actualDeviceId,
-                                 /*skipSameDeviceRetry=*/false, allocStream);
       restoreDevice();
-      return result;
+      return ptr;
     }
+    cudaError_t err = cudaMalloc(&ptr, size);
+    if (err == cudaSuccess && ptr != nullptr) {
+      registerDirectAllocation(ptr, size);
+      restoreDevice();
+      return ptr;
+    }
+    sd_debug("cudaMalloc (uninit-device path) failed: %s\n", cudaGetErrorString(err), "");
+    auto result = allocateFailover(size, deviceId, actualDeviceId,
+                                   /*skipSameDeviceRetry=*/false, allocStream);
+    restoreDevice();
+    return result;
+#endif
   }
 
   // ─── Per-process device budget (Environment::maxDeviceMemory) ─────────────
@@ -520,7 +611,11 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   // (-1 default: a single atomic load, zero behavioral change for every existing
   // caller — the whole regression surface is off unless a bound is explicitly set
   // via Nd4j.getEnvironment().setMaxDeviceMemory() or SD_MAX_DEVICE_BYTES).
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  const int64_t deviceBudget = -1;  // preserve ROCm stream/device placement
+#else
   const int64_t deviceBudget = Environment::getInstance().maxDeviceMemory();
+#endif
   if (deviceBudget > 0 && !tl_graphExecutionActive && poolInitialized_[deviceId]) {
     size_t poolUsed = 0, poolReserved = 0;
     getStats(deviceId, poolUsed, poolReserved);
@@ -552,8 +647,9 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   // stream here because it would cause recursive ContextBuffers initialization:
   // CudaMemoryPool::allocate() -> LaunchContext::defaultContext() -> getCudaStream()
   // -> ContextBuffers::initialize() -> CudaMemoryPool::allocate() -> ...
-  cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
+  cudaError_t err = streamOrderedMalloc(&ptr, size, allocStream);
 
+#if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
   if (err == cudaErrorNotSupported && !tl_graphExecutionActive) {
     // CUDA-ABI compatibility runtimes may implement cudaMalloc/cudaFree without
     // stream-ordered allocation. Preserve device placement with a tracked direct
@@ -567,8 +663,18 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       return ptr;
     }
   }
+#endif
 
   if (err != cudaSuccess) {
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+    // Never synchronize, spill, or switch execution mode on the ROCm/ZLUDA
+    // path. DSP capture/replay requires the allocation to remain ordered on
+    // this exact HIP stream.
+    sd_printf("CudaMemoryPool::allocate: hipMallocAsync failed on device %d size=%zu stream=%p: %s\n",
+              deviceId, size, reinterpret_cast<void*>(allocStream), streamOrderedErrorString(err));
+    restoreDevice();
+    return nullptr;
+#endif
     // During CUDA graph capture, error recovery (stream sync, failover) would break
     // capture. Return nullptr — the caller must handle allocation failure during capture.
     if (tl_graphExecutionActive) {
@@ -603,7 +709,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
         dirtyFreeStreams_[deviceId].clear();
         cudaGetLastError();  // clear any error from syncs
         ptr = nullptr;
-        err = cudaMallocAsync(&ptr, size, allocStream);
+        err = streamOrderedMalloc(&ptr, size, allocStream);
         if (err == cudaSuccess && ptr != nullptr) {
           restoreDevice();
           return ptr;  // Success after stream sync — no failover needed
@@ -623,7 +729,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     {
       cudaGetLastError();
       ptr = nullptr;
-      cudaError_t perThreadErr = cudaMallocAsync(&ptr, size, cudaStreamPerThread);
+      cudaError_t perThreadErr = streamOrderedMalloc(&ptr, size, cudaStreamPerThread);
       if (perThreadErr == cudaSuccess && ptr != nullptr) {
         restoreDevice();
         return ptr;
@@ -657,6 +763,14 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
 
 void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* actualDeviceId,
                                        bool skipSameDeviceRetry, cudaStream_t consumerStream) {
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  // DSP/ZLUDA must preserve the requested device and consumer stream. Cross-device,
+  // managed, pinned-host, or synchronous allocation changes replay semantics.
+  sd_printf("CudaMemoryPool::allocateFailover: disabled for ROCm/ZLUDA "
+            "(device=%d size=%zu stream=%p)\n",
+            currentDeviceId, size, reinterpret_cast<void*>(consumerStream));
+  return nullptr;
+#endif
   const char* failoverReason = skipSameDeviceRetry ? "proactive-or-budget" : "primary-allocation-failed";
   DSP_DIAG(MEMORY,
            "ALLOCATE_FAILOVER_BEGIN: reason=%s currentDevice=%d requestedBytes=%zu skipSameDeviceRetry=%d consumerStream=%p",
@@ -766,7 +880,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     // Try cudaMallocAsync first (reuses pool memory directly)
     // Use nullptr (default stream) to avoid LaunchContext recursion.
     void* ptr = nullptr;
-    cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
+    cudaError_t err = streamOrderedMalloc(&ptr, size, nullptr);
     if (err == cudaSuccess && ptr != nullptr) {
       sd_debug("CudaMemoryPool::allocateFailover: Succeeded via pool after trim on device %d\n", currentDeviceId);
       if (actualDeviceId) *actualDeviceId = currentDeviceId;
@@ -917,7 +1031,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
       // for d, so no raw cudaMalloc fallback is needed. If it fails, fall through to
       // the next device.
       void* ptr = nullptr;
-      cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
+      cudaError_t err = streamOrderedMalloc(&ptr, size, nullptr);
       if (err == cudaSuccess && ptr != nullptr) {
         sd_debug("CudaMemoryPool::allocateFailover: Succeeded via pool on peer device %d for %zu bytes\n", d, size);
         if (actualDeviceId) *actualDeviceId = d;
@@ -1205,9 +1319,11 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   // device (0); freeing a secondary-device buffer on it fails silently / leaks. We are on
   // deviceId here (cudaSetDevice above), so use its per-thread stream. deviceId <= 0 (primary
   // or unknown) keeps the resolved stream so the single-GPU path is untouched.
+#if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
   if (deviceId > 0) {
     freeStream = cudaStreamPerThread;
   }
+#endif
 
   // Persistent capture-safe allocations from allocateDirect() are pool memory
   // (cudaMallocAsync) bound to a dedicated non-capturing allocation stream. Free
@@ -1220,14 +1336,18 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     if (asyncIt != directAsyncAllocations_.end()) {
       int dev = asyncIt->second.deviceId;
       directAsyncAllocations_.erase(asyncIt);
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+      cudaStream_t s = freeStream;
+#else
       cudaStream_t s = (dev >= 0 && dev < MAX_DEVICES) ? directAllocStreams_[dev] : nullptr;
-      cudaError_t err = cudaFreeAsync(ptr, s);
+#endif
+      cudaError_t err = streamOrderedFree(ptr, s);
       if (err != cudaSuccess) {
         // Clear and leak rather than risk a context-corrupting cudaFree on pool memory.
         cudaGetLastError();
         if (sd::Environment::getInstance().isDebug()) {
           sd_printf("CudaMemoryPool::free: cudaFreeAsync failed for allocateDirect ptr=%p dev=%d: %s (leaked)\n",
-                    ptr, dev, cudaGetErrorString(err));
+                    ptr, dev, streamOrderedErrorString(err));
         }
       }
       if (needDeviceRestore) cudaSetDevice(savedDev);
@@ -1317,15 +1437,16 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
       return;
     }
     if (capErr != cudaSuccess) cudaGetLastError();  // clear benign capture-query error
-    cudaError_t err = cudaFreeAsync(ptr, freeStream);
+    cudaError_t err = streamOrderedFree(ptr, freeStream);
     if (err == cudaSuccess) {
-      // Track which stream this free was issued on so trimPool() can sync
-      // only the relevant streams instead of blocking the entire device.
+#if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+      // NVIDIA trimming historically synchronizes only streams with pending frees.
       int trackDevice = (deviceId >= 0 && deviceId < MAX_DEVICES) ? deviceId : 0;
       {
         std::lock_guard<std::mutex> lock(dirtyStreamsMutex_[trackDevice]);
         dirtyFreeStreams_[trackDevice].insert(freeStream);  // nullptr (stream 0) is valid
       }
+#endif
       if (needDeviceRestore) cudaSetDevice(savedDev);
       return;
     }
@@ -1338,7 +1459,7 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     static int cudaFreeAsyncFailCount = 0;
     if (cudaFreeAsyncFailCount < 10) {
       sd_printf("CudaMemoryPool::free: cudaFreeAsync FAILED for ptr=%p dev=%d stream=%p: %s (LEAKED, no cudaFree fallback)\n",
-                ptr, deviceId, (void*)freeStream, cudaGetErrorString(err));
+                ptr, deviceId, (void*)freeStream, streamOrderedErrorString(err));
       // Check if this is an interior pointer within a pinned host allocation
       {
         std::lock_guard<std::mutex> lock2(fallbackAllocMutex_);
@@ -1363,11 +1484,13 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     if (needDeviceRestore) cudaSetDevice(savedDev);
     return;
   }
-  // Fallback for pools not supported — use synchronous cudaFree.
-  // This path is only reached when CudaMemoryPool is disabled (supported_ == false
-  // or enabled_ == false). The pointer was allocated via cudaMalloc (not cudaMallocAsync),
-  // so cudaFree is the correct deallocator.
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  // Preserve stream ordering even if the pool was disabled after allocation.
+  streamOrderedFree(ptr, freeStream);
+#else
+  // This path is only reached for tracked synchronous NVIDIA allocations.
   cudaFree(ptr);
+#endif
   if (needDeviceRestore) cudaSetDevice(savedDev);
 }
 
@@ -1460,8 +1583,12 @@ void CudaMemoryPool::getStats(int deviceId, size_t& usedBytes, size_t& reservedB
     return;
   }
 
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  zluda_hip::getDefaultPoolStats(deviceId, &usedBytes, &reservedBytes);
+#else
   cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrUsedMemCurrent, &usedBytes);
   cudaMemPoolGetAttribute(pools_[deviceId], cudaMemPoolAttrReservedMemCurrent, &reservedBytes);
+#endif
 }
 
 void CudaMemoryPool::trimPool(int deviceId) {
@@ -1482,6 +1609,20 @@ void CudaMemoryPool::trimPool(int deviceId) {
       return;
     }
   }
+
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  size_t preUsed = 0, preReserved = 0;
+  getStats(deviceId, preUsed, preReserved);
+  zluda_hip::trimDefaultPool(deviceId, 0);
+  size_t postUsed = 0, postReserved = 0;
+  getStats(deviceId, postUsed, postReserved);
+  if (sd::Environment::getInstance().isDebug() || sd::Environment::getInstance().isVerbose()) {
+    sd_printf("CudaMemoryPool::trimPool ROCm dev=%d: used=%zuMB->%zuMB reserved=%zuMB->%zuMB\n",
+              deviceId, preUsed >> 20, postUsed >> 20, preReserved >> 20, postReserved >> 20);
+  }
+  if (prevDevice != deviceId) cudaSetDevice(prevDevice);
+  return;
+#endif
 
   // Sync only the streams that have had cudaFreeAsync issued on them.
   // free() records each stream into dirtyFreeStreams_[deviceId].
@@ -1550,6 +1691,23 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
       return;
     }
   }
+
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  // HIP's pool trim releases only currently unused pages and does not require
+  // synchronizing the DSP stream. Pending hipFreeAsync operations remain
+  // ordered on their streams and become reusable when those dependencies retire.
+  size_t preUsed = 0, preReserved = 0;
+  getStats(deviceId, preUsed, preReserved);
+  zluda_hip::trimDefaultPool(deviceId, 0);
+  size_t postUsed = 0, postReserved = 0;
+  getStats(deviceId, postUsed, postReserved);
+  DSP_DIAG(MEMORY,
+           "trimPoolOnStream ROCm(dev=%d stream=%p): used=%zuMB->%zuMB reserved=%zuMB->%zuMB",
+           deviceId, reinterpret_cast<void*>(stream), preUsed >> 20, postUsed >> 20,
+           preReserved >> 20, postReserved >> 20);
+  if (prevDevice != deviceId) cudaSetDevice(prevDevice);
+  return;
+#endif
 
   // Diagnostic: pool state BEFORE trim
   size_t preUsed = 0, preReserved = 0;
@@ -1750,9 +1908,20 @@ void* CudaMemoryPool::allocateDirect(size_t size, int deviceId) {
     cudaGetDevice(&deviceId);
   }
 
-  // Dedicated non-capturing stream → cudaMallocAsync produces a standalone pool
-  // allocation with NO cudaGraphMemAllocNode, safe to bake as a captured-graph kernel
-  // arg and persistent across capture-workspace release / graph teardown.
+  // ZLUDA uses the exact DSP/LaunchContext stream so hipMallocAsync is ordered
+  // with the consumer. NVIDIA keeps its dedicated non-capturing allocation stream.
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  cudaStream_t s = resolveNullStream(nullptr);
+  if (s != nullptr) {
+    cudaStreamCaptureStatus captureStatus = cudaStreamCaptureStatusNone;
+    if (cudaStreamIsCapturing(s, &captureStatus) == cudaSuccess &&
+        captureStatus != cudaStreamCaptureStatusNone) {
+      sd_printf("CudaMemoryPool::allocateDirect: refusing mid-capture ROCm allocation; "
+                "capture constants must come from the preallocated arena\n", "");
+      return nullptr;
+    }
+  }
+#else
   cudaStream_t s = ensureDirectAllocStream(deviceId);
   if (s == nullptr) {
     // Cannot guarantee a capture-safe standalone allocation without a dedicated
@@ -1766,13 +1935,15 @@ void* CudaMemoryPool::allocateDirect(size_t size, int deviceId) {
     }
     return nullptr;
   }
+#endif
 
   int prevDev = -1;
   cudaGetDevice(&prevDev);
   bool restore = (prevDev != deviceId && cudaSetDevice(deviceId) == cudaSuccess);
 
   void* ptr = nullptr;
-  cudaError_t err = cudaMallocAsync(&ptr, size, s);
+  cudaError_t err = streamOrderedMalloc(&ptr, size, s);
+#if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
   if (err == cudaErrorNotSupported && !tl_graphExecutionActive) {
     // Compatibility runtimes such as ZLUDA expose cudaMalloc/cudaFree but may
     // not implement stream-ordered allocation. Track the synchronous pointer so
@@ -1790,6 +1961,7 @@ void* CudaMemoryPool::allocateDirect(size_t size, int deviceId) {
       return ptr;
     }
   }
+#endif
   if (err == cudaSuccess && ptr != nullptr) {
     // Materialize the allocation so the buffer is valid for cross-stream reads by the
     // captured graph at replay. cudaStreamSynchronize is a HOST-side wait — and under a
@@ -1805,10 +1977,12 @@ void* CudaMemoryPool::allocateDirect(size_t size, int deviceId) {
     // node on the captured stream (ordered before the reader kernel), so the buffer is
     // valid at replay without a host sync. Outside capture, keep the sync so eager
     // cross-stream callers see an immediately-materialized buffer.
+#if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
     if (!tl_graphExecutionActive) {
       cudaStreamSynchronize(s);
       cudaGetLastError();
     }
+#endif
     {
       std::lock_guard<std::mutex> lock(directAllocMutex_);
       directAsyncAllocations_[ptr] = DirectAsyncInfo{size, deviceId};
@@ -1829,7 +2003,7 @@ void* CudaMemoryPool::allocateDirect(size_t size, int deviceId) {
       allocDirectFailCount++;
       sd_printf("CudaMemoryPool::allocateDirect: cudaMallocAsync FAILED dev=%d size=%zu "
                 "graphExecActive=%d err=%d (%s)\n",
-                deviceId, size, (int)tl_graphExecutionActive, (int)err, cudaGetErrorString(err));
+                deviceId, size, (int)tl_graphExecutionActive, (int)err, streamOrderedErrorString(err));
     }
     cudaGetLastError();
     ptr = nullptr;
@@ -1876,12 +2050,20 @@ void CudaMemoryPool::ensureCaptureArena(int deviceId) {
 
   int prevDev = -1; cudaGetDevice(&prevDev);
   bool restore = (prevDev != deviceId && cudaSetDevice(deviceId) == cudaSuccess);
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  cudaStream_t s = resolveNullStream(nullptr);  // same stream that will capture/use the arena
+  void* base = nullptr;
+  cudaError_t err = streamOrderedMalloc(&base, ARENA_BYTES, s);
+#else
   cudaStream_t s = ensureDirectAllocStream(deviceId);  // dedicated NON-capturing stream
   void* base = nullptr;
-  cudaError_t err = (s != nullptr) ? cudaMallocAsync(&base, ARENA_BYTES, s) : cudaErrorMemoryAllocation;
+  cudaError_t err = (s != nullptr) ? streamOrderedMalloc(&base, ARENA_BYTES, s) : cudaErrorMemoryAllocation;
+#endif
   if (err == cudaSuccess && base != nullptr) {
+#if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
     cudaStreamSynchronize(s);  // materialize — legal here (not capturing)
     cudaGetLastError();
+#endif
     size_t blockIdx = captureArenaBlocks_[deviceId].size();
     ArenaBlock blk;
     blk.base     = base;
@@ -1928,10 +2110,8 @@ void* CudaMemoryPool::allocateFromCaptureArena(size_t size, int deviceId) {
     return ptr;
   }
 
-  // Last block is full. Attempt to grow by appending a new block — BUT only when no CUDA
-  // graph capture is currently active on this thread. Mid-capture cudaMallocAsync is illegal
-  // (err900). In that very rare case (capture started before pre-warm finished, or an
-  // unusually large single plan) we return nullptr so the caller falls back gracefully.
+  // Last block is full. Attempt to grow by appending a new block only when no
+  // graph capture is active. A mid-capture allocation would change the graph contract.
   bool captureActive = false;
   if (tl_graphCaptureStream != nullptr) {
     cudaStreamCaptureStatus cs = cudaStreamCaptureStatusNone;
@@ -1941,25 +2121,33 @@ void* CudaMemoryPool::allocateFromCaptureArena(size_t size, int deviceId) {
     cudaGetLastError();
   }
   if (captureActive) {
-    // Cannot grow mid-capture. Log once and return nullptr (caller falls back, same as
-    // the old "arena FULL" path — i.e. slot-by-slot for this particular constant).
+    size_t totalCapacity = 0;
+    size_t totalUsed = 0;
+    for (const auto& blk : captureArenaBlocks_[deviceId]) {
+      totalCapacity += blk.capacity;
+      totalUsed += blk.offset;
+    }
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+    std::string errMsg =
+        "CudaMemoryPool: ROCm/ZLUDA capture arena exhausted during active DSP capture; "
+        "refusing eager or slot-by-slot fallback. device=" + std::to_string(deviceId) +
+        " requested=" + std::to_string(alignedSize) +
+        " capacity=" + std::to_string(totalCapacity) +
+        " used=" + std::to_string(totalUsed);
+    THROW_EXCEPTION(errMsg.c_str());
+#else
     static int growBlockCount = 0;
     if (growBlockCount < 15) {
       growBlockCount++;
-      size_t totalBlocks = captureArenaBlocks_[deviceId].size();
-      size_t totalCapacity = 0;
-      size_t totalUsed = 0;
-      for (const auto& blk : captureArenaBlocks_[deviceId]) {
-        totalCapacity += blk.capacity;
-        totalUsed += blk.offset;
-      }
       if (sd::Environment::getInstance().isDebug()) {
         sd_printf("CudaMemoryPool::allocateFromCaptureArena: capture ACTIVE, cannot grow dev=%d "
                   "need=%zu blocks=%zu cap=%zuMB used=%zuMB\n",
-                  deviceId, alignedSize, totalBlocks, totalCapacity >> 20, totalUsed >> 20);
+                  deviceId, alignedSize, captureArenaBlocks_[deviceId].size(),
+                  totalCapacity >> 20, totalUsed >> 20);
       }
     }
     return nullptr;
+#endif
   }
 
   // Not capturing: allocate a new block on the dedicated non-capturing stream and push it.
@@ -1969,14 +2157,22 @@ void* CudaMemoryPool::allocateFromCaptureArena(size_t size, int deviceId) {
 
   int prevDev = -1; cudaGetDevice(&prevDev);
   bool restore = (prevDev != deviceId && cudaSetDevice(deviceId) == cudaSuccess);
+#if defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
+  cudaStream_t s = resolveNullStream(nullptr);
+  void* newBase = nullptr;
+  cudaError_t err = streamOrderedMalloc(&newBase, newBlockSize, s);
+#else
   cudaStream_t s = ensureDirectAllocStream(deviceId);  // must NOT be holding captureArenaMutex_ when calling ...
   // NOTE: ensureDirectAllocStream acquires directAllocStreamMutex_, not captureArenaMutex_,
   // so calling it under captureArenaMutex_ is deadlock-free (distinct mutexes, consistent order).
   void* newBase = nullptr;
-  cudaError_t err = (s != nullptr) ? cudaMallocAsync(&newBase, newBlockSize, s) : cudaErrorMemoryAllocation;
+  cudaError_t err = (s != nullptr) ? streamOrderedMalloc(&newBase, newBlockSize, s) : cudaErrorMemoryAllocation;
+#endif
   if (err == cudaSuccess && newBase != nullptr) {
+#if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
     cudaStreamSynchronize(s);   // materialize — legal here (not capturing)
     cudaGetLastError();
+#endif
     size_t blockIdx = captureArenaBlocks_[deviceId].size();
     ArenaBlock blk;
     blk.base     = newBase;
@@ -2203,7 +2399,7 @@ void CudaMemoryPool::releaseAll() {
         if (entry.first != nullptr) {
           int dev = entry.second.deviceId;
           cudaStream_t s = (dev >= 0 && dev < MAX_DEVICES) ? directAllocStreams_[dev] : nullptr;
-          cudaFreeAsync(entry.first, s);
+          streamOrderedFree(entry.first, s);
         }
       }
       directAsyncAllocations_.clear();
@@ -2217,7 +2413,7 @@ void CudaMemoryPool::releaseAll() {
         for (int d = 0; d < MAX_DEVICES; d++) {
           for (auto& blk : captureArenaBlocks_[d]) {
             if (blk.base != nullptr) {
-              cudaFreeAsync(blk.base, directAllocStreams_[d]);
+              streamOrderedFree(blk.base, directAllocStreams_[d]);
               blk.base = nullptr;
             }
           }

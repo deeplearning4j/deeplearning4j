@@ -2310,16 +2310,11 @@ static void logGpuMemState(const char* label) {
   cudaMemGetInfo(&freeMem, &totalMem);
   size_t usedMem = totalMem - freeMem;
 
-  cudaMemPool_t pool = nullptr;
   int deviceId = 0;
   cudaGetDevice(&deviceId);
-  cudaDeviceGetDefaultMemPool(&pool, deviceId);
 
-  uint64_t poolUsed = 0, poolReserved = 0;
-  if (pool != nullptr) {
-    cudaMemPoolGetAttribute(pool, cudaMemPoolAttrUsedMemCurrent, &poolUsed);
-    cudaMemPoolGetAttribute(pool, cudaMemPoolAttrReservedMemCurrent, &poolReserved);
-  }
+  size_t poolUsed = 0, poolReserved = 0;
+  memory::CudaMemoryPool::getInstance().getStats(deviceId, poolUsed, poolReserved);
 
   DSP_DIAG(MEMORY,
       "[GPU-MEM %s] dev%d: used=%zu MB, free=%zu MB, total=%zu MB | "

@@ -3134,10 +3134,10 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                  seg.exec.executionCount, planLifecycle_.isShapesFrozen() ? 1 : 0);
     markGapOpsCapturedInGraph(seg, false, "graph_capture_begin");
 
-    // Set up capture workspace BEFORE beginCapture — cudaMalloc must be outside capture.
+    // Set up the stream-ordered capture workspace BEFORE beginCapture.
     // Native ordered range ops (matmul, attention, concat) need temporary buffers during execution.
     // With tl_graphExecutionActive=true, CudaMemoryPool allocates from this workspace
-    // instead of calling cudaMallocAsync (which fails during capture).
+    // instead of adding allocation nodes during capture.
     // tritonCaptureWorkspaceSize() is now at file scope (above).
 
     // Create the replayHandle BEFORE capture — it must exist to store workspace, host ptrs, etc.
@@ -3190,9 +3190,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
                        gpuFree / (1024*1024), headroom / (1024*1024));
         }
 
-        cudaError_t err = cudaMalloc(&sharedCaptureWorkspace_, workspaceSize);
+        sharedCaptureWorkspace_ = memory::CudaMemoryPool::getInstance().allocateLocalAsync(
+            workspaceSize, deviceId, ctx.cudaStr);
+        cudaError_t err = sharedCaptureWorkspace_ != nullptr
+            ? cudaSuccess : cudaErrorMemoryAllocation;
         if (err != cudaSuccess) {
-          cudaGetLastError();
           sharedCaptureWorkspace_ = nullptr;
         }
         if (sharedCaptureWorkspace_ != nullptr) {
