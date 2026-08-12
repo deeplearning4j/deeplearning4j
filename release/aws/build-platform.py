@@ -25,6 +25,7 @@ SCCACHE_RELEASE_BASE = (
 )
 ZLUDA_TARGET = "AMD"
 ZLUDA_LINUX_LINKER_PACKAGE = "lld"
+ZLUDA_LINUX_RPATH_EDITOR_PACKAGE = "patchelf"
 ROCM_BUILD_SDKS = {
     "7.2.4": {
         "installer_name": "amdgpu-install_7.2.4.70204-1_all.deb",
@@ -1104,7 +1105,7 @@ def attest_rocm_build_toolchain(
 
 
 def prepare_rocm_build_toolchain(build: dict, env: dict[str, str]) -> None:
-    """Install the pinned userspace ROCm SDK and LLD; never install or probe a driver."""
+    """Install pinned ROCm, LLD, and ELF packaging tools without a GPU driver."""
     spec = rocm_build_spec(build)
     if spec is None:
         return
@@ -1115,8 +1116,9 @@ def prepare_rocm_build_toolchain(build: dict, env: dict[str, str]) -> None:
     except RuntimeError:
         rocm_ready = False
     linker = shutil.which("ld.lld", path=env.get("PATH"))
+    rpath_editor = shutil.which("patchelf", path=env.get("PATH"))
 
-    if not rocm_ready or linker is None:
+    if not rocm_ready or linker is None or rpath_editor is None:
         if platform.system().lower() != "linux" or platform.machine().lower() not in {
                 "amd64", "x86_64"}:
             raise RuntimeError(
@@ -1147,6 +1149,8 @@ def prepare_rocm_build_toolchain(build: dict, env: dict[str, str]) -> None:
             packages = list(spec["packages"]) if not rocm_ready else []
             if linker is None:
                 packages.append(ZLUDA_LINUX_LINKER_PACKAGE)
+            if rpath_editor is None:
+                packages.append(ZLUDA_LINUX_RPATH_EDITOR_PACKAGE)
             if packages:
                 run([
                     "apt-get", "install", "-y", "--no-install-recommends", *packages,
@@ -1159,8 +1163,16 @@ def prepare_rocm_build_toolchain(build: dict, env: dict[str, str]) -> None:
             "ZLUDA build-only provisioning requires ld.lld from the lld package"
         )
     env["DL4J_ZLUDA_LINKER"] = linker
+    rpath_editor = shutil.which("patchelf", path=env.get("PATH"))
+    if rpath_editor is None:
+        raise RuntimeError(
+            "ZLUDA build-only provisioning requires patchelf for relocatable "
+            "classifier RUNPATHs"
+        )
+    env["DL4J_ZLUDA_PATCHELF"] = rpath_editor
     print(
         f"[dl4j-attestation] zludaLinker={linker} linkerFamily=lld "
+        f"rpathEditor={rpath_editor} runtimeRunpath=$ORIGIN "
         "sectionGc=true hardwareProbe=skipped",
         flush=True,
     )

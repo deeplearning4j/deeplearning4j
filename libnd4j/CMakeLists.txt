@@ -591,6 +591,7 @@ endif()
 if(SD_BUILD_TESTS)
     message(STATUS "Building libnd4j tests (SD_BUILD_TESTS=ON)")
     enable_testing()
+    find_program(SD_TEST_PATCHELF_EXECUTABLE NAMES patchelf)
     add_test(
         NAME zluda_windows_runtime_contract
         COMMAND ${CMAKE_COMMAND}
@@ -603,6 +604,7 @@ if(SD_BUILD_TESTS)
             "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}"
             "-DTEST_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DTEST_READELF=${CMAKE_READELF}"
+            "-DTEST_PATCHELF=${SD_TEST_PATCHELF_EXECUTABLE}"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/SharedRuntimeAliasContractTest.cmake")
     add_subdirectory(tests_cpu)
 endif()

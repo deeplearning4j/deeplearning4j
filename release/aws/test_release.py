@@ -1960,14 +1960,20 @@ class ReleaseValidationTest(unittest.TestCase):
                 build_platform.platform, "machine", return_value="x86_64"), patch.object(
                 build_platform.os, "geteuid", return_value=0, create=True), patch.object(
                 build_platform.shutil, "which",
-                side_effect=[None, "/usr/bin/ld.lld"]):
+                side_effect=[
+                    None, None, "/usr/bin/ld.lld", "/usr/bin/patchelf",
+                ]):
             environment = {}
             build_platform.prepare_rocm_build_toolchain(build, environment)
         download.assert_called_once()
         self.assertEqual("/usr/bin/ld.lld", environment["DL4J_ZLUDA_LINKER"])
+        self.assertEqual(
+            "/usr/bin/patchelf", environment["DL4J_ZLUDA_PATCHELF"]
+        )
         commands = [entry.args[0] for entry in run_command.call_args_list]
         flattened = " ".join(token for command in commands for token in command)
         self.assertIn("lld", flattened)
+        self.assertIn("patchelf", flattened)
         self.assertIn("rocm-hip-runtime-dev", flattened)
         self.assertIn("rocblas-dev", flattened)
         self.assertIn("hipblaslt-dev", flattened)

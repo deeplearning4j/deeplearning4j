@@ -100,6 +100,14 @@ set(_primary_source "${_test_root}/primary.cpp")
 set(_primary_runtime "${_test_root}/libprimary.so")
 set(_primary_output "${_test_root}/primary-output")
 set(_primary_package "${_primary_output}/classifier-runtime")
+set(_primary_runtime_policy "default")
+set(_primary_patchelf "")
+if(DEFINED TEST_PATCHELF AND
+   NOT TEST_PATCHELF STREQUAL "" AND
+   EXISTS "${TEST_PATCHELF}")
+    set(_primary_runtime_policy "zluda-amd")
+    set(_primary_patchelf "${TEST_PATCHELF}")
+endif()
 file(WRITE "${_managed_source}"
     "extern \"C\" int dl4j_managed_runtime_contract() { return 7; }\n")
 file(WRITE "${_primary_source}"
@@ -142,9 +150,10 @@ execute_process(
         "-DRUNTIME_LIBRARIES_PIPE="
         "-DRUNTIME_SEARCH_ROOTS_PIPE=${_runtime_root}"
         "-DPRIMARY_RUNTIME=${_primary_runtime}"
-        "-DRUNTIME_POLICY=zluda-amd"
+        "-DRUNTIME_POLICY=${_primary_runtime_policy}"
         "-DOUTPUT_DIR=${_primary_output}"
         "-DPACKAGE_DIR=${_primary_package}"
+        "-DPATCHELF_EXECUTABLE=${_primary_patchelf}"
         "-DCXX_COMPILER=${TEST_CXX_COMPILER}"
         "-DREADELF=${TEST_READELF}"
         -P "${LIBND4J_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
@@ -173,6 +182,42 @@ foreach(_packaged_runtime IN ITEMS
             "Classifier runtime package omitted '${_packaged_runtime}'")
     endif()
 endforeach()
+if(_primary_runtime_policy STREQUAL "zluda-amd")
+    foreach(_packaged_runtime IN ITEMS
+            libprimary.so libMIOpenContract.so.1)
+        execute_process(
+            COMMAND "${TEST_PATCHELF}" --print-rpath
+                "${_primary_package}/${_packaged_runtime}"
+            RESULT_VARIABLE _runpath_result
+            OUTPUT_VARIABLE _runpath_value
+            ERROR_VARIABLE _runpath_error)
+        string(STRIP "${_runpath_value}" _runpath_value)
+        if(NOT _runpath_result EQUAL 0 OR
+           NOT _runpath_value STREQUAL "$ORIGIN")
+            message(FATAL_ERROR
+                "Classifier runtime '${_packaged_runtime}' does not use "
+                "the required $ORIGIN RUNPATH: '${_runpath_value}' "
+                "(${_runpath_error})")
+        endif()
+        execute_process(
+            COMMAND "${TEST_READELF}" -d
+                "${_primary_package}/${_packaged_runtime}"
+            RESULT_VARIABLE _dynamic_section_result
+            OUTPUT_VARIABLE _dynamic_section
+            ERROR_VARIABLE _dynamic_section_error)
+        if(NOT _dynamic_section_result EQUAL 0 OR
+           NOT _dynamic_section MATCHES
+               "[(]RUNPATH[)][^\n]*[$]ORIGIN")
+            message(FATAL_ERROR
+                "Classifier runtime '${_packaged_runtime}' does not contain "
+                "a DT_RUNPATH entry for $ORIGIN: ${_dynamic_section_error}\n"
+                "${_dynamic_section}")
+        endif()
+    endforeach()
+else()
+    message(STATUS
+        "patchelf is unavailable; skipping the Linux ZLUDA RUNPATH sub-contract")
+endif()
 if(EXISTS "${_primary_package}/javacpp-build-toolchain.properties")
     message(FATAL_ERROR
         "Classifier runtime package leaked build-only toolchain metadata")

@@ -392,6 +392,15 @@ function(configure_cuda_linking main_target_name)
         list(APPEND _cuda_shared_runtimes ${ZLUDA_RUNTIME_LIBRARIES})
         list(APPEND _cuda_shared_runtime_roots "${ZLUDA_RUNTIME_ROOT}")
 
+        if(UNIX AND NOT APPLE)
+            find_program(_cuda_patchelf_executable NAMES patchelf)
+            if(NOT _cuda_patchelf_executable)
+                message(FATAL_ERROR
+                    "Linux ZLUDA classifier packaging requires patchelf so every "
+                    "bundled CUDA-ABI and AMD runtime can use a relocatable $ORIGIN RUNPATH")
+            endif()
+        endif()
+
         if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
             if(NOT ROCM_HIP_RUNTIME_LIBRARY OR
                NOT EXISTS "${ROCM_HIP_RUNTIME_LIBRARY}")
@@ -472,6 +481,7 @@ function(configure_cuda_linking main_target_name)
             "-DREADELF=${CMAKE_READELF}"
             "-DOBJDUMP=${CMAKE_OBJDUMP}"
             "-DOTOOL=${CMAKE_OTOOL}"
+            "-DPATCHELF_EXECUTABLE=${_cuda_patchelf_executable}"
             "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${main_target_name}>"
             "-DPACKAGE_DIR=${_cuda_classifier_runtime_dir}"

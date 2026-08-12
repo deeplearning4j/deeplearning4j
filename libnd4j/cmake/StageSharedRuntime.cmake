@@ -201,6 +201,37 @@ function(_shared_runtime_needed_names _out_var _library_path)
     set(${_out_var} "${_needed_names}" PARENT_SCOPE)
 endfunction()
 
+function(_set_zluda_origin_runpath _library_path)
+    if(NOT DEFINED PATCHELF_EXECUTABLE OR
+       PATCHELF_EXECUTABLE STREQUAL "" OR
+       NOT EXISTS "${PATCHELF_EXECUTABLE}")
+        message(FATAL_ERROR
+            "Linux ZLUDA runtime packaging requires the patchelf executable")
+    endif()
+    execute_process(
+        COMMAND "${PATCHELF_EXECUTABLE}" --set-rpath "$ORIGIN" "${_library_path}"
+        RESULT_VARIABLE _runpath_result
+        ERROR_VARIABLE _runpath_error)
+    if(NOT _runpath_result EQUAL 0)
+        message(FATAL_ERROR
+            "Failed to set the self-contained ZLUDA RUNPATH on "
+            "'${_library_path}': ${_runpath_error}")
+    endif()
+    execute_process(
+        COMMAND "${PATCHELF_EXECUTABLE}" --print-rpath "${_library_path}"
+        RESULT_VARIABLE _runpath_verify_result
+        OUTPUT_VARIABLE _runpath_value
+        ERROR_VARIABLE _runpath_verify_error)
+    string(STRIP "${_runpath_value}" _runpath_value)
+    if(NOT _runpath_verify_result EQUAL 0 OR
+       NOT _runpath_value STREQUAL "$ORIGIN")
+        message(FATAL_ERROR
+            "Self-contained ZLUDA RUNPATH verification failed for "
+            "'${_library_path}': expected '$ORIGIN', found "
+            "'${_runpath_value}' (${_runpath_verify_error})")
+    endif()
+endfunction()
+
 function(_is_managed_gpu_runtime_name _out_var _runtime_name)
     string(TOLOWER "${_runtime_name}" _runtime_name_lower)
     if(_runtime_name_lower MATCHES
@@ -572,6 +603,32 @@ foreach(_runtime_alias_entry IN LISTS _runtime_alias_entries)
     list(APPEND _staged_runtime_names "${_runtime_alias_name}")
     message(STATUS "Staged shared runtime alias: ${_runtime_alias_output}")
 endforeach()
+
+# JavaCPP extracts every classifier member into one directory, but the dynamic
+# loader does not search a DSO's sibling directory unless that DSO says so.
+# Normalize every Linux ZLUDA/ROCm library, including the linked backend, to a
+# relocatable RUNPATH before materializing the classifier package. This keeps
+# build-host CUDA/ROCm paths out of the consumer contract.
+if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd" AND
+   UNIX AND NOT APPLE)
+    set(_zluda_runpath_files "")
+    foreach(_staged_runtime_name IN LISTS _staged_runtime_names)
+        list(APPEND _zluda_runpath_files
+            "${OUTPUT_DIR}/${_staged_runtime_name}")
+    endforeach()
+    if(DEFINED PRIMARY_RUNTIME AND
+       NOT PRIMARY_RUNTIME STREQUAL "" AND
+       EXISTS "${PRIMARY_RUNTIME}" AND
+       NOT IS_DIRECTORY "${PRIMARY_RUNTIME}")
+        list(APPEND _zluda_runpath_files "${PRIMARY_RUNTIME}")
+    endif()
+    list(REMOVE_DUPLICATES _zluda_runpath_files)
+    foreach(_zluda_runpath_file IN LISTS _zluda_runpath_files)
+        _set_zluda_origin_runpath("${_zluda_runpath_file}")
+        message(STATUS
+            "Set self-contained ZLUDA RUNPATH: ${_zluda_runpath_file}")
+    endforeach()
+endif()
 
 list(SORT _staged_runtime_names)
 list(LENGTH _staged_runtime_names _runtime_count)
