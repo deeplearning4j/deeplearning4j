@@ -832,7 +832,7 @@
             </activation>
             <properties>
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/arm64-v8a</javacpp.build.output.path>
-                <platform.compiler.output>-Wl,-rpath,lib/ -D__ANDROID_API__=21 -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -march=armv8-a -Wall -nostdlib++ -fPIC -shared -Wl,--no-undefined -z text -o</platform.compiler.output>
+                <platform.compiler.output>-D__ANDROID_API__=${libnd4j.android.api} -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -march=armv8-a -Wall -nostdlib++ -fPIC -shared -Wl,--no-undefined -z text -o</platform.compiler.output>
             </properties>
             <build>
                 <plugins>
@@ -842,12 +842,12 @@
                         <version>${javacpp.version}</version>
                         <configuration>
                             <includePaths>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host/include</includePath>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-build/include</includePath>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/</includePath>
+                                <includePath>${libnd4j.outputPath}/flatbuffers-target-build/include</includePath>
+                                <includePath>${libnd4j.outputPath}/flatbuffers-host-build/include</includePath>
+                                <includePath>${libnd4j.outputPath}/flatbuffers-host/include</includePath>
+                                <includePath>${libnd4j.outputPath}/flatbuffers-build/include</includePath>
+                                <includePath>${libnd4j.outputPath}/include</includePath>
+                                <includePath>${libnd4j.outputPath}/flatbuffers-src/include/</includePath>
                                 <includePath>${libnd4jhome}/blas</includePath>
                                 <includePath>${libnd4jhome}/include</includePath>
                                 <includePath>${libnd4jhome}/include/helpers</includePath>
@@ -861,17 +861,18 @@
                             </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4j.outputPath}</linkPath>
+                                <linkPath>${user.home}/.javacpp/cache/openblas-${openblas.version}-${javacpp-presets.version}-android-arm64.jar/lib/arm64-v8a</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
-                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/21</linkPath>
+                                <linkPath>${env.ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/${libnd4j.android.api}</linkPath>
 
                             </linkPaths>
 
                             <compilerOptions>
                                 <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
                                 <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
-                                <compilerOption>--target=aarch64-linux-android21</compilerOption>
-                                <compilerOption>-D__ANDROID_API__=21</compilerOption>
+                                <compilerOption>--target=aarch64-linux-android${libnd4j.android.api}</compilerOption>
+                                <compilerOption>-D__ANDROID_API__=${libnd4j.android.api}</compilerOption>
                                 <compilerOption>-DANDROID</compilerOption>
                             </compilerOptions>
                             <properties>${javacpp.platform.properties}</properties>
@@ -894,7 +895,7 @@
                                 </property>
                                 <property>
                                     <name>platform.compiler.output</name>
-                                    <value>-Wl,-rpath,lib/ -D__ANDROID_API__=21 -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -march=armv8-a -Wall -nostdlib++ -fPIC -shared -Wl,--no-undefined -z text -o </value>
+                                    <value>-D__ANDROID_API__=${libnd4j.android.api} -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -march=armv8-a -Wall -nostdlib++ -fPIC -shared -Wl,--no-undefined -z text -o </value>
                                 </property>
                             </propertyKeysAndValues>
                         </configuration>
@@ -956,12 +957,12 @@
                                 </property>
                             </propertyKeysAndValues>
                             <includePaths>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host/include</includePath>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-build/include</includePath>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
-                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/</includePath>
+                                <includePath>${libnd4j.outputPath}/flatbuffers-target-build/include</includePath>
+                                <includePath>${libnd4j.outputPath}/flatbuffers-host-build/include</includePath>
+                                <includePath>${libnd4j.outputPath}/flatbuffers-host/include</includePath>
+                                <includePath>${libnd4j.outputPath}/flatbuffers-build/include</includePath>
+                                <includePath>${libnd4j.outputPath}/include</includePath>
+                                <includePath>${libnd4j.outputPath}/flatbuffers-src/include/</includePath>
                                 <includePath>${libnd4jhome}/blas</includePath>
                                 <includePath>${libnd4jhome}/include</includePath>
                                 <includePath>${libnd4jhome}/include/helpers</includePath>
@@ -975,6 +976,7 @@
                             </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4j.outputPath}</linkPath>
+                                <linkPath>${user.home}/.javacpp/cache/openblas-${openblas.version}-${javacpp-presets.version}-android-x86_64.jar/lib/x86_64</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
 

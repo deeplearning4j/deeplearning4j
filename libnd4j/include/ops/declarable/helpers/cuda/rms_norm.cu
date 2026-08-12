@@ -414,14 +414,14 @@ void skipRmsNorm(
 // Phase 2: write normalized x * gamma into shared memory
 // Phase 3: each block computes dot products for its assigned output columns
 ///////////////////////////////////////////////////////////////////////////////
-// WT = weight type (may differ from T when graph optimizer strips casts).
-// The kernel reads weight as WT and casts to float in-register, eliminating
-// the need for a temporary ->cast() allocation that is unsafe during CUDA
-// graph capture (baked-in addresses from the temporary become stale on replay).
-template <typename T, typename WT = T>
+// G = gamma type and WT = weight type. Both may differ from T after
+// inference-weight conversion: rank-1 gamma commonly remains FLOAT32 while
+// activations and rank-2 weights become HALF. Read each buffer in its native
+// dtype and cast in-register so graph capture never depends on temporary arrays.
+template <typename T, typename G, typename WT>
 SD_KERNEL void rmsNormLinearFusedKernel(
     const T* __restrict__ x,       // [K]
-    const T* __restrict__ gamma,   // [K] or nullptr
+    const G* __restrict__ gamma,   // [K] or nullptr
     const WT* __restrict__ W,      // [K, N] with arbitrary strides
     T* __restrict__ output,        // [N]
     const LongType K,
@@ -481,13 +481,12 @@ SD_KERNEL void rmsNormLinearFusedKernel(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Typed launcher for fused M=1 path
-// wDtype: the actual DataType of vW (may differ from T when the graph
-// optimizer strips casts). The kernel reads W in its native dtype and
-// casts to float in-register, avoiding a temporary ->cast() allocation.
+// Typed launcher for fused M=1 path. The runtime selector below instantiates
+// native input, gamma, and weight types directly; no manual instantiation or
+// temporary cast allocation is required.
 ///////////////////////////////////////////////////////////////////////////////
-template <typename T>
-void rmsNormLinearFusedLauncher(
+template <typename T, typename G, typename WT>
+static void rmsNormLinearFusedLauncher(
     const cudaStream_t* stream,
     const void* vX,
     const void* vGamma,
@@ -497,11 +496,11 @@ void rmsNormLinearFusedLauncher(
     LongType N,
     LongType wStride0,
     LongType wStride1,
-    float epsilon,
-    DataType wDtype) {
+    float epsilon) {
 
   auto x = reinterpret_cast<const T*>(vX);
-  auto gamma = (vGamma != nullptr) ? reinterpret_cast<const T*>(vGamma) : nullptr;
+  auto gamma = (vGamma != nullptr) ? reinterpret_cast<const G*>(vGamma) : nullptr;
+  auto weight = reinterpret_cast<const WT*>(vW);
   auto output = reinterpret_cast<T*>(vOutput);
 
   dim3 launchDims = getLaunchDims("rms_norm_linear");
@@ -519,33 +518,11 @@ void rmsNormLinearFusedLauncher(
     gridSize = launchDims.x;
   if (gridSize < 1) gridSize = 1;
 
-  // Dispatch kernel with correct weight type WT — avoids cast() allocation
-  if (wDtype == DataType::FLOAT32) {
-    rmsNormLinearFusedKernel<T, float><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
-        x, gamma, reinterpret_cast<const float*>(vW), output, K, N, wStride0, wStride1, epsilon);
-  } else if (wDtype == DataType::HALF) {
-    rmsNormLinearFusedKernel<T, float16><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
-        x, gamma, reinterpret_cast<const float16*>(vW), output, K, N, wStride0, wStride1, epsilon);
-  } else if (wDtype == DataType::DOUBLE) {
-    rmsNormLinearFusedKernel<T, double><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
-        x, gamma, reinterpret_cast<const double*>(vW), output, K, N, wStride0, wStride1, epsilon);
-  } else {
-    // Fallback: assume same type as input (original behavior)
-    rmsNormLinearFusedKernel<T, T><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
-        x, gamma, reinterpret_cast<const T*>(vW), output, K, N, wStride0, wStride1, epsilon);
-  }
+  rmsNormLinearFusedKernel<T, G, WT><<<gridSize, launchDims.y, sharedMemSize, *stream>>>(
+      x, gamma, weight, output, K, N, wStride0, wStride1, epsilon);
 
   DebugHelper::checkGlobalErrorCode("rmsNormLinearFusedKernel failed");
 }
-
-BUILD_SINGLE_TEMPLATE(void rmsNormLinearFusedLauncher,
-                       (const cudaStream_t* stream,
-                        const void* vX, const void* vGamma,
-                        const void* vW, void* vOutput,
-                        LongType K, LongType N,
-                        LongType wStride0, LongType wStride1,
-                        float epsilon, DataType wDtype),
-                       SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Typed launcher for general M>1 path: fused rmsNorm + MmulHelper
@@ -579,7 +556,7 @@ BUILD_SINGLE_TEMPLATE(void rmsNormLinearGeneralLauncher,
                        SD_FLOAT_TYPES);
 
 ///////////////////////////////////////////////////////////////////////////////
-// Public interface — uses BUILD_SINGLE_SELECTOR for runtime dispatch
+// Public interface — uses typed runtime selectors for native array dtypes
 ///////////////////////////////////////////////////////////////////////////////
 void rmsNormLinear(
     LaunchContext* context,
@@ -605,15 +582,16 @@ void rmsNormLinear(
     LongType wStride0 = weight->strideAt(0);
     LongType wStride1 = weight->strideAt(1);
 
-    BUILD_SINGLE_SELECTOR(input->dataType(), rmsNormLinearFusedLauncher,
-                           (stream,
-                            input->specialBuffer(),
-                            gamma != nullptr ? gamma->specialBuffer() : nullptr,
-                            weight->specialBuffer(),
-                            output->specialBuffer(),
-                            K, N, wStride0, wStride1, epsilon,
-                            weight->dataType()),
-                           SD_FLOAT_TYPES);
+    const auto gammaDtype = gamma != nullptr ? gamma->dataType() : input->dataType();
+    BUILD_TRIPLE_SELECTOR(
+        input->dataType(), gammaDtype, weight->dataType(), rmsNormLinearFusedLauncher,
+        (stream,
+         input->specialBuffer(),
+         gamma != nullptr ? gamma->specialBuffer() : nullptr,
+         weight->specialBuffer(),
+         output->specialBuffer(),
+         K, N, wStride0, wStride1, epsilon),
+        SD_FLOAT_TYPES, SD_FLOAT_TYPES, SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({output}, {input, gamma, weight});
     return;

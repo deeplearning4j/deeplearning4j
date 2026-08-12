@@ -1364,136 +1364,6 @@ endfunction()
 # METAL PERFORMANCE SHADERS (Optional, for macOS/iOS builds)
 # =============================================================================
 # =============================================================================
-# ZLUDA Transpiler (Optional, for AMD/Intel GPU support via CUDA translation)
-# Downloads ZLUDA and optionally MIOpen for AMD targets
-# =============================================================================
-function(setup_zluda_download)
-    if(NOT SD_ZLUDA)
-        message(STATUS "ZLUDA is disabled (SD_ZLUDA=${SD_ZLUDA})")
-        set(HAVE_ZLUDA FALSE PARENT_SCOPE)
-        return()
-    endif()
-
-    # Check if ZLUDA is already available via environment
-    if(DEFINED ENV{ZLUDA_PATH} AND EXISTS "$ENV{ZLUDA_PATH}")
-        message(STATUS "Using existing ZLUDA installation: $ENV{ZLUDA_PATH}")
-        set(ZLUDA_ROOT "$ENV{ZLUDA_PATH}")
-        set(HAVE_ZLUDA TRUE PARENT_SCOPE)
-        set(ZLUDA_PATH "${ZLUDA_ROOT}" PARENT_SCOPE)
-        return()
-    endif()
-
-    message(STATUS "ZLUDA automatic download enabled")
-
-    # ZLUDA release configuration
-    # ZLUDA v3 supports both AMD (ROCm/HIP) and Intel (Level Zero) GPUs
-    set(ZLUDA_VERSION "3")
-    set(ZLUDA_INSTALL_DIR "${CMAKE_BINARY_DIR}/zluda_install")
-
-    # Determine platform-specific download
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
-            set(ZLUDA_PLATFORM "linux-x86_64")
-            set(ZLUDA_ARCHIVE_EXT "tar.gz")
-        else()
-            message(WARNING "ZLUDA: Unsupported processor ${CMAKE_SYSTEM_PROCESSOR} on Linux")
-            set(HAVE_ZLUDA FALSE PARENT_SCOPE)
-            return()
-        endif()
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64|x86_64")
-            set(ZLUDA_PLATFORM "windows-x86_64")
-            set(ZLUDA_ARCHIVE_EXT "zip")
-        else()
-            message(WARNING "ZLUDA: Unsupported processor ${CMAKE_SYSTEM_PROCESSOR} on Windows")
-            set(HAVE_ZLUDA FALSE PARENT_SCOPE)
-            return()
-        endif()
-    else()
-        message(WARNING "ZLUDA: Unsupported platform ${CMAKE_SYSTEM_NAME}")
-        set(HAVE_ZLUDA FALSE PARENT_SCOPE)
-        return()
-    endif()
-
-    # ZLUDA GitHub releases URL
-    # Note: ZLUDA releases may vary in naming convention - adjust as needed
-    set(ZLUDA_URL "https://github.com/vosen/ZLUDA/releases/download/v${ZLUDA_VERSION}/zluda-${ZLUDA_PLATFORM}.${ZLUDA_ARCHIVE_EXT}")
-
-    message(STATUS "ZLUDA download URL: ${ZLUDA_URL}")
-
-    # --- Dependency cache check ---
-    if(SD_DEP_CACHE)
-        sd_dep_cache_key("zluda" "${ZLUDA_VERSION}" "${ZLUDA_PLATFORM}" _zluda_cache_key)
-        sd_dep_cache_check("zluda" "${_zluda_cache_key}" _zluda_hit _zluda_cache_path)
-        if(_zluda_hit)
-            sd_dep_cache_restore("zluda" "${_zluda_cache_path}" "${ZLUDA_INSTALL_DIR}")
-            if(NOT TARGET zluda_external)
-                add_custom_target(zluda_external)
-            endif()
-            add_library(zluda_interface INTERFACE)
-            target_include_directories(zluda_interface INTERFACE "${ZLUDA_INSTALL_DIR}/include")
-            target_link_directories(zluda_interface INTERFACE "${ZLUDA_INSTALL_DIR}/lib")
-            add_dependencies(zluda_interface zluda_external)
-            set(HAVE_ZLUDA TRUE PARENT_SCOPE)
-            set(ZLUDA_PATH "${ZLUDA_INSTALL_DIR}" PARENT_SCOPE)
-            set(ZLUDA zluda_interface PARENT_SCOPE)
-            set(ENV{ZLUDA_PATH} "${ZLUDA_INSTALL_DIR}")
-            message(STATUS "✅ ZLUDA setup complete (from cache)")
-            return()
-        endif()
-    endif()
-
-    # Download and extract ZLUDA
-    ExternalProject_Add(zluda_external
-            PREFIX            "${CMAKE_BINARY_DIR}/zluda_external"
-            URL               "${ZLUDA_URL}"
-            DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
-            SOURCE_DIR        "${ZLUDA_INSTALL_DIR}"
-            CONFIGURE_COMMAND ""
-            BUILD_COMMAND     ""
-            INSTALL_COMMAND   ""
-            BUILD_BYPRODUCTS  "${ZLUDA_INSTALL_DIR}/lib/libcuda.so"
-            TIMEOUT           300
-            ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
-            LOG_DOWNLOAD      OFF
-            LOG_CONFIGURE     OFF
-            LOG_BUILD         OFF
-            LOG_INSTALL       OFF
-    )
-
-    # Create interface library for ZLUDA
-    add_library(zluda_interface INTERFACE)
-    target_include_directories(zluda_interface INTERFACE "${ZLUDA_INSTALL_DIR}/include")
-    if(WIN32)
-        target_link_directories(zluda_interface INTERFACE "${ZLUDA_INSTALL_DIR}/lib")
-    else()
-        target_link_directories(zluda_interface INTERFACE "${ZLUDA_INSTALL_DIR}/lib")
-    endif()
-    add_dependencies(zluda_interface zluda_external)
-
-    set(HAVE_ZLUDA TRUE PARENT_SCOPE)
-    set(ZLUDA_PATH "${ZLUDA_INSTALL_DIR}" PARENT_SCOPE)
-    set(ZLUDA zluda_interface PARENT_SCOPE)
-
-    # Set environment variable for runtime
-    set(ENV{ZLUDA_PATH} "${ZLUDA_INSTALL_DIR}")
-
-    # --- Cache store ---
-    if(SD_DEP_CACHE AND DEFINED _zluda_cache_key)
-        sd_dep_cache_store("zluda" "${_zluda_cache_key}" "${ZLUDA_INSTALL_DIR}" "zluda_external")
-    endif()
-
-    message(STATUS "ZLUDA setup complete")
-    message(STATUS "   Install directory: ${ZLUDA_INSTALL_DIR}")
-    message(STATUS "   Platform: ${ZLUDA_PLATFORM}")
-
-    # Setup MIOpen for AMD targets
-    if(SD_ZLUDA_TARGET STREQUAL "AMD" OR SD_ZLUDA_TARGET STREQUAL "amd")
-        setup_miopen_download()
-    endif()
-endfunction()
-
-# =============================================================================
 # MIOpen Download (Optional, for AMD GPU DNN operations via ZLUDA)
 # =============================================================================
 function(setup_miopen_download)
@@ -2044,8 +1914,8 @@ function(setup_triton)
         if(SD_HIP OR (SD_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "AMD"))
             list(APPEND TRITON_CODEGEN_BACKENDS "amd")
         endif()
-        # Intel backend: only when ZLUDA targets Intel, or native Level Zero build
-        if(SD_LEVEL_ZERO OR (SD_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "INTEL"))
+        # Intel codegen belongs only to the native Level Zero backend.
+        if(SD_LEVEL_ZERO)
             list(APPEND TRITON_CODEGEN_BACKENDS "intel")
         endif()
         if(NOT TRITON_CODEGEN_BACKENDS)

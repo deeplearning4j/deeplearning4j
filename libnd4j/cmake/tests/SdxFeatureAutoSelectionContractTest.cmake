@@ -104,8 +104,10 @@ endforeach()
 # custom-command argv entry. Otherwise a two-library LLVM/MLIR closure splits
 # the $<JOIN:...> expression itself and StageSharedRuntime receives a literal.
 set(_sdx_runtime_argv_contract_fragments
-    [=[list(JOIN _sdx_triton_shared_runtimes "|"]=]
-    [=[RUNTIME_LIBRARIES_PIPE=${_sdx_triton_shared_runtimes_pipe}]=])
+    [=[list(JOIN _sdx_shared_runtimes "|"]=]
+    [=[RUNTIME_LIBRARIES_PIPE=${_sdx_shared_runtimes_pipe}]=]
+    [=[RUNTIME_SEARCH_ROOTS_PIPE=${_sdx_runtime_roots_pipe}]=]
+    [=[PRIMARY_RUNTIME=$<TARGET_FILE:${main_target_name}>]=])
 foreach(_sdx_runtime_argv_contract_fragment IN LISTS
         _sdx_runtime_argv_contract_fragments)
     string(FIND "${_sdx_build_contract}"

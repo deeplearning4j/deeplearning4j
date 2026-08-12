@@ -113,6 +113,43 @@ public class RmsNormLinearTest extends BaseNd4jTestWithBackends {
         }
     }
 
+    static Stream<Arguments> mixedGammaShapes() {
+        return Stream.of(
+                Arguments.of(1, 128, 256),  // fused decode path
+                Arguments.of(4, 128, 256)   // general prefill path
+        );
+    }
+
+    @ParameterizedTest(name = "halfInputFloatGammaHalfWeight_M{0}")
+    @MethodSource("mixedGammaShapes")
+    public void testHalfInputFloatGammaHalfWeightMatchesFloatReference(int M, int K, int N) {
+        float eps = 1e-6f;
+        Nd4j.getRandom().setSeed(12345);
+
+        INDArray x = Nd4j.randn(DataType.FLOAT, M, K).muli(0.25).castTo(DataType.HALF);
+        INDArray gamma = Nd4j.rand(DataType.FLOAT, K).addi(0.5);
+        INDArray W = Nd4j.randn(DataType.FLOAT, K, N).muli(0.02).castTo(DataType.HALF);
+
+        // Build the reference from the exact HALF-rounded input and weights.
+        INDArray xFloat = x.castTo(DataType.FLOAT);
+        INDArray wFloat = W.castTo(DataType.FLOAT);
+        INDArray invRms = computeInvRms(xFloat, eps);
+        INDArray expected = xFloat.mul(invRms).mul(gamma).mmul(wFloat);
+
+        INDArray output = Nd4j.create(DataType.HALF, M, N);
+        Nd4j.exec(new RmsNormLinear(x, gamma, W, output, eps));
+
+        assertEquals(DataType.HALF, output.dataType());
+        assertFalse(output.isNaN().any(),
+                "HALF input + FLOAT gamma + HALF weight produced NaN for M=" + M);
+        assertFalse(output.isInfinite().any(),
+                "HALF input + FLOAT gamma + HALF weight produced Inf for M=" + M);
+
+        double maxDiff = expected.sub(output.castTo(DataType.FLOAT)).amaxNumber().doubleValue();
+        assertTrue(maxDiff < 5e-3,
+                "Mixed-dtype rms_norm_linear max diff too large for M=" + M + ": " + maxDiff);
+    }
+
     @Test
     public void testDecodePathM1() {
         float eps = 1e-6f;

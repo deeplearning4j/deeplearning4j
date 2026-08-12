@@ -102,10 +102,10 @@ elseif(NOT SD_CUDA)
 endif()
 
 # --- ZLUDA Transpiler Options ---
-# ZLUDA enables running CUDA code on AMD/Intel GPUs via runtime translation
-option(SD_ZLUDA "Enable ZLUDA transpiler support for AMD/Intel GPUs" OFF)
-set(SD_ZLUDA_TARGET "AUTO" CACHE STRING "ZLUDA target backend (AMD, INTEL, AUTO)")
-set_property(CACHE SD_ZLUDA_TARGET PROPERTY STRINGS AUTO AMD INTEL)
+# The published ZLUDA backend translates the CUDA ABI to AMD HIP/ROCm.
+option(SD_ZLUDA "Enable the AMD ZLUDA CUDA-compatibility backend" OFF)
+set(SD_ZLUDA_TARGET "AMD" CACHE STRING "ZLUDA target backend (AMD only)")
+set_property(CACHE SD_ZLUDA_TARGET PROPERTY STRINGS AMD)
 
 # --- COMPILATION OPTIMIZATION OPTIONS (NEW) ---
 # These dramatically affect template compilation time

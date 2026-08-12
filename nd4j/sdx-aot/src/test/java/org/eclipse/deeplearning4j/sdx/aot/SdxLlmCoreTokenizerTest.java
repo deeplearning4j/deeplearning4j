@@ -8,12 +8,15 @@ import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.dsp.model.SdxTargetProfile;
 import org.nd4j.dsp.runtime.SdxRuntime;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,6 +33,21 @@ import static org.junit.jupiter.api.Assertions.*;
  * purely in Java using the shaded Jackson API that sdx-aot already depends on.
  */
 class SdxLlmCoreTokenizerTest {
+
+    @TempDir
+    Path temporaryDirectory;
+
+    @Test
+    void rawSourceIdentityAcceptsArbitraryContainerExtensions() throws Exception {
+        Path source = temporaryDirectory.resolve("model.gguf");
+        Files.write(source, new byte[] {1, 2, 3, 4, 5});
+
+        SdxGgufModelPreparer.RawSourceIdentity identity =
+                SdxGgufModelPreparer.RawSourceIdentity.identify(source);
+
+        assertEquals(5L, identity.bytes());
+        assertEquals(64, identity.sha256().length());
+    }
 
     @Test
     void buildBpeTokenizerJson_wellFormed() throws Exception {
@@ -269,16 +287,39 @@ class SdxLlmCoreTokenizerTest {
         assertTrue(exports.contains("sdxLlmGenerateStreaming"));
         assertTrue(exports.contains("sdxLlmRenderChatPrompt"));
         assertTrue(exports.contains("sdxLlmParseChatResult"));
-        assertEquals("sdx-prepared-text-model-v2", SdxGgufModelPreparer.PREPARED_SCHEMA);
+        assertEquals("sdx-prepared-text-model-v3", SdxGgufModelPreparer.PREPARED_SCHEMA);
     }
 
     @Test
-    void tensorG3AliasSelectsStrictNnapiWithoutRuntimeJit() {
+    void rawGgufAttestationUsesPhysicalBytesBeforeCanonicalImport() throws Exception {
+        Path source = temporaryDirectory.resolve("source.gguf");
+        Path cache = temporaryDirectory.resolve("cache");
+        Files.write(source, new byte[] {
+                'G', 'G', 'U', 'F', 3, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0
+        });
+        IllegalArgumentException failure = assertThrows(
+                IllegalArgumentException.class,
+                () -> SdxGgufModelPreparer.prepare(
+                        source.toString(),
+                        null,
+                        "android-arm64-nnapi-accelerator",
+                        cache.toString(),
+                        "{\"verifiedSourceSha256\":\"" + "0".repeat(64) +
+                                "\",\"verifiedSourceBytes\":16}"));
+        assertEquals(
+                "Verified source SHA-256 did not match the GGUF bytes",
+                failure.getMessage());
+    }
+
+    @Test
+    void tensorG3AliasSelectsGenericArmPlannerWithoutRuntimeJit() {
         SdxTargetProfile target = SdxTargetProfile.fromId("tensor-g3");
         SdxRuntime.ModelOptions options = SdxCompiledLlmCore.runtimeOptions(target);
         assertEquals(SdxTargetProfile.ANDROID_ARM64_NNAPI_ACCELERATOR, target);
-        assertEquals(SdxRuntime.SDX_BACKEND_NNAPI, options.backend);
-        assertEquals(1, options.strict_backend);
+        assertEquals(SdxRuntime.SDX_BACKEND_ARM_HYBRID, options.backend);
+        assertEquals(0, options.strict_backend);
         assertEquals(0, options.allow_runtime_jit);
+        assertEquals(SdxRuntime.SDX_GPU_TARGET_AUTO, options.gpu_target);
     }
 }

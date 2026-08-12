@@ -1202,10 +1202,19 @@ CUSTOM_OP_IMPL(rms_norm_linear, 3, 1, false, 0, 0) {
     float epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-6f;
 
     REQUIRE_TRUE(x->rankOf() >= 2, 0, "rms_norm_linear: input must be rank >= 2, got %d", x->rankOf());
+    REQUIRE_TRUE(gamma->rankOf() == 1, 0, "rms_norm_linear: gamma must be rank 1, got %d", gamma->rankOf());
     REQUIRE_TRUE(w->rankOf() == 2, 0, "rms_norm_linear: weight must be rank 2, got %d", w->rankOf());
 
-    // The helper internally promotes everything to FLOAT32 for the normalization
-    // and matmul, so no op-level dtype casts are needed.
+    const auto K = x->sizeAt(-1);
+    REQUIRE_TRUE(gamma->lengthOf() == K, 0,
+                 "rms_norm_linear: gamma length must match input's last dimension, got %lld vs %lld",
+                 (long long)gamma->lengthOf(), (long long)K);
+    REQUIRE_TRUE(w->sizeAt(0) == K, 0,
+                 "rms_norm_linear: weight rows must match input's last dimension, got %lld vs %lld",
+                 (long long)w->sizeAt(0), (long long)K);
+
+    // Helpers preserve the input/output dtype while reading floating gamma and
+    // weight arrays in their native dtypes, so no op-level casts are needed.
 
     // For rank-3+ inputs, flatten leading dims to rank-2 for the helper
     if (x->rankOf() > 2) {

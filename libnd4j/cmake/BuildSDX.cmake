@@ -151,38 +151,58 @@ endfunction()
 # files were compiled with Triton enabled.
 # ---------------------------------------------------------------------------
 function(configure_sdx_triton_linking main_target_name)
-    if(NOT SDX_ENABLE_TRITON)
+    if(NOT SDX_ENABLE_TRITON AND NOT SD_ZLUDA)
         return()
     endif()
-    if(NOT HAVE_TRITON)
-        message(FATAL_ERROR
-            "SDX requested Triton, but the parent build did not configure it")
-    endif()
-    if(NOT TARGET triton_interface)
-        message(FATAL_ERROR
-            "SDX Triton support requires the triton_interface target")
-    endif()
+    set(_sdx_runtime_targets "")
+    set(_sdx_shared_runtimes "")
+    set(_sdx_runtime_roots "")
 
-    target_link_libraries(${main_target_name} PUBLIC triton_interface)
-
-    set(_sdx_triton_runtime_targets "")
-    set(_sdx_triton_shared_runtimes "")
-    foreach(_triton_runtime_target IN ITEMS triton_mlir_shared triton_llvm_shared)
-        if(NOT TARGET ${_triton_runtime_target})
+    if(SDX_ENABLE_TRITON)
+        if(NOT HAVE_TRITON)
             message(FATAL_ERROR
-                "SDX Triton support requires normalized shared runtime target ${_triton_runtime_target}")
+                "SDX requested Triton, but the parent build did not configure it")
         endif()
-        list(APPEND _sdx_triton_runtime_targets ${_triton_runtime_target})
-        list(APPEND _sdx_triton_shared_runtimes
-            "$<TARGET_FILE:${_triton_runtime_target}>")
-    endforeach()
+        if(NOT TARGET triton_interface)
+            message(FATAL_ERROR
+                "SDX Triton support requires the triton_interface target")
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC triton_interface)
+        foreach(_triton_runtime_target IN ITEMS triton_mlir_shared triton_llvm_shared)
+            if(NOT TARGET ${_triton_runtime_target})
+                message(FATAL_ERROR
+                    "SDX Triton support requires normalized shared runtime target ${_triton_runtime_target}")
+            endif()
+            list(APPEND _sdx_runtime_targets ${_triton_runtime_target})
+            list(APPEND _sdx_shared_runtimes
+                "$<TARGET_FILE:${_triton_runtime_target}>")
+        endforeach()
+    endif()
+
+    if(SD_ZLUDA)
+        if(NOT ZLUDA_RUNTIME_LIBRARIES OR NOT ROCM_HIP_RUNTIME_LIBRARY)
+            message(FATAL_ERROR
+                "ZLUDA SDX target requires the same bundled ZLUDA/AMD runtime closure as nd4jcuda")
+        endif()
+        list(APPEND _sdx_shared_runtimes
+            ${ZLUDA_RUNTIME_LIBRARIES} "${ROCM_HIP_RUNTIME_LIBRARY}")
+        if(HAVE_MIOPEN AND MIOPEN_LIBRARY)
+            list(APPEND _sdx_shared_runtimes "${MIOPEN_LIBRARY}")
+        endif()
+        foreach(_sdx_runtime_root IN ITEMS
+                "${ZLUDA_RUNTIME_ROOT}" "${ROCM_PATH}" "${ROCM_LIB_DIR}")
+            if(IS_DIRECTORY "${_sdx_runtime_root}")
+                list(APPEND _sdx_runtime_roots "${_sdx_runtime_root}")
+            endif()
+        endforeach()
+    endif()
+
+    list(REMOVE_DUPLICATES _sdx_shared_runtimes)
+    list(REMOVE_DUPLICATES _sdx_runtime_roots)
     set_property(TARGET ${main_target_name} PROPERTY
-        SDX_RUNTIME_DEPENDENCY_TARGETS "${_sdx_triton_runtime_targets}")
-    # Encode the list before placing it in a custom-command argument. Expanding
-    # a semicolon-delimited list inside $<JOIN:...> lets CMake split the
-    # generator expression into multiple argv entries before it is evaluated.
-    list(JOIN _sdx_triton_shared_runtimes "|"
-        _sdx_triton_shared_runtimes_pipe)
+        SDX_RUNTIME_DEPENDENCY_TARGETS "${_sdx_runtime_targets}")
+    list(JOIN _sdx_shared_runtimes "|" _sdx_shared_runtimes_pipe)
+    list(JOIN _sdx_runtime_roots "|" _sdx_runtime_roots_pipe)
 
     if(APPLE)
         set_target_properties(${main_target_name} PROPERTIES
@@ -198,8 +218,12 @@ function(configure_sdx_triton_linking main_target_name)
 
     add_custom_command(TARGET ${main_target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND}
-            "-DRUNTIME_LIBRARIES_PIPE=${_sdx_triton_shared_runtimes_pipe}"
+            "-DRUNTIME_LIBRARIES_PIPE=${_sdx_shared_runtimes_pipe}"
+            "-DRUNTIME_SEARCH_ROOTS_PIPE=${_sdx_runtime_roots_pipe}"
+            "-DPRIMARY_RUNTIME=$<TARGET_FILE:${main_target_name}>"
+            "-DRUNTIME_POLICY=$<IF:$<BOOL:${SD_ZLUDA}>,zluda-amd,default>"
             "-DREADELF=${CMAKE_READELF}"
+            "-DOBJDUMP=${CMAKE_OBJDUMP}"
             "-DOTOOL=${CMAKE_OTOOL}"
             "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${main_target_name}>"
@@ -303,14 +327,17 @@ endfunction()
 # Each kernel backend is gated on its SDX_INCLUDE_* toggle.
 # ---------------------------------------------------------------------------
 function(configure_sdx_cuda_linking main_target_name)
-    # CUDA toolkit
-    target_link_libraries(${main_target_name} PUBLIC
-            CUDA::cudart CUDA::cublas CUDA::cusolver CUDA::cusparse)
-    if(TARGET CUDA::nvrtc)
-        target_link_libraries(${main_target_name} PUBLIC CUDA::nvrtc)
-    endif()
-    if(TARGET CUDA::cuda_driver)
-        target_link_libraries(${main_target_name} PUBLIC CUDA::cuda_driver)
+    if(SD_ZLUDA AND HAVE_ZLUDA)
+        configure_zluda_cuda_toolkit_linking(${main_target_name})
+    else()
+        target_link_libraries(${main_target_name} PUBLIC
+                CUDA::cudart CUDA::cublas CUDA::cusolver CUDA::cusparse)
+        if(TARGET CUDA::nvrtc)
+            target_link_libraries(${main_target_name} PUBLIC CUDA::nvrtc)
+        endif()
+        if(TARGET CUDA::cuda_driver)
+            target_link_libraries(${main_target_name} PUBLIC CUDA::cuda_driver)
+        endif()
     endif()
 
     # The standalone target consumes the same CUDA object library as nd4jcuda.

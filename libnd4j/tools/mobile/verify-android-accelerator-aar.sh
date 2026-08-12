@@ -132,6 +132,10 @@ for required_file in "${REQUIRED_FILES[@]}"; do
         exit 1
     fi
 done
+if [[ "$VARIANT" == "tensor-g3" && ! -s "$NATIVE_DIR/libarm_compute.so" ]]; then
+    echo "Tensor G3 AAR is missing its required Android ARM Compute runtime" >&2
+    exit 1
+fi
 
 # The Java runtime facade and JavaCPP transport are one ABI unit. This exact
 # setter is used by Android before model loading; catching it here turns a
@@ -185,6 +189,13 @@ assert platform_provider.get("defaultTargetSoc") == target_soc, platform_provide
 assert platform_provider.get("requiresAotArtifact") is True, platform_provider
 assert platform_provider.get("allowRuntimeJit") is False, platform_provider
 assert platform_provider.get("allowCpuFallback") is False, platform_provider
+if variant == "tensor-g3":
+    assert data.get("requiredAcceleratorDevice") == "google-edgetpu", data
+    assert platform_provider.get("computePolicy") == (
+        "NNAPI_EDGETPU_THEN_ACL_NEON_THEN_FUNCTIONAL_REPLAY"
+    ), platform_provider
+    assert platform_provider.get("placementObservable") is True, platform_provider
+    assert platform_provider.get("cpuExecutionMayOccur") is True, platform_provider
 
 expected_provider = {
     "formatVersion": 1,
@@ -210,6 +221,8 @@ banned = (
     "nd4jcpu",
 )
 assert not any(any(token in dep.lower() for token in banned) for dep in deps), deps
+if variant == "tensor-g3":
+    assert "libarm_compute.so" in deps, deps
 if device_ready == "1" and adapter_name:
     assert adapter_name in deps, (adapter_name, deps)
 PY
@@ -267,6 +280,10 @@ if ! grep -Eq 'Machine:[[:space:]]+AArch64' <<<"$MAIN_ELF_HEADER"; then
     echo "Primary runtime is not an Android AArch64 ELF: $MAIN_LIBRARY" >&2
     exit 1
 fi
+if grep -aFq 'executeSegmentWithCpuGraph: no CPU graph backends available' "$MAIN_LIBRARY"; then
+    echo "Primary runtime contains the obsolete manual CPU-backend chain: $MAIN_LIBRARY" >&2
+    exit 1
+fi
 
 DYNAMIC_SYMBOLS="$("$READELF" --dyn-syms --wide "$MAIN_LIBRARY")"
 for symbol in \
@@ -302,6 +319,11 @@ if [[ "$GPU_TARGET" == "VULKAN" ]]; then
 elif [[ "$ACCELERATOR" == "NNAPI_ACCELERATOR_ONLY" ]]; then
     if ! grep -Eq 'Shared library: \[libneuralnetworks[.]so\]' <<<"$MAIN_NEEDED"; then
         echo "NNAPI runtime is not linked to Android's libneuralnetworks.so" >&2
+        exit 1
+    fi
+    if [[ "$VARIANT" == "tensor-g3" ]] &&
+       ! grep -Eq 'Shared library: \[libarm_compute[.]so\]' <<<"$MAIN_NEEDED"; then
+        echo "Tensor G3 runtime is not linked to the packaged ARM Compute backend" >&2
         exit 1
     fi
 fi

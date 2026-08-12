@@ -63,7 +63,7 @@ public class TagNames {
     // Accelerator / alternative-backend tags - selected by platform-tests pom profiles:
     // -Ptest-zluda -> zluda,rocm,amd-gpu | -Ptest-tpu -> tpu |
     // multi-backend-dual/-all -> multi-backend,multi-device[,backend-discovery]
-    public final static String ZLUDA = "zluda"; //CUDA-on-AMD/Intel via ZLUDA (requires ZLUDA_PATH env)
+    public final static String ZLUDA = "zluda"; //self-contained CUDA ABI backend on AMD via ZLUDA
     public final static String ROCM = "rocm"; //requires a ROCm-capable AMD GPU
     public final static String AMD_GPU = "amd-gpu"; //requires AMD GPU hardware
     public final static String TPU = "tpu"; //PJRT/libtpu backend tests (PJRT_PATH / TPU_LIBRARY_PATH)

@@ -19,10 +19,13 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -34,7 +37,7 @@ import java.util.Map;
  * shared; only the {@link SdxTargetProfile} compiler/provider policy is backend specific.
  */
 final class SdxGgufModelPreparer {
-    static final String PREPARED_SCHEMA = "sdx-prepared-text-model-v2";
+    static final String PREPARED_SCHEMA = "sdx-prepared-text-model-v3";
     static final String RESOLVED_SCHEMA = "sdx-resolved-text-model-v1";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -51,23 +54,28 @@ final class SdxGgufModelPreparer {
         Files.createDirectories(cache.root());
 
         JsonNode options = parseObject(optionsJson);
-        SdxSourceIdentity sourceIdentity = SdxSourceIdentity.identify(source);
+        RawSourceIdentity sourceIdentity = RawSourceIdentity.identify(source);
         verifyAttestation(sourceIdentity, options);
 
         Path preparedRoot = cache.root().resolve("prepared").resolve(sourceIdentity.sha256());
         Path canonicalPointer = preparedRoot.resolve("canonical.path");
         Path canonical = readCanonicalPointer(cache, canonicalPointer);
+        SdxSourceIdentity canonicalIdentity =
+                canonical == null ? null : SdxSourceIdentity.identify(canonical);
         if (canonical != null) {
             try {
                 SdxCompiledModel cached = cache.resolve(canonical, target);
-                return preparedJson(sourceIdentity, canonical, cached, true,
-                        contextLength(source), target);
+                int cachedContextLength = contextLength(source);
+                requireUnchangedRawSource(source, sourceIdentity);
+                return preparedJson(sourceIdentity, canonicalIdentity, canonical, cached, true,
+                        cachedContextLength, target);
             } catch (SdxModelCache.MissingCompiledModelException missingTarget) {
                 // The canonical import is reusable; compile only the missing target below.
             }
         }
 
         Files.createDirectories(preparedRoot);
+        boolean publishCanonicalPointer = false;
         if (canonical == null) {
             Path temporaryRoot = cache.root().resolve("tmp");
             Files.createDirectories(temporaryRoot);
@@ -80,11 +88,16 @@ final class SdxGgufModelPreparer {
             } finally {
                 if (!admitted) Files.deleteIfExists(generated);
             }
-            writeCanonicalPointer(canonicalPointer, canonical);
+            canonicalIdentity = SdxSourceIdentity.identify(canonical);
+            publishCanonicalPointer = true;
         }
 
         TokenizerAssets tokenizerAssets = materializeTokenizerAssets(
                 source, tokenizerPath, preparedRoot.resolve("text-assets"));
+        requireUnchangedRawSource(source, sourceIdentity);
+        if (publishCanonicalPointer) {
+            writeCanonicalPointer(canonicalPointer, canonical);
+        }
         SdxPlatformProviderDescriptor provider = target.platformProvider();
         String targetSoc = provider.defaultTargetSoc();
         SdxModelCompiler compiler = new SdxModelCompiler(cache);
@@ -93,15 +106,13 @@ final class SdxGgufModelPreparer {
                 .tokenizerConfig(tokenizerAssets.tokenizerConfig)
                 .textGenerationConfig(tokenizerAssets.textGenerationConfig)
                 .targetSoc(targetSoc)
-                .modelId(sourceIdentity.sha256())
-                .cacheKeyProperty("sourceFormat", "gguf")
                 .build();
         SdxCompiledModel compiled = compiler.compile(
                 canonical,
                 target,
                 SdxModelCompiler.requireBuiltInTargetCompiler(target, targetSoc, false),
                 compileOptions);
-        return preparedJson(sourceIdentity, canonical, compiled, false,
+        return preparedJson(sourceIdentity, canonicalIdentity, canonical, compiled, false,
                 tokenizerAssets.contextLength, target);
     }
 
@@ -125,7 +136,8 @@ final class SdxGgufModelPreparer {
         return result.toString();
     }
 
-    private static String preparedJson(SdxSourceIdentity sourceIdentity, Path canonical,
+    private static String preparedJson(RawSourceIdentity sourceIdentity,
+                                       SdxSourceIdentity canonicalIdentity, Path canonical,
                                        SdxCompiledModel compiled, boolean cacheHit,
                                        int contextLength, SdxTargetProfile target)
             throws IOException {
@@ -135,6 +147,9 @@ final class SdxGgufModelPreparer {
         result.put("schema", PREPARED_SCHEMA);
         result.put("cacheHit", cacheHit);
         result.put("sourceSha256", sourceIdentity.sha256());
+        result.put("sourceBytes", sourceIdentity.bytes());
+        result.put("canonicalSdzLogicalSha256", canonicalIdentity.sha256());
+        result.put("canonicalSdzLogicalBytes", canonicalIdentity.logicalBytes());
         result.put("canonicalSdzPath", canonical.toString());
         result.put("canonicalSdzBytes", Files.size(canonical));
         result.put("targetProfile", target.id());
@@ -171,16 +186,38 @@ final class SdxGgufModelPreparer {
         }
     }
 
-    private static void verifyAttestation(SdxSourceIdentity identity, JsonNode options) {
-        if (options.hasNonNull("verifiedSourceSha256")) {
+    private static void verifyAttestation(RawSourceIdentity identity, JsonNode options) {
+        boolean hasSha256 = options.hasNonNull("verifiedSourceSha256");
+        boolean hasBytes = options.hasNonNull("verifiedSourceBytes");
+        if (hasSha256 != hasBytes) {
+            throw new IllegalArgumentException(
+                    "Verified source SHA-256 and byte count must be supplied together");
+        }
+        if (hasSha256) {
             String expected = options.get("verifiedSourceSha256").asText().toLowerCase(Locale.ROOT);
+            if (!expected.matches("[0-9a-f]{64}")) {
+                throw new IllegalArgumentException(
+                        "Verified source SHA-256 must be 64 hexadecimal characters");
+            }
             if (!identity.sha256().equals(expected)) {
                 throw new IllegalArgumentException("Verified source SHA-256 did not match the GGUF bytes");
             }
+            long expectedBytes = options.get("verifiedSourceBytes").asLong();
+            if (expectedBytes <= 0) {
+                throw new IllegalArgumentException("Verified source byte count must be positive");
+            }
+            if (identity.bytes() != expectedBytes) {
+                throw new IllegalArgumentException(
+                        "Verified source byte count did not match the GGUF bytes");
+            }
         }
-        if (options.hasNonNull("verifiedSourceBytes")
-                && identity.logicalBytes() != options.get("verifiedSourceBytes").asLong()) {
-            throw new IllegalArgumentException("Verified source byte count did not match the GGUF bytes");
+    }
+
+    private static void requireUnchangedRawSource(Path source, RawSourceIdentity expected)
+            throws IOException {
+        RawSourceIdentity actual = RawSourceIdentity.identify(source);
+        if (!expected.sha256().equals(actual.sha256()) || expected.bytes() != actual.bytes()) {
+            throw new IOException("Raw GGUF changed while SDX preparation was in progress: " + source);
         }
     }
 
@@ -317,6 +354,53 @@ final class SdxGgufModelPreparer {
     private static String requireText(String value, String label) {
         if (value == null || value.isBlank()) throw new IllegalArgumentException(label + " must not be blank");
         return value;
+    }
+
+    /**
+     * Physical identity of the downloaded raw container. This is intentionally separate
+     * from {@link SdxSourceIdentity}, whose digest is the logical identity of canonical
+     * SameDiff .sdz/.sdnb sources.
+     */
+    static final class RawSourceIdentity {
+        private final String sha256;
+        private final long bytes;
+
+        private RawSourceIdentity(String sha256, long bytes) {
+            this.sha256 = sha256;
+            this.bytes = bytes;
+        }
+
+        static RawSourceIdentity identify(Path source) throws IOException {
+            MessageDigest digest;
+            try {
+                digest = MessageDigest.getInstance("SHA-256");
+            } catch (NoSuchAlgorithmException impossible) {
+                throw new IllegalStateException("SHA-256 is unavailable", impossible);
+            }
+            long bytes = 0;
+            byte[] buffer = new byte[1024 * 1024];
+            try (InputStream input = Files.newInputStream(source)) {
+                int read;
+                while ((read = input.read(buffer)) >= 0) {
+                    if (read == 0) continue;
+                    digest.update(buffer, 0, read);
+                    bytes += read;
+                }
+            }
+            StringBuilder sha256 = new StringBuilder(64);
+            for (byte value : digest.digest()) {
+                sha256.append(String.format(Locale.ROOT, "%02x", value & 0xff));
+            }
+            return new RawSourceIdentity(sha256.toString(), bytes);
+        }
+
+        String sha256() {
+            return sha256;
+        }
+
+        long bytes() {
+            return bytes;
+        }
     }
 
     private static final class TokenizerAssets {

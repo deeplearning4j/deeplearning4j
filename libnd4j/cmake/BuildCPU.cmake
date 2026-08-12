@@ -83,7 +83,7 @@ if(HELPERS_armcompute STREQUAL "ON" AND TARGET armcompute_external)
     endif()
 endif()
 
-# ZLUDA helper (for AMD/Intel GPU via CUDA translation)
+# ZLUDA helper (AMD GPU via CUDA ABI translation to HIP/ROCm)
 if(SD_ZLUDA AND TARGET zluda_external)
     message(STATUS "🔒 BLOCKING: ${OBJECT_LIB_NAME} will wait for zluda_external to complete")
     add_dependencies(${OBJECT_LIB_NAME} zluda_external)

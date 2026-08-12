@@ -81,6 +81,242 @@ function(_shared_runtime_loader_name _out_var _library_path)
     set(${_out_var} "${_loader_name}" PARENT_SCOPE)
 endfunction()
 
+function(_shared_runtime_needed_names _out_var _library_path)
+    if(WIN32)
+        if(NOT DEFINED OBJDUMP OR OBJDUMP STREQUAL "" OR NOT EXISTS "${OBJDUMP}")
+            message(FATAL_ERROR
+                "OBJDUMP from the active CMake toolchain is required to inspect '${_library_path}'")
+        endif()
+        execute_process(
+            COMMAND "${OBJDUMP}" -p "${_library_path}"
+            RESULT_VARIABLE _needed_result
+            OUTPUT_VARIABLE _needed_output
+            ERROR_VARIABLE _needed_error)
+        set(_needed_pattern "DLL Name:[ \t]*[^\r\n]+")
+    elseif(APPLE)
+        if(NOT DEFINED OTOOL OR OTOOL STREQUAL "" OR NOT EXISTS "${OTOOL}")
+            message(FATAL_ERROR
+                "OTOOL from the active CMake toolchain is required to inspect '${_library_path}'")
+        endif()
+        execute_process(
+            COMMAND "${OTOOL}" -L "${_library_path}"
+            RESULT_VARIABLE _needed_result
+            OUTPUT_VARIABLE _needed_output
+            ERROR_VARIABLE _needed_error)
+        set(_needed_pattern "\n[ \t]*[^ \t\r\n]+")
+    else()
+        if(NOT DEFINED READELF OR READELF STREQUAL "" OR NOT EXISTS "${READELF}")
+            message(FATAL_ERROR
+                "READELF from the active CMake toolchain is required to inspect '${_library_path}'")
+        endif()
+        execute_process(
+            COMMAND "${READELF}" -d "${_library_path}"
+            RESULT_VARIABLE _needed_result
+            OUTPUT_VARIABLE _needed_output
+            ERROR_VARIABLE _needed_error)
+        set(_needed_pattern "\\(NEEDED\\)[^\n]*\\[[^]]+\\]")
+    endif()
+    if(NOT _needed_result EQUAL 0)
+        message(FATAL_ERROR
+            "Failed to inspect runtime dependencies of '${_library_path}': ${_needed_error}")
+    endif()
+
+    string(REGEX MATCHALL "${_needed_pattern}" _needed_entries "${_needed_output}")
+    set(_needed_names "")
+    foreach(_needed_entry IN LISTS _needed_entries)
+        if(WIN32)
+            string(REGEX REPLACE ".*DLL Name:[ \t]*" "" _needed_name "${_needed_entry}")
+        elseif(APPLE)
+            string(STRIP "${_needed_entry}" _needed_name)
+            string(REGEX REPLACE "[ \t].*" "" _needed_name "${_needed_name}")
+            get_filename_component(_needed_name "${_needed_name}" NAME)
+        else()
+            string(REGEX REPLACE ".*\\[([^]]+)\\].*" "\\1"
+                _needed_name "${_needed_entry}")
+        endif()
+        string(STRIP "${_needed_name}" _needed_name)
+        if(NOT _needed_name STREQUAL "")
+            list(APPEND _needed_names "${_needed_name}")
+        endif()
+    endforeach()
+    list(REMOVE_DUPLICATES _needed_names)
+    set(${_out_var} "${_needed_names}" PARENT_SCOPE)
+endfunction()
+
+function(_is_managed_gpu_runtime_name _out_var _runtime_name)
+    string(TOLOWER "${_runtime_name}" _runtime_name_lower)
+    if(_runtime_name_lower MATCHES
+            "^(lib)?(amd|hsa-runtime|miopen|roc|hip).*")
+        set(${_out_var} TRUE PARENT_SCOPE)
+    else()
+        set(${_out_var} FALSE PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Some backends ship a project-managed user-space driver stack rather than a
+# single DSO. RUNTIME_SEARCH_ROOTS_PIPE makes that dependency closure explicit:
+# only dependencies resolved below one of these roots are bundled, so ordinary
+# operating-system libraries remain host-provided. This is used by ZLUDA to
+# carry its ROCm/HIP/MIOpen closure without copying glibc or the kernel driver.
+set(_runtime_search_roots "")
+if(DEFINED RUNTIME_SEARCH_ROOTS_PIPE AND
+   NOT RUNTIME_SEARCH_ROOTS_PIPE STREQUAL "")
+    string(REPLACE "|" ";" _runtime_search_roots
+        "${RUNTIME_SEARCH_ROOTS_PIPE}")
+    set(_normalized_runtime_search_roots "")
+    foreach(_runtime_search_root IN LISTS _runtime_search_roots)
+        if(NOT IS_DIRECTORY "${_runtime_search_root}")
+            message(FATAL_ERROR
+                "Shared-runtime search root does not exist: '${_runtime_search_root}'")
+        endif()
+        get_filename_component(_runtime_search_root_real
+            "${_runtime_search_root}" REALPATH)
+        list(APPEND _normalized_runtime_search_roots
+            "${_runtime_search_root_real}")
+    endforeach()
+    list(REMOVE_DUPLICATES _normalized_runtime_search_roots)
+    set(_runtime_search_roots "${_normalized_runtime_search_roots}")
+endif()
+
+set(_runtime_alias_entries "")
+if(_runtime_search_roots)
+    # Build a deterministic filename index for the permitted roots once. The
+    # dependency walk below may inspect many ROCm libraries, so rescanning the
+    # complete runtime tree for every DT_NEEDED entry would be unnecessarily slow.
+    set(_runtime_root_files "")
+    foreach(_runtime_search_root IN LISTS _runtime_search_roots)
+        file(GLOB_RECURSE _runtime_root_candidates LIST_DIRECTORIES FALSE
+            "${_runtime_search_root}/*")
+        list(SORT _runtime_root_candidates)
+        list(APPEND _runtime_root_files ${_runtime_root_candidates})
+    endforeach()
+
+    set(_runtime_queue ${_runtime_libraries})
+    set(_runtime_libraries "")
+    while(_runtime_queue)
+        list(POP_FRONT _runtime_queue _runtime_candidate)
+        get_filename_component(_runtime_candidate_real
+            "${_runtime_candidate}" REALPATH)
+        list(FIND _runtime_libraries "${_runtime_candidate_real}"
+            _runtime_candidate_index)
+        if(NOT _runtime_candidate_index EQUAL -1)
+            continue()
+        endif()
+        list(APPEND _runtime_libraries "${_runtime_candidate_real}")
+
+        _shared_runtime_needed_names(_needed_names "${_runtime_candidate_real}")
+        foreach(_needed_name IN LISTS _needed_names)
+            set(_needed_path "")
+
+            # Prefer an explicitly seeded runtime with the requested loader name.
+            foreach(_seed_runtime IN LISTS _runtime_libraries _runtime_queue)
+                _shared_runtime_loader_name(_seed_loader_name "${_seed_runtime}")
+                if(WIN32)
+                    string(TOLOWER "${_seed_loader_name}" _seed_loader_compare)
+                    string(TOLOWER "${_needed_name}" _needed_name_compare)
+                else()
+                    set(_seed_loader_compare "${_seed_loader_name}")
+                    set(_needed_name_compare "${_needed_name}")
+                endif()
+                if(_seed_loader_compare STREQUAL _needed_name_compare)
+                    set(_needed_path "${_seed_runtime}")
+                    break()
+                endif()
+            endforeach()
+
+            _is_managed_gpu_runtime_name(_managed_gpu_runtime "${_needed_name}")
+            if(NOT _needed_path AND _managed_gpu_runtime)
+                foreach(_root_runtime_file IN LISTS _runtime_root_files)
+                    get_filename_component(_root_runtime_name
+                        "${_root_runtime_file}" NAME)
+                    if(WIN32)
+                        string(TOLOWER "${_root_runtime_name}" _root_runtime_lower)
+                        string(TOLOWER "${_needed_name}" _needed_name_lower)
+                    else()
+                        set(_root_runtime_lower "${_root_runtime_name}")
+                        set(_needed_name_lower "${_needed_name}")
+                    endif()
+                    if(_root_runtime_lower STREQUAL _needed_name_lower)
+                        set(_needed_path "${_root_runtime_file}")
+                        break()
+                    endif()
+                endforeach()
+            endif()
+            if(_needed_path)
+                list(APPEND _runtime_queue "${_needed_path}")
+                _shared_runtime_loader_name(_needed_loader_name "${_needed_path}")
+                if(NOT _needed_loader_name STREQUAL _needed_name)
+                    list(APPEND _runtime_alias_entries
+                        "${_needed_path}|${_needed_name}")
+                endif()
+            elseif(_managed_gpu_runtime)
+                message(FATAL_ERROR
+                    "Project-managed GPU runtime '${_runtime_candidate_real}' requires "
+                    "'${_needed_name}', but it was not found below the declared runtime roots: "
+                    "${_runtime_search_roots}")
+            endif()
+        endforeach()
+    endwhile()
+endif()
+
+# ZLUDA classifiers may use CUDA headers and static implementation archives at
+# build time, but the final backend must have no dynamic NVIDIA runtime
+# dependency. CUDA ABI names implemented by ZLUDA and AMD/ROCm names are allowed
+# only when their exact loader names are present in the packaged closure.
+if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd")
+    if(NOT DEFINED PRIMARY_RUNTIME OR PRIMARY_RUNTIME STREQUAL "" OR
+       NOT EXISTS "${PRIMARY_RUNTIME}")
+        message(FATAL_ERROR
+            "zluda-amd runtime policy requires the linked PRIMARY_RUNTIME")
+    endif()
+
+    set(_available_runtime_names "")
+    foreach(_available_runtime IN LISTS _runtime_libraries)
+        _shared_runtime_loader_name(_available_loader_name "${_available_runtime}")
+        list(APPEND _available_runtime_names "${_available_loader_name}")
+    endforeach()
+    foreach(_runtime_alias_entry IN LISTS _runtime_alias_entries)
+        string(REPLACE "|" ";" _runtime_alias_parts "${_runtime_alias_entry}")
+        list(GET _runtime_alias_parts 1 _runtime_alias_name)
+        list(APPEND _available_runtime_names "${_runtime_alias_name}")
+    endforeach()
+    list(REMOVE_DUPLICATES _available_runtime_names)
+
+    _shared_runtime_needed_names(_primary_needed_names "${PRIMARY_RUNTIME}")
+    foreach(_primary_needed_name IN LISTS _primary_needed_names)
+        string(TOLOWER "${_primary_needed_name}" _primary_needed_lower)
+        if(_primary_needed_lower MATCHES
+                "^(lib)?(cudart|cusolver|nvrtc|nvjitlink|curand).*")
+            message(FATAL_ERROR
+                "ZLUDA backend retained forbidden dynamic NVIDIA dependency '${_primary_needed_name}'; link its build-time implementation statically")
+        endif()
+
+        set(_packaged_gpu_runtime FALSE)
+        if(_primary_needed_lower MATCHES
+                "^(lib)?(cuda|nvcuda|cublas|cublaslt|cusparse|cufft|cudnn|amd|hsa-runtime|miopen|roc|hip).*")
+            set(_packaged_gpu_runtime TRUE)
+        endif()
+        if(_packaged_gpu_runtime)
+            set(_primary_runtime_found FALSE)
+            foreach(_available_runtime_name IN LISTS _available_runtime_names)
+                if(WIN32)
+                    string(TOLOWER "${_available_runtime_name}" _available_runtime_lower)
+                else()
+                    set(_available_runtime_lower "${_available_runtime_name}")
+                endif()
+                if(_available_runtime_lower STREQUAL _primary_needed_lower)
+                    set(_primary_runtime_found TRUE)
+                    break()
+                endif()
+            endforeach()
+            if(NOT _primary_runtime_found)
+                message(FATAL_ERROR
+                    "ZLUDA backend requires '${_primary_needed_name}', but the classifier runtime closure does not provide it")
+            endif()
+        endif()
+    endforeach()
+endif()
+
 if(NOT DEFINED OUTPUT_DIR OR OUTPUT_DIR STREQUAL "")
     message(FATAL_ERROR "OUTPUT_DIR is required when staging shared runtimes")
 endif()
@@ -134,6 +370,44 @@ foreach(_runtime_library IN LISTS _runtime_libraries)
     endif()
     list(APPEND _staged_runtime_names "${_runtime_name}")
     message(STATUS "Staged shared runtime: ${_runtime_output}")
+endforeach()
+
+# Preserve dependency filenames that intentionally differ from a library's
+# SONAME. ZLUDA v6 patches ROCm DT_NEEDED entries to unversioned names for ROCm
+# 6/7 compatibility, while the selected build library retains a versioned
+# SONAME; both names must exist in JavaCPP's extraction directory.
+foreach(_runtime_alias_entry IN LISTS _runtime_alias_entries)
+    string(REPLACE "|" ";" _runtime_alias_parts "${_runtime_alias_entry}")
+    list(GET _runtime_alias_parts 0 _runtime_alias_source)
+    list(GET _runtime_alias_parts 1 _runtime_alias_name)
+    if(_runtime_alias_name MATCHES "[/\\\\]")
+        message(FATAL_ERROR
+            "Unsafe runtime dependency alias '${_runtime_alias_name}'")
+    endif()
+    get_filename_component(_runtime_alias_real "${_runtime_alias_source}" REALPATH)
+    set(_runtime_alias_output "${OUTPUT_DIR}/${_runtime_alias_name}")
+    list(FIND _staged_runtime_names "${_runtime_alias_name}"
+        _runtime_alias_index)
+    if(NOT _runtime_alias_index EQUAL -1)
+        file(SHA256 "${_runtime_alias_real}" _runtime_alias_source_hash)
+        file(SHA256 "${_runtime_alias_output}" _runtime_alias_output_hash)
+        if(NOT _runtime_alias_source_hash STREQUAL _runtime_alias_output_hash)
+            message(FATAL_ERROR
+                "Runtime alias '${_runtime_alias_name}' resolves to conflicting libraries")
+        endif()
+        continue()
+    endif()
+    execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${_runtime_alias_real}" "${_runtime_alias_output}"
+        RESULT_VARIABLE _runtime_alias_copy_result)
+    if(NOT _runtime_alias_copy_result EQUAL 0 OR
+       NOT EXISTS "${_runtime_alias_output}")
+        message(FATAL_ERROR
+            "Failed to stage runtime alias '${_runtime_alias_name}'")
+    endif()
+    list(APPEND _staged_runtime_names "${_runtime_alias_name}")
+    message(STATUS "Staged shared runtime alias: ${_runtime_alias_output}")
 endforeach()
 
 list(SORT _staged_runtime_names)

@@ -259,20 +259,6 @@
 
         </profile>
         <profile>
-            <id>zluda-intel</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <modules>
-                <module>nd4j-cuda-backend-common</module>
-                <module>nd4j-zluda</module>
-            </modules>
-            <properties>
-                <zluda.target>INTEL</zluda.target>
-            </properties>
-
-        </profile>
-        <profile>
             <id>hexagon</id>
             <activation>
                 <activeByDefault>false</activeByDefault>

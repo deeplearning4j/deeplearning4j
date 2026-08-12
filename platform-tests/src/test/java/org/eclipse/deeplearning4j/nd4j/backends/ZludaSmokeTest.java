@@ -20,7 +20,6 @@
 package org.eclipse.deeplearning4j.nd4j.backends;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -31,28 +30,24 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.io.File;
 import java.util.ServiceLoader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Smoke tests for running the CUDA backend on non-NVIDIA GPUs through ZLUDA
  * (https://github.com/vosen/ZLUDA). See ADR 0087 (ZLUDA Transpiler Support)
  * and ADR 0102 (Accelerator and CPU-Architecture CI Test Tiers).
  *
- * Selected by {@code -Ptest-zluda} (groups zluda,rocm,amd-gpu), which activates
- * automatically when the {@code ZLUDA_PATH} environment variable is set. On a
- * machine without ZLUDA these tests skip via assumptions, so they are safe in
- * unfiltered runs.
+ * Selected explicitly by {@code -Ptest-zluda} (groups zluda,rocm,amd-gpu).
+ * The Maven platform artifact supplies ZLUDA and the AMD user-space runtime;
+ * the host supplies only the AMD kernel driver and an accessible GPU.
  *
  * Scope is deliberately limited to what ZLUDA supports as of v6 (2026):
- * core driver/runtime API, PTX JIT, and cuBLAS GEMM paths. cuDNN, cuSPARSE
- * depth, and CUDA graph capture/replay are NOT exercised here — ZLUDA does not
- * reliably support stream capture, so DSP CUDA_GRAPHS mode is out of scope.
+ * core driver/runtime API and cuBLAS GEMM paths. Broader cuDNN, cuSPARSE, and
+ * CUDA graph compatibility remains outside this smoke tier.
  *
  * All backend-specific classes are accessed reflectively so this class compiles
  * without the nd4j-zluda dependency on the classpath.
@@ -61,68 +56,25 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @Tag(TagNames.ZLUDA)
 @Tag(TagNames.ROCM)
 @Tag(TagNames.AMD_GPU)
-@DisplayName("ZLUDA smoke tests (CUDA backend on AMD/Intel GPUs)")
+@DisplayName("Self-contained ZLUDA smoke tests on AMD GPUs")
 public class ZludaSmokeTest {
 
-    private static String zludaPath;
-
-    @BeforeAll
-    public static void requireZludaEnvironment() {
-        zludaPath = System.getenv("ZLUDA_PATH");
-        assumeTrue(zludaPath != null && !zludaPath.isEmpty(),
-                "ZLUDA_PATH not set — skipping ZLUDA smoke tests");
-        assumeTrue(new File(zludaPath).isDirectory(),
-                "ZLUDA_PATH does not point to a directory: " + zludaPath);
-    }
-
     @Test
-    @DisplayName("ZLUDA environment and backend discovery report")
+    @DisplayName("Bundled classifier discovers and loads the ZLUDA backend")
     public void zludaEnvironmentReport() {
-        log.info("ZLUDA_PATH          = {}", zludaPath);
-        log.info("ZLUDA_TARGET        = {}", System.getenv("ZLUDA_TARGET"));
-        log.info("LD_LIBRARY_PATH     = {}", System.getenv("LD_LIBRARY_PATH"));
-        log.info("java.library.path   = {}", System.getProperty("java.library.path"));
-        log.info("javacpp pathsFirst  = {}", System.getProperty("org.bytedeco.javacpp.pathsFirst"));
-
-        File rootLibCuda = new File(zludaPath, "libcuda.so");
-        File libDirLibCuda = new File(zludaPath, "lib/libcuda.so");
-        log.info("libcuda.so at ZLUDA_PATH root: {}", rootLibCuda.isFile());
-        log.info("libcuda.so at ZLUDA_PATH/lib : {}", libDirLibCuda.isFile());
-        if (rootLibCuda.isFile() && !libDirLibCuda.isFile()) {
-            // JZludaBackend.checkZludaAvailable() only looks in ZLUDA_PATH/lib — a root-level
-            // layout means the SPI backend will report unavailable even though interception works.
-            log.warn("libcuda.so found only at ZLUDA_PATH root; JZludaBackend expects ZLUDA_PATH/lib/libcuda.so. "
-                    + "Create a lib/ symlink or JZludaBackend.isAvailable() will be false.");
-        }
-
-        boolean zludaSpiOnClasspath;
-        try {
-            Class.forName("org.nd4j.linalg.jzluda.JZludaBackend");
-            zludaSpiOnClasspath = true;
-        } catch (ClassNotFoundException e) {
-            zludaSpiOnClasspath = false;
-        }
-        log.info("nd4j-zluda SPI backend on classpath: {}", zludaSpiOnClasspath);
-
+        Nd4jBackend zludaBackend = null;
         for (Nd4jBackend backend : ServiceLoader.load(Nd4jBackend.class)) {
-            String available;
-            String canRun;
-            try {
-                available = String.valueOf(backend.isAvailable());
-            } catch (Throwable t) {
-                available = "threw: " + t.getMessage();
+            if (backend.getClass().getName().equals(
+                    "org.nd4j.linalg.jzluda.JZludaBackend")) {
+                zludaBackend = backend;
+                break;
             }
-            try {
-                canRun = String.valueOf(backend.canRun());
-            } catch (Throwable t) {
-                canRun = "threw: " + t.getMessage();
-            }
-            log.info("Discovered backend {} (priority {}): isAvailable={}, canRun={}",
-                    backend.getClass().getName(), backend.getPriority(), available, canRun);
         }
-
-        assertTrue(rootLibCuda.isFile() || libDirLibCuda.isFile(),
-                "No libcuda.so found under ZLUDA_PATH (checked " + rootLibCuda + " and " + libDirLibCuda + ")");
+        assertNotNull(zludaBackend,
+                "nd4j-zluda service provider is missing from the platform artifact");
+        assertTrue(zludaBackend.isAvailable(), zludaBackend.buildInfo());
+        assertTrue(zludaBackend.canRun(), zludaBackend.buildInfo());
+        log.info("Loaded bundled backend:\n{}", zludaBackend.buildInfo());
     }
 
     @Test

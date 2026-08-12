@@ -187,8 +187,9 @@
         <!-- JNI Configuration for Java stack trace capture in lifecycle tracking -->
         <libnd4j.build.with.java>ON</libnd4j.build.with.java>
 
-        <!-- ZLUDA Configuration: CUDA-compat shim for AMD/Intel GPUs -->
+        <!-- ZLUDA Configuration: build-time CUDA ABI input, bundled AMD HIP/ROCm runtime -->
         <libnd4j.zluda>OFF</libnd4j.zluda>
+        <libnd4j.zluda.root></libnd4j.zluda.root>
 
         <!-- MLIR Configuration -->
         <libnd4j.mlir>OFF</libnd4j.mlir>
@@ -712,6 +713,8 @@
                                         <argument>${libnd4j.dry.run}</argument>
                                         <argument>--zluda</argument>
                                         <argument>${libnd4j.zluda}</argument>
+                                        <argument>--zluda-root</argument>
+                                        <argument>${libnd4j.zluda.root}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
@@ -886,6 +889,8 @@
                                         <argument>${libnd4j.dry.run}</argument>
                                         <argument>--zluda</argument>
                                         <argument>${libnd4j.zluda}</argument>
+                                        <argument>--zluda-root</argument>
+                                        <argument>${libnd4j.zluda.root}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
@@ -1057,6 +1062,8 @@
                                         <argument>${libnd4j.dry.run}</argument>
                                         <argument>--zluda</argument>
                                         <argument>${libnd4j.zluda}</argument>
+                                        <argument>--zluda-root</argument>
+                                        <argument>${libnd4j.zluda.root}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>
@@ -1340,6 +1347,8 @@
                                         <argument>${libnd4j.dry.run}</argument>
                                         <argument>--zluda</argument>
                                         <argument>${libnd4j.zluda}</argument>
+                                        <argument>--zluda-root</argument>
+                                        <argument>${libnd4j.zluda.root}</argument>
                                         <argument>--mlir</argument>
                                         <argument>${libnd4j.mlir}</argument>
                                         <argument>--mlir-version</argument>

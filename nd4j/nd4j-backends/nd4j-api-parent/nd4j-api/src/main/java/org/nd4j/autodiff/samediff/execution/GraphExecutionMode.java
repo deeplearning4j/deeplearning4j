@@ -86,16 +86,19 @@ public enum GraphExecutionMode {
     MLX(6),
 
     /**
-     * ARM Hybrid backend. Uses MLIR with ARM-specific optimizations (NEON,
-     * SVE, dot product) for CPU, with optional Vulkan GPU offload for
-     * compute-heavy ops (matmul, conv2d) on ARM Mali/Adreno GPUs.
+     * ARM multi-backend placement policy. The generic DSP planner partitions
+     * the graph by each compiled backend's per-slot capabilities, orders ARM
+     * accelerator and CPU graph candidates by backend priority, and records
+     * remaining ranges for functional replay. On Tensor-class Android builds
+     * this selects NNAPI first and ARM Compute Library second.
      */
     ARM_HYBRID(7),
 
     /**
-     * Android NNAPI backend. Routes segments through Android's Neural Networks
-     * API to leverage hardware accelerators (Hexagon DSP, Mali GPU, NPU)
-     * available on the device. Only available on Android API 27+.
+     * Strict Android NNAPI mode. Routes admitted segments through Android's
+     * Neural Networks API and requires complete NNAPI lowering. Use
+     * {@link #ARM_HYBRID} when the generic planner should place islands across
+     * all compiled ARM backends. Only available on Android API 27+.
      */
     NNAPI(8),
 

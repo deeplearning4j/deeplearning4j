@@ -32,7 +32,7 @@
 
     <artifactId>nd4j-zluda-12.9</artifactId>
     <name>nd4j-zluda-12.9</name>
-    <description>ND4J ZLUDA Backend - Enables CUDA code to run on AMD and Intel GPUs via ZLUDA transpiler</description>
+    <description>ND4J ZLUDA Backend - Self-contained CUDA ABI translation for AMD GPUs via HIP/ROCm</description>
 
     <properties>
         <skipPublishing>false</skipPublishing>
@@ -110,6 +110,85 @@
     </build>
 
     <profiles>
+        <!-- Re-home the native payload produced by the CUDA compiler under the
+             ZLUDA artifact identity. The dependency is build-only: consumers of
+             nd4j-zluda never resolve nd4j-cuda or its NVIDIA platform artifacts. -->
+        <profile>
+            <id>zluda-native-bundle</id>
+            <activation>
+                <property>
+                    <name>libnd4j.zluda</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>nd4j-cuda-${cuda.version}</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                    <scope>provided</scope>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.1.2</version>
+                        <executions>
+                            <execution>
+                                <id>stage-zluda-native-classifier</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>nd4j-cuda-${cuda.version}</artifactId>
+                                            <version>${project.version}</version>
+                                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                                            <type>jar</type>
+                                            <overWrite>true</overWrite>
+                                            <outputDirectory>${project.build.directory}/zluda-native</outputDirectory>
+                                            <includes>org/nd4j/linalg/jcublas/bindings/**,META-INF/native-image/**</includes>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-zluda-native-classifier</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classesDirectory>${project.build.directory}/zluda-native</classesDirectory>
+                                    <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                                    <skipIfEmpty>false</skipIfEmpty>
+                                    <archive>
+                                        <manifestEntries>
+                                            <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
+                                            <ND4J-ZLUDA-Target>AMD</ND4J-ZLUDA-Target>
+                                            <ND4J-ZLUDA-CUDA-Build-Version>${cuda.version}</ND4J-ZLUDA-CUDA-Build-Version>
+                                        </manifestEntries>
+                                    </archive>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <!-- Profile for AMD GPU target -->
         <profile>
             <id>zluda-amd</id>
@@ -118,12 +197,5 @@
             </properties>
         </profile>
 
-        <!-- Profile for Intel GPU target -->
-        <profile>
-            <id>zluda-intel</id>
-            <properties>
-                <zluda.target>INTEL</zluda.target>
-            </properties>
-        </profile>
     </profiles>
 </project>

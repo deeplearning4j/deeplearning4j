@@ -29,7 +29,8 @@ import org.slf4j.LoggerFactory;
  *
  * Provides environment information for the ZLUDA backend, including
  * device information, memory limits, and runtime configuration.
- * ZLUDA translates CUDA API calls to other GPU backends (AMD HIP, Intel oneAPI).
+ * ZLUDA translates the CUDA ABI to AMD HIP/ROCm. The native runtime is bundled
+ * in the platform classifier and is not located through environment variables.
  */
 public class ZludaEnvironment implements Environment {
 
@@ -38,7 +39,6 @@ public class ZludaEnvironment implements Environment {
     private static ZludaEnvironment INSTANCE;
 
     private final JZludaBackend.ZludaTarget target;
-    private final String zludaPath;
 
     // Environment state
     protected boolean funcTracePrintJavaOnly = false;
@@ -86,8 +86,7 @@ public class ZludaEnvironment implements Environment {
     protected boolean opContextTracking = false;
 
     private ZludaEnvironment() {
-        this.zludaPath = System.getenv("ZLUDA_PATH");
-        this.target = detectTarget();
+        this.target = JZludaBackend.ZludaTarget.AMD;
 
         // Load settings from environment variables
         this.debug = Boolean.parseBoolean(System.getenv("ZLUDA_DEBUG"));
@@ -122,7 +121,7 @@ public class ZludaEnvironment implements Environment {
             }
         }
 
-        log.info("ZLUDA Environment initialized: target={}, path={}", target, zludaPath);
+        log.info("ZLUDA Environment initialized with bundled runtime: target={}", target);
     }
 
     public static synchronized ZludaEnvironment getInstance() {
@@ -130,18 +129,6 @@ public class ZludaEnvironment implements Environment {
             INSTANCE = new ZludaEnvironment();
         }
         return INSTANCE;
-    }
-
-    private JZludaBackend.ZludaTarget detectTarget() {
-        String targetEnv = System.getenv("ZLUDA_TARGET");
-        if (targetEnv != null) {
-            if (targetEnv.equalsIgnoreCase("AMD")) {
-                return JZludaBackend.ZludaTarget.AMD;
-            } else if (targetEnv.equalsIgnoreCase("INTEL")) {
-                return JZludaBackend.ZludaTarget.INTEL;
-            }
-        }
-        return JZludaBackend.ZludaTarget.UNKNOWN;
     }
 
     // ============ Environment Interface Implementation ============
@@ -869,47 +856,23 @@ public class ZludaEnvironment implements Environment {
     }
 
     /**
-     * Get the ZLUDA installation path
-     */
-    public String getZludaPath() {
-        return zludaPath;
-    }
-
-    /**
      * Check if MIOpen is available (for AMD targets)
      */
     public boolean isMIOpenAvailable() {
         if (target != JZludaBackend.ZludaTarget.AMD) {
             return false;
         }
-        String rocmPath = System.getenv("ROCM_PATH");
-        if (rocmPath == null) {
-            rocmPath = "/opt/rocm";
-        }
-        return new java.io.File(rocmPath, "lib/libMIOpen.so").exists();
-    }
-
-    /**
-     * Check if oneDNN is available (for Intel targets)
-     */
-    public boolean isOneDNNAvailable() {
-        if (target != JZludaBackend.ZludaTarget.INTEL) {
-            return false;
-        }
-        String oneapiPath = System.getenv("ONEAPI_ROOT");
-        if (oneapiPath == null) {
-            oneapiPath = "/opt/intel/oneapi";
-        }
-        return new java.io.File(oneapiPath).exists();
+        // MIOpen and its ROCm user-space closure are carried by the
+        // platform classifier and validated when JZludaBackend loads.
+        return true;
     }
 
     @Override
     public String toString() {
         return "ZludaEnvironment{" +
                 "target=" + target +
-                ", zludaPath='" + zludaPath + '\'' +
+                ", bundledRuntime=true" +
                 ", miopen=" + isMIOpenAvailable() +
-                ", onednn=" + isOneDNNAvailable() +
                 '}';
     }
 }

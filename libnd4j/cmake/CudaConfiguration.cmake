@@ -147,6 +147,40 @@ function(setup_modern_cudnn)
         find_library(CUDNN_LIBRARY NAMES cudnn libcudnn PATHS /usr/lib64 /usr/lib /usr/local/lib64 /usr/local/lib)
     endif()
 
+    # The CUDA SDK supplies headers while compiling a ZLUDA classifier, but its
+    # NVIDIA cuDNN DSO must never enter the runtime link. Select the matching
+    # AMD-backed cuDNN ABI implementation from the pinned ZLUDA bundle instead.
+    if(SD_ZLUDA AND HAVE_ZLUDA AND NOT WIN32)
+        if(NOT CUDNN_INCLUDE_DIR)
+            message(FATAL_ERROR
+                "ZLUDA cuDNN support requires build-time cuDNN headers")
+        endif()
+        file(READ "${CUDNN_INCLUDE_DIR}/cudnn.h" _zluda_cudnn_header)
+        string(REGEX MATCH "define CUDNN_MAJOR[ \t]+([0-9]+)"
+            _zluda_cudnn_major_match "${_zluda_cudnn_header}")
+        set(_zluda_cudnn_major "${CMAKE_MATCH_1}")
+        set(_zluda_selected_cudnn "")
+        foreach(_zluda_cudnn_runtime IN LISTS ZLUDA_CUDNN_RUNTIME_LIBRARIES)
+            get_filename_component(_zluda_cudnn_name
+                "${_zluda_cudnn_runtime}" NAME)
+            if(_zluda_cudnn_major AND
+               _zluda_cudnn_name MATCHES
+                   "^libcudnn\\.so\\.${_zluda_cudnn_major}($|\\.)")
+                set(_zluda_selected_cudnn "${_zluda_cudnn_runtime}")
+                break()
+            elseif(NOT _zluda_selected_cudnn)
+                set(_zluda_selected_cudnn "${_zluda_cudnn_runtime}")
+            endif()
+        endforeach()
+        if(NOT _zluda_selected_cudnn)
+            message(FATAL_ERROR
+                "Pinned ZLUDA bundle has no cuDNN ABI implementation")
+        endif()
+        set(CUDNN_LIBRARY "${_zluda_selected_cudnn}")
+        message(STATUS
+            "ZLUDA cuDNN runtime: ${CUDNN_LIBRARY} (CUDA SDK headers only)")
+    endif()
+
     if(CUDNN_INCLUDE_DIR AND CUDNN_LIBRARY)
         # Extract version
         if(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn.h")
@@ -215,6 +249,53 @@ function(setup_modern_cudnn)
     message(STATUS "cuDNN: Not found (disable with -DHELPERS_cudnn=OFF)")
 endfunction()
 
+# Link CUDA implementation pieces that ZLUDA does not implement as CUDA ABI
+# replacements into the backend at build time. The resulting classifier must
+# not require these NVIDIA libraries dynamically on the consumer machine.
+function(configure_zluda_cuda_toolkit_linking main_target_name)
+    if(NOT (SD_ZLUDA AND HAVE_ZLUDA))
+        message(FATAL_ERROR
+            "configure_zluda_cuda_toolkit_linking requires an active ZLUDA build")
+    endif()
+
+    configure_zluda_linking(${main_target_name})
+
+    foreach(_zluda_required_static_target IN ITEMS
+            CUDA::cudart_static CUDA::cusolver_static CUDA::nvrtc_static)
+        if(NOT TARGET ${_zluda_required_static_target})
+            message(FATAL_ERROR
+                "ZLUDA build requires ${_zluda_required_static_target}; install the complete CUDA build toolkit")
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC
+            ${_zluda_required_static_target})
+    endforeach()
+
+    # CUDA 12 splits these implementation archives from NVRTC. Older CMake
+    # versions/toolkit layouts may expose them transitively instead.
+    foreach(_zluda_optional_static_target IN ITEMS
+            CUDA::nvrtc_builtins_static CUDA::nvJitLink_static
+            CUDA::nvptxcompiler_static)
+        if(TARGET ${_zluda_optional_static_target})
+            target_link_libraries(${main_target_name} PUBLIC
+                ${_zluda_optional_static_target})
+        endif()
+    endforeach()
+
+    if(WIN32)
+        # Official Windows ZLUDA distributions carry DLLs with the CUDA ABI
+        # names. SDK import libraries are used only while linking this build.
+        foreach(_zluda_windows_import_target IN ITEMS
+                CUDA::cublas CUDA::cublasLt CUDA::cusparse CUDA::cuda_driver)
+            if(NOT TARGET ${_zluda_windows_import_target})
+                message(FATAL_ERROR
+                    "Windows ZLUDA build requires CUDA SDK import target ${_zluda_windows_import_target}")
+            endif()
+            target_link_libraries(${main_target_name} PUBLIC
+                ${_zluda_windows_import_target})
+        endforeach()
+    endif()
+endfunction()
+
 function(configure_cuda_linking main_target_name)
     setup_cuda_toolkit_paths()
     find_package(CUDAToolkit REQUIRED)
@@ -239,39 +320,20 @@ function(configure_cuda_linking main_target_name)
         )
     endif()
 
-    # CUDA::toolkit (umbrella) + CUDA::cudart are always created by FindCUDAToolkit.
-    # The per-library targets (cublas/cusolver/cusparse/nvrtc/cuda_driver) are NOT
-    # created on every toolkit layout — notably the Windows CUDA installs used in CI,
-    # where FindCUDAToolkit does not produce CUDA::cusparse. Referencing a missing
-    # imported target makes target_link_libraries a HARD configure error, which broke
-    # every Windows CUDA build. Link each optional target only if it exists; the raw
-    # libs are still reachable via the CUDA::toolkit umbrella link/include dirs.
-    target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart)
-
-    # NVRTC and CUDA driver API are required for NVRTC JIT and PTX GPU backends.
-    # Imported targets handle .so/.lib/.dylib; guard each so an install that lacks a
-    # specific target degrades to a warning instead of failing configuration.
-    foreach(_sd_cuda_lib CUDA::cublas CUDA::cusolver CUDA::cusparse CUDA::nvrtc CUDA::cuda_driver)
-        # Unix ZLUDA can provide the link-time driver library directly. Official
-        # Windows packages contain no import library, so Windows deliberately
-        # keeps the CUDA SDK's ABI-compatible nvcuda.lib here.
-        if(_sd_cuda_lib STREQUAL "CUDA::cuda_driver" AND SD_ZLUDA
-                AND HAVE_ZLUDA AND ZLUDA_LINK_LIBRARY)
-            continue()
-        endif()
-        if(TARGET ${_sd_cuda_lib})
-            target_link_libraries(${main_target_name} PUBLIC ${_sd_cuda_lib})
-        else()
-            message(WARNING "CUDA imported target ${_sd_cuda_lib} not found for ${main_target_name}; "
-                            "relying on CUDA::toolkit umbrella (verify the toolkit provides it).")
-        endif()
-    endforeach()
-
-    # Add the ZLUDA target definitions and optional AMD/Intel helper links.
-    # Windows runtime interposition remains an external deployment concern, as
-    # documented by ZLUDA (launcher or complete application-local DLL layout).
     if(SD_ZLUDA AND HAVE_ZLUDA)
-        configure_zluda_linking(${main_target_name})
+        configure_zluda_cuda_toolkit_linking(${main_target_name})
+    else()
+        # Normal CUDA classifiers deliberately retain the toolkit's shared
+        # runtime dependencies and Bytedeco platform resources.
+        target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart)
+        foreach(_sd_cuda_lib CUDA::cublas CUDA::cusolver CUDA::cusparse CUDA::nvrtc CUDA::cuda_driver)
+            if(TARGET ${_sd_cuda_lib})
+                target_link_libraries(${main_target_name} PUBLIC ${_sd_cuda_lib})
+            else()
+                message(WARNING "CUDA imported target ${_sd_cuda_lib} not found for ${main_target_name}; "
+                                "relying on CUDA::toolkit umbrella (verify the toolkit provides it).")
+            endif()
+        endforeach()
     endif()
 
     # SD_GCC_FUNCTRACE: Link libdw for stack traces
@@ -315,8 +377,45 @@ function(configure_cuda_linking main_target_name)
         message(STATUS "✅ Linking CUDA build with OpenBLAS: ${OPENBLAS_LIBRARIES}")
     endif()
 
-    # Triton GPU Compiler linking (for CUDA builds)
+    # Project-managed shared runtime closure for CUDA-family classifiers.
+    # ZLUDA is a runtime distribution, not merely a build-time link input: ship
+    # its complete library set plus the ROCm/HIP/MIOpen user-space closure so the
+    # resulting JavaCPP classifier does not require ZLUDA_PATH or a ROCm SDK.
     set(_cuda_shared_runtimes "")
+    set(_cuda_shared_runtime_roots "")
+    if(SD_ZLUDA)
+        if(NOT HAVE_ZLUDA OR NOT ZLUDA_RUNTIME_LIBRARIES OR
+           NOT IS_DIRECTORY "${ZLUDA_RUNTIME_ROOT}")
+            message(FATAL_ERROR
+                "ZLUDA classifier requires a complete resolved runtime bundle")
+        endif()
+        list(APPEND _cuda_shared_runtimes ${ZLUDA_RUNTIME_LIBRARIES})
+        list(APPEND _cuda_shared_runtime_roots "${ZLUDA_RUNTIME_ROOT}")
+
+        if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
+            if(NOT ROCM_HIP_RUNTIME_LIBRARY OR
+               NOT EXISTS "${ROCM_HIP_RUNTIME_LIBRARY}")
+                message(FATAL_ERROR
+                    "AMD ZLUDA classifier requires the libamdhip64 runtime")
+            endif()
+            list(APPEND _cuda_shared_runtimes "${ROCM_HIP_RUNTIME_LIBRARY}")
+            if(HAVE_MIOPEN)
+                if(NOT MIOPEN_LIBRARY OR NOT EXISTS "${MIOPEN_LIBRARY}")
+                    message(FATAL_ERROR
+                        "HAVE_MIOPEN is set but its runtime library is unavailable")
+                endif()
+                list(APPEND _cuda_shared_runtimes "${MIOPEN_LIBRARY}")
+            endif()
+            foreach(_rocm_runtime_root IN ITEMS "${ROCM_PATH}" "${ROCM_LIB_DIR}")
+                if(IS_DIRECTORY "${_rocm_runtime_root}")
+                    list(APPEND _cuda_shared_runtime_roots
+                        "${_rocm_runtime_root}")
+                endif()
+            endforeach()
+        endif()
+    endif()
+
+    # Triton GPU Compiler linking (for CUDA builds)
     if(HAVE_TRITON AND TARGET triton_interface)
         target_link_libraries(${main_target_name} PUBLIC triton_interface)
         # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
@@ -333,28 +432,40 @@ function(configure_cuda_linking main_target_name)
                 "$<TARGET_FILE:${_triton_runtime_target}>")
         endforeach()
 
-        if(APPLE)
-            set_target_properties(${main_target_name} PROPERTIES
-                BUILD_WITH_INSTALL_RPATH TRUE
-                INSTALL_RPATH "@loader_path"
-                INSTALL_RPATH_USE_LINK_PATH FALSE)
-        elseif(UNIX)
-            set_target_properties(${main_target_name} PROPERTIES
-                BUILD_WITH_INSTALL_RPATH TRUE
-                INSTALL_RPATH "$ORIGIN"
-                INSTALL_RPATH_USE_LINK_PATH FALSE)
-        endif()
     elseif(HAVE_TRITON)
         message(FATAL_ERROR
             "HAVE_TRITON=${HAVE_TRITON}, but the required triton_interface target is missing")
     endif()
 
+    if(APPLE AND (HAVE_TRITON OR SD_ZLUDA))
+        set_target_properties(${main_target_name} PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "@loader_path"
+            INSTALL_RPATH_USE_LINK_PATH FALSE)
+    elseif(UNIX AND (HAVE_TRITON OR SD_ZLUDA))
+        set_target_properties(${main_target_name} PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "$ORIGIN"
+            INSTALL_RPATH_USE_LINK_PATH FALSE)
+    endif()
+
+    list(REMOVE_DUPLICATES _cuda_shared_runtimes)
+    list(REMOVE_DUPLICATES _cuda_shared_runtime_roots)
+    list(JOIN _cuda_shared_runtimes "|"
+        _cuda_shared_runtimes_pipe)
+    list(JOIN _cuda_shared_runtime_roots "|"
+        _cuda_shared_runtime_roots_pipe)
+
     # Always refresh the manifest and build-toolchain metadata. This also clears
     # compiler runtimes left by a previous Triton-enabled configuration.
     add_custom_command(TARGET ${main_target_name} POST_BUILD
         COMMAND ${CMAKE_COMMAND}
-            "-DRUNTIME_LIBRARIES_PIPE=$<JOIN:${_cuda_shared_runtimes},|>"
+            "-DRUNTIME_LIBRARIES_PIPE=${_cuda_shared_runtimes_pipe}"
+            "-DRUNTIME_SEARCH_ROOTS_PIPE=${_cuda_shared_runtime_roots_pipe}"
+            "-DPRIMARY_RUNTIME=$<TARGET_FILE:${main_target_name}>"
+            "-DRUNTIME_POLICY=$<IF:$<BOOL:${SD_ZLUDA}>,zluda-amd,default>"
             "-DREADELF=${CMAKE_READELF}"
+            "-DOBJDUMP=${CMAKE_OBJDUMP}"
             "-DOTOOL=${CMAKE_OTOOL}"
             "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${main_target_name}>"
@@ -713,7 +824,11 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
     if(DEFINED CUDA_ARCH_FLAGS)
         set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
     endif()
-    set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all")
+    if(SD_ZLUDA)
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all")
+    else()
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all")
+    endif()
 
     if(CMAKE_CUDA_COMPILER_VERSION)
         string(REGEX MATCH "^([0-9]+)" CUDA_VERSION_MAJOR "${CMAKE_CUDA_COMPILER_VERSION}")

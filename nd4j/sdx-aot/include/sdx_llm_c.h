@@ -86,7 +86,11 @@ SDX_LLM_API int sdxLlmDestroyRuntime(sdx_llm_runtime_t* runtime);
 SDX_LLM_API int sdxLlmAbiVersion(sdx_llm_runtime_t* runtime);
 
 /* Convert one verified GGUF into the canonical SDZ cache, compile/resolve the
- * selected target, and return sdx-prepared-text-model-v2 JSON. */
+ * selected target, and return sdx-prepared-text-model-v3 JSON. The v3 proof
+ * separates downloaded raw-container identity (sourceSha256/sourceBytes) from
+ * canonical SameDiff logical identity
+ * (canonicalSdzLogicalSha256/canonicalSdzLogicalBytes). canonicalSdzBytes is
+ * the physical byte size of the admitted .sdz container. */
 SDX_LLM_API sdx_llm_status_t sdxLlmPrepareGguf(
     sdx_llm_runtime_t* runtime,
     const char* source_gguf,

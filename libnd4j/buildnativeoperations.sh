@@ -610,6 +610,7 @@ KERNEL_AUTOTUNING="${KERNEL_AUTOTUNING:-OFF}"
 KERNEL_CACHING="${KERNEL_CACHING:-ON}"
 HELPER_PRIORITY="${HELPER_PRIORITY:-}"
 ZLUDA="${ZLUDA:-OFF}"  # ZLUDA CUDA-compatibility shim (OFF by default)
+ZLUDA_ROOT="${ZLUDA_ROOT:-}"  # Explicit build input; never a consumer runtime path
 CHECK_VECTORIZATION="${CHECK_VECTORIZATION:-OFF}"
 NAME="${NAME:-}"
 OP_OUTPUT_FILE="${OP_OUTPUT_FILE:-include/generated/include_ops.h}"
@@ -1800,14 +1801,18 @@ do
                 OFF)
                     print_colored "blue" "✓ ZLUDA mode disabled"
                     ;;
-                ON|AMD|INTEL|AUTO)
-                    print_colored "green" "✓ ZLUDA mode enabled (target: $ZLUDA)"
+                ON|AMD)
+                    print_colored "green" "✓ ZLUDA AMD mode enabled"
                     ;;
                 *)
-                    print_colored "red" "Unsupported --zluda target '$ZLUDA' (expected OFF, ON, AMD, INTEL, or AUTO)"
+                    print_colored "red" "Unsupported --zluda target '$ZLUDA' (expected OFF, ON, or AMD)"
                     exit 2
                     ;;
             esac
+            shift # past argument
+            ;;
+        --zluda-root)
+            ZLUDA_ROOT="$value"
             shift # past argument
             ;;
         --default)
@@ -3099,12 +3104,13 @@ echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
 echo HELPER              = "$HELPER"
 echo HELPERS             = "$HELPERS"
 echo HELPERS_CMAKE       = "$HELPERS_CMAKE"
-# --zluda accepts ON (auto-detect target) or an explicit target: AMD | INTEL | AUTO.
-# Maps to -DSD_ZLUDA=ON [+ -DSD_ZLUDA_TARGET=<target>] consumed by ZludaConfiguration.cmake.
-if [ "$ZLUDA" == "ON" ] || [ "$ZLUDA" == "AMD" ] || [ "$ZLUDA" == "INTEL" ] || [ "$ZLUDA" == "AUTO" ]; then
-    ZLUDA_CMAKE="-DSD_ZLUDA=ON"
-    if [ "$ZLUDA" != "ON" ]; then
-        ZLUDA_CMAKE="$ZLUDA_CMAKE -DSD_ZLUDA_TARGET=$ZLUDA"
+# --zluda accepts ON or AMD; both select the published AMD-only backend.
+# The build worker supplies the pinned runtime through --zluda-root, while the
+# resulting classifier owns the execution-time ZLUDA/HIP/ROCm closure.
+if [ "$ZLUDA" == "ON" ] || [ "$ZLUDA" == "AMD" ]; then
+    ZLUDA_CMAKE="-DSD_ZLUDA=ON -DSD_ZLUDA_TARGET=AMD"
+    if [ -n "$ZLUDA_ROOT" ]; then
+        ZLUDA_CMAKE="$ZLUDA_CMAKE -DZLUDA_ROOT=$ZLUDA_ROOT"
     fi
     print_colored "green" "✓ ZLUDA cmake flag: $ZLUDA_CMAKE"
 fi

@@ -545,15 +545,31 @@ public final class SdxLlmCApi {
     }
 
     private static String describe(Throwable t) {
-        String message = t.getMessage();
-        return t.getClass().getSimpleName() + (message == null ? "" : ": " + message);
+        StringBuilder description = new StringBuilder();
+        Throwable current = t;
+        for (int depth = 0; current != null && depth < 8; depth++) {
+            if (depth > 0) description.append("; caused by ");
+            description.append(current.getClass().getSimpleName());
+            String message = current.getMessage();
+            if (message != null && !message.isBlank()) description.append(": ").append(message);
+            Throwable cause = current.getCause();
+            if (cause == current) break;
+            current = cause;
+        }
+        return description.toString();
     }
 
     private static int statusFor(Throwable t) {
-        if (t instanceof IllegalArgumentException || t instanceof NullPointerException) {
-            return INVALID_ARGUMENT;
+        Throwable current = t;
+        for (int depth = 0; current != null && depth < 8; depth++) {
+            if (current instanceof IllegalArgumentException || current instanceof NullPointerException) {
+                return INVALID_ARGUMENT;
+            }
+            if (current instanceof java.io.IOException) return IO_ERROR;
+            Throwable cause = current.getCause();
+            if (cause == current) break;
+            current = cause;
         }
-        if (t instanceof java.io.IOException) return IO_ERROR;
         return EXECUTION_FAILED;
     }
 }

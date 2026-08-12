@@ -753,7 +753,6 @@ class ReleaseValidationTest(unittest.TestCase):
             "zluda": {"nd4j-cuda-backend-common", "nd4j-zluda"},
             "zluda-platform": {"nd4j-zluda-platform"},
             "zluda-amd": {"nd4j-cuda-backend-common", "nd4j-zluda"},
-            "zluda-intel": {"nd4j-cuda-backend-common", "nd4j-zluda"},
         }
         profiles = {}
         for profile in pom.findall("m:profiles/m:profile", namespace):
@@ -790,7 +789,7 @@ class ReleaseValidationTest(unittest.TestCase):
             pom.findtext("m:properties/m:cuda.version", namespaces=namespace),
         )
         self.assertEqual(
-            "nd4j-cuda-${cuda.version}",
+            "nd4j-zluda-${cuda.version}",
             pom.findtext("m:properties/m:nd4j.backend", namespaces=namespace),
         )
         direct_dependencies = pom.findall("m:dependencies/m:dependency", namespace)
@@ -860,6 +859,12 @@ class ReleaseValidationTest(unittest.TestCase):
                 self.assertIn(platform, rules["unclassifiedArtifactIds"], shard["id"])
                 self.assertIn(f":{backend}", shard["build"]["modules"], shard["id"])
                 self.assertIn(f":{platform}", shard["build"]["modules"], shard["id"])
+                self.assertIn(
+                    f":nd4j-cuda-{cuda_version}", shard["build"]["modules"], shard["id"]
+                )
+                self.assertNotIn(
+                    f"nd4j-cuda-{cuda_version}", rules["artifactIds"], shard["id"]
+                )
 
     def test_no_pom_has_duplicate_top_level_profiles_sections(self):
         repository_root = Path(__file__).resolve().parents[2]
@@ -900,7 +905,6 @@ class ReleaseValidationTest(unittest.TestCase):
                 },
                 "artifactIds": {
                     "nd4j-cuda-backend-common",
-                    "nd4j-cuda-12.9",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
@@ -926,7 +930,6 @@ class ReleaseValidationTest(unittest.TestCase):
                 },
                 "artifactIds": {
                     "nd4j-cuda-backend-common",
-                    "nd4j-cuda-12.9",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
@@ -1025,6 +1028,104 @@ class ReleaseValidationTest(unittest.TestCase):
         cmake_source = (root / "libnd4j/CMakeLists.txt").read_text(encoding="utf-8")
         self.assertIn("NAME zluda_windows_runtime_contract", cmake_source)
         self.assertIn("cmake/tests/ZludaWindowsRuntimeContractTest.cmake", cmake_source)
+
+    def test_zluda_consumer_contract_is_self_contained_and_amd_only(self):
+        root = Path(__file__).parents[2]
+        cuda_configuration = (
+            root / "libnd4j/cmake/CudaConfiguration.cmake"
+        ).read_text(encoding="utf-8")
+        runtime_staging = (
+            root / "libnd4j/cmake/StageSharedRuntime.cmake"
+        ).read_text(encoding="utf-8")
+        zluda_configuration = (
+            root / "libnd4j/cmake/ZludaConfiguration.cmake"
+        ).read_text(encoding="utf-8")
+        dependency_configuration = (
+            root / "libnd4j/cmake/Dependencies.cmake"
+        ).read_text(encoding="utf-8")
+        zluda_options = (root / "libnd4j/cmake/Options.cmake").read_text(
+            encoding="utf-8"
+        )
+        backend = (
+            root
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda"
+            / "src/main/java/org/nd4j/linalg/jzluda/JZludaBackend.java"
+        ).read_text(encoding="utf-8")
+        environment = (
+            root
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda"
+            / "src/main/java/org/nd4j/linalg/jzluda/ZludaEnvironment.java"
+        ).read_text(encoding="utf-8")
+        dsp_runtime = (
+            root / "libnd4j/include/legacy/impl/DspRuntimeC.cpp"
+        ).read_text(encoding="utf-8")
+
+        for static_target in (
+            "CUDA::cudart_static",
+            "CUDA::cusolver_static",
+            "CUDA::nvrtc_static",
+        ):
+            self.assertIn(static_target, cuda_configuration)
+        self.assertIn('RUNTIME_POLICY=$<IF:$<BOOL:${SD_ZLUDA}>,zluda-amd,default>', cuda_configuration)
+        self.assertIn("retained forbidden dynamic NVIDIA dependency", runtime_staging)
+        self.assertIn("ZLUDA_RUNTIME_LIBRARIES", cuda_configuration)
+        self.assertIn("ROCM_HIP_RUNTIME_LIBRARY", cuda_configuration)
+        self.assertIn("the build controller must provide -DZLUDA_ROOT", zluda_configuration)
+        self.assertIn("The published ZLUDA backend is AMD-only", zluda_configuration)
+        self.assertNotIn("setup_zluda_download", zluda_configuration)
+        self.assertNotIn("setup_zluda_intel", zluda_configuration)
+        self.assertNotIn("ONEAPI", zluda_configuration)
+        self.assertNotIn("ENV{ZLUDA_PATH}", dependency_configuration)
+        self.assertIn(
+            'set_property(CACHE SD_ZLUDA_TARGET PROPERTY STRINGS AMD)',
+            zluda_options,
+        )
+
+        self.assertIn("Loader.load(Nd4jCuda.class)", backend)
+        self.assertNotIn('System.getenv("ZLUDA_PATH")', backend)
+        self.assertNotIn('System.getenv("ZLUDA_TARGET")', backend)
+        self.assertNotIn("INTEL", backend)
+        self.assertNotIn("ONEAPI_ROOT", environment)
+        self.assertNotIn('setenv("ZLUDA_TARGET"', dsp_runtime)
+        self.assertNotIn('_putenv_s("ZLUDA_TARGET"', dsp_runtime)
+
+        namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+        zluda_pom = ET.parse(
+            root
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-zluda/pom.xml"
+        ).getroot()
+        runtime_dependencies = {
+            item.findtext("m:artifactId", namespaces=namespace)
+            for item in zluda_pom.findall("m:dependencies/m:dependency", namespace)
+        }
+        self.assertNotIn("nd4j-cuda-${cuda.version}", runtime_dependencies)
+        self.assertIn("nd4j-cuda-backend-common", runtime_dependencies)
+        profile = next(
+            item
+            for item in zluda_pom.findall("m:profiles/m:profile", namespace)
+            if item.findtext("m:id", namespaces=namespace) == "zluda-native-bundle"
+        )
+        build_dependency = profile.find("m:dependencies/m:dependency", namespace)
+        self.assertEqual(
+            "nd4j-cuda-${cuda.version}",
+            build_dependency.findtext("m:artifactId", namespaces=namespace),
+        )
+        self.assertEqual(
+            "provided", build_dependency.findtext("m:scope", namespaces=namespace)
+        )
+        self.assertEqual(
+            "true", build_dependency.findtext("m:optional", namespaces=namespace)
+        )
+        attached_classifier = profile.find(
+            ".//m:execution[m:id='attach-zluda-native-classifier']"
+            "/m:configuration/m:classifier",
+            namespace,
+        )
+        self.assertIsNotNone(attached_classifier)
+        self.assertEqual(
+            "${javacpp.platform}${javacpp.platform.extension}",
+            attached_classifier.text,
+        )
 
     def test_zluda_cmake_scopes_rocm_to_amd_native_call_sites(self):
         root = Path(__file__).parents[2]
@@ -1630,7 +1731,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 platform_build = dict(build, javacppPlatform=platform)
                 with redirect_stdout(output):
                     build_platform.attest_zluda_configuration(
-                        platform_build, {"ZLUDA_PATH": zluda_path}
+                        platform_build, {"DL4J_ZLUDA_ROOT": zluda_path}
                     )
                 self.assertIn("target=AMD", output.getvalue())
                 self.assertIn(runtime_names[0], output.getvalue())
@@ -1641,12 +1742,12 @@ class ReleaseValidationTest(unittest.TestCase):
                 invalid = dict(build, mavenArgs=arguments)
                 with self.assertRaises(ValueError):
                     build_platform.zluda_target(invalid)
-        with self.assertRaisesRegex(RuntimeError, "prepared ZLUDA_PATH is missing"):
+        with self.assertRaisesRegex(RuntimeError, "prepared DL4J_ZLUDA_ROOT is missing"):
             build_platform.attest_zluda_configuration(build, {})
         with tempfile.TemporaryDirectory() as empty_zluda_path:
             with self.assertRaisesRegex(RuntimeError, "contains no linux runtime"):
                 build_platform.attest_zluda_configuration(
-                    build, {"ZLUDA_PATH": empty_zluda_path}
+                    build, {"DL4J_ZLUDA_ROOT": empty_zluda_path}
                 )
 
     def test_rocm_sdk_attestation_is_build_only_and_fail_closed(self):
@@ -1775,21 +1876,10 @@ class ReleaseValidationTest(unittest.TestCase):
                 environment,
             )
             runtime_directory = Path(temporary_directory, "zluda", "zluda")
-            self.assertEqual(runtime_directory, Path(environment["ZLUDA_PATH"]))
-            self.assertEqual(
-                [str(runtime_directory), "existing-search-path"],
-                environment["PATH"].split(os.pathsep),
-            )
-            child_environment = os.environ.copy()
-            child_environment.update(environment)
-            child = subprocess.run(
-                [sys.executable, "-c", "import os; print(os.environ['PATH'])"],
-                check=True,
-                capture_output=True,
-                text=True,
-                env=child_environment,
-            )
-            self.assertEqual(str(runtime_directory), child.stdout.strip().split(os.pathsep)[0])
+            self.assertEqual(runtime_directory, Path(environment["DL4J_ZLUDA_ROOT"]))
+            self.assertEqual("existing-search-path", environment["PATH"])
+            self.assertNotIn("ZLUDA_PATH", environment)
+            self.assertNotIn("LD_LIBRARY_PATH", environment)
 
     def test_prepare_zluda_rejects_archive_with_wrong_digest(self):
         def write_archive(unused_url, destination, unused_description):
@@ -1822,7 +1912,8 @@ class ReleaseValidationTest(unittest.TestCase):
         root = Path(__file__).parents[2]
         source = (root / "libnd4j/buildnativeoperations.sh").read_text(encoding="utf-8")
         self.assertRegex(source, r'case "\$ZLUDA" in\s+OFF\)')
-        self.assertIn("expected OFF, ON, AMD, INTEL, or AUTO", source)
+        self.assertIn("expected OFF, ON, or AMD", source)
+        self.assertNotIn("expected OFF, ON, AMD, INTEL, or AUTO", source)
 
     def test_buildnativeoperations_propagates_zluda_to_canonical_cmake_configure(self):
         root = Path(__file__).parents[2]
@@ -2044,8 +2135,13 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Pvulkan", vulkan)
         self.assertIn("-Dplatform.classifier=linux-x86_64-compile", vulkan)
 
-        zluda = command(DL4J_FAMILY="zluda", DL4J_CUDA_VERSION="12.9")
+        zluda = command(
+            DL4J_FAMILY="zluda",
+            DL4J_CUDA_VERSION="12.9",
+            DL4J_ZLUDA_ROOT="/opt/dl4j-build/zluda",
+        )
         self.assertIn("-Dlibnd4j.zluda=AMD", zluda)
+        self.assertIn("-Dlibnd4j.zluda.root=/opt/dl4j-build/zluda", zluda)
         self.assertIn("-Dlibnd4j.classifier=linux-x86_64-cuda-12.9-zluda", zluda)
         self.assertIn("-Djavacpp.platform.extension=-zluda", zluda)
         self.assertIn("-Pzluda", zluda)
@@ -2061,8 +2157,10 @@ class ReleaseValidationTest(unittest.TestCase):
             DL4J_FAMILY="windows-zluda",
             DL4J_CUDA_VERSION="12.9",
             DL4J_ZLUDA_TARGET="AMD",
+            DL4J_ZLUDA_ROOT="C:/dl4j-build/zluda",
         )
         self.assertIn("-Dlibnd4j.classifier=windows-x86_64-cuda-12.9-zluda", windows_zluda)
+        self.assertIn("-Dlibnd4j.zluda.root=C:/dl4j-build/zluda", windows_zluda)
         self.assertIn("-Djavacpp.platform=windows-x86_64", windows_zluda)
         self.assertIn("-Dlibnd4j.platform=windows-x86_64", windows_zluda)
         self.assertIn("-Dlibnd4j.oom.killer=OFF", windows_zluda)

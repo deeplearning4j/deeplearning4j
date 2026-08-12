@@ -312,26 +312,6 @@ inline bool isAmdDeviceType(int deviceType) {
   return deviceType == static_cast<int32_t>(SDX_DEVICE_AMD);
 }
 
-void applyGpuTargetHint(int gpuTarget) {
-#if defined(HAVE_ZLUDA)
-#if defined(_WIN32)
-  if (gpuTarget == static_cast<int>(SDX_GPU_TARGET_AMD)) {
-    _putenv_s("ZLUDA_TARGET", "AMD");
-  } else if (gpuTarget == static_cast<int>(SDX_GPU_TARGET_CUDA)) {
-    _putenv_s("ZLUDA_TARGET", "");
-  }
-#else
-  if (gpuTarget == static_cast<int>(SDX_GPU_TARGET_AMD)) {
-    setenv("ZLUDA_TARGET", "AMD", 1);
-  } else if (gpuTarget == static_cast<int>(SDX_GPU_TARGET_CUDA)) {
-    unsetenv("ZLUDA_TARGET");
-  }
-#endif
-#else
-  (void)gpuTarget;
-#endif
-}
-
 sdx_status_t mapExecuteStatus(int code) {
   if (code == 0) return SDX_STATUS_OK;
 
@@ -1639,8 +1619,6 @@ static sdx_status_t runInternal(
     setPlanJitMode(context->plan_handle, jitMode);
     context->cached_jit_mode = jitMode;
   }
-  applyGpuTargetHint(requestedGpuTarget);
-
   // ── Cached wrapper update: only rebuild wrappers whose tensor view changed ──
   bool anyInputChanged = false;
   for (int i = 0; i < context->num_inputs; i++) {

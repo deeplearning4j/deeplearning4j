@@ -36,10 +36,10 @@
 
     <properties>
         <skipPublishing>false</skipPublishing>
-        <!-- The native ZLUDA payload is produced by the versioned CUDA module;
-             this POM is the platform-specific dependency aggregator. -->
+        <!-- CUDA identifies the build-time ABI/toolchain. The runtime payload
+             and dependency graph are owned entirely by the ZLUDA artifact. -->
         <cuda.version>12.9</cuda.version>
-        <nd4j.backend>nd4j-cuda-${cuda.version}</nd4j.backend>
+        <nd4j.backend>nd4j-zluda-${cuda.version}</nd4j.backend>
     </properties>
 
     <dependencies>

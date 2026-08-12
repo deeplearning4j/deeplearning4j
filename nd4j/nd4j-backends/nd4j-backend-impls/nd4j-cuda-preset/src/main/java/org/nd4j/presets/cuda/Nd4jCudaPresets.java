@@ -148,7 +148,7 @@ import org.nd4j.presets.SharedCompilerRuntime;
                 @Platform(value = "linux-arm64", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
-                @Platform(extension = {"-cudnn","-", "-compile"})})
+                @Platform(extension = {"-cudnn","-", "-compile", "-zluda"})})
 public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
     private static final String JAVACPP_PHASE_PROPERTY =
             "platform.nd4j.javacpp.phase";
@@ -197,7 +197,26 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
             return;
         }
 
-        int i = 0;
+        String extension = Loader.loadProperties().getProperty(
+                "platform.extension", properties.getProperty("platform.extension"));
+        boolean zludaClassifier = "-zluda".equals(extension);
+        if (zludaClassifier) {
+            String classifierResource = "/org/nd4j/linalg/jcublas/bindings/"
+                    + platform + extension + "/";
+            if (!resources.contains(classifierResource)) {
+                // Extract the complete dependency closure before loading any member.
+                // This lets DT_NEEDED dependencies resolve beside their consumers
+                // even when the manifest's stable order is not dependency order.
+                resources.add(0, classifierResource);
+            }
+            // The CUDA toolkit is a build-time toolchain for this classifier.
+            // At runtime the manifest supplies ZLUDA's CUDA ABI implementations
+            // and their AMD dependency closure, so never add Bytedeco's NVIDIA
+            // platform resources or vendor preloads.
+            return;
+        }
+
+        int i = sharedRuntimePreloadCount(preloads);
 
         // Add CUDA libraries to preload list with correct version suffixes for CUDA 12.x
         // Library version mapping (from /usr/local/cuda-12.9/lib64/):
@@ -233,6 +252,15 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         if (i > 0) {
             resources.add("/org/bytedeco/cuda/");
         }
+    }
+
+    private static int sharedRuntimePreloadCount(List<String> preloads) {
+        int count = 0;
+        while (count < preloads.size()
+                && preloads.get(count).startsWith("nd4j_compiler_runtime_")) {
+            count++;
+        }
+        return count;
     }
 
     @Override

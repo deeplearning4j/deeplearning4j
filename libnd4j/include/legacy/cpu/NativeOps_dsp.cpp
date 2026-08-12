@@ -435,12 +435,15 @@ int getPlanNumSlots(sd::Pointer planHandle) {
   return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getNumSlots();
 }
 
-// ─── CUDA Graph control (delegates to plan, CPU has no CUDA Graphs) ─────────
+// ─── CUDA Graph control (unsupported on CPU) ────────────────────────────────
 
 void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled) {
-  if (planHandle != nullptr) {
-    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setCudaGraphsEnabled(enabled);
-  }
+  // CUDA graph capture is a CUDA-only optimization. Java may request it from
+  // backend-agnostic DSP code, but applying that flag to a cached CPU plan can
+  // mutate the plan after execution has started and violate its lifecycle.
+  // CPU graph execution is controlled independently by GraphExecutionMode.
+  (void)planHandle;
+  (void)enabled;
 }
 
 void setPlanJitMode(sd::Pointer planHandle, int mode) {

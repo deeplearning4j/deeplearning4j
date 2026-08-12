@@ -1090,14 +1090,9 @@ def prepare_zluda(source: Path, build: dict, env: dict[str, str]) -> None:
     if runtime is None:
         expected = "nvcuda.dll" if platform == "windows" else "libcuda.so"
         raise RuntimeError(f"ZLUDA {platform} release {version} contains no {expected}")
-    runtime_directory = str(runtime.parent)
-    env["ZLUDA_PATH"] = runtime_directory
-    search_variable = "PATH" if platform == "windows" else "LD_LIBRARY_PATH"
-    current_search_path = env.get(search_variable, "")
-    env[search_variable] = (
-        runtime_directory + os.pathsep + current_search_path
-        if current_search_path else runtime_directory
-    )
+    # This is a build input, not a runtime installation contract. Feed its root
+    # explicitly through Maven/CMake; never mutate the worker loader path.
+    env["DL4J_ZLUDA_ROOT"] = str(runtime.parent)
 
 
 def package_runtime_sdk(source: Path, output: Path, threads: int) -> int:
@@ -1322,14 +1317,14 @@ def attest_zluda_configuration(build: dict, env: dict[str, str]) -> None:
             or variant.get("platformExtension") != "-zluda"
             for variant in variants):
         failures.append("ZLUDA classifier/platform extension is not active")
-    zluda_path = Path(env.get("ZLUDA_PATH", ""))
+    zluda_path = Path(env.get("DL4J_ZLUDA_ROOT", ""))
     runtime = None
-    if not env.get("ZLUDA_PATH") or not zluda_path.is_dir():
-        failures.append("prepared ZLUDA_PATH is missing")
+    if not env.get("DL4J_ZLUDA_ROOT") or not zluda_path.is_dir():
+        failures.append("prepared DL4J_ZLUDA_ROOT is missing")
     else:
         runtime = find_zluda_runtime(zluda_path, build)
         if runtime is None:
-            failures.append(f"prepared ZLUDA_PATH contains no {zluda_platform(build)} runtime")
+            failures.append(f"prepared DL4J_ZLUDA_ROOT contains no {zluda_platform(build)} runtime")
     if failures:
         raise RuntimeError("ZLUDA configuration attestation failed: " + "; ".join(failures))
     print(
@@ -1381,6 +1376,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_MAVEN_REPOSITORY": str(repository),
             "DL4J_CUDA_VERSION": str(build.get("cudaVersion", "")),
             "DL4J_ZLUDA_TARGET": zluda_target(build),
+            "DL4J_ZLUDA_ROOT": env.get("DL4J_ZLUDA_ROOT", ""),
         })
         if family == "vulkan-mlir" and variant.get("mlir"):
             # native-platform.sh uses platform.classifier for the JavaCPP

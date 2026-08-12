@@ -258,7 +258,11 @@ final class SdxCompiledLlmCore implements SdxLlmModel {
             case ANDROID_ARM64_HEXAGON_HTP:
                 return SdxRuntime.ModelOptions.mobileHexagon();
             case ANDROID_ARM64_NNAPI_ACCELERATOR:
-                return SdxRuntime.ModelOptions.mobileNnapiAccelerator();
+                return new SdxRuntime.ModelOptions()
+                        .backend(SdxRuntime.SDX_BACKEND_ARM_HYBRID)
+                        .strictBackend(false)
+                        .allowRuntimeJit(false)
+                        .gpuTarget(SdxRuntime.SDX_GPU_TARGET_AUTO);
             case IOS_ARM64_METAL:
                 return new SdxRuntime.ModelOptions()
                         .backend(SdxRuntime.SDX_BACKEND_MLX)

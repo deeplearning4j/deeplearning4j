@@ -70,24 +70,9 @@ public class JCublasBackend extends Nd4jBackend {
 
     @Override
     public boolean canRun() {
-        // Check if running under ZLUDA transpiler
-        String zludaPath = System.getenv("ZLUDA_PATH");
-        boolean isZluda = zludaPath != null && !zludaPath.isEmpty();
-
-        if (isZluda) {
-            // ZLUDA mode - ZLUDA provides CUDA API compatibility
-            // Device detection happens through ZLUDA's translated CUDA calls
-            log.info("Running with ZLUDA transpiler from: {}", zludaPath);
-            try {
-                Loader.load(org.bytedeco.cuda.global.cublas.class);
-                return true;
-            } catch (Throwable t) {
-                log.warn("Failed to load CUDA libraries for ZLUDA: {}", t.getMessage());
-                return false;
-            }
-        }
-
-        // Standard CUDA check
+        // This is the NVIDIA CUDA backend. ZLUDA has a separate backend and
+        // platform classifier, so environment variables must not change this
+        // backend's device-selection behavior.
         int[] count = { 0 };
         int errorCode = org.bytedeco.cuda.global.cudart.cudaGetDeviceCount(count);
         if(errorCode != cudaSuccess) {
@@ -100,15 +85,6 @@ public class JCublasBackend extends Nd4jBackend {
         Loader.load(org.bytedeco.cuda.global.cublas.class);
 
         return true;
-    }
-
-    /**
-     * Check if this backend is running under ZLUDA transpiler
-     * @return true if ZLUDA_PATH environment variable is set
-     */
-    public boolean isZludaMode() {
-        String zludaPath = System.getenv("ZLUDA_PATH");
-        return zludaPath != null && !zludaPath.isEmpty();
     }
 
     @Override

@@ -25,52 +25,31 @@
 #define SD_ZLUDA_RUNTIME_H
 
 #include <execution/Engine.h>
-#include <cstdlib>
 #include <cstring>
 
 namespace sd {
 namespace zluda {
 
 /**
- * Check if ZLUDA runtime is available.
- * This checks for the ZLUDA_PATH environment variable which indicates
- * ZLUDA libraries are installed and configured.
+ * Check if this native artifact was built with its bundled ZLUDA runtime.
  *
  * @return true if ZLUDA runtime appears to be available
  */
 inline bool isZludaRuntimeAvailable() {
 #if defined(HAVE_ZLUDA)
-    const char* zludaPath = std::getenv("ZLUDA_PATH");
-    return zludaPath != nullptr && std::strlen(zludaPath) > 0;
+    return true;
 #else
     return false;
 #endif
 }
 
 /**
- * Detect the ZLUDA target backend based on environment and available GPUs.
- * This is a runtime detection that complements the compile-time configuration.
+ * Return the target encoded in this native artifact.
  *
  * @return The detected engine type, or ENGINE_CPU if ZLUDA is not available
  */
 inline samediff::Engine detectZludaBackend() {
 #if defined(HAVE_ZLUDA)
-    if (!isZludaRuntimeAvailable()) {
-        return samediff::ENGINE_CPU;
-    }
-
-    // Check for explicit target setting via environment variable
-    const char* zludaTarget = std::getenv("ZLUDA_TARGET");
-    if (zludaTarget != nullptr) {
-        if (std::strcmp(zludaTarget, "AMD") == 0 || std::strcmp(zludaTarget, "amd") == 0) {
-            return samediff::ENGINE_ZLUDA_AMD;
-        }
-        if (std::strcmp(zludaTarget, "INTEL") == 0 || std::strcmp(zludaTarget, "intel") == 0) {
-            return samediff::ENGINE_ZLUDA_INTEL;
-        }
-    }
-
-    // Use compile-time detected target
 #if defined(ZLUDA_TARGET_AMD)
     return samediff::ENGINE_ZLUDA_AMD;
 #elif defined(ZLUDA_TARGET_INTEL)

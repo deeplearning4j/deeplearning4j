@@ -1277,30 +1277,23 @@
             </build>
         </profile>
 
-        <!-- Profile for ZLUDA-specific testing (AMD/Intel GPUs).
-             Activates automatically when ZLUDA_PATH is set. The forked test JVM must see
-             ZLUDA's libcuda.so before the system CUDA driver, so this opt-in emulation profile
-             prepends its interposition libraries and enables JavaCPP pathsFirst for the
-             cublas/nvrtc drop-ins. See ZludaSmokeTest and ADR 0087 / ADR 0102. -->
+        <!-- ZLUDA AMD smoke tests. The -platform artifact owns the complete
+             JavaCPP native classifier, so the consumer supplies no ZLUDA/CUDA
+             installation, loader path, or backend-selection environment variable. -->
         <profile>
             <id>test-zluda</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>env.ZLUDA_PATH</name>
-                </property>
             </activation>
             <properties>
                 <sd.test.backend>zluda</sd.test.backend>
-                <!-- AMD or INTEL; forwarded to the forked JVM as ZLUDA_TARGET for JZludaBackend auto-detection -->
-                <zluda.target></zluda.target>
-                <!-- Override to broaden what runs under the ZLUDA environment, e.g. -Dzluda.test.groups=smoke -->
+                <!-- Override to broaden the hardware test tier, e.g. -Dzluda.test.groups=smoke -->
                 <zluda.test.groups>zluda,rocm,amd-gpu</zluda.test.groups>
             </properties>
             <dependencies>
                 <dependency>
                     <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-zluda-${cuda.version}</artifactId>
+                    <artifactId>nd4j-zluda-${cuda.version}-platform</artifactId>
                     <version>${dl4j.version}</version>
                 </dependency>
             </dependencies>
@@ -1312,15 +1305,7 @@
                         <configuration>
                             <systemPropertyVariables>
                                 <sd.test.backend>${sd.test.backend}</sd.test.backend>
-                                <org.bytedeco.javacpp.pathsFirst>true</org.bytedeco.javacpp.pathsFirst>
-                                <org.bytedeco.javacpp.pathsfirst>true</org.bytedeco.javacpp.pathsfirst>
-                                <java.library.path>${env.ZLUDA_PATH}:${env.ZLUDA_PATH}/lib:/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib</java.library.path>
                             </systemPropertyVariables>
-                            <environmentVariables>
-                                <ZLUDA_PATH>${env.ZLUDA_PATH}</ZLUDA_PATH>
-                                <ZLUDA_TARGET>${zluda.target}</ZLUDA_TARGET>
-                                <LD_LIBRARY_PATH>${env.ZLUDA_PATH}:${env.ZLUDA_PATH}/lib:/usr/local/cuda/targets/x86_64-linux/lib:/usr/local/cuda/lib64</LD_LIBRARY_PATH>
-                            </environmentVariables>
                             <groups>${zluda.test.groups}</groups>
                         </configuration>
                     </plugin>

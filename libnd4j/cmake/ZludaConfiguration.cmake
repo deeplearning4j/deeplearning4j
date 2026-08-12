@@ -1,15 +1,13 @@
 # cmake/ZludaConfiguration.cmake
-# ZLUDA Transpiler Configuration for AMD/Intel GPU Support
+# ZLUDA Transpiler Configuration for AMD GPU Support
 #
-# ZLUDA is a drop-in CUDA replacement that translates CUDA API calls to:
-#   - HIP (for AMD GPUs via ROCm)
-#   - Level Zero (for Intel GPUs via oneAPI)
+# ZLUDA is a drop-in CUDA replacement that translates CUDA API calls to HIP
+# for AMD GPUs through ROCm.
 #
 # This module provides:
-#   - ZLUDA runtime detection
+#   - explicit, pinned ZLUDA build-input resolution
 #   - MIOpen configuration for AMD (cuDNN alternative)
-#   - oneDNN configuration for Intel (cuDNN alternative)
-#   - CUDA compatibility flags for ZLUDA
+#   - CUDA ABI compatibility flags for the AMD ZLUDA runtime
 
 function(zluda_find_first_existing output_var)
     set(_zluda_match "")
@@ -56,6 +54,80 @@ function(resolve_zluda_runtime zluda_root windows_layout output_link output_runt
     set(${output_runtime} "${_zluda_runtime}" PARENT_SCOPE)
 endfunction()
 
+# Return every shared library distributed beside the selected ZLUDA driver.
+# The platform classifier must carry the complete pinned runtime, not merely the
+# link input used while compiling libnd4j. Executables such as zluda.exe are not
+# preloadable libraries and therefore remain outside this JavaCPP runtime list.
+function(resolve_zluda_runtime_bundle zluda_root windows_layout
+        output_libraries output_root)
+    resolve_zluda_runtime("${zluda_root}" "${windows_layout}"
+        _zluda_bundle_link _zluda_bundle_runtime)
+    if(NOT _zluda_bundle_runtime)
+        set(${output_libraries} "" PARENT_SCOPE)
+        set(${output_root} "" PARENT_SCOPE)
+        return()
+    endif()
+
+    get_filename_component(_zluda_bundle_root
+        "${_zluda_bundle_runtime}" DIRECTORY)
+    if(windows_layout)
+        file(GLOB _zluda_bundle_libraries LIST_DIRECTORIES FALSE
+            "${_zluda_bundle_root}/*.dll")
+    else()
+        file(GLOB _zluda_bundle_libraries LIST_DIRECTORIES FALSE
+            "${_zluda_bundle_root}/*.so"
+            "${_zluda_bundle_root}/*.so.*")
+    endif()
+    list(APPEND _zluda_bundle_libraries "${_zluda_bundle_runtime}")
+    list(REMOVE_DUPLICATES _zluda_bundle_libraries)
+    list(SORT _zluda_bundle_libraries)
+    set(${output_libraries} "${_zluda_bundle_libraries}" PARENT_SCOPE)
+    set(${output_root} "${_zluda_bundle_root}" PARENT_SCOPE)
+endfunction()
+
+# Select the CUDA ABI libraries implemented by the pinned ZLUDA distribution.
+# Unix links these implementations directly. Windows uses CUDA SDK import
+# libraries while the matching ZLUDA DLLs are staged application-local.
+function(resolve_zluda_cuda_abi_libraries runtime_libraries
+        output_libraries output_cudnn_libraries)
+    # Link exactly one file per CUDA ABI family. Official ZLUDA archives carry
+    # several compatibility symlinks for each implementation; passing every
+    # alias to the linker is redundant and can make the selected SONAME depend
+    # on archive ordering.
+    set(_zluda_cublas "")
+    set(_zluda_cublaslt "")
+    set(_zluda_cusparse "")
+    set(_zluda_cufft "")
+    set(_zluda_cudnn_libraries "")
+    if(NOT WIN32)
+        foreach(_zluda_runtime IN LISTS runtime_libraries)
+            get_filename_component(_zluda_runtime_name "${_zluda_runtime}" NAME)
+            string(TOLOWER "${_zluda_runtime_name}" _zluda_runtime_lower)
+            foreach(_zluda_family IN ITEMS cublas cublaslt cusparse cufft)
+                if(_zluda_runtime_lower MATCHES
+                        "^lib${_zluda_family}\\.so($|\\.)" AND
+                   NOT _zluda_${_zluda_family})
+                    set(_zluda_${_zluda_family} "${_zluda_runtime}")
+                endif()
+            endforeach()
+            if(_zluda_runtime_lower MATCHES "^libcudnn\\.so($|\\.)")
+                list(APPEND _zluda_cudnn_libraries "${_zluda_runtime}")
+            endif()
+        endforeach()
+    endif()
+
+    set(_zluda_abi_libraries "")
+    foreach(_zluda_family IN ITEMS cublas cublaslt cusparse cufft)
+        if(_zluda_${_zluda_family})
+            list(APPEND _zluda_abi_libraries "${_zluda_${_zluda_family}}")
+        endif()
+    endforeach()
+    list(REMOVE_DUPLICATES _zluda_abi_libraries)
+    list(REMOVE_DUPLICATES _zluda_cudnn_libraries)
+    set(${output_libraries} "${_zluda_abi_libraries}" PARENT_SCOPE)
+    set(${output_cudnn_libraries} "${_zluda_cudnn_libraries}" PARENT_SCOPE)
+endfunction()
+
 ################################################################################
 # Main ZLUDA Setup Function
 ################################################################################
@@ -71,10 +143,11 @@ function(setup_zluda)
 
     print_status_colored("INFO" "=== ZLUDA Transpiler Configuration ===")
 
-    # Detect ZLUDA installation
+    # The release worker owns download, checksum validation, and cache reuse.
+    # CMake accepts only an explicit build input (plus conventional fixed local
+    # installation roots) and never creates a runtime loader environment.
     set(ZLUDA_SEARCH_PATHS
-        $ENV{ZLUDA_PATH}
-        $ENV{ZLUDA_ROOT}
+        ${ZLUDA_ROOT}
         /opt/zluda
         /usr/local/zluda
         ${CMAKE_PREFIX_PATH}/zluda
@@ -82,6 +155,10 @@ function(setup_zluda)
 
     set(ZLUDA_LINK_LIBRARY "")
     set(ZLUDA_RUNTIME_LIBRARY "")
+    set(ZLUDA_RUNTIME_LIBRARIES "")
+    set(ZLUDA_RUNTIME_ROOT "")
+    set(ZLUDA_CUDA_ABI_LIBRARIES "")
+    set(ZLUDA_CUDNN_RUNTIME_LIBRARIES "")
     foreach(_zluda_search_root IN LISTS ZLUDA_SEARCH_PATHS)
         if(NOT "${_zluda_search_root}" STREQUAL "")
             resolve_zluda_runtime("${_zluda_search_root}" "${WIN32}"
@@ -89,6 +166,8 @@ function(setup_zluda)
             if(_zluda_runtime_candidate)
                 set(ZLUDA_LINK_LIBRARY "${_zluda_link_candidate}")
                 set(ZLUDA_RUNTIME_LIBRARY "${_zluda_runtime_candidate}")
+                resolve_zluda_runtime_bundle("${_zluda_search_root}" "${WIN32}"
+                    ZLUDA_RUNTIME_LIBRARIES ZLUDA_RUNTIME_ROOT)
                 break()
             endif()
         endif()
@@ -101,30 +180,34 @@ function(setup_zluda)
     endif()
 
     if(NOT ZLUDA_RUNTIME_LIBRARY)
-        # Try to download ZLUDA automatically
-        message(STATUS "ZLUDA not found locally, attempting automatic download...")
-        setup_zluda_download()
-
-        # Check if download succeeded and search again
-        if(TARGET zluda_external)
-            get_target_property(ZLUDA_INSTALL_DIR zluda_external INSTALL_DIR)
-            resolve_zluda_runtime("${ZLUDA_INSTALL_DIR}" "${WIN32}"
-                ZLUDA_LINK_LIBRARY ZLUDA_RUNTIME_LIBRARY)
-            if(ZLUDA_RUNTIME_LIBRARY)
-                set(ZLUDA_LIBRARY "${ZLUDA_LINK_LIBRARY}")
-                if(NOT ZLUDA_LIBRARY)
-                    set(ZLUDA_LIBRARY "${ZLUDA_RUNTIME_LIBRARY}")
-                endif()
-                message(STATUS "Using auto-downloaded ZLUDA runtime: ${ZLUDA_RUNTIME_LIBRARY}")
-            endif()
-        endif()
+        message(FATAL_ERROR
+            "ZLUDA build input was not found; the build controller must provide -DZLUDA_ROOT=<validated pinned runtime>")
     endif()
 
-    if(NOT ZLUDA_RUNTIME_LIBRARY)
-        print_status_colored("WARNING" "ZLUDA runtime not found. Set ZLUDA_PATH environment variable.")
-        print_status_colored("WARNING" "Or ensure automatic download completes successfully.")
-        print_status_colored("WARNING" "ZLUDA support disabled - falling back to standard CUDA if available.")
-        return()
+    resolve_zluda_cuda_abi_libraries("${ZLUDA_RUNTIME_LIBRARIES}"
+        ZLUDA_CUDA_ABI_LIBRARIES ZLUDA_CUDNN_RUNTIME_LIBRARIES)
+    if(NOT WIN32)
+        foreach(_zluda_required_abi IN ITEMS cublas cublaslt cusparse)
+            set(_zluda_required_found FALSE)
+            foreach(_zluda_abi_library IN LISTS ZLUDA_CUDA_ABI_LIBRARIES)
+                get_filename_component(_zluda_abi_name
+                    "${_zluda_abi_library}" NAME)
+                string(TOLOWER "${_zluda_abi_name}" _zluda_abi_lower)
+                if(_zluda_abi_lower MATCHES
+                        "^lib${_zluda_required_abi}\\.so($|\\.)")
+                    set(_zluda_required_found TRUE)
+                    break()
+                endif()
+            endforeach()
+            if(NOT _zluda_required_found)
+                message(FATAL_ERROR
+                    "Pinned ZLUDA runtime is missing AMD-backed CUDA ABI library ${_zluda_required_abi}")
+            endif()
+        endforeach()
+        if(NOT ZLUDA_CUDNN_RUNTIME_LIBRARIES)
+            message(FATAL_ERROR
+                "Pinned ZLUDA runtime is missing its AMD-backed cuDNN ABI libraries")
+        endif()
     endif()
 
     message(STATUS "Found ZLUDA runtime: ${ZLUDA_RUNTIME_LIBRARY}")
@@ -139,33 +222,26 @@ function(setup_zluda)
     set(ZLUDA_LIBRARY "${ZLUDA_LIBRARY}" PARENT_SCOPE)
     set(ZLUDA_LINK_LIBRARY "${ZLUDA_LINK_LIBRARY}" PARENT_SCOPE)
     set(ZLUDA_RUNTIME_LIBRARY "${ZLUDA_RUNTIME_LIBRARY}" PARENT_SCOPE)
+    set(ZLUDA_RUNTIME_LIBRARIES "${ZLUDA_RUNTIME_LIBRARIES}" PARENT_SCOPE)
+    set(ZLUDA_RUNTIME_ROOT "${ZLUDA_RUNTIME_ROOT}" PARENT_SCOPE)
+    set(ZLUDA_CUDA_ABI_LIBRARIES
+        "${ZLUDA_CUDA_ABI_LIBRARIES}" PARENT_SCOPE)
+    set(ZLUDA_CUDNN_RUNTIME_LIBRARIES
+        "${ZLUDA_CUDNN_RUNTIME_LIBRARIES}" PARENT_SCOPE)
 
-    # Determine target backend
-    if(SD_ZLUDA_TARGET STREQUAL "AMD" OR SD_ZLUDA_TARGET STREQUAL "amd")
-        set(ZLUDA_TARGET_BACKEND "AMD" PARENT_SCOPE)
-        set(ZLUDA_TARGET_BACKEND "AMD")
-        message(STATUS "ZLUDA target: AMD (ROCm/HIP)")
-        setup_zluda_amd()
-        foreach(_zluda_amd_variable
-                ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY
-                HAVE_MIOPEN MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR)
-            set(${_zluda_amd_variable} "${${_zluda_amd_variable}}" PARENT_SCOPE)
-        endforeach()
-    elseif(SD_ZLUDA_TARGET STREQUAL "INTEL" OR SD_ZLUDA_TARGET STREQUAL "intel")
-        set(ZLUDA_TARGET_BACKEND "INTEL" PARENT_SCOPE)
-        set(ZLUDA_TARGET_BACKEND "INTEL")
-        message(STATUS "ZLUDA target: Intel (Level Zero)")
-        setup_zluda_intel()
-    else()
-        # Auto-detect based on available GPU
-        detect_zluda_target()
-        set(ZLUDA_TARGET_BACKEND "${ZLUDA_TARGET_BACKEND}" PARENT_SCOPE)
+    if(NOT (SD_ZLUDA_TARGET STREQUAL "AMD" OR SD_ZLUDA_TARGET STREQUAL "amd"))
+        message(FATAL_ERROR
+            "The published ZLUDA backend is AMD-only; set SD_ZLUDA_TARGET=AMD")
     endif()
-
-    if(NOT ZLUDA_TARGET_BACKEND)
-        print_status_colored("WARNING" "Could not determine ZLUDA target. Please set SD_ZLUDA_TARGET=AMD or SD_ZLUDA_TARGET=INTEL")
-        return()
-    endif()
+    set(ZLUDA_TARGET_BACKEND "AMD" PARENT_SCOPE)
+    set(ZLUDA_TARGET_BACKEND "AMD")
+    message(STATUS "ZLUDA target: AMD (ROCm/HIP)")
+    setup_zluda_amd()
+    foreach(_zluda_amd_variable
+            ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY
+            HAVE_MIOPEN MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR)
+        set(${_zluda_amd_variable} "${${_zluda_amd_variable}}" PARENT_SCOPE)
+    endforeach()
 
     set(HAVE_ZLUDA TRUE PARENT_SCOPE)
     add_compile_definitions(HAVE_ZLUDA=1)
@@ -275,65 +351,6 @@ function(setup_zluda_amd)
 endfunction()
 
 ################################################################################
-# Intel-specific ZLUDA Configuration (Level Zero backend)
-################################################################################
-
-function(setup_zluda_intel)
-    message(STATUS "Configuring ZLUDA for Intel GPUs...")
-
-    # Find Level Zero / oneAPI installation
-    set(ONEAPI_SEARCH_PATHS
-        $ENV{ONEAPI_ROOT}
-        $ENV{ONEAPI_PATH}
-        $ENV{INTEL_ONEAPI_ROOT}
-        /opt/intel/oneapi
-        /usr/local/intel/oneapi
-    )
-
-    find_path(ONEAPI_PATH
-        NAMES compiler/latest/include/sycl/sycl.hpp
-        HINTS ${ONEAPI_SEARCH_PATHS}
-        NO_DEFAULT_PATH
-    )
-
-    # Also check for Level Zero directly. The replay handle needs both the
-    # headers and loader; a header-only detection must not advertise executable
-    # Level Zero support in the portable replay matrix.
-    set(HAVE_LEVELZERO FALSE CACHE BOOL "Level Zero replay handle available" FORCE)
-    find_path(LEVEL_ZERO_INCLUDE
-        NAMES level_zero/ze_api.h
-        HINTS ${ONEAPI_SEARCH_PATHS} /usr /usr/local
-        PATH_SUFFIXES include
-    )
-    find_library(LEVEL_ZERO_LIBRARY
-        NAMES ze_loader
-        HINTS ${ONEAPI_SEARCH_PATHS} /usr /usr/local
-        PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu compiler/latest/lib
-    )
-
-    if(ONEAPI_PATH OR LEVEL_ZERO_INCLUDE)
-        if(ONEAPI_PATH)
-            message(STATUS "Found oneAPI: ${ONEAPI_PATH}")
-            set(ONEAPI_PATH "${ONEAPI_PATH}" PARENT_SCOPE)
-        endif()
-        if(LEVEL_ZERO_INCLUDE AND LEVEL_ZERO_LIBRARY)
-            message(STATUS "Found Level Zero headers: ${LEVEL_ZERO_INCLUDE}")
-            message(STATUS "Found Level Zero loader: ${LEVEL_ZERO_LIBRARY}")
-            set(HAVE_LEVELZERO TRUE CACHE BOOL "Level Zero replay handle available" FORCE)
-            add_compile_definitions(HAVE_LEVELZERO=1)
-        elseif(LEVEL_ZERO_INCLUDE)
-            print_status_colored("WARNING" "Level Zero headers found but ze_loader is missing; native replay handle disabled.")
-        endif()
-
-        # For Intel ZLUDA, use oneDNN which has native Intel GPU support
-        setup_onednn_for_zluda()
-    else()
-        print_status_colored("WARNING" "oneAPI/Level Zero not found. Intel ZLUDA DNN operations may fall back to CPU.")
-        print_status_colored("WARNING" "Install oneAPI toolkit for full Intel GPU support.")
-    endif()
-endfunction()
-
-################################################################################
 # MIOpen Setup for AMD GPUs (cuDNN replacement)
 ################################################################################
 
@@ -386,135 +403,6 @@ function(setup_miopen)
 endfunction()
 
 ################################################################################
-# oneDNN Setup for Intel ZLUDA (cuDNN replacement)
-# This function ensures ZLUDA Intel uses the existing oneDNN setup from
-# Dependencies.cmake (setup_onednn) rather than configuring separately.
-################################################################################
-
-function(setup_onednn_for_zluda)
-    message(STATUS "Configuring oneDNN for Intel ZLUDA...")
-
-    # Check if oneDNN is already configured via the main build system
-    if(HAVE_ONEDNN AND TARGET onednn_interface)
-        message(STATUS "✅ Reusing existing oneDNN configuration for ZLUDA Intel")
-        message(STATUS "   oneDNN target: onednn_interface")
-        add_compile_definitions(ZLUDA_USE_ONEDNN=1)
-        set(ZLUDA_ONEDNN_TARGET onednn_interface PARENT_SCOPE)
-        return()
-    endif()
-
-    # Check if HAVE_ONEDNN is set but target doesn't exist yet
-    # (might be configured but not yet built)
-    if(HAVE_ONEDNN)
-        message(STATUS "✅ oneDNN is enabled, ZLUDA Intel will use it when available")
-        add_compile_definitions(ZLUDA_USE_ONEDNN=1)
-        return()
-    endif()
-
-    # oneDNN not enabled - enable it via HELPERS_onednn
-    # The main build system (setup_onednn in Dependencies.cmake) will handle
-    # downloading and configuring oneDNN with auto-download support
-    if(NOT HELPERS_onednn)
-        message(STATUS "Enabling oneDNN helper for Intel ZLUDA support")
-        set(HELPERS_onednn ON CACHE BOOL "Enable oneDNN for ZLUDA Intel" FORCE)
-        message(STATUS "   HELPERS_onednn set to ON - oneDNN will be auto-downloaded")
-        message(STATUS "   The main build system (setup_onednn) will configure oneDNN")
-    else()
-        message(STATUS "   HELPERS_onednn already enabled")
-    endif()
-
-    # Mark that ZLUDA will use oneDNN once it's configured
-    add_compile_definitions(ZLUDA_USE_ONEDNN=1)
-
-    # Note: The actual oneDNN setup happens in MainBuildFlow.cmake via setup_onednn()
-    # which is called AFTER ZLUDA configuration. This just ensures the flag is set.
-    message(STATUS "   Intel ZLUDA will link against project's oneDNN (onednn_interface)")
-endfunction()
-
-################################################################################
-# Auto-detect ZLUDA Target GPU
-################################################################################
-
-function(detect_zluda_target)
-    message(STATUS "Auto-detecting ZLUDA target GPU...")
-
-    # Try to detect AMD GPU via rocminfo
-    find_program(ROCMINFO_EXECUTABLE rocminfo
-        HINTS $ENV{ROCM_PATH} /opt/rocm
-        PATH_SUFFIXES bin
-    )
-
-    if(ROCMINFO_EXECUTABLE)
-        execute_process(
-            COMMAND ${ROCMINFO_EXECUTABLE}
-            RESULT_VARIABLE ROCM_RESULT
-            OUTPUT_VARIABLE ROCM_OUTPUT
-            ERROR_QUIET
-            TIMEOUT 10
-        )
-
-        if(ROCM_RESULT EQUAL 0 AND ROCM_OUTPUT MATCHES "gfx")
-            message(STATUS "Detected AMD GPU via rocminfo")
-            set(ZLUDA_TARGET_BACKEND "AMD" PARENT_SCOPE)
-            setup_zluda_amd()
-            return()
-        endif()
-    endif()
-
-    # Try to detect Intel GPU via sycl-ls or clinfo
-    find_program(SYCL_LS_EXECUTABLE sycl-ls
-        HINTS $ENV{ONEAPI_ROOT} /opt/intel/oneapi
-        PATH_SUFFIXES bin compiler/latest/bin
-    )
-
-    if(SYCL_LS_EXECUTABLE)
-        execute_process(
-            COMMAND ${SYCL_LS_EXECUTABLE}
-            RESULT_VARIABLE SYCL_RESULT
-            OUTPUT_VARIABLE SYCL_OUTPUT
-            ERROR_QUIET
-            TIMEOUT 10
-        )
-
-        if(SYCL_RESULT EQUAL 0 AND SYCL_OUTPUT MATCHES "[Ii]ntel")
-            message(STATUS "Detected Intel GPU via sycl-ls")
-            set(ZLUDA_TARGET_BACKEND "INTEL" PARENT_SCOPE)
-            setup_zluda_intel()
-            return()
-        endif()
-    endif()
-
-    # Try clinfo as fallback
-    find_program(CLINFO_EXECUTABLE clinfo)
-    if(CLINFO_EXECUTABLE)
-        execute_process(
-            COMMAND ${CLINFO_EXECUTABLE}
-            RESULT_VARIABLE CLINFO_RESULT
-            OUTPUT_VARIABLE CLINFO_OUTPUT
-            ERROR_QUIET
-            TIMEOUT 10
-        )
-
-        if(CLINFO_RESULT EQUAL 0)
-            if(CLINFO_OUTPUT MATCHES "[Aa][Mm][Dd]" OR CLINFO_OUTPUT MATCHES "gfx")
-                message(STATUS "Detected AMD GPU via clinfo")
-                set(ZLUDA_TARGET_BACKEND "AMD" PARENT_SCOPE)
-                setup_zluda_amd()
-                return()
-            elseif(CLINFO_OUTPUT MATCHES "[Ii]ntel")
-                message(STATUS "Detected Intel GPU via clinfo")
-                set(ZLUDA_TARGET_BACKEND "INTEL" PARENT_SCOPE)
-                setup_zluda_intel()
-                return()
-            endif()
-        endif()
-    endif()
-
-    print_status_colored("WARNING" "Could not auto-detect GPU vendor.")
-    print_status_colored("WARNING" "Please set SD_ZLUDA_TARGET=AMD or SD_ZLUDA_TARGET=INTEL explicitly.")
-endfunction()
-
-################################################################################
 # Configure CUDA Flags for ZLUDA Compatibility
 ################################################################################
 
@@ -534,12 +422,8 @@ function(configure_zluda_cuda_flags)
 
     set(ZLUDA_CUDA_FLAGS "")
 
-    # Report that architecture is handled by CudaConfiguration.cmake
-    if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
-        message(STATUS "   Target: AMD (ROCm/HIP) - sm_50 baseline set in CudaConfiguration")
-    elseif(ZLUDA_TARGET_BACKEND STREQUAL "INTEL")
-        message(STATUS "   Target: Intel (Level Zero) - sm_50 baseline set in CudaConfiguration")
-    endif()
+    # Report that architecture is handled by CudaConfiguration.cmake.
+    message(STATUS "   Target: AMD (ROCm/HIP) - sm_50 baseline set in CudaConfiguration")
 
     # Additional ZLUDA-specific flags can be added here if needed in the future
     # For example, disabling specific PTX optimizations that don't translate well:
@@ -571,8 +455,16 @@ function(configure_zluda_linking target_name)
         message(STATUS "   Linked ZLUDA import/shared library: ${ZLUDA_LINK_LIBRARY}")
     endif()
 
+    if(ZLUDA_CUDA_ABI_LIBRARIES)
+        target_link_libraries(${target_name} PUBLIC
+            ${ZLUDA_CUDA_ABI_LIBRARIES})
+        message(STATUS
+            "   Linked ZLUDA AMD CUDA ABI libraries: ${ZLUDA_CUDA_ABI_LIBRARIES}")
+    endif()
+
     if(WIN32)
-        message(STATUS "   Using CUDA SDK import libraries; deploy the complete ZLUDA runtime with zluda.exe or its documented DLL layout")
+        message(STATUS
+            "   Using build-only CUDA SDK import libraries; the classifier carries the matching ZLUDA DLLs")
     endif()
 
     # Add ZLUDA library path (takes precedence over system CUDA)
@@ -581,45 +473,21 @@ function(configure_zluda_linking target_name)
         message(STATUS "   Added ZLUDA lib path: ${ZLUDA_LIB_DIR}")
     endif()
 
-    if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
-        # ROCm headers are attached only to miopenBridge.cpp. Its object calls
-        # both MIOpen and the AMD HIP runtime directly, so both libraries are
-        # private implementation dependencies of the final ZLUDA artifact.
-        if(HAVE_MIOPEN)
-            target_link_libraries(${target_name} PRIVATE ${MIOPEN_LIBRARY})
-            if(ROCM_HIP_RUNTIME_LIBRARY)
-                target_link_libraries(${target_name} PRIVATE ${ROCM_HIP_RUNTIME_LIBRARY})
-            endif()
-            message(STATUS "   Linked isolated MIOpen runtime: ${MIOPEN_LIBRARY}")
-            message(STATUS "   Linked isolated AMD HIP runtime: ${ROCM_HIP_RUNTIME_LIBRARY}")
+    # ROCm headers are attached only to miopenBridge.cpp. Its object calls
+    # both MIOpen and the AMD HIP runtime directly, so both libraries are
+    # private implementation dependencies of the final ZLUDA artifact.
+    if(HAVE_MIOPEN)
+        target_link_libraries(${target_name} PRIVATE ${MIOPEN_LIBRARY})
+        if(ROCM_HIP_RUNTIME_LIBRARY)
+            target_link_libraries(${target_name} PRIVATE ${ROCM_HIP_RUNTIME_LIBRARY})
         endif()
+        message(STATUS "   Linked isolated MIOpen runtime: ${MIOPEN_LIBRARY}")
+        message(STATUS "   Linked isolated AMD HIP runtime: ${ROCM_HIP_RUNTIME_LIBRARY}")
+    endif()
 
-        # Add ROCm library path privately for the AMD-only runtime dependency.
-        if(ROCM_LIB_DIR)
-            target_link_directories(${target_name} PRIVATE ${ROCM_LIB_DIR})
-        endif()
-
-    elseif(ZLUDA_TARGET_BACKEND STREQUAL "INTEL")
-        if(HAVE_LEVELZERO AND LEVEL_ZERO_LIBRARY)
-            target_include_directories(${target_name} PUBLIC ${LEVEL_ZERO_INCLUDE})
-            target_link_libraries(${target_name} PUBLIC ${LEVEL_ZERO_LIBRARY})
-            message(STATUS "   Linked Level Zero loader: ${LEVEL_ZERO_LIBRARY}")
-        endif()
-
-        # Link against the project's existing oneDNN (onednn_interface target)
-        # This target is created by setup_onednn() in Dependencies.cmake
-        if(TARGET onednn_interface)
-            target_link_libraries(${target_name} PUBLIC onednn_interface)
-            message(STATUS "   Linked onednn_interface for Intel ZLUDA")
-        elseif(HAVE_ONEDNN AND DEFINED ONEDNN)
-            # Fallback to ONEDNN variable if set
-            target_link_libraries(${target_name} PUBLIC ${ONEDNN})
-            message(STATUS "   Linked ${ONEDNN} for Intel ZLUDA")
-        elseif(HAVE_ONEDNN)
-            message(STATUS "   oneDNN enabled but target not yet available - will be linked by main build")
-        else()
-            message(WARNING "   oneDNN not available for Intel ZLUDA - DNN ops will use fallback")
-        endif()
+    # Add ROCm library path privately for the AMD-only runtime dependency.
+    if(ROCM_LIB_DIR)
+        target_link_directories(${target_name} PRIVATE ${ROCM_LIB_DIR})
     endif()
 
     # Add compile definition for ZLUDA backend
@@ -642,24 +510,11 @@ function(print_zluda_summary)
     message(STATUS "ZLUDA Link Library: ${ZLUDA_LINK_LIBRARY}")
     message(STATUS "ZLUDA Runtime Library: ${ZLUDA_RUNTIME_LIBRARY}")
 
-    if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
-        message(STATUS "ROCm Path: ${ROCM_PATH}")
-        if(HAVE_MIOPEN)
-            message(STATUS "MIOpen: Enabled (${MIOPEN_LIBRARY})")
-        else()
-            message(STATUS "MIOpen: Not available (cuDNN ops will use fallback)")
-        endif()
-    elseif(ZLUDA_TARGET_BACKEND STREQUAL "INTEL")
-        if(ONEAPI_PATH)
-            message(STATUS "oneAPI Path: ${ONEAPI_PATH}")
-        endif()
-        if(TARGET onednn_interface)
-            message(STATUS "oneDNN: Enabled (using project's onednn_interface)")
-        elseif(HAVE_ONEDNN)
-            message(STATUS "oneDNN: Enabled (via ONEDNN=${ONEDNN})")
-        else()
-            message(STATUS "oneDNN: Not available (cuDNN ops will use fallback)")
-        endif()
+    message(STATUS "ROCm Path: ${ROCM_PATH}")
+    if(HAVE_MIOPEN)
+        message(STATUS "MIOpen: Enabled (${MIOPEN_LIBRARY})")
+    else()
+        message(STATUS "MIOpen: Not available (cuDNN ops will use fallback)")
     endif()
 
     message(STATUS "=====================================")

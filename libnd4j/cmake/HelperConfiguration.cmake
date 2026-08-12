@@ -78,6 +78,17 @@ endfunction()
 # ============================================================================
 
 function(setup_mkl_vml)
+    if(SD_ANDROID_BUILD OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+        # MKL has no Android runtime. A host JavaCPP MKL extraction must never
+        # leak into a cross-compiled Android link; Android CPU builds use OpenBLAS.
+        message(STATUS "MKL VML: Skipped (Android uses OpenBLAS)")
+        set(HAVE_MKL_VML FALSE PARENT_SCOPE)
+        set(HAVE_MKL FALSE PARENT_SCOPE)
+        set(MKL_VML_LIBRARIES "" PARENT_SCOPE)
+        set(MKL_RUNTIME_LIBRARIES "" PARENT_SCOPE)
+        return()
+    endif()
+
     if(SD_VULKAN)
         # Vulkan kernels use Vulkan/MLIR accumulation and math implementations;
         # host MKL VML is neither a device abstraction nor a fallback.
