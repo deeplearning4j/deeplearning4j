@@ -5975,6 +5975,8 @@ class RegionalMirrorTests(unittest.TestCase):
         )
 
         self.assertEqual(2, result["blobCount"])
+        self.assertEqual(2, result["scannedBlobCount"])
+        self.assertEqual(0, result["skippedBlobCount"])
         self.assertEqual(192, result["bytes"])
         self.assertEqual({"AppendBlob": 1, "BlockBlob": 1}, result["blobTypes"])
         self.assertEqual(["repo"], result["priorityPrefixes"])
@@ -5989,6 +5991,65 @@ class RegionalMirrorTests(unittest.TestCase):
         destination_blobs[append.name].set_blob_tags.assert_called_once_with(
             append.tags
         )
+
+    def test_bootstrap_skips_blob_already_copied_from_current_source_version(self):
+        item = SimpleNamespace(
+            name="repo/current.jar",
+            size=256,
+            blob_type=SimpleNamespace(value="BlockBlob"),
+            etag="current-etag",
+        )
+        source_blob = mock.Mock()
+        source_blob.get_blob_properties.return_value = SimpleNamespace(
+            etag=item.etag,
+            size=item.size,
+            version_id="2026-08-12T13:22:53.0068234Z",
+        )
+        destination_blob = mock.Mock()
+        destination_blob.get_blob_properties.return_value = SimpleNamespace(
+            copy=SimpleNamespace(
+                source=(
+                    "https://source.blob.core.windows.net/releases/repo/current.jar"
+                    "?versionid=2026-08-12T13%3A22%3A53.0068234Z"
+                )
+            )
+        )
+        source = SimpleNamespace(
+            container_name="releases",
+            url="https://source.blob.core.windows.net/releases",
+            list_blobs=lambda **kwargs: [item],
+            get_blob_client=lambda name: source_blob,
+        )
+        destination = SimpleNamespace(
+            get_blob_client=lambda name: destination_blob
+        )
+        context = {
+            "modules": {
+                "generate_container_sas": lambda **kwargs: "source-sas",
+                "ContainerSasPermissions": self.model,
+                "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+                "ResourceNotFoundError": KeyError,
+                "HttpResponseError": RuntimeError,
+            }
+        }
+
+        result = release.bootstrap_container_copy(
+            context,
+            "source",
+            "source-key",
+            source,
+            destination,
+            workers=1,
+            timeout_seconds=60,
+            priority_prefixes=["repo"],
+            include_unprioritized=False,
+        )
+
+        self.assertEqual(0, result["blobCount"])
+        self.assertEqual(1, result["scannedBlobCount"])
+        self.assertEqual(1, result["skippedBlobCount"])
+        self.assertEqual(0, result["bytes"])
+        destination_blob.start_copy_from_url.assert_not_called()
 
     def test_bootstrap_uses_native_async_copy_for_large_block_blobs(self):
         class PendingCopyError(Exception):
@@ -6014,6 +6075,9 @@ class RegionalMirrorTests(unittest.TestCase):
             },
         ]
         destination_blob.get_blob_properties.side_effect = [
+            SimpleNamespace(
+                copy=SimpleNamespace(status="pending", id="stale-copy")
+            ),
             SimpleNamespace(
                 copy=SimpleNamespace(status="pending", id="stale-copy")
             ),
@@ -6057,6 +6121,8 @@ class RegionalMirrorTests(unittest.TestCase):
             )
 
         self.assertEqual(1, result["blobCount"])
+        self.assertEqual(1, result["scannedBlobCount"])
+        self.assertEqual(0, result["skippedBlobCount"])
         self.assertEqual(size, result["bytes"])
         self.assertEqual("priority-prefixes", result["scope"])
         self.assertEqual(2, destination_blob.start_copy_from_url.call_count)
@@ -6067,7 +6133,7 @@ class RegionalMirrorTests(unittest.TestCase):
         self.assertEqual(
             "if-not-modified", copy_call.kwargs["source_match_condition"]
         )
-        self.assertEqual(3, destination_blob.get_blob_properties.call_count)
+        self.assertEqual(4, destination_blob.get_blob_properties.call_count)
         destination_blob.abort_copy.assert_called_once_with("stale-copy")
         destination_blob.set_blob_tags.assert_called_once_with(
             {"classifier": "linux-x86_64"}

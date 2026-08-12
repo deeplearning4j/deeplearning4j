@@ -4561,6 +4561,19 @@ def storage_account_key(
     return str(object_value(values[0], "value"))
 
 
+def copied_source_version_id(properties: Any) -> str:
+    """Return the immutable source version recorded by Azure Copy Blob."""
+    source = str(object_value(object_value(properties, "copy"), "source", "") or "")
+    if not source:
+        return ""
+    for key, values in urllib.parse.parse_qs(
+        urllib.parse.urlsplit(source).query
+    ).items():
+        if key.lower() == "versionid" and values:
+            return str(values[0])
+    return ""
+
+
 def bootstrap_container_copy(
     context: dict[str, Any],
     source_account_name: str,
@@ -4626,7 +4639,7 @@ def bootstrap_container_copy(
         destination_blob.abort_copy(copy_id)
         return True
 
-    def copy_blob(item: Any) -> tuple[str, int]:
+    def copy_blob(item: Any) -> tuple[str, int, bool]:
         if stop_requested.is_set():
             raise concurrent.futures.CancelledError()
         name = str(object_value(item, "name", ""))
@@ -4636,13 +4649,36 @@ def bootstrap_container_copy(
         source_url = f"{source_container.url}/{quoted}?{source_sas}"
         source_blob = source_container.get_blob_client(name)
         destination_blob = destination_container.get_blob_client(name)
-        expected_etag = object_value(item, "etag")
-        size = int(object_value(item, "size", 0) or 0)
+        source_properties = source_blob.get_blob_properties()
+        expected_etag = (
+            object_value(source_properties, "etag") or object_value(item, "etag")
+        )
+        source_version_id = str(
+            object_value(source_properties, "version_id")
+            or object_value(source_properties, "versionId", "")
+            or ""
+        )
+        size = int(
+            object_value(source_properties, "size")
+            or object_value(source_properties, "content_length")
+            or object_value(item, "size", 0)
+            or 0
+        )
         listed_blob_type = object_value(item, "blob_type", "unknown")
         blob_type = str(object_value(listed_blob_type, "value", listed_blob_type))
         synchronous = (
             blob_type == "BlockBlob" and size <= MIRROR_BLOCK_COPY_SYNC_LIMIT_BYTES
         )
+        try:
+            destination_properties = destination_blob.get_blob_properties()
+        except modules["ResourceNotFoundError"]:
+            destination_properties = None
+        if (
+            source_version_id
+            and destination_properties is not None
+            and copied_source_version_id(destination_properties) == source_version_id
+        ):
+            return blob_type, size, False
         for attempt in range(3):
             try:
                 result = destination_blob.start_copy_from_url(
@@ -4705,7 +4741,7 @@ def bootstrap_container_copy(
                     tags = source_blob.get_blob_tags()
                     if tags:
                         destination_blob.set_blob_tags(tags)
-                return blob_type, size
+                return blob_type, size, True
             expected_etag = latest_etag
             if attempt == 2:
                 raise RuntimeError(
@@ -4716,18 +4752,25 @@ def bootstrap_container_copy(
     counts: dict[str, int] = {}
     bytes_copied = 0
     completed = 0
+    copied = 0
+    skipped = 0
     submitted = 0
 
     def record(future: Any, *, listing_complete: bool = False) -> None:
-        nonlocal bytes_copied, completed
-        blob_type, size = future.result()
-        counts[blob_type] = counts.get(blob_type, 0) + 1
-        bytes_copied += size
+        nonlocal bytes_copied, completed, copied, skipped
+        blob_type, size, was_copied = future.result()
+        if was_copied:
+            counts[blob_type] = counts.get(blob_type, 0) + 1
+            bytes_copied += size
+            copied += 1
+        else:
+            skipped += 1
         completed += 1
         if completed % 100 == 0 or (listing_complete and completed == submitted):
             suffix = "" if listing_complete else " (listing in progress)"
             print(
-                f"Azure mirror bootstrap copied {completed} blobs{suffix}",
+                "Azure mirror reconciliation processed "
+                f"{completed} blobs ({copied} copied, {skipped} unchanged){suffix}",
                 file=sys.stderr,
                 flush=True,
             )
@@ -4755,7 +4798,9 @@ def bootstrap_container_copy(
     if submitted == 0:
         print("Azure mirror bootstrap source container is empty", file=sys.stderr)
     return {
-        "blobCount": completed,
+        "blobCount": copied,
+        "scannedBlobCount": completed,
+        "skippedBlobCount": skipped,
         "bytes": bytes_copied,
         "blobTypes": dict(sorted(counts.items())),
         "transport": "azure-service-to-service-copy",
@@ -4945,23 +4990,27 @@ def configure_mirrors(args: argparse.Namespace) -> None:
             object_value(existing_filters, "min_creation_time", "")
             or MIRROR_ALL_BLOBS_CREATION_TIME
         )
-        bootstrap = None
-        if existing_policy is None and not args.skip_priority_bootstrap:
-            bootstrap = bootstrap_container_copy(
-                context,
-                source_name,
-                storage_account_key(context, source_group, source_name),
-                source_container,
-                destination_service.get_container_client(destination_container_name),
-                workers=args.copy_workers,
-                timeout_seconds=args.copy_timeout_hours * 3600,
-                priority_prefixes=(
-                    args.priority_prefix
-                    or [stable_maven_repository_prefix(plan)]
+        if not args.skip_priority_bootstrap:
+            bootstrap = {
+                "state": "reconciled",
+                **bootstrap_container_copy(
+                    context,
+                    source_name,
+                    storage_account_key(context, source_group, source_name),
+                    source_container,
+                    destination_service.get_container_client(
+                        destination_container_name
+                    ),
+                    workers=args.copy_workers,
+                    timeout_seconds=args.copy_timeout_hours * 3600,
+                    priority_prefixes=(
+                        args.priority_prefix
+                        or [stable_maven_repository_prefix(plan)]
+                    ),
+                    include_unprioritized=False,
                 ),
-                include_unprioritized=False,
-            )
-        elif existing_policy is None:
+            }
+        else:
             bootstrap = {
                 "state": "skipped",
                 "reason": "--skip-priority-bootstrap",
@@ -7973,13 +8022,13 @@ def parser() -> argparse.ArgumentParser:
         "--copy-timeout-hours",
         type=int,
         default=24,
-        help="deadline for the full-container bootstrap copy (default: 24)",
+        help="deadline for priority-prefix reconciliation (default: 24)",
     )
     mirror_configure.add_argument(
         "--priority-prefix",
         action="append",
         help=(
-            "eagerly copy this Blob prefix before enabling replication; repeatable; "
+            "eagerly reconcile this Blob prefix through Azure Copy Blob; repeatable; "
             "defaults to the stable Maven repository"
         ),
     )
@@ -7987,8 +8036,8 @@ def parser() -> argparse.ArgumentParser:
         "--skip-priority-bootstrap",
         action="store_true",
         help=(
-            "enable all-existing/all-future object replication immediately; useful "
-            "when resuming after priority prefixes were already seeded"
+            "configure all-existing/all-future object replication without eagerly "
+            "reconciling priority prefixes"
         ),
     )
     add_storage_options(mirror_configure)
