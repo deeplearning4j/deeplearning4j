@@ -131,7 +131,7 @@ void ContextBuffers::release() {
     }
 
     // Free workspace buffers — routed through the pool so that both
-    // cudaMallocAsync (primary path) and allocateDirect (906 fallback)
+    // cudaMallocAsync (primary path) and allocateDirect compatibility fallbacks
     // allocations are freed correctly regardless of which path was taken.
     if (_allocationPointer != nullptr) {
       memory::CudaMemoryPool::getInstance().free(_allocationPointer, _deviceId);
@@ -224,16 +224,14 @@ void ContextBuffers::initialize() {
   // We use stream 0 (default stream) to ensure the allocation is immediately
   // available on any stream.
   //
-  // If cudaMallocAsync fails with error 906 (cudaErrorStreamCaptureImplicit),
-  // we're being called during CUDA graph capture. Fall back to cudaMalloc
-  // which doesn't participate in stream ordering and won't invalidate capture.
+  // If cudaMallocAsync is unavailable (cudaErrorNotSupported, returned by
+  // compatibility runtimes such as ZLUDA) or stream 0 cannot be used during
+  // capture (error 906), route through allocateDirect. That method preserves
+  // the async-pool path when available and uses a tracked cudaMalloc fallback
+  // when the runtime does not implement stream-ordered allocation.
   auto res = cudaMallocAsync(&_reductionPointer, 1024 * 1024 * 8, 0);
-  if (res == 906) {
-    // Error 906 = cudaErrorStreamCaptureImplicit: stream 0 would depend on
-    // a capturing blocking stream. Use allocateDirect instead — it allocates
-    // on a dedicated non-capturing stream so it is safe during graph capture
-    // and produces a persistent buffer that survives capture/teardown.
-    cudaGetLastError();  // clear error 906
+  if (res == cudaErrorNotSupported || res == 906) {
+    cudaGetLastError();  // clear the async-allocation error before fallback
     _reductionPointer = memory::CudaMemoryPool::getInstance().allocateDirect(1024 * 1024 * 8, _deviceId);
     res = (_reductionPointer != nullptr) ? cudaSuccess : cudaErrorMemoryAllocation;
   }
@@ -292,10 +290,8 @@ void ContextBuffers::initialize() {
   }
 
   res = cudaMallocAsync(&_allocationPointer, 1024 * 1024 * 8, 0);
-  if (res == 906) {
-    // Error 906 = cudaErrorStreamCaptureImplicit: same capture-safe fallback
-    // as for _reductionPointer above — allocateDirect uses a dedicated
-    // non-capturing stream, producing a persistent buffer.
+  if (res == cudaErrorNotSupported || res == 906) {
+    // Same compatibility/capture-safe fallback as _reductionPointer above.
     cudaGetLastError();
     _allocationPointer = memory::CudaMemoryPool::getInstance().allocateDirect(1024 * 1024 * 8, _deviceId);
     res = (_allocationPointer != nullptr) ? cudaSuccess : cudaErrorMemoryAllocation;

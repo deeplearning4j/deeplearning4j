@@ -4154,6 +4154,10 @@ class AzureSafetyTests(unittest.TestCase):
             worker,
         )
         self.assertIn("sccache archive SHA-256 mismatch", worker)
+        self.assertIn("function Invoke-WebRequestWithRetry", worker)
+        self.assertIn("$Attempt -le $MaxAttempts", worker)
+        self.assertIn("Write-Phase 'tool-download' 'retrying'", worker)
+        self.assertIn("-Description 'sccache archive'", worker)
         self.assertIn("$script:WindowsTarExe = Join-Path $env:SystemRoot 'System32\\tar.exe'", worker)
         self.assertIn("& $script:WindowsTarExe -xzf $SccacheArchive -C $env:TEMP", worker)
         self.assertIn("$MavenAccounting = Publish-MavenRepository", worker)

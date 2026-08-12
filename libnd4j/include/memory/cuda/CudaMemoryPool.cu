@@ -461,19 +461,20 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       restoreDevice();
       return ptr;
     }
-    // Pools disabled/unsupported: use cudaMallocAsync on the resolved stream (the
-    // device's default mempool). No raw cudaMalloc — all allocation stays pool-routed.
-    cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
-    if (err != cudaSuccess) {
-      sd_debug("cudaMallocAsync (pools-off path) failed: %s\n", cudaGetErrorString(err), "");
-      auto result = allocateFailover(size, deviceId, actualDeviceId,
-                                   /*skipSameDeviceRetry=*/false, allocStream);
+    // A runtime that reports no memory-pool support cannot be expected to
+    // implement cudaMallocAsync. Use the CUDA-compatible synchronous allocator
+    // and register the pointer so free() routes it through cudaFree.
+    cudaError_t err = cudaMalloc(&ptr, size);
+    if (err == cudaSuccess && ptr != nullptr) {
+      registerDirectAllocation(ptr, size);
       restoreDevice();
-      return result;
+      return ptr;
     }
-
+    sd_debug("cudaMalloc (pools-off path) failed: %s\n", cudaGetErrorString(err), "");
+    auto result = allocateFailover(size, deviceId, actualDeviceId,
+                                 /*skipSameDeviceRetry=*/false, allocStream);
     restoreDevice();
-    return ptr;
+    return result;
   }
 
   // Initialize pool for this device if needed
@@ -491,19 +492,19 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
         restoreDevice();
         return ptr;
       }
-      // initializeForDevice failed: use cudaMallocAsync on the resolved stream
-      // (device default mempool) rather than a raw cudaMalloc.
-      cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
-      if (err != cudaSuccess) {
-        sd_debug("cudaMallocAsync (uninit-device path) failed: %s\n", cudaGetErrorString(err), "");
-        auto result = allocateFailover(size, deviceId, actualDeviceId,
-                                   /*skipSameDeviceRetry=*/false, allocStream);
+      // The device's default pool could not be initialized. Use a tracked
+      // synchronous allocation instead of calling the unavailable async API.
+      cudaError_t err = cudaMalloc(&ptr, size);
+      if (err == cudaSuccess && ptr != nullptr) {
+        registerDirectAllocation(ptr, size);
         restoreDevice();
-        return result;
+        return ptr;
       }
-
+      sd_debug("cudaMalloc (uninit-device path) failed: %s\n", cudaGetErrorString(err), "");
+      auto result = allocateFailover(size, deviceId, actualDeviceId,
+                                 /*skipSameDeviceRetry=*/false, allocStream);
       restoreDevice();
-      return ptr;
+      return result;
     }
   }
 
@@ -552,6 +553,20 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   // CudaMemoryPool::allocate() -> LaunchContext::defaultContext() -> getCudaStream()
   // -> ContextBuffers::initialize() -> CudaMemoryPool::allocate() -> ...
   cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
+
+  if (err == cudaErrorNotSupported && !tl_graphExecutionActive) {
+    // CUDA-ABI compatibility runtimes may implement cudaMalloc/cudaFree without
+    // stream-ordered allocation. Preserve device placement with a tracked direct
+    // allocation instead of treating a missing API as memory pressure.
+    cudaGetLastError();
+    ptr = nullptr;
+    err = cudaMalloc(&ptr, size);
+    if (err == cudaSuccess && ptr != nullptr) {
+      registerDirectAllocation(ptr, size);
+      restoreDevice();
+      return ptr;
+    }
+  }
 
   if (err != cudaSuccess) {
     // During CUDA graph capture, error recovery (stream sync, failover) would break
@@ -1758,6 +1773,23 @@ void* CudaMemoryPool::allocateDirect(size_t size, int deviceId) {
 
   void* ptr = nullptr;
   cudaError_t err = cudaMallocAsync(&ptr, size, s);
+  if (err == cudaErrorNotSupported && !tl_graphExecutionActive) {
+    // Compatibility runtimes such as ZLUDA expose cudaMalloc/cudaFree but may
+    // not implement stream-ordered allocation. Track the synchronous pointer so
+    // the normal free() path selects cudaFree instead of cudaFreeAsync.
+    cudaGetLastError();
+    ptr = nullptr;
+    err = cudaMalloc(&ptr, size);
+    if (err == cudaSuccess && ptr != nullptr) {
+      registerDirectAllocation(ptr, size);
+      if (sd::Environment::getInstance().isDebug()) {
+        sd_printf("CudaMemoryPool::allocateDirect: tracked cudaMalloc compatibility allocation "
+                  "ptr=%p size=%zu dev=%d\n", ptr, size, deviceId);
+      }
+      if (restore) cudaSetDevice(prevDev);
+      return ptr;
+    }
+  }
   if (err == cudaSuccess && ptr != nullptr) {
     // Materialize the allocation so the buffer is valid for cross-stream reads by the
     // captured graph at replay. cudaStreamSynchronize is a HOST-side wait — and under a

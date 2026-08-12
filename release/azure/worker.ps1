@@ -146,6 +146,36 @@ function Invoke-NativeChecked {
   }
 }
 
+function Invoke-WebRequestWithRetry {
+  param(
+    [Parameter(Mandatory=$true)][string]$Uri,
+    [Parameter(Mandatory=$true)][string]$OutFile,
+    [Parameter(Mandatory=$true)][string]$Description,
+    [int]$MaxAttempts = 6
+  )
+
+  for ($Attempt = 1; $Attempt -le $MaxAttempts; $Attempt++) {
+    try {
+      if (Test-Path -LiteralPath $OutFile) {
+        Remove-Item -LiteralPath $OutFile -Force
+      }
+      Invoke-WebRequest -UseBasicParsing -Uri $Uri -OutFile $OutFile
+      return
+    }
+    catch {
+      if (Test-Path -LiteralPath $OutFile) {
+        Remove-Item -LiteralPath $OutFile -Force
+      }
+      if ($Attempt -ge $MaxAttempts) {
+        throw "$Description download failed after $MaxAttempts attempts: $($_.Exception.Message)"
+      }
+      $DelaySeconds = [Math]::Min(60, 5 * [Math]::Pow(2, $Attempt - 1))
+      Write-Phase 'tool-download' 'retrying' "name=$Description attempt=$Attempt maxAttempts=$MaxAttempts delaySeconds=$DelaySeconds"
+      Start-Sleep -Seconds $DelaySeconds
+    }
+  }
+}
+
 function Invoke-KillSwitchProbe {
   & $script:PythonExe $CloudIo kill-enabled --bucket $Config.killSwitchBucket --object $Config.runKillSwitchObject --emergency-object $Config.killSwitchObject --controller-epoch $Config.controllerEpoch --client-id $Config.managedIdentityClientId *> $null
   return $LASTEXITCODE
@@ -709,7 +739,10 @@ function Install-CommonToolchains {
   if (-not (Test-Path $SccacheExe)) {
     New-Item -ItemType Directory -Force -Path $SccacheDir | Out-Null
     $SccacheArchive = Join-Path $env:TEMP 'sccache.tar.gz'
-    Invoke-WebRequest "https://github.com/mozilla/sccache/releases/download/$SccacheVersion/$SccacheFile.tar.gz" -OutFile $SccacheArchive -UseBasicParsing
+    Invoke-WebRequestWithRetry `
+      -Uri "https://github.com/mozilla/sccache/releases/download/$SccacheVersion/$SccacheFile.tar.gz" `
+      -OutFile $SccacheArchive `
+      -Description 'sccache archive'
     $ActualSccacheSha256 = (Get-FileHash -LiteralPath $SccacheArchive -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($ActualSccacheSha256 -ne $SccacheSha256) {
       Remove-Item -LiteralPath $SccacheArchive -Force
