@@ -197,6 +197,21 @@ if(_runtime_search_roots)
         list(POP_FRONT _runtime_queue _runtime_candidate)
         get_filename_component(_runtime_candidate_real
             "${_runtime_candidate}" REALPATH)
+
+        # Preserve the filename of every explicitly selected symlink before
+        # canonical-path deduplication. ZLUDA exposes multiple CUDA ABI names
+        # (for example libcuda.so and libcuda.so.1) through one libnvcuda DSO;
+        # resolving those seeds first would otherwise discard the ABI aliases.
+        get_filename_component(_runtime_candidate_name
+            "${_runtime_candidate}" NAME)
+        _shared_runtime_loader_name(_runtime_candidate_loader_name
+            "${_runtime_candidate_real}")
+        if(NOT _runtime_candidate_name STREQUAL
+           _runtime_candidate_loader_name)
+            list(APPEND _runtime_alias_entries
+                "${_runtime_candidate_real}|${_runtime_candidate_name}")
+        endif()
+
         list(FIND _runtime_libraries "${_runtime_candidate_real}"
             _runtime_candidate_index)
         if(NOT _runtime_candidate_index EQUAL -1)
@@ -257,6 +272,7 @@ if(_runtime_search_roots)
             endif()
         endforeach()
     endwhile()
+    list(REMOVE_DUPLICATES _runtime_alias_entries)
 endif()
 
 # ZLUDA classifiers may use CUDA headers and static implementation archives at

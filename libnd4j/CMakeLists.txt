@@ -596,6 +596,14 @@ if(SD_BUILD_TESTS)
         COMMAND ${CMAKE_COMMAND}
             "-DLIBND4J_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/ZludaWindowsRuntimeContractTest.cmake")
+    add_test(
+        NAME shared_runtime_alias_contract
+        COMMAND ${CMAKE_COMMAND}
+            "-DLIBND4J_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+            "-DTEST_BINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}"
+            "-DTEST_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+            "-DTEST_READELF=${CMAKE_READELF}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/SharedRuntimeAliasContractTest.cmake")
     add_subdirectory(tests_cpu)
 endif()
 

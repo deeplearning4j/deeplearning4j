@@ -1025,11 +1025,13 @@ class ReleaseValidationTest(unittest.TestCase):
                     worker.index("$Arguments ="),
                 )
 
-    def test_zluda_cmake_runtime_contract_is_registered(self):
+    def test_zluda_cmake_runtime_contracts_are_registered(self):
         root = Path(__file__).parents[2]
         cmake_source = (root / "libnd4j/CMakeLists.txt").read_text(encoding="utf-8")
         self.assertIn("NAME zluda_windows_runtime_contract", cmake_source)
         self.assertIn("cmake/tests/ZludaWindowsRuntimeContractTest.cmake", cmake_source)
+        self.assertIn("NAME shared_runtime_alias_contract", cmake_source)
+        self.assertIn("cmake/tests/SharedRuntimeAliasContractTest.cmake", cmake_source)
 
     def test_zluda_consumer_contract_is_self_contained_and_amd_only(self):
         root = Path(__file__).parents[2]
