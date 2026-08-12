@@ -487,7 +487,12 @@ endfunction()
 # =============================================================================
 function(setup_flatbuffers)
     set(FLATBUFFERS_VERSION "25.2.10")
-    set(FLATBUFFERS_URL "https://github.com/google/flatbuffers/archive/v${FLATBUFFERS_VERSION}.tar.gz")
+    # ExternalProject tries URL entries in order. Keep both canonical GitHub
+    # archive forms so a transient edge failure does not abort a release shard.
+    set(FLATBUFFERS_URL
+        "https://github.com/google/flatbuffers/archive/v${FLATBUFFERS_VERSION}.tar.gz"
+        "https://codeload.github.com/google/flatbuffers/tar.gz/refs/tags/v${FLATBUFFERS_VERSION}"
+    )
     set(FLATBUFFERS_URL_HASH "SHA256=b9c2df49707c57a48fc0923d52b8c73beb72d675f9d44b2211e4569be40a7421")
 
     # MSVC produces flatbuffers.lib; GCC/MinGW/Clang produce libflatbuffers.a
