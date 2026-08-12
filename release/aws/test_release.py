@@ -1132,6 +1132,14 @@ class ReleaseValidationTest(unittest.TestCase):
             "${javacpp.platform}${javacpp.platform.extension}",
             attached_classifier.text,
         )
+        classifier_excludes = profile.find(
+            ".//m:execution[m:id='attach-zluda-native-classifier']"
+            "/m:configuration/m:excludes",
+            namespace,
+        )
+        self.assertIsNotNone(classifier_excludes)
+        self.assertEqual("override", classifier_excludes.attrib.get("combine.self"))
+        self.assertEqual([], list(classifier_excludes))
         direct_jni_build = profile.find(
             ".//m:execution[m:id='build-zluda-jni']", namespace
         )

@@ -240,6 +240,10 @@
                                 <configuration>
                                     <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
                                     <skipIfEmpty>true</skipIfEmpty>
+                                    <!-- The module-level exclusions keep native files out of
+                                         the unclassified Java JAR. This classified execution must
+                                         replace, not inherit, those exclusions. -->
+                                    <excludes combine.self="override"/>
                                     <includes>
                                         <include>org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/*</include>
                                         <include>lib/**</include>
