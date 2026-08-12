@@ -569,9 +569,12 @@ function(collect_all_sources out_source_list)
         # artifacts merely because GLOB_RECURSE sees their directory.
         file(GLOB_RECURSE VULKAN_ARRAY_SOURCES ./include/array/vulkan/*.cpp)
         list(REMOVE_ITEM ARRAY_SOURCES ${VULKAN_ARRAY_SOURCES})
-        file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp)
-        file(GLOB_RECURSE VULKAN_MEMORY_SOURCES ./include/memory/vulkan/*.cpp)
-        list(REMOVE_ITEM MEMORY_SOURCES ${VULKAN_MEMORY_SOURCES})
+        # CPU/NNAPI owns only the common memory implementation and CPU
+        # workspaces. Backend SDK bridges are admitted by their backend branch
+        # (for example, the ZLUDA HIP bridge above), never by a recursive CPU glob.
+        file(GLOB_RECURSE MEMORY_SOURCES
+            ./include/memory/impl/*.cpp
+            ./include/memory/cpu/*.cpp)
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_IMPL_SOURCES ./include/ops/declarable/helpers/impl/*.cpp)
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_CPU_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp)
         file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp)
@@ -672,6 +675,27 @@ function(collect_all_sources out_source_list)
         message(STATUS "🖥️  CPU build: Enhanced template system will generate optimized CPU instantiations")
     endif()
 
+    # CUDA, ZLUDA/HIP, cuDNN, and MIOpen translation units require their
+    # respective SDKs and belong only to the SD_CUDA backend branch. Enforce the
+    # ownership boundary for every non-CUDA target (including Android CPU/NNAPI)
+    # after all branch-local source lists have been assembled.
+    if(NOT SD_CUDA)
+        set(_non_cuda_backend_source_regex
+            "/include/(array|execution|graph|helpers|legacy|loops|memory|system/config)/(cuda|gpu|hip)/|/include/ops/declarable/(helpers|platform)/(cuda|cudnn|miopen)/")
+        set(_non_cuda_backend_sources "")
+        foreach(_candidate_source IN LISTS ALL_SOURCES_LIST)
+            if(_candidate_source MATCHES "${_non_cuda_backend_source_regex}")
+                list(APPEND _non_cuda_backend_sources "${_candidate_source}")
+            endif()
+        endforeach()
+        if(_non_cuda_backend_sources)
+            list(REMOVE_ITEM ALL_SOURCES_LIST ${_non_cuda_backend_sources})
+            list(LENGTH _non_cuda_backend_sources _non_cuda_backend_source_count)
+            message(STATUS
+                "Excluded ${_non_cuda_backend_source_count} CUDA/ZLUDA/HIP-only sources from non-CUDA target")
+        endif()
+    endif()
+
     # When SD_GCC_FUNCTRACE is ON, the binary exceeds 2GB and PLT relocations fail
     # libc_nonshared.a contains precompiled functions (like atexit) that use PLT
     # We provide our own implementations compiled with -fno-plt to override them
@@ -683,6 +707,16 @@ function(collect_all_sources out_source_list)
     # Add only the template sources selected for this backend.
     list(APPEND ALL_SOURCES_LIST ${CUSTOMOPS_GENERIC_SOURCES})
     list(REMOVE_DUPLICATES ALL_SOURCES_LIST)
+
+    # Keep the final source graph honest if later collection logic changes.
+    if(NOT SD_CUDA)
+        foreach(_candidate_source IN LISTS ALL_SOURCES_LIST)
+            if(_candidate_source MATCHES "${_non_cuda_backend_source_regex}")
+                message(FATAL_ERROR
+                    "Non-CUDA source boundary admitted CUDA/ZLUDA/HIP source: ${_candidate_source}")
+            endif()
+        endforeach()
+    endif()
 
     if(SD_VULKAN)
         # Make source ownership enforceable. A future broad glob must fail

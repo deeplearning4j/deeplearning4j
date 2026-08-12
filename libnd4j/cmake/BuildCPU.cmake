@@ -11,7 +11,12 @@ file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/except
 file(GLOB_RECURSE EXEC_SOURCES ./include/execution/*.cpp ./include/execution/*.h)
 file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp ./include/types/*.h)
 file(GLOB_RECURSE ARRAY_SOURCES ./include/array/*.cpp ./include/array/*.h)
-file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp ./include/memory/*.h)
+# Keep backend SDK translation units out of CPU/NNAPI targets. CUDA/ZLUDA
+# bridges are added explicitly by the CUDA build flow when their SDK is enabled.
+file(GLOB_RECURSE MEMORY_SOURCES
+        ./include/memory/impl/*.cpp ./include/memory/impl/*.h
+        ./include/memory/cpu/*.cpp ./include/memory/cpu/*.h
+        ./include/memory/*.h)
 file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp ./include/graph/*.h)
 file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
 file(GLOB_RECURSE CUSTOMOPS_HELPERS_IMPL_SOURCES ./include/ops/declarable/helpers/impl/*.cpp)
@@ -25,6 +30,11 @@ file(GLOB_RECURSE SYSTEM_CONFIG_SOURCES ./include/system/config/impl/*.cpp)
 
 set(ALL_SOURCES "")
 set(STATIC_SOURCES_TO_CHECK ${BLAS_SOURCES} ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES} ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES} ${SYSTEM_CONFIG_SOURCES})
+
+set(_cpu_forbidden_backend_source_regex
+        "/include/(array|execution|graph|helpers|legacy|loops|memory|system/config)/(cuda|gpu|hip)/|/include/ops/declarable/(helpers|platform)/(cuda|cudnn|miopen)/")
+list(FILTER STATIC_SOURCES_TO_CHECK EXCLUDE REGEX
+        "${_cpu_forbidden_backend_source_regex}")
 
 # Add no-PLT stub functions for functrace builds (GCC and Clang)
 # These stubs provide atexit/at_quick_exit implementations using __cxa_atexit

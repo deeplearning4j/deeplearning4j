@@ -2184,6 +2184,32 @@ class ReleaseValidationTest(unittest.TestCase):
             cpu_linking,
         )
 
+    def test_nnapi_source_graph_excludes_cuda_zluda_and_hip_translation_units(self):
+        root = Path(__file__).parents[2]
+        source = (root / "libnd4j/cmake/MainBuildFlow.cmake").read_text(
+            encoding="utf-8"
+        )
+        cpu_branch_start = source.index(
+            "    else()\n        file(GLOB_RECURSE EXEC_SOURCES",
+            source.index("elseif(SD_VULKAN)"),
+        )
+        cpu_branch_end = source.index(
+            "# --- Multi-Helper Source Collection (CPU Build)", cpu_branch_start
+        )
+        cpu_sources = source[cpu_branch_start:cpu_branch_end]
+
+        self.assertIn("./include/memory/impl/*.cpp", cpu_sources)
+        self.assertIn("./include/memory/cpu/*.cpp", cpu_sources)
+        self.assertNotIn(
+            "file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp)",
+            cpu_sources,
+        )
+        self.assertIn("if(NOT SD_CUDA)", source)
+        self.assertIn("cuda|gpu|hip", source)
+        self.assertIn(
+            "Non-CUDA source boundary admitted CUDA/ZLUDA/HIP source", source
+        )
+
     def test_nnapi_backend_uses_current_array_api_and_android_symbol_guard(self):
         root = Path(__file__).parents[2]
         source = (
