@@ -661,6 +661,110 @@ def exact_unclassified_jar_candidates(
     )
 
 
+def attest_classifier_archive_contract(
+    path: Path,
+    rules: dict,
+    artifact_id: str,
+    classifier: str,
+    phase: str,
+) -> None:
+    """Fail closed when a classified JAR omits its declared native closure."""
+    contracts = rules.get("classifierArchiveContracts", {}) or {}
+    contract = contracts.get(artifact_id)
+    if contract is None:
+        return
+    if not isinstance(contract, dict):
+        raise ValueError(
+            f"classifierArchiveContracts[{artifact_id!r}] must be an object"
+        )
+
+    def expand(value: object) -> str:
+        return str(value).format(classifier=classifier)
+
+    required_entries = tuple(
+        expand(entry) for entry in contract.get("requiredEntries", []) or []
+    )
+    manifest_entry_value = contract.get("runtimeManifest")
+    manifest_entry = (
+        expand(manifest_entry_value) if manifest_entry_value is not None else None
+    )
+    if not required_entries or not manifest_entry:
+        raise ValueError(
+            f"classifierArchiveContracts[{artifact_id!r}] must declare "
+            "requiredEntries and runtimeManifest"
+        )
+
+    try:
+        with zipfile.ZipFile(path) as archive:
+            entries = {item.filename: item for item in archive.infolist()}
+            missing = [entry for entry in required_entries if entry not in entries]
+            empty = [
+                entry for entry in required_entries
+                if entry in entries and entries[entry].file_size == 0
+            ]
+            if missing or empty:
+                details = []
+                if missing:
+                    details.append("missing " + ", ".join(missing))
+                if empty:
+                    details.append("empty " + ", ".join(empty))
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} violates its "
+                    f"runtime contract: {'; '.join(details)}"
+                )
+            try:
+                manifest_text = archive.read(manifest_entry).decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} has a non-UTF-8 "
+                    f"runtime manifest {manifest_entry}"
+                ) from exc
+            runtime_names = [
+                line.strip()
+                for line in manifest_text.splitlines()
+                if line.strip() and not line.lstrip().startswith("#")
+            ]
+            if not runtime_names:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} has an empty "
+                    f"runtime closure manifest {manifest_entry}"
+                )
+            unsafe = [
+                name for name in runtime_names
+                if "/" in name or "\\" in name or name in {".", ".."}
+            ]
+            if unsafe:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} has unsafe runtime "
+                    f"manifest entries: {', '.join(unsafe)}"
+                )
+            manifest_parent = manifest_entry.rpartition("/")[0]
+            runtime_entries = [
+                f"{manifest_parent}/{name}" if manifest_parent else name
+                for name in runtime_names
+            ]
+            missing_runtime = [
+                entry for entry in runtime_entries
+                if entry not in entries or entries[entry].file_size == 0
+            ]
+            if missing_runtime:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} is missing "
+                    "manifest-owned runtimes: " + ", ".join(missing_runtime)
+                )
+    except zipfile.BadZipFile as exc:
+        raise RuntimeError(
+            f"{phase} classifier artifact is not a readable JAR: {path}"
+        ) from exc
+
+    print(
+        f"[dl4j-attestation] phase={phase} classifier={classifier} "
+        f"artifact={artifact_id} archive-entries={len(entries)} "
+        f"runtime-closure={len(runtime_names)}",
+        flush=True,
+    )
+
+
 def reset_unclassified_artifacts(
     repository: Path, build: dict, rules: dict, version: str | None
 ) -> None:
@@ -758,6 +862,11 @@ def attest_variant_classifier_artifacts(
             f"{phase} is missing exact {classifier} classifier JARs for "
             f"variant {variant['name']}: {', '.join(missing)}"
         )
+    for artifact_id, paths_for_artifact in found.items():
+        for path in paths_for_artifact:
+            attest_classifier_archive_contract(
+                path, rules, artifact_id, classifier, phase
+            )
     paths = sorted(
         path.relative_to(repository).as_posix()
         for matches in found.values()

@@ -12,6 +12,7 @@ import tempfile
 import unittest
 import urllib.error
 import xml.etree.ElementTree as ET
+import zipfile
 from contextlib import redirect_stderr, redirect_stdout
 from io import BytesIO, StringIO
 from pathlib import Path
@@ -1646,9 +1647,9 @@ class ReleaseValidationTest(unittest.TestCase):
                     "zludaVersion": "v6",
                     "javacppPlatform": "linux-x86_64",
                     "modules": [
-                        ":nd4j-cuda-12.9",
                         ":nd4j-cuda-12.9-preset",
                         ":nd4j-zluda-12.9",
+                        ":nd4j-cuda-backend-common",
                         ":libnd4j",
                     ],
                 },
@@ -1725,6 +1726,95 @@ class ReleaseValidationTest(unittest.TestCase):
                 )
                 self.assertTrue(all(not path.exists() for path in exact))
                 self.assertTrue(all(path.is_file() for path in lookalikes))
+
+    def test_zluda_classifier_archive_attestation_requires_complete_runtime_closure(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            repository = Path(temporary_directory)
+            version = "1.0.0-SNAPSHOT"
+            classifier = "linux-x86_64-zluda"
+            artifact_id = "nd4j-zluda-12.9"
+            preset_id = "nd4j-cuda-12.9-preset"
+            native_root = (
+                "org/nd4j/linalg/jcublas/bindings/"
+                f"{classifier}"
+            )
+            build = {
+                "backend": "cuda",
+                "cudaVersion": "12.9",
+                "zludaVersion": "v6",
+                "javacppPlatform": "linux-x86_64",
+                "modules": [f":{artifact_id}", f":{preset_id}"],
+            }
+            variant = {
+                "name": "zluda",
+                "classifierSuffix": "-cuda-12.9-zluda",
+                "platformExtension": "-zluda",
+            }
+            rules = {
+                "mode": "classifier",
+                "artifactIds": [artifact_id, preset_id],
+                "classifierArchiveContracts": {
+                    artifact_id: {
+                        "requiredEntries": [
+                            f"{native_root}/libjnind4jcuda.so",
+                            f"{native_root}/libnd4jcuda.so",
+                            f"{native_root}/shared-runtime-manifest.txt",
+                        ],
+                        "runtimeManifest": (
+                            f"{native_root}/shared-runtime-manifest.txt"
+                        ),
+                    },
+                },
+            }
+
+            def artifact_path(current_artifact_id):
+                path = (
+                    repository
+                    / "org/eclipse/deeplearning4j"
+                    / current_artifact_id
+                    / version
+                    / f"{current_artifact_id}-{version}-{classifier}.jar"
+                )
+                path.parent.mkdir(parents=True, exist_ok=True)
+                return path
+
+            preset_path = artifact_path(preset_id)
+            preset_path.write_bytes(b"preset")
+            zluda_path = artifact_path(artifact_id)
+            manifest = (
+                "# nd4j-shared-runtime-manifest-v1\n"
+                "libcuda.so\nlibamdhip64.so\n"
+            )
+
+            with zipfile.ZipFile(zluda_path, "w") as archive:
+                archive.writestr(
+                    f"{native_root}/shared-runtime-manifest.txt", manifest
+                )
+            with self.assertRaisesRegex(RuntimeError, "violates its runtime contract"):
+                build_platform.attest_variant_classifier_artifacts(
+                    repository, build, rules, variant, version, "test-repository"
+                )
+
+            with zipfile.ZipFile(zluda_path, "w") as archive:
+                archive.writestr(f"{native_root}/libjnind4jcuda.so", b"jni")
+                archive.writestr(f"{native_root}/libnd4jcuda.so", b"backend")
+                archive.writestr(f"{native_root}/libcuda.so", b"zluda")
+                archive.writestr(
+                    f"{native_root}/shared-runtime-manifest.txt", manifest
+                )
+            with self.assertRaisesRegex(RuntimeError, "manifest-owned runtimes"):
+                build_platform.attest_variant_classifier_artifacts(
+                    repository, build, rules, variant, version, "test-repository"
+                )
+
+            with zipfile.ZipFile(zluda_path, "a") as archive:
+                archive.writestr(f"{native_root}/libamdhip64.so", b"hip")
+            output = StringIO()
+            with redirect_stdout(output):
+                build_platform.attest_variant_classifier_artifacts(
+                    repository, build, rules, variant, version, "test-repository"
+                )
+            self.assertIn("runtime-closure=2", output.getvalue())
 
     def test_cpu_cuda_classifier_contract_rejects_incomplete_plan(self):
         build = {

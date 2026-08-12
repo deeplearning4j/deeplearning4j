@@ -99,6 +99,7 @@ set(_managed_link_alias "${_runtime_root}/libMIOpenContract.so")
 set(_primary_source "${_test_root}/primary.cpp")
 set(_primary_runtime "${_test_root}/libprimary.so")
 set(_primary_output "${_test_root}/primary-output")
+set(_primary_package "${_primary_output}/classifier-runtime")
 file(WRITE "${_managed_source}"
     "extern \"C\" int dl4j_managed_runtime_contract() { return 7; }\n")
 file(WRITE "${_primary_source}"
@@ -143,6 +144,7 @@ execute_process(
         "-DPRIMARY_RUNTIME=${_primary_runtime}"
         "-DRUNTIME_POLICY=zluda-amd"
         "-DOUTPUT_DIR=${_primary_output}"
+        "-DPACKAGE_DIR=${_primary_package}"
         "-DCXX_COMPILER=${TEST_CXX_COMPILER}"
         "-DREADELF=${TEST_READELF}"
         -P "${LIBND4J_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
@@ -164,6 +166,17 @@ if(_managed_runtime_index EQUAL -1 OR
         "Primary-root closure omitted libMIOpenContract.so.1: "
         "${_primary_manifest_entries}")
 endif()
+foreach(_packaged_runtime IN ITEMS
+        libprimary.so libMIOpenContract.so.1 shared-runtime-manifest.txt)
+    if(NOT EXISTS "${_primary_package}/${_packaged_runtime}")
+        message(FATAL_ERROR
+            "Classifier runtime package omitted '${_packaged_runtime}'")
+    endif()
+endforeach()
+if(EXISTS "${_primary_package}/javacpp-build-toolchain.properties")
+    message(FATAL_ERROR
+        "Classifier runtime package leaked build-only toolchain metadata")
+endif()
 
 message(STATUS
-    "Shared-runtime aliases, no-SONAME DSOs, and primary-root managed closure are preserved")
+    "Shared-runtime aliases, no-SONAME DSOs, primary-root managed closure, and classifier package are preserved")

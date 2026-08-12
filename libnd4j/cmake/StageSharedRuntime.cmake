@@ -471,6 +471,20 @@ if(NOT DEFINED OUTPUT_DIR OR OUTPUT_DIR STREQUAL "")
 endif()
 file(MAKE_DIRECTORY "${OUTPUT_DIR}")
 
+# nd4jcpu and the standalone SDX target can finish linking concurrently and
+# stage the same LLVM/MLIR closure into one classifier directory. Serialize the
+# complete cleanup/copy/manifest transaction: copy_if_different alone is not
+# sufficient because another stager may remove the destination between its copy
+# and verification. GUARD PROCESS releases the lock even on a fatal error.
+set(_runtime_stage_lock "${OUTPUT_DIR}/.shared-runtime-stage.lock")
+file(LOCK "${_runtime_stage_lock}" GUARD PROCESS TIMEOUT 300
+    RESULT_VARIABLE _runtime_stage_lock_result)
+if(NOT _runtime_stage_lock_result STREQUAL "0")
+    message(FATAL_ERROR
+        "Could not acquire shared-runtime staging lock '${_runtime_stage_lock}': "
+        "${_runtime_stage_lock_result}")
+endif()
+
 # Backend build directories are reusable. Remove only files recorded by the
 # previous staging pass; broad LLVM/MLIR globs would erase a second legitimate
 # runtime version before the complete current dependency set is staged.
@@ -568,6 +582,72 @@ if(_staged_runtime_names)
     string(APPEND _runtime_manifest "${_runtime_entries}\n")
 endif()
 file(WRITE "${_runtime_manifest_path}" "${_runtime_manifest}")
+
+# A binding module must not rediscover native dependencies or copy broad build
+# directory globs.  When PACKAGE_DIR is supplied, materialize the exact package
+# payload selected above: the linked backend, every manifest-owned runtime and
+# the manifest itself.  Keeping this operation in CMake makes native dependency
+# resolution and classifier contents one fail-closed contract.
+if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
+    get_filename_component(_runtime_output_dir_absolute "${OUTPUT_DIR}" ABSOLUTE)
+    get_filename_component(_runtime_package_dir_absolute "${PACKAGE_DIR}" ABSOLUTE)
+    file(RELATIVE_PATH _runtime_package_relative
+        "${_runtime_output_dir_absolute}" "${_runtime_package_dir_absolute}")
+    if(_runtime_package_relative STREQUAL "" OR
+       _runtime_package_relative STREQUAL "." OR
+       _runtime_package_relative MATCHES "^\\.\\.[/\\\\]" OR
+       IS_ABSOLUTE "${_runtime_package_relative}")
+        message(FATAL_ERROR
+            "PACKAGE_DIR must be a dedicated child of OUTPUT_DIR: "
+            "'${PACKAGE_DIR}' is not safely contained by '${OUTPUT_DIR}'")
+    endif()
+
+    file(REMOVE_RECURSE "${_runtime_package_dir_absolute}")
+    file(MAKE_DIRECTORY "${_runtime_package_dir_absolute}")
+
+    set(_runtime_package_sources "")
+    if(DEFINED PRIMARY_RUNTIME AND
+       NOT PRIMARY_RUNTIME STREQUAL "" AND
+       EXISTS "${PRIMARY_RUNTIME}" AND
+       NOT IS_DIRECTORY "${PRIMARY_RUNTIME}")
+        list(APPEND _runtime_package_sources "${PRIMARY_RUNTIME}")
+    endif()
+    foreach(_staged_runtime_name IN LISTS _staged_runtime_names)
+        list(APPEND _runtime_package_sources
+            "${OUTPUT_DIR}/${_staged_runtime_name}")
+    endforeach()
+
+    foreach(_runtime_package_source IN LISTS _runtime_package_sources)
+        get_filename_component(_runtime_package_name
+            "${_runtime_package_source}" NAME)
+        set(_runtime_package_output
+            "${_runtime_package_dir_absolute}/${_runtime_package_name}")
+        execute_process(
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                "${_runtime_package_source}" "${_runtime_package_output}"
+            RESULT_VARIABLE _runtime_package_copy_result)
+        if(NOT _runtime_package_copy_result EQUAL 0 OR
+           NOT EXISTS "${_runtime_package_output}")
+            message(FATAL_ERROR
+                "Failed to copy classifier runtime '${_runtime_package_source}' "
+                "to '${_runtime_package_output}'")
+        endif()
+    endforeach()
+    execute_process(
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${_runtime_manifest_path}"
+            "${_runtime_package_dir_absolute}/shared-runtime-manifest.txt"
+        RESULT_VARIABLE _runtime_package_manifest_copy_result)
+    if(NOT _runtime_package_manifest_copy_result EQUAL 0 OR
+       NOT EXISTS "${_runtime_package_dir_absolute}/shared-runtime-manifest.txt")
+        message(FATAL_ERROR
+            "Failed to copy the classifier shared-runtime manifest")
+    endif()
+    list(LENGTH _runtime_package_sources _runtime_package_file_count)
+    message(STATUS
+        "Materialized classifier runtime package at "
+        "${_runtime_package_dir_absolute} (${_runtime_package_file_count} libraries)")
+endif()
 
 # Build-only metadata: JavaCPP consumes this from platform.linkpath to compile its
 # JNI wrapper with the exact C++ driver selected by CMake. The binding POM copies

@@ -43,7 +43,7 @@
         <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cuda</libnd4j.outputPath>
-        <shared.runtime.manifest>shared-runtime-manifest.txt</shared.runtime.manifest>
+        <zluda.runtime.package>${libnd4j.outputPath}/zluda-runtime-package</zluda.runtime.package>
         <module.name>nd4j.zluda</module.name>
     </properties>
 
@@ -169,11 +169,44 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>verify-zluda-cmake-runtime-package</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="verify-zluda-cmake-runtime-package">
+                                        <fail message="CMake ZLUDA runtime package is missing libnd4jcuda.so">
+                                            <condition><not><available file="${zluda.runtime.package}/libnd4jcuda.so"/></not></condition>
+                                        </fail>
+                                        <fail message="CMake ZLUDA runtime package is missing the ZLUDA CUDA ABI">
+                                            <condition><not><available file="${zluda.runtime.package}/libcuda.so"/></not></condition>
+                                        </fail>
+                                        <fail message="CMake ZLUDA runtime package is missing the AMD HIP runtime">
+                                            <condition><not><available file="${zluda.runtime.package}/libamdhip64.so"/></not></condition>
+                                        </fail>
+                                        <fail message="CMake ZLUDA runtime package is missing its closure manifest">
+                                            <condition><not><available file="${zluda.runtime.package}/shared-runtime-manifest.txt"/></not></condition>
+                                        </fail>
+                                        <fail message="JavaCPP ZLUDA JNI library was not generated">
+                                            <condition><not><available file="${javacpp.build.output.path}/libjnind4jcuda.so"/></not></condition>
+                                        </fail>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-resources-plugin</artifactId>
                         <version>3.3.1</version>
                         <executions>
                             <execution>
-                                <id>copy-zluda-shared-runtime-manifest</id>
+                                <id>copy-zluda-cmake-runtime-package</id>
                                 <phase>prepare-package</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
@@ -183,10 +216,10 @@
                                     <overwrite>true</overwrite>
                                     <resources>
                                         <resource>
-                                            <directory>${libnd4j.outputPath}</directory>
+                                            <directory>${zluda.runtime.package}</directory>
                                             <filtering>false</filtering>
                                             <includes>
-                                                <include>${shared.runtime.manifest}</include>
+                                                <include>**/*</include>
                                             </includes>
                                         </resource>
                                     </resources>

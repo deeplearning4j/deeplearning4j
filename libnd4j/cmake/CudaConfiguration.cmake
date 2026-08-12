@@ -455,6 +455,11 @@ function(configure_cuda_linking main_target_name)
         _cuda_shared_runtimes_pipe)
     list(JOIN _cuda_shared_runtime_roots "|"
         _cuda_shared_runtime_roots_pipe)
+    set(_cuda_classifier_runtime_dir "")
+    if(SD_ZLUDA)
+        set(_cuda_classifier_runtime_dir
+            "$<TARGET_FILE_DIR:${main_target_name}>/zluda-runtime-package")
+    endif()
 
     # Always refresh the manifest and build-toolchain metadata. This also clears
     # compiler runtimes left by a previous Triton-enabled configuration.
@@ -469,6 +474,7 @@ function(configure_cuda_linking main_target_name)
             "-DOTOOL=${CMAKE_OTOOL}"
             "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${main_target_name}>"
+            "-DPACKAGE_DIR=${_cuda_classifier_runtime_dir}"
             -P "${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
         VERBATIM)
 

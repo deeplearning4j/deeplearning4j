@@ -1143,6 +1143,18 @@
           "nd4j-zluda-12.9",
           "nd4j-zluda-12.9-platform"
         ],
+        "classifierArchiveContracts": {
+          "nd4j-zluda-12.9": {
+            "requiredEntries": [
+              "org/nd4j/linalg/jcublas/bindings/{classifier}/libjnind4jcuda.so",
+              "org/nd4j/linalg/jcublas/bindings/{classifier}/libnd4jcuda.so",
+              "org/nd4j/linalg/jcublas/bindings/{classifier}/libcuda.so",
+              "org/nd4j/linalg/jcublas/bindings/{classifier}/libamdhip64.so",
+              "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt"
+            ],
+            "runtimeManifest": "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt"
+          }
+        },
         "includeMetadata": true
       },
       "build": {
