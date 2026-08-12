@@ -1621,8 +1621,7 @@ void CudaMemoryPool::trimPool(int deviceId) {
               deviceId, preUsed >> 20, postUsed >> 20, preReserved >> 20, postReserved >> 20);
   }
   if (prevDevice != deviceId) cudaSetDevice(prevDevice);
-  return;
-#endif
+#else
 
   // Sync only the streams that have had cudaFreeAsync issued on them.
   // free() records each stream into dirtyFreeStreams_[deviceId].
@@ -1670,6 +1669,7 @@ void CudaMemoryPool::trimPool(int deviceId) {
   if (prevDevice != deviceId) {
     cudaSetDevice(prevDevice);
   }
+#endif
 }
 
 void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
@@ -1706,8 +1706,7 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
            deviceId, reinterpret_cast<void*>(stream), preUsed >> 20, postUsed >> 20,
            preReserved >> 20, postReserved >> 20);
   if (prevDevice != deviceId) cudaSetDevice(prevDevice);
-  return;
-#endif
+#else
 
   // Diagnostic: pool state BEFORE trim
   size_t preUsed = 0, preReserved = 0;
@@ -1796,6 +1795,7 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
   // vision encoder execution, it amplifies the chance of hitting corruption.
   // The madvise(MADV_DONTNEED) in freeGpuOnStream already releases physical
   // pages without touching glibc metadata. RSS stays under control.
+#endif
 }
 
 void CudaMemoryPool::registerCaptureWorkspace(void* basePtr, size_t bytes) {
