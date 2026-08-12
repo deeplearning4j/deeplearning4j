@@ -4120,6 +4120,11 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertIn("Register-ScheduledTask", worker)
         self.assertIn("$SccacheVersion = 'v0.17.0'", worker)
         self.assertIn("Start-ScheduledTask", worker)
+        self.assertIn("for ($StartAttempt = 1; $StartAttempt -le 3", worker)
+        self.assertIn("Scheduled worker did not start after 3 attempts", worker)
+        registration_block = worker[worker.index("if ($Register) {"):worker.index("$ConfigB64 =")]
+        self.assertNotIn("shutdown.exe", registration_block)
+        self.assertNotIn("Stop-Computer", registration_block)
         self.assertIn(
             "$SccacheSha256 = "
             "'caf1932d76a909c909b7a2e41443cdfe3c79a49a380da1a22fa422e1d00d3ca7'",

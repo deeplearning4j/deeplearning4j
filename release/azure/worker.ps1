@@ -21,29 +21,34 @@ if ($Register) {
     $Principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
     $Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew
     Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Principal $Principal -Settings $Settings -Force | Out-Null
-    Start-ScheduledTask -TaskName $TaskName
-    $Deadline = [DateTime]::UtcNow.AddSeconds(90)
-    while (-not (Test-Path -LiteralPath $WorkerStartedMarker)) {
-      if ([DateTime]::UtcNow -ge $Deadline) {
-        $Info = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction SilentlyContinue
-        throw "Scheduled worker did not start within 90 seconds (lastResult=$($Info.LastTaskResult))"
+    $Started = $false
+    $LastResult = $null
+    $LastState = $null
+    for ($StartAttempt = 1; $StartAttempt -le 3 -and -not $Started; $StartAttempt++) {
+      Write-Output "Starting scheduled worker attempt $StartAttempt of 3"
+      Start-ScheduledTask -TaskName $TaskName
+      $Deadline = [DateTime]::UtcNow.AddSeconds(90)
+      while (-not (Test-Path -LiteralPath $WorkerStartedMarker) -and [DateTime]::UtcNow -lt $Deadline) {
+        Start-Sleep -Seconds 2
       }
-      Start-Sleep -Seconds 2
+      if (Test-Path -LiteralPath $WorkerStartedMarker) {
+        $Started = $true
+        break
+      }
+      $Task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+      $Info = Get-ScheduledTaskInfo -TaskName $TaskName -ErrorAction SilentlyContinue
+      $LastState = if ($Task) { $Task.State } else { 'missing' }
+      $LastResult = if ($Info) { $Info.LastTaskResult } else { 'unavailable' }
+      Write-Warning "Scheduled worker attempt $StartAttempt did not start (state=$LastState lastResult=$LastResult)"
+      Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+      Start-Sleep -Seconds 5
+    }
+    if (-not $Started) {
+      throw "Scheduled worker did not start after 3 attempts (state=$LastState lastResult=$LastResult)"
     }
   }
   catch {
-    Write-Output ($_ | Out-String)
-    try {
-      $global:LASTEXITCODE = $null
-      & shutdown.exe /s /t 0 /f
-      if ($null -ne $global:LASTEXITCODE -and $global:LASTEXITCODE -ne 0) {
-        throw "shutdown.exe failed with exit code $global:LASTEXITCODE"
-      }
-    }
-    catch {
-      Write-Warning "shutdown.exe was unsuccessful after worker registration failure; using Stop-Computer: $($_.Exception.Message)"
-      try { Stop-Computer -Force } catch { Write-Warning "Unable to shut down after worker registration failure: $($_.Exception.Message)" }
-    }
+    Write-Error "Windows worker registration failed: $($_ | Out-String)"
     exit 1
   }
   exit 0
