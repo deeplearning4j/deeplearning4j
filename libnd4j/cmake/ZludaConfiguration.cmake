@@ -5,7 +5,7 @@
 # for AMD GPUs through ROCm.
 #
 # This module provides:
-#   - explicit, pinned ZLUDA build-input resolution
+#   - CMake-owned, pinned ZLUDA acquisition and build-input resolution
 #   - MIOpen configuration for AMD (cuDNN alternative)
 #   - CUDA ABI compatibility flags for the AMD ZLUDA runtime
 
@@ -52,6 +52,34 @@ function(resolve_zluda_runtime zluda_root windows_layout output_link output_runt
     endif()
     set(${output_link} "${_zluda_link}" PARENT_SCOPE)
     set(${output_runtime} "${_zluda_runtime}" PARENT_SCOPE)
+endfunction()
+
+# Locate the actual distribution directory below CMake's managed extraction
+# root.  Release archives may add a top-level directory, so callers must not
+# depend on archive layout details.
+function(resolve_zluda_distribution_root extraction_root windows_layout output_root)
+    if(windows_layout)
+        file(GLOB_RECURSE _zluda_runtime_candidates LIST_DIRECTORIES FALSE
+            "${extraction_root}/nvcuda.dll")
+    else()
+        file(GLOB_RECURSE _zluda_runtime_candidates LIST_DIRECTORIES FALSE
+            "${extraction_root}/libcuda.so"
+            "${extraction_root}/libnvcuda.so")
+    endif()
+    list(SORT _zluda_runtime_candidates)
+
+    set(_zluda_distribution_root "")
+    foreach(_zluda_runtime_candidate IN LISTS _zluda_runtime_candidates)
+        get_filename_component(_zluda_candidate_root
+            "${_zluda_runtime_candidate}" DIRECTORY)
+        resolve_zluda_runtime("${_zluda_candidate_root}" "${windows_layout}"
+            _zluda_candidate_link _zluda_candidate_runtime)
+        if(_zluda_candidate_runtime)
+            set(_zluda_distribution_root "${_zluda_candidate_root}")
+            break()
+        endif()
+    endforeach()
+    set(${output_root} "${_zluda_distribution_root}" PARENT_SCOPE)
 endfunction()
 
 # Return every shared library distributed beside the selected ZLUDA driver.
@@ -143,15 +171,12 @@ function(setup_zluda)
 
     print_status_colored("INFO" "=== ZLUDA Transpiler Configuration ===")
 
-    # The release worker owns download, checksum validation, and cache reuse.
-    # CMake accepts only an explicit build input (plus conventional fixed local
-    # installation roots) and never creates a runtime loader environment.
-    set(ZLUDA_SEARCH_PATHS
-        ${ZLUDA_ROOT}
-        /opt/zluda
-        /usr/local/zluda
-        ${CMAKE_PREFIX_PATH}/zluda
-    )
+    # ZLUDA is a native dependency.  Dependencies.cmake owns the pinned asset,
+    # checksum, download cache, and extraction; release orchestration supplies
+    # no filesystem root and consumers need no loader environment variable.
+    setup_zluda_download(ZLUDA_MANAGED_ROOT)
+    resolve_zluda_distribution_root(
+        "${ZLUDA_MANAGED_ROOT}" "${WIN32}" ZLUDA_DISTRIBUTION_ROOT)
 
     set(ZLUDA_LINK_LIBRARY "")
     set(ZLUDA_RUNTIME_LIBRARY "")
@@ -159,19 +184,13 @@ function(setup_zluda)
     set(ZLUDA_RUNTIME_ROOT "")
     set(ZLUDA_CUDA_ABI_LIBRARIES "")
     set(ZLUDA_CUDNN_RUNTIME_LIBRARIES "")
-    foreach(_zluda_search_root IN LISTS ZLUDA_SEARCH_PATHS)
-        if(NOT "${_zluda_search_root}" STREQUAL "")
-            resolve_zluda_runtime("${_zluda_search_root}" "${WIN32}"
-                _zluda_link_candidate _zluda_runtime_candidate)
-            if(_zluda_runtime_candidate)
-                set(ZLUDA_LINK_LIBRARY "${_zluda_link_candidate}")
-                set(ZLUDA_RUNTIME_LIBRARY "${_zluda_runtime_candidate}")
-                resolve_zluda_runtime_bundle("${_zluda_search_root}" "${WIN32}"
-                    ZLUDA_RUNTIME_LIBRARIES ZLUDA_RUNTIME_ROOT)
-                break()
-            endif()
-        endif()
-    endforeach()
+    if(ZLUDA_DISTRIBUTION_ROOT)
+        resolve_zluda_runtime("${ZLUDA_DISTRIBUTION_ROOT}" "${WIN32}"
+            ZLUDA_LINK_LIBRARY ZLUDA_RUNTIME_LIBRARY)
+        resolve_zluda_runtime_bundle(
+            "${ZLUDA_DISTRIBUTION_ROOT}" "${WIN32}"
+            ZLUDA_RUNTIME_LIBRARIES ZLUDA_RUNTIME_ROOT)
+    endif()
 
     # Preserve the historic variable for consumers that report or inspect it.
     set(ZLUDA_LIBRARY "${ZLUDA_LINK_LIBRARY}")
@@ -181,7 +200,7 @@ function(setup_zluda)
 
     if(NOT ZLUDA_RUNTIME_LIBRARY)
         message(FATAL_ERROR
-            "ZLUDA build input was not found; the build controller must provide -DZLUDA_ROOT=<validated pinned runtime>")
+            "Pinned ZLUDA ${SD_ZLUDA_VERSION} contains no valid ${CMAKE_SYSTEM_NAME} runtime")
     endif()
 
     resolve_zluda_cuda_abi_libraries("${ZLUDA_RUNTIME_LIBRARIES}"

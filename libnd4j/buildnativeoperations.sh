@@ -610,7 +610,6 @@ KERNEL_AUTOTUNING="${KERNEL_AUTOTUNING:-OFF}"
 KERNEL_CACHING="${KERNEL_CACHING:-ON}"
 HELPER_PRIORITY="${HELPER_PRIORITY:-}"
 ZLUDA="${ZLUDA:-OFF}"  # ZLUDA CUDA-compatibility shim (OFF by default)
-ZLUDA_ROOT="${ZLUDA_ROOT:-}"  # Explicit build input; never a consumer runtime path
 CHECK_VECTORIZATION="${CHECK_VECTORIZATION:-OFF}"
 NAME="${NAME:-}"
 OP_OUTPUT_FILE="${OP_OUTPUT_FILE:-include/generated/include_ops.h}"
@@ -1809,10 +1808,6 @@ do
                     exit 2
                     ;;
             esac
-            shift # past argument
-            ;;
-        --zluda-root)
-            ZLUDA_ROOT="$value"
             shift # past argument
             ;;
         --default)
@@ -3105,13 +3100,10 @@ echo HELPER              = "$HELPER"
 echo HELPERS             = "$HELPERS"
 echo HELPERS_CMAKE       = "$HELPERS_CMAKE"
 # --zluda accepts ON or AMD; both select the published AMD-only backend.
-# The build worker supplies the pinned runtime through --zluda-root, while the
-# resulting classifier owns the execution-time ZLUDA/HIP/ROCm closure.
+# CMake owns the pinned ZLUDA dependency and emits the runtime manifest used by
+# the resulting classifier.
 if [ "$ZLUDA" == "ON" ] || [ "$ZLUDA" == "AMD" ]; then
     ZLUDA_CMAKE="-DSD_ZLUDA=ON -DSD_ZLUDA_TARGET=AMD"
-    if [ -n "$ZLUDA_ROOT" ]; then
-        ZLUDA_CMAKE="$ZLUDA_CMAKE -DZLUDA_ROOT=$ZLUDA_ROOT"
-    fi
     print_colored "green" "✓ ZLUDA cmake flag: $ZLUDA_CMAKE"
 fi
 # SD_MLX (macOS arm64 unified-APU MLX graph backend). Set by the Triton=ON

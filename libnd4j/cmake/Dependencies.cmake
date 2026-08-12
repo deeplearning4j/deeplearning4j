@@ -1361,6 +1361,76 @@ function(setup_mlir)
 endfunction()
 
 # =============================================================================
+# ZLUDA CUDA ABI runtime (AMD-only)
+# =============================================================================
+# ZLUDA is a configure-time input: its exact shared libraries are needed while
+# CMake creates link targets and the JavaCPP runtime manifest.  ExternalProject
+# would materialize them only at build time, which is too late.  Keep download,
+# integrity validation, and extraction here with the other native dependencies.
+function(setup_zluda_download output_root)
+    if(NOT SD_ZLUDA)
+        set(${output_root} "" PARENT_SCOPE)
+        return()
+    endif()
+
+    if(NOT SD_ZLUDA_VERSION STREQUAL "v6")
+        message(FATAL_ERROR
+            "Unsupported ZLUDA release ${SD_ZLUDA_VERSION}; this source tree pins v6")
+    endif()
+
+    if(WIN32)
+        set(_zluda_platform "windows-x86_64")
+        set(_zluda_asset "zluda-windows-3fe1206.zip")
+        set(_zluda_sha256 "fda8891c6fdfaba438f2eb0f9d749ffa2c1fddbdf225be2301f0d7a25e37208a")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
+           CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64|AMD64)$")
+        set(_zluda_platform "linux-x86_64")
+        set(_zluda_asset "zluda-linux-3fe12063.tar.gz")
+        set(_zluda_sha256 "d9fd9893abaf3206c56d3eb25f0475c6327aa8de8e77f21be8a24f275556c3e1")
+    else()
+        message(FATAL_ERROR
+            "ZLUDA ${SD_ZLUDA_VERSION} is unsupported on ${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
+
+    set(_zluda_url
+        "https://github.com/vosen/ZLUDA/releases/download/${SD_ZLUDA_VERSION}/${_zluda_asset}")
+    set(_zluda_download_dir "${CMAKE_BINARY_DIR}/downloads")
+    set(_zluda_archive "${_zluda_download_dir}/${_zluda_asset}")
+    set(_zluda_extract_root
+        "${CMAKE_BINARY_DIR}/dependencies/zluda-${SD_ZLUDA_VERSION}-${_zluda_platform}")
+    set(_zluda_marker "${_zluda_extract_root}/.dl4j-zluda-${_zluda_sha256}")
+
+    file(MAKE_DIRECTORY "${_zluda_download_dir}")
+    message(STATUS
+        "Resolving pinned ZLUDA ${SD_ZLUDA_VERSION} for ${_zluda_platform}")
+    file(DOWNLOAD "${_zluda_url}" "${_zluda_archive}"
+        EXPECTED_HASH "SHA256=${_zluda_sha256}"
+        STATUS _zluda_download_status
+        SHOW_PROGRESS
+        TLS_VERIFY ON
+        TIMEOUT 1800)
+    list(GET _zluda_download_status 0 _zluda_download_code)
+    list(GET _zluda_download_status 1 _zluda_download_message)
+    if(NOT _zluda_download_code EQUAL 0)
+        message(FATAL_ERROR
+            "Failed to download pinned ZLUDA ${SD_ZLUDA_VERSION}: ${_zluda_download_message}")
+    endif()
+
+    if(NOT EXISTS "${_zluda_marker}")
+        file(REMOVE_RECURSE "${_zluda_extract_root}")
+        file(MAKE_DIRECTORY "${_zluda_extract_root}")
+        file(ARCHIVE_EXTRACT
+            INPUT "${_zluda_archive}"
+            DESTINATION "${_zluda_extract_root}")
+        file(WRITE "${_zluda_marker}" "${_zluda_sha256}\n")
+    endif()
+
+    set(ZLUDA_MANAGED_VERSION "${SD_ZLUDA_VERSION}" PARENT_SCOPE)
+    set(ZLUDA_MANAGED_ARCHIVE_SHA256 "${_zluda_sha256}" PARENT_SCOPE)
+    set(${output_root} "${_zluda_extract_root}" PARENT_SCOPE)
+endfunction()
+
+# =============================================================================
 # METAL PERFORMANCE SHADERS (Optional, for macOS/iOS builds)
 # =============================================================================
 # =============================================================================

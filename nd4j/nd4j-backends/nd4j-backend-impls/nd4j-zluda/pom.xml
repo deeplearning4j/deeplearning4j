@@ -39,6 +39,11 @@
         <!-- ZLUDA executes binaries produced by this exact CUDA toolchain line.
              Keep the version in the published Maven identity. -->
         <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
+        <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
+        <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
+        <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cuda</libnd4j.outputPath>
+        <shared.runtime.manifest>shared-runtime-manifest.txt</shared.runtime.manifest>
         <module.name>nd4j.zluda</module.name>
     </properties>
 
@@ -87,8 +92,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <!-- JavaCPP-generated JNI sources can preserve non-ASCII
+                         bytes from native comments. -->
+                    <encoding>ISO-8859-1</encoding>
                 </configuration>
             </plugin>
 
@@ -104,17 +110,25 @@
                             <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
+                    <excludes>
+                        <exclude>org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/*</exclude>
+                        <exclude>lib/**</exclude>
+                        <exclude>*.dll</exclude>
+                        <exclude>*.dylib</exclude>
+                        <exclude>*.so</exclude>
+                        <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
     </build>
 
     <profiles>
-        <!-- Re-home the native payload produced by the CUDA compiler under the
-             ZLUDA artifact identity. The dependency is build-only: consumers of
-             nd4j-zluda never resolve nd4j-cuda or its NVIDIA platform artifacts. -->
+        <!-- Build and attach the ZLUDA JNI/native payload directly.  libnd4j's
+             CMake build owns the pinned ZLUDA and AMD runtime closure; this
+             module owns the resulting platform classifier. -->
         <profile>
-            <id>zluda-native-bundle</id>
+            <id>zluda-native</id>
             <activation>
                 <property>
                     <name>libnd4j.zluda</name>
@@ -123,9 +137,30 @@
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
-                    <artifactId>nd4j-cuda-${cuda.version}</artifactId>
+                    <artifactId>libnd4j</artifactId>
                     <version>${project.version}</version>
-                    <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                    <type>pom</type>
+                    <scope>provided</scope>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>nd4j-cuda-${cuda.version}-preset</artifactId>
+                    <version>${project.version}</version>
+                    <scope>provided</scope>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>javacpp</artifactId>
+                    <version>${javacpp.version}</version>
+                    <classifier>${dependency.platform}</classifier>
+                    <scope>provided</scope>
+                    <optional>true</optional>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>nd4j-native-api</artifactId>
+                    <version>${project.version}</version>
                     <scope>provided</scope>
                     <optional>true</optional>
                 </dependency>
@@ -134,28 +169,27 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <version>3.1.2</version>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>3.3.1</version>
                         <executions>
                             <execution>
-                                <id>stage-zluda-native-classifier</id>
-                                <phase>process-resources</phase>
+                                <id>copy-zluda-shared-runtime-manifest</id>
+                                <phase>prepare-package</phase>
                                 <goals>
-                                    <goal>unpack</goal>
+                                    <goal>copy-resources</goal>
                                 </goals>
                                 <configuration>
-                                    <artifactItems>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>nd4j-cuda-${cuda.version}</artifactId>
-                                            <version>${project.version}</version>
-                                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
-                                            <type>jar</type>
-                                            <overWrite>true</overWrite>
-                                            <outputDirectory>${project.build.directory}/zluda-native</outputDirectory>
-                                            <includes>org/nd4j/linalg/jcublas/bindings/**,META-INF/native-image/**</includes>
-                                        </artifactItem>
-                                    </artifactItems>
+                                    <outputDirectory>${javacpp.build.output.path}</outputDirectory>
+                                    <overwrite>true</overwrite>
+                                    <resources>
+                                        <resource>
+                                            <directory>${libnd4j.outputPath}</directory>
+                                            <filtering>false</filtering>
+                                            <includes>
+                                                <include>${shared.runtime.manifest}</include>
+                                            </includes>
+                                        </resource>
+                                    </resources>
                                 </configuration>
                             </execution>
                         </executions>
@@ -171,9 +205,13 @@
                                     <goal>jar</goal>
                                 </goals>
                                 <configuration>
-                                    <classesDirectory>${project.build.directory}/zluda-native</classesDirectory>
                                     <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
-                                    <skipIfEmpty>false</skipIfEmpty>
+                                    <skipIfEmpty>true</skipIfEmpty>
+                                    <includes>
+                                        <include>org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}/*</include>
+                                        <include>lib/**</include>
+                                        <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
+                                    </includes>
                                     <archive>
                                         <manifestEntries>
                                             <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
@@ -181,6 +219,95 @@
                                             <ND4J-ZLUDA-CUDA-Build-Version>${cuda.version}</ND4J-ZLUDA-CUDA-Build-Version>
                                         </manifestEntries>
                                     </archive>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>${project.groupId}</groupId>
+                                <artifactId>nd4j-cuda-${cuda.version}-preset</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>${project.groupId}</groupId>
+                                <artifactId>nd4j-native-api</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                            <!-- Build-host CUDA headers/classes only.  Runtime
+                                 libraries are selected from CMake's ZLUDA/AMD
+                                 manifest and copied into this classifier. -->
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>cuda</artifactId>
+                                <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+                                <classifier>${dependency.platform}</classifier>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <properties>${javacpp.platform}</properties>
+                            <propertyKeysAndValues>
+                                <property>
+                                    <name>platform.root</name>
+                                    <value>${javacpp.platform.root}</value>
+                                </property>
+                                <property>
+                                    <name>platform.compiler</name>
+                                    <value>${javacpp.platform.compiler}</value>
+                                </property>
+                                <property>
+                                    <name>platform.sysroot</name>
+                                    <value>${javacpp.platform.sysroot}</value>
+                                </property>
+                            </propertyKeysAndValues>
+                            <classPaths>
+                                <classPath>${project.build.outputDirectory}</classPath>
+                                <classPath>${project.basedir}/../nd4j-cuda-backend-common/target/classes</classPath>
+                            </classPaths>
+                            <includePaths>
+                                <includePath>${libnd4jhome}/blasbuild/cuda/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cuda/flatbuffers-src/include/</includePath>
+                                <includePath>${libnd4jhome}/blas</includePath>
+                                <includePath>${libnd4jhome}/include</includePath>
+                                <includePath>${libnd4jhome}/include/helpers</includePath>
+                                <includePath>${libnd4jhome}/include/array</includePath>
+                                <includePath>${libnd4jhome}/include/cnpy</includePath>
+                                <includePath>${libnd4jhome}/include/execution</includePath>
+                                <includePath>${libnd4jhome}/include/exceptions</includePath>
+                                <includePath>${libnd4jhome}/include/graph</includePath>
+                                <includePath>${libnd4jhome}/include/indexing</includePath>
+                                <includePath>${libnd4jhome}/include/memory</includePath>
+                                <includePath>${libnd4jhome}/include/performance</includePath>
+                                <includePath>${env.CUDA_PATH}/include</includePath>
+                            </includePaths>
+                            <linkPaths>
+                                <linkPath>${libnd4jhome}/blasbuild/cuda</linkPath>
+                            </linkPaths>
+                            <compilerOptions>
+                                <compilerOption>-std=c++17</compilerOption>
+                                <compilerOption>-Wl,--no-undefined</compilerOption>
+                                <compilerOption>-L${libnd4jhome}/blasbuild/cuda</compilerOption>
+                            </compilerOptions>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>build-zluda-jni</id>
+                                <phase>process-classes</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${javacpp.compiler.skip}</skip>
+                                    <classOrPackageName>org.nd4j.linalg.jcublas.bindings.Nd4jCuda</classOrPackageName>
+                                    <clean>true</clean>
+                                    <copyLibs>true</copyLibs>
+                                    <copyResources>false</copyResources>
+                                    <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
+                                    <outputDirectory>${javacpp.build.output.path}</outputDirectory>
                                 </configuration>
                             </execution>
                         </executions>

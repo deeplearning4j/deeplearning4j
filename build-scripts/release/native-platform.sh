@@ -11,7 +11,6 @@ set -Eeuo pipefail
 : "${DL4J_LIBND4J_URL:=}"
 : "${DL4J_CMAKE_ARGS:=}"
 : "${DL4J_ANDROID_API:=24}"
-: "${DL4J_ZLUDA_ROOT:=}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -121,17 +120,16 @@ case "${DL4J_FAMILY}" in
   zluda|windows-zluda)
     : "${DL4J_CUDA_VERSION:?DL4J_CUDA_VERSION is required}"
     : "${DL4J_ZLUDA_TARGET:=AMD}"
-    : "${DL4J_ZLUDA_ROOT:?DL4J_ZLUDA_ROOT is required}"
     platform=linux-x86_64
     zluda_profiles=(-Pcuda -Pzluda -Pzluda-platform)
-    zluda_modules=:nd4j-cuda-backend-common,:nd4j-cuda-${DL4J_CUDA_VERSION},:nd4j-cuda-${DL4J_CUDA_VERSION}-preset,:nd4j-zluda-${DL4J_CUDA_VERSION},:nd4j-zluda-${DL4J_CUDA_VERSION}-platform
+    zluda_modules=:nd4j-cuda-backend-common,:nd4j-cuda-${DL4J_CUDA_VERSION}-preset,:nd4j-zluda-${DL4J_CUDA_VERSION},:nd4j-zluda-${DL4J_CUDA_VERSION}-platform
     zluda_win=()
     if [ "${DL4J_FAMILY}" = windows-zluda ]; then
       platform=windows-x86_64
       zluda_win=(-Dlibnd4j.platform=windows-x86_64 -Dlibnd4j.oom.killer=OFF)
     fi
     zluda_modules+=,:libnd4j
-    command=(mvn "${split_flags[@]}" "${repo[@]}" "${zluda_profiles[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" "-Dlibnd4j.zluda.root=${DL4J_ZLUDA_ROOT}" -Djavacpp.platform.extension=-zluda "-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}-zluda" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" "${zluda_win[@]}" --batch-mode -DskipTests -pl "${zluda_modules}" --also-make "${DL4J_MAVEN_GOAL}")
+    command=(mvn "${split_flags[@]}" "${repo[@]}" "${zluda_profiles[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" -Djavacpp.platform.extension=-zluda "-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}-zluda" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" "${zluda_win[@]}" --batch-mode -DskipTests -pl "${zluda_modules}" --also-make "${DL4J_MAVEN_GOAL}")
     ;;
   *) printf 'Unsupported DL4J_FAMILY=%s\n' "${DL4J_FAMILY}" >&2; exit 2;;
 esac

@@ -25,22 +25,6 @@ SCCACHE_RELEASE_BASE = (
 )
 ZLUDA_TARGET = "AMD"
 ZLUDA_LINUX_LINKER_PACKAGE = "lld"
-ZLUDA_WINDOWS_REQUIRED_FILES = (
-    "nvcuda.dll",
-    "nvcudart_hybrid64.dll",
-    "zluda.exe",
-    "zluda_redirect.dll",
-)
-ZLUDA_ASSETS = {
-    ("v6", "linux"): (
-        "zluda-linux-3fe12063.tar.gz",
-        "d9fd9893abaf3206c56d3eb25f0475c6327aa8de8e77f21be8a24f275556c3e1",
-    ),
-    ("v6", "windows"): (
-        "zluda-windows-3fe1206.zip",
-        "fda8891c6fdfaba438f2eb0f9d749ffa2c1fddbdf225be2301f0d7a25e37208a",
-    ),
-}
 ROCM_BUILD_SDKS = {
     "7.2.4": {
         "installer_name": "amdgpu-install_7.2.4.70204-1_all.deb",
@@ -1036,71 +1020,6 @@ def zluda_platform(build: dict) -> str:
     raise ValueError(f"ZLUDA releases do not support JavaCPP platform {platform!r}")
 
 
-def pinned_zluda_asset(version: str, platform_name: str) -> tuple[str, str]:
-    key = (version, platform_name)
-    if key not in ZLUDA_ASSETS:
-        raise RuntimeError(
-            f"ZLUDA {version} has no pinned release asset for {platform_name}"
-        )
-    return ZLUDA_ASSETS[key]
-
-
-def find_zluda_runtime(root: Path, build: dict) -> Path | None:
-    platform = zluda_platform(build)
-    if platform == "windows":
-        candidates = [
-            candidate
-            for candidate in root.rglob("nvcuda.dll")
-            if candidate.is_file()
-            and all((candidate.parent / name).is_file() for name in ZLUDA_WINDOWS_REQUIRED_FILES)
-        ]
-    else:
-        candidates = [
-            candidate
-            for candidate in list(root.rglob("libcuda.so")) + list(root.rglob("libcuda.so.*"))
-            if candidate.is_file()
-        ]
-    return (
-        min(candidates, key=lambda path: (len(path.relative_to(root).parts), str(path)))
-        if candidates else None
-    )
-
-
-def prepare_zluda(source: Path, build: dict, env: dict[str, str]) -> None:
-    version = build.get("zludaVersion")
-    if not version:
-        return
-    platform = zluda_platform(build)
-    asset_name, expected_digest = pinned_zluda_asset(version, platform)
-    archive = source / asset_name
-    download_with_retry(
-        f"https://github.com/vosen/ZLUDA/releases/download/{version}/{asset_name}",
-        archive,
-        f"ZLUDA {platform} asset for {version}",
-    )
-    actual_digest = hashlib.sha256(archive.read_bytes()).hexdigest()
-    if actual_digest != expected_digest:
-        archive.unlink(missing_ok=True)
-        raise RuntimeError(
-            f"ZLUDA archive SHA-256 mismatch: expected {expected_digest}, got {actual_digest}"
-        )
-    target = source / "zluda"
-    target.mkdir()
-    if archive.suffix == ".zip":
-        with zipfile.ZipFile(archive) as bundle:
-            bundle.extractall(target)
-    else:
-        with tarfile.open(archive) as bundle:
-            bundle.extractall(target)
-    runtime = find_zluda_runtime(target, build)
-    if runtime is None:
-        expected = "nvcuda.dll" if platform == "windows" else "libcuda.so"
-        raise RuntimeError(f"ZLUDA {platform} release {version} contains no {expected}")
-    # This is a build input, not a runtime installation contract. Feed its root
-    # explicitly through Maven/CMake; never mutate the worker loader path.
-    env["DL4J_ZLUDA_ROOT"] = str(runtime.parent)
-
-
 def package_runtime_sdk(source: Path, output: Path, threads: int) -> int:
     produced = 0
     for cache in source.glob("libnd4j/blasbuild/*/CMakeCache.txt"):
@@ -1303,7 +1222,7 @@ def zluda_target(build: dict) -> str:
     return arguments[0]
 
 
-def attest_zluda_configuration(build: dict, env: dict[str, str]) -> None:
+def attest_zluda_configuration(build: dict) -> None:
     version = build.get("zludaVersion")
     if not version:
         return
@@ -1316,6 +1235,11 @@ def attest_zluda_configuration(build: dict, env: dict[str, str]) -> None:
     zluda_artifact_id = f"nd4j-zluda-{build.get('cudaVersion', '')}"
     if f":{zluda_artifact_id}" not in build.get("modules", []):
         failures.append(f":{zluda_artifact_id} module is missing")
+    native_cuda_artifact_id = f":nd4j-cuda-{build.get('cudaVersion', '')}"
+    if native_cuda_artifact_id in build.get("modules", []):
+        failures.append(
+            f"{native_cuda_artifact_id} must not mediate the ZLUDA classifier"
+        )
     variants = build.get("variants", [])
     expected_classifier_suffix = f"-cuda-{build.get('cudaVersion', '')}-zluda"
     if not variants or any(
@@ -1323,19 +1247,11 @@ def attest_zluda_configuration(build: dict, env: dict[str, str]) -> None:
             or variant.get("platformExtension") != "-zluda"
             for variant in variants):
         failures.append("ZLUDA classifier/platform extension is not active")
-    zluda_path = Path(env.get("DL4J_ZLUDA_ROOT", ""))
-    runtime = None
-    if not env.get("DL4J_ZLUDA_ROOT") or not zluda_path.is_dir():
-        failures.append("prepared DL4J_ZLUDA_ROOT is missing")
-    else:
-        runtime = find_zluda_runtime(zluda_path, build)
-        if runtime is None:
-            failures.append(f"prepared DL4J_ZLUDA_ROOT contains no {zluda_platform(build)} runtime")
     if failures:
         raise RuntimeError("ZLUDA configuration attestation failed: " + "; ".join(failures))
     print(
         f"[dl4j-attestation] zludaVersion={version} target={target} "
-        f"profile=zluda module=:{zluda_artifact_id} path={zluda_path} runtime={runtime}",
+        f"profile=zluda module=:{zluda_artifact_id} dependencyOwner=cmake ",
         flush=True,
     )
 
@@ -1382,7 +1298,6 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_MAVEN_REPOSITORY": str(repository),
             "DL4J_CUDA_VERSION": str(build.get("cudaVersion", "")),
             "DL4J_ZLUDA_TARGET": zluda_target(build),
-            "DL4J_ZLUDA_ROOT": env.get("DL4J_ZLUDA_ROOT", ""),
         })
         if family == "vulkan-mlir" and variant.get("mlir"):
             # native-platform.sh uses platform.classifier for the JavaCPP
@@ -1464,8 +1379,7 @@ def main() -> None:
         if build["backend"] == "cuda":
             run(["bash", "./change-cuda-versions.sh", build["cudaVersion"]], args.source, env)
         prepare_rocm_build_toolchain(build, env)
-        prepare_zluda(args.source, build, env)
-        attest_zluda_configuration(build, env)
+        attest_zluda_configuration(build)
         if build.get("kind") == "cross-platform":
             print(f"[dl4j-phase] shard={shard['id']} phase=cross-platform", flush=True)
             build_cross_platform(args.source, build, args.repository, env)

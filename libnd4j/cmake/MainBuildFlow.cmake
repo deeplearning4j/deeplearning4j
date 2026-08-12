@@ -1240,20 +1240,6 @@ function(create_and_link_library)
             endif()
         endif()
 
-        # ZLUDA helper
-        if(SD_ZLUDA AND TARGET zluda_external)
-            message(STATUS "")
-            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
-            message(STATUS "║  🔒 DEPENDENCY BLOCK: ZLUDA                                       ║")
-            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for ZLUDA               ║")
-            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
-            message(STATUS "")
-            add_dependencies(${OBJECT_LIB_NAME} zluda_external)
-            if(TARGET zluda_interface)
-                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC zluda_interface)
-            endif()
-        endif()
-
         # Triton GPU compiler helper - MUST complete before object files that include Triton headers
         if(HAVE_TRITON AND TARGET triton_external)
             message(STATUS "")

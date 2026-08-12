@@ -1163,7 +1163,6 @@
           "zluda-platform"
         ],
         "modules": [
-          ":nd4j-cuda-12.9",
           ":nd4j-cuda-12.9-preset",
           ":nd4j-zluda-12.9",
           ":nd4j-zluda-12.9-platform",
@@ -1232,7 +1231,6 @@
           "zluda-platform"
         ],
         "modules": [
-          ":nd4j-cuda-12.9",
           ":nd4j-cuda-12.9-preset",
           ":nd4j-zluda-12.9",
           ":libnd4j",

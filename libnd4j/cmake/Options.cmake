@@ -106,6 +106,8 @@ endif()
 option(SD_ZLUDA "Enable the AMD ZLUDA CUDA-compatibility backend" OFF)
 set(SD_ZLUDA_TARGET "AMD" CACHE STRING "ZLUDA target backend (AMD only)")
 set_property(CACHE SD_ZLUDA_TARGET PROPERTY STRINGS AMD)
+set(SD_ZLUDA_VERSION "v6" CACHE STRING "Pinned ZLUDA release used by the AMD backend")
+set_property(CACHE SD_ZLUDA_VERSION PROPERTY STRINGS v6)
 
 # --- COMPILATION OPTIMIZATION OPTIONS (NEW) ---
 # These dramatically affect template compilation time
