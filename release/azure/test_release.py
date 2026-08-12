@@ -48,6 +48,11 @@ class CompilerCacheBuildScriptTests(unittest.TestCase):
             source.index(normalization),
             source.index('cache_name="$(basename "$expected_cache")"'),
         )
+        self.assertIn('cache_name_normalized="${cache_name,,}"', source)
+        self.assertIn('if [[ "$KERNEL" == windows-* ]]; then', source)
+        self.assertIn('expected_launcher_compare="${expected_launcher_compare,,}"', source)
+        self.assertIn('launcher_c_compare="${launcher_c_compare,,}"', source)
+        self.assertIn('launcher_cxx_compare="${launcher_cxx_compare,,}"', source)
 
 
 class TokenizerNativeBuildScriptTests(unittest.TestCase):

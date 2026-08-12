@@ -3506,6 +3506,10 @@ validate_compiler_cache_contract() {
     local require_cache="$(read_cmake_cache_value SD_REQUIRE_COMPILER_CACHE || true)"
     local expected_cache="${DL4J_COMPILER_CACHE:-ccache}"
     local cache_name=""
+    local cache_name_normalized=""
+    local expected_launcher_compare=""
+    local launcher_c_compare=""
+    local launcher_cxx_compare=""
 
     if [[ "$expected_cache" == *\\* ]]; then
         expected_cache="${expected_cache//\\//}"
@@ -3526,17 +3530,28 @@ validate_compiler_cache_contract() {
         exit 1
     fi
     cache_name="$(basename "$expected_cache")"
-    if [ "$cache_name" = "sccache" ] || [ "$cache_name" = "sccache.exe" ]; then
+    cache_name_normalized="${cache_name,,}"
+    if [ "$cache_name_normalized" = "sccache" ] || [ "$cache_name_normalized" = "sccache.exe" ]; then
         expected_launcher="$expected_cache"
     fi
-    if [ "$launcher_c" != "$expected_launcher" ] || [ "$launcher_cxx" != "$expected_launcher" ]; then
+
+    expected_launcher_compare="${expected_launcher//\\//}"
+    launcher_c_compare="${launcher_c//\\//}"
+    launcher_cxx_compare="${launcher_cxx//\\//}"
+    if [[ "$KERNEL" == windows-* ]]; then
+        expected_launcher_compare="${expected_launcher_compare,,}"
+        launcher_c_compare="${launcher_c_compare,,}"
+        launcher_cxx_compare="${launcher_cxx_compare,,}"
+    fi
+    if [ "$launcher_c_compare" != "$expected_launcher_compare" ] ||
+       [ "$launcher_cxx_compare" != "$expected_launcher_compare" ]; then
         print_colored "red" "❌ ERROR: CMake compiler launcher contract failed"
         print_colored "yellow" "   C launcher: ${launcher_c:-missing}"
         print_colored "yellow" "   CXX launcher: ${launcher_cxx:-missing}"
         print_colored "yellow" "   Expected: $expected_launcher"
         exit 1
     fi
-    if [ "$cache_name" != "sccache" ] && [ "$cache_name" != "sccache.exe" ] &&
+    if [ "$cache_name_normalized" != "sccache" ] && [ "$cache_name_normalized" != "sccache.exe" ] &&
        ! grep -Fq "CCACHE=\"$expected_cache\"" "$expected_launcher"; then
         print_colored "red" "❌ ERROR: Generated smart ccache wrapper does not invoke the expected cache binary"
         print_colored "yellow" "   Expected: $expected_cache"
