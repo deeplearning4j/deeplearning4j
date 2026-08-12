@@ -142,7 +142,7 @@ DECLARE_CUSTOM_OP(matrix_diag, 1, 1, false, 0, 0);
  * This op calculates regularized incomplete beta integral Ix(a, b).
  * Implementation is based on two algorithms depending on input values of a and b:
  * - when a and b are both >  maxValue (3000.), then Gauss-Legendre quadrature method is applied
- * - when a and b are both <= maxValue (3000.), then modified Lentz’s algorithm for continued fractions is applied
+ * - when a and b are both <= maxValue (3000.), then modified Lentz's algorithm for continued fractions is applied
  *
  * Input arrays:
  *    a: defines power t^{a-1}, must be > 0, type float.

@@ -81,7 +81,7 @@
 #define TAD_THRESHOLD sd::env_tadThreshold()
 
 // Helper to pick the correct macro based on the number of arguments.
-// This macro works by “peeling” off up to 10 parameters; if only one parameter is passed,
+// This macro works by "peeling" off up to 10 parameters; if only one parameter is passed,
 // then _1 is that parameter and NAME ends up as SHAPELIST_1. For two or more parameters,
 // NAME ends up as SHAPELIST_N.
 #define GET_SHAPELIST_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, NAME, ...) NAME
