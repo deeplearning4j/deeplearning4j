@@ -993,7 +993,9 @@
         "variants": [
           {
             "name": "base",
-            "suffix": ""
+            "suffix": "",
+            "mlir": true,
+            "triton": true
           }
         ],
         "buildThreads": 48

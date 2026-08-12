@@ -272,8 +272,12 @@ class ReleaseValidationTest(unittest.TestCase):
                 )
                 self.assertEqual("vulkan", shard["build"]["backend"], provider)
                 self.assertEqual(platform, shard["build"]["javacppPlatform"], provider)
-                self.assertEqual([{"name": "base", "suffix": ""}],
-                                 shard["build"]["variants"], provider)
+                self.assertEqual(["base"],
+                                 [variant["name"] for variant in shard["build"]["variants"]],
+                                 provider)
+                if shard["os"] == "linux":
+                    self.assertTrue(shard["build"]["variants"][0]["mlir"], provider)
+                    self.assertTrue(shard["build"]["variants"][0]["triton"], provider)
                 self.assertEqual(
                     {
                         "nd4j-vulkan",

@@ -131,7 +131,7 @@
       "id": "linux-x86_64-vulkan", "sourceWorkflow": "build-deploy-linux-vulkan.yml",
       "os": "linux", "architecture": "x86_64", "imageProject": "ubuntu-os-cloud", "imageFamily": "ubuntu-2204-lts", "machineClass": "x86", "worker": "worker.sh", "workloads": ["maven"],
       "artifactRules": {"mode": "classifier", "artifactIds": ["nd4j-vulkan", "nd4j-vulkan-preset", "nd4j-vulkan-platform"], "classifierTokens": ["linux-x86_64"], "unclassifiedArtifactIds": ["nd4j-vulkan", "nd4j-vulkan-preset", "nd4j-vulkan-platform"], "includeMetadata": true},
-      "build": {"backend": "vulkan", "javacppPlatform": "linux-x86_64", "profiles": ["vulkan", "sdx"], "modules": [":nd4j-vulkan", ":nd4j-vulkan-preset", ":nd4j-vulkan-platform", ":libnd4j"], "mavenArgs": ["-Dlibnd4j.vulkan", "-Dlibnd4j.triton=ON", "-Dplatform.classifier=linux-x86_64"], "variants": [{"name": "base", "suffix": ""}], "buildThreads": 48}
+      "build": {"backend": "vulkan", "javacppPlatform": "linux-x86_64", "profiles": ["vulkan", "sdx"], "modules": [":nd4j-vulkan", ":nd4j-vulkan-preset", ":nd4j-vulkan-platform", ":libnd4j"], "mavenArgs": ["-Dlibnd4j.vulkan", "-Dlibnd4j.triton=ON", "-Dplatform.classifier=linux-x86_64"], "variants": [{"name": "base", "suffix": "", "mlir": true, "triton": true}], "buildThreads": 48}
     },
     {
       "id": "linux-x86_64-vulkan-mlir", "sourceWorkflow": "build-deploy-linux-vulkan-mlir.yml",
