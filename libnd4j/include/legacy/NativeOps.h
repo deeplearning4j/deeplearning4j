@@ -887,11 +887,11 @@ SD_LIB_EXPORT void dumpOpExecutionLog();
  */
 SD_LIB_EXPORT void dumpOpExecutionState(const char* message);
 
-// ═══════════════════════════════════════════════════════════════
+// -----------------------------------------------------------------
 // Allocation Logging API (SD_GCC_FUNCTRACE only)
 // Similar to OpExecutionLogging, but focuses on tracking NDArray
 // and OpContext allocations for understanding memory growth patterns
-// ═══════════════════════════════════════════════════════════════
+// -----------------------------------------------------------------
 
 /**
  * Get the current allocation log file path.
