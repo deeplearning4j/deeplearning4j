@@ -85,6 +85,56 @@ function(_shared_runtime_loader_name _out_var _library_path)
     set(${_out_var} "${_loader_name}" PARENT_SCOPE)
 endfunction()
 
+# Best-effort loader-name inspection for files discovered under a declared
+# runtime root. Development packages may expose only an unversioned linker alias
+# and a concrete file whose basename differs from its SONAME. Invalid linker
+# scripts and non-library files are skipped here; explicitly selected runtimes
+# still use the strict helper above.
+function(_try_shared_runtime_loader_name _out_var _success_var _library_path)
+    set(_loader_name "")
+    set(_loader_success FALSE)
+    if(WIN32)
+        get_filename_component(_loader_name "${_library_path}" NAME)
+        set(_loader_success TRUE)
+    elseif(APPLE)
+        if(DEFINED OTOOL AND EXISTS "${OTOOL}")
+            execute_process(
+                COMMAND "${OTOOL}" -D "${_library_path}"
+                RESULT_VARIABLE _metadata_result
+                OUTPUT_VARIABLE _metadata_output
+                ERROR_QUIET)
+            if(_metadata_result EQUAL 0)
+                string(REGEX MATCH "\n[ \t]*([^ \t\r\n]+)"
+                    _install_name_match "${_metadata_output}")
+                if(NOT CMAKE_MATCH_1 STREQUAL "")
+                    get_filename_component(_loader_name
+                        "${CMAKE_MATCH_1}" NAME)
+                    set(_loader_success TRUE)
+                endif()
+            endif()
+        endif()
+    else()
+        if(DEFINED READELF AND EXISTS "${READELF}")
+            execute_process(
+                COMMAND "${READELF}" -d "${_library_path}"
+                RESULT_VARIABLE _metadata_result
+                OUTPUT_VARIABLE _metadata_output
+                ERROR_QUIET)
+            if(_metadata_result EQUAL 0)
+                string(REGEX MATCH
+                    "\\(SONAME\\)[^\n]*\\[([^]]+)\\]"
+                    _soname_match "${_metadata_output}")
+                if(NOT CMAKE_MATCH_1 STREQUAL "")
+                    set(_loader_name "${CMAKE_MATCH_1}")
+                    set(_loader_success TRUE)
+                endif()
+            endif()
+        endif()
+    endif()
+    set(${_out_var} "${_loader_name}" PARENT_SCOPE)
+    set(${_success_var} "${_loader_success}" PARENT_SCOPE)
+endfunction()
+
 function(_shared_runtime_needed_names _out_var _library_path)
     if(WIN32)
         if(NOT DEFINED OBJDUMP OR OBJDUMP STREQUAL "" OR NOT EXISTS "${OBJDUMP}")
@@ -251,6 +301,11 @@ if(_runtime_search_roots)
         _shared_runtime_needed_names(_needed_names "${_runtime_candidate_real}")
         foreach(_needed_name IN LISTS _needed_names)
             set(_needed_path "")
+            if(WIN32)
+                string(TOLOWER "${_needed_name}" _needed_name_compare)
+            else()
+                set(_needed_name_compare "${_needed_name}")
+            endif()
 
             # Prefer an explicitly seeded runtime with the requested loader name.
             foreach(_seed_runtime IN LISTS _runtime_libraries _runtime_queue)
@@ -275,12 +330,49 @@ if(_runtime_search_roots)
                         "${_root_runtime_file}" NAME)
                     if(WIN32)
                         string(TOLOWER "${_root_runtime_name}" _root_runtime_lower)
-                        string(TOLOWER "${_needed_name}" _needed_name_lower)
                     else()
                         set(_root_runtime_lower "${_root_runtime_name}")
-                        set(_needed_name_lower "${_needed_name}")
                     endif()
-                    if(_root_runtime_lower STREQUAL _needed_name_lower)
+                    if(_root_runtime_lower STREQUAL _needed_name_compare)
+                        set(_needed_path "${_root_runtime_file}")
+                        break()
+                    endif()
+                endforeach()
+            endif()
+
+            # If no file is spelled with the requested loader name, resolve by
+            # embedded SONAME. ROCm packages such as MIOpen can install a
+            # concrete versioned DSO whose filename and SONAME differ.
+            if(NOT _needed_path AND _managed_gpu_runtime)
+                foreach(_root_runtime_file IN LISTS _runtime_root_files)
+                    get_filename_component(_root_runtime_name
+                        "${_root_runtime_file}" NAME)
+                    if(WIN32)
+                        if(NOT _root_runtime_name MATCHES "\\.[Dd][Ll][Ll]$")
+                            continue()
+                        endif()
+                    elseif(APPLE)
+                        if(NOT _root_runtime_name MATCHES "\\.dylib($|\\.)")
+                            continue()
+                        endif()
+                    else()
+                        if(NOT _root_runtime_name MATCHES "\\.so($|\\.)")
+                            continue()
+                        endif()
+                    endif()
+                    _try_shared_runtime_loader_name(
+                        _root_loader_name _root_loader_success
+                        "${_root_runtime_file}")
+                    if(NOT _root_loader_success)
+                        continue()
+                    endif()
+                    if(WIN32)
+                        string(TOLOWER "${_root_loader_name}"
+                            _root_loader_compare)
+                    else()
+                        set(_root_loader_compare "${_root_loader_name}")
+                    endif()
+                    if(_root_loader_compare STREQUAL _needed_name_compare)
                         set(_needed_path "${_root_runtime_file}")
                         break()
                     endif()

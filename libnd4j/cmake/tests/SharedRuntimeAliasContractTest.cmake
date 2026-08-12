@@ -80,7 +80,7 @@ endforeach()
 # the managed dependency walk. This models libnd4jcuda.so directly requiring a
 # versioned ROCm loader name.
 set(_managed_source "${_test_root}/hipcontract.cpp")
-set(_managed_runtime "${_runtime_root}/libhipcontract.so.1")
+set(_managed_runtime "${_runtime_root}/libhipcontract-concrete.so.7")
 set(_managed_link_alias "${_runtime_root}/libhipcontract.so")
 set(_primary_source "${_test_root}/primary.cpp")
 set(_primary_runtime "${_test_root}/libprimary.so")
@@ -102,7 +102,7 @@ if(NOT _managed_compile_result EQUAL 0)
 endif()
 execute_process(
     COMMAND "${CMAKE_COMMAND}" -E create_symlink
-        "libhipcontract.so.1" "${_managed_link_alias}"
+        "libhipcontract-concrete.so.7" "${_managed_link_alias}"
     RESULT_VARIABLE _managed_symlink_result
     ERROR_VARIABLE _managed_symlink_error)
 if(NOT _managed_symlink_result EQUAL 0)
