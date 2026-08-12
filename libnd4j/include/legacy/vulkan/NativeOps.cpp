@@ -15,6 +15,7 @@
 #include <array/DataTypeUtils.h>
 #include <array/InteropDataBuffer.h>
 #include <array/NDArray.h>
+#include <dsp/NativeOpsDsp.h>
 #include <execution/LaunchContext.h>
 #include <execution/vulkan/VulkanExecutionStream.h>
 #include <execution/vulkan/VulkanLaunchContext.h>
