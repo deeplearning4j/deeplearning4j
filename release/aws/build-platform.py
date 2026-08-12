@@ -580,20 +580,26 @@ def has_base_platform_variant(build: dict) -> bool:
 
 
 def required_classifier_artifact_ids(build: dict, rules: dict) -> tuple[str, ...]:
-    """Return the CPU/CUDA artifacts that must carry every planned classifier."""
+    """Return the published runtime artifacts that must carry each classifier."""
     if rules.get("mode", "all") != "classifier":
         return ()
     backend = build.get("backend")
     if backend == "cpu":
         primary = "nd4j-native"
+        preset = "nd4j-native-preset"
     elif backend == "cuda":
         cuda_version = str(build.get("cudaVersion", ""))
         if not cuda_version:
             raise ValueError("CUDA classifier validation requires cudaVersion")
-        primary = f"nd4j-cuda-{cuda_version}"
+        if build.get("zludaVersion"):
+            primary = f"nd4j-zluda-{cuda_version}"
+            preset = f"nd4j-cuda-{cuda_version}-preset"
+        else:
+            primary = f"nd4j-cuda-{cuda_version}"
+            preset = f"{primary}-preset"
     else:
         return ()
-    required = (primary, f"{primary}-preset")
+    required = (primary, preset)
     owned = set(rules.get("artifactIds", []))
     missing_owned = [artifact_id for artifact_id in required if artifact_id not in owned]
     if missing_owned:

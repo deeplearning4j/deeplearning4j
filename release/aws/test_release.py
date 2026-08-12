@@ -1619,6 +1619,26 @@ class ReleaseValidationTest(unittest.TestCase):
                 },
                 ("nd4j-cuda-12.9", "nd4j-cuda-12.9-preset"),
             ),
+            (
+                {
+                    "backend": "cuda",
+                    "cudaVersion": "12.9",
+                    "zludaVersion": "v6",
+                    "javacppPlatform": "linux-x86_64",
+                    "modules": [
+                        ":nd4j-cuda-12.9",
+                        ":nd4j-cuda-12.9-preset",
+                        ":nd4j-zluda-12.9",
+                        ":libnd4j",
+                    ],
+                },
+                {
+                    "name": "zluda",
+                    "classifierSuffix": "-cuda-12.9-zluda",
+                    "platformExtension": "-zluda",
+                },
+                ("nd4j-zluda-12.9", "nd4j-cuda-12.9-preset"),
+            ),
         )
         version = "1.0.0-SNAPSHOT"
         for build, variant, artifact_ids in cases:
