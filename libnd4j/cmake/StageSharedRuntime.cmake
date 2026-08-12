@@ -422,6 +422,14 @@ if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd")
     _shared_runtime_needed_names(_primary_needed_names "${PRIMARY_RUNTIME}")
     foreach(_primary_needed_name IN LISTS _primary_needed_names)
         string(TOLOWER "${_primary_needed_name}" _primary_needed_lower)
+        if(WIN32)
+            set(_primary_needed_compare "${_primary_needed_lower}")
+        else()
+            # ELF SONAMEs and Mach-O install names are case-sensitive. Keep the
+            # original spelling for closure membership while using the lowercase
+            # copy only for case-insensitive policy-family classification below.
+            set(_primary_needed_compare "${_primary_needed_name}")
+        endif()
         if(_primary_needed_lower MATCHES
                 "^(lib)?(cudart|cusolver|nvrtc|nvjitlink|curand).*")
             message(FATAL_ERROR
@@ -441,7 +449,7 @@ if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd")
                 else()
                     set(_available_runtime_lower "${_available_runtime_name}")
                 endif()
-                if(_available_runtime_lower STREQUAL _primary_needed_lower)
+                if(_available_runtime_lower STREQUAL _primary_needed_compare)
                     set(_primary_runtime_found TRUE)
                     break()
                 endif()
