@@ -76,4 +76,80 @@ foreach(_required_runtime IN ITEMS libnvcuda.so libcuda.so)
     endif()
 endforeach()
 
-message(STATUS "Shared-runtime symlink aliases are preserved before canonical deduplication")
+# The linked backend, rather than the caller's seed ordering, must be the root of
+# the managed dependency walk. This models libnd4jcuda.so directly requiring a
+# versioned ROCm loader name.
+set(_managed_source "${_test_root}/hipcontract.cpp")
+set(_managed_runtime "${_runtime_root}/libhipcontract.so.1")
+set(_managed_link_alias "${_runtime_root}/libhipcontract.so")
+set(_primary_source "${_test_root}/primary.cpp")
+set(_primary_runtime "${_test_root}/libprimary.so")
+set(_primary_output "${_test_root}/primary-output")
+file(WRITE "${_managed_source}"
+    "extern \"C\" int dl4j_managed_runtime_contract() { return 7; }\n")
+file(WRITE "${_primary_source}"
+    "extern \"C\" int dl4j_managed_runtime_contract();\n"
+    "extern \"C\" int dl4j_primary_contract() { return dl4j_managed_runtime_contract(); }\n")
+execute_process(
+    COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
+        -Wl,-soname,libhipcontract.so.1
+        -o "${_managed_runtime}" "${_managed_source}"
+    RESULT_VARIABLE _managed_compile_result
+    ERROR_VARIABLE _managed_compile_error)
+if(NOT _managed_compile_result EQUAL 0)
+    message(FATAL_ERROR
+        "Failed to compile managed-runtime fixture: ${_managed_compile_error}")
+endif()
+execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E create_symlink
+        "libhipcontract.so.1" "${_managed_link_alias}"
+    RESULT_VARIABLE _managed_symlink_result
+    ERROR_VARIABLE _managed_symlink_error)
+if(NOT _managed_symlink_result EQUAL 0)
+    message(FATAL_ERROR
+        "Failed to create managed-runtime link alias: ${_managed_symlink_error}")
+endif()
+execute_process(
+    COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
+        -Wl,-soname,libprimary.so
+        -Wl,--no-as-needed
+        "-L${_runtime_root}" -lhipcontract
+        -o "${_primary_runtime}" "${_primary_source}"
+    RESULT_VARIABLE _primary_compile_result
+    ERROR_VARIABLE _primary_compile_error)
+if(NOT _primary_compile_result EQUAL 0)
+    message(FATAL_ERROR
+        "Failed to compile primary-runtime fixture: ${_primary_compile_error}")
+endif()
+
+execute_process(
+    COMMAND "${CMAKE_COMMAND}"
+        "-DRUNTIME_LIBRARIES_PIPE="
+        "-DRUNTIME_SEARCH_ROOTS_PIPE=${_runtime_root}"
+        "-DPRIMARY_RUNTIME=${_primary_runtime}"
+        "-DRUNTIME_POLICY=zluda-amd"
+        "-DOUTPUT_DIR=${_primary_output}"
+        "-DCXX_COMPILER=${TEST_CXX_COMPILER}"
+        "-DREADELF=${TEST_READELF}"
+        -P "${LIBND4J_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
+    RESULT_VARIABLE _primary_stage_result
+    OUTPUT_VARIABLE _primary_stage_output
+    ERROR_VARIABLE _primary_stage_error)
+if(NOT _primary_stage_result EQUAL 0)
+    message(FATAL_ERROR
+        "Primary-root closure staging failed:\n"
+        "${_primary_stage_output}\n${_primary_stage_error}")
+endif()
+file(STRINGS "${_primary_output}/shared-runtime-manifest.txt"
+    _primary_manifest_entries)
+list(FIND _primary_manifest_entries "libhipcontract.so.1"
+    _managed_runtime_index)
+if(_managed_runtime_index EQUAL -1 OR
+   NOT EXISTS "${_primary_output}/libhipcontract.so.1")
+    message(FATAL_ERROR
+        "Primary-root closure omitted libhipcontract.so.1: "
+        "${_primary_manifest_entries}")
+endif()
+
+message(STATUS
+    "Shared-runtime aliases and primary-root managed closure are preserved")

@@ -9,6 +9,10 @@
 # the backend, separated by '|', which is not valid in Windows file names. An
 # explicitly empty set is valid and still produces a manifest, ensuring a reused
 # backend output directory cannot retain runtimes from an earlier configuration.
+if(POLICY CMP0009)
+    cmake_policy(SET CMP0009 NEW)
+endif()
+
 if(NOT DEFINED RUNTIME_LIBRARIES_PIPE)
     message(FATAL_ERROR
         "RUNTIME_LIBRARIES_PIPE must be defined when staging shared runtimes")
@@ -185,39 +189,64 @@ if(_runtime_search_roots)
     # complete runtime tree for every DT_NEEDED entry would be unnecessarily slow.
     set(_runtime_root_files "")
     foreach(_runtime_search_root IN LISTS _runtime_search_roots)
-        file(GLOB_RECURSE _runtime_root_candidates LIST_DIRECTORIES FALSE
+        # Keep direct entries as spelled so ABI symlink names remain searchable.
+        # The recursive index supplies transitive libraries in nested ROCm roots.
+        file(GLOB _runtime_root_direct_candidates LIST_DIRECTORIES FALSE
             "${_runtime_search_root}/*")
-        list(SORT _runtime_root_candidates)
-        list(APPEND _runtime_root_files ${_runtime_root_candidates})
+        file(GLOB_RECURSE _runtime_root_recursive_candidates
+            LIST_DIRECTORIES FALSE "${_runtime_search_root}/*")
+        list(APPEND _runtime_root_files
+            ${_runtime_root_direct_candidates}
+            ${_runtime_root_recursive_candidates})
     endforeach()
+    list(REMOVE_DUPLICATES _runtime_root_files)
+    list(SORT _runtime_root_files)
 
     set(_runtime_queue ${_runtime_libraries})
+    set(_primary_runtime_real "")
+    if(DEFINED PRIMARY_RUNTIME AND NOT PRIMARY_RUNTIME STREQUAL "" AND
+       EXISTS "${PRIMARY_RUNTIME}")
+        get_filename_component(_primary_runtime_real
+            "${PRIMARY_RUNTIME}" REALPATH)
+        list(PREPEND _runtime_queue "${PRIMARY_RUNTIME}")
+    endif()
+    set(_runtime_inspected "")
     set(_runtime_libraries "")
     while(_runtime_queue)
         list(POP_FRONT _runtime_queue _runtime_candidate)
         get_filename_component(_runtime_candidate_real
             "${_runtime_candidate}" REALPATH)
+        set(_runtime_candidate_is_primary FALSE)
+        if(_primary_runtime_real AND
+           _runtime_candidate_real STREQUAL _primary_runtime_real)
+            set(_runtime_candidate_is_primary TRUE)
+        endif()
 
         # Preserve the filename of every explicitly selected symlink before
         # canonical-path deduplication. ZLUDA exposes multiple CUDA ABI names
         # (for example libcuda.so and libcuda.so.1) through one libnvcuda DSO;
         # resolving those seeds first would otherwise discard the ABI aliases.
-        get_filename_component(_runtime_candidate_name
-            "${_runtime_candidate}" NAME)
-        _shared_runtime_loader_name(_runtime_candidate_loader_name
-            "${_runtime_candidate_real}")
-        if(NOT _runtime_candidate_name STREQUAL
-           _runtime_candidate_loader_name)
-            list(APPEND _runtime_alias_entries
-                "${_runtime_candidate_real}|${_runtime_candidate_name}")
+        if(NOT _runtime_candidate_is_primary)
+            get_filename_component(_runtime_candidate_name
+                "${_runtime_candidate}" NAME)
+            _shared_runtime_loader_name(_runtime_candidate_loader_name
+                "${_runtime_candidate_real}")
+            if(NOT _runtime_candidate_name STREQUAL
+               _runtime_candidate_loader_name)
+                list(APPEND _runtime_alias_entries
+                    "${_runtime_candidate_real}|${_runtime_candidate_name}")
+            endif()
         endif()
 
-        list(FIND _runtime_libraries "${_runtime_candidate_real}"
+        list(FIND _runtime_inspected "${_runtime_candidate_real}"
             _runtime_candidate_index)
         if(NOT _runtime_candidate_index EQUAL -1)
             continue()
         endif()
-        list(APPEND _runtime_libraries "${_runtime_candidate_real}")
+        list(APPEND _runtime_inspected "${_runtime_candidate_real}")
+        if(NOT _runtime_candidate_is_primary)
+            list(APPEND _runtime_libraries "${_runtime_candidate_real}")
+        endif()
 
         _shared_runtime_needed_names(_needed_names "${_runtime_candidate_real}")
         foreach(_needed_name IN LISTS _needed_names)
