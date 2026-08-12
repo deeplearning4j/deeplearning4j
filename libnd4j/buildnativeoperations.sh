@@ -3507,6 +3507,9 @@ validate_compiler_cache_contract() {
     local expected_cache="${DL4J_COMPILER_CACHE:-ccache}"
     local cache_name=""
 
+    if [[ "$expected_cache" == *\\* ]]; then
+        expected_cache="${expected_cache//\\//}"
+    fi
     if [ ! -f "$cache_file" ]; then
         print_colored "red" "❌ ERROR: CMake did not produce CMakeCache.txt; compiler-cache validation cannot continue"
         exit 1

@@ -36,6 +36,20 @@ cloud_io = load_module("dl4j_azure_cloud_io", HERE / "cloud-io.py")
 maven_publish = load_module("dl4j_azure_maven_publish", HERE / "maven-publish.py")
 
 
+class CompilerCacheBuildScriptTests(unittest.TestCase):
+    def test_windows_sccache_path_is_normalized_before_launcher_attestation(self):
+        source = (ROOT / "libnd4j/buildnativeoperations.sh").read_text(
+            encoding="utf-8"
+        )
+        normalization = 'expected_cache="${expected_cache//\\\\//}"'
+        self.assertIn('if [[ "$expected_cache" == *\\\\* ]]; then', source)
+        self.assertIn(normalization, source)
+        self.assertLess(
+            source.index(normalization),
+            source.index('cache_name="$(basename "$expected_cache")"'),
+        )
+
+
 class TokenizerNativeBuildScriptTests(unittest.TestCase):
     def test_visual_studio_platform_variable_does_not_override_msys_host(self):
         script = (
