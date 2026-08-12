@@ -4158,6 +4158,8 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertIn("$PythonAttempt -le 3", worker)
         self.assertIn("https://www.python.org/ftp/python/$PythonVersion/", worker)
         self.assertIn("Invoke-WebRequest -UseBasicParsing -Uri $PythonInstallerUrl", worker)
+        self.assertIn("$PythonInstallerProcess.WaitForExit()", worker)
+        self.assertIn("$LASTEXITCODE = $PythonInstallerProcess.ExitCode", worker)
         self.assertNotIn("choco install -y --no-progress python312", worker)
         self.assertIn("phase=python-runtime status=retrying", worker)
         self.assertIn("$ChocolateyAttempt -le 8", worker)

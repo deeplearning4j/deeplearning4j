@@ -955,7 +955,11 @@ try {
       Remove-Item -LiteralPath $PythonInstaller -Force -ErrorAction SilentlyContinue
       Invoke-WebRequest -UseBasicParsing -Uri $PythonInstallerUrl -OutFile $PythonInstaller
       Invoke-NativeChecked -Description 'Python 3.12 installation' -SuccessCodes @(0) -Command {
-        & $PythonInstaller /quiet InstallAllUsers=1 "TargetDir=$PythonInstall" Include_launcher=0 Include_test=0 PrependPath=0
+        $PythonInstallerArguments = @('/quiet', 'InstallAllUsers=1', "TargetDir=$PythonInstall", 'Include_launcher=0', 'Include_test=0', 'PrependPath=0')
+        $PythonInstallerProcess = Start-Process -FilePath $PythonInstaller -ArgumentList $PythonInstallerArguments -PassThru
+        $null = $PythonInstallerProcess.Handle
+        $PythonInstallerProcess.WaitForExit()
+        $LASTEXITCODE = $PythonInstallerProcess.ExitCode
       }
     }
     catch {
