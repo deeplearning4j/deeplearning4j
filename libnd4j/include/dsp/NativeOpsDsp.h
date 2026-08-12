@@ -162,7 +162,7 @@ SD_LIB_EXPORT void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle);
  */
 SD_LIB_EXPORT int releaseGpuIntermediates(sd::Pointer planHandle);
 
-// ─── Replay diagnostics (Phase 2) ──────────────────────────────────────────
+// --- Replay diagnostics (Phase 2) ------------------------------------------
 
 /**
  * Get the replay schedule signature hash for a segment.
@@ -237,9 +237,9 @@ SD_LIB_EXPORT long long getPlanMidExecutionCompileCount(sd::Pointer planHandle);
  */
 SD_LIB_EXPORT void resetPlanMidExecutionCompileCount(sd::Pointer planHandle);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// -----------------------------------------------------------------------------
 // FrozenPlan Hierarchy API (Step 6) — New unified execution interface
-// ═══════════════════════════════════════════════════════════════════════════════
+// -----------------------------------------------------------------------------
 
 /**
  * Execute a FrozenPlan. Unified entry point that auto-manages build → seal → replay.
@@ -282,7 +282,7 @@ SD_LIB_EXPORT int getFrozenPlanBuildPassCount(sd::Pointer planHandle);
  */
 SD_LIB_EXPORT int getSegmentExecutorPhase(sd::Pointer planHandle, int segIdx);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// -----------------------------------------------------------------------------
 
 /**
  * Load a model from an SDZ (ZIP) or SDNB file entirely in C++.

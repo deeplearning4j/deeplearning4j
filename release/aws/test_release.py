@@ -2249,6 +2249,10 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Pvulkan", windows_vulkan)
         self.assertIn("-Dlibnd4j.vulkan", windows_vulkan)
         self.assertIn("-Djavacpp.platform=windows-x86_64", windows_vulkan)
+        self.assertIn(
+            "-Djavacpp.platform.properties=windows-x86_64-mingw", windows_vulkan
+        )
+        self.assertIn("-Djavacpp.platform.compiler=g++", windows_vulkan)
         self.assertIn("-Dlibnd4j.platform=windows-x86_64", windows_vulkan)
         self.assertIn("-Dplatform.classifier=windows-x86_64", windows_vulkan)
         self.assertIn("-Dlibnd4j.classifier=windows-x86_64", windows_vulkan)
