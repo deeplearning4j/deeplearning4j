@@ -576,21 +576,25 @@ def required_classifier_artifact_ids(build: dict, rules: dict) -> tuple[str, ...
         return ()
     backend = build.get("backend")
     if backend == "cpu":
-        primary = "nd4j-native"
-        preset = "nd4j-native-preset"
+        required = ("nd4j-native", "nd4j-native-preset")
     elif backend == "cuda":
         cuda_version = str(build.get("cudaVersion", ""))
         if not cuda_version:
             raise ValueError("CUDA classifier validation requires cudaVersion")
         if build.get("zludaVersion"):
-            primary = f"nd4j-zluda-{cuda_version}"
-            preset = f"nd4j-cuda-{cuda_version}-preset"
+            required = (
+                f"nd4j-zluda-{cuda_version}",
+                f"nd4j-cuda-{cuda_version}-preset",
+            )
         else:
             primary = f"nd4j-cuda-{cuda_version}"
-            preset = f"{primary}-preset"
+            required = (primary, f"{primary}-preset")
+    elif backend == "vulkan":
+        # nd4j-vulkan owns the native classifier. nd4j-vulkan-preset contains
+        # platform-neutral JavaCPP declarations and remains unclassified.
+        required = ("nd4j-vulkan",)
     else:
         return ()
-    required = (primary, preset)
     owned = set(rules.get("artifactIds", []))
     missing_owned = [artifact_id for artifact_id in required if artifact_id not in owned]
     if missing_owned:
@@ -1323,6 +1327,8 @@ def shared_native_family(shard: dict, variant: dict) -> str:
     if build["backend"] in {"vulkan", "hexagon", "tpu"}:
         if build["backend"] == "vulkan" and build.get("javacppPlatform", "").startswith("android-"):
             return f"{build['javacppPlatform']}-vulkan"
+        if build["backend"] == "vulkan" and shard["os"] == "windows":
+            return "windows-vulkan"
         return "vulkan-mlir" if build["backend"] == "vulkan" and variant.get("mlir") else build["backend"]
     if build["backend"] == "cuda":
         return "windows-cuda" if shard["os"] == "windows" else "linux-cuda"

@@ -255,6 +255,66 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertEqual("-onednn", variant["suffix"], provider)
             self.assertNotIn("extension", variant, provider)
 
+    def test_desktop_vulkan_release_contract_is_portable_and_complete(self):
+        root = Path(__file__).parents[2]
+        for provider in ("aws", "azure", "gcp"):
+            plan = json.loads(
+                (root / f"release/{provider}/release-plan.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            for shard_id, platform in (
+                ("linux-x86_64-vulkan", "linux-x86_64"),
+                ("windows-x86_64-vulkan", "windows-x86_64"),
+            ):
+                shard = next(
+                    item for item in plan["shards"] if item["id"] == shard_id
+                )
+                self.assertEqual("vulkan", shard["build"]["backend"], provider)
+                self.assertEqual(platform, shard["build"]["javacppPlatform"], provider)
+                self.assertEqual([{"name": "base", "suffix": ""}],
+                                 shard["build"]["variants"], provider)
+                self.assertEqual(
+                    {
+                        "nd4j-vulkan",
+                        "nd4j-vulkan-preset",
+                        "nd4j-vulkan-platform",
+                    },
+                    set(shard["artifactRules"]["artifactIds"]),
+                    provider,
+                )
+                self.assertEqual(
+                    {
+                        "nd4j-vulkan",
+                        "nd4j-vulkan-preset",
+                        "nd4j-vulkan-platform",
+                    },
+                    set(shard["artifactRules"]["unclassifiedArtifactIds"]),
+                    provider,
+                )
+                self.assertIn(
+                    f"-Dplatform.classifier={platform}",
+                    shard["build"]["mavenArgs"],
+                    provider,
+                )
+                if shard["os"] == "windows":
+                    self.assertFalse(
+                        any(
+                            variant.get("mlir") or variant.get("triton")
+                            for variant in shard["build"]["variants"]
+                        ),
+                        provider,
+                    )
+
+        for worker in (
+            root / "release/aws/worker.ps1",
+            root / "release/azure/worker.ps1",
+            root / "release/gcp/worker.ps1",
+        ):
+            source = worker.read_text(encoding="utf-8")
+            self.assertIn("mingw-w64-x86_64-vulkan-headers", source, worker)
+            self.assertIn("mingw-w64-x86_64-vulkan-loader", source, worker)
+
     def test_smoke_overrides_instance_and_build_threads(self):
         shard = self.shard()
         shard["build"] = {"buildThreads": 48}
@@ -2181,6 +2241,20 @@ class ReleaseValidationTest(unittest.TestCase):
         )
         self.assertNotIn("-Dlibnd4j.extension=cudnn", windows_cudnn)
 
+        windows_vulkan = command(DL4J_FAMILY="windows-vulkan")
+        self.assertIn("-Pvulkan", windows_vulkan)
+        self.assertIn("-Dlibnd4j.vulkan", windows_vulkan)
+        self.assertIn("-Djavacpp.platform=windows-x86_64", windows_vulkan)
+        self.assertIn("-Dlibnd4j.platform=windows-x86_64", windows_vulkan)
+        self.assertIn("-Dplatform.classifier=windows-x86_64", windows_vulkan)
+        self.assertIn("-Dlibnd4j.classifier=windows-x86_64", windows_vulkan)
+        self.assertNotIn("-Dlibnd4j.triton=ON", windows_vulkan)
+        self.assertNotIn("-Dlibnd4j.mlir=ON", windows_vulkan)
+        self.assertEqual(
+            ":nd4j-vulkan,:nd4j-vulkan-preset,:nd4j-vulkan-platform,:libnd4j",
+            windows_vulkan[windows_vulkan.index("-pl") + 1],
+        )
+
         metal = command(DL4J_FAMILY="macos-arm64", DL4J_HELPER="mps")
         self.assertIn("-Pmetal", metal)
 
@@ -2265,6 +2339,41 @@ class ReleaseValidationTest(unittest.TestCase):
             ":nd4j-cuda-backend-common,:nd4j-cuda-12.9-preset,:nd4j-zluda-12.9,"
             ":nd4j-zluda-12.9-platform,:libnd4j",
             windows_zluda[windows_zluda.index("-pl") + 1],
+        )
+
+    def test_vulkan_native_family_tracks_worker_os(self):
+        build = {
+            "backend": "vulkan",
+            "javacppPlatform": "windows-x86_64",
+            "modules": [":nd4j-vulkan"],
+        }
+        variant = {"name": "base"}
+        self.assertEqual(
+            "windows-vulkan",
+            build_platform.shared_native_family(
+                {"os": "windows", "build": build}, variant
+            ),
+        )
+        build["javacppPlatform"] = "linux-x86_64"
+        self.assertEqual(
+            "vulkan",
+            build_platform.shared_native_family(
+                {"os": "linux", "build": build}, variant
+            ),
+        )
+        self.assertEqual(
+            ("nd4j-vulkan",),
+            build_platform.required_classifier_artifact_ids(
+                build,
+                {
+                    "mode": "classifier",
+                    "artifactIds": [
+                        "nd4j-vulkan",
+                        "nd4j-vulkan-preset",
+                        "nd4j-vulkan-platform",
+                    ],
+                },
+            ),
         )
 
     def test_zluda_native_family_tracks_worker_os(self):

@@ -159,7 +159,7 @@ try {
   $env:JAVA_HOME = $JavaHome.FullName
   $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
   Write-Phase 'msys-toolchain' 'started'
-  & C:\tools\msys64\usr\bin\bash.exe -lc "pacman-key --init && pacman-key --populate msys2 && pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja"
+  & C:\tools\msys64\usr\bin\bash.exe -lc "pacman-key --init && pacman-key --populate msys2 && pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja mingw-w64-x86_64-vulkan-headers mingw-w64-x86_64-vulkan-loader"
   Write-Phase 'msys-toolchain' 'complete'
   Write-Phase 'rust-toolchain' 'started'
   rustup toolchain install stable-x86_64-pc-windows-gnu
