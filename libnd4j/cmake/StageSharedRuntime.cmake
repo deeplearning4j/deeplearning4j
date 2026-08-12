@@ -76,10 +76,14 @@ function(_shared_runtime_loader_name _out_var _library_path)
         endif()
         string(REGEX MATCH "\\(SONAME\\)[^\n]*\\[([^]]+)\\]" _soname_match "${_metadata_output}")
         if(CMAKE_MATCH_1 STREQUAL "")
-            message(FATAL_ERROR
-                "Shared runtime '${_library_path}' has no ELF SONAME")
+            # An ELF DSO is not required to declare DT_SONAME. In that case the
+            # filename used by the link/load contract is its only loader name.
+            # Several upstream ZLUDA CUDA-ABI replacement DSOs intentionally use
+            # this form, so preserve the managed filename instead of rejecting it.
+            get_filename_component(_loader_name "${_library_path}" NAME)
+        else()
+            set(_loader_name "${CMAKE_MATCH_1}")
         endif()
-        set(_loader_name "${CMAKE_MATCH_1}")
     endif()
 
     set(${_out_var} "${_loader_name}" PARENT_SCOPE)

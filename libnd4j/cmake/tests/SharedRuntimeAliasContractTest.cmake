@@ -17,10 +17,14 @@ set(_output_root "${_test_root}/output")
 set(_source_file "${_test_root}/nvcuda.cpp")
 set(_real_runtime "${_runtime_root}/libnvcuda.so")
 set(_cuda_alias "${_runtime_root}/libcuda.so")
+set(_no_soname_source "${_test_root}/cublas.cpp")
+set(_no_soname_runtime "${_runtime_root}/libcublas.so")
 
 file(REMOVE_RECURSE "${_test_root}")
 file(MAKE_DIRECTORY "${_runtime_root}" "${_output_root}")
 file(WRITE "${_source_file}" "extern \"C\" int dl4j_zluda_alias_contract() { return 0; }\n")
+file(WRITE "${_no_soname_source}"
+    "extern \"C\" int dl4j_zluda_no_soname_contract() { return 0; }\n")
 
 execute_process(
     COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
@@ -31,6 +35,15 @@ execute_process(
 if(NOT _compile_result EQUAL 0)
     message(FATAL_ERROR
         "Failed to compile shared-runtime alias fixture: ${_compile_error}")
+endif()
+execute_process(
+    COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
+        -o "${_no_soname_runtime}" "${_no_soname_source}"
+    RESULT_VARIABLE _no_soname_compile_result
+    ERROR_VARIABLE _no_soname_compile_error)
+if(NOT _no_soname_compile_result EQUAL 0)
+    message(FATAL_ERROR
+        "Failed to compile no-SONAME runtime fixture: ${_no_soname_compile_error}")
 endif()
 
 execute_process(
@@ -45,7 +58,7 @@ endif()
 
 execute_process(
     COMMAND "${CMAKE_COMMAND}"
-        "-DRUNTIME_LIBRARIES_PIPE=${_cuda_alias}"
+        "-DRUNTIME_LIBRARIES_PIPE=${_cuda_alias}|${_no_soname_runtime}"
         "-DRUNTIME_SEARCH_ROOTS_PIPE=${_runtime_root}"
         "-DOUTPUT_DIR=${_output_root}"
         "-DCXX_COMPILER=${TEST_CXX_COMPILER}"
@@ -64,7 +77,7 @@ if(NOT EXISTS "${_manifest}")
     message(FATAL_ERROR "Shared-runtime alias staging did not write a manifest")
 endif()
 file(STRINGS "${_manifest}" _manifest_entries)
-foreach(_required_runtime IN ITEMS libnvcuda.so libcuda.so)
+foreach(_required_runtime IN ITEMS libnvcuda.so libcuda.so libcublas.so)
     list(FIND _manifest_entries "${_required_runtime}" _runtime_index)
     if(_runtime_index EQUAL -1)
         message(FATAL_ERROR
@@ -153,4 +166,4 @@ if(_managed_runtime_index EQUAL -1 OR
 endif()
 
 message(STATUS
-    "Shared-runtime aliases and primary-root managed closure are preserved")
+    "Shared-runtime aliases, no-SONAME DSOs, and primary-root managed closure are preserved")
