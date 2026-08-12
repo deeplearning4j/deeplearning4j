@@ -6007,12 +6007,9 @@ class RegionalMirrorTests(unittest.TestCase):
         )
         destination_blob = mock.Mock()
         destination_blob.get_blob_properties.return_value = SimpleNamespace(
-            copy=SimpleNamespace(
-                source=(
-                    "https://source.blob.core.windows.net/releases/repo/current.jar"
-                    "?versionid=2026-08-12T13%3A22%3A53.0068234Z"
-                )
-            )
+            metadata={
+                "dl4j_mirror_source_version": "2026-08-12T13:22:53.0068234Z"
+            }
         )
         source = SimpleNamespace(
             container_name="releases",
@@ -6049,6 +6046,60 @@ class RegionalMirrorTests(unittest.TestCase):
         self.assertEqual(1, result["scannedBlobCount"])
         self.assertEqual(1, result["skippedBlobCount"])
         self.assertEqual(0, result["bytes"])
+        destination_blob.start_copy_from_url.assert_not_called()
+
+    def test_bootstrap_skips_blob_with_matching_size_and_content_md5(self):
+        content_md5 = b"0123456789abcdef"
+        item = SimpleNamespace(
+            name="repo/current-by-md5.jar",
+            size=256,
+            blob_type=SimpleNamespace(value="BlockBlob"),
+            etag="current-etag",
+        )
+        source_blob = mock.Mock()
+        source_blob.get_blob_properties.return_value = SimpleNamespace(
+            etag=item.etag,
+            size=item.size,
+            content_settings=SimpleNamespace(content_md5=content_md5),
+        )
+        destination_blob = mock.Mock()
+        destination_blob.get_blob_properties.return_value = SimpleNamespace(
+            size=item.size,
+            content_settings=SimpleNamespace(content_md5=content_md5),
+        )
+        source = SimpleNamespace(
+            container_name="releases",
+            url="https://source.blob.core.windows.net/releases",
+            list_blobs=lambda **kwargs: [item],
+            get_blob_client=lambda name: source_blob,
+        )
+        destination = SimpleNamespace(
+            get_blob_client=lambda name: destination_blob
+        )
+        context = {
+            "modules": {
+                "generate_container_sas": lambda **kwargs: "source-sas",
+                "ContainerSasPermissions": self.model,
+                "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+                "ResourceNotFoundError": KeyError,
+                "HttpResponseError": RuntimeError,
+            }
+        }
+
+        result = release.bootstrap_container_copy(
+            context,
+            "source",
+            "source-key",
+            source,
+            destination,
+            workers=1,
+            timeout_seconds=60,
+            priority_prefixes=["repo"],
+            include_unprioritized=False,
+        )
+
+        self.assertEqual(0, result["blobCount"])
+        self.assertEqual(1, result["skippedBlobCount"])
         destination_blob.start_copy_from_url.assert_not_called()
 
     def test_bootstrap_uses_native_async_copy_for_large_block_blobs(self):
@@ -6140,6 +6191,98 @@ class RegionalMirrorTests(unittest.TestCase):
         )
         destination_blob.stage_block_from_url.assert_not_called()
         destination_blob.commit_block_list.assert_not_called()
+
+    def test_bootstrap_retries_while_replication_policy_unlocks(self):
+        class OrsConflict(Exception):
+            error_code = "OrsPolicyConflict"
+
+        item = SimpleNamespace(
+            name="repo/refreshed.jar",
+            size=512,
+            blob_type=SimpleNamespace(value="BlockBlob"),
+            etag="refreshed-etag",
+        )
+        source_blob = mock.Mock()
+        source_blob.get_blob_properties.return_value = SimpleNamespace(
+            etag=item.etag,
+            size=item.size,
+            version_id="2026-08-12T13:22:53.0068234Z",
+        )
+        destination_blob = mock.Mock()
+        destination_blob.get_blob_properties.return_value = SimpleNamespace(
+            copy=SimpleNamespace(
+                source=(
+                    "https://source.blob.core.windows.net/releases/repo/refreshed.jar"
+                    "?versionid=2026-08-12T11%3A40%3A10.0000000Z"
+                )
+            )
+        )
+        destination_blob.start_copy_from_url.side_effect = [
+            OrsConflict(),
+            {"copy_id": "copy-id", "copy_status": "success"},
+        ]
+        source = SimpleNamespace(
+            container_name="releases",
+            url="https://source.blob.core.windows.net/releases",
+            list_blobs=lambda **kwargs: [item],
+            get_blob_client=lambda name: source_blob,
+        )
+        destination = SimpleNamespace(
+            get_blob_client=lambda name: destination_blob
+        )
+        context = {
+            "modules": {
+                "generate_container_sas": lambda **kwargs: "source-sas",
+                "ContainerSasPermissions": self.model,
+                "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+                "ResourceNotFoundError": KeyError,
+                "HttpResponseError": OrsConflict,
+            }
+        }
+
+        with mock.patch.object(release.time, "sleep") as sleep:
+            result = release.bootstrap_container_copy(
+                context,
+                "source",
+                "source-key",
+                source,
+                destination,
+                workers=1,
+                timeout_seconds=60,
+                priority_prefixes=["repo"],
+                include_unprioritized=False,
+            )
+
+        self.assertEqual(1, result["blobCount"])
+        self.assertEqual(2, destination_blob.start_copy_from_url.call_count)
+        sleep.assert_called_once_with(2)
+
+    def test_replication_policy_removal_unlocks_both_accounts(self):
+        operations = mock.Mock()
+        operations.list.side_effect = [[], []]
+        context = {
+            "storage": SimpleNamespace(object_replication_policies=operations),
+            "modules": {"ResourceNotFoundError": KeyError},
+        }
+        policy = SimpleNamespace(policy_id="policy-id")
+
+        policy_id = release.remove_object_replication_policy(
+            context,
+            "source-group",
+            "source",
+            "destination-group",
+            "destination",
+            policy,
+        )
+
+        self.assertEqual("policy-id", policy_id)
+        self.assertEqual(
+            [
+                mock.call("source-group", "source", "policy-id"),
+                mock.call("destination-group", "destination", "policy-id"),
+            ],
+            operations.delete.call_args_list,
+        )
 
     def test_full_container_policy_is_created_on_destination_then_source(self):
         operations = mock.Mock()

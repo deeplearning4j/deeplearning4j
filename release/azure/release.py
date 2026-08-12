@@ -4562,7 +4562,11 @@ def storage_account_key(
 
 
 def copied_source_version_id(properties: Any) -> str:
-    """Return the immutable source version recorded by Azure Copy Blob."""
+    """Return the immutable source version recorded for a mirrored blob."""
+    metadata = object_value(properties, "metadata", {}) or {}
+    for key, value in dict(metadata).items():
+        if str(key).lower() == "dl4j_mirror_source_version":
+            return str(value)
     source = str(object_value(object_value(properties, "copy"), "source", "") or "")
     if not source:
         return ""
@@ -4572,6 +4576,20 @@ def copied_source_version_id(properties: Any) -> str:
         if key.lower() == "versionid" and values:
             return str(values[0])
     return ""
+
+
+def blob_content_md5(properties: Any) -> Any:
+    return object_value(object_value(properties, "content_settings"), "content_md5")
+
+
+def blob_content_length(properties: Any, fallback: int = 0) -> int:
+    for attribute in ("size", "content_length"):
+        value = object_value(properties, attribute)
+        if isinstance(value, (int, float)):
+            return int(value)
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+    return fallback
 
 
 def bootstrap_container_copy(
@@ -4658,11 +4676,9 @@ def bootstrap_container_copy(
             or object_value(source_properties, "versionId", "")
             or ""
         )
-        size = int(
-            object_value(source_properties, "size")
-            or object_value(source_properties, "content_length")
-            or object_value(item, "size", 0)
-            or 0
+        size = blob_content_length(
+            source_properties,
+            blob_content_length(item),
         )
         listed_blob_type = object_value(item, "blob_type", "unknown")
         blob_type = str(object_value(listed_blob_type, "value", listed_blob_type))
@@ -4673,38 +4689,57 @@ def bootstrap_container_copy(
             destination_properties = destination_blob.get_blob_properties()
         except modules["ResourceNotFoundError"]:
             destination_properties = None
-        if (
+        destination_size = blob_content_length(destination_properties)
+        source_md5 = blob_content_md5(source_properties)
+        destination_md5 = blob_content_md5(destination_properties)
+        same_source_version = bool(
             source_version_id
             and destination_properties is not None
             and copied_source_version_id(destination_properties) == source_version_id
-        ):
+        )
+        same_content_md5 = bool(
+            source_md5
+            and destination_md5
+            and size == destination_size
+            and source_md5 == destination_md5
+        )
+        if same_source_version or same_content_md5:
             return blob_type, size, False
-        for attempt in range(3):
-            try:
-                result = destination_blob.start_copy_from_url(
-                    source_url,
-                    source_etag=expected_etag,
-                    source_match_condition=modules["MatchConditions"].IfNotModified,
-                    requires_sync=synchronous,
-                    tags="COPY" if synchronous else None,
-                )
-            except modules["HttpResponseError"] as exc:
-                if (
-                    str(object_value(exc, "error_code", ""))
-                    == "PendingCopyOperation"
-                    and abort_pending_destination_copy(destination_blob)
-                ):
-                    result = destination_blob.start_copy_from_url(
+        copy_metadata = dict(object_value(source_properties, "metadata", {}) or {})
+        if source_version_id:
+            copy_metadata["dl4j_mirror_source_version"] = source_version_id
+
+        def start_destination_copy() -> Any:
+            while True:
+                try:
+                    return destination_blob.start_copy_from_url(
                         source_url,
                         source_etag=expected_etag,
                         source_match_condition=modules[
                             "MatchConditions"
                         ].IfNotModified,
                         requires_sync=synchronous,
+                        metadata=copy_metadata or None,
                         tags="COPY" if synchronous else None,
                     )
-                else:
+                except modules["HttpResponseError"] as exc:
+                    error_code = str(object_value(exc, "error_code", ""))
+                    if error_code == "PendingCopyOperation" and (
+                        abort_pending_destination_copy(destination_blob)
+                    ):
+                        continue
+                    if error_code == "OrsPolicyConflict":
+                        if time.monotonic() >= deadline:
+                            raise TimeoutError(
+                                "Azure mirror policy removal did not unlock "
+                                f"destination blob {name!r}"
+                            ) from exc
+                        time.sleep(2)
+                        continue
                     raise
+
+        for attempt in range(3):
+            result = start_destination_copy()
             copy_id = str(object_value(result, "copy_id", ""))
             status = str(object_value(result, "copy_status", "pending")).lower()
             properties = None
@@ -4915,6 +4950,53 @@ def ensure_object_replication_policy(
     }
 
 
+def remove_object_replication_policy(
+    context: dict[str, Any],
+    source_group: str,
+    source_account_name: str,
+    destination_group: str,
+    destination_account_name: str,
+    policy: Any,
+) -> str:
+    """Remove both halves of one mirror policy and wait for ARM convergence."""
+    policy_id = str(
+        object_value(policy, "policy_id") or object_value(policy, "name", "")
+    )
+    if not policy_id:
+        raise RuntimeError("Azure mirror policy has no policy ID")
+    operations = context["storage"].object_replication_policies
+    missing_error = context["modules"]["ResourceNotFoundError"]
+    for group, account_name in (
+        (source_group, source_account_name),
+        (destination_group, destination_account_name),
+    ):
+        try:
+            operations.delete(group, account_name, policy_id)
+        except missing_error:
+            pass
+
+    deadline = time.monotonic() + RESOURCE_RECONCILE_TIMEOUT_SECONDS
+    while True:
+        source_policy = replication_policy(
+            operations.list(source_group, source_account_name),
+            source_account_name,
+            destination_account_name,
+        )
+        destination_policy = replication_policy(
+            operations.list(destination_group, destination_account_name),
+            source_account_name,
+            destination_account_name,
+        )
+        if source_policy is None and destination_policy is None:
+            return policy_id
+        if time.monotonic() >= deadline:
+            raise TimeoutError(
+                "Azure object-replication policy removal did not converge for "
+                f"{source_account_name}/{destination_account_name}"
+            )
+        time.sleep(2)
+
+
 def mirror_urls(
     account_name: str,
     container_name: str,
@@ -4990,42 +5072,70 @@ def configure_mirrors(args: argparse.Namespace) -> None:
             object_value(existing_filters, "min_creation_time", "")
             or MIRROR_ALL_BLOBS_CREATION_TIME
         )
-        if not args.skip_priority_bootstrap:
-            bootstrap = {
-                "state": "reconciled",
-                **bootstrap_container_copy(
-                    context,
-                    source_name,
-                    storage_account_key(context, source_group, source_name),
-                    source_container,
-                    destination_service.get_container_client(
-                        destination_container_name
-                    ),
-                    workers=args.copy_workers,
-                    timeout_seconds=args.copy_timeout_hours * 3600,
-                    priority_prefixes=(
-                        args.priority_prefix
-                        or [stable_maven_repository_prefix(plan)]
-                    ),
-                    include_unprioritized=False,
-                ),
-            }
-        else:
-            bootstrap = {
-                "state": "skipped",
-                "reason": "--skip-priority-bootstrap",
-                "scope": "object-replication-all-existing-and-future-block-blobs",
-            }
-        policy = ensure_object_replication_policy(
-            context,
-            source_group,
-            source_account,
-            source_container_name,
-            destination_group,
-            destination_account,
-            destination_container_name,
-            min_creation_time=cutover,
+        policy_temporarily_removed = bool(
+            existing_policy is not None and not args.skip_priority_bootstrap
         )
+        policy = None
+        try:
+            if policy_temporarily_removed:
+                remove_object_replication_policy(
+                    context,
+                    source_group,
+                    source_name,
+                    destination_group,
+                    destination_name,
+                    existing_policy,
+                )
+            if not args.skip_priority_bootstrap:
+                bootstrap = {
+                    "state": "reconciled",
+                    "replicationPolicyPaused": policy_temporarily_removed,
+                    **bootstrap_container_copy(
+                        context,
+                        source_name,
+                        storage_account_key(context, source_group, source_name),
+                        source_container,
+                        destination_service.get_container_client(
+                            destination_container_name
+                        ),
+                        workers=args.copy_workers,
+                        timeout_seconds=args.copy_timeout_hours * 3600,
+                        priority_prefixes=(
+                            args.priority_prefix
+                            or [stable_maven_repository_prefix(plan)]
+                        ),
+                        include_unprioritized=False,
+                    ),
+                }
+            else:
+                bootstrap = {
+                    "state": "skipped",
+                    "reason": "--skip-priority-bootstrap",
+                    "scope": "object-replication-all-existing-and-future-block-blobs",
+                }
+        finally:
+            if policy_temporarily_removed:
+                policy = ensure_object_replication_policy(
+                    context,
+                    source_group,
+                    source_account,
+                    source_container_name,
+                    destination_group,
+                    destination_account,
+                    destination_container_name,
+                    min_creation_time=cutover,
+                )
+        if policy is None:
+            policy = ensure_object_replication_policy(
+                context,
+                source_group,
+                source_account,
+                source_container_name,
+                destination_group,
+                destination_account,
+                destination_container_name,
+                min_creation_time=cutover,
+            )
         mirrors.append({
             "location": destination_location,
             "resourceGroup": destination_group,
