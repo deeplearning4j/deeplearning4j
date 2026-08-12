@@ -4561,12 +4561,23 @@ def storage_account_key(
     return str(object_value(values[0], "value"))
 
 
+def blob_metadata_value(properties: Any, wanted_key: str) -> str:
+    metadata = object_value(properties, "metadata", {}) or {}
+    if not isinstance(metadata, dict):
+        return ""
+    for key, value in metadata.items():
+        if str(key).lower() == wanted_key.lower():
+            return str(value)
+    return ""
+
+
 def copied_source_version_id(properties: Any) -> str:
     """Return the immutable source version recorded for a mirrored blob."""
-    metadata = object_value(properties, "metadata", {}) or {}
-    for key, value in dict(metadata).items():
-        if str(key).lower() == "dl4j_mirror_source_version":
-            return str(value)
+    recorded_version = blob_metadata_value(
+        properties, "dl4j_mirror_source_version"
+    )
+    if recorded_version:
+        return recorded_version
     source = str(object_value(object_value(properties, "copy"), "source", "") or "")
     if not source:
         return ""
@@ -4703,7 +4714,17 @@ def bootstrap_container_copy(
             and size == destination_size
             and source_md5 == destination_md5
         )
-        if same_source_version or same_content_md5:
+        source_sha256 = blob_metadata_value(source_properties, "dl4j_sha256")
+        destination_sha256 = blob_metadata_value(
+            destination_properties, "dl4j_sha256"
+        )
+        same_content_sha256 = bool(
+            source_sha256
+            and destination_sha256
+            and size == destination_size
+            and source_sha256 == destination_sha256
+        )
+        if same_source_version or same_content_md5 or same_content_sha256:
             return blob_type, size, False
         copy_metadata = dict(object_value(source_properties, "metadata", {}) or {})
         if source_version_id:

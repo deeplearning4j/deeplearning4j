@@ -6102,6 +6102,60 @@ class RegionalMirrorTests(unittest.TestCase):
         self.assertEqual(1, result["skippedBlobCount"])
         destination_blob.start_copy_from_url.assert_not_called()
 
+    def test_bootstrap_skips_blob_with_matching_dl4j_sha256_metadata(self):
+        sha256 = "6d656e52d5e5ea19f71e1567a40ab7e7bc5c30f73344df180a5cb2f05dfdc3e5"
+        item = SimpleNamespace(
+            name="repo/current-by-sha256.jar",
+            size=2794475294,
+            blob_type=SimpleNamespace(value="BlockBlob"),
+            etag="current-etag",
+        )
+        source_blob = mock.Mock()
+        source_blob.get_blob_properties.return_value = SimpleNamespace(
+            etag=item.etag,
+            size=item.size,
+            metadata={"Dl4J_Sha256": sha256},
+        )
+        destination_blob = mock.Mock()
+        destination_blob.get_blob_properties.return_value = SimpleNamespace(
+            size=item.size,
+            metadata={"dl4j_sha256": sha256},
+        )
+        source = SimpleNamespace(
+            container_name="releases",
+            url="https://source.blob.core.windows.net/releases",
+            list_blobs=lambda **kwargs: [item],
+            get_blob_client=lambda name: source_blob,
+        )
+        destination = SimpleNamespace(
+            get_blob_client=lambda name: destination_blob
+        )
+        context = {
+            "modules": {
+                "generate_container_sas": lambda **kwargs: "source-sas",
+                "ContainerSasPermissions": self.model,
+                "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+                "ResourceNotFoundError": KeyError,
+                "HttpResponseError": RuntimeError,
+            }
+        }
+
+        result = release.bootstrap_container_copy(
+            context,
+            "source",
+            "source-key",
+            source,
+            destination,
+            workers=1,
+            timeout_seconds=60,
+            priority_prefixes=["repo"],
+            include_unprioritized=False,
+        )
+
+        self.assertEqual(0, result["blobCount"])
+        self.assertEqual(1, result["skippedBlobCount"])
+        destination_blob.start_copy_from_url.assert_not_called()
+
     def test_bootstrap_uses_native_async_copy_for_large_block_blobs(self):
         class PendingCopyError(Exception):
             error_code = "PendingCopyOperation"
