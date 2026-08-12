@@ -956,7 +956,8 @@ class ReleaseValidationTest(unittest.TestCase):
                         self.assertEqual("7.2.4", build["rocmVersion"])
                         self.assertIs(True, build["rocmBuildOnly"])
                         self.assertEqual(
-                            ["hip", "miopen"], build["rocmBuildComponents"]
+                            ["hip", "rocblas", "miopen"],
+                            build["rocmBuildComponents"],
                         )
                     else:
                         self.assertNotIn("rocmVersion", build)
@@ -1237,7 +1238,10 @@ class ReleaseValidationTest(unittest.TestCase):
             root / ".github/workflows/build-deploy-linux-zluda.yml"
         ).read_text(encoding="utf-8")
         self.assertIn("ROCM_VERSION=7.2.4", workflow)
-        self.assertIn("lld rocm-hip-runtime-dev miopen-hip-dev", workflow)
+        self.assertIn(
+            "lld rocm-hip-runtime-dev rocblas-dev miopen-hip-dev", workflow
+        )
+        self.assertNotIn("ZLUDA_PATH", workflow)
         self.assertIn("test -x /usr/bin/ld.lld", workflow)
         self.assertIn("DL4J_ZLUDA_REQUIRE_ROCM=1", workflow)
         self.assertIn("DL4J_ZLUDA_REQUIRE_MIOPEN=1", workflow)
@@ -1775,11 +1779,12 @@ class ReleaseValidationTest(unittest.TestCase):
             "javacppPlatform": "linux-x86_64",
             "rocmVersion": "7.2.4",
             "rocmBuildOnly": True,
-            "rocmBuildComponents": ["hip", "miopen"],
+            "rocmBuildComponents": ["hip", "rocblas", "miopen"],
         }
         spec = build_platform.rocm_build_spec(build)
         self.assertEqual(
-            ("rocm-hip-runtime-dev", "miopen-hip-dev"), spec["packages"]
+            ("rocm-hip-runtime-dev", "rocblas-dev", "miopen-hip-dev"),
+            spec["packages"],
         )
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -1788,6 +1793,8 @@ class ReleaseValidationTest(unittest.TestCase):
                 root / "include/hip/hip_runtime.h",
                 root / "bin/hipcc",
                 root / "lib/libamdhip64.so",
+                root / "include/rocblas/rocblas.h",
+                root / "lib/librocblas.so",
                 root / "include/miopen/miopen.h",
                 root / "lib/libMIOpen.so",
             )
@@ -1808,7 +1815,7 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_ROCM"])
             self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_MIOPEN"])
             self.assertIn("hardwareProbe=skipped", output.getvalue())
-            files[4].unlink()
+            files[6].unlink()
             with self.assertRaisesRegex(RuntimeError, "MIOpen header"):
                 build_platform.attest_rocm_build_toolchain(
                     build, environment, root=root
@@ -1827,7 +1834,7 @@ class ReleaseValidationTest(unittest.TestCase):
             "javacppPlatform": "linux-x86_64",
             "rocmVersion": "7.2.4",
             "rocmBuildOnly": True,
-            "rocmBuildComponents": ["hip", "miopen"],
+            "rocmBuildComponents": ["hip", "rocblas", "miopen"],
         }
         with patch.object(
                 build_platform, "attest_rocm_build_toolchain",
@@ -1847,6 +1854,7 @@ class ReleaseValidationTest(unittest.TestCase):
         flattened = " ".join(token for command in commands for token in command)
         self.assertIn("lld", flattened)
         self.assertIn("rocm-hip-runtime-dev", flattened)
+        self.assertIn("rocblas-dev", flattened)
         self.assertIn("miopen-hip-dev", flattened)
         self.assertNotIn("amdgpu-dkms", flattened)
         self.assertNotIn("rocminfo", flattened)

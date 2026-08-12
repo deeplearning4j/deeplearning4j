@@ -34,11 +34,12 @@ ROCM_BUILD_SDKS = {
         ),
         "component_packages": {
             "hip": ("rocm-hip-runtime-dev",),
+            "rocblas": ("rocblas-dev",),
             "miopen": ("miopen-hip-dev",),
         },
     },
 }
-ROCM_BUILD_COMPONENTS = ("hip", "miopen")
+ROCM_BUILD_COMPONENTS = ("hip", "rocblas", "miopen")
 DOWNLOAD_RETRIES = 4
 TRANSIENT_HTTP_STATUSES = {408, 429, 500, 502, 503, 504}
 
@@ -894,6 +895,12 @@ def attest_rocm_build_toolchain(
         "lib64/libMIOpen.so",
         "lib/x86_64-linux-gnu/libMIOpen.so",
     ))
+    rocblas_header = rocm_root / "include/rocblas/rocblas.h"
+    rocblas_runtime = _first_existing_file(rocm_root, (
+        "lib/librocblas.so",
+        "lib64/librocblas.so",
+        "lib/x86_64-linux-gnu/librocblas.so",
+    ))
     failures = []
     installed_version = (
         version_file.read_text(encoding="utf-8").strip()
@@ -911,6 +918,11 @@ def attest_rocm_build_toolchain(
             failures.append(f"{description} is missing at {path}")
     if hip_runtime is None:
         failures.append(f"HIP runtime library is missing below {rocm_root}")
+    if "rocblas" in spec["components"]:
+        if not rocblas_header.is_file():
+            failures.append(f"rocBLAS header is missing at {rocblas_header}")
+        if rocblas_runtime is None:
+            failures.append(f"rocBLAS runtime library is missing below {rocm_root}")
     if "miopen" in spec["components"]:
         if not miopen_header.is_file():
             failures.append(f"MIOpen header is missing at {miopen_header}")
@@ -932,6 +944,8 @@ def attest_rocm_build_toolchain(
         "hipHeader": hip_header,
         "hipcc": hipcc,
         "hipRuntime": hip_runtime,
+        "rocblasHeader": rocblas_header,
+        "rocblasRuntime": rocblas_runtime,
         "miopenHeader": miopen_header,
         "miopenRuntime": miopen_runtime,
     }
@@ -941,6 +955,7 @@ def attest_rocm_build_toolchain(
             f"rocmVersion={spec['version']} rocmBuildOnly=true "
             f"components={','.join(spec['components'])} root={rocm_root} "
             f"hipHeader={hip_header} hipRuntime={hip_runtime} "
+            f"rocblasHeader={rocblas_header} rocblasRuntime={rocblas_runtime} "
             f"miopenHeader={miopen_header} miopenRuntime={miopen_runtime} "
             "hardwareProbe=skipped",
             flush=True,

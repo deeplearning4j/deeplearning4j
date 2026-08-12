@@ -1153,6 +1153,7 @@
         "rocmBuildOnly": true,
         "rocmBuildComponents": [
           "hip",
+          "rocblas",
           "miopen"
         ],
         "javacppPlatform": "linux-x86_64",

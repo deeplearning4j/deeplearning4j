@@ -11,9 +11,9 @@ name: Build Linux x86_64 CUDA+ZLUDA (native validation)
 # native artifacts for inspection.  Publishing would require a distinct
 # classifier (linux-x86_64-zluda) — see ADR 0087 / ADR 0102.
 #
-# A pinned ZLUDA release is downloaded and exposed via ZLUDA_PATH so
-# setup_zluda() finds it (it would otherwise attempt its own download).
-# The CPU runner also installs the pinned ROCm HIP+MIOpen development SDK.
+# CMake owns the pinned ZLUDA download, checksum verification, and native
+# staging. The CPU runner installs only the pinned ROCm HIP/rocBLAS/MIOpen SDK
+# required to build and assemble that self-contained runtime closure.
 # It never installs an AMD kernel driver or probes/runs GPU hardware.
 #
 # NOTE: hosted CUDA builds are known to be resource-tight (see the audit in
@@ -32,11 +32,6 @@ on:
           - AMD
           - INTEL
           - AUTO
-
-      zludaVersion:
-        description: 'ZLUDA release tag to download from vosen/ZLUDA'
-        required: false
-        default: 'v6'
 
       buildThreads:
         description: 'Build threads for libnd4j (controls memory usage)'
@@ -99,37 +94,6 @@ jobs:
 
       - uses: ./.github/actions/set-linux-distro-version
 
-      - name: Download pinned ZLUDA release (sets ZLUDA_PATH)
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/zluda-dl" "$RUNNER_TEMP/zluda"
-          gh release download "${{ github.event.inputs.zludaVersion }}" -R vosen/ZLUDA -p '*linux*' -D "$RUNNER_TEMP/zluda-dl"
-          shopt -s nullglob
-          for f in "$RUNNER_TEMP"/zluda-dl/*.tar.gz "$RUNNER_TEMP"/zluda-dl/*.tgz "$RUNNER_TEMP"/zluda-dl/*.tar.xz; do
-            tar -xf "$f" -C "$RUNNER_TEMP/zluda"
-          done
-          for f in "$RUNNER_TEMP"/zluda-dl/*.zip; do
-            unzip -q "$f" -d "$RUNNER_TEMP/zluda"
-          done
-          LIBCUDA=$(find "$RUNNER_TEMP/zluda" \( -name 'libcuda.so' -o -name 'libcuda.so.*' \) | head -n 1)
-          if [ -z "$LIBCUDA" ]; then
-            echo "::error::libcuda.so not found in ZLUDA release"
-            exit 1
-          fi
-          ZDIR=$(dirname "$LIBCUDA")
-          if [ "$(basename "$ZDIR")" = "lib" ]; then
-            ZLUDA_PATH=$(dirname "$ZDIR")
-          else
-            # ZludaConfiguration.cmake + JZludaBackend expect ZLUDA_PATH/lib/libcuda.so
-            mkdir -p "$ZDIR/lib"
-            ln -sf "$LIBCUDA" "$ZDIR/lib/$(basename "$LIBCUDA")"
-            ZLUDA_PATH="$ZDIR"
-          fi
-          echo "ZLUDA_PATH=$ZLUDA_PATH" >> "$GITHUB_ENV"
-          ls -la "$ZLUDA_PATH"
-
       - uses: ./.github/actions/update-deps-linux
 
       - name: Install pinned build-only ROCm SDK
@@ -146,12 +110,14 @@ jobs:
           sudo apt-get install -y --no-install-recommends "${RUNNER_TEMP}/${ROCM_INSTALLER}"
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            lld rocm-hip-runtime-dev miopen-hip-dev
+            lld rocm-hip-runtime-dev rocblas-dev miopen-hip-dev
 
           test -x /usr/bin/ld.lld
           test -f /opt/rocm/include/hip/hip_runtime.h
+          test -f /opt/rocm/include/rocblas/rocblas.h
           test -f /opt/rocm/include/miopen/miopen.h
           test -f /opt/rocm/lib/libamdhip64.so
+          test -f /opt/rocm/lib/librocblas.so
           test -f /opt/rocm/lib/libMIOpen.so
           grep -q "^${ROCM_VERSION}" /opt/rocm/.info/version
           /opt/rocm/bin/hipcc --version
@@ -162,7 +128,7 @@ jobs:
           echo "DL4J_ZLUDA_REQUIRE_ROCM=1" >> "$GITHUB_ENV"
           echo "DL4J_ZLUDA_REQUIRE_MIOPEN=1" >> "$GITHUB_ENV"
           echo "/opt/rocm/bin" >> "$GITHUB_PATH"
-          echo "[dl4j-attestation] rocmVersion=${ROCM_VERSION} rocmBuildOnly=true components=hip,miopen hardwareProbe=skipped"
+          echo "[dl4j-attestation] rocmVersion=${ROCM_VERSION} rocmBuildOnly=true components=hip,rocblas,miopen hardwareProbe=skipped"
 
       - name: Setup sccache
         id: setup-sccache
