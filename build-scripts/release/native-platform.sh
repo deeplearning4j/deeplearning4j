@@ -108,7 +108,7 @@ case "${DL4J_FAMILY}" in
     modules=:nd4j-vulkan,:nd4j-vulkan-preset,:nd4j-vulkan-platform
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
     variant_cpu "${platform}"
-    command=(mvn "${split_flags[@]}" "${repo[@]}" --no-transfer-progress -Pvulkan -pl "${modules}" -Dlibnd4j.vulkan "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false "-Djavacpp.platform=${platform}" "-Dlibnd4j.platform=${platform}" "-Dplatform.classifier=${platform}" -Dlibnd4j.oom.killer=OFF --also-make --batch-mode "${VARIANT[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
+    command=(mvn "${split_flags[@]}" "${repo[@]}" --no-transfer-progress -Pvulkan -pl "${modules}" -Dlibnd4j.vulkan -Dlibnd4j.mlir=OFF -Dlibnd4j.triton=OFF "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false "-Djavacpp.platform=${platform}" "-Dlibnd4j.platform=${platform}" "-Dplatform.classifier=${platform}" -Dlibnd4j.oom.killer=OFF --also-make --batch-mode "${VARIANT[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
     ;;
   vulkan|vulkan-mlir|hexagon|tpu)
     backend=${DL4J_FAMILY%%-*}; [ "${DL4J_FAMILY}" != vulkan-mlir ] || backend=vulkan

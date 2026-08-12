@@ -2252,6 +2252,8 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Dlibnd4j.platform=windows-x86_64", windows_vulkan)
         self.assertIn("-Dplatform.classifier=windows-x86_64", windows_vulkan)
         self.assertIn("-Dlibnd4j.classifier=windows-x86_64", windows_vulkan)
+        self.assertIn("-Dlibnd4j.triton=OFF", windows_vulkan)
+        self.assertIn("-Dlibnd4j.mlir=OFF", windows_vulkan)
         self.assertNotIn("-Dlibnd4j.triton=ON", windows_vulkan)
         self.assertNotIn("-Dlibnd4j.mlir=ON", windows_vulkan)
         self.assertEqual(
