@@ -1154,6 +1154,9 @@
         "rocmBuildComponents": [
           "hip",
           "rocblas",
+          "hipblaslt",
+          "rocsparse",
+          "rocm-smi",
           "miopen"
         ],
         "javacppPlatform": "linux-x86_64",

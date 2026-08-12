@@ -956,7 +956,10 @@ class ReleaseValidationTest(unittest.TestCase):
                         self.assertEqual("7.2.4", build["rocmVersion"])
                         self.assertIs(True, build["rocmBuildOnly"])
                         self.assertEqual(
-                            ["hip", "rocblas", "miopen"],
+                            [
+                                "hip", "rocblas", "hipblaslt", "rocsparse",
+                                "rocm-smi", "miopen",
+                            ],
                             build["rocmBuildComponents"],
                         )
                     else:
@@ -1239,8 +1242,10 @@ class ReleaseValidationTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("ROCM_VERSION=7.2.4", workflow)
         self.assertIn(
-            "lld rocm-hip-runtime-dev rocblas-dev miopen-hip-dev", workflow
+            "lld rocm-hip-runtime-dev rocblas-dev hipblaslt-dev rocsparse-dev",
+            workflow,
         )
+        self.assertIn("rocm-smi-lib miopen-hip-dev", workflow)
         self.assertNotIn("ZLUDA_PATH", workflow)
         self.assertIn("test -x /usr/bin/ld.lld", workflow)
         self.assertIn("DL4J_ZLUDA_REQUIRE_ROCM=1", workflow)
@@ -1779,11 +1784,16 @@ class ReleaseValidationTest(unittest.TestCase):
             "javacppPlatform": "linux-x86_64",
             "rocmVersion": "7.2.4",
             "rocmBuildOnly": True,
-            "rocmBuildComponents": ["hip", "rocblas", "miopen"],
+            "rocmBuildComponents": [
+                "hip", "rocblas", "hipblaslt", "rocsparse", "rocm-smi", "miopen",
+            ],
         }
         spec = build_platform.rocm_build_spec(build)
         self.assertEqual(
-            ("rocm-hip-runtime-dev", "rocblas-dev", "miopen-hip-dev"),
+            (
+                "rocm-hip-runtime-dev", "rocblas-dev", "hipblaslt-dev",
+                "rocsparse-dev", "rocm-smi-lib", "miopen-hip-dev",
+            ),
             spec["packages"],
         )
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -1795,6 +1805,9 @@ class ReleaseValidationTest(unittest.TestCase):
                 root / "lib/libamdhip64.so",
                 root / "include/rocblas/rocblas.h",
                 root / "lib/librocblas.so",
+                root / "lib/libhipblaslt.so",
+                root / "lib/librocsparse.so",
+                root / "lib/librocm_smi64.so",
                 root / "include/miopen/miopen.h",
                 root / "lib/libMIOpen.so",
             )
@@ -1815,7 +1828,7 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_ROCM"])
             self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_MIOPEN"])
             self.assertIn("hardwareProbe=skipped", output.getvalue())
-            files[6].unlink()
+            files[9].unlink()
             with self.assertRaisesRegex(RuntimeError, "MIOpen header"):
                 build_platform.attest_rocm_build_toolchain(
                     build, environment, root=root
@@ -1834,7 +1847,9 @@ class ReleaseValidationTest(unittest.TestCase):
             "javacppPlatform": "linux-x86_64",
             "rocmVersion": "7.2.4",
             "rocmBuildOnly": True,
-            "rocmBuildComponents": ["hip", "rocblas", "miopen"],
+            "rocmBuildComponents": [
+                "hip", "rocblas", "hipblaslt", "rocsparse", "rocm-smi", "miopen",
+            ],
         }
         with patch.object(
                 build_platform, "attest_rocm_build_toolchain",
@@ -1855,6 +1870,9 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("lld", flattened)
         self.assertIn("rocm-hip-runtime-dev", flattened)
         self.assertIn("rocblas-dev", flattened)
+        self.assertIn("hipblaslt-dev", flattened)
+        self.assertIn("rocsparse-dev", flattened)
+        self.assertIn("rocm-smi-lib", flattened)
         self.assertIn("miopen-hip-dev", flattened)
         self.assertNotIn("amdgpu-dkms", flattened)
         self.assertNotIn("rocminfo", flattened)

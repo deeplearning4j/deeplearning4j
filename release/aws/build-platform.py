@@ -35,11 +35,16 @@ ROCM_BUILD_SDKS = {
         "component_packages": {
             "hip": ("rocm-hip-runtime-dev",),
             "rocblas": ("rocblas-dev",),
+            "hipblaslt": ("hipblaslt-dev",),
+            "rocsparse": ("rocsparse-dev",),
+            "rocm-smi": ("rocm-smi-lib",),
             "miopen": ("miopen-hip-dev",),
         },
     },
 }
-ROCM_BUILD_COMPONENTS = ("hip", "rocblas", "miopen")
+ROCM_BUILD_COMPONENTS = (
+    "hip", "rocblas", "hipblaslt", "rocsparse", "rocm-smi", "miopen",
+)
 DOWNLOAD_RETRIES = 4
 TRANSIENT_HTTP_STATUSES = {408, 429, 500, 502, 503, 504}
 
@@ -901,6 +906,21 @@ def attest_rocm_build_toolchain(
         "lib64/librocblas.so",
         "lib/x86_64-linux-gnu/librocblas.so",
     ))
+    hipblaslt_runtime = _first_existing_file(rocm_root, (
+        "lib/libhipblaslt.so",
+        "lib64/libhipblaslt.so",
+        "lib/x86_64-linux-gnu/libhipblaslt.so",
+    ))
+    rocsparse_runtime = _first_existing_file(rocm_root, (
+        "lib/librocsparse.so",
+        "lib64/librocsparse.so",
+        "lib/x86_64-linux-gnu/librocsparse.so",
+    ))
+    rocm_smi_runtime = _first_existing_file(rocm_root, (
+        "lib/librocm_smi64.so",
+        "lib64/librocm_smi64.so",
+        "lib/x86_64-linux-gnu/librocm_smi64.so",
+    ))
     failures = []
     installed_version = (
         version_file.read_text(encoding="utf-8").strip()
@@ -923,6 +943,12 @@ def attest_rocm_build_toolchain(
             failures.append(f"rocBLAS header is missing at {rocblas_header}")
         if rocblas_runtime is None:
             failures.append(f"rocBLAS runtime library is missing below {rocm_root}")
+    for component, description, runtime in (
+            ("hipblaslt", "hipBLASLt", hipblaslt_runtime),
+            ("rocsparse", "rocSPARSE", rocsparse_runtime),
+            ("rocm-smi", "ROCm SMI", rocm_smi_runtime)):
+        if component in spec["components"] and runtime is None:
+            failures.append(f"{description} runtime library is missing below {rocm_root}")
     if "miopen" in spec["components"]:
         if not miopen_header.is_file():
             failures.append(f"MIOpen header is missing at {miopen_header}")
@@ -946,6 +972,9 @@ def attest_rocm_build_toolchain(
         "hipRuntime": hip_runtime,
         "rocblasHeader": rocblas_header,
         "rocblasRuntime": rocblas_runtime,
+        "hipblasltRuntime": hipblaslt_runtime,
+        "rocsparseRuntime": rocsparse_runtime,
+        "rocmSmiRuntime": rocm_smi_runtime,
         "miopenHeader": miopen_header,
         "miopenRuntime": miopen_runtime,
     }
@@ -956,6 +985,8 @@ def attest_rocm_build_toolchain(
             f"components={','.join(spec['components'])} root={rocm_root} "
             f"hipHeader={hip_header} hipRuntime={hip_runtime} "
             f"rocblasHeader={rocblas_header} rocblasRuntime={rocblas_runtime} "
+            f"hipblasltRuntime={hipblaslt_runtime} "
+            f"rocsparseRuntime={rocsparse_runtime} rocmSmiRuntime={rocm_smi_runtime} "
             f"miopenHeader={miopen_header} miopenRuntime={miopen_runtime} "
             "hardwareProbe=skipped",
             flush=True,

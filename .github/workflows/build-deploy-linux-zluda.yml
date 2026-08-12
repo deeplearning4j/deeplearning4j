@@ -110,7 +110,8 @@ jobs:
           sudo apt-get install -y --no-install-recommends "${RUNNER_TEMP}/${ROCM_INSTALLER}"
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            lld rocm-hip-runtime-dev rocblas-dev miopen-hip-dev
+            lld rocm-hip-runtime-dev rocblas-dev hipblaslt-dev rocsparse-dev \
+            rocm-smi-lib miopen-hip-dev
 
           test -x /usr/bin/ld.lld
           test -f /opt/rocm/include/hip/hip_runtime.h
@@ -118,6 +119,9 @@ jobs:
           test -f /opt/rocm/include/miopen/miopen.h
           test -f /opt/rocm/lib/libamdhip64.so
           test -f /opt/rocm/lib/librocblas.so
+          test -f /opt/rocm/lib/libhipblaslt.so
+          test -f /opt/rocm/lib/librocsparse.so
+          test -f /opt/rocm/lib/librocm_smi64.so
           test -f /opt/rocm/lib/libMIOpen.so
           grep -q "^${ROCM_VERSION}" /opt/rocm/.info/version
           /opt/rocm/bin/hipcc --version
@@ -128,7 +132,7 @@ jobs:
           echo "DL4J_ZLUDA_REQUIRE_ROCM=1" >> "$GITHUB_ENV"
           echo "DL4J_ZLUDA_REQUIRE_MIOPEN=1" >> "$GITHUB_ENV"
           echo "/opt/rocm/bin" >> "$GITHUB_PATH"
-          echo "[dl4j-attestation] rocmVersion=${ROCM_VERSION} rocmBuildOnly=true components=hip,rocblas,miopen hardwareProbe=skipped"
+          echo "[dl4j-attestation] rocmVersion=${ROCM_VERSION} rocmBuildOnly=true components=hip,rocblas,hipblaslt,rocsparse,rocm-smi,miopen hardwareProbe=skipped"
 
       - name: Setup sccache
         id: setup-sccache
