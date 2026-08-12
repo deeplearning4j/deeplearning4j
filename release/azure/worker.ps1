@@ -607,11 +607,37 @@ function Import-VisualStudioEnvironment {
 
 function Install-CommonToolchains {
   Write-Phase 'toolchain-packages' 'started'
-  Invoke-NativeChecked -Description 'Chocolatey toolchain installation' -SuccessCodes @(0, 1641, 3010) -Command {
-    choco install -y --no-progress cmake git maven ninja temurin11 7zip rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
+  $ToolchainInstalled = $false
+  for ($ChocolateyAttempt = 1; $ChocolateyAttempt -le 8 -and -not $ToolchainInstalled; $ChocolateyAttempt++) {
+    try {
+      Invoke-NativeChecked -Description 'Chocolatey toolchain installation' -SuccessCodes @(0, 1641, 3010) -Command {
+        choco install -y --no-progress cmake git maven ninja temurin11 7zip rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
+      }
+      $ToolchainInstalled = $true
+    }
+    catch {
+      if ($ChocolateyAttempt -ge 8) { throw }
+      $ChocolateyBackoff = [Math]::Min(60, 15 * $ChocolateyAttempt)
+      Write-Warning "Chocolatey toolchain installation attempt $ChocolateyAttempt failed: $($_.Exception.Message)"
+      Write-Phase 'toolchain-packages' 'retrying' "group=common attempt=$ChocolateyAttempt backoffSeconds=$ChocolateyBackoff"
+      Start-Sleep -Seconds $ChocolateyBackoff
+    }
   }
-  Invoke-NativeChecked -Description 'Chocolatey MSYS2 installation' -SuccessCodes @(0, 1641, 3010) -Command {
-    choco install -y --no-progress msys2 --params "/NoUpdate"
+  $MsysInstalled = $false
+  for ($MsysAttempt = 1; $MsysAttempt -le 8 -and -not $MsysInstalled; $MsysAttempt++) {
+    try {
+      Invoke-NativeChecked -Description 'Chocolatey MSYS2 installation' -SuccessCodes @(0, 1641, 3010) -Command {
+        choco install -y --no-progress msys2 --params "/NoUpdate"
+      }
+      $MsysInstalled = $true
+    }
+    catch {
+      if ($MsysAttempt -ge 8) { throw }
+      $MsysBackoff = [Math]::Min(60, 15 * $MsysAttempt)
+      Write-Warning "Chocolatey MSYS2 installation attempt $MsysAttempt failed: $($_.Exception.Message)"
+      Write-Phase 'toolchain-packages' 'retrying' "group=msys2 attempt=$MsysAttempt backoffSeconds=$MsysBackoff"
+      Start-Sleep -Seconds $MsysBackoff
+    }
   }
   Write-Phase 'toolchain-packages' 'complete'
   Import-VisualStudioEnvironment
@@ -919,29 +945,31 @@ try {
   if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
     Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
   }
+  $PythonVersion = '3.12.10'
   $PythonInstall = Join-Path $env:SystemDrive 'Python312'
   $script:PythonExe = Join-Path $PythonInstall 'python.exe'
-  $PythonInstallExitCode = $null
-  for ($PythonAttempt = 1; $PythonAttempt -le 5 -and -not (Test-Path -LiteralPath $script:PythonExe); $PythonAttempt++) {
+  $PythonInstaller = Join-Path $env:TEMP "python-$PythonVersion-amd64.exe"
+  $PythonInstallerUrl = "https://www.python.org/ftp/python/$PythonVersion/python-$PythonVersion-amd64.exe"
+  for ($PythonAttempt = 1; $PythonAttempt -le 3 -and -not (Test-Path -LiteralPath $script:PythonExe); $PythonAttempt++) {
     try {
-      Invoke-NativeChecked -Description 'Python 3.12 installation' -SuccessCodes @(0, 1641, 3010) -Command {
-        choco install -y --no-progress python312
+      Remove-Item -LiteralPath $PythonInstaller -Force -ErrorAction SilentlyContinue
+      Invoke-WebRequest -UseBasicParsing -Uri $PythonInstallerUrl -OutFile $PythonInstaller
+      Invoke-NativeChecked -Description 'Python 3.12 installation' -SuccessCodes @(0) -Command {
+        & $PythonInstaller /quiet InstallAllUsers=1 "TargetDir=$PythonInstall" Include_launcher=0 Include_test=0 PrependPath=0
       }
-      $PythonInstallExitCode = 0
     }
     catch {
-      $PythonInstallExitCode = $LASTEXITCODE
-      Write-Warning "Python 3.12 installation attempt $PythonAttempt failed: $($_.Exception.Message)"
-    }
-    if (-not (Test-Path -LiteralPath $script:PythonExe) -and $PythonAttempt -lt 5) {
+      if ($PythonAttempt -ge 3) { throw }
       $PythonBackoff = 15 * $PythonAttempt
+      Write-Warning "Python 3.12 direct installation attempt $PythonAttempt failed: $($_.Exception.Message)"
       Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=python-runtime status=retrying attempt=$PythonAttempt backoffSeconds=$PythonBackoff"
       Start-Sleep -Seconds $PythonBackoff
     }
   }
+  Remove-Item -LiteralPath $PythonInstaller -Force -ErrorAction SilentlyContinue
   $env:PATH = "${PythonInstall};${PythonInstall}\Scripts;C:\ProgramData\chocolatey\bin;$env:PATH"
   if (-not (Test-Path -LiteralPath $script:PythonExe)) {
-    throw "Python 3.12 executable was not found at $script:PythonExe after 5 installation attempts (lastExitCode=$PythonInstallExitCode)"
+    throw "Python 3.12 executable was not found at $script:PythonExe after direct installer completed"
   }
   Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=python-runtime status=ready executable=$script:PythonExe"
   Wait-ForCloudAccess
