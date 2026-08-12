@@ -919,14 +919,29 @@ try {
   if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
     Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
   }
-  Invoke-NativeChecked -Description 'Python 3.12 installation' -SuccessCodes @(0, 1641, 3010) -Command {
-    choco install -y --no-progress python312
-  }
   $PythonInstall = Join-Path $env:SystemDrive 'Python312'
-  $env:PATH = "${PythonInstall};${PythonInstall}\Scripts;C:\ProgramData\chocolatey\bin;$env:PATH"
   $script:PythonExe = Join-Path $PythonInstall 'python.exe'
+  $PythonInstallExitCode = $null
+  for ($PythonAttempt = 1; $PythonAttempt -le 5 -and -not (Test-Path -LiteralPath $script:PythonExe); $PythonAttempt++) {
+    try {
+      Invoke-NativeChecked -Description 'Python 3.12 installation' -SuccessCodes @(0, 1641, 3010) -Command {
+        choco install -y --no-progress python312
+      }
+      $PythonInstallExitCode = 0
+    }
+    catch {
+      $PythonInstallExitCode = $LASTEXITCODE
+      Write-Warning "Python 3.12 installation attempt $PythonAttempt failed: $($_.Exception.Message)"
+    }
+    if (-not (Test-Path -LiteralPath $script:PythonExe) -and $PythonAttempt -lt 5) {
+      $PythonBackoff = 15 * $PythonAttempt
+      Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=python-runtime status=retrying attempt=$PythonAttempt backoffSeconds=$PythonBackoff"
+      Start-Sleep -Seconds $PythonBackoff
+    }
+  }
+  $env:PATH = "${PythonInstall};${PythonInstall}\Scripts;C:\ProgramData\chocolatey\bin;$env:PATH"
   if (-not (Test-Path -LiteralPath $script:PythonExe)) {
-    throw "Python 3.12 executable was not found at $script:PythonExe"
+    throw "Python 3.12 executable was not found at $script:PythonExe after 5 installation attempts (lastExitCode=$PythonInstallExitCode)"
   }
   Write-Output "[dl4j-phase] timestamp=$([DateTimeOffset]::UtcNow.ToString('o')) phase=python-runtime status=ready executable=$script:PythonExe"
   Wait-ForCloudAccess
