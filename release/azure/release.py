@@ -66,8 +66,6 @@ MIRROR_ALL_BLOBS_CREATION_TIME = "1601-01-01T00:00:00Z"
 MIRROR_SOURCE_ACCOUNT_TAG = "dl4j-mirror-source-account"
 MIRROR_SOURCE_CONTAINER_TAG = "dl4j-mirror-source-container"
 MIRROR_BLOCK_COPY_SYNC_LIMIT_BYTES = 32 * 1024 * 1024
-MIRROR_BLOCK_COPY_MIN_CHUNK_BYTES = 32 * 1024 * 1024
-MIRROR_BLOCK_COPY_MAX_CHUNK_BYTES = 4000 * 1024 * 1024
 
 
 def utc_now() -> str:
@@ -359,13 +357,11 @@ def azure_modules() -> dict[str, Any]:
             ObjectReplicationPolicyRule,
         )
         from azure.storage.blob import (
-            BlobBlock,
             BlobLeaseClient,
             BlobSasPermissions,
             BlobServiceClient,
             ContainerSasPermissions,
             ContentSettings,
-            StandardBlobTier,
             generate_blob_sas,
             generate_container_sas,
         )
@@ -392,13 +388,11 @@ def azure_modules() -> dict[str, Any]:
         "ObjectReplicationPolicyFilter": ObjectReplicationPolicyFilter,
         "ObjectReplicationPolicyPropertiesMetrics": ObjectReplicationPolicyPropertiesMetrics,
         "ObjectReplicationPolicyRule": ObjectReplicationPolicyRule,
-        "BlobBlock": BlobBlock,
         "BlobLeaseClient": BlobLeaseClient,
         "BlobSasPermissions": BlobSasPermissions,
         "BlobServiceClient": BlobServiceClient,
         "ContainerSasPermissions": ContainerSasPermissions,
         "ContentSettings": ContentSettings,
-        "StandardBlobTier": StandardBlobTier,
         "generate_blob_sas": generate_blob_sas,
         "generate_container_sas": generate_container_sas,
     }
@@ -4632,83 +4626,6 @@ def bootstrap_container_copy(
         destination_blob.abort_copy(copy_id)
         return True
 
-    def copy_large_block_blob(
-        name: str,
-        source_url: str,
-        source_blob: Any,
-        destination_blob: Any,
-        expected_etag: Any,
-    ) -> int:
-        """Copy a large block blob with synchronous server-side range requests."""
-        for attempt in range(3):
-            if stop_requested.is_set():
-                raise concurrent.futures.CancelledError()
-            source_properties = source_blob.get_blob_properties()
-            source_etag = object_value(source_properties, "etag")
-            if expected_etag and source_etag != expected_etag:
-                expected_etag = source_etag
-            size = int(object_value(source_properties, "size", 0) or 0)
-            abort_pending_destination_copy(destination_blob)
-
-            chunk_bytes = max(
-                MIRROR_BLOCK_COPY_MIN_CHUNK_BYTES,
-                math.ceil(max(size, 1) / 50_000),
-            )
-            if chunk_bytes > MIRROR_BLOCK_COPY_MAX_CHUNK_BYTES:
-                raise RuntimeError(
-                    f"Azure mirror source blob {name!r} is too large for ranged copy"
-                )
-            block_ids: list[str] = []
-            for index, offset in enumerate(range(0, size, chunk_bytes)):
-                if stop_requested.is_set():
-                    raise concurrent.futures.CancelledError()
-                if time.monotonic() >= deadline:
-                    raise TimeoutError(
-                        f"Azure mirror bootstrap ranged copy timed out for {name!r}"
-                    )
-                block_id = base64.b64encode(f"{index:08d}".encode("ascii")).decode(
-                    "ascii"
-                )
-                block_ids.append(block_id)
-                destination_blob.stage_block_from_url(
-                    block_id,
-                    source_url,
-                    source_offset=offset,
-                    source_length=min(chunk_bytes, size - offset),
-                )
-
-            latest = source_blob.get_blob_properties()
-            latest_etag = object_value(latest, "etag")
-            if not expected_etag or latest_etag == expected_etag:
-                commit_options: dict[str, Any] = {
-                    "content_settings": object_value(
-                        source_properties, "content_settings"
-                    ),
-                    "metadata": object_value(source_properties, "metadata", {}),
-                    "tags": source_blob.get_blob_tags(),
-                }
-                source_tier = object_value(source_properties, "blob_tier")
-                if source_tier:
-                    commit_options["standard_blob_tier"] = modules[
-                        "StandardBlobTier"
-                    ](str(object_value(source_tier, "value", source_tier)))
-                destination_blob.commit_block_list(
-                    [modules["BlobBlock"](block_id) for block_id in block_ids],
-                    **commit_options,
-                )
-                print(
-                    f"Azure mirror ranged-copy completed {name} ({size} bytes)",
-                    file=sys.stderr,
-                    flush=True,
-                )
-                return size
-            expected_etag = latest_etag
-            if attempt == 2:
-                raise RuntimeError(
-                    f"Azure source blob {name!r} kept changing during mirror bootstrap"
-                )
-        raise AssertionError("unreachable Azure ranged copy retry state")
-
     def copy_blob(item: Any) -> tuple[str, int]:
         if stop_requested.is_set():
             raise concurrent.futures.CancelledError()
@@ -4726,15 +4643,6 @@ def bootstrap_container_copy(
         synchronous = (
             blob_type == "BlockBlob" and size <= MIRROR_BLOCK_COPY_SYNC_LIMIT_BYTES
         )
-        if blob_type == "BlockBlob" and not synchronous:
-            size = copy_large_block_blob(
-                name,
-                source_url,
-                source_blob,
-                destination_blob,
-                expected_etag,
-            )
-            return blob_type, size
         for attempt in range(3):
             try:
                 result = destination_blob.start_copy_from_url(
@@ -4746,8 +4654,7 @@ def bootstrap_container_copy(
                 )
             except modules["HttpResponseError"] as exc:
                 if (
-                    synchronous
-                    and str(object_value(exc, "error_code", ""))
+                    str(object_value(exc, "error_code", ""))
                     == "PendingCopyOperation"
                     and abort_pending_destination_copy(destination_blob)
                 ):
@@ -4757,8 +4664,8 @@ def bootstrap_container_copy(
                         source_match_condition=modules[
                             "MatchConditions"
                         ].IfNotModified,
-                        requires_sync=True,
-                        tags="COPY",
+                        requires_sync=synchronous,
+                        tags="COPY" if synchronous else None,
                     )
                 else:
                     raise

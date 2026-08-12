@@ -5990,30 +5990,40 @@ class RegionalMirrorTests(unittest.TestCase):
             append.tags
         )
 
-    def test_bootstrap_uses_ranged_server_copy_for_large_block_blobs(self):
-        chunk = release.MIRROR_BLOCK_COPY_MIN_CHUNK_BYTES
-        size = chunk * 3 + 7
+    def test_bootstrap_uses_native_async_copy_for_large_block_blobs(self):
+        class PendingCopyError(Exception):
+            error_code = "PendingCopyOperation"
+
+        size = release.MIRROR_BLOCK_COPY_SYNC_LIMIT_BYTES + 7
         item = SimpleNamespace(
             name="repo/large.jar",
             size=size,
             blob_type=SimpleNamespace(value="BlockBlob"),
             etag="large-etag",
-        )
-        content_settings = SimpleNamespace(content_type="application/java-archive")
-        properties = SimpleNamespace(
-            etag=item.etag,
-            size=size,
-            content_settings=content_settings,
-            metadata={"kind": "artifact"},
-            blob_tier="Hot",
+            tag_count=1,
         )
         source_blob = mock.Mock()
-        source_blob.get_blob_properties.side_effect = [properties, properties]
+        source_blob.get_blob_properties.return_value = SimpleNamespace(etag=item.etag)
         source_blob.get_blob_tags.return_value = {"classifier": "linux-x86_64"}
         destination_blob = mock.Mock()
-        destination_blob.get_blob_properties.return_value = SimpleNamespace(
-            copy=SimpleNamespace(status="pending", id="stale-copy")
-        )
+        destination_blob.start_copy_from_url.side_effect = [
+            PendingCopyError(),
+            {
+                "copy_id": "native-copy",
+                "copy_status": "pending",
+            },
+        ]
+        destination_blob.get_blob_properties.side_effect = [
+            SimpleNamespace(
+                copy=SimpleNamespace(status="pending", id="stale-copy")
+            ),
+            SimpleNamespace(
+                copy=SimpleNamespace(status="pending", id="native-copy")
+            ),
+            SimpleNamespace(
+                copy=SimpleNamespace(status="success", id="native-copy")
+            ),
+        ]
         source = SimpleNamespace(
             container_name="releases",
             url="https://source.blob.core.windows.net/releases",
@@ -6029,44 +6039,41 @@ class RegionalMirrorTests(unittest.TestCase):
                 "ContainerSasPermissions": self.model,
                 "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
                 "ResourceNotFoundError": KeyError,
-                "BlobBlock": lambda block_id: SimpleNamespace(block_id=block_id),
-                "StandardBlobTier": lambda value: f"tier:{value}",
+                "HttpResponseError": PendingCopyError,
             }
         }
 
-        result = release.bootstrap_container_copy(
-            context,
-            "source",
-            "source-key",
-            source,
-            destination,
-            workers=1,
-            timeout_seconds=60,
-            priority_prefixes=["repo"],
-            include_unprioritized=False,
-        )
+        with mock.patch.object(release.time, "sleep"):
+            result = release.bootstrap_container_copy(
+                context,
+                "source",
+                "source-key",
+                source,
+                destination,
+                workers=1,
+                timeout_seconds=60,
+                priority_prefixes=["repo"],
+                include_unprioritized=False,
+            )
 
         self.assertEqual(1, result["blobCount"])
         self.assertEqual(size, result["bytes"])
         self.assertEqual("priority-prefixes", result["scope"])
-        destination_blob.start_copy_from_url.assert_not_called()
-        destination_blob.abort_copy.assert_called_once_with("stale-copy")
-        stage_calls = destination_blob.stage_block_from_url.call_args_list
-        self.assertEqual(4, len(stage_calls))
-        self.assertEqual([0, chunk, chunk * 2, chunk * 3], [
-            call.kwargs["source_offset"] for call in stage_calls
-        ])
-        self.assertEqual([chunk, chunk, chunk, 7], [
-            call.kwargs["source_length"] for call in stage_calls
-        ])
-        commit = destination_blob.commit_block_list.call_args
-        self.assertEqual(4, len(commit.args[0]))
-        self.assertEqual(content_settings, commit.kwargs["content_settings"])
-        self.assertEqual({"kind": "artifact"}, commit.kwargs["metadata"])
+        self.assertEqual(2, destination_blob.start_copy_from_url.call_count)
+        copy_call = destination_blob.start_copy_from_url.call_args
+        self.assertFalse(copy_call.kwargs["requires_sync"])
+        self.assertIsNone(copy_call.kwargs["tags"])
+        self.assertEqual("large-etag", copy_call.kwargs["source_etag"])
         self.assertEqual(
-            {"classifier": "linux-x86_64"}, commit.kwargs["tags"]
+            "if-not-modified", copy_call.kwargs["source_match_condition"]
         )
-        self.assertEqual("tier:Hot", commit.kwargs["standard_blob_tier"])
+        self.assertEqual(3, destination_blob.get_blob_properties.call_count)
+        destination_blob.abort_copy.assert_called_once_with("stale-copy")
+        destination_blob.set_blob_tags.assert_called_once_with(
+            {"classifier": "linux-x86_64"}
+        )
+        destination_blob.stage_block_from_url.assert_not_called()
+        destination_blob.commit_block_list.assert_not_called()
 
     def test_full_container_policy_is_created_on_destination_then_source(self):
         operations = mock.Mock()
