@@ -4132,9 +4132,10 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertIn("sccache archive SHA-256 mismatch", worker)
         self.assertIn("$script:WindowsTarExe = Join-Path $env:SystemRoot 'System32\\tar.exe'", worker)
         self.assertIn("& $script:WindowsTarExe -xzf $SccacheArchive -C $env:TEMP", worker)
-        self.assertIn("Publish-MavenRepository $MavenOutput", worker)
+        self.assertIn("$MavenAccounting = Publish-MavenRepository", worker)
+        self.assertIn("$MavenOutput $SdkOutput $ShardConfigFile", worker)
         self.assertLess(
-            worker.index("Publish-MavenRepository $MavenOutput"),
+            worker.index("$MavenAccounting = Publish-MavenRepository"),
             worker.index('if ($BuildExitCode -ne 0) { throw "Build failed'),
         )
         self.assertIn("$HasMavenOutput", worker)
@@ -4229,7 +4230,75 @@ class WorkerTransportTests(unittest.TestCase):
         for worker in (linux, windows):
             self.assertIn("maven-publish.py", worker)
             self.assertIn("maven-publish.json", worker)
+            self.assertIn("--sdk-assets", worker)
+            self.assertIn("--config", worker)
             self.assertNotIn("maven-repository.tar.gz", worker)
+
+    def test_direct_maven_publisher_promotes_required_sdk_runtime_jars(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repository = root / "repository"
+            sdk_assets = root / "sdk-assets"
+            sdk_jars = sdk_assets / "jars"
+            sdk_jars.mkdir(parents=True)
+            rules = {
+                "unclassifiedArtifactIds": [
+                    "nd4j-cuda-12.9",
+                    "nd4j-cuda-12.9-preset",
+                ]
+            }
+            for artifact_id, payload in (
+                ("nd4j-cuda-12.9", b"runtime"),
+                ("nd4j-cuda-12.9-preset", b"preset"),
+            ):
+                component = (
+                    repository
+                    / "org/eclipse/deeplearning4j"
+                    / artifact_id
+                    / "1.0.0-SNAPSHOT"
+                )
+                component.mkdir(parents=True)
+                (component / f"{artifact_id}-1.0.0-SNAPSHOT.pom").write_text(
+                    "<project/>", encoding="utf-8"
+                )
+                (sdk_jars / f"{artifact_id}-1.0.0-SNAPSHOT.jar").write_bytes(
+                    payload
+                )
+
+            promoted, missing = maven_publish.promote_sdk_runtime_jars(
+                repository, sdk_assets, rules, "1.0.0-SNAPSHOT"
+            )
+
+            self.assertEqual([], missing)
+            self.assertEqual(
+                {
+                    "org/eclipse/deeplearning4j/nd4j-cuda-12.9/1.0.0-SNAPSHOT/"
+                    "nd4j-cuda-12.9-1.0.0-SNAPSHOT.jar",
+                    "org/eclipse/deeplearning4j/nd4j-cuda-12.9-preset/1.0.0-SNAPSHOT/"
+                    "nd4j-cuda-12.9-preset-1.0.0-SNAPSHOT.jar",
+                },
+                set(promoted),
+            )
+            self.assertEqual(
+                b"runtime",
+                (
+                    repository
+                    / "org/eclipse/deeplearning4j/nd4j-cuda-12.9/1.0.0-SNAPSHOT/"
+                    "nd4j-cuda-12.9-1.0.0-SNAPSHOT.jar"
+                ).read_bytes(),
+            )
+
+    def test_direct_maven_publisher_reports_missing_required_sdk_runtime_jar(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            promoted, missing = maven_publish.promote_sdk_runtime_jars(
+                root / "repository",
+                root / "sdk-assets",
+                {"unclassifiedArtifactIds": ["nd4j-cuda-12.9"]},
+                "1.0.0-SNAPSHOT",
+            )
+        self.assertEqual([], promoted)
+        self.assertEqual(["nd4j-cuda-12.9-1.0.0-SNAPSHOT.jar"], missing)
 
     def test_direct_maven_publisher_generates_primary_checksums_and_metadata(self):
         central = maven_publish.load_module(
@@ -5065,6 +5134,65 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
             '</versioning></metadata>'
         ).encode("utf-8")
 
+    @staticmethod
+    def _snapshot_metadata(
+        artifact_id: str, identities: list[tuple[str, str]]
+    ) -> bytes:
+        entries = []
+        for extension, classifier in identities:
+            classifier_xml = (
+                f"<classifier>{classifier}</classifier>" if classifier else ""
+            )
+            entries.append(
+                "<snapshotVersion>"
+                + classifier_xml
+                + f"<extension>{extension}</extension>"
+                + "<value>1.0.0-SNAPSHOT</value>"
+                + "<updated>20260811000000</updated>"
+                + "</snapshotVersion>"
+            )
+        return (
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<metadata xmlns="http://maven.apache.org/METADATA/1.1.0">'
+            '<groupId>org.eclipse.deeplearning4j</groupId>'
+            f'<artifactId>{artifact_id}</artifactId>'
+            '<version>1.0.0-SNAPSHOT</version>'
+            '<versioning><snapshot><localCopy>true</localCopy></snapshot>'
+            '<lastUpdated>20260811000000</lastUpdated><snapshotVersions>'
+            + "".join(entries)
+            + '</snapshotVersions></versioning></metadata>'
+        ).encode("utf-8")
+
+    def test_direct_publish_contract_requires_unclassified_runtime_jars(self):
+        rules = {
+            "unclassifiedArtifactIds": [
+                "nd4j-cuda-12.9",
+                "nd4j-cuda-12.9-preset",
+            ]
+        }
+        info = {
+            "publishedBlobs": [
+                "org/eclipse/deeplearning4j/nd4j-cuda-12.9/1.0.0-SNAPSHOT/"
+                "nd4j-cuda-12.9-1.0.0-SNAPSHOT.jar",
+            ]
+        }
+        self.assertEqual(
+            ["nd4j-cuda-12.9-preset-1.0.0-SNAPSHOT.jar"],
+            release.missing_direct_unclassified_maven_jars(
+                info, rules, "1.0.0-SNAPSHOT"
+            ),
+        )
+        info["publishedBlobs"].append(
+            "org/eclipse/deeplearning4j/nd4j-cuda-12.9-preset/1.0.0-SNAPSHOT/"
+            "nd4j-cuda-12.9-preset-1.0.0-SNAPSHOT.jar"
+        )
+        self.assertEqual(
+            [],
+            release.missing_direct_unclassified_maven_jars(
+                info, rules, "1.0.0-SNAPSHOT"
+            ),
+        )
+
     def test_direct_publish_accounting_requires_blob_hash_and_size_attestation(self):
         relative = (
             "org/eclipse/deeplearning4j/nd4j-cuda-backend-common/1.0.0/"
@@ -5189,6 +5317,138 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
         self.assertIn(relative + ".sha512", published)
         self.assertIn(b"1.0.0-SNAPSHOT", uploaded[metadata_name])
         self.assertIn(b"1.0.0", uploaded[metadata_name])
+
+    def test_direct_metadata_recovers_retained_snapshot_classifiers_from_blobs(self):
+        repository_prefix = "prefix/maven-repository"
+        artifact_id = "nd4j-cuda-12.9-preset"
+        relative = (
+            "org/eclipse/deeplearning4j/"
+            f"{artifact_id}/1.0.0-SNAPSHOT/maven-metadata.xml"
+        )
+        windows_only = self._snapshot_metadata(
+            artifact_id, [("jar", "windows-x86_64"), ("pom", "")]
+        )
+        version_prefix = (
+            f"{repository_prefix}/org/eclipse/deeplearning4j/{artifact_id}/"
+            "1.0.0-SNAPSHOT/"
+        )
+        retained_names = [
+            version_prefix
+            + f"{artifact_id}-1.0.0-SNAPSHOT-linux-x86_64.jar",
+            version_prefix
+            + f"{artifact_id}-1.0.0-SNAPSHOT-windows-x86_64.jar",
+            version_prefix + f"{artifact_id}-1.0.0-SNAPSHOT.pom",
+            version_prefix
+            + f"{artifact_id}-1.0.0-SNAPSHOT-linux-x86_64.jar.sha256",
+            version_prefix + "index.html",
+        ]
+        container = mock.Mock()
+        container.list_blobs.return_value = [
+            SimpleNamespace(name=name) for name in retained_names
+        ]
+        container.get_blob_client.return_value.download_blob.return_value.readall.return_value = (
+            windows_only
+        )
+        uploaded = {}
+
+        def capture(container_arg, modules, name, path, **unused):
+            uploaded[name] = path.read_bytes()
+
+        info = {
+            "metadataFiles": [{
+                "path": relative,
+                "contentBase64": release.base64.b64encode(
+                    windows_only
+                ).decode("ascii"),
+            }]
+        }
+        with mock.patch.object(
+            release, "upload_local_blob", side_effect=capture
+        ):
+            release.publish_direct_maven_metadata(
+                container,
+                {},
+                repository_prefix=repository_prefix,
+                publish_infos=[info],
+            )
+
+        root = release.ET.fromstring(
+            uploaded[f"{repository_prefix}/{relative}"]
+        )
+        namespace = {"m": "http://maven.apache.org/METADATA/1.1.0"}
+        identities = {
+            (
+                item.findtext("m:extension", namespaces=namespace),
+                item.findtext("m:classifier", default="", namespaces=namespace),
+            )
+            for item in root.findall(
+                "m:versioning/m:snapshotVersions/m:snapshotVersion", namespace
+            )
+        }
+        self.assertEqual(
+            {
+                ("jar", "linux-x86_64"),
+                ("jar", "windows-x86_64"),
+                ("pom", ""),
+            },
+            identities,
+        )
+        self.assertNotIn(("jar", ""), identities)
+
+    def test_snapshot_metadata_repair_discovers_only_version_level_documents(self):
+        repository_prefix = "prefix/maven-repository"
+        artifact_id = "nd4j-cuda-12.9"
+        relative = (
+            "org/eclipse/deeplearning4j/"
+            f"{artifact_id}/1.0.0-SNAPSHOT/maven-metadata.xml"
+        )
+        metadata = self._snapshot_metadata(
+            artifact_id, [("jar", "windows-x86_64"), ("pom", "")]
+        )
+        container = mock.Mock()
+        container.list_blobs.return_value = [
+            SimpleNamespace(name=f"{repository_prefix}/{relative}"),
+            SimpleNamespace(
+                name=(
+                    f"{repository_prefix}/org/eclipse/deeplearning4j/"
+                    f"{artifact_id}/maven-metadata.xml"
+                )
+            ),
+            SimpleNamespace(
+                name=(
+                    f"{repository_prefix}/org/eclipse/deeplearning4j/"
+                    f"{artifact_id}/1.0.0/{artifact_id}-1.0.0.jar"
+                )
+            ),
+        ]
+        container.get_blob_client.return_value.download_blob.return_value.readall.return_value = (
+            metadata
+        )
+        with mock.patch.object(
+            release,
+            "publish_direct_maven_metadata",
+            return_value=[relative, relative + ".sha256"],
+        ) as publish:
+            result = release.repair_snapshot_maven_metadata(
+                container,
+                {},
+                repository_prefix=repository_prefix,
+                fence_check=mock.Mock(),
+            )
+
+        self.assertEqual(1, result["snapshotMetadataCount"])
+        self.assertEqual([relative], result["snapshotMetadataPaths"])
+        publish_infos = publish.call_args.kwargs["publish_infos"]
+        self.assertEqual([relative], [
+            item["metadataFiles"][0]["path"] for item in publish_infos
+        ])
+
+    def test_repair_indexes_accepts_metadata_only_mode(self):
+        args = release.parser().parse_args([
+            "--no-wizard", "repair-indexes", "--metadata-only"
+        ])
+        self.assertTrue(args.metadata_only)
+        self.assertIs(args.func, release.repair_maven_indexes)
 
     def test_large_blob_download_is_streamed_to_disk_and_fenced(self):
         downloader = mock.Mock()
@@ -5564,6 +5824,397 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
         self.assertTrue(collect.call_args.args[0].no_github)
 
 
+class RegionalMirrorTests(unittest.TestCase):
+    @staticmethod
+    def model(**values):
+        return SimpleNamespace(**values)
+
+    def test_container_and_destination_validation_fail_before_cloud_writes(self):
+        self.assertEqual("releases", release.validate_container_name("releases"))
+        for value in ("UPPER", "ab", "bad--name", "-bad"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                release.validate_container_name(value)
+
+        context = {
+            "subscription": "subscription",
+            "subscriptions": SimpleNamespace(
+                subscriptions=SimpleNamespace(
+                    list_locations=lambda subscription: [
+                        SimpleNamespace(name="eastus2"),
+                        SimpleNamespace(name="japaneast"),
+                        SimpleNamespace(name="westus2"),
+                    ]
+                )
+            ),
+        }
+        self.assertEqual(
+            ["japaneast", "westus2"],
+            release.mirror_destination_locations(
+                context, "eastus2", ["Japan East", "westus2", "japaneast"]
+            ),
+        )
+        with self.assertRaisesRegex(ValueError, "source storage location"):
+            release.mirror_destination_locations(context, "eastus2", ["eastus2"])
+
+    def test_container_reconciliation_waits_through_soft_delete(self):
+        class BeingDeleted(Exception):
+            status_code = 409
+            error_code = "ContainerBeingDeleted"
+
+        class Missing(Exception):
+            status_code = 404
+            error_code = "ContainerNotFound"
+
+        container = mock.Mock()
+        container.create_container.side_effect = [BeingDeleted(), None]
+        container.get_container_properties.side_effect = Missing()
+        with mock.patch.object(release.time, "sleep") as sleep:
+            created = release.ensure_blob_container(
+                container,
+                metadata={"managed": "true"},
+                attempts=2,
+                retry_seconds=1,
+            )
+
+        self.assertTrue(created)
+        self.assertEqual(2, container.create_container.call_count)
+        sleep.assert_called_once_with(1)
+
+    def test_replication_features_are_enabled_idempotently(self):
+        source = SimpleNamespace(is_versioning_enabled=False, change_feed=None)
+        destination = SimpleNamespace(is_versioning_enabled=None)
+        services = mock.Mock()
+        services.get_service_properties.side_effect = [source, destination]
+        context = {
+            "storage": SimpleNamespace(blob_services=services),
+            "modules": {"ChangeFeed": self.model},
+        }
+
+        result = release.ensure_replication_features(
+            context, "source-group", "source", "destination-group", "destination"
+        )
+
+        self.assertTrue(result["sourceVersioning"])
+        self.assertTrue(result["sourceChangeFeed"])
+        self.assertTrue(result["destinationVersioning"])
+        self.assertTrue(source.is_versioning_enabled)
+        self.assertTrue(source.change_feed.enabled)
+        self.assertTrue(destination.is_versioning_enabled)
+        self.assertEqual(2, services.set_service_properties.call_count)
+
+    def test_bootstrap_copies_block_and_append_blobs_without_downloading(self):
+        block = SimpleNamespace(
+            name="repo/artifact.jar",
+            size=128,
+            blob_type=SimpleNamespace(value="BlockBlob"),
+            etag="block-etag",
+            tags={"kind": "artifact"},
+        )
+        append = SimpleNamespace(
+            name="run/live.log",
+            size=64,
+            blob_type=SimpleNamespace(value="AppendBlob"),
+            etag="append-etag",
+            tag_count=1, tags={"kind": "log"},
+        )
+        source_blobs = {
+            block.name: SimpleNamespace(
+                get_blob_properties=lambda: SimpleNamespace(etag=block.etag)
+            ),
+            append.name: SimpleNamespace(
+                get_blob_properties=lambda: SimpleNamespace(etag=append.etag),
+                get_blob_tags=lambda: append.tags,
+            ),
+        }
+        destination_blobs = {
+            block.name: mock.Mock(),
+            append.name: mock.Mock(),
+        }
+        for destination in destination_blobs.values():
+            destination.start_copy_from_url.return_value = {
+                "copy_id": "copy-id",
+                "copy_status": "success",
+            }
+        list_calls = []
+
+        def list_blobs(**kwargs):
+            list_calls.append(kwargs)
+            if kwargs.get("name_starts_with") == "repo/":
+                return [block]
+            return [block, append]
+
+        source = SimpleNamespace(
+            container_name="releases",
+            url="https://source.blob.core.windows.net/releases",
+            list_blobs=list_blobs,
+            get_blob_client=lambda name: source_blobs[name],
+        )
+        destination = SimpleNamespace(
+            get_blob_client=lambda name: destination_blobs[name]
+        )
+        sas_options = {}
+        context = {
+            "modules": {
+                "generate_container_sas": lambda **kwargs: (
+                    sas_options.update(kwargs) or "source-sas"
+                ),
+                "ContainerSasPermissions": self.model,
+                "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+            }
+        }
+
+        result = release.bootstrap_container_copy(
+            context,
+            "source",
+            "source-key",
+            source,
+            destination,
+            workers=2,
+            timeout_seconds=60,
+            priority_prefixes=["repo"],
+        )
+
+        self.assertEqual(2, result["blobCount"])
+        self.assertEqual(192, result["bytes"])
+        self.assertEqual({"AppendBlob": 1, "BlockBlob": 1}, result["blobTypes"])
+        self.assertEqual(["repo"], result["priorityPrefixes"])
+        self.assertEqual("full-container", result["scope"])
+        self.assertEqual([{"name_starts_with": "repo/"}, {}], list_calls)
+        self.assertTrue(sas_options["permission"].tag)
+        block_call = destination_blobs[block.name].start_copy_from_url.call_args
+        append_call = destination_blobs[append.name].start_copy_from_url.call_args
+        self.assertTrue(block_call.kwargs["requires_sync"])
+        self.assertEqual("COPY", block_call.kwargs["tags"])
+        self.assertFalse(append_call.kwargs["requires_sync"])
+        destination_blobs[append.name].set_blob_tags.assert_called_once_with(
+            append.tags
+        )
+
+    def test_bootstrap_uses_ranged_server_copy_for_large_block_blobs(self):
+        chunk = release.MIRROR_BLOCK_COPY_MIN_CHUNK_BYTES
+        size = chunk * 3 + 7
+        item = SimpleNamespace(
+            name="repo/large.jar",
+            size=size,
+            blob_type=SimpleNamespace(value="BlockBlob"),
+            etag="large-etag",
+        )
+        content_settings = SimpleNamespace(content_type="application/java-archive")
+        properties = SimpleNamespace(
+            etag=item.etag,
+            size=size,
+            content_settings=content_settings,
+            metadata={"kind": "artifact"},
+            blob_tier="Hot",
+        )
+        source_blob = mock.Mock()
+        source_blob.get_blob_properties.side_effect = [properties, properties]
+        source_blob.get_blob_tags.return_value = {"classifier": "linux-x86_64"}
+        destination_blob = mock.Mock()
+        destination_blob.get_blob_properties.return_value = SimpleNamespace(
+            copy=SimpleNamespace(status="pending", id="stale-copy")
+        )
+        source = SimpleNamespace(
+            container_name="releases",
+            url="https://source.blob.core.windows.net/releases",
+            list_blobs=lambda **kwargs: [item],
+            get_blob_client=lambda name: source_blob,
+        )
+        destination = SimpleNamespace(
+            get_blob_client=lambda name: destination_blob
+        )
+        context = {
+            "modules": {
+                "generate_container_sas": lambda **kwargs: "source-sas",
+                "ContainerSasPermissions": self.model,
+                "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+                "ResourceNotFoundError": KeyError,
+                "BlobBlock": lambda block_id: SimpleNamespace(block_id=block_id),
+                "StandardBlobTier": lambda value: f"tier:{value}",
+            }
+        }
+
+        result = release.bootstrap_container_copy(
+            context,
+            "source",
+            "source-key",
+            source,
+            destination,
+            workers=1,
+            timeout_seconds=60,
+            priority_prefixes=["repo"],
+            include_unprioritized=False,
+        )
+
+        self.assertEqual(1, result["blobCount"])
+        self.assertEqual(size, result["bytes"])
+        self.assertEqual("priority-prefixes", result["scope"])
+        destination_blob.start_copy_from_url.assert_not_called()
+        destination_blob.abort_copy.assert_called_once_with("stale-copy")
+        stage_calls = destination_blob.stage_block_from_url.call_args_list
+        self.assertEqual(4, len(stage_calls))
+        self.assertEqual([0, chunk, chunk * 2, chunk * 3], [
+            call.kwargs["source_offset"] for call in stage_calls
+        ])
+        self.assertEqual([chunk, chunk, chunk, 7], [
+            call.kwargs["source_length"] for call in stage_calls
+        ])
+        commit = destination_blob.commit_block_list.call_args
+        self.assertEqual(4, len(commit.args[0]))
+        self.assertEqual(content_settings, commit.kwargs["content_settings"])
+        self.assertEqual({"kind": "artifact"}, commit.kwargs["metadata"])
+        self.assertEqual(
+            {"classifier": "linux-x86_64"}, commit.kwargs["tags"]
+        )
+        self.assertEqual("tier:Hot", commit.kwargs["standard_blob_tier"])
+
+    def test_full_container_policy_is_created_on_destination_then_source(self):
+        operations = mock.Mock()
+        operations.list.side_effect = [[], []]
+        destination_policy = SimpleNamespace(
+            name="policy-id",
+            policy_id="policy-id",
+            source_account="/accounts/source",
+            destination_account="/accounts/destination",
+            rules=[SimpleNamespace(
+                rule_id="rule-id",
+                source_container="releases",
+                destination_container="releases",
+                filters=SimpleNamespace(
+                    min_creation_time=release.MIRROR_ALL_BLOBS_CREATION_TIME
+                ),
+            )],
+        )
+        operations.create_or_update.side_effect = [destination_policy, object()]
+        context = {
+            "storage": SimpleNamespace(object_replication_policies=operations),
+            "modules": {
+                "ObjectReplicationPolicy": self.model,
+                "ObjectReplicationPolicyFilter": self.model,
+                "ObjectReplicationPolicyPropertiesMetrics": self.model,
+                "ObjectReplicationPolicyRule": self.model,
+            },
+        }
+        source = SimpleNamespace(name="source", id="/accounts/source")
+        destination = SimpleNamespace(
+            name="destination", id="/accounts/destination"
+        )
+
+        result = release.ensure_object_replication_policy(
+            context,
+            "source-group",
+            source,
+            "releases",
+            "destination-group",
+            destination,
+            "releases",
+        )
+
+        self.assertTrue(result["created"])
+        self.assertEqual(
+            "all-existing-and-future-block-blobs", result["copyScope"]
+        )
+        self.assertTrue(result["destinationWriteLocked"])
+        self.assertEqual(2, operations.create_or_update.call_count)
+        destination_call, source_call = operations.create_or_update.call_args_list
+        self.assertEqual(
+            ("destination-group", "destination", "default"),
+            destination_call.args[:3],
+        )
+        self.assertEqual(
+            ("source-group", "source", "policy-id"), source_call.args[:3]
+        )
+        destination_rule = destination_call.args[3].rules[0]
+        self.assertEqual(
+            destination_rule.rule_id,
+            str(release.uuid.UUID(destination_rule.rule_id)),
+        )
+        self.assertEqual(
+            release.MIRROR_ALL_BLOBS_CREATION_TIME,
+            destination_rule.filters.min_creation_time,
+        )
+
+    def test_existing_policy_is_reused_without_recreating_or_unlocking(self):
+        rule = SimpleNamespace(
+            rule_id="rule-id",
+            source_container="releases",
+            destination_container="releases",
+            filters=SimpleNamespace(
+                min_creation_time=release.MIRROR_ALL_BLOBS_CREATION_TIME
+            ),
+        )
+        policy = SimpleNamespace(
+            name="policy-id",
+            policy_id="policy-id",
+            source_account="/accounts/source",
+            destination_account="/accounts/destination",
+            rules=[rule],
+        )
+        operations = mock.Mock()
+        operations.list.side_effect = [[policy], [policy]]
+        context = {
+            "storage": SimpleNamespace(object_replication_policies=operations),
+            "modules": {},
+        }
+
+        result = release.ensure_object_replication_policy(
+            context,
+            "source-group",
+            SimpleNamespace(name="source", id="/accounts/source"),
+            "releases",
+            "destination-group",
+            SimpleNamespace(name="destination", id="/accounts/destination"),
+            "releases",
+        )
+
+        self.assertFalse(result["created"])
+        operations.create_or_update.assert_not_called()
+        operations.delete.assert_not_called()
+
+    def test_failed_source_policy_rolls_back_new_destination_lock(self):
+        rule = SimpleNamespace(
+            rule_id="rule-id",
+            source_container="releases",
+            destination_container="releases",
+            filters=SimpleNamespace(
+                min_creation_time=release.MIRROR_ALL_BLOBS_CREATION_TIME
+            ),
+        )
+        policy = SimpleNamespace(
+            name="policy-id",
+            policy_id="policy-id",
+            source_account="/accounts/source",
+            destination_account="/accounts/destination",
+            rules=[rule],
+        )
+        operations = mock.Mock()
+        operations.list.side_effect = [[], []]
+        operations.create_or_update.side_effect = [policy, RuntimeError("source failed")]
+        context = {
+            "storage": SimpleNamespace(object_replication_policies=operations),
+            "modules": {
+                "ObjectReplicationPolicy": self.model,
+                "ObjectReplicationPolicyFilter": self.model,
+                "ObjectReplicationPolicyPropertiesMetrics": self.model,
+                "ObjectReplicationPolicyRule": self.model,
+            },
+        }
+
+        with self.assertRaisesRegex(RuntimeError, "source failed"):
+            release.ensure_object_replication_policy(
+                context,
+                "source-group",
+                SimpleNamespace(name="source", id="/accounts/source"),
+                "releases",
+                "destination-group",
+                SimpleNamespace(name="destination", id="/accounts/destination"),
+                "releases",
+            )
+        operations.delete.assert_called_once_with(
+            "destination-group", "destination", "policy-id"
+        )
+
+
 class CliTests(unittest.TestCase):
     def test_all_operational_commands_parse(self):
         subscription = "00000000-0000-0000-0000-000000000001"
@@ -5583,6 +6234,13 @@ class CliTests(unittest.TestCase):
                 "--version", "1.0.0", "--commit", "a" * 40,
                 "--no-github", "--repository-only",
             ],
+            [
+                "mirror", "configure",
+                "--destination-location", "japaneast",
+                "--destination-location", "westus2",
+                "--skip-priority-bootstrap",
+            ],
+            ["mirror", "status", "--destination-location", "japaneast"],
             ["stop-everything", "--wait"],
         ]
         for command in cases:

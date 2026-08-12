@@ -17,6 +17,7 @@ import hashlib
 import importlib.util
 import json
 import mimetypes
+import shutil
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -53,6 +54,54 @@ def relative_path(repository: Path, path: Path) -> str:
     ):
         raise RuntimeError(f"unexpected Maven namespace: {value}")
     return value
+
+
+def promote_sdk_runtime_jars(
+    repository: Path,
+    sdk_assets: Path,
+    artifact_rules: dict[str, Any],
+    release_version: str,
+) -> tuple[list[str], list[str]]:
+    """Place worker SDK runtime JARs beside their canonical Maven POMs.
+
+    Native builds historically staged their unclassified runtime JARs under
+    ``sdk-assets/jars`` while classified JARs and POMs went to the Maven staging
+    tree. Direct publication must merge those two worker-owned outputs before
+    validation and upload; otherwise Maven metadata can advertise a component
+    whose unclassified JAR is physically absent.
+    """
+    artifact_ids = sorted(
+        {
+            str(value)
+            for value in artifact_rules.get("unclassifiedArtifactIds", []) or []
+        }
+    )
+    promoted: list[str] = []
+    missing: list[str] = []
+    for artifact_id in artifact_ids:
+        filename = f"{artifact_id}-{release_version}.jar"
+        source = sdk_assets / "jars" / filename
+        candidates = [
+            repository
+            / "org/eclipse/deeplearning4j"
+            / artifact_id
+            / release_version,
+            repository / "org/nd4j" / artifact_id / release_version,
+        ]
+        pom_name = f"{artifact_id}-{release_version}.pom"
+        target_dir = next(
+            (path for path in candidates if (path / pom_name).is_file()),
+            next((path for path in candidates if path.exists()), candidates[0]),
+        )
+        target = target_dir / filename
+        if source.is_file():
+            target_dir.mkdir(parents=True, exist_ok=True)
+            if not target.is_file() or sha256(target) != sha256(source):
+                shutil.copy2(source, target)
+            promoted.append(relative_path(repository, target))
+        elif not target.is_file():
+            missing.append(filename)
+    return promoted, missing
 
 
 def prepare_repository(
@@ -136,6 +185,8 @@ def publish_files(
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description=__doc__)
     root.add_argument("--repository", type=Path, required=True)
+    root.add_argument("--sdk-assets", type=Path, required=True)
+    root.add_argument("--config", type=Path, required=True)
     root.add_argument("--central-repository", type=Path, required=True)
     root.add_argument("--cloud-io", type=Path, required=True)
     root.add_argument("--bucket", required=True)
@@ -146,6 +197,11 @@ def parser() -> argparse.ArgumentParser:
     root.add_argument("--release-version", required=True)
     root.add_argument("--commit", required=True)
     root.add_argument("--accounting", type=Path, required=True)
+    root.add_argument(
+        "--allow-missing-unclassified",
+        action="store_true",
+        help="publish completed outputs from a partial shard without requiring every runtime JAR",
+    )
     return root
 
 
@@ -154,6 +210,23 @@ def main() -> None:
     repository = args.repository.resolve()
     if not repository.is_dir():
         raise RuntimeError(f"Maven repository directory is missing: {repository}")
+
+    sdk_assets = args.sdk_assets.resolve()
+    if not sdk_assets.is_dir():
+        raise RuntimeError(f"SDK assets directory is missing: {sdk_assets}")
+    config = json.loads(args.config.resolve().read_text(encoding="utf-8"))
+    artifact_rules = config.get("shard", {}).get("artifactRules", {})
+    promoted_sdk_jars, missing_sdk_jars = promote_sdk_runtime_jars(
+        repository,
+        sdk_assets,
+        artifact_rules,
+        args.release_version,
+    )
+    if missing_sdk_jars and not args.allow_missing_unclassified:
+        raise RuntimeError(
+            "worker outputs are missing required unclassified runtime JARs: "
+            + ", ".join(missing_sdk_jars)
+        )
 
     central_repository = load_module(
         args.central_repository.resolve(), "dl4j_central_repository"
@@ -182,6 +255,8 @@ def main() -> None:
         "shard": args.shard,
         "releaseVersion": args.release_version,
         "commit": args.commit,
+        "promotedSdkJars": sorted(promoted_sdk_jars),
+        "missingSdkJars": sorted(missing_sdk_jars),
         "publishedBlobs": sorted(item["path"] for item in published_files),
         "publishedFiles": sorted(published_files, key=lambda item: item["path"]),
         "metadataFiles": sorted(metadata_files, key=lambda item: item["path"]),

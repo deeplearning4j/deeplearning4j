@@ -411,8 +411,10 @@ raise SystemExit(0 if "maven" in config["shard"].get("workloads", []) else 1)
 PY
   then
     phase maven-publish started "shard=${CURRENT_SHARD_ID} repository=${MAVEN_REPOSITORY_PREFIX}"
-    python3 "${source_dir}/release/azure/maven-publish.py" \
+    publisher=(python3 "${source_dir}/release/azure/maven-publish.py" \
       --repository "${output_dir}/maven-repository" \
+      --sdk-assets "${output_dir}/sdk-assets" \
+      --config "${CURRENT_CONFIG_FILE}" \
       --central-repository "${source_dir}/release/central/repository.py" \
       --cloud-io "${CLOUD_IO}" \
       --bucket "${BUCKET}" \
@@ -422,7 +424,11 @@ PY
       --shard "${CURRENT_SHARD_ID}" \
       --release-version "$(config releaseVersion)" \
       --commit "${COMMIT}" \
-      --accounting "${output_dir}/maven-publish.json"
+      --accounting "${output_dir}/maven-publish.json")
+    if [ "${build_code}" -ne 0 ]; then
+      publisher+=(--allow-missing-unclassified)
+    fi
+    "${publisher[@]}"
     phase maven-publish complete "shard=${CURRENT_SHARD_ID} accounting=${output_dir}/maven-publish.json"
   fi
 

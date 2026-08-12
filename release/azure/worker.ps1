@@ -331,7 +331,12 @@ function Upload-IfPresent([string]$Path, [string]$Name) {
   return $true
 }
 
-function Publish-MavenRepository([string]$Path) {
+function Publish-MavenRepository(
+  [string]$Path,
+  [string]$SdkAssets,
+  [string]$ConfigPath,
+  [bool]$AllowMissingUnclassified
+) {
   $Prefix = ([string]$Config.mavenRepositoryPrefix).TrimEnd('/')
   if ([string]::IsNullOrWhiteSpace($Prefix)) {
     throw 'Azure worker received no stable Maven repository prefix'
@@ -340,18 +345,26 @@ function Publish-MavenRepository([string]$Path) {
   $Publisher = Join-Path $SourceDir 'release\azure\maven-publish.py'
   $CentralRepository = Join-Path $SourceDir 'release\central\repository.py'
   Invoke-NativeChecked -Description 'Direct stable Maven publication' -Command {
-    & $script:PythonExe $Publisher `
-      --repository $Path `
-      --central-repository $CentralRepository `
-      --cloud-io $CloudIo `
-      --bucket $Config.bucket `
-      --repository-prefix $Prefix `
-      --client-id $Config.managedIdentityClientId `
-      --run-id $Config.runId `
-      --shard $Shard.id `
-      --release-version $Config.releaseVersion `
-      --commit $Config.commit `
-      --accounting $AccountingPath
+    $PublisherArguments = @(
+      $Publisher,
+      '--repository', $Path,
+      '--sdk-assets', $SdkAssets,
+      '--config', $ConfigPath,
+      '--central-repository', $CentralRepository,
+      '--cloud-io', $CloudIo,
+      '--bucket', $Config.bucket,
+      '--repository-prefix', $Prefix,
+      '--client-id', $Config.managedIdentityClientId,
+      '--run-id', $Config.runId,
+      '--shard', $Shard.id,
+      '--release-version', $Config.releaseVersion,
+      '--commit', $Config.commit,
+      '--accounting', $AccountingPath
+    )
+    if ($AllowMissingUnclassified) {
+      $PublisherArguments += '--allow-missing-unclassified'
+    }
+    & $script:PythonExe @PublisherArguments
   }
   return $AccountingPath
 }
@@ -805,7 +818,8 @@ function Invoke-ShardBuild {
   )
   if ((@($Shard.workloads) -contains 'maven') -and ($BuildExitCode -eq 0 -or $HasMavenOutput)) {
     Write-Phase 'maven-publish' 'started' "shard=$($Shard.id) repository=$($Config.mavenRepositoryPrefix) buildExitCode=$BuildExitCode"
-    $MavenAccounting = Publish-MavenRepository $MavenOutput
+    $MavenAccounting = Publish-MavenRepository `
+      $MavenOutput $SdkOutput $ShardConfigFile ($BuildExitCode -ne 0)
     Write-Phase 'maven-publish' 'complete' "shard=$($Shard.id) accounting=$MavenAccounting"
   }
 

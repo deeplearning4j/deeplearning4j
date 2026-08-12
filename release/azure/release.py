@@ -62,6 +62,12 @@ LOG_STREAM_CONFLICT_RETRIES = 3
 RESOURCE_CLEANUP_ATTEMPTS = 12
 RESOURCE_CLEANUP_RETRY_SECONDS = 5
 RESOURCE_RECONCILE_TIMEOUT_SECONDS = 300
+MIRROR_ALL_BLOBS_CREATION_TIME = "1601-01-01T00:00:00Z"
+MIRROR_SOURCE_ACCOUNT_TAG = "dl4j-mirror-source-account"
+MIRROR_SOURCE_CONTAINER_TAG = "dl4j-mirror-source-container"
+MIRROR_BLOCK_COPY_SYNC_LIMIT_BYTES = 32 * 1024 * 1024
+MIRROR_BLOCK_COPY_MIN_CHUNK_BYTES = 32 * 1024 * 1024
+MIRROR_BLOCK_COPY_MAX_CHUNK_BYTES = 4000 * 1024 * 1024
 
 
 def utc_now() -> str:
@@ -345,12 +351,21 @@ def azure_modules() -> dict[str, Any]:
         from azure.mgmt.network import NetworkManagementClient
         from azure.mgmt.resource import ResourceManagementClient, SubscriptionClient
         from azure.mgmt.storage import StorageManagementClient
+        from azure.mgmt.storage.models import (
+            ChangeFeed,
+            ObjectReplicationPolicy,
+            ObjectReplicationPolicyFilter,
+            ObjectReplicationPolicyPropertiesMetrics,
+            ObjectReplicationPolicyRule,
+        )
         from azure.storage.blob import (
+            BlobBlock,
             BlobLeaseClient,
             BlobSasPermissions,
             BlobServiceClient,
             ContainerSasPermissions,
             ContentSettings,
+            StandardBlobTier,
             generate_blob_sas,
             generate_container_sas,
         )
@@ -372,11 +387,18 @@ def azure_modules() -> dict[str, Any]:
         "ResourceManagementClient": ResourceManagementClient,
         "SubscriptionClient": SubscriptionClient,
         "StorageManagementClient": StorageManagementClient,
+        "ChangeFeed": ChangeFeed,
+        "ObjectReplicationPolicy": ObjectReplicationPolicy,
+        "ObjectReplicationPolicyFilter": ObjectReplicationPolicyFilter,
+        "ObjectReplicationPolicyPropertiesMetrics": ObjectReplicationPolicyPropertiesMetrics,
+        "ObjectReplicationPolicyRule": ObjectReplicationPolicyRule,
+        "BlobBlock": BlobBlock,
         "BlobLeaseClient": BlobLeaseClient,
         "BlobSasPermissions": BlobSasPermissions,
         "BlobServiceClient": BlobServiceClient,
         "ContainerSasPermissions": ContainerSasPermissions,
         "ContentSettings": ContentSettings,
+        "StandardBlobTier": StandardBlobTier,
         "generate_blob_sas": generate_blob_sas,
         "generate_container_sas": generate_container_sas,
     }
@@ -4265,6 +4287,940 @@ def existing_storage(
     return context, location, group, account, service
 
 
+def validate_container_name(value: str) -> str:
+    """Return a valid Azure container name or fail before changing cloud state."""
+    if (
+        not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?", value)
+        or "--" in value
+    ):
+        raise ValueError(
+            "Azure container names must be 3-63 lowercase letters, digits, or single hyphens"
+        )
+    return value
+
+
+def mirror_destination_locations(
+    context: dict[str, Any],
+    source_location: str,
+    values: Iterable[str],
+) -> list[str]:
+    requested: list[str] = []
+    for value in values:
+        location = value.lower().replace(" ", "")
+        if not AZURE_LOCATION_PATTERN.fullmatch(location):
+            raise ValueError(f"{value!r} is not a valid Azure destination location")
+        if location == source_location:
+            raise ValueError(
+                f"mirror destination {location!r} is the source storage location"
+            )
+        if location not in requested:
+            requested.append(location)
+    if not requested:
+        raise ValueError("at least one --destination-location is required")
+    known = {
+        str(item.name).lower()
+        for item in context["subscriptions"].subscriptions.list_locations(
+            context["subscription"]
+        )
+    }
+    unknown = [location for location in requested if location not in known]
+    if unknown:
+        raise RuntimeError(
+            "Azure subscription does not expose destination location(s): "
+            + ", ".join(unknown)
+        )
+    return requested
+
+
+def account_reference_matches(reference: Any, account_name: str) -> bool:
+    value = str(reference or "").rstrip("/").rsplit("/", 1)[-1]
+    return value.lower() == account_name.lower()
+
+
+def replication_rule(
+    policy: Any,
+    source_container: str,
+    destination_container: str,
+) -> Any | None:
+    for rule in object_value(policy, "rules", []) or []:
+        if (
+            object_value(rule, "source_container") == source_container
+            and object_value(rule, "destination_container") == destination_container
+        ):
+            return rule
+    return None
+
+
+def replication_policy(
+    policies: Iterable[Any],
+    source_account: str,
+    destination_account: str,
+) -> Any | None:
+    for policy in policies:
+        source = object_value(policy, "source_account")
+        destination = object_value(policy, "destination_account")
+        if account_reference_matches(source, source_account) and (
+            not destination
+            or account_reference_matches(destination, destination_account)
+        ):
+            return policy
+    return None
+
+
+def ensure_replication_features(
+    context: dict[str, Any],
+    source_group: str,
+    source_account: str,
+    destination_group: str,
+    destination_account: str,
+) -> dict[str, Any]:
+    """Enable the Azure data-protection features required by object replication."""
+    services = context["storage"].blob_services
+    modules = context["modules"]
+    source = services.get_service_properties(source_group, source_account)
+    source_changed = object_value(source, "is_versioning_enabled") is not True
+    feed = object_value(source, "change_feed")
+    if object_value(feed, "enabled") is not True:
+        source_changed = True
+        retention = object_value(feed, "retention_in_days")
+        source.change_feed = modules["ChangeFeed"](
+            enabled=True,
+            retention_in_days=retention,
+        )
+    source.is_versioning_enabled = True
+    if source_changed:
+        services.set_service_properties(source_group, source_account, source)
+
+    destination = services.get_service_properties(
+        destination_group, destination_account
+    )
+    destination_changed = (
+        object_value(destination, "is_versioning_enabled") is not True
+    )
+    destination.is_versioning_enabled = True
+    if destination_changed:
+        services.set_service_properties(
+            destination_group, destination_account, destination
+        )
+    return {
+        "sourceVersioning": True,
+        "sourceChangeFeed": True,
+        "destinationVersioning": True,
+        "sourceChanged": source_changed,
+        "destinationChanged": destination_changed,
+    }
+
+
+def validate_replication_account(account: Any, expected_location: str) -> None:
+    name = str(object_value(account, "name", ""))
+    location = str(object_value(account, "location", "")).lower()
+    kind = str(object_value(account, "kind", ""))
+    if location != expected_location:
+        raise RuntimeError(
+            f"Azure mirror account {name!r} is in {location!r}, not {expected_location!r}"
+        )
+    if kind not in {"StorageV2", "BlockBlobStorage"}:
+        raise RuntimeError(
+            f"Azure mirror account {name!r} uses unsupported storage kind {kind!r}"
+        )
+    if object_value(account, "is_hns_enabled", False):
+        raise RuntimeError(
+            f"Azure mirror account {name!r} has hierarchical namespace enabled"
+        )
+
+
+def ensure_blob_container(
+    container: Any,
+    *,
+    metadata: dict[str, str],
+    attempts: int = 60,
+    retry_seconds: int = 5,
+) -> bool:
+    """Create a container, reconciling Azure's asynchronous delete lifecycle."""
+    for attempt in range(attempts):
+        try:
+            container.create_container(metadata=metadata)
+            return True
+        except Exception as exc:
+            status = getattr(exc, "status_code", None)
+            code = str(getattr(exc, "error_code", "") or "")
+            expected = exc.__class__.__name__ in {
+                "ResourceExistsError",
+                "ContainerAlreadyExists",
+            } or (status == 409 and code in {
+                "ContainerAlreadyExists",
+                "ContainerBeingDeleted",
+            })
+            if not expected:
+                raise
+        try:
+            container.get_container_properties()
+            return False
+        except Exception as exc:
+            status = getattr(exc, "status_code", None)
+            code = str(getattr(exc, "error_code", "") or "")
+            if status not in {404, 409} and code not in {
+                "ContainerBeingDeleted",
+                "ContainerNotFound",
+            }:
+                raise
+        if attempt + 1 == attempts:
+            raise TimeoutError(
+                "Azure mirror container remained in its asynchronous delete window"
+            )
+        time.sleep(retry_seconds)
+    raise AssertionError("unreachable Azure container reconciliation state")
+
+
+def ensure_mirror_storage(
+    context: dict[str, Any],
+    source_account: Any,
+    source_container: Any,
+    destination_group: str,
+    destination_location: str,
+    destination_account_name: str,
+    destination_container_name: str,
+) -> tuple[Any, Any, str]:
+    """Provision one regional storage target and preserve source read access."""
+    ensure_resource_group(context, destination_group, destination_location)
+    storage = context["storage"].storage_accounts
+    source_name = str(object_value(source_account, "name", ""))
+    source_public = bool(object_value(source_account, "allow_blob_public_access", False))
+    tags = {
+        MANAGED_TAG: "true",
+        "dl4j-provider": "azure",
+        MIRROR_SOURCE_ACCOUNT_TAG: source_name,
+        MIRROR_SOURCE_CONTAINER_TAG: str(object_value(source_container, "container_name", "")),
+    }
+    try:
+        account = storage.get_properties(destination_group, destination_account_name)
+    except Exception as exc:
+        if not is_not_found(exc):
+            raise
+        availability = storage.check_name_availability(
+            {"name": destination_account_name}
+        )
+        if not bool(object_value(availability, "name_available", False)):
+            raise RuntimeError(
+                f"Azure mirror storage account {destination_account_name!r} is unavailable: "
+                f"{object_value(availability, 'reason', 'unknown reason')}"
+            )
+        account = storage.begin_create(
+            destination_group,
+            destination_account_name,
+            {
+                "location": destination_location,
+                "kind": "StorageV2",
+                "sku": {"name": "Standard_LRS"},
+                "allow_blob_public_access": source_public,
+                "allow_cross_tenant_replication": False,
+                "minimum_tls_version": "TLS1_2",
+                "public_network_access": "Enabled",
+                "tags": tags,
+            },
+        ).result(timeout=1800)
+    else:
+        validate_replication_account(account, destination_location)
+        account = storage.update(
+            destination_group,
+            destination_account_name,
+            {
+                "allow_blob_public_access": source_public,
+                "allow_cross_tenant_replication": False,
+                "tags": {**(object_value(account, "tags", {}) or {}), **tags},
+            },
+        )
+    validate_replication_account(account, destination_location)
+
+    keys = storage.list_keys(destination_group, destination_account_name)
+    values = list(object_value(keys, "keys", []) or [])
+    if not values:
+        raise RuntimeError(
+            f"Azure mirror storage account {destination_account_name} returned no keys"
+        )
+    service = context["modules"]["BlobServiceClient"](
+        account_url=f"https://{destination_account_name}.blob.core.windows.net",
+        credential=str(object_value(values[0], "value")),
+    )
+    container = service.get_container_client(destination_container_name)
+    ensure_blob_container(
+        container,
+        metadata={"dl4j_release_mirror": "true"},
+    )
+    source_access = object_value(source_container.get_container_properties(), "public_access")
+    container.set_container_access_policy(
+        signed_identifiers={},
+        public_access=source_access,
+    )
+    return account, service, str(object_value(values[0], "value"))
+
+
+def storage_account_key(
+    context: dict[str, Any],
+    group: str,
+    account_name: str,
+) -> str:
+    keys = context["storage"].storage_accounts.list_keys(group, account_name)
+    values = list(object_value(keys, "keys", []) or [])
+    if not values:
+        raise RuntimeError(f"Azure storage account {account_name} returned no keys")
+    return str(object_value(values[0], "value"))
+
+
+def bootstrap_container_copy(
+    context: dict[str, Any],
+    source_account_name: str,
+    source_account_key: str,
+    source_container: Any,
+    destination_container: Any,
+    *,
+    workers: int,
+    timeout_seconds: int,
+    priority_prefixes: Iterable[str] = (),
+    include_unprioritized: bool = True,
+) -> dict[str, Any]:
+    """Copy every current blob service-to-service before locking the mirror."""
+    if workers < 1:
+        raise ValueError("--copy-workers must be positive")
+    if timeout_seconds < 1:
+        raise ValueError("--copy-timeout-hours must be positive")
+    modules = context["modules"]
+    expiry = dt.datetime.now(dt.timezone.utc) + dt.timedelta(
+        seconds=timeout_seconds + 3600
+    )
+    source_sas = modules["generate_container_sas"](
+        account_name=source_account_name,
+        container_name=str(object_value(source_container, "container_name", "")),
+        account_key=source_account_key,
+        permission=modules["ContainerSasPermissions"](
+            read=True,
+            list=True,
+            tag=True,
+        ),
+        expiry=expiry,
+    )
+    deadline = time.monotonic() + timeout_seconds
+    stop_requested = threading.Event()
+    prefixes: list[str] = []
+    for value in priority_prefixes:
+        prefix = str(value).strip("/")
+        if prefix and not any(prefix == item or prefix.startswith(item + "/") for item in prefixes):
+            prefixes.append(prefix)
+
+    def source_blobs() -> Iterable[Any]:
+        for prefix in prefixes:
+            yield from source_container.list_blobs(name_starts_with=prefix + "/")
+        if not include_unprioritized:
+            return
+        for item in source_container.list_blobs():
+            name = str(object_value(item, "name", ""))
+            if any(name == prefix or name.startswith(prefix + "/") for prefix in prefixes):
+                continue
+            yield item
+
+    def abort_pending_destination_copy(destination_blob: Any) -> bool:
+        try:
+            destination_properties = destination_blob.get_blob_properties()
+        except modules["ResourceNotFoundError"]:
+            return False
+        destination_copy = object_value(destination_properties, "copy")
+        if str(object_value(destination_copy, "status", "")).lower() != "pending":
+            return False
+        copy_id = str(object_value(destination_copy, "id", ""))
+        if not copy_id:
+            return False
+        destination_blob.abort_copy(copy_id)
+        return True
+
+    def copy_large_block_blob(
+        name: str,
+        source_url: str,
+        source_blob: Any,
+        destination_blob: Any,
+        expected_etag: Any,
+    ) -> int:
+        """Copy a large block blob with synchronous server-side range requests."""
+        for attempt in range(3):
+            if stop_requested.is_set():
+                raise concurrent.futures.CancelledError()
+            source_properties = source_blob.get_blob_properties()
+            source_etag = object_value(source_properties, "etag")
+            if expected_etag and source_etag != expected_etag:
+                expected_etag = source_etag
+            size = int(object_value(source_properties, "size", 0) or 0)
+            abort_pending_destination_copy(destination_blob)
+
+            chunk_bytes = max(
+                MIRROR_BLOCK_COPY_MIN_CHUNK_BYTES,
+                math.ceil(max(size, 1) / 50_000),
+            )
+            if chunk_bytes > MIRROR_BLOCK_COPY_MAX_CHUNK_BYTES:
+                raise RuntimeError(
+                    f"Azure mirror source blob {name!r} is too large for ranged copy"
+                )
+            block_ids: list[str] = []
+            for index, offset in enumerate(range(0, size, chunk_bytes)):
+                if stop_requested.is_set():
+                    raise concurrent.futures.CancelledError()
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"Azure mirror bootstrap ranged copy timed out for {name!r}"
+                    )
+                block_id = base64.b64encode(f"{index:08d}".encode("ascii")).decode(
+                    "ascii"
+                )
+                block_ids.append(block_id)
+                destination_blob.stage_block_from_url(
+                    block_id,
+                    source_url,
+                    source_offset=offset,
+                    source_length=min(chunk_bytes, size - offset),
+                )
+
+            latest = source_blob.get_blob_properties()
+            latest_etag = object_value(latest, "etag")
+            if not expected_etag or latest_etag == expected_etag:
+                commit_options: dict[str, Any] = {
+                    "content_settings": object_value(
+                        source_properties, "content_settings"
+                    ),
+                    "metadata": object_value(source_properties, "metadata", {}),
+                    "tags": source_blob.get_blob_tags(),
+                }
+                source_tier = object_value(source_properties, "blob_tier")
+                if source_tier:
+                    commit_options["standard_blob_tier"] = modules[
+                        "StandardBlobTier"
+                    ](str(object_value(source_tier, "value", source_tier)))
+                destination_blob.commit_block_list(
+                    [modules["BlobBlock"](block_id) for block_id in block_ids],
+                    **commit_options,
+                )
+                print(
+                    f"Azure mirror ranged-copy completed {name} ({size} bytes)",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                return size
+            expected_etag = latest_etag
+            if attempt == 2:
+                raise RuntimeError(
+                    f"Azure source blob {name!r} kept changing during mirror bootstrap"
+                )
+        raise AssertionError("unreachable Azure ranged copy retry state")
+
+    def copy_blob(item: Any) -> tuple[str, int]:
+        if stop_requested.is_set():
+            raise concurrent.futures.CancelledError()
+        name = str(object_value(item, "name", ""))
+        if not name:
+            raise RuntimeError("Azure listed a source blob without a name")
+        quoted = urllib.parse.quote(name, safe="/")
+        source_url = f"{source_container.url}/{quoted}?{source_sas}"
+        source_blob = source_container.get_blob_client(name)
+        destination_blob = destination_container.get_blob_client(name)
+        expected_etag = object_value(item, "etag")
+        size = int(object_value(item, "size", 0) or 0)
+        listed_blob_type = object_value(item, "blob_type", "unknown")
+        blob_type = str(object_value(listed_blob_type, "value", listed_blob_type))
+        synchronous = (
+            blob_type == "BlockBlob" and size <= MIRROR_BLOCK_COPY_SYNC_LIMIT_BYTES
+        )
+        if blob_type == "BlockBlob" and not synchronous:
+            size = copy_large_block_blob(
+                name,
+                source_url,
+                source_blob,
+                destination_blob,
+                expected_etag,
+            )
+            return blob_type, size
+        for attempt in range(3):
+            try:
+                result = destination_blob.start_copy_from_url(
+                    source_url,
+                    source_etag=expected_etag,
+                    source_match_condition=modules["MatchConditions"].IfNotModified,
+                    requires_sync=synchronous,
+                    tags="COPY" if synchronous else None,
+                )
+            except modules["HttpResponseError"] as exc:
+                if (
+                    synchronous
+                    and str(object_value(exc, "error_code", ""))
+                    == "PendingCopyOperation"
+                    and abort_pending_destination_copy(destination_blob)
+                ):
+                    result = destination_blob.start_copy_from_url(
+                        source_url,
+                        source_etag=expected_etag,
+                        source_match_condition=modules[
+                            "MatchConditions"
+                        ].IfNotModified,
+                        requires_sync=True,
+                        tags="COPY",
+                    )
+                else:
+                    raise
+            copy_id = str(object_value(result, "copy_id", ""))
+            status = str(object_value(result, "copy_status", "pending")).lower()
+            properties = None
+            while status == "pending":
+                if stop_requested.is_set():
+                    raise concurrent.futures.CancelledError()
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"Azure mirror bootstrap copy timed out for {name!r}"
+                    )
+                time.sleep(1)
+                properties = destination_blob.get_blob_properties()
+                copy_properties = object_value(properties, "copy")
+                current_id = str(object_value(copy_properties, "id", ""))
+                if copy_id and current_id and current_id != copy_id:
+                    raise RuntimeError(
+                        f"Azure mirror bootstrap copy for {name!r} was replaced"
+                    )
+                status = str(
+                    object_value(copy_properties, "status", "pending")
+                ).lower()
+            if status != "success":
+                description = object_value(
+                    object_value(properties, "copy"), "status_description", ""
+                )
+                raise RuntimeError(
+                    f"Azure mirror bootstrap copy failed for {name!r}: "
+                    f"{status} {description}".rstrip()
+                )
+            latest = source_blob.get_blob_properties()
+            latest_etag = object_value(latest, "etag")
+            if not expected_etag or latest_etag == expected_etag:
+                if not synchronous and int(object_value(item, "tag_count", 0) or 0):
+                    tags = source_blob.get_blob_tags()
+                    if tags:
+                        destination_blob.set_blob_tags(tags)
+                return blob_type, size
+            expected_etag = latest_etag
+            if attempt == 2:
+                raise RuntimeError(
+                    f"Azure source blob {name!r} kept changing during mirror bootstrap"
+                )
+        raise AssertionError("unreachable Azure mirror copy retry state")
+
+    counts: dict[str, int] = {}
+    bytes_copied = 0
+    completed = 0
+    submitted = 0
+
+    def record(future: Any, *, listing_complete: bool = False) -> None:
+        nonlocal bytes_copied, completed
+        blob_type, size = future.result()
+        counts[blob_type] = counts.get(blob_type, 0) + 1
+        bytes_copied += size
+        completed += 1
+        if completed % 100 == 0 or (listing_complete and completed == submitted):
+            suffix = "" if listing_complete else " (listing in progress)"
+            print(
+                f"Azure mirror bootstrap copied {completed} blobs{suffix}",
+                file=sys.stderr,
+                flush=True,
+            )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+        pending: set[Any] = set()
+        try:
+            for item in source_blobs():
+                pending.add(executor.submit(copy_blob, item))
+                submitted += 1
+                if len(pending) >= workers * 4:
+                    done, pending = concurrent.futures.wait(
+                        pending,
+                        return_when=concurrent.futures.FIRST_COMPLETED,
+                    )
+                    for future in done:
+                        record(future)
+            for future in concurrent.futures.as_completed(pending):
+                record(future, listing_complete=True)
+        except BaseException:
+            stop_requested.set()
+            for future in pending:
+                future.cancel()
+            raise
+    if submitted == 0:
+        print("Azure mirror bootstrap source container is empty", file=sys.stderr)
+    return {
+        "blobCount": completed,
+        "bytes": bytes_copied,
+        "blobTypes": dict(sorted(counts.items())),
+        "transport": "azure-service-to-service-copy",
+        "priorityPrefixes": prefixes,
+        "scope": "full-container" if include_unprioritized else "priority-prefixes",
+    }
+
+
+def ensure_object_replication_policy(
+    context: dict[str, Any],
+    source_group: str,
+    source_account: Any,
+    source_container: str,
+    destination_group: str,
+    destination_account: Any,
+    destination_container: str,
+    min_creation_time: str = MIRROR_ALL_BLOBS_CREATION_TIME,
+) -> dict[str, Any]:
+    """Create or repair one all-existing-and-future container mirror policy."""
+    operations = context["storage"].object_replication_policies
+    modules = context["modules"]
+    source_name = str(object_value(source_account, "name", ""))
+    destination_name = str(object_value(destination_account, "name", ""))
+    existing = replication_policy(
+        operations.list(destination_group, destination_name),
+        source_name,
+        destination_name,
+    )
+    created_destination = False
+    if existing is None:
+        definition = modules["ObjectReplicationPolicy"](
+            source_account=str(object_value(source_account, "id", "")),
+            destination_account=str(object_value(destination_account, "id", "")),
+            metrics=modules["ObjectReplicationPolicyPropertiesMetrics"](enabled=True),
+            rules=[modules["ObjectReplicationPolicyRule"](
+                source_container=source_container,
+                destination_container=destination_container,
+                rule_id=str(uuid.uuid4()),
+                filters=modules["ObjectReplicationPolicyFilter"](
+                    min_creation_time=min_creation_time
+                ),
+            )],
+        )
+        existing = operations.create_or_update(
+            destination_group,
+            destination_name,
+            "default",
+            definition,
+        )
+        created_destination = True
+
+    rule = replication_rule(existing, source_container, destination_container)
+    if rule is None:
+        raise RuntimeError(
+            f"Azure replication policy for {source_name}/{destination_name} does not "
+            f"mirror {source_container}/{destination_container}"
+        )
+    filters = object_value(rule, "filters")
+    if object_value(filters, "min_creation_time") != min_creation_time:
+        raise RuntimeError(
+            "Azure replication rule has a different bootstrap cutover; "
+            "remove the incompatible rule before reconfiguring this mirror"
+        )
+    policy_id = str(
+        object_value(existing, "policy_id") or object_value(existing, "name", "")
+    )
+    rule_id = str(object_value(rule, "rule_id", ""))
+    if not policy_id or not rule_id:
+        raise RuntimeError("Azure did not assign object-replication policy/rule IDs")
+
+    source_policy = replication_policy(
+        operations.list(source_group, source_name),
+        source_name,
+        destination_name,
+    )
+    if source_policy is None:
+        definition = modules["ObjectReplicationPolicy"](
+            source_account=str(object_value(source_account, "id", "")),
+            destination_account=str(object_value(destination_account, "id", "")),
+            metrics=modules["ObjectReplicationPolicyPropertiesMetrics"](enabled=True),
+            rules=[modules["ObjectReplicationPolicyRule"](
+                source_container=source_container,
+                destination_container=destination_container,
+                rule_id=rule_id,
+                filters=modules["ObjectReplicationPolicyFilter"](
+                    min_creation_time=min_creation_time
+                ),
+            )],
+        )
+        try:
+            operations.create_or_update(
+                source_group,
+                source_name,
+                policy_id,
+                definition,
+            )
+        except BaseException:
+            if created_destination:
+                operations.delete(destination_group, destination_name, policy_id)
+            raise
+    return {
+        "policyId": policy_id,
+        "ruleId": rule_id,
+        "copyScope": (
+            "all-existing-and-future-block-blobs"
+            if min_creation_time == MIRROR_ALL_BLOBS_CREATION_TIME
+            else "future-block-blobs-after-bootstrap-cutover"
+        ),
+        "minCreationTime": min_creation_time,
+        "destinationWriteLocked": True,
+        "created": created_destination,
+    }
+
+
+def mirror_urls(
+    account_name: str,
+    container_name: str,
+    plan: dict[str, Any],
+) -> dict[str, str]:
+    root = f"https://{account_name}.blob.core.windows.net/{container_name}/"
+    return {
+        "containerUrl": root,
+        "mavenRepositoryUrl": root + stable_maven_repository_prefix(plan).strip("/") + "/",
+    }
+
+
+def configure_mirrors(args: argparse.Namespace) -> None:
+    """Provision full-container regional mirrors backed by Azure Object Replication."""
+    plan = load_plan(args.plan)
+    context, source_location, source_group, source_account, source_service = existing_storage(
+        args, plan
+    )
+    validate_replication_account(source_account, source_location)
+    source_name = str(object_value(source_account, "name", ""))
+    source_container_name = validate_container_name(
+        args.source_container or artifact_container_name(plan)
+    )
+    destination_container_name = validate_container_name(
+        args.destination_container or source_container_name
+    )
+    source_container = source_service.get_container_client(source_container_name)
+    source_container.get_container_properties()
+    locations = mirror_destination_locations(
+        context, source_location, args.destination_location
+    )
+    if args.destination_storage_account and len(locations) != 1:
+        raise ValueError(
+            "--destination-storage-account requires exactly one --destination-location"
+        )
+
+    mirrors = []
+    for destination_location in locations:
+        destination_group = resource_group_name(destination_location)
+        destination_name = storage_account_name(
+            context["subscription"],
+            destination_location,
+            args.destination_storage_account,
+        )
+        destination_account, destination_service, _ = ensure_mirror_storage(
+            context,
+            source_account,
+            source_container,
+            destination_group,
+            destination_location,
+            destination_name,
+            destination_container_name,
+        )
+        features = ensure_replication_features(
+            context,
+            source_group,
+            source_name,
+            destination_group,
+            destination_name,
+        )
+        existing_policy = replication_policy(
+            context["storage"].object_replication_policies.list(
+                destination_group, destination_name
+            ),
+            source_name,
+            destination_name,
+        )
+        existing_rule = replication_rule(
+            existing_policy, source_container_name, destination_container_name
+        ) if existing_policy else None
+        existing_filters = object_value(existing_rule, "filters") if existing_rule else None
+        cutover = str(
+            object_value(existing_filters, "min_creation_time", "")
+            or MIRROR_ALL_BLOBS_CREATION_TIME
+        )
+        bootstrap = None
+        if existing_policy is None and not args.skip_priority_bootstrap:
+            bootstrap = bootstrap_container_copy(
+                context,
+                source_name,
+                storage_account_key(context, source_group, source_name),
+                source_container,
+                destination_service.get_container_client(destination_container_name),
+                workers=args.copy_workers,
+                timeout_seconds=args.copy_timeout_hours * 3600,
+                priority_prefixes=(
+                    args.priority_prefix
+                    or [stable_maven_repository_prefix(plan)]
+                ),
+                include_unprioritized=False,
+            )
+        elif existing_policy is None:
+            bootstrap = {
+                "state": "skipped",
+                "reason": "--skip-priority-bootstrap",
+                "scope": "object-replication-all-existing-and-future-block-blobs",
+            }
+        policy = ensure_object_replication_policy(
+            context,
+            source_group,
+            source_account,
+            source_container_name,
+            destination_group,
+            destination_account,
+            destination_container_name,
+            min_creation_time=cutover,
+        )
+        mirrors.append({
+            "location": destination_location,
+            "resourceGroup": destination_group,
+            "storageAccount": destination_name,
+            "container": destination_container_name,
+            **mirror_urls(destination_name, destination_container_name, plan),
+            **features,
+            "bootstrap": bootstrap or {"state": "previously-completed"},
+            **policy,
+        })
+    print(json.dumps({
+        "schemaVersion": 1,
+        "source": {
+            "location": source_location,
+            "resourceGroup": source_group,
+            "storageAccount": source_name,
+            "container": source_container_name,
+        },
+        "mirrors": mirrors,
+    }, indent=2))
+
+
+def blob_replication_status(properties: Any, policy_id: str) -> list[str]:
+    statuses: list[str] = []
+    for policy in object_value(
+        properties, "object_replication_source_properties", []
+    ) or []:
+        current_id = str(
+            object_value(policy, "policy_id") or object_value(policy, "policyId", "")
+        )
+        if current_id and current_id != policy_id:
+            continue
+        for rule in object_value(policy, "rules", []) or []:
+            status = object_value(rule, "status")
+            if status:
+                statuses.append(str(status))
+    return statuses
+
+
+def mirror_status(args: argparse.Namespace) -> None:
+    plan = load_plan(args.plan)
+    context, source_location, source_group, source_account, source_service = existing_storage(
+        args, plan
+    )
+    source_name = str(object_value(source_account, "name", ""))
+    source_container_name = validate_container_name(
+        args.source_container or artifact_container_name(plan)
+    )
+    destination_container_name = validate_container_name(
+        args.destination_container or source_container_name
+    )
+    locations = mirror_destination_locations(
+        context, source_location, args.destination_location
+    )
+    if args.destination_storage_account and len(locations) != 1:
+        raise ValueError(
+            "--destination-storage-account requires exactly one --destination-location"
+        )
+    marker_name = f"{stable_maven_repository_prefix(plan)}/.dl4j/complete.json"
+    source_marker_properties = None
+    try:
+        source_marker_properties = source_service.get_container_client(
+            source_container_name
+        ).get_blob_client(marker_name).get_blob_properties()
+    except Exception as exc:
+        if not is_not_found(exc):
+            raise
+
+    mirrors = []
+    storage = context["storage"].storage_accounts
+    for destination_location in locations:
+        destination_group = resource_group_name(destination_location)
+        destination_name = storage_account_name(
+            context["subscription"],
+            destination_location,
+            args.destination_storage_account,
+        )
+        try:
+            destination_account = storage.get_properties(
+                destination_group, destination_name
+            )
+        except Exception as exc:
+            if not is_not_found(exc):
+                raise
+            mirrors.append({
+                "location": destination_location,
+                "resourceGroup": destination_group,
+                "storageAccount": destination_name,
+                "state": "missing",
+            })
+            continue
+        policy = replication_policy(
+            context["storage"].object_replication_policies.list(
+                destination_group, destination_name
+            ),
+            source_name,
+            destination_name,
+        )
+        policy_id = str(
+            object_value(policy, "policy_id") or object_value(policy, "name", "")
+        ) if policy else ""
+        rule = replication_rule(
+            policy, source_container_name, destination_container_name
+        ) if policy else None
+        destination_service = context["modules"]["BlobServiceClient"](
+            account_url=f"https://{destination_name}.blob.core.windows.net",
+            credential=storage_account_key(
+                context, destination_group, destination_name
+            ),
+        )
+        marker_present = True
+        try:
+            destination_service.get_container_client(
+                destination_container_name
+            ).get_blob_client(marker_name).get_blob_properties()
+        except Exception as exc:
+            if not is_not_found(exc):
+                raise
+            marker_present = False
+        blob_properties = context["storage"].blob_services.get_service_properties(
+            destination_group, destination_name
+        )
+        mirrors.append({
+            "location": destination_location,
+            "resourceGroup": destination_group,
+            "storageAccount": destination_name,
+            "container": destination_container_name,
+            "state": "configured" if policy and rule else "incomplete",
+            "policyId": policy_id or None,
+            "ruleId": object_value(rule, "rule_id") if rule else None,
+            "destinationVersioning": bool(
+                object_value(blob_properties, "is_versioning_enabled", False)
+            ),
+            "mavenMarkerPresent": marker_present,
+            "sourceMarkerReplicationStatus": blob_replication_status(
+                source_marker_properties, policy_id
+            ) if source_marker_properties and policy_id else [],
+            **mirror_urls(destination_name, destination_container_name, plan),
+        })
+    print(json.dumps({
+        "schemaVersion": 1,
+        "source": {
+            "location": source_location,
+            "resourceGroup": source_group,
+            "storageAccount": source_name,
+            "container": source_container_name,
+        },
+        "mirrors": mirrors,
+    }, indent=2))
+
+
 def latest_run_id(container: Any, plan: dict[str, Any]) -> str:
     prefix = f"{plan['artifactPrefix'].strip('/')}/"
     candidates = [
@@ -4909,6 +5865,112 @@ def merge_maven_metadata(existing: bytes, current: bytes) -> bytes:
     return ET.tostring(current_root, encoding="utf-8", xml_declaration=True)
 
 
+def reconcile_snapshot_metadata_with_blobs(
+    metadata: bytes,
+    relative: str,
+    repository_prefix: str,
+    blob_names: Iterable[str],
+) -> bytes:
+    """Add every physically retained snapshot artifact to Maven metadata.
+
+    Metadata from a partial shard only describes that shard.  Existing metadata
+    can also already be incomplete after an older last-writer publication, so
+    merging XML documents alone cannot recover all retained classifiers.  The
+    stable Blob tree is authoritative and lets the controller restore those
+    identities without downloading any artifact payloads.
+    """
+    try:
+        root = ET.fromstring(metadata)
+    except ET.ParseError:
+        return metadata
+
+    namespace = ""
+    if root.tag.startswith("{"):
+        namespace = root.tag.split("}", 1)[0][1:]
+
+    def qname(name: str) -> str:
+        return f"{{{namespace}}}{name}" if namespace else name
+
+    artifact_id = root.findtext(qname("artifactId"), default="").strip()
+    release_version = root.findtext(qname("version"), default="").strip()
+    if not artifact_id or not release_version.endswith("-SNAPSHOT"):
+        return metadata
+    expected_suffix = f"/{artifact_id}/{release_version}/maven-metadata.xml"
+    if not ("/" + relative).endswith(expected_suffix):
+        return metadata
+
+    versioning = root.find(qname("versioning"))
+    if versioning is None:
+        return metadata
+    snapshot_versions = versioning.find(qname("snapshotVersions"))
+    if snapshot_versions is None:
+        snapshot_versions = ET.SubElement(versioning, qname("snapshotVersions"))
+
+    identities = {
+        (
+            item.findtext(qname("extension"), default="").strip(),
+            item.findtext(qname("classifier"), default="").strip(),
+        )
+        for item in snapshot_versions.findall(qname("snapshotVersion"))
+    }
+    directory = relative.rsplit("/", 1)[0] + "/"
+    blob_prefix = repository_prefix.strip("/") + "/" + directory
+    base_name = f"{artifact_id}-{release_version}"
+    retained: set[tuple[str, str]] = set()
+    ignored_suffixes = (".asc", ".md5", ".sha1", ".sha256", ".sha512")
+    for object_name in blob_names:
+        if not object_name.startswith(blob_prefix):
+            continue
+        filename = object_name[len(blob_prefix) :]
+        if (
+            not filename
+            or "/" in filename
+            or filename in {"index.html", "maven-metadata.xml"}
+            or filename.endswith(ignored_suffixes)
+        ):
+            continue
+        extension = Path(filename).suffix.removeprefix(".")
+        if not extension:
+            continue
+        stem = filename[: -(len(extension) + 1)]
+        if stem == base_name:
+            classifier = ""
+        elif stem.startswith(base_name + "-"):
+            classifier = stem[len(base_name) + 1 :]
+        else:
+            continue
+        if classifier or stem == base_name:
+            retained.add((extension, classifier))
+
+    if not retained:
+        return metadata
+    last_updated = versioning.findtext(qname("lastUpdated"), default="").strip()
+    if not last_updated:
+        last_updated = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
+    for extension, classifier in sorted(retained):
+        identity = (extension, classifier)
+        if identity in identities:
+            continue
+        snapshot_version = ET.SubElement(
+            snapshot_versions, qname("snapshotVersion")
+        )
+        if classifier:
+            child = ET.SubElement(snapshot_version, qname("classifier"))
+            child.text = classifier
+        child = ET.SubElement(snapshot_version, qname("extension"))
+        child.text = extension
+        child = ET.SubElement(snapshot_version, qname("value"))
+        child.text = release_version
+        child = ET.SubElement(snapshot_version, qname("updated"))
+        child.text = last_updated
+        identities.add(identity)
+
+    if namespace:
+        ET.register_namespace("", namespace)
+    ET.indent(root, space="  ")
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
 def direct_maven_blob_attestations(
     publish_infos: Iterable[dict[str, Any]],
 ) -> dict[str, set[tuple[int, str]]]:
@@ -4931,6 +5993,24 @@ def direct_maven_blob_attestations(
             if path and isinstance(size, int) and re.fullmatch(r"[0-9a-f]{64}", digest):
                 attestations.setdefault(path, set()).add((size, digest))
     return attestations
+
+
+def missing_direct_unclassified_maven_jars(
+    value: dict[str, Any],
+    artifact_rules: dict[str, Any],
+    version: str,
+) -> list[str]:
+    """Return required unclassified runtime JARs absent from direct accounting."""
+    published = {
+        str(path) for path in value.get("publishedBlobs", []) if isinstance(path, str)
+    }
+    missing: list[str] = []
+    for artifact_id in artifact_rules.get("unclassifiedArtifactIds", []) or []:
+        filename = f"{artifact_id}-{version}.jar"
+        suffix = f"/{artifact_id}/{version}/{filename}"
+        if not any(path.endswith(suffix) for path in published):
+            missing.append(filename)
+    return missing
 
 
 def validate_direct_maven_publish(
@@ -5100,6 +6180,7 @@ def publish_direct_maven_metadata(
     if not payloads:
         return []
 
+    retained_blob_names = stable_maven_blob_names(container, repository_prefix)
     object_prefix = repository_prefix.strip("/") + "/"
     published: list[str] = []
     with tempfile.TemporaryDirectory(
@@ -5119,6 +6200,12 @@ def publish_direct_maven_metadata(
                     raise
             else:
                 current = merge_maven_metadata(existing, current)
+            current = reconcile_snapshot_metadata_with_blobs(
+                current,
+                relative,
+                repository_prefix,
+                retained_blob_names,
+            )
 
             target = root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -5150,6 +6237,54 @@ def publish_direct_maven_metadata(
                 )
                 published.append(checksum_relative)
     return sorted(published)
+
+
+def repair_snapshot_maven_metadata(
+    container: Any,
+    modules: dict[str, Any],
+    *,
+    repository_prefix: str,
+    fence_check: Callable[[], None] | None = None,
+) -> dict[str, Any]:
+    """Reconcile every retained SNAPSHOT metadata document from Blob names."""
+    object_prefix = repository_prefix.strip("/") + "/"
+    publish_infos: list[dict[str, Any]] = []
+    metadata_paths: list[str] = []
+    for object_name in sorted(stable_maven_blob_names(container, repository_prefix)):
+        if not object_name.startswith(object_prefix):
+            continue
+        relative = object_name[len(object_prefix) :]
+        parts = relative.split("/")
+        if (
+            len(parts) < 3
+            or parts[-1] != "maven-metadata.xml"
+            or not parts[-2].endswith("-SNAPSHOT")
+        ):
+            continue
+        if fence_check is not None:
+            fence_check()
+        payload = container.get_blob_client(object_name).download_blob().readall()
+        ET.fromstring(payload)
+        publish_infos.append({
+            "metadataFiles": [{
+                "path": relative,
+                "contentBase64": base64.b64encode(payload).decode("ascii"),
+            }]
+        })
+        metadata_paths.append(relative)
+
+    published = publish_direct_maven_metadata(
+        container,
+        modules,
+        repository_prefix=repository_prefix,
+        publish_infos=publish_infos,
+        fence_check=fence_check,
+    )
+    return {
+        "snapshotMetadataCount": len(metadata_paths),
+        "snapshotMetadataBlobCount": len(published),
+        "snapshotMetadataPaths": metadata_paths,
+    }
 
 
 def publish_maven_repository(
@@ -5843,6 +6978,36 @@ def _collect_under_controller_lease(
                             commit=args.commit,
                             accepted_blob_attestations=selected_blob_attestations,
                         )
+                        if not partial:
+                            direct_rules = copy.deepcopy(
+                                item["shard"].get("artifactRules", {})
+                            )
+                            planned_shard = next(
+                                (
+                                    candidate
+                                    for candidate in plan.get("shards", [])
+                                    if candidate.get("id") == shard
+                                ),
+                                None,
+                            )
+                            if planned_shard is not None:
+                                planned_rules = planned_shard.get("artifactRules", {})
+                                if (
+                                    "unclassifiedArtifactIds" not in direct_rules
+                                    and "unclassifiedArtifactIds" in planned_rules
+                                ):
+                                    direct_rules["unclassifiedArtifactIds"] = copy.deepcopy(
+                                        planned_rules["unclassifiedArtifactIds"]
+                                    )
+                            missing_direct_jars = missing_direct_unclassified_maven_jars(
+                                direct_publish, direct_rules, args.version
+                            )
+                            if missing_direct_jars:
+                                raise RuntimeError(
+                                    f"direct Maven publish for shard {shard!r} is missing "
+                                    "required unclassified runtime JARs: "
+                                    + ", ".join(missing_direct_jars)
+                                )
                         direct_publish_infos.append(direct_publish)
                         publish_path = directory / f"{shard}-maven-publish.json"
                         publish_path.write_text(
@@ -6350,7 +7515,7 @@ def collect(args: argparse.Namespace) -> None:
 
 
 def repair_maven_indexes(args: argparse.Namespace) -> None:
-    """Reconcile browse pages and directory aliases for the retained Maven tree."""
+    """Reconcile Maven metadata, browse pages, and retained directory aliases."""
     plan = load_plan(args.plan)
     context, location, group, account, service = existing_storage(args, plan)
     control_container = service.get_container_client(control_container_name(plan))
@@ -6373,11 +7538,21 @@ def repair_maven_indexes(args: argparse.Namespace) -> None:
     active_lease = ControllerLeaseGroup(primary_lease, [marker_lease])
     primary_error: BaseException | None = None
     try:
-        browse_info = publish_maven_browse_indexes(
+        metadata_info = repair_snapshot_maven_metadata(
             artifact_container,
             context["modules"],
             repository_prefix=repository_prefix,
             fence_check=active_lease.check,
+        )
+        browse_info = (
+            {}
+            if getattr(args, "metadata_only", False)
+            else publish_maven_browse_indexes(
+                artifact_container,
+                context["modules"],
+                repository_prefix=repository_prefix,
+                fence_check=active_lease.check,
+            )
         )
         marker = get_json(artifact_container, marker_name) or {
             "schemaVersion": 1,
@@ -6385,6 +7560,7 @@ def repair_maven_indexes(args: argparse.Namespace) -> None:
             "ready": True,
             "provider": "azure",
         }
+        marker.update(metadata_info)
         marker.update(browse_info)
         marker["repositoryPrefix"] = repository_prefix
         put_json(
@@ -6402,6 +7578,7 @@ def repair_maven_indexes(args: argparse.Namespace) -> None:
                     "resourceGroup": group,
                     "storageAccount": str(object_value(account, "name", "")),
                     "repositoryPrefix": repository_prefix,
+                    **metadata_info,
                     **browse_info,
                 },
                 indent=2,
@@ -6845,10 +8022,86 @@ def parser() -> argparse.ArgumentParser:
 
     repair = sub.add_parser(
         "repair-indexes",
-        help="reconcile browsable Maven index pages and directory aliases",
+        help=(
+            "reconcile Maven metadata, browsable index pages, and directory aliases"
+        ),
+    )
+    repair.add_argument(
+        "--metadata-only",
+        action="store_true",
+        help="repair retained Maven metadata without rebuilding browse pages",
     )
     add_storage_options(repair)
     repair.set_defaults(func=repair_maven_indexes)
+
+    mirror = sub.add_parser(
+        "mirror",
+        help="configure or inspect full-container regional Blob mirrors",
+    )
+    mirror_sub = mirror.add_subparsers(dest="mirror_command", required=True)
+
+    mirror_configure = mirror_sub.add_parser(
+        "configure",
+        help="provision read-only regional mirrors using Azure Object Replication",
+    )
+    mirror_configure.add_argument(
+        "--destination-location",
+        action="append",
+        required=True,
+        help="Azure region to mirror into; repeat for multiple regions",
+    )
+    mirror_configure.add_argument(
+        "--destination-storage-account",
+        help="override the deterministic account name for a single destination",
+    )
+    mirror_configure.add_argument("--source-container")
+    mirror_configure.add_argument("--destination-container")
+    mirror_configure.add_argument(
+        "--copy-workers",
+        type=int,
+        default=16,
+        help="parallel Azure service-to-service bootstrap copies (default: 16)",
+    )
+    mirror_configure.add_argument(
+        "--copy-timeout-hours",
+        type=int,
+        default=24,
+        help="deadline for the full-container bootstrap copy (default: 24)",
+    )
+    mirror_configure.add_argument(
+        "--priority-prefix",
+        action="append",
+        help=(
+            "eagerly copy this Blob prefix before enabling replication; repeatable; "
+            "defaults to the stable Maven repository"
+        ),
+    )
+    mirror_configure.add_argument(
+        "--skip-priority-bootstrap",
+        action="store_true",
+        help=(
+            "enable all-existing/all-future object replication immediately; useful "
+            "when resuming after priority prefixes were already seeded"
+        ),
+    )
+    add_storage_options(mirror_configure)
+    mirror_configure.set_defaults(func=configure_mirrors)
+
+    mirror_show = mirror_sub.add_parser(
+        "status",
+        help="show replication policy and Maven-marker status for regional mirrors",
+    )
+    mirror_show.add_argument(
+        "--destination-location",
+        action="append",
+        required=True,
+        help="Azure mirror region to inspect; repeat for multiple regions",
+    )
+    mirror_show.add_argument("--destination-storage-account")
+    mirror_show.add_argument("--source-container")
+    mirror_show.add_argument("--destination-container")
+    add_storage_options(mirror_show)
+    mirror_show.set_defaults(func=mirror_status)
 
     stop = sub.add_parser("stop-everything")
     stop.add_argument("--wait", action="store_true")

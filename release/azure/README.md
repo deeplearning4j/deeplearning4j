@@ -145,6 +145,48 @@ Output for each shard is stored beneath:
 https://ACCOUNT.blob.core.windows.net/releases/deeplearning4j/releases/RUN_ID/SHARD/
 ```
 
+## Regional Blob mirrors
+
+`mirror configure` provisions one or more independent regional StorageV2 accounts and mirrors the complete block-blob container. It first copies configured priority prefixes with bounded Azure service-to-service requests, so artifact bytes never pass through the controller machine. The stable Maven repository is the default priority prefix; repeat `--priority-prefix PREFIX` to make other paths immediately available without narrowing the final mirror scope. Block blobs up to 32 MiB use a synchronous copy, while larger blobs use 32 MiB ranged block copies that retain content settings, metadata, tags, and access tier. The command then enables source change feed plus source/destination versioning and installs Azure Object Replication with the all-time creation cutoff. Azure therefore transfers every existing BlockBlob in the container and continuously replicates future versions without requiring the controller to enumerate an arbitrarily large compiler cache. The destination container is service-enforced read-only while the policy remains active. Azure Object Replication does not support append or page blobs, so build logs remain authoritative in the source region; Maven artifacts, browse indexes, dependency snapshots, and compiler-cache objects are block blobs and are covered.
+
+Destination locations are repeatable. Account names and resource groups are deterministic from the subscription and region unless a single destination account override is supplied:
+
+```bash
+python3 release/azure/release.py \
+  --subscription "$AZURE_SUBSCRIPTION_ID" \
+  --location eastus2 \
+  --no-wizard \
+  mirror configure \
+  --destination-location westus2 \
+  --destination-location northeurope
+```
+
+The nearest explicit Azure region for a Japan-based consumer is the manual Japan East configuration:
+
+```bash
+python3 release/azure/release.py \
+  --subscription "$AZURE_SUBSCRIPTION_ID" \
+  --location eastus2 \
+  --no-wizard \
+  mirror configure \
+  --destination-location japaneast
+```
+
+If an eager priority seed completed but policy creation was interrupted, rerun the same command with `--skip-priority-bootstrap`. This does not narrow the mirror: the all-time Object Replication rule still copies every existing and future BlockBlob, while avoiding a redundant priority-prefix transfer.
+
+The command is idempotent: a completed destination policy is reused rather than recopying the container. Inspect policy IDs, versioning, the stable Maven marker, replication state, and regional URLs with:
+
+```bash
+python3 release/azure/release.py \
+  --subscription "$AZURE_SUBSCRIPTION_ID" \
+  --location eastus2 \
+  --no-wizard \
+  mirror status \
+  --destination-location japaneast
+```
+
+The destination preserves the source container's anonymous read level, so direct Maven URLs remain read-only. Object replication configuration itself has no charge, but the initial copy, replication transactions, cross-region egress, retained versions, change-feed processing, and destination capacity are billable Azure Storage usage.
+
 ## Emergency stop and cleanup
 
 The control container holds a fail-closed global emergency switch plus one leased kill-switch document per run. A run controller leases only its own document, so Windows, Linux, and Android releases can coexist; ordinary lane failure or completion affects only sibling lanes in that run. Workers poll both documents every 15 seconds before and during toolchain installation/build execution. Missing, malformed, unreadable, or unexpectedly epoch-mismatched run state stops the worker. The global document is acted on only when it carries an emergency `force` record, so a legacy controller's normal completion record cannot cancel newer independent runs.
@@ -183,7 +225,7 @@ A successful `start` or `resume` automatically finalizes Maven accounting after 
 deeplearning4j/releases/maven-repository/
 ```
 
-Each worker uploads its primary Maven files and MD5/SHA-1/SHA-256/SHA-512 sidecars directly to the stable repository over Azure's internal network. Large JARs never download to the controller. The worker emits hash/size accounting plus its small generated metadata documents; after VM cleanup, the controller verifies the Blob attestations, merges artifact-level and snapshot version-level `maven-metadata.xml` without dropping classifiers from earlier shards, refreshes affected browse indexes, and writes `.dl4j/complete.json` last. Snapshot metadata uses Maven's `localCopy` form so resolved filenames retain the clean `VERSION-SNAPSHOT` spelling instead of publication-time names. The publisher writes `index.html` plus a trailing-slash alias at the repository root and every coordinate directory because Blob Storage does not synthesize directory listings or route `/path/` to `index.html`. Each marker records retained files, files published by the run, exact new/overwritten blob paths, and any `failedRunExecutions` from a partially selected run. Legacy per-run tarballs remain supported strictly as migration inputs; new Linux and Windows runs do not create or synchronize Maven repository archives.
+Each worker uploads its primary Maven files and MD5/SHA-1/SHA-256/SHA-512 sidecars directly to the stable repository over Azure's internal network. Large JARs never download to the controller. The worker emits hash/size accounting plus its small generated metadata documents; after VM cleanup, the controller verifies the Blob attestations, merges artifact-level and snapshot version-level `maven-metadata.xml`, reconciles snapshot entries against the physically retained Blob filenames so incomplete older metadata cannot hide classifiers, refreshes affected browse indexes, and writes `.dl4j/complete.json` last. Snapshot metadata uses Maven's `localCopy` form so resolved filenames retain the clean `VERSION-SNAPSHOT` spelling instead of publication-time names. The publisher writes `index.html` plus a trailing-slash alias at the repository root and every coordinate directory because Blob Storage does not synthesize directory listings or route `/path/` to `index.html`. Each marker records retained files, files published by the run, exact new/overwritten blob paths, and any `failedRunExecutions` from a partially selected run. Legacy per-run tarballs remain supported strictly as migration inputs; new Linux and Windows runs do not create or synchronize Maven repository archives.
 
 Run `collect` explicitly when assembling a hybrid release or updating its draft GitHub Release:
 
@@ -197,7 +239,7 @@ python3 release/azure/release.py collect \
 
 To publish only the expanded Blob repository for an existing successful run, without downloading the SDK archive or touching GitHub, add `--no-github --repository-only`. This is the same lightweight mode used by automatic collection.
 
-`repair-indexes` is the first-class reconciliation command for an existing stable tree. It takes the controller and repository-marker leases, regenerates every retained directory page and its trailing-slash alias, and updates `.dl4j/complete.json`; normal `collect`/`start` finalization runs this same step automatically.
+`repair-indexes` is the first-class reconciliation command for an existing stable tree. It takes the controller and repository-marker leases, reconstructs every retained SNAPSHOT classifier entry from actual Blob filenames, regenerates every retained directory page and its trailing-slash alias, and updates `.dl4j/complete.json`. Add `--metadata-only` to repair metadata and checksums without rebuilding unchanged browse pages. Normal `collect`/`start` finalization applies the same Blob-authoritative metadata reconciliation automatically.
 
 `collect` checks `run.json`, every `status.json`, every shard identity, release version, commit, and workload/variant selection. Legacy archives included in a migration collection are verified against the worker-attested size and SHA-256 digest before their Maven coordinates are upserted; direct-publish runs reconcile the already-uploaded stable blobs. Existing classifiers and versions outside the current collection remain in the stable repository.
 
@@ -211,3 +253,4 @@ Only dispatch `.github/workflows/publish-central-from-release.yml` after `releas
 - x64 Fsv2 VM sizes: <https://learn.microsoft.com/azure/virtual-machines/sizes/compute-optimized/fsv2-series>
 - Managed identities for Azure resources: <https://learn.microsoft.com/entra/identity/managed-identities-azure-resources/overview>
 - Azure Blob authorization with managed identity: <https://learn.microsoft.com/azure/storage/blobs/authorize-access-azure-active-directory>
+- Azure Blob Object Replication: <https://learn.microsoft.com/azure/storage/blobs/object-replication-overview>
