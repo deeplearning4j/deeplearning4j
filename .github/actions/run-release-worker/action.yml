@@ -68,9 +68,6 @@ runs:
           mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc
           mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-ragel
 
-    - name: Set up Rust
-      uses: dtolnay/rust-toolchain@stable
-
     - name: Bootstrap Unix worker
       if: runner.os != 'Windows'
       shell: bash
@@ -86,6 +83,9 @@ runs:
       if: runner.os == 'Windows'
       shell: powershell
       run: ./release/github/bootstrap-worker.ps1 -Shard '${{ inputs.shard }}'
+
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
 
     - name: Set up GitHub sccache fallback on Linux
       if: runner.os == 'Linux'
