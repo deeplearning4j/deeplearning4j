@@ -7,6 +7,7 @@ import argparse
 import copy
 import json
 import os
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -79,6 +80,14 @@ def plan_shards(plan: dict) -> dict[str, dict]:
     return shards
 
 
+def public_artifact_id(shard_id: str, variant_name: str) -> str:
+    """Return a stable external ID without the internal ``--`` selector delimiter."""
+    artifact_id = re.sub(r"-+", "-", f"{shard_id}-{variant_name}").strip("-")
+    if not artifact_id:
+        raise ValueError("release artifact ID cannot be empty")
+    return artifact_id
+
+
 def workflow_rows(
     plan: dict,
     matrix: dict,
@@ -132,12 +141,15 @@ def workflow_rows(
         if runtime.get("group") != group:
             continue
         for variant_name in selected_names:
-            row_name = f"{shard_id}--{variant_name}"
-            if requested and row_name not in requested:
+            selector = f"{shard_id}--{variant_name}"
+            if requested and selector not in requested:
                 continue
             variant = by_name[variant_name]
+            artifact_id = public_artifact_id(shard_id, variant_name)
             row = {
-                "name": row_name,
+                "name": artifact_id,
+                "artifactId": artifact_id,
+                "selector": selector,
                 "shard": shard_id,
                 "variant": variant_name,
                 "runner": runner_override or str(runtime["runner"]),

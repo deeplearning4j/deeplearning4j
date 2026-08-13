@@ -42,7 +42,14 @@ class WorkflowMatrixTests(unittest.TestCase):
             )
             self.assertTrue(rows, workflow)
             self.assertEqual(len(rows), len({row["name"] for row in rows}), workflow)
+            self.assertEqual(len(rows), len({row["artifactId"] for row in rows}), workflow)
             for row in rows:
+                self.assertNotIn("--", row["name"], workflow)
+                self.assertNotIn("--", row["artifactId"], workflow)
+                self.assertEqual(row["name"], row["artifactId"], workflow)
+                self.assertEqual(
+                    f'{row["shard"]}--{row["variant"]}', row["selector"], workflow
+                )
                 variants = {
                     variant["name"]
                     for variant in plan_shards[row["shard"]]["build"]["variants"]
@@ -102,6 +109,8 @@ class WorkflowMatrixTests(unittest.TestCase):
             [("android-arm64-vulkan", "base")],
             [(row["shard"], row["variant"]) for row in rows],
         )
+        self.assertEqual("android-arm64-vulkan-base", rows[0]["artifactId"])
+        self.assertEqual("android-arm64-vulkan--base", rows[0]["selector"])
 
     def test_classifier_filter_rejects_unknown_row(self):
         with self.assertRaisesRegex(ValueError, "does not contain requested classifiers"):

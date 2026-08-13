@@ -112,7 +112,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: release-worker-${{ matrix.shard }}-${{ matrix.variant }}
+          name: release-worker-${{ matrix.artifactId }}
           path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
           if-no-files-found: error
           include-hidden-files: true
@@ -149,7 +149,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: release-worker-${{ matrix.shard }}-${{ matrix.variant }}
+          name: release-worker-${{ matrix.artifactId }}
           path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
           if-no-files-found: error
           include-hidden-files: true
