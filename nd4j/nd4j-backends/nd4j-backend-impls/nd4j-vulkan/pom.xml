@@ -161,6 +161,39 @@
                 </executions>
             </plugin>
 
+            <!-- Android Vulkan builds can leave many gigabytes of native object files and
+                 static archives after libnd4jvulkan and its shared runtime closure have
+                 already linked. On disk-constrained workers, remove only those post-link
+                 intermediates before JavaCPP copies the shared libraries into the JAR. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>${maven-antrun-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>prune-native-intermediates-before-javacpp</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target if="dl4j.prune.native.intermediates">
+                                <echo>Pruning post-link native objects and static archives from ${libnd4j.outputPath}</echo>
+                                <delete includeEmptyDirs="true">
+                                    <fileset dir="${libnd4j.outputPath}">
+                                        <include name="**/*.o"/>
+                                        <include name="**/*.obj"/>
+                                        <include name="**/*.lo"/>
+                                        <include name="**/*.a"/>
+                                        <include name="**/*.dwo"/>
+                                    </fileset>
+                                </delete>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.bytedeco</groupId>
                 <artifactId>javacpp</artifactId>
@@ -330,6 +363,30 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>prune-android-arm64-vulkan-intermediates</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>android-arm64</value>
+                </property>
+            </activation>
+            <properties>
+                <dl4j.prune.native.intermediates>true</dl4j.prune.native.intermediates>
+            </properties>
+        </profile>
+        <profile>
+            <id>prune-android-x86_64-vulkan-intermediates</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>android-x86_64</value>
+                </property>
+            </activation>
+            <properties>
+                <dl4j.prune.native.intermediates>true</dl4j.prune.native.intermediates>
+            </properties>
+        </profile>
         <profile>
             <id>linux-dynamic-shared-libraries</id>
             <activation>

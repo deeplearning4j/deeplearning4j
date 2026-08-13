@@ -142,6 +142,7 @@ runs:
       run: |
         set -Eeuo pipefail
         artifact_root="${GITHUB_WORKSPACE}/.release-worker/${INPUT_SHARD}/${INPUT_VARIANT}"
+        work_root="${RUNNER_TEMP}/dl4j-release-work/${INPUT_SHARD}/${INPUT_VARIANT}"
         config="${artifact_root}/worker-config.json"
         printf 'artifact-root=%s\n' "${artifact_root}" >>"${GITHUB_OUTPUT}"
         args=(
@@ -176,6 +177,6 @@ runs:
         "${python_bin}" release/aws/build-platform.py \
           --config "${config}" \
           --source "${GITHUB_WORKSPACE}" \
-          --repository "${artifact_root}/m2" \
+          --repository "${work_root}/m2" \
           --maven-output "${artifact_root}/maven-repository" \
           --sdk-output "${artifact_root}/sdk-assets"

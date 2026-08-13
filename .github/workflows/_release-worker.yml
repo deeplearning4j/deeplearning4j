@@ -116,6 +116,7 @@ jobs:
           path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
           if-no-files-found: error
           include-hidden-files: true
+          compression-level: 0
           retention-days: 7
 
   host:
@@ -152,4 +153,5 @@ jobs:
           path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
           if-no-files-found: error
           include-hidden-files: true
+          compression-level: 0
           retention-days: 7

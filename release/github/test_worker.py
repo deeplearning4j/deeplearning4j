@@ -196,6 +196,29 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("sys.version_info < (3, 10)", action)
         self.assertIn("python3 python3.11", bootstrap)
 
+    def test_worker_stages_only_release_outputs_and_prunes_android_vulkan_intermediates(self):
+        action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
+        workflow = (ROOT / ".github/workflows/_release-worker.yml").read_text()
+        vulkan_pom = (
+            ROOT
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-vulkan/pom.xml"
+        ).read_text()
+
+        self.assertIn(
+            'work_root="${RUNNER_TEMP}/dl4j-release-work/${INPUT_SHARD}/${INPUT_VARIANT}"',
+            action,
+        )
+        self.assertIn('--repository "${work_root}/m2"', action)
+        self.assertNotIn('--repository "${artifact_root}/m2"', action)
+        self.assertEqual(2, workflow.count("compression-level: 0"))
+        self.assertIn(
+            '<target if="dl4j.prune.native.intermediates">', vulkan_pom
+        )
+        self.assertIn('<include name="**/*.o"/>', vulkan_pom)
+        self.assertIn('<include name="**/*.a"/>', vulkan_pom)
+        self.assertIn("<value>android-arm64</value>", vulkan_pom)
+        self.assertIn("<value>android-x86_64</value>", vulkan_pom)
+
     def test_linux_bootstrap_pins_a_supported_maven(self):
         bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
         self.assertIn("ensure_modern_maven()", bootstrap)
