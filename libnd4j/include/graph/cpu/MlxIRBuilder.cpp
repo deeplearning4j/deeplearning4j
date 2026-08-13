@@ -77,19 +77,19 @@ static std::string normalizeOp(const std::string& opName) {
 
 int MlxIRBuilder::sdTypeToMlxDtype(sd::DataType dt) {
   switch (dt) {
-    case sd::DataType::FLOAT32: return static_cast<int>(mx::float32);
-    case sd::DataType::HALF: return static_cast<int>(mx::float16);
-    case sd::DataType::BFLOAT16: return static_cast<int>(mx::bfloat16);
-    case sd::DataType::INT32: return static_cast<int>(mx::int32);
-    case sd::DataType::INT64: return static_cast<int>(mx::int64);
-    case sd::DataType::INT16: return static_cast<int>(mx::int16);
-    case sd::DataType::INT8: return static_cast<int>(mx::int8);
-    case sd::DataType::UINT8: return static_cast<int>(mx::uint8);
-    case sd::DataType::UINT16: return static_cast<int>(mx::uint16);
-    case sd::DataType::UINT32: return static_cast<int>(mx::uint32);
-    case sd::DataType::UINT64: return static_cast<int>(mx::uint64);
-    case sd::DataType::BOOL: return static_cast<int>(mx::bool_);
-    default: return static_cast<int>(mx::float32);
+    case sd::DataType::FLOAT32: return static_cast<int>(mx::float32.val());
+    case sd::DataType::HALF: return static_cast<int>(mx::float16.val());
+    case sd::DataType::BFLOAT16: return static_cast<int>(mx::bfloat16.val());
+    case sd::DataType::INT32: return static_cast<int>(mx::int32.val());
+    case sd::DataType::INT64: return static_cast<int>(mx::int64.val());
+    case sd::DataType::INT16: return static_cast<int>(mx::int16.val());
+    case sd::DataType::INT8: return static_cast<int>(mx::int8.val());
+    case sd::DataType::UINT8: return static_cast<int>(mx::uint8.val());
+    case sd::DataType::UINT16: return static_cast<int>(mx::uint16.val());
+    case sd::DataType::UINT32: return static_cast<int>(mx::uint32.val());
+    case sd::DataType::UINT64: return static_cast<int>(mx::uint64.val());
+    case sd::DataType::BOOL: return static_cast<int>(mx::bool_.val());
+    default: return static_cast<int>(mx::float32.val());
   }
 }
 
