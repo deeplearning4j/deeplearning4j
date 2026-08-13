@@ -104,10 +104,10 @@ static void addMPS(NDArray* x, NDArray* y, NDArray* z) {
             [matrixSum encodeToCommandBuffer:commandBuffer
                               sourceMatrices:matrices
                               resultMatrix:matrixZ
-                                     scale:nil
-                             offsetVector:nil
-                             biasVector:nil
-                               startIndex:0];
+                               scaleVector:nil
+                              offsetVector:nil
+                                biasVector:nil
+                                startIndex:0];
 
             [commandBuffer commit];
             [commandBuffer waitUntilCompleted];

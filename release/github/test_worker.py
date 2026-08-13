@@ -347,6 +347,8 @@ class WorkflowMatrixTests(unittest.TestCase):
             ROOT / "libnd4j/include/ops/declarable/platform/mps/mps_elementwise.mm"
         ).read_text()
         self.assertNotIn("start:0", elementwise)
+        self.assertNotIn("scale:nil", elementwise)
+        self.assertIn("scaleVector:nil", elementwise)
         self.assertIn("startIndex:0", elementwise)
 
 
