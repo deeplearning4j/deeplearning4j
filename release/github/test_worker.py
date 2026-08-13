@@ -22,6 +22,11 @@ class WorkflowMatrixTests(unittest.TestCase):
         cls.plan = prepare_worker.load_json(ROOT / "release/aws/release-plan.json")
         cls.matrix = prepare_worker.load_json(ROOT / "release/github/workflow-matrix.json")
 
+    def test_existing_dispatch_workflow_can_select_branch_only_matrices(self):
+        workflow = (ROOT / ".github/workflows/build-deploy-cross-platform.yml").read_text()
+        self.assertIn("workflow:\n        description: Canonical release workflow matrix to execute.", workflow)
+        self.assertIn("workflow: ${{ inputs.workflow }}", workflow)
+
     def test_every_covered_release_workflow_has_exactly_one_worker_mapping(self):
         self.assertEqual(
             set(self.plan["coveredWorkflows"]),

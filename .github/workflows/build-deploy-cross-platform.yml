@@ -3,6 +3,10 @@ name: Build cross-platform Java modules
 on:
   workflow_dispatch:
     inputs:
+      workflow:
+        description: Canonical release workflow matrix to execute.
+        required: false
+        default: build-deploy-cross-platform.yml
       commitId:
         description: Source commit or ref. Empty uses the triggering commit.
         required: false
@@ -44,7 +48,7 @@ jobs:
   release:
     uses: ./.github/workflows/_release-worker.yml
     with:
-      workflow: build-deploy-cross-platform.yml
+      workflow: ${{ inputs.workflow }}
       sourceRef: ${{ inputs.commitId || github.sha }}
       runnerOverride: ${{ inputs.runsOn }}
       buildThreads: ${{ inputs.buildThreads }}
