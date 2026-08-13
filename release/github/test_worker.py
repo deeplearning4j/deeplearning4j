@@ -235,6 +235,13 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('${repository[@]+"${repository[@]}"}', launcher)
         self.assertIn('${protoc_profile[@]+"${protoc_profile[@]}"}', launcher)
 
+    def test_windows_tokenizers_builds_rust_for_mingw(self):
+        builder = (
+            ROOT / "nd4j/nd4j-tokenizers/libtokenizers/buildnativetokenizers.sh"
+        ).read_text()
+        self.assertIn('CARGO_BUILD_TARGET="${CARGO_BUILD_TARGET:-${TARGET}}"', builder)
+        self.assertIn('--target "${CARGO_BUILD_TARGET}"', builder)
+
     def test_native_builder_avoids_bash4_uppercase_expansion(self):
         builder = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
         self.assertNotIn("^^}", builder)

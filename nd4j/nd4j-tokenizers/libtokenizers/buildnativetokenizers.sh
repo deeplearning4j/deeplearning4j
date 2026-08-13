@@ -170,8 +170,18 @@ FFI_TARGET_DIR="${BUILD_DIR}/tokenizers-ffi"
 if [[ -d "${FFI_DIR}" ]]; then
     mkdir -p "${FFI_TARGET_DIR}"
 
-    # Build the FFI crate
-    CARGO_TARGET_DIR="${FFI_TARGET_DIR}" cargo build --release --manifest-path="${FFI_DIR}/Cargo.toml"
+    # Build the FFI crate. The Windows C++ wrapper uses MinGW, so Rust must
+    # emit a GNU archive rather than the default MSVC tokenizers_ffi.lib.
+    if [[ "${HOST_PLATFORM}" == "windows" ]]; then
+        CARGO_BUILD_TARGET="${CARGO_BUILD_TARGET:-${TARGET}}"
+        if command_exists rustup; then
+            rustup target add "${CARGO_BUILD_TARGET}"
+        fi
+        CARGO_TARGET_DIR="${FFI_TARGET_DIR}" cargo build --release \
+            --target "${CARGO_BUILD_TARGET}" --manifest-path="${FFI_DIR}/Cargo.toml"
+    else
+        CARGO_TARGET_DIR="${FFI_TARGET_DIR}" cargo build --release --manifest-path="${FFI_DIR}/Cargo.toml"
+    fi
 
     # When CARGO_BUILD_TARGET is set, cargo outputs to target/<triple>/release/ instead of target/release/
     # Copy the library to the expected location so CMake can find it
