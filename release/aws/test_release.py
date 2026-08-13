@@ -464,6 +464,94 @@ class ReleaseValidationTest(unittest.TestCase):
                 )
         self.assertEqual("s3-bucket", settings["s3"]["bucket"])
 
+    def test_shared_driver_prefetches_and_publishes_one_l0_working_set(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "source"
+            source.mkdir()
+            environment = {
+                "PATH": "/existing/bin",
+                "DL4J_CLOUD_IO": "/cloud-io.py",
+                "DL4J_DEPENDENCY_CACHE_HELPER": "/dependency-cache.py",
+            }
+            config = {
+                "commit": "commit-a",
+                "managedIdentityClientId": "identity",
+                "shard": {"id": "linux-zluda", "contractDigest": "contract-a"},
+                "compilerCache": {
+                    "backend": "azure",
+                    "account": "account",
+                    "container": "releases",
+                    "keyPrefix": "compiler/v1",
+                    "connectionString": "BlobEndpoint=https://account/;SharedAccessSignature=sas",
+                    "toolchainCache": {"schemaVersion": 1, "keyPrefix": "tools/v1"},
+                    "localSnapshot": {"schemaVersion": 1, "name": "sccache-l0"},
+                },
+            }
+            transport = (Path("/dependency-cache.py"), "account/releases", "tools/v1", "identity")
+            with patch.object(
+                build_platform, "toolchain_cache_transport", return_value=transport
+            ), patch.object(
+                build_platform, "restore_toolchain_dependency", return_value=False
+            ) as restore, patch.object(
+                build_platform, "ensure_cached_sccache", return_value="/tools/sccache"
+            ), patch.object(build_platform, "run"):
+                executable, started = build_platform.configure_compiler_cache(
+                    config, source, environment
+                )
+            self.assertEqual("/tools/sccache", executable)
+            self.assertTrue(started)
+            identity = environment["DL4J_SCCACHE_SNAPSHOT_IDENTITY"]
+            restore.assert_called_once_with(
+                config,
+                environment,
+                name="sccache-l0",
+                identity=identity,
+                destination=source.parent / "sccache",
+            )
+            self.assertEqual("false", environment["DL4J_SCCACHE_SNAPSHOT_RESTORED"])
+
+            cache_file = source.parent / "sccache" / "object"
+            cache_file.write_bytes(b"cached-object")
+            with patch.object(build_platform, "publish_toolchain_dependency") as publish:
+                metrics = build_platform.publish_compiler_cache_snapshot(
+                    config, environment
+                )
+            publish.assert_called_once_with(
+                config,
+                environment,
+                name="sccache-l0",
+                identity=identity,
+                source=source.parent / "sccache",
+            )
+            self.assertEqual("published", metrics["publishStatus"])
+            self.assertGreaterEqual(metrics["expandedBytes"], len(b"cached-object"))
+
+            same_contract = json.loads(json.dumps(config))
+            same_contract["commit"] = "commit-b"
+            self.assertEqual(
+                identity,
+                build_platform.compiler_cache_snapshot_identity(same_contract),
+            )
+            changed_contract = json.loads(json.dumps(config))
+            changed_contract["shard"]["contractDigest"] = "contract-b"
+            self.assertNotEqual(
+                identity,
+                build_platform.compiler_cache_snapshot_identity(changed_contract),
+            )
+
+    def test_restored_l0_snapshot_is_not_republished(self):
+        environment = {
+            "DL4J_SCCACHE_SNAPSHOT_IDENTITY": "a" * 64,
+            "DL4J_SCCACHE_SNAPSHOT_DIR": "/cache",
+            "DL4J_SCCACHE_SNAPSHOT_RESTORED": "true",
+            "DL4J_SCCACHE_SNAPSHOT_RESTORE_SECONDS": "1.25",
+        }
+        with patch.object(build_platform, "publish_toolchain_dependency") as publish:
+            metrics = build_platform.publish_compiler_cache_snapshot({}, environment)
+        publish.assert_not_called()
+        self.assertEqual("hit", metrics["restoreStatus"])
+        self.assertEqual("not-required", metrics["publishStatus"])
+
     def test_shared_driver_activates_local_sccache_but_not_ccache(self):
         with tempfile.TemporaryDirectory() as temp:
             source = Path(temp) / "source"

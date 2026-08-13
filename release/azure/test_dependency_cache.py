@@ -77,6 +77,10 @@ class DependencyCacheIntegrationContractTests(unittest.TestCase):
         self.assertIn("--default-toolchain 1.97.1", worker)
         self.assertIn("--version 0.29.4 cbindgen", worker)
 
+        windows_worker = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        self.assertIn("__DL4J_DEPENDENCY_CACHE_B64__", windows_worker)
+        self.assertIn("DL4J_DEPENDENCY_CACHE_HELPER", windows_worker)
+
     def test_rocm_sdk_uses_the_same_content_addressed_cache_contract(self):
         driver = (HERE.parent / "aws" / "build-platform.py").read_text(encoding="utf-8")
         self.assertIn('toolchain_cache_identity(\n        "rocm-sdk"', driver)
@@ -86,12 +90,16 @@ class DependencyCacheIntegrationContractTests(unittest.TestCase):
         self.assertIn('"destination": "/opt/rocm"', driver)
         self.assertIn('name="sccache"', driver)
         self.assertIn("ensure_cached_sccache(cache_dir, config, env)", driver)
+        self.assertIn('name="sccache-l0"', driver)
+        self.assertIn("restore_compiler_cache_snapshot(config, env, cache_dir)", driver)
+        self.assertIn("publish_compiler_cache_snapshot(", driver)
         self.assertIn('name="openblas"', driver)
 
     def test_controller_embeds_helper_and_advertises_versioned_prefix(self):
         source = (HERE / "release.py").read_text(encoding="utf-8")
         self.assertIn("__DL4J_DEPENDENCY_CACHE_B64__", source)
         self.assertIn('"toolchainCache": {', source)
+        self.assertIn('"localSnapshot": {', source)
         self.assertIn('"/toolchain-cache/v1"', source)
 
 

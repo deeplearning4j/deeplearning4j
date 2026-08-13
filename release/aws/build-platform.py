@@ -452,6 +452,121 @@ def _activate_sccache(env: dict[str, str], compiler_cache: str) -> None:
     _configure_compiler_launchers(env, compiler_cache)
 
 
+def compiler_cache_snapshot_identity(config: dict) -> str | None:
+    remote = config.get("compilerCache")
+    if not isinstance(remote, dict):
+        return None
+    snapshot = remote.get("localSnapshot")
+    if not isinstance(snapshot, dict):
+        return None
+    if snapshot.get("schemaVersion") != 1:
+        raise ValueError("compilerCache.localSnapshot.schemaVersion must be 1")
+    if snapshot.get("name") != "sccache-l0":
+        raise ValueError("compilerCache.localSnapshot.name must be 'sccache-l0'")
+    shard = config.get("shard")
+    if not isinstance(shard, dict):
+        raise ValueError("compilerCache.localSnapshot requires a shard contract")
+    shard_id = str(shard.get("id", "")).strip()
+    contract_digest = str(shard.get("contractDigest", "")).strip()
+    if not shard_id or not contract_digest:
+        raise ValueError(
+            "compilerCache.localSnapshot requires shard.id and shard.contractDigest"
+        )
+    operating_system, architecture = host_platform()
+    return toolchain_cache_identity(
+        "sccache-l0",
+        {
+            "snapshotSchemaVersion": 1,
+            "sccacheVersion": SCCACHE_VERSION,
+            "platform": operating_system,
+            "architecture": architecture,
+            "backend": _required_cache_value(remote, "backend"),
+            "keyPrefix": _required_cache_value(remote, "keyPrefix"),
+            "shard": shard_id,
+            "shardContractDigest": contract_digest,
+        },
+    )
+
+
+def restore_compiler_cache_snapshot(
+    config: dict, env: dict[str, str], cache_dir: Path
+) -> None:
+    identity = compiler_cache_snapshot_identity(config)
+    if identity is None or toolchain_cache_transport(config, env) is None:
+        return
+    started = time.monotonic()
+    restored = restore_toolchain_dependency(
+        config,
+        env,
+        name="sccache-l0",
+        identity=identity,
+        destination=cache_dir,
+    )
+    duration = round(time.monotonic() - started, 3)
+    env.update({
+        "DL4J_SCCACHE_SNAPSHOT_IDENTITY": identity,
+        "DL4J_SCCACHE_SNAPSHOT_DIR": str(cache_dir),
+        "DL4J_SCCACHE_SNAPSHOT_RESTORED": "true" if restored else "false",
+        "DL4J_SCCACHE_SNAPSHOT_RESTORE_SECONDS": str(duration),
+    })
+    print(
+        f"[dl4j-cache-prefetch] name=sccache-l0 identity={identity} "
+        f"status={'hit' if restored else 'miss'} durationSeconds={duration}",
+        flush=True,
+    )
+
+
+def compiler_cache_snapshot_metrics(env: dict[str, str]) -> dict:
+    identity = env.get("DL4J_SCCACHE_SNAPSHOT_IDENTITY")
+    if not identity:
+        return {"enabled": False}
+    return {
+        "enabled": True,
+        "identity": identity,
+        "restoreStatus": (
+            "hit" if env.get("DL4J_SCCACHE_SNAPSHOT_RESTORED") == "true" else "miss"
+        ),
+        "restoreDurationSeconds": float(
+            env.get("DL4J_SCCACHE_SNAPSHOT_RESTORE_SECONDS", "0")
+        ),
+    }
+
+
+def directory_size_bytes(root: Path) -> int:
+    return sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
+
+
+def publish_compiler_cache_snapshot(config: dict, env: dict[str, str]) -> dict:
+    metrics = compiler_cache_snapshot_metrics(env)
+    if not metrics["enabled"]:
+        return metrics
+    if metrics["restoreStatus"] == "hit":
+        metrics["publishStatus"] = "not-required"
+        return metrics
+    cache_dir = Path(env["DL4J_SCCACHE_SNAPSHOT_DIR"])
+    expanded_bytes = directory_size_bytes(cache_dir)
+    started = time.monotonic()
+    publish_toolchain_dependency(
+        config,
+        env,
+        name="sccache-l0",
+        identity=metrics["identity"],
+        source=cache_dir,
+    )
+    duration = round(time.monotonic() - started, 3)
+    metrics.update({
+        "publishStatus": "published",
+        "publishDurationSeconds": duration,
+        "expandedBytes": expanded_bytes,
+    })
+    print(
+        f"[dl4j-cache-prefetch] name=sccache-l0 identity={metrics['identity']} "
+        f"status=published expandedBytes={expanded_bytes} durationSeconds={duration}",
+        flush=True,
+    )
+    return metrics
+
+
 def configure_compiler_cache(
     config: dict, source: Path, env: dict[str, str]
 ) -> tuple[str | None, bool]:
@@ -463,6 +578,7 @@ def configure_compiler_cache(
         if backend not in {"s3", "gcs", "azure"}:
             raise ValueError(f"unsupported compilerCache.backend {backend!r}")
         cache_dir = source.parent / "sccache"
+        restore_compiler_cache_snapshot(config, env, cache_dir)
         cache_dir.mkdir(parents=True, exist_ok=True)
         compiler_cache = ensure_cached_sccache(cache_dir, config, env)
         env.update({
@@ -1897,12 +2013,12 @@ def main() -> None:
     build = shard["build"]
     env = os.environ.copy()
     env["MAVEN_OPTS"] = f"-Xmx{build.get('mavenHeapGiB', 16)}g -Dmaven.repo.local={args.repository}"
+    driver_started_at = int(time.time())
+    driver_timer = time.monotonic()
     compiler_cache, sccache_started = configure_compiler_cache(
         config, args.source, env
     )
     benchmark_path = args.maven_output.parent / "build-benchmark.json"
-    driver_started_at = int(time.time())
-    driver_timer = time.monotonic()
     selected_machine = config.get("selectedMachine") or {}
     benchmark = {
         "schemaVersion": 1,
@@ -1918,6 +2034,7 @@ def main() -> None:
         "buildThreads": int(build.get("buildThreads", 16)),
         "mavenHeapGiB": int(build.get("mavenHeapGiB", 16)),
         "compilerCacheBackend": (config.get("compilerCache") or {}).get("backend"),
+        "compilerCacheSnapshot": compiler_cache_snapshot_metrics(env),
         "startedAt": driver_started_at,
         "variants": [],
     }
@@ -1991,21 +2108,27 @@ def main() -> None:
         print(f"[dl4j-phase] shard={shard['id']} phase=complete", flush=True)
         build_completed = True
     finally:
-        benchmark.update({
-            "status": "complete" if build_completed else "failed",
-            "completedAt": int(time.time()),
-            "durationSeconds": round(time.monotonic() - driver_timer, 3),
-        })
-        write_build_benchmark(benchmark_path, benchmark)
-        if sccache_started and compiler_cache:
-            print("+", subprocess.list2cmdline([compiler_cache, "--stop-server"]), flush=True)
-            stopped = subprocess.run(
-                [compiler_cache, "--stop-server"], cwd=args.source, env=env, check=False,
-            )
-            if build_completed and stopped.returncode != 0:
-                raise RuntimeError(
-                    f"sccache server shutdown failed with exit code {stopped.returncode}"
+        try:
+            if sccache_started and compiler_cache:
+                print("+", subprocess.list2cmdline([compiler_cache, "--stop-server"]), flush=True)
+                stopped = subprocess.run(
+                    [compiler_cache, "--stop-server"], cwd=args.source, env=env, check=False,
                 )
+                if build_completed and stopped.returncode != 0:
+                    raise RuntimeError(
+                        f"sccache server shutdown failed with exit code {stopped.returncode}"
+                    )
+            if build_completed:
+                benchmark["compilerCacheSnapshot"] = publish_compiler_cache_snapshot(
+                    config, env
+                )
+        finally:
+            benchmark.update({
+                "status": "complete" if build_completed else "failed",
+                "completedAt": int(time.time()),
+                "durationSeconds": round(time.monotonic() - driver_timer, 3),
+            })
+            write_build_benchmark(benchmark_path, benchmark)
 
 
 if __name__ == "__main__":

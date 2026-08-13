@@ -2430,6 +2430,10 @@ def compiler_cache_config(
                 "/toolchain-cache/v1"
             ),
         },
+        "localSnapshot": {
+            "schemaVersion": 1,
+            "name": "sccache-l0",
+        },
         "connectionString": (
             f"BlobEndpoint=https://{account_name}.blob.core.windows.net;"
             f"SharedAccessSignature={token}"

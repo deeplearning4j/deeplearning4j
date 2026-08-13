@@ -2484,6 +2484,10 @@ class AzureSafetyTests(unittest.TestCase):
         self.assertEqual(
             "deeplearning4j/releases/compiler-cache/v1", cache["keyPrefix"]
         )
+        self.assertEqual(
+            {"schemaVersion": 1, "name": "sccache-l0"},
+            cache["localSnapshot"],
+        )
         self.assertIn("SharedAccessSignature=sv=1&sig=short-lived", cache["connectionString"])
         self.assertNotIn("account-key", cache["connectionString"])
         permissions = generate.call_args.kwargs["permission"].values

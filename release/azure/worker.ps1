@@ -57,6 +57,7 @@ if ($Register) {
 $ConfigB64 = '__DL4J_WORKER_CONFIG_B64__'
 $BuildDriverB64 = '__DL4J_BUILD_DRIVER_B64__'
 $CloudIoB64 = '__DL4J_CLOUD_IO_B64__'
+$DependencyCacheB64 = '__DL4J_DEPENDENCY_CACHE_B64__'
 $NativePlatformScriptB64 = '__DL4J_NATIVE_PLATFORM_SCRIPT_B64__'
 $ToolchainRoot = Join-Path $WorkRoot 'toolchains'
 $SourceRoot = Join-Path $WorkRoot 'sources'
@@ -71,6 +72,7 @@ $BuildPidFile = Join-Path $WorkRoot 'build.pid'
 $ConfigFile = Join-Path $BootstrapRoot 'worker.json'
 $BuildDriver = Join-Path $BootstrapRoot 'build-platform.py'
 $CloudIo = Join-Path $BootstrapRoot 'cloud-io.py'
+$DependencyCache = Join-Path $BootstrapRoot 'dependency-cache.py'
 $AttemptFile = Join-Path $BootstrapRoot 'worker-attempt.txt'
 $env:CARGO_HOME = Join-Path $ToolchainRoot 'cargo'
 $env:RUSTUP_HOME = Join-Path $ToolchainRoot 'rustup'
@@ -969,8 +971,12 @@ try {
   [IO.File]::WriteAllBytes($ConfigFile, [Convert]::FromBase64String($ConfigB64))
   [IO.File]::WriteAllBytes($BuildDriver, [Convert]::FromBase64String($BuildDriverB64))
   [IO.File]::WriteAllBytes($CloudIo, [Convert]::FromBase64String($CloudIoB64))
+  [IO.File]::WriteAllBytes($DependencyCache, [Convert]::FromBase64String($DependencyCacheB64))
   if ([string]::IsNullOrWhiteSpace($NativePlatformScriptB64)) { throw 'native-platform.sh payload is missing' }
   $Config = Get-Content -Raw $ConfigFile | ConvertFrom-Json
+  $env:DL4J_CLOUD_IO = $CloudIo
+  $env:DL4J_DEPENDENCY_CACHE_HELPER = $DependencyCache
+  $env:AZURE_CLIENT_ID = $Config.managedIdentityClientId
   $Shards = if ($Config.shards) { @($Config.shards) } else { @($Config.shard) }
   if ($Shards.Count -eq 0) { throw 'Azure lane worker received no shards' }
 
