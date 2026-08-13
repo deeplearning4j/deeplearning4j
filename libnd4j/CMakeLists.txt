@@ -143,6 +143,10 @@ endif()
 
 if(SD_CUDA)
     project(libnd4j LANGUAGES C CXX CUDA)
+elseif(CMAKE_HOST_APPLE OR APPLE)
+    # Objective-C++ must be enabled at directory scope. Enabling it later from
+    # setup_mps() confines CMake's internal compile rules to the function scope.
+    project(libnd4j LANGUAGES C CXX OBJCXX)
 else()
     project(libnd4j LANGUAGES C CXX)
 endif()

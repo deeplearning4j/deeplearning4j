@@ -1568,8 +1568,9 @@ function(setup_mps)
     # Enable SD_METAL for MetalReplayHandle in the DSP framework
     add_compile_definitions(SD_METAL=1)
 
-    # Enable Objective-C++ compilation for .mm files
-    enable_language(OBJCXX)
+    # The top-level project enables Objective-C++ at directory scope on Apple.
+    # Keep language initialization out of this function so CMake's internal
+    # OBJCXX compile rules remain visible while targets are generated.
 
     sd_register_helper("mps")
     message(STATUS "✅ MPS setup complete with Metal ICB replay (SD_METAL)")
