@@ -10,6 +10,7 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
@@ -463,7 +464,7 @@ def configure_compiler_cache(
             raise ValueError(f"unsupported compilerCache.backend {backend!r}")
         cache_dir = source.parent / "sccache"
         cache_dir.mkdir(parents=True, exist_ok=True)
-        compiler_cache = ensure_sccache(cache_dir)
+        compiler_cache = ensure_cached_sccache(cache_dir, config, env)
         env.update({
             "SCCACHE_DIR": str(cache_dir),
             "SCCACHE_CACHE_SIZE": "100G",
@@ -1048,6 +1049,158 @@ def download_with_retry(url: str, destination: Path, description: str) -> None:
         raise
 
 
+def toolchain_cache_identity(name: str, contract: dict) -> str:
+    payload = json.dumps(
+        {"schemaVersion": 1, "name": name, "contract": contract},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def toolchain_cache_transport(
+    config: dict, env: dict[str, str]
+) -> tuple[Path, str, str, str | None] | None:
+    remote = config.get("compilerCache")
+    if not isinstance(remote, dict):
+        return None
+    cache = remote.get("toolchainCache")
+    if not isinstance(cache, dict) or cache.get("schemaVersion") != 1:
+        return None
+    helper = Path(env.get("DL4J_DEPENDENCY_CACHE_HELPER", ""))
+    cloud_io = Path(env.get("DL4J_CLOUD_IO", ""))
+    account = str(remote.get("account", ""))
+    container = str(remote.get("container", ""))
+    prefix = str(cache.get("keyPrefix", "")).strip("/")
+    if (
+        not helper.is_file()
+        or not cloud_io.is_file()
+        or not account
+        or not container
+        or not prefix
+    ):
+        return None
+    client_id = str(config.get("managedIdentityClientId", "")) or None
+    return helper, f"{account}/{container}", prefix, client_id
+
+
+def restore_toolchain_dependency(
+    config: dict,
+    env: dict[str, str],
+    *,
+    name: str,
+    identity: str,
+    destination: Path,
+) -> bool:
+    transport = toolchain_cache_transport(config, env)
+    if transport is None:
+        return False
+    helper, bucket, prefix, client_id = transport
+    command = [
+        sys.executable,
+        str(helper),
+        "restore",
+        "--cloud-io",
+        env["DL4J_CLOUD_IO"],
+        "--bucket",
+        bucket,
+        "--prefix",
+        prefix,
+        "--name",
+        name,
+        "--identity",
+        identity,
+        "--destination",
+        str(destination),
+    ]
+    if client_id:
+        command.extend(["--client-id", client_id])
+    result = subprocess.run(command, env=env, check=False)
+    if result.returncode == 0:
+        return True
+    if result.returncode == 3:
+        return False
+    raise RuntimeError(
+        f"managed toolchain cache restore failed for {name}/{identity}: "
+        f"exit code {result.returncode}"
+    )
+
+
+def publish_toolchain_dependency(
+    config: dict,
+    env: dict[str, str],
+    *,
+    name: str,
+    identity: str,
+    source: Path,
+) -> None:
+    transport = toolchain_cache_transport(config, env)
+    if transport is None:
+        return
+    helper, bucket, prefix, client_id = transport
+    command = [
+        sys.executable,
+        str(helper),
+        "publish",
+        "--cloud-io",
+        env["DL4J_CLOUD_IO"],
+        "--bucket",
+        bucket,
+        "--prefix",
+        prefix,
+        "--name",
+        name,
+        "--identity",
+        identity,
+        "--source",
+        str(source),
+    ]
+    if client_id:
+        command.extend(["--client-id", client_id])
+    subprocess.run(command, env=env, check=True)
+
+
+def ensure_cached_sccache(
+    cache_dir: Path, config: dict, env: dict[str, str]
+) -> str:
+    existing = _matching_system_sccache()
+    if existing:
+        return existing
+    archive_name, archive_digest = pinned_sccache_asset()
+    operating_system, architecture = host_platform()
+    executable_name = "sccache.exe" if operating_system == "windows" else "sccache"
+    destination = cache_dir / "tools" / f"sccache-{SCCACHE_VERSION}"
+    identity = toolchain_cache_identity(
+        "sccache",
+        {
+            "version": SCCACHE_VERSION,
+            "platform": operating_system,
+            "architecture": architecture,
+            "archive": archive_name,
+            "archiveSha256": archive_digest,
+        },
+    )
+    restored = (destination / executable_name).is_file()
+    if not restored:
+        restored = restore_toolchain_dependency(
+            config,
+            env,
+            name="sccache",
+            identity=identity,
+            destination=destination,
+        )
+    executable = ensure_sccache(cache_dir)
+    if not restored:
+        publish_toolchain_dependency(
+            config,
+            env,
+            name="sccache",
+            identity=identity,
+            source=destination,
+        )
+    return executable
+
+
 def _prepend_environment_path(env: dict[str, str], name: str, value: str) -> None:
     entries = [entry for entry in env.get(name, "").split(os.pathsep) if entry]
     env[name] = os.pathsep.join([value] + [entry for entry in entries if entry != value])
@@ -1211,20 +1364,53 @@ def attest_rocm_build_toolchain(
     return attested
 
 
-def prepare_rocm_build_toolchain(build: dict, env: dict[str, str]) -> None:
-    """Install pinned ROCm, LLD, and ELF packaging tools without a GPU driver."""
+def prepare_rocm_build_toolchain(
+    build: dict, env: dict[str, str], config: dict | None = None
+) -> None:
+    """Restore or install a pinned ROCm SDK without requiring AMD hardware."""
+    config = config or {}
     spec = rocm_build_spec(build)
     if spec is None:
         return
 
+    os_contract = ""
+    os_release = Path("/etc/os-release")
+    if os_release.is_file():
+        os_contract = os_release.read_text(encoding="utf-8")
+    cache_identity = toolchain_cache_identity(
+        "rocm-sdk",
+        {
+            "platform": platform.system().lower(),
+            "architecture": platform.machine().lower(),
+            "osRelease": os_contract,
+            "version": spec["version"],
+            "components": list(spec["components"]),
+            "packages": list(spec["packages"]),
+            "installerUrl": spec["installer_url"],
+            "destination": "/opt/rocm",
+        },
+    )
+    rocm_root = Path("/opt/rocm")
     rocm_ready = True
+    cache_seed_required = False
     try:
-        attest_rocm_build_toolchain(build, env, emit=False)
+        attest_rocm_build_toolchain(build, env, root=rocm_root, emit=False)
     except RuntimeError:
-        rocm_ready = False
+        rocm_ready = restore_toolchain_dependency(
+            config,
+            env,
+            name="rocm-sdk",
+            identity=cache_identity,
+            destination=rocm_root,
+        )
+        cache_seed_required = not rocm_ready
+        if rocm_ready:
+            attest_rocm_build_toolchain(
+                build, env, root=rocm_root, emit=False
+            )
+
     linker = shutil.which("ld.lld", path=env.get("PATH"))
     rpath_editor = shutil.which("patchelf", path=env.get("PATH"))
-
     if not rocm_ready or linker is None or rpath_editor is None:
         if platform.system().lower() != "linux" or platform.machine().lower() not in {
                 "amd64", "x86_64"}:
@@ -1263,7 +1449,15 @@ def prepare_rocm_build_toolchain(build: dict, env: dict[str, str]) -> None:
                     "apt-get", "install", "-y", "--no-install-recommends", *packages,
                 ], Path("/"), install_env)
 
-    attest_rocm_build_toolchain(build, env)
+    attest_rocm_build_toolchain(build, env, root=rocm_root)
+    if cache_seed_required:
+        publish_toolchain_dependency(
+            config,
+            env,
+            name="rocm-sdk",
+            identity=cache_identity,
+            source=rocm_root.resolve(),
+        )
     linker = shutil.which("ld.lld", path=env.get("PATH"))
     if linker is None:
         raise RuntimeError(
@@ -1654,7 +1848,7 @@ def main() -> None:
         run(update, args.source, env)
         if build["backend"] == "cuda":
             run(["bash", "./change-cuda-versions.sh", build["cudaVersion"]], args.source, env)
-        prepare_rocm_build_toolchain(build, env)
+        prepare_rocm_build_toolchain(build, env, config)
         attest_zluda_configuration(build)
         if build.get("kind") == "cross-platform":
             print(f"[dl4j-phase] shard={shard['id']} phase=cross-platform", flush=True)

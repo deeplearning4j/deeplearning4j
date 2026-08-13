@@ -8,6 +8,7 @@ workers never receive storage keys or release/publication credentials.
 import argparse
 import base64
 import datetime as dt
+import http.client
 import json
 import mimetypes
 import os
@@ -309,6 +310,96 @@ def download_bytes(bucket, name, client_id=None):
     )
 
 
+def download_file(bucket, name, path, client_id=None):
+    """Stream a Blob to disk with authenticated ranged retries."""
+    destination = pathlib.Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    staged = destination.with_name(destination.name + ".partial")
+    staged.unlink(missing_ok=True)
+    url = blob_url(bucket, name)
+    delay = 1.0
+    etag = None
+    attempts = 12
+    try:
+        for attempt in range(attempts):
+            offset = staged.stat().st_size if staged.exists() else 0
+            headers = {
+                "Authorization": "Bearer " + access_token(client_id),
+                "x-ms-version": STORAGE_API_VERSION,
+                "x-ms-date": dt.datetime.now(dt.timezone.utc).strftime(
+                    "%a, %d %b %Y %H:%M:%S GMT"
+                ),
+            }
+            if offset:
+                headers["Range"] = f"bytes={offset}-"
+            if etag:
+                headers["If-Match"] = etag
+            req = urllib.request.Request(url, headers=headers, method="GET")
+            try:
+                with urllib.request.urlopen(req, timeout=120) as response:
+                    status = getattr(response, "status", response.getcode())
+                    response_etag = response.headers.get("ETag")
+                    if etag and response_etag and response_etag != etag:
+                        raise RuntimeError(
+                            f"Azure Blob changed during download: {name}"
+                        )
+                    etag = etag or response_etag
+                    if offset and status != 206:
+                        offset = 0
+                    content_range = response.headers.get("Content-Range", "")
+                    if offset and not content_range.startswith(f"bytes {offset}-"):
+                        raise RuntimeError(
+                            f"Azure Blob returned an invalid resume range for {name}: "
+                            f"{content_range!r}"
+                        )
+                    mode = "ab" if offset else "wb"
+                    with staged.open(mode) as output:
+                        while True:
+                            chunk = response.read(8 * 1024 * 1024)
+                            if not chunk:
+                                break
+                            output.write(chunk)
+                    expected_size = None
+                    if "/" in content_range:
+                        total = content_range.rsplit("/", 1)[1]
+                        if total.isdigit():
+                            expected_size = int(total)
+                    elif response.headers.get("Content-Length", "").isdigit():
+                        expected_size = int(response.headers["Content-Length"])
+                    actual_size = staged.stat().st_size
+                    if expected_size is not None and actual_size != expected_size:
+                        raise OSError(
+                            f"incomplete Azure Blob download for {name}: "
+                            f"expected {expected_size} bytes, got {actual_size}"
+                        )
+                os.replace(staged, destination)
+                return
+            except urllib.error.HTTPError as exc:
+                body = exc.read(65536).decode("utf-8", "replace")
+                if exc.code in (404, 410):
+                    raise FileNotFoundError(url) from exc
+                if exc.code in (401, 403):
+                    _TOKEN["expires"] = 0
+                retryable = exc.code in (401, 403, 408, 409, 429, 500, 502, 503, 504)
+                if not retryable or attempt + 1 >= attempts:
+                    raise RuntimeError(
+                        f"Azure download failed ({exc.code}) {url}: {body}"
+                    ) from exc
+            except (
+                http.client.HTTPException,
+                urllib.error.URLError,
+                TimeoutError,
+                OSError,
+            ) as exc:
+                if attempt + 1 >= attempts:
+                    raise RuntimeError(f"Azure download failed {url}: {exc}") from exc
+            time.sleep(delay)
+            delay = min(delay * 2, 20)
+    except BaseException:
+        staged.unlink(missing_ok=True)
+        raise
+
+
 def create_append_blob(bucket, name, client_id=None):
     return request(
         blob_url(bucket, name),
@@ -363,10 +454,9 @@ def command_upload_json(args):
 
 def command_download(args):
     try:
-        payload = download_bytes(args.bucket, args.object, args.client_id)
+        download_file(args.bucket, args.object, args.file, args.client_id)
     except FileNotFoundError:
-        return 1
-    pathlib.Path(args.file).write_bytes(payload)
+        return getattr(args, "missing_exit_code", 1)
     return 0
 
 
@@ -551,6 +641,7 @@ def parser():
     download.add_argument("--bucket", required=True)
     download.add_argument("--object", required=True)
     download.add_argument("--file", required=True)
+    download.add_argument("--missing-exit-code", type=int, default=1)
     add_identity_option(download)
     download.set_defaults(func=command_download)
 

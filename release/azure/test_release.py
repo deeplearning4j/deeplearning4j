@@ -4566,15 +4566,48 @@ class WorkerTransportTests(unittest.TestCase):
                 client_id="client",
             )
             with mock.patch.object(
-                cloud_io, "download_bytes", side_effect=FileNotFoundError
+                cloud_io, "download_file", side_effect=FileNotFoundError
             ):
                 self.assertEqual(1, cloud_io.command_download(args))
             self.assertFalse(output.exists())
-            with mock.patch.object(
-                cloud_io, "download_bytes", return_value=b'{"exitCode":0}'
-            ):
+            def write_checkpoint(_bucket, _object, file, _client_id):
+                Path(file).write_bytes(b'{"exitCode":0}')
+
+            with mock.patch.object(cloud_io, "download_file", side_effect=write_checkpoint):
                 self.assertEqual(0, cloud_io.command_download(args))
             self.assertEqual(b'{"exitCode":0}', output.read_bytes())
+
+    def test_blob_download_streams_to_an_atomic_file(self):
+        payload = b"streamed-blob-payload"
+
+        class Response:
+            status = 200
+            headers = {"Content-Length": str(len(payload)), "ETag": '"etag"'}
+
+            def __init__(self):
+                self.stream = io.BytesIO(payload)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def getcode(self):
+                return self.status
+
+            def read(self, size=-1):
+                return self.stream.read(size)
+
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "archive.tar.gz"
+            with mock.patch.object(cloud_io, "access_token", return_value="token"), \
+                    mock.patch.object(cloud_io.urllib.request, "urlopen", return_value=Response()):
+                cloud_io.download_file(
+                    "dl4jaccount/releases", "cache/archive.tar.gz", output, "client"
+                )
+            self.assertEqual(payload, output.read_bytes())
+            self.assertFalse(output.with_name(output.name + ".partial").exists())
 
     def test_kill_switch_is_fail_closed(self):
         args = SimpleNamespace(

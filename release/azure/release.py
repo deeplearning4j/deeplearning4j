@@ -57,6 +57,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PLAN = ROOT / "release/azure/release-plan.json"
 BUILD_DRIVER = ROOT / "release/aws/build-platform.py"
 CLOUD_IO = ROOT / "release/azure/cloud-io.py"
+DEPENDENCY_CACHE = ROOT / "release/azure/dependency-cache.py"
 LOG_STREAM_CHUNK_BYTES = 8 * 1024 * 1024
 LOG_STREAM_CONFLICT_RETRIES = 3
 RESOURCE_CLEANUP_ATTEMPTS = 12
@@ -2301,6 +2302,9 @@ def render_worker(worker_path: Path, config: dict[str, Any]) -> bytes:
         "__DL4J_CLOUD_IO_B64__": base64.b64encode(
             CLOUD_IO.read_bytes()
         ).decode("ascii"),
+        "__DL4J_DEPENDENCY_CACHE_B64__": base64.b64encode(
+            DEPENDENCY_CACHE.read_bytes()
+        ).decode("ascii"),
         "__DL4J_NATIVE_PLATFORM_SCRIPT_B64__": base64.b64encode(
             (ROOT / "build-scripts/release/native-platform.sh").read_bytes()
         ).decode("ascii"),
@@ -2405,6 +2409,13 @@ def compiler_cache_config(
         "dependencyCache": dependency_cache_metadata(
             context, account_name, account_key, plan
         ),
+        "toolchainCache": {
+            "schemaVersion": 1,
+            "keyPrefix": (
+                f"{plan.get('artifactPrefix', 'deeplearning4j/releases').strip('/')}"
+                "/toolchain-cache/v1"
+            ),
+        },
         "connectionString": (
             f"BlobEndpoint=https://{account_name}.blob.core.windows.net;"
             f"SharedAccessSignature={token}"

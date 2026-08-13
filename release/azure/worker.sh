@@ -10,11 +10,13 @@ export LOGNAME="${LOGNAME:-${USER}}"
 CONFIG_B64='__DL4J_WORKER_CONFIG_B64__'
 BUILD_DRIVER_B64='__DL4J_BUILD_DRIVER_B64__'
 CLOUD_IO_B64='__DL4J_CLOUD_IO_B64__'
+DEPENDENCY_CACHE_B64='__DL4J_DEPENDENCY_CACHE_B64__'
 WORK_ROOT=${DL4J_WORK_ROOT:-/opt/dl4j-release}
 BOOTSTRAP_ROOT=${WORK_ROOT}/bootstrap
 CONFIG_FILE=${BOOTSTRAP_ROOT}/worker.json
 BUILD_DRIVER=${BOOTSTRAP_ROOT}/build-platform.py
 CLOUD_IO=${BOOTSTRAP_ROOT}/cloud-io.py
+DEPENDENCY_CACHE=${BOOTSTRAP_ROOT}/dependency-cache.py
 SOURCE_ROOT=${WORK_ROOT}/sources
 SCCACHE_ROOT=${SOURCE_ROOT}/sccache
 OUTPUT_ROOT=${WORK_ROOT}/outputs
@@ -47,6 +49,7 @@ decode_b64() { printf '%s' "$1" | base64 --decode > "$2"; }
 decode_b64 "${CONFIG_B64}" "${CONFIG_FILE}"
 decode_b64 "${BUILD_DRIVER_B64}" "${BUILD_DRIVER}"
 decode_b64 "${CLOUD_IO_B64}" "${CLOUD_IO}"
+decode_b64 "${DEPENDENCY_CACHE_B64}" "${DEPENDENCY_CACHE}"
 exec > >(tee -a "${LANE_LOG}") 2>&1
 
 phase() {
@@ -71,8 +74,50 @@ KILL_SWITCH_OBJECT=$(config killSwitchObject)
 RUN_KILL_SWITCH_OBJECT=$(config runKillSwitchObject)
 AZURE_CLIENT_ID=$(config managedIdentityClientId)
 CONTROLLER_EPOCH=$(config controllerEpoch)
+TOOLCHAIN_CACHE_BUCKET=$(python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); v=c.get("compilerCache",{}); print((str(v.get("account","")) + "/" + str(v.get("container",""))).strip("/"))' "${CONFIG_FILE}")
+TOOLCHAIN_CACHE_PREFIX=$(python3 -c 'import json,sys; c=json.load(open(sys.argv[1])); print(c.get("compilerCache",{}).get("toolchainCache",{}).get("keyPrefix",""))' "${CONFIG_FILE}")
 export AZURE_CLIENT_ID
 export DL4J_CLOUD_IO="${CLOUD_IO}"
+export DL4J_DEPENDENCY_CACHE_HELPER="${DEPENDENCY_CACHE}"
+export DL4J_TOOLCHAIN_CACHE_BUCKET="${TOOLCHAIN_CACHE_BUCKET}"
+export DL4J_TOOLCHAIN_CACHE_PREFIX="${TOOLCHAIN_CACHE_PREFIX}"
+
+cache_identity() {
+  python3 -c 'import hashlib,json,sys; print(hashlib.sha256(json.dumps(sys.argv[1:],separators=(",",":")).encode()).hexdigest())' "$@"
+}
+
+restore_dependency() {
+  local name="$1" identity="$2" destination="$3" code
+  if [ -z "${TOOLCHAIN_CACHE_BUCKET}" ] || [ -z "${TOOLCHAIN_CACHE_PREFIX}" ]; then
+    return 1
+  fi
+  phase dependency-cache started "dependency=${name} identity=${identity} operation=restore"
+  set +e
+  python3 "${DEPENDENCY_CACHE}" restore     --cloud-io "${CLOUD_IO}"     --bucket "${TOOLCHAIN_CACHE_BUCKET}"     --prefix "${TOOLCHAIN_CACHE_PREFIX}"     --name "${name}"     --identity "${identity}"     --destination "${destination}"     --client-id "${AZURE_CLIENT_ID}"
+  code=$?
+  set -e
+  if [ "${code}" -eq 0 ]; then
+    phase dependency-cache hit "dependency=${name} identity=${identity}"
+    return 0
+  fi
+  if [ "${code}" -eq 3 ]; then
+    phase dependency-cache miss "dependency=${name} identity=${identity}"
+    return 1
+  fi
+  phase dependency-cache failed "dependency=${name} identity=${identity} exitCode=${code}"
+  exit "${code}"
+}
+
+publish_dependency() {
+  local name="$1" identity="$2" source="$3"
+  if [ -z "${TOOLCHAIN_CACHE_BUCKET}" ] || [ -z "${TOOLCHAIN_CACHE_PREFIX}" ]; then
+    return 0
+  fi
+  phase dependency-cache started "dependency=${name} identity=${identity} operation=publish"
+  python3 "${DEPENDENCY_CACHE}" publish     --cloud-io "${CLOUD_IO}"     --bucket "${TOOLCHAIN_CACHE_BUCKET}"     --prefix "${TOOLCHAIN_CACHE_PREFIX}"     --name "${name}"     --identity "${identity}"     --source "${source}"     --client-id "${AZURE_CLIENT_ID}"
+  phase dependency-cache complete "dependency=${name} identity=${identity} operation=publish"
+}
+
 mapfile -t SHARD_IDS < <(
   python3 -c 'import json,sys; print(*[s["id"] for s in json.load(open(sys.argv[1]))["shards"]], sep="\n")' "${CONFIG_FILE}"
 )
@@ -286,8 +331,10 @@ watch_kill_switch() {
 }
 
 ensure_common_toolchains() {
-  local java_arch
+  local java_arch machine protobuf_identity protoc_arch protoc_identity
+  local cmake_identity rust_identity
   export DEBIAN_FRONTEND=noninteractive
+  machine=$(uname -m)
   phase package-index started "lane=${LANE_ID}"
   apt-get update
   phase package-index complete
@@ -298,46 +345,64 @@ ensure_common_toolchains() {
   phase toolchain-packages complete
   java_arch=$(dpkg --print-architecture)
   export JAVA_HOME="/usr/lib/jvm/java-11-openjdk-${java_arch}"
-  if [ ! -x /opt/protobuf/bin/protoc ]; then
+
+  protobuf_identity=$(cache_identity protobuf 3.8.0 linux "${machine}" /opt/protobuf)
+  if [ ! -x /opt/protobuf/bin/protoc ] && ! restore_dependency protobuf "${protobuf_identity}" /opt/protobuf; then
     phase protobuf-toolchain started
     curl --fail --location --retry 5       https://github.com/google/protobuf/releases/download/v3.8.0/protobuf-cpp-3.8.0.tar.gz       -o /tmp/protobuf-3.8.0.tar.gz
     rm -rf /tmp/protobuf-3.8.0
     tar -xzf /tmp/protobuf-3.8.0.tar.gz -C /tmp
     (cd /tmp/protobuf-3.8.0 && ./configure --prefix=/opt/protobuf && make -j2 && make install)
+    publish_dependency protobuf "${protobuf_identity}" /opt/protobuf
     phase protobuf-toolchain complete
   fi
+  [ -x /opt/protobuf/bin/protoc ] || { phase protobuf-toolchain failed "reason=missing-protoc"; return 1; }
   export PATH="/opt/protobuf/bin:${PATH}"
-  if [ ! -x /opt/protoc-21.7/bin/protoc ]; then
-    local protoc_arch
-    protoc_arch=$([ "$(uname -m)" = aarch64 ] && printf aarch_64 || printf x86_64)
+
+  protoc_arch=$([ "${machine}" = aarch64 ] && printf aarch_64 || printf x86_64)
+  protoc_identity=$(cache_identity protoc 21.7 linux "${protoc_arch}" /opt/protoc-21.7)
+  if [ ! -x /opt/protoc-21.7/bin/protoc ] && ! restore_dependency protoc "${protoc_identity}" /opt/protoc-21.7; then
     curl --fail --location --retry 5       "https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-linux-${protoc_arch}.zip"       -o /tmp/protoc.zip
     mkdir -p /opt/protoc-21.7
     unzip -qo /tmp/protoc.zip -d /opt/protoc-21.7 bin/protoc
     chmod +x /opt/protoc-21.7/bin/protoc
+    publish_dependency protoc "${protoc_identity}" /opt/protoc-21.7
   fi
-  if [ "$(uname -m)" = x86_64 ] && [ ! -x /opt/cmake/bin/cmake ]; then
-    curl --fail --location --retry 5       https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3-linux-x86_64.tar.gz       -o /tmp/cmake.tar.gz
-    mkdir -p /opt/cmake
-    tar -xzf /tmp/cmake.tar.gz -C /opt/cmake --strip-components=1
+  [ -x /opt/protoc-21.7/bin/protoc ] || { phase protoc-toolchain failed "reason=missing-protoc"; return 1; }
+
+  if [ "${machine}" = x86_64 ]; then
+    cmake_identity=$(cache_identity cmake 3.28.3 linux x86_64 /opt/cmake)
+    if [ ! -x /opt/cmake/bin/cmake ] && ! restore_dependency cmake "${cmake_identity}" /opt/cmake; then
+      curl --fail --location --retry 5       https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3-linux-x86_64.tar.gz       -o /tmp/cmake.tar.gz
+      mkdir -p /opt/cmake
+      tar -xzf /tmp/cmake.tar.gz -C /opt/cmake --strip-components=1
+      publish_dependency cmake "${cmake_identity}" /opt/cmake
+    fi
   fi
   [ ! -x /opt/cmake/bin/cmake ] || export PATH="/opt/cmake/bin:${PATH}"
-  if [ ! -x "${CARGO_HOME}/bin/cbindgen" ]; then
+
+  rust_identity=$(cache_identity rust-cbindgen rustc-1.97.1 cbindgen-0.29.4 linux "${machine}" "${TOOLCHAIN_ROOT}")
+  if [ ! -x "${CARGO_HOME}/bin/cbindgen" ] && ! restore_dependency rust-cbindgen "${rust_identity}" "${TOOLCHAIN_ROOT}"; then
     phase rust-toolchain started
-    curl --proto '=https' --tlsv1.2 --fail --silent --show-error       https://sh.rustup.rs | sh -s -- -y --profile minimal
-    cargo install --locked cbindgen
+    curl --proto '=https' --tlsv1.2 --fail --silent --show-error       https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain 1.97.1
+    cargo install --locked --version 0.29.4 cbindgen
+    publish_dependency rust-cbindgen "${rust_identity}" "${TOOLCHAIN_ROOT}"
     phase rust-toolchain complete
   fi
+  [ -x "${CARGO_HOME}/bin/cbindgen" ] || { phase rust-toolchain failed "reason=missing-cbindgen"; return 1; }
 }
 
 ensure_shard_toolchains() {
-  local platform ndk_version
+  local platform ndk_version ndk_identity graal_arch
   platform=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["shard"]["build"]["javacppPlatform"])' "${CURRENT_CONFIG_FILE}")
   if [[ "${platform}" == android-* ]]; then
     ndk_version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["shard"]["build"]["ndkVersion"])' "${CURRENT_CONFIG_FILE}")
-    if [ ! -d "/opt/android/android-ndk-${ndk_version}" ]; then
+    ndk_identity=$(cache_identity android-ndk "${ndk_version}" linux "$(uname -m)" "/opt/android/android-ndk-${ndk_version}")
+    if [ ! -d "/opt/android/android-ndk-${ndk_version}" ] && ! restore_dependency android-ndk "${ndk_identity}" "/opt/android/android-ndk-${ndk_version}"; then
       curl --fail --location --retry 5         "https://dl.google.com/android/repository/android-ndk-${ndk_version}-linux.zip"         -o "/tmp/android-ndk-${ndk_version}.zip"
       mkdir -p /opt/android
       unzip -q "/tmp/android-ndk-${ndk_version}.zip" -d /opt/android
+      publish_dependency android-ndk "${ndk_identity}" "/opt/android/android-ndk-${ndk_version}"
     fi
     export ANDROID_NDK="/opt/android/android-ndk-${ndk_version}"
     export ANDROID_NDK_HOME="${ANDROID_NDK}"
@@ -345,9 +410,10 @@ ensure_shard_toolchains() {
     unset ANDROID_NDK ANDROID_NDK_HOME || true
   fi
   if python3 -c 'import json,sys; raise SystemExit(0 if json.load(open(sys.argv[1]))["shard"]["build"].get("buildAot") else 1)' "${CURRENT_CONFIG_FILE}"; then
+    graal_arch=$([ "$(uname -m)" = aarch64 ] && printf aarch64 || printf x64)
     if [ ! -x /opt/graalvm/bin/java ]; then
-      local graal_arch
-      graal_arch=$([ "$(uname -m)" = aarch64 ] && printf aarch64 || printf x64)
+      # The upstream URL is intentionally not cached until the plan pins an
+      # immutable GraalVM build instead of the moving "latest" alias.
       curl --fail --location --retry 5         "https://download.oracle.com/graalvm/21/latest/graalvm-jdk-21_linux-${graal_arch}_bin.tar.gz"         -o /tmp/graalvm.tar.gz
       mkdir -p /opt/graalvm
       tar -xzf /tmp/graalvm.tar.gz -C /opt/graalvm --strip-components=1
@@ -356,6 +422,26 @@ ensure_shard_toolchains() {
   else
     unset GRAALVM_HOME || true
   fi
+}
+
+ensure_container_image() {
+  local image="$1" manifest_digest identity cache_dir
+  [ -n "${image}" ] || return 0
+  if docker image inspect "${image}" >/dev/null 2>&1; then
+    return 0
+  fi
+  manifest_digest=$(docker manifest inspect "${image}" | python3 -c 'import hashlib,sys; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest())')
+  identity=$(cache_identity container-image "${image}" "$(uname -m)" "${manifest_digest}")
+  cache_dir="${TOOLCHAIN_ROOT}/container-images/${identity}"
+  if restore_dependency container-image "${identity}" "${cache_dir}"; then
+    docker load --input "${cache_dir}/image.tar"
+    docker image inspect "${image}" >/dev/null
+    return 0
+  fi
+  docker pull "${image}"
+  mkdir -p "${cache_dir}"
+  docker save --output "${cache_dir}/image.tar" "${image}"
+  publish_dependency container-image "${identity}" "${cache_dir}"
 }
 
 run_shard() (
@@ -377,13 +463,14 @@ run_shard() (
 
   container_image=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["shard"].get("containerImage", ""))' "${CURRENT_CONFIG_FILE}")
   container_family=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["shard"].get("containerFamily", "debian"))' "${CURRENT_CONFIG_FILE}")
+  ensure_container_image "${container_image}"
   build=(python3 "${BUILD_DRIVER}" --config "${CURRENT_CONFIG_FILE}"     --source "${source_dir}" --repository "${maven_repo}"     --maven-output "${output_dir}/maven-repository"     --sdk-output "${output_dir}/sdk-assets")
   if [ -n "${container_image}" ]; then
     if [ "${container_family}" = almalinux ]; then
       docker build --tag dl4j-release-compat         --file "${source_dir}/.github/actions/build-centos/Dockerfile"         "${source_dir}/.github/actions/build-centos"
-      build=(docker run --rm --network host -e GITHUB_WORKSPACE=/github/workspace         -e LIBND4J_FILE_NAME= -e LIBND4J_URL= -e OPENBLAS_PATH=/usr         -e "INSTALL_COMMAND=python3 /dl4j-build-platform.py --config /dl4j-config.json --source /github/workspace --repository /dl4j-m2 --maven-output /dl4j-output/maven-repository --sdk-output /dl4j-output/sdk-assets"         -v "${source_dir}:/github/workspace" -v "${SCCACHE_ROOT}:/github/sccache" -v "${maven_repo}:/dl4j-m2"         -v "${output_dir}:/dl4j-output" -v "${CURRENT_CONFIG_FILE}:/dl4j-config.json:ro"         -v "${BUILD_DRIVER}:/dl4j-build-platform.py:ro" dl4j-release-compat)
+      build=(docker run --rm --network host -e GITHUB_WORKSPACE=/github/workspace         -e LIBND4J_FILE_NAME= -e LIBND4J_URL= -e OPENBLAS_PATH=/usr         -e "INSTALL_COMMAND=python3 /dl4j-build-platform.py --config /dl4j-config.json --source /github/workspace --repository /dl4j-m2 --maven-output /dl4j-output/maven-repository --sdk-output /dl4j-output/sdk-assets"         -e DL4J_CLOUD_IO=/dl4j-cloud-io.py -e DL4J_DEPENDENCY_CACHE_HELPER=/dl4j-dependency-cache.py -e "AZURE_CLIENT_ID=${AZURE_CLIENT_ID}"         -v "${source_dir}:/github/workspace" -v "${SCCACHE_ROOT}:/github/sccache" -v "${maven_repo}:/dl4j-m2"         -v "${output_dir}:/dl4j-output" -v "${CURRENT_CONFIG_FILE}:/dl4j-config.json:ro"         -v "${BUILD_DRIVER}:/dl4j-build-platform.py:ro" -v "${CLOUD_IO}:/dl4j-cloud-io.py:ro"         -v "${DEPENDENCY_CACHE}:/dl4j-dependency-cache.py:ro" dl4j-release-compat)
     else
-      build=(docker run --rm --network host -v "${source_dir}:/workspace"         -v "${SCCACHE_ROOT}:/sccache" -v "${maven_repo}:/dl4j-m2" -v "${output_dir}:/dl4j-output"         -v "${CURRENT_CONFIG_FILE}:/dl4j-config.json:ro"         -v "${BUILD_DRIVER}:/dl4j-build-platform.py:ro"         -v /opt/protobuf:/opt/protobuf:ro -v /opt/cmake:/opt/cmake:ro         -w /workspace "${container_image}" bash -lc         "apt-get update && apt-get install -y --no-install-recommends autoconf automake build-essential ca-certificates cmake gfortran git libomp-dev libopenblas-dev libtool libzstd-dev maven nasm ninja-build openjdk-11-jdk pkg-config python3 swig unzip xz-utils zip zlib1g-dev && export JAVA_HOME=\$(dirname \$(dirname \$(readlink -f \$(command -v javac)))) && export PATH=\${JAVA_HOME}/bin:/opt/protobuf/bin:/opt/cmake/bin:\$PATH && python3 /dl4j-build-platform.py --config /dl4j-config.json --source /workspace --repository /dl4j-m2 --maven-output /dl4j-output/maven-repository --sdk-output /dl4j-output/sdk-assets")
+      build=(docker run --rm --network host -v "${source_dir}:/workspace"         -v "${SCCACHE_ROOT}:/sccache" -v "${maven_repo}:/dl4j-m2" -v "${output_dir}:/dl4j-output"         -v "${CURRENT_CONFIG_FILE}:/dl4j-config.json:ro"         -v "${BUILD_DRIVER}:/dl4j-build-platform.py:ro" -v "${CLOUD_IO}:/dl4j-cloud-io.py:ro"         -v "${DEPENDENCY_CACHE}:/dl4j-dependency-cache.py:ro" -e DL4J_CLOUD_IO=/dl4j-cloud-io.py         -e DL4J_DEPENDENCY_CACHE_HELPER=/dl4j-dependency-cache.py -e "AZURE_CLIENT_ID=${AZURE_CLIENT_ID}"         -v /opt/protobuf:/opt/protobuf:ro -v /opt/cmake:/opt/cmake:ro         -w /workspace "${container_image}" bash -lc         "apt-get update && apt-get install -y --no-install-recommends autoconf automake build-essential ca-certificates cmake gfortran git libomp-dev libopenblas-dev libtool libzstd-dev maven nasm ninja-build openjdk-11-jdk pkg-config python3 swig unzip xz-utils zip zlib1g-dev && export JAVA_HOME=\$(dirname \$(dirname \$(readlink -f \$(command -v javac)))) && export PATH=\${JAVA_HOME}/bin:/opt/protobuf/bin:/opt/cmake/bin:\$PATH && python3 /dl4j-build-platform.py --config /dl4j-config.json --source /workspace --repository /dl4j-m2 --maven-output /dl4j-output/maven-repository --sdk-output /dl4j-output/sdk-assets")
     fi
   fi
   phase matrix-build started "shard=${CURRENT_SHARD_ID}"
