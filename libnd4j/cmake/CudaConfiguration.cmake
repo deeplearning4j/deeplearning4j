@@ -303,6 +303,11 @@ function(configure_zluda_cuda_toolkit_linking main_target_name)
         ${main_target_name} CUDA::cudart_static cudart_static TRUE)
     link_zluda_cuda_static_library(
         ${main_target_name} CUDA::cusolver_static cusolver_static TRUE)
+    # CUDA 12's static cuSolver archive leaves its LAPACK shim symbols in a
+    # separate archive. Link it explicitly because older FindCUDAToolkit
+    # modules do not always model this dependency on CUDA::cusolver_static.
+    link_zluda_cuda_static_library(
+        ${main_target_name} CUDA::cusolver_lapack_static cusolver_lapack_static TRUE)
     link_zluda_cuda_static_library(
         ${main_target_name} CUDA::nvrtc_static nvrtc_static TRUE)
 

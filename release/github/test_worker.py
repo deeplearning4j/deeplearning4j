@@ -281,6 +281,10 @@ class WorkflowMatrixTests(unittest.TestCase):
             configuration,
         )
         self.assertIn(
+            "${main_target_name} CUDA::cusolver_lapack_static cusolver_lapack_static TRUE",
+            configuration,
+        )
+        self.assertIn(
             "${main_target_name} CUDA::nvrtc_static nvrtc_static TRUE",
             configuration,
         )
