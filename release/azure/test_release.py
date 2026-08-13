@@ -314,12 +314,16 @@ class ReleasePlanTests(unittest.TestCase):
         self.assertTrue(
             all(name.startswith(("Standard_F", "Standard_E", "Standard_D")) for name in x86)
         )
+        self.assertEqual(8, self.azure["defaults"]["maxCores"])
+        self.assertEqual(32, self.azure["defaults"]["maxTotalCores"])
+        self.assertEqual(512, self.azure["defaults"]["rootVolumeGiB"])
+        self.assertEqual("Standard_E8as_v7", x86[0])
+        self.assertEqual("Standard_E8ps_v6", arm[0])
         self.assertIn("Standard_F64as_v7", x86)
         self.assertLess(x86.index("Standard_F64s_v2"), x86.index("Standard_F64as_v7"))
         self.assertLess(x86.index("Standard_F64as_v7"), x86.index("Standard_F48s_v2"))
-        self.assertLess(x86.index("Standard_F4as_v7"), x86.index("Standard_E8s_v6"))
         self.assertLess(x86.index("Standard_E8as_v7"), x86.index("Standard_D8s_v6"))
-        self.assertTrue(all("ps_v" in name for name in arm))
+        self.assertTrue(all(("ps_v" in name or "pds_v" in name) for name in arm))
         self.assertIn("Standard_D96ps_v6", arm)
         self.assertFalse(any(token in name for name in x86 + arm for token in ("NC", "ND", "NV")))
 
@@ -4266,6 +4270,8 @@ class WorkerTransportTests(unittest.TestCase):
     def test_workers_publish_maven_files_directly_without_repository_archives(self):
         linux = (HERE / "worker.sh").read_text(encoding="utf-8")
         windows = (HERE / "worker.ps1").read_text(encoding="utf-8")
+        self.assertIn("build-benchmark.json", linux)
+        self.assertIn("build-benchmark.json", windows)
         for worker in (linux, windows):
             self.assertIn("maven-publish.py", worker)
             self.assertIn("maven-publish.json", worker)

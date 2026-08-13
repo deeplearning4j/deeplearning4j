@@ -233,7 +233,7 @@ finalize_shard() {
     } >>"${CURRENT_BUILD_LOG}"
   fi
   local artifact
-  for artifact in build.log maven-publish.json sdk-assets.tar.gz shard-manifest.json; do
+  for artifact in build.log build-benchmark.json maven-publish.json sdk-assets.tar.gz shard-manifest.json; do
     if [ -e "${CURRENT_OUTPUT_DIR}/${artifact}" ]; then
       upload_object "${CURRENT_OBJECT_PREFIX}/${artifact}"         "${CURRENT_OUTPUT_DIR}/${artifact}" || final_code=1
     fi

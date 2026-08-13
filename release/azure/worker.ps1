@@ -516,6 +516,7 @@ function Complete-Shard([int]$RequestedExitCode) {
 
     $Artifacts = @(
       [pscustomobject]@{Path=$BuildLog; Name='build.log'},
+      [pscustomobject]@{Path=(Join-Path $OutputDir 'build-benchmark.json'); Name='build-benchmark.json'},
       [pscustomobject]@{Path=(Join-Path $OutputDir 'maven-publish.json'); Name='maven-publish.json'},
       [pscustomobject]@{Path=(Join-Path $OutputDir 'sdk-assets.tar.gz'); Name='sdk-assets.tar.gz'},
       [pscustomobject]@{Path=(Join-Path $OutputDir 'shard-manifest.json'); Name='shard-manifest.json'}

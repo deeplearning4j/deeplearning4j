@@ -1772,10 +1772,22 @@ def write_build_result(path: Path | None, completed_variants: list[str]) -> None
     )
 
 
+def write_build_benchmark(path: Path | None, benchmark: dict) -> None:
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(benchmark, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def build_native_platform(source: Path, shard: dict, repository: Path, env: dict[str, str],
                           compiler_cache: str | None, release_version: str | None = None,
                           config: dict | None = None, maven_output: Path | None = None,
-                          progress_output: Path | None = None) -> None:
+                          progress_output: Path | None = None,
+                          benchmark: dict | None = None,
+                          benchmark_output: Path | None = None) -> None:
     """Invoke the exact shared scripts used by each GitHub platform workflow."""
     build, shard_id = shard["build"], shard["id"]
     rules = shard.get("artifactRules", {})
@@ -1824,7 +1836,22 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             variant_env["DL4J_LIBND4J_FILE_DOWNLOAD"] = ""
         if variant.get("mlir") and config is not None:
             restore_remote_dependency_cache(source, config, variant_env)
-        run(["bash", str(source / "build-scripts/release" / script_name), "--run"], source, variant_env)
+        variant_started_at = int(time.time())
+        variant_timer = time.monotonic()
+        variant_status = "failed"
+        try:
+            run(["bash", str(source / "build-scripts/release" / script_name), "--run"], source, variant_env)
+            variant_status = "complete"
+        finally:
+            if benchmark is not None:
+                benchmark.setdefault("variants", []).append({
+                    "name": variant["name"],
+                    "status": variant_status,
+                    "startedAt": variant_started_at,
+                    "completedAt": int(time.time()),
+                    "durationSeconds": round(time.monotonic() - variant_timer, 3),
+                })
+                write_build_benchmark(benchmark_output, benchmark)
         attest_variant_classifier_artifacts(
             repository, build, rules, variant, release_version, "local-repository"
         )
@@ -1873,6 +1900,28 @@ def main() -> None:
     compiler_cache, sccache_started = configure_compiler_cache(
         config, args.source, env
     )
+    benchmark_path = args.maven_output.parent / "build-benchmark.json"
+    driver_started_at = int(time.time())
+    driver_timer = time.monotonic()
+    selected_machine = config.get("selectedMachine") or {}
+    benchmark = {
+        "schemaVersion": 1,
+        "shard": shard["id"],
+        "provider": config.get("provider"),
+        "runId": config.get("runId"),
+        "commit": config.get("commit"),
+        "machine": {
+            "name": selected_machine.get("name"),
+            "vcpus": selected_machine.get("vcpus"),
+            "memoryGiB": selected_machine.get("memoryGiB"),
+        },
+        "buildThreads": int(build.get("buildThreads", 16)),
+        "mavenHeapGiB": int(build.get("mavenHeapGiB", 16)),
+        "compilerCacheBackend": (config.get("compilerCache") or {}).get("backend"),
+        "startedAt": driver_started_at,
+        "variants": [],
+    }
+    write_build_benchmark(benchmark_path, benchmark)
     build_completed = False
     try:
         print(f"[dl4j-phase] shard={shard['id']} phase=version-setup", flush=True)
@@ -1896,6 +1945,8 @@ def main() -> None:
                 config,
                 args.maven_output,
                 args.maven_output.parent / "build-result.json",
+                benchmark,
+                benchmark_path,
             )
         print(f"[dl4j-phase] shard={shard['id']} phase=package", flush=True)
         args.maven_output.mkdir(parents=True, exist_ok=True)
@@ -1940,6 +1991,12 @@ def main() -> None:
         print(f"[dl4j-phase] shard={shard['id']} phase=complete", flush=True)
         build_completed = True
     finally:
+        benchmark.update({
+            "status": "complete" if build_completed else "failed",
+            "completedAt": int(time.time()),
+            "durationSeconds": round(time.monotonic() - driver_timer, 3),
+        })
+        write_build_benchmark(benchmark_path, benchmark)
         if sccache_started and compiler_cache:
             print("+", subprocess.list2cmdline([compiler_cache, "--stop-server"]), flush=True)
             stopped = subprocess.run(

@@ -732,6 +732,40 @@ class ReleaseValidationTest(unittest.TestCase):
                 json.loads(progress.read_text(encoding="utf-8"))["completedVariants"],
             )
 
+    def test_native_lane_records_variant_build_duration_on_failure(self):
+        shard = {
+            "id": "linux-x86_64-cpu",
+            "os": "linux",
+            "artifactRules": {},
+            "build": {
+                "javacppPlatform": "linux-x86_64",
+                "backend": "cpu",
+                "profiles": ["cpu"],
+                "modules": [":libnd4j"],
+                "variants": [{"name": "base"}],
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            benchmark_path = Path(temp) / "build-benchmark.json"
+            benchmark = {"schemaVersion": 1, "variants": []}
+            with patch.object(build_platform, "prepare_openblas"), patch.object(
+                build_platform, "run", side_effect=RuntimeError("native failed")
+            ):
+                with self.assertRaisesRegex(RuntimeError, "native failed"):
+                    build_platform.build_native_platform(
+                        Path("/source"),
+                        shard,
+                        Path(temp) / "m2",
+                        {},
+                        None,
+                        benchmark=benchmark,
+                        benchmark_output=benchmark_path,
+                    )
+            recorded = json.loads(benchmark_path.read_text(encoding="utf-8"))
+            self.assertEqual("base", recorded["variants"][0]["name"])
+            self.assertEqual("failed", recorded["variants"][0]["status"])
+            self.assertGreaterEqual(recorded["variants"][0]["durationSeconds"], 0)
+
     def test_android_release_disables_host_jvm_linking_and_selects_variant_api(self):
         source = Path("/source")
         build = {"javacppPlatform": "android-arm64"}

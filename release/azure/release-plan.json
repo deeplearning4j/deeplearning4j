@@ -24,10 +24,18 @@
     "build-deploy-mac-arm64.yml": "Azure Virtual Machines do not provide macOS hosts; use the AWS backend for this lane and assemble a hybrid release."
   },
   "defaults": {
-    "rootVolumeGiB": 1000,
+    "rootVolumeGiB": 512,
     "mavenHeapGiB": 24,
     "buildThreads": 32,
+    "maxCores": 8,
+    "maxTotalCores": 32,
     "x86MachineCandidates": [
+      "Standard_E8as_v7",
+      "Standard_E8s_v6",
+      "Standard_D8as_v7",
+      "Standard_D8s_v6",
+      "Standard_F8as_v7",
+      "Standard_F8s_v2",
       "Standard_F72s_v2",
       "Standard_F64s_v2",
       "Standard_F64as_v7",
@@ -37,16 +45,14 @@
       "Standard_F32as_v7",
       "Standard_F16s_v2",
       "Standard_F16as_v7",
-      "Standard_F8s_v2",
-      "Standard_F8as_v7",
       "Standard_F4s_v2",
       "Standard_F4as_v7",
-      "Standard_E8s_v6",
-      "Standard_E8as_v7",
-      "Standard_D8s_v6",
-      "Standard_D8as_v7"
+      "Standard_D8as_v6"
     ],
     "armMachineCandidates": [
+      "Standard_E8ps_v6",
+      "Standard_D8ps_v6",
+      "Standard_D8ps_v5",
       "Standard_D96ps_v6",
       "Standard_D96ps_v5",
       "Standard_D64ps_v6",
@@ -56,9 +62,7 @@
       "Standard_D32ps_v6",
       "Standard_D32ps_v5",
       "Standard_D16ps_v6",
-      "Standard_D16ps_v5",
-      "Standard_D8ps_v6",
-      "Standard_D8ps_v5"
+      "Standard_D16ps_v5"
     ]
   },
   "shards": [

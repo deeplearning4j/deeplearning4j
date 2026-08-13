@@ -93,6 +93,14 @@ def load_plan(path: Path) -> dict[str, Any]:
             or any(not isinstance(item, str) or not item for item in candidates)
         ):
             raise ValueError(f"Azure release plan defaults.{key} must be a non-empty string list")
+    for key in ("rootVolumeGiB", "mavenHeapGiB", "buildThreads", "maxCores", "maxTotalCores"):
+        configured = defaults.get(key)
+        if not isinstance(configured, int) or configured < 1:
+            raise ValueError(f"Azure release plan defaults.{key} must be a positive integer")
+    if defaults["maxTotalCores"] < defaults["maxCores"]:
+        raise ValueError(
+            "Azure release plan defaults.maxTotalCores must be at least defaults.maxCores"
+        )
     shards = value.get("shards")
     if not isinstance(shards, list) or not shards or any(
         not isinstance(item, dict) for item in shards
@@ -1367,12 +1375,18 @@ def preflight_data(args: argparse.Namespace, *, include_context: bool = False) -
     quota_usage = list(context["compute"].usage.list(location))
     quota_limits = quota_limits_by_name(quota_usage)
     lane_specs = group_execution_lanes(plan, executions)
+    max_cores = getattr(args, "max_cores", None)
+    if max_cores is None:
+        max_cores = int(plan["defaults"]["maxCores"])
+    max_total_cores = getattr(args, "max_total_cores", None)
+    if max_total_cores is None:
+        max_total_cores = int(plan["defaults"]["maxTotalCores"])
     selected_machines = choose_parallel_lane_machines(
         skus,
         lane_specs,
         location,
-        getattr(args, "max_cores", None),
-        getattr(args, "max_total_cores", None),
+        max_cores,
+        max_total_cores,
         getattr(args, "zone", None),
         quota_limits,
         getattr(args, "machine_type", None),
@@ -3074,6 +3088,10 @@ def _run_parallel_lane(
             )
             for execution_id in lane["executionIds"]
         ]
+        selected_machine = lane.get("selectedMachine")
+        if not isinstance(selected_machine, dict):
+            first_execution = executions_by_id[lane["executionIds"][0]]
+            selected_machine = first_execution.get("selectedMachine", {})
         config = {
             "provider": "azure",
             "subscription": context["subscription"],
@@ -3105,6 +3123,7 @@ def _run_parallel_lane(
             ),
             "controllerEpoch": epoch,
             "laneId": lane_id,
+            "selectedMachine": copy.deepcopy(selected_machine),
             "shards": shards,
         }
         if resources is None:

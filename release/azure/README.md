@@ -85,7 +85,7 @@ Workers use a user-assigned managed identity scoped to the managed storage accou
 - Verifies x64 versus Arm64 CPU architecture, availability-zone restrictions, vCPU count, and memory.
 - Resolves every Marketplace image publisher/offer/SKU/version.
 - Reads current total-regional and per-family vCPU quota and validates the sum of every simultaneously running lane against both limits.
-- Searches viable size combinations jointly. It first maximizes the useful minimum lane size, then aggregate throughput and balance, so one box is not starved merely because another candidate appears earlier.
+- Searches viable size combinations jointly under the plan's cost envelope. The cached-build defaults cap each lane at 8 vCPUs and all simultaneous lanes at 32 vCPUs; explicit CLI overrides can raise either ceiling for a measured cold-build case.
 - Validates the storage-account name and the 64-4095 GiB OS-disk bound.
 
 ```bash
@@ -94,7 +94,7 @@ python3 release/azure/release.py preflight \
   --max-cores 32
 ```
 
-The default candidates are compute-optimized Fsv2 and F-as-v7 x64 VMs plus Dpsv6/Dpsv5 Arm64 VMs. The preferred order is interleaved by core count, and preflight skips candidates whose current family quota cannot admit the VM. Candidate availability is never assumed from the JSON file; the live Resource SKUs and usage APIs are authoritative. Force a verified size or availability zone only when needed:
+The default candidates prefer memory-capable 8-vCPU E/D-family VMs (64 GiB x64 and 32-64 GiB Arm64) before compute-optimized fallbacks. This keeps enough memory for Maven/native links while allowing sccache to replace most compiler concurrency. Larger candidates remain in the plan but require raising `--max-cores`. Preflight skips candidates whose current family quota cannot admit the VM. Candidate availability is never assumed from the JSON file; the live Resource SKUs and usage APIs are authoritative. Force a verified size or availability zone only when needed:
 
 ```bash
 python3 release/azure/release.py preflight \
@@ -103,7 +103,7 @@ python3 release/azure/release.py preflight \
   --zone 1
 ```
 
-Use `--max-cores` as a per-VM ceiling and `--max-total-cores` as an aggregate cost/concurrency ceiling. `--machine-type` still forces one size for every selected lane and is mainly useful for same-architecture selections; repeated `--lane-machine LANE=SIZE` overrides mixed combinations safely. Build threads default to `min(plan threads, vCPUs / 2)`, and Maven heap is reduced to fit each selected VM.
+Use `--max-cores` as a per-VM ceiling and `--max-total-cores` as an aggregate cost/concurrency ceiling. Their plan defaults are 8 and 32 respectively, so up to four compatibility lanes can still overlap without recreating the former 64-vCPU-per-lane cost. `--machine-type` still forces one size for every selected lane and is mainly useful for same-architecture selections; repeated `--lane-machine LANE=SIZE` overrides mixed combinations safely. Build threads default to `min(plan threads, vCPUs / 2)`, and Maven heap is reduced to fit each selected VM. The default ephemeral OS disk is 512 GiB; override it only when retained build output proves that a lane needs more.
 
 ## Start and monitor
 
@@ -115,11 +115,10 @@ python3 release/azure/release.py start \
   --version 1.0.0-SNAPSHOT \
   --snapshot-version 1.0.0-SNAPSHOT \
   --shard linux-x86_64-cpu--base \
-  --max-cores 32 \
   --reset-kill-switch
 ```
 
-A full Azure-capable matrix:
+A deliberately larger full Azure-capable matrix:
 
 ```bash
 python3 release/azure/release.py start \
@@ -137,7 +136,7 @@ Linux installs a systemd service from cloud-init; Windows uses the Azure Custom 
 
 Both preflight output and `run.json` use schema version 1. `run.json` retains the flat `executions` array used by status, collection, and historical tooling and adds a `lanes` array plus `laneId` on each execution so selected machine combinations, VM resources, queue membership, and lane cleanup are auditable without changing per-shard artifact paths.
 
-Parallelism overlaps VM and Premium SSD exposure. Use `--max-cores`, `--max-total-cores`, or a smaller shard selection when you want a tighter cost envelope; no idle VM pool is retained after the run.
+Parallelism overlaps VM and Premium SSD exposure. The checked-in 8-vCPU/32-total defaults are the normal cached-build cost envelope; larger values are explicit benchmark-controlled overrides. No idle VM pool is retained after the run.
 
 The controller prints recovery commands before the first lane starts:
 
@@ -148,6 +147,8 @@ python3 release/azure/release.py stop-everything --wait
 ```
 
 Workers append only new output to private `live.log` Append Blobs while the lane runs. The default `logs --follow` view reads the cumulative lane transcript, so VM bootstrap, toolchain installation, and every queued shard remain visible from one command on both Linux and Windows. Add `--shard SHARD_ID` to drill into that shard's live transcript; after it is terminal the same command reads its immutable `build.log`. Every append carries Azure's expected-position condition and ambiguous responses are reconciled against the remote prefix before the local offset advances, preventing retry duplication. A failed shard's retained `build.log` is printed automatically by the attached controller before it raises the failure.
+
+Every shard also publishes `build-benchmark.json`. It records the selected VM size, vCPUs, memory, build-thread and Maven-heap limits, compiler-cache backend, total driver wall time, and the wall time/status of every classifier variant. Compare that file across identical commits and cache identities before raising the default core limits.
 
 `status` includes the run manifest plus each active VM's size, provisioning state, power state, complete Azure instance-view statuses, and a bounded managed-boot-diagnostics console tail. Boot diagnostics are enabled on every created VM, providing the same bootstrap-failure visibility that the AWS controller obtains from EC2 instance health and console output.
 
