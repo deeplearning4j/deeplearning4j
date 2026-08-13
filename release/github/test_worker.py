@@ -310,6 +310,18 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertNotIn("reshape(a->ordering(), {", blas)
         self.assertIn("(*aReshape)(i, {0})", blas)
 
+        conv = (
+            ROOT / "libnd4j/include/ops/declarable/platform/mps/mps_conv.mm"
+        ).read_text()
+        self.assertNotIn("MPSOffsetMake", conv)
+        self.assertEqual(2, conv.count("MPSOffset poolingOffset ="))
+
+        elementwise = (
+            ROOT / "libnd4j/include/ops/declarable/platform/mps/mps_elementwise.mm"
+        ).read_text()
+        self.assertNotIn("start:0", elementwise)
+        self.assertIn("startIndex:0", elementwise)
+
 
 class WorkerConfigTests(unittest.TestCase):
     def args(self, **overrides):

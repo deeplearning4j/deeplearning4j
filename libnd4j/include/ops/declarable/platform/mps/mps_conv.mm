@@ -188,7 +188,8 @@ static void maxpool2dMPS(NDArray* input, NDArray* output,
            strideInPixelsX:sW
            strideInPixelsY:sH];
 
-        pooling.offset = MPSOffsetMake(kW / 2, kH / 2, 0);
+        MPSOffset poolingOffset = {kW / 2, kH / 2, 0};
+        pooling.offset = poolingOffset;
         pooling.edgeMode = MPSImageEdgeModeClamp;
 
         // Create images
@@ -290,7 +291,8 @@ static void avgpool2dMPS(NDArray* input, NDArray* output,
            strideInPixelsX:sW
            strideInPixelsY:sH];
 
-        pooling.offset = MPSOffsetMake(kW / 2, kH / 2, 0);
+        MPSOffset poolingOffset = {kW / 2, kH / 2, 0};
+        pooling.offset = poolingOffset;
         pooling.edgeMode = MPSImageEdgeModeClamp;
 
         // Create and process images (similar to maxpool)

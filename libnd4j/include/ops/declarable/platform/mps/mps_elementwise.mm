@@ -107,7 +107,7 @@ static void addMPS(NDArray* x, NDArray* y, NDArray* z) {
                                      scale:nil
                              offsetVector:nil
                              biasVector:nil
-                                    start:0];
+                               startIndex:0];
 
             [commandBuffer commit];
             [commandBuffer waitUntilCompleted];
