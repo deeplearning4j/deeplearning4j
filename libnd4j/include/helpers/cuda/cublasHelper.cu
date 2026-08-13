@@ -71,6 +71,7 @@ static void* solver_() {
   auto cusolverH = new cusolverDnHandle_t();
   auto status = cusolverDnCreate(cusolverH);
   if (status != CUSOLVER_STATUS_SUCCESS) {
+    delete cusolverH;
     std::string msg = "cuSolver handle creation failed !; Error code: [" + std::to_string(status) + "]";
     THROW_EXCEPTION(msg.c_str());
   }
@@ -119,15 +120,17 @@ CublasHelper::CublasHelper() {
   auto numDevices = AffinityManager::numberOfDevices();
   auto currentDevice = AffinityManager::currentDeviceId();
   _cache.resize(numDevices);
-  _solvers.resize(numDevices);
+  _solvers.resize(numDevices, nullptr);
   _cudnn.resize(numDevices);
   _sparse.resize(numDevices, nullptr);
   for (int e = 0; e < numDevices; e++) {
     AffinityManager::setCurrentNativeDevice(e);
 
     _cache[e] = handle_();
-    _solvers[e] = solver_();
     _cudnn[e] = cudnn_();
+    // _solvers[e] is created only when a solver-backed operation requests it.
+    // ZLUDA supports the CUDA execution path without implementing cuSolver,
+    // so ordinary array allocation must not probe that optional library.
     // _sparse[e] is lazily created on first use via sparseHandle(int deviceId)
   }
 
@@ -136,9 +139,18 @@ CublasHelper::CublasHelper() {
 }
 
 CublasHelper::~CublasHelper() {
-  auto numDevices = AffinityManager::numberOfDevices();
+  // The legacy cuBLAS cache and thread-local handles retain their existing
+  // process-lifetime ownership; only optional per-device handles are owned here.
 
-  // for (int e = 0; e < numDevices; e++) destroyHandle_(_cache[e]);
+  // Destroy only handles that were requested and successfully created.
+  for (int e = 0; e < static_cast<int>(_solvers.size()); e++) {
+    if (_solvers[e] != nullptr) {
+      auto* solverHandle = reinterpret_cast<cusolverDnHandle_t*>(_solvers[e]);
+      cusolverDnDestroy(*solverHandle);
+      delete solverHandle;
+      _solvers[e] = nullptr;
+    }
+  }
 
   // Destroy any lazily-created cuSPARSE handles
   for (int e = 0; e < static_cast<int>(_sparse.size()); e++) {
@@ -229,12 +241,18 @@ void* CublasHelper::solver() {
     THROW_EXCEPTION(msg.c_str());
   }
 
-  auto handle = _solvers[deviceId];
-  if (handle == nullptr) {
-    std::string msg = "cuSolver handle is null for device - initialization may have failed; Error code: [" + std::to_string(deviceId) + "]";
-    THROW_EXCEPTION(msg.c_str());
+  // cuSolver is optional for most CUDA operations and is not implemented by
+  // every CUDA ABI provider (notably ZLUDA). Create its handle only when an
+  // operation such as SVD or LUP explicitly asks for it. Always take the lock:
+  // reading and writing a plain vector slot outside the lock would be a data
+  // race during first use from concurrent threads.
+  std::lock_guard<std::mutex> lock(_mutex);
+  if (_solvers[deviceId] == nullptr) {
+    // deviceId is the current device by construction, so solver_() binds the
+    // handle to the same context without any process-global device switching.
+    _solvers[deviceId] = solver_();
   }
-  return handle;
+  return _solvers[deviceId];
 }
 
 void* CublasHelper::handle(int deviceId) {

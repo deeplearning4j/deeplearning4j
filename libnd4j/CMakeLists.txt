@@ -606,6 +606,11 @@ if(SD_BUILD_TESTS)
             "-DTEST_READELF=${CMAKE_READELF}"
             "-DTEST_PATCHELF=${SD_TEST_PATCHELF_EXECUTABLE}"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/SharedRuntimeAliasContractTest.cmake")
+    add_test(
+        NAME cublas_lazy_solver_contract
+        COMMAND ${CMAKE_COMMAND}
+            "-DLIBND4J_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/CublasLazySolverContractTest.cmake")
     add_subdirectory(tests_cpu)
 endif()
 
