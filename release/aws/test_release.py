@@ -238,6 +238,7 @@ class ReleaseValidationTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("SD_TRITON_MANAGED_LLVM_HOST_TOOLS", dependencies)
         self.assertIn("_TRITON_MANAGED_HOST_TOOLS_READY", dependencies)
+        self.assertIn("NOT _TRITON_LLVM_INSTALL_COMPLETE OR", dependencies)
         self.assertIn("NOT _TRITON_COMPILER_INSTALL_COMPLETE", dependencies)
 
     def test_sccache_release_assets_are_pinned_to_quoted_response_file_support(self):

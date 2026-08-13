@@ -2211,13 +2211,13 @@ function(setup_triton)
     endif()
 
     if(CMAKE_CROSSCOMPILING AND
-       _TRITON_BUILDS_COMPILER AND
-       NOT _TRITON_COMPILER_INSTALL_COMPLETE AND
-       NOT _TRITON_MANAGED_HOST_TOOLS_READY)
-        # Triton's generated sources always require native tablegen executables.
-        # A restored target LLVM/MLIR package cannot satisfy that host contract;
-        # use an explicitly restored host-tool snapshot or build the small native
-        # generator target locally.
+       NOT _TRITON_MANAGED_HOST_TOOLS_READY AND
+       (NOT _TRITON_LLVM_INSTALL_COMPLETE OR
+        (_TRITON_BUILDS_COMPILER AND NOT _TRITON_COMPILER_INSTALL_COMPLETE)))
+        # A cold target LLVM build and Triton's generated sources both require
+        # native tablegen executables. A restored target LLVM/MLIR package cannot
+        # satisfy that host contract; use an explicitly restored host-tool
+        # snapshot or build the small native generator target locally.
         find_program(_TRITON_HOST_NINJA
             NAMES ninja ninja-build NO_CMAKE_FIND_ROOT_PATH)
         if(NOT _TRITON_HOST_NINJA)
