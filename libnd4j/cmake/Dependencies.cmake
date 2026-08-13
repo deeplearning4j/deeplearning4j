@@ -2179,6 +2179,19 @@ function(setup_triton)
     set(TRITON_LLVM_URL
         "https://github.com/llvm/llvm-project/archive/${TRITON_LLVM_COMMIT}.tar.gz")
     set(_TRITON_LLVM_NATIVE_TOOL_DIR "${TRITON_LLVM_INSTALL_DIR}/bin")
+    set(_TRITON_MANAGED_HOST_TOOLS_READY FALSE)
+    if(CMAKE_CROSSCOMPILING AND SD_TRITON_MANAGED_LLVM_HOST_TOOLS)
+        get_filename_component(_TRITON_LLVM_NATIVE_TOOL_DIR
+            "${SD_TRITON_MANAGED_LLVM_HOST_TOOLS}" ABSOLUTE)
+        if(NOT EXISTS "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen" OR
+           NOT EXISTS "${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen")
+            message(FATAL_ERROR
+                "SD_TRITON_MANAGED_LLVM_HOST_TOOLS must contain executable llvm-tblgen and mlir-tblgen")
+        endif()
+        set(_TRITON_MANAGED_HOST_TOOLS_READY TRUE)
+        message(STATUS
+            "   Reusing managed LLVM host tools: ${_TRITON_LLVM_NATIVE_TOOL_DIR}")
+    endif()
 
     if(CMAKE_CROSSCOMPILING)
         # Every cold cross-build generator, including SLEEF, needs native host
@@ -2197,10 +2210,14 @@ function(setup_triton)
         endif()
     endif()
 
-    if(CMAKE_CROSSCOMPILING AND NOT _TRITON_LLVM_INSTALL_COMPLETE)
-        # A validated target LLVM/MLIR cache hit already contains every target
-        # artifact consumed below, so it must not rebuild host-only tablegen
-        # tools. They are needed solely while producing a new target install.
+    if(CMAKE_CROSSCOMPILING AND
+       _TRITON_BUILDS_COMPILER AND
+       NOT _TRITON_COMPILER_INSTALL_COMPLETE AND
+       NOT _TRITON_MANAGED_HOST_TOOLS_READY)
+        # Triton's generated sources always require native tablegen executables.
+        # A restored target LLVM/MLIR package cannot satisfy that host contract;
+        # use an explicitly restored host-tool snapshot or build the small native
+        # generator target locally.
         find_program(_TRITON_HOST_NINJA
             NAMES ninja ninja-build NO_CMAKE_FIND_ROOT_PATH)
         if(NOT _TRITON_HOST_NINJA)

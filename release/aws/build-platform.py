@@ -183,6 +183,28 @@ def ensure_sccache(cache_dir: Path) -> str:
     return str(executable)
 
 
+def _activate_managed_llvm_environment(
+    env: dict[str, str],
+    managed_llvm_root: str,
+    managed_llvm_host_tools: str = "",
+) -> None:
+    """Expose a restored target LLVM package and its native generator tools."""
+    env["SD_TRITON_MANAGED_LLVM_ROOT"] = managed_llvm_root
+    cmake_args = [
+        f"-DSD_TRITON_MANAGED_LLVM_ROOT={managed_llvm_root}",
+        "-DSD_TRITON_CONSUMER_KIND=CPU_COMPILER",
+    ]
+    if managed_llvm_host_tools:
+        env["SD_TRITON_MANAGED_LLVM_HOST_TOOLS"] = managed_llvm_host_tools
+        cmake_args.append(
+            "-DSD_TRITON_MANAGED_LLVM_HOST_TOOLS=" + managed_llvm_host_tools
+        )
+    existing_cmake_args = env.get("DL4J_CMAKE_ARGS", "").strip()
+    env["DL4J_CMAKE_ARGS"] = " ".join(
+        item for item in (existing_cmake_args, *cmake_args) if item
+    )
+
+
 def restore_remote_dependency_cache(
     source: Path, config: dict, env: dict[str, str]
 ) -> None:
@@ -248,15 +270,28 @@ def restore_remote_dependency_cache(
         except (OSError, ValueError):
             cached = {}
         managed_root = cached.get("managedLlvmRoot")
+        managed_host_tools = cached.get("managedLlvmHostTools", "")
+        host_tools_valid = (
+            isinstance(managed_host_tools, str)
+            and Path(managed_host_tools, "llvm-tblgen").is_file()
+            and Path(managed_host_tools, "mlir-tblgen").is_file()
+        )
+        host_tools_required = javacpp_platform.startswith("android-")
         if (
             cached.get("identities") == identities
             and isinstance(managed_root, str)
             and Path(managed_root).is_dir()
+            and (host_tools_valid or not host_tools_required)
         ):
-            env["SD_TRITON_MANAGED_LLVM_ROOT"] = managed_root
+            _activate_managed_llvm_environment(
+                env,
+                managed_root,
+                managed_host_tools if host_tools_valid else "",
+            )
             print(
                 f"[dl4j-dep-cache] reuse host={identities['host']} "
-                f"target={identities['target']} llvm={managed_root}",
+                f"target={identities['target']} llvm={managed_root} "
+                f"hostTools={managed_host_tools if host_tools_valid else 'local-build'}",
                 flush=True,
             )
             return
@@ -302,6 +337,7 @@ def restore_remote_dependency_cache(
     cache_dir.mkdir(parents=True, exist_ok=True)
     restored = []
     package_roots_by_scope = {"host": [], "target": []}
+    llvm_host_tool_dirs = []
     with tempfile.TemporaryDirectory(
         prefix="dl4j-dependency-cache-restore-", dir=cache_root
     ) as temporary:
@@ -365,9 +401,18 @@ def restore_remote_dependency_cache(
                 root = llvm_config.parents[3]
                 if (root / "lib/cmake/mlir/MLIRConfig.cmake").is_file():
                     candidate_roots.append(root.relative_to(candidate))
+            candidate_host_tool_dirs = []
+            if scope == "host":
+                for llvm_tablegen in candidate.rglob("llvm-tblgen"):
+                    tool_dir = llvm_tablegen.parent
+                    if (tool_dir / "mlir-tblgen").is_file():
+                        candidate_host_tool_dirs.append(tool_dir.relative_to(candidate))
             shutil.copytree(candidate, cache_dir, dirs_exist_ok=True)
             package_roots_by_scope[scope].extend(
                 cache_dir / relative_root for relative_root in candidate_roots
+            )
+            llvm_host_tool_dirs.extend(
+                cache_dir / relative_root for relative_root in candidate_host_tool_dirs
             )
             restored.append(
                 f"{scope}={manifest.get('identity', archive_object)}"
@@ -441,14 +486,19 @@ def restore_remote_dependency_cache(
             "managed dependency snapshots did not contain a uniquely selectable "
             f"LLVM/MLIR package (found {len(llvm_roots)} roots: {llvm_roots})"
         )
-    env["SD_TRITON_MANAGED_LLVM_ROOT"] = managed_llvm_root
-    managed_cmake_args = (
-        f"-DSD_TRITON_MANAGED_LLVM_ROOT={managed_llvm_root} "
-        "-DSD_TRITON_CONSUMER_KIND=CPU_COMPILER"
+    selectable_host_tool_dirs = sorted(
+        {
+            path.resolve()
+            for path in llvm_host_tool_dirs
+            if (path / "llvm-tblgen").is_file()
+            and (path / "mlir-tblgen").is_file()
+        }
     )
-    existing_cmake_args = env.get("DL4J_CMAKE_ARGS", "").strip()
-    env["DL4J_CMAKE_ARGS"] = (
-        f"{existing_cmake_args} {managed_cmake_args}".strip()
+    managed_llvm_host_tools = (
+        str(selectable_host_tool_dirs[0]) if selectable_host_tool_dirs else ""
+    )
+    _activate_managed_llvm_environment(
+        env, managed_llvm_root, managed_llvm_host_tools
     )
     marker.write_text(
         json.dumps(
@@ -457,6 +507,7 @@ def restore_remote_dependency_cache(
                 "javacppPlatform": javacpp_platform,
                 "nativeBackend": native_backend,
                 "managedLlvmRoot": managed_llvm_root,
+                "managedLlvmHostTools": managed_llvm_host_tools,
             },
             sort_keys=True,
         ),
@@ -464,7 +515,8 @@ def restore_remote_dependency_cache(
     )
     print(
         "[dl4j-dep-cache] restored " + " ".join(restored) +
-        f" llvm={managed_llvm_root}",
+        f" llvm={managed_llvm_root} "
+        f"hostTools={managed_llvm_host_tools or 'local-build'}",
         flush=True,
     )
 

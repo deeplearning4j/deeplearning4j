@@ -213,6 +213,33 @@ class ReleaseValidationTest(unittest.TestCase):
             ["./update-versions.sh", "snapshot", "release"], command[1:]
         )
 
+    def test_managed_llvm_environment_carries_host_generators_and_existing_args(self):
+        env = {"DL4J_CMAKE_ARGS": "-DEXISTING=ON"}
+        build_platform._activate_managed_llvm_environment(
+            env, "/cache/target-llvm", "/cache/host-tools/bin"
+        )
+        self.assertEqual("/cache/target-llvm", env["SD_TRITON_MANAGED_LLVM_ROOT"])
+        self.assertEqual(
+            "/cache/host-tools/bin", env["SD_TRITON_MANAGED_LLVM_HOST_TOOLS"]
+        )
+        self.assertIn("-DEXISTING=ON", env["DL4J_CMAKE_ARGS"])
+        self.assertIn(
+            "-DSD_TRITON_MANAGED_LLVM_ROOT=/cache/target-llvm",
+            env["DL4J_CMAKE_ARGS"],
+        )
+        self.assertIn(
+            "-DSD_TRITON_MANAGED_LLVM_HOST_TOOLS=/cache/host-tools/bin",
+            env["DL4J_CMAKE_ARGS"],
+        )
+
+    def test_cross_triton_has_managed_host_tools_and_cold_build_fallback(self):
+        dependencies = (
+            Path(__file__).parents[2] / "libnd4j/cmake/Dependencies.cmake"
+        ).read_text(encoding="utf-8")
+        self.assertIn("SD_TRITON_MANAGED_LLVM_HOST_TOOLS", dependencies)
+        self.assertIn("_TRITON_MANAGED_HOST_TOOLS_READY", dependencies)
+        self.assertIn("NOT _TRITON_COMPILER_INSTALL_COMPLETE", dependencies)
+
     def test_sccache_release_assets_are_pinned_to_quoted_response_file_support(self):
         self.assertEqual("0.17.0", build_platform.SCCACHE_VERSION)
         self.assertEqual(
