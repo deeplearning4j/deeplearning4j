@@ -965,6 +965,7 @@ class ReleaseValidationTest(unittest.TestCase):
                     ":nd4j-cuda-12.9-preset",
                     ":nd4j-zluda-12.9",
                     ":nd4j-zluda-12.9-platform",
+                    ":nd4j-presets-common",
                     ":libnd4j",
                 },
                 "artifactIds": {
@@ -972,12 +973,14 @@ class ReleaseValidationTest(unittest.TestCase):
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
+                    "nd4j-presets-common",
                 },
                 "unclassifiedArtifactIds": [
                     "nd4j-cuda-backend-common",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
+                    "nd4j-presets-common",
                 ],
             },
             "windows-x86_64-zluda": {
@@ -989,6 +992,7 @@ class ReleaseValidationTest(unittest.TestCase):
                     ":nd4j-cuda-12.9-preset",
                     ":nd4j-zluda-12.9",
                     ":nd4j-zluda-12.9-platform",
+                    ":nd4j-presets-common",
                     ":libnd4j",
                 },
                 "artifactIds": {
@@ -996,12 +1000,14 @@ class ReleaseValidationTest(unittest.TestCase):
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
+                    "nd4j-presets-common",
                 },
                 "unclassifiedArtifactIds": [
                     "nd4j-cuda-backend-common",
                     "nd4j-cuda-12.9-preset",
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
+                    "nd4j-presets-common",
                 ],
             },
         }
@@ -1026,6 +1032,16 @@ class ReleaseValidationTest(unittest.TestCase):
                                 "rocm-smi", "miopen",
                             ],
                             build["rocmBuildComponents"],
+                        )
+                        archive_contract = rules["classifierArchiveContracts"][
+                            "nd4j-zluda-12.9"
+                        ]
+                        self.assertEqual(
+                            {
+                                "libcuda.so": "libnvcuda.so",
+                                "libcuda.so.1": "libnvcuda.so",
+                            },
+                            archive_contract["requiredRuntimeAliases"],
                         )
                     else:
                         self.assertNotIn("rocmVersion", build)
@@ -1835,6 +1851,10 @@ class ReleaseValidationTest(unittest.TestCase):
                         "runtimeManifest": (
                             f"{native_root}/shared-runtime-manifest.txt"
                         ),
+                        "requiredRuntimeAliases": {
+                            "libcuda.so": "libnvcuda.so",
+                            "libcuda.so.1": "libnvcuda.so",
+                        },
                     },
                 },
             }
@@ -1855,7 +1875,11 @@ class ReleaseValidationTest(unittest.TestCase):
             zluda_path = artifact_path(artifact_id)
             manifest = (
                 "# nd4j-shared-runtime-manifest-v1\n"
-                "libcuda.so\nlibamdhip64.so\n"
+                "# runtime-count=2\n"
+                "# runtime-alias-count=2\n"
+                "# runtime-alias=libcuda.so->libnvcuda.so\n"
+                "# runtime-alias=libcuda.so.1->libnvcuda.so\n"
+                "libamdhip64.so\nlibnvcuda.so\n"
             )
 
             with zipfile.ZipFile(zluda_path, "w") as archive:
@@ -1870,7 +1894,7 @@ class ReleaseValidationTest(unittest.TestCase):
             with zipfile.ZipFile(zluda_path, "w") as archive:
                 archive.writestr(f"{native_root}/libjnind4jcuda.so", b"jni")
                 archive.writestr(f"{native_root}/libnd4jcuda.so", b"backend")
-                archive.writestr(f"{native_root}/libcuda.so", b"zluda")
+                archive.writestr(f"{native_root}/libnvcuda.so", b"zluda")
                 archive.writestr(
                     f"{native_root}/shared-runtime-manifest.txt", manifest
                 )
@@ -1881,12 +1905,23 @@ class ReleaseValidationTest(unittest.TestCase):
 
             with zipfile.ZipFile(zluda_path, "a") as archive:
                 archive.writestr(f"{native_root}/libamdhip64.so", b"hip")
+            with self.assertRaisesRegex(
+                RuntimeError, "manifest-declared runtime aliases"
+            ):
+                build_platform.attest_variant_classifier_artifacts(
+                    repository, build, rules, variant, version, "test-repository"
+                )
+
+            with zipfile.ZipFile(zluda_path, "a") as archive:
+                archive.writestr(f"{native_root}/libcuda.so", b"zluda")
+                archive.writestr(f"{native_root}/libcuda.so.1", b"zluda")
             output = StringIO()
             with redirect_stdout(output):
                 build_platform.attest_variant_classifier_artifacts(
                     repository, build, rules, variant, version, "test-repository"
                 )
             self.assertIn("runtime-closure=2", output.getvalue())
+            self.assertIn("runtime-aliases=2", output.getvalue())
 
     def test_cpu_cuda_classifier_contract_rejects_incomplete_plan(self):
         build = {

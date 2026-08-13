@@ -598,6 +598,9 @@ endif()
 
 set(_staged_runtime_names "")
 set(_staged_package_names "")
+set(_staged_runtime_alias_names "")
+set(_staged_runtime_alias_targets "")
+set(_staged_runtime_alias_mappings "")
 foreach(_runtime_library IN LISTS _runtime_libraries)
     get_filename_component(_runtime_real_path "${_runtime_library}" REALPATH)
     if(NOT EXISTS "${_runtime_real_path}" OR IS_DIRECTORY "${_runtime_real_path}")
@@ -647,6 +650,32 @@ foreach(_runtime_alias_entry IN LISTS _runtime_alias_entries)
             "Unsafe runtime dependency alias '${_runtime_alias_name}'")
     endif()
     get_filename_component(_runtime_alias_real "${_runtime_alias_source}" REALPATH)
+    _shared_runtime_loader_name(_runtime_alias_target
+        "${_runtime_alias_real}")
+    list(FIND _staged_runtime_names "${_runtime_alias_target}"
+        _runtime_alias_target_index)
+    if(_runtime_alias_target_index EQUAL -1)
+        message(FATAL_ERROR
+            "Runtime alias '${_runtime_alias_name}' targets canonical runtime "
+            "'${_runtime_alias_target}', which was not staged")
+    endif()
+    list(FIND _staged_runtime_alias_names "${_runtime_alias_name}"
+        _runtime_alias_mapping_index)
+    if(_runtime_alias_mapping_index EQUAL -1)
+        list(APPEND _staged_runtime_alias_names "${_runtime_alias_name}")
+        list(APPEND _staged_runtime_alias_targets "${_runtime_alias_target}")
+        list(APPEND _staged_runtime_alias_mappings
+            "${_runtime_alias_name}->${_runtime_alias_target}")
+    else()
+        list(GET _staged_runtime_alias_targets
+            ${_runtime_alias_mapping_index} _previous_runtime_alias_target)
+        if(NOT _previous_runtime_alias_target STREQUAL _runtime_alias_target)
+            message(FATAL_ERROR
+                "Runtime alias '${_runtime_alias_name}' maps to both "
+                "'${_previous_runtime_alias_target}' and "
+                "'${_runtime_alias_target}'")
+        endif()
+    endif()
     set(_runtime_alias_output "${OUTPUT_DIR}/${_runtime_alias_name}")
     list(FIND _staged_package_names "${_runtime_alias_name}"
         _runtime_alias_index)
@@ -704,6 +733,19 @@ list(SORT _staged_runtime_names)
 list(LENGTH _staged_runtime_names _runtime_count)
 set(_runtime_manifest
     "# nd4j-shared-runtime-manifest-v1\n# runtime-count=${_runtime_count}\n")
+if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
+    # These entries are extraction metadata, not preload entries. JavaCPP must
+    # materialize each compatibility name beside its canonical target without
+    # calling System.load() on the alias and creating a second runtime identity.
+    list(SORT _staged_runtime_alias_mappings)
+    list(LENGTH _staged_runtime_alias_mappings _runtime_alias_count)
+    string(APPEND _runtime_manifest
+        "# runtime-alias-count=${_runtime_alias_count}\n")
+    foreach(_runtime_alias_mapping IN LISTS _staged_runtime_alias_mappings)
+        string(APPEND _runtime_manifest
+            "# runtime-alias=${_runtime_alias_mapping}\n")
+    endforeach()
+endif()
 if(_staged_runtime_names)
     string(REPLACE ";" "\n" _runtime_entries "${_staged_runtime_names}")
     string(APPEND _runtime_manifest "${_runtime_entries}\n")

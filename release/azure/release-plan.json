@@ -1204,7 +1204,8 @@
           "nd4j-cuda-12.9-preset",
           "nd4j-zluda-12.9",
           "nd4j-zluda-12.9-platform",
-          "nd4j-cuda-backend-common"
+          "nd4j-cuda-backend-common",
+          "nd4j-presets-common"
         ],
         "classifierTokens": [
           "linux-x86_64-zluda"
@@ -1213,7 +1214,8 @@
           "nd4j-cuda-backend-common",
           "nd4j-cuda-12.9-preset",
           "nd4j-zluda-12.9",
-          "nd4j-zluda-12.9-platform"
+          "nd4j-zluda-12.9-platform",
+          "nd4j-presets-common"
         ],
         "classifierArchiveContracts": {
           "nd4j-zluda-12.9": {
@@ -1224,7 +1226,11 @@
               "org/nd4j/linalg/jcublas/bindings/{classifier}/libamdhip64.so",
               "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt"
             ],
-            "runtimeManifest": "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt"
+            "runtimeManifest": "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt",
+            "requiredRuntimeAliases": {
+              "libcuda.so": "libnvcuda.so",
+              "libcuda.so.1": "libnvcuda.so"
+            }
           }
         },
         "includeMetadata": true
@@ -1255,7 +1261,8 @@
           ":nd4j-zluda-12.9",
           ":nd4j-zluda-12.9-platform",
           ":libnd4j",
-          ":nd4j-cuda-backend-common"
+          ":nd4j-cuda-backend-common",
+          ":nd4j-presets-common"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",
@@ -1294,7 +1301,8 @@
           "nd4j-cuda-12.9-preset",
           "nd4j-cuda-backend-common",
           "nd4j-zluda-12.9",
-          "nd4j-zluda-12.9-platform"
+          "nd4j-zluda-12.9-platform",
+          "nd4j-presets-common"
         ],
         "classifierTokens": [
           "windows-x86_64-zluda"
@@ -1303,7 +1311,8 @@
           "nd4j-cuda-backend-common",
           "nd4j-cuda-12.9-preset",
           "nd4j-zluda-12.9",
-          "nd4j-zluda-12.9-platform"
+          "nd4j-zluda-12.9-platform",
+          "nd4j-presets-common"
         ],
         "includeMetadata": true
       },
@@ -1323,7 +1332,8 @@
           ":nd4j-zluda-12.9",
           ":libnd4j",
           ":nd4j-cuda-backend-common",
-          ":nd4j-zluda-12.9-platform"
+          ":nd4j-zluda-12.9-platform",
+          ":nd4j-presets-common"
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",

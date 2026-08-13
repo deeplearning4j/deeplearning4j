@@ -14,6 +14,7 @@ endforeach()
 set(_test_root "${TEST_BINARY_DIR}/shared-runtime-alias-contract")
 set(_runtime_root "${_test_root}/runtime")
 set(_output_root "${_test_root}/output")
+set(_package_root "${_output_root}/classifier-runtime")
 set(_source_file "${_test_root}/nvcuda.cpp")
 set(_real_runtime "${_runtime_root}/libnvcuda.so")
 set(_cuda_alias "${_runtime_root}/libcuda.so")
@@ -61,6 +62,7 @@ execute_process(
         "-DRUNTIME_LIBRARIES_PIPE=${_cuda_alias}|${_no_soname_runtime}"
         "-DRUNTIME_SEARCH_ROOTS_PIPE=${_runtime_root}"
         "-DOUTPUT_DIR=${_output_root}"
+        "-DPACKAGE_DIR=${_package_root}"
         "-DCXX_COMPILER=${TEST_CXX_COMPILER}"
         "-DREADELF=${TEST_READELF}"
         -P "${LIBND4J_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
@@ -91,12 +93,30 @@ if(NOT _alias_manifest_index EQUAL -1)
         "Shared-runtime preload manifest contains package-only alias "
         "'libcuda.so': ${_manifest_entries}")
 endif()
+list(FIND _manifest_entries
+    "# runtime-alias=libcuda.so->libnvcuda.so"
+    _alias_mapping_index)
+list(FIND _manifest_entries "# runtime-alias-count=1"
+    _alias_count_index)
+if(_alias_mapping_index EQUAL -1 OR _alias_count_index EQUAL -1)
+    message(FATAL_ERROR
+        "Shared-runtime manifest omitted the non-preloaded libcuda alias "
+        "mapping/count: ${_manifest_entries}")
+endif()
 foreach(_required_runtime IN ITEMS libnvcuda.so libcuda.so libcublas.so)
     if(NOT EXISTS "${_output_root}/${_required_runtime}")
         message(FATAL_ERROR
             "Shared-runtime staging omitted '${_required_runtime}'")
     endif()
+    if(NOT EXISTS "${_package_root}/${_required_runtime}")
+        message(FATAL_ERROR
+            "Classifier runtime package omitted '${_required_runtime}'")
+    endif()
 endforeach()
+if(NOT EXISTS "${_package_root}/shared-runtime-manifest.txt")
+    message(FATAL_ERROR
+        "Classifier runtime package omitted shared-runtime-manifest.txt")
+endif()
 
 # The linked backend, rather than the caller's seed ordering, must be the root of
 # the managed dependency walk. The mixed-case MIOpen-style SONAME also verifies

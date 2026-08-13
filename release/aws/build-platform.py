@@ -693,6 +693,16 @@ def attest_classifier_archive_contract(
     manifest_entry = (
         expand(manifest_entry_value) if manifest_entry_value is not None else None
     )
+    required_runtime_aliases_value = contract.get("requiredRuntimeAliases", {}) or {}
+    if not isinstance(required_runtime_aliases_value, dict):
+        raise ValueError(
+            f"classifierArchiveContracts[{artifact_id!r}].requiredRuntimeAliases "
+            "must be an object"
+        )
+    required_runtime_aliases = {
+        expand(alias): expand(target)
+        for alias, target in required_runtime_aliases_value.items()
+    }
     if not required_entries or not manifest_entry:
         raise ValueError(
             f"classifierArchiveContracts[{artifact_id!r}] must declare "
@@ -724,18 +734,71 @@ def attest_classifier_archive_contract(
                     f"{phase} classifier archive {path.name} has a non-UTF-8 "
                     f"runtime manifest {manifest_entry}"
                 ) from exc
+            manifest_lines = [
+                line.strip() for line in manifest_text.splitlines() if line.strip()
+            ]
             runtime_names = [
-                line.strip()
-                for line in manifest_text.splitlines()
-                if line.strip() and not line.lstrip().startswith("#")
+                line for line in manifest_lines if not line.startswith("#")
             ]
             if not runtime_names:
                 raise RuntimeError(
                     f"{phase} classifier archive {path.name} has an empty "
                     f"runtime closure manifest {manifest_entry}"
                 )
+            alias_count = None
+            runtime_aliases = {}
+            for line in manifest_lines:
+                if line.startswith("# runtime-alias-count="):
+                    if alias_count is not None:
+                        raise RuntimeError(
+                            f"{phase} classifier archive {path.name} has duplicate "
+                            "runtime alias counts"
+                        )
+                    try:
+                        alias_count = int(line.partition("=")[2])
+                    except ValueError as exc:
+                        raise RuntimeError(
+                            f"{phase} classifier archive {path.name} has an invalid "
+                            f"runtime alias count: {line}"
+                        ) from exc
+                elif line.startswith("# runtime-alias="):
+                    mapping = line.partition("=")[2]
+                    alias, separator, target = mapping.partition("->")
+                    alias = alias.strip()
+                    target = target.strip()
+                    if not separator or not alias or not target:
+                        raise RuntimeError(
+                            f"{phase} classifier archive {path.name} has an invalid "
+                            f"runtime alias declaration: {line}"
+                        )
+                    if alias in runtime_aliases:
+                        raise RuntimeError(
+                            f"{phase} classifier archive {path.name} has duplicate "
+                            f"runtime alias declarations for {alias}"
+                        )
+                    runtime_aliases[alias] = target
+            if alias_count is not None and alias_count != len(runtime_aliases):
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} declares "
+                    f"{alias_count} runtime aliases but lists {len(runtime_aliases)}"
+                )
+            missing_required_aliases = [
+                f"{alias}->{target}"
+                for alias, target in required_runtime_aliases.items()
+                if runtime_aliases.get(alias) != target
+            ]
+            if missing_required_aliases:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} does not declare "
+                    "required runtime aliases: " + ", ".join(missing_required_aliases)
+                )
             unsafe = [
-                name for name in runtime_names
+                name
+                for name in (
+                    runtime_names
+                    + list(runtime_aliases)
+                    + list(runtime_aliases.values())
+                )
                 if "/" in name or "\\" in name or name in {".", ".."}
             ]
             if unsafe:
@@ -743,11 +806,22 @@ def attest_classifier_archive_contract(
                     f"{phase} classifier archive {path.name} has unsafe runtime "
                     f"manifest entries: {', '.join(unsafe)}"
                 )
-            manifest_parent = manifest_entry.rpartition("/")[0]
-            runtime_entries = [
-                f"{manifest_parent}/{name}" if manifest_parent else name
-                for name in runtime_names
+            invalid_alias_targets = [
+                f"{alias}->{target}"
+                for alias, target in runtime_aliases.items()
+                if target not in runtime_names or alias in runtime_names
             ]
+            if invalid_alias_targets:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} has runtime aliases "
+                    "which do not resolve directly to canonical manifest runtimes: "
+                    + ", ".join(invalid_alias_targets)
+                )
+            manifest_parent = manifest_entry.rpartition("/")[0]
+            def manifest_sibling(name):
+                return f"{manifest_parent}/{name}" if manifest_parent else name
+
+            runtime_entries = [manifest_sibling(name) for name in runtime_names]
             missing_runtime = [
                 entry for entry in runtime_entries
                 if entry not in entries or entries[entry].file_size == 0
@@ -757,6 +831,34 @@ def attest_classifier_archive_contract(
                     f"{phase} classifier archive {path.name} is missing "
                     "manifest-owned runtimes: " + ", ".join(missing_runtime)
                 )
+            alias_entries = {
+                manifest_sibling(alias): manifest_sibling(target)
+                for alias, target in runtime_aliases.items()
+            }
+            missing_aliases = [
+                alias
+                for alias in alias_entries
+                if alias not in entries or entries[alias].file_size == 0
+            ]
+            if missing_aliases:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} is missing "
+                    "manifest-declared runtime aliases: " + ", ".join(missing_aliases)
+                )
+            mismatched_aliases = [
+                f"{alias}->{target}"
+                for alias, target in alias_entries.items()
+                if (
+                    entries[alias].file_size != entries[target].file_size
+                    or entries[alias].CRC != entries[target].CRC
+                )
+            ]
+            if mismatched_aliases:
+                raise RuntimeError(
+                    f"{phase} classifier archive {path.name} has runtime aliases "
+                    "whose content differs from the canonical runtime: "
+                    + ", ".join(mismatched_aliases)
+                )
     except zipfile.BadZipFile as exc:
         raise RuntimeError(
             f"{phase} classifier artifact is not a readable JAR: {path}"
@@ -765,7 +867,8 @@ def attest_classifier_archive_contract(
     print(
         f"[dl4j-attestation] phase={phase} classifier={classifier} "
         f"artifact={artifact_id} archive-entries={len(entries)} "
-        f"runtime-closure={len(runtime_names)}",
+        f"runtime-closure={len(runtime_names)} "
+        f"runtime-aliases={len(runtime_aliases)}",
         flush=True,
     )
 

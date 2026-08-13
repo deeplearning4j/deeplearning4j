@@ -1,0 +1,6 @@
+# nd4j-shared-runtime-manifest-v1
+# runtime-count=1
+# runtime-alias-count=2
+# runtime-alias=libcuda.so->libnvcuda.so
+# runtime-alias=libcuda.so.1->libnvcuda.so
+libnvcuda.so

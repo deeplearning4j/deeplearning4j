@@ -15,15 +15,24 @@ import org.bytedeco.javacpp.ClassProperties;
 import org.bytedeco.javacpp.Loader;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -37,6 +46,10 @@ public final class SharedCompilerRuntime {
     private static final String MANIFEST_FORMAT =
             "# nd4j-shared-runtime-manifest-v1";
     private static final String RUNTIME_COUNT_PREFIX = "# runtime-count=";
+    private static final String RUNTIME_ALIAS_COUNT_PREFIX =
+            "# runtime-alias-count=";
+    private static final String RUNTIME_ALIAS_PREFIX = "# runtime-alias=";
+    private static final String RUNTIME_ALIAS_SEPARATOR = "->";
     private static final String BUILD_TOOLCHAIN_NAME =
             "javacpp-build-toolchain.properties";
 
@@ -60,7 +73,7 @@ public final class SharedCompilerRuntime {
             throw new IllegalStateException(
                     "JavaCPP ClassProperties has no platform");
         }
-        Set<String> runtimeNames;
+        RuntimeManifest manifest;
         if (Loader.isLoadLibraries()) {
             Properties configuredProperties = Loader.loadProperties();
             String configuredPlatform =
@@ -73,28 +86,28 @@ public final class SharedCompilerRuntime {
             }
             String configuredExtension =
                     configuredProperties.getProperty("platform.extension");
-            runtimeNames = readBundledManifest(
+            manifest = readBundledManifest(
                     presetClass,
                     resourceRoot,
                     platform,
                     configuredExtension,
                     properties.get("platform.extension"));
         } else {
-            Path manifest = findBuildManifest(properties);
-            if (manifest == null) {
+            Path manifestPath = findBuildManifest(properties);
+            if (manifestPath == null) {
                 throw new IllegalStateException(
                         "The native build did not produce " + MANIFEST_NAME
                                 + " in any JavaCPP platform.linkpath");
             }
-            runtimeNames = readBuildManifest(manifest);
-            configureBuildToolchain(properties, manifest.getParent());
-            configureBuildLinking(properties, manifest.getParent(), platform);
+            manifest = readBuildManifest(manifestPath);
+            configureBuildToolchain(properties, manifestPath.getParent());
+            configureBuildLinking(properties, manifestPath.getParent(), platform);
         }
 
         List<String> preloads = properties.get("platform.preload");
         int insertionIndex = 0;
         int added = 0;
-        for (String runtimeName : runtimeNames) {
+        for (String runtimeName : manifest.runtimeNames) {
             String runtimeSpec = runtimeSpec(runtimeName);
             if (!preloads.contains(runtimeSpec)) {
                 preloads.add(insertionIndex++, runtimeSpec);
@@ -114,10 +127,10 @@ public final class SharedCompilerRuntime {
         return null;
     }
 
-    private static Set<String> readBuildManifest(Path manifest) {
+    private static RuntimeManifest readBuildManifest(Path manifest) {
         try (BufferedReader reader = Files.newBufferedReader(
                 manifest, StandardCharsets.UTF_8)) {
-            return readRuntimeNames(reader, manifest.toString());
+            return readRuntimeManifest(reader, manifest.toString());
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Cannot read compiler runtime manifest " + manifest, e);
@@ -215,7 +228,7 @@ public final class SharedCompilerRuntime {
         }
     }
 
-    private static Set<String> readBundledManifest(
+    private static RuntimeManifest readBundledManifest(
             Class<?> presetClass,
             String resourceRoot,
             String platform,
@@ -247,17 +260,29 @@ public final class SharedCompilerRuntime {
 
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                     input, StandardCharsets.UTF_8))) {
-                Set<String> runtimeNames = readRuntimeNames(reader, resource);
-                for (String runtimeName : runtimeNames) {
-                    if (classLoader.getResource(resourceRoot + classifier
-                            + "/" + runtimeName) == null) {
+                RuntimeManifest manifest = readRuntimeManifest(reader, resource);
+                String runtimeResourceRoot = resourceRoot + classifier + "/";
+                for (String runtimeName : manifest.runtimeNames) {
+                    if (classLoader.getResource(runtimeResourceRoot
+                            + runtimeName) == null) {
                         throw new IllegalStateException(
                                 "Classifier '" + classifier
                                         + "' is missing runtime " + runtimeName
                                         + " declared by " + resource);
                     }
                 }
-                return runtimeNames;
+                for (String runtimeAlias : manifest.runtimeAliases.keySet()) {
+                    if (classLoader.getResource(runtimeResourceRoot
+                            + runtimeAlias) == null) {
+                        throw new IllegalStateException(
+                                "Classifier '" + classifier
+                                        + "' is missing compatibility alias "
+                                        + runtimeAlias + " declared by " + resource);
+                    }
+                }
+                materializeRuntimeAliases(
+                        classLoader, runtimeResourceRoot, manifest, resource);
+                return manifest;
             } catch (IOException e) {
                 throw new IllegalStateException(
                         "Cannot read compiler runtime manifest " + resource, e);
@@ -275,11 +300,13 @@ public final class SharedCompilerRuntime {
                         + attemptedResources);
     }
 
-    private static Set<String> readRuntimeNames(
+    private static RuntimeManifest readRuntimeManifest(
             BufferedReader reader, String source) throws IOException {
         Set<String> runtimeNames = new LinkedHashSet<>();
+        Map<String, String> runtimeAliases = new LinkedHashMap<>();
         boolean formatSeen = false;
         Integer declaredCount = null;
+        Integer declaredAliasCount = null;
         String line;
         while ((line = reader.readLine()) != null) {
             String runtimeName = line.trim();
@@ -317,14 +344,56 @@ public final class SharedCompilerRuntime {
                 }
                 continue;
             }
+            if (runtimeName.startsWith(RUNTIME_ALIAS_COUNT_PREFIX)) {
+                if (declaredAliasCount != null) {
+                    throw new IllegalStateException(
+                            "Duplicate runtime alias count in compiler runtime manifest "
+                                    + source);
+                }
+                String count = runtimeName.substring(
+                        RUNTIME_ALIAS_COUNT_PREFIX.length());
+                try {
+                    declaredAliasCount = Integer.valueOf(count);
+                } catch (NumberFormatException e) {
+                    throw new IllegalStateException(
+                            "Invalid runtime alias count '" + count
+                                    + "' in compiler runtime manifest " + source,
+                            e);
+                }
+                if (declaredAliasCount < 0) {
+                    throw new IllegalStateException(
+                            "Negative runtime alias count in compiler runtime manifest "
+                                    + source);
+                }
+                continue;
+            }
+            if (runtimeName.startsWith(RUNTIME_ALIAS_PREFIX)) {
+                String mapping = runtimeName.substring(RUNTIME_ALIAS_PREFIX.length());
+                int separator = mapping.indexOf(RUNTIME_ALIAS_SEPARATOR);
+                if (separator <= 0 || separator + RUNTIME_ALIAS_SEPARATOR.length()
+                        >= mapping.length()
+                        || mapping.indexOf(RUNTIME_ALIAS_SEPARATOR,
+                        separator + RUNTIME_ALIAS_SEPARATOR.length()) >= 0) {
+                    throw new IllegalStateException(
+                            "Invalid runtime alias mapping '" + mapping
+                                    + "' in compiler runtime manifest " + source);
+                }
+                String alias = mapping.substring(0, separator);
+                String target = mapping.substring(
+                        separator + RUNTIME_ALIAS_SEPARATOR.length());
+                validateRuntimeName(alias, source);
+                validateRuntimeName(target, source);
+                if (runtimeAliases.put(alias, target) != null) {
+                    throw new IllegalStateException(
+                            "Duplicate runtime alias '" + alias
+                                    + "' in compiler runtime manifest " + source);
+                }
+                continue;
+            }
             if (runtimeName.startsWith("#")) {
                 continue;
             }
-            if (!runtimeName.matches("[A-Za-z0-9][A-Za-z0-9._+@-]*")) {
-                throw new IllegalStateException(
-                        "Invalid shared-library loader name '" + runtimeName
-                                + "' in compiler runtime manifest " + source);
-            }
+            validateRuntimeName(runtimeName, source);
             runtimeNames.add(runtimeName);
         }
         if (!formatSeen || declaredCount == null) {
@@ -338,7 +407,137 @@ public final class SharedCompilerRuntime {
                             + declaredCount + " runtimes but contains "
                             + runtimeNames.size());
         }
-        return runtimeNames;
+        if (!runtimeAliases.isEmpty() && declaredAliasCount == null) {
+            throw new IllegalStateException(
+                    "Compiler runtime manifest " + source
+                            + " declares runtime aliases without an alias count");
+        }
+        if (declaredAliasCount != null
+                && declaredAliasCount != runtimeAliases.size()) {
+            throw new IllegalStateException(
+                    "Compiler runtime manifest " + source + " declares "
+                            + declaredAliasCount + " runtime aliases but contains "
+                            + runtimeAliases.size());
+        }
+        for (Map.Entry<String, String> alias : runtimeAliases.entrySet()) {
+            if (runtimeNames.contains(alias.getKey())) {
+                throw new IllegalStateException(
+                        "Compiler runtime manifest " + source
+                                + " lists compatibility alias '" + alias.getKey()
+                                + "' as a preload runtime");
+            }
+            if (!runtimeNames.contains(alias.getValue())) {
+                throw new IllegalStateException(
+                        "Compiler runtime manifest " + source
+                                + " maps compatibility alias '" + alias.getKey()
+                                + "' to missing canonical runtime '"
+                                + alias.getValue() + "'");
+            }
+        }
+        return new RuntimeManifest(runtimeNames, runtimeAliases);
+    }
+
+    private static void validateRuntimeName(String runtimeName, String source) {
+        if (!runtimeName.matches("[A-Za-z0-9][A-Za-z0-9._+@-]*")) {
+            throw new IllegalStateException(
+                    "Invalid shared-library loader name '" + runtimeName
+                            + "' in compiler runtime manifest " + source);
+        }
+    }
+
+    private static synchronized void materializeRuntimeAliases(
+            ClassLoader classLoader,
+            String runtimeResourceRoot,
+            RuntimeManifest manifest,
+            String source) throws IOException {
+        if (manifest.runtimeAliases.isEmpty()) {
+            return;
+        }
+
+        Map<String, Path> canonicalPaths = new LinkedHashMap<>();
+        Path cacheDirectory = null;
+        for (String target : new LinkedHashSet<>(manifest.runtimeAliases.values())) {
+            URL targetResource = classLoader.getResource(runtimeResourceRoot + target);
+            File cachedTarget = targetResource == null
+                    ? null : Loader.cacheResource(targetResource);
+            if (cachedTarget == null || !cachedTarget.isFile()) {
+                throw new IllegalStateException(
+                        "Cannot extract canonical runtime '" + target
+                                + "' declared by " + source);
+            }
+            Path targetPath = cachedTarget.toPath().toAbsolutePath().normalize();
+            if (cacheDirectory == null) {
+                cacheDirectory = targetPath.getParent();
+            } else if (!cacheDirectory.equals(targetPath.getParent())) {
+                throw new IllegalStateException(
+                        "Canonical runtimes declared by " + source
+                                + " were extracted into different directories");
+            }
+            canonicalPaths.put(target, targetPath);
+        }
+
+        Path lockPath = cacheDirectory.resolve(".nd4j-shared-runtime-aliases.lock");
+        try (FileChannel channel = FileChannel.open(
+                lockPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+             FileLock ignored = channel.lock()) {
+            for (Map.Entry<String, String> mapping
+                    : manifest.runtimeAliases.entrySet()) {
+                Path targetPath = canonicalPaths.get(mapping.getValue());
+                Path aliasPath = cacheDirectory.resolve(mapping.getKey()).normalize();
+                if (!cacheDirectory.equals(aliasPath.getParent())) {
+                    throw new IllegalStateException(
+                            "Runtime alias escapes JavaCPP cache directory: "
+                                    + mapping.getKey());
+                }
+                if (Files.exists(aliasPath, LinkOption.NOFOLLOW_LINKS)
+                        && Files.isSameFile(aliasPath, targetPath)) {
+                    continue;
+                }
+                Files.deleteIfExists(aliasPath);
+                try {
+                    Files.createSymbolicLink(
+                            aliasPath, Paths.get(targetPath.getFileName().toString()));
+                } catch (IOException | UnsupportedOperationException
+                         | SecurityException symbolicLinkError) {
+                    Files.deleteIfExists(aliasPath);
+                    try {
+                        Files.createLink(aliasPath, targetPath);
+                    } catch (FileAlreadyExistsException race) {
+                        if (!Files.isSameFile(aliasPath, targetPath)) {
+                            throw race;
+                        }
+                    } catch (IOException | UnsupportedOperationException
+                             | SecurityException hardLinkError) {
+                        hardLinkError.addSuppressed(symbolicLinkError);
+                        throw new IllegalStateException(
+                                "Cannot materialize runtime alias '"
+                                        + mapping.getKey() + "' -> '"
+                                        + mapping.getValue() + "' declared by "
+                                        + source,
+                                hardLinkError);
+                    }
+                }
+                if (!Files.exists(aliasPath, LinkOption.NOFOLLOW_LINKS)
+                        || !Files.isSameFile(aliasPath, targetPath)) {
+                    throw new IllegalStateException(
+                            "Runtime alias '" + mapping.getKey()
+                                    + "' does not resolve to canonical runtime '"
+                                    + mapping.getValue() + "'");
+                }
+            }
+        }
+    }
+
+    private static final class RuntimeManifest {
+        private final Set<String> runtimeNames;
+        private final Map<String, String> runtimeAliases;
+
+        private RuntimeManifest(
+                Set<String> runtimeNames,
+                Map<String, String> runtimeAliases) {
+            this.runtimeNames = runtimeNames;
+            this.runtimeAliases = runtimeAliases;
+        }
     }
 
     private static String runtimeSpec(String runtimeName) {
