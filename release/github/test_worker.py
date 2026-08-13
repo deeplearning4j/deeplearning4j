@@ -167,6 +167,8 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertNotIn("mx::array()", builder)
         self.assertNotIn("mmacosx-version-min=10.10", platform)
         self.assertNotIn("mmacosx-version-min=10.10", detection)
+        self.assertIn('CACHE STRING "Minimum macOS deployment target" FORCE', platform)
+        self.assertIn('CACHE STRING "Minimum macOS deployment target" FORCE', detection)
 
     def test_compat_worker_uses_modern_container_python(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
