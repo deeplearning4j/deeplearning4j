@@ -77,12 +77,21 @@ if(NOT EXISTS "${_manifest}")
     message(FATAL_ERROR "Shared-runtime alias staging did not write a manifest")
 endif()
 file(STRINGS "${_manifest}" _manifest_entries)
-foreach(_required_runtime IN ITEMS libnvcuda.so libcuda.so libcublas.so)
+foreach(_required_runtime IN ITEMS libnvcuda.so libcublas.so)
     list(FIND _manifest_entries "${_required_runtime}" _runtime_index)
     if(_runtime_index EQUAL -1)
         message(FATAL_ERROR
-            "Shared-runtime manifest omitted '${_required_runtime}': ${_manifest_entries}")
+            "Shared-runtime manifest omitted canonical runtime "
+            "'${_required_runtime}': ${_manifest_entries}")
     endif()
+endforeach()
+list(FIND _manifest_entries "libcuda.so" _alias_manifest_index)
+if(NOT _alias_manifest_index EQUAL -1)
+    message(FATAL_ERROR
+        "Shared-runtime preload manifest contains package-only alias "
+        "'libcuda.so': ${_manifest_entries}")
+endif()
+foreach(_required_runtime IN ITEMS libnvcuda.so libcuda.so libcublas.so)
     if(NOT EXISTS "${_output_root}/${_required_runtime}")
         message(FATAL_ERROR
             "Shared-runtime staging omitted '${_required_runtime}'")
@@ -144,6 +153,21 @@ if(NOT _primary_compile_result EQUAL 0)
     message(FATAL_ERROR
         "Failed to compile primary-runtime fixture: ${_primary_compile_error}")
 endif()
+if(_primary_runtime_policy STREQUAL "zluda-amd")
+    # Model ZLUDA's compatibility-patched binaries: the DSO requests a
+    # development alias even though the selected dependency has a canonical
+    # SONAME. Staging must rewrite this back to the canonical identity.
+    execute_process(
+        COMMAND "${TEST_PATCHELF}" --replace-needed
+            libMIOpenContract.so.1 libMIOpenContract.so
+            "${_primary_runtime}"
+        RESULT_VARIABLE _fixture_alias_result
+        ERROR_VARIABLE _fixture_alias_error)
+    if(NOT _fixture_alias_result EQUAL 0)
+        message(FATAL_ERROR
+            "Failed to create aliased DT_NEEDED fixture: ${_fixture_alias_error}")
+    endif()
+endif()
 
 execute_process(
     COMMAND "${CMAKE_COMMAND}"
@@ -169,14 +193,21 @@ file(STRINGS "${_primary_output}/shared-runtime-manifest.txt"
     _primary_manifest_entries)
 list(FIND _primary_manifest_entries "libMIOpenContract.so.1"
     _managed_runtime_index)
+list(FIND _primary_manifest_entries "libMIOpenContract.so"
+    _managed_alias_index)
 if(_managed_runtime_index EQUAL -1 OR
+   NOT _managed_alias_index EQUAL -1 OR
    NOT EXISTS "${_primary_output}/libMIOpenContract.so.1")
     message(FATAL_ERROR
-        "Primary-root closure omitted libMIOpenContract.so.1: "
-        "${_primary_manifest_entries}")
+        "Primary-root preload closure did not isolate the canonical "
+        "libMIOpenContract.so.1 identity: ${_primary_manifest_entries}")
 endif()
-foreach(_packaged_runtime IN ITEMS
-        libprimary.so libMIOpenContract.so.1 shared-runtime-manifest.txt)
+set(_required_packaged_runtimes
+    libprimary.so libMIOpenContract.so.1 shared-runtime-manifest.txt)
+if(_primary_runtime_policy STREQUAL "zluda-amd")
+    list(APPEND _required_packaged_runtimes libMIOpenContract.so)
+endif()
+foreach(_packaged_runtime IN LISTS _required_packaged_runtimes)
     if(NOT EXISTS "${_primary_package}/${_packaged_runtime}")
         message(FATAL_ERROR
             "Classifier runtime package omitted '${_packaged_runtime}'")
@@ -214,9 +245,25 @@ if(_primary_runtime_policy STREQUAL "zluda-amd")
                 "${_dynamic_section}")
         endif()
     endforeach()
+    execute_process(
+        COMMAND "${TEST_READELF}" -d
+            "${_primary_package}/libprimary.so"
+        RESULT_VARIABLE _primary_needed_result
+        OUTPUT_VARIABLE _primary_needed_section
+        ERROR_VARIABLE _primary_needed_error)
+    if(NOT _primary_needed_result EQUAL 0 OR
+       NOT _primary_needed_section MATCHES
+           "\\[libMIOpenContract[.]so[.]1\\]" OR
+       _primary_needed_section MATCHES
+           "\\[libMIOpenContract[.]so\\]")
+        message(FATAL_ERROR
+            "Classifier primary runtime retained an alias DT_NEEDED instead "
+            "of the canonical SONAME: ${_primary_needed_error}\n"
+            "${_primary_needed_section}")
+    endif()
 else()
     message(STATUS
-        "patchelf is unavailable; skipping the Linux ZLUDA RUNPATH sub-contract")
+        "patchelf is unavailable; skipping the Linux ZLUDA identity and RUNPATH sub-contracts")
 endif()
 if(EXISTS "${_primary_package}/javacpp-build-toolchain.properties")
     message(FATAL_ERROR

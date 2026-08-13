@@ -75,7 +75,7 @@ function(_shared_runtime_loader_name _out_var _library_path)
                 "Failed to read SONAME from '${_library_path}': ${_metadata_error}")
         endif()
         string(REGEX MATCH "\\(SONAME\\)[^\n]*\\[([^]]+)\\]" _soname_match "${_metadata_output}")
-        if(CMAKE_MATCH_1 STREQUAL "")
+        if(_soname_match STREQUAL "")
             # An ELF DSO is not required to declare DT_SONAME. In that case the
             # filename used by the link/load contract is its only loader name.
             # Several upstream ZLUDA CUDA-ABI replacement DSOs intentionally use
@@ -229,6 +229,71 @@ function(_set_zluda_origin_runpath _library_path)
             "Self-contained ZLUDA RUNPATH verification failed for "
             "'${_library_path}': expected '$ORIGIN', found "
             "'${_runpath_value}' (${_runpath_verify_error})")
+    endif()
+endfunction()
+
+# A classifier archive cannot preserve the symlink topology used by ELF
+# development packages. When two alias filenames are extracted as regular
+# files, dlopen treats them as independent DSOs even though their bytes and
+# SONAME match. Normalize every managed dependency to the concrete library's
+# loader name before packaging so the process has one runtime identity.
+function(_normalize_zluda_needed_aliases _library_path)
+    _shared_runtime_needed_names(_needed_names "${_library_path}")
+    set(_replaced_aliases "")
+    foreach(_runtime_alias_entry IN LISTS _runtime_alias_entries)
+        string(REPLACE "|" ";" _runtime_alias_parts "${_runtime_alias_entry}")
+        list(GET _runtime_alias_parts 0 _runtime_alias_source)
+        list(GET _runtime_alias_parts 1 _runtime_alias_name)
+        _shared_runtime_loader_name(_runtime_canonical_name
+            "${_runtime_alias_source}")
+        if(_runtime_alias_name STREQUAL _runtime_canonical_name)
+            continue()
+        endif()
+
+        list(FIND _needed_names "${_runtime_alias_name}" _needed_alias_index)
+        if(_needed_alias_index EQUAL -1)
+            continue()
+        endif()
+        execute_process(
+            COMMAND "${PATCHELF_EXECUTABLE}" --replace-needed
+                "${_runtime_alias_name}" "${_runtime_canonical_name}"
+                "${_library_path}"
+            RESULT_VARIABLE _replace_needed_result
+            ERROR_VARIABLE _replace_needed_error)
+        if(NOT _replace_needed_result EQUAL 0)
+            message(FATAL_ERROR
+                "Failed to normalize ZLUDA runtime dependency "
+                "'${_runtime_alias_name}' to '${_runtime_canonical_name}' in "
+                "'${_library_path}': ${_replace_needed_error}")
+        endif()
+        list(APPEND _replaced_aliases
+            "${_runtime_alias_name}|${_runtime_canonical_name}")
+        list(REMOVE_ITEM _needed_names "${_runtime_alias_name}")
+        list(APPEND _needed_names "${_runtime_canonical_name}")
+        message(STATUS
+            "Normalized ZLUDA runtime dependency: ${_runtime_alias_name} -> "
+            "${_runtime_canonical_name} in ${_library_path}")
+    endforeach()
+
+    if(_replaced_aliases)
+        _shared_runtime_needed_names(_normalized_needed_names "${_library_path}")
+        foreach(_replaced_alias IN LISTS _replaced_aliases)
+            string(REPLACE "|" ";" _replaced_alias_parts "${_replaced_alias}")
+            list(GET _replaced_alias_parts 0 _replaced_alias_name)
+            list(GET _replaced_alias_parts 1 _replaced_canonical_name)
+            list(FIND _normalized_needed_names "${_replaced_alias_name}"
+                _stale_alias_index)
+            list(FIND _normalized_needed_names "${_replaced_canonical_name}"
+                _canonical_needed_index)
+            if(NOT _stale_alias_index EQUAL -1 OR
+               _canonical_needed_index EQUAL -1)
+                message(FATAL_ERROR
+                    "ZLUDA runtime dependency normalization did not produce "
+                    "'${_replaced_canonical_name}' without stale alias "
+                    "'${_replaced_alias_name}' in '${_library_path}': "
+                    "${_normalized_needed_names}")
+            endif()
+        endforeach()
     endif()
 endfunction()
 
@@ -532,6 +597,7 @@ if(EXISTS "${_runtime_manifest_path}")
 endif()
 
 set(_staged_runtime_names "")
+set(_staged_package_names "")
 foreach(_runtime_library IN LISTS _runtime_libraries)
     get_filename_component(_runtime_real_path "${_runtime_library}" REALPATH)
     if(NOT EXISTS "${_runtime_real_path}" OR IS_DIRECTORY "${_runtime_real_path}")
@@ -563,13 +629,15 @@ foreach(_runtime_library IN LISTS _runtime_libraries)
             "Failed to stage shared runtime '${_runtime_real_path}' at '${_runtime_output}'")
     endif()
     list(APPEND _staged_runtime_names "${_runtime_name}")
+    list(APPEND _staged_package_names "${_runtime_name}")
     message(STATUS "Staged shared runtime: ${_runtime_output}")
 endforeach()
 
-# Preserve dependency filenames that intentionally differ from a library's
-# SONAME. ZLUDA v6 patches ROCm DT_NEEDED entries to unversioned names for ROCm
-# 6/7 compatibility, while the selected build library retains a versioned
-# SONAME; both names must exist in JavaCPP's extraction directory.
+# Preserve compatibility filenames that intentionally differ from a library's
+# SONAME in the classifier payload. They are package-only aliases: the preload
+# manifest contains only canonical loader identities, and the ZLUDA policy below
+# rewrites managed DT_NEEDED aliases to those canonical identities. This avoids
+# loading byte-identical alias copies as independent HIP/ZLUDA runtimes.
 foreach(_runtime_alias_entry IN LISTS _runtime_alias_entries)
     string(REPLACE "|" ";" _runtime_alias_parts "${_runtime_alias_entry}")
     list(GET _runtime_alias_parts 0 _runtime_alias_source)
@@ -580,7 +648,7 @@ foreach(_runtime_alias_entry IN LISTS _runtime_alias_entries)
     endif()
     get_filename_component(_runtime_alias_real "${_runtime_alias_source}" REALPATH)
     set(_runtime_alias_output "${OUTPUT_DIR}/${_runtime_alias_name}")
-    list(FIND _staged_runtime_names "${_runtime_alias_name}"
+    list(FIND _staged_package_names "${_runtime_alias_name}"
         _runtime_alias_index)
     if(NOT _runtime_alias_index EQUAL -1)
         file(SHA256 "${_runtime_alias_real}" _runtime_alias_source_hash)
@@ -600,19 +668,20 @@ foreach(_runtime_alias_entry IN LISTS _runtime_alias_entries)
         message(FATAL_ERROR
             "Failed to stage runtime alias '${_runtime_alias_name}'")
     endif()
-    list(APPEND _staged_runtime_names "${_runtime_alias_name}")
-    message(STATUS "Staged shared runtime alias: ${_runtime_alias_output}")
+    list(APPEND _staged_package_names "${_runtime_alias_name}")
+    message(STATUS "Staged package-only runtime alias: ${_runtime_alias_output}")
 endforeach()
 
 # JavaCPP extracts every classifier member into one directory, but the dynamic
 # loader does not search a DSO's sibling directory unless that DSO says so.
-# Normalize every Linux ZLUDA/ROCm library, including the linked backend, to a
-# relocatable RUNPATH before materializing the classifier package. This keeps
-# build-host CUDA/ROCm paths out of the consumer contract.
+# Normalize every Linux ZLUDA/ROCm library, including the linked backend, to
+# canonical managed DT_NEEDED names and a relocatable RUNPATH before
+# materializing the classifier package. This keeps build-host CUDA/ROCm paths
+# out of the consumer contract and guarantees a single runtime identity.
 if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd" AND
    UNIX AND NOT APPLE)
     set(_zluda_runpath_files "")
-    foreach(_staged_runtime_name IN LISTS _staged_runtime_names)
+    foreach(_staged_runtime_name IN LISTS _staged_package_names)
         list(APPEND _zluda_runpath_files
             "${OUTPUT_DIR}/${_staged_runtime_name}")
     endforeach()
@@ -624,6 +693,7 @@ if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd" AND
     endif()
     list(REMOVE_DUPLICATES _zluda_runpath_files)
     foreach(_zluda_runpath_file IN LISTS _zluda_runpath_files)
+        _normalize_zluda_needed_aliases("${_zluda_runpath_file}")
         _set_zluda_origin_runpath("${_zluda_runpath_file}")
         message(STATUS
             "Set self-contained ZLUDA RUNPATH: ${_zluda_runpath_file}")
@@ -642,8 +712,9 @@ file(WRITE "${_runtime_manifest_path}" "${_runtime_manifest}")
 
 # A binding module must not rediscover native dependencies or copy broad build
 # directory globs.  When PACKAGE_DIR is supplied, materialize the exact package
-# payload selected above: the linked backend, every manifest-owned runtime and
-# the manifest itself.  Keeping this operation in CMake makes native dependency
+# payload selected above: the linked backend, every canonical manifest-owned
+# runtime, compatibility aliases, and the manifest itself. Keeping this
+# operation in CMake makes native dependency
 # resolution and classifier contents one fail-closed contract.
 if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
     get_filename_component(_runtime_output_dir_absolute "${OUTPUT_DIR}" ABSOLUTE)
@@ -669,7 +740,7 @@ if(DEFINED PACKAGE_DIR AND NOT PACKAGE_DIR STREQUAL "")
        NOT IS_DIRECTORY "${PRIMARY_RUNTIME}")
         list(APPEND _runtime_package_sources "${PRIMARY_RUNTIME}")
     endif()
-    foreach(_staged_runtime_name IN LISTS _staged_runtime_names)
+    foreach(_staged_runtime_name IN LISTS _staged_package_names)
         list(APPEND _runtime_package_sources
             "${OUTPUT_DIR}/${_staged_runtime_name}")
     endforeach()
