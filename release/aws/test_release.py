@@ -2743,6 +2743,9 @@ class ReleaseValidationTest(unittest.TestCase):
         dependencies = (root / "libnd4j/cmake/Dependencies.cmake").read_text(
             encoding="utf-8"
         )
+        llvm_patch = (
+            root / "libnd4j/cmake/patch_external_llvm_coexistence.cmake"
+        ).read_text(encoding="utf-8")
         self.assertIn(
             'string(REPLACE "#ifdef FLT16_MAX" "#ifdef DL4J_NATIVE_FLOAT16"',
             patch_script,
@@ -2750,7 +2753,59 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("#if defined(__clang__)", patch_script)
         self.assertIn("defined(__GNUC__) && defined(__aarch64__)", patch_script)
         self.assertIn("typedef uint16_t fp16_t", patch_script)
-        self.assertIn("managed-llvm-patches-v11", dependencies)
+        self.assertIn("managed-llvm-patches-v12", dependencies)
+        self.assertIn("_sd_mlir_direct_options_anchor", llvm_patch)
+        self.assertIn("_sd_mlir_legacy_options_anchor", llvm_patch)
+        self.assertIn("SD_ANDROID_MLIR_EXECUTION_ENGINE_V2", llvm_patch)
+        self.assertIn("unsupported MLIR execution-engine option layout", llvm_patch)
+
+    def test_external_llvm_patch_forces_android_execution_engine_after_arch_check(self):
+        root = Path(__file__).parents[2]
+        patch_script = root / "libnd4j/cmake/patch_external_llvm_coexistence.cmake"
+        direct_layout = """if(${LLVM_NATIVE_ARCH} IN_LIST LLVM_TARGETS_TO_BUILD)
+  set(MLIR_ENABLE_EXECUTION_ENGINE 1)
+else()
+  set(MLIR_ENABLE_EXECUTION_ENGINE 0)
+endif()"""
+        legacy_layout = """if(${LLVM_NATIVE_ARCH} IN_LIST LLVM_TARGETS_TO_BUILD)
+  set(MLIR_ENABLE_EXECUTION_ENGINE_default 1)
+else()
+  set(MLIR_ENABLE_EXECUTION_ENGINE_default 0)
+endif()
+option(MLIR_ENABLE_EXECUTION_ENGINE
+       \"Enable building the MLIR Execution Engine.\"
+       ${MLIR_ENABLE_EXECUTION_ENGINE_default})"""
+        llvm_dylib_option = """cmake_dependent_option(LLVM_BUILD_LLVM_DYLIB \"Build libllvm dynamic library\" ${LLVM_BUILD_LLVM_DYLIB_default}
+                       \"CAN_BUILD_LLVM_DYLIB\" OFF)
+"""
+
+        for layout in (direct_layout, legacy_layout):
+            with self.subTest(layout=layout.splitlines()[1]):
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    source_dir = Path(temp_dir)
+                    handle_options = source_dir / "llvm/cmake/modules/HandleLLVMOptions.cmake"
+                    handle_options.parent.mkdir(parents=True)
+                    handle_options.write_text("include(LLVMProcessSources)\n", encoding="utf-8")
+                    llvm_cmake = source_dir / "llvm/CMakeLists.txt"
+                    llvm_cmake.write_text(llvm_dylib_option, encoding="utf-8")
+                    mlir_cmake = source_dir / "mlir/CMakeLists.txt"
+                    mlir_cmake.parent.mkdir(parents=True)
+                    mlir_cmake.write_text(layout + "\n", encoding="utf-8")
+
+                    command = [
+                        "cmake",
+                        f"-DSOURCE_DIR={source_dir}",
+                        "-DSD_EXTERNAL_PROJECT=LLVM",
+                        "-P",
+                        str(patch_script),
+                    ]
+                    subprocess.run(command, check=True, capture_output=True, text=True)
+                    subprocess.run(command, check=True, capture_output=True, text=True)
+
+                    patched = mlir_cmake.read_text(encoding="utf-8")
+                    marker = "# SD_ANDROID_MLIR_EXECUTION_ENGINE_V2"
+                    self.assertEqual(1, patched.count(marker))
+                    self.assertGreater(patched.index(marker), patched.index(layout))
 
     def test_linux_cross_platform_java_command_does_not_infer_accelerator_profiles(self):
         root = Path(__file__).parents[2]

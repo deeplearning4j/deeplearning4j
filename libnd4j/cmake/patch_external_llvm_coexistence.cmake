@@ -189,15 +189,19 @@ if(_sd_external_project STREQUAL "LLVM")
     set(_sd_mlir_options_file "${SOURCE_DIR}/mlir/CMakeLists.txt")
     if(EXISTS "${_sd_mlir_options_file}")
         file(READ "${_sd_mlir_options_file}" _sd_mlir_options_source)
-        set(_sd_android_mlir_engine_marker "# SD_ANDROID_MLIR_EXECUTION_ENGINE_V1")
+        set(_sd_android_mlir_engine_marker "# SD_ANDROID_MLIR_EXECUTION_ENGINE_V2")
         string(FIND "${_sd_mlir_options_source}" "${_sd_android_mlir_engine_marker}"
             _sd_android_mlir_engine_marker_pos)
         if(_sd_android_mlir_engine_marker_pos EQUAL -1)
-            # LLVM's MLIR option changed across pinned snapshots. Prefer the
-            # complete current layout, then fall back to extracting the first
-            # execution-engine option/assignment block. This keeps the patch
-            # idempotent while tolerating whitespace and legacy layouts.
-            set(_sd_mlir_options_anchor [=[if(${LLVM_NATIVE_ARCH} IN_LIST LLVM_TARGETS_TO_BUILD)
+            # The two pinned LLVM snapshots use different complete option
+            # blocks. Patch after the whole conditional, never after an individual
+            # assignment that a following else() branch can overwrite.
+            set(_sd_mlir_direct_options_anchor [=[if(${LLVM_NATIVE_ARCH} IN_LIST LLVM_TARGETS_TO_BUILD)
+  set(MLIR_ENABLE_EXECUTION_ENGINE 1)
+else()
+  set(MLIR_ENABLE_EXECUTION_ENGINE 0)
+endif()]=])
+            set(_sd_mlir_legacy_options_anchor [=[if(${LLVM_NATIVE_ARCH} IN_LIST LLVM_TARGETS_TO_BUILD)
   set(MLIR_ENABLE_EXECUTION_ENGINE_default 1)
 else()
   set(MLIR_ENABLE_EXECUTION_ENGINE_default 0)
@@ -205,42 +209,25 @@ endif()
 option(MLIR_ENABLE_EXECUTION_ENGINE
        "Enable building the MLIR Execution Engine."
        ${MLIR_ENABLE_EXECUTION_ENGINE_default})]=])
-            string(FIND "${_sd_mlir_options_source}" "${_sd_mlir_options_anchor}"
-                _sd_mlir_options_anchor_pos)
-            if(_sd_mlir_options_anchor_pos EQUAL -1)
-                # Some snapshots alter the surrounding if() block or spacing.
-                # Extract the first complete option() call instead of requiring
-                # the exact upstream formatting.
+            set(_sd_mlir_options_anchor "")
+            string(FIND "${_sd_mlir_options_source}"
+                "${_sd_mlir_direct_options_anchor}"
+                _sd_mlir_direct_options_anchor_pos)
+            if(NOT _sd_mlir_direct_options_anchor_pos EQUAL -1)
+                set(_sd_mlir_options_anchor "${_sd_mlir_direct_options_anchor}")
+            else()
                 string(FIND "${_sd_mlir_options_source}"
-                    "option(MLIR_ENABLE_EXECUTION_ENGINE"
-                    _sd_mlir_option_start)
-                if(_sd_mlir_option_start EQUAL -1)
-                    # Very old snapshots set the option directly without an
-                    # option() declaration.
-                    string(FIND "${_sd_mlir_options_source}"
-                        "set(MLIR_ENABLE_EXECUTION_ENGINE"
-                        _sd_mlir_option_start)
-                endif()
-                if(_sd_mlir_option_start GREATER_EQUAL 0)
-                    string(SUBSTRING "${_sd_mlir_options_source}"
-                        ${_sd_mlir_option_start} -1 _sd_mlir_option_tail)
-                    string(FIND "${_sd_mlir_option_tail}" ")"
-                        _sd_mlir_option_end)
-                    if(_sd_mlir_option_end GREATER_EQUAL 0)
-                        math(EXPR _sd_mlir_option_length
-                            "${_sd_mlir_option_end} + 1")
-                        string(SUBSTRING "${_sd_mlir_options_source}"
-                            ${_sd_mlir_option_start}
-                            ${_sd_mlir_option_length}
-                            _sd_mlir_options_anchor)
-                        string(FIND "${_sd_mlir_options_source}"
-                            "${_sd_mlir_options_anchor}"
-                            _sd_mlir_options_anchor_pos)
-                    endif()
+                    "${_sd_mlir_legacy_options_anchor}"
+                    _sd_mlir_legacy_options_anchor_pos)
+                if(NOT _sd_mlir_legacy_options_anchor_pos EQUAL -1)
+                    set(_sd_mlir_options_anchor "${_sd_mlir_legacy_options_anchor}")
+                else()
+                    message(FATAL_ERROR
+                        "patch_external_llvm_coexistence: unsupported MLIR execution-engine option layout")
                 endif()
             endif()
             set(_sd_android_mlir_engine_patch [=[
-# SD_ANDROID_MLIR_EXECUTION_ENGINE_V1
+# SD_ANDROID_MLIR_EXECUTION_ENGINE_V2
 if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(MLIR_ENABLE_EXECUTION_ENGINE 1)
   set(MLIR_ENABLE_EXECUTION_ENGINE 1 CACHE BOOL "Enable MLIR execution engine" FORCE)
