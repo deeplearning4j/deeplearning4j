@@ -358,7 +358,13 @@ function(configure_cuda_linking main_target_name)
         configure_zluda_cuda_toolkit_linking(${main_target_name})
     else()
         # Normal CUDA classifiers deliberately retain the toolkit's shared
-        # runtime dependencies and Bytedeco platform resources.
+        # runtime dependencies and Bytedeco platform resources.  CUDA helper
+        # objects reference cuBLASLt through generated CUDA host objects; GNU
+        # ld may otherwise discard libcublasLt under its default --as-needed
+        # policy before those references are resolved.
+        if(UNIX AND NOT APPLE)
+            target_link_options(${main_target_name} PRIVATE "LINKER:--no-as-needed")
+        endif()
         target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart)
         foreach(_sd_cuda_lib CUDA::cublas CUDA::cublasLt CUDA::cusolver CUDA::cusparse CUDA::nvrtc CUDA::cuda_driver)
             if(TARGET ${_sd_cuda_lib})

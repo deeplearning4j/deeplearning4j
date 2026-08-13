@@ -262,10 +262,17 @@ class WorkflowMatrixTests(unittest.TestCase):
 
     def test_cuda_linking_includes_cublas_lt(self):
         configuration = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
+        sdx_configuration = (ROOT / "libnd4j/cmake/BuildSDX.cmake").read_text()
         self.assertIn(
             "CUDA::cublas CUDA::cublasLt CUDA::cusolver",
             configuration,
         )
+        self.assertIn(
+            "CUDA::cudart CUDA::cublas CUDA::cublasLt CUDA::cusolver",
+            sdx_configuration,
+        )
+        self.assertIn('target_link_options(${main_target_name} PRIVATE "LINKER:--no-as-needed")', configuration)
+        self.assertIn('target_link_options(${main_target_name} PRIVATE "LINKER:--no-as-needed")', sdx_configuration)
 
     def test_zluda_resolves_static_cuda_archives_when_cmake_lacks_targets(self):
         configuration = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
