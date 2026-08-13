@@ -5611,6 +5611,19 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
             identities,
         )
         self.assertNotIn(("jar", ""), identities)
+        last_updated = root.findtext("m:versioning/m:lastUpdated", namespaces=namespace)
+        self.assertRegex(last_updated or "", r"^[0-9]{14}$")
+        self.assertNotEqual("20260811000000", last_updated)
+        self.assertEqual(
+            {last_updated},
+            {
+                item.findtext("m:updated", namespaces=namespace)
+                for item in root.findall(
+                    "m:versioning/m:snapshotVersions/m:snapshotVersion",
+                    namespace,
+                )
+            },
+        )
 
     def test_snapshot_metadata_repair_discovers_only_version_level_documents(self):
         repository_prefix = "prefix/maven-repository"
@@ -6264,6 +6277,44 @@ class RegionalMirrorTests(unittest.TestCase):
         self.assertEqual(2, result["blobCount"])
         source.list_blobs.assert_not_called()
 
+    def test_mirror_reconciliation_cutover_uses_current_utc_second(self):
+        with mock.patch.object(
+            release.dt,
+            "datetime",
+            wraps=release.dt.datetime,
+        ) as datetime_type:
+            datetime_type.now.return_value = release.dt.datetime(
+                2026, 8, 13, 4, 55, 12, 987654, tzinfo=release.dt.timezone.utc
+            )
+            self.assertEqual(
+                "2026-08-13T04:55:12Z",
+                release.mirror_replication_cutover_now(),
+            )
+
+    def test_maven_incremental_mirror_orders_primaries_before_checksums(self):
+        prefix = "repo/org/example/demo/1.0-SNAPSHOT/"
+        primary = prefix + "demo-1.0-SNAPSHOT.jar"
+        metadata = prefix + "maven-metadata.xml"
+        marker = "repo/.dl4j/complete.json"
+
+        phases = release.maven_mirror_copy_phases([
+            marker,
+            metadata + ".sha1",
+            primary + ".sha512",
+            metadata,
+            primary,
+            primary + ".md5",
+            primary,
+        ])
+
+        self.assertEqual([
+            ("primaries", [primary]),
+            ("primary-checksums", [primary + ".md5", primary + ".sha512"]),
+            ("metadata", [metadata]),
+            ("metadata-checksums", [metadata + ".sha1"]),
+            ("completion-marker", [marker]),
+        ], phases)
+
     def test_incremental_mirror_keeps_replication_policy_when_blobs_are_current(self):
         name = "repo/current.jar"
         version_id = "2026-08-13T03:00:00Z"
@@ -6397,6 +6448,62 @@ class RegionalMirrorTests(unittest.TestCase):
         self.assertEqual(1, result["skippedBlobCount"])
         self.assertEqual(0, result["bytes"])
         destination_blob.start_copy_from_url.assert_not_called()
+
+    def test_bootstrap_can_force_an_exact_matching_blob(self):
+        name = "repo/current.sha1"
+        source_blob = mock.Mock()
+        source_blob.get_blob_properties.return_value = SimpleNamespace(
+            etag="current-etag",
+            size=41,
+            version_id="source-version",
+            blob_type=SimpleNamespace(value="BlockBlob"),
+        )
+        destination_blob = mock.Mock()
+        destination_blob.get_blob_properties.return_value = SimpleNamespace(
+            metadata={"dl4j_mirror_source_version": "source-version"},
+            size=41,
+        )
+        destination_blob.start_copy_from_url.return_value = {
+            "copy_id": "forced-copy",
+            "copy_status": "success",
+        }
+        source = SimpleNamespace(
+            container_name="releases",
+            url="https://source.blob.core.windows.net/releases",
+            list_blobs=mock.Mock(side_effect=AssertionError("must not list blobs")),
+            get_blob_client=lambda unused: source_blob,
+        )
+        destination = SimpleNamespace(
+            get_blob_client=lambda unused: destination_blob
+        )
+        context = {
+            "modules": {
+                "generate_container_sas": lambda **kwargs: "source-sas",
+                "ContainerSasPermissions": self.model,
+                "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+                "ResourceNotFoundError": KeyError,
+                "HttpResponseError": RuntimeError,
+            }
+        }
+
+        result = release.bootstrap_container_copy(
+            context,
+            "source",
+            "source-key",
+            source,
+            destination,
+            workers=1,
+            timeout_seconds=60,
+            blob_names=[name],
+            force_blob_names=[name],
+            include_unprioritized=False,
+        )
+
+        self.assertEqual(1, result["blobCount"])
+        self.assertEqual(1, result["forcedBlobCount"])
+        self.assertEqual(0, result["skippedBlobCount"])
+        destination_blob.start_copy_from_url.assert_called_once()
+        source.list_blobs.assert_not_called()
 
     def test_bootstrap_skips_blob_with_matching_size_and_content_md5(self):
         content_md5 = b"0123456789abcdef"

@@ -4655,6 +4655,7 @@ def bootstrap_container_copy(
     priority_prefixes: Iterable[str] = (),
     include_unprioritized: bool = True,
     blob_names: Iterable[str] | None = None,
+    force_blob_names: Iterable[str] = (),
 ) -> dict[str, Any]:
     """Reconcile selected blobs service-to-service before locking the mirror."""
     if workers < 1:
@@ -4686,6 +4687,15 @@ def bootstrap_container_copy(
     explicit_names = sorted({
         str(value).strip() for value in blob_names or () if str(value).strip()
     })
+    forced_names = {
+        str(value).strip() for value in force_blob_names if str(value).strip()
+    }
+    unknown_forced_names = forced_names.difference(explicit_names)
+    if unknown_forced_names:
+        raise ValueError(
+            "forced Azure mirror copies must also be selected through blob_names: "
+            + ", ".join(sorted(unknown_forced_names))
+        )
 
     def source_blobs() -> Iterable[Any]:
         if explicit_names:
@@ -4751,7 +4761,10 @@ def bootstrap_container_copy(
             destination_properties = destination_blob.get_blob_properties()
         except modules["ResourceNotFoundError"]:
             destination_properties = None
-        if mirrored_blob_matches(source_properties, destination_properties):
+        if (
+            name not in forced_names
+            and mirrored_blob_matches(source_properties, destination_properties)
+        ):
             return blob_type, size, False
         copy_metadata = dict(object_value(source_properties, "metadata", {}) or {})
         if source_version_id:
@@ -4888,12 +4901,23 @@ def bootstrap_container_copy(
         "blobTypes": dict(sorted(counts.items())),
         "transport": "azure-service-to-service-copy",
         "priorityPrefixes": prefixes,
+        "forcedBlobCount": len(forced_names),
         "scope": (
             "explicit-blobs"
             if explicit_names
             else "full-container" if include_unprioritized else "priority-prefixes"
         ),
     }
+
+
+def mirror_replication_cutover_now() -> str:
+    """Return the future-replication cutover for a reconciliation starting now."""
+    return (
+        dt.datetime.now(dt.timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def configured_mirror_accounts(
@@ -4923,6 +4947,39 @@ def configured_mirror_accounts(
             str(tags.get(MIRROR_DESTINATION_CONTAINER_TAG) or source_container_name),
         ))
     return sorted(mirrors, key=lambda item: str(object_value(item[0], "name", "")))
+
+
+def maven_mirror_copy_phases(
+    blob_names: Iterable[str],
+) -> list[tuple[str, list[str]]]:
+    """Order Maven mirror writes so consumers never observe stale sidecars."""
+    names = sorted({
+        str(value).strip() for value in blob_names if str(value).strip()
+    })
+    checksum_suffixes = tuple(f".{name}" for name in MAVEN_CHECKSUM_LENGTHS)
+    metadata_checksum_suffixes = tuple(
+        f"maven-metadata.xml.{name}" for name in MAVEN_CHECKSUM_LENGTHS
+    )
+    phases: dict[str, list[str]] = {
+        "primaries": [],
+        "primary-checksums": [],
+        "metadata": [],
+        "metadata-checksums": [],
+        "completion-marker": [],
+    }
+    for name in names:
+        if name.endswith("/.dl4j/complete.json"):
+            phase = "completion-marker"
+        elif name.endswith(metadata_checksum_suffixes):
+            phase = "metadata-checksums"
+        elif name.endswith("/maven-metadata.xml"):
+            phase = "metadata"
+        elif name.endswith(checksum_suffixes):
+            phase = "primary-checksums"
+        else:
+            phase = "primaries"
+        phases[phase].append(name)
+    return [(phase, values) for phase, values in phases.items() if values]
 
 
 def mirror_published_maven_blobs(
@@ -4988,6 +5045,11 @@ def mirror_published_maven_blobs(
             if not mirrored_blob_matches(source_properties, destination_properties):
                 requires_copy = True
                 break
+        if requires_copy:
+            # The selected current objects are reconciled synchronously below.
+            # Replication must start at this reconciliation, not at year 1601:
+            # replaying historical versions can overwrite current Maven files.
+            cutover = mirror_replication_cutover_now()
         if existing_policy is not None and requires_copy:
             remove_object_replication_policy(
                 context,
@@ -4998,17 +5060,52 @@ def mirror_published_maven_blobs(
                 existing_policy,
             )
         try:
-            copied = bootstrap_container_copy(
-                context,
-                source_name,
-                storage_account_key(context, source_group, source_name),
-                source_container,
-                destination_container,
-                workers=workers,
-                timeout_seconds=timeout_seconds,
-                include_unprioritized=False,
-                blob_names=names,
-            )
+            source_key = storage_account_key(context, source_group, source_name)
+            deadline = time.monotonic() + timeout_seconds
+            phase_results: list[dict[str, Any]] = []
+            blob_types: dict[str, int] = {}
+            for phase, phase_names in maven_mirror_copy_phases(names):
+                remaining = max(1, int(deadline - time.monotonic()))
+                phase_result = bootstrap_container_copy(
+                    context,
+                    source_name,
+                    source_key,
+                    source_container,
+                    destination_container,
+                    workers=workers,
+                    timeout_seconds=remaining,
+                    include_unprioritized=False,
+                    blob_names=phase_names,
+                )
+                for blob_type, count in phase_result.get("blobTypes", {}).items():
+                    blob_types[blob_type] = blob_types.get(blob_type, 0) + int(count)
+                phase_results.append({
+                    "phase": phase,
+                    "blobNames": phase_names,
+                    "blobCount": int(phase_result.get("blobCount", 0)),
+                    "scannedBlobCount": int(
+                        phase_result.get("scannedBlobCount", 0)
+                    ),
+                    "skippedBlobCount": int(
+                        phase_result.get("skippedBlobCount", 0)
+                    ),
+                    "bytes": int(phase_result.get("bytes", 0)),
+                })
+            copied = {
+                "blobCount": sum(item["blobCount"] for item in phase_results),
+                "scannedBlobCount": sum(
+                    item["scannedBlobCount"] for item in phase_results
+                ),
+                "skippedBlobCount": sum(
+                    item["skippedBlobCount"] for item in phase_results
+                ),
+                "bytes": sum(item["bytes"] for item in phase_results),
+                "blobTypes": dict(sorted(blob_types.items())),
+                "transport": "azure-service-to-service-copy",
+                "priorityPrefixes": [],
+                "scope": "explicit-blobs",
+                "copyPhases": phase_results,
+            }
         finally:
             policy = ensure_object_replication_policy(
                 context,
@@ -5219,6 +5316,19 @@ def configure_mirrors(args: argparse.Namespace) -> None:
         raise ValueError(
             "--destination-storage-account requires exactly one --destination-location"
         )
+    priority_blobs = sorted({
+        str(value).strip()
+        for value in (args.priority_blob or [])
+        if str(value).strip()
+    })
+    if args.force_priority_copy and not priority_blobs:
+        raise ValueError("--force-priority-copy requires at least one --priority-blob")
+    if args.skip_priority_bootstrap and (
+        priority_blobs or args.priority_prefix or args.force_priority_copy
+    ):
+        raise ValueError(
+            "--skip-priority-bootstrap cannot be combined with priority selections"
+        )
 
     mirrors = []
     for destination_location in locations:
@@ -5254,6 +5364,11 @@ def configure_mirrors(args: argparse.Namespace) -> None:
         existing_rule = replication_rule(
             existing_policy, source_container_name, destination_container_name
         ) if existing_policy else None
+        if priority_blobs and existing_policy is None:
+            raise ValueError(
+                "--priority-blob is a targeted repair for an existing mirror; "
+                "configure the full mirror first"
+            )
         existing_filters = object_value(existing_rule, "filters") if existing_rule else None
         cutover = str(
             object_value(existing_filters, "min_creation_time", "")
@@ -5262,6 +5377,10 @@ def configure_mirrors(args: argparse.Namespace) -> None:
         policy_temporarily_removed = bool(
             existing_policy is not None and not args.skip_priority_bootstrap
         )
+        if not args.skip_priority_bootstrap:
+            # Capture source changes from the start of the synchronous current
+            # state reconciliation, without replaying historical versions.
+            cutover = mirror_replication_cutover_now()
         policy = None
         try:
             if policy_temporarily_removed:
@@ -5288,10 +5407,21 @@ def configure_mirrors(args: argparse.Namespace) -> None:
                         workers=args.copy_workers,
                         timeout_seconds=args.copy_timeout_hours * 3600,
                         priority_prefixes=(
-                            args.priority_prefix
-                            or [stable_maven_repository_prefix(plan)]
+                            []
+                            if priority_blobs
+                            else (
+                                args.priority_prefix
+                                or [stable_maven_repository_prefix(plan)]
+                            )
                         ),
-                        include_unprioritized=False,
+                        # Full mirror configuration bootstraps every
+                        # current object. Exact-name mode is reserved for an
+                        # already-configured mirror repair.
+                        include_unprioritized=not priority_blobs,
+                        blob_names=priority_blobs,
+                        force_blob_names=(
+                            priority_blobs if args.force_priority_copy else ()
+                        ),
                     ),
                 }
             else:
@@ -6112,7 +6242,7 @@ def merge_maven_metadata(existing: bytes, current: bytes) -> bytes:
         current_updated = current_versioning.find(qname("lastUpdated"))
         existing_updated = existing_versioning.find(qname("lastUpdated"))
         if current_updated is None and existing_updated is not None:
-            existing_versioning.append(copy.deepcopy(existing_updated))
+            current_versioning.append(copy.deepcopy(existing_updated))
 
     ET.register_namespace("", namespace)
     return ET.tostring(current_root, encoding="utf-8", xml_declaration=True)
@@ -6123,6 +6253,7 @@ def reconcile_snapshot_metadata_with_blobs(
     relative: str,
     repository_prefix: str,
     blob_names: Iterable[str],
+    updated_at: str | None = None,
 ) -> bytes:
     """Add every physically retained snapshot artifact to Maven metadata.
 
@@ -6197,9 +6328,21 @@ def reconcile_snapshot_metadata_with_blobs(
 
     if not retained:
         return metadata
-    last_updated = versioning.findtext(qname("lastUpdated"), default="").strip()
-    if not last_updated:
-        last_updated = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
+    last_updated = (
+        updated_at
+        or dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M%S")
+    )
+    if not re.fullmatch(r"[0-9]{14}", last_updated):
+        raise ValueError("Maven snapshot metadata update time must be YYYYMMDDhhmmss")
+    last_updated_element = versioning.find(qname("lastUpdated"))
+    if last_updated_element is None:
+        last_updated_element = ET.SubElement(versioning, qname("lastUpdated"))
+    last_updated_element.text = last_updated
+    for snapshot_version in snapshot_versions.findall(qname("snapshotVersion")):
+        updated_element = snapshot_version.find(qname("updated"))
+        if updated_element is None:
+            updated_element = ET.SubElement(snapshot_version, qname("updated"))
+        updated_element.text = last_updated
     for extension, classifier in sorted(retained):
         identity = (extension, classifier)
         if identity in identities:
@@ -8411,12 +8554,29 @@ def parser() -> argparse.ArgumentParser:
         default=24,
         help="deadline for priority-prefix reconciliation (default: 24)",
     )
-    mirror_configure.add_argument(
+    priority_selection = mirror_configure.add_mutually_exclusive_group()
+    priority_selection.add_argument(
         "--priority-prefix",
         action="append",
         help=(
             "eagerly reconcile this Blob prefix through Azure Copy Blob; repeatable; "
             "defaults to the stable Maven repository"
+        ),
+    )
+    priority_selection.add_argument(
+        "--priority-blob",
+        action="append",
+        help=(
+            "reconcile this exact Blob without listing a prefix; repeatable and "
+            "intended for small targeted repairs"
+        ),
+    )
+    mirror_configure.add_argument(
+        "--force-priority-copy",
+        action="store_true",
+        help=(
+            "overwrite selected --priority-blob destinations even when their "
+            "content digest already matches"
         ),
     )
     mirror_configure.add_argument(
