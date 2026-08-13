@@ -86,6 +86,7 @@ class DependencyCacheIntegrationContractTests(unittest.TestCase):
         self.assertIn('"destination": "/opt/rocm"', driver)
         self.assertIn('name="sccache"', driver)
         self.assertIn("ensure_cached_sccache(cache_dir, config, env)", driver)
+        self.assertIn('name="openblas"', driver)
 
     def test_controller_embeds_helper_and_advertises_versioned_prefix(self):
         source = (HERE / "release.py").read_text(encoding="utf-8")

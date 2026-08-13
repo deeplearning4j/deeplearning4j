@@ -1004,22 +1004,54 @@ def build_cross_platform(source: Path, build: dict, repository: Path, env: dict[
     run(["bash", str(script), "--run-java"], source, cross_env)
 
 
-def prepare_openblas(source: Path, build: dict, env: dict[str, str]) -> None:
+def prepare_openblas(
+    source: Path,
+    build: dict,
+    env: dict[str, str],
+    config: dict | None = None,
+) -> None:
     if ":libnd4j" not in build.get("modules", []):
         return
     classifier = build["javacppPlatform"]
     version = "0.3.28-1.5.11"
     archive = source / f"openblas-{version}-{classifier}.jar"
     url = f"https://repo1.maven.org/maven2/org/bytedeco/openblas/{version}/{archive.name}"
-    print(f"+ download {url}", flush=True)
-    urllib.request.urlretrieve(url, archive)
     target = source / "openblas_home"
-    with zipfile.ZipFile(archive) as bundle:
-        bundle.extractall(target)
+    identity = toolchain_cache_identity(
+        "openblas",
+        {"version": version, "classifier": classifier, "url": url},
+    )
+    restored = restore_toolchain_dependency(
+        config or {},
+        env,
+        name="openblas",
+        identity=identity,
+        destination=target,
+    )
+    if not restored:
+        print(f"+ download {url}", flush=True)
+        download_with_retry(url, archive, f"OpenBLAS {version} {classifier}")
+        with zipfile.ZipFile(archive) as bundle:
+            root = target.resolve()
+            for member in bundle.infolist():
+                destination = (target / member.filename).resolve()
+                if destination != root and root not in destination.parents:
+                    raise RuntimeError(
+                        f"unsafe path in OpenBLAS archive: {member.filename!r}"
+                    )
+            bundle.extractall(target)
     headers = list(target.rglob("include/cblas.h"))
     if not headers:
         raise RuntimeError(f"OpenBLAS archive has no include/cblas.h: {archive}")
     env["OPENBLAS_PATH"] = str(headers[0].parent.parent)
+    if not restored:
+        publish_toolchain_dependency(
+            config or {},
+            env,
+            name="openblas",
+            identity=identity,
+            source=target,
+        )
 
 
 def urlopen_with_retry(request: urllib.request.Request, description: str):
@@ -1748,7 +1780,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
     build, shard_id = shard["build"], shard["id"]
     rules = shard.get("artifactRules", {})
     reset_unclassified_artifacts(repository, build, rules, release_version)
-    prepare_openblas(source, build, env)
+    prepare_openblas(source, build, env, config)
     completed_variants: list[str] = []
     write_build_result(progress_output, completed_variants)
     for variant in build["variants"]:
