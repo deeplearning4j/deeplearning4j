@@ -35,6 +35,19 @@ def load_module(path: Path, name: str) -> ModuleType:
     return module
 
 
+def file_digests(path: Path) -> dict[str, str]:
+    digests = {
+        algorithm: hashlib.new(algorithm) for algorithm in CHECKSUM_ALGORITHMS
+    }
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            for digest in digests.values():
+                digest.update(chunk)
+    return {
+        algorithm: digest.hexdigest() for algorithm, digest in digests.items()
+    }
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -125,10 +138,12 @@ def prepare_repository(
             for algorithm in CHECKSUM_ALGORITHMS
         )
         for path in candidates:
+            digests = file_digests(path)
             published_files.append(
                 {
                     "path": relative_path(repository, path),
-                    "sha256": sha256(path),
+                    "digests": digests,
+                    "sha256": digests["sha256"],
                     "size": path.stat().st_size,
                 }
             )
@@ -159,25 +174,51 @@ def publish_files(
     if not prefix:
         raise RuntimeError("stable Maven repository prefix is empty")
 
-    def upload(item: dict[str, Any]) -> str:
-        relative = item["path"]
-        path = repository / relative
-        content_type = (
-            mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-        )
-        cloud_io.upload_file(
-            bucket,
-            f"{prefix}/{relative}",
-            path,
-            content_type,
-            client_id,
-            metadata_sha256=item["sha256"],
-        )
-        return relative
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for item in files:
+        relative = str(item["path"])
+        primary = relative
+        for algorithm in CHECKSUM_ALGORITHMS:
+            suffix = f".{algorithm}"
+            if relative.endswith(suffix):
+                primary = relative[: -len(suffix)]
+                break
+        groups.setdefault(primary, []).append(item)
 
-    workers = max(1, min(4, len(files)))
+    def upload_group(primary: str, items: list[dict[str, Any]]) -> str:
+        by_path = {str(item["path"]): item for item in items}
+        expected_paths = [
+            primary,
+            *(primary + f".{algorithm}" for algorithm in CHECKSUM_ALGORITHMS),
+        ]
+        if set(by_path) != set(expected_paths):
+            raise RuntimeError(
+                f"incomplete Maven checksum group for {primary}: "
+                f"{sorted(by_path)}"
+            )
+        for relative in expected_paths:
+            item = by_path[relative]
+            path = repository / relative
+            content_type = (
+                mimetypes.guess_type(str(path))[0] or "application/octet-stream"
+            )
+            cloud_io.upload_file(
+                bucket,
+                f"{prefix}/{relative}",
+                path,
+                content_type,
+                client_id,
+                metadata_sha256=item["sha256"],
+                metadata_digests=item["digests"],
+            )
+        return primary
+
+    workers = max(1, min(4, len(groups)))
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = [executor.submit(upload, item) for item in files]
+        futures = [
+            executor.submit(upload_group, primary, items)
+            for primary, items in sorted(groups.items())
+        ]
         for future in concurrent.futures.as_completed(futures):
             future.result()
 
@@ -248,7 +289,7 @@ def main() -> None:
     )
 
     accounting = {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "mode": "stable-maven-upsert",
         "repositoryPrefix": args.repository_prefix.strip("/"),
         "runId": args.run_id,

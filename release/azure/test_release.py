@@ -4377,6 +4377,57 @@ class WorkerTransportTests(unittest.TestCase):
             all(item["path"].endswith("maven-metadata.xml") for item in metadata)
         )
 
+    def test_direct_maven_publisher_uploads_primary_before_its_checksum_sidecars(self):
+        primary = (
+            "org/eclipse/deeplearning4j/nd4j-cuda-backend-common/1.0.0/"
+            "nd4j-cuda-backend-common-1.0.0.jar"
+        )
+        expected_paths = [
+            primary,
+            *(primary + f".{algorithm}" for algorithm in maven_publish.CHECKSUM_ALGORITHMS),
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            for index, relative in enumerate(expected_paths):
+                path = repository / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(f"payload-{index}".encode("ascii"))
+            files = []
+            for relative in reversed(expected_paths):
+                path = repository / relative
+                digests = maven_publish.file_digests(path)
+                files.append({
+                    "path": relative,
+                    "digests": digests,
+                    "sha256": digests["sha256"],
+                    "size": path.stat().st_size,
+                })
+            cloud = mock.Mock()
+
+            maven_publish.publish_files(
+                repository,
+                cloud,
+                "account/releases",
+                "stable/maven",
+                "client",
+                files,
+            )
+
+        uploaded = [call.args[1] for call in cloud.upload_file.call_args_list]
+        self.assertEqual(
+            [f"stable/maven/{relative}" for relative in expected_paths],
+            uploaded,
+        )
+        for call in cloud.upload_file.call_args_list:
+            self.assertEqual(
+                call.kwargs["metadata_sha256"],
+                call.kwargs["metadata_digests"]["sha256"],
+            )
+            self.assertEqual(
+                set(maven_publish.CHECKSUM_ALGORITHMS),
+                set(call.kwargs["metadata_digests"]),
+            )
+
     def test_bucket_parser_and_blob_url_are_azure_native(self):
         self.assertEqual(
             ("dl4jaccount", "releases"),
@@ -4420,6 +4471,25 @@ class WorkerTransportTests(unittest.TestCase):
         self.assertEqual(
             "a" * 64, call.kwargs["headers"]["x-ms-meta-dl4j_sha256"]
         )
+
+    def test_file_upload_attests_all_maven_checksum_algorithms(self):
+        digests = {
+            "md5": "a" * 32,
+            "sha1": "b" * 40,
+            "sha256": "c" * 64,
+            "sha512": "d" * 128,
+        }
+        with mock.patch.object(cloud_io, "request", return_value=b"") as request:
+            cloud_io.upload_bytes(
+                "dl4jaccount/releases",
+                "maven/artifact.jar",
+                b"artifact",
+                metadata_digests=digests,
+            )
+
+        headers = request.call_args.kwargs["headers"]
+        for algorithm, digest in digests.items():
+            self.assertEqual(digest, headers[f"x-ms-meta-dl4j_{algorithm}"])
 
     def test_large_file_upload_streams_ordered_blocks_then_commits_them(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -5315,6 +5385,114 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
                 run_id="run",
                 shard="linux-x86_64-zluda--zluda",
                 version="1.0.0",
+                commit="a" * 40,
+            )
+
+    def test_direct_publish_schema_three_cross_attests_checksum_sidecars(self):
+        primary_path = (
+            "org/eclipse/deeplearning4j/nd4j-zluda-12.9/1.0.0-SNAPSHOT/"
+            "nd4j-zluda-12.9-1.0.0-SNAPSHOT-linux-x86_64-zluda.jar"
+        )
+
+        def digests(payload):
+            return {
+                algorithm: hashlib.new(algorithm, payload).hexdigest()
+                for algorithm in release.MAVEN_CHECKSUM_LENGTHS
+            }
+
+        primary_payload = b"native-runtime"
+        primary_digests = digests(primary_payload)
+        published_files = [{
+            "path": primary_path,
+            "digests": primary_digests,
+            "sha256": primary_digests["sha256"],
+            "size": len(primary_payload),
+        }]
+        for algorithm in release.MAVEN_CHECKSUM_LENGTHS:
+            relative = primary_path + f".{algorithm}"
+            payload = (primary_digests[algorithm] + "\n").encode("ascii")
+            values = digests(payload)
+            published_files.append({
+                "path": relative,
+                "digests": values,
+                "sha256": values["sha256"],
+                "size": len(payload),
+            })
+
+        metadata_payload = self._snapshot_metadata(
+            "nd4j-zluda-12.9",
+            [("jar", "linux-x86_64-zluda")],
+        )
+        info = {
+            "schemaVersion": 3,
+            "mode": "stable-maven-upsert",
+            "repositoryPrefix": "prefix/maven-repository",
+            "runId": "run",
+            "shard": "linux-x86_64-zluda--zluda",
+            "releaseVersion": "1.0.0-SNAPSHOT",
+            "commit": "a" * 40,
+            "publishedBlobs": [item["path"] for item in published_files],
+            "publishedFiles": published_files,
+            "metadataFiles": [{
+                "path": (
+                    "org/eclipse/deeplearning4j/nd4j-zluda-12.9/"
+                    "maven-metadata.xml"
+                ),
+                "sha256": hashlib.sha256(metadata_payload).hexdigest(),
+                "size": len(metadata_payload),
+                "contentBase64": release.base64.b64encode(
+                    metadata_payload
+                ).decode("ascii"),
+            }],
+        }
+        attestations = release.direct_maven_blob_attestations([info])
+        self.assertEqual(
+            {(len(primary_payload), primary_digests["sha256"])},
+            attestations[primary_path],
+        )
+
+        prefix = "prefix/maven-repository/"
+        entries = {item["path"]: item for item in published_files}
+        container = mock.Mock()
+
+        def blob_client(object_name):
+            item = entries[object_name.removeprefix(prefix)]
+            client = mock.Mock()
+            client.get_blob_properties.return_value = SimpleNamespace(
+                size=item["size"],
+                metadata={
+                    f"Dl4J_{algorithm}": value
+                    for algorithm, value in item["digests"].items()
+                },
+            )
+            return client
+
+        container.get_blob_client.side_effect = blob_client
+        validated = release.validate_direct_maven_publish(
+            container,
+            info,
+            repository_prefix="prefix/maven-repository",
+            run_id="run",
+            shard="linux-x86_64-zluda--zluda",
+            version="1.0.0-SNAPSHOT",
+            commit="a" * 40,
+        )
+        self.assertIs(info, validated)
+
+        stale_payload = ("0" * 40 + "\n").encode("ascii")
+        stale_digests = digests(stale_payload)
+        stale = entries[primary_path + ".sha1"]
+        stale["digests"] = stale_digests
+        stale["sha256"] = stale_digests["sha256"]
+        stale["size"] = len(stale_payload)
+        with self.assertRaisesRegex(RuntimeError, "sha1 sidecar mismatch"):
+            release.validate_direct_maven_publish(
+                container,
+                info,
+                repository_prefix="prefix/maven-repository",
+                run_id="run",
+                shard="linux-x86_64-zluda--zluda",
+                version="1.0.0-SNAPSHOT",
                 commit="a" * 40,
             )
 

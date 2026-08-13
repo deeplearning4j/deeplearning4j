@@ -68,6 +68,7 @@ MIRROR_SOURCE_CONTAINER_TAG = "dl4j-mirror-source-container"
 MIRROR_DESTINATION_CONTAINER_TAG = "dl4j-mirror-destination-container"
 MIRROR_BLOCK_COPY_SYNC_LIMIT_BYTES = 32 * 1024 * 1024
 MIRROR_INCREMENTAL_COPY_TIMEOUT_SECONDS = 4 * 3600
+MAVEN_CHECKSUM_LENGTHS = {"md5": 32, "sha1": 40, "sha256": 64, "sha512": 128}
 
 
 def utc_now() -> str:
@@ -6234,7 +6235,7 @@ def direct_maven_blob_attestations(
     """
     attestations: dict[str, set[tuple[int, str]]] = {}
     for publish_info in publish_infos:
-        if int(publish_info.get("schemaVersion", 0)) != 2:
+        if int(publish_info.get("schemaVersion", 0)) not in {2, 3}:
             continue
         for item in publish_info.get("publishedFiles", []):
             if not isinstance(item, dict):
@@ -6298,9 +6299,9 @@ def validate_direct_maven_publish(
     schema = int(value.get("schemaVersion", 0))
     if schema == 1:
         # Retain collection support for already-completed Windows runs. New
-        # workers always emit schema 2 with hash/size and metadata attestations.
+        # workers emit schema 3 with cross-attested Maven checksum sidecars.
         return value
-    if schema != 2:
+    if schema not in {2, 3}:
         raise RuntimeError(
             f"unsupported direct Maven publish schema for shard {shard!r}: {schema}"
         )
@@ -6315,6 +6316,7 @@ def validate_direct_maven_publish(
         )
 
     paths: set[str] = set()
+    published_entries: dict[str, dict[str, Any]] = {}
     object_prefix = repository_prefix.strip("/") + "/"
     for item in published_files:
         if not isinstance(item, dict):
@@ -6343,6 +6345,31 @@ def validate_direct_maven_publish(
                 f"direct Maven publish for shard {shard!r} has invalid attestation "
                 f"for {relative!r}"
             )
+        digests = {"sha256": digest}
+        if schema == 3:
+            raw_digests = item.get("digests")
+            if not isinstance(raw_digests, dict) or set(raw_digests) != set(
+                MAVEN_CHECKSUM_LENGTHS
+            ):
+                raise RuntimeError(
+                    f"direct Maven publish for shard {shard!r} has incomplete "
+                    f"checksum attestations for {relative!r}"
+                )
+            digests = {
+                str(algorithm): str(value).lower()
+                for algorithm, value in raw_digests.items()
+            }
+            if digests["sha256"] != digest or any(
+                not re.fullmatch(
+                    rf"[0-9a-f]{{{MAVEN_CHECKSUM_LENGTHS[algorithm]}}}",
+                    value,
+                )
+                for algorithm, value in digests.items()
+            ):
+                raise RuntimeError(
+                    f"direct Maven publish for shard {shard!r} has invalid "
+                    f"checksum attestations for {relative!r}"
+                )
         properties = container.get_blob_client(
             object_prefix + relative
         ).get_blob_properties()
@@ -6369,13 +6396,54 @@ def validate_direct_maven_publish(
                 f"direct Maven Blob attestation mismatch for shard {shard!r}: "
                 f"{relative}"
             )
+        if schema == 3:
+            actual_digests = {
+                algorithm: blob_metadata_value(
+                    properties, f"dl4j_{algorithm}"
+                ).lower()
+                for algorithm in MAVEN_CHECKSUM_LENGTHS
+            }
+            if actual_digests != digests:
+                raise RuntimeError(
+                    f"direct Maven Blob checksum metadata mismatch for shard "
+                    f"{shard!r}: {relative}"
+                )
         paths.add(relative)
+        published_entries[relative] = item
 
     published_blobs = value.get("publishedBlobs")
     if not isinstance(published_blobs, list) or set(published_blobs) != paths:
         raise RuntimeError(
             f"direct Maven publishedBlobs mismatch for shard {shard!r}"
         )
+
+    if schema == 3:
+        checksum_suffixes = tuple(
+            f".{algorithm}" for algorithm in MAVEN_CHECKSUM_LENGTHS
+        )
+        for relative, primary in published_entries.items():
+            if relative.endswith(checksum_suffixes):
+                continue
+            primary_digests = primary["digests"]
+            for algorithm in MAVEN_CHECKSUM_LENGTHS:
+                checksum_relative = relative + f".{algorithm}"
+                checksum = published_entries.get(checksum_relative)
+                expected_payload = (
+                    str(primary_digests[algorithm]) + "\n"
+                ).encode("ascii")
+                expected_digests = {
+                    name: hashlib.new(name, expected_payload).hexdigest()
+                    for name in MAVEN_CHECKSUM_LENGTHS
+                }
+                if (
+                    checksum is None
+                    or checksum.get("size") != len(expected_payload)
+                    or checksum.get("digests") != expected_digests
+                ):
+                    raise RuntimeError(
+                        f"direct Maven {algorithm} sidecar mismatch for shard "
+                        f"{shard!r}: {relative}"
+                    )
 
     metadata_paths: set[str] = set()
     for item in metadata_files:

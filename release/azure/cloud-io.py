@@ -140,13 +140,36 @@ def _block_id(index):
     return base64.b64encode(f"{index:08d}".encode("ascii")).decode("ascii")
 
 
+CHECKSUM_LENGTHS = {"md5": 32, "sha1": 40, "sha256": 64, "sha512": 128}
+
+
+def checksum_metadata_headers(values=None, metadata_sha256=None):
+    checksums = dict(values or {})
+    if metadata_sha256 is not None:
+        metadata_sha256 = str(metadata_sha256).lower()
+        if (
+            "sha256" in checksums
+            and str(checksums["sha256"]).lower() != metadata_sha256
+        ):
+            raise ValueError("conflicting Azure Blob SHA-256 metadata values")
+        checksums["sha256"] = metadata_sha256
+    headers = {}
+    for algorithm, value in checksums.items():
+        if algorithm not in CHECKSUM_LENGTHS:
+            raise ValueError(f"unsupported Azure Blob checksum metadata: {algorithm}")
+        value = str(value).lower()
+        length = CHECKSUM_LENGTHS[algorithm]
+        if not re.fullmatch(rf"[0-9a-f]{{{length}}}", value):
+            raise ValueError(
+                f"Azure Blob {algorithm.upper()} metadata must be "
+                f"{length} hexadecimal characters"
+            )
+        headers[f"x-ms-meta-dl4j_{algorithm}"] = value
+    return headers
+
+
 def sha256_metadata_header(value):
-    if value is None:
-        return {}
-    value = str(value).lower()
-    if not re.fullmatch(r"[0-9a-f]{64}", value):
-        raise ValueError("Azure Blob SHA-256 metadata must be 64 hexadecimal characters")
-    return {"x-ms-meta-dl4j_sha256": value}
+    return checksum_metadata_headers(metadata_sha256=value)
 
 
 def upload_block_blob(
@@ -156,6 +179,7 @@ def upload_block_blob(
     content_type,
     client_id=None,
     metadata_sha256=None,
+    metadata_digests=None,
 ):
     """Upload chunks as uncommitted blocks, then atomically publish their list."""
     url = blob_url(bucket, name)
@@ -193,7 +217,7 @@ def upload_block_blob(
         headers={
             "Content-Type": "application/xml; charset=utf-8",
             "x-ms-blob-content-type": content_type,
-            **sha256_metadata_header(metadata_sha256),
+            **checksum_metadata_headers(metadata_digests, metadata_sha256),
         },
         authenticated=True,
         client_id=client_id,
@@ -207,6 +231,7 @@ def upload_bytes(
     content_type="application/octet-stream",
     client_id=None,
     metadata_sha256=None,
+    metadata_digests=None,
 ):
     if len(data) > SINGLE_PUT_LIMIT:
         chunks = (
@@ -220,6 +245,7 @@ def upload_bytes(
             content_type,
             client_id,
             metadata_sha256,
+            metadata_digests,
         )
     return request(
         blob_url(bucket, name),
@@ -228,7 +254,7 @@ def upload_bytes(
         headers={
             "Content-Type": content_type,
             "x-ms-blob-type": "BlockBlob",
-            **sha256_metadata_header(metadata_sha256),
+            **checksum_metadata_headers(metadata_digests, metadata_sha256),
         },
         authenticated=True,
         client_id=client_id,
@@ -242,6 +268,7 @@ def upload_file(
     content_type="application/octet-stream",
     client_id=None,
     metadata_sha256=None,
+    metadata_digests=None,
 ):
     path = pathlib.Path(path)
     if path.stat().st_size <= SINGLE_PUT_LIMIT:
@@ -252,6 +279,7 @@ def upload_file(
             content_type,
             client_id,
             metadata_sha256,
+            metadata_digests,
         )
 
     def chunks():
@@ -269,6 +297,7 @@ def upload_file(
         content_type,
         client_id,
         metadata_sha256,
+        metadata_digests,
     )
 
 

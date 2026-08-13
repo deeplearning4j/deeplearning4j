@@ -61,6 +61,16 @@ python3 release/azure/release.py configure
 
 If credentials or required values are absent in an interactive terminal, the controller asks once for `az login`, `AZURE_SUBSCRIPTION_ID`, and `AZURE_LOCATION`. Redirected and CI invocations fail immediately. Put `--no-wizard` before the subcommand to force noninteractive behavior.
 
+For local release administration, use the checked-in wrapper so the conda environment and global Azure arguments are not repeated on every command:
+
+```bash
+release/azure/run.sh status --run-id RUN_ID
+release/azure/run.sh logs --run-id RUN_ID --follow
+release/azure/run.sh stop-everything --wait
+```
+
+The wrapper uses `dl4j-azure-release`, resolves the active Azure CLI subscription when `AZURE_SUBSCRIPTION_ID` is unset, defaults the source region to `eastus2`, and always disables the interactive wizard. Override those defaults with `DL4J_AZURE_CONDA_ENV`, `DL4J_AZURE_CONDA_EXE`, `AZURE_SUBSCRIPTION_ID`, or `AZURE_LOCATION`.
+
 The controller principal needs permission to create and delete resource groups/resources, virtual machines, managed identities, role assignments, networks, public IPs, and storage accounts, and to read VM-family quota. A subscription-level Owner role is sufficient for initial setup; a narrower custom role can be used if it includes those operations and role-assignment rights.
 
 Workers use a user-assigned managed identity scoped to the managed storage account with the built-in Storage Blob Data Contributor role. Storage keys, GitHub credentials, GPG keys, and Central credentials are never placed on builder VMs.
