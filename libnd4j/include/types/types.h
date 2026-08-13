@@ -78,9 +78,13 @@ static constexpr auto DOUBLE = sd::DataType::DOUBLE;
 static constexpr auto HALF = sd::DataType::HALF;
 #endif
 
-// These names conflict with Windows SDK typedefs (basetsd.h / minwindef.h)
-#if !defined(_WIN32)
+// These names conflict with Windows SDK typedefs (basetsd.h / minwindef.h).
+// BOOL also conflicts with the Objective-C runtime typedef in Objective-C/C++
+// translation units, including the Metal and MPS sources on Apple platforms.
+#if !defined(_WIN32) && !defined(__OBJC__)
 static constexpr auto BOOL = sd::DataType::BOOL;
+#endif
+#if !defined(_WIN32)
 static constexpr auto INT8 = sd::DataType::INT8;
 static constexpr auto INT16 = sd::DataType::INT16;
 static constexpr auto INT32 = sd::DataType::INT32;

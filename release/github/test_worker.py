@@ -159,6 +159,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         header = (ROOT / "libnd4j/include/graph/cpu/MlxIRBuilder.h").read_text()
         platform = (ROOT / "libnd4j/cmake/Platform.cmake").read_text()
         detection = (ROOT / "libnd4j/cmake/PlatformDetection.cmake").read_text()
+        types = (ROOT / "libnd4j/include/types/types.h").read_text()
         self.assertIn("struct Dtype;", header)
         self.assertIn("GraphAnalysisUtils::profileSegment", builder)
         self.assertIn("std::optional<mx::array> mask", builder)
@@ -169,6 +170,8 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertNotIn("mmacosx-version-min=10.10", detection)
         self.assertIn('CACHE STRING "Minimum macOS deployment target" FORCE', platform)
         self.assertIn('CACHE STRING "Minimum macOS deployment target" FORCE', detection)
+        self.assertIn("!defined(_WIN32) && !defined(__OBJC__)", types)
+        self.assertIn("static constexpr auto BOOL = sd::DataType::BOOL;", types)
 
     def test_compat_worker_uses_modern_container_python(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
