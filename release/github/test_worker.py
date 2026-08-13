@@ -135,6 +135,11 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('${win[@]+"${win[@]}"}', launcher)
         self.assertIn('${zluda_win[@]+"${zluda_win[@]}"}', launcher)
 
+    def test_native_builder_avoids_bash4_uppercase_expansion(self):
+        builder = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
+        self.assertNotIn("^^}", builder)
+        self.assertIn("uppercase()", builder)
+
 
 class WorkerConfigTests(unittest.TestCase):
     def args(self, **overrides):

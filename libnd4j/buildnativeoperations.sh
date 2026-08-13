@@ -77,7 +77,9 @@ else
     echo "⚠️  Using bash $BASH_VERSION - falling back to compatibility mode"
 fi
 
-
+uppercase() {
+    printf '%s' "$1" | tr '[:lower:]' '[:upper:]'
+}
 
 
 # =============================================================================
@@ -1795,7 +1797,7 @@ do
             else
                 ZLUDA="ON"
             fi
-            ZLUDA="${ZLUDA^^}"
+            ZLUDA="$(uppercase "$ZLUDA")"
             case "$ZLUDA" in
                 OFF)
                     print_colored "blue" "✓ ZLUDA mode disabled"
@@ -2749,7 +2751,7 @@ configure_primary_backend() {
 
 configure_primary_backend "$CHIP"
 
-case "${SDX_OFFLINE^^}" in
+case "$(uppercase "$SDX_OFFLINE")" in
     ON|TRUE|1)
         BLAS_ARG="$BLAS_ARG -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DFETCHCONTENT_UPDATES_DISCONNECTED=ON"
         ;;
@@ -3206,7 +3208,7 @@ case "${SD_REQUIRE_COMPILER_CACHE:-OFF}" in
 esac
 CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DSD_REQUIRE_COMPILER_CACHE=$SD_REQUIRE_COMPILER_CACHE"
 
-case "${CCACHE_TRACE^^}" in
+case "$(uppercase "$CCACHE_TRACE")" in
     ON|TRUE|1)
         CCACHE_TRACE=ON
         ;;
@@ -3218,7 +3220,7 @@ case "${CCACHE_TRACE^^}" in
         exit 1
         ;;
 esac
-case "${CCACHE_TRACE_VERBOSE^^}" in
+case "$(uppercase "$CCACHE_TRACE_VERBOSE")" in
     ON|TRUE|1)
         CCACHE_TRACE_VERBOSE=ON
         ;;
