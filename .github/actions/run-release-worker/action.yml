@@ -158,7 +158,18 @@ runs:
         [ "${INPUT_BUILD_AOT}" != 1 ] || args+=(--build-aot)
         [ "${INPUT_AOT_ALL_SPINS}" != 1 ] || args+=(--aot-all-spins)
         [ -z "${SCCACHE_AZURE_CONNECTION_STRING}" ] || args+=(--azure-cache)
-        python_bin=$(command -v python3 || command -v python)
+        python_bin=""
+        for candidate in python3.11 python3.10 python python3; do
+          if command -v "${candidate}" >/dev/null 2>&1 &&
+             "${candidate}" -c 'import sys; raise SystemExit(sys.version_info < (3, 10))'; then
+            python_bin=$(command -v "${candidate}")
+            break
+          fi
+        done
+        if [ -z "${python_bin}" ]; then
+          printf 'The release worker requires Python 3.10 or newer.\n' >&2
+          exit 1
+        fi
         "${python_bin}" release/github/prepare-worker.py config "${args[@]}"
 
         export DL4J_SCCACHE_DIR="${RUNNER_TEMP}/dl4j-sccache/${INPUT_SHARD}/${INPUT_VARIANT}"

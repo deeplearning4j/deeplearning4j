@@ -3151,25 +3151,29 @@ echo MAKEJ               = "$MAKEJ"
 mkbuilddir
 pwd
 
-# Android provider builds are incremental and may outlive changes to PATH (for
-# example, activating Conda after CMake originally selected Linuxbrew ccache).
-# Keep the cache binary pinned to the existing CMake build tree unless the
-# caller explicitly selects a different DL4J_COMPILER_CACHE. Always pass the
-# resolved path back to CMake so its cache, generated smart wrapper, trace
-# collector, and post-configure validator agree on one executable.
+# Android provider builds are incremental and may outlive changes to PATH.
+# Keep the compiler-cache executable pinned to the existing CMake build tree
+# unless the caller explicitly selects a different DL4J_COMPILER_CACHE. Both
+# ccache and sccache are valid launchers; CI uses sccache for the shared Azure
+# object cache while local Android builds may continue using ccache.
 if [[ "$OS" == android-* ]]; then
     ANDROID_COMPILER_CACHE_SOURCE="environment"
     if [ -z "${DL4J_COMPILER_CACHE:-}" ]; then
         CACHED_ANDROID_COMPILER_CACHE=""
         if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
             CACHED_ANDROID_COMPILER_CACHE="$(
-                grep '^CCACHE_PROGRAM:FILEPATH=' "$BUILD_DIR/CMakeCache.txt" 2>/dev/null |
-                    cut -d= -f2- || true
+                {
+                    grep '^SCCACHE_PROGRAM:FILEPATH=' "$BUILD_DIR/CMakeCache.txt" 2>/dev/null
+                    grep '^CCACHE_PROGRAM:FILEPATH=' "$BUILD_DIR/CMakeCache.txt" 2>/dev/null
+                } | cut -d= -f2- | head -n 1 || true
             )"
         fi
         if [ -n "$CACHED_ANDROID_COMPILER_CACHE" ] && [ -x "$CACHED_ANDROID_COMPILER_CACHE" ]; then
             DL4J_COMPILER_CACHE="$CACHED_ANDROID_COMPILER_CACHE"
             ANDROID_COMPILER_CACHE_SOURCE="CMakeCache"
+        elif [ -n "${SD_USE_SCCACHE:-}" ]; then
+            DL4J_COMPILER_CACHE="$(command -v sccache 2>/dev/null || true)"
+            ANDROID_COMPILER_CACHE_SOURCE="PATH"
         else
             DL4J_COMPILER_CACHE="$(command -v ccache 2>/dev/null || true)"
             ANDROID_COMPILER_CACHE_SOURCE="PATH"
@@ -3179,22 +3183,32 @@ if [[ "$OS" == android-* ]]; then
     fi
 
     if [ -z "${DL4J_COMPILER_CACHE:-}" ] || [ ! -x "$DL4J_COMPILER_CACHE" ]; then
-        print_colored "red" "❌ ERROR: Android builds require an executable ccache binary"
-        print_colored "yellow" "   Set DL4J_COMPILER_CACHE to an absolute ccache path, or install ccache on PATH."
-        exit 1
-    fi
-    if [ "$(basename "$DL4J_COMPILER_CACHE")" != "ccache" ]; then
-        print_colored "red" "❌ ERROR: Android smart-cache contract requires ccache, got: $DL4J_COMPILER_CACHE"
-        exit 1
-    fi
-    if [ -n "${SD_USE_SCCACHE:-}" ]; then
-        print_colored "red" "❌ ERROR: SD_USE_SCCACHE conflicts with the Android smart-ccache contract"
+        print_colored "red" "❌ ERROR: Android builds require an executable ccache or sccache binary"
+        print_colored "yellow" "   Set DL4J_COMPILER_CACHE to an absolute cache executable, or install ccache/sccache on PATH."
         exit 1
     fi
 
+    ANDROID_COMPILER_CACHE_NAME="$(lowercase "$(basename "$DL4J_COMPILER_CACHE")")"
+    case "$ANDROID_COMPILER_CACHE_NAME" in
+        ccache|ccache.exe)
+            if [ -n "${SD_USE_SCCACHE:-}" ]; then
+                print_colored "red" "❌ ERROR: SD_USE_SCCACHE is set but DL4J_COMPILER_CACHE selects ccache"
+                exit 1
+            fi
+            CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DCCACHE_PROGRAM:FILEPATH=$DL4J_COMPILER_CACHE"
+            ;;
+        sccache|sccache.exe)
+            export SD_USE_SCCACHE=1
+            CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DSCCACHE_PROGRAM:FILEPATH=$DL4J_COMPILER_CACHE"
+            ;;
+        *)
+            print_colored "red" "❌ ERROR: Android compiler-cache contract requires ccache or sccache, got: $DL4J_COMPILER_CACHE"
+            exit 1
+            ;;
+    esac
+
     export DL4J_COMPILER_CACHE
     SD_REQUIRE_COMPILER_CACHE=ON
-    CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DCCACHE_PROGRAM:FILEPATH=$DL4J_COMPILER_CACHE"
     print_colored "cyan" "Android compiler cache: source=$ANDROID_COMPILER_CACHE_SOURCE path=$DL4J_COMPILER_CACHE"
 fi
 

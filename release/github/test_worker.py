@@ -123,10 +123,23 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("Windows.flatc.binary.zip", bootstrap)
         self.assertIn("DL4J_FLATC_EXECUTABLE", bootstrap)
 
-    def test_compat_worker_uses_container_python(self):
+    def test_compat_worker_uses_modern_container_python(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
+        bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
         self.assertIn("inputs.shard != 'linux-x86_64-compat'", action)
-        self.assertIn("python_bin=$(command -v python3 || command -v python)", action)
+        self.assertIn("python3.11 python3.10 python python3", action)
+        self.assertIn("sys.version_info < (3, 10)", action)
+        self.assertIn("python3 python3.11", bootstrap)
+
+    def test_android_worker_accepts_sccache_as_the_required_compiler_cache(self):
+        builder = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
+        self.assertIn("ccache|ccache.exe)", builder)
+        self.assertIn("sccache|sccache.exe)", builder)
+        self.assertIn("-DSCCACHE_PROGRAM:FILEPATH=$DL4J_COMPILER_CACHE", builder)
+        self.assertNotIn(
+            "Android smart-cache contract requires ccache",
+            builder,
+        )
 
     def test_external_dependencies_receive_complete_android_and_host_tool_contracts(self):
         dependencies = (ROOT / "libnd4j/cmake/Dependencies.cmake").read_text()

@@ -33,7 +33,7 @@ install_linux_packages() {
     as_root dnf install -y \
       autoconf automake ca-certificates ccache cmake curl findutils gcc-gfortran git \
       java-11-openjdk-devel jq libtool libusb-devel libusbx-devel make maven nasm \
-      ninja-build openblas-devel openssl-devel patch pkgconfig python3 swig tar unzip wget which xz \
+      ninja-build openblas-devel openssl-devel patch pkgconfig python3 python3.11 swig tar unzip wget which xz \
       zip zlib-devel
   else
     printf 'Unsupported Linux package manager\n' >&2
