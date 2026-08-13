@@ -1971,7 +1971,15 @@ def shared_native_family(shard: dict, variant: dict) -> str:
             return f"{build['javacppPlatform']}-vulkan"
         if build["backend"] == "vulkan" and shard["os"] == "windows":
             return "windows-vulkan"
-        return "vulkan-mlir" if build["backend"] == "vulkan" and variant.get("mlir") else build["backend"]
+        # A Vulkan base classifier also carries MLIR/Triton support.  The
+        # classifier extension—not the presence of MLIR—is what distinguishes
+        # the compile-only Vulkan lane from the base runtime lane.
+        return (
+            "vulkan-mlir"
+            if build["backend"] == "vulkan"
+            and variant_artifact_classifier(build, variant).endswith("-compile")
+            else build["backend"]
+        )
     if build["backend"] == "cuda":
         return "windows-cuda" if shard["os"] == "windows" else "linux-cuda"
     return {

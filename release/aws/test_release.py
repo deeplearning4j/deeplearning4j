@@ -2654,10 +2654,21 @@ class ReleaseValidationTest(unittest.TestCase):
             ),
         )
         build["javacppPlatform"] = "linux-x86_64"
+        # The base Vulkan runtime includes MLIR/Triton, but must retain the
+        # unextended linux-x86_64 classifier.  Only the explicit -compile
+        # variant belongs to the vulkan-mlir family.
+        variant["mlir"] = True
         self.assertEqual(
             "vulkan",
             build_platform.shared_native_family(
                 {"os": "linux", "build": build}, variant
+            ),
+        )
+        self.assertEqual(
+            "vulkan-mlir",
+            build_platform.shared_native_family(
+                {"os": "linux", "build": build},
+                {"name": "compile", "suffix": "-compile", "mlir": True},
             ),
         )
         self.assertEqual(
