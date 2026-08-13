@@ -26,6 +26,8 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
 #include <ConstMessages.h>
+#include <mutex>
+#include <stdexcept>
 #include "mpsUtils.h"
 
 #ifdef HAVE_MPS
@@ -518,60 +520,68 @@ PLATFORM_CHECK(softmax, ENGINE_CPU) {
 // Approximation: 0.5 * x * (1 + tanh(sqrt(2/π) * (x + 0.044715 * x^3)))
 //////////////////////////////////////////////////////////////////////////
 
+static id<MTLComputePipelineState> geluPipeline(id<MTLDevice> device) {
+    static id<MTLComputePipelineState> pipeline = nil;
+    static std::once_flag pipelineOnce;
+    std::call_once(pipelineOnce, [device]() {
+        NSString* source =
+            @"#include <metal_stdlib>\n"
+             "using namespace metal;\n"
+             "kernel void gelu_kernel(device const float* input [[buffer(0)]],\n"
+             "                        device float* output [[buffer(1)]],\n"
+             "                        constant ulong& length [[buffer(2)]],\n"
+             "                        uint index [[thread_position_in_grid]]) {\n"
+             "  if ((ulong)index >= length) return;\n"
+             "  float x = input[index];\n"
+             "  float inner = 0.7978845608f * (x + 0.044715f * x * x * x);\n"
+             "  output[index] = 0.5f * x * (1.0f + tanh(inner));\n"
+             "}\n";
+
+        NSError* error = nil;
+        id<MTLLibrary> library = [device newLibraryWithSource:source options:nil error:&error];
+        if (library == nil) {
+            throw std::runtime_error("Unable to compile the MPS GELU Metal kernel");
+        }
+
+        id<MTLFunction> function = [library newFunctionWithName:@"gelu_kernel"];
+        pipeline = [device newComputePipelineStateWithFunction:function error:&error];
+        if (pipeline == nil) {
+            throw std::runtime_error("Unable to create the MPS GELU compute pipeline");
+        }
+    });
+    return pipeline;
+}
+
 static void geluMPS(NDArray* input, NDArray* output) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
-
         if (device == nil) return;
 
         NSUInteger length = input->lengthOf();
         size_t bufferSize = length * sizeof(float);
+        id<MTLBuffer> inputBuffer = [device newBufferWithBytes:input->buffer()
+                                                       length:bufferSize
+                                                      options:MTLResourceStorageModeShared];
+        id<MTLBuffer> outputBuffer = [device newBufferWithLength:bufferSize
+                                                        options:MTLResourceStorageModeShared];
 
-        MPSImageDescriptor* desc = [MPSImageDescriptor
-            imageDescriptorWithChannelFormat:MPSImageFeatureChannelFormatFloat32
-                                       width:length
-                                      height:1
-                             featureChannels:1];
+        id<MTLComputePipelineState> pipeline = geluPipeline(device);
+        id<MTLCommandBuffer> commandBuffer = manager.createCommandBuffer();
+        id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
+        [encoder setComputePipelineState:pipeline];
+        [encoder setBuffer:inputBuffer offset:0 atIndex:0];
+        [encoder setBuffer:outputBuffer offset:0 atIndex:1];
+        [encoder setBytes:&length length:sizeof(length) atIndex:2];
 
-        MPSImage* inputImage = [[MPSImage alloc] initWithDevice:device imageDescriptor:desc];
-        MPSImage* outputImage = [[MPSImage alloc] initWithDevice:device imageDescriptor:desc];
+        NSUInteger threadWidth = MIN(pipeline.maxTotalThreadsPerThreadgroup, length);
+        [encoder dispatchThreads:MTLSizeMake(length, 1, 1)
+           threadsPerThreadgroup:MTLSizeMake(threadWidth, 1, 1)];
+        [encoder endEncoding];
+        [commandBuffer commit];
+        [commandBuffer waitUntilCompleted];
 
-        MTLRegion region = MTLRegionMake3D(0, 0, 0, length, 1, 1);
-        [inputImage.texture replaceRegion:region
-                              mipmapLevel:0
-                                withBytes:input->buffer()
-                              bytesPerRow:bufferSize];
-
-        // Create GELU kernel (available in newer MPS versions)
-        // For compatibility, we can use MPSCNNNeuronGeLU if available
-        if (@available(macOS 11.0, iOS 14.0, *)) {
-            MPSCNNNeuronGeLU* gelu = [[MPSCNNNeuronGeLU alloc] initWithDevice:device];
-
-            id<MTLCommandBuffer> commandBuffer = manager.createCommandBuffer();
-            [gelu encodeToCommandBuffer:commandBuffer
-                            sourceImage:inputImage
-                       destinationImage:outputImage];
-            [commandBuffer commit];
-            [commandBuffer waitUntilCompleted];
-
-            [outputImage.texture getBytes:output->buffer()
-                              bytesPerRow:bufferSize
-                               fromRegion:region
-                              mipmapLevel:0];
-        } else {
-            // Fallback: compute GELU on CPU
-            const float* inPtr = input->bufferAsT<float>();
-            float* outPtr = output->bufferAsT<float>();
-            const float sqrt2OverPi = 0.7978845608f;  // sqrt(2/π)
-            const float coeff = 0.044715f;
-
-            for (NSUInteger i = 0; i < length; i++) {
-                float x = inPtr[i];
-                float inner = sqrt2OverPi * (x + coeff * x * x * x);
-                outPtr[i] = 0.5f * x * (1.0f + tanhf(inner));
-            }
-        }
+        memcpy(output->buffer(), [outputBuffer contents], bufferSize);
     }
 }
 

@@ -146,19 +146,44 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     if (block.getTArguments()->size() > 0) alpha = T_ARG(0);
     if (block.getTArguments()->size() > 1) beta = T_ARG(1);
 
-    // Handle batch matmul
+    // Flatten all leading dimensions into one batch dimension, then use the
+    // current pointer-returning NDArray view API for each rank-2 matrix.
     if (a->rankOf() > 2) {
-        auto aReshape = a->reshape(a->ordering(), {-1, a->sizeAt(-2), a->sizeAt(-1)});
-        auto bReshape = b->reshape(b->ordering(), {-1, b->sizeAt(-2), b->sizeAt(-1)});
-        auto cReshape = c->reshape(c->ordering(), {-1, c->sizeAt(-2), c->sizeAt(-1)});
+        std::vector<LongType> aShape = {-1, a->sizeAt(-2), a->sizeAt(-1)};
+        std::vector<LongType> bShape = {-1, b->sizeAt(-2), b->sizeAt(-1)};
+        std::vector<LongType> cShape = {-1, c->sizeAt(-2), c->sizeAt(-1)};
+        NDArray* aReshape = a->reshape(a->ordering(), aShape);
+        NDArray* bReshape = b->reshape(b->ordering(), bShape);
+        NDArray* cReshape = c->reshape(c->ordering(), cShape, false);
 
-        LongType batchSize = aReshape.sizeAt(0);
-        for (LongType i = 0; i < batchSize; i++) {
-            auto aSub = aReshape.subarray({NDIndex::point(i), NDIndex::all(), NDIndex::all()});
-            auto bSub = bReshape.subarray({NDIndex::point(i), NDIndex::all(), NDIndex::all()});
-            auto cSub = cReshape.subarray({NDIndex::point(i), NDIndex::all(), NDIndex::all()});
-            matmulMPS(&aSub, &bSub, &cSub, transA != 0, transB != 0, alpha, beta);
+        try {
+            LongType batchSize = aReshape->sizeAt(0);
+            for (LongType i = 0; i < batchSize; i++) {
+                NDArray* aSub = (*aReshape)(i, {0});
+                NDArray* bSub = (*bReshape)(i, {0});
+                NDArray* cSub = (*cReshape)(i, {0});
+                try {
+                    matmulMPS(aSub, bSub, cSub, transA != 0, transB != 0, alpha, beta);
+                } catch (...) {
+                    delete aSub;
+                    delete bSub;
+                    delete cSub;
+                    throw;
+                }
+                delete aSub;
+                delete bSub;
+                delete cSub;
+            }
+        } catch (...) {
+            delete aReshape;
+            delete bReshape;
+            delete cReshape;
+            throw;
         }
+
+        delete aReshape;
+        delete bReshape;
+        delete cReshape;
     } else {
         matmulMPS(a, b, c, transA != 0, transB != 0, alpha, beta);
     }
@@ -214,12 +239,25 @@ PLATFORM_IMPL(batched_gemm, ENGINE_CPU) {
     sd::LongType K    = transA ? A->sizeAt(-2) : A->sizeAt(-1);
     sd::LongType N    = transB ? B->sizeAt(-2) : B->sizeAt(-1);
 
-    for (sd::LongType i = 0; i < bS; i++) {
-        // Slice each batch element and run matmul
-        auto aSlice = A->subarray({NDIndex::point(i), NDIndex::all(), NDIndex::all()});
-        auto bSlice = B->subarray({NDIndex::point(i), NDIndex::all(), NDIndex::all()});
-        auto cSlice = C->subarray({NDIndex::point(i), NDIndex::all(), NDIndex::all()});
-        matmulMPS(&aSlice, &bSlice, &cSlice, transA, transB, alpha, beta);
+    if (rank == 2) {
+        matmulMPS(A, B, C, transA, transB, alpha, beta);
+    } else {
+        for (sd::LongType i = 0; i < bS; i++) {
+            NDArray* aSlice = (*A)(i, {0});
+            NDArray* bSlice = (*B)(i, {0});
+            NDArray* cSlice = (*C)(i, {0});
+            try {
+                matmulMPS(aSlice, bSlice, cSlice, transA, transB, alpha, beta);
+            } catch (...) {
+                delete aSlice;
+                delete bSlice;
+                delete cSlice;
+                throw;
+            }
+            delete aSlice;
+            delete bSlice;
+            delete cSlice;
+        }
     }
 
     return sd::Status::OK;

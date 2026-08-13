@@ -294,6 +294,22 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertNotIn("^^}", builder)
         self.assertIn("uppercase()", builder)
 
+    def test_macos_mps_sources_use_supported_metal_and_ndarray_apis(self):
+        activations = (
+            ROOT
+            / "libnd4j/include/ops/declarable/platform/mps/mps_activations.mm"
+        ).read_text()
+        self.assertNotIn("MPSCNNNeuronGeLU", activations)
+        self.assertIn("newLibraryWithSource", activations)
+        self.assertIn("dispatchThreads", activations)
+
+        blas = (
+            ROOT / "libnd4j/include/ops/declarable/platform/mps/mps_blas.mm"
+        ).read_text()
+        self.assertNotIn(".subarray(", blas)
+        self.assertNotIn("reshape(a->ordering(), {", blas)
+        self.assertIn("(*aReshape)(i, {0})", blas)
+
 
 class WorkerConfigTests(unittest.TestCase):
     def args(self, **overrides):
