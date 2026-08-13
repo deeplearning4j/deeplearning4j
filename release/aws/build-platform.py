@@ -476,6 +476,19 @@ def _required_cache_value(settings: dict, name: str) -> str:
     return value.strip()
 
 
+def _normalize_azure_connection_string(connection_string: str) -> str:
+    """Remove endpoint trailing slashes that OpenDAL otherwise duplicates."""
+    normalized = []
+    for segment in connection_string.split(";"):
+        if not segment:
+            continue
+        name, separator, value = segment.partition("=")
+        if separator and name.strip().lower().endswith("endpoint"):
+            value = value.rstrip("/")
+        normalized.append(f"{name}{separator}{value}")
+    return ";".join(normalized)
+
+
 def _configure_compiler_launchers(env: dict[str, str], compiler_cache: str) -> None:
     env.update({
         "DL4J_COMPILER_CACHE": compiler_cache,
@@ -671,7 +684,9 @@ def configure_compiler_cache(
                     "compilerCache.connectionString or compilerCache.connectionStringEnv is required"
                 )
             env.update({
-                "SCCACHE_AZURE_CONNECTION_STRING": connection_string,
+                "SCCACHE_AZURE_CONNECTION_STRING": _normalize_azure_connection_string(
+                    connection_string
+                ),
                 "SCCACHE_AZURE_BLOB_CONTAINER": _required_cache_value(remote, "container"),
                 "SCCACHE_AZURE_KEY_PREFIX": prefix,
             })

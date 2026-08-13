@@ -496,7 +496,7 @@ class ReleaseValidationTest(unittest.TestCase):
                     {"compilerCache": remote}, source, environment
                 )
             self.assertEqual(
-                "BlobEndpoint=https://account/;token",
+                "BlobEndpoint=https://account;token",
                 environment["SCCACHE_AZURE_CONNECTION_STRING"],
             )
             self.assertNotIn("connectionString", remote)
