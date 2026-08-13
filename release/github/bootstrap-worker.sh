@@ -26,12 +26,15 @@ install_linux_packages() {
       as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y llvm-dev libmlir-dev mlir-tools ||
       true
   elif command -v dnf >/dev/null 2>&1; then
-    as_root dnf install -y epel-release || true
+    as_root dnf install -y dnf-plugins-core epel-release
+    as_root dnf config-manager --set-enabled powertools ||
+      as_root dnf config-manager --set-enabled crb
     as_root dnf groupinstall -y "Development Tools"
     as_root dnf install -y \
       autoconf automake ca-certificates ccache cmake curl findutils gcc-gfortran git \
-      java-11-openjdk-devel jq libtool libusb-devel make maven nasm ninja-build \
-      openblas-devel patch pkgconfig python3 swig tar unzip wget which xz zip zlib-devel
+      java-11-openjdk-devel jq libtool libusb-devel libusbx-devel make maven nasm \
+      ninja-build openblas-devel patch pkgconfig python3 swig tar unzip wget which xz \
+      zip zlib-devel
   else
     printf 'Unsupported Linux package manager\n' >&2
     exit 2
