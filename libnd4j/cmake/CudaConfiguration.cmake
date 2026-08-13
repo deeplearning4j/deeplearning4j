@@ -326,7 +326,7 @@ function(configure_cuda_linking main_target_name)
         # Normal CUDA classifiers deliberately retain the toolkit's shared
         # runtime dependencies and Bytedeco platform resources.
         target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart)
-        foreach(_sd_cuda_lib CUDA::cublas CUDA::cusolver CUDA::cusparse CUDA::nvrtc CUDA::cuda_driver)
+        foreach(_sd_cuda_lib CUDA::cublas CUDA::cublasLt CUDA::cusolver CUDA::cusparse CUDA::nvrtc CUDA::cuda_driver)
             if(TARGET ${_sd_cuda_lib})
                 target_link_libraries(${main_target_name} PUBLIC ${_sd_cuda_lib})
             else()

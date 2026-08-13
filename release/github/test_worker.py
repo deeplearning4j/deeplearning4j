@@ -242,6 +242,13 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('CARGO_BUILD_TARGET="${CARGO_BUILD_TARGET:-${TARGET}}"', builder)
         self.assertIn('--target "${CARGO_BUILD_TARGET}"', builder)
 
+    def test_cuda_linking_includes_cublas_lt(self):
+        configuration = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
+        self.assertIn(
+            "CUDA::cublas CUDA::cublasLt CUDA::cusolver",
+            configuration,
+        )
+
     def test_native_builder_avoids_bash4_uppercase_expansion(self):
         builder = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
         self.assertNotIn("^^}", builder)
