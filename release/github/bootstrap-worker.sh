@@ -85,8 +85,9 @@ ensure_protoc_21() {
     "https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-${protoc_target}.zip" \
     -o "${work}/protoc.zip"
   as_root mkdir -p "${toolchain_root}/protoc-21.7"
-  as_root unzip -qo "${work}/protoc.zip" -d "${toolchain_root}/protoc-21.7" bin/protoc
+  as_root unzip -qo "${work}/protoc.zip" bin/protoc -d "${toolchain_root}/protoc-21.7"
   as_root chmod +x "${toolchain_root}/protoc-21.7/bin/protoc"
+  "${toolchain_root}/protoc-21.7/bin/protoc" --version
   trap - RETURN
   rm -rf "${work}"
 }

@@ -115,6 +115,14 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("12.5.10.65", bootstrap)
         self.assertIn("cusparse_v2.h", bootstrap)
 
+    def test_unix_protoc_bootstrap_places_member_selector_before_destination(self):
+        bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
+        self.assertIn(
+            'unzip -qo "${work}/protoc.zip" bin/protoc -d "${toolchain_root}/protoc-21.7"',
+            bootstrap,
+        )
+        self.assertIn('protoc-21.7/bin/protoc" --version', bootstrap)
+
 
 class WorkerConfigTests(unittest.TestCase):
     def args(self, **overrides):
