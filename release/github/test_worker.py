@@ -149,8 +149,24 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("Microsoft.VisualStudio.Component.VC.Tools.x86.x64", bootstrap)
         self.assertIn("Get-Command cl.exe", bootstrap)
         self.assertIn("Add-Content -Path $env:GITHUB_PATH", bootstrap)
+        self.assertIn("$originalPathSet.Contains($pathEntry)", bootstrap)
+        self.assertNotIn("if ($pathEntry) {\n      Add-Content -Path $env:GITHUB_PATH", bootstrap)
         self.assertIn("'INCLUDE'", bootstrap)
         self.assertIn("'LIB'", bootstrap)
+
+    def test_macos_mlx_sources_match_the_pinned_mlx_api(self):
+        builder = (ROOT / "libnd4j/include/graph/cpu/MlxIRBuilder.cpp").read_text()
+        header = (ROOT / "libnd4j/include/graph/cpu/MlxIRBuilder.h").read_text()
+        platform = (ROOT / "libnd4j/cmake/Platform.cmake").read_text()
+        detection = (ROOT / "libnd4j/cmake/PlatformDetection.cmake").read_text()
+        self.assertIn("struct Dtype;", header)
+        self.assertIn("GraphAnalysisUtils::profileSegment", builder)
+        self.assertIn("std::optional<mx::array> mask", builder)
+        self.assertIn("std::nullopt", builder)
+        self.assertNotIn("OpCategoryTable::categorize", builder)
+        self.assertNotIn("mx::array()", builder)
+        self.assertNotIn("mmacosx-version-min=10.10", platform)
+        self.assertNotIn("mmacosx-version-min=10.10", detection)
 
     def test_compat_worker_uses_modern_container_python(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()

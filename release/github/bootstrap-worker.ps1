@@ -63,6 +63,10 @@ if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
   if (-not (Test-Path -LiteralPath $vcVars)) {
     throw "Visual Studio x64 environment script was not found at $vcVars"
   }
+  $originalPathSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+  foreach ($pathEntry in ($env:PATH -split ';')) {
+    if ($pathEntry) { [void]$originalPathSet.Add($pathEntry) }
+  }
   $environmentLines = & $env:ComSpec /d /s /c "`"$vcVars`" >nul && set"
   if ($LASTEXITCODE -ne 0) {
     throw "Visual Studio x64 environment initialization failed with exit code $LASTEXITCODE"
@@ -93,8 +97,12 @@ if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
       Add-Content -Path $env:GITHUB_ENV -Value "$name=$value"
     }
   }
+  # GITHUB_PATH augments the next step's existing PATH. Persisting the complete
+  # vcvars PATH duplicates every hosted-runner entry and can make nvcc's own
+  # vcvars64 invocation exceed cmd.exe's command-line limit. Persist only the
+  # Visual Studio entries that vcvars added.
   foreach ($pathEntry in ($env:PATH -split ';')) {
-    if ($pathEntry) {
+    if ($pathEntry -and -not $originalPathSet.Contains($pathEntry)) {
       Add-Content -Path $env:GITHUB_PATH -Value $pathEntry
     }
   }

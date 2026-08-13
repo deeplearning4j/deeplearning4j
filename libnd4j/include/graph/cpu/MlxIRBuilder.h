@@ -37,7 +37,7 @@
 // Forward-declare MLX types to avoid leaking MLX headers into non-C++20 TUs
 namespace mlx::core {
 class array;
-enum class Dtype;
+struct Dtype;
 }  // namespace mlx::core
 
 namespace sd {

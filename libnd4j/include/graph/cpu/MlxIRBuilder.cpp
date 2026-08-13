@@ -22,6 +22,7 @@
 
 #include <graph/cpu/MlxIRBuilder.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/GraphAnalysisUtils.h>
 #include <graph/gpu/OpCategoryTable.h>
 #include <helpers/shape.h>
 #include <helpers/logger.h>
@@ -33,7 +34,10 @@
 #include <cmath>
 #include <cstring>
 #include <limits>
+#include <memory>
 #include <numeric>
+#include <optional>
+#include <stdexcept>
 
 // MLX C++ API headers
 #include <mlx/mlx.h>
@@ -74,7 +78,7 @@ static std::string normalizeOp(const std::string& opName) {
 int MlxIRBuilder::sdTypeToMlxDtype(sd::DataType dt) {
   switch (dt) {
     case sd::DataType::FLOAT32: return static_cast<int>(mx::float32);
-    case sd::DataType::FLOAT16: return static_cast<int>(mx::float16);
+    case sd::DataType::HALF: return static_cast<int>(mx::float16);
     case sd::DataType::BFLOAT16: return static_cast<int>(mx::bfloat16);
     case sd::DataType::INT32: return static_cast<int>(mx::int32);
     case sd::DataType::INT64: return static_cast<int>(mx::int64);
@@ -92,7 +96,7 @@ int MlxIRBuilder::sdTypeToMlxDtype(sd::DataType dt) {
 static mx::Dtype sdTypeToMlxDtypeInternal(sd::DataType dt) {
   switch (dt) {
     case sd::DataType::FLOAT32: return mx::float32;
-    case sd::DataType::FLOAT16: return mx::float16;
+    case sd::DataType::HALF: return mx::float16;
     case sd::DataType::BFLOAT16: return mx::bfloat16;
     case sd::DataType::INT32: return mx::int32;
     case sd::DataType::INT64: return mx::int64;
@@ -107,12 +111,31 @@ static mx::Dtype sdTypeToMlxDtypeInternal(sd::DataType dt) {
   }
 }
 
+static mx::array copyContiguousNdArrayToMlx(NDArray* arr, const std::vector<int>& shape) {
+  auto dtype = sdTypeToMlxDtypeInternal(arr->dataType());
+  switch (arr->dataType()) {
+    case sd::DataType::FLOAT32: return mx::array(arr->bufferAsT<float>(), shape, dtype);
+    case sd::DataType::HALF: return mx::array(arr->bufferAsT<float16>(), shape, dtype);
+    case sd::DataType::BFLOAT16: return mx::array(arr->bufferAsT<bfloat16>(), shape, dtype);
+    case sd::DataType::INT64: return mx::array(arr->bufferAsT<int64_t>(), shape, dtype);
+    case sd::DataType::INT32: return mx::array(arr->bufferAsT<int32_t>(), shape, dtype);
+    case sd::DataType::INT16: return mx::array(arr->bufferAsT<int16_t>(), shape, dtype);
+    case sd::DataType::INT8: return mx::array(arr->bufferAsT<int8_t>(), shape, dtype);
+    case sd::DataType::UINT64: return mx::array(arr->bufferAsT<uint64_t>(), shape, dtype);
+    case sd::DataType::UINT32: return mx::array(arr->bufferAsT<uint32_t>(), shape, dtype);
+    case sd::DataType::UINT16: return mx::array(arr->bufferAsT<uint16_t>(), shape, dtype);
+    case sd::DataType::UINT8: return mx::array(arr->bufferAsT<uint8_t>(), shape, dtype);
+    case sd::DataType::BOOL: return mx::array(arr->bufferAsT<bool>(), shape, dtype);
+    default: throw std::invalid_argument("MlxIRBuilder: unsupported NDArray data type");
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Static analysis
 // ═══════════════════════════════════════════════════════════════════════════
 
 bool MlxIRBuilder::isMlxMappable(const std::string& opName) {
-  auto cat = OpCategoryTable::categorize(opName);
+  auto cat = getOpCategoryFromName(opName);
   switch (cat) {
     // Phase 1: element-wise
     case TritonOpCategory::BINARY_ELEMENTWISE:
@@ -143,48 +166,7 @@ bool MlxIRBuilder::isMlxMappable(const std::string& opName) {
 
 SegmentProfile MlxIRBuilder::profileSegment(NativeSlot* slots, int startSlot, int endSlot,
                                              NDArray** outputSlots, int totalOutputSlots) {
-  SegmentProfile profile;
-  profile.startSlot = startSlot;
-  profile.endSlot = endSlot;
-  profile.totalOps = endSlot - startSlot + 1;
-  profile.elementwiseOps = 0;
-  profile.reductionOps = 0;
-  profile.matmulOps = 0;
-  profile.unsupportedOps = 0;
-
-  for (int i = startSlot; i <= endSlot; i++) {
-    auto cat = OpCategoryTable::categorize(slots[i].ident.opName);
-    switch (cat) {
-      case TritonOpCategory::BINARY_ELEMENTWISE:
-      case TritonOpCategory::UNARY_ELEMENTWISE:
-      case TritonOpCategory::COMPARISON:
-      case TritonOpCategory::LOGICAL:
-      case TritonOpCategory::TERNARY:
-      case TritonOpCategory::IDENTITY:
-      case TritonOpCategory::CAST:
-      case TritonOpCategory::SHAPE_MANIPULATION:
-      case TritonOpCategory::DATA_MOVEMENT:
-      case TritonOpCategory::CONSTANT_GENERATION:
-        profile.elementwiseOps++;
-        break;
-      case TritonOpCategory::REDUCTION:
-      case TritonOpCategory::NORMALIZATION:
-        profile.reductionOps++;
-        break;
-      case TritonOpCategory::MATMUL:
-      case TritonOpCategory::CONVOLUTION:
-      case TritonOpCategory::FUSED_ATTENTION:
-      case TritonOpCategory::ROPE:
-      case TritonOpCategory::FUSED_LLM:
-        profile.matmulOps++;
-        break;
-      default:
-        profile.unsupportedOps++;
-        break;
-    }
-  }
-
-  return profile;
+  return GraphAnalysisUtils::profileSegment(slots, startSlot, endSlot, outputSlots, totalOutputSlots);
 }
 
 SegmentAnalysis MlxIRBuilder::analyzeSegment(NativeSlot* slots, int startSlot, int endSlot,
@@ -196,7 +178,7 @@ SegmentAnalysis MlxIRBuilder::analyzeSegment(NativeSlot* slots, int startSlot, i
 
   auto profile = profileSegment(slots, startSlot, endSlot, outputSlots, totalOutputSlots);
 
-  if (profile.unsupportedOps > 0) {
+  if (profile.categoryCounts[static_cast<int>(TritonOpCategory::UNSUPPORTED)] > 0) {
     analysis.canCompile = false;
     analysis.failureReason = "segment contains unsupported ops for MLX";
     return analysis;
@@ -270,25 +252,36 @@ std::unordered_set<int> MlxIRBuilder::computeExternallyVisibleOutputs(
 std::shared_ptr<void> MlxIRBuilder::ndArrayToMlxArray(NDArray* arr) {
   if (!arr || arr->isEmpty()) return nullptr;
 
+  switch (arr->dataType()) {
+    case sd::DataType::FLOAT32:
+    case sd::DataType::HALF:
+    case sd::DataType::BFLOAT16:
+    case sd::DataType::INT64:
+    case sd::DataType::INT32:
+    case sd::DataType::INT16:
+    case sd::DataType::INT8:
+    case sd::DataType::UINT64:
+    case sd::DataType::UINT32:
+    case sd::DataType::UINT16:
+    case sd::DataType::UINT8:
+    case sd::DataType::BOOL:
+      break;
+    default:
+      return nullptr;
+  }
+
   auto rank = arr->rankOf();
   std::vector<int> shape(rank);
   for (int i = 0; i < rank; i++) {
     shape[i] = static_cast<int>(arr->sizeAt(i));
   }
 
-  auto dtype = sdTypeToMlxDtypeInternal(arr->dataType());
-
   if (shape::strideDescendingCAscendingF(arr->shapeInfo()) && arr->ordering() == 'c') {
-    auto* dataPtr = arr->buffer();
-    auto mlxArr = mx::array(dataPtr, shape, dtype);
-    return wrap(std::move(mlxArr));
-  } else {
-    auto duped = arr->dup('c');
-    auto* dataPtr = duped.buffer();
-    auto mlxArr = mx::array(dataPtr, shape, dtype);
-    mx::eval(mlxArr);
-    return wrap(std::move(mlxArr));
+    return wrap(copyContiguousNdArrayToMlx(arr, shape));
   }
+
+  std::unique_ptr<NDArray> duped(arr->dup('c'));
+  return wrap(copyContiguousNdArrayToMlx(duped.get(), shape));
 }
 
 void MlxIRBuilder::mlxArrayToNDArray(const std::shared_ptr<void>& mlxArr, NDArray* output) {
@@ -792,12 +785,12 @@ std::shared_ptr<void> MlxIRBuilder::emitNormalizationOp(const std::string& opNam
       auto result = mx::fast::layer_norm(x, unwrap(inputs[1]), unwrap(inputs[2]), eps);
       return wrap(std::move(result));
     } else if (inputs.size() >= 2) {
-      // weight only, no bias — pass empty array for bias
-      auto result = mx::fast::layer_norm(x, unwrap(inputs[1]), mx::array(), eps);
+      // weight only, no bias
+      auto result = mx::fast::layer_norm(x, unwrap(inputs[1]), std::nullopt, eps);
       return wrap(std::move(result));
     } else {
       // No weight/bias
-      auto result = mx::fast::layer_norm(x, mx::array(), mx::array(), eps);
+      auto result = mx::fast::layer_norm(x, std::nullopt, std::nullopt, eps);
       return wrap(std::move(result));
     }
   }
@@ -811,7 +804,8 @@ std::shared_ptr<void> MlxIRBuilder::emitNormalizationOp(const std::string& opNam
       auto result = mx::fast::rms_norm(x, unwrap(inputs[1]), eps);
       return wrap(std::move(result));
     } else {
-      auto result = mx::fast::rms_norm(x, mx::array(), eps);
+      auto meanSquare = mx::mean(mx::square(x), std::vector<int>{-1}, true);
+      auto result = mx::multiply(x, mx::rsqrt(mx::add(meanSquare, mx::array(eps))));
       return wrap(std::move(result));
     }
   }
@@ -1114,10 +1108,11 @@ std::shared_ptr<void> MlxIRBuilder::emitDataMovementOp(const std::string& opName
     mx::eval(padSpec);
 
     int ndim = static_cast<int>(data.ndim());
-    std::vector<int> padWidths;
+    std::vector<std::pair<int, int>> padWidths;
+    padWidths.reserve(ndim);
     auto padData = padSpec.data<int32_t>();
-    for (int i = 0; i < ndim * 2; i++) {
-      padWidths.push_back(padData[i]);
+    for (int i = 0; i < ndim; i++) {
+      padWidths.emplace_back(padData[2 * i], padData[2 * i + 1]);
     }
 
     // Pad mode from iArgs[0]: 0=constant, 1=reflect, 2=edge
@@ -1490,8 +1485,7 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
       auto result = mx::fast::scaled_dot_product_attention(Q, K, V, scale, mask);
       return wrap(std::move(result));
     } else {
-      // No mask — pass empty array
-      auto result = mx::fast::scaled_dot_product_attention(Q, K, V, scale, mx::array());
+      auto result = mx::fast::scaled_dot_product_attention(Q, K, V, scale, std::nullopt);
       return wrap(std::move(result));
     }
   }
@@ -1524,7 +1518,7 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
       auto causalMask = mx::triu(mx::full({seqLen, kvLen}, mx::array(-std::numeric_limits<float>::infinity())), 1);
       return wrap(mx::fast::scaled_dot_product_attention(Q, K, V, scale, causalMask));
     }
-    return wrap(mx::fast::scaled_dot_product_attention(Q, K, V, scale, mx::array()));
+    return wrap(mx::fast::scaled_dot_product_attention(Q, K, V, scale, std::nullopt));
   }
 
   // grouped_query_attention: GQA with head repeating
@@ -1561,7 +1555,7 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
     }
 
     // Build mask
-    mx::array mask;
+    std::optional<mx::array> mask;
     if (inputs.size() >= 4 && inputs[3]) {
       mask = unwrap(inputs[3]);
     } else if (causal) {
@@ -1753,7 +1747,7 @@ MlxIRBuilder::MlxGraph MlxIRBuilder::buildGraph(
 
   for (int si = startSlot; si <= endSlot; si++) {
     auto& slot = slots[si];
-    auto cat = OpCategoryTable::categorize(slot.ident.opName);
+    auto cat = getOpCategoryFromName(slot.ident.opName);
 
     // Resolve inputs from SSA map or external inputs
     std::vector<std::shared_ptr<void>> inputs;
