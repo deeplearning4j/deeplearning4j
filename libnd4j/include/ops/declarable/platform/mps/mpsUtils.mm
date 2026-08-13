@@ -42,10 +42,9 @@ bool hasMPSSupport() {
     return MPSDeviceManager::getInstance().isAvailable();
 }
 
-bool isContiguous(const sd::NDArray& arr) {
+bool isContiguous(sd::NDArray& arr) {
     // Use the canonical contiguity check — never ews().
-    return shape::strideDescendingCAscendingF(
-        const_cast<sd::LongType*>(arr.shapeInfo()));
+    return shape::strideDescendingCAscendingF(arr.shapeInfo());
 }
 
 // ---------------------------------------------------------------------------
@@ -175,7 +174,7 @@ bool isMPSSupported(sd::DataType dtype) {
     }
 }
 
-bool isMPSFriendly(const sd::NDArray& arr) {
+bool isMPSFriendly(sd::NDArray& arr) {
     return isContiguous(arr) && isMPSSupported(arr.dataType()) && !arr.isEmpty();
 }
 
@@ -191,7 +190,7 @@ MPSDataType getMPSDataType(sd::DataType dtype) {
     }
 }
 
-MPSMatrix* createMPSMatrix(const sd::NDArray* arr, id<MTLDevice> device) {
+MPSMatrix* createMPSMatrix(sd::NDArray* arr, id<MTLDevice> device) {
     if (arr == nullptr || device == nil) {
         return nil;
     }
@@ -238,7 +237,7 @@ MPSMatrix* createMPSMatrix(const sd::NDArray* arr, id<MTLDevice> device) {
     }
 }
 
-MPSImage* createMPSImage(const sd::NDArray* arr, id<MTLDevice> device) {
+MPSImage* createMPSImage(sd::NDArray* arr, id<MTLDevice> device) {
     if (arr == nullptr || device == nil || arr->rankOf() != 4) {
         return nil;
     }
@@ -379,7 +378,7 @@ void MPSCommandBufferGuard::commit() {
 // ============================================================================
 
 void checkMPSRequirements(sd::Requirements& reqs, sd::graph::Context& block,
-                           const sd::NDArray* input, const sd::NDArray* output) {
+                           sd::NDArray* input, sd::NDArray* output) {
     reqs.expectTrue(block.isUseMPS(), IS_USE_MPS_MSG);
     reqs.expectTrue(MPSDeviceManager::getInstance().isAvailable(),
                     "MPS device must be available");

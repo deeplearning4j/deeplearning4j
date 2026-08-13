@@ -34,6 +34,7 @@
 #include <ConstMessages.h>
 
 #ifdef HAVE_MPS
+#import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 #endif
@@ -414,7 +415,7 @@ bool hasMPSSupport();
  * Returns true when the NDArray is contiguous in C order (row-major).
  * Available unconditionally so PLATFORM_CHECK can call it on any platform.
  */
-bool isContiguous(const sd::NDArray& arr);
+bool isContiguous(sd::NDArray& arr);
 
 /**
  * Singleton device manager for MPS / Metal.
@@ -470,16 +471,16 @@ private:
 bool isMPSSupported(sd::DataType dtype);
 
 /** Returns true if the array is contiguous and has a MPS-supported dtype. */
-bool isMPSFriendly(const sd::NDArray& arr);
+bool isMPSFriendly(sd::NDArray& arr);
 
 /** Map a libnd4j DataType to the corresponding MPSDataType. */
 MPSDataType getMPSDataType(sd::DataType dtype);
 
 /** Create an MPSMatrix wrapping the data in @p arr. */
-MPSMatrix* createMPSMatrix(const sd::NDArray* arr, id<MTLDevice> device);
+MPSMatrix* createMPSMatrix(sd::NDArray* arr, id<MTLDevice> device);
 
 /** Create an MPSImage from a 4-D NDArray (NCHW). */
-MPSImage* createMPSImage(const sd::NDArray* arr, id<MTLDevice> device);
+MPSImage* createMPSImage(sd::NDArray* arr, id<MTLDevice> device);
 
 /** Synchronously copy an MPSMatrix result back to @p arr. */
 void copyMPSMatrixToNDArray(MPSMatrix* matrix, sd::NDArray* arr);
@@ -509,8 +510,8 @@ private:
 
 /** Fill @p reqs with the standard MPS preconditions. */
 void checkMPSRequirements(sd::Requirements& reqs, sd::graph::Context& block,
-                           const sd::NDArray* input  = nullptr,
-                           const sd::NDArray* output = nullptr);
+                           sd::NDArray* input  = nullptr,
+                           sd::NDArray* output = nullptr);
 
 #endif  // HAVE_MPS
 

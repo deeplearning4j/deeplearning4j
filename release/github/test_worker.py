@@ -160,6 +160,8 @@ class WorkflowMatrixTests(unittest.TestCase):
         platform = (ROOT / "libnd4j/cmake/Platform.cmake").read_text()
         detection = (ROOT / "libnd4j/cmake/PlatformDetection.cmake").read_text()
         types = (ROOT / "libnd4j/include/types/types.h").read_text()
+        mps_header = (ROOT / "libnd4j/include/ops/declarable/platform/mps/mpsUtils.h").read_text()
+        mps_source = (ROOT / "libnd4j/include/ops/declarable/platform/mps/mpsUtils.mm").read_text()
         self.assertIn("struct Dtype;", header)
         self.assertIn("GraphAnalysisUtils::profileSegment", builder)
         self.assertIn("std::optional<mx::array> mask", builder)
@@ -172,6 +174,12 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('CACHE STRING "Minimum macOS deployment target" FORCE', detection)
         self.assertIn("!defined(_WIN32) && !defined(__OBJC__)", types)
         self.assertIn("static constexpr auto BOOL = sd::DataType::BOOL;", types)
+        self.assertLess(
+            mps_header.index("#import <Foundation/Foundation.h>"),
+            mps_header.index("#import <Metal/Metal.h>"),
+        )
+        self.assertNotIn("const sd::NDArray", mps_header)
+        self.assertNotIn("const sd::NDArray", mps_source)
 
     def test_compat_worker_uses_modern_container_python(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
