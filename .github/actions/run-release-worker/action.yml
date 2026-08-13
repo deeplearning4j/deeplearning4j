@@ -108,6 +108,24 @@ runs:
       with:
         cache-suffix: ${{ inputs.shard }}-${{ inputs.variant }}
 
+    - name: Hand off pre-started sccache on Unix
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        if command -v sccache >/dev/null 2>&1; then
+          sccache --stop-server || true
+        fi
+
+    - name: Hand off pre-started sccache on Windows
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        $sccache = Get-Command sccache -ErrorAction SilentlyContinue
+        if ($null -ne $sccache) {
+          & $sccache.Source --stop-server
+        }
+        exit 0
+
     - name: Execute shared release worker
       id: worker
       shell: bash
