@@ -21,8 +21,8 @@ fi
 # Architecture selects only cross-platform toolchain behavior. Accelerator profiles
 # belong exclusively to their explicit CUDA, Metal, TPU, Hexagon, Vulkan, and ZLUDA
 # matrix lanes; inferring them here would contaminate CPU builds.
-tokenizers=(mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native --also-make "-Djavacpp.platform=${DL4J_PLATFORM}" "${mingw[@]}" "${repository[@]}" -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests)
-java=(mvn -pl '!:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:platform-tests' "${protoc_profile[@]}" "${repository[@]}" -DskipTestResourceEnforcement=true "-Djavacpp.platform=${DL4J_PLATFORM}" -Dmaven.javadoc.failOnError=false -Dmaven.test.skip=true --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}")
+tokenizers=(mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native --also-make "-Djavacpp.platform=${DL4J_PLATFORM}" ${mingw[@]+"${mingw[@]}"} ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}" -DskipTests)
+java=(mvn -pl '!:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:platform-tests' ${protoc_profile[@]+"${protoc_profile[@]}"} ${repository[@]+"${repository[@]}"} -DskipTestResourceEnforcement=true "-Djavacpp.platform=${DL4J_PLATFORM}" -Dmaven.javadoc.failOnError=false -Dmaven.test.skip=true --no-transfer-progress --batch-mode "${DL4J_MAVEN_GOAL}")
 
 print_command() {
   printf '%q ' "$@"

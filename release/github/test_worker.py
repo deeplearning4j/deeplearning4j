@@ -227,6 +227,12 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('${win[@]+"${win[@]}"}', launcher)
         self.assertIn('${zluda_win[@]+"${zluda_win[@]}"}', launcher)
 
+    def test_cross_platform_launcher_expands_empty_arrays_safely_on_macos_bash(self):
+        launcher = (ROOT / "build-scripts/release/cross-platform.sh").read_text()
+        self.assertIn('${mingw[@]+"${mingw[@]}"}', launcher)
+        self.assertIn('${repository[@]+"${repository[@]}"}', launcher)
+        self.assertIn('${protoc_profile[@]+"${protoc_profile[@]}"}', launcher)
+
     def test_native_builder_avoids_bash4_uppercase_expansion(self):
         builder = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
         self.assertNotIn("^^}", builder)
