@@ -125,6 +125,9 @@ endif()
 set(_managed_source "${_test_root}/MIOpenContract.cpp")
 set(_managed_runtime "${_runtime_root}/libMIOpenContract-concrete.so.7")
 set(_managed_link_alias "${_runtime_root}/libMIOpenContract.so")
+set(_host_hsa_source "${_test_root}/hsa-runtime.cpp")
+set(_host_hsa_runtime "${_runtime_root}/libhsa-runtime64.so.1.99")
+set(_host_hsa_link_alias "${_runtime_root}/libhsa-runtime64.so")
 set(_primary_source "${_test_root}/primary.cpp")
 set(_primary_runtime "${_test_root}/libprimary.so")
 set(_primary_output "${_test_root}/primary-output")
@@ -139,9 +142,12 @@ if(DEFINED TEST_PATCHELF AND
 endif()
 file(WRITE "${_managed_source}"
     "extern \"C\" int dl4j_managed_runtime_contract() { return 7; }\n")
+file(WRITE "${_host_hsa_source}"
+    "extern \"C\" int dl4j_host_hsa_contract() { return 11; }\n")
 file(WRITE "${_primary_source}"
     "extern \"C\" int dl4j_managed_runtime_contract();\n"
-    "extern \"C\" int dl4j_primary_contract() { return dl4j_managed_runtime_contract(); }\n")
+    "extern \"C\" int dl4j_host_hsa_contract();\n"
+    "extern \"C\" int dl4j_primary_contract() { return dl4j_managed_runtime_contract() + dl4j_host_hsa_contract(); }\n")
 execute_process(
     COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
         -Wl,-soname,libMIOpenContract.so.1
@@ -163,9 +169,28 @@ if(NOT _managed_symlink_result EQUAL 0)
 endif()
 execute_process(
     COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
+        -Wl,-soname,libhsa-runtime64.so.1
+        -o "${_host_hsa_runtime}" "${_host_hsa_source}"
+    RESULT_VARIABLE _host_hsa_compile_result
+    ERROR_VARIABLE _host_hsa_compile_error)
+if(NOT _host_hsa_compile_result EQUAL 0)
+    message(FATAL_ERROR
+        "Failed to compile host-HSA fixture: ${_host_hsa_compile_error}")
+endif()
+execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E create_symlink
+        "libhsa-runtime64.so.1.99" "${_host_hsa_link_alias}"
+    RESULT_VARIABLE _host_hsa_symlink_result
+    ERROR_VARIABLE _host_hsa_symlink_error)
+if(NOT _host_hsa_symlink_result EQUAL 0)
+    message(FATAL_ERROR
+        "Failed to create host-HSA link alias: ${_host_hsa_symlink_error}")
+endif()
+execute_process(
+    COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
         -Wl,-soname,libprimary.so
         -Wl,--no-as-needed
-        "-L${_runtime_root}" -lMIOpenContract
+        "-L${_runtime_root}" -lMIOpenContract -lhsa-runtime64
         -o "${_primary_runtime}" "${_primary_source}"
     RESULT_VARIABLE _primary_compile_result
     ERROR_VARIABLE _primary_compile_error)
@@ -222,10 +247,27 @@ if(_managed_runtime_index EQUAL -1 OR
         "Primary-root preload closure did not isolate the canonical "
         "libMIOpenContract.so.1 identity: ${_primary_manifest_entries}")
 endif()
+list(FIND _primary_manifest_entries "libhsa-runtime64.so.1"
+    _host_hsa_manifest_index)
+if(_primary_runtime_policy STREQUAL "zluda-amd")
+    if(NOT _host_hsa_manifest_index EQUAL -1 OR
+       EXISTS "${_primary_output}/libhsa-runtime64.so.1" OR
+       EXISTS "${_primary_package}/libhsa-runtime64.so.1")
+        message(FATAL_ERROR
+            "ZLUDA classifier packaged host-owned HSA runtime: "
+            "${_primary_manifest_entries}")
+    endif()
+elseif(_host_hsa_manifest_index EQUAL -1)
+    message(FATAL_ERROR
+        "Default shared-runtime policy unexpectedly excluded HSA fixture")
+endif()
+
 set(_required_packaged_runtimes
     libprimary.so libMIOpenContract.so.1 shared-runtime-manifest.txt)
 if(_primary_runtime_policy STREQUAL "zluda-amd")
     list(APPEND _required_packaged_runtimes libMIOpenContract.so)
+else()
+    list(APPEND _required_packaged_runtimes libhsa-runtime64.so.1)
 endif()
 foreach(_packaged_runtime IN LISTS _required_packaged_runtimes)
     if(NOT EXISTS "${_primary_package}/${_packaged_runtime}")

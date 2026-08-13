@@ -25,6 +25,7 @@
 #include <cusolverDn.h>
 #include <cusparse_v2.h>
 #include <execution/AffinityManager.h>
+#include <execution/ZludaRuntime.h>
 #include <string>
 #include <helpers/logger.h>
 #include <mutex>
@@ -235,6 +236,13 @@ void* CublasHelper::handle() {
 }
 
 void* CublasHelper::solver() {
+  // cuSolver is an optional backend capability. ZLUDA implements the CUDA ABI
+  // used by ordinary ND4J operations but not cuSolver, so do not probe it while
+  // constructing a launch context.
+  if (!zluda::supportsCusolver()) {
+    return nullptr;
+  }
+
   auto deviceId = AffinityManager::currentDeviceId();
   if (deviceId < 0 || deviceId >= _solvers.size()) {
     std::string msg = "requested deviceId doesn't look valid for cuSolver; Error code: [" + std::to_string(deviceId) + "]";

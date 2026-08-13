@@ -44,6 +44,21 @@ inline bool isZludaRuntimeAvailable() {
 }
 
 /**
+ * Report whether this native artifact provides the NVIDIA cuSolver ABI.
+ *
+ * ZLUDA does not currently implement cuSolver. Keeping this capability at the
+ * native backend boundary prevents ordinary CUDA-compatible launch contexts
+ * from probing an unsupported optional library.
+ */
+inline bool supportsCusolver() {
+#if defined(HAVE_ZLUDA)
+    return false;
+#else
+    return true;
+#endif
+}
+
+/**
  * Return the target encoded in this native artifact.
  *
  * @return The detected engine type, or ENGINE_CPU if ZLUDA is not available

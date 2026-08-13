@@ -297,9 +297,25 @@ function(_normalize_zluda_needed_aliases _library_path)
     endif()
 endfunction()
 
+function(_is_host_runtime_boundary_name _out_var _runtime_name)
+    string(TOLOWER "${_runtime_name}" _runtime_name_lower)
+    if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd" AND
+       _runtime_name_lower MATCHES "^(lib)?hsa-runtime.*")
+        set(${_out_var} TRUE PARENT_SCOPE)
+    else()
+        set(${_out_var} FALSE PARENT_SCOPE)
+    endif()
+endfunction()
+
 function(_is_managed_gpu_runtime_name _out_var _runtime_name)
     string(TOLOWER "${_runtime_name}" _runtime_name_lower)
-    if(_runtime_name_lower MATCHES
+    _is_host_runtime_boundary_name(_host_runtime_boundary "${_runtime_name}")
+    if(_host_runtime_boundary)
+        # libhsa-runtime is coupled to the host's amdgpu/KFD stack. Packaging a
+        # second copy permits both identities to enter one process and corrupt
+        # HSA teardown state.
+        set(${_out_var} FALSE PARENT_SCOPE)
+    elseif(_runtime_name_lower MATCHES
             "^(lib)?(amd|hsa-runtime|miopen|roc|hip).*")
         set(${_out_var} TRUE PARENT_SCOPE)
     else()
@@ -312,6 +328,8 @@ endfunction()
 # only dependencies resolved below one of these roots are bundled, so ordinary
 # operating-system libraries remain host-provided. This is used by ZLUDA to
 # carry its ROCm/HIP/MIOpen closure without copying glibc or the kernel driver.
+# Under the zluda-amd policy, libhsa-runtime is also host-owned because it must
+# match the installed amdgpu/KFD stack; it is deliberately outside the closure.
 set(_runtime_search_roots "")
 if(DEFINED RUNTIME_SEARCH_ROOTS_PIPE AND
    NOT RUNTIME_SEARCH_ROOTS_PIPE STREQUAL "")
@@ -518,6 +536,16 @@ if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd")
         list(APPEND _available_runtime_names "${_runtime_alias_name}")
     endforeach()
     list(REMOVE_DUPLICATES _available_runtime_names)
+    foreach(_available_runtime_name IN LISTS _available_runtime_names)
+        _is_host_runtime_boundary_name(
+            _available_is_host_boundary "${_available_runtime_name}")
+        if(_available_is_host_boundary)
+            message(FATAL_ERROR
+                "ZLUDA classifier must not package host-owned runtime "
+                "'${_available_runtime_name}'; use the HSA runtime supplied by "
+                "the installed amdgpu/KFD stack")
+        endif()
+    endforeach()
 
     _shared_runtime_needed_names(_primary_needed_names "${PRIMARY_RUNTIME}")
     foreach(_primary_needed_name IN LISTS _primary_needed_names)
@@ -538,7 +566,7 @@ if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd")
 
         set(_packaged_gpu_runtime FALSE)
         if(_primary_needed_lower MATCHES
-                "^(lib)?(cuda|nvcuda|cublas|cublaslt|cusparse|cufft|cudnn|amd|hsa-runtime|miopen|roc|hip).*")
+                "^(lib)?(cuda|nvcuda|cublas|cublaslt|cusparse|cufft|cudnn|amd|miopen|roc|hip).*")
             set(_packaged_gpu_runtime TRUE)
         endif()
         if(_packaged_gpu_runtime)

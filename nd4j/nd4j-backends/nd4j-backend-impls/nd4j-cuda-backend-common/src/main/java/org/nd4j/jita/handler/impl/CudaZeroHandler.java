@@ -951,6 +951,23 @@ public class CudaZeroHandler implements MemoryHandler {
     }
 
     /**
+     * Return the optional cuSolver handle exposed by the native backend.
+     *
+     * ZLUDA intentionally returns no handle because it does not implement the
+     * cuSolver ABI. Ordinary array/context setup must remain usable; an actual
+     * LAPACK operation will fail through CudaContext#getSolverHandle() with the
+     * existing explicit unsupported-handle error.
+     */
+    private cusolverDnHandle_t getCudaSolverHandle(OpaqueLaunchContext lc) {
+        Pointer nativeHandle = nativeOps.lcSolverHandle(lc);
+        if (nativeHandle == null || nativeHandle.isNull()) {
+            return null;
+        }
+        nativeHandle.retainReference();
+        return new cusolverDnHandle_t(nativeHandle);
+    }
+
+    /**
      * This method returns CudaContext for current thread with FRESH stream pointers.
      *
      * Stream pointers are NOT cached because native code can reinitialize
@@ -984,7 +1001,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 .oldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc).retainReference()))
                 .specialStream(new cudaStream_t(nativeOps.lcCopyStream(lc).retainReference()))
                 .cublasHandle(getCudaCublasHandle(lc))
-                .solverHandle(new cusolverDnHandle_t(nativeOps.lcSolverHandle(lc).retainReference()))
+                .solverHandle(getCudaSolverHandle(lc))
                 .deviceId(currentDeviceId)
                 .build();
 
@@ -1032,7 +1049,7 @@ public class CudaZeroHandler implements MemoryHandler {
                 // IMPORTANT: retainReference() prevents JavaCPP from freeing CUDA-allocated memory
                 Pointer execStream = nativeOps.lcExecutionStream(lc).retainReference();
                 Pointer copyStream = nativeOps.lcCopyStream(lc).retainReference();
-                Pointer solverHandlePtr = nativeOps.lcSolverHandle(lc).retainReference();
+                cusolverDnHandle_t solverHandle = getCudaSolverHandle(lc);
 
                 // Validate streams
                 if (execStream == null || execStream.isNull()) {
@@ -1052,7 +1069,7 @@ public class CudaZeroHandler implements MemoryHandler {
                             .oldStream(new cudaStream_t(execStream))
                             .specialStream(new cudaStream_t(copyStream))
                             .cublasHandle(getCudaCublasHandleForDevice(lc, deviceId))
-                            .solverHandle(new cusolverDnHandle_t(solverHandlePtr))
+                            .solverHandle(solverHandle)
                             .deviceId(deviceId)
                             .build();
                     deviceContexts.set(deviceId, cachedCtx);
