@@ -80,6 +80,28 @@ def run(command: list[str], cwd: Path, env: dict[str, str]) -> None:
     subprocess.run(command, cwd=cwd, env=env, check=True)
 
 
+def bash_command(arguments: list[str], env: dict[str, str]) -> list[str]:
+    configured = env.get("DL4J_BASH_EXE")
+    if configured:
+        return [configured, *arguments]
+    if platform.system().lower() == "windows":
+        candidates = (
+            Path(env.get("ProgramFiles", r"C:\Program Files")) / "Git" / "bin" / "bash.exe",
+            Path(r"C:\msys64\usr\bin\bash.exe"),
+        )
+        for candidate in candidates:
+            if candidate.is_file():
+                return [str(candidate), *arguments]
+        raise RuntimeError(
+            "Git Bash is required on Windows; set DL4J_BASH_EXE to bash.exe. "
+            "The Windows WSL bash.exe is not supported."
+        )
+    executable = shutil.which("bash")
+    if not executable:
+        raise RuntimeError("bash is required to execute release build scripts")
+    return [executable, *arguments]
+
+
 def host_platform() -> tuple[str, str]:
     system = platform.system().lower()
     os_name = {"darwin": "macos", "windows": "windows", "linux": "linux"}.get(system)
@@ -1133,8 +1155,8 @@ def build_cross_platform(source: Path, build: dict, repository: Path, env: dict[
         "DL4J_MAVEN_REPOSITORY": str(repository),
     })
     script = source / "build-scripts/release/cross-platform.sh"
-    run(["bash", str(script), "--run-tokenizers"], source, cross_env)
-    run(["bash", str(script), "--run-java"], source, cross_env)
+    run(bash_command([str(script), "--run-tokenizers"], cross_env), source, cross_env)
+    run(bash_command([str(script), "--run-java"], cross_env), source, cross_env)
 
 
 def prepare_openblas(
@@ -2042,7 +2064,14 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
         variant_timer = time.monotonic()
         variant_status = "failed"
         try:
-            run(["bash", str(source / "build-scripts/release" / script_name), "--run"], source, variant_env)
+            run(
+                bash_command(
+                    [str(source / "build-scripts/release" / script_name), "--run"],
+                    variant_env,
+                ),
+                source,
+                variant_env,
+            )
             variant_status = "complete"
         finally:
             if benchmark is not None:
@@ -2128,10 +2157,17 @@ def main() -> None:
     build_completed = False
     try:
         print(f"[dl4j-phase] shard={shard['id']} phase=version-setup", flush=True)
-        update = ["bash", "./update-versions.sh", config["snapshotVersion"], config["releaseVersion"]]
+        update = bash_command(
+            ["./update-versions.sh", config["snapshotVersion"], config["releaseVersion"]],
+            env,
+        )
         run(update, args.source, env)
         if build["backend"] == "cuda":
-            run(["bash", "./change-cuda-versions.sh", build["cudaVersion"]], args.source, env)
+            run(
+                bash_command(["./change-cuda-versions.sh", build["cudaVersion"]], env),
+                args.source,
+                env,
+            )
         prepare_rocm_build_toolchain(build, env, config)
         attest_zluda_configuration(build)
         if build.get("kind") == "cross-platform":

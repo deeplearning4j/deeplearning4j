@@ -14,8 +14,13 @@ if (-not (Get-Command cbindgen -ErrorAction SilentlyContinue)) {
 }
 $msysPath = 'C:\msys64\usr\bin'
 $mingwPath = 'C:\msys64\mingw64\bin'
+$gitBash = 'C:\Program Files\Git\bin\bash.exe'
+if (-not (Test-Path -LiteralPath $gitBash)) {
+  throw "Git Bash was not installed at $gitBash"
+}
 Add-Content -Path $env:GITHUB_PATH -Value $msysPath
 Add-Content -Path $env:GITHUB_PATH -Value $mingwPath
+Add-Content -Path $env:GITHUB_ENV -Value "DL4J_BASH_EXE=$gitBash"
 
 if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
   $cudaVersion = if ($Shard -match '12-6') { '12.6' } else { '12.9' }

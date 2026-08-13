@@ -202,6 +202,17 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertIn("amiQuery", shard)
             self.assertNotIn("amiSsmParameter", shard)
 
+    def test_windows_shell_commands_use_explicit_git_bash(self):
+        env = {"DL4J_BASH_EXE": r"C:\\Program Files\\Git\\bin\\bash.exe"}
+        with patch.object(build_platform.platform, "system", return_value="Windows"):
+            command = build_platform.bash_command(
+                ["./update-versions.sh", "snapshot", "release"], env
+            )
+        self.assertEqual(env["DL4J_BASH_EXE"], command[0])
+        self.assertEqual(
+            ["./update-versions.sh", "snapshot", "release"], command[1:]
+        )
+
     def test_sccache_release_assets_are_pinned_to_quoted_response_file_support(self):
         self.assertEqual("0.17.0", build_platform.SCCACHE_VERSION)
         self.assertEqual(

@@ -123,6 +123,13 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertIn('protoc-21.7/bin/protoc" --version', bootstrap)
 
+    def test_native_launcher_expands_empty_arrays_safely_on_macos_bash(self):
+        launcher = (ROOT / "build-scripts/release/native-platform.sh").read_text()
+        self.assertIn('${split_flags[@]+"${split_flags[@]}"}', launcher)
+        self.assertIn('${repo[@]+"${repo[@]}"}', launcher)
+        self.assertIn('${win[@]+"${win[@]}"}', launcher)
+        self.assertIn('${zluda_win[@]+"${zluda_win[@]}"}', launcher)
+
 
 class WorkerConfigTests(unittest.TestCase):
     def args(self, **overrides):
