@@ -249,6 +249,45 @@ function(setup_modern_cudnn)
     message(STATUS "cuDNN: Not found (disable with -DHELPERS_cudnn=OFF)")
 endfunction()
 
+# Link a CUDA SDK archive while tolerating FindCUDAToolkit modules that predate
+# the corresponding imported target. CUDA 12 development images can contain the
+# archive even when the host CMake does not define (for example)
+# CUDA::nvrtc_static. Required archives still fail closed when genuinely absent.
+function(link_zluda_cuda_static_library main_target_name imported_target library_name required)
+    if(TARGET ${imported_target})
+        target_link_libraries(${main_target_name} PUBLIC ${imported_target})
+        return()
+    endif()
+
+    unset(_zluda_cuda_static_library CACHE)
+    find_library(_zluda_cuda_static_library
+        NAMES ${library_name}
+        HINTS
+            "${CUDAToolkit_LIBRARY_DIR}"
+            "${CUDAToolkit_LIBRARY_ROOT}"
+            "${CUDAToolkit_ROOT}"
+            "${CUDA_TOOLKIT_ROOT_DIR}"
+        PATH_SUFFIXES
+            lib64 lib
+            targets/x86_64-linux/lib
+            targets/aarch64-linux/lib
+        NO_DEFAULT_PATH)
+    if(NOT _zluda_cuda_static_library)
+        find_library(_zluda_cuda_static_library NAMES ${library_name})
+    endif()
+
+    if(_zluda_cuda_static_library)
+        message(STATUS
+            "Resolved ${imported_target} compatibility archive: ${_zluda_cuda_static_library}")
+        target_link_libraries(${main_target_name} PUBLIC
+            "${_zluda_cuda_static_library}")
+    elseif(required)
+        message(FATAL_ERROR
+            "ZLUDA build requires ${imported_target} (${library_name}); install the complete CUDA build toolkit")
+    endif()
+    unset(_zluda_cuda_static_library CACHE)
+endfunction()
+
 # Link CUDA implementation pieces that ZLUDA does not implement as CUDA ABI
 # replacements into the backend at build time. The resulting classifier must
 # not require these NVIDIA libraries dynamically on the consumer machine.
@@ -260,26 +299,21 @@ function(configure_zluda_cuda_toolkit_linking main_target_name)
 
     configure_zluda_linking(${main_target_name})
 
-    foreach(_zluda_required_static_target IN ITEMS
-            CUDA::cudart_static CUDA::cusolver_static CUDA::nvrtc_static)
-        if(NOT TARGET ${_zluda_required_static_target})
-            message(FATAL_ERROR
-                "ZLUDA build requires ${_zluda_required_static_target}; install the complete CUDA build toolkit")
-        endif()
-        target_link_libraries(${main_target_name} PUBLIC
-            ${_zluda_required_static_target})
-    endforeach()
+    link_zluda_cuda_static_library(
+        ${main_target_name} CUDA::cudart_static cudart_static TRUE)
+    link_zluda_cuda_static_library(
+        ${main_target_name} CUDA::cusolver_static cusolver_static TRUE)
+    link_zluda_cuda_static_library(
+        ${main_target_name} CUDA::nvrtc_static nvrtc_static TRUE)
 
     # CUDA 12 splits these implementation archives from NVRTC. Older CMake
     # versions/toolkit layouts may expose them transitively instead.
-    foreach(_zluda_optional_static_target IN ITEMS
-            CUDA::nvrtc_builtins_static CUDA::nvJitLink_static
-            CUDA::nvptxcompiler_static)
-        if(TARGET ${_zluda_optional_static_target})
-            target_link_libraries(${main_target_name} PUBLIC
-                ${_zluda_optional_static_target})
-        endif()
-    endforeach()
+    link_zluda_cuda_static_library(
+        ${main_target_name} CUDA::nvrtc_builtins_static nvrtc-builtins_static FALSE)
+    link_zluda_cuda_static_library(
+        ${main_target_name} CUDA::nvJitLink_static nvJitLink_static FALSE)
+    link_zluda_cuda_static_library(
+        ${main_target_name} CUDA::nvptxcompiler_static nvptxcompiler_static FALSE)
 
     if(WIN32)
         # Official Windows ZLUDA distributions carry DLLs with the CUDA ABI

@@ -267,6 +267,21 @@ class WorkflowMatrixTests(unittest.TestCase):
             configuration,
         )
 
+    def test_zluda_resolves_static_cuda_archives_when_cmake_lacks_targets(self):
+        configuration = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
+        self.assertIn(
+            "function(link_zluda_cuda_static_library main_target_name imported_target library_name required)",
+            configuration,
+        )
+        self.assertIn(
+            "${main_target_name} CUDA::nvrtc_static nvrtc_static TRUE",
+            configuration,
+        )
+        self.assertIn(
+            '"ZLUDA build requires ${imported_target} (${library_name}); install the complete CUDA build toolkit"',
+            configuration,
+        )
+
     def test_native_builder_avoids_bash4_uppercase_expansion(self):
         builder = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
         self.assertNotIn("^^}", builder)
