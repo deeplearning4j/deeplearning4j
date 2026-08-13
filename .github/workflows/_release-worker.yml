@@ -22,6 +22,10 @@ on:
         type: string
         required: false
         default: ""
+      classifiers:
+        type: string
+        required: false
+        default: ""
       libnd4jUrl:
         type: string
         required: false
@@ -57,12 +61,15 @@ jobs:
         env:
           WORKFLOW: ${{ inputs.workflow }}
           RUNNER_OVERRIDE: ${{ inputs.runnerOverride }}
+          CLASSIFIERS: ${{ inputs.classifiers }}
         run: |
           set -Eeuo pipefail
           linux=$(python release/github/prepare-worker.py matrix \
-            --workflow "$WORKFLOW" --group linux --runner-override "$RUNNER_OVERRIDE")
+            --workflow "$WORKFLOW" --group linux --runner-override "$RUNNER_OVERRIDE" \
+            --classifiers "$CLASSIFIERS")
           host=$(python release/github/prepare-worker.py matrix \
-            --workflow "$WORKFLOW" --group host --runner-override "$RUNNER_OVERRIDE")
+            --workflow "$WORKFLOW" --group host --runner-override "$RUNNER_OVERRIDE" \
+            --classifiers "$CLASSIFIERS")
           printf 'linux=%s\n' "$linux" >>"$GITHUB_OUTPUT"
           printf 'host=%s\n' "$host" >>"$GITHUB_OUTPUT"
 

@@ -19,6 +19,10 @@ on:
         description: Additional Maven flags passed to the shared worker.
         required: false
         default: ""
+      classifiers:
+        description: Optional comma-separated exact shard--variant names.
+        required: false
+        default: ""
       libnd4jUrl:
         description: Optional prebuilt libnd4j archive URL.
         required: false
@@ -45,6 +49,7 @@ jobs:
       runnerOverride: ${{ inputs.runsOn }}
       buildThreads: ${{ inputs.buildThreads }}
       mvnFlags: ${{ inputs.mvnFlags }}
+      classifiers: ${{ inputs.classifiers }}
       libnd4jUrl: ${{ inputs.libnd4jUrl }}
       buildAot: ${{ inputs.buildAot }}
       aotAllSpins: ${{ inputs.aotAllSpins }}

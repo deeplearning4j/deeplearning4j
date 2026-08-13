@@ -85,6 +85,7 @@ def workflow_rows(
     workflow: str,
     group: str,
     runner_override: str = "",
+    classifiers: str = "",
 ) -> list[dict]:
     if matrix.get("schemaVersion") != 1:
         raise ValueError("workflow matrix schemaVersion must be 1")
@@ -93,7 +94,13 @@ def workflow_rows(
         raise ValueError(f"unknown release workflow {workflow!r}")
     shards = plan_shards(plan)
     runtimes = matrix.get("shards", {})
-    rows: list[dict] = []
+    requested = {
+        classifier.strip()
+        for classifier in classifiers.split(",")
+        if classifier.strip()
+    }
+    selections: list[tuple[str, dict, dict[str, dict], list[str]]] = []
+    available: set[str] = set()
     for selection in workflows[workflow]:
         shard_id = str(selection["shard"])
         if shard_id not in shards:
@@ -101,20 +108,36 @@ def workflow_rows(
         if shard_id not in runtimes:
             raise ValueError(f"workflow matrix has no runtime for shard {shard_id!r}")
         runtime = runtimes[shard_id]
-        if runtime.get("group") != group:
-            continue
         variants = shards[shard_id]["build"].get("variants", [])
         by_name = {str(variant["name"]): variant for variant in variants}
-        selected_names = selection.get("variants") or list(by_name)
+        selected_names = [str(name) for name in (selection.get("variants") or list(by_name))]
         for variant_name in selected_names:
             if variant_name not in by_name:
                 raise ValueError(
                     f"workflow {workflow!r} references unknown variant "
                     f"{shard_id}--{variant_name}"
                 )
+            available.add(f"{shard_id}--{variant_name}")
+        selections.append((shard_id, runtime, by_name, selected_names))
+
+    unknown = sorted(requested - available)
+    if unknown:
+        raise ValueError(
+            f"workflow {workflow!r} does not contain requested classifiers: "
+            + ", ".join(unknown)
+        )
+
+    rows: list[dict] = []
+    for shard_id, runtime, by_name, selected_names in selections:
+        if runtime.get("group") != group:
+            continue
+        for variant_name in selected_names:
+            row_name = f"{shard_id}--{variant_name}"
+            if requested and row_name not in requested:
+                continue
             variant = by_name[variant_name]
             row = {
-                "name": f"{shard_id}--{variant_name}",
+                "name": row_name,
                 "shard": shard_id,
                 "variant": variant_name,
                 "runner": runner_override or str(runtime["runner"]),
@@ -214,6 +237,11 @@ def parse_args() -> argparse.Namespace:
     matrix_parser.add_argument("--workflow", required=True)
     matrix_parser.add_argument("--group", choices=("linux", "host"), required=True)
     matrix_parser.add_argument("--runner-override", default="")
+    matrix_parser.add_argument(
+        "--classifiers",
+        default="",
+        help="Comma-separated exact shard--variant names to include",
+    )
 
     config_parser = subparsers.add_parser("config")
     config_parser.add_argument("--source", type=Path, default=ROOT)
@@ -244,6 +272,7 @@ def main() -> None:
             args.workflow,
             args.group,
             args.runner_override.strip(),
+            args.classifiers.strip(),
         ), separators=(",", ":")))
         return
 

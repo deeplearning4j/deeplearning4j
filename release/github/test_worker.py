@@ -85,6 +85,29 @@ class WorkflowMatrixTests(unittest.TestCase):
             {row["dependencyCacheKey"] for row in compile_rows},
         )
 
+    def test_exact_classifier_filter_selects_only_requested_row(self):
+        rows = prepare_worker.workflow_rows(
+            self.plan,
+            self.matrix,
+            "build-deploy-android-arm64.yml",
+            "linux",
+            classifiers="android-arm64-vulkan--base",
+        )
+        self.assertEqual(
+            [("android-arm64-vulkan", "base")],
+            [(row["shard"], row["variant"]) for row in rows],
+        )
+
+    def test_classifier_filter_rejects_unknown_row(self):
+        with self.assertRaisesRegex(ValueError, "does not contain requested classifiers"):
+            prepare_worker.workflow_rows(
+                self.plan,
+                self.matrix,
+                "build-deploy-android-arm64.yml",
+                "linux",
+                classifiers="android-arm64-vulkan--missing",
+            )
+
     def test_linux_compile_isa_rows_emit_distinct_classifiers(self):
         script = ROOT / "build-scripts/release/linux-x86_64.sh"
         for extension in ("avx2", "avx512"):
