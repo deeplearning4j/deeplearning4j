@@ -2582,6 +2582,17 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Dlibnd4j.android.api=21", android_x86)
         self.assertIn("-Dlibnd4j.build.with.java=OFF", android_x86)
 
+        android_vulkan = command(
+            DL4J_FAMILY="android-arm64-vulkan",
+            DL4J_ANDROID_API="24",
+            DL4J_CMAKE_ARGS="-DSD_BUILD_WITH_JAVA=OFF",
+            ANDROID_NDK="/opt/android/android-ndk-r27d",
+        )
+        self.assertEqual(
+            ":nd4j-vulkan,:nd4j-vulkan-preset,:nd4j-vulkan-platform,:libnd4j",
+            android_vulkan[android_vulkan.index("-pl") + 1],
+        )
+
         linux_arm64 = command(DL4J_FAMILY="linux-arm64")
         self.assertNotIn("-Dlibnd4j.build.with.java=OFF", linux_arm64)
         self.assertIn("-Djavacpp.platform.compiler=g++", linux_arm64)

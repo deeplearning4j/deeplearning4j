@@ -111,7 +111,7 @@ case "${DL4J_FAMILY}" in
         extra=("-Djavacpp.platform.compiler=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android${DL4J_ANDROID_API}-clang++" "-Djavacpp.platform.sysroot=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Djavacpp.compiler.options=--sysroot=${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot" "-Dlibnd4j.cmake=${DL4J_CMAKE_ARGS}" "-Dlibnd4j.android.api=${DL4J_ANDROID_API}" "-Dandroid.api=${DL4J_ANDROID_API}" -Dlibnd4j.build.with.java=OFF)
         ;;
     esac
-    modules=:nd4j-vulkan,:nd4j-vulkan-preset
+    modules=:nd4j-vulkan,:nd4j-vulkan-preset,:nd4j-vulkan-platform
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
     variant_cpu "${platform}"
     command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} --no-transfer-progress "${profiles[@]}" -pl "${modules}" -Dlibnd4j.vulkan -Dlibnd4j.triton=ON "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=true "-Djavacpp.platform=${platform}" "-Dplatform.classifier=${platform}" --also-make --batch-mode "${extra[@]}" "${VARIANT[@]}" "${DL4J_MAVEN_GOAL}" -DskipTests)
