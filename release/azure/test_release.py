@@ -6031,6 +6031,139 @@ class RegionalMirrorTests(unittest.TestCase):
             append.tags
         )
 
+    def test_incremental_bootstrap_uses_exact_blob_names_without_listing_prefix(self):
+        names = ["repo/current.jar", "repo/maven-metadata.xml"]
+        source_blobs = {}
+        destination_blobs = {}
+        for index, name in enumerate(names):
+            source_blob = mock.Mock()
+            source_blob.get_blob_properties.return_value = SimpleNamespace(
+                etag=f"etag-{index}",
+                size=100 + index,
+                blob_type=SimpleNamespace(value="BlockBlob"),
+            )
+            source_blobs[name] = source_blob
+            destination_blob = mock.Mock()
+            destination_blob.get_blob_properties.side_effect = KeyError(name)
+            destination_blob.start_copy_from_url.return_value = {
+                "copy_id": f"copy-{index}",
+                "copy_status": "success",
+            }
+            destination_blobs[name] = destination_blob
+        source = SimpleNamespace(
+            container_name="releases",
+            url="https://source.blob.core.windows.net/releases",
+            list_blobs=mock.Mock(side_effect=AssertionError("must not inventory blobs")),
+            get_blob_client=lambda name: source_blobs[name],
+        )
+        destination = SimpleNamespace(
+            get_blob_client=lambda name: destination_blobs[name]
+        )
+        context = {
+            "modules": {
+                "generate_container_sas": lambda **kwargs: "source-sas",
+                "ContainerSasPermissions": self.model,
+                "MatchConditions": SimpleNamespace(IfNotModified="if-not-modified"),
+                "ResourceNotFoundError": KeyError,
+                "HttpResponseError": RuntimeError,
+            }
+        }
+
+        result = release.bootstrap_container_copy(
+            context,
+            "source",
+            "source-key",
+            source,
+            destination,
+            workers=2,
+            timeout_seconds=60,
+            blob_names=[names[1], names[0], names[0]],
+            include_unprioritized=False,
+        )
+
+        self.assertEqual("explicit-blobs", result["scope"])
+        self.assertEqual(2, result["scannedBlobCount"])
+        self.assertEqual(2, result["blobCount"])
+        source.list_blobs.assert_not_called()
+
+    def test_incremental_mirror_keeps_replication_policy_when_blobs_are_current(self):
+        name = "repo/current.jar"
+        version_id = "2026-08-13T03:00:00Z"
+        source_blob = mock.Mock()
+        source_blob.get_blob_properties.return_value = SimpleNamespace(
+            version_id=version_id,
+            size=128,
+        )
+        destination_blob = mock.Mock()
+        destination_blob.get_blob_properties.return_value = SimpleNamespace(
+            metadata={"dl4j_mirror_source_version": version_id},
+            size=128,
+        )
+        source_container = SimpleNamespace(
+            container_name="releases",
+            get_blob_client=lambda unused: source_blob,
+        )
+        destination_container = SimpleNamespace(
+            get_blob_client=lambda unused: destination_blob,
+        )
+        destination_service = SimpleNamespace(
+            get_container_client=lambda unused: destination_container,
+        )
+        destination_account = SimpleNamespace(
+            name="japan-account",
+            location="japaneast",
+        )
+        context = {
+            "modules": {
+                "BlobServiceClient": lambda **unused: destination_service,
+                "ResourceNotFoundError": KeyError,
+            },
+            "storage": SimpleNamespace(
+                object_replication_policies=SimpleNamespace(list=lambda *unused: [])
+            ),
+        }
+        copied = {
+            "blobCount": 0,
+            "scannedBlobCount": 1,
+            "skippedBlobCount": 1,
+        }
+        with mock.patch.object(
+            release,
+            "configured_mirror_accounts",
+            return_value=[(destination_account, "japan-group", "releases")],
+        ), mock.patch.object(
+            release, "replication_policy", return_value=SimpleNamespace(name="policy")
+        ), mock.patch.object(
+            release,
+            "replication_rule",
+            return_value=SimpleNamespace(
+                filters=SimpleNamespace(
+                    min_creation_time=release.MIRROR_ALL_BLOBS_CREATION_TIME
+                )
+            ),
+        ), mock.patch.object(
+            release, "storage_account_key", return_value="key"
+        ), mock.patch.object(
+            release, "bootstrap_container_copy", return_value=copied
+        ) as bootstrap, mock.patch.object(
+            release,
+            "ensure_object_replication_policy",
+            return_value={"policyId": "policy"},
+        ), mock.patch.object(
+            release, "remove_object_replication_policy"
+        ) as remove:
+            result = release.mirror_published_maven_blobs(
+                context,
+                source_group="source-group",
+                source_account=SimpleNamespace(name="source-account"),
+                source_container=source_container,
+                blob_names=[name],
+            )
+
+        remove.assert_not_called()
+        self.assertEqual([name], bootstrap.call_args.kwargs["blob_names"])
+        self.assertEqual(0, result[0]["blobCount"])
+
     def test_bootstrap_skips_blob_already_copied_from_current_source_version(self):
         item = SimpleNamespace(
             name="repo/current.jar",
