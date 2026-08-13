@@ -81,6 +81,10 @@ uppercase() {
     printf '%s' "$1" | tr '[:lower:]' '[:upper:]'
 }
 
+lowercase() {
+    printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
+}
+
 
 # =============================================================================
 # TYPE VALIDATION SYSTEM
@@ -3532,7 +3536,7 @@ validate_compiler_cache_contract() {
         exit 1
     fi
     cache_name="$(basename "$expected_cache")"
-    cache_name_normalized="${cache_name,,}"
+    cache_name_normalized="$(lowercase "$cache_name")"
     if [ "$cache_name_normalized" = "sccache" ] || [ "$cache_name_normalized" = "sccache.exe" ]; then
         expected_launcher="$expected_cache"
     fi
@@ -3541,9 +3545,9 @@ validate_compiler_cache_contract() {
     launcher_c_compare="${launcher_c//\\//}"
     launcher_cxx_compare="${launcher_cxx//\\//}"
     if [[ "$KERNEL" == windows-* ]]; then
-        expected_launcher_compare="${expected_launcher_compare,,}"
-        launcher_c_compare="${launcher_c_compare,,}"
-        launcher_cxx_compare="${launcher_cxx_compare,,}"
+        expected_launcher_compare="$(lowercase "$expected_launcher_compare")"
+        launcher_c_compare="$(lowercase "$launcher_c_compare")"
+        launcher_cxx_compare="$(lowercase "$launcher_cxx_compare")"
     fi
     if [ "$launcher_c_compare" != "$expected_launcher_compare" ] ||
        [ "$launcher_cxx_compare" != "$expected_launcher_compare" ]; then
