@@ -15,6 +15,54 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PLAN = ROOT / "release/aws/release-plan.json"
 DEFAULT_MATRIX = ROOT / "release/github/workflow-matrix.json"
 AZURE_CACHE_PREFIX = "deeplearning4j/releases/compiler-cache/v1"
+PUBLIC_DEPENDENCY_CACHE = {
+    "publicBaseUrl": (
+        "https://dl4jrel26302370c1eeb25.blob.core.windows.net/releases"
+    ),
+    "host": {
+        "identity": "abe03741e11341b4eb4587fc2be01c91c4aaf39f6378691da79fc43b6bffd59e",
+        "indexObject": (
+            "deeplearning4j/releases/dependency-cache/v2/host-index/"
+            "abe03741e11341b4eb4587fc2be01c91c4aaf39f6378691da79fc43b6bffd59e.json"
+        ),
+        "archiveObject": (
+            "deeplearning4j/releases/dependency-cache/v2/objects/"
+            "47b6220b71103a0f63de444e305de9d961ae54ba0dac1fa4360534830b2c8992.tar.gz"
+        ),
+    },
+    "targets": [
+        {
+            "identity": "28f4929d991a53575e9ed3f6f1ce07abbd2c874479312e3f0181ed5bf1d0f50c",
+            "indexObject": (
+                "deeplearning4j/releases/dependency-cache/v2/index/"
+                "28f4929d991a53575e9ed3f6f1ce07abbd2c874479312e3f0181ed5bf1d0f50c.json"
+            ),
+            "archiveObject": (
+                "deeplearning4j/releases/dependency-cache/v2/objects/"
+                "0ee34de538482ae624929dce0be4f5aa5b913e5a8eb2a39237dbb813d10622dd.tar.gz"
+            ),
+            "compatibility": {
+                "javacppPlatform": "android-arm64",
+                "nativeBackend": "cpu",
+            },
+        },
+        {
+            "identity": "b57a0f6d3f7a5b9f9ece17052ac39f90419c757d13769db20d6c5aff1d295405",
+            "indexObject": (
+                "deeplearning4j/releases/dependency-cache/v2/index/"
+                "b57a0f6d3f7a5b9f9ece17052ac39f90419c757d13769db20d6c5aff1d295405.json"
+            ),
+            "archiveObject": (
+                "deeplearning4j/releases/dependency-cache/v2/objects/"
+                "a7b9f4f2ebd969813f1b21e3867796ef12bdb86db463c13917d0dfd5e3495505.tar.gz"
+            ),
+            "compatibility": {
+                "javacppPlatform": "android-x86_64",
+                "nativeBackend": "cpu",
+            },
+        },
+    ],
+}
 
 
 def load_json(path: Path) -> dict:
@@ -64,13 +112,21 @@ def workflow_rows(
                     f"workflow {workflow!r} references unknown variant "
                     f"{shard_id}--{variant_name}"
                 )
+            variant = by_name[variant_name]
             row = {
                 "name": f"{shard_id}--{variant_name}",
                 "shard": shard_id,
                 "variant": variant_name,
                 "runner": runner_override or str(runtime["runner"]),
                 "os": str(shards[shard_id]["os"]),
+                "dependencyCacheKey": "",
             }
+            if variant.get("mlir"):
+                build = shards[shard_id]["build"]
+                row["dependencyCacheKey"] = (
+                    f"{build.get('javacppPlatform', shard_id)}-"
+                    f"{build.get('backend', 'cpu')}"
+                )
             if group == "linux":
                 container = str(runtime.get("container", "")).strip()
                 if not container:
@@ -133,6 +189,10 @@ def worker_config(args: argparse.Namespace) -> dict:
             "architecture": os.environ.get("RUNNER_ARCH"),
             "os": os.environ.get("RUNNER_OS"),
         },
+        # Published dependency snapshots are immutable and anonymously readable.
+        # Keep them separate from the authenticated compiler-object cache so a
+        # GitHub worker can restore LLVM/MLIR without receiving storage keys.
+        "dependencyCache": copy.deepcopy(PUBLIC_DEPENDENCY_CACHE),
     }
     if args.azure_cache:
         config["compilerCache"] = {

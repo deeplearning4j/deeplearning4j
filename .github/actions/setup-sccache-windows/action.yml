@@ -38,7 +38,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: C:\sccache-patched-bin
-        key: sccache-patched-v0.17.0-windows-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
+        key: sccache-patched-v0.17.0-gha-azure-windows-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
 
     # ---------------------------------------------------------------
     # 3. On cache miss: clone, patch, and build from source.
@@ -73,7 +73,7 @@ runs:
 
         # Build with only the GHA cache feature
         cd /tmp/sccache-src
-        cargo build --release --features gha --no-default-features
+        cargo build --release --features gha,azure --no-default-features
 
         # Stage the binary for GHA cache storage
         mkdir -p /c/sccache-patched-bin

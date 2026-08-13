@@ -78,6 +78,12 @@ class WorkflowMatrixTests(unittest.TestCase):
             {"android-arm64", "android-arm64-vulkan"},
             {row["shard"] for row in rows},
         )
+        compile_rows = [row for row in rows if row["variant"] == "compile-nnapi"]
+        self.assertTrue(compile_rows)
+        self.assertEqual(
+            {"android-arm64-cpu"},
+            {row["dependencyCacheKey"] for row in compile_rows},
+        )
 
     def test_linux_compile_isa_rows_emit_distinct_classifiers(self):
         script = ROOT / "build-scripts/release/linux-x86_64.sh"
@@ -114,6 +120,27 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("12.5.4.2", bootstrap)
         self.assertIn("12.5.10.65", bootstrap)
         self.assertIn("cusparse_v2.h", bootstrap)
+        self.assertIn("Windows.flatc.binary.zip", bootstrap)
+        self.assertIn("DL4J_FLATC_EXECUTABLE", bootstrap)
+
+    def test_compat_worker_uses_container_python(self):
+        action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
+        self.assertIn("inputs.shard != 'linux-x86_64-compat'", action)
+        self.assertIn("python_bin=$(command -v python3 || command -v python)", action)
+
+    def test_external_dependencies_receive_complete_android_and_host_tool_contracts(self):
+        dependencies = (ROOT / "libnd4j/cmake/Dependencies.cmake").read_text()
+        self.assertIn("ONEDNN_CMAKE_ARGS -DANDROID_ABI=", dependencies)
+        self.assertIn("ONEDNN_CMAKE_ARGS -DANDROID_PLATFORM=", dependencies)
+        self.assertIn("DL4J_FLATC_EXECUTABLE", dependencies)
+
+    def test_sccache_actions_support_github_and_azure_backends(self):
+        for operating_system in ("linux", "windows", "macos"):
+            action = (
+                ROOT / f".github/actions/setup-sccache-{operating_system}/action.yml"
+            ).read_text()
+            self.assertIn("--features gha,azure --no-default-features", action)
+            self.assertIn("gha-azure", action)
 
     def test_unix_protoc_bootstrap_places_member_selector_before_destination(self):
         bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
@@ -176,6 +203,18 @@ class WorkerConfigTests(unittest.TestCase):
             config["compilerCache"]["connectionStringEnv"],
         )
         self.assertNotIn("connectionString", config["compilerCache"])
+        dependency_cache = config["dependencyCache"]
+        self.assertEqual(
+            "https://dl4jrel26302370c1eeb25.blob.core.windows.net/releases",
+            dependency_cache["publicBaseUrl"],
+        )
+        self.assertEqual(
+            {"android-arm64", "android-x86_64"},
+            {
+                target["compatibility"]["javacppPlatform"]
+                for target in dependency_cache["targets"]
+            },
+        )
 
     def test_default_threads_are_capped_to_the_runner_cpu_count(self):
         with patch.object(prepare_worker.os, "cpu_count", return_value=4):

@@ -83,6 +83,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.sourceRef }}
+      - name: Restore managed dependency snapshot
+        if: matrix.dependencyCacheKey != ''
+        uses: actions/cache@v4
+        with:
+          path: ~/.libnd4j
+          key: dl4j-dependency-v2-${{ matrix.dependencyCacheKey }}-${{ hashFiles('release/github/prepare-worker.py') }}
       - name: Run worker
         id: worker
         uses: ./.github/actions/run-release-worker

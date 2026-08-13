@@ -189,8 +189,10 @@ def restore_remote_dependency_cache(
     """Restore the managed host/target dependency snapshots before MLIR builds."""
     remote = config.get("compilerCache")
     if not isinstance(remote, dict):
-        return
-    snapshots = remote.get("dependencyCache")
+        remote = {}
+    snapshots = config.get("dependencyCache")
+    if not isinstance(snapshots, dict):
+        snapshots = remote.get("dependencyCache")
     if not isinstance(snapshots, dict):
         print("[dl4j-dep-cache] no managed dependency snapshots were advertised", flush=True)
         return
@@ -259,14 +261,43 @@ def restore_remote_dependency_cache(
             )
             return
 
+    public_base_url = str(snapshots.get("publicBaseUrl", "")).strip().rstrip("/")
     cloud_io = Path(
         env.get("DL4J_CLOUD_IO", "/opt/dl4j-release/bootstrap/cloud-io.py")
     )
-    if not cloud_io.is_file():
-        raise RuntimeError(f"managed dependency cache transport is missing: {cloud_io}")
-    account = _required_cache_value(remote, "account")
-    container = _required_cache_value(remote, "container")
-    bucket = f"{account}/{container}"
+    bucket = ""
+    if not public_base_url:
+        if not cloud_io.is_file():
+            raise RuntimeError(f"managed dependency cache transport is missing: {cloud_io}")
+        account = _required_cache_value(remote, "account")
+        container = _required_cache_value(remote, "container")
+        bucket = f"{account}/{container}"
+
+    def download_object(object_name: str, destination: Path, description: str) -> None:
+        if public_base_url:
+            download_with_retry(
+                f"{public_base_url}/{object_name.lstrip('/')}",
+                destination,
+                description,
+            )
+            return
+        run(
+            [
+                "python3",
+                str(cloud_io),
+                "download",
+                "--bucket",
+                bucket,
+                "--object",
+                object_name,
+                "--file",
+                str(destination),
+                "--client-id",
+                env.get("AZURE_CLIENT_ID", ""),
+            ],
+            source,
+            env,
+        )
     cache_root.mkdir(parents=True, exist_ok=True)
     cache_dir.mkdir(parents=True, exist_ok=True)
     restored = []
@@ -282,22 +313,10 @@ def restore_remote_dependency_cache(
                 raise RuntimeError(f"{scope} dependency snapshot has invalid object metadata")
             index_path = temporary_root / f"{scope}-index.json"
             archive_path = temporary_root / f"{scope}-cache.tar.gz"
-            run(
-                [
-                    "python3",
-                    str(cloud_io),
-                    "download",
-                    "--bucket",
-                    bucket,
-                    "--object",
-                    index_object,
-                    "--file",
-                    str(index_path),
-                    "--client-id",
-                    env.get("AZURE_CLIENT_ID", ""),
-                ],
-                source,
-                env,
+            download_object(
+                index_object,
+                index_path,
+                f"{scope} dependency snapshot index",
             )
             index = json.loads(index_path.read_text(encoding="utf-8"))
             indexed_archive = index.get("archiveObject")
@@ -306,23 +325,28 @@ def restore_remote_dependency_cache(
                     f"{scope} dependency snapshot index/archive mismatch: "
                     f"{indexed_archive!r} != {archive_object!r}"
                 )
-            run(
-                [
-                    "python3",
-                    str(cloud_io),
-                    "download",
-                    "--bucket",
-                    bucket,
-                    "--object",
-                    archive_object,
-                    "--file",
-                    str(archive_path),
-                    "--client-id",
-                    env.get("AZURE_CLIENT_ID", ""),
-                ],
-                source,
-                env,
+            download_object(
+                archive_object,
+                archive_path,
+                f"{scope} dependency snapshot archive",
             )
+            expected_size = index.get("size")
+            if isinstance(expected_size, int) and archive_path.stat().st_size != expected_size:
+                raise RuntimeError(
+                    f"{scope} dependency snapshot size mismatch: "
+                    f"{archive_path.stat().st_size} != {expected_size}"
+                )
+            expected_sha256 = index.get("sha256")
+            if isinstance(expected_sha256, str) and expected_sha256:
+                digest = hashlib.sha256()
+                with archive_path.open("rb") as archive_stream:
+                    for chunk in iter(lambda: archive_stream.read(8 * 1024 * 1024), b""):
+                        digest.update(chunk)
+                if digest.hexdigest() != expected_sha256:
+                    raise RuntimeError(
+                        f"{scope} dependency snapshot SHA-256 mismatch: "
+                        f"{digest.hexdigest()} != {expected_sha256}"
+                    )
             extracted = temporary_root / f"{scope}-extracted"
             extracted.mkdir()
             with tarfile.open(archive_path, mode="r:gz") as bundle:

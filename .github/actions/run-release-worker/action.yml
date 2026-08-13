@@ -51,6 +51,7 @@ runs:
         github-token: ${{ github.token }}
 
     - name: Set up Python
+      if: inputs.shard != 'linux-x86_64-compat'
       uses: actions/setup-python@v5
       with:
         python-version: "3.10"
@@ -157,10 +158,11 @@ runs:
         [ "${INPUT_BUILD_AOT}" != 1 ] || args+=(--build-aot)
         [ "${INPUT_AOT_ALL_SPINS}" != 1 ] || args+=(--aot-all-spins)
         [ -z "${SCCACHE_AZURE_CONNECTION_STRING}" ] || args+=(--azure-cache)
-        python release/github/prepare-worker.py config "${args[@]}"
+        python_bin=$(command -v python3 || command -v python)
+        "${python_bin}" release/github/prepare-worker.py config "${args[@]}"
 
         export DL4J_SCCACHE_DIR="${RUNNER_TEMP}/dl4j-sccache/${INPUT_SHARD}/${INPUT_VARIANT}"
-        python release/aws/build-platform.py \
+        "${python_bin}" release/aws/build-platform.py \
           --config "${config}" \
           --source "${GITHUB_WORKSPACE}" \
           --repository "${artifact_root}/m2" \

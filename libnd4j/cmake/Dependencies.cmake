@@ -808,6 +808,10 @@ function(setup_flatbuffers)
 
         if(SHOULD_BUILD_FLATC)
             set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
+            if(DEFINED ENV{DL4J_FLATC_EXECUTABLE} AND EXISTS "$ENV{DL4J_FLATC_EXECUTABLE}")
+                set(FLATC_EXECUTABLE "$ENV{DL4J_FLATC_EXECUTABLE}")
+                message(STATUS "Using prebuilt host flatc: ${FLATC_EXECUTABLE}")
+            endif()
 
             # Generate headers and copy Java files inline after ExternalProject builds
             # Copy ALL flatbuffers headers (modular structure in newer versions)
@@ -1034,14 +1038,16 @@ function(setup_onednn)
         message(STATUS "   Passing plain ccache to OneDNN CXX: ${SD_PLAIN_CCACHE_PATH}")
     endif()
 
-    # Pass Android cross-compilation args to OneDNN (same pattern as FlatBuffers)
+    # Pass the complete Android NDK toolchain contract to oneDNN. CMake's
+    # CMAKE_ANDROID_* variables alone are not sufficient for the NDK toolchain:
+    # without ANDROID_ABI it defaults to a 32-bit ABI and oneDNN rejects it.
     if(CMAKE_TOOLCHAIN_FILE)
         list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE})
     endif()
     if(CMAKE_SYSTEM_NAME)
         list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})
     endif()
-    if(CMAKE_SYSTEM_VERSION)
+    if(CMAKE_SYSTEM_VERSION AND NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
         list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION})
     endif()
     if(CMAKE_ANDROID_ARCH_ABI)
@@ -1052,6 +1058,17 @@ function(setup_onednn)
     endif()
     if(CMAKE_ANDROID_STL_TYPE)
         list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_ANDROID_STL_TYPE=${CMAKE_ANDROID_STL_TYPE})
+    endif()
+    if(ANDROID_ABI)
+        list(APPEND ONEDNN_CMAKE_ARGS -DANDROID_ABI=${ANDROID_ABI})
+    elseif(CMAKE_ANDROID_ARCH_ABI)
+        list(APPEND ONEDNN_CMAKE_ARGS -DANDROID_ABI=${CMAKE_ANDROID_ARCH_ABI})
+    endif()
+    if(ANDROID_PLATFORM)
+        list(APPEND ONEDNN_CMAKE_ARGS -DANDROID_PLATFORM=${ANDROID_PLATFORM})
+    endif()
+    if(ANDROID_STL)
+        list(APPEND ONEDNN_CMAKE_ARGS -DANDROID_STL=${ANDROID_STL})
     endif()
 
     ExternalProject_Add(onednn_external
@@ -2080,8 +2097,8 @@ function(setup_triton)
     endif()
 
     # --- Dependency cache: restore Triton LLVM and Triton into build dirs ---
-    # This is done BEFORE the existing "reuse existing install" check so that
-    # the existing fast-path logic picks up restored files naturally.
+    # The in-tree fast path above handles an already-populated build directory.
+    # Fresh build directories restore here, then recompute producer completeness.
     if(SD_DEP_CACHE)
         # Check Triton LLVM cache
         string(SUBSTRING "${TRITON_LLVM_COMMIT}" 0 8 TRITON_LLVM_COMMIT_SHORT)
@@ -2125,6 +2142,19 @@ function(setup_triton)
         endif()
     endif()
 
+    # Cache restoration happens after the initial in-tree fast-path check. Recompute
+    # the compiler package state now so restored artifacts suppress every producer
+    # that exists only to rebuild them.
+    set(_TRITON_COMPILER_INSTALL_COMPLETE FALSE)
+    if(_TRITON_BUILDS_COMPILER AND
+       (EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" OR
+        EXISTS "${TRITON_INSTALL_DIR}/lib/triton.lib") AND
+       EXISTS "${_TRITON_INSTALL_MARKER}")
+        set(_TRITON_COMPILER_INSTALL_COMPLETE TRUE)
+        message(STATUS
+            "   Reusing cache-restored Triton compiler at ${TRITON_INSTALL_DIR}")
+    endif()
+
     # Build-time-only SmartCcache partition key for Triton LLVM external build.
     # This stays in CMake/source-tree scope; runtime extraction infra is separate.
     set(_TRITON_LLVM_SHAPE_KEY_RAW
@@ -2150,32 +2180,37 @@ function(setup_triton)
     set(_TRITON_LLVM_NATIVE_TOOL_DIR "${TRITON_LLVM_INSTALL_DIR}/bin")
 
     if(CMAKE_CROSSCOMPILING)
-        # LLVM and MLIR tablegen executables run on the build host; the shared
-        # LLVM/MLIR libraries below run on the target. Mirror the repository's
-        # FlatBuffers host-generator/target-library split instead of allowing
-        # target executables or ambient host packages to cross that boundary.
-        # Prefer the native host GNU toolchain. During Android cross builds the
-        # NDK places target clang first on PATH; selecting it here would make
-        # llvm-tblgen/mlir-tblgen's host-only configure test the Android target
-        # compiler and reject host flags such as -fno-gnu-unique.
+        # Every cold cross-build generator, including SLEEF, needs native host
+        # compilers. Resolve them independently of the target LLVM cache state.
         find_program(_TRITON_HOST_C_COMPILER
             NAMES gcc cc clang NO_CMAKE_FIND_ROOT_PATH)
         find_program(_TRITON_HOST_CXX_COMPILER
             NAMES g++ c++ clang++ NO_CMAKE_FIND_ROOT_PATH)
         if(NOT _TRITON_HOST_C_COMPILER OR NOT _TRITON_HOST_CXX_COMPILER)
             message(FATAL_ERROR
-                "Cross-building Triton LLVM requires host C and C++ compilers for "
-                "llvm-tblgen/mlir-tblgen.")
+                "Cross-building Triton requires native host C and C++ compilers.")
+        endif()
+        set(_TRITON_HOST_EXE_SUFFIX "")
+        if(CMAKE_HOST_WIN32)
+            set(_TRITON_HOST_EXE_SUFFIX ".exe")
+        endif()
+    endif()
+
+    if(CMAKE_CROSSCOMPILING AND NOT _TRITON_LLVM_INSTALL_COMPLETE)
+        # A validated target LLVM/MLIR cache hit already contains every target
+        # artifact consumed below, so it must not rebuild host-only tablegen
+        # tools. They are needed solely while producing a new target install.
+        find_program(_TRITON_HOST_NINJA
+            NAMES ninja ninja-build NO_CMAKE_FIND_ROOT_PATH)
+        if(NOT _TRITON_HOST_NINJA)
+            message(FATAL_ERROR
+                "A cold cross-build of Triton LLVM requires host Ninja.")
         endif()
 
         set(_TRITON_LLVM_HOST_PREFIX
             "${CMAKE_BINARY_DIR}/triton_llvm_host_tools_${_TRITON_MANAGED_RECIPE_REVISION}")
         set(_TRITON_LLVM_HOST_BUILD_DIR "${_TRITON_LLVM_HOST_PREFIX}/build")
         set(_TRITON_LLVM_NATIVE_TOOL_DIR "${_TRITON_LLVM_HOST_BUILD_DIR}/bin")
-        set(_TRITON_HOST_EXE_SUFFIX "")
-        if(CMAKE_HOST_WIN32)
-            set(_TRITON_HOST_EXE_SUFFIX ".exe")
-        endif()
 
         ExternalProject_Add(triton_llvm_host_tools_external
             PREFIX            "${_TRITON_LLVM_HOST_PREFIX}"
@@ -2190,7 +2225,9 @@ function(setup_triton)
                 -P "${CMAKE_SOURCE_DIR}/cmake/patch_external_llvm_coexistence.cmake"
             SOURCE_SUBDIR     llvm
             BINARY_DIR        "${_TRITON_LLVM_HOST_BUILD_DIR}"
+            CMAKE_GENERATOR   "Ninja"
             CMAKE_ARGS
+                -DCMAKE_MAKE_PROGRAM=${_TRITON_HOST_NINJA}
                 -DCMAKE_BUILD_TYPE=Release
                 -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
                 -DLLVM_ENABLE_PROJECTS=mlir
@@ -2348,7 +2385,8 @@ function(setup_triton)
 
     set(_TRITON_EXTERNAL_DEPENDENCIES triton_llvm_external)
     if(CMAKE_CROSSCOMPILING AND
-       _TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
+       _TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER" AND
+       NOT _TRITON_COMPILER_INSTALL_COMPLETE)
         # SLEEF generates target headers with small executables such as
         # mkrename. Its cross-build contract expects those tools in a native
         # build directory; otherwise imported targets collapse to /bin and
@@ -2535,7 +2573,13 @@ function(setup_triton)
         set(_TRITON_EP_URL_HASH "${TRITON_URL_HASH}")
     endif()
 
-    ExternalProject_Add(triton_external
+    if(_TRITON_COMPILER_INSTALL_COMPLETE)
+        # Preserve the stable target consumed by MainBuildFlow without
+        # downloading, configuring, or rebuilding an already-restored compiler.
+        add_custom_target(triton_external)
+        add_dependencies(triton_external triton_llvm_external)
+    else()
+        ExternalProject_Add(triton_external
             PREFIX            "${TRITON_PREFIX}"
             URL               "${TRITON_URL}"
             URL_HASH          "${_TRITON_EP_URL_HASH}"
@@ -2560,7 +2604,8 @@ function(setup_triton)
             LOG_BUILD         OFF
             LOG_INSTALL       OFF
             DEPENDS           ${_TRITON_EXTERNAL_DEPENDENCIES}
-    )
+        )
+    endif()
     else()
         # MainBuildFlow depends on this stable compiler-package target. Vulkan
         # has no Triton emitter build; its target represents only the managed
@@ -2638,7 +2683,8 @@ function(setup_triton)
     set(TRITON triton_interface PARENT_SCOPE)
 
     # --- Cache store for Triton ---
-    if(_TRITON_BUILDS_COMPILER AND SD_DEP_CACHE AND DEFINED _triton_cache_key)
+    if(_TRITON_BUILDS_COMPILER AND NOT _TRITON_COMPILER_INSTALL_COMPLETE AND
+       SD_DEP_CACHE AND DEFINED _triton_cache_key)
         sd_dep_cache_store("triton" "${_triton_cache_key}" "${TRITON_INSTALL_DIR}" "triton_external")
     endif()
 

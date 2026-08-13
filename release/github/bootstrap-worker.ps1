@@ -22,6 +22,28 @@ Add-Content -Path $env:GITHUB_PATH -Value $msysPath
 Add-Content -Path $env:GITHUB_PATH -Value $mingwPath
 Add-Content -Path $env:GITHUB_ENV -Value "DL4J_BASH_EXE=$gitBash"
 
+# Use the exact upstream host compiler for schema generation. The MinGW-built
+# flatc from the same source tree has crashed while executing on hosted Windows
+# runners; the official binary avoids making schema generation depend on that
+# host compiler/runtime combination.
+$flatbuffersVersion = '25.2.10'
+$flatcZip = Join-Path $env:RUNNER_TEMP "flatc-$flatbuffersVersion.zip"
+$flatcDir = Join-Path $env:RUNNER_TEMP "flatc-$flatbuffersVersion"
+Invoke-WebRequest "https://github.com/google/flatbuffers/releases/download/v$flatbuffersVersion/Windows.flatc.binary.zip" -OutFile $flatcZip -UseBasicParsing
+Remove-Item -LiteralPath $flatcDir -Recurse -Force -ErrorAction SilentlyContinue
+Expand-Archive -LiteralPath $flatcZip -DestinationPath $flatcDir -Force
+$flatc = Get-ChildItem -LiteralPath $flatcDir -Filter flatc.exe -File -Recurse | Select-Object -First 1
+if ($null -eq $flatc) {
+  throw "FlatBuffers $flatbuffersVersion archive did not contain flatc.exe"
+}
+$flatcVersion = (& $flatc.FullName --version | Out-String).Trim()
+if ($flatcVersion -notmatch [regex]::Escape($flatbuffersVersion)) {
+  throw "Expected flatc $flatbuffersVersion, got '$flatcVersion'"
+}
+$flatcPath = $flatc.FullName.Replace('\', '/')
+Add-Content -Path $env:GITHUB_ENV -Value "DL4J_FLATC_EXECUTABLE=$flatcPath"
+Write-Host "[dl4j-bootstrap] flatc=$flatcVersion path=$flatcPath"
+
 if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
   $cudaVersion = if ($Shard -match '12-6') { '12.6' } else { '12.9' }
   $installer = Join-Path $env:RUNNER_TEMP 'install_cuda_windows.ps1'

@@ -40,7 +40,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: /tmp/sccache-patched-bin
-        key: sccache-patched-v0.17.0-linux-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
+        key: sccache-patched-v0.17.0-gha-azure-linux-${{ runner.arch }}-${{ steps.patch-hash.outputs.hash }}
 
     # ---------------------------------------------------------------
     # 3. On cache miss: clone sccache source, apply RetryLayer patch,
@@ -62,7 +62,9 @@ runs:
           source "$HOME/.cargo/env"
         fi
 
-        # Clone sccache source at the target version
+        # Clone sccache source at the target version. A previous failed attempt
+        # may have left the destination behind in a reused job container.
+        rm -rf /tmp/sccache-src
         git clone --depth 1 --branch "$SCCACHE_VERSION" \
           https://github.com/mozilla/sccache.git /tmp/sccache-src
 
@@ -75,9 +77,11 @@ runs:
           echo "WARNING: Patch file not found at $PATCH_FILE — building unpatched"
         fi
 
-        # Build with only the GHA cache feature (minimal build)
+        # setup-python prepends its own pkg-config directory. Preserve it, but
+        # put the distribution OpenSSL metadata first so cargo can link natively.
         cd /tmp/sccache-src
-        cargo build --release --features gha --no-default-features
+        export PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib64/pkgconfig:/usr/share/pkgconfig:${PKG_CONFIG_PATH:-}"
+        cargo build --release --features gha,azure --no-default-features
 
         # Stage the binary for GHA cache storage
         mkdir -p /tmp/sccache-patched-bin
@@ -92,11 +96,19 @@ runs:
     - name: Install sccache
       shell: bash
       run: |
+        set -euo pipefail
         SCCACHE_VERSION="v0.17.0"
 
+        install_sccache() {
+          if [ "$(id -u)" -eq 0 ]; then
+            install -m 0755 "$1" /usr/local/bin/sccache
+          else
+            sudo install -m 0755 "$1" /usr/local/bin/sccache
+          fi
+        }
+
         if [ -f "/tmp/sccache-patched-bin/sccache" ]; then
-          sudo cp /tmp/sccache-patched-bin/sccache /usr/local/bin/sccache
-          sudo chmod +x /usr/local/bin/sccache
+          install_sccache /tmp/sccache-patched-bin/sccache
           echo "Installed patched sccache (with RetryLayer):"
           sccache --version
         else
@@ -111,9 +123,9 @@ runs:
           UPSTREAM_FILE="sccache-${SCCACHE_VERSION}-${MUSL_ARCH}-unknown-linux-musl"
           UPSTREAM_URL="https://github.com/mozilla/sccache/releases/download/${SCCACHE_VERSION}/${UPSTREAM_FILE}.tar.gz"
           echo "Downloading ${UPSTREAM_URL} ..."
+          rm -rf "/tmp/${UPSTREAM_FILE}"
           curl -fsSL "${UPSTREAM_URL}" | tar xz -C /tmp
-          sudo mv "/tmp/${UPSTREAM_FILE}/sccache" /usr/local/bin/sccache
-          sudo chmod +x /usr/local/bin/sccache
+          install_sccache "/tmp/${UPSTREAM_FILE}/sccache"
           echo "Installed upstream sccache (unpatched fallback):"
           sccache --version
         fi

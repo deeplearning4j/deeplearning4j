@@ -19,7 +19,7 @@ install_linux_packages() {
     as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
       autoconf automake build-essential ca-certificates ccache cmake curl gfortran git \
       gnupg jq libdwarf-dev libdw-dev libelf-dev libgomp1 libomp-dev libopenblas-dev \
-      libtool libusb-1.0-0-dev libvulkan-dev libvulkan1 maven mesa-vulkan-drivers \
+      libssl-dev libtool libusb-1.0-0-dev libvulkan-dev libvulkan1 maven mesa-vulkan-drivers \
       nasm ninja-build openjdk-11-jdk pinentry-curses pkg-config python3 python3-pip \
       swig tar unzip vulkan-tools wget xz-utils zip zlib1g-dev
     as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y llvm-18-dev mlir-18-tools ||
@@ -33,7 +33,7 @@ install_linux_packages() {
     as_root dnf install -y \
       autoconf automake ca-certificates ccache cmake curl findutils gcc-gfortran git \
       java-11-openjdk-devel jq libtool libusb-devel libusbx-devel make maven nasm \
-      ninja-build openblas-devel patch pkgconfig python3 swig tar unzip wget which xz \
+      ninja-build openblas-devel openssl-devel patch pkgconfig python3 swig tar unzip wget which xz \
       zip zlib-devel
   else
     printf 'Unsupported Linux package manager\n' >&2
