@@ -48,6 +48,23 @@ install_macos_packages() {
   printf '%s\n' "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >>"${GITHUB_PATH}"
 }
 
+ensure_modern_maven() {
+  maven_version=3.9.9
+  target="${toolchain_root}/apache-maven-${maven_version}"
+  if [ ! -x "${target}/bin/mvn" ]; then
+    work=$(mktemp -d)
+    trap 'rm -rf "${work}"' RETURN
+    curl --fail --location --retry 5 \
+      "https://archive.apache.org/dist/maven/maven-3/${maven_version}/binaries/apache-maven-${maven_version}-bin.tar.gz" \
+      -o "${work}/maven.tar.gz"
+    as_root tar -xzf "${work}/maven.tar.gz" -C "${toolchain_root}"
+    trap - RETURN
+    rm -rf "${work}"
+  fi
+  "${target}/bin/mvn" --version
+  printf '%s\n' "${target}/bin" >>"${GITHUB_PATH}"
+}
+
 ensure_protobuf() {
   if [ "$(uname -s)" != Linux ] || [ -x "${toolchain_root}/protobuf/bin/protoc" ]; then
     return
@@ -113,6 +130,7 @@ ensure_android_ndk() {
 case "$(uname -s)" in
   Linux)
     install_linux_packages
+    ensure_modern_maven
     ensure_protobuf
     ensure_protoc_21
     ensure_android_ndk

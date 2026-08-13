@@ -131,6 +131,13 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("sys.version_info < (3, 10)", action)
         self.assertIn("python3 python3.11", bootstrap)
 
+    def test_linux_bootstrap_pins_a_supported_maven(self):
+        bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
+        self.assertIn("ensure_modern_maven()", bootstrap)
+        self.assertIn("maven_version=3.9.9", bootstrap)
+        self.assertIn('"${target}/bin/mvn" --version', bootstrap)
+        self.assertIn('"${target}/bin" >>"${GITHUB_PATH}"', bootstrap)
+
     def test_android_worker_accepts_sccache_as_the_required_compiler_cache(self):
         builder = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
         self.assertIn("ccache|ccache.exe)", builder)
