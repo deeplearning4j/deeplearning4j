@@ -43,7 +43,7 @@ namespace platforms {
 // ReLU Activation
 //////////////////////////////////////////////////////////////////////////
 
-static void reluMPS(const NDArray* input, NDArray* output) {
+static void reluMPS(NDArray* input, NDArray* output) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -131,7 +131,7 @@ PLATFORM_CHECK(relu, ENGINE_CPU) {
 // Leaky ReLU
 //////////////////////////////////////////////////////////////////////////
 
-static void leakyReluMPS(const NDArray* input, NDArray* output, float alpha) {
+static void leakyReluMPS(NDArray* input, NDArray* output, float alpha) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -209,7 +209,7 @@ PLATFORM_CHECK(leaky_relu, ENGINE_CPU) {
 // Sigmoid
 //////////////////////////////////////////////////////////////////////////
 
-static void sigmoidMPS(const NDArray* input, NDArray* output) {
+static void sigmoidMPS(NDArray* input, NDArray* output) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -282,7 +282,7 @@ PLATFORM_CHECK(sigmoid, ENGINE_CPU) {
 // Tanh
 //////////////////////////////////////////////////////////////////////////
 
-static void tanhMPS(const NDArray* input, NDArray* output) {
+static void tanhMPS(NDArray* input, NDArray* output) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -355,7 +355,7 @@ PLATFORM_CHECK(tanh, ENGINE_CPU) {
 // ELU
 //////////////////////////////////////////////////////////////////////////
 
-static void eluMPS(const NDArray* input, NDArray* output, float alpha) {
+static void eluMPS(NDArray* input, NDArray* output, float alpha) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -433,7 +433,7 @@ PLATFORM_CHECK(elu, ENGINE_CPU) {
 // Softmax
 //////////////////////////////////////////////////////////////////////////
 
-static void softmaxMPS(const NDArray* input, NDArray* output) {
+static void softmaxMPS(NDArray* input, NDArray* output) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -518,7 +518,7 @@ PLATFORM_CHECK(softmax, ENGINE_CPU) {
 // Approximation: 0.5 * x * (1 + tanh(sqrt(2/π) * (x + 0.044715 * x^3)))
 //////////////////////////////////////////////////////////////////////////
 
-static void geluMPS(const NDArray* input, NDArray* output) {
+static void geluMPS(NDArray* input, NDArray* output) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -607,7 +607,7 @@ PLATFORM_CHECK(gelu, ENGINE_CPU) {
 // SiLU(x) = x * sigmoid(x)
 //////////////////////////////////////////////////////////////////////////
 
-static void siluMPS(const NDArray* input, NDArray* output) {
+static void siluMPS(NDArray* input, NDArray* output) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();

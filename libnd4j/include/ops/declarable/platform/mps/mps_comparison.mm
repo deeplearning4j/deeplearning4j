@@ -43,7 +43,7 @@ namespace platforms {
 // Greater Than
 //////////////////////////////////////////////////////////////////////////
 
-static void greaterMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void greaterMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -102,7 +102,7 @@ PLATFORM_CHECK(greater, ENGINE_CPU) {
 // Greater Than or Equal
 //////////////////////////////////////////////////////////////////////////
 
-static void greaterEqualMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void greaterEqualMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -161,7 +161,7 @@ PLATFORM_CHECK(greater_equal, ENGINE_CPU) {
 // Less Than
 //////////////////////////////////////////////////////////////////////////
 
-static void lessMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void lessMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -220,7 +220,7 @@ PLATFORM_CHECK(less, ENGINE_CPU) {
 // Less Than or Equal
 //////////////////////////////////////////////////////////////////////////
 
-static void lessEqualMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void lessEqualMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -279,7 +279,7 @@ PLATFORM_CHECK(less_equal, ENGINE_CPU) {
 // Equal
 //////////////////////////////////////////////////////////////////////////
 
-static void equalMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void equalMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -338,7 +338,7 @@ PLATFORM_CHECK(equals, ENGINE_CPU) {
 // Not Equal
 //////////////////////////////////////////////////////////////////////////
 
-static void notEqualMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void notEqualMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -397,7 +397,7 @@ PLATFORM_CHECK(not_equals, ENGINE_CPU) {
 // Maximum (element-wise)
 //////////////////////////////////////////////////////////////////////////
 
-static void maximumMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void maximumMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -456,7 +456,7 @@ PLATFORM_CHECK(maximum, ENGINE_CPU) {
 // Minimum (element-wise)
 //////////////////////////////////////////////////////////////////////////
 
-static void minimumMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void minimumMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -515,7 +515,7 @@ PLATFORM_CHECK(minimum, ENGINE_CPU) {
 // Where (conditional select)
 //////////////////////////////////////////////////////////////////////////
 
-static void whereMPS(const NDArray* condition, const NDArray* x, const NDArray* y, NDArray* z) {
+static void whereMPS(NDArray* condition, NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const bool* condPtr = condition->bufferAsT<bool>();
         const float* xPtr = x->bufferAsT<float>();

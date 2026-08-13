@@ -43,7 +43,7 @@ namespace platforms {
 // Element-wise Addition using MPS
 //////////////////////////////////////////////////////////////////////////
 
-static void addMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void addMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -175,7 +175,7 @@ PLATFORM_CHECK(add, ENGINE_CPU) {
 // Element-wise Multiplication using MPS
 //////////////////////////////////////////////////////////////////////////
 
-static void multiplyMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void multiplyMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -267,7 +267,7 @@ PLATFORM_CHECK(multiply, ENGINE_CPU) {
 // Element-wise Subtraction
 //////////////////////////////////////////////////////////////////////////
 
-static void subtractMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void subtractMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -326,7 +326,7 @@ PLATFORM_CHECK(subtract, ENGINE_CPU) {
 // Element-wise Division
 //////////////////////////////////////////////////////////////////////////
 
-static void divideMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void divideMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -385,7 +385,7 @@ PLATFORM_CHECK(divide, ENGINE_CPU) {
 // Element-wise Square Root
 //////////////////////////////////////////////////////////////////////////
 
-static void sqrtMPS(const NDArray* x, NDArray* z) {
+static void sqrtMPS(NDArray* x, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         float* zPtr = z->bufferAsT<float>();
@@ -428,7 +428,7 @@ PLATFORM_CHECK(sqrt, ENGINE_CPU) {
 // Element-wise Exponential
 //////////////////////////////////////////////////////////////////////////
 
-static void expMPS(const NDArray* x, NDArray* z) {
+static void expMPS(NDArray* x, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         float* zPtr = z->bufferAsT<float>();
@@ -471,7 +471,7 @@ PLATFORM_CHECK(exp, ENGINE_CPU) {
 // Element-wise Natural Logarithm
 //////////////////////////////////////////////////////////////////////////
 
-static void logMPS(const NDArray* x, NDArray* z) {
+static void logMPS(NDArray* x, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         float* zPtr = z->bufferAsT<float>();
@@ -514,7 +514,7 @@ PLATFORM_CHECK(log, ENGINE_CPU) {
 // Element-wise Power
 //////////////////////////////////////////////////////////////////////////
 
-static void powMPS(const NDArray* x, const NDArray* y, NDArray* z) {
+static void powMPS(NDArray* x, NDArray* y, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         const float* yPtr = y->bufferAsT<float>();
@@ -573,7 +573,7 @@ PLATFORM_CHECK(pow, ENGINE_CPU) {
 // Element-wise Absolute Value
 //////////////////////////////////////////////////////////////////////////
 
-static void absMPS(const NDArray* x, NDArray* z) {
+static void absMPS(NDArray* x, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         float* zPtr = z->bufferAsT<float>();
@@ -616,7 +616,7 @@ PLATFORM_CHECK(abs, ENGINE_CPU) {
 // Element-wise Negative
 //////////////////////////////////////////////////////////////////////////
 
-static void negMPS(const NDArray* x, NDArray* z) {
+static void negMPS(NDArray* x, NDArray* z) {
     @autoreleasepool {
         const float* xPtr = x->bufferAsT<float>();
         float* zPtr = z->bufferAsT<float>();

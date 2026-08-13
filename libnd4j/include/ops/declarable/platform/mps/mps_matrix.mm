@@ -43,7 +43,7 @@ namespace platforms {
 // Transpose
 //////////////////////////////////////////////////////////////////////////
 
-static void transposeMPS(const NDArray* input, NDArray* output, const std::vector<LongType>& permutation) {
+static void transposeMPS(NDArray* input, NDArray* output, const std::vector<LongType>& permutation) {
     @autoreleasepool {
         int rank = input->rankOf();
         auto inShape = input->shapeOf();
@@ -132,7 +132,7 @@ PLATFORM_CHECK(transpose, ENGINE_CPU) {
 // Concat
 //////////////////////////////////////////////////////////////////////////
 
-static void concatMPS(const std::vector<const NDArray*>& inputs, NDArray* output, int axis) {
+static void concatMPS(const std::vector<NDArray*>& inputs, NDArray* output, int axis) {
     @autoreleasepool {
         if (axis < 0) {
             axis += output->rankOf();
@@ -154,7 +154,7 @@ static void concatMPS(const std::vector<const NDArray*>& inputs, NDArray* output
 
         LongType outOffset = 0;
         for (size_t n = 0; n < inputs.size(); n++) {
-            const NDArray* input = inputs[n];
+            NDArray* input = inputs[n];
             const float* inPtr = input->bufferAsT<float>();
             LongType axisSize = input->sizeAt(axis);
 
@@ -182,7 +182,7 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
         axis = INT_ARG(0);
     }
 
-    std::vector<const NDArray*> inputs;
+    std::vector<NDArray*> inputs;
     for (int i = 0; i < block.width(); i++) {
         auto inp = INPUT_VARIABLE(i);
         if (!inp->isEmpty()) {
@@ -215,7 +215,7 @@ PLATFORM_CHECK(concat, ENGINE_CPU) {
 // Stack
 //////////////////////////////////////////////////////////////////////////
 
-static void stackMPS(const std::vector<const NDArray*>& inputs, NDArray* output, int axis) {
+static void stackMPS(const std::vector<NDArray*>& inputs, NDArray* output, int axis) {
     @autoreleasepool {
         if (axis < 0) {
             axis += output->rankOf();
@@ -283,7 +283,7 @@ PLATFORM_IMPL(stack, ENGINE_CPU) {
         axis = INT_ARG(0);
     }
 
-    std::vector<const NDArray*> inputs;
+    std::vector<NDArray*> inputs;
     for (int i = 0; i < block.width(); i++) {
         inputs.push_back(INPUT_VARIABLE(i));
     }
@@ -311,7 +311,7 @@ PLATFORM_CHECK(stack, ENGINE_CPU) {
 // Gather
 //////////////////////////////////////////////////////////////////////////
 
-static void gatherMPS(const NDArray* input, const NDArray* indices, NDArray* output, int axis) {
+static void gatherMPS(NDArray* input, NDArray* indices, NDArray* output, int axis) {
     @autoreleasepool {
         if (axis < 0) {
             axis += input->rankOf();
@@ -386,7 +386,7 @@ PLATFORM_CHECK(gather, ENGINE_CPU) {
 // Tile
 //////////////////////////////////////////////////////////////////////////
 
-static void tileMPS(const NDArray* input, NDArray* output, const std::vector<LongType>& repeats) {
+static void tileMPS(NDArray* input, NDArray* output, const std::vector<LongType>& repeats) {
     @autoreleasepool {
         const float* inPtr = input->bufferAsT<float>();
         float* outPtr = output->bufferAsT<float>();
@@ -462,7 +462,7 @@ PLATFORM_CHECK(tile, ENGINE_CPU) {
 // Reverse
 //////////////////////////////////////////////////////////////////////////
 
-static void reverseMPS(const NDArray* input, NDArray* output, const std::vector<int>& axes) {
+static void reverseMPS(NDArray* input, NDArray* output, const std::vector<int>& axes) {
     @autoreleasepool {
         const float* inPtr = input->bufferAsT<float>();
         float* outPtr = output->bufferAsT<float>();
@@ -538,7 +538,7 @@ PLATFORM_CHECK(reverse, ENGINE_CPU) {
 // Pad
 //////////////////////////////////////////////////////////////////////////
 
-static void padMPS(const NDArray* input, NDArray* output, const std::vector<std::pair<LongType, LongType>>& paddings, float padValue) {
+static void padMPS(NDArray* input, NDArray* output, const std::vector<std::pair<LongType, LongType>>& paddings, float padValue) {
     @autoreleasepool {
         const float* inPtr = input->bufferAsT<float>();
         float* outPtr = output->bufferAsT<float>();
@@ -620,7 +620,7 @@ PLATFORM_CHECK(pad, ENGINE_CPU) {
 // Slice
 //////////////////////////////////////////////////////////////////////////
 
-static void sliceMPS(const NDArray* input, NDArray* output, const std::vector<LongType>& begin, const std::vector<LongType>& size) {
+static void sliceMPS(NDArray* input, NDArray* output, const std::vector<LongType>& begin, const std::vector<LongType>& size) {
     @autoreleasepool {
         const float* inPtr = input->bufferAsT<float>();
         float* outPtr = output->bufferAsT<float>();

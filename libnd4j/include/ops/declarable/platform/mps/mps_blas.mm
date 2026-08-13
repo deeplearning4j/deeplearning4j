@@ -43,7 +43,7 @@ namespace platforms {
  * Matrix multiplication using MPS
  * C = alpha * op(A) * op(B) + beta * C
  */
-static void matmulMPS(const NDArray* a, const NDArray* b, NDArray* c,
+static void matmulMPS(NDArray* a, NDArray* b, NDArray* c,
                        bool transA, bool transB, double alpha, double beta) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();

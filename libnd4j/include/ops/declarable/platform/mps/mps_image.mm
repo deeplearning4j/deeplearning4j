@@ -43,7 +43,7 @@ namespace platforms {
 // Bilinear Resize using MPS
 //////////////////////////////////////////////////////////////////////////
 
-static void resizeBilinearMPS(const NDArray* input, NDArray* output, int newHeight, int newWidth, bool alignCorners) {
+static void resizeBilinearMPS(NDArray* input, NDArray* output, int newHeight, int newWidth, bool alignCorners) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -182,7 +182,7 @@ PLATFORM_CHECK(resize_bilinear, ENGINE_CPU) {
 // Nearest Neighbor Resize using MPS
 //////////////////////////////////////////////////////////////////////////
 
-static void resizeNearestMPS(const NDArray* input, NDArray* output, int newHeight, int newWidth) {
+static void resizeNearestMPS(NDArray* input, NDArray* output, int newHeight, int newWidth) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -301,7 +301,7 @@ PLATFORM_CHECK(resize_nearest, ENGINE_CPU) {
 // Image Crop and Resize
 //////////////////////////////////////////////////////////////////////////
 
-static void cropAndResizeMPS(const NDArray* image, const NDArray* boxes, const NDArray* boxIndices,
+static void cropAndResizeMPS(NDArray* image, NDArray* boxes, NDArray* boxIndices,
                               NDArray* output, int cropHeight, int cropWidth, int method) {
     @autoreleasepool {
         // image: [batch, height, width, channels] or [batch, channels, height, width]
@@ -435,7 +435,7 @@ PLATFORM_CHECK(crop_and_resize, ENGINE_CPU) {
 // Image Transpose (NHWC <-> NCHW)
 //////////////////////////////////////////////////////////////////////////
 
-static void transposeImageMPS(const NDArray* input, NDArray* output, bool toNCHW) {
+static void transposeImageMPS(NDArray* input, NDArray* output, bool toNCHW) {
     @autoreleasepool {
         if (toNCHW) {
             // NHWC -> NCHW: [N, H, W, C] -> [N, C, H, W]
@@ -495,7 +495,7 @@ static void transposeImageMPS(const NDArray* input, NDArray* output, bool toNCHW
 // Depthwise Convolution 2D
 //////////////////////////////////////////////////////////////////////////
 
-static void depthwiseConv2dMPS(const NDArray* input, const NDArray* weights, const NDArray* bias,
+static void depthwiseConv2dMPS(NDArray* input, NDArray* weights, NDArray* bias,
                                 NDArray* output, int kH, int kW, int sH, int sW,
                                 int pH, int pW, int dH, int dW) {
     @autoreleasepool {

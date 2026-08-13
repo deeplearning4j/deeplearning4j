@@ -42,7 +42,7 @@ namespace platforms {
 /**
  * 2D Convolution using MPS
  */
-static void conv2dMPS(const NDArray* input, const NDArray* weights, const NDArray* bias,
+static void conv2dMPS(NDArray* input, NDArray* weights, NDArray* bias,
                        NDArray* output, int kH, int kW, int sH, int sW,
                        int pH, int pW, int dH, int dW) {
     @autoreleasepool {
@@ -167,7 +167,7 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
 // Max Pooling 2D
 //////////////////////////////////////////////////////////////////////////
 
-static void maxpool2dMPS(const NDArray* input, NDArray* output,
+static void maxpool2dMPS(NDArray* input, NDArray* output,
                           int kH, int kW, int sH, int sW, int pH, int pW) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
@@ -269,7 +269,7 @@ PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
 // Average Pooling 2D
 //////////////////////////////////////////////////////////////////////////
 
-static void avgpool2dMPS(const NDArray* input, NDArray* output,
+static void avgpool2dMPS(NDArray* input, NDArray* output,
                           int kH, int kW, int sH, int sW, int pH, int pW) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();

@@ -44,8 +44,8 @@ namespace platforms {
 // y = gamma * (x - mean) / sqrt(variance + epsilon) + beta
 //////////////////////////////////////////////////////////////////////////
 
-static void batchnormMPS(const NDArray* input, const NDArray* mean, const NDArray* variance,
-                          const NDArray* gamma, const NDArray* beta,
+static void batchnormMPS(NDArray* input, NDArray* mean, NDArray* variance,
+                          NDArray* gamma, NDArray* beta,
                           NDArray* output, float epsilon) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
@@ -174,7 +174,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
 // Normalizes across the last dimension(s)
 //////////////////////////////////////////////////////////////////////////
 
-static void layerNormMPS(const NDArray* input, const NDArray* gamma, const NDArray* beta,
+static void layerNormMPS(NDArray* input, NDArray* gamma, NDArray* beta,
                           NDArray* output, float epsilon, int axis) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
@@ -270,7 +270,7 @@ PLATFORM_CHECK(layer_norm, ENGINE_CPU) {
 // Normalizes across spatial dimensions (H, W) for each channel independently
 //////////////////////////////////////////////////////////////////////////
 
-static void instanceNormMPS(const NDArray* input, const NDArray* gamma, const NDArray* beta,
+static void instanceNormMPS(NDArray* input, NDArray* gamma, NDArray* beta,
                              NDArray* output, float epsilon) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();

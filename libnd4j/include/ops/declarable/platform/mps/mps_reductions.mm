@@ -44,7 +44,7 @@ namespace platforms {
 // Reduce Sum
 //////////////////////////////////////////////////////////////////////////
 
-static void reduceSumMPS(const NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims) {
+static void reduceSumMPS(NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims) {
     @autoreleasepool {
         auto& manager = mpsUtils::MPSDeviceManager::getInstance();
         id<MTLDevice> device = manager.getDevice();
@@ -143,7 +143,7 @@ PLATFORM_CHECK(reduce_sum, ENGINE_CPU) {
 // Reduce Mean
 //////////////////////////////////////////////////////////////////////////
 
-static void reduceMeanMPS(const NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims) {
+static void reduceMeanMPS(NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims) {
     @autoreleasepool {
         const float* inPtr = input->bufferAsT<float>();
         float* outPtr = output->bufferAsT<float>();
@@ -242,7 +242,7 @@ PLATFORM_CHECK(reduce_mean, ENGINE_CPU) {
 // Reduce Max
 //////////////////////////////////////////////////////////////////////////
 
-static void reduceMaxMPS(const NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims) {
+static void reduceMaxMPS(NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims) {
     @autoreleasepool {
         const float* inPtr = input->bufferAsT<float>();
         float* outPtr = output->bufferAsT<float>();
@@ -334,7 +334,7 @@ PLATFORM_CHECK(reduce_max, ENGINE_CPU) {
 // Reduce Min
 //////////////////////////////////////////////////////////////////////////
 
-static void reduceMinMPS(const NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims) {
+static void reduceMinMPS(NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims) {
     @autoreleasepool {
         const float* inPtr = input->bufferAsT<float>();
         float* outPtr = output->bufferAsT<float>();
@@ -426,7 +426,7 @@ PLATFORM_CHECK(reduce_min, ENGINE_CPU) {
 // Reduce Prod
 //////////////////////////////////////////////////////////////////////////
 
-static void reduceProdMPS(const NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims) {
+static void reduceProdMPS(NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims) {
     @autoreleasepool {
         const float* inPtr = input->bufferAsT<float>();
         float* outPtr = output->bufferAsT<float>();
@@ -514,7 +514,7 @@ PLATFORM_CHECK(reduce_prod, ENGINE_CPU) {
 // Reduce Variance
 //////////////////////////////////////////////////////////////////////////
 
-static void reduceVarianceMPS(const NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims, bool biasCorrected) {
+static void reduceVarianceMPS(NDArray* input, NDArray* output, const std::vector<LongType>& axes, bool keepDims, bool biasCorrected) {
     @autoreleasepool {
         const float* inPtr = input->bufferAsT<float>();
         float* outPtr = output->bufferAsT<float>();
