@@ -123,6 +123,11 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertIn('protoc-21.7/bin/protoc" --version', bootstrap)
 
+    def test_optional_android_ndk_bootstrap_returns_successfully(self):
+        bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
+        self.assertIn('[ -n "${ndk_version}" ] || return 0', bootstrap)
+        self.assertNotIn('[ -n "${ndk_version}" ] || return\n', bootstrap)
+
     def test_native_launcher_expands_empty_arrays_safely_on_macos_bash(self):
         launcher = (ROOT / "build-scripts/release/native-platform.sh").read_text()
         self.assertIn('${split_flags[@]+"${split_flags[@]}"}', launcher)

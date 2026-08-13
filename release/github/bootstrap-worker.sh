@@ -93,7 +93,7 @@ ensure_protoc_21() {
 }
 
 ensure_android_ndk() {
-  [ -n "${ndk_version}" ] || return
+  [ -n "${ndk_version}" ] || return 0
   target="${toolchain_root}/android/android-ndk-${ndk_version}"
   if [ ! -d "${target}" ]; then
     work=$(mktemp -d)
