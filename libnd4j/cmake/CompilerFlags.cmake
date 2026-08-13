@@ -711,8 +711,10 @@ elseif(SD_SANITIZE)
     message(STATUS "ℹ️  Skipping --no-undefined for sanitizer build (sanitizer runtime symbols resolved at runtime)")
 endif()
 
-# Make build more verbose to see template instantiation issues
-set(CMAKE_VERBOSE_MAKEFILE ON)
+# Keep hosted-build logs compact unless verbose output was explicitly requested.
+# Full CUDA command lines can exhaust GitHub Actions' retained log budget before
+# the actual compiler failure is emitted.
+set(CMAKE_VERBOSE_MAKEFILE "${SD_VERBOSE_BUILD}")
 
 if(SD_GCC_FUNCTRACE)
     message(STATUS "✅ Applying SD_GCC_FUNCTRACE debug flags for line number information")

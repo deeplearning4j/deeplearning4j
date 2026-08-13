@@ -351,6 +351,18 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("scaleVector:nil", elementwise)
         self.assertIn("startIndex:0", elementwise)
 
+    def test_native_build_logs_are_compact_unless_verbose_is_explicit(self):
+        setup = (ROOT / "libnd4j/cmake/Setup.cmake").read_text()
+        compiler_flags = (ROOT / "libnd4j/cmake/CompilerFlags.cmake").read_text()
+        cuda_config = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
+        build_script = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
+
+        self.assertIn('option(SD_VERBOSE_BUILD "Print full native compiler command lines" OFF)', setup)
+        self.assertNotIn("set(CMAKE_VERBOSE_MAKEFILE ON)", compiler_flags)
+        self.assertNotIn("set(CMAKE_VERBOSE_MAKEFILE ON PARENT_SCOPE)", cuda_config)
+        self.assertIn('VERBOSE="${VERBOSE:-false}"', build_script)
+        self.assertIn("-DSD_VERBOSE_BUILD=$SD_VERBOSE_BUILD", build_script)
+
 
 class WorkerConfigTests(unittest.TestCase):
     def args(self, **overrides):

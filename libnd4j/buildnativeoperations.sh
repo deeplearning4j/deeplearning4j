@@ -600,8 +600,7 @@ CLEAN_ALL="${CLEAN_ALL:-false}"
 MINIFIER="${MINIFIER:-false}"
 TESTS="${TESTS:-false}"
 PRINT_INDICES="${PRINT_INDICES:-OFF}"
-VERBOSE="${VERBOSE:-true}"
-VERBOSE_ARG="${VERBOSE_ARG:-VERBOSE=1}"
+VERBOSE="${VERBOSE:-false}"
 HELPER="${HELPER:-}"
 # Multi-helper support: comma-separated list of helpers
 HELPERS="${HELPERS:-}"
@@ -2668,7 +2667,12 @@ export TMP="$COMPILER_TMPDIR"
 export TEMP="$COMPILER_TMPDIR"
 print_colored "cyan" "📁 Compiler temp directory: $COMPILER_TMPDIR"
 
-export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_SANITIZE=$SANITIZE -DSD_SANITIZERS=$SANITIZERS"
+if [ "$VERBOSE" = "true" ]; then
+    SD_VERBOSE_BUILD="ON"
+else
+    SD_VERBOSE_BUILD="OFF"
+fi
+export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_VERBOSE_BUILD=$SD_VERBOSE_BUILD -DSD_SANITIZE=$SANITIZE -DSD_SANITIZERS=$SANITIZERS"
 
 if [ "$CHIP_EXTENSION" == "avx512" ] || [ "$ARCH" == "avx512" ]; then
     CHIP_EXTENSION="avx512"

@@ -4,7 +4,8 @@
 # Basic CMake Configuration
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
-set(CMAKE_VERBOSE_MAKEFILE OFF)
+option(SD_VERBOSE_BUILD "Print full native compiler command lines" OFF)
+set(CMAKE_VERBOSE_MAKEFILE "${SD_VERBOSE_BUILD}")
 
 # Standard Settings
 set(CMAKE_CXX_STANDARD 17)
