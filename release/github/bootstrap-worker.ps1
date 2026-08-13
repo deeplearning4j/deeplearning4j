@@ -45,6 +45,61 @@ Add-Content -Path $env:GITHUB_ENV -Value "DL4J_FLATC_EXECUTABLE=$flatcPath"
 Write-Host "[dl4j-bootstrap] flatc=$flatcVersion path=$flatcPath"
 
 if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
+  # nvcc uses MSVC as its Windows host compiler. GitHub-hosted runners have
+  # Visual Studio installed, but its compiler environment is not active in a
+  # normal PowerShell/Git Bash step, so materialize vcvars64 for this step and
+  # persist the required variables for the later shared-worker step.
+  $vsWhereRoot = ${env:ProgramFiles(x86)}
+  if (-not $vsWhereRoot) { $vsWhereRoot = $env:ProgramFiles }
+  $vsWhere = Join-Path $vsWhereRoot 'Microsoft Visual Studio\Installer\vswhere.exe'
+  if (-not (Test-Path -LiteralPath $vsWhere)) {
+    throw "Visual Studio locator was not found at $vsWhere"
+  }
+  $vsInstall = (& $vsWhere -latest -products '*' -version '[17.0,18.0)' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1)
+  if (-not $vsInstall) {
+    throw 'Visual Studio 2022 C++ Build Tools installation was not found'
+  }
+  $vcVars = Join-Path $vsInstall 'VC\Auxiliary\Build\vcvars64.bat'
+  if (-not (Test-Path -LiteralPath $vcVars)) {
+    throw "Visual Studio x64 environment script was not found at $vcVars"
+  }
+  $environmentLines = & $env:ComSpec /d /s /c "`"$vcVars`" >nul && set"
+  if ($LASTEXITCODE -ne 0) {
+    throw "Visual Studio x64 environment initialization failed with exit code $LASTEXITCODE"
+  }
+  foreach ($line in $environmentLines) {
+    if ($line -match '^([^=]+)=(.*)$') {
+      [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2], 'Process')
+    }
+  }
+  if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
+    throw 'Visual Studio environment did not expose cl.exe on PATH'
+  }
+
+  $vsEnvironmentNames = @(
+    'CL', 'DevEnvDir', 'Framework40Version', 'FrameworkDir',
+    'FrameworkDir32', 'FrameworkVersion', 'FrameworkVersion32', 'INCLUDE',
+    'LIB', 'LIBPATH', 'NETFXSDKDir', 'UCRTVersion', 'UniversalCRTSdkDir',
+    'VCIDEInstallDir', 'VCINSTALLDIR', 'VCToolsInstallDir',
+    'VCToolsRedistDir', 'VCToolsVersion', 'VisualStudioVersion',
+    'VS170COMNTOOLS', 'VSCMD_ARG_app_plat', 'VSCMD_ARG_HOST_ARCH',
+    'VSCMD_ARG_TGT_ARCH', 'VSCMD_VER', 'VSINSTALLDIR', 'WindowsLibPath',
+    'WindowsSdkBinPath', 'WindowsSdkDir', 'WindowsSDKLibVersion',
+    'WindowsSdkVerBinPath', 'WindowsSDKVersion'
+  )
+  foreach ($name in $vsEnvironmentNames) {
+    $value = [Environment]::GetEnvironmentVariable($name, 'Process')
+    if ($null -ne $value) {
+      Add-Content -Path $env:GITHUB_ENV -Value "$name=$value"
+    }
+  }
+  foreach ($pathEntry in ($env:PATH -split ';')) {
+    if ($pathEntry) {
+      Add-Content -Path $env:GITHUB_PATH -Value $pathEntry
+    }
+  }
+  Write-Host "[dl4j-bootstrap] visual-studio=$vsInstall cl=$((Get-Command cl.exe).Source)"
+
   $cudaVersion = if ($Shard -match '12-6') { '12.6' } else { '12.9' }
   $installer = Join-Path $env:RUNNER_TEMP 'install_cuda_windows.ps1'
   Invoke-WebRequest 'https://raw.githubusercontent.com/KonduitAI/cuda-install/1bd33888dea7d372de612ec9ecc87343ec8dba4a/.github/actions/install-cuda-windows/install_cuda_windows.ps1' -OutFile $installer -UseBasicParsing

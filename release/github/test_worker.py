@@ -122,6 +122,12 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("cusparse_v2.h", bootstrap)
         self.assertIn("Windows.flatc.binary.zip", bootstrap)
         self.assertIn("DL4J_FLATC_EXECUTABLE", bootstrap)
+        self.assertIn("VC\\Auxiliary\\Build\\vcvars64.bat", bootstrap)
+        self.assertIn("Microsoft.VisualStudio.Component.VC.Tools.x86.x64", bootstrap)
+        self.assertIn("Get-Command cl.exe", bootstrap)
+        self.assertIn("Add-Content -Path $env:GITHUB_PATH", bootstrap)
+        self.assertIn("'INCLUDE'", bootstrap)
+        self.assertIn("'LIB'", bootstrap)
 
     def test_compat_worker_uses_modern_container_python(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
