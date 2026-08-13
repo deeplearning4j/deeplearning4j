@@ -1,249 +1,51 @@
-name: Build and Deploy Linux x86_64 Vulkan
-
-# Build the nd4jvulkan native library and deploy the nd4j-vulkan /
-# nd4j-vulkan-preset Java artifacts for the linux-x86_64 platform.
-#
-# The native build uses chip=vulkan which activates SD_VULKAN=true in CMake
-# via VulkanConfiguration.cmake + BuildVulkan.cmake.  Vulkan headers are
-# auto-downloaded by CMake (Khronos Vulkan-Headers release, dep-cache aware)
-# when vulkan/vulkan.h is absent; only the Vulkan loader (libvulkan.so.1)
-# must be present on the host — no GPU hardware is required to BUILD.
-# mesa-vulkan-drivers additionally provides lavapipe, a CPU-side Vulkan ICD,
-# so downstream smoke tests can create a Vulkan device on hosted runners.
-#
-# See ADR 0110 for the Vulkan backend design.
+name: Build Linux Vulkan classifier
 
 on:
   workflow_dispatch:
     inputs:
-      buildThreads:
-        description: 'Build threads for libnd4j (controls memory usage)'
-        required: true
-        default: 4
-
-      deployToReleaseStaging:
-        description: 'Whether to deploy to release staging or not.'
+      commitId:
+        description: Source commit or ref. Empty uses the triggering commit.
         required: false
-        default: 0
-
-      releaseVersion:
-        description: 'Release version target'
-        required: false
-        default: 1.0.0-M3
-
-      snapshotVersion:
-        description: 'Snapshot version target'
-        required: false
-        default: 1.0.0-SNAPSHOT
-
-      serverId:
-        description: 'Server id to publish to'
-        required: false
-        default: central
-
-      mvnFlags:
-        description: 'Extra maven flags'
-        required: false
-        default: ''
-
-      libnd4jUrl:
-        description: 'Pre-built libnd4j download URL (skips native C++ build)'
-        required: false
-        default: ''
-
+        default: ""
       runsOn:
-        description: 'Runner to use'
+        description: Optional runner label override.
         required: false
-        default: ubuntu-22.04
-
-      debug_enabled:
-        description: 'Enable tmate debugging'
+        default: ""
+      buildThreads:
+        description: Optional native build thread override.
         required: false
-        default: false
-
-      swapSize:
-        description: 'Swap file size in GB'
+        default: ""
+      mvnFlags:
+        description: Additional Maven flags passed to the shared worker.
         required: false
-        default: 12
+        default: ""
+      libnd4jUrl:
+        description: Optional prebuilt libnd4j archive URL.
+        required: false
+        default: ""
+      buildAot:
+        description: Build GraalVM AOT artifacts for the base variant.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
+      aotAllSpins:
+        description: Build AOT artifacts for every selected classifier.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
 
 jobs:
-  linux-x86_64-vulkan:
-    runs-on: ${{ github.event.inputs.runsOn }}
-    timeout-minutes: 180
-    name: linux-x86_64-vulkan (standalone Vulkan chip)
-
-    steps:
-      - uses: AutoModality/action-clean@v1
-
-      - uses: actions/checkout@v4
-
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
-
-      - name: Configure swap space
-        shell: bash
-        run: |
-          if swapon --show | grep -q "/"; then
-            echo "Swap already configured."
-            swapon --show
-          else
-            SWAP_SIZE="${{ github.event.inputs.swapSize }}G"
-            echo "Creating ${SWAP_SIZE} swap file..."
-            sudo fallocate -l ${SWAP_SIZE} /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1G count=${{ github.event.inputs.swapSize }} status=progress
-            sudo chmod 600 /swapfile
-            sudo mkswap /swapfile
-            sudo swapon /swapfile
-          fi
-          sudo sysctl vm.swappiness=80
-          free -h
-
-      - uses: ./.github/actions/set-linux-distro-version
-
-      - name: Set mvn build command
-        shell: bash
-        run: |
-          if [ -n "${{ github.event.inputs.libnd4jUrl }}" ]; then
-            modules=':nd4j-vulkan,:nd4j-vulkan-preset'
-          else
-            modules=':nd4j-vulkan,:nd4j-vulkan-preset,:libnd4j'
-          fi
-          # -Pvulkan adds nd4j-vulkan/-preset to the reactor (nd4j-backend-impls 'vulkan'
-          # profile is -P activated, NOT property activated) — without it `-pl :nd4j-vulkan`
-          # cannot resolve. -Dlibnd4j.vulkan separately activates the libnd4j chip=vulkan profile;
-          # Triton remains the universal DSP/replay gate for every Vulkan build.
-          command=$(DL4J_FAMILY=vulkan DL4J_BUILD_THREADS='${{ github.event.inputs.buildThreads }}' DL4J_MVN_FLAGS='${{ github.event.inputs.mvnFlags }}' DL4J_LIBND4J_URL='${{ github.event.inputs.libnd4jUrl }}' bash build-scripts/release/native-platform.sh --print)
-          echo "COMMAND=${command}" >> $GITHUB_ENV
-          echo "Build command: ${command}"
-
-      - uses: ./.github/actions/update-deps-linux
-
-      - name: Install DWARF headers
-        shell: bash
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y libdw-dev libelf-dev libdwarf-dev
-
-      - name: Install Vulkan loader and software ICD
-        shell: bash
-        run: |
-          sudo apt-get update -qq
-          # libvulkan-dev: loader + dev symlink for find_library(VULKAN_LIBRARY)
-          # mesa-vulkan-drivers: lavapipe CPU ICD (device creation without a GPU)
-          # vulkan-tools: vulkaninfo for diagnostics
-          sudo apt-get install -y libvulkan-dev libvulkan1 mesa-vulkan-drivers vulkan-tools
-          vulkaninfo --summary 2>/dev/null || echo "vulkaninfo unavailable (no ICD active in build stage — fine for building)"
-
-      - name: Setup sccache
-        id: setup-sccache
-        uses: ./.github/actions/setup-sccache-linux
-        with:
-          cache-suffix: linux-x86_64-vulkan
-
-      - uses: ./.github/actions/install-protobuf-linux
-
-      - uses: ./.github/actions/install-cmake-linux
-
-      - name: Set up Java 11 for publishing
-        uses: actions/setup-java@v4
-        with:
-          java-version: 11
-          distribution: 'temurin'
-          server-id: ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
-      - name: Setup libnd4j home if download URL specified
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
-        shell: bash
-        run: |
-          mkdir "${GITHUB_WORKSPACE}/openblas_home"
-          cd "${GITHUB_WORKSPACE}/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-linux-x86_64.jar
-          unzip openblas-0.3.28-1.5.11-linux-x86_64.jar
-          cd ..
-          echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
-
-      - name: Build Vulkan backend (linux-x86_64)
-        shell: bash
-        env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: central
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
-          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
-          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
-          MAVEN_OPTS: -Xmx2g
-          LIBND4J_FILE_NAME: ${{ github.event.inputs.libnd4jUrl }}
-        run: |
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          mvn --version
-          cmake --version
-          protoc --version
-
-          if [ "$PERFORM_RELEASE" == 1 ]; then
-            bash ${GITHUB_WORKSPACE}/release-specified-component.sh \
-              "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "central" "${COMMAND}"
-          else
-            echo "Deploying Vulkan backend to snapshots"
-            BACKOFF=(0 60 180 300 420)
-            for attempt in 1 2 3 4 5; do
-              eval "${COMMAND}" && break
-              DELAY=${BACKOFF[$attempt]:-420}
-              echo "::warning::Deploy attempt $attempt failed. Retrying in ${DELAY}s..."
-              sleep $DELAY
-            done
-          fi
-
-      - name: Verify libnd4jvulkan.so produced
-        if: ${{ github.event.inputs.libnd4jUrl == '' }}
-        shell: bash
-        run: |
-          SO=$(find libnd4j/blasbuild/vulkan -name 'libnd4jvulkan.so' | head -1)
-          if [ -z "$SO" ]; then
-            echo "::error::libnd4jvulkan.so was not produced by the native build"
-            exit 1
-          fi
-          ls -la "$SO"
-          # The chip library must link the Vulkan loader
-          if ! ldd "$SO" | grep -q 'libvulkan'; then
-            echo "::error::libnd4jvulkan.so does not link libvulkan"
-            exit 1
-          fi
-          ldd "$SO" | grep 'libvulkan'
-
-      - name: Show sccache stats
-        if: always()
-        shell: bash
-        run: |
-          sccache --show-stats || true
-          sccache --stop-server || true
-
-      - name: Upload Vulkan build logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: vulkan-build-logs-linux-x86_64
-          path: |
-            libnd4j/blasbuild/vulkan/**/*.log
-          retention-days: 7
-
-      - name: Cleanup swap
-        if: always()
-        shell: bash
-        run: |
-          sudo swapoff /swapfile 2>/dev/null || true
-          sudo rm -f /swapfile 2>/dev/null || true
+  release:
+    uses: ./.github/workflows/_release-worker.yml
+    with:
+      workflow: build-deploy-linux-vulkan.yml
+      sourceRef: ${{ inputs.commitId || github.sha }}
+      runnerOverride: ${{ inputs.runsOn }}
+      buildThreads: ${{ inputs.buildThreads }}
+      mvnFlags: ${{ inputs.mvnFlags }}
+      libnd4jUrl: ${{ inputs.libnd4jUrl }}
+      buildAot: ${{ inputs.buildAot }}
+      aotAllSpins: ${{ inputs.aotAllSpins }}
+    secrets: inherit

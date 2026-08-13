@@ -36,7 +36,9 @@
           {"name": "onednn", "helper": "onednn", "suffix": "-onednn"},
           {"name": "onednn-avx2", "helper": "onednn", "extension": "avx2", "suffix": "-onednn-avx2"},
           {"name": "onednn-avx512", "helper": "onednn", "extension": "avx512", "suffix": "-onednn-avx512"},
-          {"name": "compile", "suffix": "-compile", "mlir": true}
+          {"name": "compile", "suffix": "-compile", "mlir": true},
+          {"name": "compile-avx2", "extension": "avx2", "suffix": "-compile-avx2", "mlir": true},
+          {"name": "compile-avx512", "extension": "avx512", "suffix": "-compile-avx512", "mlir": true}
         ],
         "buildAot": true, "buildThreads": 48, "mavenHeapGiB": 32
       }

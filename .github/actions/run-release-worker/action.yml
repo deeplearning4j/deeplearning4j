@@ -1,0 +1,150 @@
+name: Run DL4J release worker
+description: Bootstrap a release lane and execute one canonical shard variant.
+
+inputs:
+  shard:
+    required: true
+    description: Canonical release-plan shard id.
+  variant:
+    required: true
+    description: Canonical release-plan variant name.
+  build-threads:
+    required: false
+    default: ""
+  maven-flags:
+    required: false
+    default: ""
+  libnd4j-url:
+    required: false
+    default: ""
+  build-aot:
+    required: false
+    default: "0"
+  aot-all-spins:
+    required: false
+    default: "0"
+  azure-cache-connection-string:
+    required: false
+    default: ""
+
+outputs:
+  artifact-root:
+    description: Directory containing the staged Maven repository, SDK assets, and receipts.
+    value: ${{ steps.worker.outputs.artifact-root }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Java 11
+      if: inputs.build-aot != '1'
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: "11"
+
+    - name: Set up GraalVM for AOT
+      if: inputs.build-aot == '1'
+      uses: graalvm/setup-graalvm@v1
+      with:
+        java-version: "17"
+        distribution: graalvm
+        github-token: ${{ github.token }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Set up MSYS2
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        path-type: inherit
+        install: >-
+          base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive
+          automake patch mingw-w64-x86_64-make mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-ragel
+
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Bootstrap Unix worker
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        ndk=""
+        case "${{ inputs.shard }}" in
+          android-arm64|android-arm64-vulkan) ndk=r27d ;;
+          android-x86_64) ndk=r26d ;;
+        esac
+        bash release/github/bootstrap-worker.sh "${{ inputs.shard }}" "$ndk"
+
+    - name: Bootstrap Windows worker
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: ./release/github/bootstrap-worker.ps1 -Shard '${{ inputs.shard }}'
+
+    - name: Set up GitHub sccache fallback on Linux
+      if: runner.os == 'Linux'
+      continue-on-error: true
+      uses: ./.github/actions/setup-sccache-linux
+      with:
+        cache-suffix: ${{ inputs.shard }}-${{ inputs.variant }}
+
+    - name: Set up GitHub sccache fallback on Windows
+      if: runner.os == 'Windows'
+      continue-on-error: true
+      uses: ./.github/actions/setup-sccache-windows
+      with:
+        cache-suffix: ${{ inputs.shard }}-${{ inputs.variant }}
+
+    - name: Set up GitHub sccache fallback on macOS
+      if: runner.os == 'macOS'
+      continue-on-error: true
+      uses: ./.github/actions/setup-sccache-macos
+      with:
+        cache-suffix: ${{ inputs.shard }}-${{ inputs.variant }}
+
+    - name: Execute shared release worker
+      id: worker
+      shell: bash
+      env:
+        INPUT_SHARD: ${{ inputs.shard }}
+        INPUT_VARIANT: ${{ inputs.variant }}
+        INPUT_BUILD_THREADS: ${{ inputs.build-threads }}
+        INPUT_MAVEN_FLAGS: ${{ inputs.maven-flags }}
+        INPUT_LIBND4J_URL: ${{ inputs.libnd4j-url }}
+        INPUT_BUILD_AOT: ${{ inputs.build-aot }}
+        INPUT_AOT_ALL_SPINS: ${{ inputs.aot-all-spins }}
+        SCCACHE_AZURE_CONNECTION_STRING: ${{ inputs.azure-cache-connection-string }}
+      run: |
+        set -Eeuo pipefail
+        artifact_root="${GITHUB_WORKSPACE}/.release-worker/${INPUT_SHARD}/${INPUT_VARIANT}"
+        config="${artifact_root}/worker-config.json"
+        printf 'artifact-root=%s\n' "${artifact_root}" >>"${GITHUB_OUTPUT}"
+        args=(
+          --source "${GITHUB_WORKSPACE}"
+          --output "${config}"
+          --shard "${INPUT_SHARD}"
+          --variant "${INPUT_VARIANT}"
+          --build-threads "${INPUT_BUILD_THREADS}"
+          --maven-flags "${INPUT_MAVEN_FLAGS}"
+          --libnd4j-url "${INPUT_LIBND4J_URL}"
+          --run-id "github-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          --commit "${GITHUB_SHA}"
+        )
+        [ "${INPUT_BUILD_AOT}" != 1 ] || args+=(--build-aot)
+        [ "${INPUT_AOT_ALL_SPINS}" != 1 ] || args+=(--aot-all-spins)
+        [ -z "${SCCACHE_AZURE_CONNECTION_STRING}" ] || args+=(--azure-cache)
+        python release/github/prepare-worker.py config "${args[@]}"
+
+        export DL4J_SCCACHE_DIR="${RUNNER_TEMP}/dl4j-sccache/${INPUT_SHARD}/${INPUT_VARIANT}"
+        python release/aws/build-platform.py \
+          --config "${config}" \
+          --source "${GITHUB_WORKSPACE}" \
+          --repository "${artifact_root}/m2" \
+          --maven-output "${artifact_root}/maven-repository" \
+          --sdk-output "${artifact_root}/sdk-assets"

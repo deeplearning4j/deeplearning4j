@@ -74,7 +74,10 @@ class ReleasePlanTests(unittest.TestCase):
         self.assertEqual(len(self.gcp["shards"]), len(executions))
         cpu = next(item for item in executions if item["id"] == "linux-x86_64-cpu")
         self.assertEqual(
-            ["base", "avx2", "avx512", "onednn", "onednn-avx2", "onednn-avx512", "compile"],
+            [
+                "base", "avx2", "avx512", "onednn", "onednn-avx2",
+                "onednn-avx512", "compile", "compile-avx2", "compile-avx512",
+            ],
             [item["name"] for item in cpu["build"]["variants"]],
         )
 
@@ -88,7 +91,10 @@ class ReleasePlanTests(unittest.TestCase):
         selected = release.selected_executions(self.gcp, exclusions=["linux-x86_64-cpu--base"])
         cpu = next(item for item in selected if item["id"] == "linux-x86_64-cpu")
         self.assertEqual(
-            ["avx2", "avx512", "onednn", "onednn-avx2", "onednn-avx512", "compile"],
+            [
+                "avx2", "avx512", "onednn", "onednn-avx2", "onednn-avx512",
+                "compile", "compile-avx2", "compile-avx512",
+            ],
             [item["name"] for item in cpu["build"]["variants"]],
         )
         self.assertEqual(len(self.gcp["shards"]), len(selected))
@@ -295,8 +301,10 @@ class WorkerTests(unittest.TestCase):
         self.assertIn("KILL_SWITCH_BUCKET", rendered)
         self.assertIn("cloud-logging", rendered)
         self.assertIn('SCCACHE_ROOT=${WORK_ROOT}/sccache', rendered)
-        self.assertIn('${SCCACHE_ROOT}:/sccache', rendered)
-        self.assertIn('${SCCACHE_ROOT}:/github/sccache', rendered)
+        self.assertIn('DL4J_SCCACHE_DIR=/dl4j-sccache-root/cache', rendered)
+        self.assertIn('${SCCACHE_ROOT}:/dl4j-sccache-root', rendered)
+        self.assertIn('DL4J_SCCACHE_DIR=/github/sccache-root/cache', rendered)
+        self.assertIn('${SCCACHE_ROOT}:/github/sccache-root', rendered)
 
     def test_windows_worker_has_mid_build_kill_polling(self):
         text = (ROOT / "release/gcp/worker.ps1").read_text(encoding="utf-8")

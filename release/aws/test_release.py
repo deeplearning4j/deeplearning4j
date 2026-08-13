@@ -335,7 +335,7 @@ class ReleaseValidationTest(unittest.TestCase):
         lanes = release.execution_shards(plan)
         self.assertEqual(len(plan["shards"]), len(lanes))
         linux = next(item for item in lanes if item["id"] == "linux-x86_64-cpu")
-        self.assertEqual(7, len(linux["build"]["variants"]))
+        self.assertEqual(9, len(linux["build"]["variants"]))
         self.assertNotIn("--base", linux["id"])
 
     def test_windows_shards_omit_unsupported_managed_llvm_variants(self):
@@ -464,14 +464,76 @@ class ReleaseValidationTest(unittest.TestCase):
                 )
         self.assertEqual("s3-bucket", settings["s3"]["bucket"])
 
-    def test_shared_driver_prefetches_and_publishes_one_l0_working_set(self):
+    def test_shared_driver_reads_azure_sccache_secret_from_environment(self):
         with tempfile.TemporaryDirectory() as temp:
             source = Path(temp) / "source"
             source.mkdir()
             environment = {
                 "PATH": "/existing/bin",
+                "GITHUB_AZURE_CACHE_SECRET": "BlobEndpoint=https://account/;token",
+            }
+            remote = {
+                "backend": "azure",
+                "container": "releases",
+                "keyPrefix": "cache/v1",
+                "connectionStringEnv": "GITHUB_AZURE_CACHE_SECRET",
+            }
+            with patch.object(
+                build_platform, "ensure_cached_sccache", return_value="/tools/sccache"
+            ), patch.object(build_platform, "run"):
+                build_platform.configure_compiler_cache(
+                    {"compilerCache": remote}, source, environment
+                )
+            self.assertEqual(
+                "BlobEndpoint=https://account/;token",
+                environment["SCCACHE_AZURE_CONNECTION_STRING"],
+            )
+            self.assertNotIn("connectionString", remote)
+
+    def test_shared_driver_restores_prebuilt_libnd4j_archive(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source"
+            source.mkdir()
+            archive = root / "libnd4j.zip"
+            with zipfile.ZipFile(archive, "w") as bundle:
+                bundle.writestr("payload/libnd4j/blasbuild/cpu/libnd4jcpu.so", b"native")
+                bundle.writestr("payload/libnd4j/blasbuild/cpu/blas/libopenblas.so", b"blas")
+            openblas = root / "openblas"
+            environment = {"OPENBLAS_PATH": str(openblas)}
+
+            def copy_archive(_url, destination, _description):
+                destination.write_bytes(archive.read_bytes())
+
+            with patch.object(build_platform, "download_with_retry", side_effect=copy_archive):
+                url = build_platform.prepare_prebuilt_libnd4j(
+                    source,
+                    {"backend": "cpu", "libnd4jUrl": "https://example.invalid/libnd4j.zip"},
+                    environment,
+                )
+
+            self.assertEqual("https://example.invalid/libnd4j.zip", url)
+            self.assertEqual(
+                b"native",
+                (source / "libnd4j/blasbuild/cpu/libnd4jcpu.so").read_bytes(),
+            )
+            self.assertIn(
+                "DEFAULT_ENGINE samediff::ENGINE_CPU",
+                (source / "libnd4j/include/config.h").read_text(),
+            )
+            self.assertTrue((source / "libnd4j/include/generated/include_ops.h").is_file())
+            self.assertEqual(b"blas", (openblas / "lib/libopenblas.so").read_bytes())
+
+    def test_shared_driver_prefetches_and_publishes_one_l0_working_set(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "source"
+            source.mkdir()
+            cache_dir = Path(temp) / "mounted-sccache" / "cache"
+            environment = {
+                "PATH": "/existing/bin",
                 "DL4J_CLOUD_IO": "/cloud-io.py",
                 "DL4J_DEPENDENCY_CACHE_HELPER": "/dependency-cache.py",
+                "DL4J_SCCACHE_DIR": str(cache_dir),
             }
             config = {
                 "commit": "commit-a",
@@ -506,11 +568,11 @@ class ReleaseValidationTest(unittest.TestCase):
                 environment,
                 name="sccache-l0",
                 identity=identity,
-                destination=source.parent / "sccache",
+                destination=cache_dir,
             )
             self.assertEqual("false", environment["DL4J_SCCACHE_SNAPSHOT_RESTORED"])
 
-            cache_file = source.parent / "sccache" / "object"
+            cache_file = cache_dir / "object"
             cache_file.write_bytes(b"cached-object")
             with patch.object(build_platform, "publish_toolchain_dependency") as publish:
                 metrics = build_platform.publish_compiler_cache_snapshot(
@@ -521,7 +583,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 environment,
                 name="sccache-l0",
                 identity=identity,
-                source=source.parent / "sccache",
+                source=cache_dir,
             )
             self.assertEqual("published", metrics["publishStatus"])
             self.assertGreaterEqual(metrics["expandedBytes"], len(b"cached-object"))
@@ -911,18 +973,14 @@ class ReleaseValidationTest(unittest.TestCase):
     def test_every_covered_workflow_uses_a_shared_release_executor(self):
         repository_root = Path(__file__).resolve().parents[2]
         plan = json.loads((Path(__file__).with_name("release-plan.json")).read_text(encoding="utf-8"))
-        shared = (
-            "build-scripts/release/linux-x86_64.sh",
-            "build-scripts/release/cross-platform.sh",
-            "build-scripts/release/native-platform.sh",
-        )
+        shared = ".github/workflows/_release-worker.yml"
         missing = []
         for relative_path in plan["coveredWorkflows"]:
             workflow_path = Path(relative_path)
             if workflow_path.parent == Path("."):
                 workflow_path = Path(".github/workflows") / workflow_path
             workflow = (repository_root / workflow_path).read_text(encoding="utf-8")
-            if not any(script in workflow for script in shared):
+            if shared not in workflow:
                 missing.append(relative_path)
         self.assertEqual([], missing)
 
@@ -1448,24 +1506,33 @@ class ReleaseValidationTest(unittest.TestCase):
                 'set(MIOPEN_INCLUDE_DIR "")'):
             self.assertNotIn(poisoned_lookup, configuration)
 
-    def test_linux_zluda_workflow_installs_only_build_time_rocm_components(self):
+    def test_linux_zluda_worker_installs_only_build_time_rocm_components(self):
         root = Path(__file__).parents[2]
-        workflow = (
-            root / ".github/workflows/build-deploy-linux-zluda.yml"
-        ).read_text(encoding="utf-8")
-        self.assertIn("ROCM_VERSION=7.2.4", workflow)
-        self.assertIn(
-            "lld rocm-hip-runtime-dev rocblas-dev hipblaslt-dev rocsparse-dev",
-            workflow,
+        plan = json.loads(
+            (root / "release/aws/release-plan.json").read_text(encoding="utf-8")
         )
-        self.assertIn("rocm-smi-lib miopen-hip-dev", workflow)
-        self.assertNotIn("ZLUDA_PATH", workflow)
-        self.assertIn("test -x /usr/bin/ld.lld", workflow)
-        self.assertIn("DL4J_ZLUDA_REQUIRE_ROCM=1", workflow)
-        self.assertIn("DL4J_ZLUDA_REQUIRE_MIOPEN=1", workflow)
-        self.assertIn("hardwareProbe=skipped", workflow)
-        self.assertNotIn("amdgpu-dkms", workflow)
-        self.assertNotIn("rocminfo", workflow)
+        build = next(
+            shard["build"] for shard in plan["shards"]
+            if shard["id"] == "linux-x86_64-zluda"
+        )
+        driver = (root / "release/aws/build-platform.py").read_text(encoding="utf-8")
+        self.assertEqual("7.2.4", build["rocmVersion"])
+        self.assertTrue(build["rocmBuildOnly"])
+        self.assertEqual(
+            ["hip", "rocblas", "hipblaslt", "rocsparse", "rocm-smi", "miopen"],
+            build["rocmBuildComponents"],
+        )
+        for package in (
+            "lld", "patchelf", "rocm-hip-runtime-dev", "rocblas-dev",
+            "hipblaslt-dev", "rocsparse-dev", "rocm-smi-lib", "miopen-hip-dev",
+        ):
+            self.assertIn(package, driver)
+        self.assertNotIn("ZLUDA_PATH", driver)
+        self.assertIn('env["DL4J_ZLUDA_REQUIRE_ROCM"] = "1"', driver)
+        self.assertIn('env["DL4J_ZLUDA_REQUIRE_MIOPEN"] = "1"', driver)
+        self.assertIn("hardwareProbe=skipped", driver)
+        self.assertNotIn("amdgpu-dkms", driver)
+        self.assertNotIn("rocminfo", driver)
 
     def test_linux_zluda_uses_large_code_model_for_multi_gibibyte_library(self):
         root = Path(__file__).parents[2]
@@ -2698,14 +2765,17 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual("deploy", command[-2])
         self.assertEqual("-DskipTests", command[-1])
 
-    def test_github_and_aws_reference_the_same_release_scripts(self):
+    def test_github_and_clouds_reference_the_same_release_worker(self):
         root = Path(__file__).parents[2]
         linux_workflow = (root / ".github/workflows/build-deploy-linux-x86_64.yml").read_text(encoding="utf-8")
         cross_workflow = (root / ".github/workflows/build-deploy-cross-platform.yml").read_text(encoding="utf-8")
+        reusable = (root / ".github/workflows/_release-worker.yml").read_text(encoding="utf-8")
+        action = (root / ".github/actions/run-release-worker/action.yml").read_text(encoding="utf-8")
         driver = (root / "release/aws/build-platform.py").read_text(encoding="utf-8")
-        self.assertIn("build-scripts/release/linux-x86_64.sh --print", linux_workflow)
-        self.assertIn("build-scripts/release/cross-platform.sh --print-tokenizers", cross_workflow)
-        self.assertIn("build-scripts/release/cross-platform.sh --print-java", cross_workflow)
+        self.assertIn(".github/workflows/_release-worker.yml", linux_workflow)
+        self.assertIn(".github/workflows/_release-worker.yml", cross_workflow)
+        self.assertIn("release/github/prepare-worker.py matrix", reusable)
+        self.assertIn("release/aws/build-platform.py", action)
         self.assertIn('script_name = "linux-x86_64.sh"', driver)
         self.assertIn('source / "build-scripts/release/cross-platform.sh"', driver)
         self.assertIn('else "native-platform.sh"', driver)
@@ -2757,8 +2827,10 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertLess(linux.index("export HOME="), linux.index("CONFIG_B64="))
         self.assertLess(linux.index("export CARGO_HOME="), linux.index("rust-toolchain started"))
         self.assertIn('SCCACHE_ROOT=${WORK_ROOT}/sccache', linux)
-        self.assertIn('${SCCACHE_ROOT}:/sccache', linux)
-        self.assertIn('${SCCACHE_ROOT}:/github/sccache', linux)
+        self.assertIn('DL4J_SCCACHE_DIR=/dl4j-sccache-root/cache', linux)
+        self.assertIn('${SCCACHE_ROOT}:/dl4j-sccache-root', linux)
+        self.assertIn('DL4J_SCCACHE_DIR=/github/sccache-root/cache', linux)
+        self.assertIn('${SCCACHE_ROOT}:/github/sccache-root', linux)
         self.assertNotIn('${HOME}/.cargo', linux)
         self.assertLess(windows.index("$env:CARGO_HOME ="), windows.index("rustup toolchain install"))
         self.assertNotIn("$env:USERPROFILE", windows)

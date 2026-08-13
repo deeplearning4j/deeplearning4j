@@ -1,359 +1,51 @@
+name: Build Linux CUDA 12.9 classifiers
+
 on:
   workflow_dispatch:
     inputs:
-      buildThreads:
-        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
-        required: true
-        default: 4
-
-      deployToReleaseStaging:
-        description: 'Whether to deploy to release staging or not.'
+      commitId:
+        description: Source commit or ref. Empty uses the triggering commit.
         required: false
-        default: 0
-
-      releaseVersion:
-        description: 'Release version target'
-        required: false
-        default: 1.0.0-M3
-
-      snapshotVersion:
-        description: 'Snapshot version target'
-        required: false
-        default: 1.0.0-SNAPSHOT
-
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default:
-
-      serverId:
-        description: 'Server id to publish to'
-        required: false
-        default: central
-
-
-      mvnFlags:
-        description: "Extra maven flags (must escape input yourself if used)"
-        required: false
-        default:
-
-      libnd4jUrl:
-        description: 'Whether to download libnd4j using  https://github.com/KonduitAI/gh-actions-libnd4j-urls/ for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
-        required: false
-        default:
-
-
+        default: ""
       runsOn:
-        description: 'System to run on'
+        description: Optional runner label override.
         required: false
-        default: ubuntu-22.04
+        default: ""
+      buildThreads:
+        description: Optional native build thread override.
+        required: false
+        default: ""
+      mvnFlags:
+        description: Additional Maven flags passed to the shared worker.
+        required: false
+        default: ""
+      libnd4jUrl:
+        description: Optional prebuilt libnd4j archive URL.
+        required: false
+        default: ""
+      buildAot:
+        description: Build GraalVM AOT artifacts for the base variant.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
+      aotAllSpins:
+        description: Build AOT artifacts for every selected classifier.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
 
-      debug_enabled:
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
-        required: false
-        default: false
 jobs:
-  linux-x86_64-cuda-12-9:
-    strategy:
-      fail-fast: false
-      matrix:
-        helper: [ cudnn, compile, "" ]
-        extension: [ ""  ]
-        include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags || '' }}
-            experimental: true
-            name: Extra maven flags
-          - debug_enabled:  ${{ github.event.inputs.debug_enabled || 'false' }}
-            experimental: true
-            name: Debug enabled
-
-          - runs_on: ${{ github.event.inputs.runsOn || 'ubuntu-22.04' }}
-            experimental: true
-            name: OS to run on
-
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl || '' }}
-            experimental: true
-            name: OS to run on
-
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging || '0' }}
-            experimental: true
-            name: Whether to deploy to release staging or not
-
-          - release_version: ${{ github.event.inputs.releaseVersion || '1.0.0-M3' }}
-            experimental: true
-            name: Release version
-
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion || '1.0.0-SNAPSHOT' }}
-            experimental: true
-            name: Snapshot version
-
-          - server_id: ${{ github.event.inputs.serverId || 'central' }}
-            experimental: true
-            name: Server id
-
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId || '' }}
-            experimental: true
-            name: The release repository to run on
-
-          - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
-            experimental: true
-            name: Extra maven flags to use as part of the build
-
-          - build_threads: ${{ github.event.inputs.buildThreads || '2' }}
-            experimental: true
-            name: The number of threads to build libnd4j with
-
-    runs-on: ${{ matrix.runs_on }}
-    timeout-minutes: 720
-    env:
-      CUDA_PATH: /usr/local/cuda-12.9
-      CUDNN_ROOT_DIR: /usr/local/cuda-12.9
-    steps:
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
-
-      - uses: actions/checkout@v2
-
-      - name: Setup sccache (distributed per-object cache)
-        id: setup-sccache
-        uses: ./.github/actions/setup-sccache-linux
-        with:
-          cache-suffix: cuda
-
-      - name: Show sccache stats before build
-        if: always()
-        continue-on-error: true
-        shell: bash
-        run: |
-          echo "=== sccache stats before build ==="
-          sccache --show-stats || true
-
-      - name: Set mvn build command based on matrix
-        shell: bash
-        run: |
-          if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-               modules=':nd4j-cuda-12.9,:nd4j-cuda-12.9-preset'
-          elif [ "${{ matrix.helper }}" == '' ]; then
-             echo "Building libnd4j from source"
-             modules=':nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:libnd4j,:nd4j-cuda-12.9-platform'
-          else
-               echo "Building libnd4j from source"
-               modules=':nd4j-cuda-12.9,:nd4j-cuda-12.9-preset,:libnd4j'
-          fi
-          # Determine helper/extension flags first so they apply to both phases.
-          libnd4j_download_file_url=""
-          if [ "${{ matrix.helper }}" == 'compile' ]; then
-             mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=linux-x86_64-cuda-12.9-compile"
-             libnd4j_download_file_url="linux-cuda-12.9-compile"
-          elif [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-             mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-12.9-${{ matrix.helper }}-${{matrix.extension}}"
-             libnd4j_download_file_url="linux-cuda-12.9-${{ matrix.extension }}-${{ matrix.helper }}"
-          elif [ "${{ matrix.helper }}" != '' ]; then
-             mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-cuda-12.9-${{ matrix.helper }}"
-             libnd4j_download_file_url="linux-cuda-12.9-${{ matrix.extension }}-${{ matrix.helper }}"
-          else
-             mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-12.9"
-             libnd4j_download_file_url="linux-cuda-12.9-${{ matrix.extension }}-${{ matrix.helper }}"
-          fi
-          command=$(DL4J_FAMILY=linux-cuda DL4J_CUDA_VERSION=12.9 DL4J_BUILD_THREADS='${{ matrix.build_threads }}' DL4J_HELPER='${{ matrix.helper }}' DL4J_EXTENSION='${{ matrix.extension }}' DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}' DL4J_LIBND4J_URL='${{ matrix.libnd4j_file_download }}' bash build-scripts/release/native-platform.sh --print)
-          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-          echo "COMMAND=${command}" >> $GITHUB_ENV
-      - uses: ./.github/actions/install-protobuf-linux
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v4
-        with:
-          java-version: 11
-          distribution: 'temurin'
-          server-id:  ${{ github.event.inputs.serverId || 'central' }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
-      - name: Install DWARF headers for stack trace support
-        shell: bash
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y libdw-dev libelf-dev libdwarf-dev
-
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
-        env:
-          cuda: 12.9.0
-          GCC:  11
-
-      # Set up CUDA environment paths
-      - name: Setup CUDA PATH
-        run: |
-          echo "PATH=/usr/local/cuda-12.9/bin:$PATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-
-      # Debug CUDA installation
-      - name: Debug CUDA Installation
-        run: |
-          echo "Debugging CUDA installation"
-          echo "Current PATH: $PATH"
-          echo "Current LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
-          echo "Contents of /usr/local/cuda-12.9:"
-          ls -la /usr/local/cuda-12.9
-          echo "Contents of /usr/local/cuda-12.9/bin:"
-          ls -la /usr/local/cuda-12.9/bin
-          echo "Finding nvcc:"
-          find /usr/local -name nvcc 2>/dev/null
-          echo "CUDA installation info:"
-          if [ -f /usr/local/cuda-12.9/bin/nvcc ]; then
-            /usr/local/cuda-12.9/bin/nvcc --version
-          else
-            echo "nvcc not found in expected location"
-            # Try to find in alternative locations
-            find /usr -name nvcc 2>/dev/null
-          fi
-          # Check symlinks
-          echo "Checking CUDA symlinks:"
-          ls -la /usr/local/cuda*
-          # Create symlink if needed
-          if [ ! -f /usr/local/cuda-12.9/bin/nvcc ]; then
-            echo "Attempting to fix nvcc location"
-            # Check if nvcc exists in alternative location
-            nvcc_path=$(find /usr -name nvcc 2>/dev/null | head -1)
-            if [ -n "$nvcc_path" ]; then
-              echo "Found nvcc at $nvcc_path"
-              sudo mkdir -p /usr/local/cuda-12.9/bin
-              sudo ln -sf $nvcc_path /usr/local/cuda-12.9/bin/nvcc
-              echo "Created symlink to nvcc"
-              ls -la /usr/local/cuda-12.9/bin/nvcc
-            fi
-          fi
-
-      # Verify the CUDA installation and PATH setup
-      - name: Verify CUDA Setup
-        run: |
-          echo "Verifying CUDA installation and PATH setup"
-          echo $PATH
-          ls -la /usr/local/cuda-12.9/bin
-          which nvcc || echo "nvcc not found in PATH"
-          nvcc --version || echo "nvcc command failed"
-          # If still failing, try direct path
-          if ! which nvcc; then
-            echo "Trying direct path to nvcc"
-            /usr/local/cuda-12.9/bin/nvcc --version || echo "Direct nvcc command failed"
-          fi
-
-      - name: Run cuda compilation on linux-x86_64
-        shell: bash
-        env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: central
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-          RELEASE_VERSION: ${{ matrix.release_version }}
-          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          MODULES: ${{ matrix.mvn_flags }}
-          LIBND4J_HOME_SUFFIX: cuda
-          MAVEN_OPTS: -Xmx2g
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
-          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
-        run: |
-          echo "libnd4j build threads ${{ matrix.build_threads }}"
-          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
-          echo "release version ${{ matrix.release_version }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "debug enabled ${{ matrix.debug_enabled }}"
-          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
-          echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "server id ${{ matrix.server_id }}"
-          echo "release repo id ${{ matrix.release_repo_id }}"
-
-          # Explicitly set PATH and other environment variables for this step
-          export PATH=/usr/local/cuda-12.9/bin:/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          export LD_LIBRARY_PATH=/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH
-          export C_INCLUDE_PATH="/usr/include/libdwarf:${C_INCLUDE_PATH:-}"
-          export CPLUS_INCLUDE_PATH="/usr/include/libdwarf:${CPLUS_INCLUDE_PATH:-}"
-          
-          # Final check for nvcc before proceeding
-          echo "Final check for nvcc:"
-          which nvcc || echo "nvcc still not found in PATH"
-          if ! which nvcc; then
-            echo "WARNING: nvcc not in PATH, trying to diagnose and fix..."
-            direct_nvcc=$(find /usr -name nvcc 2>/dev/null | head -1)
-            if [ -n "$direct_nvcc" ]; then
-              echo "Found nvcc at $direct_nvcc"
-              sudo ln -sf $direct_nvcc /usr/bin/nvcc
-              echo "Created global symlink to nvcc"
-              which nvcc
-            else
-              echo "ERROR: Could not find nvcc anywhere. Build may fail!"
-            fi
-          fi
-          
-          # Test that nvcc is properly in the PATH
-          echo "Checking nvcc availability:"
-          which nvcc
-          nvcc --version
-          
-          mvn --version
-          cmake --version
-          protoc --version
-          sudo apt-get autoremove
-          sudo apt-get clean
-          bash ./change-cuda-versions.sh 12.9
-          
-          # Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
-          # See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
-          if [ "$PERFORM_RELEASE" == 1 ]; then
-                    echo "Performing release"
-                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
-                   else
-                       echo "Running build and deploying to snapshots"
-                       BACKOFF=(0 60 180 300 420)
-                       for attempt in 1 2 3 4 5; do
-                         eval "${COMMAND}" && break
-                         DELAY=${BACKOFF[$attempt]:-420}
-                         echo "::warning::Deploy attempt $attempt failed (exit $?). Retrying in ${DELAY}s..."
-                         sleep $DELAY
-                       done
-          fi
-
-      - name: Show sccache stats after build
-        if: always()
-        continue-on-error: true
-        shell: bash
-        run: |
-          echo "=== sccache stats after build ==="
-          sccache --show-stats || true
-          # Stop the sccache server to flush any pending writes
-          sccache --stop-server || true
-
-      - name: Publish SDX runtime SDK artifacts
-        if: matrix.deploy_to_release_staging == '1'
-        uses: ./.github/actions/publish-sdx-runtime-sdk
-        with:
-          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
-          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
-          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
-
-      - name: Publish SDK JAR artifacts
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/publish-sdk-jars
-        with:
-          artifact-name: sdk-jars-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
-          backend: cuda
-          platform: linux-x86_64
-          cuda-version: "12.9"
-          platform-extension: ${{ matrix.helper != '' && format('-{0}', matrix.helper) || '' }}
-          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
+  release:
+    uses: ./.github/workflows/_release-worker.yml
+    with:
+      workflow: build-deploy-linux-cuda-12.9.yml
+      sourceRef: ${{ inputs.commitId || github.sha }}
+      runnerOverride: ${{ inputs.runsOn }}
+      buildThreads: ${{ inputs.buildThreads }}
+      mvnFlags: ${{ inputs.mvnFlags }}
+      libnd4jUrl: ${{ inputs.libnd4jUrl }}
+      buildAot: ${{ inputs.buildAot }}
+      aotAllSpins: ${{ inputs.aotAllSpins }}
+    secrets: inherit

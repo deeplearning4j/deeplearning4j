@@ -1,302 +1,51 @@
-name: Build & Deploy Cross-Platform (Java modules)
+name: Build cross-platform Java modules
 
 on:
   workflow_dispatch:
     inputs:
-      deployToReleaseStaging:
-        description: 'Whether to deploy to release staging or not.'
+      commitId:
+        description: Source commit or ref. Empty uses the triggering commit.
         required: false
-        default: 0
-
-      releaseVersion:
-        description: 'Release version target'
-        required: false
-        default: 1.0.0-M3
-
-      snapshotVersion:
-        description: 'Snapshot version target'
-        required: false
-        default: 1.0.0-SNAPSHOT
-
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default: ''
-
-      serverId:
-        description: 'Server id to publish to'
-        required: false
-        default: central
-
+        default: ""
       runsOn:
-        description: 'Override runner for all jobs (leave empty for matrix defaults)'
+        description: Optional runner label override.
         required: false
-        default: ''
-
-      debug_enabled:
-        description: 'Run the build with tmate debugging enabled'
+        default: ""
+      buildThreads:
+        description: Optional native build thread override.
         required: false
-        default: false
+        default: ""
+      mvnFlags:
+        description: Additional Maven flags passed to the shared worker.
+        required: false
+        default: ""
+      libnd4jUrl:
+        description: Optional prebuilt libnd4j archive URL.
+        required: false
+        default: ""
+      buildAot:
+        description: Build GraalVM AOT artifacts for the base variant.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
+      aotAllSpins:
+        description: Build AOT artifacts for every selected classifier.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
 
 jobs:
-  cross-platform:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: linux-x86_64
-            os: linux
-            runner: ubuntu-22.04
-
-          - platform: linux-arm64
-            os: linux
-            runner: ubuntu-22.04-arm
-
-          - platform: macosx-arm64
-            os: macos
-            runner: macos-14
-
-          - platform: windows-x86_64
-            os: windows
-            runner: windows-2022
-
-    runs-on: ${{ github.event.inputs.runsOn || matrix.runner }}
-    timeout-minutes: 180
-    name: ${{ matrix.platform }}
-
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-
-      - uses: actions/checkout@v4
-
-      # ── Disk / swap (Linux only) ──
-      - name: Free Disk Space (Linux)
-        if: matrix.os == 'linux'
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
-
-      - name: Configure swap (Linux)
-        if: matrix.os == 'linux'
-        shell: bash
-        run: |
-          sudo fallocate -l 8G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1G count=8 status=progress
-          sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
-          sudo sysctl vm.swappiness=60
-          sudo sysctl vm.overcommit_memory=2
-          sudo sysctl vm.overcommit_ratio=80
-          free -h
-
-      # ── Linux build deps ──
-      - uses: ./.github/actions/set-linux-distro-version
-        if: matrix.os == 'linux'
-
-      - uses: ./.github/actions/update-deps-linux
-        if: matrix.os == 'linux'
-
-      - uses: ./.github/actions/install-protobuf-linux
-        if: matrix.os == 'linux'
-
-      - uses: ./.github/actions/install-cmake-linux
-        if: matrix.os == 'linux' && matrix.platform == 'linux-x86_64'
-
-      - name: Install cmake (Linux ARM64)
-        if: matrix.os == 'linux' && matrix.platform == 'linux-arm64'
-        shell: bash
-        run: sudo apt-get install -y cmake
-
-      - name: Install protoc 3.21.7 (ARM64)
-        if: matrix.platform == 'linux-arm64' || matrix.platform == 'macosx-arm64'
-        shell: bash
-        run: |
-          PROTOC_VERSION=21.7
-          if [ "${{ matrix.os }}" == "linux" ]; then
-            PROTOC_ZIP=protoc-${PROTOC_VERSION}-linux-aarch_64.zip
-          else
-            PROTOC_ZIP=protoc-${PROTOC_VERSION}-osx-aarch_64.zip
-          fi
-          curl -fsSL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}" -o /tmp/protoc.zip
-          sudo unzip -o /tmp/protoc.zip -d /usr/local bin/protoc
-          sudo chmod +x /usr/local/bin/protoc
-          protoc --version
-
-      # ── macOS build deps ──
-      # NOTE: Do NOT install brew protobuf — it is v4.x which generates code
-      # incompatible with our shaded protobuf 3.21.7. The Maven protoc-jar plugin
-      # downloads the correct protoc binary automatically.
-      - name: Install build tools (macOS)
-        if: matrix.os == 'macos'
-        shell: bash
-        run: |
-          brew install cmake pkg-config gnu-sed
-          echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
-
-      # ── Windows build deps (MSYS2 with full mingw64 toolchain) ──
-      - name: Setup MSYS2 (Windows)
-        if: matrix.os == 'windows'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          cache: false
-          path-type: inherit
-          install: >-
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-pkg-config
-            make
-            git
-
-      # ── Rust (all platforms, for tokenizers) ──
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.os == 'windows' && 'x86_64-pc-windows-gnu' || '' }}
-
-      - name: Set Rust default target (Windows)
-        if: matrix.os == 'windows'
-        shell: bash
-        run: |
-          rustup set default-host x86_64-pc-windows-gnu
-          echo "CARGO_BUILD_TARGET=x86_64-pc-windows-gnu" >> $GITHUB_ENV
-
-      - name: Install cbindgen
-        shell: bash
-        run: cargo install cbindgen
-
-      # ── Java setup ──
-      - name: Set up Java for publishing
-        uses: actions/setup-java@v4
-        with:
-          java-version: 11
-          distribution: 'temurin'
-          server-id: ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
-      - name: Configure Maven snapshot repository
-        shell: bash
-        run: |
-          SETTINGS_FILE="${HOME}/.m2/settings.xml"
-          if [ ! -f "$SETTINGS_FILE" ]; then
-            mkdir -p ~/.m2
-            cat > "$SETTINGS_FILE" << 'SETTINGS'
-          <settings>
-            <profiles>
-              <profile>
-                <id>sonatype-snapshots</id>
-                <repositories>
-                  <repository>
-                    <id>central-portal-snapshots</id>
-                    <name>Central Portal Snapshots</name>
-                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-                    <releases><enabled>false</enabled></releases>
-                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
-                  </repository>
-                </repositories>
-              </profile>
-            </profiles>
-            <activeProfiles>
-              <activeProfile>sonatype-snapshots</activeProfile>
-            </activeProfiles>
-          </settings>
-          SETTINGS
-          else
-            sed -i 's|</settings>|<profiles><profile><id>sonatype-snapshots</id><repositories><repository><id>central-portal-snapshots</id><name>Central Portal Snapshots</name><url>https://central.sonatype.com/repository/maven-snapshots/</url><releases><enabled>false</enabled></releases><snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots></repository></repositories></profile></profiles><activeProfiles><activeProfile>sonatype-snapshots</activeProfile></activeProfiles></settings>|' "$SETTINGS_FILE"
-          fi
-
-      # ── Step 1: Build and deploy tokenizers native chain ──
-      - name: Build and deploy tokenizers
-        shell: bash
-        env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: central
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
-          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
-          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
-          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MAVEN_OPTS: -Xmx2g
-        run: |
-          echo "=== Building tokenizers native for ${{ matrix.platform }} ==="
-          rustc --version
-          cargo --version
-
-          # Add Linux tool paths
-          if [ "${{ matrix.os }}" == "linux" ]; then
-            export PATH=/opt/protobuf/bin:$PATH
-            [ -d /opt/cmake/bin ] && export PATH=/opt/cmake/bin:$PATH
-          fi
-
-          command=$(DL4J_PLATFORM='${{ matrix.platform }}' DL4J_OS='${{ matrix.os }}' \
-            bash build-scripts/release/cross-platform.sh --print-tokenizers)
-
-          if [ "$PERFORM_RELEASE" == 1 ]; then
-            echo "Performing release"
-            bash ${GITHUB_WORKSPACE}/release-specified-component.sh \
-              "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
-          else
-            echo "Deploying tokenizers to snapshots"
-            eval "$command"
-          fi
-
-      # ── Step 2: Build and deploy all Java modules ──
-      - name: Build and deploy Java modules
-        shell: bash
-        env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: central
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
-          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
-          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
-          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MAVEN_OPTS: -Xmx2g
-        run: |
-          echo "=== Building and deploying Java modules for ${{ matrix.platform }} ==="
-
-          # Add Linux tool paths
-          if [ "${{ matrix.os }}" == "linux" ]; then
-            export PATH=/opt/protobuf/bin:$PATH
-            [ -d /opt/cmake/bin ] && export PATH=/opt/cmake/bin:$PATH
-          fi
-
-          mvn --version
-
-          command=$(DL4J_PLATFORM='${{ matrix.platform }}' DL4J_OS='${{ matrix.os }}' \
-            bash build-scripts/release/cross-platform.sh --print-java)
-
-          if [ "$PERFORM_RELEASE" == 1 ]; then
-            echo "Performing release"
-            bash ${GITHUB_WORKSPACE}/release-specified-component.sh \
-              "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
-          else
-            echo "Running build and deploying to snapshots"
-            eval "$command"
-          fi
-
-      # ── Cleanup ──
-      - name: Cleanup swap (Linux)
-        if: always() && matrix.os == 'linux'
-        shell: bash
-        run: |
-          sudo swapoff /swapfile 2>/dev/null || true
-          sudo rm -f /swapfile 2>/dev/null || true
+  release:
+    uses: ./.github/workflows/_release-worker.yml
+    with:
+      workflow: build-deploy-cross-platform.yml
+      sourceRef: ${{ inputs.commitId || github.sha }}
+      runnerOverride: ${{ inputs.runsOn }}
+      buildThreads: ${{ inputs.buildThreads }}
+      mvnFlags: ${{ inputs.mvnFlags }}
+      libnd4jUrl: ${{ inputs.libnd4jUrl }}
+      buildAot: ${{ inputs.buildAot }}
+      aotAllSpins: ${{ inputs.aotAllSpins }}
+    secrets: inherit

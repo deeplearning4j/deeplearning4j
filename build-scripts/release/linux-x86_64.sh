@@ -17,7 +17,14 @@ fi
 
 mvn_ext=()
 if [ "${DL4J_HELPER}" = compile ]; then
-  mvn_ext=(-Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=linux-x86_64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON)
+  compile_suffix=compile
+  if [ -n "${DL4J_EXTENSION}" ]; then
+    compile_suffix="compile-${DL4J_EXTENSION}"
+  fi
+  mvn_ext=(-Dlibnd4j.triton=ON "-Djavacpp.platform.extension=-${compile_suffix}" "-Dlibnd4j.classifier=linux-x86_64-${compile_suffix}" -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON)
+  if [ -n "${DL4J_EXTENSION}" ]; then
+    mvn_ext+=("-Dlibnd4j.extension=${DL4J_EXTENSION}")
+  fi
 elif [ -n "${DL4J_HELPER}" ] && [ -n "${DL4J_EXTENSION}" ]; then
   mvn_ext=("-Dlibnd4j.helper=${DL4J_HELPER}" "-Dlibnd4j.extension=${DL4J_EXTENSION}" "-Djavacpp.platform.extension=-${DL4J_HELPER}-${DL4J_EXTENSION}" "-Dlibnd4j.classifier=linux-x86_64-${DL4J_HELPER}-${DL4J_EXTENSION}")
 elif [ -n "${DL4J_HELPER}" ]; then

@@ -1,214 +1,51 @@
+name: Build Linux x86_64 compatibility classifier
+
 on:
   workflow_dispatch:
     inputs:
-      buildThreads:
-        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
-        required: true
-        default: 2
-
-      deployToReleaseStaging:
-        description: 'Whether to deploy to release staging or not.'
+      commitId:
+        description: Source commit or ref. Empty uses the triggering commit.
         required: false
-        default: 0
-
-      releaseVersion:
-        description: 'Release version target'
-        required: false
-        default: 1.0.0-M3
-
-      snapshotVersion:
-        description: 'Snapshot version target'
-        required: false
-        default: 1.0.0-SNAPSHOT
-
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default:
-
-      serverId:
-        description: 'Server id to publish to'
-        required: false
-        default: central
-
-      mvnFlags:
-        description: "Extra maven flags (must escape input yourself if used)"
-        required: false
-        default:
-
-      libnd4jUrl:
-          description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
-          required: false
-          default:
-
-
+        default: ""
       runsOn:
-        description: 'System to run on'
+        description: Optional runner label override.
         required: false
-        default: ubuntu-22.04
+        default: ""
+      buildThreads:
+        description: Optional native build thread override.
+        required: false
+        default: ""
+      mvnFlags:
+        description: Additional Maven flags passed to the shared worker.
+        required: false
+        default: ""
+      libnd4jUrl:
+        description: Optional prebuilt libnd4j archive URL.
+        required: false
+        default: ""
+      buildAot:
+        description: Build GraalVM AOT artifacts for the base variant.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
+      aotAllSpins:
+        description: Build AOT artifacts for every selected classifier.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
 
-      debug_enabled:
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
-        required: false
-        default: false
 jobs:
-  #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
-  linux-x86_64:
-    strategy:
-      fail-fast: false
-      matrix:
-        helper: [""]
-        extension: [compat]
-        include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
-            experimental: true
-            name: Debug enabled
-
-          - runs_on: ${{ github.event.inputs.runsOn }}
-            experimental: true
-            name: OS to run on
-
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
-            experimental: true
-            name: OS to run on
-
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
-            experimental: true
-            name: Whether to deploy to release staging or not
-
-          - release_version: ${{ github.event.inputs.releaseVersion }}
-            experimental: true
-            name: Release version
-
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
-            experimental: true
-            name: Snapshot version
-
-          - server_id: ${{ github.event.inputs.serverId }}
-            experimental: true
-            name: Server id
-
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
-
-          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags to use as part of the build
-
-          - build_threads: ${{ github.event.inputs.buildThreads }}
-            experimental: true
-            name: The number of threads to build libnd4j with
-
-
-    runs-on: ${{ matrix.runs_on }}
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Free Disk Space Before Build
-        run: |
-          echo "Disk space before cleanup:"
-          df -h
-          sudo rm -rf /usr/local/.ghcup
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo rm -rf /usr/local/lib/android/sdk/ndk
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          sudo apt-get clean
-          echo "Disk space after cleanup:"
-          df -h
-      - uses: ./.github/actions/set-linux-distro-version
-      - name: Set mvn build command based on matrix
-        shell: bash
-        run: |
-              deploy_command=$(DL4J_FAMILY=compat DL4J_BUILD_THREADS='${{ matrix.build_threads }}' DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}' DL4J_MAVEN_GOAL=deploy bash build-scripts/release/native-platform.sh --print)
-              install_command=$(DL4J_FAMILY=compat DL4J_BUILD_THREADS='${{ matrix.build_threads }}' DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}' DL4J_MAVEN_GOAL=install bash build-scripts/release/native-platform.sh --print)
-              echo "DEPLOY_COMMAND=${deploy_command} -Dlibnd4j.cpu.compile.skip=true -Djavacpp.compiler.skip=true -Djavacpp.parser.skip=true" >> "$GITHUB_ENV"
-              echo "INSTALL_COMMAND=${install_command}" >> "$GITHUB_ENV"
-              echo "COMMAND=${install_command}" >> "$GITHUB_ENV"
-
-      - uses: ./.github/actions/update-deps-linux
-
-      - name: Build on  linux-x86_64
-        uses: ./.github/actions/build-centos
-        env:
-          JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64/
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: central
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-          RELEASE_VERSION: ${{ matrix.release_version }}
-          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          MODULES: ${{ matrix.mvn_flags }}
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
-          MAVEN_OPTS: -Xmx2g
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v4
-        with:
-          java-version: 11
-          distribution: 'temurin'
-          server-id: ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
-
-
-      - name: Deploy
-        shell: bash
-        run: |
-              # Docker builds are root owned
-              sudo chown -R $USER $GITHUB_WORKSPACE/*
-              if [ "$PERFORM_RELEASE" == 1 ]; then
-                        export COMMAND="${DEPLOY_COMMAND}"
-                        bash "$GITHUB_WORKSPACE/release-specified-component.sh" "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${DEPLOY_COMMAND}"
-                       else
-                           echo "Running build and deploying to snapshots"
-                           eval "${DEPLOY_COMMAND}"
-              fi
-        env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: central
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-          RELEASE_VERSION: ${{ matrix.release_version }}
-          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          MODULES: ${{ matrix.mvn_flags }}
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
-          MAVEN_OPTS: -Xmx2g
-
-      - name: Publish SDX runtime SDK artifacts
-        if: matrix.deploy_to_release_staging == '1'
-        uses: ./.github/actions/publish-sdx-runtime-sdk
-        with:
-          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
-          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
-          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
-
-      - name: Publish SDK JAR artifacts
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/publish-sdk-jars
-        with:
-          artifact-name: sdk-jars-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
-          backend: cpu
-          platform: linux-x86_64
-          platform-extension: ${{ matrix.helper != '' && matrix.extension != '' && format('-{0}-{1}', matrix.helper, matrix.extension) || matrix.helper != '' && format('-{0}', matrix.helper) || matrix.extension != '' && format('-{0}', matrix.extension) || '' }}
-          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
+  release:
+    uses: ./.github/workflows/_release-worker.yml
+    with:
+      workflow: build-deploy-linux-x86_64-compat.yml
+      sourceRef: ${{ inputs.commitId || github.sha }}
+      runnerOverride: ${{ inputs.runsOn }}
+      buildThreads: ${{ inputs.buildThreads }}
+      mvnFlags: ${{ inputs.mvnFlags }}
+      libnd4jUrl: ${{ inputs.libnd4jUrl }}
+      buildAot: ${{ inputs.buildAot }}
+      aotAllSpins: ${{ inputs.aotAllSpins }}
+    secrets: inherit

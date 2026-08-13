@@ -1,207 +1,51 @@
-name: Build Linux x86_64 CUDA+ZLUDA (native validation)
-
-# Builds the CUDA 12.9 backend with the ZLUDA transpiler enabled
-# (-Dlibnd4j.zluda=<AMD|INTEL|AUTO> → --zluda → -DSD_ZLUDA=ON
-# -DSD_ZLUDA_TARGET=<t> → ZludaConfiguration.cmake setup_zluda()).
-#
-# IMPORTANT — this workflow deliberately does NOT `deploy`:
-# a ZLUDA-flavored nd4j-cuda-12.9 must never overwrite the regular CUDA
-# snapshot coordinates (HAVE_ZLUDA changes compile definitions).  It runs
-# `install`, verifies the ZLUDA configuration took effect, and uploads the
-# native artifacts for inspection.  Publishing would require a distinct
-# classifier (linux-x86_64-zluda) — see ADR 0087 / ADR 0102.
-#
-# CMake owns the pinned ZLUDA download, checksum verification, and native
-# staging. The CPU runner installs only the pinned ROCm HIP/rocBLAS/MIOpen SDK
-# required to build and assemble that self-contained runtime closure.
-# It never installs an AMD kernel driver or probes/runs GPU hardware.
-#
-# NOTE: hosted CUDA builds are known to be resource-tight (see the audit in
-# PLATFORM_TESTS_CI_AUDIT.md) — this workflow inherits the same swap/sccache
-# mitigations as build-deploy-linux-cuda-12.9.yml.
+name: Build Linux ZLUDA classifier
 
 on:
   workflow_dispatch:
     inputs:
-      zludaTarget:
-        description: 'ZLUDA target backend'
+      commitId:
+        description: Source commit or ref. Empty uses the triggering commit.
         required: false
-        default: 'AMD'
-        type: choice
-        options:
-          - AMD
-          - INTEL
-          - AUTO
-
-      buildThreads:
-        description: 'Build threads for libnd4j (controls memory usage)'
-        required: true
-        default: 2
-
-      mvnFlags:
-        description: 'Extra maven flags'
-        required: false
-        default: ''
-
+        default: ""
       runsOn:
-        description: 'Runner to use (needs ~14GB+ RAM for CUDA compilation)'
+        description: Optional runner label override.
         required: false
-        default: ubuntu-22.04
-
-      swapSize:
-        description: 'Swap file size in GB'
+        default: ""
+      buildThreads:
+        description: Optional native build thread override.
         required: false
-        default: 16
+        default: ""
+      mvnFlags:
+        description: Additional Maven flags passed to the shared worker.
+        required: false
+        default: ""
+      libnd4jUrl:
+        description: Optional prebuilt libnd4j archive URL.
+        required: false
+        default: ""
+      buildAot:
+        description: Build GraalVM AOT artifacts for the base variant.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
+      aotAllSpins:
+        description: Build AOT artifacts for every selected classifier.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
 
 jobs:
-  linux-x86_64-cuda-zluda:
-    runs-on: ${{ github.event.inputs.runsOn }}
-    timeout-minutes: 350
-    name: linux-x86_64 cuda-12.9 + zluda (${{ github.event.inputs.zludaTarget }})
-
-    steps:
-      - uses: AutoModality/action-clean@v1
-
-      - uses: actions/checkout@v4
-
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
-
-      - name: Configure swap space
-        shell: bash
-        run: |
-          if swapon --show | grep -q "/"; then
-            echo "Swap already configured."
-            swapon --show
-          else
-            SWAP_SIZE="${{ github.event.inputs.swapSize }}G"
-            echo "Creating ${SWAP_SIZE} swap file..."
-            sudo fallocate -l ${SWAP_SIZE} /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1G count=${{ github.event.inputs.swapSize }} status=progress
-            sudo chmod 600 /swapfile
-            sudo mkswap /swapfile
-            sudo swapon /swapfile
-          fi
-          sudo sysctl vm.swappiness=80
-          free -h
-
-      - uses: ./.github/actions/set-linux-distro-version
-
-      - uses: ./.github/actions/update-deps-linux
-
-      - name: Install pinned build-only ROCm SDK
-        shell: bash
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          ROCM_VERSION=7.2.4
-          ROCM_INSTALLER=amdgpu-install_7.2.4.70204-1_all.deb
-          curl --fail --location --retry 5 \
-            "https://repo.radeon.com/amdgpu-install/${ROCM_VERSION}/ubuntu/jammy/${ROCM_INSTALLER}" \
-            --output "${RUNNER_TEMP}/${ROCM_INSTALLER}"
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends "${RUNNER_TEMP}/${ROCM_INSTALLER}"
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            lld rocm-hip-runtime-dev rocblas-dev hipblaslt-dev rocsparse-dev \
-            rocm-smi-lib miopen-hip-dev
-
-          test -x /usr/bin/ld.lld
-          test -f /opt/rocm/include/hip/hip_runtime.h
-          test -f /opt/rocm/include/rocblas/rocblas.h
-          test -f /opt/rocm/include/miopen/miopen.h
-          test -f /opt/rocm/lib/libamdhip64.so
-          test -f /opt/rocm/lib/librocblas.so
-          test -f /opt/rocm/lib/libhipblaslt.so
-          test -f /opt/rocm/lib/librocsparse.so
-          test -f /opt/rocm/lib/librocm_smi64.so
-          test -f /opt/rocm/lib/libMIOpen.so
-          grep -q "^${ROCM_VERSION}" /opt/rocm/.info/version
-          /opt/rocm/bin/hipcc --version
-
-          echo "ROCM_PATH=/opt/rocm" >> "$GITHUB_ENV"
-          echo "ROCM_HOME=/opt/rocm" >> "$GITHUB_ENV"
-          echo "HIP_PATH=/opt/rocm" >> "$GITHUB_ENV"
-          echo "DL4J_ZLUDA_REQUIRE_ROCM=1" >> "$GITHUB_ENV"
-          echo "DL4J_ZLUDA_REQUIRE_MIOPEN=1" >> "$GITHUB_ENV"
-          echo "/opt/rocm/bin" >> "$GITHUB_PATH"
-          echo "[dl4j-attestation] rocmVersion=${ROCM_VERSION} rocmBuildOnly=true components=hip,rocblas,hipblaslt,rocsparse,rocm-smi,miopen hardwareProbe=skipped"
-
-      - name: Setup sccache
-        id: setup-sccache
-        uses: ./.github/actions/setup-sccache-linux
-        with:
-          cache-suffix: linux-x86_64-cuda-zluda
-
-      - uses: ./.github/actions/install-protobuf-linux
-
-      - uses: ./.github/actions/install-cmake-linux
-
-      - name: Install CUDA toolkit
-        uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
-        env:
-          cuda: 12.9.0
-
-      - name: Set up Java 11
-        uses: actions/setup-java@v4
-        with:
-          java-version: 11
-          distribution: 'temurin'
-
-      - name: Build CUDA backend with ZLUDA enabled (install only — never deploy)
-        shell: bash
-        env:
-          DEBIAN_FRONTEND: noninteractive
-          MAVEN_OPTS: -Xmx2g
-        run: |
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          mvn --version && cmake --version && protoc --version
-          DL4J_FAMILY=zluda DL4J_BUILD_THREADS='${{ github.event.inputs.buildThreads }}' \
-            DL4J_MVN_FLAGS='${{ github.event.inputs.mvnFlags }}' \
-            DL4J_ZLUDA_TARGET='${{ github.event.inputs.zludaTarget }}' \
-            bash build-scripts/release/native-platform.sh --run 2>&1 | tee zluda-native-build.log
-
-      - name: Verify ZLUDA configuration took effect
-        shell: bash
-        run: |
-          LOG=libnd4j/blasbuild/cuda/libnd4j-build.log
-          if grep -q "SD_ZLUDA=ON" zluda-native-build.log && grep -qE "ZLUDA configuration complete|Found ZLUDA library" "$LOG" ; then
-            echo "ZLUDA configuration verified:"
-            grep -E "ZLUDA" "$LOG" | head -10
-          else
-            echo "::error::ZLUDA configuration did not take effect — check ZludaConfiguration.cmake output"
-            grep -iE "zluda" "$LOG" | head -20 || true
-            exit 1
-          fi
-
-      - name: Upload ZLUDA-flavored native artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cuda-zluda-native-${{ github.event.inputs.zludaTarget }}
-          path: |
-            libnd4j/blasbuild/cuda/libnd4jcuda.so
-            libnd4j/blasbuild/cuda/libnd4j-build.log
-            zluda-native-build.log
-          retention-days: 14
-
-      - name: Show sccache stats
-        if: always()
-        shell: bash
-        run: |
-          sccache --show-stats || true
-          sccache --stop-server || true
-
-      - name: Cleanup swap
-        if: always()
-        shell: bash
-        run: |
-          sudo swapoff /swapfile 2>/dev/null || true
-          sudo rm -f /swapfile 2>/dev/null || true
+  release:
+    uses: ./.github/workflows/_release-worker.yml
+    with:
+      workflow: build-deploy-linux-zluda.yml
+      sourceRef: ${{ inputs.commitId || github.sha }}
+      runnerOverride: ${{ inputs.runsOn }}
+      buildThreads: ${{ inputs.buildThreads }}
+      mvnFlags: ${{ inputs.mvnFlags }}
+      libnd4jUrl: ${{ inputs.libnd4jUrl }}
+      buildAot: ${{ inputs.buildAot }}
+      aotAllSpins: ${{ inputs.aotAllSpins }}
+    secrets: inherit

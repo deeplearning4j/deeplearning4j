@@ -577,7 +577,14 @@ def configure_compiler_cache(
         backend = _required_cache_value(remote, "backend")
         if backend not in {"s3", "gcs", "azure"}:
             raise ValueError(f"unsupported compilerCache.backend {backend!r}")
-        cache_dir = source.parent / "sccache"
+        configured_cache_dir = env.get("DL4J_SCCACHE_DIR", "").strip()
+        cache_dir = (
+            Path(configured_cache_dir)
+            if configured_cache_dir
+            else source.parent / "sccache"
+        )
+        if configured_cache_dir and not cache_dir.is_absolute():
+            raise ValueError("DL4J_SCCACHE_DIR must be an absolute path")
         restore_compiler_cache_snapshot(config, env, cache_dir)
         cache_dir.mkdir(parents=True, exist_ok=True)
         compiler_cache = ensure_cached_sccache(cache_dir, config, env)
@@ -605,10 +612,20 @@ def configure_compiler_cache(
                 "SCCACHE_GCS_RW_MODE": "READ_WRITE",
             })
         else:
+            connection_string = str(remote.get("connectionString", "")).strip()
+            connection_string_env = str(remote.get("connectionStringEnv", "")).strip()
+            if connection_string_env:
+                connection_string = env.get(connection_string_env, "").strip()
+                if not connection_string:
+                    raise ValueError(
+                        f"compilerCache environment variable {connection_string_env!r} is empty"
+                    )
+            if not connection_string:
+                raise ValueError(
+                    "compilerCache.connectionString or compilerCache.connectionStringEnv is required"
+                )
             env.update({
-                "SCCACHE_AZURE_CONNECTION_STRING": _required_cache_value(
-                    remote, "connectionString"
-                ),
+                "SCCACHE_AZURE_CONNECTION_STRING": connection_string,
                 "SCCACHE_AZURE_BLOB_CONTAINER": _required_cache_value(remote, "container"),
                 "SCCACHE_AZURE_KEY_PREFIX": prefix,
             })
@@ -1168,6 +1185,73 @@ def prepare_openblas(
             identity=identity,
             source=target,
         )
+
+
+def prepare_prebuilt_libnd4j(source: Path, build: dict, env: dict[str, str]) -> str:
+    """Restore an optional libnd4j archive before JavaCPP packaging."""
+    url = str(build.get("libnd4jUrl", "")).strip()
+    if not url:
+        return ""
+    tools = source / ".dl4j-release-tools"
+    tools.mkdir(parents=True, exist_ok=True)
+    archive = tools / "prebuilt-libnd4j.zip"
+    print(f"[dl4j-phase] phase=prebuilt-libnd4j status=started url={url}", flush=True)
+    download_with_retry(url, archive, "prebuilt libnd4j")
+    with tempfile.TemporaryDirectory(prefix="dl4j-prebuilt-libnd4j-") as temporary:
+        extracted = Path(temporary)
+        with zipfile.ZipFile(archive) as bundle:
+            root = extracted.resolve()
+            for member in bundle.infolist():
+                destination = (extracted / member.filename).resolve()
+                if destination != root and root not in destination.parents:
+                    raise RuntimeError(
+                        f"unsafe path in prebuilt libnd4j archive: {member.filename!r}"
+                    )
+            bundle.extractall(extracted)
+        candidates = [
+            path for path in extracted.rglob("blasbuild")
+            if path.is_dir() and path.parent.name == "libnd4j"
+        ]
+        if len(candidates) != 1:
+            raise RuntimeError(
+                "prebuilt libnd4j archive must contain exactly one libnd4j/blasbuild "
+                f"directory; found {len(candidates)}"
+            )
+        target = source / "libnd4j/blasbuild"
+        target.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(candidates[0], target, dirs_exist_ok=True)
+
+    backend = "cuda" if build.get("backend") == "cuda" else "cpu"
+    engine = "ENGINE_CUDA" if backend == "cuda" else "ENGINE_CPU"
+    config_text = (
+        "#ifndef LIBND4J_CONFIG_H\n"
+        "#define LIBND4J_CONFIG_H\n"
+        f"#define DEFAULT_ENGINE samediff::{engine}\n"
+        "#endif\n"
+    )
+    for config_path in (
+        source / "libnd4j/include/config.h",
+        source / f"libnd4j/blasbuild/{backend}/include/config.h",
+    ):
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text(config_text, encoding="utf-8")
+    generated = source / "libnd4j/include/generated/include_ops.h"
+    generated.parent.mkdir(parents=True, exist_ok=True)
+    generated.touch(exist_ok=True)
+
+    if backend == "cpu":
+        blas = source / "libnd4j/blasbuild/cpu/blas"
+        openblas = Path(env["OPENBLAS_PATH"]) / "lib"
+        if blas.is_dir():
+            openblas.mkdir(parents=True, exist_ok=True)
+            for path in blas.iterdir():
+                destination = openblas / path.name
+                if path.is_dir():
+                    shutil.copytree(path, destination, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(path, destination)
+    print("[dl4j-phase] phase=prebuilt-libnd4j status=complete", flush=True)
+    return url
 
 
 def urlopen_with_retry(request: urllib.request.Request, description: str):
@@ -1909,6 +1993,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
     rules = shard.get("artifactRules", {})
     reset_unclassified_artifacts(repository, build, rules, release_version)
     prepare_openblas(source, build, env, config)
+    prebuilt_libnd4j_url = prepare_prebuilt_libnd4j(source, build, env)
     completed_variants: list[str] = []
     write_build_result(progress_output, completed_variants)
     for variant in build["variants"]:
@@ -1928,6 +2013,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_MAVEN_REPOSITORY": str(repository),
             "DL4J_CUDA_VERSION": str(build.get("cudaVersion", "")),
             "DL4J_ZLUDA_TARGET": zluda_target(build),
+            "DL4J_LIBND4J_URL": prebuilt_libnd4j_url,
         })
         if family == "vulkan-mlir" and variant.get("mlir"):
             # native-platform.sh uses platform.classifier for the JavaCPP
@@ -1949,7 +2035,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
         script_name = "linux-x86_64.sh" if family == "linux-x86_64" else "native-platform.sh"
         if family == "linux-x86_64":
             variant_env["DL4J_MATRIX_MVN_EXT"] = variant_env.pop("DL4J_MVN_FLAGS")
-            variant_env["DL4J_LIBND4J_FILE_DOWNLOAD"] = ""
+            variant_env["DL4J_LIBND4J_FILE_DOWNLOAD"] = prebuilt_libnd4j_url
         if variant.get("mlir") and config is not None:
             restore_remote_dependency_cache(source, config, variant_env)
         variant_started_at = int(time.time())

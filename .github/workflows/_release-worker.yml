@@ -1,0 +1,142 @@
+name: Shared DL4J release worker
+
+on:
+  workflow_call:
+    inputs:
+      workflow:
+        type: string
+        required: true
+      sourceRef:
+        type: string
+        required: false
+        default: ""
+      runnerOverride:
+        type: string
+        required: false
+        default: ""
+      buildThreads:
+        type: string
+        required: false
+        default: ""
+      mvnFlags:
+        type: string
+        required: false
+        default: ""
+      libnd4jUrl:
+        type: string
+        required: false
+        default: ""
+      buildAot:
+        type: string
+        required: false
+        default: "0"
+      aotAllSpins:
+        type: string
+        required: false
+        default: "0"
+    secrets:
+      AZURE_SCCACHE_CONNECTION_STRING:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-22.04
+    outputs:
+      linux: ${{ steps.rows.outputs.linux }}
+      host: ${{ steps.rows.outputs.host }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sourceRef }}
+      - name: Resolve canonical worker matrix
+        id: rows
+        shell: bash
+        env:
+          WORKFLOW: ${{ inputs.workflow }}
+          RUNNER_OVERRIDE: ${{ inputs.runnerOverride }}
+        run: |
+          set -Eeuo pipefail
+          linux=$(python release/github/prepare-worker.py matrix \
+            --workflow "$WORKFLOW" --group linux --runner-override "$RUNNER_OVERRIDE")
+          host=$(python release/github/prepare-worker.py matrix \
+            --workflow "$WORKFLOW" --group host --runner-override "$RUNNER_OVERRIDE")
+          printf 'linux=%s\n' "$linux" >>"$GITHUB_OUTPUT"
+          printf 'host=%s\n' "$host" >>"$GITHUB_OUTPUT"
+
+  linux:
+    needs: matrix
+    if: needs.matrix.outputs.linux != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.linux) }}
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 720
+    container:
+      image: ${{ matrix.container }}
+      options: --shm-size=4g
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sourceRef }}
+      - name: Run worker
+        id: worker
+        uses: ./.github/actions/run-release-worker
+        with:
+          shard: ${{ matrix.shard }}
+          variant: ${{ matrix.variant }}
+          build-threads: ${{ inputs.buildThreads }}
+          maven-flags: ${{ inputs.mvnFlags }}
+          libnd4j-url: ${{ inputs.libnd4jUrl }}
+          build-aot: ${{ inputs.buildAot }}
+          aot-all-spins: ${{ inputs.aotAllSpins }}
+          azure-cache-connection-string: ${{ secrets.AZURE_SCCACHE_CONNECTION_STRING }}
+      - name: Upload staged worker result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-worker-${{ matrix.shard }}-${{ matrix.variant }}
+          path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
+
+  host:
+    needs: matrix
+    if: needs.matrix.outputs.host != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.host) }}
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 720
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sourceRef }}
+      - name: Run worker
+        id: worker
+        uses: ./.github/actions/run-release-worker
+        with:
+          shard: ${{ matrix.shard }}
+          variant: ${{ matrix.variant }}
+          build-threads: ${{ inputs.buildThreads }}
+          maven-flags: ${{ inputs.mvnFlags }}
+          libnd4j-url: ${{ inputs.libnd4jUrl }}
+          build-aot: ${{ inputs.buildAot }}
+          aot-all-spins: ${{ inputs.aotAllSpins }}
+          azure-cache-connection-string: ${{ secrets.AZURE_SCCACHE_CONNECTION_STRING }}
+      - name: Upload staged worker result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-worker-${{ matrix.shard }}-${{ matrix.variant }}
+          path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "shards": {
+    "linux-x86_64-cpu": {"group": "linux", "runner": "ubuntu-22.04", "container": "ubuntu:22.04"},
+    "linux-arm64-cpu": {"group": "linux", "runner": "ubuntu-22.04-arm", "container": "ubuntu:22.04"},
+    "linux-x86_64-cuda-12-6": {"group": "linux", "runner": "ubuntu-22.04", "container": "nvidia/cuda:12.6.3-cudnn-devel-ubuntu22.04"},
+    "linux-x86_64-cuda-12-9": {"group": "linux", "runner": "ubuntu-22.04", "container": "nvidia/cuda:12.9.1-cudnn-devel-ubuntu22.04"},
+    "windows-x86_64-cpu": {"group": "host", "runner": "windows-2022"},
+    "windows-x86_64-vulkan": {"group": "host", "runner": "windows-2022"},
+    "windows-x86_64-cuda-12-6": {"group": "host", "runner": "windows-2022"},
+    "windows-x86_64-cuda-12-9": {"group": "host", "runner": "windows-2022"},
+    "macos-14-arm64-cpu": {"group": "host", "runner": "macos-14"},
+    "android-arm64": {"group": "linux", "runner": "ubuntu-22.04", "container": "ubuntu:22.04"},
+    "android-arm64-vulkan": {"group": "linux", "runner": "ubuntu-22.04", "container": "ubuntu:22.04"},
+    "android-x86_64": {"group": "linux", "runner": "ubuntu-22.04", "container": "ubuntu:22.04"},
+    "linux-x86_64-compat": {"group": "linux", "runner": "ubuntu-22.04", "container": "almalinux:8"},
+    "linux-x86_64-vulkan": {"group": "linux", "runner": "ubuntu-22.04", "container": "ubuntu:22.04"},
+    "linux-x86_64-vulkan-mlir": {"group": "linux", "runner": "ubuntu-22.04", "container": "ubuntu:22.04"},
+    "linux-x86_64-hexagon": {"group": "linux", "runner": "ubuntu-22.04", "container": "ubuntu:22.04"},
+    "linux-x86_64-tpu": {"group": "linux", "runner": "ubuntu-22.04", "container": "ubuntu:22.04"},
+    "linux-x86_64-zluda": {"group": "linux", "runner": "ubuntu-22.04", "container": "nvidia/cuda:12.9.1-devel-ubuntu22.04"},
+    "windows-x86_64-zluda": {"group": "host", "runner": "windows-2022"}
+  },
+  "workflows": {
+    "build-deploy-cross-platform.yml": [
+      {"shard": "linux-x86_64-cpu", "variants": ["base"]},
+      {"shard": "linux-arm64-cpu", "variants": ["base"]},
+      {"shard": "windows-x86_64-cpu", "variants": ["base"]},
+      {"shard": "macos-14-arm64-cpu", "variants": ["base"]}
+    ],
+    "build-deploy-linux-x86_64.yml": [{"shard": "linux-x86_64-cpu"}],
+    "build-deploy-linux-x86_64-compat.yml": [{"shard": "linux-x86_64-compat"}],
+    "build-deploy-linux-arm64.yml": [{"shard": "linux-arm64-cpu"}],
+    "build-deploy-linux-cuda-12.6.yml": [{"shard": "linux-x86_64-cuda-12-6"}],
+    "build-deploy-linux-cuda-12.9.yml": [{"shard": "linux-x86_64-cuda-12-9"}],
+    "build-deploy-windows.yml": [{"shard": "windows-x86_64-cpu"}],
+    "build-deploy-windows-cuda-12.6.yml": [{"shard": "windows-x86_64-cuda-12-6"}],
+    "build-deploy-windows-cuda-12.9.yml": [{"shard": "windows-x86_64-cuda-12-9"}],
+    "build-deploy-mac-arm64.yml": [{"shard": "macos-14-arm64-cpu"}],
+    "build-deploy-android-arm64.yml": [
+      {"shard": "android-arm64"},
+      {"shard": "android-arm64-vulkan"}
+    ],
+    "build-deploy-android-x86_64.yml": [{"shard": "android-x86_64"}],
+    "build-deploy-linux-vulkan.yml": [{"shard": "linux-x86_64-vulkan"}],
+    "build-deploy-linux-vulkan-mlir.yml": [{"shard": "linux-x86_64-vulkan-mlir"}],
+    "build-deploy-linux-hexagon.yml": [{"shard": "linux-x86_64-hexagon"}],
+    "build-deploy-linux-tpu.yml": [{"shard": "linux-x86_64-tpu"}],
+    "build-deploy-linux-zluda.yml": [{"shard": "linux-x86_64-zluda"}]
+  }
+}

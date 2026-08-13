@@ -1,477 +1,51 @@
+name: Build Windows x86_64 CPU classifiers
+
 on:
   workflow_dispatch:
     inputs:
-      buildThreads:
-        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
-        required: true
-        default: 4
-
-      deployToReleaseStaging:
-        description: 'Whether to deploy to release staging or not.'
+      commitId:
+        description: Source commit or ref. Empty uses the triggering commit.
         required: false
-        default: 0
-
-      releaseVersion:
-        description: 'Release version target'
-        required: false
-        default: 1.0.0-M3
-
-      snapshotVersion:
-        description: 'Snapshot version target'
-        required: false
-        default: 1.0.0-SNAPSHOT
-
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default:
-
-      serverId:
-        description: 'Server id to publish to'
-        required: false
-        default: central
-
-      mvnFlags:
-        description: "Extra maven flags (must escape input yourself if used)"
-        required: false
-        default:
-
-      libnd4jUrl:
-        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
-        required: false
-        default:
-
+        default: ""
       runsOn:
-        description: 'OS to run on'
+        description: Optional runner label override.
         required: false
-        default: windows-2022
-
-      debug_enabled:
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        default: ""
+      buildThreads:
+        description: Optional native build thread override.
         required: false
-        default: false
-
+        default: ""
+      mvnFlags:
+        description: Additional Maven flags passed to the shared worker.
+        required: false
+        default: ""
+      libnd4jUrl:
+        description: Optional prebuilt libnd4j archive URL.
+        required: false
+        default: ""
       buildAot:
-        description: 'Build the GraalVM AOT export (sdx-llm CLI + libsdx_llm, ADR 0109). 1 = on, 0 = off.'
-        required: false
-        default: 0
-
+        description: Build GraalVM AOT artifacts for the base variant.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
       aotAllSpins:
-        description: 'Also build the AOT export for every optimized-math matrix combo (onednn/avx2/avx512 spins). Each spin adds a full native-image build. 1 = on, 0 = off.'
-        required: false
-        default: 0
+        description: Build AOT artifacts for every selected classifier.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
 
 jobs:
-  windows-x86_64:
-    strategy:
-      fail-fast: false
-      matrix:
-        helper: [ onednn, compile, "" ]
-        extension: [ avx2, avx512, "" ]
-        include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags || '' }}
-            experimental: true
-            name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled || 'false' }}
-            experimental: true
-            name: Debug enabled
-          - runs_on: ${{ github.event.inputs.runsOn || 'windows-2022' }}
-            experimental: true
-            name: OS to run on
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl || '' }}
-            experimental: true
-            name: OS to run on
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging || '0' }}
-            experimental: true
-            name: Whether to deploy to release staging or not
-          - release_version: ${{ github.event.inputs.releaseVersion || '1.0.0-M3' }}
-            experimental: true
-            name: Release version
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion || '1.0.0-SNAPSHOT' }}
-            experimental: true
-            name: Snapshot version
-          - server_id: ${{ github.event.inputs.serverId || 'central' }}
-            experimental: true
-            name: Server id
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId || '' }}
-            experimental: true
-            name: The release repository to run on
-          - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
-            experimental: true
-            name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
-            experimental: true
-            name: The number of threads to build libnd4j with
-
-    runs-on: ${{ matrix.runs_on }}
-    timeout-minutes: 720
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup sccache (distributed per-object cache)
-        id: setup-sccache
-        continue-on-error: true
-        uses: ./.github/actions/setup-sccache-windows
-        with:
-          cache-suffix: windows-x86_64
-
-      - name: Show sccache stats before build
-        if: always()
-        continue-on-error: true
-        shell: cmd
-        run: |
-          echo === sccache stats before build ===
-          %USERPROFILE%\sccache\sccache.exe --show-stats
-
-      - name: Disable Windows Defender real-time monitoring
-        continue-on-error: true
-        shell: powershell
-        run: |
-          # Disable real-time monitoring to prevent scanning every compiled .obj/.o file
-          Set-MpPreference -DisableRealtimeMonitoring $true
-          Write-Host "Windows Defender real-time monitoring disabled"
-
-          # Add exclusions as fallback in case DisableRealtimeMonitoring is not allowed
-          $excludePaths = @(
-            "$env:GITHUB_WORKSPACE",
-            "C:\msys64",
-            "$env:USERPROFILE\.m2",
-            "$env:USERPROFILE\ccache",
-            "$env:USERPROFILE\sccache"
-          )
-          foreach ($path in $excludePaths) {
-            Add-MpPreference -ExclusionPath $path -ErrorAction SilentlyContinue
-          }
-
-          $excludeProcesses = @("gcc.exe", "g++.exe", "make.exe", "cmake.exe", "java.exe", "ccache.exe", "sccache.exe")
-          foreach ($proc in $excludeProcesses) {
-            Add-MpPreference -ExclusionProcess $proc -ErrorAction SilentlyContinue
-          }
-
-          $excludeExtensions = @(".obj", ".o", ".h", ".hpp", ".cpp", ".lib", ".dll", ".exe", ".jar")
-          foreach ($ext in $excludeExtensions) {
-            Add-MpPreference -ExclusionExtension $ext -ErrorAction SilentlyContinue
-          }
-          Write-Host "Windows Defender exclusions added for build paths, processes, and extensions"
-
-      - name: Free Disk Space (Windows)
-        continue-on-error: true
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'Continue'
-          # Show initial disk space
-          Write-Host "Initial disk space:"
-          Get-PSDrive C | Select-Object Used,Free
-
-          # Configure pagefile to 24 GB
-          try {
-              wmic computersystem set AutomaticManagedPagefile=False 2>$null
-              $currentPagefile = Get-WmiObject -Query "SELECT * FROM Win32_PageFileSetting WHERE Name='C:\\pagefile.sys'" -ErrorAction SilentlyContinue
-              if ($currentPagefile) { $currentPagefile.Delete() }
-              wmic pagefileset create name="C:\\pagefile.sys" 2>$null
-              wmic pagefileset where "name='C:\\pagefile.sys'" set InitialSize=24576,MaximumSize=24576 2>$null
-              Write-Host "Pagefile configured to 24 GB for the duration of this job."
-          }
-          catch {
-              Write-Host "Pagefile configuration failed. Continuing..."
-          }
-
-          # Remove Windows Defender scan history
-          Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Write-Host "Removed Windows Defender scan history"
-
-          # Clear Windows temp folders
-          Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Write-Host "Cleared Windows temp folders"
-
-          # Clear Windows Update cache safely
-          Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Write-Host "Cleared Windows Update download cache"
-
-          # Clean package manager caches
-          if (Test-Path -Path "C:\npm\cache") {
-              Remove-Item -Path "C:\npm\cache\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared NPM cache"
-          }
-
-          choco cache remove -y 2>$null
-          Write-Host "Cleared Chocolatey cache"
-
-          # Remove Docker images if Docker is installed
-          try {
-              if (Get-Command "docker" -ErrorAction SilentlyContinue) {
-                  docker image prune -a -f 2>$null
-                  docker container prune -f 2>$null
-                  docker volume prune -f 2>$null
-                  Write-Host "Pruned Docker resources"
-              }
-          }
-          catch {
-              Write-Host "Failed to prune Docker resources. Continuing..."
-          }
-
-          # Remove .NET SDK/Runtime backup folders
-          Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
-
-          # Clear Azure artifacts cache
-          Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
-
-          # Show final disk space
-          Write-Host "Final disk space:"
-          Get-PSDrive C | Select-Object Used,Free
-
-      - name: Install MSYS2 and dependencies
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          cache: false
-          install: >-
-            base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake libtool make patch gnupg
-            mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool
-            mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
-            mingw-w64-x86_64-libwinpthread-git
-            mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel
-            mingw-w64-x86_64-vulkan-headers
-            mingw-w64-x86_64-vulkan-loader
-
-      - name: Install build tools
-        shell: cmd
-        run: |
-          echo Removing conflicting binaries from MSYS2
-          del /f "C:\msys64\usr\bin\link.exe" 2>nul
-          del /f "C:\msys64\usr\bin\timeout.exe" 2>nul
-
-          curl -LO https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz || curl -LO https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
-          bash -c "tar -xzf apache-maven-3.6.3-bin.tar.gz -C 'C:/Program Files/'"
-
-      - name: Set mvn build command based on matrix
-        shell: powershell
-        run: |
-          if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
-            $modules=" :nd4j-native-preset,:nd4j-native"
-          } elseif ( "${{ matrix.helper }}" -ne "" ) {
-            $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
-          }  elseif ( "${{ matrix.extension }}" -ne "" ) {
-            $modules=":nd4j-native-preset,:nd4j-native,libnd4j"
-          }  else {
-            $modules=":nd4j-native-preset,:nd4j-native,libnd4j,:nd4j-native-platform"
-          }
-          
-          # Determine helper/extension flags first so they apply to both phases.
-          if ( "${{ matrix.helper }}" -eq "compile" ) {
-             $mvn_ext=" -Dlibnd4j.triton=ON -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=windows-x86_64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
-          } elseif ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
-             $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64"
-          } elseif ( "${{ matrix.helper }}" -ne "" ) {
-              $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64"
-          }  elseif ( "${{ matrix.extension }}" -ne "" ) {
-                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
-          } else {
-             $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64"
-          }
-
-          $env:DL4J_FAMILY='windows-cpu'; $env:DL4J_BUILD_THREADS='${{ matrix.build_threads }}'; $env:DL4J_HELPER='${{ matrix.helper }}'; $env:DL4J_EXTENSION='${{ matrix.extension }}'; $env:DL4J_MVN_FLAGS='${{ matrix.mvn_ext }}'; $env:DL4J_LIBND4J_URL='${{ matrix.libnd4j_file_download }}'
-          $command = bash build-scripts/release/native-platform.sh --print
-
-          if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
-                 echo "Adding libnd4j download"
-                 $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$(${{ matrix.libnd4j_file_download }}/$libnd4j_download_file_url)");
-                 echo $libnd4j_url_to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-          }
-
-          $to_write = -join("COMMAND=","$($command)");
-          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command)"
-          echo $command  | Out-File -FilePath   "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
-          echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-
-      - name: Set up Java for publishing to OSSRH
-        uses: actions/setup-java@v4
-        with:
-          java-version: 11
-          distribution: 'temurin'
-          server-id:   ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
-      - name: Setup windows path
-        shell: powershell
-        run: echo "C:\msys64\mingw64\bin;C:\msys64\usr\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-      - name: Download OpenBLAS (required CPU BLAS backend for libnd4j)
-        shell: bash
-        run: |
-          set -euo pipefail
-          # OpenBLAS is required for EVERY windows-cpu build: without it libnd4j's
-          # MklBlasHelper.h fires #error "No BLAS backend available", the nd4jcpu
-          # library never links, and javacpp fails with "cannot find -lnd4jcpu".
-          # This step was previously (a) gated behind `libnd4j_file_download != ''`
-          # — empty for normal builds, so it was SKIPPED and the build always failed
-          # on "No BLAS backend" — and (b) written in powershell using %VAR%/${VAR}
-          # syntax that powershell does not expand, so even when it ran it produced a
-          # broken OPENBLAS_PATH. Now: always run, in bash, with correct expansion.
-          #
-          # The bytedeco openblas jar carries windows-x86_64/{include/cblas.h,
-          # lib/openblas.lib, libopenblas.dll} (verified). setup_blas() keys on
-          # OPENBLAS_PATH + include/cblas.h to define HAVE_OPENBLAS;
-          # buildnativeoperations.sh uses a non-empty OPENBLAS_PATH env var verbatim
-          # (skips its jar auto-detect, which cannot see this workspace dir).
-          # Normalize the workspace to forward slashes. On Windows runners
-          # GITHUB_WORKSPACE is "D:\a\repo\repo" (backslashes); those get eaten as
-          # escape chars passing through GITHUB_ENV -> buildnativeoperations.sh ->
-          # cmake -DOPENBLAS_PATH=, turning "D:\a\..." into "D:a..." so CMake can't
-          # find include/cblas.h. Forward slashes survive intact and CMake + msys
-          # bash both accept them on Windows.
-          WS="${GITHUB_WORKSPACE//\\//}"
-          OB_HOME="${WS}/openblas_home"
-          mkdir -p "$OB_HOME"
-          cd "$OB_HOME"
-          curl -fsSL -O https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-windows-x86_64.jar
-          unzip -o openblas-0.3.28-1.5.11-windows-x86_64.jar
-          OB_PATH="${OB_HOME}/org/bytedeco/openblas/windows-x86_64"
-          test -f "${OB_PATH}/include/cblas.h" || { echo "ERROR: cblas.h missing under ${OB_PATH}"; exit 1; }
-          echo "OPENBLAS_PATH=${OB_PATH}/" >> "$GITHUB_ENV"
-          echo "Set OPENBLAS_PATH=${OB_PATH}/"
-
-      - name: Run windows cpu build
-        shell: cmd
-        timeout-minutes: 720
-        run: |
-          call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
-          set MSYSTEM=MINGW64
-
-          set "MAVEN_OPTS=-Xmx3g -XX:+UseG1GC"
-          set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%ProgramFiles%\apache-maven-3.6.3\bin;%PATH%"
-          set "CMAKE_BUILD_PARALLEL_LEVEL=4"
-
-          REM Raise OOM killer thresholds for CI with large pagefile
-          set "OOM_MEMORY_THRESHOLD=95"
-          set "OOM_CRITICAL_THRESHOLD=98"
-          set "OOM_VELOCITY_THRESHOLD=15"
-
-          where cl
-          where gcc
-          where cmake
-          where mvn
-          where sccache
-
-          cl
-          cmake --version
-          call mvn -version
-          sccache --show-stats
-          df -h
-
-          echo "libnd4j build threads ${{ matrix.build_threads }}"
-          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
-          echo "release version ${{ matrix.release_version }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "debug enabled ${{ matrix.debug_enabled }}"
-          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
-          echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "server id ${{ matrix.server_id }}"
-          echo "release repo id ${{ matrix.release_repo_id }}"
-
-          if "%PERFORM_RELEASE%"=="1" (
-               echo "Running release"
-               bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows x86_64 "${{ matrix.helper }}" "${{ matrix.extension }}"
-               bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
-          ) else (
-              if "%PERFORM_RELEASE%"==1 (
-                    echo "Running release"
-                     bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
-               ) else (
-                  echo "Running snapshots"
-                  call "%GITHUB_WORKSPACE%\mvn-command.bat"
-                  if errorlevel 1 (
-                    echo "::warning::Deploy attempt 1 failed. Retrying in 60s..."
-                    timeout /t 60 /nobreak >nul
-                    call "%GITHUB_WORKSPACE%\mvn-command.bat"
-                    if errorlevel 1 (
-                      echo "::warning::Deploy attempt 2 failed. Retrying in 180s..."
-                      timeout /t 180 /nobreak >nul
-                      call "%GITHUB_WORKSPACE%\mvn-command.bat"
-                      if errorlevel 1 (
-                        echo "::warning::Deploy attempt 3 failed. Retrying in 300s..."
-                        timeout /t 300 /nobreak >nul
-                        call "%GITHUB_WORKSPACE%\mvn-command.bat"
-                        if errorlevel 1 (
-                          echo "::warning::Deploy attempt 4 failed. Retrying in 420s..."
-                          timeout /t 420 /nobreak >nul
-                          call "%GITHUB_WORKSPACE%\mvn-command.bat"
-                        )
-                      )
-                    )
-                  )
-               )
-          )
-          set MVN_EXIT=%ERRORLEVEL%
-
-          sccache --show-stats
-          df -h
-
-          exit /b %MVN_EXIT%
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: central
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
-          RELEASE_VERSION: ${{ matrix.release_version }}
-          SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
-          RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-          MODULES: ${{ matrix.mvn_flags }}
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
-          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
-
-      - name: Show sccache stats after build
-        if: always()
-        continue-on-error: true
-        shell: cmd
-        run: |
-          echo === sccache stats after build ===
-          %USERPROFILE%\sccache\sccache.exe --show-stats
-          %USERPROFILE%\sccache\sccache.exe --stop-server
-
-      - name: Publish SDX runtime SDK artifacts
-        if: matrix.deploy_to_release_staging == '1'
-        uses: ./.github/actions/publish-sdx-runtime-sdk
-        with:
-          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
-          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
-          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
-
-      - name: Publish SDK JAR artifacts
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/publish-sdk-jars
-        with:
-          artifact-name: sdk-jars-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
-          backend: cpu
-          platform: windows-x86_64
-          platform-extension: ${{ matrix.helper != '' && matrix.extension != '' && format('-{0}-{1}', matrix.helper, matrix.extension) || matrix.helper != '' && format('-{0}', matrix.helper) || matrix.extension != '' && format('-{0}', matrix.extension) || '' }}
-          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
-
-      # GraalVM AOT export of the Java LLM stack (ADR 0109). Opt-in until validated
-      # on this platform; aotAllSpins=1 also covers the optimized-math combos.
-      - name: Build SDX AOT artifacts (GraalVM)
-        if: github.event.inputs.buildAot == '1' && (github.event.inputs.aotAllSpins == '1' || (matrix.helper == '' && matrix.extension == ''))
-        continue-on-error: true
-        uses: ./.github/actions/build-sdx-aot
-        with:
-          platform: windows-x86_64
-          variant: cpu
-          platform-extension: ${{ matrix.helper != '' && matrix.extension != '' && format('-{0}-{1}', matrix.helper, matrix.extension) || matrix.helper != '' && format('-{0}', matrix.helper) || matrix.extension != '' && format('-{0}', matrix.extension) || '' }}
-          release-version: ${{ matrix.deploy_to_release_staging == '1' && matrix.release_version || '' }}
-
-      - name: Clean up
-        shell: cmd
-        run: |
-          cd /d %USERPROFILE%
-          set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\usr\bin;%PATH%"
-          bash -c "rm -Rf $(find .m2/repository/ -name '*SNAPSHOT*')"
+  release:
+    uses: ./.github/workflows/_release-worker.yml
+    with:
+      workflow: build-deploy-windows.yml
+      sourceRef: ${{ inputs.commitId || github.sha }}
+      runnerOverride: ${{ inputs.runsOn }}
+      buildThreads: ${{ inputs.buildThreads }}
+      mvnFlags: ${{ inputs.mvnFlags }}
+      libnd4jUrl: ${{ inputs.libnd4jUrl }}
+      buildAot: ${{ inputs.buildAot }}
+      aotAllSpins: ${{ inputs.aotAllSpins }}
+    secrets: inherit
