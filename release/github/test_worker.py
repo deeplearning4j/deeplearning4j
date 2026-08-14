@@ -33,6 +33,15 @@ class WorkflowMatrixTests(unittest.TestCase):
             set(self.matrix["workflows"]),
         )
 
+    def test_every_plan_shard_is_reachable_from_a_workflow(self):
+        plan_shards = set(prepare_worker.plan_shards(self.plan))
+        mapped_shards = {
+            row["shard"]
+            for rows in self.matrix["workflows"].values()
+            for row in rows
+        }
+        self.assertEqual(plan_shards, mapped_shards)
+
     def test_every_matrix_row_is_an_explicit_plan_variant(self):
         plan_shards = prepare_worker.plan_shards(self.plan)
         for workflow in self.plan["coveredWorkflows"]:

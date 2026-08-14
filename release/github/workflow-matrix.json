@@ -42,10 +42,16 @@
       {"shard": "android-arm64-vulkan"}
     ],
     "build-deploy-android-x86_64.yml": [{"shard": "android-x86_64"}],
-    "build-deploy-linux-vulkan.yml": [{"shard": "linux-x86_64-vulkan"}],
+    "build-deploy-linux-vulkan.yml": [
+      {"shard": "linux-x86_64-vulkan"},
+      {"shard": "windows-x86_64-vulkan"}
+    ],
     "build-deploy-linux-vulkan-mlir.yml": [{"shard": "linux-x86_64-vulkan-mlir"}],
     "build-deploy-linux-hexagon.yml": [{"shard": "linux-x86_64-hexagon"}],
     "build-deploy-linux-tpu.yml": [{"shard": "linux-x86_64-tpu"}],
-    "build-deploy-linux-zluda.yml": [{"shard": "linux-x86_64-zluda"}]
+    "build-deploy-linux-zluda.yml": [
+      {"shard": "linux-x86_64-zluda"},
+      {"shard": "windows-x86_64-zluda"}
+    ]
   }
 }
