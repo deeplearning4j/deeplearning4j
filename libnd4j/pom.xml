@@ -189,6 +189,9 @@
 
         <!-- ZLUDA Configuration: build-time CUDA ABI input, bundled AMD HIP/ROCm runtime -->
         <libnd4j.zluda>OFF</libnd4j.zluda>
+        <!-- The CUDA profile normally attaches its own full archive. ZLUDA uses the
+             classifier-aware primary assembly instead, so it suppresses that duplicate. -->
+        <libnd4j.cuda.assembly.skip>false</libnd4j.cuda.assembly.skip>
 
         <!-- MLIR Configuration -->
         <libnd4j.mlir>OFF</libnd4j.mlir>
@@ -768,6 +771,7 @@
                                     <goal>single</goal>
                                 </goals>
                                 <configuration>
+                                    <skipAssembly>${libnd4j.cuda.assembly.skip}</skipAssembly>
                                     <descriptors>
                                         <descriptor>assembly-cuda.xml</descriptor>
                                     </descriptors>
@@ -777,6 +781,18 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>zluda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <!-- assembly.xml already attaches the ZLUDA-specific classifier. Avoid
+                     also materializing the full CUDA archive from assembly-cuda.xml. -->
+                <libnd4j.cuda.assembly.skip>true</libnd4j.cuda.assembly.skip>
+            </properties>
         </profile>
 
         <profile>

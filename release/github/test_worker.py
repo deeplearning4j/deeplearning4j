@@ -306,6 +306,25 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('target_link_options(${main_target_name} PRIVATE "LINKER:--no-as-needed")', configuration)
         self.assertIn('target_link_options(${main_target_name} PRIVATE "LINKER:--no-as-needed")', sdx_configuration)
 
+    def test_zluda_profile_skips_only_the_duplicate_cuda_assembly(self):
+        pom = (ROOT / "libnd4j/pom.xml").read_text()
+        self.assertIn(
+            "<libnd4j.cuda.assembly.skip>false</libnd4j.cuda.assembly.skip>",
+            pom,
+        )
+        self.assertIn(
+            "<skipAssembly>${libnd4j.cuda.assembly.skip}</skipAssembly>",
+            pom,
+        )
+        self.assertIn(
+            "<id>zluda</id>",
+            pom,
+        )
+        self.assertIn(
+            "<libnd4j.cuda.assembly.skip>true</libnd4j.cuda.assembly.skip>",
+            pom,
+        )
+
     def test_zluda_resolves_static_cuda_archives_when_cmake_lacks_targets(self):
         configuration = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
         self.assertIn(
