@@ -71,7 +71,9 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.assertNotIn("--", row["name"], workflow)
                 self.assertNotIn("--", row["artifactId"], workflow)
                 self.assertEqual(row["name"], row["artifactId"], workflow)
-                self.assertEqual(row["shard"], row["dependencyCacheKey"], workflow)
+                self.assertTrue(
+                    row["dependencyCacheKey"].startswith(f'{row["shard"]}-'), workflow
+                )
                 self.assertEqual(
                     f'{row["shard"]}--{row["variant"]}', row["selector"], workflow
                 )
@@ -107,6 +109,37 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertNotIn("compile-avx2", {row["variant"] for row in rows})
         self.assertNotIn("compile-avx512", {row["variant"] for row in rows})
 
+    def test_dependency_caches_are_scoped_by_variant_toolchain_contract(self):
+        linux_cpu = prepare_worker.workflow_rows(
+            self.plan, self.matrix, "build-deploy-linux-x86_64.yml", "linux"
+        )
+        linux_scopes = {row["variant"]: row["dependencyCacheKey"] for row in linux_cpu}
+        self.assertEqual("linux-x86_64-cpu-default", linux_scopes["base"])
+        self.assertEqual(linux_scopes["base"], linux_scopes["avx2"])
+        self.assertEqual(linux_scopes["onednn"], linux_scopes["onednn-avx512"])
+        self.assertIn("-onednn-", linux_scopes["onednn"])
+        self.assertEqual(linux_scopes["compile"], linux_scopes["compile-avx512"])
+        self.assertIn("-mlir-", linux_scopes["compile"])
+        self.assertNotEqual(linux_scopes["base"], linux_scopes["compile"])
+
+        linux_cuda = prepare_worker.workflow_rows(
+            self.plan, self.matrix, "build-deploy-linux-cuda-12.9.yml", "linux"
+        )
+        cuda_scopes = {row["variant"]: row["dependencyCacheKey"] for row in linux_cuda}
+        self.assertEqual("linux-x86_64-cuda-12-9-default", cuda_scopes["base"])
+        self.assertIn("-cudnn-", cuda_scopes["cudnn"])
+        self.assertIn("-triton-", cuda_scopes["compile"])
+        self.assertEqual(3, len(set(cuda_scopes.values())))
+
+        windows_cpu = prepare_worker.workflow_rows(
+            self.plan, self.matrix, "build-deploy-windows.yml", "host"
+        )
+        windows_scopes = {
+            row["variant"]: row["dependencyCacheKey"] for row in windows_cpu
+        }
+        self.assertIn("-windows-native-compile-", windows_scopes["compile"])
+        self.assertNotEqual(windows_scopes["base"], windows_scopes["compile"])
+
     def test_android_arm64_workflow_includes_cpu_and_vulkan_shards(self):
         rows = prepare_worker.workflow_rows(
             self.plan, self.matrix, "build-deploy-android-arm64.yml", "linux"
@@ -117,10 +150,8 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         compile_rows = [row for row in rows if row["variant"] == "compile-nnapi"]
         self.assertTrue(compile_rows)
-        self.assertEqual(
-            {"android-arm64"},
-            {row["dependencyCacheKey"] for row in compile_rows},
-        )
+        self.assertEqual(1, len({row["dependencyCacheKey"] for row in compile_rows}))
+        self.assertIn("-mlir-no-triton-", compile_rows[0]["dependencyCacheKey"])
 
     def test_exact_classifier_filter_selects_only_requested_row(self):
         rows = prepare_worker.workflow_rows(
@@ -293,7 +324,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertEqual(
             2, workflow.count("name: Restore managed dependency downloads")
         )
-        self.assertEqual(4, workflow.count("dl4j-dependency-v3-${{ runner.os }}-"))
+        self.assertEqual(4, workflow.count("dl4j-dependency-v4-${{ runner.os }}-"))
         self.assertNotIn("if: matrix.dependencyCacheKey != ''", workflow)
 
     def test_shared_worker_publishes_prebuilt_snapshots_with_existing_central_credentials(self):

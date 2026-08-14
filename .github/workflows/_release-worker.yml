@@ -107,9 +107,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.libnd4j
-          key: dl4j-dependency-v3-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-${{ hashFiles('libnd4j/cmake/Dependencies.cmake', 'libnd4j/cmake/ZludaConfiguration.cmake', 'release/aws/build-platform.py', 'release/github/bootstrap-worker.sh', 'release/github/bootstrap-worker.ps1') }}
+          key: dl4j-dependency-v4-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-${{ hashFiles('libnd4j/cmake/Dependencies.cmake', 'libnd4j/cmake/ZludaConfiguration.cmake', 'release/aws/build-platform.py', 'release/github/bootstrap-worker.sh', 'release/github/bootstrap-worker.ps1') }}
           restore-keys: |
-            dl4j-dependency-v3-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-
+            dl4j-dependency-v4-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-
       - name: Run worker
         id: worker
         uses: ./.github/actions/run-release-worker
@@ -151,9 +151,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.libnd4j
-          key: dl4j-dependency-v3-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-${{ hashFiles('libnd4j/cmake/Dependencies.cmake', 'libnd4j/cmake/ZludaConfiguration.cmake', 'release/aws/build-platform.py', 'release/github/bootstrap-worker.sh', 'release/github/bootstrap-worker.ps1') }}
+          key: dl4j-dependency-v4-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-${{ hashFiles('libnd4j/cmake/Dependencies.cmake', 'libnd4j/cmake/ZludaConfiguration.cmake', 'release/aws/build-platform.py', 'release/github/bootstrap-worker.sh', 'release/github/bootstrap-worker.ps1') }}
           restore-keys: |
-            dl4j-dependency-v3-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-
+            dl4j-dependency-v4-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-
       - name: Run worker
         id: worker
         uses: ./.github/actions/run-release-worker

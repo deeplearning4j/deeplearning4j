@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import os
 import re
@@ -88,6 +89,37 @@ def public_artifact_id(shard_id: str, variant_name: str) -> str:
     return artifact_id
 
 
+def dependency_cache_key(shard_id: str, variant: dict) -> str:
+    """Group variants only when their managed dependency contract is identical."""
+    ignored = {"name", "suffix", "classifierSuffix"}
+    contract = {}
+    for key, value in variant.items():
+        if key in ignored:
+            continue
+        if key == "extension" and value in {"avx2", "avx512"}:
+            continue
+        if value is None or value == "" or value == [] or value == {}:
+            continue
+        contract[key] = value
+    if not contract:
+        return public_artifact_id(shard_id, "default")
+
+    labels: list[str] = []
+    helper = str(contract.get("helper", "")).strip()
+    if helper:
+        labels.append(helper)
+    if contract.get("mlir"):
+        labels.append("mlir")
+    if "triton" in contract:
+        labels.append("triton" if contract["triton"] else "no-triton")
+    if contract.get("windowsNativeCompile"):
+        labels.append("windows-native-compile")
+    digest = hashlib.sha256(
+        json.dumps(contract, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()[:12]
+    return public_artifact_id(shard_id, "-".join(labels or ["custom"]) + f"-{digest}")
+
+
 def workflow_rows(
     plan: dict,
     matrix: dict,
@@ -164,10 +196,11 @@ def workflow_rows(
                 "variant": variant_name,
                 "runner": runner_override or str(runtime["runner"]),
                 "os": str(shards[shard_id]["os"]),
-                # Every classifier in a shard shares the same dependency
-                # downloads. The immutable content hash in the workflow key
-                # invalidates this cache when the dependency contract changes.
-                "dependencyCacheKey": shard_id,
+                # Variants may share native objects but require different
+                # downloaded toolchains (for example base vs MLIR/Triton).
+                # Use a dependency-contract scope so parallel variants cannot
+                # race to save incompatible contents under one cache key.
+                "dependencyCacheKey": dependency_cache_key(shard_id, variant),
             }
             if group == "linux":
                 container = str(runtime.get("container", "")).strip()
