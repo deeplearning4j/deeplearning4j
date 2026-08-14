@@ -40,7 +40,7 @@ jobs:
     name: pjrt-rocm-static (hosted, no AMD GPU)
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Java 11
         uses: actions/setup-java@v4
@@ -137,7 +137,7 @@ jobs:
     name: pjrt-rocm-gpu (self-hosted AMD/ROCm)
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Clean workspace (self-hosted)
         uses: AutoModality/action-clean@v1

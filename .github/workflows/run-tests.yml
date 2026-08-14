@@ -162,7 +162,7 @@ jobs:
     name: quick / ${{ matrix.suite }} (${{ needs.setup.outputs.classifier }})
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Clean workspace (self-hosted)
         if: needs.setup.outputs.runner == 'self-hosted'
@@ -278,7 +278,7 @@ jobs:
     name: ${{ inputs.testSuite }} (${{ needs.setup.outputs.classifier }})
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Clean workspace (self-hosted)
         if: needs.setup.outputs.runner == 'self-hosted'

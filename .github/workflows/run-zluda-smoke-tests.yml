@@ -65,7 +65,7 @@ jobs:
     name: zluda-smoke (${{ inputs.zludaTarget }} / ${{ inputs.backendArtifactId }})
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Clean workspace (self-hosted)
         if: contains(inputs.runnerLabels, 'self-hosted')

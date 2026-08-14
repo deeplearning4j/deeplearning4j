@@ -50,7 +50,7 @@ jobs:
     name: zluda-java-validation (no GPU / no CUDA build)
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Java 11
         uses: actions/setup-java@v4

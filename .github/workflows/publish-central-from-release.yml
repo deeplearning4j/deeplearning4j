@@ -48,7 +48,7 @@ jobs:
           [[ -n "${RELEASE_VERSION}" ]] || { echo 'releaseVersion is required' >&2; exit 2; }
 
       - name: Checkout the exact build commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.expectedCommit }}
           persist-credentials: false

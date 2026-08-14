@@ -40,7 +40,7 @@ jobs:
     name: pjrt-cpu-smoke (hosted, no TPU hardware)
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Java 11
         uses: actions/setup-java@v4
@@ -185,7 +185,7 @@ jobs:
     name: tpu-vm-smoke (self-hosted Cloud TPU VM)
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Clean workspace (self-hosted)
         uses: AutoModality/action-clean@v1

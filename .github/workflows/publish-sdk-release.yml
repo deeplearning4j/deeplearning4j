@@ -32,7 +32,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout (for action access)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Create or update GitHub Release
         env:

@@ -60,7 +60,7 @@ jobs:
       linux: ${{ steps.rows.outputs.linux }}
       host: ${{ steps.rows.outputs.host }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sourceRef }}
       - name: Resolve canonical worker matrix
@@ -100,7 +100,7 @@ jobs:
       image: ${{ matrix.container }}
       options: --shm-size=4g
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sourceRef }}
       - name: Restore managed dependency downloads
@@ -144,7 +144,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 720
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sourceRef }}
       - name: Restore managed dependency downloads
@@ -188,7 +188,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sourceRef }}
       - name: Download staged worker result
@@ -250,7 +250,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.sourceRef }}
       - name: Download staged worker result
