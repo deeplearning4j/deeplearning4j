@@ -59,26 +59,59 @@ jobs:
               .replaceAll('*', '.*')
               .replaceAll('?', '.');
             const matcher = new RegExp(`^${escaped}$`);
-            const artifacts = await github.paginate(
-              github.rest.actions.listWorkflowRunArtifacts,
-              {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: runId,
-                per_page: 100,
-              },
-            );
-            const rows = artifacts
+            const [artifacts, jobs] = await Promise.all([
+              github.paginate(
+                github.rest.actions.listWorkflowRunArtifacts,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: runId,
+                  per_page: 100,
+                },
+              ),
+              github.paginate(
+                github.rest.actions.listJobsForWorkflowRun,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: runId,
+                  per_page: 100,
+                },
+              ),
+            ]);
+            const candidates = artifacts
               .filter((artifact) => !artifact.expired && matcher.test(artifact.name))
-              .sort((left, right) => left.name.localeCompare(right.name))
-              .map((artifact) => ({ name: artifact.name }));
+              .sort((left, right) => left.name.localeCompare(right.name));
+            const rows = [];
+            for (const artifact of candidates) {
+              const artifactId = artifact.name.replace(/^release-worker-/, '');
+              const sourceJob = jobs.find((job) => job.name.endsWith(` / ${artifactId}`));
+              const workerStep = sourceJob?.steps?.find((step) => step.name === 'Run worker');
+              const uploadStep = sourceJob?.steps?.find(
+                (step) => step.name === 'Upload staged worker result',
+              );
+              if (
+                sourceJob?.status !== 'completed'
+                || workerStep?.conclusion !== 'success'
+                || uploadStep?.conclusion !== 'success'
+              ) {
+                core.warning(
+                  `Skipping ${artifact.name}: no completed source job with successful `
+                  + 'Run worker and artifact upload steps.',
+                );
+                continue;
+              }
+              rows.push({ name: artifact.name, sourceJobId: String(sourceJob.id) });
+            }
             if (rows.length === 0) {
               core.setFailed(
-                `No unexpired artifacts matching ${pattern} were found in run ${runId}`,
+                `No verified successful artifacts matching ${pattern} were found in run ${runId}`,
               );
               return;
             }
-            core.info(`Publishing ${rows.length} staged worker artifact(s) from run ${runId}`);
+            core.info(
+              `Publishing ${rows.length} verified staged worker artifact(s) from run ${runId}`,
+            );
             core.setOutput('artifacts', JSON.stringify(rows));
 
   publish:
@@ -106,11 +139,10 @@ jobs:
         run: |
           set -Eeuo pipefail
           artifact_root="${GITHUB_WORKSPACE}/.release-worker-recovery/${{ matrix.name }}"
-          if [ ! -f "${artifact_root}/worker-success" ]; then
-            printf 'publish=false\n' >>"${GITHUB_OUTPUT}"
-            printf 'Skipping %s because worker-success is absent.\n' "${{ matrix.name }}" \
-              >>"${GITHUB_STEP_SUMMARY}"
-            exit 0
+          if [ ! -f "${artifact_root}/worker-config.json" ]; then
+            printf 'Missing worker configuration for verified source job %s (%s).\n' \
+              "${{ matrix.sourceJobId }}" "${{ matrix.name }}" >&2
+            exit 1
           fi
           release_version=$(python3 release/github/prepare-worker.py release-version \
             --config "${artifact_root}/worker-config.json")
