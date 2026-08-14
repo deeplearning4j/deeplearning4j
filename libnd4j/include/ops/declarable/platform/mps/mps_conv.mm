@@ -358,21 +358,6 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
 }
 
 // ===========================================================================
-// depthwise_conv2d  (stub)
-// ===========================================================================
-
-PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
-    return sd::Status::OK;
-}
-
-PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
-    Requirements req("MPS DEPTHWISE_CONV2D OP");
-    req.expectTrue(makeInfoVariable(false, "depthwise_conv2d uses CPU fallback"), NO_MSG);
-    req.logTheSuccess();
-    return req;
-}
-
-// ===========================================================================
 // depthwise_conv2d_bp  (stub)
 // ===========================================================================
 

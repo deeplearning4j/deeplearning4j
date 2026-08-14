@@ -352,6 +352,20 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertNotIn("MPSOffsetMake", conv)
         self.assertEqual(2, conv.count("MPSOffset poolingOffset ="))
 
+        image = (
+            ROOT / "libnd4j/include/ops/declarable/platform/mps/mps_image.mm"
+        ).read_text()
+        self.assertNotIn("PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU)", conv)
+        self.assertNotIn("PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU)", conv)
+        self.assertEqual(
+            2,
+            image.count("PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU)"),
+        )
+        self.assertEqual(
+            2,
+            image.count("PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU)"),
+        )
+
         elementwise = (
             ROOT / "libnd4j/include/ops/declarable/platform/mps/mps_elementwise.mm"
         ).read_text()
