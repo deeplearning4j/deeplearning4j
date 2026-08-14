@@ -44,6 +44,7 @@ set(CUSTOMOPS_GENERIC_SOURCES "" CACHE INTERNAL "Template-generated source files
 # Chunk sizing for functrace builds: adapt chunk sizes so total compile memory is roughly 60% of
 # system RAM, even when high parallelism (buildthreads ~14) is used.
 set(USE_MULTI_PASS_GENERATION "ON" CACHE STRING "Use multi-pass generation (ON/OFF/AUTO)")
+option(SD_TEMPLATE_DISPATCH_DEBUG "Log every generated template dispatch" OFF)
 
 if(SD_GCC_FUNCTRACE)
     set(_functrace_jobs 0)
@@ -2013,13 +2014,14 @@ endfunction()
 function(dispatch_to_handler template_name t1 t2 t3 parts_count content_var is_cuda)
     set(content "${${content_var}}")
     
-    # DEBUG: Log every call
-    message(STATUS "DEBUG dispatch_to_handler:")
-    message(STATUS "  template_name: '${template_name}'")
-    message(STATUS "  parts_count: ${parts_count}")
-    message(STATUS "  t1: '${t1}'")
-    message(STATUS "  t2: '${t2}'")
-    message(STATUS "  t3: '${t3}'")
+    if(SD_TEMPLATE_DISPATCH_DEBUG)
+        message(STATUS "DEBUG dispatch_to_handler:")
+        message(STATUS "  template_name: '${template_name}'")
+        message(STATUS "  parts_count: ${parts_count}")
+        message(STATUS "  t1: '${t1}'")
+        message(STATUS "  t2: '${t2}'")
+        message(STATUS "  t3: '${t3}'")
+    endif()
     
     # Create a template-specific deduplication set name
     if(is_cuda)
