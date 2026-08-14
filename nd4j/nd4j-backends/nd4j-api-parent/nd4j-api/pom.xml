@@ -197,7 +197,7 @@
                     <artifactId>libnd4j</artifactId>
                     <version>${project.version}</version>
                     <type>zip</type>
-                    <classifier>${javacpp.platform}-cuda-${cuda.version}</classifier>
+                    <classifier>${libnd4j.classifier}</classifier>
                     <optional>true</optional>
                 </dependency>
             </dependencies>

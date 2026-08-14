@@ -34,6 +34,13 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+#if defined(HAVE_ZLUDA)
+void svd(LaunchContext* context, NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV,
+         const bool calcUV, const int switchNum) {
+  THROW_EXCEPTION("SVD requires cuSolver and is not supported by the ZLUDA backend");
+}
+#else
+
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
@@ -598,6 +605,7 @@ void svd(LaunchContext* context, NDArray* x, const std::vector<NDArray*>& outArr
 
   NDArray::registerSpecialUse({S, U, V}, {x});
 }
+#endif
 
 }  // namespace helpers
 }  // namespace ops

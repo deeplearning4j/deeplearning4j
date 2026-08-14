@@ -373,6 +373,9 @@ static SD_KERNEL SD_INLINE void fillUpPermutation(void *output, const LongType *
 // compound - C matrix L + U - I, or main diagonal and lower - L matrix, from the 2nd diagonal - U matrix
 template <typename T, typename I>
 static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDArray *permutation) {
+#if defined(HAVE_ZLUDA)
+  THROW_EXCEPTION("LUP factorization requires cuSolver and is not supported by the ZLUDA backend");
+#else
   auto stream = context->getCudaStream();
   auto n = input->rows();
   std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
@@ -483,6 +486,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
 
   // cuSolver getrf wrote input in-place on device; register it unconditionally.
   NDArray::registerSpecialUse({input}, {});
+#endif
 }
 // ------------------------------------------------------------------------------------------------------------------ //
 

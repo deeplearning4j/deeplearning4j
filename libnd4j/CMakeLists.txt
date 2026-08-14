@@ -151,6 +151,16 @@ else()
     project(libnd4j LANGUAGES C CXX)
 endif()
 
+# CMAKE_OTOOL is not initialized consistently by older CMake releases, but the
+# runtime staging contract needs the active Apple toolchain's binary inspector.
+# Resolve it once at configure time so every target stages dylibs identically.
+if(APPLE AND NOT CMAKE_OTOOL)
+    find_program(CMAKE_OTOOL NAMES otool)
+endif()
+if(APPLE AND NOT CMAKE_OTOOL)
+    message(FATAL_ERROR "otool from the active Apple toolchain is required")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

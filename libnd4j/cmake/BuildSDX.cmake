@@ -240,6 +240,17 @@ function(configure_sdx_cpu_linking main_target_name)
     target_link_libraries(${main_target_name} PUBLIC
             ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} flatbuffers_interface ${CMAKE_DL_LIBS})
 
+    # The standalone SDX library contains the same Apple MPS implementation
+    # objects as the normal CPU target and therefore needs the same frameworks.
+    if(HAVE_MPS)
+        if(NOT APPLE OR NOT MPS_LIBRARIES)
+            message(FATAL_ERROR
+                "HAVE_MPS requires resolved Apple MPS frameworks for ${main_target_name}")
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC ${MPS_LIBRARIES})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_MPS=1)
+    endif()
+
     # Android CPU-family SDX builds include the NNAPI system ABI whenever the
     # shared object contains NnapiGraphBackend.  Keep this explicit on the
     # standalone target as well as the normal CPU target; otherwise the object

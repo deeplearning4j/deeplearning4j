@@ -366,16 +366,24 @@ class WorkflowMatrixTests(unittest.TestCase):
             pom,
         )
 
-    def test_zluda_resolves_static_cuda_archives_when_cmake_lacks_targets(self):
+        api_pom = (
+            ROOT
+            / "nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/pom.xml"
+        ).read_text()
+        self.assertIn("<classifier>${libnd4j.classifier}</classifier>", api_pom)
+        self.assertNotIn(
+            "<classifier>${javacpp.platform}-cuda-${cuda.version}</classifier>",
+            api_pom,
+        )
+
+    def test_zluda_links_only_required_cuda_static_archives(self):
         configuration = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
         self.assertIn(
             "function(link_zluda_cuda_static_library main_target_name imported_target library_name required)",
             configuration,
         )
-        self.assertIn(
-            "${main_target_name} CUDA::cusolver_lapack_static cusolver_lapack_static TRUE",
-            configuration,
-        )
+        self.assertNotIn("CUDA::cusolver_static", configuration)
+        self.assertNotIn("cusolver_lapack_static", configuration)
         self.assertIn(
             "${main_target_name} CUDA::nvrtc_static nvrtc_static TRUE",
             configuration,
@@ -385,12 +393,39 @@ class WorkflowMatrixTests(unittest.TestCase):
             configuration,
         )
 
+        cublas_helper = (
+            ROOT / "libnd4j/include/helpers/cuda/cublasHelper.cu"
+        ).read_text()
+        svd_helper = (
+            ROOT / "libnd4j/include/ops/declarable/helpers/cuda/svd.cu"
+        ).read_text()
+        lup_helper = (
+            ROOT / "libnd4j/include/ops/declarable/helpers/cuda/lup.cu"
+        ).read_text()
+        self.assertIn("#if !defined(HAVE_ZLUDA)", cublas_helper)
+        self.assertIn(
+            "SVD requires cuSolver and is not supported by the ZLUDA backend",
+            svd_helper,
+        )
+        self.assertIn(
+            "LUP factorization requires cuSolver and is not supported by the ZLUDA backend",
+            lup_helper,
+        )
+
     def test_native_builder_avoids_bash4_uppercase_expansion(self):
         builder = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
         self.assertNotIn("^^}", builder)
         self.assertIn("uppercase()", builder)
 
     def test_macos_mps_sources_use_supported_metal_and_ndarray_apis(self):
+        cmake_source = (ROOT / "libnd4j/CMakeLists.txt").read_text()
+        sdx_linking = (ROOT / "libnd4j/cmake/BuildSDX.cmake").read_text()
+        self.assertIn("find_program(CMAKE_OTOOL NAMES otool)", cmake_source)
+        self.assertIn(
+            "target_link_libraries(${main_target_name} PUBLIC ${MPS_LIBRARIES})",
+            sdx_linking,
+        )
+
         activations = (
             ROOT
             / "libnd4j/include/ops/declarable/platform/mps/mps_activations.mm"

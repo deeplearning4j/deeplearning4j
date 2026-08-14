@@ -1366,10 +1366,11 @@ class ReleaseValidationTest(unittest.TestCase):
 
         for static_target in (
             "CUDA::cudart_static",
-            "CUDA::cusolver_static",
             "CUDA::nvrtc_static",
         ):
             self.assertIn(static_target, cuda_configuration)
+        self.assertNotIn("CUDA::cusolver_static", cuda_configuration)
+        self.assertNotIn("cusolver_lapack_static", cuda_configuration)
         self.assertIn('RUNTIME_POLICY=$<IF:$<BOOL:${SD_ZLUDA}>,zluda-amd,default>', cuda_configuration)
         self.assertIn("retained forbidden dynamic NVIDIA dependency", runtime_staging)
         self.assertIn("ZLUDA_RUNTIME_LIBRARIES", cuda_configuration)

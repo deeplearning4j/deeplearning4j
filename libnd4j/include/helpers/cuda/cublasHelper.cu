@@ -68,6 +68,7 @@ static void* handle_() {
   return reinterpret_cast<void*>(_handle);
 }
 
+#if !defined(HAVE_ZLUDA)
 static void* solver_() {
   auto cusolverH = new cusolverDnHandle_t();
   auto status = cusolverDnCreate(cusolverH);
@@ -79,6 +80,7 @@ static void* solver_() {
 
   return cusolverH;
 }
+#endif
 
 static void* cudnn_() {
 #if HAVE_CUDNN
@@ -143,6 +145,7 @@ CublasHelper::~CublasHelper() {
   // The legacy cuBLAS cache and thread-local handles retain their existing
   // process-lifetime ownership; only optional per-device handles are owned here.
 
+#if !defined(HAVE_ZLUDA)
   // Destroy only handles that were requested and successfully created.
   for (int e = 0; e < static_cast<int>(_solvers.size()); e++) {
     if (_solvers[e] != nullptr) {
@@ -152,6 +155,7 @@ CublasHelper::~CublasHelper() {
       _solvers[e] = nullptr;
     }
   }
+#endif
 
   // Destroy any lazily-created cuSPARSE handles
   for (int e = 0; e < static_cast<int>(_sparse.size()); e++) {
@@ -236,6 +240,11 @@ void* CublasHelper::handle() {
 }
 
 void* CublasHelper::solver() {
+#if defined(HAVE_ZLUDA)
+  // ZLUDA does not expose the cuSolver ABI. Keep the public capability boundary
+  // but compile every cuSolver symbol out of the AMD-only classifier.
+  return nullptr;
+#else
   // cuSolver is an optional backend capability. ZLUDA implements the CUDA ABI
   // used by ordinary ND4J operations but not cuSolver, so do not probe it while
   // constructing a launch context.
@@ -261,6 +270,7 @@ void* CublasHelper::solver() {
     _solvers[deviceId] = solver_();
   }
   return _solvers[deviceId];
+#endif
 }
 
 void* CublasHelper::handle(int deviceId) {
