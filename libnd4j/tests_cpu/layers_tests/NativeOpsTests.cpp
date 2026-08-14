@@ -22,6 +22,7 @@
 #include <array/NDArray.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/BlasHelper.h>
 
 #include <loops/reduce3.h>
 #include <loops/type_conversions.h>
@@ -898,6 +899,20 @@ TEST_F(NativeOpsTests, ConcatTest_2) {
 }
 
 TEST_F(NativeOpsTests, InitializeTest_1) {
+#ifndef SD_CUDA
+  ASSERT_EQ(1, nd4j_process_blas_symbols_abi_v1());
+  auto& blas = BlasHelper::getInstance();
+  blas.initializeFunctions(nullptr);
+
+#if defined(HAS_FLOAT32) && (__EXTERNAL_BLAS__ || HAVE_OPENBLAS)
+  ASSERT_NE(nullptr, blas.sgemv());
+  ASSERT_NE(nullptr, blas.sgemm());
+#endif
+#if defined(HAS_DOUBLE) && (__EXTERNAL_BLAS__ || HAVE_OPENBLAS)
+  ASSERT_NE(nullptr, blas.dgemv());
+  ASSERT_NE(nullptr, blas.dgemm());
+#endif
+#endif
 }
 
 TEST_F(NativeOpsTests, MallocTest_1) {

@@ -843,10 +843,18 @@ void DataBuffer::allocateSpecial() {
       if (_specialBuffer == nullptr) {
         THROW_EXCEPTION("[DEVICE] allocation failed");
       }
+      void* poolAllocation = reinterpret_cast<void*>(_specialBuffer);
       // If failover landed on a non-peer device, switch to pinned host (UVA-accessible).
-      void* specialBuf = reinterpret_cast<void*>(_specialBuffer);
+      void* specialBuf = poolAllocation;
       actualDevice = handleNonPeerFailover(specialBuf, allocSize, deviceId, actualDevice, "DataBuffer::allocateSpecial");
       _specialBuffer = reinterpret_cast<int8_t*>(specialBuf);
+      if (DSP_DIAG_ENABLED(MEMORY)) {
+        DSP_DIAG(MEMORY,
+                 "DB_ALLOC_SPECIAL: db=%p poolPtr=%p finalPtr=%p bytes=%lld allocBytes=%zu "
+                 "requestedDevice=%d actualDevice=%d stream=%p graphExecution=%d",
+                 (void*)this, poolAllocation, specialBuf, (long long)getLenInBytes(), allocSize,
+                 deviceId, actualDevice, (void*)allocStream, (int)tl_graphExecutionActive);
+      }
     } else {
       size_t allocSize = getLenInBytes() + 8;
       DSP_DIAG(MEMORY, "DataBuffer::allocateSpecial via workspace: db=%p ws=%p bytes=%zu",

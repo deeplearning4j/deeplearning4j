@@ -1394,6 +1394,15 @@ struct GraphSegment {
   GraphBackend* resolvedGraphBackend = nullptr;
   GraphBackendPlanningPolicy resolvedGraphBackendPolicy;
 
+  // A compiled backend artifact belongs to this exact plan segment. Backends
+  // that are process-wide singletons must not own compiled graphs in a cache
+  // keyed only by slot range and shape: two plans can have identical ranges and
+  // shapes while representing different models. Keeping the strong reference
+  // here makes the artifact's lifetime identical to the segment's lifetime.
+  GraphBackend* compiledGraphBackendArtifactOwner = nullptr;
+  LongType compiledGraphBackendArtifactShapeKey = 0;
+  std::shared_ptr<void> compiledGraphBackendArtifact;
+
   // Pointer to NativeDynamicShapePlan slot array cache — allows GPU backends
   // to update the slot cache when pre-allocating output arrays.
   NDArray** slotArrayCache = nullptr;
@@ -1410,8 +1419,22 @@ struct GraphSegment {
                            : GraphBackendPlanningPolicy{};
   }
 
-  // Reset backend identity and policy together on shape-change rebuild.
+  void setCompiledGraphBackendArtifact(
+      GraphBackend* owner, LongType shapeKey, std::shared_ptr<void> artifact) {
+    compiledGraphBackendArtifactOwner = owner;
+    compiledGraphBackendArtifactShapeKey = shapeKey;
+    compiledGraphBackendArtifact = std::move(artifact);
+  }
+
+  void clearCompiledGraphBackendArtifact() {
+    compiledGraphBackendArtifact.reset();
+    compiledGraphBackendArtifactOwner = nullptr;
+    compiledGraphBackendArtifactShapeKey = 0;
+  }
+
+  // Reset backend identity, policy, and its plan-owned compilation together.
   void resetGraphBackend() {
+    clearCompiledGraphBackendArtifact();
     resolvedGraphBackend = nullptr;
     resolvedGraphBackendPolicy = GraphBackendPlanningPolicy{};
   }
@@ -1927,6 +1950,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Get the total number of slots (ops) in the plan.
    */
   int getNumSlots() const { return numSlots_; }
+
+  /** Whether the most recent shape-only pass resolved every live slot output. */
+  bool isShapePrePassComplete() const { return shapePrePassComplete_; }
+  int shapePrePassFirstIncompleteSlot() const {
+    return shapePrePassFirstIncompleteSlot_;
+  }
+  const std::string& shapePrePassIncompleteReason() const {
+    return shapePrePassIncompleteReason_;
+  }
 
   /**
    * Identity fingerprint: FNV-1a hash of (numSlots, all opNames, all output wiring).
@@ -2960,6 +2992,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
                                  // Use to measure pure dispatch overhead without kernel cost.
   bool shapePrePassDone_ = false;  // True after phaseShapeInferenceOnly has been run automatically
                                     // during the first execute() call. Prevents redundant re-runs.
+  bool shapePrePassComplete_ = false;  // True only when that pass resolved every live slot output.
+  int shapePrePassFirstIncompleteSlot_ = -1;
+  std::string shapePrePassIncompleteReason_;
   bool inShapeChangeWarmup_ = false;  // True during segDispatchCompile's shape-change warmup pass.
                                        // Allows slot shape reassignment in step3_allocateOutputs.
   int executeCount_;  // Total plan execution count (monotonically increasing)

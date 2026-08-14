@@ -57,9 +57,11 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
 import org.nd4j.autodiff.samediff.execution.DspDebugger;
+import org.nd4j.autodiff.samediff.execution.DspHandle;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
-import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.DynamicShapeSlot;
+import org.nd4j.autodiff.samediff.execution.PlanPhase;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
@@ -77,6 +79,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -177,6 +180,9 @@ public class GenerationPipeline implements AutoCloseable {
     /** Decoded control-token lexemes, retained because added tokens may not support string-to-id lookup. */
     private final List<String> specialTokenPieces;
 
+    /** Opt-in raw versus post-constraint candidate observer; disabled by default and non-mutating. */
+    private final ConstraintCandidateDiagnostics constraintCandidateDiagnostics;
+
     @Getter
     private final ModelIOConfig ioConfig;
 
@@ -195,6 +201,9 @@ public class GenerationPipeline implements AutoCloseable {
      * (see {@link InGraphKvState#sampling}).</p>
      */
     private volatile SamplingConfig activeSamplingConfig;
+
+    /** Template-owned assistant turn terminators active only during generateChat(). */
+    private volatile Set<Integer> activeChatStopTokenIds = Collections.emptySet();
 
     private enum DecodePolicyKind {
         GREEDY,
@@ -317,6 +326,8 @@ public class GenerationPipeline implements AutoCloseable {
         }
         this.specialTokenIds = Collections.unmodifiableSet(protocolTokens);
         this.specialTokenPieces = decodeSpecialTokenPieces(tokenizer, protocolTokens);
+        this.constraintCandidateDiagnostics =
+                ConstraintCandidateDiagnostics.fromSystemProperties();
         this.ioConfig = ioConfig;
         this.embeddingTable = embeddingTable;
         this.hiddenSize = hiddenSize;
@@ -740,9 +751,9 @@ public class GenerationPipeline implements AutoCloseable {
      * Generate one structured chat turn using the pipeline-configured template,
      * falling back to the tokenizer-owned template when no override is configured.
      *
-     * <p>The request is rendered once, the already-loaded pipeline is reused, and
-     * generated token IDs are decoded with special tokens retained so native
-     * tool sentinels remain available to the parser.</p>
+     * <p>The request is rendered once and the already-loaded pipeline is reused. Non-terminal
+     * special tokens remain visible to the protocol parser, while the active template's atomic
+     * assistant-turn terminator is handled as a stop token and excluded from generated text.</p>
      */
     public ChatGenerationResult generateChat(
             org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request request,
@@ -756,22 +767,22 @@ public class GenerationPipeline implements AutoCloseable {
         }
         org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request effective =
                 resolveChatRequest(request);
-        String prompt = tokenizer.applyChatTemplate(effective, effectiveChatTemplateText());
+        String activeTemplateText = effectiveChatTemplateText();
+        String prompt = tokenizer.applyChatTemplate(effective, activeTemplateText);
         SamplingConfig chatSampling = samplingForChat(effective, sampling);
-        SamplingConfig previous = this.activeSamplingConfig;
+        Set<Integer> chatStops = tokenizer.getChatTemplateStopTokenIds(activeTemplateText);
+        SamplingConfig previousSampling = this.activeSamplingConfig;
+        Set<Integer> previousChatStops = this.activeChatStopTokenIds;
         this.activeSamplingConfig = chatSampling;
+        this.activeChatStopTokenIds = chatStops;
         GenerationResult generated;
         try {
             generated = generateTokenIds(encodeFormattedChatToIds(prompt), maxNewTokens);
         } finally {
-            this.activeSamplingConfig = previous;
+            this.activeSamplingConfig = previousSampling;
+            this.activeChatStopTokenIds = previousChatStops;
         }
-        String raw = generated.getText();
-        int[] ids = generated.getTokenIds();
-        if (ids != null && ids.length > 0) {
-            raw = tokenizer.decode(ids, false);
-        }
-        return parseEffectiveChatOutput(effective, raw);
+        return parseEffectiveChatOutput(effective, generated.getText());
     }
 
     /**
@@ -857,7 +868,7 @@ public class GenerationPipeline implements AutoCloseable {
                     Set<Integer> specialTokenIds,
                     Collection<String> specialTokenPieces) {
         if (templateFormat
-                == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.NATIVE) {
+                != org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.JSON) {
             return templateFormat;
         }
         Set<Integer> specials = specialTokenIds == null
@@ -920,10 +931,14 @@ public class GenerationPipeline implements AutoCloseable {
         String[] toolNames = request.getTools().stream()
                 .map(org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Tool::getName)
                 .toArray(String[]::new);
-        boolean nativeFormat = request.getToolCallFormat()
-                == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.NATIVE;
+        org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat format =
+                request.getToolCallFormat();
+        boolean structuredFormat = format
+                == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.NATIVE
+                || format
+                == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.XML;
         ConstraintConfig constraint;
-        if (nativeFormat) {
+        if (structuredFormat) {
             Map<String, List<String>> argumentNamesByTool = new LinkedHashMap<>();
             Map<String, Map<String, List<String>>> argumentValuesByTool =
                     new LinkedHashMap<>();
@@ -932,24 +947,29 @@ public class GenerationPipeline implements AutoCloseable {
             for (org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Tool tool
                     : request.getTools()) {
                 argumentNamesByTool.put(
-                        tool.getName(), requiredNativeToolArgumentNames(tool));
+                        tool.getName(), requiredToolArgumentNames(tool));
                 parameterSchemasByTool.put(tool.getName(), tool.getParameters());
                 Map<String, List<String>> allowedValues =
-                        nativeToolArgumentValues(tool);
+                        toolArgumentValues(tool);
                 if (!allowedValues.isEmpty()) {
                     argumentValuesByTool.put(tool.getName(), allowedValues);
                 }
             }
-            constraint = ConstraintConfig.nativeToolCall(
-                    argumentNamesByTool, argumentValuesByTool,
-                    parameterSchemasByTool);
+            constraint = format
+                    == org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolCallFormat.XML
+                    ? ConstraintConfig.xmlToolCall(
+                            argumentNamesByTool, argumentValuesByTool,
+                            parameterSchemasByTool)
+                    : ConstraintConfig.nativeToolCall(
+                            argumentNamesByTool, argumentValuesByTool,
+                            parameterSchemasByTool);
         } else {
             constraint = ConstraintConfig.toolCall(toolNames);
         }
         return base.toBuilder().constraintConfig(constraint).build();
     }
 
-    private static List<String> requiredNativeToolArgumentNames(
+    private static List<String> requiredToolArgumentNames(
             org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Tool tool) {
         Object required = tool.getParameters().get("required");
         if (!(required instanceof Collection<?>)) {
@@ -964,7 +984,7 @@ public class GenerationPipeline implements AutoCloseable {
         return List.copyOf(names);
     }
 
-    private static Map<String, List<String>> nativeToolArgumentValues(
+    private static Map<String, List<String>> toolArgumentValues(
             org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Tool tool) {
         Object propertiesObject = tool.getParameters().get("properties");
         if (!(propertiesObject instanceof Map<?, ?>)) {
@@ -972,7 +992,7 @@ public class GenerationPipeline implements AutoCloseable {
         }
         Map<?, ?> properties = (Map<?, ?>) propertiesObject;
         Map<String, List<String>> allowedValues = new LinkedHashMap<>();
-        for (String argumentName : requiredNativeToolArgumentNames(tool)) {
+        for (String argumentName : requiredToolArgumentNames(tool)) {
             Object schemaObject = properties.get(argumentName);
             if (!(schemaObject instanceof Map<?, ?>)) {
                 continue;
@@ -1327,6 +1347,10 @@ public class GenerationPipeline implements AutoCloseable {
                         log.warn("[Lifecycle] Frozen fixed-buffer DSP plan has no retained state; resetting it before fresh prefill");
                         decoder.resetSession();
                         decoder.clearDynamicShapePlanCache();
+                        // The cache reset releases plan-owned arrays with cudaFreeAsync.
+                        // Drain those frees before allocating the replacement plan or each
+                        // independent generation retains another request-sized pool footprint.
+                        SameDiffMemoryUtils.trimAllDevicePools();
                     }
                 }
             }
@@ -1344,6 +1368,9 @@ public class GenerationPipeline implements AutoCloseable {
                     // dereferences a dangling pointer → free(): invalid pointer.
                     decoder.resetSession();
                     decoder.clearDynamicShapePlanCache();
+                    // resetSession()/cache clear enqueue plan-owned frees. Synchronize and
+                    // return them before this independent generation allocates a new plan.
+                    SameDiffMemoryUtils.trimAllDevicePools();
                 }
             }
         }
@@ -1981,10 +2008,11 @@ public class GenerationPipeline implements AutoCloseable {
                 decodeInputMap.put(entry.getKey(), entry.getValue());
             }
         }
-        // Prefill and decode must request the identical ordered output contract. DSP keys its
-        // native plan by this list; dropping K/V outputs or switching logits names here destroys
-        // the prefill plan and reloads the model-sized plan on every phase transition.
+        // The last-position projection is a prefill-only optimization. Decode is S=1 and must use
+        // the canonical logits output; DSP already selects a distinct plan for the decode shape.
+        // Retain the remaining ordered state outputs so the native recurrent-state contract is stable.
         List<String> decodeOutputNames = new ArrayList<>(prefillOutputNames);
+        decodeOutputNames.set(0, logitsName);
         int kvBufCount = (isQuantizedV2 && quantizedKvBuffers != null) ? quantizedKvBuffers.size()
                 : (staticKvBuffers != null ? staticKvBuffers.size() : 0);
         log.info("[GGUF-KV] STEP 3: warmup decode with {} KV buffers (V2={}), {} recurrent state buffers, {} inputs",
@@ -2003,7 +2031,7 @@ public class GenerationPipeline implements AutoCloseable {
             throw new IllegalStateException("Bundled MTP graph did not return " + TARGET_HIDDEN_STATES_NAME
                     + " during target warmup");
         }
-        INDArray decodeLogits = decodeOutputs.get(effectiveLogitsName);
+        INDArray decodeLogits = decodeOutputs.get(logitsName);
         suppressStopsUnderFloor(decodeLogits, 0, sampling, generatedSoFar.size(), stopTokenIds);
         int secondTokenId = sampleToken(
                 decodeLogits, 0, sampling, generatedSoFar, rng,
@@ -2124,7 +2152,7 @@ public class GenerationPipeline implements AutoCloseable {
         int cachePosExtIdx = cachePosName != null ? resolveExtInputIdx(executor, cachePosName) : -1;
         int actualSeqLenExtIdx = decoder.hasVariable(ACTUAL_SEQUENCE_LENGTH_NAME)
                 ? resolveExtInputIdx(executor, ACTUAL_SEQUENCE_LENGTH_NAME) : -1;
-        int logitsOutputIdx = resolveOutputIdx(executor, effectiveLogitsName);
+        int logitsOutputIdx = resolveOutputIdx(executor, logitsName);
         int targetHiddenOutputIdx = useNativeMtp
                 ? resolveOutputIdx(executor, TARGET_HIDDEN_STATES_NAME) : -1;
 
@@ -2286,7 +2314,7 @@ public class GenerationPipeline implements AutoCloseable {
         }
         // else: rotating disabled — rotatingSlotMap stays null (default); all existing paths unchanged.
         state.inputIdsName = inputIdsName;
-        state.logitsName = effectiveLogitsName;
+        state.logitsName = logitsName;
         state.causalMaskName = causalMaskName;
         state.posOffsetName = posOffsetName;
         state.cachePosName = cachePosName;
@@ -4555,6 +4583,7 @@ public class GenerationPipeline implements AutoCloseable {
             stopTokenIds.add(eosTokenId);
         }
         stopTokenIds.addAll(modelMetadata.getStopTokenIds());
+        stopTokenIds.addAll(activeChatStopTokenIds);
         if (config.getAdditionalStopTokenIds() != null) {
             stopTokenIds.addAll(config.getAdditionalStopTokenIds());
         }
@@ -5071,9 +5100,26 @@ public class GenerationPipeline implements AutoCloseable {
         // Apply constraint masking before all other sampling transforms.
         if (masker != null && tokenizer != null) {
             float[] rawLogits = slice.toFloatVector();
-            float[] masked = masker.maskLogits(
-                    rawLogits, effectiveStopTokenIds, specialTokenIds,
-                    id -> constraintTokenPiece(tokenizer, id));
+            String nonFiniteFailure = nonFiniteLogitsFailure(rawLogits, masker, generatedSoFar);
+            if (nonFiniteFailure != null) {
+                slice.close();
+                throw new IllegalStateException(nonFiniteFailure);
+            }
+            float[] masked = masker.maskLogitsByDecodedCandidate(
+                    rawLogits,
+                    effectiveStopTokenIds,
+                    specialTokenIds,
+                    token -> constraintTokenPiece(tokenizer, token),
+                    token -> decodeConstraintCandidate(token, generatedSoFar, tokenizer),
+                    specialTokenPieces);
+            String emittedText = masker.getEmittedText();
+            constraintCandidateDiagnostics.captureAndLog(
+                    emittedText,
+                    rawLogits,
+                    masked,
+                    sampling.isGreedy(),
+                    token -> constraintDiagnosticTokenText(
+                            token, emittedText, generatedSoFar, tokenizer));
             INDArray maskedSlice = Nd4j.create(masked, new long[]{masked.length}, slice.dataType());
             slice.close();
             slice = maskedSlice;
@@ -5084,9 +5130,11 @@ public class GenerationPipeline implements AutoCloseable {
                 int token = SamplerUtils.argmax(slice);
                 double selectedLogit = slice.getDouble(token);
                 if (!Double.isFinite(selectedLogit)) {
+                    String failure = masker != null
+                            ? constraintDeadEndMessage(masker, generatedSoFar)
+                            : nonFiniteLogitsFailure(slice.toFloatVector(), null, generatedSoFar);
                     slice.close();
-                    throw new IllegalStateException(
-                            "Constraint rejected every candidate token after exact sequence decode");
+                    throw new IllegalStateException(failure);
                 }
                 if (acceptConstraintCandidate(
                         token, generatedSoFar, masker, tokenizer, effectiveStopTokenIds)) {
@@ -5155,20 +5203,49 @@ public class GenerationPipeline implements AutoCloseable {
         while (true) {
             double bestLogit = slice.maxNumber().doubleValue();
             if (!Double.isFinite(bestLogit)) {
+                String failure = masker != null
+                        ? constraintDeadEndMessage(masker, generatedSoFar)
+                        : nonFiniteLogitsFailure(slice.toFloatVector(), null, generatedSoFar);
                 slice.close();
-                throw new IllegalStateException(
-                        "Constraint rejected every candidate token after exact sequence decode");
+                throw new IllegalStateException(failure);
             }
             INDArray probs = SamplerUtils.softmax(slice);
             int token = SamplerUtils.multinomialSample(probs, rng);
             probs.close();
             if (acceptConstraintCandidate(
-                    token, generatedSoFar, masker, tokenizer, stopTokenIds)) {
+                    token, generatedSoFar, masker, tokenizer, effectiveStopTokenIds)) {
                 slice.close();
                 return token;
             }
             slice.putScalar(token, Double.NEGATIVE_INFINITY);
         }
+    }
+
+    private static String decodeConstraintCandidate(
+            int token, List<Integer> generatedSoFar, Tokenizer tokenizer) {
+        int size = generatedSoFar == null ? 0 : generatedSoFar.size();
+        int[] candidateIds = new int[size + 1];
+        for (int index = 0; index < size; index++) {
+            candidateIds[index] = generatedSoFar.get(index);
+        }
+        candidateIds[size] = token;
+        return tokenizer.decode(candidateIds, false);
+    }
+
+    private static String constraintDiagnosticTokenText(
+            int token,
+            String emittedText,
+            List<Integer> generatedSoFar,
+            Tokenizer tokenizer) {
+        String piece = constraintTokenPiece(tokenizer, token);
+        String decodedCandidate = decodeConstraintCandidate(token, generatedSoFar, tokenizer);
+        String emitted = emittedText == null ? "" : emittedText;
+        String extension = decodedCandidate != null && decodedCandidate.startsWith(emitted)
+                ? decodedCandidate.substring(emitted.length()) : decodedCandidate;
+        if (Objects.equals(piece, extension)) {
+            return extension;
+        }
+        return "piece=" + piece + " extension=" + extension;
     }
 
     private boolean acceptConstraintCandidate(
@@ -5185,18 +5262,269 @@ public class GenerationPipeline implements AutoCloseable {
         if (terminals.contains(token) && masker.isComplete()) {
             return true;
         }
-        int size = generatedSoFar == null ? 0 : generatedSoFar.size();
-        int[] candidateIds = new int[size + 1];
-        for (int index = 0; index < size; index++) {
-            candidateIds[index] = generatedSoFar.get(index);
+        if (specialTokenIds.contains(token)) {
+            String piece = constraintTokenPiece(tokenizer, token);
+            if (!masker.allowsSpecialToken(piece)) {
+                return false;
+            }
+            masker.specialTokenEmitted(piece);
+            return true;
         }
-        candidateIds[size] = token;
-        String decoded = tokenizer.decode(candidateIds, false);
+        String decoded = decodeConstraintCandidate(token, generatedSoFar, tokenizer);
         if (!masker.allowsDecodedText(decoded, specialTokenPieces)) {
             return false;
         }
         masker.decodedTextEmitted(decoded);
         return true;
+    }
+
+    private String nonFiniteLogitsFailure(
+            float[] rawLogits, ConstraintMasker masker, List<Integer> generatedSoFar) {
+        int finite = 0;
+        int nan = 0;
+        int positiveInfinity = 0;
+        int negativeInfinity = 0;
+        for (float value : rawLogits) {
+            if (Float.isFinite(value)) {
+                finite++;
+            } else if (Float.isNaN(value)) {
+                nan++;
+            } else if (value > 0.0f) {
+                positiveInfinity++;
+            } else {
+                negativeInfinity++;
+            }
+        }
+        if (finite > 0) {
+            return null;
+        }
+
+        StringBuilder dsp = new StringBuilder();
+        try {
+            DspHandle handle = decoder.dsp();
+            if (handle.isCompiled()) {
+                int firstNonFiniteSlot = firstNonFiniteDspSlot(handle);
+                dsp.append(", firstNonFiniteSlot=").append(firstNonFiniteSlot);
+                if (firstNonFiniteSlot >= 0) {
+                    DynamicShapePlanExecutor executor =
+                            decoder.getOrCreateSession().getDynamicShapePlanExecutor();
+                    DynamicShapePlan plan = executor == null ? null : executor.getCurrentPlan();
+                    DynamicShapeSlot producer = producerForOutputSlot(plan, firstNonFiniteSlot);
+                    if (producer != null) {
+                        dsp.append(", firstNonFiniteOp=").append(producer.getOpName())
+                                .append(", firstNonFiniteInputs=")
+                                .append(Arrays.toString(producer.getInputVarNames()))
+                                .append(", firstNonFiniteOutputs=")
+                                .append(Arrays.toString(producer.getOutputVarNames()));
+                        appendDspSlotStats(
+                                dsp, handle, firstNonFiniteSlot, "firstNonFinite",
+                                producer.getOpName());
+                        appendDspInputLineage(
+                                dsp, handle, decoder, plan, producer, 10, new HashSet<>());
+                    } else {
+                        dsp.append(", firstNonFiniteOp=unknown-output-slot");
+                    }
+                }
+            }
+        } catch (RuntimeException diagnosticFailure) {
+            dsp.append(", dspDiagnosticFailure=")
+                    .append(diagnosticFailure.getClass().getSimpleName())
+                    .append(':').append(diagnosticFailure.getMessage());
+        }
+
+        String constraintType = masker == null || masker.getConstraint() == null
+                ? "none" : masker.getConstraint().getClass().getSimpleName();
+        int tokenCount = generatedSoFar == null ? 0 : generatedSoFar.size();
+        return "Model produced no finite logits before constraint masking"
+                + " [constraint=" + constraintType
+                + ", generatedTokens=" + tokenCount
+                + ", finite=" + finite
+                + ", nan=" + nan
+                + ", positiveInfinity=" + positiveInfinity
+                + ", negativeInfinity=" + negativeInfinity
+                + dsp + "]";
+    }
+
+    /**
+     * Locate the first output slot containing an actual NaN or infinity.
+     *
+     * <p>{@link DspHandle#firstNaNSlot()}
+     * uses a reduction sum, which can overflow for large finite FP16 tensors and
+     * therefore misidentify an early slot. This slower element-wise scan runs
+     * only after generation has already failed with wholly non-finite logits.</p>
+     */
+    private static int firstNonFiniteDspSlot(DspHandle handle) {
+        for (int slotIndex = 0; slotIndex < handle.totalSlots(); slotIndex++) {
+            INDArray slot = handle.getSlotOutput(slotIndex);
+            if (slot == null || !slot.dataType().isNumerical()) {
+                continue;
+            }
+            float[] values = slot.toFloatVector();
+            for (float value : values) {
+                if (!Float.isFinite(value)) {
+                    return slotIndex;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static DynamicShapeSlot producerForOutputSlot(
+            DynamicShapePlan plan, int outputSlotIndex) {
+        if (plan == null || plan.getSlots() == null) {
+            return null;
+        }
+        for (DynamicShapeSlot slot : plan.getSlots()) {
+            for (int candidate : slot.getOutputSlotIndices()) {
+                if (candidate == outputSlotIndex) {
+                    return slot;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Trace authoritative input output-slot indices rather than resolving by variable name.
+     * SameDiff names may be rewritten after graph construction, while the compiled source
+     * indices are the exact wiring consumed by DSP.
+     */
+    private static void appendDspInputLineage(
+            StringBuilder diagnostic,
+            DspHandle handle,
+            SameDiff graph,
+            DynamicShapePlan plan,
+            DynamicShapeSlot consumer,
+            int remainingDepth,
+            Set<Integer> visited) {
+        if (remainingDepth <= 0 || consumer == null || plan == null || plan.getSlots() == null) {
+            return;
+        }
+        int[] sources = consumer.getInputSourceIndices();
+        byte[] sourceTypes = consumer.getInputSourceTypes();
+        String[] inputNames = consumer.getInputVarNames();
+        if (sources == null) {
+            return;
+        }
+        for (int i = 0; i < sources.length; i++) {
+            int outputSlot = sources[i];
+            String inputName = inputNames != null && i < inputNames.length && inputNames[i] != null
+                    ? inputNames[i] : consumer.getOpName() + ".input" + i;
+            boolean opOutput = outputSlot >= 0
+                    && (sourceTypes == null || i >= sourceTypes.length
+                    || sourceTypes[i] == DynamicShapeSlot.SOURCE_OP_OUTPUT);
+            if (!opOutput) {
+                INDArray externalValue = graph == null ? null : graph.getArrForVarName(inputName);
+                appendDspArrayStats(
+                        diagnostic, externalValue, inputName,
+                        "externalSource=" + (sourceTypes != null && i < sourceTypes.length
+                                ? sourceTypes[i] : "unknown"));
+                continue;
+            }
+            if (!visited.add(outputSlot)) {
+                continue;
+            }
+            DynamicShapeSlot producer = producerForOutputSlot(plan, outputSlot);
+            appendDspSlotStats(diagnostic, handle, outputSlot, inputName,
+                    producer == null ? "unknown" : producer.getOpName());
+            appendDspInputLineage(
+                    diagnostic, handle, graph, plan, producer, remainingDepth - 1, visited);
+        }
+    }
+
+    private static void appendDspSlotStats(
+            StringBuilder diagnostic,
+            DspHandle handle,
+            int outputSlot,
+            String label) {
+        appendDspSlotStats(diagnostic, handle, outputSlot, label, "unknown");
+    }
+
+    private static void appendDspSlotStats(
+            StringBuilder diagnostic,
+            DspHandle handle,
+            int outputSlot,
+            String label,
+            String producerName) {
+        try {
+            INDArray value = handle.getSlotOutput(outputSlot);
+            appendDspArrayStats(
+                    diagnostic, value, label,
+                    "slot=" + outputSlot + ", producer=" + producerName);
+        } catch (RuntimeException diagnosticFailure) {
+            diagnostic.append("\n  dspLineage[").append(label).append("]={slot=")
+                    .append(outputSlot).append(", producer=").append(producerName)
+                    .append(", unavailable=")
+                    .append(diagnosticFailure.getClass().getSimpleName()).append('}');
+        }
+    }
+
+    private static void appendDspArrayStats(
+            StringBuilder diagnostic,
+            INDArray value,
+            String label,
+            String provenance) {
+        diagnostic.append("\n  dspLineage[").append(label).append("]={")
+                .append(provenance);
+        if (value == null) {
+            diagnostic.append(", value=unavailable}");
+            return;
+        }
+        if (!value.dataType().isNumerical()) {
+            diagnostic.append(", dtype=").append(value.dataType())
+                    .append(", shape=").append(Arrays.toString(value.shape()))
+                    .append(", value=non-numerical}");
+            return;
+        }
+        float min = Float.POSITIVE_INFINITY;
+        float max = Float.NEGATIVE_INFINITY;
+        int finite = 0;
+        int nan = 0;
+        int positiveInfinity = 0;
+        int negativeInfinity = 0;
+        for (float element : value.toFloatVector()) {
+            if (Float.isNaN(element)) {
+                nan++;
+            } else if (element == Float.POSITIVE_INFINITY) {
+                positiveInfinity++;
+            } else if (element == Float.NEGATIVE_INFINITY) {
+                negativeInfinity++;
+            } else {
+                finite++;
+                min = Math.min(min, element);
+                max = Math.max(max, element);
+            }
+        }
+        diagnostic.append(", dtype=").append(value.dataType())
+                .append(", shape=").append(Arrays.toString(value.shape()))
+                .append(", finite=").append(finite)
+                .append(", min=").append(min)
+                .append(", max=").append(max)
+                .append(", nan=").append(nan)
+                .append(", +inf=").append(positiveInfinity)
+                .append(", -inf=").append(negativeInfinity)
+                .append('}');
+    }
+
+    private static String constraintDeadEndMessage(
+            ConstraintMasker masker, List<Integer> generatedSoFar) {
+        String emitted = masker == null ? "" : masker.getEmittedText();
+        String escaped = emitted == null ? "" : emitted
+                .replace("\\", "\\\\")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n")
+                .replace("\t", "\\t");
+        int maxChars = 512;
+        String bounded = escaped.length() <= maxChars
+                ? escaped : "…" + escaped.substring(escaped.length() - maxChars);
+        String constraintType = masker == null || masker.getConstraint() == null
+                ? "none" : masker.getConstraint().getClass().getSimpleName();
+        int tokenCount = generatedSoFar == null ? 0 : generatedSoFar.size();
+        return "Constraint rejected every candidate token after exact sequence decode"
+                + " [constraint=" + constraintType
+                + ", generatedTokens=" + tokenCount
+                + ", complete=" + (masker != null && masker.isComplete())
+                + ", emitted=\"" + bounded + "\"]";
     }
 
     /**
@@ -5635,6 +5963,8 @@ public class GenerationPipeline implements AutoCloseable {
                     log.info("[Lifecycle] Resetting frozen DSP executor for new generation");
                     decoder.resetSession();
                     decoder.clearDynamicShapePlanCache();
+                    // Do not carry deferred plan frees into the replacement generation.
+                    SameDiffMemoryUtils.trimAllDevicePools();
                 }
             }
         }
@@ -5751,7 +6081,8 @@ public class GenerationPipeline implements AutoCloseable {
                 null, maxKvLen, 0,
                 false, hiddenSize,
                 reusableInputs, dspActive,
-                encoderOutputs, encoderAttentionMask);
+                encoderOutputs, encoderAttentionMask,
+                actualPrefillLen);
 
         Map<String, INDArray> prefillOutputs = decoder.output(
                 prefillInputMap, allOutputNames.toArray(new String[0]));

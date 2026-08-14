@@ -6,11 +6,13 @@ usage() {
 Usage:
   verify-android-accelerator-aar.sh --aar <file> --variant <name>
       --native-library <basename> --accelerator <enum> --android-ndk <path>
-      [--gpu-target <enum>] [--device-ready] [--adapter-name <libname.so>]
+      [--gpu-target <enum>] [--device-ready] [--adapter-name <hexagon-libname.so>]
 
 Verifies Android ARM64 packaging, SDX/JavaCPP/tokenizer contents, binding
-metadata, accelerator adapter symbols, ELF dependency closure, and the absence
-of OpenBLAS/MKL/GFortran or Linux-host runtime dependencies.
+metadata, variant-specific device readiness, ELF dependency closure, and the
+absence of OpenBLAS/MKL/GFortran or Linux-host runtime dependencies. Tensor G3
+readiness is proven by its NNAPI and packaged ARM Compute closure; Hexagon also
+requires the named vendor adapter and its exported runtime ABI.
 USAGE
 }
 
@@ -79,8 +81,8 @@ if [[ ! -s "$AAR" ]]; then
     echo "AAR not found or empty: $AAR" >&2
     exit 1
 fi
-if [[ "$DEVICE_READY" == "1" && "$GPU_TARGET" != "VULKAN" && -z "$ADAPTER_NAME" ]]; then
-    echo "--device-ready requires --adapter-name unless --gpu-target VULKAN is selected" >&2
+if [[ "$DEVICE_READY" == "1" && "$VARIANT" == "hexagon" && -z "$ADAPTER_NAME" ]]; then
+    echo "Hexagon --device-ready verification requires --adapter-name" >&2
     exit 2
 fi
 for command_name in unzip python3 sha256sum; do
@@ -106,7 +108,9 @@ fi
 
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
-unzip -q "$AAR" -d "$TMP_DIR"
+# AAR assembly may include duplicate entries from layered native/JAR inputs.
+# Verification is non-interactive: later archive entries deterministically win.
+unzip -oq "$AAR" -d "$TMP_DIR"
 
 NATIVE_DIR="$TMP_DIR/jni/arm64-v8a"
 BINDING_JSON="$TMP_DIR/binding.json"
@@ -373,7 +377,7 @@ for native_file in "${NATIVE_LIBRARIES[@]}"; do
               sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p')
 done
 
-if [[ "$DEVICE_READY" == "1" && -n "$ADAPTER_NAME" ]]; then
+if [[ "$DEVICE_READY" == "1" && "$VARIANT" == "hexagon" ]]; then
     ADAPTER_LIBRARY="$NATIVE_DIR/$ADAPTER_NAME"
     if [[ ! -s "$ADAPTER_LIBRARY" ]]; then
         echo "Device-ready adapter is missing: $ADAPTER_NAME" >&2

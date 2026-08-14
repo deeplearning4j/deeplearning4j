@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.llm.generation;
 
 import org.eclipse.deeplearning4j.llm.generation.constraint.NativeToolCallConstraint;
+import org.eclipse.deeplearning4j.llm.generation.constraint.XmlToolCallConstraint;
 import org.eclipse.deeplearning4j.llm.generation.sampling.SamplingConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.junit.jupiter.api.Test;
@@ -99,6 +100,44 @@ class ToolCallParserTest {
         assertEquals("The status is \"Do not use\".",
                 result.getToolCalls().get(0).getArguments().get("query"));
         assertTrue(result.getErrors().isEmpty());
+    }
+
+    @Test
+    void parsesTemplateDeclaredXmlFunctionEnvelope() {
+        String raw = "I found two explicit entities.\n<tool_call>\n"
+                + "<function=submit_entities>\n"
+                + "<parameter=names>\n[\"M. Chen\",\"J. Park\"]\n"
+                + "</parameter>\n</function>\n</tool_call>";
+
+        ToolCallParser.ParseResult result = ToolCallParser.parse(
+                raw, ENTITY_TOOLS, ChatTemplate.ToolCallFormat.XML,
+                ChatTemplate.ToolChoice.REQUIRED);
+
+        assertEquals("I found two explicit entities.", result.getContent());
+        assertEquals(1, result.getToolCalls().size());
+        assertEquals("submit_entities", result.getToolCalls().get(0).getName());
+        assertEquals(List.of("M. Chen", "J. Park"),
+                result.getToolCalls().get(0).getArguments().get("names"));
+        assertTrue(result.getErrors().isEmpty());
+    }
+
+    @Test
+    void rejectsIncompleteOrSchemaInvalidXmlFunctionEnvelope() {
+        ToolCallParser.ParseResult incomplete = ToolCallParser.parse(
+                "<tool_call>\n<function=submit_entities>\n"
+                        + "<parameter=names>\n[\"M. Chen\"]\n</parameter>",
+                ENTITY_TOOLS, ChatTemplate.ToolCallFormat.XML,
+                ChatTemplate.ToolChoice.REQUIRED);
+        ToolCallParser.ParseResult duplicate = ToolCallParser.parse(
+                "<tool_call>\n<function=submit_entities>\n"
+                        + "<parameter=names>\n[\"M. Chen\",\"M. Chen\"]\n"
+                        + "</parameter>\n</function>\n</tool_call>",
+                ENTITY_TOOLS, ChatTemplate.ToolCallFormat.XML,
+                ChatTemplate.ToolChoice.REQUIRED);
+
+        assertEquals(List.of("incomplete XML tool-call envelope"), incomplete.getErrors());
+        assertTrue(duplicate.getToolCalls().isEmpty());
+        assertTrue(duplicate.getErrors().get(0).contains("unique items"));
     }
 
     @Test
@@ -234,6 +273,46 @@ class ToolCallParserTest {
         assertFalse(resolved.getConstraintConfig().buildConstraint().isAccepting(
                 "<|tool_call_start|>[search_graph(query=\"Someone else\")]"
                         + "<|tool_call_end|>"));
+    }
+
+    @Test
+    void requiredXmlChatDerivesTemplateProtocolConstraint() {
+        ChatTemplate.Request request = ChatTemplate.Request.builder()
+                .messages(List.of(ChatTemplate.Message.user("Extract")))
+                .tools(ENTITY_TOOLS)
+                .toolCallFormat(ChatTemplate.ToolCallFormat.XML)
+                .toolChoice(ChatTemplate.ToolChoice.REQUIRED)
+                .build();
+
+        SamplingConfig resolved =
+                GenerationPipeline.samplingForChat(request, SamplingConfig.greedy());
+        assertEquals(XmlToolCallConstraint.TYPE,
+                resolved.getConstraintConfig().getType());
+        var constraint = resolved.getConstraintConfig().buildConstraint();
+        String valid = "<tool_call>\n<function=submit_entities>\n"
+                + "<parameter=names>\n[\"M. Chen\",\"J. Park\"]\n"
+                + "</parameter>\n</function>\n</tool_call>";
+        String invalid = "<tool_call>\n<function=submit_entities>\n"
+                + "<parameter=names>\n[\"M. Chen\",\"M. Chen\"]\n"
+                + "</parameter>\n</function>\n</tool_call>";
+
+        assertTrue(constraint.isAccepting(valid));
+        assertFalse(constraint.isAccepting(invalid));
+        assertFalse(constraint.canExtend(
+                "<tool_call>\n<function=submit_entities>\n<parameter=other>", "\n"));
+        String valuePrefix = "<tool_call>\n<function=submit_entities>\n"
+                + "<parameter=names>\n";
+        assertFalse(constraint.canExtend(valuePrefix, "- PERSON"),
+                "array values must be constrained before the closing tag");
+        assertTrue(constraint.canExtend(valuePrefix, "[\"M. Chen\""));
+        assertFalse(constraint.canExtend(
+                valuePrefix + "[\"M. Chen\"", "\n</parameter>\n"),
+                "an incomplete schema value must not enter the closing tag");
+        String openValue = valuePrefix + "[\"M. Chen\",\"J. Park\"]";
+        assertFalse(constraint.canExtend(
+                openValue, "\n</parameter=names>\n"));
+        assertFalse(constraint.allowsSpecialToken(openValue, "<|im_end|>"));
+        assertTrue(constraint.canExtend(openValue, "\n</parameter>\n"));
     }
 
     @Test

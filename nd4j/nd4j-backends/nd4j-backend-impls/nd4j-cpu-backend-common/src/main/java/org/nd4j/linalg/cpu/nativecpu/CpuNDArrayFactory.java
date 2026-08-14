@@ -24,6 +24,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
@@ -116,6 +117,19 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         // TODO: add batched gemm here
 
+        // Branch before constructing any JavaCPP values. Embedded Native Image
+        // builds freeze this policy at build time, so the JNI lookup path is unreachable.
+        if (NativeSymbolResolution.PROCESS_SYMBOLS) {
+            nativeOps.initializeFunctionsFromProcessSymbols();
+        } else {
+            nativeOps.initializeFunctions(javaCppNativeFunctions());
+        }
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+    }
+
+    private static PointerPointer javaCppNativeFunctions() {
         PointerPointer functions = new PointerPointer(10);
         functions.put(0, Loader.addressof("cblas_sgemv"));
         functions.put(1, Loader.addressof("cblas_dgemv"));
@@ -127,10 +141,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         functions.put(7, Loader.addressof("LAPACKE_dgesvd"));
         functions.put(8, Loader.addressof("LAPACKE_sgesdd"));
         functions.put(9, Loader.addressof("LAPACKE_dgesdd"));
-        nativeOps.initializeFunctions(functions);
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        return functions;
     }
 
     private static String cpuBinaryLevelToName(int level) {

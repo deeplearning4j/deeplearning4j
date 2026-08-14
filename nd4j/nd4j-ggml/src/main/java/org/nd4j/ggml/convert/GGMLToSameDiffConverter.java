@@ -31,7 +31,9 @@ import org.nd4j.ggml.architecture.ArchitectureRegistry;
 import org.nd4j.ggml.architecture.ModelArchitecture;
 import org.nd4j.ggml.format.*;
 import org.nd4j.ggml.quantization.DequantizerFactory;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -512,12 +514,12 @@ public class GGMLToSameDiffConverter {
 
         // directData is already a direct ByteBuffer in little-endian order.
         // Create ND4J DataBuffer directly from it — no heap copy needed.
-        org.nd4j.linalg.api.buffer.DataBuffer buf = Nd4j.createBuffer(directData, nd4jType, (int) numElements);
+        DataBuffer buf = Nd4j.createBuffer(directData, nd4jType, numElements);
         INDArray array = Nd4j.create(buf, shape, Nd4j.getStrides(shape, 'c'), 0, 'c');
 
         // Ensure host has correct data for later transfers
         Nd4j.getAffinityManager().ensureLocation(array,
-                org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+                AffinityManager.Location.HOST);
 
         return castFloatingTarget(array, nd4jType, targetType);
     }
@@ -535,7 +537,7 @@ public class GGMLToSameDiffConverter {
         if (numElements < 1) numElements = 1;
 
         // Use type-specific array creation to ensure reliable host-to-device transfer.
-        // Direct ByteBuffer creation via Nd4j.createBuffer(ByteBuffer, DataType, int) can
+        // Direct ByteBuffer creation via Nd4j.createBuffer(ByteBuffer, DataType, long) can
         // leave CUDA device buffers uninitialized when the affinity manager doesn't detect
         // that the host buffer was written. Using Nd4j.create(primitive[], shape) goes through
         // a well-tested path that correctly marks host data as authoritative.
@@ -548,7 +550,7 @@ public class GGMLToSameDiffConverter {
 
         switch (nd4jType) {
             case FLOAT: {
-                float[] floatData = new float[(int) numElements];
+                float[] floatData = new float[Math.toIntExact(numElements)];
                 bb.asFloatBuffer().get(floatData);
                 return castFloatingTarget(Nd4j.create(floatData, shape, 'c'), nd4jType, targetType);
             }
@@ -558,7 +560,7 @@ public class GGMLToSameDiffConverter {
                 ByteBuffer directBuffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.LITTLE_ENDIAN);
                 directBuffer.put(data);
                 directBuffer.rewind();
-                org.nd4j.linalg.api.buffer.DataBuffer buf = Nd4j.createBuffer(directBuffer, DataType.HALF, (int) numElements);
+                DataBuffer buf = Nd4j.createBuffer(directBuffer, DataType.HALF, numElements);
                 // Construct with the exact GGUF shape so rank-0 scalars, rank-1 vectors, and N-D
                 // tensors all produce consistent shape info. The previous "create(buf) + conditional
                 // reshape" pattern left rank-0 tensors as malformed 1D [1] arrays that later paths
@@ -566,11 +568,11 @@ public class GGMLToSameDiffConverter {
                 INDArray array = Nd4j.create(buf, shape, Nd4j.getStrides(shape, 'c'), 0, 'c');
                 // Force device→host sync so host has correct data for later host→device transfers
                 Nd4j.getAffinityManager().ensureLocation(array,
-                        org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+                        AffinityManager.Location.HOST);
                 return castFloatingTarget(array, nd4jType, targetType);
             }
             case DOUBLE: {
-                double[] doubleData = new double[(int) numElements];
+                double[] doubleData = new double[Math.toIntExact(numElements)];
                 bb.asDoubleBuffer().get(doubleData);
                 return castFloatingTarget(Nd4j.create(doubleData, shape, 'c'), nd4jType, targetType);
             }
@@ -581,7 +583,7 @@ public class GGMLToSameDiffConverter {
                 ByteBuffer directBuffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.LITTLE_ENDIAN);
                 directBuffer.put(data);
                 directBuffer.rewind();
-                org.nd4j.linalg.api.buffer.DataBuffer rawDataBuffer = Nd4j.createBuffer(directBuffer, nd4jType, (int) numElements);
+                DataBuffer rawDataBuffer = Nd4j.createBuffer(directBuffer, nd4jType, numElements);
                 return Nd4j.create(rawDataBuffer, shape, Nd4j.getStrides(shape, 'c'), 0, 'c');
             }
         }

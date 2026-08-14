@@ -82,6 +82,39 @@ function(sd_dep_cache_key dep_name version extra_config out_var)
     set(${out_var} "${version}-${_hash8}" PARENT_SCOPE)
 endfunction()
 
+# Host generators used by a cross build are independent of the Android target
+# toolchain. Key them from the pinned source/recipe plus the actual native host
+# compilers so changing an NDK or target ABI never rebuilds llvm-tblgen, mlir-tblgen,
+# or SLEEF's generators.
+function(sd_dep_cache_host_key dep_name version host_c_compiler host_cxx_compiler extra_config out_var)
+    execute_process(
+        COMMAND "${host_c_compiler}" --version
+        OUTPUT_VARIABLE _host_c_version
+        ERROR_VARIABLE _host_c_version_error
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(
+        COMMAND "${host_cxx_compiler}" --version
+        OUTPUT_VARIABLE _host_cxx_version
+        ERROR_VARIABLE _host_cxx_version_error
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(_host_c_version STREQUAL "")
+        set(_host_c_version "${_host_c_version_error}")
+    endif()
+    if(_host_cxx_version STREQUAL "")
+        set(_host_cxx_version "${_host_cxx_version_error}")
+    endif()
+    string(SHA256 _host_c_identity
+        "${host_c_compiler};${_host_c_version}")
+    string(SHA256 _host_cxx_identity
+        "${host_cxx_compiler};${_host_cxx_version}")
+    set(_key_input
+        "${version};${CMAKE_HOST_SYSTEM_NAME};${CMAKE_HOST_SYSTEM_PROCESSOR};"
+        "${_host_c_identity};${_host_cxx_identity};cmake=${CMAKE_VERSION};${extra_config}")
+    string(MD5 _hash "${_key_input}")
+    string(SUBSTRING "${_hash}" 0 8 _hash8)
+    set(${out_var} "${version}-${_hash8}" PARENT_SCOPE)
+endfunction()
+
 # Check if a cached dependency exists and is complete.
 # Sets out_hit to TRUE/FALSE and out_cache_path to the cache install directory.
 function(sd_dep_cache_check dep_name cache_key out_hit out_cache_path)
@@ -132,7 +165,13 @@ function(sd_dep_cache_store dep_name cache_key install_dir ep_target)
     # Normalize paths to forward slashes for Windows compatibility in generated scripts
     string(REPLACE "\\" "/" _cache_dir "${_cache_dir}")
     string(REPLACE "\\" "/" install_dir "${install_dir}")
-    set(_store_script "${CMAKE_BINARY_DIR}/dep_cache_store_${dep_name}.cmake")
+    # A configure can stage multiple variants of the same dependency. Give every
+    # producer a unique script so a later setup_triton() call cannot overwrite
+    # the cache publication command of an earlier target.
+    string(MD5 _store_script_identity
+        "${dep_name};${cache_key};${install_dir};${ep_target}")
+    set(_store_script
+        "${CMAKE_BINARY_DIR}/dep_cache_store_${dep_name}_${_store_script_identity}.cmake")
     # Write a cmake script that copies install_dir to cache and writes the marker
     file(WRITE "${_store_script}" "
         # Store dependency artifacts into cache
@@ -1743,17 +1782,20 @@ function(setup_triton)
     set(SD_TRITON_MANAGED_LLVM_ROOT "${TRITON_LLVM_INSTALL_DIR}" CACHE INTERNAL
         "Project-managed LLVM/MLIR package root selected by setup_triton" FORCE)
 
-    # Revision of the project-managed LLVM/Triton source patch recipe. The
-    # marker prevents the fast path from accepting installs without the required
-    # dynamic-linking and MLIR correctness patches and partitions dependency caches.
-    # Bump the recipe whenever the managed install contract changes; this prevents
-    # incomplete LLVM/MLIR archives from being restored from the shared cache.
-    set(_TRITON_MANAGED_RECIPE_REVISION "managed-llvm-patches-v12")
+    # Keep cache identities aligned with the artifacts they describe. LLVM/MLIR,
+    # the Triton compiler, native LLVM TableGen tools, and SLEEF generators have
+    # different source/configuration closures and must not invalidate one another.
+    # The current LLVM and compiler values intentionally preserve the v12 cache
+    # identity; future changes must bump only the affected artifact contract.
+    set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v12")
+    set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v12")
+    set(_TRITON_LLVM_HOST_TOOLS_RECIPE_REVISION "managed-llvm-host-tools-v1")
+    set(_TRITON_SLEEF_HOST_TOOLS_RECIPE_REVISION "managed-sleef-host-tools-v1")
     set(_TRITON_LLVM_INSTALL_MARKER
-        "${TRITON_LLVM_INSTALL_DIR}/.sd-${_TRITON_MANAGED_RECIPE_REVISION}")
+        "${TRITON_LLVM_INSTALL_DIR}/.sd-${_TRITON_LLVM_RECIPE_REVISION}")
     if(_TRITON_BUILDS_COMPILER)
         set(_TRITON_INSTALL_MARKER
-            "${TRITON_INSTALL_DIR}/.sd-${_TRITON_MANAGED_RECIPE_REVISION}")
+            "${TRITON_INSTALL_DIR}/.sd-${_TRITON_COMPILER_RECIPE_REVISION}")
     endif()
 
     # A generated MLIRConfig.cmake alone does not make a reusable install.
@@ -1950,11 +1992,11 @@ function(setup_triton)
         set(TRITON_CPU_COMMIT "c4ccb98970bfe0fa17548b5b32def8d0de2bdc53")
         if(_TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER")
             set(TRITON_PREFIX
-                "${CMAKE_BINARY_DIR}/triton_cpu_external_${_TRITON_MANAGED_RECIPE_REVISION}")
+                "${CMAKE_BINARY_DIR}/triton_cpu_external_${_TRITON_COMPILER_RECIPE_REVISION}")
             set(TRITON_VERSION "cpu-${TRITON_CPU_COMMIT}")
         else()
             set(TRITON_PREFIX
-                "${CMAKE_BINARY_DIR}/triton_external_${_TRITON_MANAGED_RECIPE_REVISION}")
+                "${CMAKE_BINARY_DIR}/triton_external_${_TRITON_COMPILER_RECIPE_REVISION}")
             set(TRITON_VERSION "3.6.0")
         endif()
         set(TRITON_STAMP_DIR "${TRITON_PREFIX}/stamp")
@@ -2037,7 +2079,7 @@ function(setup_triton)
         set(TRITON_LLVM_COMMIT "20902f0b721ba6cf2fb134362d27144bd8584d53")
         set(TRITON_LLVM_URL_HASH "SHA256=1736af3127e73eab0f2a2f489275c9509d5b60f80c050c42be3a1f85843993e2")
         set(TRITON_LLVM_PREFIX
-            "${CMAKE_BINARY_DIR}/triton_cpu_llvm_${_TRITON_MANAGED_RECIPE_REVISION}")
+            "${CMAKE_BINARY_DIR}/triton_cpu_llvm_${_TRITON_LLVM_RECIPE_REVISION}")
         set(_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP OFF)
     else()
         # GPU Triton v3.6.0 pins f6ded0be. Vulkan deliberately consumes this
@@ -2046,7 +2088,7 @@ function(setup_triton)
         set(TRITON_LLVM_COMMIT "f6ded0be897e2878612dd903f7e8bb85448269e5")
         set(TRITON_LLVM_URL_HASH "SHA256=f63c624aa63eda73508b9df2be2a6945ea4fddbee58615fbe1cd747b6884dd5e")
         set(TRITON_LLVM_PREFIX
-            "${CMAKE_BINARY_DIR}/triton_llvm_${_TRITON_MANAGED_RECIPE_REVISION}")
+            "${CMAKE_BINARY_DIR}/triton_llvm_${_TRITON_LLVM_RECIPE_REVISION}")
         set(_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP ON)
     endif()
 
@@ -2104,7 +2146,7 @@ function(setup_triton)
         # Check Triton LLVM cache
         string(SUBSTRING "${TRITON_LLVM_COMMIT}" 0 8 TRITON_LLVM_COMMIT_SHORT)
         sd_dep_cache_key("triton_llvm" "${TRITON_LLVM_COMMIT_SHORT}"
-            "TARGETS=${TRITON_LLVM_TARGETS};llvm_mlir_dylib=1;recipe=${_TRITON_MANAGED_RECIPE_REVISION};${_TRITON_TARGET_CACHE_CONFIG}"
+            "TARGETS=${TRITON_LLVM_TARGETS};llvm_mlir_dylib=1;recipe=${_TRITON_LLVM_RECIPE_REVISION};${_TRITON_TARGET_CACHE_CONFIG}"
             _tllvm_cache_key)
         sd_dep_cache_check("triton_llvm" "${_tllvm_cache_key}" _tllvm_hit _tllvm_cache_path)
         if(_tllvm_hit AND NOT _TRITON_LLVM_INSTALL_COMPLETE)
@@ -2126,7 +2168,7 @@ function(setup_triton)
             set(_triton_ver "${TRITON_VERSION}")
             string(REPLACE ";" "_" _triton_backends_str "${TRITON_CODEGEN_BACKENDS}")
             sd_dep_cache_key("triton" "${_triton_ver}"
-                "BACKENDS=${_triton_backends_str};llvm_mlir_dylib=1;recipe=${_TRITON_MANAGED_RECIPE_REVISION};${_TRITON_TARGET_CACHE_CONFIG}"
+                "BACKENDS=${_triton_backends_str};llvm_mlir_dylib=1;recipe=${_TRITON_COMPILER_RECIPE_REVISION};${_TRITON_TARGET_CACHE_CONFIG}"
                 _triton_cache_key)
             sd_dep_cache_check("triton" "${_triton_cache_key}" _triton_hit _triton_cache_path)
             if(_triton_hit)
@@ -2159,7 +2201,7 @@ function(setup_triton)
     # Build-time-only SmartCcache partition key for Triton LLVM external build.
     # This stays in CMake/source-tree scope; runtime extraction infra is separate.
     set(_TRITON_LLVM_SHAPE_KEY_RAW
-        "${TRITON_LLVM_COMMIT}-${TRITON_LLVM_TARGETS}-Release-${_TRITON_MANAGED_RECIPE_REVISION}-${_TRITON_TARGET_CACHE_CONFIG}")
+        "${TRITON_LLVM_COMMIT}-${TRITON_LLVM_TARGETS}-Release-${_TRITON_LLVM_RECIPE_REVISION}-${_TRITON_TARGET_CACHE_CONFIG}")
     string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" TRITON_LLVM_SHAPE_KEY "${_TRITON_LLVM_SHAPE_KEY_RAW}")
     set(TRITON_LLVM_BUILD_COMMAND
             ${CMAKE_COMMAND}
@@ -2215,36 +2257,53 @@ function(setup_triton)
        (NOT _TRITON_LLVM_INSTALL_COMPLETE OR
         (_TRITON_BUILDS_COMPILER AND NOT _TRITON_COMPILER_INSTALL_COMPLETE)))
         # A cold target LLVM build and Triton's generated sources both require
-        # native tablegen executables. A restored target LLVM/MLIR package cannot
-        # satisfy that host contract; use an explicitly restored host-tool
-        # snapshot or build the small native generator target locally.
-        find_program(_TRITON_HOST_NINJA
-            NAMES ninja ninja-build NO_CMAKE_FIND_ROOT_PATH)
-        if(NOT _TRITON_HOST_NINJA)
-            message(FATAL_ERROR
-                "A cold cross-build of Triton LLVM requires host Ninja.")
+        # native tablegen executables. Cache this native snapshot independently
+        # from every target ABI/NDK because the pinned LLVM source and host
+        # compiler are its complete platform identity.
+        string(SUBSTRING "${TRITON_LLVM_COMMIT}" 0 8 _TRITON_LLVM_HOST_VERSION)
+        if(SD_DEP_CACHE)
+            sd_dep_cache_host_key(
+                "triton_llvm_host_tools"
+                "${_TRITON_LLVM_HOST_VERSION}"
+                "${_TRITON_HOST_C_COMPILER}"
+                "${_TRITON_HOST_CXX_COMPILER}"
+                "recipe=${_TRITON_LLVM_HOST_TOOLS_RECIPE_REVISION};patchSpirv=${_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP}"
+                _tllvm_host_cache_key)
+            sd_dep_cache_check(
+                "triton_llvm_host_tools"
+                "${_tllvm_host_cache_key}"
+                _tllvm_host_hit
+                _tllvm_host_cache_path)
+            if(_tllvm_host_hit)
+                set(_TRITON_LLVM_NATIVE_TOOL_DIR "${_tllvm_host_cache_path}/bin")
+                if(EXISTS "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}" AND
+                   EXISTS "${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX}" AND
+                   EXISTS "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-config${_TRITON_HOST_EXE_SUFFIX}")
+                    set(_TRITON_MANAGED_HOST_TOOLS_READY TRUE)
+                    add_custom_target(triton_llvm_host_tools_external)
+                    message(STATUS
+                        "   Reusing cached LLVM host tools: ${_TRITON_LLVM_NATIVE_TOOL_DIR}")
+                else()
+                    message(FATAL_ERROR
+                        "Cached LLVM host-tool snapshot is incomplete: ${_tllvm_host_cache_path}")
+                endif()
+            endif()
         endif()
 
-        set(_TRITON_LLVM_HOST_PREFIX
-            "${CMAKE_BINARY_DIR}/triton_llvm_host_tools_${_TRITON_MANAGED_RECIPE_REVISION}")
-        set(_TRITON_LLVM_HOST_BUILD_DIR "${_TRITON_LLVM_HOST_PREFIX}/build")
-        set(_TRITON_LLVM_NATIVE_TOOL_DIR "${_TRITON_LLVM_HOST_BUILD_DIR}/bin")
+        if(NOT _TRITON_MANAGED_HOST_TOOLS_READY)
+            find_program(_TRITON_HOST_NINJA
+                NAMES ninja ninja-build NO_CMAKE_FIND_ROOT_PATH)
+            if(NOT _TRITON_HOST_NINJA)
+                message(FATAL_ERROR
+                    "A cold cross-build of Triton LLVM requires host Ninja.")
+            endif()
 
-        ExternalProject_Add(triton_llvm_host_tools_external
-            PREFIX            "${_TRITON_LLVM_HOST_PREFIX}"
-            URL               "${TRITON_LLVM_URL}"
-            URL_HASH          "${TRITON_LLVM_URL_HASH}"
-            DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
-            ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
-            PATCH_COMMAND     ${CMAKE_COMMAND}
-                -DSOURCE_DIR=<SOURCE_DIR>
-                -DSD_EXTERNAL_PROJECT=LLVM
-                -DSD_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP=${_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP}
-                -P "${CMAKE_SOURCE_DIR}/cmake/patch_external_llvm_coexistence.cmake"
-            SOURCE_SUBDIR     llvm
-            BINARY_DIR        "${_TRITON_LLVM_HOST_BUILD_DIR}"
-            CMAKE_GENERATOR   "Ninja"
-            CMAKE_ARGS
+            set(_TRITON_LLVM_HOST_PREFIX
+                "${CMAKE_BINARY_DIR}/triton_llvm_host_tools_${_TRITON_LLVM_HOST_TOOLS_RECIPE_REVISION}")
+            set(_TRITON_LLVM_HOST_BUILD_DIR "${_TRITON_LLVM_HOST_PREFIX}/build")
+            set(_TRITON_LLVM_HOST_INSTALL_DIR "${_TRITON_LLVM_HOST_PREFIX}/install")
+            set(_TRITON_LLVM_NATIVE_TOOL_DIR "${_TRITON_LLVM_HOST_INSTALL_DIR}/bin")
+            set(_TRITON_LLVM_HOST_CMAKE_ARGS
                 -DCMAKE_MAKE_PROGRAM=${_TRITON_HOST_NINJA}
                 -DCMAKE_BUILD_TYPE=Release
                 -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
@@ -2259,22 +2318,61 @@ function(setup_triton)
                 -DMLIR_INCLUDE_TESTS=OFF
                 -DMLIR_ENABLE_BINDINGS_PYTHON=OFF
                 -DCMAKE_C_COMPILER=${_TRITON_HOST_C_COMPILER}
-                -DCMAKE_CXX_COMPILER=${_TRITON_HOST_CXX_COMPILER}
-            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR>
-                --config Release --target llvm-tblgen mlir-tblgen llvm-config
-                --parallel ${DEP_PARALLEL_JOBS}
-            INSTALL_COMMAND   ""
-            BUILD_BYPRODUCTS
-                "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}"
-                "${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX}"
-                "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-config${_TRITON_HOST_EXE_SUFFIX}"
-            TIMEOUT           7200
-            LOG_DOWNLOAD      OFF
-            LOG_CONFIGURE     OFF
-            LOG_BUILD         OFF
-            LOG_INSTALL       OFF)
-        message(STATUS
-            "   LLVM host tools: ${_TRITON_LLVM_NATIVE_TOOL_DIR}")
+                -DCMAKE_CXX_COMPILER=${_TRITON_HOST_CXX_COMPILER})
+            if(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+                list(APPEND _TRITON_LLVM_HOST_CMAKE_ARGS
+                    "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}"
+                    "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
+            endif()
+
+            ExternalProject_Add(triton_llvm_host_tools_external
+                PREFIX            "${_TRITON_LLVM_HOST_PREFIX}"
+                URL               "${TRITON_LLVM_URL}"
+                URL_HASH          "${TRITON_LLVM_URL_HASH}"
+                DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+                ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
+                PATCH_COMMAND     ${CMAKE_COMMAND}
+                    -DSOURCE_DIR=<SOURCE_DIR>
+                    -DSD_EXTERNAL_PROJECT=LLVM
+                    -DSD_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP=${_TRITON_LLVM_PATCH_SCF_TO_SPIRV_ZERO_TRIP}
+                    -P "${CMAKE_SOURCE_DIR}/cmake/patch_external_llvm_coexistence.cmake"
+                SOURCE_SUBDIR     llvm
+                BINARY_DIR        "${_TRITON_LLVM_HOST_BUILD_DIR}"
+                CMAKE_GENERATOR   "Ninja"
+                CMAKE_ARGS        ${_TRITON_LLVM_HOST_CMAKE_ARGS}
+                BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR>
+                    --config Release --target llvm-tblgen mlir-tblgen llvm-config
+                    --parallel ${DEP_PARALLEL_JOBS}
+                INSTALL_COMMAND   ${CMAKE_COMMAND} -E make_directory
+                        "${_TRITON_LLVM_HOST_INSTALL_DIR}/bin"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "<BINARY_DIR>/bin/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}"
+                        "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "<BINARY_DIR>/bin/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX}"
+                        "${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX}"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "<BINARY_DIR>/bin/llvm-config${_TRITON_HOST_EXE_SUFFIX}"
+                        "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-config${_TRITON_HOST_EXE_SUFFIX}"
+                BUILD_BYPRODUCTS
+                    "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-tblgen${_TRITON_HOST_EXE_SUFFIX}"
+                    "${_TRITON_LLVM_NATIVE_TOOL_DIR}/mlir-tblgen${_TRITON_HOST_EXE_SUFFIX}"
+                    "${_TRITON_LLVM_NATIVE_TOOL_DIR}/llvm-config${_TRITON_HOST_EXE_SUFFIX}"
+                TIMEOUT           7200
+                LOG_DOWNLOAD      OFF
+                LOG_CONFIGURE     OFF
+                LOG_BUILD         OFF
+                LOG_INSTALL       OFF)
+            if(SD_DEP_CACHE AND DEFINED _tllvm_host_cache_key)
+                sd_dep_cache_store(
+                    "triton_llvm_host_tools"
+                    "${_tllvm_host_cache_key}"
+                    "${_TRITON_LLVM_HOST_INSTALL_DIR}"
+                    "triton_llvm_host_tools_external")
+            endif()
+            message(STATUS
+                "   LLVM host tools: ${_TRITON_LLVM_NATIVE_TOOL_DIR}")
+        endif()
     endif()
 
     if(NOT _TRITON_LLVM_INSTALL_COMPLETE)
@@ -2405,22 +2503,47 @@ function(setup_triton)
     if(CMAKE_CROSSCOMPILING AND
        _TRITON_CONSUMER_KIND STREQUAL "CPU_COMPILER" AND
        NOT _TRITON_COMPILER_INSTALL_COMPLETE)
-        # SLEEF generates target headers with small executables such as
-        # mkrename. Its cross-build contract expects those tools in a native
-        # build directory; otherwise imported targets collapse to /bin and
-        # Android binaries are incorrectly executed through QEMU.
-        set(_TRITON_SLEEF_HOST_PREFIX
-            "${CMAKE_BINARY_DIR}/triton_cpu_sleef_host_tools_${_TRITON_MANAGED_RECIPE_REVISION}")
-        set(_TRITON_SLEEF_HOST_BUILD_DIR
-            "${_TRITON_SLEEF_HOST_PREFIX}/build")
-        ExternalProject_Add(triton_cpu_sleef_host_tools_external
-            PREFIX            "${_TRITON_SLEEF_HOST_PREFIX}"
-            URL               "https://github.com/shibatch/sleef/archive/refs/tags/3.8.tar.gz"
-            URL_HASH          "SHA256=a12ccd50f57083c530e1c76f10d52865defbd19fc9e2c85b483493065709874a"
-            DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
-            ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
-            BINARY_DIR        "${_TRITON_SLEEF_HOST_BUILD_DIR}"
-            CMAKE_ARGS
+        # SLEEF generates target headers with native utilities such as mkrename.
+        # They depend on pinned SLEEF sources and the host compiler, not the NDK.
+        set(_TRITON_SLEEF_HOST_TOOLS_READY FALSE)
+        if(SD_DEP_CACHE)
+            sd_dep_cache_host_key(
+                "triton_sleef_host_tools"
+                "3.8"
+                "${_TRITON_HOST_C_COMPILER}"
+                "${_TRITON_HOST_CXX_COMPILER}"
+                "recipe=${_TRITON_SLEEF_HOST_TOOLS_RECIPE_REVISION};sourceSha256=a12ccd50f57083c530e1c76f10d52865defbd19fc9e2c85b483493065709874a"
+                _triton_sleef_host_cache_key)
+            sd_dep_cache_check(
+                "triton_sleef_host_tools"
+                "${_triton_sleef_host_cache_key}"
+                _triton_sleef_host_hit
+                _triton_sleef_host_cache_path)
+            if(_triton_sleef_host_hit)
+                set(_TRITON_SLEEF_HOST_BUILD_DIR "${_triton_sleef_host_cache_path}")
+                foreach(_triton_sleef_tool
+                        mkrename mkrename_gnuabi mkmasked_gnuabi mkdisp mkalias addSuffix)
+                    if(NOT EXISTS
+                       "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/${_triton_sleef_tool}${_TRITON_HOST_EXE_SUFFIX}")
+                        message(FATAL_ERROR
+                            "Cached SLEEF host-tool snapshot is incomplete: ${_triton_sleef_host_cache_path}")
+                    endif()
+                endforeach()
+                set(_TRITON_SLEEF_HOST_TOOLS_READY TRUE)
+                add_custom_target(triton_cpu_sleef_host_tools_external)
+                message(STATUS
+                    "   Reusing cached SLEEF host tools: ${_TRITON_SLEEF_HOST_BUILD_DIR}/bin")
+            endif()
+        endif()
+
+        if(NOT _TRITON_SLEEF_HOST_TOOLS_READY)
+            set(_TRITON_SLEEF_HOST_PREFIX
+                "${CMAKE_BINARY_DIR}/triton_cpu_sleef_host_tools_${_TRITON_SLEEF_HOST_TOOLS_RECIPE_REVISION}")
+            set(_TRITON_SLEEF_HOST_COMPILE_DIR
+                "${_TRITON_SLEEF_HOST_PREFIX}/build")
+            set(_TRITON_SLEEF_HOST_BUILD_DIR
+                "${_TRITON_SLEEF_HOST_PREFIX}/install")
+            set(_TRITON_SLEEF_HOST_CMAKE_ARGS
                 -DCMAKE_BUILD_TYPE=Release
                 -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
                 -DCMAKE_C_COMPILER=${_TRITON_HOST_C_COMPILER}
@@ -2430,28 +2553,69 @@ function(setup_triton)
                 -DSLEEF_BUILD_GNUABI_LIBS=OFF
                 -DSLEEF_BUILD_SCALAR_LIB=OFF
                 -DSLEEF_BUILD_TESTS=OFF
-                -DSLEEF_BUILD_BENCH=OFF
-            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR>
-                --config Release
-                --target mkrename mkrename_gnuabi mkmasked_gnuabi mkdisp mkalias addSuffix
-                --parallel ${DEP_PARALLEL_JOBS}
-            INSTALL_COMMAND   ""
-            BUILD_BYPRODUCTS
-                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkrename${_TRITON_HOST_EXE_SUFFIX}"
-                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkrename_gnuabi${_TRITON_HOST_EXE_SUFFIX}"
-                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkmasked_gnuabi${_TRITON_HOST_EXE_SUFFIX}"
-                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkdisp${_TRITON_HOST_EXE_SUFFIX}"
-                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkalias${_TRITON_HOST_EXE_SUFFIX}"
-                "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/addSuffix${_TRITON_HOST_EXE_SUFFIX}"
-            TIMEOUT           1800
-            LOG_DOWNLOAD      OFF
-            LOG_CONFIGURE     OFF
-            LOG_BUILD         OFF
-            LOG_INSTALL       OFF)
+                -DSLEEF_BUILD_BENCH=OFF)
+            if(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+                list(APPEND _TRITON_SLEEF_HOST_CMAKE_ARGS
+                    "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
+            endif()
+
+            ExternalProject_Add(triton_cpu_sleef_host_tools_external
+                PREFIX            "${_TRITON_SLEEF_HOST_PREFIX}"
+                URL               "https://github.com/shibatch/sleef/archive/refs/tags/3.8.tar.gz"
+                URL_HASH          "SHA256=a12ccd50f57083c530e1c76f10d52865defbd19fc9e2c85b483493065709874a"
+                DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+                ${SD_EXTERNAL_PROJECT_DOWNLOAD_TIMESTAMP_ARGS}
+                BINARY_DIR        "${_TRITON_SLEEF_HOST_COMPILE_DIR}"
+                CMAKE_ARGS        ${_TRITON_SLEEF_HOST_CMAKE_ARGS}
+                BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR>
+                    --config Release
+                    --target mkrename mkrename_gnuabi mkmasked_gnuabi mkdisp mkalias addSuffix
+                    --parallel ${DEP_PARALLEL_JOBS}
+                INSTALL_COMMAND   ${CMAKE_COMMAND} -E make_directory
+                        "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "<BINARY_DIR>/bin/mkrename${_TRITON_HOST_EXE_SUFFIX}"
+                        "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkrename${_TRITON_HOST_EXE_SUFFIX}"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "<BINARY_DIR>/bin/mkrename_gnuabi${_TRITON_HOST_EXE_SUFFIX}"
+                        "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkrename_gnuabi${_TRITON_HOST_EXE_SUFFIX}"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "<BINARY_DIR>/bin/mkmasked_gnuabi${_TRITON_HOST_EXE_SUFFIX}"
+                        "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkmasked_gnuabi${_TRITON_HOST_EXE_SUFFIX}"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "<BINARY_DIR>/bin/mkdisp${_TRITON_HOST_EXE_SUFFIX}"
+                        "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkdisp${_TRITON_HOST_EXE_SUFFIX}"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "<BINARY_DIR>/bin/mkalias${_TRITON_HOST_EXE_SUFFIX}"
+                        "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkalias${_TRITON_HOST_EXE_SUFFIX}"
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "<BINARY_DIR>/bin/addSuffix${_TRITON_HOST_EXE_SUFFIX}"
+                        "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/addSuffix${_TRITON_HOST_EXE_SUFFIX}"
+                BUILD_BYPRODUCTS
+                    "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkrename${_TRITON_HOST_EXE_SUFFIX}"
+                    "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkrename_gnuabi${_TRITON_HOST_EXE_SUFFIX}"
+                    "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkmasked_gnuabi${_TRITON_HOST_EXE_SUFFIX}"
+                    "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkdisp${_TRITON_HOST_EXE_SUFFIX}"
+                    "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/mkalias${_TRITON_HOST_EXE_SUFFIX}"
+                    "${_TRITON_SLEEF_HOST_BUILD_DIR}/bin/addSuffix${_TRITON_HOST_EXE_SUFFIX}"
+                TIMEOUT           1800
+                LOG_DOWNLOAD      OFF
+                LOG_CONFIGURE     OFF
+                LOG_BUILD         OFF
+                LOG_INSTALL       OFF)
+            if(SD_DEP_CACHE AND DEFINED _triton_sleef_host_cache_key)
+                sd_dep_cache_store(
+                    "triton_sleef_host_tools"
+                    "${_triton_sleef_host_cache_key}"
+                    "${_TRITON_SLEEF_HOST_BUILD_DIR}"
+                    "triton_cpu_sleef_host_tools_external")
+            endif()
+            message(STATUS
+                "   SLEEF host tools: ${_TRITON_SLEEF_HOST_BUILD_DIR}/bin")
+        endif()
+
         list(APPEND _TRITON_EXTERNAL_DEPENDENCIES
             triton_cpu_sleef_host_tools_external)
-        message(STATUS
-            "   SLEEF host tools: ${_TRITON_SLEEF_HOST_BUILD_DIR}/bin")
     endif()
 
     set(TRITON_MLIR_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir")
@@ -2517,7 +2681,7 @@ function(setup_triton)
     # Runtime key extraction/caching infrastructure will be layered separately.
     string(REPLACE ";" "_" _TRITON_BACKENDS_KEY "${TRITON_CODEGEN_BACKENDS}")
     set(_TRITON_SHAPE_KEY_RAW
-        "${TRITON_VERSION}-${_TRITON_BACKENDS_KEY}-${CMAKE_BUILD_TYPE}-${_TRITON_MANAGED_RECIPE_REVISION}-${_TRITON_TARGET_CACHE_CONFIG}")
+        "${TRITON_VERSION}-${_TRITON_BACKENDS_KEY}-${CMAKE_BUILD_TYPE}-${_TRITON_COMPILER_RECIPE_REVISION}-${_TRITON_TARGET_CACHE_CONFIG}")
     string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" TRITON_SHAPE_KEY "${_TRITON_SHAPE_KEY_RAW}")
     # Use DEP_PARALLEL_JOBS (memory-based) instead of hardcoded 8.
     # Higher parallelism can cause race conditions between TableGen-generated

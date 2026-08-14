@@ -58,9 +58,14 @@ import java.util.regex.Pattern;
  */
 public class ChatTemplate {
 
-    /** Canonical native tool-call delimiters used by model templates such as LFM. */
+    /** Canonical sentinel/function tool-call delimiters used by model templates such as LFM. */
     public static final String NATIVE_TOOL_CALL_START = "<|tool_call_start|>";
     public static final String NATIVE_TOOL_CALL_END = "<|tool_call_end|>";
+    /** Canonical XML function-call delimiters declared by templates such as Qwen 3.5. */
+    public static final String XML_TOOL_CALL_START = "<tool_call>";
+    public static final String XML_TOOL_CALL_END = "</tool_call>";
+    public static final String XML_FUNCTION_START = "<function=";
+    public static final String XML_PARAMETER_START = "<parameter=";
     /** Canonical reasoning delimiters, enabled only when they occur in the imported template. */
     public static final String THINKING_START = "<think>";
     public static final String THINKING_END = "</think>";
@@ -152,7 +157,7 @@ public class ChatTemplate {
         if (!request.getTools().isEmpty()) {
             ToolDefinitionFormat format = request.getToolDefinitionFormat() == null
                     ? ToolDefinitionFormat.STANDARD : request.getToolDefinitionFormat();
-            boolean lfmNativeProtocol = usesLfmNativeToolProtocol();
+            boolean lfmNativeProtocol = usesLfmNativeToolProtocol(request);
             String definitions = renderToolDefinitions(
                     request.getTools(), format, lfmNativeProtocol);
             int system = -1;
@@ -176,8 +181,9 @@ public class ChatTemplate {
         return apply(messages, request.isAddGenerationPrompt());
     }
 
-    private boolean usesLfmNativeToolProtocol() {
-        return toolCallFormat() == ToolCallFormat.NATIVE;
+    private boolean usesLfmNativeToolProtocol(Request request) {
+        return request.getToolCallFormat() == ToolCallFormat.NATIVE
+                || toolCallFormat() == ToolCallFormat.NATIVE;
     }
 
     /**
@@ -186,9 +192,17 @@ public class ChatTemplate {
      * model names or protocol sentinels themselves.
      */
     public ToolCallFormat toolCallFormat() {
-        return template.contains(NATIVE_TOOL_CALL_START)
-                && template.contains(NATIVE_TOOL_CALL_END)
-                ? ToolCallFormat.NATIVE : ToolCallFormat.JSON;
+        if (template.contains(NATIVE_TOOL_CALL_START)
+                && template.contains(NATIVE_TOOL_CALL_END)) {
+            return ToolCallFormat.NATIVE;
+        }
+        if (template.contains(XML_TOOL_CALL_START)
+                && template.contains(XML_TOOL_CALL_END)
+                && template.contains(XML_FUNCTION_START)
+                && template.contains(XML_PARAMETER_START)) {
+            return ToolCallFormat.XML;
+        }
+        return ToolCallFormat.JSON;
     }
 
     /**
@@ -587,6 +601,7 @@ public class ChatTemplate {
     /** Output envelope selected by a model's native chat protocol. */
     public enum ToolCallFormat {
         NATIVE,
+        XML,
         JSON
     }
 

@@ -12,7 +12,6 @@
     "name": "org.nd4j.linalg.jcublas.JCublasNDArrayFactory",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
-    "allDeclaredMethods": true,
     "allPublicMethods": true,
     "allDeclaredFields": true,
     "allPublicFields": true,

@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jInitialization;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -170,28 +171,21 @@ public abstract class DifferentialFunction {
 
 
     protected void recordCreation() {
-        // Guard against circular initialization: DifferentialFunctionClassHolder.initInstance()
-        // is called during Nd4j initialization before the backend is fully set up.
-        //
-        // while Nd4j class is being initialized causes circular dependency issues and crashes.
-        //
-        // Instead, we use try-catch to safely handle the case where Nd4j is not yet initialized.
-        // If Nd4j.getEnvironment() throws any exception (NoClassDefFoundError, NullPointerException,
-        // ExceptionInInitializerError, etc.), it means Nd4j is not ready, so we skip recording.
-        try {
-            if(Nd4j.getEnvironment().isDebug() || Nd4j.getEnvironment().isVerbose() ||
-            Nd4j.getEnvironment().isFuncTracePrintJavaOnly()) {
-                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                this.creationLocation = StackTraceUtils.pointOfInvocation(stackTrace);
-                this.creationPointofOrigin = StackTraceUtils.pointOfOrigin(stackTrace);
-                this.sameDiffCalls = StackTraceUtils.callsFromClass(stackTrace, SameDiff.class.getName());
-                creationCallStack = stackTrace;
-            }
-        } catch (Throwable t) {
-            // Nd4j is not fully initialized yet - skip recording.
-            // This is expected during DifferentialFunctionClassHolder.initInstance() which
-            // happens during Nd4j static initialization.
+        // Operation prototypes are constructed while the global registry is part of
+        // ND4J's bootstrap transaction. Creation tracing is optional diagnostic work
+        // and must never initialize a backend or native Environment on its own.
+        if (!Nd4jInitialization.isReady()) {
             return;
+        }
+
+        org.nd4j.linalg.factory.Environment environment = Nd4j.getEnvironment();
+        if (environment.isDebug() || environment.isVerbose()
+                || environment.isFuncTracePrintJavaOnly()) {
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            this.creationLocation = StackTraceUtils.pointOfInvocation(stackTrace);
+            this.creationPointofOrigin = StackTraceUtils.pointOfOrigin(stackTrace);
+            this.sameDiffCalls = StackTraceUtils.callsFromClass(stackTrace, SameDiff.class.getName());
+            creationCallStack = stackTrace;
         }
     }
 

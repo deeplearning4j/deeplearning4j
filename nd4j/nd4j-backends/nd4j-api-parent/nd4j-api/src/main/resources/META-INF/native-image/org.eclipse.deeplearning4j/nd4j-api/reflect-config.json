@@ -5329,6 +5329,14 @@
     "allPublicClasses": true
   },
   {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.TypicalPFilter",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.Unique",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
@@ -5362,6 +5370,14 @@
   },
   {
     "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true,
+    "allDeclaredClasses": true,
+    "allPublicClasses": true
+  },
+  {
+    "name": "org.nd4j.linalg.api.ops.impl.transforms.custom.XtcFilter",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true,

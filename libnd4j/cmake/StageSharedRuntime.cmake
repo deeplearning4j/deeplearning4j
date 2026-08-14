@@ -652,8 +652,10 @@ foreach(_runtime_library IN LISTS _runtime_libraries)
     endif()
 
     execute_process(
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "${_runtime_real_path}" "${_runtime_output}"
+        COMMAND "${CMAKE_COMMAND}"
+            "-DINPUT_FILE=${_runtime_real_path}"
+            "-DOUTPUT_FILE=${_runtime_output}"
+            -P "${CMAKE_CURRENT_LIST_DIR}/StageArtifact.cmake"
         RESULT_VARIABLE _copy_result)
     if(NOT _copy_result EQUAL 0 OR NOT EXISTS "${_runtime_output}")
         message(FATAL_ERROR
@@ -717,8 +719,10 @@ foreach(_runtime_alias_entry IN LISTS _runtime_alias_entries)
         continue()
     endif()
     execute_process(
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "${_runtime_alias_real}" "${_runtime_alias_output}"
+        COMMAND "${CMAKE_COMMAND}"
+            "-DINPUT_FILE=${_runtime_alias_real}"
+            "-DOUTPUT_FILE=${_runtime_alias_output}"
+            -P "${CMAKE_CURRENT_LIST_DIR}/StageArtifact.cmake"
         RESULT_VARIABLE _runtime_alias_copy_result)
     if(NOT _runtime_alias_copy_result EQUAL 0 OR
        NOT EXISTS "${_runtime_alias_output}")

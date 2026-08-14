@@ -251,6 +251,25 @@ public class ToolCallConstraint implements TextConstraint {
     }
 
     /**
+     * The canonical tool protocol requires an argument object, never a scalar, array, or
+     * parenthesized expression. Empty/whitespace-only text remains a valid prefix while the
+     * opening brace is still being generated.
+     */
+    private boolean hasValidArgsObjectPrefix(String text) {
+        if (text == null || !text.startsWith(TOOL_PREFIX)) {
+            return false;
+        }
+        String argsText = extractArgsText(text);
+        for (int index = 0; index < argsText.length(); index++) {
+            char value = argsText.charAt(index);
+            if (!Character.isWhitespace(value)) {
+                return value == '{';
+            }
+        }
+        return true;
+    }
+
+    /**
      * Extracts the text that follows TOOL_PREFIX and the closed tool-name quote, i.e.,
      * the part that should match (a prefix of) AFTER_TOOL_SUFFIX.  Returns null if
      * a complete tool name cannot yet be found.
@@ -323,8 +342,10 @@ public class ToolCallConstraint implements TextConstraint {
                 if (isPrefixOf(afterNameText, AFTER_TOOL_SUFFIX)) return true;
                 // Case 2: separator is fully present and args have started → treat as ARGS.
                 if (afterNameText.startsWith(AFTER_TOOL_SUFFIX)) {
-                    // Delegate to ARGS phase check for the whole combined string.
-                    return JsonObjectConstraint.isValidJsonPrefix(combined);
+                    // Tool arguments are a JSON object by contract. Validate that root before
+                    // delegating nested structural-prefix checks to the JSON constraint.
+                    return hasValidArgsObjectPrefix(combined)
+                            && JsonObjectConstraint.isValidJsonPrefix(combined);
                 }
                 return false;
             }
@@ -332,7 +353,8 @@ public class ToolCallConstraint implements TextConstraint {
                 // The whole expression is one JSON object; validate it as a JSON prefix.
                 // We use the whole combined string (not just the args portion) because
                 // the outer closing '}' is part of the same JSON object.
-                return JsonObjectConstraint.isValidJsonPrefix(combined);
+                return hasValidArgsObjectPrefix(combined)
+                        && JsonObjectConstraint.isValidJsonPrefix(combined);
             }
             case DONE: {
                 // Already complete — no extension allowed.
@@ -345,7 +367,8 @@ public class ToolCallConstraint implements TextConstraint {
 
     @Override
     public boolean isAccepting(String currentText) {
-        return detectPhase(currentText) == Phase.DONE;
+        return hasValidArgsObjectPrefix(currentText)
+                && detectPhase(currentText) == Phase.DONE;
     }
 
     @Override

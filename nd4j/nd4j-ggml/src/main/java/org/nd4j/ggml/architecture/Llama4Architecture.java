@@ -28,9 +28,7 @@ import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.ggml.architecture.QuantizedLinear;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -344,13 +342,11 @@ public class Llama4Architecture implements ModelArchitecture {
             int ropeDim = config.getRopeDimensionCount();
             if (isRopeLayer || ropeDim <= 0 || ropeDim >= headDim) {
                 // Full RoPE — all head dimensions receive rotary embeddings
-                q = new FusedRoPE(sd, q, config.getRopeType(), 0,
-                        config.getRopeFreqBase(), 1.0, ropeDim).outputVariable();
-                sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+                q = sd.nn().fusedRoPE("q_rope_" + layerIdx, q, null,
+                        config.getRopeType(), config.getRopeFreqBase(), 1.0, ropeDim);
 
-                k = new FusedRoPE(sd, k, config.getRopeType(), 0,
-                        config.getRopeFreqBase(), 1.0, ropeDim).outputVariable();
-                sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+                k = sd.nn().fusedRoPE("k_rope_" + layerIdx, k, null,
+                        config.getRopeType(), config.getRopeFreqBase(), 1.0, ropeDim);
             } else {
                 // Partial RoPE (NoPE layer): split head dim into RoPE dims and NoPE dims,
                 // apply RoPE only to the first ropeDim dimensions, then concatenate back.
@@ -366,13 +362,13 @@ public class Llama4Architecture implements ModelArchitecture {
                         SDIndex.interval(ropeDim, headDim));
 
                 // Apply RoPE only to the RoPE portions
-                qRopePart = new FusedRoPE(sd, qRopePart, config.getRopeType(), 0,
-                        config.getRopeFreqBase(), 1.0, ropeDim).outputVariable();
-                sd.updateVariableNameAndReference(qRopePart, "q_rope_part_" + layerIdx);
+                qRopePart = sd.nn().fusedRoPE(
+                        "q_rope_part_" + layerIdx, qRopePart, null,
+                        config.getRopeType(), config.getRopeFreqBase(), 1.0, ropeDim);
 
-                kRopePart = new FusedRoPE(sd, kRopePart, config.getRopeType(), 0,
-                        config.getRopeFreqBase(), 1.0, ropeDim).outputVariable();
-                sd.updateVariableNameAndReference(kRopePart, "k_rope_part_" + layerIdx);
+                kRopePart = sd.nn().fusedRoPE(
+                        "k_rope_part_" + layerIdx, kRopePart, null,
+                        config.getRopeType(), config.getRopeFreqBase(), 1.0, ropeDim);
 
                 // Concatenate RoPE and NoPE portions back along last axis
                 q = sd.concat("q_rope_" + layerIdx, -1, qRopePart, qNopePart);
@@ -381,9 +377,7 @@ public class Llama4Architecture implements ModelArchitecture {
         }
 
         // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("v_cast_" + layerIdx, q.dataType());
-        }
+        v = GGMLDTypePolicy.castTo(v, "v_cast_" + layerIdx, q.dataType());
 
         // Causal dot-product attention with local chunking (chunked attention)
         // dotProductAttentionV2 applies causal masking; chunk-level locality is

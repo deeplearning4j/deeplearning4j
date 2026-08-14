@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.ggml.export.ExportOptions;
 import org.nd4j.ggml.format.GGMLDataType;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -250,7 +251,7 @@ public class DynamicQuantizationAnalyzer {
      * making it more sensitive to quantization errors.
      */
     private double computeSNR(INDArray array) {
-        INDArray floatArr = array.castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT);
+        INDArray floatArr = array.castTo(DataType.FLOAT);
         double mean = floatArr.meanNumber().doubleValue();
         double variance = floatArr.varNumber().doubleValue();
         if (variance < 1e-10) {
@@ -264,7 +265,7 @@ public class DynamicQuantizationAnalyzer {
      * Higher values indicate larger weights that are more sensitive to quantization.
      */
     private double computeMAE(INDArray array) {
-        INDArray floatArr = array.castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT);
+        INDArray floatArr = array.castTo(DataType.FLOAT);
         return Nd4j.math().abs(floatArr).meanNumber().doubleValue();
     }
 
@@ -273,7 +274,7 @@ public class DynamicQuantizationAnalyzer {
      * Larger magnitudes indicate more important weights.
      */
     private double computeWeightMagnitude(INDArray array) {
-        INDArray floatArr = array.castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT);
+        INDArray floatArr = array.castTo(DataType.FLOAT);
         double norm2 = floatArr.norm2Number().doubleValue();
         long numElements = array.length();
         if (numElements == 0) {

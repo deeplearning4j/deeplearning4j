@@ -28,7 +28,6 @@ import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.config.ND4JSystemProperties;
-import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
 import org.nd4j.imports.descriptors.onnx.OpDescriptor;
@@ -41,7 +40,9 @@ import org.nd4j.linalg.api.ops.impl.shape.CreateView;
 import org.nd4j.linalg.api.ops.impl.shape.SetShape;
 import org.nd4j.linalg.api.ops.random.impl.CustomDropOut;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.InitializationController;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jInitialization;
 import org.tensorflow.framework.OpDef;
 
 import java.io.IOException;
@@ -76,15 +77,28 @@ public class DifferentialFunctionClassHolder {
 
     private static  Map<Class<?>,Set<String>> classFieldsToIgnore;
 
-    private static AtomicBoolean initialized = new AtomicBoolean(false);
-
-
-
+    private static final InitializationController REGISTRY_INITIALIZATION =
+            new InitializationController("ND4J operation registry");
 
     public static void initInstance() throws IOException {
-        log.trace("Initializing DifferentialClassHolder");
-        if(initialized.get())
+        if (!REGISTRY_INITIALIZATION.begin()) {
             return;
+        }
+
+        try {
+            initializeRegistry();
+            REGISTRY_INITIALIZATION.complete();
+        } catch (IOException e) {
+            REGISTRY_INITIALIZATION.fail(e);
+            throw e;
+        } catch (RuntimeException | Error e) {
+            REGISTRY_INITIALIZATION.fail(e);
+            throw e;
+        }
+    }
+
+    private static void initializeRegistry() throws IOException {
+        log.trace("Initializing DifferentialClassHolder");
         classesToIgnore = new HashSet<>(Arrays.<Class>asList(
                 Object.class
         ));
@@ -1153,7 +1167,7 @@ public class DifferentialFunctionClassHolder {
         Set<Long> multiClassHashes = new HashSet<>();
         for (Map.Entry<String, CustomOpDescriptor> e : descriptorMap.entrySet()) {
             String name = e.getKey();
-            DifferentialFunction df = getInstance(name);
+            DifferentialFunction df = OP_NAME_MAP.get(name);
 
             if (df == null) {
                 //Can be no class for 2 reasons:
@@ -1183,7 +1197,7 @@ public class DifferentialFunctionClassHolder {
                 }
                 Map<String, Class<?>> m = customOpHashToClasses.get(h);
                 String name = e.getKey();
-                DifferentialFunction df = getInstance(name);
+                DifferentialFunction df = OP_NAME_MAP.get(name);
                 if(df == null)
                     continue;
                 m.put(e.getKey(), df.getClass());
@@ -1235,8 +1249,6 @@ public class DifferentialFunctionClassHolder {
 
         INSTANCE = new DifferentialFunctionClassHolder();
         log.debug("Initialized instance");
-
-        initialized.set(true);
     }
 
     /**
@@ -1305,6 +1317,7 @@ public class DifferentialFunctionClassHolder {
      * @return
      */
     public static DifferentialFunction getInstance(String name) {
+        getInstance();
         return OP_NAME_MAP.get(name);
     }
 
@@ -1348,25 +1361,29 @@ public class DifferentialFunctionClassHolder {
 
     public static synchronized DifferentialFunctionClassHolder getInstance() {
         log.trace("Returning class holder instance");
-        if (INSTANCE == null && !initialized.get()) {
-            // Deserialization can reach the op registry before anything has touched Nd4j
-            // (e.g. SameDiff.load of an SDZ/SDNB as a process's first ND4J call). The
-            // registry is only built at the tail of Nd4j's backend init (initInstance()),
-            // so bootstrap through the canonical path. Re-entrant callers during that
-            // init still observe null and are handled by the existing circular-init
-            // guards in DifferentialFunction.
-            try {
-                Nd4j.getExecutioner();
-            } catch (Throwable t) {
-                log.warn("Nd4j bootstrap for op-registry initialization failed; initializing registry directly", t);
-            }
-            if (INSTANCE == null && !initialized.get()) {
-                try {
-                    initInstance();
-                } catch (IOException e) {
-                    throw new IllegalStateException("Failed to initialize the op registry", e);
-                }
-            }
+        if (INSTANCE != null) {
+            return INSTANCE;
+        }
+
+        Nd4jInitialization.throwIfFailed();
+        REGISTRY_INITIALIZATION.throwIfFailed();
+
+        if (REGISTRY_INITIALIZATION.isInitializingByCurrentThread()
+                || Nd4jInitialization.isInitializingByCurrentThread()) {
+            throw new IllegalStateException(
+                    "The ND4J operation registry was requested reentrantly during bootstrap");
+        }
+
+        // Deserialization may be the first ND4J entry point. Bootstrap only through
+        // Nd4j's canonical transaction; never build a second registry after a backend
+        // failure, because that masks the original cause and exposes partial maps.
+        Nd4j.getExecutioner();
+        Nd4jInitialization.throwIfFailed();
+        REGISTRY_INITIALIZATION.throwIfFailed();
+
+        if (INSTANCE == null) {
+            throw new IllegalStateException(
+                    "ND4J initialization completed without an operation registry");
         }
         return INSTANCE;
     }

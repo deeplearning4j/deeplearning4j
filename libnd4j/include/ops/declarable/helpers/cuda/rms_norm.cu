@@ -170,6 +170,11 @@ template void launchRmsNormKernel<float16, float>(
     const float16*, const float*, float16*,
     LongType, LongType, float, cudaStream_t);
 
+// Mixed-type gamma — F32 recurrent activations with F16 model weights.
+template void launchRmsNormKernel<float, float16>(
+    const float*, const float16*, float*,
+    LongType, LongType, float, cudaStream_t);
+
 //////////////////////////////////////////////////////////////////////////////
 // Public interface called from rms_norm op
 //////////////////////////////////////////////////////////////////////////////
@@ -190,17 +195,31 @@ void rmsNorm(
   auto gammaDtype = gamma != nullptr ? gamma->dataType() : dtype;
 
   if (dtype == DataType::FLOAT32) {
-    launchRmsNormKernel<float, float>(
-        reinterpret_cast<const float*>(input->specialBuffer()),
-        gamma != nullptr ? reinterpret_cast<const float*>(gamma->specialBuffer()) : nullptr,
-        reinterpret_cast<float*>(output->specialBuffer()),
-        numRows, rowLen, epsilon, *stream);
+    if (gamma != nullptr && gammaDtype == DataType::HALF) {
+      launchRmsNormKernel<float, float16>(
+          reinterpret_cast<const float*>(input->specialBuffer()),
+          reinterpret_cast<const float16*>(gamma->specialBuffer()),
+          reinterpret_cast<float*>(output->specialBuffer()),
+          numRows, rowLen, epsilon, *stream);
+    } else if (gamma == nullptr || gammaDtype == DataType::FLOAT32) {
+      launchRmsNormKernel<float, float>(
+          reinterpret_cast<const float*>(input->specialBuffer()),
+          gamma != nullptr ? reinterpret_cast<const float*>(gamma->specialBuffer()) : nullptr,
+          reinterpret_cast<float*>(output->specialBuffer()),
+          numRows, rowLen, epsilon, *stream);
+    } else {
+      THROW_EXCEPTION("rmsNormCuda: Unsupported gamma type for FLOAT32 input");
+    }
   } else if (dtype == DataType::DOUBLE) {
-    launchRmsNormKernel<double, double>(
-        reinterpret_cast<const double*>(input->specialBuffer()),
-        gamma != nullptr ? reinterpret_cast<const double*>(gamma->specialBuffer()) : nullptr,
-        reinterpret_cast<double*>(output->specialBuffer()),
-        numRows, rowLen, epsilon, *stream);
+    if (gamma == nullptr || gammaDtype == DataType::DOUBLE) {
+      launchRmsNormKernel<double, double>(
+          reinterpret_cast<const double*>(input->specialBuffer()),
+          gamma != nullptr ? reinterpret_cast<const double*>(gamma->specialBuffer()) : nullptr,
+          reinterpret_cast<double*>(output->specialBuffer()),
+          numRows, rowLen, epsilon, *stream);
+    } else {
+      THROW_EXCEPTION("rmsNormCuda: Unsupported gamma type for DOUBLE input");
+    }
   } else if (dtype == DataType::HALF) {
     if (gamma != nullptr && gammaDtype == DataType::FLOAT32) {
       // Mixed-type: F16 input, F32 gamma — pass gamma directly without casting
@@ -209,12 +228,14 @@ void rmsNorm(
           reinterpret_cast<const float*>(gamma->specialBuffer()),
           reinterpret_cast<float16*>(output->specialBuffer()),
           numRows, rowLen, epsilon, *stream);
-    } else {
+    } else if (gamma == nullptr || gammaDtype == DataType::HALF) {
       launchRmsNormKernel<float16, float16>(
           reinterpret_cast<const float16*>(input->specialBuffer()),
           gamma != nullptr ? reinterpret_cast<const float16*>(gamma->specialBuffer()) : nullptr,
           reinterpret_cast<float16*>(output->specialBuffer()),
           numRows, rowLen, epsilon, *stream);
+    } else {
+      THROW_EXCEPTION("rmsNormCuda: Unsupported gamma type for HALF input");
     }
   } else {
     THROW_EXCEPTION("rmsNormCuda: Unsupported data type");

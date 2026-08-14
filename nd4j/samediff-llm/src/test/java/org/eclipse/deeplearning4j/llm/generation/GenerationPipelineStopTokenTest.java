@@ -107,6 +107,18 @@ class GenerationPipelineStopTokenTest {
     }
 
     @Test
+    void importedTemplateSelectsXmlFunctionProtocolWithoutModelNameChecks() {
+        ChatTemplate template = new ChatTemplate(
+                "<tool_call><function=example><parameter=value>"
+                        + "</parameter></function></tool_call>", "", "");
+
+        assertEquals(ChatTemplate.ToolCallFormat.XML, template.toolCallFormat());
+        assertEquals(ChatTemplate.ToolCallFormat.XML,
+                GenerationPipeline.selectModelToolCallFormat(
+                        template.toolCallFormat(), null, null, Set.of()));
+    }
+
+    @Test
     void absentNativeMarkerPairKeepsModelJsonProtocol() {
         assertEquals(ChatTemplate.ToolCallFormat.JSON,
                 GenerationPipeline.selectModelToolCallFormat(

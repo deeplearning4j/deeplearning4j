@@ -214,6 +214,17 @@ public interface NativeOps {
  void initializeFunctions(PointerPointer functions);
 
  /**
+  * Ask this backend to initialize optional function entry points from the native process.
+  *
+  * <p>The backend's native {@link #initializeFunctions(PointerPointer)} implementation owns
+  * the concrete symbol set and the meaning of a null pointer table. This path avoids carrying
+  * JavaCPP pointer and String objects across an embedded native-image/host-JVM boundary.</p>
+  */
+ default void initializeFunctionsFromProcessSymbols() {
+     initializeFunctions(null);
+ }
+
+ /**
   * Initialize the shape cache eagerly during early JVM startup.
   * This prevents race conditions during static initialization when multiple threads
   * try to create NDArrays concurrently before the shape cache is fully initialized.

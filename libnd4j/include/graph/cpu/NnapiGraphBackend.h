@@ -109,6 +109,17 @@ class NnapiGraphBackend : public GraphBackend {
   bool nnapiAvailable_ = false;
   int apiLevel_ = 0;
   int preference_ = ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;
+  const ANeuralNetworksDevice* requiredDevice_ = nullptr;
+  std::string requiredDeviceName_;
+  std::string selectedDeviceName_;
+  std::string selectedDeviceVersion_;
+  int32_t selectedDeviceType_ = ANEURALNETWORKS_DEVICE_UNKNOWN;
+  int64_t selectedDeviceFeatureLevel_ = 0;
+
+  // Resolve the accelerator-only device contract before the backend is admitted.
+  // Tensor G3 must bind google-edgetpu; generic NNAPI selection is not proof of
+  // accelerator placement because Android may otherwise partition onto CPU.
+  bool resolveRequiredAcceleratorDevice();
 
   // NNAPI operand type from nd4j DataType. Returns -1 if unsupported.
   static int32_t toNnapiOperandType(DataType dt);
@@ -134,6 +145,8 @@ class NnapiGraphBackend : public GraphBackend {
   struct CompiledModel {
     ANeuralNetworksModel* model = nullptr;
     ANeuralNetworksCompilation* compilation = nullptr;
+    int startSlot = -1;
+    int endSlot = -1;
     LongType shapeKey = 0;
     bool valid = false;
 
@@ -150,10 +163,19 @@ class NnapiGraphBackend : public GraphBackend {
     // Compilation audit
     std::vector<CompilationAuditEntry> compilationAudit;
 
-    ~CompiledModel() {
-      if (compilation) ANeuralNetworksCompilation_free(compilation);
-      if (model) ANeuralNetworksModel_free(model);
+    void invalidate() {
+      if (compilation) {
+        ANeuralNetworksCompilation_free(compilation);
+        compilation = nullptr;
+      }
+      if (model) {
+        ANeuralNetworksModel_free(model);
+        model = nullptr;
+      }
+      valid = false;
     }
+
+    ~CompiledModel() { invalidate(); }
 
     // Non-copyable, moveable
     CompiledModel() = default;
@@ -161,20 +183,24 @@ class NnapiGraphBackend : public GraphBackend {
     CompiledModel& operator=(const CompiledModel&) = delete;
     CompiledModel(CompiledModel&& o) noexcept
         : model(o.model), compilation(o.compilation),
+          startSlot(o.startSlot), endSlot(o.endSlot),
           shapeKey(o.shapeKey), valid(o.valid),
           inputMappings(std::move(o.inputMappings)),
           outputMappings(std::move(o.outputMappings)),
           compilationAudit(std::move(o.compilationAudit)) {
       o.model = nullptr;
       o.compilation = nullptr;
+      o.startSlot = -1;
+      o.endSlot = -1;
       o.valid = false;
     }
     CompiledModel& operator=(CompiledModel&& o) noexcept {
       if (this != &o) {
-        if (compilation) ANeuralNetworksCompilation_free(compilation);
-        if (model) ANeuralNetworksModel_free(model);
+        invalidate();
         model = o.model;
         compilation = o.compilation;
+        startSlot = o.startSlot;
+        endSlot = o.endSlot;
         shapeKey = o.shapeKey;
         valid = o.valid;
         inputMappings = std::move(o.inputMappings);
@@ -188,8 +214,10 @@ class NnapiGraphBackend : public GraphBackend {
     }
   };
 
-  // Segment cache (SegmentCacheKey/Hash from GraphBackendCommon.h)
-  std::unordered_map<SegmentCacheKey, CompiledModel, SegmentCacheHash> cache_;
+  // Non-owning registry used only by invalidateCache(). The plan's GraphSegment
+  // owns each compiled artifact, so destroying a context releases its NNAPI
+  // model/compilation instead of retaining it in this process-wide singleton.
+  std::vector<std::weak_ptr<CompiledModel>> compiledArtifacts_;
   std::mutex cacheMtx_;
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
 

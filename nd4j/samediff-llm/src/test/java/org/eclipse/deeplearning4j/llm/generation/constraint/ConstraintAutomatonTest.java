@@ -196,6 +196,21 @@ class ConstraintAutomatonTest {
     }
 
     @Test
+    void toolCall_argsMustBeginWithJsonObject() {
+        ToolCallConstraint c = new ToolCallConstraint(TOOLS);
+        String argsPrefix = "{\"tool\": \"ask_graph_verify\", \"args\": ";
+
+        assertFalse(c.canExtend(argsPrefix, "("),
+                "a parenthesized expression is not a JSON tool-arguments object");
+        assertFalse(c.canExtend(argsPrefix, "["),
+                "an array is not a JSON tool-arguments object");
+        assertFalse(c.isAccepting(argsPrefix + "()}"),
+                "balanced outer braces must not make invalid argument syntax accepting");
+        assertTrue(c.canExtend(argsPrefix, "{"),
+                "the documented JSON object argument root must remain selectable");
+    }
+
+    @Test
     void toolCall_eosOnlyAcceptedWhenDone() {
         ToolCallConstraint c = new ToolCallConstraint(TOOLS);
         // EOS should be blocked in all non-DONE states.
@@ -298,6 +313,334 @@ class ConstraintAutomatonTest {
                 "a JSON value followed by trailing garbage must never become accepting");
         assertFalse(constraint.canExtend(arrayPrefix + "\"M. Chen\"]", "?)]"),
                 "trailing non-JSON tokens must be masked before the native call closes");
+    }
+
+    @Test
+    void nativeToolCall_schemaRejectsMalformedNestedObjectPrefixes() {
+        Map<String, Object> entity = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "id", Map.of("type", "string"),
+                        "name", Map.of("type", "string"),
+                        "type", Map.of("type", "string")),
+                "required", List.of("id", "name", "type"),
+                "additionalProperties", false);
+        Map<String, Object> relation = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "source", Map.of("type", "integer", "minimum", 0),
+                        "target", Map.of("type", "integer", "minimum", 0),
+                        "type", Map.of("type", "string")),
+                "required", List.of("source", "target", "type"),
+                "additionalProperties", false);
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "entities", Map.of("type", "array", "items", entity),
+                        "relations", Map.of("type", "array", "items", relation)),
+                "required", List.of("entities", "relations"),
+                "additionalProperties", false);
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit_graph_delta"),
+                Map.of("submit_graph_delta", List.of("entities", "relations")),
+                Map.of(),
+                Map.of("submit_graph_delta", parameters));
+
+        String outOfOrder = "<|tool_call_start|>[submit_graph_delta(relations=";
+        assertFalse(constraint.canExtend(outOfOrder, "["),
+                "full parameter schemas must not allow a later required argument first");
+
+        String entityPrefix = "<|tool_call_start|>[submit_graph_delta(entities=[{"
+                + "\"id\":\"person-1\",\"name\":\"Alex Rivera\",\"type\":\"PERSON\"";
+        assertFalse(constraint.canExtend(entityPrefix, ", response:"),
+                "unquoted object narration must be rejected before it consumes the token budget");
+        assertFalse(constraint.canExtend(entityPrefix, ",\"response\":"),
+                "undeclared nested object properties must be rejected before object closure");
+
+        String relationPropertyPrefix = "<|tool_call_start|>[submit_graph_delta(entities=[{"
+                + "\"id\":\"person-1\",\"name\":\"Alex Rivera\",\"type\":\"PERSON\"}],"
+                + "relations=[{\"source\":0,\"t";
+        assertFalse(constraint.canExtend(relationPropertyPrefix, "\\u201"),
+                "an impossible Unicode escape in a declared property name must be rejected early");
+        assertTrue(constraint.canExtend(relationPropertyPrefix, "\\u0061"),
+                "a Unicode escape that can still spell target must remain selectable");
+
+        String incompleteTarget = relationPropertyPrefix + "arget\":";
+        assertFalse(constraint.canExtend(incompleteTarget, "-"),
+                "a non-negative integer schema must reject a negative prefix immediately");
+        assertFalse(constraint.canExtend(incompleteTarget + "1", "\b"),
+                "JSON numbers must not absorb a backspace control character");
+        assertFalse(constraint.canExtend(incompleteTarget + "1", "\u001b"),
+                "JSON numbers must not absorb an escape control character");
+        assertTrue(constraint.canExtend(incompleteTarget, "1"));
+
+        String valid = "<|tool_call_start|>[submit_graph_delta(entities=[{"
+                + "\"id\":\"person-1\",\"name\":\"Alex Rivera\",\"type\":\"PERSON\"}],"
+                + "relations=[{\"source\":0,\"target\":1,"
+                + "\"type\":\"WORKS_AT\"}])]<|tool_call_end|>";
+        assertTrue(constraint.isAccepting(valid));
+    }
+
+    @Test
+    void nativeToolCall_compactEntityRejectsPropertyAfterRequiredFields() {
+        Map<String, Object> entity = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string", "maxLength", 13),
+                        "type", Map.of("type", "string", "enum", List.of("PERSON", "COMPANY"))),
+                "required", List.of("name", "type"),
+                "additionalProperties", false);
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "format", Map.of("type", "string", "const", "indexed"),
+                        "entities", Map.of(
+                                "type", "array", "items", entity,
+                                "minItems", 2, "maxItems", 2, "uniqueItems", true),
+                        "relations", Map.of("type", "array", "items", Map.of())),
+                "required", List.of("format", "entities", "relations"),
+                "additionalProperties", false);
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit_graph_delta"),
+                Map.of("submit_graph_delta", List.of("format", "entities", "relations")),
+                Map.of(),
+                Map.of("submit_graph_delta", parameters));
+        String entityPrefix = "<|tool_call_start|>[submit_graph_delta(format=\"indexed\","
+                + "entities=[{\"name\":\"Alex Rivera\",\"type\":\"PERSON\"";
+
+        assertFalse(constraint.canExtend(entityPrefix, ",\"format:indexed"),
+                "additionalProperties=false must reject a property after all entity fields");
+        assertTrue(constraint.canExtend(entityPrefix, "},{\"name\":"),
+                "the exact-cardinality array must still allow its second entity");
+
+        String duplicateSecondType = entityPrefix + "},{\"name\":\"Alex Rivera\",\"type\":";
+        assertFalse(constraint.canExtend(duplicateSecondType, "\"P"),
+                "uniqueItems must reject an enum prefix when every matching object completion is a duplicate");
+        assertTrue(constraint.canExtend(duplicateSecondType, "\"C"),
+                "an enum prefix with a unique object completion must remain selectable");
+        assertFalse(constraint.canExtend(duplicateSecondType, "\"PERSON\""),
+                "uniqueItems must reject a final property value that makes the open object an unavoidable duplicate");
+        assertFalse(constraint.canExtend(duplicateSecondType, "\"PERSON\\"),
+                "an incomplete escape cannot extend a fully matched enum value around duplicate lookahead");
+        assertTrue(constraint.canExtend(duplicateSecondType, "\"COMPANY\""),
+                "a final property value that keeps the second object unique must remain selectable");
+    }
+
+    @Test
+    void nativeToolCall_prefixItemsConstrainEachArraySlotBeforeDuplicateDeadEnd() {
+        Map<String, Object> firstEntity = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string", "const", "Jordan Lee"),
+                        "type", Map.of("type", "string", "const", "PERSON")),
+                "required", List.of("name", "type"),
+                "additionalProperties", false);
+        Map<String, Object> secondEntity = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string", "const", "Helios Dynamics"),
+                        "type", Map.of(
+                                "type", "string",
+                                "enum", List.of("PERSON", "COMPANY"),
+                                "const", "COMPANY")),
+                "required", List.of("name", "type"),
+                "additionalProperties", false);
+        Map<String, Object> entities = Map.of(
+                "type", "array",
+                "prefixItems", List.of(firstEntity, secondEntity),
+                "items", false,
+                "minItems", 2,
+                "maxItems", 2,
+                "uniqueItems", true);
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of("entities", entities),
+                "required", List.of("entities"),
+                "additionalProperties", false);
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit_entities"),
+                Map.of("submit_entities", List.of("entities")),
+                Map.of(),
+                Map.of("submit_entities", parameters));
+
+        String secondPrefix = "<|tool_call_start|>[submit_entities(entities=["
+                + "{\"name\":\"Jordan Lee\",\"type\":\"PERSON\"},{\"name\":";
+        assertFalse(constraint.canExtend(secondPrefix, "\"Jordan"),
+                "the second positional slot must reject a repeated first entity before closure");
+        assertTrue(constraint.canExtend(secondPrefix, "\"Helios"),
+                "the source-derived second entity must remain selectable");
+        String secondTypePrefix = secondPrefix + "\"Helios Dynamics\",\"type\":";
+        assertFalse(constraint.canExtend(secondTypePrefix, "\"PERSON"),
+                "const must narrow an enclosing enum before the wrong value can dead-end");
+        assertTrue(constraint.canExtend(secondTypePrefix, "\"COMPANY"));
+
+        String valid = secondTypePrefix + "\"COMPANY\"}])]<|tool_call_end|>";
+        assertTrue(constraint.isAccepting(valid));
+        assertFalse(constraint.canExtend(valid, ","),
+                "items=false and maxItems must reject a tail after positional slots");
+    }
+
+    @Test
+    void nativeToolCall_uniqueItemsRejectsDuplicateThatCrossesATokenBoundary() {
+        Map<String, Object> entity = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string"),
+                        "type", Map.of(
+                                "type", "string",
+                                "enum", List.of("PERSON", "COMPANY"))),
+                "required", List.of("name", "type"),
+                "additionalProperties", false);
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "entities", Map.of(
+                                "type", "array",
+                                "items", entity,
+                                "uniqueItems", true)),
+                "required", List.of("entities"),
+                "additionalProperties", false);
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit_entities"),
+                Map.of("submit_entities", List.of("entities")),
+                Map.of(),
+                Map.of("submit_entities", parameters));
+
+        String first = "<|tool_call_start|>[submit_entities(entities=["
+                + "{\"name\":\"Alex Rivera\",\"type\":\"PERSON\"}";
+        assertFalse(constraint.canExtend(first,
+                        ",{\"name\":\"Alex Rivera\",\"type\":\"PERSON\"},{\"name\":\""),
+                "a token spanning a complete duplicate and the next item must be rejected");
+        assertTrue(constraint.canExtend(first,
+                        ",{\"name\":\"Acme Robotics\",\"type\":\"COMPANY\"},{\"name\":\""),
+                "a distinct completed item in the same token must remain valid");
+    }
+
+    @Test
+    void nativeToolCall_prefixItemsRemainActiveAfterARequiredScalarArgument() {
+        Map<String, Object> firstEntity = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string", "const", "Jordan Lee"),
+                        "type", Map.of("type", "string", "const", "PERSON")),
+                "required", List.of("name", "type"),
+                "additionalProperties", false);
+        Map<String, Object> secondEntity = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string", "const", "Helios Dynamics"),
+                        "type", Map.of("type", "string", "const", "COMPANY")),
+                "required", List.of("name", "type"),
+                "additionalProperties", false);
+        Map<String, Object> relation = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "source", Map.of("type", "integer", "const", 0),
+                        "target", Map.of("type", "integer", "const", 1),
+                        "type", Map.of("type", "string", "const", "FOUNDED")),
+                "required", List.of("source", "target", "type"),
+                "additionalProperties", false);
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "format", Map.of("type", "string", "const", "indexed"),
+                        "entities", Map.of(
+                                "type", "array",
+                                "prefixItems", List.of(firstEntity, secondEntity),
+                                "items", false,
+                                "minItems", 2,
+                                "maxItems", 2,
+                                "uniqueItems", true),
+                        "relations", Map.of(
+                                "type", "array",
+                                "prefixItems", List.of(relation),
+                                "items", false,
+                                "minItems", 1,
+                                "maxItems", 1,
+                                "uniqueItems", true)),
+                "required", List.of("format", "entities", "relations"),
+                "additionalProperties", false);
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit_graph_delta"),
+                Map.of("submit_graph_delta", List.of("format", "entities", "relations")),
+                Map.of("submit_graph_delta", Map.of("format", List.of("indexed"))),
+                Map.of("submit_graph_delta", parameters));
+
+        String firstType = "<|tool_call_start|>[submit_graph_delta(format=\"indexed\",entities=[{"
+                + "\"name\":\"Jordan Lee\",\"type\":";
+        assertFalse(constraint.canExtend(firstType, "\"COMPANY\""));
+        assertTrue(constraint.canExtend(firstType, "\"PERSON\""));
+        String secondName = firstType + "\"PERSON\"},{\"name\":";
+        assertFalse(constraint.canExtend(secondName, "\"Jordan Lee\""));
+        assertTrue(constraint.canExtend(secondName, "\"Helios Dynamics\""));
+
+        String valid = secondName + "\"Helios Dynamics\",\"type\":\"COMPANY\"}],"
+                + "relations=[{\"source\":0,\"target\":1,\"type\":\"FOUNDED\"}])]"
+                + "<|tool_call_end|>";
+        assertTrue(constraint.isAccepting(valid));
+        assertFalse(constraint.isAccepting(valid.replace("\"target\":1", "\"target\":0")));
+    }
+
+    @Test
+    void nativeToolCall_enumRejectsImpossibleIncompleteUnicodeEscapeBeforeDeadEnd() {
+        Map<String, Object> property = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string"),
+                        "type", Map.of("type", "string", "enum", List.of("String"))),
+                "required", List.of("name", "type"),
+                "additionalProperties", false);
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "properties", Map.of("type", "array", "items", property)),
+                "required", List.of("properties"),
+                "additionalProperties", false);
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit_corpus_schema"),
+                Map.of("submit_corpus_schema", List.of("properties")),
+                Map.of(),
+                Map.of("submit_corpus_schema", parameters));
+
+        String prefix = "<|tool_call_start|>[submit_corpus_schema(properties=[{"
+                + "\"name\":\"employee\",\"type\":\"S";
+        assertTrue(constraint.canExtend(prefix, "\\u"),
+                "an escape introducer remains recoverable through the enum's next character");
+        assertTrue(constraint.canExtend(prefix + "\\u", "0"),
+                "String's next character t can still be represented as \\u0074");
+        assertFalse(constraint.canExtend(prefix + "\\u", "2"),
+                "an impossible Unicode prefix must be rejected before all completions dead-end");
+        assertTrue(constraint.canExtend(prefix + "\\u007", "4"),
+                "the escaped enum prefix \\u0074 must remain selectable");
+        assertTrue(constraint.canExtend(prefix + "\\u0074", "r"),
+                "generation may continue from the decoded escaped prefix");
+    }
+
+    @Test
+    void nativeToolCall_maxLengthRejectsIncompleteEscapeBeforeDeadEnd() {
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string", "maxLength", 3)),
+                "required", List.of("name"),
+                "additionalProperties", false);
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit"),
+                Map.of("submit", List.of("name")),
+                Map.of(),
+                Map.of("submit", parameters));
+
+        String fullPrefix = "<|tool_call_start|>[submit(name=\"abc";
+        assertFalse(constraint.canExtend(fullPrefix, "\\"),
+                "an unfinished escape cannot start when maxLength is exhausted");
+        assertTrue(constraint.canExtend(fullPrefix, "\""),
+                "the closing quote must remain selectable at maxLength");
+
+        String remainingCapacity = "<|tool_call_start|>[submit(name=\"ab";
+        assertTrue(constraint.canExtend(remainingCapacity, "\\"),
+                "an unfinished escape remains legal while one character fits");
+        assertTrue(constraint.canExtend(remainingCapacity, "\\n"),
+                "a completed one-character escape may consume the remaining capacity");
     }
 
     @Test
@@ -567,6 +910,143 @@ class ConstraintAutomatonTest {
         assertEquals(Float.NEGATIVE_INFINITY, masked[0]);
         assertEquals(Float.NEGATIVE_INFINITY, masked[1]);
         assertEquals(Float.NEGATIVE_INFINITY, masked[3]);
+    }
+
+    @Test
+    void masker_exactDecodeReplaysToolTransitionsAfterBoundaryRewrite() {
+        ToolCallConstraint constraint = new ToolCallConstraint(
+                "submit_graph_delta", "submit_graph_detail");
+        ConstraintMasker masker = new ConstraintMasker(constraint, 2);
+        String current = "{\"tool\": \"submit_graph_del";
+        String rewritten = "{\"tool\": \"submit_graph_detail";
+        masker.decodedTextEmitted(current);
+
+        assertFalse(rewritten.startsWith(current),
+                "the fixture must exercise the exact-decoder rewrite branch");
+        assertTrue(masker.allowsDecodedText(rewritten, List.of()),
+                "a rewritten exact decode must be replayed through incremental protocol states");
+    }
+
+    @Test
+    void masker_exactDecodeTopKWidensPastInvalidHighLogitCandidate() {
+        JsonObjectConstraint constraint = new JsonObjectConstraint();
+        ConstraintMasker masker = new ConstraintMasker(constraint, 1);
+        masker.decodedTextEmitted("{\"key\":\"value\"");
+
+        float[] logits = {9.0f, 1.0f};
+        float[] approximate = masker.maskLogits(logits, Set.of(), id -> "}");
+        assertTrue(Float.isFinite(approximate[0]));
+        assertEquals(Float.NEGATIVE_INFINITY, approximate[1],
+                "the fast top-K approximation should initially omit the lower candidate");
+
+        float[] exact = masker.maskLogitsByDecodedCandidate(
+                logits,
+                Set.of(),
+                id -> id == 0 ? "x" : "{\"key\":\"value\"}",
+                List.of());
+        assertEquals(Float.NEGATIVE_INFINITY, exact[0],
+                "the tokenizer's invalid full-sequence decode must be rejected");
+        assertTrue(Float.isFinite(exact[1]),
+                "full-vocabulary exact widening must recover the lower valid token");
+    }
+
+    @Test
+    void masker_exactDecodeWideningUsesPieceCandidatesBeforeFullVocabulary() {
+        Map<String, Object> itemSchema = Map.of(
+                "type", "object",
+                "properties", Map.of("target", Map.of("type", "string")),
+                "required", List.of("target"),
+                "additionalProperties", false);
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of("item", itemSchema),
+                "required", List.of("item"),
+                "additionalProperties", false);
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit"),
+                Map.of("submit", List.of("item")),
+                Map.of(),
+                Map.of("submit", parameters));
+        ConstraintMasker masker = new ConstraintMasker(constraint, 1);
+        String current = "<|tool_call_start|>[submit(item={\"t";
+        String completion = "arget\":\"ok\"})]<|tool_call_end|>";
+        masker.decodedTextEmitted(current);
+        float[] logits = new float[1_000];
+        logits[0] = 9.0f;
+        logits[999] = 1.0f;
+        java.util.concurrent.atomic.AtomicInteger exactDecodes =
+                new java.util.concurrent.atomic.AtomicInteger();
+
+        float[] exact = masker.maskLogitsByDecodedCandidate(
+                logits,
+                Set.of(),
+                Set.of(),
+                id -> id == 999 ? completion : "x",
+                id -> {
+                    exactDecodes.incrementAndGet();
+                    return id == 999 ? current + completion : current + "x";
+                },
+                List.of());
+
+        assertTrue(Float.isFinite(exact[999]));
+        assertTrue(exactDecodes.get() < 10,
+                "structural widening should not exact-decode the full vocabulary");
+    }
+
+    @Test
+    void masker_exactDecodeKeepsFastTopKWhenAnExactCandidateIsValid() {
+        ConstraintMasker masker = new ConstraintMasker(new JsonObjectConstraint(), 1);
+        float[] exact = masker.maskLogitsByDecodedCandidate(
+                new float[]{9.0f, 1.0f},
+                Set.of(),
+                id -> id == 0 ? "{\"preferred\":true}" : "{\"lower\":true}",
+                List.of());
+
+        assertTrue(Float.isFinite(exact[0]));
+        assertEquals(Float.NEGATIVE_INFINITY, exact[1],
+                "a legal exact top-K candidate must avoid a full-vocabulary scan");
+    }
+
+    @Test
+    void masker_exactDecodeRejectsDisappearingUnownedControlToken() {
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint("submit");
+        ConstraintMasker masker = new ConstraintMasker(constraint, 1);
+
+        float[] exact = masker.maskLogitsByDecodedCandidate(
+                new float[]{9.0f, 1.0f},
+                Set.of(),
+                Set.of(0),
+                id -> id == 0 ? "<|pad|>" : "<|tool_call_start|>",
+                id -> id == 0 ? "" : "<|tool_call_start|>",
+                List.of("<|pad|>", "<|tool_call_start|>"));
+
+        assertEquals(Float.NEGATIVE_INFINITY, exact[0],
+                "a control token omitted by exact decode must remain blocked by token identity");
+        assertTrue(Float.isFinite(exact[1]),
+                "exact widening must recover the lower ordinary-token protocol prefix");
+        assertFalse(masker.allowsSpecialToken("<|pad|>"));
+        assertTrue(masker.allowsSpecialToken("<|tool_call_start|>"));
+        masker.specialTokenEmitted("<|tool_call_start|>");
+        assertEquals("<|tool_call_start|>", masker.getEmittedText());
+    }
+
+    @Test
+    void masker_exactDecodePreservesIncrementalWhitespaceProgress() {
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint("submit");
+        ConstraintMasker masker = new ConstraintMasker(constraint, 2);
+        String current = "<|tool_call_start|>[submit(values=[] ";
+        masker.decodedTextEmitted(current);
+
+        float[] exact = masker.maskLogitsByDecodedCandidate(
+                new float[]{9.0f, 1.0f},
+                Set.of(),
+                id -> id == 0 ? current + "\t" : current + ")]<|tool_call_end|>",
+                List.of("<|tool_call_start|>", "<|tool_call_end|>"));
+
+        assertEquals(Float.NEGATIVE_INFINITY, exact[0],
+                "exact decoding must not bypass the native grammar's whitespace self-loop guard");
+        assertTrue(Float.isFinite(exact[1]),
+                "the structural close must remain selectable after whitespace is exhausted");
     }
 
     @Test

@@ -28,8 +28,6 @@ import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.DualRoPE;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.PerLayerEmbedding;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.SharedKvAttention;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
@@ -249,9 +247,8 @@ public class GemmaArchitecture implements ModelArchitecture {
         }
 
         SDVariable pleVar = sd.var("model.layers." + layerIdx + ".ple.weight", pleWeight);
-        SDVariable result = new PerLayerEmbedding(sd, hidden, pleVar, tokenIds).outputVariable();
-        sd.updateVariableNameAndReference(result, "ple_" + layerIdx);
-        return result;
+        return sd.nn().perLayerEmbedding(
+                "ple_" + layerIdx, hidden, pleVar, tokenIds);
     }
 
     // ========================================================================
@@ -313,13 +310,11 @@ public class GemmaArchitecture implements ModelArchitecture {
         // Apply Dual RoPE (Gemma 4) or standard RoPE (earlier Gemma)
         int attentionType = isGlobalAttention ? DualRoPE.ATTENTION_TYPE_GLOBAL : DualRoPE.ATTENTION_TYPE_LOCAL;
 
-        q = new DualRoPE(sd, q, attentionType, 0,
-                localFreqBase, globalFreqBase, localFreqScale, globalFreqScale).outputVariable();
-        sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+        q = sd.nn().dualRoPE("q_rope_" + layerIdx, q, attentionType, 0,
+                localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
 
-        k = new DualRoPE(sd, k, attentionType, 0,
-                localFreqBase, globalFreqBase, localFreqScale, globalFreqScale).outputVariable();
-        sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+        k = sd.nn().dualRoPE("k_rope_" + layerIdx, k, attentionType, 0,
+                localFreqBase, globalFreqBase, localFreqScale, globalFreqScale);
 
         return new SDVariable[]{q, k, v};
     }
@@ -387,17 +382,16 @@ public class GemmaArchitecture implements ModelArchitecture {
         q = sd.reshape("q_heads_" + layerIdx, q, qShapeVar);
 
         // Apply RoPE to Q only (K/V already have RoPE from source layer)
-        q = new DualRoPE(sd, q,
+        q = sd.nn().dualRoPE("q_rope_" + layerIdx, q,
                 isGlobalAttention ? DualRoPE.ATTENTION_TYPE_GLOBAL : DualRoPE.ATTENTION_TYPE_LOCAL,
-                0, DEFAULT_LOCAL_FREQ_BASE, DEFAULT_GLOBAL_FREQ_BASE, 1.0, 1.0).outputVariable();
-        sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+                0, DEFAULT_LOCAL_FREQ_BASE, DEFAULT_GLOBAL_FREQ_BASE, 1.0, 1.0);
 
         // Use SharedKvAttention op
         double scale = 1.0 / Math.sqrt(headDim);
-        SDVariable attnOut = new SharedKvAttention(sd, q, sharedKey, sharedValue,
+        SDVariable attnOut = sd.nn().sharedKvAttention(
+                "shared_kv_attn_out_" + layerIdx, q, sharedKey, sharedValue, null,
                 numHeads, numKvHeads, 1,
-                isGlobalAttention ? 0 : slidingWindow, scale).outputVariable();
-        sd.updateVariableNameAndReference(attnOut, "shared_kv_attn_out_" + layerIdx);
+                isGlobalAttention ? 0 : slidingWindow, scale);
 
         // Reshape: [batch, seq, numHeads, headDim] -> [batch, seq, numHeads * headDim]
         int attnOutDim = numHeads * headDim;

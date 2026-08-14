@@ -28,8 +28,6 @@ import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -63,7 +61,7 @@ import java.util.Set;
  *
  * <p>For the LLM decoder the implementation follows the LLaMA/Qwen pattern with
  * separate Q/K/V projections and QK norms, but substitutes
- * {@link FusedMRoPE} for standard RoPE to carry temporal, height, and width
+ * the generated {@code sd.nn().fusedMRoPE(...)} namespace op for standard RoPE to carry temporal, height, and width
  * position IDs through the attention layers.</p>
  */
 @Slf4j
@@ -354,7 +352,7 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
         SDVariable hidden;
         if (patchEmbedW != null) {
             SDVariable wPatch = sd.var("vision.patch_embed.proj.weight", patchEmbedW);
-            hidden = fp32Mmul(sd, "vit_patch_proj", input, wPatch.permute(1, 0), dtype);
+            hidden = QuantizedLinear.fp32Mmul(sd, "vit_patch_proj", input, wPatch.permute(1, 0), dtype);
             if (patchEmbedB != null) {
                 hidden = hidden.add("vit_patch_proj_bias",
                         sd.var("vision.patch_embed.proj.bias", patchEmbedB));
@@ -454,9 +452,9 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
         SDVariable wv = sd.var(attnPrefix + "v_proj.weight", vW);
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oW);
 
-        SDVariable q = fp32Mmul(sd, "vit_q_" + layerIdx, input, wq.permute(1, 0), dtype);
-        SDVariable k = fp32Mmul(sd, "vit_k_" + layerIdx, input, wk.permute(1, 0), dtype);
-        SDVariable v = fp32Mmul(sd, "vit_v_" + layerIdx, input, wv.permute(1, 0), dtype);
+        SDVariable q = QuantizedLinear.fp32Mmul(sd, "vit_q_" + layerIdx, input, wq.permute(1, 0), dtype);
+        SDVariable k = QuantizedLinear.fp32Mmul(sd, "vit_k_" + layerIdx, input, wk.permute(1, 0), dtype);
+        SDVariable v = QuantizedLinear.fp32Mmul(sd, "vit_v_" + layerIdx, input, wv.permute(1, 0), dtype);
 
         // Optional biases
         INDArray qb = weights.get(prefix + ".attn_q.bias");
@@ -478,18 +476,17 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
         v = sd.reshape("vit_v_heads_" + layerIdx, v, qShape);
 
         // Full self-attention (no causal mask, no KV cache)
-        SDVariable attnOut = new DotProductAttentionV2(sd,
-                q, v, k, null, null,
+        SDVariable attnOut = sd.nn().dotProductAttentionV2(
+                "vit_attn_out_" + layerIdx, q, v, k, null, null,
                 null, null, null, null,
-                0.0, 0.0, false, false).outputVariable();
-        sd.updateVariableNameAndReference(attnOut, "vit_attn_out_" + layerIdx);
+                0.0, 0.0, false, false);
 
         SDVariable outShape = sd.stack("vit_attn_flat_shape_" + layerIdx, 0,
                 batchDim, seqDim,
                 sd.constant(Nd4j.scalar((long) VIT_HIDDEN_SIZE)));
         SDVariable attnFlat = sd.reshape("vit_attn_flat_" + layerIdx, attnOut, outShape);
 
-        return fp32Mmul(sd, "vit_attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
+        return QuantizedLinear.fp32Mmul(sd, "vit_attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
     }
 
     /**
@@ -516,12 +513,12 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
         INDArray upB   = weights.get(prefix + ".ffn_up.bias");
         INDArray downB = weights.get(prefix + ".ffn_down.bias");
 
-        SDVariable up = fp32Mmul(sd, "vit_up_" + layerIdx, input, wUp.permute(1, 0), dtype);
+        SDVariable up = QuantizedLinear.fp32Mmul(sd, "vit_up_" + layerIdx, input, wUp.permute(1, 0), dtype);
         if (upB != null) up = up.add(sd.var(mlpPfx + "fc1.bias", upB));
 
         SDVariable activated = sd.nn.gelu("vit_gelu_" + layerIdx, up);
 
-        SDVariable down = fp32Mmul(sd, "vit_down_" + layerIdx, activated, wDown.permute(1, 0), dtype);
+        SDVariable down = QuantizedLinear.fp32Mmul(sd, "vit_down_" + layerIdx, activated, wDown.permute(1, 0), dtype);
         if (downB != null) down = down.add(sd.var(mlpPfx + "fc2.bias", downB));
 
         return down;
@@ -560,12 +557,12 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
         INDArray fc1B = weights.get("mm.0.bias");
         INDArray fc2B = weights.get("mm.2.bias");
 
-        SDVariable h = fp32Mmul(sd, "proj_fc1", input, w1.permute(1, 0), dtype);
+        SDVariable h = QuantizedLinear.fp32Mmul(sd, "proj_fc1", input, w1.permute(1, 0), dtype);
         if (fc1B != null) h = h.add(sd.var("projector.fc1.bias", fc1B));
 
         h = sd.nn.gelu("proj_gelu", h);
 
-        SDVariable out = fp32Mmul(sd, "proj_fc2", h, w2.permute(1, 0), dtype);
+        SDVariable out = QuantizedLinear.fp32Mmul(sd, "proj_fc2", h, w2.permute(1, 0), dtype);
         if (fc2B != null) out = out.add(sd.var("projector.fc2.bias", fc2B));
 
         return out;
@@ -699,25 +696,18 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
                     config.getLayerNormEpsilon());
         }
 
-        // M-RoPE: apply multimodal rotary position embeddings using three position tensors.
-        // Interleaved=true and freq_base=1e6 match the Qwen3-VL reference implementation.
-        q = FusedMRoPE.forQwen3VL(sd, q, posT, posH, posW).outputVariable();
-        sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+        // M-RoPE: apply the canonical Qwen3-VL preset through the generated namespace.
+        q = sd.nn().fusedMRoPE("q_rope_" + layerIdx, q, posT, posH, posW);
+        k = sd.nn().fusedMRoPE("k_rope_" + layerIdx, k, posT, posH, posW);
 
-        k = FusedMRoPE.forQwen3VL(sd, k, posT, posH, posW).outputVariable();
-        sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
-
-        // FusedMRoPE may promote HALF→FLOAT; V must match Q/K dtype
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("v_cast_" + layerIdx, q.dataType());
-        }
+        // FusedMRoPE may promote HALF→FLOAT; V must match Q/K dtype.
+        v = GGMLDTypePolicy.castTo(v, "v_cast_" + layerIdx, q.dataType());
 
         // Dot-product attention with KV cache and causal mask
-        SDVariable attnOut = new DotProductAttentionV2(sd,
-                q, v, k, null, null,
+        SDVariable attnOut = sd.nn().dotProductAttentionV2(
+                "attn_out_" + layerIdx, q, v, k, null, null,
                 keyCache, valueCache, cachePosition, causalMask,
-                0.0, 0.0, false, false).outputVariable();
-        sd.updateVariableNameAndReference(attnOut, "attn_out_" + layerIdx);
+                0.0, 0.0, false, false);
 
         int attnOutDim = actualQHeads * fHeadDim;
         SDVariable outShape = sd.stack("attn_out_shape_" + layerIdx, 0,
@@ -781,17 +771,14 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
 
         SDVariable gamma = sd.var(outputName + ".weight", normW);
 
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        SDVariable x = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
+        SDVariable x = GGMLDTypePolicy.castForAccumulation(input, outputName + "_accum");
 
         SDVariable squared    = x.mul(x);
         SDVariable meanSq     = squared.mean(true, -1);
         SDVariable rms        = sd.math.sqrt(meanSq.add(eps));
         SDVariable normalized = x.div(rms);
-
-        if (needsCast) {
-            normalized = normalized.castTo(outputName + "_cast", input.dataType());
-        }
+        normalized = GGMLDTypePolicy.castTo(
+                normalized, outputName + "_cast", input.dataType());
 
         return normalized.mul(outputName, gamma);
     }
@@ -814,18 +801,14 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
 
         SDVariable gamma = sd.var(outputName + ".weight", normW);
 
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        SDVariable x = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
+        SDVariable x = GGMLDTypePolicy.castForAccumulation(input, outputName + "_accum");
 
         SDVariable mean = x.mean(true, -1);
         SDVariable diff = x.sub(mean);
         SDVariable varV = diff.mul(diff).mean(true, -1);
         SDVariable std  = sd.math.sqrt(varV.add(eps));
         SDVariable norm = diff.div(std);
-
-        if (needsCast) {
-            norm = norm.castTo(outputName + "_cast", input.dataType());
-        }
+        norm = GGMLDTypePolicy.castTo(norm, outputName + "_cast", input.dataType());
 
         SDVariable result = norm.mul(outputName, gamma);
         if (normB != null) {
@@ -843,42 +826,16 @@ public class Qwen3VLArchitecture implements ModelArchitecture {
                                       INDArray normWeight, float eps) {
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        SDVariable x = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
+        SDVariable x = GGMLDTypePolicy.castForAccumulation(input, outputName + "_accum");
 
         SDVariable squared    = x.mul(x);
         SDVariable meanSq     = squared.mean(true, -1);
         SDVariable rms        = sd.math.sqrt(meanSq.add(eps));
         SDVariable normalized = x.div(rms);
-
-        if (needsCast) {
-            normalized = normalized.castTo(outputName + "_cast", input.dataType());
-        }
+        normalized = GGMLDTypePolicy.castTo(
+                normalized, outputName + "_cast", input.dataType());
 
         return normalized.mul(outputName, gamma);
-    }
-
-    // ========================================================================
-    // FP32 matmul helper
-    // ========================================================================
-
-    /**
-     * Perform a matrix multiply in FP32, then cast the result back to the input dtype.
-     *
-     * <p>When {@code dtype == HALF}, FP16 dot products over large feature dimensions
-     * easily overflow to ±65504. This helper upcasts both operands before the multiply
-     * and casts the result back, matching the "compute in FP32, store in FP16" pattern
-     * used by PyTorch and HuggingFace.</p>
-     */
-    private SDVariable fp32Mmul(SameDiff sd, String name,
-                                 SDVariable a, SDVariable b, DataType dtype) {
-        if (QuantizedLinear.requiresFp32Accumulation(dtype)) {
-            SDVariable aF32 = a.castTo(name + "_a_f32", DataType.FLOAT);
-            SDVariable bF32 = b.castTo(name + "_b_f32", DataType.FLOAT);
-            SDVariable res  = sd.mmul(name + "_f32", aF32, bF32);
-            return res.castTo(name, dtype);
-        }
-        return sd.mmul(name, a, b);
     }
 
     // ========================================================================

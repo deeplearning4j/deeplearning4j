@@ -140,6 +140,37 @@ public class DspMixedPrecisionReplayTest {
                 mode + ": Inf detected in mixed-precision matmul output");
     }
 
+    @Test
+    @DisplayName("DSP shape pre-pass preserves explicit HALF to FLOAT cast dtype")
+    public void testShapePrePassPreservesExplicitCastDtype() {
+        sd = SameDiff.create();
+
+        SDVariable input = sd.placeHolder("input", DataType.HALF, 1, 1024);
+        SDVariable castFloat = input.castTo("cast_float", DataType.FLOAT);
+        SDVariable weightA = sd.constant("weight_a", Nd4j.randn(DataType.FLOAT, 1024, 16));
+        SDVariable weightB = sd.constant("weight_b", Nd4j.randn(DataType.FLOAT, 1024, 16));
+        SDVariable projectedA = sd.mmul("projected_a", castFloat, weightA);
+        SDVariable projectedB = sd.mmul("projected_b", castFloat, weightB);
+        SDVariable output = projectedA.add("output", projectedB);
+
+        sd.setGraphExecutionMode(GraphExecutionMode.TRITON);
+
+        Map<String, INDArray> ph = new LinkedHashMap<>();
+        ph.put("input", Nd4j.randn(DataType.HALF, 1, 1024));
+
+        for (int step = 0; step < 2; step++) {
+            Map<String, INDArray> result = sd.output(ph, "cast_float", "output");
+            assertEquals(DataType.FLOAT, result.get("cast_float").dataType(),
+                    "DSP shape pre-pass must retain the cast op's declared FLOAT output");
+            assertEquals(DataType.FLOAT, result.get("output").dataType(),
+                    "Downstream batched matmuls must use the cast op's FLOAT dtype");
+            assertFalse(result.get("output").isNaN().any(),
+                    "Mixed-precision output must remain finite at step " + step);
+        }
+
+        DspPlanAssertions.assertNoSegmentFailures(sd, "explicitHalfToFloatCast");
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     // Test 2: Decode-loop lifecycle — must reach REPLAYING
     // ═══════════════════════════════════════════════════════════════════════════

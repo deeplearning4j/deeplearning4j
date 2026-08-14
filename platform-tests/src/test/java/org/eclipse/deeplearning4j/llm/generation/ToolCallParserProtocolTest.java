@@ -19,6 +19,7 @@
  */
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.eclipse.deeplearning4j.llm.generation.constraint.NativeToolCallConstraint;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +41,38 @@ class ToolCallParserProtocolTest {
                                     "type", "array",
                                     "items", Map.of("type", "string"))),
                             "required", List.of("names"))));
+
+    @Test
+    void nativeConstraintRejectsMalformedGraphObjectBeforeParsing() {
+        Map<String, Object> entity = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "id", Map.of("type", "string"),
+                        "name", Map.of("type", "string"),
+                        "type", Map.of("type", "string")),
+                "required", List.of("id", "name", "type"),
+                "additionalProperties", false);
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "entities", Map.of("type", "array", "items", entity),
+                        "relations", Map.of("type", "array", "items", Map.of(
+                                "type", "object",
+                                "properties", Map.of(),
+                                "additionalProperties", false))),
+                "required", List.of("entities", "relations"),
+                "additionalProperties", false);
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit_graph_delta"),
+                Map.of("submit_graph_delta", List.of("entities", "relations")),
+                Map.of(),
+                Map.of("submit_graph_delta", parameters));
+        String prefix = "<|tool_call_start|>[submit_graph_delta(entities=[{"
+                + "\"id\":\"person-1\",\"name\":\"Alex Rivera\",\"type\":\"PERSON\"";
+
+        assertFalse(constraint.canExtend(prefix, ", response:"));
+        assertFalse(constraint.canExtend(prefix, ",\"response\":"));
+    }
 
     @Test
     void truncatedNativeEnvelopesCannotBecomeExecutableCalls() {

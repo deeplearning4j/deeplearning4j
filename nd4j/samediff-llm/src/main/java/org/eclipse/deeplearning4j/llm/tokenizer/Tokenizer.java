@@ -20,8 +20,11 @@
 
 package org.eclipse.deeplearning4j.llm.tokenizer;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Interface for text tokenizers used in LLM applications.
@@ -365,8 +368,8 @@ public interface Tokenizer extends AutoCloseable {
      *
      * @return immutable set of special token IDs
      */
-    default java.util.Set<Integer> getSpecialTokenIds() {
-        java.util.Set<Integer> ids = new java.util.LinkedHashSet<>();
+    default Set<Integer> getSpecialTokenIds() {
+        Set<Integer> ids = new LinkedHashSet<>();
         int pad = getPadTokenId();
         int bos = getBosTokenId();
         int eos = getEosTokenId();
@@ -375,7 +378,68 @@ public interface Tokenizer extends AutoCloseable {
         if (bos >= 0) ids.add(bos);
         if (eos >= 0) ids.add(eos);
         if (unk >= 0) ids.add(unk);
-        return java.util.Collections.unmodifiableSet(ids);
+        return Collections.unmodifiableSet(ids);
+    }
+
+    /**
+     * Resolve atomic tokens emitted by the active chat template after a completed assistant turn.
+     *
+     * <p>Chat models commonly terminate an assistant turn with a template-owned control token that
+     * is distinct from the model container's EOS token. The tokenizer is the authoritative source
+     * for both the rendered template and added/special-token identities, so generation code must not
+     * guess this from a model name or hard-coded marker. A probe assistant message isolates the
+     * rendered suffix, then only tokenizer-declared atomic tokens in that suffix become stops.</p>
+     *
+     * @param chatTemplateOverride active imported/pipeline template, or {@code null} for tokenizer metadata
+     * @return immutable assistant-turn stop-token IDs
+     */
+    default Set<Integer> getChatTemplateStopTokenIds(String chatTemplateOverride) {
+        String template = chatTemplateOverride == null || chatTemplateOverride.isBlank()
+                ? getChatTemplate() : chatTemplateOverride;
+        if (template == null || template.isBlank()) {
+            return Collections.emptySet();
+        }
+
+        String boundary = "DL4J_ASSISTANT_TURN_BOUNDARY_7F3A91";
+        ChatTemplate.Request probe = ChatTemplate.Request.builder()
+                .messages(List.of(
+                        ChatTemplate.Message.user("DL4J chat-template stop-token probe"),
+                        ChatTemplate.Message.assistant(boundary)))
+                .addGenerationPrompt(false)
+                .build();
+        String rendered = applyChatTemplate(probe, chatTemplateOverride);
+        int boundaryStart = rendered.lastIndexOf(boundary);
+        if (boundaryStart < 0) {
+            throw new IllegalStateException(
+                    "Chat template did not preserve assistant probe content; cannot resolve turn terminator");
+        }
+        String suffix = rendered.substring(boundaryStart + boundary.length());
+        if (suffix.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Set<Integer> stops = new LinkedHashSet<>();
+        for (Map.Entry<String, Integer> added : getAddedTokens().entrySet()) {
+            String token = added.getKey();
+            Integer id = added.getValue();
+            if (id != null && id >= 0 && token != null && !token.trim().isEmpty()
+                    && suffix.contains(token)) {
+                stops.add(id);
+            }
+        }
+        for (Integer id : getSpecialTokenIds()) {
+            if (id == null || id < 0 || stops.contains(id)) {
+                continue;
+            }
+            String token = getToken(id);
+            if (token == null || token.isEmpty()) {
+                token = decode(new int[]{id}, false);
+            }
+            if (token != null && !token.trim().isEmpty() && suffix.contains(token)) {
+                stops.add(id);
+            }
+        }
+        return Collections.unmodifiableSet(stops);
     }
 
     /**

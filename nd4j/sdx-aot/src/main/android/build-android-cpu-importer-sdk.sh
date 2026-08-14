@@ -17,13 +17,18 @@ Optional:
   --jobs N                 Native build jobs (default: 12)
   --output-link DIR        Published SDK symlink (default: target/android-cpu-importer)
   --work-dir DIR           Disposable assembly root
-  --skip-native-build      Assemble already-installed current Maven artifacts
+  --skip-native-build      Expert override: assemble already-installed Maven artifacts
   --offline                Require Maven offline mode
   -h, --help               Show this help
 
-The default path rebuilds nd4j-native for Android ARM64 in an API-specific CMake
-directory, resolves the Android classified runtime closure from Maven, audits it,
-and publishes an immutable SDK. Accelerator provider libraries are forbidden.
+The default path reuses independently receipted native, managed-runtime, and published
+SDK stages. Only the first invalid stage is rebuilt. Native compilation is separated
+from Maven packaging so a managed or publication failure never recreates libnd4j's
+large native archive. Deployment copies have only their debug sections removed before
+they are audited and published as an immutable SDK.
+Triton CPU and its LLVM/MLIR runtime closure remain enabled and packaged. The separate
+standalone libsdx_cpu.so is not part of the JavaCPP importer runtime. Accelerator
+provider libraries are forbidden.
 USAGE
 }
 
@@ -36,10 +41,90 @@ sha256_file() {
   sha256sum "$1" | cut -d ' ' -f 1
 }
 
+receipt_has() {
+  local receipt="$1"
+  local expected="$2"
+  [[ -f "$receipt" && ! -L "$receipt" ]] && grep -Fqx -- "$expected" "$receipt"
+}
+
+extract_android_native_member() {
+  local archive="$1"
+  local member="$2"
+  local destination_dir="$3"
+  local scratch_dir="$4"
+  local name candidate existing candidate_sha existing_sha
+  name="$(basename -- "$member")"
+  [[ "$name" =~ ^lib[A-Za-z0-9._+-]+[.]so$ ]] ||
+    fail "unsafe Android native member name: $member"
+  candidate="$scratch_dir/candidate-$name"
+  unzip -p "$archive" "$member" >"$candidate" ||
+    fail "could not extract $member from $archive"
+  [[ -s "$candidate" ]] || fail "empty Android native member: $member"
+  existing="$destination_dir/$name"
+  if [[ -e "$existing" ]]; then
+    candidate_sha="$(sha256_file "$candidate")"
+    existing_sha="$(sha256_file "$existing")"
+    [[ "$candidate_sha" == "$existing_sha" ]] ||
+      fail "conflicting Android native libraries named $name"
+    rm -f -- "$candidate"
+  else
+    mv -- "$candidate" "$existing"
+  fi
+}
+
+validate_native_payload_manifest() {
+  local payload_dir="$1"
+  local payload_bytes="$2"
+  local expected_sha name
+  [[ -d "$payload_dir" && ! -L "$payload_dir" && -s "$payload_bytes" ]] || return 1
+  cmp -s \
+    <(cut -d ' ' -f 2- "$payload_bytes" | LC_ALL=C sort -u) \
+    <(find "$payload_dir" -maxdepth 1 -type f -name '*.so' -printf '%f\n' | LC_ALL=C sort -u) || return 1
+  while read -r expected_sha name; do
+    [[ "$expected_sha" =~ ^[0-9a-f]{64}$ && "$name" =~ ^lib[A-Za-z0-9._+-]+[.]so$ ]] || return 1
+    [[ -f "$payload_dir/$name" && ! -L "$payload_dir/$name" && -s "$payload_dir/$name" ]] || return 1
+    [[ "$(sha256_file "$payload_dir/$name")" == "$expected_sha" ]] || return 1
+  done <"$payload_bytes"
+}
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODULE_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 DL4J_ROOT="$(cd "$MODULE_DIR/../.." && pwd)"
+SOURCE_MANIFEST_HELPER="$SCRIPT_DIR/source-manifest.sh"
 NATIVE_PLATFORM="$DL4J_ROOT/build-scripts/release/native-platform.sh"
+[[ -r "$SOURCE_MANIFEST_HELPER" ]] ||
+  fail "source manifest helper is missing: $SOURCE_MANIFEST_HELPER"
+# shellcheck source=source-manifest.sh
+source "$SOURCE_MANIFEST_HELPER"
+NATIVE_SOURCE_ROOTS=(
+  pom.xml
+  build-scripts/release/native-platform.sh
+  libnd4j
+)
+MANAGED_SOURCE_ROOTS=(
+  pom.xml
+  nd4j/pom.xml
+  nd4j/sdx-aot/pom.xml
+  nd4j/sdx-aot/src/main/java
+  nd4j/sdx-aot/src/main/resources
+  nd4j/sdx-aot/src/main/assembly
+  nd4j/sdx-aot/src/main/linker
+  nd4j/nd4j-backends/nd4j-api-parent/nd4j-api
+  nd4j/nd4j-backends/nd4j-api-parent/nd4j-native-api
+  nd4j/nd4j-backends/nd4j-backend-impls/nd4j-presets-common
+  nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset
+  nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common
+  nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native
+  nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx
+  nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model
+  nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset
+)
+RUNTIME_SOURCE_ROOTS=(
+  "${NATIVE_SOURCE_ROOTS[@]}"
+  "${MANAGED_SOURCE_ROOTS[@]}"
+  nd4j/sdx-aot/src/main/android/build-android-cpu-importer-sdk.sh
+  nd4j/sdx-aot/src/main/android/source-manifest.sh
+)
 ANDROID_NDK=""
 JAVA_HOME_ARG=""
 MAVEN=""
@@ -83,6 +168,7 @@ NDK_REVISION="$(awk -F= '/Pkg.Revision/ {gsub(/[[:space:]]/, "", $2); print $2}'
 [[ "$NDK_REVISION" == 28.1.13356709 ]] ||
   fail "expected Android NDK 28.1.13356709, found $NDK_REVISION"
 command -v unzip >/dev/null || fail "unzip is required"
+command -v flock >/dev/null || fail "flock is required"
 
 JAVA_SPECIFICATION_VERSION="$("$JAVA_HOME_ARG/bin/java" -XshowSettings:properties -version 2>&1 |
   sed -n 's/^[[:space:]]*java[.]specification[.]version = //p')"
@@ -91,101 +177,392 @@ MAVEN="$(realpath -e -- "$MAVEN")"
 JAVA_HOME_ARG="$(realpath -e -- "$JAVA_HOME_ARG")"
 CCACHE="$(realpath -e -- "$CCACHE")"
 ANDROID_NDK="$(realpath -e -- "$ANDROID_NDK")"
+OUTPUT_LINK_BASENAME="$(basename -- "$OUTPUT_LINK")"
+OUTPUT_PARENT="$(realpath -m -- "$(dirname -- "$OUTPUT_LINK")")"
+OUTPUT_LINK="$OUTPUT_PARENT/$OUTPUT_LINK_BASENAME"
+WORK_DIR="$(realpath -m -- "$WORK_DIR")"
+GENERATIONS_DIR="$OUTPUT_PARENT/.android-cpu-importer-generations"
+NATIVE_BUILDS_DIR="$WORK_DIR/native-builds"
+MANAGED_STAGES_DIR="$WORK_DIR/managed-stages"
+mkdir -p "$WORK_DIR" "$GENERATIONS_DIR" "$NATIVE_BUILDS_DIR" "$MANAGED_STAGES_DIR"
 
-if [[ "$SKIP_NATIVE_BUILD" == 0 ]]; then
-  maven_flags=(-Dlibnd4j.triton=ON)
+CLEANUP_PATHS=()
+cleanup_paths() {
+  local path
+  for path in "${CLEANUP_PATHS[@]}"; do
+    [[ -e "$path" ]] || continue
+    chmod -R u+w -- "$path" 2>/dev/null || true
+    rm -rf -- "$path"
+  done
+}
+trap cleanup_paths EXIT
+
+SOURCE_MANIFEST_SHA256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}")"
+NATIVE_SOURCE_MANIFEST_SHA256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}")"
+MANAGED_SOURCE_MANIFEST_SHA256="$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}")"
+NDK_SOURCE_PROPERTIES_SHA256="$(sha256_file "$ANDROID_NDK/source.properties")"
+JAVA_RELEASE_SHA256="$(sha256_file "$JAVA_HOME_ARG/release")"
+MAVEN_ID_SHA256="$({ sha256_file "$MAVEN"; env JAVA_HOME="$JAVA_HOME_ARG" "$MAVEN" --version; } |
+  sha256sum | cut -d ' ' -f 1)"
+PRODUCER_SHA256="$(sha256_file "${BASH_SOURCE[0]}")"
+PROCESS_BLAS_SYMBOLS_ABI=nd4j_process_blas_symbols_abi_v1
+
+validate_published_generation() {
+  local generation receipt native_manifest native_bytes expected_sha library_name extra actual_manifest
+  [[ -L "$OUTPUT_LINK" ]] || return 1
+  generation="$(realpath -e -- "$OUTPUT_LINK")" || return 1
+  case "$generation/" in
+    "$GENERATIONS_DIR"/*/) ;;
+    *) return 1 ;;
+  esac
+  receipt="$generation/metadata/build-receipt"
+  receipt_has "$receipt" "format=2" || return 1
+  receipt_has "$receipt" "stage=android-cpu-importer-sdk" || return 1
+  receipt_has "$receipt" "cache_schema=independent-stages-v1" || return 1
+  receipt_has "$receipt" "source_manifest_sha256=$SOURCE_MANIFEST_SHA256" || return 1
+  receipt_has "$receipt" "producer_sha256=$PRODUCER_SHA256" || return 1
+  receipt_has "$receipt" "android_api=$ANDROID_API" || return 1
+  receipt_has "$receipt" "android_ndk_source_properties_sha256=$NDK_SOURCE_PROPERTIES_SHA256" || return 1
+  native_manifest="$generation/metadata/cmake-owned-native-libraries.txt"
+  native_bytes="$generation/metadata/native-bytes.txt"
+  [[ -s "$native_manifest" && -s "$native_bytes" ]] || return 1
+  actual_manifest="$(mktemp "$WORK_DIR/published-native-manifest.XXXXXXXX")"
+  CLEANUP_PATHS+=("$actual_manifest")
+  find "$generation/jni/arm64-v8a" -maxdepth 1 -type f -name '*.so' -printf '%f\n' |
+    LC_ALL=C sort -u >"$actual_manifest"
+  cmp -s "$native_manifest" "$actual_manifest" || return 1
+  while read -r expected_sha library_name extra; do
+    [[ -n "$expected_sha" && -n "$library_name" && -z "${extra:-}" ]] || return 1
+    [[ "$library_name" =~ ^lib[A-Za-z0-9._+-]+[.]so$ ]] || return 1
+    [[ -f "$generation/jni/arm64-v8a/$library_name" && ! -L "$generation/jni/arm64-v8a/$library_name" ]] || return 1
+    [[ "$(sha256_file "$generation/jni/arm64-v8a/$library_name")" == "$expected_sha" ]] || return 1
+  done <"$native_bytes"
+  PUBLISHED_GENERATION="$generation"
+}
+
+if validate_published_generation; then
+  printf 'Reusing validated Android CPU importer SDK: %s\n' "$PUBLISHED_GENERATION"
+  exit 0
+fi
+
+run_native_platform_stage() {
+  local goal="$1"
+  shift
+  local maven_flags=("$@")
+  local native_only=0
+  [[ "$goal" != compile ]] || native_only=1
   [[ "$OFFLINE" == 0 ]] || maven_flags=(-o "${maven_flags[@]}")
   env \
     DL4J_FAMILY=android-arm64 \
+    DL4J_NATIVE_ONLY="$native_only" \
+    DL4J_MAVEN_ALSO_MAKE=0 \
     DL4J_BUILD_THREADS="$JOBS" \
-    DL4J_MAVEN_GOAL=install \
+    DL4J_MAVEN_GOAL="$goal" \
     DL4J_MVN_FLAGS="${maven_flags[*]}" \
     DL4J_CMAKE_ARGS="-DBLAS_IMPL=openblas" \
     DL4J_ANDROID_API="$ANDROID_API" \
     DL4J_COMPILER_CACHE="$CCACHE" \
+    DL4J_NATIVE_OUTPUT_ROOT="$NATIVE_OUTPUT_ROOT" \
     ANDROID_NDK="$ANDROID_NDK" \
     JAVA_HOME="$JAVA_HOME_ARG" \
     PATH="$(dirname "$MAVEN"):$(dirname "$CCACHE"):$JAVA_HOME_ARG/bin:$PATH" \
     "$NATIVE_PLATFORM" --run
+}
+
+NATIVE_STAGE_KEY="$({
+  printf '%s\n' \
+    'format=android-cpu-native-stage-v1' \
+    "source=$NATIVE_SOURCE_MANIFEST_SHA256" \
+    "ndk=$NDK_SOURCE_PROPERTIES_SHA256" \
+    "android_api=$ANDROID_API" \
+    'android_abi=arm64-v8a' \
+    'blas=openblas' \
+    'triton=on' \
+    'sdx_standalone=on'
+} | sha256sum | cut -d ' ' -f 1)"
+
+# The stage key identifies immutable output bytes. It must not also name the mutable
+# CMake worktree: changing that path discards Make/Ninja dependency state and poisons
+# path-sensitive ccache keys. Keep one physical worktree for each toolchain/configuration
+# and update its content receipt after a successful incremental compile.
+NATIVE_WORKTREE_COMPAT_KEY="$({
+  printf '%s\n' \
+    'format=android-cpu-native-worktree-v1' \
+    "ndk=$NDK_SOURCE_PROPERTIES_SHA256" \
+    "android_api=$ANDROID_API" \
+    'android_abi=arm64-v8a' \
+    'blas=openblas' \
+    'triton=on' \
+    'sdx_standalone=on'
+} | sha256sum | cut -d ' ' -f 1)"
+NATIVE_WORKTREE_STATE_DIR="$NATIVE_BUILDS_DIR/.worktrees/$NATIVE_WORKTREE_COMPAT_KEY"
+NATIVE_WORKTREE_POINTER="$NATIVE_WORKTREE_STATE_DIR/active-root"
+LEGACY_NATIVE_OUTPUT_ROOT="$NATIVE_BUILDS_DIR/$NATIVE_STAGE_KEY"
+mkdir -p "$NATIVE_WORKTREE_STATE_DIR"
+exec {NATIVE_WORKTREE_LOCK_FD}>"$NATIVE_WORKTREE_STATE_DIR/build.lock"
+flock "$NATIVE_WORKTREE_LOCK_FD"
+
+if [[ -e "$NATIVE_WORKTREE_POINTER" ]]; then
+  [[ -f "$NATIVE_WORKTREE_POINTER" && ! -L "$NATIVE_WORKTREE_POINTER" ]] ||
+    fail "unsafe native worktree pointer: $NATIVE_WORKTREE_POINTER"
+  IFS= read -r NATIVE_OUTPUT_ROOT <"$NATIVE_WORKTREE_POINTER"
+  [[ -n "$NATIVE_OUTPUT_ROOT" ]] || fail "native worktree pointer is empty"
+elif [[ -e "$LEGACY_NATIVE_OUTPUT_ROOT" ]]; then
+  NATIVE_OUTPUT_ROOT="$(realpath -e -- "$LEGACY_NATIVE_OUTPUT_ROOT")"
+  printf 'Adopting existing native CMake worktree: %s\n' "$NATIVE_OUTPUT_ROOT"
+else
+  NATIVE_OUTPUT_ROOT="$NATIVE_WORKTREE_STATE_DIR/root"
 fi
 
-OUTPUT_PARENT="$(dirname "$OUTPUT_LINK")"
-GENERATIONS_DIR="$OUTPUT_PARENT/.android-cpu-importer-generations"
-mkdir -p "$WORK_DIR" "$GENERATIONS_DIR"
+NATIVE_OUTPUT_ROOT="$(realpath -m -- "$NATIVE_OUTPUT_ROOT")"
+case "$NATIVE_OUTPUT_ROOT/" in
+  "$NATIVE_BUILDS_DIR"/*/) ;;
+  *) fail "native worktree escapes the managed build root: $NATIVE_OUTPUT_ROOT" ;;
+esac
+[[ ! -e "$NATIVE_OUTPUT_ROOT" || ( -d "$NATIVE_OUTPUT_ROOT" && ! -L "$NATIVE_OUTPUT_ROOT" ) ]] ||
+  fail "unsafe native worktree root: $NATIVE_OUTPUT_ROOT"
+mkdir -p "$NATIVE_OUTPUT_ROOT"
+NATIVE_OUTPUT_ROOT="$(realpath -e -- "$NATIVE_OUTPUT_ROOT")"
+native_pointer_tmp="$NATIVE_WORKTREE_POINTER.tmp.$$"
+CLEANUP_PATHS+=("$native_pointer_tmp")
+printf '%s\n' "$NATIVE_OUTPUT_ROOT" >"$native_pointer_tmp"
+mv -f -- "$native_pointer_tmp" "$NATIVE_WORKTREE_POINTER"
+
+NATIVE_BUILD_DIR="$NATIVE_OUTPUT_ROOT/android-arm64-api${ANDROID_API}-cpu"
+NATIVE_CPU_BACKEND="$NATIVE_BUILD_DIR/libnd4jcpu.so"
+NATIVE_STAGE_RECEIPT="$NATIVE_BUILD_DIR/android-cpu-native-stage.receipt"
+NATIVE_NM="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm"
+[[ -x "$NATIVE_NM" ]] || fail "NDK llvm-nm is missing"
+
+validate_native_stage() {
+  [[ -s "$NATIVE_BUILD_DIR/CMakeCache.txt" && -s "$NATIVE_CPU_BACKEND" ]] || return 1
+  if receipt_has "$NATIVE_STAGE_RECEIPT" "format=2"; then
+    receipt_has "$NATIVE_STAGE_RECEIPT" "worktree_compatibility_key=$NATIVE_WORKTREE_COMPAT_KEY" || return 1
+  else
+    receipt_has "$NATIVE_STAGE_RECEIPT" "format=1" || return 1
+  fi
+  receipt_has "$NATIVE_STAGE_RECEIPT" "stage=android-cpu-native" || return 1
+  receipt_has "$NATIVE_STAGE_RECEIPT" "stage_key=$NATIVE_STAGE_KEY" || return 1
+  receipt_has "$NATIVE_STAGE_RECEIPT" "source_manifest_sha256=$NATIVE_SOURCE_MANIFEST_SHA256" || return 1
+  receipt_has "$NATIVE_STAGE_RECEIPT" "android_ndk_source_properties_sha256=$NDK_SOURCE_PROPERTIES_SHA256" || return 1
+  receipt_has "$NATIVE_STAGE_RECEIPT" "native_cpu_sha256=$(sha256_file "$NATIVE_CPU_BACKEND")" || return 1
+  "$NATIVE_NM" -D --defined-only "$NATIVE_CPU_BACKEND" |
+    grep -E "[[:space:]]$PROCESS_BLAS_SYMBOLS_ABI$" >/dev/null
+}
+
+if validate_native_stage; then
+  printf 'Reusing validated native compile stage: %s\n' "$NATIVE_STAGE_KEY"
+else
+  if [[ "$SKIP_NATIVE_BUILD" == 0 ]]; then
+    if [[ -s "$NATIVE_BUILD_DIR/CMakeCache.txt" ]]; then
+      printf 'Incrementally updating native CMake worktree: %s\n' "$NATIVE_OUTPUT_ROOT"
+    else
+      printf 'Initializing native CMake worktree: %s\n' "$NATIVE_OUTPUT_ROOT"
+    fi
+    run_native_platform_stage compile -Dlibnd4j.triton=ON
+  else
+    printf 'Expert override: validating existing native output without compiling it.\n'
+  fi
+  [[ -s "$NATIVE_BUILD_DIR/CMakeCache.txt" && -s "$NATIVE_CPU_BACKEND" ]] ||
+    fail "canonical native producer did not leave a complete Android CPU build"
+  "$NATIVE_NM" -D --defined-only "$NATIVE_CPU_BACKEND" |
+    grep -E "[[:space:]]$PROCESS_BLAS_SYMBOLS_ABI$" >/dev/null ||
+    fail "native CPU build lacks process BLAS symbol-resolution ABI"
+  [[ "$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${NATIVE_SOURCE_ROOTS[@]}")" == "$NATIVE_SOURCE_MANIFEST_SHA256" ]] ||
+    fail "native sources changed during the Android CPU compile stage"
+  native_receipt_tmp="$NATIVE_STAGE_RECEIPT.tmp.$$"
+  cat >"$native_receipt_tmp" <<RECEIPT
+format=2
+stage=android-cpu-native
+stage_key=$NATIVE_STAGE_KEY
+source_manifest_sha256=$NATIVE_SOURCE_MANIFEST_SHA256
+worktree_compatibility_key=$NATIVE_WORKTREE_COMPAT_KEY
+android_api=$ANDROID_API
+android_abi=arm64-v8a
+android_ndk_source_properties_sha256=$NDK_SOURCE_PROPERTIES_SHA256
+native_cpu_sha256=$(sha256_file "$NATIVE_CPU_BACKEND")
+process_blas_symbols_capability=$PROCESS_BLAS_SYMBOLS_ABI
+RECEIPT
+  mv -f -- "$native_receipt_tmp" "$NATIVE_STAGE_RECEIPT"
+fi
+NATIVE_CPU_SHA256="$(sha256_file "$NATIVE_CPU_BACKEND")"
+
+MANAGED_STAGE_KEY="$({
+  printf '%s\n' \
+    'format=android-cpu-managed-stage-v2' \
+    "source=$MANAGED_SOURCE_MANIFEST_SHA256" \
+    "native_stage=$NATIVE_STAGE_KEY" \
+    "native_cpu=$NATIVE_CPU_SHA256" \
+    "java=$JAVA_RELEASE_SHA256" \
+    "maven=$MAVEN_ID_SHA256" \
+    'javacpp_platform=android-arm64' \
+    'libnd4j_archive=skipped' \
+    'payload=immutable-native-closure-v1'
+} | sha256sum | cut -d ' ' -f 1)"
+MANAGED_STAGE_DIR="$MANAGED_STAGES_DIR/$MANAGED_STAGE_KEY"
+MANAGED_STAGE_RECEIPT="$MANAGED_STAGE_DIR/managed-stage.receipt"
+MANAGED_NATIVE_PAYLOAD="$MANAGED_STAGE_DIR/native-libraries"
+MANAGED_NATIVE_BYTES="$MANAGED_STAGE_DIR/native-library-bytes.txt"
+
+validate_managed_stage() {
+  [[ -d "$MANAGED_STAGE_DIR" && ! -L "$MANAGED_STAGE_DIR" ]] || return 1
+  receipt_has "$MANAGED_STAGE_RECEIPT" "format=2" || return 1
+  receipt_has "$MANAGED_STAGE_RECEIPT" "stage=android-cpu-managed-runtime" || return 1
+  receipt_has "$MANAGED_STAGE_RECEIPT" "stage_key=$MANAGED_STAGE_KEY" || return 1
+  receipt_has "$MANAGED_STAGE_RECEIPT" "source_manifest_sha256=$MANAGED_SOURCE_MANIFEST_SHA256" || return 1
+  receipt_has "$MANAGED_STAGE_RECEIPT" "native_stage_key=$NATIVE_STAGE_KEY" || return 1
+  [[ -s "$MANAGED_STAGE_DIR/runtime-classpath.txt" &&
+     -s "$MANAGED_STAGE_DIR/classpath.entries" &&
+     -s "$MANAGED_STAGE_DIR/classpath-bytes.txt" &&
+     -s "$MANAGED_NATIVE_BYTES" ]] || return 1
+  receipt_has "$MANAGED_STAGE_RECEIPT" "classpath_bytes_sha256=$(sha256_file "$MANAGED_STAGE_DIR/classpath-bytes.txt")" || return 1
+  receipt_has "$MANAGED_STAGE_RECEIPT" "native_payload_bytes_sha256=$(sha256_file "$MANAGED_NATIVE_BYTES")" || return 1
+  validate_native_payload_manifest "$MANAGED_NATIVE_PAYLOAD" "$MANAGED_NATIVE_BYTES"
+}
+
+if validate_managed_stage; then
+  printf 'Reusing validated managed runtime stage: %s\n' "$MANAGED_STAGE_KEY"
+else
+  printf 'Managed runtime cache miss: %s\n' "$MANAGED_STAGE_KEY"
+  if [[ "$SKIP_NATIVE_BUILD" == 0 ]]; then
+    # The native compile is already receipted. This install packages that exact output
+    # without running CMake or generating libnd4j's multi-gigabyte assembly archive.
+    run_native_platform_stage install \
+      -Dlibnd4j.triton=ON \
+      -Dlibnd4j.native.compile.skip=true \
+      -Dassembly.skipAssembly=true
+  else
+    printf 'Expert override: validating already-installed managed artifacts.\n'
+  fi
+  managed_tmp="$(mktemp -d "$WORK_DIR/managed-stage.XXXXXXXX")"
+  CLEANUP_PATHS+=("$managed_tmp")
+  classpath_flags=(-DskipTests -Djavacpp.platform=android-arm64)
+  [[ "$OFFLINE" == 0 ]] || classpath_flags+=(-o)
+  env JAVA_HOME="$JAVA_HOME_ARG" PATH="$JAVA_HOME_ARG/bin:$PATH" \
+    "$MAVEN" "${classpath_flags[@]}" -f "$MODULE_DIR/pom.xml" \
+      dependency:build-classpath -Dmdep.includeScope=runtime \
+      -Dmdep.outputFile="$managed_tmp/runtime-classpath.txt"
+  [[ -s "$managed_tmp/runtime-classpath.txt" ]] || fail "Maven produced no Android runtime classpath"
+  tr ':' '\n' <"$managed_tmp/runtime-classpath.txt" |
+    sed '/^[[:space:]]*$/d' >"$managed_tmp/classpath.entries"
+  : >"$managed_tmp/classpath-bytes.txt"
+  mkdir -p "$managed_tmp/native-libraries"
+  archive_index=0
+  while IFS= read -r archive; do
+    [[ -f "$archive" && ! -L "$archive" && -s "$archive" ]] ||
+      fail "unsafe runtime classpath artifact: $archive"
+    printf '%s %s\n' "$(sha256_file "$archive")" "$(realpath -e -- "$archive")" >>"$managed_tmp/classpath-bytes.txt"
+    members="$managed_tmp/members.$archive_index"
+    archive_index=$((archive_index + 1))
+    unzip -Z1 "$archive" |
+      grep -E '(^|/)(android-arm64|arm64-v8a)/lib[A-Za-z0-9._+-]+[.]so$' |
+      LC_ALL=C sort -u >"$members" || true
+    while IFS= read -r member; do
+      [[ -n "$member" ]] || continue
+      # The standalone C runtime is published directly from the receipted native
+      # stage. It is intentionally absent from the JavaCPP importer closure, so
+      # do not inflate its multi-gigabyte ZIP64 member just to delete it below.
+      [[ "$(basename -- "$member")" != libsdx_cpu.so ]] || continue
+      extract_android_native_member "$archive" "$member" "$managed_tmp/native-libraries" "$managed_tmp"
+    done <"$members"
+    rm -f -- "$members"
+  done <"$managed_tmp/classpath.entries"
+  LC_ALL=C sort -o "$managed_tmp/classpath-bytes.txt" "$managed_tmp/classpath-bytes.txt"
+
+  shopt -s nullglob
+  ndk_libomp_candidates=(
+    "$ANDROID_NDK"/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/*/lib/linux/aarch64/libomp.so
+  )
+  shopt -u nullglob
+  [[ "${#ndk_libomp_candidates[@]}" == 1 ]] ||
+    fail "expected exactly one AArch64 NDK libomp.so, found ${#ndk_libomp_candidates[@]}"
+  ndk_libomp="${ndk_libomp_candidates[0]}"
+  if [[ -e "$managed_tmp/native-libraries/libomp.so" ]]; then
+    [[ "$(sha256_file "$managed_tmp/native-libraries/libomp.so")" == "$(sha256_file "$ndk_libomp")" ]] ||
+      fail "Maven and Android NDK supplied conflicting libomp.so bytes"
+  else
+    cp -- "$ndk_libomp" "$managed_tmp/native-libraries/libomp.so"
+  fi
+  rm -f -- "$managed_tmp/native-libraries/libsdx_cpu.so"
+  for required_library in \
+    libjnind4jcpu.so \
+    libnd4jcpu.so \
+    libopenblas.so \
+    libomp.so \
+    libjnitokenizers.so \
+    libtokenizers_ffi.so \
+    libtokenizers_wrapper.so; do
+    [[ -f "$managed_tmp/native-libraries/$required_library" &&
+       ! -L "$managed_tmp/native-libraries/$required_library" &&
+       -s "$managed_tmp/native-libraries/$required_library" ]] ||
+      fail "resolved Android CPU importer closure omitted $required_library"
+  done
+  for provider_library in libnd4jnnapi.so libnd4jvulkan.so liblitert-lm.so; do
+    [[ ! -e "$managed_tmp/native-libraries/$provider_library" ]] ||
+      fail "CPU importer closure contains accelerator provider $provider_library"
+  done
+  : >"$managed_tmp/native-library-bytes.txt"
+  while IFS= read -r library_name; do
+    printf '%s %s\n' \
+      "$(sha256_file "$managed_tmp/native-libraries/$library_name")" \
+      "$library_name"
+  done < <(find "$managed_tmp/native-libraries" -maxdepth 1 -type f -name '*.so' -printf '%f\n' | LC_ALL=C sort -u) \
+    >"$managed_tmp/native-library-bytes.txt"
+  validate_native_payload_manifest "$managed_tmp/native-libraries" "$managed_tmp/native-library-bytes.txt" ||
+    fail "could not validate immutable managed native payload"
+  [[ "$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${MANAGED_SOURCE_ROOTS[@]}")" == "$MANAGED_SOURCE_MANIFEST_SHA256" ]] ||
+    fail "managed sources changed during the Android CPU runtime stage"
+  cat >"$managed_tmp/managed-stage.receipt" <<RECEIPT
+format=2
+stage=android-cpu-managed-runtime
+stage_key=$MANAGED_STAGE_KEY
+source_manifest_sha256=$MANAGED_SOURCE_MANIFEST_SHA256
+native_stage_key=$NATIVE_STAGE_KEY
+native_cpu_sha256=$NATIVE_CPU_SHA256
+java_release_sha256=$JAVA_RELEASE_SHA256
+maven_id_sha256=$MAVEN_ID_SHA256
+classpath_bytes_sha256=$(sha256_file "$managed_tmp/classpath-bytes.txt")
+native_payload_bytes_sha256=$(sha256_file "$managed_tmp/native-library-bytes.txt")
+RECEIPT
+  if [[ -e "$MANAGED_STAGE_DIR" ]]; then
+    chmod -R u+w -- "$MANAGED_STAGE_DIR" 2>/dev/null || true
+    rm -rf -- "$MANAGED_STAGE_DIR"
+  fi
+  mv -- "$managed_tmp" "$MANAGED_STAGE_DIR"
+  chmod -R a-w -- "$MANAGED_STAGE_DIR"
+fi
+
 BUILD_ROOT="$(mktemp -d "$WORK_DIR/generation.XXXXXXXX")"
-trap 'chmod -R u+w -- "$BUILD_ROOT" 2>/dev/null || true; rm -rf -- "$BUILD_ROOT"' EXIT
+CLEANUP_PATHS+=("$BUILD_ROOT")
 STAGE="$BUILD_ROOT/sdk"
 JNI_DIR="$STAGE/jni/arm64-v8a"
 METADATA_DIR="$STAGE/metadata"
 mkdir -p "$JNI_DIR" "$METADATA_DIR"
-
-classpath_flags=(-DskipTests -Djavacpp.platform=android-arm64)
-[[ "$OFFLINE" == 0 ]] || classpath_flags+=(-o)
-CLASSPATH_FILE="$BUILD_ROOT/runtime-classpath.txt"
-env JAVA_HOME="$JAVA_HOME_ARG" PATH="$JAVA_HOME_ARG/bin:$PATH" \
-  "$MAVEN" "${classpath_flags[@]}" -f "$MODULE_DIR/pom.xml" \
-    dependency:build-classpath -Dmdep.includeScope=runtime \
-    -Dmdep.outputFile="$CLASSPATH_FILE"
-[[ -s "$CLASSPATH_FILE" ]] || fail "Maven produced no Android runtime classpath"
-
-tr ':' '\n' <"$CLASSPATH_FILE" | sed '/^[[:space:]]*$/d' >"$BUILD_ROOT/classpath.entries"
+cp -- "$MANAGED_STAGE_DIR/classpath-bytes.txt" "$METADATA_DIR/classpath-bytes.txt"
 CLASSPATH_BYTES="$METADATA_DIR/classpath-bytes.txt"
-: >"$CLASSPATH_BYTES"
-while IFS= read -r archive; do
-  [[ -f "$archive" && ! -L "$archive" && -s "$archive" ]] ||
-    fail "unsafe runtime classpath artifact: $archive"
-  printf '%s %s\n' "$(sha256_file "$archive")" "$(realpath -e -- "$archive")" >>"$CLASSPATH_BYTES"
-done <"$BUILD_ROOT/classpath.entries"
-LC_ALL=C sort -o "$CLASSPATH_BYTES" "$CLASSPATH_BYTES"
+cp -- "$MANAGED_NATIVE_PAYLOAD"/*.so "$JNI_DIR/"
 
-extract_native_member() {
-  local archive="$1"
-  local member="$2"
-  local name candidate existing candidate_sha existing_sha
-  name="$(basename -- "$member")"
-  [[ "$name" =~ ^lib[A-Za-z0-9._+-]+[.]so$ ]] ||
-    fail "unsafe Android native member name: $member"
-  candidate="$BUILD_ROOT/candidate-$name"
-  unzip -p "$archive" "$member" >"$candidate" ||
-    fail "could not extract $member from $archive"
-  [[ -s "$candidate" ]] || fail "empty Android native member: $member"
-  existing="$JNI_DIR/$name"
-  if [[ -e "$existing" ]]; then
-    candidate_sha="$(sha256_file "$candidate")"
-    existing_sha="$(sha256_file "$existing")"
-    [[ "$candidate_sha" == "$existing_sha" ]] ||
-      fail "conflicting Android native libraries named $name"
-    rm -f -- "$candidate"
-  else
-    mv -- "$candidate" "$existing"
-  fi
-}
+# The managed stage snapshots the complete native closure before Maven's mutable local
+# repository can be changed by another build. Publication now depends only on immutable,
+# content-verified stage files rather than reopening gigabyte classifier JARs.
+validate_native_payload_manifest "$MANAGED_NATIVE_PAYLOAD" "$MANAGED_NATIVE_BYTES" ||
+  fail "managed native payload changed during Android CPU importer publication"
 
-while IFS= read -r archive; do
-  members="$BUILD_ROOT/members.$(sha256_file "$archive")"
-  unzip -Z1 "$archive" |
-    grep -E '(^|/)(android-arm64|arm64-v8a)/lib[A-Za-z0-9._+-]+[.]so$' |
-    LC_ALL=C sort -u >"$members" || true
-  while IFS= read -r member; do
-    [[ -n "$member" ]] || continue
-    extract_native_member "$archive" "$member"
-  done <"$members"
-done <"$BUILD_ROOT/classpath.entries"
+TOOLCHAIN="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+READELF="$TOOLCHAIN/llvm-readelf"
+LLVM_NM="$TOOLCHAIN/llvm-nm"
+LLVM_STRIP="$TOOLCHAIN/llvm-strip"
+[[ -x "$READELF" ]] || fail "NDK llvm-readelf is missing"
+[[ -x "$LLVM_NM" ]] || fail "NDK llvm-nm is missing"
+[[ -x "$LLVM_STRIP" ]] || fail "NDK llvm-strip is missing"
 
-shopt -s nullglob
-ndk_libomp_candidates=(
-  "$ANDROID_NDK"/toolchains/llvm/prebuilt/linux-x86_64/lib/clang/*/lib/linux/aarch64/libomp.so
-)
-shopt -u nullglob
-[[ "${#ndk_libomp_candidates[@]}" == 1 ]] ||
-  fail "expected exactly one AArch64 NDK libomp.so, found ${#ndk_libomp_candidates[@]}"
-NDK_LIBOMP="${ndk_libomp_candidates[0]}"
-if [[ -e "$JNI_DIR/libomp.so" ]]; then
-  [[ "$(sha256_file "$JNI_DIR/libomp.so")" == "$(sha256_file "$NDK_LIBOMP")" ]] ||
-    fail "Maven and Android NDK supplied conflicting libomp.so bytes"
-else
-  cp -- "$NDK_LIBOMP" "$JNI_DIR/libomp.so"
-fi
+# CMake and Maven artifacts retain their full symbols and are bound by classpath-bytes.txt.
+# APK deployment copies need executable code, unwind information, build IDs, and dynamic
+# symbols—not multi-gigabyte DWARF sections. --strip-debug preserves the load-time ABI.
+for library in "$JNI_DIR"/*.so; do
+  "$LLVM_STRIP" --strip-debug "$library" ||
+    fail "could not strip debug sections from deployment library: $(basename -- "$library")"
+done
 
 for required_library in \
   libjnind4jcpu.so \
@@ -204,9 +581,6 @@ for provider_library in libnd4jnnapi.so libnd4jvulkan.so liblitert-lm.so; do
     fail "CPU importer closure contains accelerator provider $provider_library"
 done
 
-TOOLCHAIN="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
-READELF="$TOOLCHAIN/llvm-readelf"
-[[ -x "$READELF" ]] || fail "NDK llvm-readelf is missing"
 is_android_system_library() {
   case "$1" in
     libc.so|libdl.so|libm.so|liblog.so|libz.so|libandroid.so|libatomic.so|libc++_shared.so|libneuralnetworks.so) return 0 ;;
@@ -219,6 +593,9 @@ for library in "$JNI_DIR"/*.so; do
   "$READELF" -h "$library" >"$elf_header" || fail "ELF header audit failed: $name"
   grep -Eq 'Class:[[:space:]]+ELF64' "$elf_header" || fail "$name is not ELF64"
   grep -Eq 'Machine:[[:space:]]+AArch64' "$elf_header" || fail "$name is not AArch64"
+  if "$READELF" --sections "$library" | grep -Eq '[.]debug_'; then
+    fail "$name still contains debug sections after deployment stripping"
+  fi
   while IFS= read -r needed; do
     is_android_system_library "$needed" || [[ -s "$JNI_DIR/$needed" ]] ||
       fail "$name requires unpackaged native dependency $needed"
@@ -227,6 +604,11 @@ for library in "$JNI_DIR"/*.so; do
 done
 
 CPU_BACKEND="$JNI_DIR/libnd4jcpu.so"
+CPU_BACKEND_SYMBOLS="$BUILD_ROOT/libnd4jcpu.dynamic-symbols"
+"$LLVM_NM" -D --defined-only "$CPU_BACKEND" >"$CPU_BACKEND_SYMBOLS" ||
+  fail "could not inspect CPU importer backend symbols"
+grep -q "[[:space:]]$PROCESS_BLAS_SYMBOLS_ABI$" "$CPU_BACKEND_SYMBOLS" ||
+  fail "CPU importer backend lacks process BLAS symbol-resolution ABI: $PROCESS_BLAS_SYMBOLS_ABI"
 TEXT_GENERATION_V2_CONTRACTS=(
   causal-lm-in-graph-state-v2
   io.recurrentStates
@@ -248,37 +630,57 @@ while IFS= read -r library_name; do
   printf '%s %s\n' "$(sha256_file "$JNI_DIR/$library_name")" "$library_name"
 done <"$NATIVE_MANIFEST" >"$NATIVE_BYTES"
 
+[[ "$(sdx_git_source_manifest_sha256 "$DL4J_ROOT" "${RUNTIME_SOURCE_ROOTS[@]}")" == "$SOURCE_MANIFEST_SHA256" ]] ||
+  fail "runtime sources changed during the Android CPU importer build"
 INPUTS_SHA256="$({
-  sha256_file "${BASH_SOURCE[0]}"
+  printf '%s\n' "$PRODUCER_SHA256"
   sha256_file "$CLASSPATH_BYTES"
   sha256_file "$NATIVE_BYTES"
-  sha256_file "$ANDROID_NDK/source.properties"
-  printf '%s\n' "$ANDROID_API"
+  printf '%s\n' \
+    "$NDK_SOURCE_PROPERTIES_SHA256" \
+    "$SOURCE_MANIFEST_SHA256" \
+    "$NATIVE_STAGE_KEY" \
+    "$MANAGED_STAGE_KEY" \
+    "$PROCESS_BLAS_SYMBOLS_ABI" \
+    "$ANDROID_API"
 } | sha256sum | cut -d ' ' -f 1)"
 cat >"$METADATA_DIR/build-receipt" <<RECEIPT
-format=1
+format=2
 stage=android-cpu-importer-sdk
+cache_schema=independent-stages-v1
 inputs_sha256=$INPUTS_SHA256
+source_manifest_sha256=$SOURCE_MANIFEST_SHA256
+native_source_manifest_sha256=$NATIVE_SOURCE_MANIFEST_SHA256
+managed_source_manifest_sha256=$MANAGED_SOURCE_MANIFEST_SHA256
+native_stage_key=$NATIVE_STAGE_KEY
+managed_stage_key=$MANAGED_STAGE_KEY
 producer=$(realpath -e -- "${BASH_SOURCE[0]}")
-producer_sha256=$(sha256_file "${BASH_SOURCE[0]}")
+producer_sha256=$PRODUCER_SHA256
 android_api=$ANDROID_API
 android_abi=arm64-v8a
-android_ndk_source_properties_sha256=$(sha256_file "$ANDROID_NDK/source.properties")
+process_blas_symbols_abi=1
+process_blas_symbols_capability=$PROCESS_BLAS_SYMBOLS_ABI
+native_packaging=strip-debug
+standalone_sdx_cpu_included=false
+android_ndk_source_properties_sha256=$NDK_SOURCE_PROPERTIES_SHA256
 classpath_bytes_sha256=$(sha256_file "$CLASSPATH_BYTES")
 native_bytes_sha256=$(sha256_file "$NATIVE_BYTES")
 native_library_count=$(wc -l <"$NATIVE_MANIFEST")
 RECEIPT
 
-GENERATION_ID="$(sha256_file "$NATIVE_BYTES")-$(sha256_file "$CLASSPATH_BYTES")"
+GENERATION_ID="$SOURCE_MANIFEST_SHA256-$INPUTS_SHA256"
 GENERATION="$GENERATIONS_DIR/$GENERATION_ID"
 if [[ -e "$GENERATION" ]]; then
   [[ -d "$GENERATION" && ! -L "$GENERATION" ]] || fail "unsafe existing generation: $GENERATION"
+  receipt_has "$GENERATION/metadata/build-receipt" "inputs_sha256=$INPUTS_SHA256" ||
+    fail "existing Android CPU importer generation has a conflicting receipt"
   rm -rf -- "$STAGE"
 else
   mv -- "$STAGE" "$GENERATION"
   chmod -R a-w "$GENERATION"
 fi
 LINK_TMP="$OUTPUT_LINK.tmp.$$"
+CLEANUP_PATHS+=("$LINK_TMP")
 ln -s "$GENERATION" "$LINK_TMP"
 mv -Tf -- "$LINK_TMP" "$OUTPUT_LINK"
 printf 'Published Android CPU importer SDK: %s\n' "$GENERATION"

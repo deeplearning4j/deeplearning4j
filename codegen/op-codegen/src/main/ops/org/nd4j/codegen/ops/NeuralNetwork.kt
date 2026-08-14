@@ -1361,8 +1361,8 @@ fun NN() = Namespace("NN") {
         Input(NUMERIC, "activations") { description = "Activations [M, K] or [B, S, K] (FLOAT32 or HALF)" }
         Input(NUMERIC, "packedWeights") { description = "Packed GGML quantized weight bytes (INT8, rank 1) for a logical [N, K] weight" }
         Arg(INT, "quantType") { description = "GGML quantization type: 4=Q8_0, 8=Q4_K, 10=Q6_K" }
-        Arg(INT, "n") { description = "Number of weight rows (output columns)" }
-        Arg(INT, "k") { description = "Inner dimension (must be divisible by the quant block size)" }
+        Arg(LONG, "n") { description = "Number of weight rows (output columns)" }
+        Arg(LONG, "k") { description = "Inner dimension (must be divisible by the quant block size)" }
         Arg(INT, "outputDtype") { description = "Output dtype: 0=FLOAT32, 1=HALF" }
         Output(NUMERIC, "output") { description = "out = activations @ dequant(weight)^T, [M, N] or [B, S, N]" }
         Doc(Language.ANY, DocScope.ALL) {
@@ -1382,8 +1382,8 @@ fun NN() = Namespace("NN") {
         Input(NUMERIC, "loraB") { description = "LoRA up-projection [N, rank]" }
         Arg(FLOATING_POINT, "scaling") { description = "LoRA scaling factor" }
         Arg(INT, "quantType") { description = "GGML quantization type: 4=Q8_0, 8=Q4_K, 10=Q6_K" }
-        Arg(INT, "n") { description = "Number of weight rows (output columns)" }
-        Arg(INT, "k") { description = "Inner dimension" }
+        Arg(LONG, "n") { description = "Number of weight rows (output columns)" }
+        Arg(LONG, "k") { description = "Inner dimension" }
         Arg(INT, "outputDtype") { description = "Output dtype: 0=FLOAT32, 1=HALF" }
         Output(NUMERIC, "output") { description = "ggml_qmatmul(activations, weight) + scaling * (activations @ loraA^T) @ loraB^T" }
         Doc(Language.ANY, DocScope.ALL) {
@@ -1776,6 +1776,7 @@ fun NN() = Namespace("NN") {
         val beta = Input(NUMERIC, "beta") { description = "Per-step learning rate [batch, seqLen, numHeads]" }
         val gate = Input(NUMERIC, "gate") { description = "Decay gate (pre-exp) [batch, seqLen, numHeads]" }
         val stateIn = Input(NUMERIC, "stateIn") { description = "Previous recurrent state [batch, numHeads, headDimK, headDimV]"; defaultValue = null }
+        val actualSequenceLength = Input(NUMERIC, "actualSequenceLength") { description = "Scalar INT64 tensor containing the unpadded sequence length"; defaultValue = null }
 
         Output(NUMERIC, "output") { description = "Attention output [batch, seqLen, numHeads, headDimV]" }
         Output(NUMERIC, "stateOut") { description = "Final recurrent state [batch, numHeads, headDimK, headDimV]" }
@@ -1804,6 +1805,7 @@ fun NN() = Namespace("NN") {
         val weight = Input(NUMERIC, "weight") { description = "Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1)" }
         val bias = Input(NUMERIC, "bias") { description = "Bias [dim]"; defaultValue = null }
         val stateIn = Input(NUMERIC, "convStateIn") { description = "Conv state for autoregressive decode [batch, dim, kernelSize-1]"; defaultValue = null }
+        val actualSequenceLength = Input(NUMERIC, "actualSequenceLength") { description = "Scalar INT64 tensor containing the unpadded sequence length"; defaultValue = null }
         val activation = Arg(INT, "activation") { description = "Activation function (0=none, 1=silu)"; defaultValue = 0 }
         val wFormat = Arg(INT, "wFormat") { description = "Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)"; defaultValue = 0 }
 
@@ -2164,17 +2166,20 @@ fun NN() = Namespace("NN") {
     Op("fusedMRoPE") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "FusedMRoPE"
-        Input(NUMERIC, "input") { description = "Input tensor [batch, seq_len, num_heads, head_dim]" }
-        Input(INT, "posT") { description = "Temporal position IDs [batch, seq_len]" }
-        Input(INT, "posH") { description = "Height position IDs [batch, seq_len]" }
-        Input(INT, "posW") { description = "Width position IDs [batch, seq_len]" }
-        Arg(INT, "sectionT") { description = "Temporal frequency band size" }
-        Arg(INT, "sectionH") { description = "Height frequency band size" }
-        Arg(INT, "sectionW") { description = "Width frequency band size" }
-        Arg(BOOL, "interleaved") { description = "Whether to interleave frequency bands (true for Qwen3-VL)" }
-        Arg(NUMERIC, "freqBase") { description = "Base frequency for RoPE computation" }
+        val input = Input(NUMERIC, "input") { description = "Input tensor [batch, seq_len, num_heads, head_dim]" }
+        val posT = Input(INT, "posT") { description = "Temporal position IDs [batch, seq_len]" }
+        val posH = Input(INT, "posH") { description = "Height position IDs [batch, seq_len]" }
+        val posW = Input(INT, "posW") { description = "Width position IDs [batch, seq_len]" }
+        Arg(INT, "sectionT") { defaultValue = 24; description = "Temporal frequency band size" }
+        Arg(INT, "sectionH") { defaultValue = 20; description = "Height frequency band size" }
+        Arg(INT, "sectionW") { defaultValue = 20; description = "Width frequency band size" }
+        Arg(BOOL, "interleaved") { defaultValue = true; description = "Whether to interleave frequency bands (true for Qwen3-VL)" }
+        Arg(NUMERIC, "freqBase") { defaultValue = 5000000.0; description = "Base frequency for RoPE computation" }
 
         Output(NUMERIC, "output") { description = "Input with M-RoPE applied [batch, seq_len, num_heads, head_dim]" }
+
+        AllParamSignature()
+        Signature(input, posT, posH, posW)
 
         Doc(Language.ANY, DocScope.ALL) {
             """

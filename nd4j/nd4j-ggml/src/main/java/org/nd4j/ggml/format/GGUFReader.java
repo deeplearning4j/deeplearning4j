@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -43,6 +42,14 @@ import java.util.Map;
  */
 @Slf4j
 public class GGUFReader implements Closeable {
+
+    /**
+     * Metadata is consumed sequentially through a bounded window. Tensor payloads
+     * are read positionally and never enter this buffer. Keeping this deliberately
+     * small prevents a GGUF source file from becoming a second model-sized resident
+     * allocation during conversion.
+     */
+    private static final int READ_BUFFER_BYTES = 1024 * 1024;
 
     // GGUF metadata value types
     private static final int GGUF_TYPE_UINT8 = 0;
@@ -62,7 +69,9 @@ public class GGUFReader implements Closeable {
     private final File file;
     private final RandomAccessFile raf;
     private final FileChannel channel;
-    private MappedByteBuffer buffer;
+    private final ByteBuffer buffer;
+    private long bufferStart;
+    private long readPosition;
 
     private GGUFHeader header;
     private List<GGMLTensorInfo> tensorInfos;
@@ -76,27 +85,27 @@ public class GGUFReader implements Closeable {
         this.file = file;
         this.raf = new RandomAccessFile(file, "r");
         this.channel = raf.getChannel();
-
-        // Memory-map the file for efficient access
-        this.buffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, Math.min(channel.size(), Integer.MAX_VALUE));
-        this.buffer.order(ByteOrder.LITTLE_ENDIAN);
+        this.buffer = ByteBuffer.allocate(READ_BUFFER_BYTES).order(ByteOrder.LITTLE_ENDIAN);
+        this.buffer.limit(0);
+        this.bufferStart = 0;
+        this.readPosition = 0;
     }
 
     /**
      * Read and parse the GGUF header
      */
     public GGUFHeader readHeader() throws IOException, GGMLImportException {
-        buffer.position(0);
+        seek(0);
 
         // Read magic
-        int magic = buffer.getInt();
+        int magic = readInt();
         if (magic != GGMLFormatDetector.GGUF_MAGIC) {
             throw new GGMLImportException(String.format(
                     "Invalid GGUF magic: 0x%08X (expected 0x%08X)", magic, GGMLFormatDetector.GGUF_MAGIC));
         }
 
         // Read version
-        int version = buffer.getInt();
+        int version = readInt();
         if (version < 1 || version > 3) {
             throw new GGMLImportException("Unsupported GGUF version: " + version);
         }
@@ -112,7 +121,7 @@ public class GGUFReader implements Closeable {
         Map<String, Object> metadata = new HashMap<>();
         for (long i = 0; i < metadataKVCount; i++) {
             String key = readString();
-            int valueType = buffer.getInt();
+            int valueType = readInt();
             Object value = readMetadataValue(valueType);
             metadata.put(key, value);
 
@@ -147,14 +156,14 @@ public class GGUFReader implements Closeable {
 
         for (long i = 0; i < header.getTensorCount(); i++) {
             String name = readString();
-            int numDimensions = buffer.getInt();
+            int numDimensions = readInt();
 
             long[] shape = new long[numDimensions];
             for (int d = 0; d < numDimensions; d++) {
                 shape[d] = readUInt64();
             }
 
-            int typeId = buffer.getInt();
+            int typeId = readInt();
             GGMLDataType dataType;
             try {
                 dataType = GGMLDataType.fromTypeId(typeId);
@@ -181,7 +190,7 @@ public class GGUFReader implements Closeable {
         }
 
         // Calculate data section offset (aligned)
-        int headerEnd = buffer.position();
+        long headerEnd = readPosition;
         dataOffset = alignOffset(headerEnd, alignment);
 
         log.debug("Data section starts at offset {} (aligned from {})", dataOffset, headerEnd);
@@ -201,19 +210,7 @@ public class GGUFReader implements Closeable {
         }
 
         byte[] data = new byte[(int) dataSize];
-
-        // Handle large files that may need multiple mapped regions
-        if (absoluteOffset + dataSize > buffer.capacity()) {
-            // Re-map to include this region
-            channel.position(absoluteOffset);
-            ByteBuffer tempBuffer = ByteBuffer.allocate((int) dataSize);
-            channel.read(tempBuffer);
-            tempBuffer.flip();
-            tempBuffer.get(data);
-        } else {
-            buffer.position((int) absoluteOffset);
-            buffer.get(data);
-        }
+        readFullyAt(ByteBuffer.wrap(data), absoluteOffset);
 
         return data;
     }
@@ -232,22 +229,7 @@ public class GGUFReader implements Closeable {
         }
 
         ByteBuffer direct = ByteBuffer.allocateDirect((int) dataSize).order(ByteOrder.LITTLE_ENDIAN);
-
-        if (absoluteOffset + dataSize > buffer.capacity()) {
-            // Beyond mmap window — read via channel
-            channel.position(absoluteOffset);
-            while (direct.hasRemaining()) {
-                if (channel.read(direct) == -1) {
-                    throw new IOException("Unexpected EOF reading tensor data at offset " + absoluteOffset);
-                }
-            }
-        } else {
-            // Within mmap window — bulk copy from mmap buffer
-            ByteBuffer slice = buffer.duplicate();
-            slice.position((int) absoluteOffset);
-            slice.limit((int) (absoluteOffset + dataSize));
-            direct.put(slice);
-        }
+        readFullyAt(direct, absoluteOffset);
         direct.flip();
         return direct;
     }
@@ -294,38 +276,38 @@ public class GGUFReader implements Closeable {
 
     // Private helper methods
 
-    private String readString() {
+    private String readString() throws IOException {
         long length = readUInt64();
         if (length > Integer.MAX_VALUE || length < 0) {
             throw new IllegalStateException("String length too large: " + length);
         }
         byte[] bytes = new byte[(int) length];
-        buffer.get(bytes);
+        readBytes(bytes);
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
-    private long readUInt64() {
-        return buffer.getLong();
+    private long readUInt64() throws IOException {
+        return readLong();
     }
 
-    private Object readMetadataValue(int valueType) throws GGMLImportException {
+    private Object readMetadataValue(int valueType) throws IOException, GGMLImportException {
         switch (valueType) {
             case GGUF_TYPE_UINT8:
-                return buffer.get() & 0xFF;
+                return readByte() & 0xFF;
             case GGUF_TYPE_INT8:
-                return buffer.get();
+                return readByte();
             case GGUF_TYPE_UINT16:
-                return buffer.getShort() & 0xFFFF;
+                return readShort() & 0xFFFF;
             case GGUF_TYPE_INT16:
-                return buffer.getShort();
+                return readShort();
             case GGUF_TYPE_UINT32:
-                return buffer.getInt() & 0xFFFFFFFFL;
+                return readInt() & 0xFFFFFFFFL;
             case GGUF_TYPE_INT32:
-                return buffer.getInt();
+                return readInt();
             case GGUF_TYPE_FLOAT32:
-                return buffer.getFloat();
+                return readFloat();
             case GGUF_TYPE_BOOL:
-                return buffer.get() != 0;
+                return readByte() != 0;
             case GGUF_TYPE_STRING:
                 return readString();
             case GGUF_TYPE_ARRAY:
@@ -333,16 +315,16 @@ public class GGUFReader implements Closeable {
             case GGUF_TYPE_UINT64:
                 return readUInt64();
             case GGUF_TYPE_INT64:
-                return buffer.getLong();
+                return readLong();
             case GGUF_TYPE_FLOAT64:
-                return buffer.getDouble();
+                return readDouble();
             default:
                 throw new GGMLImportException("Unknown GGUF metadata value type: " + valueType);
         }
     }
 
-    private Object readArray() throws GGMLImportException {
-        int elementType = buffer.getInt();
+    private Object readArray() throws IOException, GGMLImportException {
+        int elementType = readInt();
         long length = readUInt64();
 
         if (length > Integer.MAX_VALUE) {
@@ -355,14 +337,14 @@ public class GGUFReader implements Closeable {
             case GGUF_TYPE_UINT8:
             case GGUF_TYPE_INT8: {
                 byte[] arr = new byte[len];
-                buffer.get(arr);
+                readBytes(arr);
                 return arr;
             }
             case GGUF_TYPE_UINT16:
             case GGUF_TYPE_INT16: {
                 short[] arr = new short[len];
                 for (int i = 0; i < len; i++) {
-                    arr[i] = buffer.getShort();
+                    arr[i] = readShort();
                 }
                 return arr;
             }
@@ -370,21 +352,21 @@ public class GGUFReader implements Closeable {
             case GGUF_TYPE_INT32: {
                 int[] arr = new int[len];
                 for (int i = 0; i < len; i++) {
-                    arr[i] = buffer.getInt();
+                    arr[i] = readInt();
                 }
                 return arr;
             }
             case GGUF_TYPE_FLOAT32: {
                 float[] arr = new float[len];
                 for (int i = 0; i < len; i++) {
-                    arr[i] = buffer.getFloat();
+                    arr[i] = readFloat();
                 }
                 return arr;
             }
             case GGUF_TYPE_BOOL: {
                 boolean[] arr = new boolean[len];
                 for (int i = 0; i < len; i++) {
-                    arr[i] = buffer.get() != 0;
+                    arr[i] = readByte() != 0;
                 }
                 return arr;
             }
@@ -399,14 +381,14 @@ public class GGUFReader implements Closeable {
             case GGUF_TYPE_INT64: {
                 long[] arr = new long[len];
                 for (int i = 0; i < len; i++) {
-                    arr[i] = buffer.getLong();
+                    arr[i] = readLong();
                 }
                 return arr;
             }
             case GGUF_TYPE_FLOAT64: {
                 double[] arr = new double[len];
                 for (int i = 0; i < len; i++) {
-                    arr[i] = buffer.getDouble();
+                    arr[i] = readDouble();
                 }
                 return arr;
             }
@@ -422,17 +404,133 @@ public class GGUFReader implements Closeable {
         }
     }
 
+    private void seek(long newPosition) throws IOException {
+        if (newPosition < 0 || newPosition > channel.size()) {
+            throw new IOException("GGUF seek outside file: " + newPosition);
+        }
+
+        long bufferedEnd = bufferStart + buffer.limit();
+        if (newPosition >= bufferStart && newPosition <= bufferedEnd) {
+            buffer.position((int) (newPosition - bufferStart));
+        } else {
+            buffer.clear();
+            buffer.limit(0);
+            bufferStart = newPosition;
+        }
+        readPosition = newPosition;
+    }
+
+    private void ensureAvailable(int requiredBytes) throws IOException {
+        if (requiredBytes < 0 || requiredBytes > buffer.capacity()) {
+            throw new IllegalArgumentException("Invalid buffered read size: " + requiredBytes);
+        }
+        if (buffer.remaining() >= requiredBytes) {
+            return;
+        }
+
+        int preservedBytes = buffer.remaining();
+        if (preservedBytes > 0) {
+            buffer.compact();
+        } else {
+            buffer.clear();
+        }
+
+        bufferStart = readPosition;
+        long filePosition = readPosition + preservedBytes;
+        while (buffer.hasRemaining()) {
+            int read = channel.read(buffer, filePosition);
+            if (read < 0) {
+                break;
+            }
+            if (read == 0) {
+                break;
+            }
+            filePosition += read;
+        }
+        buffer.flip();
+
+        if (buffer.remaining() < requiredBytes) {
+            throw new IOException("Unexpected EOF reading GGUF metadata at offset " + readPosition
+                    + " (needed " + requiredBytes + " bytes, found " + buffer.remaining() + ")");
+        }
+    }
+
+    private byte readByte() throws IOException {
+        ensureAvailable(Byte.BYTES);
+        readPosition += Byte.BYTES;
+        return buffer.get();
+    }
+
+    private short readShort() throws IOException {
+        ensureAvailable(Short.BYTES);
+        readPosition += Short.BYTES;
+        return buffer.getShort();
+    }
+
+    private int readInt() throws IOException {
+        ensureAvailable(Integer.BYTES);
+        readPosition += Integer.BYTES;
+        return buffer.getInt();
+    }
+
+    private long readLong() throws IOException {
+        ensureAvailable(Long.BYTES);
+        readPosition += Long.BYTES;
+        return buffer.getLong();
+    }
+
+    private float readFloat() throws IOException {
+        ensureAvailable(Float.BYTES);
+        readPosition += Float.BYTES;
+        return buffer.getFloat();
+    }
+
+    private double readDouble() throws IOException {
+        ensureAvailable(Double.BYTES);
+        readPosition += Double.BYTES;
+        return buffer.getDouble();
+    }
+
+    private void readBytes(byte[] destination) throws IOException {
+        int copied = 0;
+        while (copied < destination.length) {
+            if (!buffer.hasRemaining()) {
+                ensureAvailable(1);
+            }
+            int chunk = Math.min(buffer.remaining(), destination.length - copied);
+            buffer.get(destination, copied, chunk);
+            copied += chunk;
+            readPosition += chunk;
+        }
+    }
+
+    private void readFullyAt(ByteBuffer destination, long absoluteOffset) throws IOException {
+        long bytes = destination.remaining();
+        long fileSize = channel.size();
+        if (absoluteOffset < 0 || absoluteOffset > fileSize || bytes > fileSize - absoluteOffset) {
+            throw new IOException("Tensor data range outside GGUF file: offset=" + absoluteOffset
+                    + ", bytes=" + bytes + ", fileSize=" + fileSize);
+        }
+
+        long filePosition = absoluteOffset;
+        while (destination.hasRemaining()) {
+            int read = channel.read(destination, filePosition);
+            if (read < 0) {
+                throw new IOException("Unexpected EOF reading tensor data at offset " + filePosition);
+            }
+            if (read == 0) {
+                throw new IOException("GGUF tensor read made no progress at offset " + filePosition);
+            }
+            filePosition += read;
+        }
+    }
+
     private static long alignOffset(long offset, int alignment) {
         return ((offset + alignment - 1) / alignment) * alignment;
     }
 
     @Override
     public void close() throws IOException {
-        if (buffer != null) {
-            // MappedByteBuffer doesn't have an explicit close,
-            // it will be garbage collected
-            buffer = null;
-        }
         if (channel != null && channel.isOpen()) {
             channel.close();
         }

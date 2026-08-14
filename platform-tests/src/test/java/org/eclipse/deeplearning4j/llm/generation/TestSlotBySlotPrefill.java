@@ -21,6 +21,7 @@
 package org.eclipse.deeplearning4j.llm.generation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.LongPointer;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.DownloadResult;
 import org.eclipse.deeplearning4j.llm.data.LLMModelDownloader.LLMModel;
@@ -40,6 +41,7 @@ import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.ggml.GGMLModelImport;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -261,8 +263,8 @@ public class TestSlotBySlotPrefill {
         runGreedyRepeats(cfg, true);
     }
 
-    /** Decode length for the repeat probes. */
-    private static final int REPEAT_TOKENS = 60;
+    /** Decode length for the repeat probes; lower it for focused memory-lifecycle runs. */
+    private static final int REPEAT_TOKENS = Integer.getInteger("qwen.repeat.tokens", 60);
 
     private void runGreedyRepeats(GenerationPipelineConfig cfg, boolean assertSteadyExact) throws Exception {
 
@@ -282,15 +284,45 @@ public class TestSlotBySlotPrefill {
         // From generation 3 on every plan replays captured graphs — bit-identical by
         // construction (verified: gens 3/4/5 exact, tokens AND decode-entry state).
         // Assert exact equality at steady state; earlier pairs are logged only.
-        int genCount = 5;
+        int genCount = Math.max(4, Integer.getInteger("qwen.repeat.generations", 5));
         int warmups = 2;
         int[][] gens = new int[genCount][];
+        long[] poolUsedAfterGeneration = new long[genCount];
         try (GenerationPipeline pipe = GenerationPipeline.create(cfg)) {
             for (int g = 0; g < genCount; g++) {
+                Nd4j.getNativeOps().dbCloseResetDiagnostics();
                 gens[g] = pipe.generate(PROMPT, REPEAT_TOKENS).getTokenIds();
+                logDbCloseState(g + 1);
                 assertTrue(gens[g].length >= REPEAT_TOKENS / 2,
                         "Generation " + (g + 1) + " produced only " + gens[g].length + " tokens");
+                logDspState(g + 1);
+                if (Boolean.getBoolean("qwen.repeat.reclaim.dead")) {
+                    System.gc();
+                    int flushed = Nd4j.getDeallocatorService().forceFlushAll();
+                    SameDiffMemoryUtils.trimAllDevicePools();
+                    log.info("[GREEDY-TWICE] gen{} diagnostic dead-buffer flush reclaimed {} references",
+                            g + 1, flushed);
+                }
+                poolUsedAfterGeneration[g] = memoryPoolUsedBytes();
+                log.info("[GREEDY-TWICE] gen{} poolUsed={} MB",
+                        g + 1, poolUsedAfterGeneration[g] < 0
+                                ? "unavailable"
+                                : poolUsedAfterGeneration[g] / (1024 * 1024));
             }
+        }
+        if (!assertSteadyExact && poolUsedAfterGeneration[2] >= 0) {
+            long steadyMin = Long.MAX_VALUE;
+            long steadyMax = Long.MIN_VALUE;
+            for (int g = 2; g < genCount; g++) {
+                steadyMin = Math.min(steadyMin, poolUsedAfterGeneration[g]);
+                steadyMax = Math.max(steadyMax, poolUsedAfterGeneration[g]);
+            }
+            long maxSteadyGrowth = 1024L * 1024 * 1024;
+            assertTrue(steadyMax - steadyMin <= maxSteadyGrowth,
+                    "Variable-size independent generations accumulated "
+                            + ((steadyMax - steadyMin) / (1024 * 1024))
+                            + " MB of live CUDA pool allocations across steady generations; expected <= "
+                            + (maxSteadyGrowth / (1024 * 1024)) + " MB");
         }
         int steadyMismatches = 0;
         for (int a = 0; a < genCount; a++) {
@@ -314,6 +346,47 @@ public class TestSlotBySlotPrefill {
                     "Steady-state greedy generations (gen " + (warmups + 1) + "+) on the same frozen "
                             + "plan must be token-identical; " + steadyMismatches
                             + " pairwise mismatches — see [GREEDY-TWICE] lines");
+        }
+    }
+
+    private static void logDspState(int generation) {
+        try {
+            String report = optimizedModel.dsp().nativePlanReport();
+            if (report != null && report.length() > 2000) {
+                report = report.substring(0, 2000) + "...";
+            }
+            log.info("[GREEDY-TWICE] gen{} dsp={} capture={} report={}",
+                    generation,
+                    optimizedModel.dsp().planSummary(),
+                    optimizedModel.dsp().captureStats(),
+                    report);
+        } catch (RuntimeException e) {
+            log.info("[GREEDY-TWICE] gen{} DSP state unavailable: {}", generation, e.getMessage());
+        }
+    }
+
+    private static void logDbCloseState(int generation) {
+        try (LongPointer nativeStats = new LongPointer(9)) {
+            Nd4j.getNativeOps().dbCloseGetDiagnostics(nativeStats);
+            log.info("[GREEDY-TWICE] gen{} dbClose total={} constant={} alreadyClosed={} noDataBuffer={} "
+                            + "notOwner={} deviceError={} deleted={} freedBytes={} MB",
+                    generation,
+                    nativeStats.get(0), nativeStats.get(2), nativeStats.get(3),
+                    nativeStats.get(4), nativeStats.get(5), nativeStats.get(6),
+                    nativeStats.get(7), nativeStats.get(8) / (1024 * 1024));
+        } catch (UnsupportedOperationException | UnsatisfiedLinkError e) {
+            log.info("[GREEDY-TWICE] gen{} dbClose diagnostics unavailable: {}", generation, e.getMessage());
+        }
+    }
+
+    private static long memoryPoolUsedBytes() {
+        try (LongPointer used = new LongPointer(1);
+             LongPointer reserved = new LongPointer(1)) {
+            Nd4j.getNativeOps().getMemoryPoolStats(
+                    Nd4j.getAffinityManager().getDeviceForCurrentThread(), used, reserved);
+            return used.get();
+        } catch (UnsupportedOperationException | UnsatisfiedLinkError e) {
+            return -1;
         }
     }
 

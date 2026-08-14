@@ -35,8 +35,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -104,6 +106,40 @@ class GGUFReaderTest {
         try (GGUFReader reader = new GGUFReader(versionFile)) {
             GGMLMetadata metadata = reader.getMetadata();
             assertNotNull(metadata);
+        }
+    }
+
+    @Test
+    @DisplayName("Reader does not retain a whole-file memory mapping")
+    void testReaderDoesNotRetainWholeFileMapping() {
+        assertFalse(Arrays.stream(GGUFReader.class.getDeclaredFields())
+                        .anyMatch(field -> MappedByteBuffer.class.isAssignableFrom(field.getType())),
+                "GGUF conversion must not retain a model-sized MappedByteBuffer");
+    }
+
+    @Test
+    @DisplayName("Read metadata across the bounded buffer and tensor data positionally")
+    void testBoundedMetadataAndPositionalTensorReads() throws IOException, GGMLImportException {
+        File ggufFile = createGGUFWithLargeMetadataAndTensor();
+
+        try (GGUFReader reader = new GGUFReader(ggufFile)) {
+            GGUFHeader header = reader.readHeader();
+            assertEquals(1, header.getTensorCount());
+            assertEquals(1, header.getMetadataKVCount());
+
+            GGMLTensorInfo tensor = reader.readTensorInfos().get(0);
+            assertEquals("test.weight", tensor.getName());
+            assertArrayEquals(new long[]{4}, tensor.getShape());
+
+            ByteBuffer heapData = ByteBuffer.wrap(reader.readTensorData(tensor))
+                    .order(ByteOrder.LITTLE_ENDIAN);
+            ByteBuffer directData = reader.readTensorDataDirect(tensor)
+                    .order(ByteOrder.LITTLE_ENDIAN);
+            for (int i = 0; i < 4; i++) {
+                float expected = i + 0.25f;
+                assertEquals(expected, heapData.getFloat(), 0.0f);
+                assertEquals(expected, directData.getFloat(), 0.0f);
+            }
         }
     }
 
@@ -266,6 +302,52 @@ class GGUFReaderTest {
             buffer.putLong(valueBytes.length); // value length
             buffer.put(valueBytes);            // value
 
+            fos.write(buffer.array());
+        }
+        return file;
+    }
+
+    private File createGGUFWithLargeMetadataAndTensor() throws IOException {
+        File file = tempDir.resolve("large-metadata-tensor.gguf").toFile();
+        byte[] key = "general.architecture".getBytes(StandardCharsets.UTF_8);
+        byte[] value = new byte[1024 * 1024 + 37];
+        Arrays.fill(value, (byte) 'x');
+        byte[] tensorName = "test.weight".getBytes(StandardCharsets.UTF_8);
+
+        int unalignedDataOffset = 24
+                + Long.BYTES + key.length + Integer.BYTES + Long.BYTES + value.length
+                + Long.BYTES + tensorName.length + Integer.BYTES + Long.BYTES
+                + Integer.BYTES + Long.BYTES;
+        int dataOffset = ((unalignedDataOffset + 31) / 32) * 32;
+        ByteBuffer buffer = ByteBuffer.allocate(dataOffset + 4 * Float.BYTES)
+                .order(ByteOrder.LITTLE_ENDIAN);
+
+        buffer.putInt(0x46554747);
+        buffer.putInt(3);
+        buffer.putLong(1);
+        buffer.putLong(1);
+
+        buffer.putLong(key.length);
+        buffer.put(key);
+        buffer.putInt(8);
+        buffer.putLong(value.length);
+        buffer.put(value);
+
+        buffer.putLong(tensorName.length);
+        buffer.put(tensorName);
+        buffer.putInt(1);
+        buffer.putLong(4);
+        buffer.putInt(GGMLDataType.GGML_TYPE_F32.getTypeId());
+        buffer.putLong(0);
+
+        while (buffer.position() < dataOffset) {
+            buffer.put((byte) 0);
+        }
+        for (int i = 0; i < 4; i++) {
+            buffer.putFloat(i + 0.25f);
+        }
+
+        try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(buffer.array());
         }
         return file;

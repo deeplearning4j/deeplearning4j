@@ -46,6 +46,9 @@
         <libnd4j.extension></libnd4j.extension>
         <libnd4j.chip></libnd4j.chip>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
+        <!-- Lets controlled producers redirect classes without changing normal Maven output. -->
+        <nd4j.api.outputDirectory>${project.build.directory}/classes</nd4j.api.outputDirectory>
+        <graalvm.sdk.version>24.1.1</graalvm.sdk.version>
     </properties>
 
 
@@ -134,6 +137,19 @@
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-common</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <!-- Native Image runtime API plus the hosted Feature API used only at image build time. -->
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <version>${graalvm.sdk.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
+            <artifactId>svm</artifactId>
+            <version>${graalvm.sdk.version}</version>
+            <scope>provided</scope>
         </dependency>
 
     </dependencies>
@@ -310,6 +326,7 @@
     </profiles>
 
     <build>
+        <outputDirectory>${nd4j.api.outputDirectory}</outputDirectory>
         <plugins>
             <plugin>
                 <groupId>org.moditect</groupId>

@@ -1,26 +1,44 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+fail() {
+    printf 'build-android-accelerator: %s\n' "$*" >&2
+    exit 1
+}
+
 usage() {
     cat <<'USAGE'
 Usage:
-  build-android-accelerator.sh --profile <profile.env> --android-ndk <path> [options]
+  build-android-accelerator.sh [profile] [options]
+
+The profile may be a checked-in profile name (tensor-g3-nnapi, vulkan, or
+hexagon) or a profile.env path. It defaults to tensor-g3-nnapi. Android NDK r28,
+JDK 17, Maven, the /tmp build root, and bounded host parallelism are discovered
+automatically.
 
 Options:
-  --output-root <path>  Build and distribution root
-  --jobs <n>            Native/Cargo parallelism (default: 4)
-  --offline             Forbid Cargo and Maven network access and disconnect CMake FetchContent
-  --device-ready        Require and validate the profile's vendor adapter library
-  --skip-tokenizers     Reuse already-built Rust/JavaCPP tokenizer artifacts
-  --skip-native         Reuse an already-built native SDX Android AAR
-  --skip-java           Reuse an already-built full JavaCPP SDX Android AAR
-  -h, --help            Show this help
+  --profile <name|file> Select a profile (default: tensor-g3-nnapi)
+  --android-ndk <path> Override NDK discovery
+  --java-home <path>   Override JDK 17 discovery
+  --maven <command>    Override Maven discovery
+  --output-root <path> Build and distribution root
+  --jobs <n>           Native/Cargo parallelism (default: min(host CPUs, 8))
+  --offline            Forbid network access (default)
+  --online             Permit dependency resolution
+  --print-config        Print resolved inputs and exit
+  --device-ready       Require and validate the profile's vendor adapter library
+  --skip-tokenizers    Reuse already-built Rust/JavaCPP tokenizer artifacts
+  --skip-native        Reuse a native AAR only when its receipt matches current sources
+  --reuse-receipted-native
+                       Reuse an immutable native AAR authorized by its historical receipt
+  --skip-java          Reuse an already-built full JavaCPP SDX Android AAR
+  -h, --help           Show this help
 
-The profile selects an accelerator-only variant. CPU and BLAS-backed profiles are
-rejected. Set MVN_CMD to choose a Maven executable. Qualcomm device-ready builds
-also require HEXAGON_ADAPTER_LIBRARY to point at libhexagon_mlir_runtime.so.
-Vulkan uses Android's system loader and requires no bundled vendor adapter.
-Set SDX_NATIVE_OOM_MEMORY_THRESHOLD to override the serialized native-build
+Environment overrides use the common SDX_ANDROID_PROFILE, SDX_ANDROID_NDK,
+SDX_JAVA17_HOME, SDX_MAVEN, and SDX_ANDROID_BUILD_ROOT names. Qualcomm
+device-ready builds also require HEXAGON_ADAPTER_LIBRARY. Vulkan uses Android's
+system loader and requires no bundled vendor adapter. Set
+SDX_NATIVE_OOM_MEMORY_THRESHOLD to override the serialized native-build
 host-memory threshold (default: 90).
 USAGE
 }
@@ -36,15 +54,26 @@ SDX_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx"
 SDX_MODEL_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model"
 SDX_PRESET_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset"
 VERIFY_SCRIPT="$SCRIPT_DIR/verify-android-accelerator-aar.sh"
+BUILD_ENV="$SCRIPT_DIR/android-build-env.sh"
+[[ -r "$BUILD_ENV" ]] || {
+    echo "Shared Android build discovery is missing: $BUILD_ENV" >&2
+    exit 1
+}
+# shellcheck source=android-build-env.sh
+source "$BUILD_ENV"
 
 PROFILE=""
-ANDROID_NDK_ARG="${ANDROID_NDK:-${ANDROID_NDK_ROOT:-${ANDROID_NDK_HOME:-}}}"
+ANDROID_NDK_ARG=""
+JAVA_HOME_ARG=""
+MAVEN_ARG=""
 OUTPUT_ROOT=""
-JOBS="${JOBS:-4}"
-OFFLINE=0
+JOBS="${JOBS:-$(sdx_android_default_jobs)}"
+OFFLINE=1
+PRINT_CONFIG=0
 DEVICE_READY=0
 SKIP_TOKENIZERS=0
 SKIP_NATIVE=0
+REUSE_RECEIPTED_NATIVE=0
 SKIP_JAVA=0
 
 while [[ $# -gt 0 ]]; do
@@ -55,6 +84,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --android-ndk)
             ANDROID_NDK_ARG="${2:?missing value for --android-ndk}"
+            shift 2
+            ;;
+        --java-home)
+            JAVA_HOME_ARG="${2:?missing value for --java-home}"
+            shift 2
+            ;;
+        --maven)
+            MAVEN_ARG="${2:?missing value for --maven}"
             shift 2
             ;;
         --output-root)
@@ -69,6 +106,14 @@ while [[ $# -gt 0 ]]; do
             OFFLINE=1
             shift
             ;;
+        --online)
+            OFFLINE=0
+            shift
+            ;;
+        --print-config)
+            PRINT_CONFIG=1
+            shift
+            ;;
         --device-ready)
             DEVICE_READY=1
             shift
@@ -81,6 +126,11 @@ while [[ $# -gt 0 ]]; do
             SKIP_NATIVE=1
             shift
             ;;
+        --reuse-receipted-native)
+            SKIP_NATIVE=1
+            REUSE_RECEIPTED_NATIVE=1
+            shift
+            ;;
         --skip-java)
             SKIP_JAVA=1
             shift
@@ -90,23 +140,25 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
-            echo "Unknown option: $1" >&2
-            usage >&2
-            exit 2
+            if [[ "$1" != -* && -z "$PROFILE" ]]; then
+                PROFILE="$1"
+                shift
+            else
+                echo "Unknown option: $1" >&2
+                usage >&2
+                exit 2
+            fi
             ;;
     esac
 done
 
-if [[ -z "$PROFILE" ]]; then
-    echo "--profile is required" >&2
-    exit 2
-fi
-if [[ ! -f "$PROFILE" ]]; then
-    echo "Profile not found: $PROFILE" >&2
-    exit 1
-fi
-if [[ -z "$ANDROID_NDK_ARG" || ! -f "$ANDROID_NDK_ARG/build/cmake/android.toolchain.cmake" ]]; then
-    echo "--android-ndk must point at an installed Android NDK" >&2
+PROFILE="$(sdx_android_resolve_profile "$SCRIPT_DIR/profiles" "$PROFILE")"
+ANDROID_NDK_ARG="$(sdx_android_resolve_ndk "$ANDROID_NDK_ARG")"
+JAVA_HOME_REAL="$(sdx_android_resolve_java17 "$JAVA_HOME_ARG")"
+MVN_REAL="$(sdx_android_resolve_maven "$MAVEN_ARG" "$REPO_ROOT")"
+export JAVA_HOME="$JAVA_HOME_REAL"
+if [[ ! -f "$ANDROID_NDK_ARG/build/cmake/android.toolchain.cmake" ]]; then
+    echo "Discovered Android NDK is incomplete: $ANDROID_NDK_ARG" >&2
     exit 1
 fi
 if [[ ! "$JOBS" =~ ^[1-9][0-9]*$ ]]; then
@@ -146,22 +198,47 @@ if [[ "$SDX_ANDROID_ABI" != "arm64-v8a" ]]; then
     exit 1
 fi
 
-OUTPUT_ROOT="${OUTPUT_ROOT:-$LIBND4J_DIR/build/mobile/$SDX_VARIANT}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-$(sdx_android_default_build_root)/accelerator/$SDX_VARIANT}"
+OUTPUT_ROOT="$(realpath -m -- "$OUTPUT_ROOT")"
 NATIVE_BUILD_DIR="$OUTPUT_ROOT/native"
 DIST_DIR="$OUTPUT_ROOT/dist"
 mkdir -p "$NATIVE_BUILD_DIR" "$DIST_DIR"
+[[ -d "$OUTPUT_ROOT" && ! -L "$OUTPUT_ROOT" ]] ||
+    fail "accelerator output root must be a real directory: $OUTPUT_ROOT"
 
-MVN_CMD="${MVN_CMD:-mvn}"
-if ! command -v "$MVN_CMD" >/dev/null 2>&1; then
-    echo "Maven executable not found: $MVN_CMD" >&2
-    exit 1
-fi
-if [[ -z "${JAVA_HOME:-}" || ! -x "$JAVA_HOME/bin/java" ]]; then
-    echo "JAVA_HOME must point at the JDK used for the Maven packaging build" >&2
-    exit 1
-fi
-MVN_REAL="$(realpath -e -- "$(command -v "$MVN_CMD")")"
-JAVA_HOME_REAL="$(realpath -e -- "$JAVA_HOME")"
+printf 'Resolved Android accelerator build configuration:\n'
+printf '  profile:      %s\n' "$PROFILE"
+printf '  variant:      %s\n' "$SDX_VARIANT"
+printf '  Android NDK:  %s\n' "$ANDROID_NDK_ARG"
+printf '  JDK 17:       %s\n' "$JAVA_HOME_REAL"
+printf '  Maven:        %s\n' "$MVN_REAL"
+printf '  output root:  %s\n' "$OUTPUT_ROOT"
+printf '  offline:      %s\n' "$OFFLINE"
+printf '  jobs:         %s\n' "$JOBS"
+[[ "$PRINT_CONFIG" == 0 ]] || exit 0
+
+command -v flock >/dev/null 2>&1 ||
+    fail "flock is required"
+exec {ACCELERATOR_BUILD_LOCK_FD}>"$OUTPUT_ROOT/.build.lock"
+printf 'Waiting for the Android accelerator build lock: %s\n' "$OUTPUT_ROOT/.build.lock"
+flock "$ACCELERATOR_BUILD_LOCK_FD"
+
+while IFS= read -r -d '' stale_quarantine; do
+    [[ -d "$stale_quarantine" && ! -L "$stale_quarantine" ]] ||
+        fail "unsafe stale Maven quarantine: $stale_quarantine"
+    stale_quarantine_real="$(realpath -e -- "$stale_quarantine")"
+    [[ "$(dirname -- "$stale_quarantine_real")" == "$OUTPUT_ROOT" ]] ||
+        fail "stale Maven quarantine escapes accelerator output root: $stale_quarantine_real"
+    stale_quarantine_kib="$(du -sk -- "$stale_quarantine_real" | cut -f 1)"
+    [[ "$stale_quarantine_kib" =~ ^[0-9]+$ ]] ||
+        fail "could not measure stale Maven quarantine: $stale_quarantine_real"
+    chmod -R u+w -- "$stale_quarantine_real" ||
+        fail "could not make stale Maven quarantine removable: $stale_quarantine_real"
+    rm -rf -- "$stale_quarantine_real"
+    printf 'Removed stale accelerator Maven quarantine: %s (%s KiB)\n' \
+        "$stale_quarantine_real" "$stale_quarantine_kib"
+done < <(find "$OUTPUT_ROOT" -mindepth 1 -maxdepth 1 -name 'quarantined-maven-targets.*' -print0)
+
 MAVEN_SHA256="$(sha256sum "$MVN_REAL" | cut -d ' ' -f 1)"
 MAVEN_VERSION_SHA256="$(
     { env JAVA_HOME="$JAVA_HOME_REAL" PATH="$JAVA_HOME_REAL/bin:$PATH" "$MVN_REAL" --version; } 2>&1 |
@@ -273,6 +350,8 @@ source_manifest_sha256() {
         libnd4j
         nd4j/sdx-aot
         nd4j/nd4j-tokenizers
+        nd4j/nd4j-backends/nd4j-api-parent/nd4j-api
+        nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common
         nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx
         nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model
         nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset
@@ -389,7 +468,12 @@ fi
 
 PROFILE_REAL="$(realpath -e -- "$PROFILE")"
 PROFILE_SHA256="$(sha256_file "$PROFILE_REAL")"
-BUILD_SCRIPT_SHA256="$(sha256_file "$0")"
+BUILD_SCRIPT_SHA256="$(
+    {
+        printf 'entrypoint=%s\n' "$(sha256_file "$0")"
+        printf 'shared_env=%s\n' "$(sha256_file "$BUILD_ENV")"
+    } | sha256sum | cut -d ' ' -f 1
+)"
 NDK_REVISION_FILE="$ANDROID_NDK_ARG/source.properties"
 [[ -s "$NDK_REVISION_FILE" ]] || {
     echo "Android NDK revision file is missing: $NDK_REVISION_FILE" >&2
@@ -399,6 +483,22 @@ NDK_REVISION_SHA256="$(sha256_file "$NDK_REVISION_FILE")"
 SOURCE_MANIFEST_SHA256="$(source_manifest_sha256)"
 MAVEN_TARGET_QUARANTINE="$(mktemp -d "$OUTPUT_ROOT/quarantined-maven-targets.XXXXXX")"
 FRESH_JAVA_BUILDS_TMP="$(mktemp "$DIST_DIR/fresh-java-builds.tmp.XXXXXX")"
+cleanup_accelerator_temporary_state() {
+    local build_status=$?
+    trap - EXIT INT TERM
+    rm -f -- "$FRESH_JAVA_BUILDS_TMP"
+    if [[ -e "$MAVEN_TARGET_QUARANTINE" || -L "$MAVEN_TARGET_QUARANTINE" ]]; then
+        [[ -d "$MAVEN_TARGET_QUARANTINE" && ! -L "$MAVEN_TARGET_QUARANTINE" ]] ||
+            fail "unsafe active Maven quarantine: $MAVEN_TARGET_QUARANTINE"
+        chmod -R u+w -- "$MAVEN_TARGET_QUARANTINE" ||
+            fail "could not make active Maven quarantine removable: $MAVEN_TARGET_QUARANTINE"
+        rm -rf -- "$MAVEN_TARGET_QUARANTINE"
+    fi
+    exit "$build_status"
+}
+trap cleanup_accelerator_temporary_state EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 NATIVE_HELPERS="none"
 REQUIRED_ACCELERATOR_DEVICE="none"
 if [[ "$SDX_VARIANT" == "tensor-g3" ]]; then
@@ -543,15 +643,27 @@ else
         profile_sha256 build_script_sha256 ndk_revision_sha256 android_api android_abi \
         chip helpers required_accelerator_device provider_member provider_sha256 \
         arm_compute_member arm_compute_sha256
+    RECEIPT_NATIVE_INPUTS_SHA256="$(
+        printf '%s\n' \
+            "source_manifest_sha256=${RECEIPT_VALUES[source_manifest_sha256]}" \
+            "profile_sha256=${RECEIPT_VALUES[profile_sha256]}" \
+            "build_script_sha256=${RECEIPT_VALUES[build_script_sha256]}" \
+            "ndk_revision_sha256=${RECEIPT_VALUES[ndk_revision_sha256]}" \
+            "variant=${RECEIPT_VALUES[variant]}" \
+            "android_api=${RECEIPT_VALUES[android_api]}" \
+            "android_abi=${RECEIPT_VALUES[android_abi]}" \
+            "chip=${RECEIPT_VALUES[chip]}" \
+            "helpers=${RECEIPT_VALUES[helpers]}" \
+            "required_accelerator_device=${RECEIPT_VALUES[required_accelerator_device]}" |
+            sha256sum | cut -d ' ' -f 1
+    )"
     if [[ "${RECEIPT_VALUES[format]}" != "2" ||
           "${RECEIPT_VALUES[stage]}" != "native" ||
           "${RECEIPT_VALUES[variant]}" != "$SDX_VARIANT" ||
           "${RECEIPT_VALUES[artifact]}" != "$NATIVE_AAR_REAL" ||
           "${RECEIPT_VALUES[sha256]}" != "$NATIVE_AAR_SHA256" ||
-          "${RECEIPT_VALUES[inputs_sha256]}" != "$NATIVE_INPUTS_SHA256" ||
-          "${RECEIPT_VALUES[source_manifest_sha256]}" != "$SOURCE_MANIFEST_SHA256" ||
+          "${RECEIPT_VALUES[inputs_sha256]}" != "$RECEIPT_NATIVE_INPUTS_SHA256" ||
           "${RECEIPT_VALUES[profile_sha256]}" != "$PROFILE_SHA256" ||
-          "${RECEIPT_VALUES[build_script_sha256]}" != "$BUILD_SCRIPT_SHA256" ||
           "${RECEIPT_VALUES[ndk_revision_sha256]}" != "$NDK_REVISION_SHA256" ||
           "${RECEIPT_VALUES[android_api]}" != "$SDX_ANDROID_API" ||
           "${RECEIPT_VALUES[android_abi]}" != "$SDX_ANDROID_ABI" ||
@@ -566,7 +678,19 @@ else
         echo "Rerun without --skip-native to rebuild and refresh the receipt." >&2
         exit 1
     fi
-    echo "Verified native build receipt: $NATIVE_RECEIPT"
+    if [[ "$REUSE_RECEIPTED_NATIVE" != "1" &&
+          ( "${RECEIPT_VALUES[inputs_sha256]}" != "$NATIVE_INPUTS_SHA256" ||
+            "${RECEIPT_VALUES[source_manifest_sha256]}" != "$SOURCE_MANIFEST_SHA256" ||
+            "${RECEIPT_VALUES[build_script_sha256]}" != "$BUILD_SCRIPT_SHA256" ) ]]; then
+        echo "Native build receipt does not match the current source closure: $NATIVE_RECEIPT" >&2
+        echo "Use --reuse-receipted-native only when intentionally layering current Java artifacts over this immutable native producer." >&2
+        exit 1
+    fi
+    if [[ "$REUSE_RECEIPTED_NATIVE" == "1" ]]; then
+        echo "Verified immutable native producer from historical receipt: $NATIVE_RECEIPT"
+    else
+        echo "Verified native build receipt: $NATIVE_RECEIPT"
+    fi
 fi
 
 if [[ "$SKIP_JAVA" != "1" ]]; then

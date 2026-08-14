@@ -850,7 +850,15 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       // resolve the producer step before comparing device placement.
       const int producerStep = slotProducerStep[srcSlot];
       if (producerStep < 0 || producerStep >= numSteps) continue;
-      if (sl.targetDeviceId != plan->slots_[producerStep].targetDeviceId) continue;
+      const auto& sourceProducer = plan->slots_[producerStep];
+      if (sl.targetDeviceId != sourceProducer.targetDeviceId) continue;
+      // The in-place output becomes another publication of the source NDArray.
+      // A view/identity producer can publish borrowed external storage or mint a
+      // fresh wrapper on every execution, so its pointer is not stable enough to
+      // become a frozen in-place output. Besides violating the frozen-slot
+      // contract, treating that borrowed array as a plan-owned output can make
+      // teardown release memory owned by the caller.
+      if (sourceProducer.aliasesInput() || sourceProducer.frozenConstantSlot()) continue;
       // Input slot must have only this op as consumer (safe to overwrite)
       if (slotConsumerCount[srcSlot] != 1) continue;
       // Skip if this slot is already marked (e.g., from fusion pass)

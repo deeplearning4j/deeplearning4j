@@ -26,6 +26,10 @@
 #include <mutex>
 #include <string>
 
+#if !defined(_WIN32)
+#include <dlfcn.h>
+#endif
+
 // MKL VML detection - only include VML functions, not full MKL (to avoid CBLAS conflicts with OpenBLAS)
 // Note: We use MklVmlHelper.h for VML functions, which handles HAVE_MKL_VML internally
 // Do NOT include mkl.h here as it conflicts with OpenBLAS cblas.h
@@ -82,7 +86,26 @@ namespace {
 }
 #endif
 
+extern "C" SD_LIB_EXPORT int nd4j_process_blas_symbols_abi_v1() { return 1; }
+
 namespace sd {
+
+namespace {
+constexpr int kBlasFunctionCount = 10;
+const char* const kBlasFunctionSymbols[kBlasFunctionCount] = {
+    "cblas_sgemv",       "cblas_dgemv",       "cblas_sgemm",       "cblas_dgemm",      "cblas_sgemm_batch",
+    "cblas_dgemm_batch", "LAPACKE_sgesvd",    "LAPACKE_dgesvd",    "LAPACKE_sgesdd",   "LAPACKE_dgesdd"};
+
+void resolveProcessBlasFunctions(Pointer* functions) {
+#if !defined(_WIN32)
+  for (int i = 0; i < kBlasFunctionCount; ++i) {
+    functions[i] = dlsym(RTLD_DEFAULT, kBlasFunctionSymbols[i]);
+  }
+#else
+  (void)functions;
+#endif
+}
+}  // namespace
 
 BlasHelper::BlasHelper() {
   // Detect MKL availability at compile time
@@ -124,6 +147,12 @@ BlasHelper &BlasHelper::getInstance() {
 
 void BlasHelper::initializeFunctions(Pointer *functions) {
   sd_debug("Initializing BLAS\n", "");
+
+  Pointer resolvedFunctions[kBlasFunctionCount] = {};
+  if (functions == nullptr) {
+    resolveProcessBlasFunctions(resolvedFunctions);
+    functions = resolvedFunctions;
+  }
 
   _hasSgemv = functions[0] != nullptr;
   _hasSgemm = functions[2] != nullptr;

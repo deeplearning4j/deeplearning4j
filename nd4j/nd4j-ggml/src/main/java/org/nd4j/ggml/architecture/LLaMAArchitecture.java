@@ -27,15 +27,11 @@ import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.autodiff.samediff.SDIndex;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,7 +141,11 @@ public class LLaMAArchitecture implements ModelArchitecture {
                 valueCachePlaceholders.put(layer, valueCache);
             } else {
                 // GDN recurrent state: [batch, numGdnHeads, headDimKV, headDimKV]
-                SDVariable gdnStateIn = sd.placeHolder("past_gdn_state." + layer, dtype, -1, -1, -1, -1);
+                // Qwen3.5 performs the Gated Delta Rule and retains its recurrent state in
+                // FP32 even when the surrounding model runs in FP16/BF16.
+                SDVariable gdnStateIn = sd.placeHolder(
+                        "past_gdn_state." + layer, GGMLDTypePolicy.accumulationType(dtype),
+                        -1, -1, -1, -1);
                 gdnStatePlaceholders.put(layer, gdnStateIn);
                 // CausalConv1d state: [batch, convDim, kernelSize-1]
                 SDVariable convStateIn = sd.placeHolder("past_conv_state." + layer, dtype, -1, -1, -1);
@@ -442,82 +442,6 @@ public class LLaMAArchitecture implements ModelArchitecture {
     }
 
     // ========================================================================
-    // FP32 matmul helper
-    // ========================================================================
-
-    /**
-     * Perform a matrix multiply in FP32, then cast the result back to the input dtype.
-     *
-     * <p>When {@code dtype == DataType.HALF}, FP16 dot products over large feature dimensions
-     * (e.g. hidden=1024) frequently overflow to ±65504 — the FP16 maximum. This helper
-     * upcasts both operands to FP32 before the multiply and casts the result back, matching
-     * the standard "compute in FP32, store in FP16" pattern used by PyTorch, HuggingFace, etc.</p>
-     *
-     * <p>When {@code dtype} is already FP32 or higher no extra casts are inserted.</p>
-     *
-     * @param sd       the SameDiff graph
-     * @param name     unique node name for the mmul result
-     * @param a        left operand  [... , M, K]
-     * @param b        right operand [... , K, N] (already permuted by the caller if needed)
-     * @param dtype    the model's working dtype
-     * @return         result in {@code dtype}, shape [... , M, N]
-     */
-    private SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b, DataType dtype) {
-        if (QuantizedLinear.requiresFp32Accumulation(dtype)) {
-            SDVariable aF32 = a.castTo(name + "_a_f32", DataType.FLOAT);
-            SDVariable bF32 = b.castTo(name + "_b_f32", DataType.FLOAT);
-            SDVariable result = sd.mmul(name + "_f32", aF32, bF32);
-            return result.castTo(name, dtype);
-        }
-        return sd.mmul(name, a, b);
-    }
-
-    /**
-     * Emit either ggml_qmatmul (if the weight is a packed INT8 quantized buffer with companion
-     * metadata) or the standard fp32Mmul.
-     *
-     * <p>In RUNTIME_QUANTIZED_MATMUL mode the converter stores:
-     * <ul>
-     *   <li>weightName → INT8 1D packed bytes</li>
-     *   <li>weightName + ".__q__" → LONG[3] = [ggmlQuantType, N, K]</li>
-     * </ul>
-     * When both are present and the weight is INT8, this method wires up ggml_qmatmul.
-     * Otherwise it falls through to fp32Mmul with the weight permuted as usual.</p>
-     *
-     * @param sd          SameDiff graph
-     * @param name        output variable name
-     * @param activation  input activations, [B,S,K] or [M,K]
-     * @param weightName  SameDiff variable name of the weight (used to look up companion metadata)
-     * @param weights     raw INDArray weight map (contains companion metadata if applicable)
-     * @param dtype       model working dtype
-     * @return            output variable [B,S,N] or [M,N]
-     */
-    private SDVariable qMatMulOrFp32Mmul(SameDiff sd, String name, SDVariable activation,
-                                         String weightName, Map<String, INDArray> weights,
-                                         DataType dtype) {
-        INDArray meta = weights.get(weightName + ".__q__");
-        // The weight variable is registered in sd under weightName; check its datatype
-        SDVariable wVar = sd.getVariable(weightName);
-        if (meta != null && wVar != null && wVar.dataType() == DataType.BYTE) {
-            // Runtime quantized path: emit ggml_qmatmul
-            int ggmlQuantType = (int) meta.getLong(0);
-            long N = meta.getLong(1);
-            long K = meta.getLong(2);
-            int outputDtype = (dtype == DataType.HALF) ? GgmlQMatMul.OUTPUT_FLOAT16 : GgmlQMatMul.OUTPUT_FLOAT32;
-            log.debug("ggml_qmatmul: {} [N={}, K={}, quantType={}]", name, N, K, ggmlQuantType);
-            // Wire ggml_qmatmul as a SameDiff graph node (graph-build time, NOT eager)
-            SDVariable result = new GgmlQMatMul(sd, activation, wVar, ggmlQuantType, N, K, outputDtype)
-                    .outputVariable();
-            result = sd.identity(name, result);  // rename to requested output name
-            return result;
-        }
-        // Standard path: permute weight [N,K] → [K,N] and do fp32Mmul
-        return fp32Mmul(sd, name, activation,
-                wVar != null ? wVar.permute(1, 0) : sd.getVariable(weightName).permute(1, 0),
-                dtype);
-    }
-
-    // ========================================================================
     // RMS Normalization
     // ========================================================================
 
@@ -541,25 +465,17 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Upcast to FLOAT32 for squaring to prevent HALF overflow (values > 256 overflow when squared).
         // Skip the upcast/downcast when the input is already FP32 — this avoids creating
         // redundant cast ops that add per-step overhead on CPU.
-        SDVariable computeInput;
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        if (needsCast) {
-            computeInput = input.castTo(outputName + "_f32", DataType.FLOAT);
-        } else {
-            computeInput = input;
-        }
+        DataType storageType = input.dataType();
+        SDVariable computeInput = GGMLDTypePolicy.castForAccumulation(
+                input, outputName + "_accum");
         SDVariable squared = computeInput.mul(computeInput);
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(config.getLayerNormEpsilon()));
         SDVariable normalized = computeInput.div(rms);
-        SDVariable normalizedOrig;
-        if (needsCast) {
-            normalizedOrig = normalized.castTo(outputName + "_cast", input.dataType());
-        } else {
-            normalizedOrig = normalized;
-        }
+        SDVariable storageResult = GGMLDTypePolicy.castTo(
+                normalized, outputName + "_storage", storageType);
 
-        return normalizedOrig.mul(outputName, gamma);
+        return storageResult.mul(outputName, gamma);
     }
 
     /**
@@ -573,24 +489,16 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Normalize along the last (headDim) dimension
         // Upcast to FLOAT32 for squaring to prevent HALF overflow (values > 256 overflow when squared).
         // Skip cast when input is already FP32.
-        SDVariable computeInput;
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        if (needsCast) {
-            computeInput = input.castTo(outputName + "_f32", DataType.FLOAT);
-        } else {
-            computeInput = input;
-        }
+        DataType storageType = input.dataType();
+        SDVariable computeInput = GGMLDTypePolicy.castForAccumulation(
+                input, outputName + "_accum");
         SDVariable squared = computeInput.mul(computeInput);
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(eps));
         SDVariable normalized = computeInput.div(rms);
-        SDVariable normalizedOrig;
-        if (needsCast) {
-            normalizedOrig = normalized.castTo(outputName + "_cast", input.dataType());
-        } else {
-            normalizedOrig = normalized;
-        }
-        return normalizedOrig.mul(outputName, gamma);
+        SDVariable storageResult = GGMLDTypePolicy.castTo(
+                normalized, outputName + "_storage", storageType);
+        return storageResult.mul(outputName, gamma);
     }
 
     // ========================================================================
@@ -671,29 +579,24 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // Apply RoPE with dynamic position offset (enables DSP replay)
         if (config.isUseRotaryEmbeddings()) {
-            q = new FusedRoPE(sd, q, positionOffset,
+            q = sd.nn().fusedRoPE("q_rope_" + layerIdx, q, positionOffset,
                     config.getRopeType(), config.getRopeFreqBase(), 1.0,
-                    config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+                    config.getRopeDimensionCount());
 
-            k = new FusedRoPE(sd, k, positionOffset,
+            k = sd.nn().fusedRoPE("k_rope_" + layerIdx, k, positionOffset,
                     config.getRopeType(), config.getRopeFreqBase(), 1.0,
-                    config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+                    config.getRopeDimensionCount());
         }
 
         // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("v_cast_" + layerIdx, q.dataType());
-        }
+        v = GGMLDTypePolicy.castTo(v, "v_attention_type_" + layerIdx, q.dataType());
 
         // Attention with built-in KV cache + attention bias for masking
         // useCausalMask=false — the causalMask (attention bias) handles all masking
-        SDVariable attnOut = new DotProductAttentionV2(sd,
-                q, v, k, null, null,
+        SDVariable attnOut = sd.nn().dotProductAttentionV2(
+                "attn_out_" + layerIdx, q, v, k, null, null,
                 keyCache, valueCache, cachePosition, causalMask,
-                0.0, 0.0, false, false).outputVariable();
-        sd.updateVariableNameAndReference(attnOut, "attn_out_" + layerIdx);
+                0.0, 0.0, false, false);
 
         int attnOutDim = actualNumHeads * headDim;
         SDVariable outShapeVar = sd.stack("attn_out_shape_" + layerIdx, 0,
@@ -792,7 +695,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
         int actualKHeads = kOutDim / headDim;
         int actualVHeads = vOutDim / headDim;
         log.info("Layer {} V reshape: vWeight.shape={}, vOutDim={}, actualVHeads={}, headDim={}, target=[B,seq,{},{}]",
-                layerIdx, java.util.Arrays.toString(vWeight.shape()), vOutDim, actualVHeads, headDim, actualVHeads, headDim);
+                layerIdx, Arrays.toString(vWeight.shape()), vOutDim, actualVHeads, headDim, actualVHeads, headDim);
 
         SDVariable kShapeVar = sd.stack("k_shape_" + layerIdx, 0,
                 batchDim, seqDim,
@@ -818,28 +721,23 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // Apply RoPE after QK norms with dynamic position offset (enables DSP replay)
         if (config.isUseRotaryEmbeddings()) {
-            q = new FusedRoPE(sd, q, positionOffset,
+            q = sd.nn().fusedRoPE("q_rope_" + layerIdx, q, positionOffset,
                     config.getRopeType(), config.getRopeFreqBase(), 1.0,
-                    config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+                    config.getRopeDimensionCount());
 
-            k = new FusedRoPE(sd, k, positionOffset,
+            k = sd.nn().fusedRoPE("k_rope_" + layerIdx, k, positionOffset,
                     config.getRopeType(), config.getRopeFreqBase(), 1.0,
-                    config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+                    config.getRopeDimensionCount());
         }
 
         // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("v_cast_" + layerIdx, q.dataType());
-        }
+        v = GGMLDTypePolicy.castTo(v, "v_attention_type_" + layerIdx, q.dataType());
 
         // Attention with built-in KV cache + attention bias for masking
-        SDVariable attnOut = new DotProductAttentionV2(sd,
-                q, v, k, null, null,
+        SDVariable attnOut = sd.nn().dotProductAttentionV2(
+                "attn_out_" + layerIdx, q, v, k, null, null,
                 keyCache, valueCache, cachePosition, causalMask,
-                0.0, 0.0, false, false).outputVariable();
-        sd.updateVariableNameAndReference(attnOut, "attn_out_" + layerIdx);
+                0.0, 0.0, false, false);
 
         // Reshape: [batch, seq, numHeads, headDim] -> [batch, seq, attnDim]
         SDVariable outShapeVar = sd.stack("attn_out_shape_" + layerIdx, 0,
@@ -920,13 +818,13 @@ public class LLaMAArchitecture implements ModelArchitecture {
                     gateWeight != null ? gateWeight.shape()[0] : 0);
             log.info("Layer {} GDN weights: ssmA={} alpha={} beta={} dtBias={} ssmNorm={} gate={} out={}",
                     layerIdx,
-                    ssmA != null ? java.util.Arrays.toString(ssmA.shape()) + " vals=" + ssmA : "null",
-                    alphaWeight != null ? java.util.Arrays.toString(alphaWeight.shape()) : "null",
-                    betaWeight != null ? java.util.Arrays.toString(betaWeight.shape()) : "null",
-                    dtBias != null ? java.util.Arrays.toString(dtBias.shape()) + " vals=" + dtBias : "null",
-                    ssmNormWeight != null ? java.util.Arrays.toString(ssmNormWeight.shape()) : "null",
-                    gateWeight != null ? java.util.Arrays.toString(gateWeight.shape()) : "null",
-                    outWeight != null ? java.util.Arrays.toString(outWeight.shape()) : "null");
+                    ssmA != null ? Arrays.toString(ssmA.shape()) + " vals=" + ssmA : "null",
+                    alphaWeight != null ? Arrays.toString(alphaWeight.shape()) : "null",
+                    betaWeight != null ? Arrays.toString(betaWeight.shape()) : "null",
+                    dtBias != null ? Arrays.toString(dtBias.shape()) + " vals=" + dtBias : "null",
+                    ssmNormWeight != null ? Arrays.toString(ssmNormWeight.shape()) : "null",
+                    gateWeight != null ? Arrays.toString(gateWeight.shape()) : "null",
+                    outWeight != null ? Arrays.toString(outWeight.shape()) : "null");
         }
 
         // 1. QKV projection: [B, L, hidden] -> [B, L, qkvDim]
@@ -937,12 +835,10 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // 2. Causal conv1d with SiLU activation
         if (convWeight != null) {
             SDVariable wConv = sd.var(attnPrefix + "conv.weight", convWeight);
-            SDVariable[] convResult = new CausalConv1d(sd, qkv, wConv, null, convStateIn,
-                    actualSequenceLength, 1, 0).outputVariables();
+            SDVariable[] convResult = sd.nn().causalConv1d(
+                    new String[]{"gdn_conv_" + layerIdx, "conv_state_out_" + layerIdx},
+                    qkv, wConv, null, convStateIn, actualSequenceLength, 1, 0);
             qkv = convResult[0];
-            sd.updateVariableNameAndReference(qkv, "gdn_conv_" + layerIdx);
-            SDVariable convStateOut = convResult[1];
-            sd.updateVariableNameAndReference(convStateOut, "conv_state_out_" + layerIdx);
         }
 
         // 3. Split QKV into Q [B, L, qkDim], K [B, L, qkDim], V [B, L, vDim]
@@ -971,19 +867,24 @@ public class LLaMAArchitecture implements ModelArchitecture {
 
         // 5. L2-normalize Q and K (per head vector, matching use_qk_l2norm_in_kernel=True)
         // Upcast to FLOAT32 for squaring to prevent HALF overflow
-        SDVariable qF32 = q.castTo("gdn_q_f32_" + layerIdx, DataType.FLOAT);
-        SDVariable qNormSq = qF32.mul(qF32).sum("gdn_q_normsq_" + layerIdx, true, -1);
+        SDVariable qAccum = GGMLDTypePolicy.castForAccumulation(q, "gdn_q_accum_" + layerIdx);
+        SDVariable qNormSq = qAccum.mul(qAccum).sum("gdn_q_normsq_" + layerIdx, true, -1);
         SDVariable qNorm = sd.math.sqrt(qNormSq.add(1e-6));
-        q = q.div("gdn_q_l2norm_" + layerIdx, qNorm.castTo("gdn_q_norm_cast_" + layerIdx, q.dataType()));
-        SDVariable kF32 = k.castTo("gdn_k_f32_" + layerIdx, DataType.FLOAT);
-        SDVariable kNormSq = kF32.mul(kF32).sum("gdn_k_normsq_" + layerIdx, true, -1);
+        q = q.div("gdn_q_l2norm_" + layerIdx,
+                GGMLDTypePolicy.castTo(qNorm, "gdn_q_norm_cast_" + layerIdx, q.dataType()));
+        SDVariable kAccum = GGMLDTypePolicy.castForAccumulation(k, "gdn_k_accum_" + layerIdx);
+        SDVariable kNormSq = kAccum.mul(kAccum).sum("gdn_k_normsq_" + layerIdx, true, -1);
         SDVariable kNorm = sd.math.sqrt(kNormSq.add(1e-6));
-        k = k.div("gdn_k_l2norm_" + layerIdx, kNorm.castTo("gdn_k_norm_cast_" + layerIdx, k.dataType()));
+        k = k.div("gdn_k_l2norm_" + layerIdx,
+                GGMLDTypePolicy.castTo(kNorm, "gdn_k_norm_cast_" + layerIdx, k.dataType()));
 
-        // 5b. Scale Q by 1/sqrt(D_k) — standard attention scaling
-        // Reference: scale = 1 / (query.shape[-1] ** 0.5); query = query * scale
+        // 5b. The reference recurrent kernel casts Q/K/V to FLOAT32 before applying
+        // attention scaling and updating its state.
         double qScale = 1.0 / Math.sqrt(headDimQK);
-        q = q.mul("gdn_q_scaled_" + layerIdx, qScale);
+        q = GGMLDTypePolicy.castForAccumulation(q, "gdn_q_compute_" + layerIdx)
+                .mul("gdn_q_scaled_" + layerIdx, qScale);
+        k = GGMLDTypePolicy.castForAccumulation(k, "gdn_k_compute_" + layerIdx);
+        v = GGMLDTypePolicy.castForAccumulation(v, "gdn_v_compute_" + layerIdx);
 
         // 6. Compute beta (update gate): sigmoid(input @ Wbeta^T) → [B, L, H]
         // Reference: beta = sigmoid(in_proj_b(x))  — NO dt_bias added here
@@ -996,7 +897,7 @@ public class LLaMAArchitecture implements ModelArchitecture {
             beta = q.mean("gdn_beta_" + layerIdx, false, -1);
             beta = beta.mul(0).add(1.0);
         }
-        beta = beta.castTo("gdn_beta_cast_" + layerIdx, dtype);
+        beta = GGMLDTypePolicy.castForAccumulation(beta, "gdn_beta_compute_" + layerIdx);
 
         // 7. Compute gate (decay) in log-domain: g = -exp(A_log) * softplus(a_proj + dt_bias)
         // Reference: g = -self.A_log.float().exp() * F.softplus(a.float() + self.dt_bias)
@@ -1005,36 +906,39 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // exp(A_log) with positive A_log. Since ssmA = -A_log, we compute exp(-ssmA) = exp(A_log).
         SDVariable gateDecay;
         if (ssmA != null && alphaWeight != null) {
-            SDVariable aLog = sd.var(attnPrefix + "a", ssmA);           // ssmA = -A_log (NEGATIVE in GGUF)
+            SDVariable aLog = GGMLDTypePolicy.castForAccumulation(
+                    sd.var(attnPrefix + "a", ssmA), "gdn_a_log_" + layerIdx);
             SDVariable expALog = sd.math.exp(aLog.neg());                // exp(-ssmA) = exp(A_log): [H]
             SDVariable wAlpha = sd.var(attnPrefix + "alpha.weight", alphaWeight);
-            SDVariable aProj = QuantizedLinear.matMul(sd, "gdn_alpha_proj_" + layerIdx, input, wAlpha, weights, "blk." + layerIdx + ".ssm_alpha.weight", dtype); // [B,L,H]
+            SDVariable aProj = GGMLDTypePolicy.castForAccumulation(
+                    QuantizedLinear.matMul(sd, "gdn_alpha_proj_" + layerIdx, input, wAlpha,
+                            weights, "blk." + layerIdx + ".ssm_alpha.weight", dtype),
+                    "gdn_alpha_proj_" + layerIdx); // [B,L,H]
             if (dtBias != null) {
-                aProj = aProj.add("gdn_a_plus_bias_" + layerIdx, sd.var(attnPrefix + "dt.bias", dtBias));
+                SDVariable dtBiasAccum = GGMLDTypePolicy.castForAccumulation(
+                        sd.var(attnPrefix + "dt.bias", dtBias), "gdn_dt_bias_" + layerIdx);
+                aProj = aProj.add("gdn_a_plus_bias_" + layerIdx, dtBiasAccum);
             }
             SDVariable sp = sd.nn.softplus("gdn_softplus_" + layerIdx, aProj); // softplus(a + bias): [B,L,H]
             // g = -exp(A_log) * softplus(a + bias), broadcast [H] * [B,L,H] -> [B,L,H]
             gateDecay = sp.mul(expALog).neg("gdn_gate_decay_" + layerIdx);
-            gateDecay = gateDecay.castTo("gdn_gate_decay_cast_" + layerIdx, dtype);
         } else if (ssmA != null) {
             // Fallback: use ssmA directly as log-domain gate (negative)
-            SDVariable a = sd.var(attnPrefix + "a", ssmA);
+            SDVariable a = GGMLDTypePolicy.castForAccumulation(
+                    sd.var(attnPrefix + "a", ssmA), "gdn_a_" + layerIdx);
             SDVariable negA = a.neg();
             SDVariable onesBlh = sd.onesLike("gdn_ones_blh_" + layerIdx, beta);
             gateDecay = onesBlh.mul("gdn_gate_decay_" + layerIdx, negA);
-            gateDecay = gateDecay.castTo("gdn_gate_decay_cast_" + layerIdx, dtype);
         } else {
             // No decay: gate=0 so exp(0)=1 (identity)
             gateDecay = sd.zerosLike("gdn_gate_decay_" + layerIdx, beta);
         }
 
         // 8. Gated delta rule: [B, L, H, D] -> [B, L, H, D]
-        SDVariable[] gdrResult = new GatedDeltaRule(sd, q, k, v, beta, gateDecay,
-                gdnStateIn, actualSequenceLength).outputVariables();
+        SDVariable[] gdrResult = sd.nn().gatedDeltaRule(
+                new String[]{"gdn_out_" + layerIdx, "gdn_state_out_" + layerIdx},
+                q, k, v, beta, gateDecay, gdnStateIn, actualSequenceLength);
         SDVariable gdnOut = gdrResult[0];
-        sd.updateVariableNameAndReference(gdnOut, "gdn_out_" + layerIdx);
-        SDVariable gdnStateOut = gdrResult[1];
-        sd.updateVariableNameAndReference(gdnStateOut, "gdn_state_out_" + layerIdx);
 
         // 9. Gated RMSNorm per-head: output = RMSNorm(gdnOut) * weight * SiLU(z)
         // Reference: Qwen3_5RMSNormGated — RMSNorm FIRST, then gate with SiLU(z)
@@ -1048,9 +952,13 @@ public class LLaMAArchitecture implements ModelArchitecture {
             SDVariable wGate = sd.var(attnPrefix + "gate.weight", gateWeight);
             SDVariable z = QuantizedLinear.matMul(sd, "gdn_gate_proj_" + layerIdx, input, wGate, weights, "blk." + layerIdx + ".attn_gate.weight", dtype); // [B,L,vDim]
             SDVariable zReshaped = sd.reshape("gdn_z_reshaped_" + layerIdx, z, vHeadShape); // [B,L,H,headDimV]
-            SDVariable gateAct = sd.nn.swish("gdn_gate_act_" + layerIdx, zReshaped);
+            SDVariable zAccum = GGMLDTypePolicy.castForAccumulation(
+                    zReshaped, "gdn_gate_input_" + layerIdx);
+            SDVariable gateAct = sd.nn.swish("gdn_gate_act_" + layerIdx, zAccum);
             gdnOut = gdnOut.mul("gdn_gated_" + layerIdx, gateAct);
         }
+        gdnOut = GGMLDTypePolicy.castTo(
+                gdnOut, "gdn_output_cast_" + layerIdx, dtype);
 
         // 10. Reshape from [B, L, H, D_v] to [B, L, H*D_v]
         SDVariable flatShape = sd.stack("gdn_flat_shape_" + layerIdx, 0,
@@ -1129,19 +1037,17 @@ public class LLaMAArchitecture implements ModelArchitecture {
         v = sd.reshape("v_heads_" + layerIdx, v, kvShapeVar);
 
         if (config.isUseRotaryEmbeddings()) {
-            q = new FusedRoPE(sd, q, config.getRopeType(), 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+            q = sd.nn().fusedRoPE("q_rope_" + layerIdx, q, null,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount());
 
-            k = new FusedRoPE(sd, k, config.getRopeType(), 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+            k = sd.nn().fusedRoPE("k_rope_" + layerIdx, k, null,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount());
         }
 
         // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("v_cast_" + layerIdx, q.dataType());
-        }
+        v = GGMLDTypePolicy.castTo(v, "v_attention_type_" + layerIdx, q.dataType());
 
         SDVariable attnOut = sd.nn.dotProductAttentionV2(
                 "attn_out_" + layerIdx,

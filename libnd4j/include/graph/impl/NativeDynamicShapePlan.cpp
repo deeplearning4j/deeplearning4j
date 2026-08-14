@@ -602,7 +602,7 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       outputSlots_(nullptr),
       contextPool_(nullptr), viewProducerDetectionDone_(false), frozenConstantDetectionDone_(false),
       gpuGraphCaptureEnabled_(false), totalGraphReplays_(0), jitMode_(JitMode::GRAPH_ONLY), graphExecutionMode_(GraphExecutionMode::GEM_AUTO),
-      executeCount_(0), syncOverrideDepth_(0), shapePrePassDone_(true), executionTimingEnabled_(false), traceEnabled_(false),
+      executeCount_(0), syncOverrideDepth_(0), shapePrePassDone_(true), shapePrePassComplete_(true), executionTimingEnabled_(false), traceEnabled_(false),
       untrackedOutputCache_(nullptr), untrackedOutputCacheSize_(0),
       hasControlFlow_(false), loopRegions_(nullptr), numLoopRegions_(0),
       cfLoopBackStep_(-1),
@@ -1268,6 +1268,7 @@ void NativeDynamicShapePlan::setGraphExecutionMode(GraphExecutionMode mode) {
   // Any mode change invalidates preparation state. ModeContract and the
   // resolved backend policy decide whether a new shape pre-pass is required.
   shapePrePassDone_ = false;
+  shapePrePassComplete_ = false;
   // Reset cached backends so buildSegments() uses the correct mode.
   graphBackendCandidatesBuilt_ = false;
   graphBackendCandidates_.clear();
@@ -3068,7 +3069,26 @@ Status NativeDynamicShapePlan::execute(
                static_cast<int>(prePassStatus));
     } else {
       shapePrePassDone_ = true;
-      DSP_DIAG(SHAPE, "AUTO_SHAPE_PREPASS: completed successfully, shape caches populated");
+      if (requiresSuccessfulShapePrePass && !shapePrePassComplete_) {
+        DSP_DIAG(SHAPE,
+                 "AUTO_SHAPE_PREPASS: required preparation was incomplete");
+        std::string prePassError =
+            "required shape prepass did not resolve every live slot output";
+        if (shapePrePassFirstIncompleteSlot_ >= 0) {
+          prePassError += " at slot " +
+              std::to_string(shapePrePassFirstIncompleteSlot_) + " (" +
+              slots_[shapePrePassFirstIncompleteSlot_].ident.opName + ")";
+        }
+        if (!shapePrePassIncompleteReason_.empty()) {
+          prePassError += ": " + shapePrePassIncompleteReason_;
+        }
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
+            prePassError.c_str());
+        return Status::KERNEL_FAILURE;
+      }
+      DSP_DIAG(SHAPE,
+               "AUTO_SHAPE_PREPASS: completed (complete=%d)",
+               shapePrePassComplete_ ? 1 : 0);
     }
   }
 
@@ -4040,8 +4060,8 @@ Status NativeDynamicShapePlan::executeSteadyState(
 
   // Low-overhead steady-state memory telemetry. Native autoregressive decode
   // executes this path once per token, so sample densely only during initial
-  // convergence and then every 64 executions. These counters distinguish plan
-  // ownership/cache growth from allocator-pool retention without an ASan run.
+  // convergence and then every 64 executions. Report bytes as well as object
+  // counts so a retained plan can be distinguished from allocator-pool retention.
   if (DSP_DIAG_ENABLED(MEMORY) &&
       (executeCount_ <= 8 || (executeCount_ % 64) == 0)) {
     int untrackedLive = 0;
@@ -4050,16 +4070,29 @@ Status NativeDynamicShapePlan::executeSteadyState(
         if (untrackedOutputCache_[i] != nullptr) untrackedLive++;
       }
     }
+    const size_t slotOwnedBytes = estimatedOwnedBytes();
+    size_t captureWorkspaceBytes = 0;
+    size_t cublasWorkspaceBytes = 0;
+#ifdef SD_CUDA
+    captureWorkspaceBytes =
+        sharedCaptureWorkspace_ != nullptr ? sharedCaptureWorkspaceBytes_ : 0;
+    cublasWorkspaceBytes =
+        cublasWorkspaceBuffer_ != nullptr ? cublasWorkspaceSize_ : 0;
+#endif
     auto poolReport = DspBufferPool::forCurrentDevice().report();
     DSP_DIAG(
         MEMORY,
-        "DSP_STEADY_MEMORY: plan=%p exec=%d planOwned=%zu deferred=%zu "
-        "untrackedLive=%d untrackedCapacity=%d poolDevice=%d poolBytes=%zu "
+        "DSP_STEADY_MEMORY: plan=%p exec=%d planOwned=%zu slotOwnedBytes=%zuMB "
+        "captureWorkspace=%zuMB cublasWorkspace=%zuMB deferred=%zu "
+        "untrackedLive=%d untrackedCapacity=%d poolDevice=%d poolBytes=%zuMB "
         "poolCount=%d totalAcquired=%zu totalReused=%zu",
         (void*)this, executeCount_, planOwnedArrays_.size(),
+        slotOwnedBytes / (1024 * 1024),
+        captureWorkspaceBytes / (1024 * 1024),
+        cublasWorkspaceBytes / (1024 * 1024),
         deferredSlotDeletes_.size(), untrackedLive, untrackedOutputCacheSize_,
-        poolReport.deviceId, poolReport.pooledBytes, poolReport.pooledCount,
-        poolReport.totalAcquired, poolReport.totalReused);
+        poolReport.deviceId, poolReport.pooledBytes / (1024 * 1024),
+        poolReport.pooledCount, poolReport.totalAcquired, poolReport.totalReused);
   }
 
   // CUDA-only: completion event, stream restore, cuBLAS restore.
@@ -4517,6 +4550,73 @@ Status NativeDynamicShapePlan::phaseFreeze() {
     }
   }
 
+  // Fusion can be enabled by the compiler before shape inference or by the
+  // freeze-time FusionPass above. In either case, publish the source NDArray in
+  // the output slot now, while replacement is legal, so SHAPES_FROZEN starts
+  // with the same wrapper/DataBuffer identity that executeSlot will reuse.
+  int boundInPlaceAliases = 0;
+  int disabledInPlaceAliases = 0;
+  for (int stepIdx = 0; stepIdx < numSlots_; stepIdx++) {
+    NativeSlot& slot = slots_[stepIdx];
+    if (!slot.isInPlaceFused() || slot.wiring.numOutputs < 1) continue;
+
+    const int sourceSlotIdx = slot.inPlaceSourceSlot();
+    const int outputSlotIdx = slot.wiring.outputSlotIndices[0];
+    const int producerStep =
+        dsp::findProducingStepForOutputSlot(slots_, numSlots_, sourceSlotIdx);
+    NDArray* alias =
+        sourceSlotIdx >= 0 && sourceSlotIdx < totalOutputSlots_
+            ? outputSlots_[sourceSlotIdx]
+            : nullptr;
+    NDArray* existing =
+        outputSlotIdx >= 0 && outputSlotIdx < totalOutputSlots_
+            ? outputSlots_[outputSlotIdx]
+            : nullptr;
+    const LongType* expectedShape =
+        !slot.shapeCache.cachedOutputShapes.empty()
+            ? slot.shapeCache.cachedOutputShapes[0]
+            : (existing != nullptr && existing->hasValidShapeInfo()
+                   ? existing->shapeInfo()
+                   : nullptr);
+    const bool stableOwnedSource =
+        sourceSlotIdx >= 0 && outputSlotIdx >= 0 &&
+        outputSlotIdx < totalOutputSlots_ && producerStep >= 0 &&
+        !slots_[producerStep].aliasesInput() &&
+        !slots_[producerStep].frozenConstantSlot() &&
+        alias != nullptr && alias->dataBuffer() != nullptr &&
+        protectedWeightBuffers_.count(alias->dataBuffer()) == 0;
+    const bool compatible =
+        stableOwnedSource && alias->hasValidShapeInfo() &&
+        expectedShape != nullptr &&
+        shape::equalsSoft(alias->shapeInfo(), expectedShape) &&
+        alias->dataType() == ArrayOptions::dataType(expectedShape);
+    if (!compatible) {
+      slot.disableInPlaceFusion();
+      disabledInPlaceAliases++;
+      DSP_DIAG(
+          FUSION,
+          "FREEZE_IN_PLACE_DISABLED: slot %d (%s) sourceSlotIdx=%d "
+          "outputSlotIdx=%d producerStep=%d stable=%d compatible=%d",
+          stepIdx, slot.ident.opName.c_str(), sourceSlotIdx, outputSlotIdx,
+          producerStep, stableOwnedSource ? 1 : 0, compatible ? 1 : 0);
+      continue;
+    }
+
+    writeOutputSlot(outputSlotIdx, alias, "freeze-in-place-alias");
+    boundInPlaceAliases++;
+    DSP_DIAG(
+        FUSION,
+        "FREEZE_IN_PLACE_ALIAS: slot %d (%s) sourceSlotIdx=%d "
+        "outputSlotIdx=%d array=%p db=%p",
+        stepIdx, slot.ident.opName.c_str(), sourceSlotIdx, outputSlotIdx,
+        (void*)alias, (void*)alias->dataBuffer());
+  }
+  if (boundInPlaceAliases > 0 || disabledInPlaceAliases > 0) {
+    DSP_DIAG(FUSION,
+             "freeze in-place aliases: bound=%d disabled=%d",
+             boundInPlaceAliases, disabledInPlaceAliases);
+  }
+
   DSP_DIAG(SEGMENT, "SEGMENT_MAP_BEFORE_FREEZE: %d segments", (int)segments_.size());
   for (int i = 0; i < (int)segments_.size(); i++) {
     auto& s = segments_[i];
@@ -4586,6 +4686,7 @@ Status NativeDynamicShapePlan::phaseFreeze() {
   if (!freezeModeContract.requiresShapePrePass &&
       !freezeBackendPolicy.requiresShapePrePass) {
     shapePrePassDone_ = false;
+    shapePrePassComplete_ = false;
   }
 
   // Buffer coloring requires the concrete output arrays and ownership
@@ -4639,48 +4740,54 @@ Status NativeDynamicShapePlan::phaseWarmup(NDArray** externalInputs, int numExte
   // compositeReplay (line 2945) which deliberately avoid clearCastCache().
   MmulHelper::resetCastCacheIndices();
 
-  // A backend may declare that a successful shape prepass is sufficient for
-  // warmup. Keep the generic path deliberately conservative: any value-dependent
-  // shape, control flow, or missing output forces functional warmup.
+  // A backend may declare that a complete shape prepass is sufficient for
+  // warmup. Value-dependent shape slots are eligible when the prepass resolved
+  // them from actual external control tensors; incomplete/internal-control
+  // chains remain ineligible and a required preparation contract fails closed.
   const GraphBackendPlanningPolicy warmupBackendPolicy =
       getResolvedGraphBackendPlanningPolicy();
-  bool backendShapeOnlyWarmup =
+  const bool shapeOnlyWarmupRequested =
       warmupBackendPolicy.allowsShapeOnlyWarmup && shapePrePassDone_;
+  if (shapeOnlyWarmupRequested &&
+      warmupBackendPolicy.requiresSuccessfulShapePrePass &&
+      !shapePrePassComplete_) {
+    DSP_DIAG(SHAPE,
+             "phaseWarmup: required backend shape prepass incomplete");
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
+        "required backend shape prepass is incomplete before warmup");
+    return Status::KERNEL_FAILURE;
+  }
+
+  bool backendShapeOnlyWarmup =
+      shapeOnlyWarmupRequested && shapePrePassComplete_ && !hasControlFlow_;
   if (backendShapeOnlyWarmup) {
-    if (hasControlFlow_) {
-      backendShapeOnlyWarmup = false;
-    } else {
-      for (int i = 0; i < numSlots_ && backendShapeOnlyWarmup; i++) {
-        auto& slot = slots_[i];
-        if (slot.hasValueDependentShape() || slot.flags.outputShapeDependsOnInputValues) {
+    for (int i = 0; i < numSlots_ && backendShapeOnlyWarmup; i++) {
+      auto& slot = slots_[i];
+      if (slot.fusedChain.isFusedChainTail && !slot.fusedChain.isFusedChainHead) {
+        continue;
+      }
+      if (slot.wiring.numOutputs > 0 &&
+          (!slot.slotPhase.shapeCacheValid ||
+           slot.shapeCache.cachedOutputShapes.size() <
+               static_cast<size_t>(slot.wiring.numOutputs))) {
+        backendShapeOnlyWarmup = false;
+        break;
+      }
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        if (outputSlot >= 0 && outputSlot < totalOutputSlots_ &&
+            outputSlots_[outputSlot] == nullptr) {
           backendShapeOnlyWarmup = false;
           break;
-        }
-        if (slot.wiring.numOutputs > 0 &&
-            (!slot.slotPhase.shapeCacheValid ||
-             slot.shapeCache.cachedOutputShapes.size() <
-                 static_cast<size_t>(slot.wiring.numOutputs))) {
-          backendShapeOnlyWarmup = false;
-          break;
-        }
-        if (slot.fusedChain.isFusedChainTail && !slot.fusedChain.isFusedChainHead) {
-          continue;
-        }
-        for (int o = 0; o < slot.wiring.numOutputs; o++) {
-          const int outputSlot = slot.wiring.outputSlotIndices[o];
-          if (outputSlot >= 0 && outputSlot < totalOutputSlots_ &&
-              outputSlots_[outputSlot] == nullptr) {
-            backendShapeOnlyWarmup = false;
-            break;
-          }
         }
       }
     }
   }
   DSP_DIAG(SHAPE,
-           "phaseWarmup: backend shape-only=%d (prepass=%d controlFlow=%d)",
+           "phaseWarmup: backend shape-only=%d "
+           "(prepass=%d complete=%d controlFlow=%d)",
            backendShapeOnlyWarmup ? 1 : 0, shapePrePassDone_ ? 1 : 0,
-           hasControlFlow_ ? 1 : 0);
+           shapePrePassComplete_ ? 1 : 0, hasControlFlow_ ? 1 : 0);
 
   // Reset ALL slot states to WARMUP and clear shape caches. The unfrozen
   // pass left slots in various states (SHAPE_CACHED, FROZEN, FROZEN_CONSTANT)
@@ -5152,8 +5259,17 @@ Status NativeDynamicShapePlan::precompilePlan(NDArray** externalInputs, int numE
         phaseShapeInferenceOnly(externalInputs, numExternalInputs, stream);
     if (shapeStatus == Status::OK) {
       shapePrePassDone_ = true;
+      if (precompileBackendPolicy.requiresSuccessfulShapePrePass &&
+          !shapePrePassComplete_) {
+        DSP_DIAG(SHAPE,
+                 "precompilePlan: required backend shape-only prepass was incomplete");
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(
+            "required backend shape prepass did not resolve every live slot output");
+        return Status::KERNEL_FAILURE;
+      }
       DSP_DIAG(SHAPE,
-               "precompilePlan: backend shape-only prepass completed");
+               "precompilePlan: backend shape-only prepass completed (complete=%d)",
+               shapePrePassComplete_ ? 1 : 0);
     } else {
       DSP_DIAG(
           SHAPE,
@@ -5223,6 +5339,16 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
     NDArray** externalInputs, int numExternalInputs, void* stream) {
   DSP_DIAG(SHAPE, "phaseShapeInferenceOnly: BEGIN numSlots=%d extInputs=%d",
            numSlots_, numExternalInputs);
+  shapePrePassComplete_ = false;
+  shapePrePassFirstIncompleteSlot_ = -1;
+  shapePrePassIncompleteReason_.clear();
+
+  // A prepass placeholder carries only a shape. Tiny integral outputs become
+  // trustworthy shape controls only after their bounded producer executes below.
+  // This provenance prevents downstream shape functions from reading fabricated
+  // zero-filled placeholders while still allowing real shape-control subgraphs.
+  std::vector<uint8_t> materializedControlOutputs(totalOutputSlots_, 0);
+  std::vector<std::string> incompleteReasons(numSlots_);
 
   // Thread-local scratch vectors to avoid per-slot heap allocation.
   static thread_local std::vector<NDArray*> siInputs;
@@ -5233,18 +5359,6 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
 
     // ── Fused chain tails produce no independent output — skip ───────────
     if (slot.fusedChain.isFusedChainTail && !slot.fusedChain.isFusedChainHead) {
-      continue;
-    }
-
-    // ── Data-dependent ops: skip — their shape functions read actual tensor
-    // values (e.g., Where counts true elements, NonZero etc.). In the pre-pass
-    // all internal arrays are zero-initialised, so these functions return wrong
-    // shapes (e.g. numOfTrue=0) that corrupt every downstream slot's shape.
-    // Leave outputSlots_ null for these slots; downstream ops will propagate
-    // the skip via the null-input check below.
-    if (slot.hasValueDependentShape()) {
-      DSP_DIAG(SHAPE, "SHAPE_INFER_ONLY: slot %d (%s) has value-dependent shape — skipping shape pre-pass",
-               stepIdx, slot.ident.opName.c_str());
       continue;
     }
 
@@ -5304,21 +5418,72 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
         }
       }
       if (!hasAnyInput) {
+        incompleteReasons[stepIdx] = "all wired inputs are null";
         DSP_DIAG(SHAPE, "SHAPE_INFER_ONLY: slot %d (%s) has %d inputs but all are null — skipping",
                  stepIdx, slot.ident.opName.c_str(), slot.wiring.numInputs);
         continue;
       }
       if (hasNullInternalInput) {
+        incompleteReasons[stepIdx] = "an upstream internal output was not resolved";
         DSP_DIAG(SHAPE, "SHAPE_INFER_ONLY: slot %d (%s) has null internal input (upstream data-dep skipped) — skipping",
                  stepIdx, slot.ident.opName.c_str());
         continue;
       }
       if (hasNullExternalInput) {
+        incompleteReasons[stepIdx] = "a required external input was not provided";
         DSP_DIAG(SHAPE, "SHAPE_INFER_ONLY: slot %d (%s) has null external input (not provided by caller) — skipping"
                  " to prevent null INPUT_VARIABLE dereference in DECLARE_SHAPE_FN",
                  stepIdx, slot.ident.opName.c_str());
         continue;
       }
+    }
+
+    // Value-dependent shapes may read only bounded integral controls whose
+    // values have real provenance: either the caller supplied the array, or a
+    // preceding bounded control producer materialized it in this pass. Merely
+    // allocated internal placeholders are never trusted. Dynamic-size outputs
+    // (Where 1-arg, Unique, NMS, etc.) still require functional execution.
+    if (slot.hasValueDependentShape()) {
+      bool canInferFromMaterializedControls =
+          slot.flags.outputShapeDependsOnInputValues &&
+          !slot.hasDynamicOutputSize();
+      bool foundControl = false;
+      int unresolvedSource = -1;
+      for (int i = 0;
+           i < slot.wiring.numInputs && canInferFromMaterializedControls; i++) {
+        if (!isSmallIntegralControlArray(siInputs[i])) continue;
+        foundControl = true;
+        const int srcIdx = slot.wiring.inputSourceIndices[i];
+        if (srcIdx >= 0 &&
+            (srcIdx >= totalOutputSlots_ ||
+             materializedControlOutputs[srcIdx] == 0)) {
+          unresolvedSource = srcIdx;
+          canInferFromMaterializedControls = false;
+        }
+      }
+      canInferFromMaterializedControls =
+          canInferFromMaterializedControls && foundControl;
+      if (!canInferFromMaterializedControls) {
+        incompleteReasons[stepIdx] =
+            slot.hasDynamicOutputSize()
+                ? "dynamic output size requires functional execution"
+                : unresolvedSource >= 0
+                      ? "internal shape control output " +
+                            std::to_string(unresolvedSource) +
+                            " was not materialized"
+                      : "no bounded materialized shape control was available";
+        DSP_DIAG(
+            SHAPE,
+            "SHAPE_INFER_ONLY: slot %d (%s) has unresolved value-dependent "
+            "shape controls (source=%d) — skipping",
+            stepIdx, slot.ident.opName.c_str(), unresolvedSource);
+        continue;
+      }
+      DSP_DIAG(
+          SHAPE,
+          "SHAPE_INFER_ONLY: slot %d (%s) resolving value-dependent shape "
+          "from materialized controls",
+          stepIdx, slot.ident.opName.c_str());
     }
 
     // ── Identity ops: output shape = input[0] shape ─────────────────────
@@ -5439,32 +5604,11 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
       return Status::KERNEL_FAILURE;
     }
 
-    // ── Dtype contamination detection ────────────────────────────────────
-    // If all real (non-null) inputs share a common dtype but the output dtype
-    // differs, the shape function likely promoted via a FLOAT32 placeholder
-    // for a null optional input.  Record the correct dtype so Step 4 below
-    // can substitute corrected shape info when caching.
-    //
-    // Exempt ops that intentionally produce a different output dtype:
-    //   - bool-output ops (equals, greater, less, etc.)
-    //   - cast / reduce_long / argmax / shape_of / size / where etc.
-    //   - ops with explicit DArg dtype override
-    DataType commonInputDtype = DataType::UNKNOWN;
-    bool allSameDtype = true;
-    for (int i = 0; i < slot.wiring.numInputs; i++) {
-      if (siInputs[i] == nullptr) continue;
-      DataType dt = siInputs[i]->dataType();
-      if (commonInputDtype == DataType::UNKNOWN) {
-        commonInputDtype = dt;
-      } else if (dt != commonInputDtype) {
-        allSameDtype = false;
-        break;
-      }
-    }
-    // When all real inputs agree on dtype, no DArgs override, and the output
-    // is a promoted floating type — flag it for correction in the cache step.
-    bool needsDtypeCorrection = allSameDtype && commonInputDtype != DataType::UNKNOWN &&
-                                 slot.args.numDArgs == 0;
+    // calculateOutputShape owns the output dtype contract. Every null
+    // external/internal input is rejected above, so the placeholder branch used
+    // to preserve ShapeList positional alignment cannot contaminate this result.
+    // Never infer an output dtype from the input dtypes here: cast, promotion,
+    // reductions, comparisons, and shape ops intentionally change dtype.
 
     // ── Diagnostic: dump computed output shapes + dtypes ────────────────
     for (int i = 0; i < static_cast<int>(shapeList->size()); i++) {
@@ -5488,26 +5632,9 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
     slot.shapeCache.cachedOutputShapes.resize(numShapeOutputs);
     for (int i = 0; i < numShapeOutputs; i++) {
       const LongType* rawShape = shapeList->at(i);
-      auto outDt = ArrayOptions::dataType(rawShape);
-
-      // Correct placeholder-contaminated dtypes: if all real inputs are e.g.
-      // HALF but the output is FLOAT32 (promoted via a FLOAT32 placeholder for
-      // a null optional input), substitute a shape info with the correct dtype.
-      const LongType* correctedShape = rawShape;
-      if (needsDtypeCorrection && outDt != commonInputDtype &&
-          DataTypeUtils::isR(outDt) && DataTypeUtils::isR(commonInputDtype)) {
-        DSP_DIAG(SHAPE, "SHAPE_PREPASS_DTYPE_FIX: slot %d (%s) output[%d] dtype %s != "
-                 "common input dtype %s — correcting (likely placeholder contamination)",
-                 stepIdx, slot.ident.opName.c_str(), i,
-                 DataTypeUtils::asString(outDt).c_str(),
-                 DataTypeUtils::asString(commonInputDtype).c_str());
-        correctedShape = ConstantShapeHelper::getInstance().createShapeInfo(
-            commonInputDtype, shape::order(rawShape),
-            shape::rank(rawShape), shape::shapeOf(const_cast<LongType*>(rawShape)));
-      }
 
       auto& shapeHelper = ConstantShapeHelper::getInstance();
-      auto* shapeToCache = const_cast<LongType*>(correctedShape);
+      auto* shapeToCache = const_cast<LongType*>(rawShape);
       // The trait, not an op-name list, defines which primary output aliases
       // storage and therefore requires ARRAY_IS_VIEW in the cached shape.
       auto cached = i == 0 && slot.isViewCapableOp()
@@ -5526,6 +5653,49 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
     for (int i = 0; i < numShapeOutputs; i++) {
       int slotIdx = (i < numWiredOutputs) ? slot.wiring.outputSlotIndices[i] : -1;
       if (slotIdx < 0 || slotIdx >= totalOutputSlots_) continue;
+
+      // An in-place op's output is the selected input array by contract.
+      // Establish that alias during the shape-only pass, before the plan freezes
+      // pointer identities. Allocating an independent placeholder here and
+      // replacing it on the first real execution is a genuine frozen-lifecycle
+      // violation (and was observed for sqrt on Android/NNAPI).
+      if (i == 0 && slot.isInPlaceFused()) {
+        const int fusedInputIdx = slot.inPlaceFusedInputIdx();
+        const int sourceSlotIdx = slot.inPlaceSourceSlot();
+        const int producerStep =
+            dsp::findProducingStepForOutputSlot(slots_, numSlots_, sourceSlotIdx);
+        NDArray* alias =
+            fusedInputIdx >= 0 && fusedInputIdx < slot.wiring.numInputs
+                ? siInputs[fusedInputIdx]
+                : nullptr;
+        const bool stableOwnedSource =
+            sourceSlotIdx >= 0 && producerStep >= 0 &&
+            !slots_[producerStep].aliasesInput() &&
+            !slots_[producerStep].frozenConstantSlot();
+        const bool compatible =
+            alias != nullptr && alias->hasValidShapeInfo() &&
+            shape::equalsSoft(alias->shapeInfo(), siOutputShapes[i]) &&
+            alias->dataType() == ArrayOptions::dataType(siOutputShapes[i]);
+        if (stableOwnedSource && compatible) {
+          writeOutputSlot(slotIdx, alias, "shape-prepass-in-place-alias");
+          DSP_DIAG(SHAPE,
+                   "SHAPE_PRE_PASS_IN_PLACE_ALIAS: slot %d (%s) outSlotIdx=%d "
+                   "sourceSlotIdx=%d array=%p db=%p",
+                   stepIdx, slot.ident.opName.c_str(), slotIdx, sourceSlotIdx,
+                   (void*)alias, (void*)alias->dataBuffer());
+          continue;
+        }
+
+        // In-place execution is an optimization, but stable ownership is a
+        // correctness requirement. Keep the ordinary independently-owned output
+        // when the source is borrowed/view-producing, missing, or incompatible.
+        slot.disableInPlaceFusion();
+        DSP_DIAG(FUSION,
+                 "SHAPE_PRE_PASS_IN_PLACE_DISABLED: slot %d (%s) sourceSlotIdx=%d "
+                 "producerStep=%d stable=%d compatible=%d",
+                 stepIdx, slot.ident.opName.c_str(), sourceSlotIdx, producerStep,
+                 stableOwnedSource ? 1 : 0, compatible ? 1 : 0);
+      }
 
       // Reuse existing array if shape already matches
       NDArray* existing = outputSlots_[slotIdx];
@@ -5567,8 +5737,26 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
         outputSlots_[slotIdx] = nullptr;
       }
 
-      // Allocate new array with the inferred shape
-      NDArray* outArr = new NDArray(const_cast<LongType*>(siOutputShapes[i]), true);
+      // Allocate an owned placeholder for downstream shape inference. A
+      // view-capable op's cached output shape intentionally carries
+      // ARRAY_IS_VIEW, but this prepass placeholder owns a newly allocated
+      // DataBuffer. Passing the view-marked shape to NDArray makes its
+      // destructor treat that owned buffer as borrowed storage, leaking one
+      // full set of view-output placeholders every plan warmup. Keep the
+      // cached/runtime shape view-marked, and clear only the ownership bit on
+      // the allocation shape.
+      const LongType* allocationShape = siOutputShapes[i];
+      if (i == 0 && slot.isViewCapableOp() &&
+          shape::isViewConst(siOutputShapes[i])) {
+        LongType* ownedShape =
+            ShapeBuilders::copyShapeInfo(siOutputShapes[i], true, nullptr);
+        ArrayOptions::unsetPropertyBit(ownedShape, ARRAY_IS_VIEW);
+        allocationShape =
+            ConstantShapeHelper::getInstance().createFromExisting(ownedShape);
+        delete[] ownedShape;
+      }
+      NDArray* outArr =
+          new NDArray(const_cast<LongType*>(allocationShape), true);
       outputSlots_[slotIdx] = outArr;
       planOwnedArrays_.insert(outArr);
       DSP_DIAG(SHAPE, "SHAPE_PRE_PASS_ALLOC: slot %d (%s) outSlotIdx=%d allocated dtype=%s shape=%s",
@@ -5576,9 +5764,172 @@ Status NativeDynamicShapePlan::phaseShapeInferenceOnly(
                DataTypeUtils::asString(outArr->dataType()).c_str(),
                ShapeUtils::shapeAsString(outArr).c_str());
     }
+
+    // Materialize only a closed, bounded shape-control subgraph. This is not a
+    // numeric model warmup: every output must be a tiny integral tensor, the op
+    // must be deterministic and fully writing, and every value-bearing internal
+    // input must already have materialized provenance. Shape-only producers such
+    // as shape_of/rank/size may inspect arbitrary tensor metadata, never payloads.
+    bool allOutputsAreBoundedControls =
+        slot.wiring.numOutputs > 0 &&
+        numShapeOutputs >= slot.wiring.numOutputs;
+    for (int o = 0; o < slot.wiring.numOutputs && allOutputsAreBoundedControls; o++) {
+      const int outputSlot = slot.wiring.outputSlotIndices[o];
+      allOutputsAreBoundedControls =
+          outputSlot >= 0 && outputSlot < totalOutputSlots_ &&
+          isSmallIntegralControlArray(outputSlots_[outputSlot]);
+    }
+
+    const bool metadataOnlyProducer =
+        slot.hasOpTrait(sd::ops::OP_TRAIT_SHAPE_ONLY_OUTPUT) &&
+        !slot.isDataDependent() &&
+        !slot.flags.outputShapeDependsOnInputValues;
+    bool closedTinyControlTransform = true;
+    for (int i = 0;
+         i < slot.wiring.numInputs && closedTinyControlTransform; i++) {
+      if (!isSmallIntegralControlArray(siInputs[i])) {
+        closedTinyControlTransform = false;
+        break;
+      }
+      const int srcIdx = slot.wiring.inputSourceIndices[i];
+      if (srcIdx >= 0 &&
+          (srcIdx >= totalOutputSlots_ ||
+           materializedControlOutputs[srcIdx] == 0)) {
+        closedTinyControlTransform = false;
+      }
+    }
+
+    const bool canMaterializeControl =
+        allOutputsAreBoundedControls && slot.isFullyWriting() &&
+        !slot.aliasesInput() && !slot.hasDynamicOutputSize() &&
+        !slot.hasOpTrait(sd::ops::OP_TRAIT_STATEFUL) &&
+        (metadataOnlyProducer || closedTinyControlTransform);
+    if (canMaterializeControl) {
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        ctx.setOutputArray(o, outputSlots_[outputSlot]);
+      }
+      ctx.setShapeFunctionOverride(true);
+
+      Status materializeStatus = Status::KERNEL_FAILURE;
+      try {
+        materializeStatus = platformExecuteSlot(slot, ctx);
+      } catch (const std::exception& e) {
+        incompleteReasons[stepIdx] =
+            "bounded control materialization threw: " + std::string(e.what());
+      }
+      if (materializeStatus != Status::OK) {
+        if (incompleteReasons[stepIdx].empty()) {
+          incompleteReasons[stepIdx] =
+              "bounded control materialization failed with status " +
+              std::to_string(static_cast<int>(materializeStatus));
+        }
+        DSP_DIAG(SHAPE,
+                 "SHAPE_CONTROL_MATERIALIZE_FAILED: slot=%d op=%s status=%d reason=%s",
+                 stepIdx, slot.ident.opName.c_str(),
+                 static_cast<int>(materializeStatus),
+                 incompleteReasons[stepIdx].c_str());
+        continue;
+      }
+
+      bool stableOutputs = true;
+      for (int o = 0; o < slot.wiring.numOutputs; o++) {
+        const int outputSlot = slot.wiring.outputSlotIndices[o];
+        NDArray* materialized =
+            o < static_cast<int>(ctx.fastpath_out().size())
+                ? ctx.fastpath_out()[o]
+                : nullptr;
+        if (materialized == nullptr || materialized != outputSlots_[outputSlot] ||
+            !isSmallIntegralControlArray(materialized)) {
+          stableOutputs = false;
+          incompleteReasons[stepIdx] =
+              "bounded control producer replaced or invalidated its output wrapper";
+          break;
+        }
+        try {
+          materialized->syncToHost();
+        } catch (const std::exception& e) {
+          stableOutputs = false;
+          incompleteReasons[stepIdx] =
+              "bounded control output host sync threw: " + std::string(e.what());
+          break;
+        }
+        materializedControlOutputs[outputSlot] = 1;
+      }
+      if (!stableOutputs) {
+        for (int o = 0; o < slot.wiring.numOutputs; o++) {
+          const int outputSlot = slot.wiring.outputSlotIndices[o];
+          if (outputSlot >= 0 && outputSlot < totalOutputSlots_) {
+            materializedControlOutputs[outputSlot] = 0;
+          }
+        }
+        DSP_DIAG(SHAPE,
+                 "SHAPE_CONTROL_MATERIALIZE_UNSTABLE: slot=%d op=%s reason=%s",
+                 stepIdx, slot.ident.opName.c_str(),
+                 incompleteReasons[stepIdx].c_str());
+        continue;
+      }
+      DSP_DIAG(SHAPE,
+               "SHAPE_CONTROL_MATERIALIZED: slot=%d op=%s outputs=%d kind=%s",
+               stepIdx, slot.ident.opName.c_str(), slot.wiring.numOutputs,
+               metadataOnlyProducer ? "metadata" : "tiny-control-transform");
+    }
   }
 
-  DSP_DIAG(SHAPE, "phaseShapeInferenceOnly: END numSlots=%d", numSlots_);
+  bool complete = true;
+  int firstIncompleteSlot = -1;
+  for (int stepIdx = 0; stepIdx < numSlots_ && complete; stepIdx++) {
+    const NativeSlot& slot = slots_[stepIdx];
+    if (slot.fusedChain.isFusedChainTail && !slot.fusedChain.isFusedChainHead) {
+      continue;
+    }
+    if (!incompleteReasons[stepIdx].empty()) {
+      complete = false;
+      firstIncompleteSlot = stepIdx;
+      break;
+    }
+    if (slot.wiring.numOutputs > 0 &&
+        (!slot.slotPhase.shapeCacheValid ||
+         slot.shapeCache.cachedOutputShapes.size() <
+             static_cast<size_t>(slot.wiring.numOutputs))) {
+      complete = false;
+      firstIncompleteSlot = stepIdx;
+      break;
+    }
+    for (int o = 0; o < slot.wiring.numOutputs; o++) {
+      const int outputSlot = slot.wiring.outputSlotIndices[o];
+      if (outputSlot >= 0 && outputSlot < totalOutputSlots_ &&
+          outputSlots_[outputSlot] == nullptr) {
+        complete = false;
+        firstIncompleteSlot = stepIdx;
+        break;
+      }
+    }
+  }
+  shapePrePassComplete_ = complete;
+  shapePrePassFirstIncompleteSlot_ = firstIncompleteSlot;
+  if (firstIncompleteSlot >= 0) {
+    const NativeSlot& incompleteSlot = slots_[firstIncompleteSlot];
+    shapePrePassIncompleteReason_ =
+        incompleteReasons[firstIncompleteSlot].empty()
+            ? "shape cache or output allocation was not resolved"
+            : incompleteReasons[firstIncompleteSlot];
+    DSP_DIAG(SHAPE,
+             "phaseShapeInferenceOnly: INCOMPLETE slot=%d op=%s reason=%s "
+             "shapeCached=%d cachedOutputs=%zu wiredOutputs=%d",
+             firstIncompleteSlot, incompleteSlot.ident.opName.c_str(),
+             shapePrePassIncompleteReason_.c_str(),
+             incompleteSlot.slotPhase.shapeCacheValid ? 1 : 0,
+             incompleteSlot.shapeCache.cachedOutputShapes.size(),
+             incompleteSlot.wiring.numOutputs);
+  }
+  DSP_DIAG(SHAPE,
+           "phaseShapeInferenceOnly: END numSlots=%d complete=%d "
+           "firstIncompleteSlot=%d reason=%s",
+           numSlots_, complete ? 1 : 0, firstIncompleteSlot,
+           shapePrePassIncompleteReason_.empty()
+               ? "none"
+               : shapePrePassIncompleteReason_.c_str());
   return Status::OK;
 }
 
@@ -6230,8 +6581,22 @@ void NativeDynamicShapePlan::processPendingExternalViewReacquire(NDArray** exter
 
 
 int NativeDynamicShapePlan::releaseGpuIntermediates() {
-  DSP_DIAG(MEMORY, "releaseGpuIntermediates: START plan=%p numSlots=%d totalOutputSlots=%d",
-           this, numSlots_, totalOutputSlots_);
+  const size_t slotOwnedBytesBeforeRelease = estimatedOwnedBytes();
+  size_t captureWorkspaceBytesBeforeRelease = 0;
+  size_t cublasWorkspaceBytesBeforeRelease = 0;
+#ifdef SD_CUDA
+  captureWorkspaceBytesBeforeRelease =
+      sharedCaptureWorkspace_ != nullptr ? sharedCaptureWorkspaceBytes_ : 0;
+  cublasWorkspaceBytesBeforeRelease =
+      cublasWorkspaceBuffer_ != nullptr ? cublasWorkspaceSize_ : 0;
+#endif
+  DSP_DIAG(MEMORY,
+           "releaseGpuIntermediates: START plan=%p numSlots=%d totalOutputSlots=%d "
+           "planOwned=%zu slotOwnedBytes=%zuMB captureWorkspace=%zuMB cublasWorkspace=%zuMB",
+           this, numSlots_, totalOutputSlots_, planOwnedArrays_.size(),
+           slotOwnedBytesBeforeRelease / (1024 * 1024),
+           captureWorkspaceBytesBeforeRelease / (1024 * 1024),
+           cublasWorkspaceBytesBeforeRelease / (1024 * 1024));
   // BUF_FP_RING: dump per-exec fingerprints accumulated so far, BEFORE this
   // teardown resets executeCount_ (later execs reuse ring step indices). The
   // Java output readback that preceded this call already host-synced the LC
@@ -6664,6 +7029,7 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   resetExecuteCount("release_gpu_intermediates");
   planLifecycle_.compilationDone = false;
   shapePrePassDone_ = false;
+  shapePrePassComplete_ = false;
   // Frozen refs were released before identity-mutating teardown. Keep this call
   // as an idempotent guard for future releaseGpuIntermediates() edits.
   releaseFrozenRefsForTeardown();
@@ -6692,8 +7058,23 @@ int NativeDynamicShapePlan::releaseGpuIntermediates() {
   // Clear GPU backend failed-segment cache
   clearGpuBackendFailedCache();
 
-  DSP_DIAG(MEMORY, "releaseGpuIntermediates: DONE plan=%p, freed %d arrays. "
-           "Plan is now cold — next execute() will re-warm.", this, freedCount);
+  const size_t slotOwnedBytesAfterRelease = estimatedOwnedBytes();
+  size_t captureWorkspaceBytesAfterRelease = 0;
+  size_t cublasWorkspaceBytesAfterRelease = 0;
+#ifdef SD_CUDA
+  captureWorkspaceBytesAfterRelease =
+      sharedCaptureWorkspace_ != nullptr ? sharedCaptureWorkspaceBytes_ : 0;
+  cublasWorkspaceBytesAfterRelease =
+      cublasWorkspaceBuffer_ != nullptr ? cublasWorkspaceSize_ : 0;
+#endif
+  DSP_DIAG(MEMORY,
+           "releaseGpuIntermediates: DONE plan=%p freed=%d planOwned=%zu "
+           "slotOwnedBytes=%zuMB captureWorkspace=%zuMB cublasWorkspace=%zuMB. "
+           "Plan is now cold — next execute() will re-warm.",
+           this, freedCount, planOwnedArrays_.size(),
+           slotOwnedBytesAfterRelease / (1024 * 1024),
+           captureWorkspaceBytesAfterRelease / (1024 * 1024),
+           cublasWorkspaceBytesAfterRelease / (1024 * 1024));
 
   return freedCount;
 }

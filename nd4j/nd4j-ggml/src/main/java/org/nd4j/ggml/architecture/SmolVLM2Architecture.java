@@ -676,36 +676,23 @@ public class SmolVLM2Architecture implements ModelArchitecture {
 
         // RoPE positional encoding with dynamic offset for DSP replay
         if (config.isUseRotaryEmbeddings()) {
-            org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE ropeQ =
-                    new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(
-                            sd, q, positionOffset,
-                            config.getRopeType(), config.getRopeFreqBase(), 1.0,
-                            config.getRopeDimensionCount());
-            q = ropeQ.outputVariable();
-            sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+            q = sd.nn().fusedRoPE("q_rope_" + layerIdx, q, positionOffset,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount());
 
-            org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE ropeK =
-                    new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(
-                            sd, k, positionOffset,
-                            config.getRopeType(), config.getRopeFreqBase(), 1.0,
-                            config.getRopeDimensionCount());
-            k = ropeK.outputVariable();
-            sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+            k = sd.nn().fusedRoPE("k_rope_" + layerIdx, k, positionOffset,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount());
         }
 
         // V must match Q/K dtype after FusedRoPE promotes HALF → FLOAT
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("v_cast_" + layerIdx, q.dataType());
-        }
+        v = GGMLDTypePolicy.castTo(v, "v_cast_" + layerIdx, q.dataType());
 
         // Dot-product attention with KV cache and causal mask
-        org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2 attnOp =
-                new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(
-                        sd, q, v, k, null, null,
-                        keyCache, valueCache, cachePosition, causalMask,
-                        0.0, 0.0, false, false);
-        SDVariable attnOut = attnOp.outputVariable();
-        sd.updateVariableNameAndReference(attnOut, "attn_out_" + layerIdx);
+        SDVariable attnOut = sd.nn().dotProductAttentionV2(
+                "attn_out_" + layerIdx, q, v, k, null, null,
+                keyCache, valueCache, cachePosition, causalMask,
+                0.0, 0.0, false, false);
 
         int attnOutDim = actualNumHeads * headDim;
         SDVariable outShapeVar = sd.stack("attn_out_shape_" + layerIdx, 0,
@@ -770,17 +757,15 @@ public class SmolVLM2Architecture implements ModelArchitecture {
 
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        SDVariable computeInput = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
+        SDVariable computeInput = GGMLDTypePolicy.castForAccumulation(
+                input, outputName + "_accum");
 
         SDVariable squared = computeInput.mul(computeInput);
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(config.getLayerNormEpsilon()));
         SDVariable normalized = computeInput.div(rms);
-
-        SDVariable normalizedOrig = needsCast
-                ? normalized.castTo(outputName + "_cast", input.dataType())
-                : normalized;
+        SDVariable normalizedOrig = GGMLDTypePolicy.castTo(
+                normalized, outputName + "_cast", input.dataType());
 
         return normalizedOrig.mul(outputName, gamma);
     }
@@ -793,18 +778,16 @@ public class SmolVLM2Architecture implements ModelArchitecture {
 
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        SDVariable computeInput = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
+        SDVariable computeInput = GGMLDTypePolicy.castForAccumulation(
+                input, outputName + "_accum");
 
         SDVariable mean = computeInput.mean(true, -1);
         SDVariable centered = computeInput.sub(mean);
         SDVariable variance = centered.mul(centered).mean(true, -1);
         SDVariable stdDev = sd.math.sqrt(variance.add(eps));
         SDVariable normalized = centered.div(stdDev);
-
-        SDVariable normalizedOrig = needsCast
-                ? normalized.castTo(outputName + "_cast", input.dataType())
-                : normalized;
+        SDVariable normalizedOrig = GGMLDTypePolicy.castTo(
+                normalized, outputName + "_cast", input.dataType());
 
         SDVariable scaled = normalizedOrig.mul(outputName + "_scaled", gamma);
         if (normBias != null) {
@@ -813,23 +796,6 @@ public class SmolVLM2Architecture implements ModelArchitecture {
         }
         sd.updateVariableNameAndReference(scaled, outputName);
         return scaled;
-    }
-
-    // ========================================================================
-    // FP32 matmul helper
-    // ========================================================================
-
-    /**
-     * Matmul in FP32 to avoid HALF overflow on large dot products, then cast back to dtype.
-     */
-    private SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b, DataType dtype) {
-        if (QuantizedLinear.requiresFp32Accumulation(dtype)) {
-            SDVariable aF32 = a.castTo(name + "_a_f32", DataType.FLOAT);
-            SDVariable bF32 = b.castTo(name + "_b_f32", DataType.FLOAT);
-            SDVariable result = sd.mmul(name + "_f32", aF32, bF32);
-            return result.castTo(name, dtype);
-        }
-        return sd.mmul(name, a, b);
     }
 
     // ========================================================================

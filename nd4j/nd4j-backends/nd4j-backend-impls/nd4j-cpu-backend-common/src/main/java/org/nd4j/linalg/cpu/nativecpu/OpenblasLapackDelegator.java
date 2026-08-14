@@ -35,8 +35,21 @@ import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.blas.BLASLapackDelegator;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.NativeSymbolResolution;
 
 public class OpenblasLapackDelegator implements BLASLapackDelegator {
+  private static final int OPENBLAS_VENDOR_ID = 2;
+
+  private static NativeOps processNativeOps() {
+    NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    if (nativeOps == null) {
+      throw new IllegalStateException(
+          "Process-symbol OpenBLAS control requires an initialized NativeOps backend");
+    }
+    return nativeOps;
+  }
   @Override
   public int LAPACKE_sgees(int arg0, byte arg1, byte arg2, Pointer arg3, int arg4, FloatBuffer arg5,
       int arg6, IntBuffer arg7, FloatBuffer arg8, FloatBuffer arg9, FloatBuffer arg10, int arg11) {
@@ -96701,16 +96714,26 @@ public class OpenblasLapackDelegator implements BLASLapackDelegator {
 
   @Override
   public void blas_set_num_threads(int arg0) {
+    if (NativeSymbolResolution.PROCESS_SYMBOLS) {
+      processNativeOps().setOpenBlasThreads(arg0);
+      return;
+    }
     openblas.blas_set_num_threads(arg0);
   }
 
   @Override
   public int blas_get_num_threads() {
+    if (NativeSymbolResolution.PROCESS_SYMBOLS) {
+      return processNativeOps().getOpenBlasThreads();
+    }
     return openblas.blas_get_num_threads();
   }
 
   @Override
   public int blas_get_vendor() {
+    if (NativeSymbolResolution.PROCESS_SYMBOLS) {
+      return OPENBLAS_VENDOR_ID;
+    }
     return openblas.blas_get_vendor();
   }
 }

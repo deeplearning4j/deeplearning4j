@@ -25,6 +25,7 @@ import org.nd4j.ggml.format.GGMLDataType;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -228,7 +229,7 @@ public class AdaptiveLayerQuantizer {
         float[] floatData = flattenFloat(weight);
 
         // Use Q4_K as the measurement quant type — a reasonable midpoint proxy
-        GGMLDataType probeType = org.nd4j.ggml.format.GGMLDataType.GGML_TYPE_Q4_K;
+        GGMLDataType probeType = GGMLDataType.GGML_TYPE_Q4_K;
 
         if (!QuantizerFactory.hasQuantizer(probeType) ||
                 !DequantizerFactory.hasDequantizer(probeType)) {
@@ -457,8 +458,8 @@ public class AdaptiveLayerQuantizer {
         if (calibCols > inDim) {
             // Truncate to inDim
             return calib2d.get(
-                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
-                    org.nd4j.linalg.indexing.NDArrayIndex.interval(0, inDim));
+                    NDArrayIndex.all(),
+                    NDArrayIndex.interval(0, inDim));
         }
         // calibCols < inDim — cannot use this calibration data for this layer
         return null;

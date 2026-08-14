@@ -240,6 +240,14 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("_TRITON_MANAGED_HOST_TOOLS_READY", dependencies)
         self.assertIn("NOT _TRITON_LLVM_INSTALL_COMPLETE OR", dependencies)
         self.assertIn("NOT _TRITON_COMPILER_INSTALL_COMPLETE", dependencies)
+        self.assertIn('set(_TRITON_LLVM_RECIPE_REVISION "managed-llvm-patches-v12")', dependencies)
+        self.assertIn('set(_TRITON_COMPILER_RECIPE_REVISION "managed-llvm-patches-v12")', dependencies)
+        self.assertIn("managed-llvm-host-tools-v1", dependencies)
+        self.assertIn("managed-sleef-host-tools-v1", dependencies)
+        self.assertIn('"triton_llvm_host_tools"', dependencies)
+        self.assertIn('"triton_sleef_host_tools"', dependencies)
+        self.assertIn("sd_dep_cache_host_key(", dependencies)
+        self.assertIn("dep_cache_store_${dep_name}_${_store_script_identity}.cmake", dependencies)
 
     def test_sccache_release_assets_are_pinned_to_quoted_response_file_support(self):
         self.assertEqual("0.17.0", build_platform.SCCACHE_VERSION)

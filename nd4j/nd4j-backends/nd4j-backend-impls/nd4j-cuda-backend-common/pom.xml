@@ -31,6 +31,8 @@
         <cuda.version>12.9</cuda.version>
         <cudnn.version>9.10</cudnn.version>
         <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
+        <!-- Lets controlled producers redirect classes without changing normal Maven output. -->
+        <nd4j.cudaBackendCommon.outputDirectory>${project.build.directory}/classes</nd4j.cudaBackendCommon.outputDirectory>
     </properties>
 
     <dependencies>
@@ -90,6 +92,7 @@
     </dependencies>
 
     <build>
+        <outputDirectory>${nd4j.cudaBackendCommon.outputDirectory}</outputDirectory>
         <plugins>
             <plugin>
                 <groupId>org.moditect</groupId>

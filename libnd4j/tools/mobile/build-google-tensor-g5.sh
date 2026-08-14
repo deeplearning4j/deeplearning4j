@@ -9,26 +9,50 @@ MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-litertlm"
 PRESET_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-preset"
 SDX_MODEL_MODULE="$REPO_ROOT/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model"
 VERIFY_SCRIPT="$SCRIPT_DIR/verify-google-tensor-g5-aar.sh"
+BUILD_ENV="$SCRIPT_DIR/android-build-env.sh"
+[[ -r "$BUILD_ENV" ]] || {
+    echo "Shared Android build discovery is missing: $BUILD_ENV" >&2
+    exit 1
+}
+# shellcheck source=android-build-env.sh
+source "$BUILD_ENV"
 
 usage() {
     cat <<'USAGE'
 Usage:
-  build-google-tensor-g5.sh --android-ndk <path>
-      [--output-dir <path>] [--source-dir <path>] [--maven <command>]
-      [--jobs <count>] [--offline] [--skip-native] [--skip-java]
+  build-google-tensor-g5.sh [options]
+
+Android NDK r28, JDK 17, Maven, the /tmp build root, and bounded host
+parallelism are discovered automatically. The build is offline by default.
+
+Options:
+  --android-ndk <path> Override NDK discovery
+  --java-home <path>   Override JDK 17 discovery
+  --maven <command>    Override Maven discovery
+  --output-dir <path>  Override the build and distribution root
+  --source-dir <path>  Reuse a pinned LiteRT-LM checkout
+  --jobs <count>       Parallel jobs (default: min(host CPUs, 8))
+  --offline            Forbid network access (default)
+  --online             Permit dependency resolution
+  --print-config       Print resolved inputs and exit
+  --skip-native        Reuse already-built native outputs
+  --skip-java          Reuse already-built Java outputs
 
 Builds the direct Google Tensor G5 LiteRT-LM NPU provider and its JavaCPP AAR.
 The build is pinned, AOT-only, device-only, and rejects BLAS/host fallback.
-No model is downloaded or bundled; target objects are compiled and cached from canonical .sdz inputs.
+No model is downloaded or bundled; target objects are compiled and cached from
+canonical .sdz inputs.
 USAGE
 }
 
-ANDROID_NDK_ARG="${ANDROID_NDK:-${ANDROID_NDK_ROOT:-${ANDROID_NDK_HOME:-}}}"
+ANDROID_NDK_ARG=""
+JAVA_HOME_ARG=""
+MAVEN_ARG=""
 OUTPUT_DIR=""
 SOURCE_DIR=""
-MAVEN_CMD="${MAVEN_CMD:-mvn}"
-JOBS="${JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}"
-OFFLINE=0
+JOBS="${JOBS:-$(sdx_android_default_jobs)}"
+OFFLINE=1
+PRINT_CONFIG=0
 SKIP_NATIVE=0
 SKIP_JAVA=0
 
@@ -36,6 +60,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --android-ndk)
             ANDROID_NDK_ARG="${2:?missing value for --android-ndk}"
+            shift 2
+            ;;
+        --java-home)
+            JAVA_HOME_ARG="${2:?missing value for --java-home}"
             shift 2
             ;;
         --output-dir)
@@ -47,7 +75,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --maven)
-            MAVEN_CMD="${2:?missing value for --maven}"
+            MAVEN_ARG="${2:?missing value for --maven}"
             shift 2
             ;;
         --jobs)
@@ -56,6 +84,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --offline)
             OFFLINE=1
+            shift
+            ;;
+        --online)
+            OFFLINE=0
+            shift
+            ;;
+        --print-config)
+            PRINT_CONFIG=1
             shift
             ;;
         --skip-native)
@@ -77,6 +113,11 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+ANDROID_NDK_ARG="$(sdx_android_resolve_ndk "$ANDROID_NDK_ARG")"
+JAVA_HOME_REAL="$(sdx_android_resolve_java17 "$JAVA_HOME_ARG")"
+MAVEN_CMD="$(sdx_android_resolve_maven "$MAVEN_ARG" "$REPO_ROOT")"
+export JAVA_HOME="$JAVA_HOME_REAL"
 
 if [[ ! -f "$PROFILE" ]]; then
     echo "Missing Google Tensor profile: $PROFILE" >&2
@@ -128,7 +169,8 @@ if ! command -v "$MAVEN_CMD" >/dev/null 2>&1 && [[ ! -x "$MAVEN_CMD" ]]; then
     exit 1
 fi
 
-BUILD_ROOT="${OUTPUT_DIR:-$LIBND4J_DIR/build/mobile/google-tensor-g5}"
+BUILD_ROOT="${OUTPUT_DIR:-$(sdx_android_default_build_root)/accelerator/google-tensor-g5}"
+BUILD_ROOT="$(realpath -m -- "$BUILD_ROOT")"
 SOURCE_DIR="${SOURCE_DIR:-$BUILD_ROOT/source/litert-lm-$LITERTLM_VERSION}"
 CACHE_DIR="$BUILD_ROOT/cache"
 BAZEL_OUTPUT_ROOT="$CACHE_DIR/bazel-google-tensor-g5"
@@ -136,6 +178,16 @@ BAZEL_LFS_ROOT="$CACHE_DIR/bazel-git-lfs"
 NPM_CACHE="$CACHE_DIR/npm"
 DIST_DIR="$BUILD_ROOT/dist"
 mkdir -p "$CACHE_DIR" "$DIST_DIR"
+
+printf 'Resolved Google Tensor G5 build configuration:\n'
+printf '  Android NDK:  %s\n' "$ANDROID_NDK_ARG"
+printf '  JDK 17:       %s\n' "$JAVA_HOME_REAL"
+printf '  Maven:        %s\n' "$MAVEN_CMD"
+printf '  build root:   %s\n' "$BUILD_ROOT"
+printf '  source:       %s\n' "$SOURCE_DIR"
+printf '  offline:      %s\n' "$OFFLINE"
+printf '  jobs:         %s\n' "$JOBS"
+[[ "$PRINT_CONFIG" == 0 ]] || exit 0
 
 export OPENBLAS_NUM_THREADS=0
 unset OPENBLAS_HOME MKLROOT BLAS_HOME || true

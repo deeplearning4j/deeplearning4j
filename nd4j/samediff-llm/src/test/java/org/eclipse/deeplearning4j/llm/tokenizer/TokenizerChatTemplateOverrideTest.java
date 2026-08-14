@@ -23,6 +23,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TokenizerChatTemplateOverrideTest {
 
+    private static final String TEST_TOKENIZER_JSON = "{"
+            + "\"version\":\"1.0\","
+            + "\"truncation\":null,"
+            + "\"padding\":null,"
+            + "\"added_tokens\":[],"
+            + "\"normalizer\":null,"
+            + "\"pre_tokenizer\":{\"type\":\"Whitespace\"},"
+            + "\"post_processor\":null,"
+            + "\"decoder\":null,"
+            + "\"model\":{"
+            + "\"type\":\"WordLevel\","
+            + "\"vocab\":{\"[UNK]\":0,\"hello\":1,\"world\":2},"
+            + "\"unk_token\":\"[UNK]\""
+            + "}"
+            + "}";
+
     @Test
     void addedSpecialTokensComeFromTokenizerMetadata() {
         String tokenizerJson = "{\"added_tokens\":["
@@ -114,6 +130,40 @@ class TokenizerChatTemplateOverrideTest {
     }
 
     @Test
+    void resolvedNativeProtocolUsesLfmToolShapeWithPreFixTemplate() {
+        Tokenizer tokenizer = new TemplateLessTokenizer();
+        ChatTemplate.Tool tool = ChatTemplate.Tool.function(
+                "submit_graph_delta",
+                "Submit the extracted graph.",
+                Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "entities", Map.of("type", "array"),
+                                "relations", Map.of("type", "array")),
+                        "required", List.of("entities", "relations")));
+        ChatTemplate.Request request = ChatTemplate.Request.builder()
+                .messages(List.of(
+                        ChatTemplate.Message.system("Extract the graph."),
+                        ChatTemplate.Message.user("Text: Alex works at Acme.")))
+                .tools(List.of(tool))
+                .toolDefinitionFormat(ChatTemplate.ToolDefinitionFormat.FLAT)
+                .toolCallFormat(ChatTemplate.ToolCallFormat.NATIVE)
+                .addGenerationPrompt(true)
+                .build();
+
+        // LFM2.5's pre-fix template did not contain the native call sentinels even
+        // though tokenizer metadata declared them and the pipeline resolved NATIVE.
+        String rendered = tokenizer.applyChatTemplate(request,
+                "{{- bos_token -}}<|im_start|>{{ message.role }}\n"
+                        + "{{ message.content }}<|im_end|>");
+
+        assertTrue(rendered.contains("Extract the graph.\nList of tools: ["));
+        assertTrue(rendered.contains("\"name\":\"submit_graph_delta\""));
+        assertTrue(!rendered.contains("Available tools:"));
+        assertTrue(rendered.endsWith("<|im_start|>assistant\n"));
+    }
+
+    @Test
     void structuredRequestUsesPipelineOverrideWhenTokenizerHasNoTemplate() {
         Tokenizer tokenizer = new TemplateLessTokenizer();
         ChatTemplate.Request request = ChatTemplate.Request.builder()
@@ -128,6 +178,65 @@ class TokenizerChatTemplateOverrideTest {
 
         assertTrue(rendered.contains("### Instruction:\nroute this verdict"));
         assertTrue(rendered.endsWith("### Response:\n"));
+    }
+
+    @Test
+    void activeTemplateDerivesAssistantTurnStopWithoutModelNameChecks() {
+        String tokenizerJson = "{"
+                + "\"version\":\"1.0\","
+                + "\"truncation\":null,\"padding\":null,"
+                + "\"added_tokens\":["
+                + "{\"id\":3,\"content\":\"<|im_start|>\",\"single_word\":false,"
+                + "\"lstrip\":false,\"rstrip\":false,\"normalized\":false,\"special\":true},"
+                + "{\"id\":4,\"content\":\"<|im_end|>\",\"single_word\":false,"
+                + "\"lstrip\":false,\"rstrip\":false,\"normalized\":false,\"special\":true}],"
+                + "\"normalizer\":null,\"pre_tokenizer\":{\"type\":\"Whitespace\"},"
+                + "\"post_processor\":null,\"decoder\":null,"
+                + "\"model\":{\"type\":\"WordLevel\","
+                + "\"vocab\":{\"[UNK]\":0,\"hello\":1,\"world\":2},"
+                + "\"unk_token\":\"[UNK]\"}}";
+        String template = "{% for message in messages %}<|im_start|>{{ message.role }}\\n"
+                + "{{ message.content }}<|im_end|>\\n{% endfor %}"
+                + "{% if add_generation_prompt %}<|im_start|>assistant\\n{% endif %}";
+
+        try (HuggingFaceTokenizer tokenizer = HuggingFaceTokenizer.fromJson(tokenizerJson)) {
+            assertEquals(java.util.Set.of(4), tokenizer.getChatTemplateStopTokenIds(template));
+        }
+    }
+
+    @Test
+    void nativeTokenizerRendersImportedOverrideWithCompleteToolContext() {
+        ChatTemplate.Tool tool = ChatTemplate.Tool.function(
+                "submit_graph_delta",
+                "Submit the extracted graph.",
+                Map.of(
+                        "type", "object",
+                        "properties", Map.of(
+                                "entities", Map.of("type", "array"),
+                                "relations", Map.of("type", "array")),
+                        "required", List.of("entities", "relations")));
+        ChatTemplate.Request request = ChatTemplate.Request.builder()
+                .messages(List.of(ChatTemplate.Message.user("Alex works at Acme.")))
+                .tools(List.of(tool))
+                .toolDefinitionFormat(ChatTemplate.ToolDefinitionFormat.STANDARD)
+                .toolCallFormat(ChatTemplate.ToolCallFormat.JSON)
+                .addGenerationPrompt(true)
+                .build();
+        String override = "{% if tools %}<tools>{% for tool in tools %}"
+                + "{{ tool.function.name }}="
+                + "{{ tool.function.parameters.properties | length }};"
+                + "{% endfor %}</tools>{% endif %}"
+                + "{% for message in messages %}<{{ message.role }}>"
+                + "{{ message.content }}</{{ message.role }}>{% endfor %}"
+                + "{% if add_generation_prompt %}<assistant>{% endif %}";
+
+        try (HuggingFaceTokenizer tokenizer =
+                     HuggingFaceTokenizer.fromJson(TEST_TOKENIZER_JSON)) {
+            assertEquals(
+                    "<tools>submit_graph_delta=2;</tools>"
+                            + "<user>Alex works at Acme.</user><assistant>",
+                    tokenizer.applyChatTemplate(request, override));
+        }
     }
 
     private static final class TemplateLessTokenizer implements Tokenizer {

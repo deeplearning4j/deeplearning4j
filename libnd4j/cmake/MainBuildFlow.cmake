@@ -2232,8 +2232,14 @@ if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
         COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_lib_dir}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_RUNTIME_HEADER}" "${_sdx_sdk_include_dir}/dsp_runtime_c.h"
         ${_sdx_readme_stage_cmds}
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${_sdx_sdk_target}>" "${_sdx_sdk_lib_dir}/$<TARGET_FILE_NAME:${_sdx_sdk_target}>"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_LINKER_FILE:${_sdx_sdk_target}>" "${_sdx_sdk_lib_dir}/$<TARGET_LINKER_FILE_NAME:${_sdx_sdk_target}>"
+        COMMAND ${CMAKE_COMMAND}
+            "-DINPUT_FILE=$<TARGET_FILE:${_sdx_sdk_target}>"
+            "-DOUTPUT_FILE=${_sdx_sdk_lib_dir}/$<TARGET_FILE_NAME:${_sdx_sdk_target}>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/StageArtifact.cmake"
+        COMMAND ${CMAKE_COMMAND}
+            "-DINPUT_FILE=$<TARGET_LINKER_FILE:${_sdx_sdk_target}>"
+            "-DOUTPUT_FILE=${_sdx_sdk_lib_dir}/$<TARGET_LINKER_FILE_NAME:${_sdx_sdk_target}>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/StageArtifact.cmake"
         ${_sdx_shared_runtime_stage_cmds}
         ${_sdx_schema_stage_cmds}
         ${_sdx_wrapper_stage_cmds}

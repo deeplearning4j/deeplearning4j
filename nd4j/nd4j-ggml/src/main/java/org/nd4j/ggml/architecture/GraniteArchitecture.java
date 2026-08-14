@@ -27,7 +27,6 @@ import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.autodiff.samediff.SDIndex;
 
@@ -364,19 +363,15 @@ public class GraniteArchitecture implements ModelArchitecture {
 
         // Apply RoPE (Granite uses standard split-half RoPE)
         if (config.isUseRotaryEmbeddings()) {
-            q = new FusedRoPE(sd, q, 0, 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+            q = sd.nn().fusedRoPE("q_rope_" + layerIdx, q, null,
+                    0, config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount());
 
-            k = new FusedRoPE(sd, k, 0, 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+            k = sd.nn().fusedRoPE("k_rope_" + layerIdx, k, null,
+                    0, config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount());
         }
 
         // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("v_cast_" + layerIdx, q.dataType());
-        }
+        v = GGMLDTypePolicy.castTo(v, "v_cast_" + layerIdx, q.dataType());
 
         // muP attention scaling (replaces 1/sqrt(d_k))
         // dotProductAttentionV2 applies 1/sqrt(d_k) internally, so we need to counteract it

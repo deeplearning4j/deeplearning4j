@@ -33,6 +33,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace sd {
@@ -76,6 +78,101 @@ SD_INLINE const char* streamOrderedErrorString(cudaError_t status) {
   return cudaGetErrorString(status);
 #endif
 }
+
+namespace {
+
+// Diagnostics-only ownership ledger for stream-ordered pool allocations. Keep
+// this implementation state out of CudaMemoryPool.h so enabling one missing
+// counter does not invalidate every CUDA translation unit.
+struct DiagnosticPoolAllocation {
+  size_t size;
+  int deviceId;
+  std::string source;
+  uint64_t sequence;
+};
+
+std::mutex diagnosticPoolAllocMutex;
+std::unordered_map<void*, DiagnosticPoolAllocation> diagnosticPoolAllocations;
+std::atomic<bool> diagnosticPoolTrackingActive{false};
+std::atomic<uint64_t> diagnosticPoolSequence{0};
+
+void recordDiagnosticPoolAllocation(void* ptr, size_t size, int deviceId, const char* source) {
+  if (ptr == nullptr || !DSP_DIAG_ENABLED(MEMORY)) return;
+  diagnosticPoolTrackingActive.store(true, std::memory_order_release);
+  DiagnosticPoolAllocation allocation{size, deviceId, source == nullptr ? "unknown" : source,
+                                      diagnosticPoolSequence.fetch_add(1, std::memory_order_relaxed) + 1};
+  std::lock_guard<std::mutex> lock(diagnosticPoolAllocMutex);
+  diagnosticPoolAllocations[ptr] = std::move(allocation);
+}
+
+void eraseDiagnosticPoolAllocation(void* ptr) {
+  if (ptr == nullptr || !diagnosticPoolTrackingActive.load(std::memory_order_acquire)) return;
+  std::lock_guard<std::mutex> lock(diagnosticPoolAllocMutex);
+  diagnosticPoolAllocations.erase(ptr);
+}
+
+void reportDiagnosticPoolAllocations(int deviceId) {
+  if (!diagnosticPoolTrackingActive.load(std::memory_order_acquire) || !DSP_DIAG_ENABLED(MEMORY)) return;
+
+  struct SnapshotEntry {
+    void* ptr;
+    DiagnosticPoolAllocation allocation;
+  };
+  std::vector<SnapshotEntry> entries;
+  {
+    std::lock_guard<std::mutex> lock(diagnosticPoolAllocMutex);
+    entries.reserve(diagnosticPoolAllocations.size());
+    for (const auto& item : diagnosticPoolAllocations) {
+      if (item.second.deviceId == deviceId) entries.push_back({item.first, item.second});
+    }
+  }
+
+  size_t totalBytes = 0;
+  std::unordered_map<std::string, std::pair<size_t, size_t>> bySource;
+  std::unordered_map<size_t, size_t> bySize;
+  for (const auto& entry : entries) {
+    totalBytes += entry.allocation.size;
+    auto& source = bySource[entry.allocation.source];
+    source.first++;
+    source.second += entry.allocation.size;
+    bySize[entry.allocation.size]++;
+  }
+
+  DSP_DIAG(MEMORY, "POOL_LEDGER dev=%d outstanding=%zu bytes=%zu mb=%zu sequence=%llu",
+           deviceId, entries.size(), totalBytes, totalBytes >> 20,
+           static_cast<unsigned long long>(diagnosticPoolSequence.load(std::memory_order_relaxed)));
+  for (const auto& source : bySource) {
+    DSP_DIAG(MEMORY, "POOL_LEDGER_SOURCE dev=%d source=%s count=%zu bytes=%zu mb=%zu",
+             deviceId, source.first.c_str(), source.second.first, source.second.second,
+             source.second.second >> 20);
+  }
+
+  std::vector<std::pair<size_t, size_t>> sizes(bySize.begin(), bySize.end());
+  std::sort(sizes.begin(), sizes.end(), [](const auto& left, const auto& right) {
+    const size_t leftTotal = left.first * left.second;
+    const size_t rightTotal = right.first * right.second;
+    return leftTotal == rightTotal ? left.first > right.first : leftTotal > rightTotal;
+  });
+  for (size_t i = 0; i < sizes.size() && i < 12; i++) {
+    DSP_DIAG(MEMORY, "POOL_LEDGER_SIZE dev=%d rank=%zu allocationBytes=%zu count=%zu totalBytes=%zu totalMb=%zu",
+             deviceId, i + 1, sizes[i].first, sizes[i].second,
+             sizes[i].first * sizes[i].second, (sizes[i].first * sizes[i].second) >> 20);
+  }
+
+  std::sort(entries.begin(), entries.end(), [](const SnapshotEntry& left, const SnapshotEntry& right) {
+    return left.allocation.size == right.allocation.size
+               ? left.allocation.sequence > right.allocation.sequence
+               : left.allocation.size > right.allocation.size;
+  });
+  for (size_t i = 0; i < entries.size() && i < 8; i++) {
+    DSP_DIAG(MEMORY, "POOL_LEDGER_TOP dev=%d rank=%zu ptr=%p source=%s bytes=%zu sequence=%llu",
+             deviceId, i + 1, entries[i].ptr, entries[i].allocation.source.c_str(),
+             entries[i].allocation.size,
+             static_cast<unsigned long long>(entries[i].allocation.sequence));
+  }
+}
+
+}  // namespace
 
 SD_INLINE cudaStream_t resolveCaptureStream(cudaStream_t stream) {
   if (tl_graphExecutionActive && stream == nullptr && tl_graphCaptureStream != nullptr) {
@@ -366,6 +463,8 @@ void* CudaMemoryPool::allocateLocalAsync(size_t size, int deviceId, cudaStream_t
     sd_printf("CudaMemoryPool::allocateLocalAsync failed dev=%d size=%zu stream=%p: %s\n",
               deviceId, size, reinterpret_cast<void*>(stream), streamOrderedErrorString(err));
     ptr = nullptr;
+  } else {
+    recordDiagnosticPoolAllocation(ptr, size, deviceId, "local-async");
   }
   if (restore) cudaSetDevice(savedDev);
   return ptr;
@@ -549,6 +648,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
         restoreDevice();
         return nullptr;
       }
+      recordDiagnosticPoolAllocation(ptr, size, deviceId, "allocate-pools-off-capture");
       restoreDevice();
       return ptr;
     }
@@ -582,6 +682,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
         restoreDevice();
         return nullptr;
       }
+      recordDiagnosticPoolAllocation(ptr, size, deviceId, "allocate-pools-off-capture");
       restoreDevice();
       return ptr;
     }
@@ -711,6 +812,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
         ptr = nullptr;
         err = streamOrderedMalloc(&ptr, size, allocStream);
         if (err == cudaSuccess && ptr != nullptr) {
+          recordDiagnosticPoolAllocation(ptr, size, deviceId, "allocate-retry-dirty-stream");
           restoreDevice();
           return ptr;  // Success after stream sync — no failover needed
         }
@@ -731,6 +833,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       ptr = nullptr;
       cudaError_t perThreadErr = streamOrderedMalloc(&ptr, size, cudaStreamPerThread);
       if (perThreadErr == cudaSuccess && ptr != nullptr) {
+        recordDiagnosticPoolAllocation(ptr, size, deviceId, "allocate-retry-per-thread");
         restoreDevice();
         return ptr;
       }
@@ -756,7 +859,8 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     return result;
   }
 
-  // Pool allocation succeeded - no tracking needed, will use cudaFreeAsync
+  // Pool allocation succeeded. Track ownership only while MEMORY diagnostics are enabled.
+  recordDiagnosticPoolAllocation(ptr, size, deviceId, "allocate");
   restoreDevice();
   return ptr;
 }
@@ -884,6 +988,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     if (err == cudaSuccess && ptr != nullptr) {
       sd_debug("CudaMemoryPool::allocateFailover: Succeeded via pool after trim on device %d\n", currentDeviceId);
       if (actualDeviceId) *actualDeviceId = currentDeviceId;
+      recordDiagnosticPoolAllocation(ptr, size, currentDeviceId, "allocate-failover-local");
       if (retryNeedRestore) cudaSetDevice(retryPrevDev);
       return ptr;
     }
@@ -1043,6 +1148,7 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
                     "bytes=%zu freeBefore=%zu MB\n",
                     currentDeviceId, d, size, candidate.freeMem / (1024*1024));
         }
+        recordDiagnosticPoolAllocation(ptr, size, d, "allocate-failover-peer");
         cudaSetDevice(prevDev);
         return ptr;
       }
@@ -1342,7 +1448,9 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
       cudaStream_t s = (dev >= 0 && dev < MAX_DEVICES) ? directAllocStreams_[dev] : nullptr;
 #endif
       cudaError_t err = streamOrderedFree(ptr, s);
-      if (err != cudaSuccess) {
+      if (err == cudaSuccess) {
+        eraseDiagnosticPoolAllocation(ptr);
+      } else {
         // Clear and leak rather than risk a context-corrupting cudaFree on pool memory.
         cudaGetLastError();
         if (sd::Environment::getInstance().isDebug()) {
@@ -1439,6 +1547,7 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     if (capErr != cudaSuccess) cudaGetLastError();  // clear benign capture-query error
     cudaError_t err = streamOrderedFree(ptr, freeStream);
     if (err == cudaSuccess) {
+      eraseDiagnosticPoolAllocation(ptr);
 #if !defined(HAVE_ZLUDA_HIP_MEMORY_BRIDGE)
       // NVIDIA trimming historically synchronizes only streams with pending frees.
       int trackDevice = (deviceId >= 0 && deviceId < MAX_DEVICES) ? deviceId : 0;
@@ -1666,6 +1775,8 @@ void CudaMemoryPool::trimPool(int deviceId) {
     }
   }
 
+  reportDiagnosticPoolAllocations(deviceId);
+
   if (prevDevice != deviceId) {
     cudaSetDevice(prevDevice);
   }
@@ -1783,6 +1894,8 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
             (preUsed > postSyncUsed) ? (preUsed - postSyncUsed)/(1024*1024) : (size_t)0,
             postTrimUsed/(1024*1024), postTrimReserved/(1024*1024),
             (postSyncReserved > postTrimReserved) ? (postSyncReserved - postTrimReserved)/(1024*1024) : (size_t)0);
+
+  reportDiagnosticPoolAllocations(deviceId);
 
   if (prevDevice != deviceId) {
     cudaSetDevice(prevDevice);
@@ -1987,6 +2100,7 @@ void* CudaMemoryPool::allocateDirect(size_t size, int deviceId) {
       std::lock_guard<std::mutex> lock(directAllocMutex_);
       directAsyncAllocations_[ptr] = DirectAsyncInfo{size, deviceId};
     }
+    recordDiagnosticPoolAllocation(ptr, size, deviceId, "allocate-direct");
     if (sd::Environment::getInstance().isDebug()) {
       sd_printf("CudaMemoryPool::allocateDirect: persistent capture-safe alloc ptr=%p size=%zu dev=%d "
                 "(non-capturing stream, survives workspace/graph teardown)\n",
@@ -2070,6 +2184,7 @@ void CudaMemoryPool::ensureCaptureArena(int deviceId) {
     blk.capacity = ARENA_BYTES;
     blk.offset   = 0;
     captureArenaBlocks_[deviceId].push_back(blk);
+    recordDiagnosticPoolAllocation(base, ARENA_BYTES, deviceId, "capture-arena");
     if (sd::Environment::getInstance().isDebug()) {
       sd_printf("CudaMemoryPool::ensureCaptureArena: materialized block[%zu] %zuMB capture-constant arena "
                 "for dev=%d base=%p\n", blockIdx, ARENA_BYTES >> 20, deviceId, base);
@@ -2179,6 +2294,7 @@ void* CudaMemoryPool::allocateFromCaptureArena(size_t size, int deviceId) {
     blk.capacity = newBlockSize;
     blk.offset   = alignedSize;  // immediately consume the request
     captureArenaBlocks_[deviceId].push_back(blk);
+    recordDiagnosticPoolAllocation(newBase, newBlockSize, deviceId, "capture-arena");
     if (sd::Environment::getInstance().isDebug()) {
       sd_printf("CudaMemoryPool::allocateFromCaptureArena: GREW arena dev=%d block[%zu] "
                 "%zuMB base=%p (total blocks=%zu)\n",
@@ -2325,7 +2441,7 @@ void CudaMemoryPool::registerDirectAllocation(void* ptr, size_t size) {
 bool CudaMemoryPool::isDirectAllocation(void* ptr) const {
   if (ptr == nullptr) return false;
   std::lock_guard<std::mutex> lock(directAllocMutex_);
-  return directAllocations_.count(ptr) > 0;
+  return directAllocations_.count(ptr) > 0 || directAsyncAllocations_.count(ptr) > 0;
 }
 
 void CudaMemoryPool::releaseAll() {

@@ -63,6 +63,17 @@ static bool isDenseCOrder(NDArray* arr) {
 // while still allowing useful arithmetic islands to remain on the accelerator.
 static constexpr int kMaxNnapiSegmentOps = 32;
 
+#if defined(SD_NNAPI_ACCELERATOR_ONLY)
+#define SD_NNAPI_STRINGIFY_INNER(value) #value
+#define SD_NNAPI_STRINGIFY(value) SD_NNAPI_STRINGIFY_INNER(value)
+#if defined(SD_NNAPI_REQUIRED_DEVICE_NAME)
+static constexpr const char* kRequiredNnapiAcceleratorDevice =
+    SD_NNAPI_STRINGIFY(SD_NNAPI_REQUIRED_DEVICE_NAME);
+#else
+static constexpr const char* kRequiredNnapiAcceleratorDevice = "google-edgetpu";
+#endif
+#endif
+
 // ─── Data type support ──────────────────────────────────────────────────────
 
 int32_t NnapiGraphBackend::toNnapiOperandType(DataType dt) {
@@ -441,13 +452,85 @@ bool NnapiGraphBackend::validateSlotContract(const NativeSlot& slot, int nnapiOp
 
 // ─── Construction / singleton ───────────────────────────────────────────────
 
+bool NnapiGraphBackend::resolveRequiredAcceleratorDevice() {
+#if defined(SD_NNAPI_ACCELERATOR_ONLY) && defined(__ANDROID_API__) && __ANDROID_API__ >= 29
+  requiredDeviceName_ = kRequiredNnapiAcceleratorDevice;
+
+  uint32_t deviceCount = 0;
+  int result = ANeuralNetworks_getDeviceCount(&deviceCount);
+  if (result != ANEURALNETWORKS_NO_ERROR) {
+    DSP_DIAG(BACKEND,
+             "NNAPI_DEVICE_SELECTION_FAILED required=%s getDeviceCount=%d",
+             requiredDeviceName_.c_str(), result);
+    return false;
+  }
+
+  for (uint32_t deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
+    const ANeuralNetworksDevice* device = nullptr;
+    if (ANeuralNetworks_getDevice(deviceIndex, &device) != ANEURALNETWORKS_NO_ERROR ||
+        device == nullptr) {
+      continue;
+    }
+
+    const char* deviceName = nullptr;
+    const char* deviceVersion = nullptr;
+    int32_t deviceType = ANEURALNETWORKS_DEVICE_UNKNOWN;
+    int64_t featureLevel = 0;
+    if (ANeuralNetworksDevice_getName(device, &deviceName) != ANEURALNETWORKS_NO_ERROR ||
+        deviceName == nullptr ||
+        ANeuralNetworksDevice_getType(device, &deviceType) != ANEURALNETWORKS_NO_ERROR ||
+        ANeuralNetworksDevice_getFeatureLevel(device, &featureLevel) !=
+            ANEURALNETWORKS_NO_ERROR) {
+      continue;
+    }
+    (void)ANeuralNetworksDevice_getVersion(device, &deviceVersion);
+
+    DSP_DIAG(BACKEND,
+             "NNAPI_DEVICE_DISCOVERED index=%u name=%s type=%d version=%s feature_level=%lld",
+             deviceIndex, deviceName, deviceType,
+             deviceVersion != nullptr ? deviceVersion : "unknown",
+             static_cast<long long>(featureLevel));
+
+    if (toLower(deviceName) != toLower(requiredDeviceName_) ||
+        deviceType != ANEURALNETWORKS_DEVICE_ACCELERATOR) {
+      continue;
+    }
+
+    requiredDevice_ = device;
+    selectedDeviceName_ = deviceName;
+    selectedDeviceVersion_ = deviceVersion != nullptr ? deviceVersion : "unknown";
+    selectedDeviceType_ = deviceType;
+    selectedDeviceFeatureLevel_ = featureLevel;
+    DSP_DIAG(BACKEND,
+             "NNAPI_DEVICE_SELECTED required=%s name=%s type=%d version=%s feature_level=%lld",
+             requiredDeviceName_.c_str(), selectedDeviceName_.c_str(),
+             selectedDeviceType_, selectedDeviceVersion_.c_str(),
+             static_cast<long long>(selectedDeviceFeatureLevel_));
+    return true;
+  }
+
+  DSP_DIAG(BACKEND,
+           "NNAPI_DEVICE_SELECTION_FAILED required=%s discovered=%u reason=missing_accelerator",
+           requiredDeviceName_.c_str(), deviceCount);
+  return false;
+#else
+  requiredDeviceName_.clear();
+  return true;
+#endif
+}
+
 NnapiGraphBackend::NnapiGraphBackend() {
   apiLevel_ = getAndroidApiLevel();
   nnapiAvailable_ = (apiLevel_ >= 27);
+  if (nnapiAvailable_ && !resolveRequiredAcceleratorDevice()) {
+    nnapiAvailable_ = false;
+  }
   if (nnapiAvailable_) {
     DSP_DIAG(BACKEND, "NnapiGraphBackend: NNAPI available (API level %d)", apiLevel_);
   } else {
-    DSP_DIAG(BACKEND, "NnapiGraphBackend: NNAPI not available (API level %d, need 27+)", apiLevel_);
+    DSP_DIAG(BACKEND,
+             "NnapiGraphBackend: NNAPI unavailable or required accelerator missing (API level %d)",
+             apiLevel_);
   }
 }
 
@@ -1346,14 +1429,17 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return false;
   }
 
-  // Check cache
-  SegmentCacheKey key{startSlot, endSlot, shapeKey};
-  {
-    std::lock_guard<std::mutex> lock(cacheMtx_);
-    auto it = cache_.find(key);
-    if (it != cache_.end() && it->second.valid) {
-      lastCompilationAudit_ = it->second.compilationAudit;
-      DSP_DIAG(COMPILE, "NNAPI_PHASE compile_cache_hit seg[%d-%d]", startSlot, endSlot);
+  // Reuse is deliberately scoped to this exact GraphSegment. Slot ranges and
+  // shape keys are not model identities and must never cross-hit another plan.
+  if (seg.compiledGraphBackendArtifactOwner == this &&
+      seg.compiledGraphBackendArtifactShapeKey == shapeKey &&
+      seg.compiledGraphBackendArtifact) {
+    auto existing = std::static_pointer_cast<CompiledModel>(
+        seg.compiledGraphBackendArtifact);
+    if (existing->valid && existing->startSlot == startSlot &&
+        existing->endSlot == endSlot) {
+      lastCompilationAudit_ = existing->compilationAudit;
+      DSP_DIAG(COMPILE, "NNAPI_PHASE compile_segment_hit seg[%d-%d]", startSlot, endSlot);
       return true;
     }
   }
@@ -1367,12 +1453,14 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return false;
   }
 
-  CompiledModel compiled;
-  compiled.shapeKey = shapeKey;
+  auto compiled = std::make_shared<CompiledModel>();
+  compiled->startSlot = startSlot;
+  compiled->endSlot = endSlot;
+  compiled->shapeKey = shapeKey;
 
   // Build the model graph
   DSP_DIAG(COMPILE, "NNAPI_PHASE model_build_begin seg[%d-%d]", startSlot, endSlot);
-  if (!buildModel(model, compiled, slots, startSlot, endSlot,
+  if (!buildModel(model, *compiled, slots, startSlot, endSlot,
                   externalInputs, numExternalInputs,
                   outputSlots, totalOutputSlots, totalSlots,
                   requestedOutputSlotIndices, numRequestedOutputs)) {
@@ -1380,21 +1468,77 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return false;
   }
 
-  compiled.model = model;
+  compiled->model = model;
   DSP_DIAG(COMPILE, "NNAPI_PHASE model_build_done seg[%d-%d] inputs=%d outputs=%d",
             startSlot, endSlot,
-            static_cast<int>(compiled.inputMappings.size()),
-            static_cast<int>(compiled.outputMappings.size()));
+            static_cast<int>(compiled->inputMappings.size()),
+            static_cast<int>(compiled->outputMappings.size()));
 
-  // Compile the model
+  // Compile the model. Accelerator-only builds must classify the finished
+  // model against the required device and pin compilation to that exact device.
+  // ANeuralNetworksCompilation_create() is intentionally forbidden here because
+  // Android may otherwise partition or fall back to a CPU NNAPI implementation.
   DSP_DIAG(COMPILE, "NNAPI_PHASE compilation_create_begin seg[%d-%d]", startSlot, endSlot);
   ANeuralNetworksCompilation* compilation = nullptr;
-  result = ANeuralNetworksCompilation_create(model, &compilation);
-  if (result != ANEURALNETWORKS_NO_ERROR || !compilation) {
-    DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to create compilation: %d", result);
-    ANeuralNetworksModel_free(model);
+#if defined(SD_NNAPI_ACCELERATOR_ONLY)
+#if defined(__ANDROID_API__) && __ANDROID_API__ >= 29
+  if (requiredDevice_ == nullptr) {
+    DSP_DIAG(COMPILE,
+             "NNAPI_DEVICE_COMPILE_REJECTED seg[%d-%d] required=%s reason=device_not_selected",
+             startSlot, endSlot, requiredDeviceName_.c_str());
     return false;
   }
+
+  const ANeuralNetworksDevice* devices[] = {requiredDevice_};
+  const int operationCount = endSlot - startSlot + 1;
+  std::unique_ptr<bool[]> supportedOperations(new bool[operationCount]());
+  result = ANeuralNetworksModel_getSupportedOperationsForDevices(
+      model, devices, 1, supportedOperations.get());
+  if (result != ANEURALNETWORKS_NO_ERROR) {
+    DSP_DIAG(COMPILE,
+             "NNAPI_DEVICE_CLASSIFICATION_FAILED seg[%d-%d] device=%s status=%d",
+             startSlot, endSlot, selectedDeviceName_.c_str(), result);
+    return false;
+  }
+
+  int supportedCount = 0;
+  for (int operationIndex = 0; operationIndex < operationCount; ++operationIndex) {
+    if (supportedOperations[operationIndex]) {
+      ++supportedCount;
+      continue;
+    }
+    const int slotIndex = startSlot + operationIndex;
+    DSP_DIAG(COMPILE,
+             "NNAPI_DEVICE_UNSUPPORTED_OPERATION device=%s slot=%d op=%s",
+             selectedDeviceName_.c_str(), slotIndex,
+             slots[slotIndex].ident.opName.c_str());
+  }
+  DSP_DIAG(COMPILE,
+           "NNAPI_DEVICE_CLASSIFICATION device=%s seg[%d-%d] supported=%d total=%d",
+           selectedDeviceName_.c_str(), startSlot, endSlot,
+           supportedCount, operationCount);
+  if (supportedCount != operationCount) {
+    return false;
+  }
+
+  result = ANeuralNetworksCompilation_createForDevices(model, devices, 1, &compilation);
+#else
+  DSP_DIAG(COMPILE,
+           "NNAPI_DEVICE_COMPILE_REJECTED seg[%d-%d] required=%s reason=api_below_29",
+           startSlot, endSlot, requiredDeviceName_.c_str());
+  return false;
+#endif
+#else
+  result = ANeuralNetworksCompilation_create(model, &compilation);
+#endif
+  if (result != ANEURALNETWORKS_NO_ERROR || !compilation) {
+    DSP_DIAG(COMPILE,
+             "NnapiGraphBackend: failed to create compilation for device '%s': %d",
+             selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
+             result);
+    return false;
+  }
+  compiled->compilation = compilation;
 
   ANeuralNetworksCompilation_setPreference(compilation, preference_);
 
@@ -1402,13 +1546,15 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   result = ANeuralNetworksCompilation_finish(compilation);
   if (result != ANEURALNETWORKS_NO_ERROR) {
     DSP_DIAG(COMPILE, "NnapiGraphBackend: compilation finish failed: %d", result);
-    ANeuralNetworksCompilation_free(compilation);
-    ANeuralNetworksModel_free(model);
     return false;
   }
 
-  compiled.compilation = compilation;
-  compiled.valid = true;
+  compiled->valid = true;
+  DSP_DIAG(COMPILE,
+           "NNAPI_DEVICE_COMPILATION_COMMITTED device=%s type=%d feature_level=%lld seg[%d-%d]",
+           selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
+           selectedDeviceType_, static_cast<long long>(selectedDeviceFeatureLevel_),
+           startSlot, endSlot);
   DSP_DIAG(COMPILE, "NNAPI_PHASE compilation_finish_done seg[%d-%d]", startSlot, endSlot);
 
   // Build compilation audit
@@ -1426,23 +1572,32 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         entry.reason = "no NNAPI op mapping";
       }
     }
-    compiled.compilationAudit.push_back(entry);
+    compiled->compilationAudit.push_back(entry);
   }
 
-  lastCompilationAudit_ = compiled.compilationAudit;
+  lastCompilationAudit_ = compiled->compilationAudit;
 
   DSP_DIAG(COMPILE, "NnapiGraphBackend: compiled segment [%d-%d] with %d inputs, %d outputs (%d ops) on API %d",
             startSlot, endSlot,
-            static_cast<int>(compiled.inputMappings.size()),
-            static_cast<int>(compiled.outputMappings.size()),
+            static_cast<int>(compiled->inputMappings.size()),
+            static_cast<int>(compiled->outputMappings.size()),
             endSlot - startSlot + 1,
             apiLevel_);
 
-  // Cache
+  // The segment is the sole strong owner. The singleton keeps weak references
+  // only so an explicit global invalidation can still release driver resources.
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
-    cache_[key] = std::move(compiled);
+    compiledArtifacts_.erase(
+        std::remove_if(
+            compiledArtifacts_.begin(), compiledArtifacts_.end(),
+            [](const std::weak_ptr<CompiledModel>& artifact) {
+              return artifact.expired();
+            }),
+        compiledArtifacts_.end());
+    compiledArtifacts_.push_back(compiled);
   }
+  seg.setCompiledGraphBackendArtifact(this, shapeKey, compiled);
 
   return true;
 }
@@ -1455,19 +1610,16 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                           void* stream) {
   int startSlot = seg.def.startSlot;
   int endSlot = seg.def.endSlot;
-  SegmentCacheKey key{startSlot, endSlot, seg.def.shapeKeyState.compiledShapeKey};
-
-  CompiledModel* compiled = nullptr;
-  {
-    std::lock_guard<std::mutex> lock(cacheMtx_);
-    auto it = cache_.find(key);
-    if (it == cache_.end() || !it->second.valid) {
-      return Status::KERNEL_FAILURE;
-    }
-    compiled = &it->second;
+  if (seg.compiledGraphBackendArtifactOwner != this ||
+      !seg.compiledGraphBackendArtifact) {
+    return Status::KERNEL_FAILURE;
   }
-
-  if (!compiled->compilation) {
+  auto compiledHandle = std::static_pointer_cast<CompiledModel>(
+      seg.compiledGraphBackendArtifact);
+  CompiledModel* compiled = compiledHandle.get();
+  if (!compiled->valid || !compiled->compilation ||
+      compiled->startSlot != startSlot || compiled->endSlot != endSlot ||
+      compiled->shapeKey != seg.def.shapeKeyState.compiledShapeKey) {
     return Status::KERNEL_FAILURE;
   }
 
@@ -1565,7 +1717,12 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
   }
 
-  // Execute synchronously via startCompute + wait
+  // Execute synchronously via startCompute + wait. In accelerator-only builds
+  // this compilation was created exclusively for selectedDeviceName_.
+  DSP_DIAG(EXECUTE,
+           "NNAPI_DEVICE_EXECUTE_BEGIN device=%s seg[%d-%d]",
+           selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
+           startSlot, endSlot);
   DSP_DIAG(EXECUTE, "NNAPI_PHASE start_compute_begin seg[%d-%d]", startSlot, endSlot);
   ANeuralNetworksEvent* event = nullptr;
   result = ANeuralNetworksExecution_startCompute(execution, &event);
@@ -1598,6 +1755,10 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
   }
 
+  DSP_DIAG(EXECUTE,
+           "NNAPI_DEVICE_EXECUTE_DONE device=%s seg[%d-%d] status=0",
+           selectedDeviceName_.empty() ? "nnapi-default" : selectedDeviceName_.c_str(),
+           startSlot, endSlot);
   DSP_DIAG(EXECUTE, "NNAPI_PHASE execute_done seg[%d-%d]", startSlot, endSlot);
   return Status::OK;
 }
@@ -1606,7 +1767,10 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
 void NnapiGraphBackend::invalidateCache() {
   std::lock_guard<std::mutex> lock(cacheMtx_);
-  cache_.clear();
+  for (auto& weakArtifact : compiledArtifacts_) {
+    if (auto artifact = weakArtifact.lock()) artifact->invalidate();
+  }
+  compiledArtifacts_.clear();
 }
 
 std::vector<CompilationAuditEntry> NnapiGraphBackend::getLastCompilationAudit() const {

@@ -41,6 +41,12 @@ public final class ToolCallParser {
     private static final Pattern PYTHON_CALL = Pattern.compile(
             "(?s)([A-Za-z_][A-Za-z0-9_.-]*)\\s*\\((.*)\\)");
     private static final Pattern ARGUMENT_NAME = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
+    private static final Pattern XML_FUNCTION = Pattern.compile(
+            "(?s)<tool_call>\\s*<function=([A-Za-z_][A-Za-z0-9_.-]*)>\\s*"
+                    + "(.*?)\\s*</function>\\s*</tool_call>");
+    private static final Pattern XML_PARAMETER = Pattern.compile(
+            "(?s)\\s*<parameter=([A-Za-z_][A-Za-z0-9_]*)>\\s*"
+                    + "(.*?)\\s*</parameter>");
 
     private ToolCallParser() {
     }
@@ -48,7 +54,8 @@ public final class ToolCallParser {
     public enum Protocol {
         CONTENT_ONLY,
         JSON,
-        LFM_NATIVE
+        LFM_NATIVE,
+        XML
     }
 
     public static final class ParseResult {
@@ -95,8 +102,21 @@ public final class ToolCallParser {
         if (format == null) {
             throw new IllegalArgumentException("Tool-call format must be explicit");
         }
-        return parse(rawText, tools, format == ChatTemplate.ToolCallFormat.NATIVE
-                ? Protocol.LFM_NATIVE : Protocol.JSON, toolChoice);
+        Protocol protocol;
+        switch (format) {
+            case NATIVE:
+                protocol = Protocol.LFM_NATIVE;
+                break;
+            case XML:
+                protocol = Protocol.XML;
+                break;
+            case JSON:
+                protocol = Protocol.JSON;
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported tool-call format: " + format);
+        }
+        return parse(rawText, tools, protocol, toolChoice);
     }
 
     public static ParseResult parse(String rawText, List<ChatTemplate.Tool> tools,
@@ -131,6 +151,16 @@ public final class ToolCallParser {
                 if (required) {
                     return new ParseResult(raw, raw.trim(), List.of(),
                             List.of("required native tool call was missing or invalid"));
+                }
+                return new ParseResult(raw, raw.trim(), List.of(), List.of());
+            case XML:
+                if (raw.contains(ChatTemplate.XML_TOOL_CALL_START)
+                        || raw.contains(ChatTemplate.XML_TOOL_CALL_END)) {
+                    return parseXmlEnvelope(raw, byName);
+                }
+                if (required) {
+                    return new ParseResult(raw, raw.trim(), List.of(),
+                            List.of("required XML tool call was missing or invalid"));
                 }
                 return new ParseResult(raw, raw.trim(), List.of(), List.of());
             default:
@@ -212,6 +242,63 @@ public final class ToolCallParser {
 
         ChatTemplate.ToolCall parsed = new ChatTemplate.ToolCall(null, name, arguments);
         return new ParseResult(raw, "", List.of(parsed), List.of());
+    }
+
+    private static ParseResult parseXmlEnvelope(
+            String raw, Map<String, ChatTemplate.Tool> declared) {
+        String trimmed = raw.trim();
+        int envelopeStart = trimmed.indexOf(ChatTemplate.XML_TOOL_CALL_START);
+        if (envelopeStart < 0) {
+            return new ParseResult(raw, trimmed, List.of(),
+                    List.of("required XML tool call was missing or invalid"));
+        }
+        String content = trimmed.substring(0, envelopeStart).trim();
+        String envelope = trimmed.substring(envelopeStart);
+        Matcher function = XML_FUNCTION.matcher(envelope);
+        if (!function.matches()) {
+            return new ParseResult(raw, content, List.of(),
+                    List.of("incomplete XML tool-call envelope"));
+        }
+
+        String name = function.group(1);
+        ChatTemplate.Tool tool = declared.get(name);
+        if (tool == null) {
+            return new ParseResult(raw, content, List.of(),
+                    List.of("undeclared tool " + name));
+        }
+
+        String parameters = function.group(2);
+        Matcher parameter = XML_PARAMETER.matcher(parameters);
+        Map<String, Object> arguments = new LinkedHashMap<>();
+        int cursor = 0;
+        while (cursor < parameters.length()) {
+            parameter.region(cursor, parameters.length());
+            if (!parameter.lookingAt()) {
+                if (parameters.substring(cursor).isBlank()) {
+                    cursor = parameters.length();
+                    break;
+                }
+                return new ParseResult(raw, content, List.of(),
+                        List.of("invalid XML parameters for tool " + name));
+            }
+            String argumentName = parameter.group(1);
+            if (arguments.containsKey(argumentName)) {
+                return new ParseResult(raw, content, List.of(),
+                        List.of("duplicate XML parameter " + argumentName
+                                + " for tool " + name));
+            }
+            arguments.put(argumentName, parseScalar(parameter.group(2).trim()));
+            cursor = parameter.end();
+        }
+
+        List<String> schemaErrors = ToolSchemaValidator.validateArguments(tool, arguments);
+        if (!schemaErrors.isEmpty()) {
+            return new ParseResult(raw, content, List.of(),
+                    List.of("arguments for tool " + name + " violate its schema: "
+                            + String.join("; ", schemaErrors)));
+        }
+        return new ParseResult(raw, content,
+                List.of(new ChatTemplate.ToolCall(null, name, arguments)), List.of());
     }
 
     private static void extractJsonCalls(JsonNode root, Map<String, ChatTemplate.Tool> declared,

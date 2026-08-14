@@ -784,10 +784,12 @@ bool addPrefillInputs(
     int32_t promptCount,
     std::string* error) {
   const auto& metadata = session->metadata;
+  // The graph inputs are dynamically shaped. maxPrefillLength is an admission
+  // limit, not a physical buffer size: materializing it here makes the causal
+  // mask quadratic in the model's advertised context even for a tiny prompt.
   auto inputIds = createArray(
-      {1, static_cast<LongType>(metadata.maxPrefillLength)},
+      {1, static_cast<LongType>(promptCount)},
       DataType::INT64);
-  assignScalar(inputIds.get(), static_cast<double>(metadata.padId));
   for (int32_t i = 0; i < promptCount; ++i) {
     inputIds->p(static_cast<LongType>(i), static_cast<LongType>(prompt[i]));
   }
@@ -800,14 +802,14 @@ bool addPrefillInputs(
   }
 
   auto mask = createArray(
-      {1, 1, static_cast<LongType>(metadata.maxPrefillLength),
-       static_cast<LongType>(metadata.contextLength)},
+      {1, 1, static_cast<LongType>(promptCount),
+       static_cast<LongType>(promptCount)},
       metadata.maskDataType);
   assignScalar(mask.get(), maskFillValue(metadata.maskDataType));
   for (int32_t row = 0; row < promptCount; ++row) {
     for (int32_t column = 0; column <= row; ++column) {
       const LongType index =
-          static_cast<LongType>(row) * metadata.contextLength + column;
+          static_cast<LongType>(row) * promptCount + column;
       mask->p(index, 0.0);
     }
   }

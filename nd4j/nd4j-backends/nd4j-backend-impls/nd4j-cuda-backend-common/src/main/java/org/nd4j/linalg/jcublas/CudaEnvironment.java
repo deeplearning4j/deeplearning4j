@@ -18,7 +18,9 @@
 package org.nd4j.linalg.jcublas;
 
 import org.bytedeco.javacpp.BytePointer;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.factory.Environment;
+import org.nd4j.linalg.factory.config.MemoryConfig;
 import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
 
 /**
@@ -54,6 +56,22 @@ public class CudaEnvironment implements Environment {
 
     protected CudaEnvironment(Nd4jCuda.Environment environment){
         this.e = environment;
+
+        MemoryConfig memoryConfig = MemoryConfig.getInstance();
+        Nd4jCuda.MemoryConfig nativeMemoryConfig = environment.memory();
+        nativeMemoryConfig.setPoolReleaseThresholdPercent(memoryConfig.poolReleaseThresholdPercent());
+        nativeMemoryConfig.setNonPeerHeadroomPercent(memoryConfig.nonPeerHeadroomPercent());
+
+        Nd4jCuda.DspConfig nativeDspConfig = environment.dsp();
+        String planCacheBudgetFraction = System.getProperty(
+                ND4JSystemProperties.DSP_PLAN_CACHE_BUDGET_FRACTION);
+        if (planCacheBudgetFraction != null) {
+            nativeDspConfig.setPlanCacheBudgetFraction(Float.parseFloat(planCacheBudgetFraction));
+        }
+        String planCacheMaxPlans = System.getProperty(ND4JSystemProperties.DSP_PLAN_CACHE_MAX_PLANS);
+        if (planCacheMaxPlans != null) {
+            nativeDspConfig.setPlanCacheMaxPlans(Integer.parseInt(planCacheMaxPlans));
+        }
     }
 
     @Override

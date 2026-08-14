@@ -28,7 +28,6 @@ import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
@@ -224,19 +223,17 @@ public class GptOssArchitecture implements ModelArchitecture {
 
         // Apply RoPE
         if (config.isUseRotaryEmbeddings()) {
-            q = new FusedRoPE(sd, q, config.getRopeType(), 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+            q = sd.nn().fusedRoPE("q_rope_" + layerIdx, q, null,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount());
 
-            k = new FusedRoPE(sd, k, config.getRopeType(), 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+            k = sd.nn().fusedRoPE("k_rope_" + layerIdx, k, null,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount());
         }
 
         // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("v_cast_" + layerIdx, q.dataType());
-        }
+        v = GGMLDTypePolicy.castTo(v, "v_cast_" + layerIdx, q.dataType());
 
         SDVariable attnOut = sd.nn.dotProductAttentionV2(
                 "attn_out_" + layerIdx,

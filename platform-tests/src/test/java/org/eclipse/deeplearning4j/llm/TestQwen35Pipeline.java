@@ -77,6 +77,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   -Dqwen.max.tokens=50            max generation tokens
  *   -Dqwen.prompt="Hello"           custom test prompt
  *   -Dqwen.tokenizer.path=/path     path to tokenizer.json (optional, extracted from GGUF if absent)
+ *   -Dqwen.prefill.lastPositionLogits=true  exercise production last-position prefill optimization
  *
  * Run examples:
  *   cd platform-tests && mvn test -Dtest=TestQwen35Pipeline#testQwen35Pipeline \
@@ -402,6 +403,8 @@ public class TestQwen35Pipeline {
                             System.getProperty("qwen.graph.optimizer", "true")))
                     .dspEnabled(Boolean.parseBoolean(
                             System.getProperty("qwen.dsp", "true")))
+                    .prefillLastPositionLogitsEnabled(Boolean.parseBoolean(
+                            System.getProperty("qwen.prefill.lastPositionLogits", "false")))
                     .build();
 
             try (GenerationPipeline pipeline = GenerationPipeline.create(pipelineConfig)) {
@@ -805,6 +808,8 @@ public class TestQwen35Pipeline {
                             System.getProperty("qwen.graph.optimizer", "true")))
                     .dspEnabled(Boolean.parseBoolean(
                             System.getProperty("qwen.dsp", "true")))
+                    .prefillLastPositionLogitsEnabled(Boolean.parseBoolean(
+                            System.getProperty("qwen.prefill.lastPositionLogits", "false")))
                     .build();
 
             GenerationPipeline pipeline;

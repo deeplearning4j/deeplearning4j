@@ -189,6 +189,26 @@
 
 
         </profile>
+
+        <!--
+          Managed-only Android/AOT builds need the CPU Java modules in the
+          reactor without activating nd4j-api's "cpu" profile, whose optional
+          libnd4j ZIP is a native distribution input. Keeping those concerns in
+          separate profile IDs lets cross-target compilation reuse an already
+          receipted native SDK instead of rebuilding a multi-gigabyte archive.
+        -->
+        <profile>
+            <id>cpu-managed</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>nd4j-native</module>
+                <module>nd4j-native-preset</module>
+                <module>nd4j-cpu-backend-common</module>
+            </modules>
+        </profile>
+
         <profile>
             <id>cuda</id>
             <activation>

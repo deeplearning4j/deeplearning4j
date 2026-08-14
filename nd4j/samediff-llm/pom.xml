@@ -71,6 +71,13 @@
             <artifactId>tokenizers-native</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>tokenizers-native</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform}</classifier>
+            <scope>test</scope>
+        </dependency>
 
         <!-- SameDiff graph-construction tests require an actual backend. -->
         <dependency>

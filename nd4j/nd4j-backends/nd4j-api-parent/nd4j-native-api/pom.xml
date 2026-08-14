@@ -39,10 +39,13 @@
         <skipPublishing>false</skipPublishing>
         <!-- Java 9 module name does not allow native-->
         <module.name>nd4j.cpu.api</module.name>
+        <!-- Lets controlled producers redirect classes without changing normal Maven output. -->
+        <nd4j.nativeApi.outputDirectory>${project.build.directory}/classes</nd4j.nativeApi.outputDirectory>
     </properties>
 
 
     <build>
+        <outputDirectory>${nd4j.nativeApi.outputDirectory}</outputDirectory>
         <plugins>
             <plugin>
                 <groupId>org.moditect</groupId>

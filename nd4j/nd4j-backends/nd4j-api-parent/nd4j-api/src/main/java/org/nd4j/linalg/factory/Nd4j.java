@@ -299,8 +299,15 @@ public class Nd4j {
 
     static {
         fallbackMode = new AtomicBoolean(false);
-        Nd4j nd4j = new Nd4j();
-        nd4j.initContext();
+        Nd4jInitialization.begin();
+        try {
+            Nd4j nd4j = new Nd4j();
+            nd4j.initContext();
+            Nd4jInitialization.complete();
+        } catch (Throwable failure) {
+            Nd4jInitialization.fail(failure);
+            throw Nd4jInitialization.propagate(failure);
+        }
     }
 
     /**
@@ -1774,6 +1781,19 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(ByteBuffer buffer, DataType type, int length) {
+        return getDataBufferFactory().createBuffer(buffer, type, length);
+    }
+
+    /**
+     * Creates a buffer backed by the given byte buffer without narrowing a tensor's
+     * element count to 32 bits.
+     *
+     * @param buffer the buffer to create from
+     * @param type the data type of the buffer
+     * @param length the number of elements
+     * @return the created buffer
+     */
+    public static DataBuffer createBuffer(ByteBuffer buffer, DataType type, long length) {
         return getDataBufferFactory().createBuffer(buffer, type, length);
     }
 
@@ -5612,8 +5632,14 @@ public class Nd4j {
             defaultFloatingPointDataType = new AtomicReference<>();
             defaultFloatingPointDataType.set(DataType.FLOAT);
             Nd4jBackend backend = Nd4jBackend.load();
-            if(backend != null)
-                initWithBackend(backend);
+            if (backend == null) {
+                throw new IllegalStateException("ND4J backend discovery returned no backend");
+            }
+            initWithBackend(backend);
+            if (Nd4j.backend == null) {
+                throw new IllegalStateException(
+                        "ND4J backend initialization completed without an active backend");
+            }
 
             // Auto-initialize multi-backend support
             // This detects all available backends/devices and configures routing
@@ -5773,37 +5799,23 @@ public class Nd4j {
 
             log.debug("=== Instance Creation Phase ===");
 
-            // Create instances with debug info
-            try {
-                memoryManager = memoryManagerClazz.newInstance();
-                log.debug("Memory Manager instance created: {}", memoryManager.getClass().getName());
-            } catch (Exception e) {
-                log.error("Failed to create Memory Manager instance: {}", e.getMessage(), e);
+            // Construct every configured component as part of the same bootstrap
+            // transaction. A required component failure must abort ND4J initialization;
+            // continuing would publish an unusable, partially initialized runtime.
+            memoryManager = memoryManagerClazz.newInstance();
+            log.debug("Memory Manager instance created: {}", memoryManager.getClass().getName());
+
+            constantHandler = constantProviderClazz.newInstance();
+            log.debug("Constant Handler instance created: {}", constantHandler.getClass().getName());
+
+            if (shapeInfoProviderClazz != null) {
+                shapeInfoProvider = shapeInfoProviderClazz.newInstance();
+                log.debug("Shape Info Provider instance created: {}", shapeInfoProvider.getClass().getName());
             }
 
-            try {
-                constantHandler = constantProviderClazz.newInstance();
-                log.debug("Constant Handler instance created: {}", constantHandler.getClass().getName());
-            } catch (Exception e) {
-                log.error("Failed to create Constant Handler instance: {}", e.getMessage(), e);
-            }
-
-            if(shapeInfoProviderClazz != null) {
-                try {
-                    shapeInfoProvider = shapeInfoProviderClazz.newInstance();
-                    log.debug("Shape Info Provider instance created: {}", shapeInfoProvider.getClass().getName());
-                } catch (Exception e) {
-                    log.error("Failed to create Shape Info Provider instance: {}", e.getMessage(), e);
-                }
-            }
-
-            if(workspaceManagerClazz != null) {
-                try {
-                    workspaceManager = workspaceManagerClazz.newInstance();
-                    log.debug("Workspace Manager instance created: {}", workspaceManager.getClass().getName());
-                } catch (Exception e) {
-                    log.error("Failed to create Workspace Manager instance: {}", e.getMessage(), e);
-                }
+            if (workspaceManagerClazz != null) {
+                workspaceManager = workspaceManagerClazz.newInstance();
+                log.debug("Workspace Manager instance created: {}", workspaceManager.getClass().getName());
             }
 
             // Debug Op Executioner
@@ -5843,54 +5855,37 @@ public class Nd4j {
                     .loadClassByName(arrayStatsProviderName);
             log.debug("Array Stats Provider class loaded: {}", arrayStatsProviderClazz != null ? arrayStatsProviderClazz.getName() : "null");
 
-            try {
-                STATS_PROVIDER = arrayStatsProviderClazz.newInstance();
-                log.debug("Stats Provider instance created: {}", STATS_PROVIDER.getClass().getName());
-            } catch (Exception e) {
-                log.error("Failed to create Stats Provider instance: {}", e.getMessage(), e);
-            }
+            STATS_PROVIDER = arrayStatsProviderClazz.newInstance();
+            log.debug("Stats Provider instance created: {}", STATS_PROVIDER.getClass().getName());
 
-            try {
-                OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
-                log.debug("Op Executioner instance created: {}", OP_EXECUTIONER_INSTANCE.getClass().getName());
-            } catch (Exception e) {
-                log.error("Failed to create Op Executioner instance: {}", e.getMessage(), e);
-            }
+            OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
+            log.debug("Op Executioner instance created: {}", OP_EXECUTIONER_INSTANCE.getClass().getName());
 
-            try {
-                Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
-                INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
-                log.debug("NDArray Factory instance created: {} with dtype={}, order={}", INSTANCE.getClass().getName(), dtype, ORDER);
-            } catch (Exception e) {
-                log.error("Failed to create NDArray Factory instance: {}", e.getMessage(), e);
-            }
+            Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
+            INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
+            log.debug("NDArray Factory instance created: {} with dtype={}, order={}",
+                    INSTANCE.getClass().getName(), dtype, ORDER);
 
-            try {
-                CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
-                log.debug("Convolution Instance created: {}", CONVOLUTION_INSTANCE.getClass().getName());
-            } catch (Exception e) {
-                log.error("Failed to create Convolution Instance: {}", e.getMessage(), e);
-            }
+            CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
+            log.debug("Convolution Instance created: {}", CONVOLUTION_INSTANCE.getClass().getName());
 
-            try {
-                BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
-                log.debug("BLAS Wrapper instance created: {}", BLAS_WRAPPER_INSTANCE.getClass().getName());
-            } catch (Exception e) {
-                log.error("Failed to create BLAS Wrapper instance: {}", e.getMessage(), e);
-            }
+            BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
+            log.debug("BLAS Wrapper instance created: {}", BLAS_WRAPPER_INSTANCE.getClass().getName());
 
-            try {
-                DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
-                log.debug("Data Buffer Factory instance created: {}", DATA_BUFFER_FACTORY_INSTANCE.getClass().getName());
-            } catch (Exception e) {
-                log.error("Failed to create Data Buffer Factory instance: {}", e.getMessage(), e);
-            }
+            DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
+            log.debug("Data Buffer Factory instance created: {}", DATA_BUFFER_FACTORY_INSTANCE.getClass().getName());
 
-            try {
-                DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
-                log.debug("Distribution Factory instance created: {}", DISTRIBUTION_FACTORY.getClass().getName());
-            } catch (Exception e) {
-                log.error("Failed to create Distribution Factory instance: {}", e.getMessage(), e);
+            DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
+            log.debug("Distribution Factory instance created: {}", DISTRIBUTION_FACTORY.getClass().getName());
+
+            // Device initialization and the CPU BLAS function table are separate native
+            // phases. Prove both the configured BLAS and Environment before advertising
+            // ND4J as ready or constructing the global op registry.
+            if (INSTANCE.blas() == null) {
+                throw new IllegalStateException("NDArray factory did not provide a BLAS implementation");
+            }
+            if (backend.getEnvironment() == null) {
+                throw new IllegalStateException("Backend did not provide an Environment implementation");
             }
 
             log.debug("=== ND4J Property Loading Complete ===");
@@ -5911,13 +5906,9 @@ public class Nd4j {
             // multi-backend execution so ops can run on CPU when data spills to host memory
             initializeMultiBackendIfAvailable();
 
-            // Force early native shape cache initialization before any NDArray allocations occur
-            try {
-                NativeOpsHolder.getInstance().getDeviceNativeOps().initializeShapeCache();
-            } catch (Throwable t) {
-                log.warn("Unable to initialize native shape cache early; continuing with lazy init", t);
-            }
-
+            // Prove the native shape cache before any NDArray allocations occur.
+            // Failure here is a backend initialization failure, not a lazy optional path.
+            NativeOpsHolder.getInstance().getDeviceNativeOps().initializeShapeCache();
 
             DifferentialFunctionClassHolder.initInstance();
 

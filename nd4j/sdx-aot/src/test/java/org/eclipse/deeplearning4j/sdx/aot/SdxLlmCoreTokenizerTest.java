@@ -15,6 +15,8 @@ import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,6 +49,45 @@ class SdxLlmCoreTokenizerTest {
 
         assertEquals(5L, identity.bytes());
         assertEquals(64, identity.sha256().length());
+    }
+
+    @Test
+    void rejectsHuggingFaceGenerationDefaultsAsNativeSdxContract() throws Exception {
+        Path config = temporaryDirectory.resolve("generation_config.json");
+        Files.writeString(config,
+                "{\"bos_token_id\":1,\"eos_token_id\":[2,3],\"temperature\":0.7}",
+                StandardCharsets.UTF_8);
+
+        assertFalse(SdxGgufModelPreparer.isNativeTextGenerationContract(config));
+    }
+
+    @Test
+    void acceptsCompleteRecurrentNativeSdxContract() throws Exception {
+        Path config = temporaryDirectory.resolve("text-generation.json");
+        Files.writeString(config,
+                "{\"formatVersion\":2,"
+                        + "\"profile\":\"causal-lm-in-graph-state-v2\","
+                        + "\"io\":{"
+                        + "\"inputIds\":\"input_ids\",\"causalMask\":\"attention_mask\","
+                        + "\"positionOffset\":\"position_offset\","
+                        + "\"cachePosition\":\"cache_position\","
+                        + "\"actualSequenceLength\":\"actual_sequence_length\","
+                        + "\"logits\":\"logits\","
+                        + "\"kvKeyInputs\":[\"past_key_values.0.key\"],"
+                        + "\"kvValueInputs\":[\"past_key_values.0.value\"],"
+                        + "\"prefillKeyOutputs\":[\"k_rope_0\"],"
+                        + "\"prefillValueOutputs\":[\"v_heads_0\"],"
+                        + "\"recurrentStates\":[{\"input\":\"state.0\","
+                        + "\"output\":\"state_out.0\",\"kind\":\"GDN\","
+                        + "\"dataType\":\"FLOAT32\",\"shape\":[1]}]},"
+                        + "\"execution\":{\"kvLayout\":\"BSHD\","
+                        + "\"kvDtype\":\"FLOAT32\",\"maskDtype\":\"FLOAT32\","
+                        + "\"planOwnsKvScatter\":true},"
+                        + "\"tokens\":{\"padId\":0,\"eosIds\":[2,3]},"
+                        + "\"limits\":{\"contextLength\":128,\"maxPrefillLength\":127}}",
+                StandardCharsets.UTF_8);
+
+        assertTrue(SdxGgufModelPreparer.isNativeTextGenerationContract(config));
     }
 
     @Test
@@ -310,6 +351,56 @@ class SdxLlmCoreTokenizerTest {
         assertEquals(
                 "Verified source SHA-256 did not match the GGUF bytes",
                 failure.getMessage());
+    }
+
+    @Test
+    void embeddedNativeImageFreezesProcessOwnedSymbolResolutionAtBuildTime() throws Exception {
+        String resource = "/META-INF/native-image/org.eclipse.deeplearning4j/sdx-aot/native-image.properties";
+        try (InputStream input = SdxNativeLibs.class.getResourceAsStream(resource)) {
+            assertNotNull(input, "Missing SDX native-image build configuration");
+            String configuration = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+            assertTrue(configuration.contains("-Dorg.nd4j.native.symbolResolution=process"));
+            assertTrue(configuration.contains(
+                    "--initialize-at-build-time=org.slf4j,ch.qos.logback," +
+                            "org.eclipse.deeplearning4j.sdx.aot.SdxNativeLibs," +
+                            "org.nd4j.nativeblas.NativeSymbolResolution"));
+            assertTrue(configuration.contains(
+                    "--initialize-at-run-time=org.nd4j.linalg.api.ops," +
+                            "org.nd4j.autodiff.samediff," +
+                            "org.nd4j.linalg.learning.config," +
+                            "org.nd4j.linalg.api.memory.deallocation.DeallocatorService"),
+                    "Stateful ND4J operation classes must initialize at runtime");
+            assertTrue(configuration.contains(
+                    "org.bytedeco.javacpp.Loader$Helper"),
+                    "JavaCPP helper classes must initialize after the embedded native libraries are loaded");
+            assertTrue(configuration.contains(
+                    "--initialize-at-run-time=org.nd4j.linalg.cpu.nativecpu.NDArray," +
+                            "org.nd4j.linalg.cpu.nativecpu.CpuNDArrayFactory," +
+                            "org.nd4j.linalg.cpu.nativecpu.CpuBackend," +
+                            "org.nd4j.linalg.cpu.nativecpu.CpuEnvironment," +
+                            "org.nd4j.linalg.cpu.nativecpu.buffer.CpuDeallocator," +
+                            "org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu$Environment"),
+                    "Stateful CPU backend classes must initialize only after Android loads the process-owned native libraries");
+            assertFalse(configuration.contains("org.nd4j.cpu.blas.processSymbols"));
+        }
+
+    }
+
+    @Test
+    void embeddedJavaCppSymbolLookupGuardFailsClosedForEveryEntryPoint() {
+        IllegalStateException loaderFailure = assertThrows(
+                IllegalStateException.class,
+                () -> Target_org_bytedeco_javacpp_Loader.addressof("cblas_sgemm"));
+        IllegalStateException helperFailure = assertThrows(
+                IllegalStateException.class,
+                () -> Target_org_bytedeco_javacpp_Loader_Helper.addressof("cublasSgemm_v2"));
+
+        assertEquals(
+                SdxNativeImageJavaCppSafety.FAILURE_PREFIX + "cblas_sgemm",
+                loaderFailure.getMessage());
+        assertEquals(
+                SdxNativeImageJavaCppSafety.FAILURE_PREFIX + "cublasSgemm_v2",
+                helperFailure.getMessage());
     }
 
     @Test

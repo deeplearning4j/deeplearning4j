@@ -41,7 +41,8 @@ import java.util.regex.PatternSyntaxException;
  *
  * <p>The portable subset covers the schema vocabulary emitted by the chat and
  * crawl stacks: object properties/required/additionalProperties, arrays and
- * item schemas, scalar types, enum/const, size bounds, uniqueness, patterns,
+ * item schemas (including positional prefixItems), scalar types, enum/const,
+ * size bounds, uniqueness, patterns,
  * and numeric bounds. Unsupported annotation keywords are ignored.</p>
  */
 public final class ToolSchemaValidator {
@@ -193,10 +194,31 @@ public final class ToolSchemaValidator {
             }
         }
 
-        if (schema.get("items") instanceof Map<?, ?>) {
+        int prefixCount = 0;
+        if (schema.get("prefixItems") instanceof Collection<?>) {
+            Collection<?> prefixItems = (Collection<?>) schema.get("prefixItems");
+            for (Object prefixItem : prefixItems) {
+                if (prefixCount >= values.size()) {
+                    break;
+                }
+                Map<String, Object> prefixSchema = prefixItem instanceof Map<?, ?>
+                        ? stringKeyMap((Map<?, ?>) prefixItem) : Map.of();
+                validateValue(values.get(prefixCount), prefixSchema,
+                        path + "[" + prefixCount + "]", errors);
+                prefixCount++;
+            }
+        }
+
+        if (values.size() <= prefixCount) {
+            return;
+        }
+        Object remainingItems = schema.get("items");
+        if (Boolean.FALSE.equals(remainingItems)) {
+            errors.add(path + " must not contain items after index " + (prefixCount - 1));
+        } else if (remainingItems instanceof Map<?, ?>) {
             Map<String, Object> itemSchema =
-                    stringKeyMap((Map<?, ?>) schema.get("items"));
-            for (int index = 0; index < values.size(); index++) {
+                    stringKeyMap((Map<?, ?>) remainingItems);
+            for (int index = prefixCount; index < values.size(); index++) {
                 validateValue(values.get(index), itemSchema,
                         path + "[" + index + "]", errors);
             }

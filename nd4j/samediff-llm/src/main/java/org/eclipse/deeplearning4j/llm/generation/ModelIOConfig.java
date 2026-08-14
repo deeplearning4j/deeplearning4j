@@ -133,6 +133,9 @@ public class ModelIOConfig {
         if (ioConfig.getPositionIdsName() != null) knownInputs.add(ioConfig.getPositionIdsName());
         if (ioConfig.getPositionOffsetName() != null) knownInputs.add(ioConfig.getPositionOffsetName());
         if (ioConfig.getCachePositionName() != null) knownInputs.add(ioConfig.getCachePositionName());
+        if (ioConfig.getActualSequenceLengthName() != null) {
+            knownInputs.add(ioConfig.getActualSequenceLengthName());
+        }
 
         for (String inputName : sd.inputs()) {
             if (knownInputs.contains(inputName)) continue;
@@ -433,6 +436,14 @@ public class ModelIOConfig {
     private final String cachePositionName = "cache_position";
 
     /**
+     * Name of the real, unpadded current-sequence-length placeholder.
+     * Hybrid recurrent models use this scalar to ignore fixed-buffer padding when
+     * updating recurrent state and selecting the final-token logits.
+     */
+    @Builder.Default
+    private final String actualSequenceLengthName = "actual_sequence_length";
+
+    /**
      * Name of the merged-decoder branch selector (optimum "decoder_model_merged"
      * exports, e.g. Whisper): a BOOL scalar choosing the no-past prefill branch
      * (false) vs the with-past decode branch (true) of the exported If.
@@ -543,6 +554,13 @@ public class ModelIOConfig {
     }
 
     /**
+     * Check whether a given input name is the real, unpadded current sequence length.
+     */
+    public boolean isActualSequenceLength(String name) {
+        return actualSequenceLengthName != null && actualSequenceLengthName.equals(name);
+    }
+
+    /**
      * Check whether a given input name is the merged-decoder branch selector
      * (optimum decoder_model_merged exports).
      */
@@ -648,6 +666,7 @@ public class ModelIOConfig {
         String posName = null;
         String posOffsetName = null;
         String cachePosName = null;
+        String actualSeqLenName = null;
         String kvPrefix = null;
         String attnReformat = null;
         String encoderHiddenName = null;
@@ -680,6 +699,14 @@ public class ModelIOConfig {
                 posOffsetName = input;
             } else if (cachePosName == null && (input.contains("cache_position") || input.contains("seqlens_k"))) {
                 cachePosName = input;
+            } else if (actualSeqLenName == null) {
+                String normalizedInput = input.toLowerCase(java.util.Locale.ROOT);
+                if (normalizedInput.contains("actual_sequence_length")
+                        || normalizedInput.contains("actual_seq_len")
+                        || normalizedInput.equals("sequence_length")
+                        || normalizedInput.equals("seq_len")) {
+                    actualSeqLenName = input;
+                }
             }
 
             // Detect KV cache prefix
@@ -741,6 +768,7 @@ public class ModelIOConfig {
                 .positionIdsName(posName)
                 .positionOffsetName(posOffsetName)
                 .cachePositionName(cachePosName)
+                .actualSequenceLengthName(actualSeqLenName)
                 .kvCachePrefix(kvPrefix != null ? kvPrefix : "past_key_values.")
                 .kvPresentToInputReplace(replacement)
                 .logitsOutputName(logitsName != null ? logitsName : "lm_logits")
@@ -752,11 +780,12 @@ public class ModelIOConfig {
                 .build();
 
         log.info("ModelIOConfig.discover(): embeddings={}, inputIds={}, attentionMask={}, causalMask={}, " +
-                        "positionIds={}, positionOffset={}, cachePosition={}, kvPrefix={}, logits={}, " +
-                        "kvLayers={}, inGraphKv={}, attnReformat={}, encoderDecoder={}, encoderHidden={}, encoderMask={}",
+                        "positionIds={}, positionOffset={}, cachePosition={}, actualSequenceLength={}, " +
+                        "kvPrefix={}, logits={}, kvLayers={}, inGraphKv={}, attnReformat={}, " +
+                        "encoderDecoder={}, encoderHidden={}, encoderMask={}",
                 config.inputEmbeddingsName, config.inputIdsName, config.attentionMaskName,
                 config.causalMaskName, config.positionIdsName, config.positionOffsetName,
-                config.cachePositionName, config.kvCachePrefix,
+                config.cachePositionName, config.actualSequenceLengthName, config.kvCachePrefix,
                 config.logitsOutputName, kvNames != null ? kvNames.keyNames.size() : 0,
                 inGraphKv, config.attnMaskReformatOutput,
                 config.encoderDecoder, config.encoderHiddenStatesName, config.encoderAttentionMaskName);

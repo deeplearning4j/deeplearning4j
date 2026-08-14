@@ -58,14 +58,29 @@ final class SdxNativeLibs {
     private SdxNativeLibs() {
     }
 
-    /** Idempotent; call before any ND4J / tokenizer class initialization. */
-    static synchronized void bootstrap() {
+    /** Idempotent JVM/native-image bootstrap; call before any ND4J or tokenizer class initializes. */
+    static void bootstrap() {
+        bootstrap(isNativeImage());
+    }
+
+    /**
+     * Bootstrap an invocation that entered through the generated C ABI. That boundary proves this code is running
+     * inside the embedded native image, even on hosts where Graal's imagecode property is not installed.
+     */
+    static void bootstrapForEmbeddedNativeImage() {
+        // Native function-symbol ownership is frozen by the SDX Native Image
+        // configuration for every backend. It must not depend on mutable state
+        // set after the image isolate has already been constructed.
+        bootstrap(true);
+    }
+
+    private static synchronized void bootstrap(boolean nativeImage) {
         if (bootstrapped) {
             return;
         }
         bootstrapped = true;
 
-        if (isNativeImage()) {
+        if (nativeImage) {
             // Classpath scanning cannot run in an image: point ClassGraphHolder at
             // the scan baked by SdxClassGraphScanBaker (respect a user override).
             if (System.getProperty(org.nd4j.common.config.ND4JSystemProperties.CLASS_GRAPH_SCAN_RESOURCES) == null) {
@@ -79,7 +94,7 @@ final class SdxNativeLibs {
             }
         }
 
-        if (!isNativeImage() && hasClassifierJarsOnClasspath()) {
+        if (!nativeImage && hasClassifierJarsOnClasspath()) {
             return; // JVM dev mode — classpath extraction handles it
         }
 
@@ -227,8 +242,15 @@ final class SdxNativeLibs {
         return PLATFORM.startsWith("windows") ? "sdx-llm.exe" : "sdx-llm";
     }
 
-    /** JavaCPP-format platform string (e.g. "linux-x86_64", "macosx-arm64"). */
+    /** JavaCPP-format platform string (e.g. "android-arm64", "macosx-arm64"). */
     private static String detectPlatform() {
+        // Cross-compiled native images must use their configured target instead
+        // of freezing the build host's os.name/os.arch into this class.
+        String configured = System.getProperty("org.bytedeco.javacpp.platform");
+        if (configured != null && !configured.isBlank()) {
+            return configured.trim();
+        }
+
         String osName = System.getProperty("os.name", "").toLowerCase();
         String os;
         if (osName.contains("linux")) {

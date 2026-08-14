@@ -31,6 +31,7 @@ import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.autodiff.samediff.optimize.OptimizerSet;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.common.util.ND4JFileUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -123,6 +124,40 @@ public class SDZSerializer {
     }
 
     /**
+     * Creates serializer working storage beside the related model whenever possible.
+     * Native Image can otherwise bake the build host's {@code java.io.tmpdir} (for
+     * example {@code /tmp}) into an Android image where that path is not writable.
+     * Keeping multi-gigabyte SDNB staging beside the source/destination also avoids
+     * an unnecessary cross-filesystem copy. The configured ND4J temp directory is
+     * retained as a fallback for read-only model locations.
+     */
+    static Path createWorkingDirectory(File relatedFile, String prefix) throws IOException {
+        Path related = relatedFile.toPath().toAbsolutePath().normalize();
+        Path parent = related.getParent();
+        IOException adjacentFailure = null;
+        if (parent != null) {
+            try {
+                Files.createDirectories(parent);
+                return Files.createTempDirectory(parent, prefix);
+            } catch (IOException failure) {
+                adjacentFailure = failure;
+            }
+        }
+
+        Path configuredTemp = ND4JFileUtils.getTempDir().toPath().toAbsolutePath().normalize();
+        try {
+            Files.createDirectories(configuredTemp);
+            return Files.createTempDirectory(configuredTemp, prefix);
+        } catch (IOException fallbackFailure) {
+            if (adjacentFailure != null) {
+                adjacentFailure.addSuppressed(fallbackFailure);
+                throw adjacentFailure;
+            }
+            throw fallbackFailure;
+        }
+    }
+
+    /**
      * Set the maximum total uncompressed size allowed when extracting SDZ files.
      * @param maxSize Maximum size in bytes (must be positive)
      */
@@ -165,7 +200,7 @@ public class SDZSerializer {
         Preconditions.checkNotNull(sameDiff, "SameDiff instance cannot be null");
         Preconditions.checkNotNull(outputZipFile, "Output ZIP file path cannot be null.");
 
-        Path tempDir = Files.createTempDirectory("sdz-serializer-save-");
+        Path tempDir = createWorkingDirectory(outputZipFile, "sdz-serializer-save-");
         File tempDirFile = tempDir.toFile();
         log.info("Created temporary directory for saving: {}", tempDirFile.getAbsolutePath());
 
@@ -411,7 +446,7 @@ public class SDZSerializer {
         Path tempDir = null;
         try {
             // Extract SDNB entries to temp files using ZipFile (random access, large buffer)
-            tempDir = Files.createTempDirectory("sdz-serializer-load-");
+            tempDir = createWorkingDirectory(modelZipFile, "sdz-serializer-load-");
             File tempDirFile = tempDir.toFile();
 
             try (java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(modelZipFile)) {
@@ -526,7 +561,7 @@ public class SDZSerializer {
 
         try {
             // Extract using ZipFile for random access (same as non-context load)
-            tempDir = Files.createTempDirectory("sdz-serializer-load-");
+            tempDir = createWorkingDirectory(modelZipFile, "sdz-serializer-load-");
             File tempDirFile = tempDir.toFile();
 
             try (java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(modelZipFile)) {

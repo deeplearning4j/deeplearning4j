@@ -107,29 +107,18 @@ public final class QuantizedLinear {
             // truncating to HALF; downstream norms/residuals and QLoRA zero-delta paths must not
             // see saturated +/-Inf activations from large packed-weight projections.
             int ggmlOutputDtype = GgmlQMatMul.OUTPUT_FLOAT32;
-            SDVariable result = new GgmlQMatMul(sd, activation, weightVar, quantType, n, k, ggmlOutputDtype).outputVariable();
-            // Rename to the requested output name; the packed weightVar keeps its own name so PEFT
-            // can match it against target-module patterns and attach a LoRA residual.
-            return sd.identity(name, result);
+            // Use the generated namespace so validation and naming stay consistent with other
+            // SameDiff importer operations. The packed weight keeps its own name for PEFT matching.
+            return sd.nn().ggmlQMatMul(
+                    name, activation, weightVar, quantType, n, k, ggmlOutputDtype);
         }
         return fp32Mmul(sd, name, activation, weightVar.permute(1, 0), computeDtype, outputDtype);
     }
 
     /**
-     * Whether this floating storage dtype should use FP32 accumulation for numerically
-     * sensitive operations.
-     */
-    public static boolean requiresFp32Accumulation(DataType dataType) {
-        return dataType == DataType.HALF
-                || dataType == DataType.BFLOAT16
-                || dataType == DataType.FLOAT8
-                || dataType == DataType.FLOAT8_E5M2;
-    }
-
-    /**
-     * FP32-accumulated matmul. Upcasts low-precision floating operands to FLOAT to avoid
-     * overflow on long dot products, then casts the result back. For FLOAT inputs it is
-     * a plain matmul.
+     * Matmul using the importer-wide accumulation policy. Low-precision floating
+     * operands accumulate in FP32 and the result is restored to the requested
+     * model storage type.
      */
     public static SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b, DataType dtype) {
         return fp32Mmul(sd, name, a, b, dtype, dtype);
@@ -137,14 +126,15 @@ public final class QuantizedLinear {
 
     private static SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b,
                                        DataType computeDtype, DataType outputDtype) {
-        boolean outputFloat = outputDtype == DataType.FLOAT;
-        boolean needsFloatCompute = outputFloat || requiresFp32Accumulation(computeDtype);
-        if (needsFloatCompute) {
-            SDVariable aF32 = a.dataType() == DataType.FLOAT ? a : a.castTo(name + "_a_f32", DataType.FLOAT);
-            SDVariable bF32 = b.dataType() == DataType.FLOAT ? b : b.castTo(name + "_b_f32", DataType.FLOAT);
-            SDVariable result = sd.mmul(outputFloat ? name : name + "_f32", aF32, bF32);
-            return outputFloat ? result : result.castTo(name, outputDtype);
-        }
-        return sd.mmul(name, a, b);
+        DataType accumulationType = outputDtype == DataType.FLOAT
+                ? outputDtype
+                : GGMLDTypePolicy.accumulationType(computeDtype);
+        boolean restoreOutputType = accumulationType != outputDtype;
+        SDVariable computeA = GGMLDTypePolicy.castTo(a, name + "_a_accum", accumulationType);
+        SDVariable computeB = GGMLDTypePolicy.castTo(b, name + "_b_accum", accumulationType);
+        SDVariable result = sd.mmul(restoreOutputType ? name + "_accum" : name, computeA, computeB);
+        return restoreOutputType
+                ? GGMLDTypePolicy.castTo(result, name, outputDtype)
+                : result;
     }
 }

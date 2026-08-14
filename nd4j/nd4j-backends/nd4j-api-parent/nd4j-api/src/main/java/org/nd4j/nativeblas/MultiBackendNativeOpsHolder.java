@@ -290,13 +290,23 @@ public class MultiBackendNativeOpsHolder {
             }
         }
 
+        if (loadedCount == 0) {
+            // Discovery is allowed to be retried after dependencies or native libraries
+            // become available. Never cache an empty backend set as initialized.
+            multiBackendEnabled.set(false);
+            primaryOps = null;
+            primaryBackendType = null;
+            cpuOps = null;
+            cudaOps = null;
+            log.error("No backends loaded; multi-backend initialization remains incomplete.");
+            return false;
+        }
+
         multiBackendEnabled.set(loadedCount > 1);
         initialized.set(true);
 
         // Log summary
-        if (loadedCount == 0) {
-            log.error("No backends loaded! ND4J will not function correctly.");
-        } else if (multiBackendEnabled.get()) {
+        if (multiBackendEnabled.get()) {
             log.info("Multi-backend mode enabled: {} backends available", loadedCount);
             log.info("Primary backend: {} (priority {})",
                     BACKEND_REGISTRY.get(primaryBackendType).displayName, highestPriority);

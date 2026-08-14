@@ -32,6 +32,9 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.openblas.global.openblas;
 import org.bytedeco.openblas.global.openblas_nolapack;
 import org.nd4j.linalg.api.blas.BLASLapackDelegator;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.NativeSymbolResolution;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
 
@@ -154,6 +157,26 @@ public class OpenblasBlasLapackGenerator {
         TypeSpec.Builder openblasLapackDelegator = TypeSpec.classBuilder("OpenblasLapackDelegator");
         openblasLapackDelegator.addModifiers(Modifier.PUBLIC);
         openblasLapackDelegator.addSuperinterface(BLASLapackDelegator.class);
+        openblasLapackDelegator.addField(FieldSpec.builder(
+                        int.class,
+                        "OPENBLAS_VENDOR_ID",
+                        Modifier.PRIVATE,
+                        Modifier.STATIC,
+                        Modifier.FINAL)
+                .initializer("$L", 2)
+                .build());
+        openblasLapackDelegator.addMethod(MethodSpec.methodBuilder("processNativeOps")
+                .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
+                .returns(NativeOps.class)
+                .addStatement("$T nativeOps = $T.getInstance().getDeviceNativeOps()",
+                        NativeOps.class, NativeOpsHolder.class)
+                .beginControlFlow("if (nativeOps == null)")
+                .addStatement("throw new $T($S)",
+                        IllegalStateException.class,
+                        "Process-symbol OpenBLAS control requires an initialized NativeOps backend")
+                .endControlFlow()
+                .addStatement("return nativeOps")
+                .build());
 
         Class<BLASLapackDelegator> clazz = BLASLapackDelegator.class;
         List<Method> objectMethods = Arrays.asList(Object.class.getMethods());
@@ -166,6 +189,36 @@ public class OpenblasBlasLapackGenerator {
                             ).addModifiers(Modifier.PUBLIC)
                             .returns(method.getReturnType())
                             .addAnnotation(Override.class);
+                    if (method.getName().equals("blas_set_num_threads")
+                            || method.getName().equals("blas_get_num_threads")
+                            || method.getName().equals("blas_get_vendor")) {
+                        Arrays.stream(method.getParameters()).forEach(param ->
+                                builder.addParameter(ParameterSpec.builder(param.getType(), param.getName()).build()));
+                        builder.beginControlFlow("if ($T.PROCESS_SYMBOLS)", NativeSymbolResolution.class);
+                        if (method.getName().equals("blas_set_num_threads")) {
+                            builder.addStatement("processNativeOps().setOpenBlasThreads($N)",
+                                            method.getParameters()[0].getName())
+                                    .addStatement("return");
+                        } else if (method.getName().equals("blas_get_num_threads")) {
+                            builder.addStatement("return processNativeOps().getOpenBlasThreads()");
+                        } else {
+                            builder.addStatement("return OPENBLAS_VENDOR_ID");
+                        }
+                        builder.endControlFlow();
+                        String arguments = Arrays.stream(method.getParameters())
+                                .map(parameter -> parameter.getName())
+                                .reduce((left, right) -> left + "," + right)
+                                .orElse("");
+                        if (method.getReturnType().equals(Void.TYPE)) {
+                            builder.addStatement("openblas.$L($L)", method.getName(), arguments);
+                        } else {
+                            builder.addStatement("return openblas.$L($L)", method.getName(), arguments);
+                        }
+                        MethodSpec build = builder.build();
+                        openblasLapackDelegator.addMethod(build);
+                        addedCodeLines.add(build);
+                        return;
+                    }
                     StringBuilder codeStatement = new StringBuilder();
                     //don't return anything when void
                     if(method.getReturnType().equals(Void.TYPE)) {
@@ -273,7 +326,7 @@ public class OpenblasBlasLapackGenerator {
     }
 
     public static void main(String...args) throws Exception {
-        OpenblasBlasLapackGenerator openblasBlasLapackGenerator = new OpenblasBlasLapackGenerator(new File("nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java"));
+        OpenblasBlasLapackGenerator openblasBlasLapackGenerator = new OpenblasBlasLapackGenerator(new File("nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cpu-backend-common/src/main/java"));
         openblasBlasLapackGenerator.parse();
         String generated = FileUtils.readFileToString(openblasBlasLapackGenerator.getTargetFile(), Charset.defaultCharset());
         generated = generated.replace(";;",";");

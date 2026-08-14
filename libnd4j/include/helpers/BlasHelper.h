@@ -48,6 +48,7 @@ struct bfloat16;
   #endif
 #endif
 #include <helpers/logger.h>
+#include <system/common.h>
 #include <types/float16.h>
 #include <mutex>
 #include <atomic>
@@ -59,6 +60,10 @@ struct bfloat16;
 #define CUBLASWINAPI
 #define CUSOLVERAPI
 #endif
+
+// Capability ABI for embedded runtimes that ask libnd4j to resolve BLAS
+// functions from the current process by passing nullptr to initializeFunctions.
+extern "C" SD_LIB_EXPORT int nd4j_process_blas_symbols_abi_v1();
 
 namespace sd {
 typedef enum {

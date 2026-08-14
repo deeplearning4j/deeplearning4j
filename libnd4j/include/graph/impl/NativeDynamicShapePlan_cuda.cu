@@ -2100,12 +2100,25 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
   }
 
   // Destroy replay handles before releasing the plan-owned arena whose
-  // addresses they retain. The workspace is allocated with cudaMalloc, so use
-  // the matching backend release path (which also unregisters its range).
+  // addresses they retain. The arena came from allocateLocalAsync(), so release it
+  // through the CUDA pool on its recorded allocation device. Do not route this free
+  // through tl_dspExecutionStream: the plan-owned stream was destroyed above and a
+  // cudaFreeAsync on that stale handle silently leaks one arena per plan lifecycle.
   if (sharedCaptureWorkspace_ != nullptr) {
-    sd::graph::dspFreeWorkspaceOnPool(sharedCaptureWorkspace_);
-    DSP_DIAG(MEMORY, "platformFreePlanResources: freed PLAN-OWNED capture workspace %zuMB on device %d",
-             sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
+    auto& pool = memory::CudaMemoryPool::getInstance();
+    const int workspaceDevice = sharedCaptureWorkspaceDevice_;
+    size_t poolUsedBefore = 0;
+    size_t poolReservedBefore = 0;
+    if (workspaceDevice >= 0) {
+      pool.getStats(workspaceDevice, poolUsedBefore, poolReservedBefore);
+    }
+    pool.unregisterCaptureWorkspace(sharedCaptureWorkspace_);
+    pool.free(sharedCaptureWorkspace_, workspaceDevice, nullptr);
+    DSP_DIAG(MEMORY,
+             "platformFreePlanResources: released PLAN-OWNED capture workspace "
+             "%zuMB on device %d poolUsedBefore=%zuMB poolReservedBefore=%zuMB",
+             sharedCaptureWorkspaceBytes_ / (1024*1024), workspaceDevice,
+             poolUsedBefore / (1024*1024), poolReservedBefore / (1024*1024));
     sharedCaptureWorkspace_ = nullptr;
     sharedCaptureWorkspaceBytes_ = 0;
     sharedCaptureWorkspaceDevice_ = -1;
@@ -2195,9 +2208,12 @@ int NativeDynamicShapePlan::platformCountCapturedGraphSegments() const {
 
 void NativeDynamicShapePlan::platformFreeCaptureWorkspace() {
   if (sharedCaptureWorkspace_ != nullptr) {
-    sd::graph::dspFreeWorkspaceOnPool(sharedCaptureWorkspace_);
-    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freed PLAN-OWNED capture workspace %zuMB on device %d",
-             sharedCaptureWorkspaceBytes_ / (1024*1024), sharedCaptureWorkspaceDevice_);
+    auto& pool = memory::CudaMemoryPool::getInstance();
+    const int workspaceDevice = sharedCaptureWorkspaceDevice_;
+    pool.unregisterCaptureWorkspace(sharedCaptureWorkspace_);
+    pool.free(sharedCaptureWorkspace_, workspaceDevice, nullptr);
+    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: released PLAN-OWNED capture workspace %zuMB on device %d",
+             sharedCaptureWorkspaceBytes_ / (1024*1024), workspaceDevice);
     sharedCaptureWorkspace_ = nullptr;
     sharedCaptureWorkspaceBytes_ = 0;
     sharedCaptureWorkspaceDevice_ = -1;

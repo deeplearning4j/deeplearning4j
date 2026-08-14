@@ -474,6 +474,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
             String argument = arguments.get(index);
             String name = completeArgumentName(argument);
             if (name == null || seen.contains(name)
+                    || !validRequiredArgumentOrder(name, requiredArguments, seen)
                     || !argumentSchemas.containsKey(name)
                     || !validNamedArgument(
                             argument, name,
@@ -486,7 +487,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
 
         String current = arguments.isEmpty() ? "" : arguments.get(arguments.size() - 1);
         return validPartialDeclaredArgument(
-                current, seen, allowedValues, argumentSchemas);
+                current, seen, requiredArguments, allowedValues, argumentSchemas);
     }
 
     private static boolean validCompleteParameterSchema(
@@ -499,6 +500,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
             for (String argument : splitTopLevelArguments(body)) {
                 String name = completeArgumentName(argument);
                 if (name == null || seen.contains(name)
+                        || !validRequiredArgumentOrder(name, requiredArguments, seen)
                         || !argumentSchemas.containsKey(name)
                         || !validNamedArgument(
                                 argument, name,
@@ -515,6 +517,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
     private static boolean validPartialDeclaredArgument(
             String argument,
             List<String> seen,
+            List<String> requiredArguments,
             Map<String, List<String>> allowedValues,
             Map<String, Map<String, Object>> argumentSchemas) {
         String part = argument.stripLeading();
@@ -525,6 +528,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
         if (equals < 0) {
             for (String name : argumentSchemas.keySet()) {
                 if (!seen.contains(name)
+                        && validRequiredArgumentOrder(name, requiredArguments, seen)
                         && (name.startsWith(part)
                                 || part.startsWith(name)
                                 && part.substring(name.length()).isBlank())) {
@@ -535,7 +539,9 @@ public final class NativeToolCallConstraint implements TextConstraint {
         }
 
         String name = part.substring(0, equals).trim();
-        if (seen.contains(name) || !argumentSchemas.containsKey(name)) {
+        if (seen.contains(name)
+                || !validRequiredArgumentOrder(name, requiredArguments, seen)
+                || !argumentSchemas.containsKey(name)) {
             return false;
         }
         String value = part.substring(equals + 1).stripLeading();
@@ -553,6 +559,23 @@ public final class NativeToolCallConstraint implements TextConstraint {
             }
         }
         return validValuePrefix(value, argumentSchemas.get(name));
+    }
+
+    /**
+     * Required native arguments are emitted in schema order so a model cannot start dependent
+     * fields before their prerequisites. Optional arguments may still appear at any point.
+     */
+    private static boolean validRequiredArgumentOrder(
+            String name, List<String> requiredArguments, List<String> seen) {
+        if (requiredArguments == null || !requiredArguments.contains(name)) {
+            return true;
+        }
+        for (String required : requiredArguments) {
+            if (!seen.contains(required)) {
+                return required.equals(name);
+            }
+        }
+        return false;
     }
 
     private static String completeArgumentName(String argument) {
@@ -654,7 +677,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
         return Collections.unmodifiableMap(result);
     }
 
-    private static boolean validCompleteValue(
+    static boolean validCompleteValue(
             String rawValue, Map<String, Object> schema) {
         String value = rawValue == null ? "" : rawValue.trim();
         if (value.isEmpty()) {
@@ -677,7 +700,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
         }
     }
 
-    private static boolean validValuePrefix(
+    static boolean validValuePrefix(
             String rawValue, Map<String, Object> schema) {
         String value = rawValue == null ? "" : rawValue.stripLeading();
         if (value.isEmpty()) {
@@ -710,7 +733,8 @@ public final class NativeToolCallConstraint implements TextConstraint {
         if (!state.valid) {
             return false;
         }
-        if (!validStringValuePrefix(state.value, schema)) {
+        if (!validStringValuePrefix(state.value, schema)
+                || !validIncompleteStringEscapePrefix(value, state.value, schema)) {
             return false;
         }
         return !state.closed || ToolSchemaValidator.isValidValue(state.value, schema);
@@ -725,6 +749,91 @@ public final class NativeToolCallConstraint implements TextConstraint {
             return false;
         }
 
+        List<String> allowed = allowedStringValues(schema);
+        return allowed.isEmpty() || allowed.stream().anyMatch(item -> item.startsWith(value));
+    }
+
+    private static boolean validIncompleteStringEscapePrefix(
+            String rawValue, String decodedValue, Map<String, Object> schema) {
+        boolean trailingEscape = hasTrailingIncompleteEscape(rawValue);
+        String digits = incompleteUnicodeEscapeDigits(rawValue);
+        int length = decodedValue.codePointCount(0, decodedValue.length());
+        Object maxLength = schema.get("maxLength");
+        if ((trailingEscape || digits != null)
+                && maxLength instanceof Number
+                && length >= ((Number) maxLength).intValue()) {
+            return false;
+        }
+        List<String> allowed = allowedStringValues(schema);
+        if (trailingEscape && !allowed.isEmpty()) {
+            return allowed.stream().anyMatch(candidate -> candidate.startsWith(decodedValue)
+                    && candidate.length() > decodedValue.length());
+        }
+        if (digits == null) {
+            return true;
+        }
+
+        if (allowed.isEmpty()) {
+            return true;
+        }
+        String normalizedDigits = digits.toLowerCase(java.util.Locale.ROOT);
+        for (String candidate : allowed) {
+            if (!candidate.startsWith(decodedValue)
+                    || candidate.length() <= decodedValue.length()) {
+                continue;
+            }
+            String hex = Integer.toHexString(candidate.charAt(decodedValue.length()));
+            String padded = "0000".substring(hex.length()) + hex;
+            if (padded.startsWith(normalizedDigits)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasTrailingIncompleteEscape(String rawValue) {
+        if (rawValue == null || rawValue.isEmpty()) {
+            return false;
+        }
+        int slashCount = 0;
+        for (int index = rawValue.length() - 1;
+                index >= 0 && rawValue.charAt(index) == '\\'; index--) {
+            slashCount++;
+        }
+        return (slashCount & 1) == 1;
+    }
+
+    private static String incompleteUnicodeEscapeDigits(String rawValue) {
+        if (rawValue == null || rawValue.isEmpty()) {
+            return null;
+        }
+        int marker = rawValue.lastIndexOf("\\u");
+        if (marker < 0) {
+            return null;
+        }
+        int slashCount = 0;
+        for (int index = marker; index >= 0 && rawValue.charAt(index) == '\\'; index--) {
+            slashCount++;
+        }
+        if ((slashCount & 1) == 0) {
+            return null;
+        }
+        String digits = rawValue.substring(marker + 2);
+        if (digits.length() >= 4) {
+            return null;
+        }
+        for (int index = 0; index < digits.length(); index++) {
+            if (Character.digit(digits.charAt(index), 16) < 0) {
+                return null;
+            }
+        }
+        return digits;
+    }
+
+    private static List<String> allowedStringValues(Map<String, Object> schema) {
+        if (schema.get("const") instanceof String) {
+            return List.of((String) schema.get("const"));
+        }
         List<String> allowed = new ArrayList<>();
         Object enumObject = schema.get("enum");
         if (enumObject instanceof java.util.Collection<?>) {
@@ -734,10 +843,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
                 }
             }
         }
-        if (schema.get("const") instanceof String) {
-            allowed.add((String) schema.get("const"));
-        }
-        return allowed.isEmpty() || allowed.stream().anyMatch(item -> item.startsWith(value));
+        return allowed;
     }
 
     private static NativeStringState parseNativeString(String raw) {
@@ -820,13 +926,6 @@ public final class NativeToolCallConstraint implements TextConstraint {
             return validCompleteValue(value, schema);
         }
 
-        Map<String, Object> itemSchema = Map.of();
-        if (schema.get("items") instanceof Map<?, ?>) {
-            Map<String, Object> copied = new LinkedHashMap<>();
-            ((Map<?, ?>) schema.get("items")).forEach(
-                    (key, item) -> copied.put(String.valueOf(key), item));
-            itemSchema = copied;
-        }
         int maxItems = schema.get("maxItems") instanceof Number
                 ? Math.max(0, ((Number) schema.get("maxItems")).intValue())
                 : Integer.MAX_VALUE;
@@ -835,6 +934,10 @@ public final class NativeToolCallConstraint implements TextConstraint {
         int lastIndex = state.items.size() - 1;
         for (int index = 0; index < lastIndex; index++) {
             String item = state.items.get(index).trim();
+            Map<String, Object> itemSchema = arrayItemSchema(schema, index);
+            if (itemSchema == null) {
+                return false;
+            }
             if (item.isEmpty() || !validCompleteValue(item, itemSchema)) {
                 return false;
             }
@@ -842,25 +945,216 @@ public final class NativeToolCallConstraint implements TextConstraint {
             if (parsed == INVALID_VALUE) {
                 return false;
             }
+            // A tokenizer token may span the end of one item, the comma, and the start of the
+            // next item. In that case a duplicate can move directly into completeValues without
+            // ever being observed as the current item below. Enforce uniqueItems while collecting
+            // every completed value as well as for the currently open value.
+            if (Boolean.TRUE.equals(schema.get("uniqueItems"))
+                    && completeValues.contains(parsed)) {
+                return false;
+            }
             completeValues.add(parsed);
         }
-        if (completeValues.size() >= maxItems) {
-            return false;
-        }
-
         String current = lastIndex < 0 ? "" : state.items.get(lastIndex).stripLeading();
+        if (completeValues.size() >= maxItems) {
+            return lastIndex == 0 && current.isEmpty();
+        }
         if (current.isEmpty()) {
-            return true;
+            return lastIndex == 0 || arrayItemSchema(schema, lastIndex) != null;
+        }
+        Map<String, Object> itemSchema = arrayItemSchema(schema, lastIndex);
+        if (itemSchema == null) {
+            return false;
         }
         if (!validValuePrefix(current, itemSchema)) {
             return false;
+        }
+        if (Boolean.TRUE.equals(schema.get("uniqueItems"))) {
+            Boolean viable = uniqueObjectCompletionViability(
+                    current, itemSchema, completeValues);
+            if (Boolean.FALSE.equals(viable)) {
+                return false;
+            }
         }
         if (Boolean.TRUE.equals(schema.get("uniqueItems"))
                 && validCompleteValue(current, itemSchema)) {
             Object parsed = parseJsonValue(current);
             return parsed != INVALID_VALUE && !completeValues.contains(parsed);
         }
+        if (Boolean.TRUE.equals(schema.get("uniqueItems"))) {
+            String forcedCompletion = forcedCompleteObjectValue(current, itemSchema);
+            if (forcedCompletion != null) {
+                Object parsed = parseJsonValue(forcedCompletion);
+                if (parsed != INVALID_VALUE && completeValues.contains(parsed)) {
+                    return false;
+                }
+            }
+        }
         return true;
+    }
+
+    /**
+     * Determines whether an incomplete final string property still has an enum/const completion
+     * that makes the enclosing object distinct. A null result means the prefix cannot be decided
+     * locally and ordinary incremental validation remains authoritative.
+     */
+    private static Boolean uniqueObjectCompletionViability(
+            String value,
+            Map<String, Object> schema,
+            List<Object> completeValues) {
+        if (!"object".equals(schema.get("type"))) {
+            return null;
+        }
+        ObjectPrefixState state = parseObjectPrefix(value);
+        if (!state.valid || state.closed || state.members.isEmpty()) {
+            return null;
+        }
+        Map<String, Map<String, Object>> properties = objectPropertySchemas(schema);
+        Object additionalProperties = schema.get("additionalProperties");
+        List<String> seen = new ArrayList<>();
+        int lastIndex = state.members.size() - 1;
+        for (int index = 0; index < lastIndex; index++) {
+            ObjectMember member = completeObjectMember(
+                    state.members.get(index), properties, additionalProperties, seen);
+            if (member == null) {
+                return null;
+            }
+            seen.add(member.name);
+        }
+
+        String lastMember = state.members.get(lastIndex);
+        int colon = topLevelColon(lastMember);
+        if (colon <= 0) {
+            return null;
+        }
+        NativeStringState name = parseNativeString(lastMember.substring(0, colon).trim());
+        if (!name.valid || !name.closed || seen.contains(name.value)) {
+            return null;
+        }
+        Map<String, Object> valueSchema = objectPropertySchema(
+                name.value, properties, additionalProperties);
+        if (valueSchema == null || !"string".equals(valueSchema.get("type"))) {
+            return null;
+        }
+        NativeStringState partial = parseNativeString(
+                lastMember.substring(colon + 1).stripLeading());
+        if (!partial.valid || partial.closed) {
+            return null;
+        }
+        List<String> allowed = allowedStringValues(valueSchema);
+        if (allowed.isEmpty()) {
+            return null;
+        }
+
+        seen.add(name.value);
+        if (hasAvailableObjectProperty(properties, additionalProperties, seen)) {
+            return null;
+        }
+        Object required = schema.get("required");
+        if (required instanceof java.util.Collection<?>
+                && ((java.util.Collection<?>) required).stream()
+                        .map(String::valueOf)
+                        .anyMatch(requiredName -> !seen.contains(requiredName))) {
+            return null;
+        }
+
+        for (String candidateValue : allowed) {
+            if (!candidateValue.startsWith(partial.value)) {
+                continue;
+            }
+            StringBuilder completed = new StringBuilder("{");
+            for (int index = 0; index < lastIndex; index++) {
+                if (index > 0) {
+                    completed.append(',');
+                }
+                completed.append(state.members.get(index));
+            }
+            if (lastIndex > 0) {
+                completed.append(',');
+            }
+            completed.append(lastMember, 0, colon + 1)
+                    .append(nativeStringLiteral(candidateValue))
+                    .append('}');
+            String candidate = completed.toString();
+            if (validCompleteValue(candidate, schema)) {
+                Object parsed = parseJsonValue(candidate);
+                if (parsed != INVALID_VALUE && !completeValues.contains(parsed)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Completes an open object only when its current member is complete and the schema permits no
+     * further member. This lets an enclosing {@code uniqueItems} array reject the token that makes a
+     * duplicate inevitable, rather than accepting it and discovering a dead end at the closing brace.
+     */
+    private static String forcedCompleteObjectValue(
+            String value, Map<String, Object> schema) {
+        if (!"object".equals(schema.get("type"))) {
+            return null;
+        }
+        ObjectPrefixState state = parseObjectPrefix(value);
+        if (!state.valid || state.closed || state.members.isEmpty()) {
+            return null;
+        }
+        Map<String, Map<String, Object>> properties = objectPropertySchemas(schema);
+        Object additionalProperties = schema.get("additionalProperties");
+        List<String> seen = new ArrayList<>();
+        for (String rawMember : state.members) {
+            ObjectMember member = completeObjectMember(
+                    rawMember, properties, additionalProperties, seen);
+            if (member == null) {
+                return null;
+            }
+            seen.add(member.name);
+        }
+        if (hasAvailableObjectProperty(properties, additionalProperties, seen)) {
+            return null;
+        }
+        Object required = schema.get("required");
+        if (required instanceof java.util.Collection<?>
+                && ((java.util.Collection<?>) required).stream()
+                        .map(String::valueOf)
+                        .anyMatch(name -> !seen.contains(name))) {
+            return null;
+        }
+        String candidate = value + "}";
+        return validCompleteValue(candidate, schema) ? candidate : null;
+    }
+
+    /**
+     * Resolves the JSON Schema item contract for one array position. Draft 2020-12 prefixItems
+     * takes precedence for its declared slots; items governs only the remaining tail.
+     */
+    private static Map<String, Object> arrayItemSchema(
+            Map<String, Object> schema, int index) {
+        Object prefixItems = schema.get("prefixItems");
+        if (prefixItems instanceof List<?> && index >= 0) {
+            List<?> positional = (List<?>) prefixItems;
+            if (index < positional.size()) {
+                Object positionalSchema = positional.get(index);
+                if (!(positionalSchema instanceof Map<?, ?>)) {
+                    return Map.of();
+                }
+                Map<String, Object> copied = new LinkedHashMap<>();
+                ((Map<?, ?>) positionalSchema).forEach(
+                        (key, item) -> copied.put(String.valueOf(key), item));
+                return copied;
+            }
+        }
+        if (Boolean.FALSE.equals(schema.get("items"))) {
+            return null;
+        }
+        if (schema.get("items") instanceof Map<?, ?>) {
+            Map<String, Object> copied = new LinkedHashMap<>();
+            ((Map<?, ?>) schema.get("items")).forEach(
+                    (key, item) -> copied.put(String.valueOf(key), item));
+            return copied;
+        }
+        return Map.of();
     }
 
     private static boolean validJsonCompositePrefix(
@@ -868,14 +1162,170 @@ public final class NativeToolCallConstraint implements TextConstraint {
             Map<String, Object> schema,
             char open,
             char close) {
-        if (value.isEmpty() || value.charAt(0) != open) {
+        if (open != '{' || close != '}') {
             return false;
         }
-        int depth = 0;
+        ObjectPrefixState state = parseObjectPrefix(value);
+        if (!state.valid) {
+            return false;
+        }
+        if (state.closed) {
+            return validCompleteValue(value, schema);
+        }
+
+        Map<String, Map<String, Object>> properties = objectPropertySchemas(schema);
+        Object additionalProperties = schema.get("additionalProperties");
+        List<String> seen = new ArrayList<>();
+        int lastIndex = state.members.size() - 1;
+        for (int index = 0; index < lastIndex; index++) {
+            ObjectMember member = completeObjectMember(
+                    state.members.get(index), properties, additionalProperties, seen);
+            if (member == null) {
+                return false;
+            }
+            seen.add(member.name);
+        }
+
+        String current = lastIndex < 0 ? "" : state.members.get(lastIndex);
+        return validPartialObjectMember(
+                current, properties, additionalProperties, seen);
+    }
+
+    private static Map<String, Map<String, Object>> objectPropertySchemas(
+            Map<String, Object> schema) {
+        if (schema == null || !(schema.get("properties") instanceof Map<?, ?>)) {
+            return Map.of();
+        }
+        Map<String, Map<String, Object>> result = new LinkedHashMap<>();
+        ((Map<?, ?>) schema.get("properties")).forEach((name, propertySchema) -> {
+            if (name != null && propertySchema instanceof Map<?, ?>) {
+                Map<String, Object> copied = new LinkedHashMap<>();
+                ((Map<?, ?>) propertySchema).forEach(
+                        (key, item) -> copied.put(String.valueOf(key), item));
+                result.put(String.valueOf(name), Collections.unmodifiableMap(copied));
+            }
+        });
+        return Collections.unmodifiableMap(result);
+    }
+
+    private static ObjectMember completeObjectMember(
+            String rawMember,
+            Map<String, Map<String, Object>> properties,
+            Object additionalProperties,
+            List<String> seen) {
+        String member = rawMember == null ? "" : rawMember.trim();
+        int colon = topLevelColon(member);
+        if (colon <= 0) {
+            return null;
+        }
+        NativeStringState name = parseNativeString(member.substring(0, colon).trim());
+        if (!name.valid || !name.closed || seen.contains(name.value)) {
+            return null;
+        }
+        Map<String, Object> valueSchema = objectPropertySchema(
+                name.value, properties, additionalProperties);
+        String value = member.substring(colon + 1).trim();
+        if (valueSchema == null || !validCompleteValue(value, valueSchema)) {
+            return null;
+        }
+        return new ObjectMember(name.value);
+    }
+
+    private static boolean validPartialObjectMember(
+            String rawMember,
+            Map<String, Map<String, Object>> properties,
+            Object additionalProperties,
+            List<String> seen) {
+        String member = rawMember == null ? "" : rawMember.stripLeading();
+        if (member.isBlank()) {
+            return hasAvailableObjectProperty(properties, additionalProperties, seen);
+        }
+
+        int colon = topLevelColon(member);
+        if (colon < 0) {
+            NativeStringState name = parseNativeString(member);
+            if (!name.valid) {
+                return false;
+            }
+            if (name.closed) {
+                return !seen.contains(name.value)
+                        && objectPropertySchema(
+                                name.value, properties, additionalProperties) != null;
+            }
+            if (allowsAdditionalObjectProperty(additionalProperties)) {
+                return true;
+            }
+            List<String> availableProperties = new ArrayList<>();
+            for (String candidate : properties.keySet()) {
+                if (!seen.contains(candidate)) {
+                    availableProperties.add(candidate);
+                }
+            }
+            if (availableProperties.isEmpty()) {
+                return false;
+            }
+            Map<String, Object> propertyNameSchema = Map.of(
+                    "type", "string",
+                    "enum", availableProperties);
+            return validStringValuePrefix(name.value, propertyNameSchema)
+                    && validIncompleteStringEscapePrefix(
+                    member, name.value, propertyNameSchema);
+        }
+
+        NativeStringState name = parseNativeString(member.substring(0, colon).trim());
+        if (!name.valid || !name.closed || seen.contains(name.value)) {
+            return false;
+        }
+        Map<String, Object> valueSchema = objectPropertySchema(
+                name.value, properties, additionalProperties);
+        if (valueSchema == null) {
+            return false;
+        }
+        String value = member.substring(colon + 1).stripLeading();
+        return value.isEmpty() || validValuePrefix(value, valueSchema);
+    }
+
+    private static boolean hasAvailableObjectProperty(
+            Map<String, Map<String, Object>> properties,
+            Object additionalProperties,
+            List<String> seen) {
+        return allowsAdditionalObjectProperty(additionalProperties)
+                || properties.keySet().stream().anyMatch(name -> !seen.contains(name));
+    }
+
+    private static boolean allowsAdditionalObjectProperty(Object additionalProperties) {
+        return !(additionalProperties instanceof Boolean)
+                || Boolean.TRUE.equals(additionalProperties)
+                || additionalProperties instanceof Map<?, ?>;
+    }
+
+    private static Map<String, Object> objectPropertySchema(
+            String name,
+            Map<String, Map<String, Object>> properties,
+            Object additionalProperties) {
+        Map<String, Object> declared = properties.get(name);
+        if (declared != null) {
+            return declared;
+        }
+        if (Boolean.FALSE.equals(additionalProperties)) {
+            return null;
+        }
+        if (additionalProperties instanceof Map<?, ?>) {
+            Map<String, Object> copied = new LinkedHashMap<>();
+            ((Map<?, ?>) additionalProperties).forEach(
+                    (key, value) -> copied.put(String.valueOf(key), value));
+            return copied;
+        }
+        return Map.of();
+    }
+
+    private static int topLevelColon(String text) {
+        int braces = 0;
+        int brackets = 0;
         boolean quoted = false;
         boolean escaped = false;
-        for (int index = 0; index < value.length(); index++) {
-            char current = value.charAt(index);
+        for (int index = 0; index < text.length(); index++) {
+            char current = text.charAt(index);
             if (quoted) {
                 if (escaped) {
                     escaped = false;
@@ -888,34 +1338,100 @@ public final class NativeToolCallConstraint implements TextConstraint {
             }
             if (current == '"') {
                 quoted = true;
-            } else if (current == open) {
-                depth++;
-            } else if (current == close) {
-                if (--depth < 0) {
-                    return false;
-                }
-                if (depth == 0) {
-                    return value.substring(index + 1).isBlank()
-                            && validCompleteValue(value, schema);
-                }
+            } else if (current == '{') {
+                braces++;
+            } else if (current == '}') {
+                braces--;
+            } else if (current == '[') {
+                brackets++;
+            } else if (current == ']') {
+                brackets--;
+            } else if (current == ':' && braces == 0 && brackets == 0) {
+                return index;
             }
         }
-        return depth > 0;
+        return -1;
+    }
+
+    private static ObjectPrefixState parseObjectPrefix(String raw) {
+        String value = raw == null ? "" : raw.stripLeading();
+        if (value.isEmpty() || value.charAt(0) != '{') {
+            return ObjectPrefixState.invalid();
+        }
+        List<String> members = new ArrayList<>();
+        List<Character> stack = new ArrayList<>();
+        boolean quoted = false;
+        boolean escaped = false;
+        int start = 1;
+        for (int index = 1; index < value.length(); index++) {
+            char current = value.charAt(index);
+            if (quoted) {
+                if (escaped) {
+                    escaped = false;
+                } else if (current == '\\') {
+                    escaped = true;
+                } else if (current == '"') {
+                    quoted = false;
+                } else if (Character.isISOControl(current)) {
+                    return ObjectPrefixState.invalid();
+                }
+                continue;
+            }
+            if (current == '"') {
+                quoted = true;
+                continue;
+            }
+            if (current == '{' || current == '[') {
+                stack.add(current);
+                continue;
+            }
+            if (current == '}' || current == ']') {
+                if (current == '}' && stack.isEmpty()) {
+                    members.add(value.substring(start, index));
+                    if (!value.substring(index + 1).isBlank()) {
+                        return ObjectPrefixState.invalid();
+                    }
+                    return new ObjectPrefixState(true, true, members);
+                }
+                if (stack.isEmpty() || !matching(stack.remove(stack.size() - 1), current)) {
+                    return ObjectPrefixState.invalid();
+                }
+                continue;
+            }
+            if (current == ',' && stack.isEmpty()) {
+                members.add(value.substring(start, index));
+                start = index + 1;
+            }
+        }
+        members.add(value.substring(start));
+        return new ObjectPrefixState(true, false, members);
     }
 
     private static boolean validNumberPrefix(
             String value, Map<String, Object> schema) {
+        if (value == null
+                || !value.matches("[ \\t\\r\\n]*-?[0-9]*(\\.[0-9]*)?([eE][+-]?[0-9]*)?[ \\t\\r\\n]*")) {
+            return false;
+        }
         String trimmed = value.trim();
-        if (!trimmed.matches("-?[0-9]*(\\.[0-9]*)?([eE][+-]?[0-9]*)?")) {
+        boolean trailingJsonWhitespace = !value.isEmpty()
+                && isJsonWhitespace(value.charAt(value.length() - 1));
+        if ("-".equals(trimmed)
+                && schema.get("minimum") instanceof Number
+                && ((Number) schema.get("minimum")).doubleValue() >= 0.0d) {
             return false;
         }
         if (trimmed.isEmpty() || "-".equals(trimmed)
                 || trimmed.endsWith(".") || trimmed.endsWith("e")
                 || trimmed.endsWith("E") || trimmed.endsWith("+")
                 || trimmed.endsWith("-")) {
-            return true;
+            return !trailingJsonWhitespace;
         }
         return validCompleteValue(trimmed, schema);
+    }
+
+    private static boolean isJsonWhitespace(char value) {
+        return value == ' ' || value == '\t' || value == '\r' || value == '\n';
     }
 
     private static ArrayPrefixState parseArrayPrefix(String raw) {
@@ -985,6 +1501,30 @@ public final class NativeToolCallConstraint implements TextConstraint {
                     : MAPPER.convertValue(parsed, Object.class);
         } catch (Exception ignored) {
             return INVALID_VALUE;
+        }
+    }
+
+    private static final class ObjectMember {
+        private final String name;
+
+        private ObjectMember(String name) {
+            this.name = name;
+        }
+    }
+
+    private static final class ObjectPrefixState {
+        private final boolean valid;
+        private final boolean closed;
+        private final List<String> members;
+
+        private ObjectPrefixState(boolean valid, boolean closed, List<String> members) {
+            this.valid = valid;
+            this.closed = closed;
+            this.members = members;
+        }
+
+        private static ObjectPrefixState invalid() {
+            return new ObjectPrefixState(false, false, List.of());
         }
     }
 

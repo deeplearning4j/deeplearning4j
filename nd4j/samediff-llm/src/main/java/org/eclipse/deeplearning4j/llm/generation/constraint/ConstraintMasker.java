@@ -240,6 +240,139 @@ public class ConstraintMasker {
         return masked;
     }
 
+    /**
+     * Builds a constraint mask from the tokenizer's exact decode of the complete candidate
+     * sequence. Token-piece lookup is deliberately approximate: for tokenizers with whitespace
+     * cleanup or byte-level composition, {@code decode(prefix + token)} is not necessarily equal
+     * to {@code decode(prefix) + decode(token)}. This method therefore checks the top-K candidates
+     * using their exact sequence decodes and widens to the full vocabulary only when none is legal.
+     *
+     * @param logits raw vocabulary logits
+     * @param stopTokenIds tokens that terminate generation
+     * @param idToDecodedCandidate maps a token ID to the exact decode of prefix plus that token
+     * @param specialPieces tokenizer control lexemes that must be owned by the constraint
+     * @return a fresh exact mask, limited to legal top-K candidates when possible
+     */
+    public float[] maskLogitsByDecodedCandidate(
+            float[] logits,
+            Set<Integer> stopTokenIds,
+            IntFunction<String> idToDecodedCandidate,
+            List<String> specialPieces) {
+        return maskLogitsByDecodedCandidate(
+                logits,
+                stopTokenIds,
+                Collections.emptySet(),
+                ignored -> null,
+                idToDecodedCandidate,
+                specialPieces);
+    }
+
+    /**
+     * Exact candidate masking that retains tokenizer control-token identity.
+     *
+     * <p>A tokenizer may omit a control token from a full-sequence decode. Text-only validation
+     * cannot distinguish that disappearance from a legitimate byte-boundary rewrite and can
+     * accidentally reset the constraint state. Registered special-token IDs are therefore checked
+     * against the constraint-owned protocol transition before their decoded text is considered.</p>
+     */
+    public float[] maskLogitsByDecodedCandidate(
+            float[] logits,
+            Set<Integer> stopTokenIds,
+            Set<Integer> specialTokenIds,
+            IntFunction<String> idToPiece,
+            IntFunction<String> idToDecodedCandidate,
+            List<String> specialPieces) {
+        if (logits == null) {
+            throw new IllegalArgumentException("logits must not be null");
+        }
+        if (idToDecodedCandidate == null) {
+            throw new IllegalArgumentException("idToDecodedCandidate must not be null");
+        }
+        Set<Integer> terminals = stopTokenIds == null
+                ? Collections.emptySet() : stopTokenIds;
+        Set<Integer> specialsById = specialTokenIds == null
+                ? Collections.emptySet() : specialTokenIds;
+        IntFunction<String> pieceLookup = idToPiece == null ? ignored -> null : idToPiece;
+        List<String> specials = specialPieces == null
+                ? Collections.emptyList() : specialPieces;
+        boolean accepting = isComplete();
+        int[] topKIndices = topKIndices(logits, Math.min(evalTopK, logits.length));
+        boolean anyTopKAllowed = false;
+        for (int tokenId : topKIndices) {
+            if (tokenId >= 0 && !terminals.contains(tokenId)
+                    && allowsDecodedCandidate(
+                    tokenId, specialsById, pieceLookup, idToDecodedCandidate, specials)) {
+                anyTopKAllowed = true;
+                break;
+            }
+        }
+
+        float[] masked = new float[logits.length];
+        java.util.Arrays.fill(masked, Float.NEGATIVE_INFINITY);
+        if (anyTopKAllowed) {
+            for (int tokenId : topKIndices) {
+                if (tokenId >= 0 && !terminals.contains(tokenId)
+                        && allowsDecodedCandidate(
+                        tokenId, specialsById, pieceLookup, idToDecodedCandidate, specials)) {
+                    masked[tokenId] = logits[tokenId];
+                }
+            }
+        } else {
+            // Narrow the exact widening pass with the inexpensive piece-level automaton first.
+            // Exact full-sequence decode remains the authority, but decoding every vocabulary item
+            // through a native tokenizer at every structural boundary is prohibitively expensive.
+            boolean[] approximatelyAllowed = cache.getAllowedTokens(
+                    constraint, emittedText, logits.length, pieceLookup);
+            boolean foundExactCandidate = false;
+            for (int tokenId = 0; tokenId < logits.length; tokenId++) {
+                if (!terminals.contains(tokenId)
+                        && isAllowedToken(
+                        tokenId, approximatelyAllowed, specialsById, specials, pieceLookup)
+                        && allowsDecodedCandidate(
+                        tokenId, specialsById, pieceLookup, idToDecodedCandidate, specials)) {
+                    masked[tokenId] = logits[tokenId];
+                    foundExactCandidate = true;
+                }
+            }
+            // Piece lookup can be a false negative for byte-level/token-boundary rewrites. Preserve
+            // the exact decoder's widening guarantee when the fast candidate set finds nothing.
+            if (!foundExactCandidate) {
+                for (int tokenId = 0; tokenId < logits.length; tokenId++) {
+                    if (!terminals.contains(tokenId)
+                            && allowsDecodedCandidate(
+                            tokenId, specialsById, pieceLookup, idToDecodedCandidate, specials)) {
+                        masked[tokenId] = logits[tokenId];
+                    }
+                }
+            }
+        }
+
+        // Preserve the existing terminal semantics: an already complete constraint may stop, and
+        // a constraint-owned terminal may itself be the exact transition that closes the envelope.
+        for (Integer terminal : terminals) {
+            if (terminal == null || terminal < 0 || terminal >= logits.length) {
+                continue;
+            }
+            boolean allowed = accepting
+                    || allowsDecodedCandidate(
+                    terminal, specialsById, pieceLookup, idToDecodedCandidate, specials);
+            masked[terminal] = allowed ? logits[terminal] : Float.NEGATIVE_INFINITY;
+        }
+        return masked;
+    }
+
+    private boolean allowsDecodedCandidate(
+            int tokenId,
+            Set<Integer> specialTokenIds,
+            IntFunction<String> idToPiece,
+            IntFunction<String> idToDecodedCandidate,
+            List<String> specialPieces) {
+        if (specialTokenIds.contains(tokenId)) {
+            return allowsSpecialToken(idToPiece.apply(tokenId));
+        }
+        return allowsDecodedText(idToDecodedCandidate.apply(tokenId), specialPieces);
+    }
+
     private boolean isAllowedToken(
             int tokenId,
             boolean[] allowed,
@@ -333,9 +466,23 @@ public class ConstraintMasker {
      * compositionally equivalent for every tokenizer.
      */
     public boolean allowsDecodedText(String decodedText, List<String> specialPieces) {
-        if (decodedText == null
-                || (!constraint.canExtend("", decodedText)
-                && !constraint.isAccepting(decodedText))) {
+        if (decodedText == null || decodedText.isEmpty()) {
+            return false;
+        }
+        boolean validContinuation;
+        if (decodedText.startsWith(emittedText)) {
+            String extension = decodedText.substring(emittedText.length());
+            validContinuation = !extension.isEmpty()
+                    && (constraint.canExtend(emittedText, extension)
+                    || constraint.isAccepting(decodedText));
+        } else {
+            // Some tokenizers rewrite an earlier byte-level boundary when the next token is
+            // decoded. In that case there is no stable suffix to validate incrementally. A
+            // state-derived constraint cannot validate the whole decode as one giant extension
+            // from the empty state: it must observe each protocol transition in order.
+            validContinuation = isValidDecodedPrefixFromInitialState(decodedText);
+        }
+        if (!validContinuation) {
             return false;
         }
         List<String> specials = specialPieces == null
@@ -356,12 +503,43 @@ public class ConstraintMasker {
         return true;
     }
 
+    private boolean isValidDecodedPrefixFromInitialState(String decodedText) {
+        StringBuilder prefix = new StringBuilder(decodedText.length());
+        for (int offset = 0; offset < decodedText.length();) {
+            int codePoint = decodedText.codePointAt(offset);
+            String piece = new String(Character.toChars(codePoint));
+            if (!constraint.canExtend(prefix.toString(), piece)) {
+                return false;
+            }
+            prefix.append(piece);
+            offset += Character.charCount(codePoint);
+        }
+        return true;
+    }
+
     /** Replaces approximate per-token state with the tokenizer's exact sequence decode. */
     public void decodedTextEmitted(String decodedText) {
         if (decodedText == null) {
             throw new IllegalArgumentException("decodedText must not be null");
         }
         emittedText = decodedText;
+    }
+
+    /** Returns whether a tokenizer-declared control token is owned at the current protocol state. */
+    public boolean allowsSpecialToken(String piece) {
+        return piece != null
+                && !piece.isEmpty()
+                && constraint.allowsSpecialToken(emittedText, piece)
+                && constraint.canExtend(emittedText, piece);
+    }
+
+    /** Advances the exact state through a constraint-owned tokenizer control token. */
+    public void specialTokenEmitted(String piece) {
+        if (!allowsSpecialToken(piece)) {
+            throw new IllegalArgumentException(
+                    "Special token is not allowed at the current constraint state: " + piece);
+        }
+        emittedText += piece;
     }
 
     // -------------------------------------------------------------------------

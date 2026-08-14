@@ -27,8 +27,6 @@ import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -349,7 +347,7 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
 
         // Flatten pixel values into patch vectors (approximation — exact unfolding left to runtime)
         SDVariable patches = sd.reshape("v.patches_flat", pixelValues, -1, -1, patchDim);
-        SDVariable patchEmbeds = fp32Mmul(sd, "v.patch_embeds", patches,
+        SDVariable patchEmbeds = QuantizedLinear.fp32Mmul(sd, "v.patch_embeds", patches,
                 wPatchFlat.permute(1, 0), dtype);
 
         // Add patch position bias if present
@@ -486,9 +484,9 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         SDVariable wv = sd.var(attnPrefix + "v_proj.weight", vWeight);
         SDVariable wo = sd.var(attnPrefix + "o_proj.weight", oWeight);
 
-        SDVariable q = fp32Mmul(sd, "vq_" + layerIdx, input, wq.permute(1, 0), dtype);
-        SDVariable k = fp32Mmul(sd, "vk_" + layerIdx, input, wk.permute(1, 0), dtype);
-        SDVariable v = fp32Mmul(sd, "vv_" + layerIdx, input, wv.permute(1, 0), dtype);
+        SDVariable q = QuantizedLinear.fp32Mmul(sd, "vq_" + layerIdx, input, wq.permute(1, 0), dtype);
+        SDVariable k = QuantizedLinear.fp32Mmul(sd, "vk_" + layerIdx, input, wk.permute(1, 0), dtype);
+        SDVariable v = QuantizedLinear.fp32Mmul(sd, "vv_" + layerIdx, input, wv.permute(1, 0), dtype);
 
         // Add Q/K/V biases if present (SigLIP2 uses biases in attention)
         INDArray qBias = weights.get(prefix + ".attn_q.bias");
@@ -512,11 +510,10 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         v = sd.reshape("vv_heads_" + layerIdx, v, headShape);
 
         // Scaled dot-product attention (no mask, no KV cache for the ViT encoder)
-        SDVariable attnOut = new DotProductAttentionV2(sd,
-                q, v, k, null, null,
+        SDVariable attnOut = sd.nn().dotProductAttentionV2(
+                "v_attn_out_" + layerIdx, q, v, k, null, null,
                 null, null, null, null,
-                0.0, 0.0, false, false).outputVariable();
-        sd.updateVariableNameAndReference(attnOut, "v_attn_out_" + layerIdx);
+                0.0, 0.0, false, false);
 
         // Reshape back: [batch*frames, numPatches, qOutDim]
         SDVariable outShape = sd.stack("v_attn_out_shape_" + layerIdx, 0,
@@ -525,7 +522,7 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         SDVariable attnFlat = sd.reshape("v_attn_flat_" + layerIdx, attnOut, outShape);
 
         // Output projection
-        SDVariable out = fp32Mmul(sd, "v_attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
+        SDVariable out = QuantizedLinear.fp32Mmul(sd, "v_attn_proj_" + layerIdx, attnFlat, wo.permute(1, 0), dtype);
 
         INDArray oBias = weights.get(prefix + ".attn_output.bias");
         if (oBias != null) {
@@ -553,13 +550,13 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         SDVariable wUp   = sd.var(mlpPrefix + "fc1.weight", upWeight);
         SDVariable wDown = sd.var(mlpPrefix + "fc2.weight", downWeight);
 
-        SDVariable up = fp32Mmul(sd, "v_up_" + layerIdx, input, wUp.permute(1, 0), dtype);
+        SDVariable up = QuantizedLinear.fp32Mmul(sd, "v_up_" + layerIdx, input, wUp.permute(1, 0), dtype);
 
         INDArray upBias = weights.get(prefix + ".ffn_up.bias");
         if (upBias != null) up = up.add(sd.var(mlpPrefix + "fc1.bias", upBias));
 
         SDVariable activated = sd.nn.gelu("v_gelu_" + layerIdx, up);
-        SDVariable down = fp32Mmul(sd, "v_down_" + layerIdx, activated, wDown.permute(1, 0), dtype);
+        SDVariable down = QuantizedLinear.fp32Mmul(sd, "v_down_" + layerIdx, activated, wDown.permute(1, 0), dtype);
 
         INDArray downBias = weights.get(prefix + ".ffn_down.bias");
         if (downBias != null) down = down.add(sd.var(mlpPrefix + "fc2.bias", downBias));
@@ -643,9 +640,9 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         SDVariable wo = sd.var("resampler.attn_output.weight", attnOWeight);
 
         // Project queries, keys, values
-        SDVariable q = fp32Mmul(sd, "resampler.q", queryTokens, wq.permute(1, 0), dtype);
-        SDVariable k = fp32Mmul(sd, "resampler.k", kv, wk.permute(1, 0), dtype);
-        SDVariable v = fp32Mmul(sd, "resampler.v", kv, wv.permute(1, 0), dtype);
+        SDVariable q = QuantizedLinear.fp32Mmul(sd, "resampler.q", queryTokens, wq.permute(1, 0), dtype);
+        SDVariable k = QuantizedLinear.fp32Mmul(sd, "resampler.k", kv, wk.permute(1, 0), dtype);
+        SDVariable v = QuantizedLinear.fp32Mmul(sd, "resampler.v", kv, wv.permute(1, 0), dtype);
 
         // Add biases if present
         INDArray qBias = weights.get("resampler.attn_q.bias");
@@ -678,11 +675,10 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         v = sd.reshape("resampler.v_heads", v, kvShape);
 
         // Cross-attention: queries attend to vision key/value pairs (no causal mask)
-        SDVariable attnOut = new DotProductAttentionV2(sd,
-                q, v, k, null, null,
+        SDVariable attnOut = sd.nn().dotProductAttentionV2(
+                "resampler.attn_out", q, v, k, null, null,
                 null, null, null, null,
-                0.0, 0.0, false, false).outputVariable();
-        sd.updateVariableNameAndReference(attnOut, "resampler.attn_out");
+                0.0, 0.0, false, false);
 
         // Reshape: [batch, numOutputTokens, numHeads * headDim]
         SDVariable outShape = sd.stack("resampler.out_shape", 0,
@@ -691,7 +687,7 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         SDVariable attnFlat = sd.reshape("resampler.attn_flat", attnOut, outShape);
 
         // Output projection
-        SDVariable resamplerOut = fp32Mmul(sd, "resampler.attn_proj", attnFlat, wo.permute(1, 0), dtype);
+        SDVariable resamplerOut = QuantizedLinear.fp32Mmul(sd, "resampler.attn_proj", attnFlat, wo.permute(1, 0), dtype);
 
         INDArray oBias = weights.get("resampler.attn_output.bias");
         if (oBias != null) {
@@ -709,7 +705,7 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         INDArray mmWeight0 = weights.get("mm.0.weight");
         if (mmWeight0 != null) {
             SDVariable wMm0 = sd.var("mm.0.weight", mmWeight0);
-            resamplerOut = fp32Mmul(sd, "mm.0.proj", resamplerOut, wMm0.permute(1, 0), dtype);
+            resamplerOut = QuantizedLinear.fp32Mmul(sd, "mm.0.proj", resamplerOut, wMm0.permute(1, 0), dtype);
             INDArray mmBias0 = weights.get("mm.0.bias");
             if (mmBias0 != null) resamplerOut = resamplerOut.add(sd.var("mm.0.bias", mmBias0));
             resamplerOut = sd.nn.gelu("mm.gelu", resamplerOut);
@@ -717,7 +713,7 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         INDArray mmWeight2 = weights.get("mm.2.weight");
         if (mmWeight2 != null) {
             SDVariable wMm2 = sd.var("mm.2.weight", mmWeight2);
-            resamplerOut = fp32Mmul(sd, "mm.2.proj", resamplerOut, wMm2.permute(1, 0), dtype);
+            resamplerOut = QuantizedLinear.fp32Mmul(sd, "mm.2.proj", resamplerOut, wMm2.permute(1, 0), dtype);
             INDArray mmBias2 = weights.get("mm.2.bias");
             if (mmBias2 != null) resamplerOut = resamplerOut.add(sd.var("mm.2.bias", mmBias2));
         }
@@ -848,28 +844,24 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         }
 
         // Apply NeoX/interleaved RoPE with dynamic position offset
-        q = new FusedRoPE(sd, q, positionOffset,
+        q = sd.nn().fusedRoPE("q_rope_" + layerIdx, q, positionOffset,
                 config.getRopeType(), config.getRopeFreqBase(), 1.0,
-                config.getRopeDimensionCount()).outputVariable();
-        sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+                config.getRopeDimensionCount());
 
-        k = new FusedRoPE(sd, k, positionOffset,
+        k = sd.nn().fusedRoPE("k_rope_" + layerIdx, k, positionOffset,
                 config.getRopeType(), config.getRopeFreqBase(), 1.0,
-                config.getRopeDimensionCount()).outputVariable();
-        sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+                config.getRopeDimensionCount());
 
         // V must match Q/K dtype after FusedRoPE promotion
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("llm_v_cast_" + layerIdx, q.dataType());
-        }
+        v = GGMLDTypePolicy.castTo(
+                v, "llm_v_cast_" + layerIdx, q.dataType());
         sd.updateVariableNameAndReference(v, "v_heads_" + layerIdx);
 
         // Dot-product attention with KV cache and causal mask
-        SDVariable attnOut = new DotProductAttentionV2(sd,
-                q, v, k, null, null,
+        SDVariable attnOut = sd.nn().dotProductAttentionV2(
+                "llm_attn_out_" + layerIdx, q, v, k, null, null,
                 keyCache, valueCache, cachePosition, causalMask,
-                0.0, 0.0, false, false).outputVariable();
-        sd.updateVariableNameAndReference(attnOut, "llm_attn_out_" + layerIdx);
+                0.0, 0.0, false, false);
 
         // Flatten heads: [batch, seq, numHeads, headDim] -> [batch, seq, numHeads*headDim]
         int attnOutDim = actualNumHeads * headDim;
@@ -929,15 +921,14 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
 
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        SDVariable x = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
+        SDVariable x = GGMLDTypePolicy.castForAccumulation(input, outputName + "_accum");
 
         SDVariable squared    = x.mul(x);
         SDVariable meanSq     = squared.mean(true, -1);
         SDVariable rms        = sd.math.sqrt(meanSq.add(config.getLayerNormEpsilon()));
         SDVariable normalized = x.div(rms);
-
-        if (needsCast) normalized = normalized.castTo(outputName + "_cast", input.dataType());
+        normalized = GGMLDTypePolicy.castTo(
+                normalized, outputName + "_cast", input.dataType());
 
         return normalized.mul(outputName, gamma);
     }
@@ -949,15 +940,14 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
                                         INDArray normWeight, float eps) {
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        SDVariable x = needsCast ? input.castTo(outputName + "_f32", DataType.FLOAT) : input;
+        SDVariable x = GGMLDTypePolicy.castForAccumulation(input, outputName + "_accum");
 
         SDVariable squared    = x.mul(x);
         SDVariable meanSq     = squared.mean(true, -1);
         SDVariable rms        = sd.math.sqrt(meanSq.add(eps));
         SDVariable normalized = x.div(rms);
-
-        if (needsCast) normalized = normalized.castTo(outputName + "_cast", input.dataType());
+        normalized = GGMLDTypePolicy.castTo(
+                normalized, outputName + "_cast", input.dataType());
 
         return normalized.mul(outputName, gamma);
     }
@@ -983,21 +973,6 @@ public class MiniCPMVArchitecture implements ModelArchitecture {
         }
 
         return result;
-    }
-
-    // ========================================================================
-    // FP32 matmul helper (prevents FP16 overflow on large dot products)
-    // ========================================================================
-
-    private SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b,
-                                DataType dtype) {
-        if (QuantizedLinear.requiresFp32Accumulation(dtype)) {
-            SDVariable aF32  = a.castTo(name + "_a_f32", DataType.FLOAT);
-            SDVariable bF32  = b.castTo(name + "_b_f32", DataType.FLOAT);
-            SDVariable result = sd.mmul(name + "_f32", aF32, bF32);
-            return result.castTo(name, dtype);
-        }
-        return sd.mmul(name, a, b);
     }
 
     // ========================================================================

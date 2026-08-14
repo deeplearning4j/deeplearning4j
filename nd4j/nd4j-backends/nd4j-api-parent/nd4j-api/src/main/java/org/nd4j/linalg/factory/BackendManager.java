@@ -161,8 +161,15 @@ public class BackendManager {
             log.debug("Auto-initialization disabled via system property");
             return;
         }
+        if (initialized.get()) {
+            return;
+        }
 
-        if (initialized.compareAndSet(false, true)) {
+        synchronized (this) {
+            if (initialized.get()) {
+                return;
+            }
+
             log.debug("Auto-initializing BackendManager");
 
             // Initialize the registry (discovers backends and devices)
@@ -183,20 +190,19 @@ public class BackendManager {
                 log.debug("Multi-backend mode disabled via system property");
             }
 
-            // Configure memory caps
+            // Configure memory caps and routing before publishing readiness.
             configureMemoryCaps();
-
-            // Set up routing configuration
             configureRouting();
 
             // Auto-install DeviceAwareOpExecutioner with CPU fallback if:
             // 1. Primary backend is GPU-based (CUDA, ROCm, etc.)
             // 2. CPU backend is available on classpath
-            // This enables transparent CPU fallback for spillover scenarios
             autoInstallDeviceAwareExecutioner();
 
-            // Log what we found
             logInitializationSummary();
+
+            // Commit only after every required manager phase completed.
+            initialized.set(true);
         }
     }
 

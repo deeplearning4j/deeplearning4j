@@ -82,7 +82,7 @@ public final class SdxLlmCApi {
                                         CCharPointer cacheDirectory, CCharPointer optionsJson,
                                         CCharPointerPointer outJson) {
         try {
-            SdxNativeLibs.bootstrap();
+            SdxNativeLibs.bootstrapForEmbeddedNativeImage();
             String source = toJavaString(sourceGguf);
             String target = toJavaString(targetProfile);
             String cache = toJavaString(cacheDirectory);
@@ -105,7 +105,7 @@ public final class SdxLlmCApi {
                                                CCharPointer cacheDirectory,
                                                CCharPointerPointer outJson) {
         try {
-            SdxNativeLibs.bootstrap();
+            SdxNativeLibs.bootstrapForEmbeddedNativeImage();
             String source = toJavaString(sourceSdz);
             String target = toJavaString(targetProfile);
             String cache = toJavaString(cacheDirectory);
@@ -133,7 +133,7 @@ public final class SdxLlmCApi {
         try {
             // Side-loaded natives (SDK lib/ next to the library) must be resolvable
             // before ND4J / tokenizer classes initialize (ADR 0109). Idempotent.
-            SdxNativeLibs.bootstrap();
+            SdxNativeLibs.bootstrapForEmbeddedNativeImage();
             String model = toJavaString(modelPath);
             if (model == null) {
                 lastError = "modelPath must not be null";
@@ -155,7 +155,7 @@ public final class SdxLlmCApi {
                                                        CCharPointer targetProfile,
                                                        CCharPointer optionsJson) {
         try {
-            SdxNativeLibs.bootstrap();
+            SdxNativeLibs.bootstrapForEmbeddedNativeImage();
             String bundle = toJavaString(bundlePath);
             String target = toJavaString(targetProfile);
             if (bundle == null || target == null) {
@@ -452,7 +452,7 @@ public final class SdxLlmCApi {
     public static int sdxVlmExtract(IsolateThread runtime, CCharPointer modelPath, CCharPointer tokenizerPath,
                                     CCharPointer inputPath, CCharPointer optionsJson, CCharPointerPointer outText) {
         try {
-            SdxNativeLibs.bootstrap();
+            SdxNativeLibs.bootstrapForEmbeddedNativeImage();
             String model = toJavaString(modelPath);
             String input = toJavaString(inputPath);
             if (model == null || input == null || outText.isNull()) {
@@ -476,7 +476,7 @@ public final class SdxLlmCApi {
     public static int sdxAudioTranscribe(IsolateThread runtime, CCharPointer modelPath, CCharPointer audioPath,
                                          CCharPointer optionsJson, CCharPointerPointer outText) {
         try {
-            SdxNativeLibs.bootstrap();
+            SdxNativeLibs.bootstrapForEmbeddedNativeImage();
             String model = toJavaString(modelPath);
             String audio = toJavaString(audioPath);
             if (model == null || audio == null || outText.isNull()) {

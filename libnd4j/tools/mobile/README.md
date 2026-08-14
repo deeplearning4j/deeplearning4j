@@ -1,6 +1,6 @@
 # Mobile accelerator builds
 
-This directory owns reproducible Android ARM64 accelerator builds for the offline chat stack. Profiles are declarative; SDK, NDK, Maven, and licensed vendor paths are caller inputs.
+This directory owns reproducible Android ARM64 accelerator builds for the offline chat stack. Profiles are declarative. The wrappers discover Android NDK r28, JDK 17, Maven, bounded parallelism, and a shared `/tmp/sdx-android-build` root; `SDX_*` environment variables and command-line options remain available as explicit overrides. Licensed vendor paths remain caller inputs.
 
 Core rules:
 
@@ -61,10 +61,7 @@ Mobile resolution is extraction-only and fail-closed. It never runs a compiler o
 
 Build the BLAS-free device-only Vulkan SDX AAR with the NDK:
 
-    tools/mobile/build-android-accelerator.sh \
-      --profile tools/mobile/profiles/vulkan.env \
-      --android-ndk /path/to/android-ndk-r28b-or-newer \
-      --offline
+    tools/mobile/build-android-accelerator.sh vulkan
 
 The AAR links Android's system Vulkan loader and packages libnd4jvulkan, libjnisdx, functional replay, and the Java/JavaCPP runtime. Production sessions require cached AOT SPIR-V, capture the lowered command sequence once, and replay it for later tokens. Unsupported or unrecordable operations fail closed.
 
@@ -72,10 +69,7 @@ The AAR links Android's system Vulkan loader and packages libnd4jvulkan, libjnis
 
 Build and publish the canonical Pixel Tensor G3 provider from the checkout:
 
-    tools/mobile/build-android-accelerator.sh \
-      --profile tools/mobile/profiles/tensor-g3-nnapi.env \
-      --android-ndk /path/to/android-ndk-r28b-or-newer \
-      --offline
+    tools/mobile/build-android-accelerator.sh
 
 The default command builds and installs the tokenizer preset, generated tokenizer bindings, SDX preset, model compiler/cache API, native runtime, and JavaCPP bridge in dependency order. The promoted AAR includes `binding.json`, `provider.json`, the complete Java class contract, and the exact AArch64 native dependency closure. Its verifier cross-checks the provider ID, artifact format, target SoC, runtime library, execution policy, Java APIs, and ELF dependencies before writing the SHA-256 sidecar.
 
@@ -87,18 +81,12 @@ Tensor G3 segment placement is explicit and observable: EdgeTPU-capable NNAPI se
 
 Build the runtime contract:
 
-    tools/mobile/build-android-accelerator.sh \
-      --profile tools/mobile/profiles/hexagon.env \
-      --android-ndk /path/to/android-ndk \
-      --offline
+    tools/mobile/build-android-accelerator.sh hexagon
 
 For a device-ready artifact, inject the licensed adapter:
 
     HEXAGON_ADAPTER_LIBRARY=/path/to/libhexagon_mlir_runtime.so \
-    tools/mobile/build-android-accelerator.sh \
-      --profile tools/mobile/profiles/hexagon.env \
-      --android-ndk /path/to/android-ndk \
-      --device-ready --offline
+      tools/mobile/build-android-accelerator.sh hexagon --device-ready
 
 Functional/emulated replay produces the vendor compile request. Finalized kernels use inclusive segment bounds, exact shape keys, cache/adapter ABI, SoC, byte size, and SHA-256:
 
@@ -117,9 +105,7 @@ The resulting directory is supplied to the SDX compiler SPI or the temporary `--
 
 The Tensor G5 provider is built from pinned LiteRT-LM 0.14.0 and Google's direct Tensor dispatch library. It fixes the backend to `npu`, validates `Build.SOC_MODEL`, and exposes no CPU/GPU/NNAPI selector:
 
-    tools/mobile/build-google-tensor-g5.sh \
-      --android-ndk /path/to/android-ndk-r28b-or-newer \
-      --maven /path/to/mvn
+    tools/mobile/build-google-tensor-g5.sh
 
 The script builds the direct-NPU runtime and JavaCPP bridge, packages the exact AArch64 dependency closure, embeds the common SDZ cache API, and runs `verify-google-tensor-g5-aar.sh`. It does not download or bundle a gated model.
 
@@ -136,7 +122,7 @@ Pass the validated file to `sdx-compile.sh compile --quantization-config ...`; i
 
 ## Outputs
 
-The default build root is `libnd4j/build/mobile/<variant>`. Its `dist` directory contains the complete JavaCPP AAR and SHA-256 sidecar:
+The default build root is `/tmp/sdx-android-build/accelerator/<variant>` (or `$SDX_ANDROID_BUILD_ROOT/accelerator/<variant>`). Its `dist` directory contains the complete JavaCPP AAR and SHA-256 sidecar:
 
 - `sdx-runtime-android-arm64-vulkan.aar`
 - `sdx-runtime-android-arm64-hexagon.aar`

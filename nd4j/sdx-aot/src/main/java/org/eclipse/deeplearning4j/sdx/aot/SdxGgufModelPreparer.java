@@ -4,6 +4,10 @@
  */
 package org.eclipse.deeplearning4j.sdx.aot;
 
+import org.eclipse.deeplearning4j.llm.generation.SdxTextGenerationConfig;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.SDZSerializer;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.dsp.model.SdxCompiledModel;
 import org.nd4j.dsp.model.SdxModelCache;
 import org.nd4j.dsp.model.SdxModelCompiler;
@@ -27,6 +31,8 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,6 +58,7 @@ final class SdxGgufModelPreparer {
         SdxTargetProfile target = SdxTargetProfile.fromId(requireText(targetProfile, "target profile"));
         SdxModelCache cache = new SdxModelCache(Path.of(requireText(cacheDirectory, "cache directory")));
         Files.createDirectories(cache.root());
+        Path temporaryRoot = configureTemporaryDirectory(cache);
 
         JsonNode options = parseObject(optionsJson);
         RawSourceIdentity sourceIdentity = RawSourceIdentity.identify(source);
@@ -65,24 +72,27 @@ final class SdxGgufModelPreparer {
         if (canonical != null) {
             try {
                 SdxCompiledModel cached = cache.resolve(canonical, target);
-                int cachedContextLength = contextLength(source);
-                requireUnchangedRawSource(source, sourceIdentity);
-                return preparedJson(sourceIdentity, canonicalIdentity, canonical, cached, true,
-                        cachedContextLength, target);
+                if (isNativeTextGenerationContract(
+                        cached.requireTextModelAssets().textGenerationConfig())) {
+                    int cachedContextLength = contextLength(source);
+                    requireUnchangedRawSource(source, sourceIdentity);
+                    return preparedJson(sourceIdentity, canonicalIdentity, canonical, cached, true,
+                            cachedContextLength, target);
+                }
             } catch (SdxModelCache.MissingCompiledModelException missingTarget) {
                 // The canonical import is reusable; compile only the missing target below.
             }
         }
 
         Files.createDirectories(preparedRoot);
+        TokenizerAssets tokenizerAssets = materializeTokenizerAssets(
+                source, tokenizerPath, preparedRoot.resolve("text-assets"));
         boolean publishCanonicalPointer = false;
         if (canonical == null) {
-            Path temporaryRoot = cache.root().resolve("tmp");
-            Files.createDirectories(temporaryRoot);
             Path generated = Files.createTempFile(temporaryRoot, "gguf-import-", ".sdz");
             boolean admitted = false;
             try {
-                convertToSdz(source, generated);
+                convertToSdz(source, generated, tokenizerAssets);
                 canonical = cache.admitGeneratedSource(generated);
                 admitted = true;
             } finally {
@@ -90,10 +100,14 @@ final class SdxGgufModelPreparer {
             }
             canonicalIdentity = SdxSourceIdentity.identify(canonical);
             publishCanonicalPointer = true;
+        } else {
+            writeTextGenerationConfig(canonical, tokenizerAssets);
+        }
+        if (!isNativeTextGenerationContract(tokenizerAssets.textGenerationConfig)) {
+            throw new IOException("Derived text-generation metadata does not satisfy the native SDX contract: "
+                    + tokenizerAssets.textGenerationConfig);
         }
 
-        TokenizerAssets tokenizerAssets = materializeTokenizerAssets(
-                source, tokenizerPath, preparedRoot.resolve("text-assets"));
         requireUnchangedRawSource(source, sourceIdentity);
         if (publishCanonicalPointer) {
             writeCanonicalPointer(canonicalPointer, canonical);
@@ -121,6 +135,7 @@ final class SdxGgufModelPreparer {
         Path source = requireRegularFile(sourceSdz, "source SDZ");
         SdxTargetProfile target = SdxTargetProfile.fromId(requireText(targetProfile, "target profile"));
         SdxModelCache cache = new SdxModelCache(Path.of(requireText(cacheDirectory, "cache directory")));
+        configureTemporaryDirectory(cache);
         SdxCompiledModel compiled = cache.resolve(source, target);
         SdxTextModelAssets assets = compiled.requireTextModelAssets();
         ObjectNode result = MAPPER.createObjectNode();
@@ -134,6 +149,13 @@ final class SdxGgufModelPreparer {
         result.put("compilerId", compiled.compilerId());
         result.put("executionProvider", target.platformProvider().providerId());
         return result.toString();
+    }
+
+    private static Path configureTemporaryDirectory(SdxModelCache cache) throws IOException {
+        Path temporaryRoot = cache.root().resolve("tmp").toAbsolutePath().normalize();
+        Files.createDirectories(temporaryRoot);
+        System.setProperty(ND4JSystemProperties.ND4J_TEMP_DIR_PROPERTY, temporaryRoot.toString());
+        return temporaryRoot;
     }
 
     private static String preparedJson(RawSourceIdentity sourceIdentity,
@@ -225,6 +247,7 @@ final class SdxGgufModelPreparer {
     private static TokenizerAssets materializeTokenizerAssets(
             Path source, String explicitTokenizerPath, Path destination) throws IOException {
         Files.createDirectories(destination);
+        GGMLMetadata metadata = inspect(source);
         Path tokenizerSource = null;
         Path configSource = null;
         Path generationSource = null;
@@ -246,8 +269,7 @@ final class SdxGgufModelPreparer {
         Path tokenizer = destination.resolve("tokenizer.json");
         Path tokenizerConfig = destination.resolve("tokenizer_config.json");
         Path textGeneration = destination.resolve("text_generation.json");
-        int contextLength = contextLength(source);
-        GGMLMetadata metadata = null;
+        int contextLength = contextLength(metadata);
 
         if (Files.isRegularFile(tokenizerSource)) {
             Files.copy(tokenizerSource, tokenizer, StandardCopyOption.REPLACE_EXISTING);
@@ -256,7 +278,6 @@ final class SdxGgufModelPreparer {
             }
             Files.copy(configSource, tokenizerConfig, StandardCopyOption.REPLACE_EXISTING);
         } else {
-            metadata = inspect(source);
             Map<String, Object> raw = metadata.getRawMetadata();
             Object tokensValue = raw.get("tokenizer.ggml.tokens");
             if (!(tokensValue instanceof List) || ((List<?>) tokensValue).isEmpty()) {
@@ -279,20 +300,12 @@ final class SdxGgufModelPreparer {
                 throw new IOException("GGUF does not contain tokenizer.chat_template: " + source);
             }
             Files.writeString(tokenizerConfig, config, StandardCharsets.UTF_8);
-            ObjectNode generated = MAPPER.createObjectNode();
-            generated.put("bos_token_id", bosId);
-            generated.put("eos_token_id", eosId);
-            Files.writeString(textGeneration, generated.toString(), StandardCharsets.UTF_8);
         }
 
-        if (!Files.isRegularFile(textGeneration)) {
-            if (generationSource != null) {
-                Files.copy(generationSource, textGeneration, StandardCopyOption.REPLACE_EXISTING);
-            } else {
-                Files.writeString(textGeneration, "{}", StandardCharsets.UTF_8);
-            }
-        }
-        return new TokenizerAssets(tokenizer, tokenizerConfig, textGeneration, contextLength);
+        SdxTextGenerationConfig.Options generationOptions = generationOptions(
+                tokenizerConfig, generationSource, metadata, contextLength);
+        return new TokenizerAssets(tokenizer, tokenizerConfig, textGeneration,
+                contextLength, generationOptions);
     }
 
     private static int[] tokenTypes(Object value) {
@@ -305,7 +318,10 @@ final class SdxGgufModelPreparer {
     }
 
     private static int contextLength(Path source) throws IOException {
-        GGMLMetadata metadata = inspect(source);
+        return contextLength(inspect(source));
+    }
+
+    private static int contextLength(GGMLMetadata metadata) {
         for (Map.Entry<String, Object> entry : metadata.getRawMetadata().entrySet()) {
             if (entry.getKey().endsWith(".context_length") && entry.getValue() instanceof Number) {
                 int value = ((Number) entry.getValue()).intValue();
@@ -315,12 +331,214 @@ final class SdxGgufModelPreparer {
         return 4096;
     }
 
-    private static void convertToSdz(Path source, Path destination) throws IOException {
-        try {
-            GGMLModelImport.convertToSDZ(source.toFile(), destination.toFile());
+    private static void convertToSdz(
+            Path source, Path destination, TokenizerAssets tokenizerAssets) throws IOException {
+        try (SameDiff graph = GGMLModelImport.importModel(source.toFile())) {
+            SdxTextGenerationConfig.write(
+                    graph, tokenizerAssets.generationOptions, tokenizerAssets.textGenerationConfig);
+            Map<String, String> metadata = new HashMap<>();
+            metadata.put("source_format", "ggml");
+            metadata.put("source_file", source.getFileName().toString());
+            metadata.put("conversion_timestamp", String.valueOf(System.currentTimeMillis()));
+            SDZSerializer.save(graph, destination.toFile(), false, metadata);
         } catch (GGMLImportException failure) {
             throw new IOException("Could not import GGUF into canonical SDZ: " + source, failure);
         }
+    }
+
+    private static void writeTextGenerationConfig(
+            Path canonical, TokenizerAssets tokenizerAssets) throws IOException {
+        try (SameDiff graph = SDZSerializer.load(canonical.toFile(), false)) {
+            SdxTextGenerationConfig.write(
+                    graph, tokenizerAssets.generationOptions, tokenizerAssets.textGenerationConfig);
+        }
+    }
+
+    static boolean isNativeTextGenerationContract(Path config) {
+        if (config == null || !Files.isRegularFile(config)) return false;
+        try {
+            JsonNode root = MAPPER.readTree(config.toFile());
+            if (root == null || !root.isObject() || !root.path("formatVersion").canConvertToInt()) {
+                return false;
+            }
+            int version = root.path("formatVersion").intValue();
+            String profile = root.path("profile").asText("");
+            boolean versionAndProfile = version == SdxTextGenerationConfig.KV_ONLY_FORMAT_VERSION
+                    ? SdxTextGenerationConfig.KV_ONLY_PROFILE.equals(profile)
+                    : version == SdxTextGenerationConfig.RECURRENT_STATE_FORMAT_VERSION
+                    && SdxTextGenerationConfig.RECURRENT_STATE_PROFILE.equals(profile);
+            if (!versionAndProfile || !root.path("io").isObject()
+                    || !root.path("execution").isObject()
+                    || !root.path("tokens").isObject()
+                    || !root.path("limits").isObject()) {
+                return false;
+            }
+            JsonNode io = root.path("io");
+            if (!hasNonEmptyText(io, "inputIds", "causalMask", "positionOffset",
+                    "cachePosition", "actualSequenceLength", "logits")
+                    || !hasNonEmptyTextArray(io, "kvKeyInputs", "kvValueInputs",
+                    "prefillKeyOutputs", "prefillValueOutputs")) {
+                return false;
+            }
+            JsonNode execution = root.path("execution");
+            if (!"BSHD".equals(execution.path("kvLayout").asText())
+                    || !execution.path("kvDtype").isTextual()
+                    || !execution.path("maskDtype").isTextual()
+                    || !execution.path("planOwnsKvScatter").asBoolean(false)) {
+                return false;
+            }
+            JsonNode tokens = root.path("tokens");
+            JsonNode eos = tokens.path("eosIds");
+            if (!tokens.path("padId").canConvertToInt() || tokens.path("padId").intValue() < 0
+                    || !eos.isArray() || eos.isEmpty()) {
+                return false;
+            }
+            for (JsonNode token : eos) {
+                if (!token.canConvertToInt() || token.intValue() < 0) return false;
+            }
+            JsonNode limits = root.path("limits");
+            int contextLength = limits.path("contextLength").asInt(-1);
+            int maxPrefillLength = limits.path("maxPrefillLength").asInt(-1);
+            if (contextLength < 2 || maxPrefillLength < 1 || maxPrefillLength >= contextLength) {
+                return false;
+            }
+            JsonNode recurrent = io.path("recurrentStates");
+            return version != SdxTextGenerationConfig.RECURRENT_STATE_FORMAT_VERSION
+                    || recurrent.isArray() && !recurrent.isEmpty();
+        } catch (IOException | RuntimeException invalid) {
+            return false;
+        }
+    }
+
+    private static boolean hasNonEmptyText(JsonNode object, String... fields) {
+        for (String field : fields) {
+            if (!object.path(field).isTextual() || object.path(field).asText().isBlank()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean hasNonEmptyTextArray(JsonNode object, String... fields) {
+        for (String field : fields) {
+            JsonNode values = object.path(field);
+            if (!values.isArray() || values.isEmpty()) return false;
+            for (JsonNode value : values) {
+                if (!value.isTextual() || value.asText().isBlank()) return false;
+            }
+        }
+        return true;
+    }
+
+    private static SdxTextGenerationConfig.Options generationOptions(
+            Path tokenizerConfig, Path generationSource, GGMLMetadata metadata,
+            int contextLength) throws IOException {
+        JsonNode tokenizer = readOptionalObject(tokenizerConfig);
+        JsonNode generation = readOptionalObject(generationSource);
+        GGMLMetadata.TokenizerInfo tokenizerInfo = metadata.getTokenizerInfo();
+
+        Integer bosId = firstNonNegativeInteger(
+                generation.get("bos_token_id"), tokenizer.get("bos_token_id"));
+        if (bosId == null && tokenizerInfo != null && tokenizerInfo.getBosTokenId() >= 0) {
+            bosId = tokenizerInfo.getBosTokenId();
+        }
+
+        List<Integer> eosIds = firstTokenIds(
+                generation.get("eos_token_id"), tokenizer.get("eos_token_id"));
+        if (eosIds.isEmpty() && tokenizerInfo != null && tokenizerInfo.getEosTokenId() >= 0) {
+            eosIds.add(tokenizerInfo.getEosTokenId());
+        }
+        if (eosIds.isEmpty()) {
+            throw new IOException("Tokenizer metadata does not define a non-negative EOS token ID");
+        }
+
+        Integer padId = firstNonNegativeInteger(
+                generation.get("pad_token_id"), tokenizer.get("pad_token_id"));
+        if (padId == null) padId = eosIds.get(0);
+
+        int maxNewTokens = boundedInteger(
+                generation.get("max_new_tokens"), 128, 1, contextLength - 1);
+        int minNewTokens = boundedInteger(
+                generation.get("min_new_tokens"), 0, 0, maxNewTokens);
+
+        return SdxTextGenerationConfig.Options.builder()
+                .contextLength(contextLength)
+                .maxPrefillLength(contextLength - 1)
+                .bosId(bosId)
+                .padId(padId)
+                .eosIds(eosIds)
+                .maxNewTokens(maxNewTokens)
+                .minNewTokens(minNewTokens)
+                .temperature(nonNegativeDouble(generation.get("temperature"), 0.0))
+                .topK(boundedInteger(generation.get("top_k"), 0, 0, Integer.MAX_VALUE))
+                .topP(boundedDouble(generation.get("top_p"), 1.0, 0.0, 1.0))
+                .repetitionPenalty(positiveDouble(
+                        generation.get("repetition_penalty"), 1.0))
+                .seed(integerValue(generation.get("seed"), 0))
+                .build();
+    }
+
+    private static JsonNode readOptionalObject(Path path) throws IOException {
+        if (path == null || !Files.isRegularFile(path)) return MAPPER.createObjectNode();
+        JsonNode value = MAPPER.readTree(path.toFile());
+        if (value == null || !value.isObject()) {
+            throw new IOException("Expected a JSON object in " + path);
+        }
+        return value;
+    }
+
+    private static Integer firstNonNegativeInteger(JsonNode... values) {
+        for (JsonNode value : values) {
+            if (value != null && value.isIntegralNumber() && value.canConvertToInt()
+                    && value.intValue() >= 0) {
+                return value.intValue();
+            }
+        }
+        return null;
+    }
+
+    private static List<Integer> firstTokenIds(JsonNode... values) {
+        for (JsonNode value : values) {
+            LinkedHashSet<Integer> result = new LinkedHashSet<>();
+            if (value != null && value.isIntegralNumber() && value.canConvertToInt()
+                    && value.intValue() >= 0) {
+                result.add(value.intValue());
+            } else if (value != null && value.isArray()) {
+                for (JsonNode element : value) {
+                    if (element.isIntegralNumber() && element.canConvertToInt()
+                            && element.intValue() >= 0) {
+                        result.add(element.intValue());
+                    }
+                }
+            }
+            if (!result.isEmpty()) return new ArrayList<>(result);
+        }
+        return new ArrayList<>();
+    }
+
+    private static int boundedInteger(JsonNode value, int fallback, int minimum, int maximum) {
+        long parsed = value != null && value.isIntegralNumber() ? value.longValue() : fallback;
+        return (int) Math.max(minimum, Math.min(maximum, parsed));
+    }
+
+    private static long integerValue(JsonNode value, long fallback) {
+        return value != null && value.isIntegralNumber() ? value.longValue() : fallback;
+    }
+
+    private static double nonNegativeDouble(JsonNode value, double fallback) {
+        return boundedDouble(value, fallback, 0.0, Double.MAX_VALUE);
+    }
+
+    private static double positiveDouble(JsonNode value, double fallback) {
+        double parsed = value != null && value.isNumber() ? value.doubleValue() : fallback;
+        return Double.isFinite(parsed) && parsed > 0.0 ? parsed : fallback;
+    }
+
+    private static double boundedDouble(
+            JsonNode value, double fallback, double minimum, double maximum) {
+        double parsed = value != null && value.isNumber() ? value.doubleValue() : fallback;
+        if (!Double.isFinite(parsed)) return fallback;
+        return Math.max(minimum, Math.min(maximum, parsed));
     }
 
     private static GGMLMetadata inspect(Path source) throws IOException {
@@ -408,13 +626,16 @@ final class SdxGgufModelPreparer {
         private final Path tokenizerConfig;
         private final Path textGenerationConfig;
         private final int contextLength;
+        private final SdxTextGenerationConfig.Options generationOptions;
 
         private TokenizerAssets(Path tokenizer, Path tokenizerConfig,
-                                Path textGenerationConfig, int contextLength) {
+                                Path textGenerationConfig, int contextLength,
+                                SdxTextGenerationConfig.Options generationOptions) {
             this.tokenizer = tokenizer;
             this.tokenizerConfig = tokenizerConfig;
             this.textGenerationConfig = textGenerationConfig;
             this.contextLength = contextLength;
+            this.generationOptions = generationOptions;
         }
     }
 }

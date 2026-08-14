@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormLinear;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -48,6 +49,27 @@ public class RmsNormLinearTest extends BaseNd4jTestWithBackends {
     @Override
     public char ordering() {
         return 'c';
+    }
+
+    @Test
+    public void testRmsNormFloatInputHalfGammaRank4() {
+        float eps = 1e-6f;
+        long[] shape = {1, 17, 16, 128};
+        long length = 1L * 17 * 16 * 128;
+
+        INDArray input = Nd4j.linspace(DataType.FLOAT, -0.5, 0.001, length).reshape(shape);
+        INDArray gamma = Nd4j.linspace(DataType.FLOAT, 0.5, 0.004, 128).castTo(DataType.HALF);
+        INDArray expected = input.mul(computeInvRms(input, eps)).mul(gamma.castTo(DataType.FLOAT));
+        INDArray actual = Nd4j.create(DataType.FLOAT, shape);
+
+        Nd4j.exec(new RmsNorm(input, gamma, actual, eps));
+
+        assertEquals(DataType.FLOAT, actual.dataType());
+        assertFalse(actual.isNaN().any(), "FLOAT input + HALF gamma produced NaN");
+        assertFalse(actual.isInfinite().any(), "FLOAT input + HALF gamma produced Inf");
+        double maxDiff = expected.sub(actual).amaxNumber().doubleValue();
+        assertTrue(maxDiff < 1e-5,
+                "FLOAT input + HALF gamma RMSNorm max diff too large: " + maxDiff);
     }
 
     /**

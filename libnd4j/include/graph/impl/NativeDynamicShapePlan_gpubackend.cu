@@ -888,22 +888,37 @@ static void dumpGpuContextState(int failedDeviceId, const char* errorType) {
 
 
 static Status reportOomError(GraphSegment& seg, const char* phase,
-                             size_t requestedBytes, int deviceId) {
+                             size_t requestedBytes, int deviceId,
+                             size_t slotOwnedBytes, size_t planOwnedArrays,
+                             size_t captureWorkspaceBytes,
+                             size_t cublasWorkspaceBytes) {
   dumpGpuContextState(deviceId, "OOM");
   size_t gpuFree = 0, gpuTotal = 0;
   cudaMemGetInfo(&gpuFree, &gpuTotal);
-  // Build a detailed error message with actionable fix info — never silently fail.
-  char oomMsg[1024];
+  size_t poolUsed = 0, poolReserved = 0;
+  memory::CudaMemoryPool::getInstance().getStats(deviceId, poolUsed, poolReserved);
+  auto& dsp = sd::Environment::getInstance().dsp();
+
+  // Include allocator, plan ownership, and cache policy in the thrown error so
+  // OOM diagnosis does not depend on an external profiler or a second run.
+  char oomMsg[2048];
   std::snprintf(oomMsg, sizeof(oomMsg),
       "DSP OOM in seg[%d-%d] during '%s' on device %d: "
       "requested=%zuMB gpuFree=%zuMB gpuTotal=%zuMB gpuUsed=%zuMB "
-      "captureWorkspace=%zuMB executionCount=%d. "
-      "FIX: increase -Dnd4j.dsp.captureWorkspaceMb (current=%zuMB)",
+      "poolUsed=%zuMB poolReserved=%zuMB poolReclaimable=%zuMB "
+      "planOwnedArrays=%zu slotOwnedBytes=%zuMB captureWorkspace=%zuMB "
+      "cublasWorkspace=%zuMB executionCount=%d planCacheMaxPlans=%d "
+      "planCacheBudgetFraction=%.4f configuredCaptureWorkspace=%zuMB.",
       seg.def.startSlot, seg.def.endSlot, phase, deviceId,
       requestedBytes / (1024*1024), gpuFree / (1024*1024),
       gpuTotal / (1024*1024), (gpuTotal - gpuFree) / (1024*1024),
-      tritonCaptureWorkspaceSize() / (1024*1024),
-      seg.exec.executionCount,
+      poolUsed / (1024*1024), poolReserved / (1024*1024),
+      poolReserved > poolUsed ? (poolReserved - poolUsed) / (1024*1024) : 0,
+      planOwnedArrays, slotOwnedBytes / (1024*1024),
+      captureWorkspaceBytes / (1024*1024),
+      cublasWorkspaceBytes / (1024*1024),
+      seg.exec.executionCount, dsp.planCacheMaxPlans(),
+      dsp.planCacheBudgetFraction(),
       tritonCaptureWorkspaceSize() / (1024*1024));
   DSP_DIAG(MEMORY, "%s", oomMsg);
   SegmentLifecycle::markFailed(seg.exec, "oom", seg.def.startSlot, seg.def.endSlot);
@@ -3212,8 +3227,11 @@ Status NativeDynamicShapePlan::segDispatchCaptureOrDirect(
           tritonOrderedRangeGuard.active = false;
           TritonGraphBackend::clearOrderedRangeExecutor();
 #endif
-          return reportOomError(seg, "shared_workspace_allocation",
-                                workspaceSize, deviceId);
+          return reportOomError(
+              seg, "shared_workspace_allocation", workspaceSize, deviceId,
+              estimatedOwnedBytes(), planOwnedArrays_.size(),
+              sharedCaptureWorkspace_ != nullptr ? sharedCaptureWorkspaceBytes_ : 0,
+              cublasWorkspaceBuffer_ != nullptr ? cublasWorkspaceSize_ : 0);
         }
       } else {
         DSP_DIAG_SEG(MEMORY, seg.def.startSlot,

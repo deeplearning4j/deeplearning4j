@@ -27,6 +27,7 @@ import org.eclipse.deeplearning4j.model.download.ModelDownloader;
 import org.eclipse.deeplearning4j.tokenizers.NativeTokenizer;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -541,16 +542,34 @@ public class HuggingFaceTokenizer implements Tokenizer {
     public String applyChatTemplate(ChatTemplate.Request request,
                                     String chatTemplateOverride) {
         checkNotClosed();
+        String renderConfig = tokenizerConfigJson;
         if (chatTemplateOverride != null && !chatTemplateOverride.isBlank()) {
-            return Tokenizer.super.applyChatTemplate(request, chatTemplateOverride);
-        }
-        if (tokenizerConfigJson == null || tokenizerConfigJson.isBlank()
+            renderConfig = tokenizerConfigWithChatTemplate(chatTemplateOverride);
+        } else if (renderConfig == null || renderConfig.isBlank()
                 || config == null || !config.hasChatTemplate()) {
             throw new IllegalStateException(
                     "Tokenizer import does not provide tokenizer_config.json with a chat_template");
         }
         return NativeTokenizer.renderChatTemplateContext(
-                tokenizerConfigJson, ChatTemplate.requestContextJson(request));
+                renderConfig, ChatTemplate.requestContextJson(request));
+    }
+
+    private String tokenizerConfigWithChatTemplate(String chatTemplate) {
+        try {
+            JsonNode parsed = tokenizerConfigJson == null || tokenizerConfigJson.isBlank()
+                    ? JSON_MAPPER.createObjectNode()
+                    : JSON_MAPPER.readTree(tokenizerConfigJson);
+            if (!(parsed instanceof ObjectNode)) {
+                throw new TokenizerException("tokenizer_config.json must contain a JSON object");
+            }
+            ((ObjectNode) parsed).put("chat_template", chatTemplate);
+            return JSON_MAPPER.writeValueAsString(parsed);
+        } catch (TokenizerException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new TokenizerException(
+                    "Could not apply imported model chat template: " + e.getMessage(), e);
+        }
     }
 
     @Override

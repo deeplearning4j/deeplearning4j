@@ -82,21 +82,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public void createBlas() {
         blas = new CudaBlas();
-        PointerPointer functions = new PointerPointer(13);
-        functions.put(0, Loader.addressof("cublasSgemv_v2"));
-        functions.put(1, Loader.addressof("cublasDgemv_v2"));
-        functions.put(2, Loader.addressof("cublasHgemm"));
-        functions.put(3, Loader.addressof("cublasSgemm_v2"));
-        functions.put(4, Loader.addressof("cublasDgemm_v2"));
-        functions.put(5, Loader.addressof("cublasSgemmEx"));
-        functions.put(6, Loader.addressof("cublasHgemmBatched"));
-        functions.put(7, Loader.addressof("cublasSgemmBatched"));
-        functions.put(8, Loader.addressof("cublasDgemmBatched"));
-        functions.put(9, Loader.addressof("cusolverDnSgesvd_bufferSize"));
-        functions.put(10, Loader.addressof("cusolverDnDgesvd_bufferSize"));
-        functions.put(11, Loader.addressof("cusolverDnSgesvd"));
-        functions.put(12, Loader.addressof("cusolverDnDgesvd"));
-
         // Retry loop: CUDA context creation (streams, cuBLAS handle) may fail with
         // error 2 (cudaErrorMemoryAllocation) even after cudaSetDevice succeeds —
         // e.g. a display GPU with ~350MB used by Xorg, or a GPU saturated by another
@@ -114,7 +99,13 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             int currentDevice = DeviceMemoryManager.getInstance().getCurrentDeviceId();
             try {
                 nativeOps.clearLastError();
-                nativeOps.initializeFunctions(functions);
+                // Keep the JavaCPP lookup behind the build-time policy branch.
+                // CUDA and ZLUDA therefore share the same embedded-runtime contract as CPU.
+                if (NativeSymbolResolution.PROCESS_SYMBOLS) {
+                    nativeOps.initializeFunctionsFromProcessSymbols();
+                } else {
+                    nativeOps.initializeFunctions(javaCppNativeFunctions());
+                }
                 int errorCode = nativeOps.lastErrorCode();
                 if (errorCode != 0) {
                     String msg = nativeOps.lastErrorMessage();
@@ -149,6 +140,24 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         throw new RuntimeException(
                 "No usable CUDA device could be initialised for BLAS after " + numDevices + " attempt(s)",
                 lastException);
+    }
+
+    private static PointerPointer javaCppNativeFunctions() {
+        PointerPointer functions = new PointerPointer(13);
+        functions.put(0, Loader.addressof("cublasSgemv_v2"));
+        functions.put(1, Loader.addressof("cublasDgemv_v2"));
+        functions.put(2, Loader.addressof("cublasHgemm"));
+        functions.put(3, Loader.addressof("cublasSgemm_v2"));
+        functions.put(4, Loader.addressof("cublasDgemm_v2"));
+        functions.put(5, Loader.addressof("cublasSgemmEx"));
+        functions.put(6, Loader.addressof("cublasHgemmBatched"));
+        functions.put(7, Loader.addressof("cublasSgemmBatched"));
+        functions.put(8, Loader.addressof("cublasDgemmBatched"));
+        functions.put(9, Loader.addressof("cusolverDnSgesvd_bufferSize"));
+        functions.put(10, Loader.addressof("cusolverDnDgesvd_bufferSize"));
+        functions.put(11, Loader.addressof("cusolverDnSgesvd"));
+        functions.put(12, Loader.addressof("cusolverDnDgesvd"));
+        return functions;
     }
 
     @Override

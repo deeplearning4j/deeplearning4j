@@ -136,6 +136,30 @@ public class DecoderInputBuilder {
             Map<String, INDArray> reusableInputs,
             boolean dspActive,
             INDArray encoderOutputs, INDArray encoderAttentionMask) {
+        return buildDecoderInputMap(ioConfig, decoderInputNames, decoder, embeddings, inputIds,
+                pastSeqLen, currentSeqLen, staticKvBuffers, maxKvLen, cachePos,
+                usingStaticKv, hiddenSize, reusableInputs, dspActive,
+                encoderOutputs, encoderAttentionMask, currentSeqLen);
+    }
+
+    /**
+     * Build the complete decoder input map with an explicit real sequence length.
+     *
+     * <p>{@code currentSeqLen} is the materialized tensor width, while
+     * {@code actualSequenceLength} is the number of non-padding tokens. They differ
+     * during fixed-buffer prefill and are identical for dynamic scoring/decode.</p>
+     */
+    public static Map<String, INDArray> buildDecoderInputMap(
+            ModelIOConfig ioConfig,
+            List<String> decoderInputNames, SameDiff decoder,
+            INDArray embeddings, INDArray inputIds,
+            long pastSeqLen, long currentSeqLen,
+            Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
+            boolean usingStaticKv, long hiddenSize,
+            Map<String, INDArray> reusableInputs,
+            boolean dspActive,
+            INDArray encoderOutputs, INDArray encoderAttentionMask,
+            long actualSequenceLength) {
 
         Map<String, INDArray> decoderInputMap = new HashMap<>();
         boolean canReuse = reusableInputs != null && usingStaticKv && currentSeqLen == 1;
@@ -156,6 +180,15 @@ public class DecoderInputBuilder {
             } else if (ioConfig.isPositionIds(inputName)) {
                 buildPositionIds(decoderInputMap, inputName, canReuse, reusableInputs,
                         pastSeqLen, currentSeqLen);
+            } else if (ioConfig.isPositionOffset(inputName)) {
+                putScalarControl(decoderInputMap, inputName, decoder, pastSeqLen,
+                        canReuse, reusableInputs);
+            } else if (ioConfig.isCachePosition(inputName)) {
+                putScalarControl(decoderInputMap, inputName, decoder, cachePos,
+                        canReuse, reusableInputs);
+            } else if (ioConfig.isActualSequenceLength(inputName)) {
+                putScalarControl(decoderInputMap, inputName, decoder, actualSequenceLength,
+                        canReuse, reusableInputs);
             } else if (ioConfig.isKvCacheInput(inputName)) {
                 // Merged-decoder prefill (use_cache_branch=false): ONNX If semantics
                 // never evaluate the with-past branch, so past inputs are DEAD. Feeding
@@ -425,6 +458,9 @@ public class DecoderInputBuilder {
         addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getAttentionMaskName());
         addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getCausalMaskName());
         addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getPositionIdsName());
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getPositionOffsetName());
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getCachePositionName());
+        addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getActualSequenceLengthName());
         addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getEncoderHiddenStatesName());
         addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getEncoderAttentionMaskName());
         addConfiguredInputIfInternal(materializedInputNames, decoder, ioConfig.getAttnMaskReformatOutput());
@@ -440,6 +476,27 @@ public class DecoderInputBuilder {
             return;
         }
         inputNames.add(inputName);
+    }
+
+    private static void putScalarControl(Map<String, INDArray> decoderInputMap,
+                                         String inputName,
+                                         SameDiff decoder,
+                                         long value,
+                                         boolean canReuse,
+                                         Map<String, INDArray> reusableInputs) {
+        INDArray scalar = canReuse ? reusableInputs.get(inputName) : null;
+        if (scalar != null) {
+            scalar.assign(value);
+        } else {
+            SDVariable variable = decoder != null ? decoder.getVariable(inputName) : null;
+            DataType dataType = variable != null && variable.dataType() != null
+                    ? variable.dataType() : DataType.INT64;
+            scalar = Nd4j.scalar(dataType, value);
+            if (canReuse) {
+                reusableInputs.put(inputName, scalar);
+            }
+        }
+        decoderInputMap.put(inputName, scalar);
     }
 
     private static void writePositionIds(INDArray posIds, long startPos, long length) {
@@ -459,17 +516,11 @@ public class DecoderInputBuilder {
      * Build a complete decoder input map for teacher-forcing, scoring, or perplexity evaluation
      * over any imported decoder, including hybrid architectures with recurrent states (GDN/SSM/conv).
      *
-     * <p>Extends {@link #buildDecoderInputMap} with three additional input categories that the
-     * standard per-step builder skips (not needed in the decode pipeline but required for
-     * single-forward teacher-forcing passes):
-     * <ol>
-     *   <li><b>Recurrent state inputs</b> (e.g. {@code past_gdn_state.N}, {@code past_conv_state.N}
-     *       on hybrid architectures like Qwen3.5 or LFM-2) — fed as zero tensors with shapes
-     *       derived from the ops that consume them via
-     *       {@link GenerationPipeline#deriveRecurrentStateShape}.</li>
-     *   <li><b>position_offset</b> — scalar INT64 = 0 (GGUF in-graph KV models only).</li>
-     *   <li><b>cache_position</b> — scalar INT64 = 0 (GGUF in-graph KV models only).</li>
-     * </ol>
+     * <p>Extends {@link #buildDecoderInputMap} with zero-filled recurrent state inputs
+     * (e.g. {@code past_gdn_state.N}, {@code past_conv_state.N} on hybrid architectures
+     * like Qwen3.5 or LFM-2). Shapes are derived from the consuming ops via
+     * {@link GenerationPipeline#deriveRecurrentStateShape}. Scalar position and real-length
+     * controls are handled by the canonical per-step builder.</p>
      *
      * <p>This is the canonical entry point for all scoring uses: perplexity evaluation,
      * distillation target extraction, and any other teacher-forcing forward over an imported
@@ -515,17 +566,6 @@ public class DecoderInputBuilder {
                 /*cachePos=*/0L, /*usingStaticKv=*/false, hiddenSize,
                 /*reusableInputs=*/null, /*dspActive=*/false,
                 /*encoderOutputs=*/null, /*encoderAttentionMask=*/null);
-
-        // Feed position_offset and cache_position scalars (GGUF in-graph KV models).
-        // These are not iterated in the main builder loop, so they must be added here.
-        String posOffset = ioConfig.getPositionOffsetName();
-        if (posOffset != null && decoder.hasVariable(posOffset) && !inputs.containsKey(posOffset)) {
-            inputs.put(posOffset, Nd4j.scalar(DataType.INT64, 0));
-        }
-        String cachePosName = ioConfig.getCachePositionName();
-        if (cachePosName != null && decoder.hasVariable(cachePosName) && !inputs.containsKey(cachePosName)) {
-            inputs.put(cachePosName, Nd4j.scalar(DataType.INT64, 0));
-        }
 
         // Feed zero-filled recurrent state inputs (hybrid architectures: GDN/SSM/causal-conv).
         // Discovered structurally from the graph op topology (no hardcoded prefix matching).

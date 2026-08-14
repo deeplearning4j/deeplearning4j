@@ -27,9 +27,6 @@ import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -341,28 +338,23 @@ public class LFM2Architecture implements ModelArchitecture {
 
         // RoPE with dynamic position offset
         if (config.isUseRotaryEmbeddings()) {
-            q = new FusedRoPE(sd, q, positionOffset,
+            q = sd.nn().fusedRoPE("q_rope_" + layerIdx, q, positionOffset,
                     config.getRopeType(), config.getRopeFreqBase(), 1.0,
-                    config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+                    config.getRopeDimensionCount());
 
-            k = new FusedRoPE(sd, k, positionOffset,
+            k = sd.nn().fusedRoPE("k_rope_" + layerIdx, k, positionOffset,
                     config.getRopeType(), config.getRopeFreqBase(), 1.0,
-                    config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+                    config.getRopeDimensionCount());
         }
 
         // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("v_cast_" + layerIdx, q.dataType());
-        }
+        v = GGMLDTypePolicy.castTo(v, "v_cast_" + layerIdx, q.dataType());
 
         // Attention with KV cache + causal mask
-        SDVariable attnOut = new DotProductAttentionV2(sd,
-                q, v, k, null, null,
+        SDVariable attnOut = sd.nn().dotProductAttentionV2(
+                "attn_out_" + layerIdx, q, v, k, null, null,
                 keyCache, valueCache, cachePosition, causalMask,
-                0.0, 0.0, false, false).outputVariable();
-        sd.updateVariableNameAndReference(attnOut, "attn_out_" + layerIdx);
+                0.0, 0.0, false, false);
 
         int attnOutDim = actualNumHeads * headDim;
         SDVariable outShapeVar = sd.stack("attn_out_shape_" + layerIdx, 0,
@@ -392,7 +384,8 @@ public class LFM2Architecture implements ModelArchitecture {
 
         // Fused input projection: [B, L, hidden] -> [B, L, 3*hidden]
         SDVariable wInProj = sd.var(convPrefix + "in_proj.weight", inProjWeight);
-        SDVariable projected = fp32Mmul(sd, "conv_in_proj_" + layerIdx, input, wInProj.permute(1, 0), dtype);
+        SDVariable projected = QuantizedLinear.fp32Mmul(
+                sd, "conv_in_proj_" + layerIdx, input, wInProj.permute(1, 0), dtype);
 
         // Split into 3 equal chunks: B (input gate), C (output gate), x (value)
         SDVariable[] bCx = sd.split(new String[]{
@@ -409,13 +402,10 @@ public class LFM2Architecture implements ModelArchitecture {
         INDArray convWeight = weights.get(prefix + ".shortconv.conv.weight");
         if (convWeight != null) {
             SDVariable wConv = sd.var(convPrefix + "conv.weight", convWeight);
-            SDVariable[] convResult = new CausalConv1d(
-                    sd, bx, wConv, null, convStateIn, actualSequenceLength, 0, 0).outputVariables();
+            SDVariable[] convResult = sd.nn().causalConv1d(
+                    new String[]{"conv_path_" + layerIdx, "conv_state_out_" + layerIdx},
+                    bx, wConv, null, convStateIn, actualSequenceLength, 0, 0);
             bx = convResult[0];
-            sd.updateVariableNameAndReference(bx, "conv_path_" + layerIdx);
-            // Name the state output so GenerationPipeline can discover and feed it back
-            SDVariable convStateOut = convResult[1];
-            sd.updateVariableNameAndReference(convStateOut, "conv_state_out_" + layerIdx);
         }
 
         // Output gating: y = C * conv_out
@@ -425,7 +415,8 @@ public class LFM2Architecture implements ModelArchitecture {
         INDArray outProjWeight = weights.get(prefix + ".shortconv.out_proj.weight");
         if (outProjWeight != null) {
             SDVariable wOutProj = sd.var(convPrefix + "out_proj.weight", outProjWeight);
-            y = fp32Mmul(sd, "conv_out_proj_" + layerIdx, y, wOutProj.permute(1, 0), dtype);
+            y = QuantizedLinear.fp32Mmul(
+                    sd, "conv_out_proj_" + layerIdx, y, wOutProj.permute(1, 0), dtype);
         }
 
         return y;
@@ -462,20 +453,6 @@ public class LFM2Architecture implements ModelArchitecture {
     }
 
     // ========================================================================
-    // FP32 matmul helper (copied from LLaMA)
-    // ========================================================================
-
-    private SDVariable fp32Mmul(SameDiff sd, String name, SDVariable a, SDVariable b, DataType dtype) {
-        if (QuantizedLinear.requiresFp32Accumulation(dtype)) {
-            SDVariable aF32 = a.castTo(name + "_a_f32", DataType.FLOAT);
-            SDVariable bF32 = b.castTo(name + "_b_f32", DataType.FLOAT);
-            SDVariable result = sd.mmul(name + "_f32", aF32, bF32);
-            return result.castTo(name, dtype);
-        }
-        return sd.mmul(name, a, b);
-    }
-
-    // ========================================================================
     // RMS Normalization (FP16-safe, copied from LLaMA)
     // ========================================================================
 
@@ -490,24 +467,15 @@ public class LFM2Architecture implements ModelArchitecture {
 
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
 
-        // Upcast to FLOAT32 for squaring to prevent HALF overflow
-        SDVariable computeInput;
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        if (needsCast) {
-            computeInput = input.castTo(outputName + "_f32", DataType.FLOAT);
-        } else {
-            computeInput = input;
-        }
+        // Accumulate reductions in the importer policy's compute type.
+        SDVariable computeInput = GGMLDTypePolicy.castForAccumulation(
+                input, outputName + "_accum");
         SDVariable squared = computeInput.mul(computeInput);
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(config.getLayerNormEpsilon()));
         SDVariable normalized = computeInput.div(rms);
-        SDVariable normalizedOrig;
-        if (needsCast) {
-            normalizedOrig = normalized.castTo(outputName + "_cast", input.dataType());
-        } else {
-            normalizedOrig = normalized;
-        }
+        SDVariable normalizedOrig = GGMLDTypePolicy.castTo(
+                normalized, outputName + "_cast", input.dataType());
 
         return normalizedOrig.mul(outputName, gamma);
     }
@@ -519,23 +487,14 @@ public class LFM2Architecture implements ModelArchitecture {
     private SDVariable applyHeadNorm(SameDiff sd, SDVariable input, String outputName,
                                       INDArray normWeight, float eps) {
         SDVariable gamma = sd.var(outputName + ".weight", normWeight);
-        SDVariable computeInput;
-        boolean needsCast = QuantizedLinear.requiresFp32Accumulation(input.dataType());
-        if (needsCast) {
-            computeInput = input.castTo(outputName + "_f32", DataType.FLOAT);
-        } else {
-            computeInput = input;
-        }
+        SDVariable computeInput = GGMLDTypePolicy.castForAccumulation(
+                input, outputName + "_accum");
         SDVariable squared = computeInput.mul(computeInput);
         SDVariable meanSquared = squared.mean(true, -1);
         SDVariable rms = sd.math.sqrt(meanSquared.add(eps));
         SDVariable normalized = computeInput.div(rms);
-        SDVariable normalizedOrig;
-        if (needsCast) {
-            normalizedOrig = normalized.castTo(outputName + "_cast", input.dataType());
-        } else {
-            normalizedOrig = normalized;
-        }
+        SDVariable normalizedOrig = GGMLDTypePolicy.castTo(
+                normalized, outputName + "_cast", input.dataType());
         return normalizedOrig.mul(outputName, gamma);
     }
 

@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.ops.executioner;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.api.device.DeviceType;
+import org.nd4j.linalg.factory.InitializationController;
 import org.nd4j.nativeblas.NativeOps;
 
 import java.lang.reflect.Constructor;
@@ -55,6 +56,7 @@ public class CpuBackendLoader {
     private static volatile NativeOps cpuNativeOps;
     private static volatile OpExecutioner cpuExecutioner;
     private static volatile Boolean cpuAvailable;
+    private static volatile Throwable cpuInitializationFailure;
     private static final Object LOCK = new Object();
 
     /**
@@ -99,6 +101,10 @@ public class CpuBackendLoader {
             return null;
         }
 
+        if (cpuInitializationFailure != null) {
+            throw InitializationController.propagate(cpuInitializationFailure);
+        }
+
         if (cpuNativeOps != null) {
             return cpuNativeOps;
         }
@@ -115,26 +121,22 @@ public class CpuBackendLoader {
                     return null;
                 }
 
-                // Instantiate NativeOps - this loads the native library
-                cpuNativeOps = (NativeOps) nativeOpsClass.getDeclaredConstructor().newInstance();
+                // Construct and prove the candidate before publishing it. CPU device
+                // initialization may be a native no-op, but any linkage or runtime
+                // failure still makes this binding unusable.
+                NativeOps candidate =
+                        (NativeOps) nativeOpsClass.getDeclaredConstructor().newInstance();
+                candidate.initializeDevicesAndFunctions();
+                cpuNativeOps = candidate;
+                log.info("CPU NativeOps initialized successfully for secondary backend");
+                return candidate;
 
-                // Initialize devices and functions
-                try {
-                    cpuNativeOps.initializeDevicesAndFunctions();
-                    log.info("CPU NativeOps initialized successfully for secondary backend");
-                } catch (Exception e) {
-                    log.warn("CPU NativeOps initialization warning: {}", e.getMessage());
-                    // Continue anyway - some initialization may have succeeded
+            } catch (Throwable failure) {
+                if (cpuInitializationFailure == null) {
+                    cpuInitializationFailure = failure;
                 }
-
-                return cpuNativeOps;
-
-            } catch (Exception e) {
-                log.error("Failed to load CPU NativeOps: {}", e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("Full stack trace:", e);
-                }
-                return null;
+                log.error("Failed to initialize CPU NativeOps", failure);
+                throw InitializationController.propagate(cpuInitializationFailure);
             }
         }
     }
@@ -167,32 +169,21 @@ public class CpuBackendLoader {
                     return null;
                 }
 
-                // Look for the secondary backend constructor: NativeOpExecutioner(NativeOps, boolean)
-                Constructor<?> constructor = null;
-                try {
-                    constructor = executionerClass.getConstructor(NativeOps.class, boolean.class);
-                } catch (NoSuchMethodException e) {
-                    log.warn("CPU executioner doesn't have secondary backend constructor. " +
-                            "Falling back to default constructor (may cause issues).");
-                }
-
-                if (constructor != null) {
-                    // Use the secondary backend constructor
-                    cpuExecutioner = (OpExecutioner) constructor.newInstance(nativeOps, true);
-                } else {
-                    // Fall back to default constructor (less safe)
-                    cpuExecutioner = (OpExecutioner) executionerClass.getDeclaredConstructor().newInstance();
-                }
+                // A secondary executioner must share the proven NativeOps authority.
+                // Falling back to the default constructor creates an independent native
+                // binding and breaks process-wide initialization ownership.
+                Constructor<?> constructor =
+                        executionerClass.getConstructor(NativeOps.class, boolean.class);
+                OpExecutioner candidate =
+                        (OpExecutioner) constructor.newInstance(nativeOps, true);
+                cpuExecutioner = candidate;
 
                 log.info("CPU OpExecutioner loaded successfully as secondary backend");
-                return cpuExecutioner;
+                return candidate;
 
-            } catch (Exception e) {
-                log.error("Failed to load CPU OpExecutioner: {}", e.getMessage());
-                if (log.isDebugEnabled()) {
-                    log.debug("Full stack trace:", e);
-                }
-                return null;
+            } catch (Throwable failure) {
+                log.error("Failed to initialize CPU OpExecutioner", failure);
+                throw InitializationController.propagate(failure);
             }
         }
     }
@@ -230,6 +221,7 @@ public class CpuBackendLoader {
             cpuNativeOps = null;
             cpuExecutioner = null;
             cpuAvailable = null;
+            cpuInitializationFailure = null;
         }
     }
 }

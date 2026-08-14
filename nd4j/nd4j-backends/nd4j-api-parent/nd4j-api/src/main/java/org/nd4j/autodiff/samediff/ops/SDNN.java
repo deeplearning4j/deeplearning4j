@@ -219,13 +219,14 @@ public class SDNN extends SDOps {
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param actualSequenceLength Scalar INT64 tensor containing the unpadded sequence length (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
    * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
    * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
    * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight, SDVariable bias,
-      SDVariable convStateIn, int activation, int wFormat) {
+      SDVariable convStateIn, SDVariable actualSequenceLength, int activation, int wFormat) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
     if (bias != null) {
@@ -234,7 +235,10 @@ public class SDNN extends SDOps {
     if (convStateIn != null) {
       SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, wFormat).outputVariables();
+    if (actualSequenceLength != null) {
+      SDValidation.validateNumerical("causalConv1d", "actualSequenceLength", actualSequenceLength);
+    }
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, actualSequenceLength, activation, wFormat).outputVariables();
   }
 
   /**
@@ -250,13 +254,14 @@ public class SDNN extends SDOps {
    * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param actualSequenceLength Scalar INT64 tensor containing the unpadded sequence length (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
    * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
    * @return output Convolved output [batch, seqLen, dim] (NUMERIC type)
    * @return stateOut Updated conv state [batch, dim, kernelSize-1] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight, SDVariable bias,
-      SDVariable convStateIn, int activation, int wFormat) {
+      SDVariable convStateIn, SDVariable actualSequenceLength, int activation, int wFormat) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
     if (bias != null) {
@@ -265,7 +270,10 @@ public class SDNN extends SDOps {
     if (convStateIn != null) {
       SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, wFormat).outputVariables();
+    if (actualSequenceLength != null) {
+      SDValidation.validateNumerical("causalConv1d", "actualSequenceLength", actualSequenceLength);
+    }
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, actualSequenceLength, activation, wFormat).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -285,7 +293,7 @@ public class SDNN extends SDOps {
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, null, null, 0, 0).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, null, null, null, 0, 0).outputVariables();
   }
 
   /**
@@ -305,7 +313,7 @@ public class SDNN extends SDOps {
   public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, null, null, 0, 0).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, null, null, null, 0, 0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -329,7 +337,7 @@ public class SDNN extends SDOps {
     if (bias != null) {
       SDValidation.validateNumerical("causalConv1d", "bias", bias);
     }
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, null, 0, 0).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, null, null, 0, 0).outputVariables();
   }
 
   /**
@@ -354,7 +362,7 @@ public class SDNN extends SDOps {
     if (bias != null) {
       SDValidation.validateNumerical("causalConv1d", "bias", bias);
     }
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, null, 0, 0).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, null, null, 0, 0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -383,7 +391,7 @@ public class SDNN extends SDOps {
     if (convStateIn != null) {
       SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, 0, 0).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, null, 0, 0).outputVariables();
   }
 
   /**
@@ -412,7 +420,7 @@ public class SDNN extends SDOps {
     if (convStateIn != null) {
       SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, 0, 0).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, null, 0, 0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -442,7 +450,7 @@ public class SDNN extends SDOps {
     if (convStateIn != null) {
       SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, 0).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, null, activation, 0).outputVariables();
   }
 
   /**
@@ -472,7 +480,7 @@ public class SDNN extends SDOps {
     if (convStateIn != null) {
       SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
     }
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, 0).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, null, activation, 0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -1928,6 +1936,64 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Fused Multimodal Rotary Position Embedding (M-RoPE).<br>
+   * <br>
+   * Applies rotary embeddings with separate temporal/height/width position<br>
+   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head<br>
+   * dimension is split into 3 frequency band sections, each rotated using<br>
+   * its own position vector.<br>
+   * <br>
+   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:<br>
+   *   Temporal band: dims [0..24) rotated by temporal positions<br>
+   *   Height band: dims [24..44) rotated by spatial height positions<br>
+   *   Width band: dims [44..64) rotated by spatial width positions<br>
+   *
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param posT Temporal position IDs [batch, seq_len] (INT type)
+   * @param posH Height position IDs [batch, seq_len] (INT type)
+   * @param posW Width position IDs [batch, seq_len] (INT type)
+   * @return output Input with M-RoPE applied [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   */
+  public SDVariable fusedMRoPE(SDVariable input, SDVariable posT, SDVariable posH,
+      SDVariable posW) {
+    SDValidation.validateNumerical("fusedMRoPE", "input", input);
+    SDValidation.validateInteger("fusedMRoPE", "posT", posT);
+    SDValidation.validateInteger("fusedMRoPE", "posH", posH);
+    SDValidation.validateInteger("fusedMRoPE", "posW", posW);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE(sd,input, posT, posH, posW, 24, 20, 20, true, 5000000.0).outputVariable();
+  }
+
+  /**
+   * Fused Multimodal Rotary Position Embedding (M-RoPE).<br>
+   * <br>
+   * Applies rotary embeddings with separate temporal/height/width position<br>
+   * encodings for multimodal models like Qwen3-VL and Qwen2.5-VL. The head<br>
+   * dimension is split into 3 frequency band sections, each rotated using<br>
+   * its own position vector.<br>
+   * <br>
+   * For Qwen3-VL with head_dim=64, default sections are [24, 20, 20]:<br>
+   *   Temporal band: dims [0..24) rotated by temporal positions<br>
+   *   Height band: dims [24..44) rotated by spatial height positions<br>
+   *   Width band: dims [44..64) rotated by spatial width positions<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param posT Temporal position IDs [batch, seq_len] (INT type)
+   * @param posH Height position IDs [batch, seq_len] (INT type)
+   * @param posW Width position IDs [batch, seq_len] (INT type)
+   * @return output Input with M-RoPE applied [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   */
+  public SDVariable fusedMRoPE(String name, SDVariable input, SDVariable posT, SDVariable posH,
+      SDVariable posW) {
+    SDValidation.validateNumerical("fusedMRoPE", "input", input);
+    SDValidation.validateInteger("fusedMRoPE", "posT", posT);
+    SDValidation.validateInteger("fusedMRoPE", "posH", posH);
+    SDValidation.validateInteger("fusedMRoPE", "posW", posW);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedMRoPE(sd,input, posT, posH, posW, 24, 20, 20, true, 5000000.0).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Fused normalization + quantization in a single kernel.<br>
    *
    * @param input Input tensor (NUMERIC type)
@@ -2300,11 +2366,12 @@ public class SDNN extends SDOps {
    * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
    * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
    * @param stateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @param actualSequenceLength Scalar INT64 tensor containing the unpadded sequence length (NUMERIC type)
    * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
    * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
    */
   public SDVariable[] gatedDeltaRule(SDVariable q, SDVariable k, SDVariable v, SDVariable beta,
-      SDVariable gate, SDVariable stateIn) {
+      SDVariable gate, SDVariable stateIn, SDVariable actualSequenceLength) {
     SDValidation.validateNumerical("gatedDeltaRule", "q", q);
     SDValidation.validateNumerical("gatedDeltaRule", "k", k);
     SDValidation.validateNumerical("gatedDeltaRule", "v", v);
@@ -2313,7 +2380,10 @@ public class SDNN extends SDOps {
     if (stateIn != null) {
       SDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
     }
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(sd,q, k, v, beta, gate, stateIn).outputVariables();
+    if (actualSequenceLength != null) {
+      SDValidation.validateNumerical("gatedDeltaRule", "actualSequenceLength", actualSequenceLength);
+    }
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(sd,q, k, v, beta, gate, stateIn, actualSequenceLength).outputVariables();
   }
 
   /**
@@ -2333,11 +2403,12 @@ public class SDNN extends SDOps {
    * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
    * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
    * @param stateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @param actualSequenceLength Scalar INT64 tensor containing the unpadded sequence length (NUMERIC type)
    * @return output Attention output [batch, seqLen, numHeads, headDimV] (NUMERIC type)
    * @return stateOut Final recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
    */
   public SDVariable[] gatedDeltaRule(String[] names, SDVariable q, SDVariable k, SDVariable v,
-      SDVariable beta, SDVariable gate, SDVariable stateIn) {
+      SDVariable beta, SDVariable gate, SDVariable stateIn, SDVariable actualSequenceLength) {
     SDValidation.validateNumerical("gatedDeltaRule", "q", q);
     SDValidation.validateNumerical("gatedDeltaRule", "k", k);
     SDValidation.validateNumerical("gatedDeltaRule", "v", v);
@@ -2346,7 +2417,10 @@ public class SDNN extends SDOps {
     if (stateIn != null) {
       SDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
     }
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(sd,q, k, v, beta, gate, stateIn).outputVariables();
+    if (actualSequenceLength != null) {
+      SDValidation.validateNumerical("gatedDeltaRule", "actualSequenceLength", actualSequenceLength);
+    }
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(sd,q, k, v, beta, gate, stateIn, actualSequenceLength).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -2375,7 +2449,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("gatedDeltaRule", "v", v);
     SDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
     SDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(sd,q, k, v, beta, gate, null).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(sd,q, k, v, beta, gate, null, null).outputVariables();
   }
 
   /**
@@ -2404,7 +2478,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("gatedDeltaRule", "v", v);
     SDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
     SDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(sd,q, k, v, beta, gate, null).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(sd,q, k, v, beta, gate, null, null).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -2449,7 +2523,7 @@ public class SDNN extends SDOps {
    * @return output out = activations @ dequant(weight)^T, [M, N] or [B, S, N] (NUMERIC type)
    */
   public SDVariable ggmlQMatMul(SDVariable activations, SDVariable packedWeights, int quantType,
-      int n, int k, int outputDtype) {
+      long n, long k, int outputDtype) {
     SDValidation.validateNumerical("ggmlQMatMul", "activations", activations);
     SDValidation.validateNumerical("ggmlQMatMul", "packedWeights", packedWeights);
     return new org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul(sd,activations, packedWeights, quantType, n, k, outputDtype).outputVariable();
@@ -2469,7 +2543,7 @@ public class SDNN extends SDOps {
    * @return output out = activations @ dequant(weight)^T, [M, N] or [B, S, N] (NUMERIC type)
    */
   public SDVariable ggmlQMatMul(String name, SDVariable activations, SDVariable packedWeights,
-      int quantType, int n, int k, int outputDtype) {
+      int quantType, long n, long k, int outputDtype) {
     SDValidation.validateNumerical("ggmlQMatMul", "activations", activations);
     SDValidation.validateNumerical("ggmlQMatMul", "packedWeights", packedWeights);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GgmlQMatMul(sd,activations, packedWeights, quantType, n, k, outputDtype).outputVariable();
@@ -2492,7 +2566,7 @@ public class SDNN extends SDOps {
    * @return output ggml_qmatmul(activations, weight) + scaling * (activations @ loraA^T) @ loraB^T (NUMERIC type)
    */
   public SDVariable ggmlQMatMulLora(SDVariable activations, SDVariable packedWeights,
-      SDVariable loraA, SDVariable loraB, double scaling, int quantType, int n, int k,
+      SDVariable loraA, SDVariable loraB, double scaling, int quantType, long n, long k,
       int outputDtype) {
     SDValidation.validateNumerical("ggmlQMatMulLora", "activations", activations);
     SDValidation.validateNumerical("ggmlQMatMulLora", "packedWeights", packedWeights);
@@ -2518,7 +2592,7 @@ public class SDNN extends SDOps {
    * @return output ggml_qmatmul(activations, weight) + scaling * (activations @ loraA^T) @ loraB^T (NUMERIC type)
    */
   public SDVariable ggmlQMatMulLora(String name, SDVariable activations, SDVariable packedWeights,
-      SDVariable loraA, SDVariable loraB, double scaling, int quantType, int n, int k,
+      SDVariable loraA, SDVariable loraB, double scaling, int quantType, long n, long k,
       int outputDtype) {
     SDValidation.validateNumerical("ggmlQMatMulLora", "activations", activations);
     SDValidation.validateNumerical("ggmlQMatMulLora", "packedWeights", packedWeights);

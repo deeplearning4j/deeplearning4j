@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Aligns JavaCPP's dependent-library list with the project-managed shared
@@ -52,6 +53,10 @@ public final class SharedCompilerRuntime {
     private static final String RUNTIME_ALIAS_SEPARATOR = "->";
     private static final String BUILD_TOOLCHAIN_NAME =
             "javacpp-build-toolchain.properties";
+    private static final String ND4J_SHARED_RUNTIME_PATH_PROPERTY =
+            "org.nd4j.presets.sharedRuntimePath";
+    private static final String JAVACPP_LIBRARY_PATH_PROPERTY =
+            "org.bytedeco.javacpp.library.path";
 
     private SharedCompilerRuntime() {
     }
@@ -84,14 +89,19 @@ public final class SharedCompilerRuntime {
                                 + platform + "', configured platform='"
                                 + configuredPlatform + "'");
             }
-            String configuredExtension =
-                    configuredProperties.getProperty("platform.extension");
-            manifest = readBundledManifest(
-                    presetClass,
-                    resourceRoot,
-                    platform,
-                    configuredExtension,
-                    properties.get("platform.extension"));
+            Path externalManifest = findExternalRuntimeManifest();
+            if (externalManifest != null) {
+                manifest = readExternalRuntimeManifest(externalManifest);
+            } else {
+                String configuredExtension =
+                        configuredProperties.getProperty("platform.extension");
+                manifest = readBundledManifest(
+                        presetClass,
+                        resourceRoot,
+                        platform,
+                        configuredExtension,
+                        properties.get("platform.extension"));
+            }
         } else {
             Path manifestPath = findBuildManifest(properties);
             if (manifestPath == null) {
@@ -135,6 +145,70 @@ public final class SharedCompilerRuntime {
             throw new IllegalStateException(
                     "Cannot read compiler runtime manifest " + manifest, e);
         }
+    }
+
+    private static Path findExternalRuntimeManifest() {
+        Set<Path> manifests = new LinkedHashSet<>();
+        collectExternalRuntimeManifests(
+                System.getProperty(ND4J_SHARED_RUNTIME_PATH_PROPERTY), manifests);
+        collectExternalRuntimeManifests(
+                System.getProperty(JAVACPP_LIBRARY_PATH_PROPERTY), manifests);
+        if (manifests.size() > 1) {
+            throw new IllegalStateException(
+                    "Multiple external compiler runtime manifests found in "
+                            + ND4J_SHARED_RUNTIME_PATH_PROPERTY + " or "
+                            + JAVACPP_LIBRARY_PATH_PROPERTY + ": " + manifests);
+        }
+        return manifests.isEmpty() ? null : manifests.iterator().next();
+    }
+
+    private static void collectExternalRuntimeManifests(
+            String configuredPath, Set<Path> manifests) {
+        if (configuredPath == null || configuredPath.isBlank()) {
+            return;
+        }
+        for (String entry : configuredPath.split(
+                Pattern.quote(File.pathSeparator), -1)) {
+            if (entry.isBlank()) {
+                continue;
+            }
+            Path manifest = Paths.get(entry).toAbsolutePath().normalize()
+                    .resolve(MANIFEST_NAME);
+            if (Files.isRegularFile(manifest)) {
+                manifests.add(manifest);
+            }
+        }
+    }
+
+    private static RuntimeManifest readExternalRuntimeManifest(Path manifestPath) {
+        RuntimeManifest manifest = readBuildManifest(manifestPath);
+        Path runtimeDirectory = manifestPath.getParent();
+        for (String runtimeName : manifest.runtimeNames) {
+            Path runtime = runtimeDirectory.resolve(runtimeName);
+            if (!Files.isRegularFile(runtime)) {
+                throw new IllegalStateException(
+                        "External compiler runtime manifest " + manifestPath
+                                + " declares missing runtime " + runtimeName);
+            }
+        }
+        for (Map.Entry<String, String> alias : manifest.runtimeAliases.entrySet()) {
+            Path aliasPath = runtimeDirectory.resolve(alias.getKey());
+            Path targetPath = runtimeDirectory.resolve(alias.getValue());
+            try {
+                if (!Files.isRegularFile(aliasPath)
+                        || !Files.isSameFile(aliasPath, targetPath)) {
+                    throw new IllegalStateException(
+                            "External compiler runtime alias '" + alias.getKey()
+                                    + "' does not resolve to canonical runtime '"
+                                    + alias.getValue() + "' in " + runtimeDirectory);
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException(
+                        "Cannot validate external compiler runtime alias '"
+                                + alias.getKey() + "' in " + runtimeDirectory, e);
+            }
+        }
+        return manifest;
     }
 
     private static void configureBuildToolchain(

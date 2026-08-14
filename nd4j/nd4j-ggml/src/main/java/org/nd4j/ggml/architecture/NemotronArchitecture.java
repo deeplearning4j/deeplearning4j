@@ -28,9 +28,6 @@ import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Mamba2SSM;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
@@ -234,7 +231,8 @@ public class NemotronArchitecture implements ModelArchitecture {
         if (convWeight != null) {
             SDVariable wConv = sd.var(ssmPrefix + "conv.weight", convWeight);
             SDVariable bConv = convBias != null ? sd.var(ssmPrefix + "conv.bias", convBias) : null;
-            SDVariable[] convResult = new CausalConv1d(sd, projected, wConv, bConv, null, 1).outputVariables();
+            SDVariable[] convResult = sd.nn().causalConv1d(
+                    projected, wConv, bConv, null, null, 1, 0);
             projected = convResult[0];
             sd.updateVariableNameAndReference(projected, "ssm_conv_" + layerIdx);
         }
@@ -280,8 +278,9 @@ public class NemotronArchitecture implements ModelArchitecture {
         }
 
         // Mamba2SSM op: (x, A, B, C, dt) -> output
-        SDVariable ssmOut = new Mamba2SSM(sd, projected, aVar, bVar, cVar, dt,
-                ssmNumHeads, ssmHeadDim, ssmStateSize).outputVariable();
+        SDVariable ssmOut = sd.nn().mamba2Ssm(
+                projected, aVar, bVar, cVar, dt,
+                ssmNumHeads, ssmHeadDim, ssmStateSize)[0];
         sd.updateVariableNameAndReference(ssmOut, "ssm_out_" + layerIdx);
 
         // Apply D skip connection if present
@@ -352,19 +351,17 @@ public class NemotronArchitecture implements ModelArchitecture {
 
         // Apply RoPE
         if (config.isUseRotaryEmbeddings()) {
-            q = new FusedRoPE(sd, q, config.getRopeType(), 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(q, "q_rope_" + layerIdx);
+            q = sd.nn().fusedRoPE("q_rope_" + layerIdx, q, null,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount());
 
-            k = new FusedRoPE(sd, k, config.getRopeType(), 0,
-                    config.getRopeFreqBase(), 1.0, config.getRopeDimensionCount()).outputVariable();
-            sd.updateVariableNameAndReference(k, "k_rope_" + layerIdx);
+            k = sd.nn().fusedRoPE("k_rope_" + layerIdx, k, null,
+                    config.getRopeType(), config.getRopeFreqBase(), 1.0,
+                    config.getRopeDimensionCount());
         }
 
         // FusedRoPE promotes HALF→FLOAT internally; V must match Q/K dtype
-        if (v.dataType() != q.dataType()) {
-            v = v.castTo("v_cast_" + layerIdx, q.dataType());
-        }
+        v = GGMLDTypePolicy.castTo(v, "v_cast_" + layerIdx, q.dataType());
 
         // Dot-product attention
         SDVariable attnOut = sd.nn.dotProductAttentionV2(

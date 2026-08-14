@@ -239,6 +239,18 @@ public class ConstraintConfig {
                 .build();
     }
 
+    /** Creates a schema-aware constraint for a template-declared XML function protocol. */
+    public static ConstraintConfig xmlToolCall(
+            Map<String, List<String>> argumentNamesByTool,
+            Map<String, Map<String, List<String>>> argumentValuesByTool,
+            Map<String, Map<String, Object>> parameterSchemasByTool) {
+        return nativeToolCall(
+                argumentNamesByTool, argumentValuesByTool, parameterSchemasByTool)
+                .toBuilder()
+                .type(XmlToolCallConstraint.TYPE)
+                .build();
+    }
+
     private static ConstraintConfig namedToolConstraint(
             String type, String factoryName, String... names) {
         if (names == null || names.length == 0) {
@@ -267,21 +279,27 @@ public class ConstraintConfig {
             return new JsonObjectConstraint();
         }
         if (ToolCallConstraint.TYPE.equals(type)
-                || NativeToolCallConstraint.TYPE.equals(type)) {
+                || NativeToolCallConstraint.TYPE.equals(type)
+                || XmlToolCallConstraint.TYPE.equals(type)) {
             if (toolNames == null || toolNames.isEmpty()) {
                 throw new IllegalArgumentException(
                         "ConstraintConfig with type=\"" + type
                                 + "\" requires at least one toolName");
             }
-            return ToolCallConstraint.TYPE.equals(type)
-                    ? new ToolCallConstraint(toolNames)
-                    : new NativeToolCallConstraint(
-                            toolNames, toolArgumentNames, toolArgumentValues,
-                            toolParameterSchemas);
+            if (ToolCallConstraint.TYPE.equals(type)) {
+                return new ToolCallConstraint(toolNames);
+            }
+            if (NativeToolCallConstraint.TYPE.equals(type)) {
+                return new NativeToolCallConstraint(
+                        toolNames, toolArgumentNames, toolArgumentValues,
+                        toolParameterSchemas);
+            }
+            return new XmlToolCallConstraint(
+                    toolNames, toolArgumentNames, toolParameterSchemas);
         }
         throw new IllegalArgumentException(
                 "Unknown constraint type: \"" + type
                         + "\". Supported: \"json_object\", \"tool_call\", "
-                        + "\"native_tool_call\"");
+                        + "\"native_tool_call\", \"xml_tool_call\"");
     }
 }

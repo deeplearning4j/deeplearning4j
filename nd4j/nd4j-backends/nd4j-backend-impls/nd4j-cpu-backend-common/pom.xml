@@ -17,9 +17,12 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Java 9 module name does not allow native-->
         <module.name>nd4j.cpu.backend.common</module.name>
+        <!-- Lets controlled producers redirect classes without changing normal Maven output. -->
+        <nd4j.cpuBackendCommon.outputDirectory>${project.build.directory}/classes</nd4j.cpuBackendCommon.outputDirectory>
     </properties>
 
     <build>
+        <outputDirectory>${nd4j.cpuBackendCommon.outputDirectory}</outputDirectory>
         <plugins>
             <plugin>
                 <groupId>org.moditect</groupId>
@@ -44,6 +47,30 @@
             <artifactId>openblas</artifactId>
             <version>${openblas.version}-${javacpp-presets.version}</version>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-commons</artifactId>
+            <version>1.10.2</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
