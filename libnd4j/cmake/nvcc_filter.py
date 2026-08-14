@@ -25,9 +25,13 @@ import re
 import subprocess
 import tempfile
 
-# Log counter for diagnostics (limit verbose output to first few files)
-_log_count = 0
-_MAX_VERBOSE_LOGS = 5
+_VERBOSE_ENV = "DL4J_NVCC_FILTER_VERBOSE"
+_TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
+
+
+def verbose_enabled():
+    """Return whether per-invocation NVCC diagnostics were explicitly requested."""
+    return os.environ.get(_VERBOSE_ENV, "").strip().lower() in _TRUTHY_ENV_VALUES
 
 
 def should_filter_arg(arg):
@@ -84,8 +88,6 @@ def parse_response_file(rsp_path):
 
     Returns (filtered_tokens, was_modified) tuple.
     """
-    global _log_count
-
     if not os.path.isfile(rsp_path):
         return [], False
 
@@ -95,8 +97,7 @@ def parse_response_file(rsp_path):
     content = raw_content.decode('utf-8', errors='replace')
     lines = content.splitlines()
 
-    _log_count += 1
-    if _log_count <= _MAX_VERBOSE_LOGS:
+    if verbose_enabled():
         print(f"[nvcc_filter] === Response file: {rsp_path} ===", file=sys.stderr)
         print(f"[nvcc_filter] Line count: {len(lines)}", file=sys.stderr)
         for i, line in enumerate(lines[:30]):
@@ -145,7 +146,7 @@ def parse_response_file(rsp_path):
             else:
                 all_tokens.append(fix_xcompiler_quoting(t))
 
-    if _log_count <= _MAX_VERBOSE_LOGS:
+    if verbose_enabled():
         if removed_count:
             print(f"[nvcc_filter] Filtered {removed_count} tokens from {rsp_path}", file=sys.stderr)
         if modified:
@@ -211,8 +212,7 @@ def main():
     nvcc = sys.argv[arg_start]
     args = sys.argv[arg_start + 1:]
 
-    global _log_count
-    if _log_count == 0:
+    if verbose_enabled():
         print(f"[nvcc_filter] nvcc: {nvcc}", file=sys.stderr)
         if cache_path:
             print(f"[nvcc_filter] {cache_tool}: {cache_path}", file=sys.stderr)
@@ -284,10 +284,10 @@ def main():
 
         i += 1
 
-    if direct_filtered and _log_count <= _MAX_VERBOSE_LOGS:
+    if direct_filtered and verbose_enabled():
         print(f"[nvcc_filter] Direct args filtered: {direct_filtered}", file=sys.stderr)
 
-    if use_expanded and _log_count <= _MAX_VERBOSE_LOGS:
+    if use_expanded and verbose_enabled():
         print(f"[nvcc_filter] Expanded response files for {cache_tool} ({len(filtered_args)} args)", file=sys.stderr)
 
     try:

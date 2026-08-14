@@ -518,12 +518,17 @@ class WorkflowMatrixTests(unittest.TestCase):
         compiler_flags = (ROOT / "libnd4j/cmake/CompilerFlags.cmake").read_text()
         cuda_config = (ROOT / "libnd4j/cmake/CudaConfiguration.cmake").read_text()
         build_script = (ROOT / "libnd4j/buildnativeoperations.sh").read_text()
+        nvcc_filter = (ROOT / "libnd4j/cmake/nvcc_filter.py").read_text()
 
         self.assertIn('option(SD_VERBOSE_BUILD "Print full native compiler command lines" OFF)', setup)
         self.assertNotIn("set(CMAKE_VERBOSE_MAKEFILE ON)", compiler_flags)
         self.assertNotIn("set(CMAKE_VERBOSE_MAKEFILE ON PARENT_SCOPE)", cuda_config)
         self.assertIn('VERBOSE="${VERBOSE:-false}"', build_script)
         self.assertIn("-DSD_VERBOSE_BUILD=$SD_VERBOSE_BUILD", build_script)
+        self.assertIn('DL4J_NVCC_FILTER_VERBOSE', nvcc_filter)
+        self.assertIn('if verbose_enabled():', nvcc_filter)
+        self.assertNotIn('_log_count', nvcc_filter)
+        self.assertIn('=== NVCC FAILED', nvcc_filter)
 
 
 class WorkerConfigTests(unittest.TestCase):
