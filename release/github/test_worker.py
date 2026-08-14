@@ -237,6 +237,38 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("<value>android-arm64</value>", vulkan_pom)
         self.assertIn("<value>android-x86_64</value>", vulkan_pom)
 
+    def test_shared_worker_publishes_prebuilt_snapshots_with_existing_central_credentials(self):
+        action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
+        workflow = (ROOT / ".github/workflows/_release-worker.yml").read_text()
+
+        self.assertIn("release-version:", action)
+        self.assertIn("python-executable:", action)
+        self.assertIn(
+            'print(json.load(open(sys.argv[1], encoding="utf-8"))["releaseVersion"])',
+            action,
+        )
+        self.assertIn("CENTRAL_SONATYPE_TOKEN_USERNAME:\n        required: true", workflow)
+        self.assertIn("CENTRAL_SONATYPE_TOKEN_PASSWORD:\n        required: true", workflow)
+        self.assertEqual(2, workflow.count("name: Publish staged Maven snapshot"))
+        self.assertEqual(2, workflow.count("repository.py deploy-snapshot"))
+        self.assertEqual(2, workflow.count("server-id: central-portal-snapshots"))
+        self.assertEqual(
+            2,
+            workflow.count(
+                "--url https://central.sonatype.com/repository/maven-snapshots/"
+            ),
+        )
+        self.assertEqual(
+            4,
+            workflow.count(
+                "endsWith(steps.worker.outputs['release-version'], '-SNAPSHOT')"
+            ),
+        )
+        for caller in sorted((ROOT / ".github/workflows").glob("build-deploy-*")):
+            contents = caller.read_text()
+            if "uses: ./.github/workflows/_release-worker.yml" in contents:
+                self.assertIn("secrets: inherit", contents, caller.name)
+
     def test_linux_bootstrap_pins_a_supported_maven(self):
         bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
         self.assertIn("ensure_modern_maven()", bootstrap)

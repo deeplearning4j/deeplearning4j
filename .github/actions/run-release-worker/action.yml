@@ -31,6 +31,12 @@ outputs:
   artifact-root:
     description: Directory containing the staged Maven repository, SDK assets, and receipts.
     value: ${{ steps.worker.outputs.artifact-root }}
+  release-version:
+    description: Exact Maven version staged by this worker.
+    value: ${{ steps.worker.outputs.release-version }}
+  python-executable:
+    description: Python executable selected by the worker bootstrap.
+    value: ${{ steps.worker.outputs.python-executable }}
 
 runs:
   using: composite
@@ -171,7 +177,10 @@ runs:
           printf 'The release worker requires Python 3.10 or newer.\n' >&2
           exit 1
         fi
+        printf 'python-executable=%s\n' "${python_bin}" >>"${GITHUB_OUTPUT}"
         "${python_bin}" release/github/prepare-worker.py config "${args[@]}"
+        release_version=$("${python_bin}" -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["releaseVersion"])' "${config}")
+        printf 'release-version=%s\n' "${release_version}" >>"${GITHUB_OUTPUT}"
 
         export DL4J_SCCACHE_DIR="${RUNNER_TEMP}/dl4j-sccache/${INPUT_SHARD}/${INPUT_VARIANT}"
         "${python_bin}" release/aws/build-platform.py \

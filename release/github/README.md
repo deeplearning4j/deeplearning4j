@@ -10,6 +10,10 @@ For access to the existing Azure Blob sccache, define the optional repository or
 
 When that secret is unavailable, such as on an untrusted fork, the existing GitHub Actions sccache setup is used as the fallback.
 
+## Sonatype snapshots
+
+Every successful worker publishes its verified staged Maven coordinates to the Central Portal snapshots repository at `https://central.sonatype.com/repository/maven-snapshots/`. The reusable workflow requires the existing `CENTRAL_SONATYPE_TOKEN_USERNAME` and `CENTRAL_SONATYPE_TOKEN_PASSWORD` secrets, configures Maven server ID `central-portal-snapshots`, and invokes `release/central/repository.py deploy-snapshot` against the prebuilt staging tree. Publication does not rebuild the module, and a failed build still retains its worker artifact without attempting a deploy.
+
 ## Matrix maintenance
 
 Add or change classifiers in the provider release plans first. Keep `release/github/workflow-matrix.json` limited to workflow-to-shard and shard-to-runtime mappings. `release/github/test_worker.py` rejects workflow rows that do not resolve to an explicit release-plan variant and checks the historically distinct Linux compile ISA classifiers.
