@@ -71,6 +71,7 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.assertNotIn("--", row["name"], workflow)
                 self.assertNotIn("--", row["artifactId"], workflow)
                 self.assertEqual(row["name"], row["artifactId"], workflow)
+                self.assertEqual(row["shard"], row["dependencyCacheKey"], workflow)
                 self.assertEqual(
                     f'{row["shard"]}--{row["variant"]}', row["selector"], workflow
                 )
@@ -117,7 +118,7 @@ class WorkflowMatrixTests(unittest.TestCase):
         compile_rows = [row for row in rows if row["variant"] == "compile-nnapi"]
         self.assertTrue(compile_rows)
         self.assertEqual(
-            {"android-arm64-cpu"},
+            {"android-arm64"},
             {row["dependencyCacheKey"] for row in compile_rows},
         )
 
@@ -273,6 +274,27 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn('<include name="**/*.a"/>', vulkan_pom)
         self.assertIn("<value>android-arm64</value>", vulkan_pom)
         self.assertIn("<value>android-x86_64</value>", vulkan_pom)
+
+    def test_every_worker_reuses_native_and_maven_dependency_downloads(self):
+        action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
+        workflow = (ROOT / ".github/workflows/_release-worker.yml").read_text()
+
+        self.assertIn("name: Restore Maven dependency repository", action)
+        self.assertIn(
+            "${{ runner.temp }}/dl4j-release-work/"
+            "${{ inputs.shard }}/${{ inputs.variant }}/m2",
+            action,
+        )
+        self.assertIn("dl4j-maven-v2-${{ runner.os }}-", action)
+        self.assertIn("name: Keep only third-party Maven dependencies in cache", action)
+        self.assertIn(
+            '"${maven_cache}/org/eclipse/deeplearning4j"', action
+        )
+        self.assertEqual(
+            2, workflow.count("name: Restore managed dependency downloads")
+        )
+        self.assertEqual(4, workflow.count("dl4j-dependency-v3-${{ runner.os }}-"))
+        self.assertNotIn("if: matrix.dependencyCacheKey != ''", workflow)
 
     def test_shared_worker_publishes_prebuilt_snapshots_with_existing_central_credentials(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()

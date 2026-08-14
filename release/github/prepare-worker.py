@@ -164,14 +164,11 @@ def workflow_rows(
                 "variant": variant_name,
                 "runner": runner_override or str(runtime["runner"]),
                 "os": str(shards[shard_id]["os"]),
-                "dependencyCacheKey": "",
+                # Every classifier in a shard shares the same dependency
+                # downloads. The immutable content hash in the workflow key
+                # invalidates this cache when the dependency contract changes.
+                "dependencyCacheKey": shard_id,
             }
-            if variant.get("mlir"):
-                build = shards[shard_id]["build"]
-                row["dependencyCacheKey"] = (
-                    f"{build.get('javacppPlatform', shard_id)}-"
-                    f"{build.get('backend', 'cpu')}"
-                )
             if group == "linux":
                 container = str(runtime.get("container", "")).strip()
                 if not container:

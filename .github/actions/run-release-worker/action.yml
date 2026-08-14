@@ -94,6 +94,15 @@ runs:
     - name: Set up Rust
       uses: dtolnay/rust-toolchain@stable
 
+    - name: Restore Maven dependency repository
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/dl4j-release-work/${{ inputs.shard }}/${{ inputs.variant }}/m2
+        key: dl4j-maven-v2-${{ runner.os }}-${{ inputs.shard }}-${{ inputs.variant }}-${{ hashFiles('pom.xml', '**/pom.xml') }}
+        restore-keys: |
+          dl4j-maven-v2-${{ runner.os }}-${{ inputs.shard }}-
+          dl4j-maven-v2-${{ runner.os }}-
+
     - name: Set up GitHub sccache fallback on Linux
       if: runner.os == 'Linux'
       continue-on-error: true
@@ -189,3 +198,10 @@ runs:
           --repository "${work_root}/m2" \
           --maven-output "${artifact_root}/maven-repository" \
           --sdk-output "${artifact_root}/sdk-assets"
+
+    - name: Keep only third-party Maven dependencies in cache
+      if: always()
+      shell: bash
+      run: |
+        maven_cache="${RUNNER_TEMP}/dl4j-release-work/${{ inputs.shard }}/${{ inputs.variant }}/m2"
+        rm -rf -- "${maven_cache}/org/eclipse/deeplearning4j" "${maven_cache}/org/nd4j"

@@ -103,12 +103,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.sourceRef }}
-      - name: Restore managed dependency snapshot
-        if: matrix.dependencyCacheKey != ''
+      - name: Restore managed dependency downloads
         uses: actions/cache@v4
         with:
           path: ~/.libnd4j
-          key: dl4j-dependency-v2-${{ matrix.dependencyCacheKey }}-${{ hashFiles('release/github/prepare-worker.py') }}
+          key: dl4j-dependency-v3-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-${{ hashFiles('libnd4j/cmake/Dependencies.cmake', 'libnd4j/cmake/ZludaConfiguration.cmake', 'release/aws/build-platform.py', 'release/github/bootstrap-worker.sh', 'release/github/bootstrap-worker.ps1') }}
+          restore-keys: |
+            dl4j-dependency-v3-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-
       - name: Run worker
         id: worker
         uses: ./.github/actions/run-release-worker
@@ -172,6 +173,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.sourceRef }}
+      - name: Restore managed dependency downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.libnd4j
+          key: dl4j-dependency-v3-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-${{ hashFiles('libnd4j/cmake/Dependencies.cmake', 'libnd4j/cmake/ZludaConfiguration.cmake', 'release/aws/build-platform.py', 'release/github/bootstrap-worker.sh', 'release/github/bootstrap-worker.ps1') }}
+          restore-keys: |
+            dl4j-dependency-v3-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-
       - name: Run worker
         id: worker
         uses: ./.github/actions/run-release-worker
