@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.llm.generation.constraint;
 
 import lombok.Builder;
 import lombok.Data;
+import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -132,6 +133,17 @@ public class ConstraintConfig {
      */
     @Builder.Default
     private int evalTopK = 256;
+
+    /**
+     * Template-declared blocks which are already open when assistant generation begins.
+     *
+     * <p>The definitions are ordered outermost to innermost. Their content remains
+     * unconstrained, but each exact closing delimiter is required before the configured
+     * structured-output grammar begins. This composes model-owned output sections with
+     * JSON, native, or XML payload constraints without naming any particular block type.</p>
+     */
+    @Builder.Default
+    private List<ChatTemplate.OutputBlockDefinition> outputBlocks = Collections.emptyList();
 
     // -------------------------------------------------------------------------
     // Factory methods
@@ -275,10 +287,10 @@ public class ConstraintConfig {
      *                                  required parameters (e.g., tool names) are missing
      */
     public TextConstraint buildConstraint() {
+        TextConstraint constraint;
         if (JsonObjectConstraint.TYPE.equals(type)) {
-            return new JsonObjectConstraint();
-        }
-        if (ToolCallConstraint.TYPE.equals(type)
+            constraint = new JsonObjectConstraint();
+        } else if (ToolCallConstraint.TYPE.equals(type)
                 || NativeToolCallConstraint.TYPE.equals(type)
                 || XmlToolCallConstraint.TYPE.equals(type)) {
             if (toolNames == null || toolNames.isEmpty()) {
@@ -287,19 +299,123 @@ public class ConstraintConfig {
                                 + "\" requires at least one toolName");
             }
             if (ToolCallConstraint.TYPE.equals(type)) {
-                return new ToolCallConstraint(toolNames);
-            }
-            if (NativeToolCallConstraint.TYPE.equals(type)) {
-                return new NativeToolCallConstraint(
+                constraint = new ToolCallConstraint(toolNames);
+            } else if (NativeToolCallConstraint.TYPE.equals(type)) {
+                constraint = new NativeToolCallConstraint(
                         toolNames, toolArgumentNames, toolArgumentValues,
                         toolParameterSchemas);
+            } else {
+                constraint = new XmlToolCallConstraint(
+                        toolNames, toolArgumentNames, toolParameterSchemas);
             }
-            return new XmlToolCallConstraint(
-                    toolNames, toolArgumentNames, toolParameterSchemas);
+        } else {
+            throw new IllegalArgumentException(
+                    "Unknown constraint type: \"" + type
+                            + "\". Supported: \"json_object\", \"tool_call\", "
+                            + "\"native_tool_call\", \"xml_tool_call\"");
         }
-        throw new IllegalArgumentException(
-                "Unknown constraint type: \"" + type
-                        + "\". Supported: \"json_object\", \"tool_call\", "
-                        + "\"native_tool_call\", \"xml_tool_call\"");
+        return outputBlocks == null || outputBlocks.isEmpty()
+                ? constraint
+                : new OutputBlockSequenceConstraint(outputBlocks, constraint);
+    }
+
+    /**
+     * Prefix grammar for template-opened output blocks followed by a strict payload.
+     *
+     * <p>This adapter is deliberately agnostic to block names and payload protocol. It
+     * derives progress entirely from the ordered delimiter definitions and delegates the
+     * suffix to the configured constraint after every block has closed.</p>
+     */
+    private static final class OutputBlockSequenceConstraint implements TextConstraint {
+        private final List<ChatTemplate.OutputBlockDefinition> blocks;
+        private final TextConstraint payload;
+
+        private OutputBlockSequenceConstraint(
+                List<ChatTemplate.OutputBlockDefinition> blocks, TextConstraint payload) {
+            this.blocks = List.copyOf(blocks);
+            this.payload = payload;
+        }
+
+        @Override
+        public boolean canExtend(String currentText, String piece) {
+            String current = currentText == null ? "" : currentText;
+            String extension = piece == null ? "" : piece;
+            BlockState before = state(current);
+            BlockState after = state(current + extension);
+            if (!after.blocksClosed) {
+                return true;
+            }
+            if (!before.blocksClosed) {
+                if (after.payloadText.isEmpty()) {
+                    return true;
+                }
+                return payload.canExtend("", after.payloadText);
+            }
+            if (!after.payloadText.startsWith(before.payloadText)) {
+                return false;
+            }
+            String payloadExtension = after.payloadText.substring(before.payloadText.length());
+            if (payloadExtension.isEmpty()) {
+                return before.rawPayloadText.isEmpty()
+                        && !after.rawPayloadText.isEmpty()
+                        && after.rawPayloadText.chars().allMatch(Character::isWhitespace);
+            }
+            return payload.canExtend(before.payloadText, payloadExtension);
+        }
+
+        @Override
+        public boolean allowsSpecialToken(String currentText, String piece) {
+            BlockState current = state(currentText == null ? "" : currentText);
+            if (!current.blocksClosed) {
+                String expected = blocks.get(current.openBlockIndex).getClosingDelimiter();
+                return expected.equals(piece) && canExtend(currentText, piece);
+            }
+            return payload.allowsSpecialToken(current.payloadText, piece);
+        }
+
+        @Override
+        public boolean isAccepting(String currentText) {
+            BlockState current = state(currentText == null ? "" : currentText);
+            return current.blocksClosed && payload.isAccepting(current.payloadText);
+        }
+
+        @Override
+        public TextConstraint reset() {
+            return new OutputBlockSequenceConstraint(blocks, payload.reset());
+        }
+
+        @Override
+        public String type() {
+            return "output_blocks_then_" + payload.type();
+        }
+
+        private BlockState state(String text) {
+            int cursor = 0;
+            for (int index = blocks.size() - 1; index >= 0; index--) {
+                String closing = blocks.get(index).getClosingDelimiter();
+                int closingAt = text.indexOf(closing, cursor);
+                if (closingAt < 0) {
+                    return new BlockState(false, index, "", "");
+                }
+                cursor = closingAt + closing.length();
+            }
+            String rawPayload = text.substring(cursor);
+            return new BlockState(true, -1, rawPayload.stripLeading(), rawPayload);
+        }
+
+        private static final class BlockState {
+            private final boolean blocksClosed;
+            private final int openBlockIndex;
+            private final String payloadText;
+            private final String rawPayloadText;
+
+            private BlockState(boolean blocksClosed, int openBlockIndex,
+                               String payloadText, String rawPayloadText) {
+                this.blocksClosed = blocksClosed;
+                this.openBlockIndex = openBlockIndex;
+                this.payloadText = payloadText;
+                this.rawPayloadText = rawPayloadText;
+            }
+        }
     }
 }

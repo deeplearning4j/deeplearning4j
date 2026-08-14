@@ -16,8 +16,13 @@ import org.nd4j.dsp.model.SdxSourceIdentity;
 import org.nd4j.dsp.model.SdxTargetProfile;
 import org.nd4j.dsp.model.SdxTextModelAssets;
 import org.nd4j.ggml.GGMLImportException;
+import org.nd4j.ggml.GGMLExportException;
 import org.nd4j.ggml.GGMLModelImport;
+import org.nd4j.ggml.GGMLModelExport;
+import org.nd4j.ggml.convert.ConversionOptions;
+import org.nd4j.ggml.export.ExportOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
@@ -43,7 +48,7 @@ import java.util.Map;
  * shared; only the {@link SdxTargetProfile} compiler/provider policy is backend specific.
  */
 final class SdxGgufModelPreparer {
-    static final String PREPARED_SCHEMA = "sdx-prepared-text-model-v3";
+    static final String PREPARED_SCHEMA = "sdx-prepared-text-model-v4";
     static final String RESOLVED_SCHEMA = "sdx-resolved-text-model-v1";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -61,11 +66,15 @@ final class SdxGgufModelPreparer {
         Path temporaryRoot = configureTemporaryDirectory(cache);
 
         JsonNode options = parseObject(optionsJson);
+        PreparationProfile profile = PreparationProfile.from(options);
+        String diagnosticMode = configureDiagnostics(options);
         RawSourceIdentity sourceIdentity = RawSourceIdentity.identify(source);
         verifyAttestation(sourceIdentity, options);
 
-        Path preparedRoot = cache.root().resolve("prepared").resolve(sourceIdentity.sha256());
+        Path preparedRoot = cache.root().resolve("prepared").resolve(sourceIdentity.sha256())
+                .resolve(profile.sha256());
         Path canonicalPointer = preparedRoot.resolve("canonical.path");
+        Path optimizedSource = profile.existingOptimizedSource(source, preparedRoot);
         Path canonical = readCanonicalPointer(cache, canonicalPointer);
         SdxSourceIdentity canonicalIdentity =
                 canonical == null ? null : SdxSourceIdentity.identify(canonical);
@@ -77,7 +86,7 @@ final class SdxGgufModelPreparer {
                     int cachedContextLength = contextLength(source);
                     requireUnchangedRawSource(source, sourceIdentity);
                     return preparedJson(sourceIdentity, canonicalIdentity, canonical, cached, true,
-                            cachedContextLength, target);
+                            cachedContextLength, target, profile, diagnosticMode, optimizedSource);
                 }
             } catch (SdxModelCache.MissingCompiledModelException missingTarget) {
                 // The canonical import is reusable; compile only the missing target below.
@@ -85,6 +94,7 @@ final class SdxGgufModelPreparer {
         }
 
         Files.createDirectories(preparedRoot);
+        optimizedSource = profile.materializeOptimizedSource(source, preparedRoot, temporaryRoot);
         TokenizerAssets tokenizerAssets = materializeTokenizerAssets(
                 source, tokenizerPath, preparedRoot.resolve("text-assets"));
         boolean publishCanonicalPointer = false;
@@ -92,7 +102,7 @@ final class SdxGgufModelPreparer {
             Path generated = Files.createTempFile(temporaryRoot, "gguf-import-", ".sdz");
             boolean admitted = false;
             try {
-                convertToSdz(source, generated, tokenizerAssets);
+                convertToSdz(optimizedSource, generated, tokenizerAssets, profile);
                 canonical = cache.admitGeneratedSource(generated);
                 admitted = true;
             } finally {
@@ -127,7 +137,7 @@ final class SdxGgufModelPreparer {
                 SdxModelCompiler.requireBuiltInTargetCompiler(target, targetSoc, false),
                 compileOptions);
         return preparedJson(sourceIdentity, canonicalIdentity, canonical, compiled, false,
-                tokenizerAssets.contextLength, target);
+                tokenizerAssets.contextLength, target, profile, diagnosticMode, optimizedSource);
     }
 
     static String resolve(String sourceSdz, String targetProfile, String cacheDirectory)
@@ -161,7 +171,9 @@ final class SdxGgufModelPreparer {
     private static String preparedJson(RawSourceIdentity sourceIdentity,
                                        SdxSourceIdentity canonicalIdentity, Path canonical,
                                        SdxCompiledModel compiled, boolean cacheHit,
-                                       int contextLength, SdxTargetProfile target)
+                                       int contextLength, SdxTargetProfile target,
+                                       PreparationProfile profile, String diagnosticMode,
+                                       Path optimizedSource)
             throws IOException {
         SdxTextModelAssets assets = compiled.requireTextModelAssets();
         SdxPlatformProviderDescriptor provider = target.platformProvider();
@@ -182,6 +194,11 @@ final class SdxGgufModelPreparer {
         result.put("contextLength", contextLength);
         result.put("maxPrefillLength", Math.max(1, contextLength - 1));
         result.put("executionProvider", provider.providerId());
+        result.put("conversionProfileSha256", profile.sha256());
+        result.set("conversionProfile", profile.json().deepCopy());
+        result.put("diagnosticMode", diagnosticMode);
+        result.put("optimizedSourcePath", optimizedSource.toString());
+        result.put("optimizedSourceBytes", Files.size(optimizedSource));
         result.put("importResourcesReleased", true);
         return result.toString();
     }
@@ -332,13 +349,17 @@ final class SdxGgufModelPreparer {
     }
 
     private static void convertToSdz(
-            Path source, Path destination, TokenizerAssets tokenizerAssets) throws IOException {
-        try (SameDiff graph = GGMLModelImport.importModel(source.toFile())) {
+            Path source, Path destination, TokenizerAssets tokenizerAssets,
+            PreparationProfile profile) throws IOException {
+        try (SameDiff graph = GGMLModelImport.importModel(
+                source.toFile(), profile.conversionOptions())) {
             SdxTextGenerationConfig.write(
                     graph, tokenizerAssets.generationOptions, tokenizerAssets.textGenerationConfig);
             Map<String, String> metadata = new HashMap<>();
             metadata.put("source_format", "ggml");
             metadata.put("source_file", source.getFileName().toString());
+            metadata.put("conversion_profile_sha256", profile.sha256());
+            metadata.put("conversion_profile", profile.json().toString());
             metadata.put("conversion_timestamp", String.valueOf(System.currentTimeMillis()));
             SDZSerializer.save(graph, destination.toFile(), false, metadata);
         } catch (GGMLImportException failure) {
@@ -558,6 +579,40 @@ final class SdxGgufModelPreparer {
         return value;
     }
 
+    private static String configureDiagnostics(JsonNode options) {
+        String mode = options.path("diagnosticMode").asText("standard").trim()
+                .toLowerCase(Locale.ROOT);
+        switch (mode) {
+            case "standard":
+                return mode;
+            case "verbose":
+                System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS,
+                        "COMPILE,EXECUTE,TIMING,MEMORY");
+                System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "detailed");
+                return mode;
+            case "dsp":
+                System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS, "ALL");
+                System.setProperty(ND4JSystemProperties.DSP_DIAGNOSTICS_LEVEL, "full");
+                return mode;
+            default:
+                throw new IllegalArgumentException("Unknown diagnosticMode: " + mode);
+        }
+    }
+
+    private static String sha256(String value) {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 is unavailable", impossible);
+        }
+        StringBuilder result = new StringBuilder(64);
+        for (byte item : digest.digest(value.getBytes(StandardCharsets.UTF_8))) {
+            result.append(String.format(Locale.ROOT, "%02x", item & 0xff));
+        }
+        return result.toString();
+    }
+
     private static Path firstRegular(Path first, Path second) {
         if (Files.isRegularFile(first)) return first;
         return Files.isRegularFile(second) ? second : null;
@@ -618,6 +673,153 @@ final class SdxGgufModelPreparer {
 
         long bytes() {
             return bytes;
+        }
+    }
+
+    /** Validated, canonicalized conversion settings. Diagnostics are intentionally not cached. */
+    static final class PreparationProfile {
+        private final ConversionOptions.QuantizationMode conversionMode;
+        private final ExportOptions.QuantizationType requantizeType;
+        private final int kvQuantFormat;
+        private final int tensorBatchSize;
+        private final boolean useMemoryMapping;
+        private final ObjectNode json;
+        private final String sha256;
+
+        private PreparationProfile(ConversionOptions.QuantizationMode conversionMode,
+                                   ExportOptions.QuantizationType requantizeType,
+                                   int kvQuantFormat, int tensorBatchSize,
+                                   boolean useMemoryMapping) {
+            this.conversionMode = conversionMode;
+            this.requantizeType = requantizeType;
+            this.kvQuantFormat = kvQuantFormat;
+            this.tensorBatchSize = tensorBatchSize;
+            this.useMemoryMapping = useMemoryMapping;
+            ObjectNode canonical = MAPPER.createObjectNode();
+            canonical.put("conversionMode", conversionMode.name());
+            canonical.put("requantizeType", requantizeType == null ? "NONE" : requantizeType.name());
+            canonical.put("kvQuantFormat", kvQuantFormat);
+            canonical.put("tensorBatchSize", tensorBatchSize);
+            canonical.put("useMemoryMapping", useMemoryMapping);
+            this.json = canonical;
+            this.sha256 = SdxGgufModelPreparer.sha256(canonical.toString());
+        }
+
+        static PreparationProfile from(JsonNode options) {
+            String modeText = options.path("conversionMode")
+                    .asText(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16.name())
+                    .trim().toUpperCase(Locale.ROOT);
+            ConversionOptions.QuantizationMode mode;
+            try {
+                mode = ConversionOptions.QuantizationMode.valueOf(modeText);
+            } catch (IllegalArgumentException invalid) {
+                throw new IllegalArgumentException("Unknown conversionMode: " + modeText, invalid);
+            }
+            String requantizeText = options.path("requantizeType").asText("NONE")
+                    .trim().toUpperCase(Locale.ROOT);
+            ExportOptions.QuantizationType requantize = null;
+            if (!requantizeText.equals("NONE")) {
+                try {
+                    requantize = ExportOptions.QuantizationType.valueOf(requantizeText);
+                } catch (IllegalArgumentException invalid) {
+                    throw new IllegalArgumentException("Unknown requantizeType: " + requantizeText,
+                            invalid);
+                }
+                if (requantize != ExportOptions.QuantizationType.Q4_K
+                        && requantize != ExportOptions.QuantizationType.Q6_K
+                        && requantize != ExportOptions.QuantizationType.Q8_0) {
+                    throw new IllegalArgumentException(
+                            "Mobile packed execution supports requantizeType Q4_K, Q6_K, or Q8_0");
+                }
+                mode = requantize == ExportOptions.QuantizationType.Q8_0
+                        ? ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_INT8
+                        : ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_MATMUL;
+            }
+            int kv = options.path("kvQuantFormat").asInt(0);
+            if (kv < 0 || kv > 4) {
+                throw new IllegalArgumentException("kvQuantFormat must be between 0 and 4");
+            }
+            int batch = options.path("tensorBatchSize").asInt(10);
+            if (batch < 1 || batch > 256) {
+                throw new IllegalArgumentException("tensorBatchSize must be between 1 and 256");
+            }
+            boolean mmap = options.path("useMemoryMapping").asBoolean(true);
+            return new PreparationProfile(mode, requantize, kv, batch, mmap);
+        }
+
+        ConversionOptions conversionOptions() {
+            return ConversionOptions.builder()
+                    .quantizationMode(conversionMode)
+                    .targetDataType(targetDataType(conversionMode))
+                    .forTraining(false)
+                    .preserveTokenizerInfo(true)
+                    .kvQuantFormat(kvQuantFormat)
+                    .tensorBatchSize(tensorBatchSize)
+                    .useMemoryMapping(useMemoryMapping)
+                    .build();
+        }
+
+        private static DataType targetDataType(ConversionOptions.QuantizationMode mode) {
+            switch (mode) {
+                case DEQUANTIZE_TO_FLOAT32:
+                    return DataType.FLOAT;
+                case DEQUANTIZE_TO_BFLOAT16:
+                    return DataType.BFLOAT16;
+                case DEQUANTIZE_TO_FLOAT8_E4M3:
+                    return DataType.FLOAT8;
+                case DEQUANTIZE_TO_FLOAT8_E5M2:
+                    return DataType.FLOAT8_E5M2;
+                default:
+                    return DataType.HALF;
+            }
+        }
+
+        Path existingOptimizedSource(Path source, Path preparedRoot) {
+            if (requantizeType == null) return source;
+            Path optimized = optimizedPath(preparedRoot);
+            return Files.isRegularFile(optimized) ? optimized : source;
+        }
+
+        Path materializeOptimizedSource(Path source, Path preparedRoot, Path temporaryRoot)
+                throws IOException {
+            if (requantizeType == null) return source;
+            Path optimized = optimizedPath(preparedRoot);
+            if (Files.isRegularFile(optimized)) return optimized;
+            Path temporary = Files.createTempFile(temporaryRoot, "requantize-", ".gguf");
+            boolean published = false;
+            try (SameDiff graph = GGMLModelImport.importModel(
+                    source.toFile(), ConversionOptions.fp16())) {
+                GGMLModelExport.exportModel(graph, temporary.toFile(), ExportOptions.builder()
+                        .quantizationType(requantizeType)
+                        .includeTokenizer(true)
+                        .validateBeforeExport(true)
+                        .build());
+                try {
+                    Files.move(temporary, optimized, StandardCopyOption.ATOMIC_MOVE);
+                } catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
+                    Files.move(temporary, optimized);
+                }
+                published = true;
+                return optimized;
+            } catch (GGMLImportException | GGMLExportException failure) {
+                throw new IOException("Could not create " + requantizeType
+                        + " optimized GGUF derivative from " + source, failure);
+            } finally {
+                if (!published) Files.deleteIfExists(temporary);
+            }
+        }
+
+        private Path optimizedPath(Path preparedRoot) {
+            return preparedRoot.resolve("optimized-"
+                    + requantizeType.name().toLowerCase(Locale.ROOT) + ".gguf");
+        }
+
+        ObjectNode json() {
+            return json;
+        }
+
+        String sha256() {
+            return sha256;
         }
     }
 

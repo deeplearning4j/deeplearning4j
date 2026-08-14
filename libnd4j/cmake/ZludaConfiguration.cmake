@@ -442,14 +442,14 @@ function(configure_zluda_cuda_flags)
 
     message(STATUS "Configuring CUDA flags for ZLUDA compatibility...")
 
-    # CUDA's Windows static NVRTC archive is built against the static MSVC CRT.
-    # Keep every libnd4j C/C++ object on the same runtime contract so the final
-    # nd4jcuda.dll link does not mix MT_StaticRelease and MD_DynamicRelease.
-    # The JavaCPP ZLUDA wrapper follows the same /MT contract.
+    # Keep ZLUDA's Windows objects on the dynamic MSVC CRT used by
+    # libnd4j, JavaCPP, and the JavaCPP-generated launcher.  The static
+    # /MT contract conflicts with JavaCPP's /MD throw_exception.cpp object
+    # and produces libcpmt/msvcprt duplicate symbols at the DLL link.
     if(MSVC)
         set(CMAKE_MSVC_RUNTIME_LIBRARY
-            "MultiThreaded$<$<CONFIG:Debug>:Debug>" PARENT_SCOPE)
-        message(STATUS "   Windows ZLUDA MSVC runtime: static (/MT)")
+            "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" PARENT_SCOPE)
+        message(STATUS "   Windows ZLUDA MSVC runtime: dynamic (/MD)")
     endif()
 
     # =========================================================================

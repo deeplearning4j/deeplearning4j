@@ -254,10 +254,12 @@ if(WIN32 AND SD_CUDA)
     # sccache wraps nvcc and decomposes the command line. Slash-prefixed MSVC flags
     # like /bigobj get interpreted as drive-relative paths (D:\bigobj) on Windows.
     # MSVC cl.exe accepts both / and - as option prefixes, so -bigobj == /bigobj.
-    # Hyphen prefix is sccache-safe and works with plain nvcc too. Windows ZLUDA
-    # statically links NVRTC, whose objects use /MT; normal CUDA keeps /MD.
+    # Hyphen prefix is sccache-safe and works with plain nvcc too. Keep
+    # ZLUDA on the same dynamic MSVC CRT as JavaCPP and the host C++ targets;
+    # mixing /MT CUDA objects with /MD JavaCPP objects causes duplicate runtime
+    # symbols when nd4jcuda.dll is linked.
     if(SD_ZLUDA)
-        set(_sd_cuda_msvc_runtime_flag "-MT")
+        set(_sd_cuda_msvc_runtime_flag "-MD")
     else()
         set(_sd_cuda_msvc_runtime_flag "-MD")
     endif()

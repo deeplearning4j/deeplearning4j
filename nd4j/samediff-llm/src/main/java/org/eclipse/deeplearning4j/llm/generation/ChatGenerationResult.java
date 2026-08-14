@@ -34,6 +34,7 @@ public final class ChatGenerationResult {
     private final String rawText;
     private final String content;
     private final String reasoningContent;
+    private final List<ChatTemplate.OutputBlock> outputBlocks;
     private final List<ChatTemplate.ToolCall> toolCalls;
     private final List<String> parseErrors;
 
@@ -42,6 +43,7 @@ public final class ChatGenerationResult {
         this.rawText = parsed.getRawText();
         this.content = parsed.getContent();
         this.reasoningContent = "";
+        this.outputBlocks = List.of();
         this.toolCalls = parsed.getToolCalls();
         this.parseErrors = parsed.getErrors();
     }
@@ -54,6 +56,7 @@ public final class ChatGenerationResult {
         this.rawText = parsed.getRawText();
         this.content = parsed.getContent();
         this.reasoningContent = "";
+        this.outputBlocks = List.of();
         this.toolCalls = parsed.getToolCalls();
         this.parseErrors = parsed.getErrors();
     }
@@ -67,9 +70,21 @@ public final class ChatGenerationResult {
     public ChatGenerationResult(String rawText, String content, String reasoningContent,
                                 List<ChatTemplate.ToolCall> toolCalls,
                                 List<String> parseErrors) {
+        this(rawText, content, reasoningContent,
+                reasoningContent == null || reasoningContent.isBlank()
+                        ? List.of()
+                        : List.of(new ChatTemplate.OutputBlock("think", reasoningContent)),
+                toolCalls, parseErrors);
+    }
+
+    public ChatGenerationResult(String rawText, String content, String reasoningContent,
+                                List<ChatTemplate.OutputBlock> outputBlocks,
+                                List<ChatTemplate.ToolCall> toolCalls,
+                                List<String> parseErrors) {
         this.rawText = rawText == null ? "" : rawText;
         this.content = content == null ? "" : content;
         this.reasoningContent = reasoningContent == null ? "" : reasoningContent;
+        this.outputBlocks = outputBlocks == null ? List.of() : List.copyOf(outputBlocks);
         this.toolCalls = toolCalls == null ? List.of() : List.copyOf(toolCalls);
         this.parseErrors = parseErrors == null ? List.of() : List.copyOf(parseErrors);
     }
@@ -94,6 +109,7 @@ public final class ChatGenerationResult {
         this.rawText = rawText == null ? "" : rawText;
         this.content = parsed.getContent();
         this.reasoningContent = normalized == null ? "" : normalized.getReasoningContent();
+        this.outputBlocks = normalized == null ? List.of() : normalized.getOutputBlocks();
         this.toolCalls = parsed.getToolCalls();
         this.parseErrors = List.copyOf(errors);
     }
@@ -112,6 +128,11 @@ public final class ChatGenerationResult {
 
     public String getReasoningContent() {
         return reasoningContent;
+    }
+
+    /** Every template-declared model output block in emitted closing order. */
+    public List<ChatTemplate.OutputBlock> getOutputBlocks() {
+        return outputBlocks;
     }
 
     public List<ChatTemplate.ToolCall> getToolCalls() {

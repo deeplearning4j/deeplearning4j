@@ -19,12 +19,15 @@
  */
 package org.eclipse.deeplearning4j.llm.generation;
 
+import org.eclipse.deeplearning4j.llm.generation.constraint.ConstraintConfig;
 import org.eclipse.deeplearning4j.llm.generation.constraint.NativeToolCallConstraint;
+import org.eclipse.deeplearning4j.llm.generation.constraint.TextConstraint;
 import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -141,6 +144,78 @@ class ToolCallParserProtocolTest {
                 "<think>literal text</think>answer</s>");
         assertEquals("<think>literal text</think>answer", untouched.getContent());
         assertEquals("", untouched.getReasoningContent());
+    }
+
+    @Test
+    void templateCanDeclareMultipleNestedOutputBlockKinds() {
+        ChatTemplate template = new ChatTemplate(
+                "{{ messages }}{% if add_generation_prompt %}<analysis><think>{% endif %}"
+                        + "</think></analysis><tool_call></tool_call>",
+                "", "<|im_end|>");
+        List<ChatTemplate.OutputBlockDefinition> definitions =
+                template.prefilledOutputBlocks("messages", "messages<analysis><think>\n");
+
+        assertEquals(List.of("analysis", "think"), definitions.stream()
+                .map(ChatTemplate.OutputBlockDefinition::getType)
+                .collect(Collectors.toList()));
+
+        String raw = "inspect graph evidence</think>cite source</analysis>"
+                + "<tool_call>\n<function=submit_entities>\n"
+                + "<parameter=names>\n[\"Alice\"]\n</parameter>\n"
+                + "</function>\n</tool_call><|im_end|>";
+        ChatTemplate.AssistantOutput parsed =
+                template.parseAssistantOutput(raw, definitions);
+
+        assertEquals(List.of("think", "analysis"), parsed.getOutputBlocks().stream()
+                .map(ChatTemplate.OutputBlock::getType)
+                .collect(Collectors.toList()));
+        assertEquals(List.of("inspect graph evidence", "cite source"),
+                parsed.getOutputBlocks().stream()
+                        .map(ChatTemplate.OutputBlock::getContent)
+                        .collect(Collectors.toList()));
+        assertEquals("inspect graph evidence", parsed.getReasoningContent());
+        assertTrue(parsed.getContent().startsWith("<tool_call>"));
+        assertTrue(parsed.getErrors().isEmpty());
+
+        ChatGenerationResult result = new ChatGenerationResult(
+                raw, parsed, ENTITY_TOOLS, ChatTemplate.ToolCallFormat.XML,
+                ChatTemplate.ToolChoice.REQUIRED);
+        assertTrue(result.isParsedCleanly());
+        assertEquals(2, result.getOutputBlocks().size());
+        assertEquals(List.of("Alice"),
+                result.getToolCalls().get(0).getArguments().get("names"));
+    }
+
+    @Test
+    void requiredXmlConstraintAllowsMultipleOutputBlocksBeforePayload() {
+        List<ChatTemplate.OutputBlockDefinition> definitions = List.of(
+                new ChatTemplate.OutputBlockDefinition(
+                        "analysis", "<analysis>", "</analysis>"),
+                new ChatTemplate.OutputBlockDefinition(
+                        "think", "<think>", "</think>"));
+        TextConstraint constraint = ConstraintConfig.xmlToolCall(
+                        Map.of("submit_entities", List.of("names")),
+                        Map.of(),
+                        Map.of("submit_entities", ENTITY_TOOLS.get(0).getParameters()))
+                .toBuilder()
+                .outputBlocks(definitions)
+                .build()
+                .buildConstraint();
+
+        assertTrue(constraint.canExtend("", "inspect graph evidence"));
+        assertTrue(constraint.canExtend("inspect graph evidence", "</think>"));
+        String blockPrefix = "inspect graph evidence</think>cite source</analysis>";
+        assertTrue(constraint.canExtend("", blockPrefix));
+        assertFalse(constraint.isAccepting(blockPrefix));
+        assertFalse(constraint.canExtend(blockPrefix, "<not_a_tool>"));
+
+        String payload = "<tool_call>\n<function=submit_entities>\n"
+                + "<parameter=names>\n[\"Alice\"]\n</parameter>\n"
+                + "</function>\n</tool_call>";
+        String complete = blockPrefix + "\n" + payload;
+        assertTrue(constraint.canExtend("", complete));
+        assertTrue(constraint.isAccepting(complete));
+        assertEquals("output_blocks_then_xml_tool_call", constraint.type());
     }
 
     @Test

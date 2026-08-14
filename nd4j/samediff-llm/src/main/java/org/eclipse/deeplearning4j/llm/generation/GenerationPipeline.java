@@ -769,7 +769,9 @@ public class GenerationPipeline implements AutoCloseable {
                 resolveChatRequest(request);
         String activeTemplateText = effectiveChatTemplateText();
         String prompt = tokenizer.applyChatTemplate(effective, activeTemplateText);
-        SamplingConfig chatSampling = samplingForChat(effective, sampling);
+        List<org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.OutputBlockDefinition>
+                outputBlocks = prefilledOutputBlocks(effective, activeTemplateText, prompt);
+        SamplingConfig chatSampling = samplingForChat(effective, sampling, outputBlocks);
         Set<Integer> chatStops = tokenizer.getChatTemplateStopTokenIds(activeTemplateText);
         SamplingConfig previousSampling = this.activeSamplingConfig;
         Set<Integer> previousChatStops = this.activeChatStopTokenIds;
@@ -782,7 +784,7 @@ public class GenerationPipeline implements AutoCloseable {
             this.activeSamplingConfig = previousSampling;
             this.activeChatStopTokenIds = previousChatStops;
         }
-        return parseEffectiveChatOutput(effective, generated.getText());
+        return parseEffectiveChatOutput(effective, generated.getText(), outputBlocks);
     }
 
     /**
@@ -795,18 +797,50 @@ public class GenerationPipeline implements AutoCloseable {
         if (request == null) {
             throw new IllegalArgumentException("Chat request must not be null");
         }
-        return parseEffectiveChatOutput(resolveChatRequest(request), rawText);
+        org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request effective =
+                resolveChatRequest(request);
+        String activeTemplateText = effectiveChatTemplateText();
+        String prompt = tokenizer.applyChatTemplate(effective, activeTemplateText);
+        List<org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.OutputBlockDefinition>
+                outputBlocks = prefilledOutputBlocks(effective, activeTemplateText, prompt);
+        return parseEffectiveChatOutput(effective, rawText, outputBlocks);
     }
 
     private ChatGenerationResult parseEffectiveChatOutput(
             org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request effective,
-            String rawText) {
+            String rawText,
+            List<org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.OutputBlockDefinition>
+                    outputBlocks) {
         org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate activeTemplate =
                 activeChatTemplate();
         org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.AssistantOutput normalized =
-                activeTemplate.parseAssistantOutput(rawText);
+                activeTemplate.parseAssistantOutput(rawText, outputBlocks);
         return new ChatGenerationResult(rawText, normalized, effective.getTools(),
                 effective.getToolCallFormat(), effective.getToolChoice());
+    }
+
+    private List<org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.OutputBlockDefinition>
+            prefilledOutputBlocks(
+                    org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request request,
+                    String activeTemplateText,
+                    String promptWithGeneration) {
+        if (!request.isAddGenerationPrompt()) {
+            return List.of();
+        }
+        org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request withoutGeneration =
+                org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request.builder()
+                        .messages(request.getMessages())
+                        .tools(request.getTools())
+                        .addGenerationPrompt(false)
+                        .toolDefinitionFormat(request.getToolDefinitionFormat())
+                        .toolCallFormat(request.getToolCallFormat())
+                        .toolChoice(request.getToolChoice())
+                        .templateArguments(request.getTemplateArguments())
+                        .build();
+        String promptWithoutGeneration =
+                tokenizer.applyChatTemplate(withoutGeneration, activeTemplateText);
+        return activeChatTemplate().prefilledOutputBlocks(
+                promptWithoutGeneration, promptWithGeneration);
     }
 
     private org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request resolveChatRequest(
@@ -911,8 +945,25 @@ public class GenerationPipeline implements AutoCloseable {
     static SamplingConfig samplingForChat(
             org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request request,
             SamplingConfig sampling) {
+        return samplingForChat(request, sampling, List.of());
+    }
+
+    static SamplingConfig samplingForChat(
+            org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.Request request,
+            SamplingConfig sampling,
+            List<org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.OutputBlockDefinition>
+                    outputBlocks) {
         SamplingConfig base = sampling == null
                 ? SamplingConfig.defaultConfig() : sampling;
+        List<org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.OutputBlockDefinition>
+                blocks = outputBlocks == null ? List.of() : List.copyOf(outputBlocks);
+        if (base.hasConstraint() && !blocks.isEmpty()) {
+            base = base.toBuilder()
+                    .constraintConfig(base.getConstraintConfig().toBuilder()
+                            .outputBlocks(blocks)
+                            .build())
+                    .build();
+        }
         org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolChoice choice =
                 request.getToolChoice() == null
                         ? org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate.ToolChoice.AUTO
@@ -965,6 +1016,9 @@ public class GenerationPipeline implements AutoCloseable {
                             parameterSchemasByTool);
         } else {
             constraint = ConstraintConfig.toolCall(toolNames);
+        }
+        if (!blocks.isEmpty()) {
+            constraint = constraint.toBuilder().outputBlocks(blocks).build();
         }
         return base.toBuilder().constraintConfig(constraint).build();
     }

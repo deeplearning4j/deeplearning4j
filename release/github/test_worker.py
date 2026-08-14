@@ -588,17 +588,17 @@ class WorkflowMatrixTests(unittest.TestCase):
             ROOT / "libnd4j/cmake/ZludaConfiguration.cmake"
         ).read_text()
         self.assertIn(
-            'set(CMAKE_MSVC_RUNTIME_LIBRARY\n            "MultiThreaded$<$<CONFIG:Debug>:Debug>" PARENT_SCOPE)',
+            'set(CMAKE_MSVC_RUNTIME_LIBRARY\n            "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" PARENT_SCOPE)',
             zluda_configuration,
         )
         self.assertIn(
-            'Windows ZLUDA MSVC runtime: static (/MT)',
+            'Windows ZLUDA MSVC runtime: dynamic (/MD)',
             zluda_configuration,
         )
 
         cmake_source = (ROOT / "libnd4j/CMakeLists.txt").read_text()
         self.assertIn(
-            'if(SD_ZLUDA)\n        set(_sd_cuda_msvc_runtime_flag "-MT")',
+            'if(SD_ZLUDA)\n        set(_sd_cuda_msvc_runtime_flag "-MD")',
             cmake_source,
         )
         self.assertIn(

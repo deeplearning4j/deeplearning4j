@@ -328,7 +328,7 @@ class SdxLlmCoreTokenizerTest {
         assertTrue(exports.contains("sdxLlmGenerateStreaming"));
         assertTrue(exports.contains("sdxLlmRenderChatPrompt"));
         assertTrue(exports.contains("sdxLlmParseChatResult"));
-        assertEquals("sdx-prepared-text-model-v3", SdxGgufModelPreparer.PREPARED_SCHEMA);
+        assertEquals("sdx-prepared-text-model-v4", SdxGgufModelPreparer.PREPARED_SCHEMA);
     }
 
     @Test

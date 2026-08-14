@@ -595,6 +595,12 @@ public final class SdxLlmCore implements SdxLlmModel {
         root.put("rawText", result.getRawText());
         root.put("content", result.getContent());
         root.put("reasoningContent", result.getReasoningContent());
+        ArrayNode outputBlocks = root.putArray("outputBlocks");
+        for (ChatTemplate.OutputBlock block : result.getOutputBlocks()) {
+            ObjectNode value = outputBlocks.addObject();
+            value.put("type", block.getType());
+            value.put("content", block.getContent());
+        }
         ArrayNode calls = root.putArray("toolCalls");
         for (ChatTemplate.ToolCall call : result.getToolCalls()) {
             ObjectNode value = calls.addObject();

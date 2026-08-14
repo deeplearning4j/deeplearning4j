@@ -66,9 +66,12 @@ public class ChatTemplate {
     public static final String XML_TOOL_CALL_END = "</tool_call>";
     public static final String XML_FUNCTION_START = "<function=";
     public static final String XML_PARAMETER_START = "<parameter=";
-    /** Canonical reasoning delimiters, enabled only when they occur in the imported template. */
+    /** Legacy aliases for the common thinking block; block discovery itself is delimiter-generic. */
     public static final String THINKING_START = "<think>";
     public static final String THINKING_END = "</think>";
+
+    private static final Pattern OUTPUT_BLOCK_TAG_PATTERN = Pattern.compile(
+            "<([A-Za-z][A-Za-z0-9_.:-]*)>|</([A-Za-z][A-Za-z0-9_.:-]*)>");
 
     private final String template;
     private final String bosToken;
@@ -206,26 +209,86 @@ public class ChatTemplate {
     }
 
     /**
-     * Parse model-owned terminal and reasoning delimiters without leaking those
-     * details into callers. Only delimiters declared by this imported template are
-     * active; ordinary answer text is otherwise left untouched.
+     * Discover output blocks which the rendered generation prefix opened but did not close.
+     *
+     * <p>This is derived from the imported template's actual rendered prefix, not a model name
+     * or a hard-coded block type. Multiple nested block kinds are retained in outer-to-inner
+     * order. Non-XML control sentinels such as {@code <|im_start|>} are deliberately ignored.</p>
+     */
+    public List<OutputBlockDefinition> prefilledOutputBlocks(
+            String promptWithoutGeneration, String promptWithGeneration) {
+        String base = promptWithoutGeneration == null ? "" : promptWithoutGeneration;
+        String rendered = promptWithGeneration == null ? "" : promptWithGeneration;
+        int common = 0;
+        int maximum = Math.min(base.length(), rendered.length());
+        while (common < maximum && base.charAt(common) == rendered.charAt(common)) {
+            common++;
+        }
+        String generationPrefix = rendered.substring(common);
+        List<OutputBlockDefinition> openBlocks = new ArrayList<>();
+        Matcher matcher = OUTPUT_BLOCK_TAG_PATTERN.matcher(generationPrefix);
+        while (matcher.find()) {
+            String openingName = matcher.group(1);
+            String closingName = matcher.group(2);
+            if (openingName != null) {
+                String closingDelimiter = "</" + openingName + ">";
+                if (template.contains(closingDelimiter)) {
+                    openBlocks.add(new OutputBlockDefinition(
+                            openingName, "<" + openingName + ">", closingDelimiter));
+                }
+            } else if (closingName != null && !openBlocks.isEmpty()
+                    && closingName.equals(openBlocks.get(openBlocks.size() - 1).getType())) {
+                openBlocks.remove(openBlocks.size() - 1);
+            }
+        }
+        return List.copyOf(openBlocks);
+    }
+
+    /**
+     * Parse model-owned terminal and output-block delimiters without leaking those
+     * details into callers. Ordinary answer text is otherwise left untouched.
      */
     public AssistantOutput parseAssistantOutput(String rawText) {
+        return parseAssistantOutput(rawText, List.of());
+    }
+
+    /**
+     * Parse output after a template generation prefix pre-opened one or more blocks.
+     * Generated text closes the innermost block first; every block is retained independently.
+     */
+    public AssistantOutput parseAssistantOutput(
+            String rawText, List<OutputBlockDefinition> prefilledBlocks) {
         String raw = rawText == null ? "" : rawText;
         String value = stripTerminalToken(raw, eosToken).trim();
         List<String> errors = new ArrayList<>();
-        String reasoning = "";
-        if (template.contains(THINKING_START) && template.contains(THINKING_END)
-                && value.startsWith(THINKING_START)) {
+        List<OutputBlock> blocks = new ArrayList<>();
+        List<OutputBlockDefinition> definitions = prefilledBlocks == null
+                ? List.of() : List.copyOf(prefilledBlocks);
+
+        for (int index = definitions.size() - 1; index >= 0; index--) {
+            OutputBlockDefinition definition = definitions.get(index);
+            int end = value.indexOf(definition.getClosingDelimiter());
+            if (end < 0) {
+                errors.add("incomplete model output block: " + definition.getType());
+                return new AssistantOutput(raw, "", blocks, errors);
+            }
+            blocks.add(new OutputBlock(definition.getType(), value.substring(0, end).trim()));
+            value = value.substring(end + definition.getClosingDelimiter().length()).trim();
+        }
+
+        // Backward-compatible parsing for outputs which include their own complete think block.
+        if (definitions.isEmpty() && template.contains(THINKING_START)
+                && template.contains(THINKING_END) && value.startsWith(THINKING_START)) {
             int end = value.indexOf(THINKING_END, THINKING_START.length());
             if (end < 0) {
-                errors.add("incomplete model reasoning block");
-                return new AssistantOutput(raw, "", "", errors);
+                errors.add("incomplete model output block: think");
+                return new AssistantOutput(raw, "", blocks, errors);
             }
-            reasoning = value.substring(THINKING_START.length(), end).trim();
+            blocks.add(new OutputBlock(
+                    "think", value.substring(THINKING_START.length(), end).trim()));
             value = value.substring(end + THINKING_END.length()).trim();
         }
-        return new AssistantOutput(raw, value, reasoning, errors);
+        return new AssistantOutput(raw, value, blocks, errors);
     }
 
     private static String stripTerminalToken(String value, String terminalToken) {
@@ -239,24 +302,66 @@ public class ChatTemplate {
         return result;
     }
 
-    /** Model-normalized assistant output with reasoning kept separate from answer content. */
+    /** One template-declared output block and its exact delimiters. */
+    @Data
+    public static final class OutputBlockDefinition {
+        private final String type;
+        private final String openingDelimiter;
+        private final String closingDelimiter;
+
+        public OutputBlockDefinition(
+                String type, String openingDelimiter, String closingDelimiter) {
+            if (type == null || type.isBlank()) {
+                throw new IllegalArgumentException("Output block type must not be blank");
+            }
+            if (openingDelimiter == null || openingDelimiter.isEmpty()
+                    || closingDelimiter == null || closingDelimiter.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Output block delimiters must not be empty for " + type);
+            }
+            this.type = type;
+            this.openingDelimiter = openingDelimiter;
+            this.closingDelimiter = closingDelimiter;
+        }
+    }
+
+    /** Parsed content from one template-declared output block. */
+    @Data
+    public static final class OutputBlock {
+        private final String type;
+        private final String content;
+
+        public OutputBlock(String type, String content) {
+            this.type = type == null ? "" : type;
+            this.content = content == null ? "" : content;
+        }
+    }
+
+    /** Model-normalized assistant output with every prefix block kept separate from content. */
     public static final class AssistantOutput {
         private final String rawText;
         private final String content;
-        private final String reasoningContent;
+        private final List<OutputBlock> outputBlocks;
         private final List<String> errors;
 
-        public AssistantOutput(String rawText, String content, String reasoningContent,
+        public AssistantOutput(String rawText, String content, List<OutputBlock> outputBlocks,
                                List<String> errors) {
             this.rawText = rawText == null ? "" : rawText;
             this.content = content == null ? "" : content;
-            this.reasoningContent = reasoningContent == null ? "" : reasoningContent;
+            this.outputBlocks = outputBlocks == null ? List.of() : List.copyOf(outputBlocks);
             this.errors = errors == null ? List.of() : List.copyOf(errors);
         }
 
         public String getRawText() { return rawText; }
         public String getContent() { return content; }
-        public String getReasoningContent() { return reasoningContent; }
+        public List<OutputBlock> getOutputBlocks() { return outputBlocks; }
+        public String getReasoningContent() {
+            return outputBlocks.stream()
+                    .filter(block -> "think".equals(block.getType()))
+                    .map(OutputBlock::getContent)
+                    .findFirst()
+                    .orElse("");
+        }
         public List<String> getErrors() { return errors; }
     }
 
