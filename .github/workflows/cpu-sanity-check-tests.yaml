@@ -59,14 +59,14 @@ jobs:
       - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: cache-cmake
         with:
           path: /opt/cmake
           key: ${{ runner.os }}-${{ runner.arch }}-cmake
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-cmake
       - name: Cache protobuf install
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         id: cache-protobuf
         with:
           path: /opt/protobuf
@@ -79,7 +79,7 @@ jobs:
 
 
       - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 11
           distribution: 'temurin'
@@ -239,7 +239,7 @@ jobs:
           Get-PSDrive C | Select-Object Used,Free
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 11
           distribution: 'temurin'
@@ -319,7 +319,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Set up Java for publishing to OSSRH
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 11
           distribution: 'temurin'

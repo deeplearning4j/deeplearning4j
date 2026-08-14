@@ -72,7 +72,7 @@ jobs:
         uses: AutoModality/action-clean@v1
 
       - name: Set up Java 11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 11
           distribution: 'temurin'
@@ -257,7 +257,7 @@ jobs:
 
       - name: Upload logs and reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zluda-smoke-${{ inputs.zludaTarget }}-${{ inputs.backendArtifactId }}
           path: |

@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Java 11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 11
           distribution: temurin
@@ -102,7 +102,7 @@ jobs:
 
       - name: Upload coexistence logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cuda-vulkan-coexistence
           path: |

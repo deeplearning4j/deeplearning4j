@@ -97,7 +97,7 @@ runs:
         fi
 
     - name: Upload workflow artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: sdx-llm-aot-${{ inputs.platform }}${{ inputs.platform-extension }}-${{ inputs.variant }}
         path: nd4j/sdx-aot/target/sdx-aot-*-aot.zip

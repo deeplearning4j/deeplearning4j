@@ -104,7 +104,7 @@ jobs:
         with:
           ref: ${{ inputs.sourceRef }}
       - name: Restore managed dependency downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.libnd4j
           key: dl4j-dependency-v4-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-${{ hashFiles('libnd4j/cmake/Dependencies.cmake', 'libnd4j/cmake/ZludaConfiguration.cmake', 'release/aws/build-platform.py', 'release/github/bootstrap-worker.sh', 'release/github/bootstrap-worker.ps1') }}
@@ -124,7 +124,7 @@ jobs:
           azure-cache-connection-string: ${{ secrets.AZURE_SCCACHE_CONNECTION_STRING }}
       - name: Upload staged worker result
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-worker-${{ matrix.artifactId }}
           path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
@@ -148,7 +148,7 @@ jobs:
         with:
           ref: ${{ inputs.sourceRef }}
       - name: Restore managed dependency downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.libnd4j
           key: dl4j-dependency-v4-${{ runner.os }}-${{ matrix.dependencyCacheKey }}-${{ hashFiles('libnd4j/cmake/Dependencies.cmake', 'libnd4j/cmake/ZludaConfiguration.cmake', 'release/aws/build-platform.py', 'release/github/bootstrap-worker.sh', 'release/github/bootstrap-worker.ps1') }}
@@ -168,7 +168,7 @@ jobs:
           azure-cache-connection-string: ${{ secrets.AZURE_SCCACHE_CONNECTION_STRING }}
       - name: Upload staged worker result
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-worker-${{ matrix.artifactId }}
           path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
@@ -192,7 +192,7 @@ jobs:
         with:
           ref: ${{ inputs.sourceRef }}
       - name: Download staged worker result
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-worker-${{ matrix.artifactId }}
           path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
@@ -216,7 +216,7 @@ jobs:
           fi
       - name: Configure Maven Central snapshots
         if: steps.staged.outputs.publish == 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "11"
@@ -254,7 +254,7 @@ jobs:
         with:
           ref: ${{ inputs.sourceRef }}
       - name: Download staged worker result
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-worker-${{ matrix.artifactId }}
           path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
@@ -278,7 +278,7 @@ jobs:
           fi
       - name: Configure Maven Central snapshots
         if: steps.staged.outputs.publish == 'true'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "11"

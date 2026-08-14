@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Java 11
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 11
           distribution: 'temurin'
@@ -92,7 +92,7 @@ jobs:
 
       - name: Download mps-compile native artifact
         if: ${{ inputs.useNativeArtifact == 'true' }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           # build-deploy-mac-arm64.yml uploads `sdk-jars-<job>-<helper||default>-<extension||base>`;
           # for the mps-compile leg (helper=mps-compile, extension="") that resolves to the -base suffix.
@@ -149,7 +149,7 @@ jobs:
 
       - name: Upload logs and reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: metal-smoke
           path: |

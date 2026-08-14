@@ -362,6 +362,30 @@ class WorkflowMatrixTests(unittest.TestCase):
             if "uses: ./.github/workflows/_release-worker.yml" in contents:
                 self.assertIn("secrets: inherit", contents, caller.name)
 
+    def test_github_actions_use_current_node24_runtimes(self):
+        github_files = sorted((ROOT / ".github").rglob("*.yml"))
+        github_files.extend(sorted((ROOT / ".github").rglob("*.yaml")))
+        contents = {path: path.read_text() for path in github_files}
+        deprecated = (
+            "actions/setup-java@v4",
+            "actions/download-artifact@v4",
+            "actions/upload-artifact@v4",
+            "actions/cache@v4",
+            "actions/github-script@v7",
+        )
+        for path, text in contents.items():
+            for action in deprecated:
+                self.assertNotIn(action, text, path)
+        combined = "\n".join(contents.values())
+        for action in (
+            "actions/setup-java@v5",
+            "actions/download-artifact@v8",
+            "actions/upload-artifact@v7",
+            "actions/cache@v6",
+            "actions/github-script@v9",
+        ):
+            self.assertIn(action, combined)
+
     def test_linux_bootstrap_pins_a_supported_maven(self):
         bootstrap = (ROOT / "release/github/bootstrap-worker.sh").read_text()
         self.assertIn("ensure_modern_maven()", bootstrap)
