@@ -615,8 +615,20 @@ def snapshot_deploy_commands(
     return commands
 
 
+def resolve_maven_command(maven_executable: str, os_name: str | None = None) -> list[str]:
+    """Resolve Maven's platform launcher into a subprocess-safe command prefix."""
+    resolved = shutil.which(maven_executable)
+    if not resolved:
+        raise FileNotFoundError(f"Maven executable {maven_executable!r} was not found on PATH")
+    if (os_name or os.name) == "nt" and Path(resolved).suffix.lower() in {".bat", ".cmd"}:
+        return [os.environ.get("COMSPEC", "cmd.exe"), "/d", "/c", resolved]
+    return [resolved]
+
+
 def deploy_snapshot(repository: Path, version: str, repository_id: str, url: str, maven_executable: str = "mvn") -> None:
+    maven_command = resolve_maven_command(maven_executable)
     for index, command in enumerate(snapshot_deploy_commands(repository, version, repository_id, url, maven_executable), start=1):
+        command = [*maven_command, *command[1:]]
         print(json.dumps({"snapshotComponent": index, "command": command}), flush=True)
         subprocess.run(command, check=True)
 

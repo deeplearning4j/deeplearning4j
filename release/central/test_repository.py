@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -295,6 +296,87 @@ class MavenMetadataTests(unittest.TestCase):
                             "1.0.0-SNAPSHOT",
                             updated=invalid_timestamp,
                         )
+
+
+class MavenExecutableTests(unittest.TestCase):
+    def test_windows_maven_cmd_uses_command_interpreter(self):
+        with (
+            mock.patch.object(
+                repository.shutil,
+                "which",
+                return_value=r"C:\hostedtoolcache\windows\maven\bin\mvn.cmd",
+            ),
+            mock.patch.dict(
+                repository.os.environ,
+                {"COMSPEC": r"C:\Windows\System32\cmd.exe"},
+            ),
+        ):
+            self.assertEqual(
+                [
+                    r"C:\Windows\System32\cmd.exe",
+                    "/d",
+                    "/c",
+                    r"C:\hostedtoolcache\windows\maven\bin\mvn.cmd",
+                ],
+                repository.resolve_maven_command("mvn", os_name="nt"),
+            )
+
+    def test_native_maven_executable_is_used_directly(self):
+        with mock.patch.object(
+            repository.shutil,
+            "which",
+            return_value="/opt/apache-maven/bin/mvn",
+        ):
+            self.assertEqual(
+                ["/opt/apache-maven/bin/mvn"],
+                repository.resolve_maven_command("mvn", os_name="posix"),
+            )
+
+    def test_missing_maven_executable_has_actionable_error(self):
+        with mock.patch.object(repository.shutil, "which", return_value=None):
+            with self.assertRaisesRegex(FileNotFoundError, "was not found on PATH"):
+                repository.resolve_maven_command("mvn", os_name="nt")
+
+    def test_snapshot_deploy_uses_resolved_windows_command_prefix(self):
+        version = "1.0.0-SNAPSHOT"
+        with tempfile.TemporaryDirectory() as temporary:
+            version_dir = (
+                Path(temporary)
+                / "org/eclipse/deeplearning4j/nd4j-native"
+                / version
+            )
+            version_dir.mkdir(parents=True)
+            base = version_dir / f"nd4j-native-{version}"
+            Path(str(base) + ".pom").write_text(
+                "<project><modelVersion>4.0.0</modelVersion></project>\n",
+                encoding="utf-8",
+            )
+            Path(str(base) + "-windows-x86_64-avx512.jar").write_bytes(
+                b"PK\x03\x04test-jar"
+            )
+            prefix = ["cmd.exe", "/d", "/c", "mvn.cmd"]
+            with (
+                mock.patch.object(
+                    repository,
+                    "resolve_maven_command",
+                    return_value=prefix,
+                ),
+                mock.patch.object(repository.subprocess, "run") as run,
+            ):
+                repository.deploy_snapshot(
+                    Path(temporary),
+                    version,
+                    "central-portal-snapshots",
+                    "https://example.invalid/snapshots/",
+                )
+
+            command = run.call_args.args[0]
+            self.assertEqual(prefix, command[:len(prefix)])
+            self.assertIn(
+                "-Dclassifiers=windows-x86_64-avx512",
+                command,
+            )
+            run.assert_called_once_with(command, check=True)
 
 
 if __name__ == "__main__":
