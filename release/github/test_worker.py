@@ -27,6 +27,19 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("workflow:\n        description: Canonical release workflow matrix to execute.", workflow)
         self.assertIn("workflow: ${{ inputs.workflow }}", workflow)
 
+    def test_reusable_worker_resolves_abbreviated_source_refs_once(self):
+        workflow = (ROOT / ".github/workflows/_release-worker.yml").read_text()
+        self.assertIn("const ref = process.env.SOURCE_REF || context.sha;", workflow)
+        self.assertIn("github.rest.repos.getCommit", workflow)
+        self.assertIn("source: ${{ steps.source.outputs.result }}", workflow)
+        self.assertEqual(
+            1, workflow.count("ref: ${{ steps.source.outputs.result }}")
+        )
+        self.assertEqual(
+            4, workflow.count("ref: ${{ needs.matrix.outputs.source }}")
+        )
+        self.assertNotIn("ref: ${{ inputs.sourceRef }}", workflow)
+
     def test_every_dispatch_caller_requires_explicit_targeted_retry_mode(self):
         for workflow_name in self.matrix["workflows"]:
             workflow = (ROOT / ".github/workflows" / workflow_name).read_text()

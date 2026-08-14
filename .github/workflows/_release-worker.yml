@@ -57,12 +57,28 @@ jobs:
   matrix:
     runs-on: ubuntu-22.04
     outputs:
+      source: ${{ steps.source.outputs.result }}
       linux: ${{ steps.rows.outputs.linux }}
       host: ${{ steps.rows.outputs.host }}
     steps:
+      - name: Resolve source ref
+        id: source
+        uses: actions/github-script@v9
+        env:
+          SOURCE_REF: ${{ inputs.sourceRef }}
+        with:
+          result-encoding: string
+          script: |
+            const ref = process.env.SOURCE_REF || context.sha;
+            const { data } = await github.rest.repos.getCommit({
+              ...context.repo,
+              ref,
+            });
+            core.info(`Resolved source ref ${ref} to ${data.sha}`);
+            return data.sha;
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.sourceRef }}
+          ref: ${{ steps.source.outputs.result }}
       - name: Resolve canonical worker matrix
         id: rows
         shell: bash
@@ -102,7 +118,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.sourceRef }}
+          ref: ${{ needs.matrix.outputs.source }}
       - name: Restore managed dependency downloads
         uses: actions/cache@v6
         with:
@@ -146,7 +162,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.sourceRef }}
+          ref: ${{ needs.matrix.outputs.source }}
       - name: Restore managed dependency downloads
         uses: actions/cache@v6
         with:
@@ -190,7 +206,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.sourceRef }}
+          ref: ${{ needs.matrix.outputs.source }}
       - name: Download staged worker result
         uses: actions/download-artifact@v8
         with:
@@ -252,7 +268,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.sourceRef }}
+          ref: ${{ needs.matrix.outputs.source }}
       - name: Download staged worker result
         uses: actions/download-artifact@v8
         with:
