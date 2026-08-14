@@ -57,6 +57,22 @@ class WorkflowMatrixTests(unittest.TestCase):
         }
         self.assertEqual(plan_shards, mapped_shards)
 
+    def test_every_plan_variant_is_reachable_from_a_canonical_workflow(self):
+        plan_shards = prepare_worker.plan_shards(self.plan)
+        expected = {
+            f'{shard_id}--{variant["name"]}'
+            for shard_id, shard in plan_shards.items()
+            for variant in shard["build"].get("variants", [])
+        }
+        actual = set()
+        for workflow in self.plan["coveredWorkflows"]:
+            rows = (
+                prepare_worker.workflow_rows(self.plan, self.matrix, workflow, "linux")
+                + prepare_worker.workflow_rows(self.plan, self.matrix, workflow, "host")
+            )
+            actual.update(row["selector"] for row in rows)
+        self.assertEqual(expected, actual)
+
     def test_every_matrix_row_is_an_explicit_plan_variant(self):
         plan_shards = prepare_worker.plan_shards(self.plan)
         for workflow in self.plan["coveredWorkflows"]:
