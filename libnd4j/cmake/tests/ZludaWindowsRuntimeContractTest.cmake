@@ -16,6 +16,16 @@ if(_windows_hip_sdk_contract EQUAL -1)
         "Windows ZLUDA must not require the Linux libamdhip64 packaging contract")
 endif()
 
+file(READ "${LIBND4J_SOURCE_DIR}/cmake/BuildSDX.cmake"
+    _sdx_configuration)
+string(FIND "${_sdx_configuration}"
+    "(NOT WIN32 AND NOT ROCM_HIP_RUNTIME_LIBRARY)"
+    _windows_sdx_hip_sdk_contract)
+if(_windows_sdx_hip_sdk_contract EQUAL -1)
+    message(FATAL_ERROR
+        "Windows ZLUDA SDX must not require the Linux libamdhip64 packaging contract")
+endif()
+
 set(_fixture "${CMAKE_CURRENT_BINARY_DIR}/zluda-windows-runtime-contract")
 file(REMOVE_RECURSE "${_fixture}")
 file(MAKE_DIRECTORY "${_fixture}/bin" "${_fixture}/lib")
