@@ -150,6 +150,30 @@ def workflow_rows(
         )
     if selection_mode == "targeted" and not requested:
         raise ValueError("targeted matrix selection requires at least one classifier")
+
+    def available_selectors(workflow_name: str) -> set[str]:
+        selectors: set[str] = set()
+        for selection in workflows[workflow_name]:
+            shard_id = str(selection["shard"])
+            if shard_id not in shards:
+                continue
+            variants = shards[shard_id]["build"].get("variants", [])
+            variant_names = [str(variant["name"]) for variant in variants]
+            selected_names = [
+                str(name) for name in (selection.get("variants") or variant_names)
+            ]
+            selectors.update(f"{shard_id}--{name}" for name in selected_names)
+        return selectors
+
+    if requested and not requested.issubset(available_selectors(workflow)):
+        owners = [
+            workflow_name
+            for workflow_name in workflows
+            if requested.issubset(available_selectors(workflow_name))
+        ]
+        if len(owners) == 1:
+            workflow = owners[0]
+
     selections: list[tuple[str, dict, dict[str, dict], list[str]]] = []
     available: set[str] = set()
     for selection in workflows[workflow]:

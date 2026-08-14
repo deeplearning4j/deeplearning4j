@@ -169,6 +169,20 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertEqual("android-arm64-vulkan-base", rows[0]["artifactId"])
         self.assertEqual("android-arm64-vulkan--base", rows[0]["selector"])
 
+    def test_targeted_classifier_auto_resolves_unique_canonical_workflow(self):
+        rows = prepare_worker.workflow_rows(
+            self.plan,
+            self.matrix,
+            "build-deploy-cross-platform.yml",
+            "host",
+            classifiers="windows-x86_64-zluda--zluda",
+            selection_mode="targeted",
+        )
+        self.assertEqual(
+            [("windows-x86_64-zluda", "zluda")],
+            [(row["shard"], row["variant"]) for row in rows],
+        )
+
     def test_classifier_filter_rejects_unknown_row(self):
         with self.assertRaisesRegex(ValueError, "does not contain requested classifiers"):
             prepare_worker.workflow_rows(

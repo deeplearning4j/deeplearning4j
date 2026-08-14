@@ -24,7 +24,7 @@ on:
         required: false
         default: ""
       classifiers:
-        description: Comma-separated exact shard--variant names; requires targetedRetry=1.
+        description: Exact shard--variant names; requires targetedRetry=1 and auto-resolves a unique canonical matrix.
         required: false
         default: ""
       targetedRetry:
