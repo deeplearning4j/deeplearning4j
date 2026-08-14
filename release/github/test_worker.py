@@ -381,6 +381,7 @@ class WorkflowMatrixTests(unittest.TestCase):
             ROOT / ".github/workflows/build-deploy-cross-platform.yml"
         ).read_text()
         self.assertIn("publishSourceRunId:", caller)
+        self.assertIn("permissions:\n  actions: read\n  contents: read", caller)
         self.assertIn("if: inputs.publishSourceRunId == ''", caller)
         self.assertIn("if: inputs.publishSourceRunId != ''", caller)
         self.assertIn(

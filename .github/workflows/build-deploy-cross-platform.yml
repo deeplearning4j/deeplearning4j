@@ -58,6 +58,10 @@ on:
         required: false
         default: release-worker-*
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   release:
     if: inputs.publishSourceRunId == ''
