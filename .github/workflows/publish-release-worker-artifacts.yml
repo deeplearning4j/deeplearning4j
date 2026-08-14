@@ -1,6 +1,22 @@
 name: Publish staged release worker artifacts
 
 on:
+  workflow_call:
+    inputs:
+      sourceRunId:
+        description: GitHub Actions run ID containing release-worker-* artifacts.
+        required: true
+        type: string
+      artifactPattern:
+        description: Glob selecting staged worker artifacts from the source run.
+        required: false
+        default: release-worker-*
+        type: string
+    secrets:
+      CENTRAL_SONATYPE_TOKEN_USERNAME:
+        required: true
+      CENTRAL_SONATYPE_TOKEN_PASSWORD:
+        required: true
   workflow_dispatch:
     inputs:
       sourceRunId:

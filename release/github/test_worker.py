@@ -377,6 +377,17 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("repository.py deploy-snapshot", workflow)
         self.assertNotIn("run-release-worker", workflow)
 
+        caller = (
+            ROOT / ".github/workflows/build-deploy-cross-platform.yml"
+        ).read_text()
+        self.assertIn("publishSourceRunId:", caller)
+        self.assertIn("if: inputs.publishSourceRunId == ''", caller)
+        self.assertIn("if: inputs.publishSourceRunId != ''", caller)
+        self.assertIn(
+            "uses: ./.github/workflows/publish-release-worker-artifacts.yml",
+            caller,
+        )
+
     def test_github_actions_use_current_node24_runtimes(self):
         github_files = sorted((ROOT / ".github").rglob("*.yml"))
         github_files.extend(sorted((ROOT / ".github").rglob("*.yaml")))

@@ -49,9 +49,18 @@ on:
         type: choice
         options: ["0", "1"]
         default: "0"
+      publishSourceRunId:
+        description: Publish staged release-worker artifacts from this run ID without rebuilding.
+        required: false
+        default: ""
+      publishArtifactPattern:
+        description: Glob selecting staged worker artifacts when publishSourceRunId is set.
+        required: false
+        default: release-worker-*
 
 jobs:
   release:
+    if: inputs.publishSourceRunId == ''
     uses: ./.github/workflows/_release-worker.yml
     with:
       workflow: ${{ inputs.workflow }}
@@ -64,4 +73,12 @@ jobs:
       libnd4jUrl: ${{ inputs.libnd4jUrl }}
       buildAot: ${{ inputs.buildAot }}
       aotAllSpins: ${{ inputs.aotAllSpins }}
+    secrets: inherit
+
+  publish-staged:
+    if: inputs.publishSourceRunId != ''
+    uses: ./.github/workflows/publish-release-worker-artifacts.yml
+    with:
+      sourceRunId: ${{ inputs.publishSourceRunId }}
+      artifactPattern: ${{ inputs.publishArtifactPattern }}
     secrets: inherit
