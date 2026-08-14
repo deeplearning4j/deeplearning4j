@@ -977,6 +977,8 @@ template <typename F>
 Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
 #if defined(HAVE_ZLUDA)
   THROW_EXCEPTION("Cholesky factorization requires cuSolver and is not supported by the ZLUDA backend");
+  // THROW_EXCEPTION is not declared [[noreturn]], so MSVC requires this.
+  return Status::OK;
 #else
   if (!inplace) output->assign(input);
   auto tempOutput = output->dup();

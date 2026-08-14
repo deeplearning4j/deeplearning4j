@@ -55,12 +55,12 @@ ${_source}"
 endforeach()
 
 set(_zluda_cholesky_contract
-"Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {\n#if defined(HAVE_ZLUDA)\n  THROW_EXCEPTION(\"Cholesky factorization requires cuSolver and is not supported by the ZLUDA backend\");\n#else")
+"Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {\n#if defined(HAVE_ZLUDA)\n  THROW_EXCEPTION(\"Cholesky factorization requires cuSolver and is not supported by the ZLUDA backend\");\n  // THROW_EXCEPTION is not declared [[noreturn]], so MSVC requires this.\n  return Status::OK;\n#else")
 string(FIND "${_lup_source}" "${_zluda_cholesky_contract}"
     _zluda_cholesky_contract_index)
 if(_zluda_cholesky_contract_index EQUAL -1)
     message(FATAL_ERROR
-        "ZLUDA Cholesky implementation still admits direct cuSolver references")
+        "ZLUDA Cholesky implementation must reject cuSolver and return explicitly for MSVC")
 endif()
 
 foreach(_required_java_contract IN ITEMS
