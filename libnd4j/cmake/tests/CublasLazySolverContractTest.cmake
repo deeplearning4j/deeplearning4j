@@ -4,19 +4,22 @@ endif()
 
 set(_cublas_helper
     "${LIBND4J_SOURCE_DIR}/include/helpers/cuda/cublasHelper.cu")
+set(_lup_helper
+    "${LIBND4J_SOURCE_DIR}/include/ops/declarable/helpers/cuda/lup.cu")
 set(_zluda_runtime
     "${LIBND4J_SOURCE_DIR}/include/execution/ZludaRuntime.h")
 get_filename_component(_repository_root "${LIBND4J_SOURCE_DIR}" DIRECTORY)
 set(_cuda_zero_handler
     "${_repository_root}/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda-backend-common/src/main/java/org/nd4j/jita/handler/impl/CudaZeroHandler.java")
 foreach(_contract_file IN ITEMS
-        "${_cublas_helper}" "${_zluda_runtime}" "${_cuda_zero_handler}")
+        "${_cublas_helper}" "${_lup_helper}" "${_zluda_runtime}" "${_cuda_zero_handler}")
     if(NOT EXISTS "${_contract_file}")
         message(FATAL_ERROR "Missing cuSolver contract input: ${_contract_file}")
     endif()
 endforeach()
 
 file(READ "${_cublas_helper}" _source)
+file(READ "${_lup_helper}" _lup_source)
 file(READ "${_zluda_runtime}" _zluda_source)
 file(READ "${_cuda_zero_handler}" _java_source)
 
@@ -50,6 +53,15 @@ ${_source}"
             "ZLUDA cuSolver capability contract omitted: ${_required_zluda_contract}")
     endif()
 endforeach()
+
+set(_zluda_cholesky_contract
+"Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {\n#if defined(HAVE_ZLUDA)\n  THROW_EXCEPTION(\"Cholesky factorization requires cuSolver and is not supported by the ZLUDA backend\");\n#else")
+string(FIND "${_lup_source}" "${_zluda_cholesky_contract}"
+    _zluda_cholesky_contract_index)
+if(_zluda_cholesky_contract_index EQUAL -1)
+    message(FATAL_ERROR
+        "ZLUDA Cholesky implementation still admits direct cuSolver references")
+endif()
 
 foreach(_required_java_contract IN ITEMS
         "private cusolverDnHandle_t getCudaSolverHandle(OpaqueLaunchContext lc)"

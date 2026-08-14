@@ -975,6 +975,9 @@ template SD_KERNEL SD_INLINE void adjustResultsKernel<double>(double *dArray, co
 
 template <typename F>
 Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
+#if defined(HAVE_ZLUDA)
+  THROW_EXCEPTION("Cholesky factorization requires cuSolver and is not supported by the ZLUDA backend");
+#else
   if (!inplace) output->assign(input);
   auto tempOutput = output->dup();
   cusolverDnHandle_t handle = nullptr;
@@ -1137,6 +1140,7 @@ Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool 
   NDArray::registerSpecialUse({output}, {input});
   cusolverDnDestroy(handle);
   return Status::OK;
+#endif
 }
 
 //    template <typename T>
