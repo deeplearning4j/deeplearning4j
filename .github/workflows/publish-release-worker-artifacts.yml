@@ -1,0 +1,136 @@
+name: Publish staged release worker artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      sourceRunId:
+        description: GitHub Actions run ID containing release-worker-* artifacts.
+        required: true
+        type: string
+      artifactPattern:
+        description: Glob selecting staged worker artifacts from the source run.
+        required: false
+        default: release-worker-*
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-22.04
+    outputs:
+      artifacts: ${{ steps.artifacts.outputs.artifacts }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Resolve staged worker artifacts
+        id: artifacts
+        uses: actions/github-script@v9
+        env:
+          SOURCE_RUN_ID: ${{ inputs.sourceRunId }}
+          ARTIFACT_PATTERN: ${{ inputs.artifactPattern }}
+        with:
+          script: |
+            const runId = Number.parseInt(process.env.SOURCE_RUN_ID, 10);
+            if (!Number.isSafeInteger(runId) || runId <= 0) {
+              core.setFailed(`Invalid source run ID: ${process.env.SOURCE_RUN_ID}`);
+              return;
+            }
+            const pattern = process.env.ARTIFACT_PATTERN || 'release-worker-*';
+            const escaped = pattern
+              .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+              .replaceAll('*', '.*')
+              .replaceAll('?', '.');
+            const matcher = new RegExp(`^${escaped}$`);
+            const artifacts = await github.paginate(
+              github.rest.actions.listWorkflowRunArtifacts,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId,
+                per_page: 100,
+              },
+            );
+            const rows = artifacts
+              .filter((artifact) => !artifact.expired && matcher.test(artifact.name))
+              .sort((left, right) => left.name.localeCompare(right.name))
+              .map((artifact) => ({ name: artifact.name }));
+            if (rows.length === 0) {
+              core.setFailed(
+                `No unexpired artifacts matching ${pattern} were found in run ${runId}`,
+              );
+              return;
+            }
+            core.info(`Publishing ${rows.length} staged worker artifact(s) from run ${runId}`);
+            core.setOutput('artifacts', JSON.stringify(rows));
+
+  publish:
+    needs: matrix
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.artifacts) }}
+    name: publish / ${{ matrix.name }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download staged worker artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ github.workspace }}/.release-worker-recovery/${{ matrix.name }}
+          run-id: ${{ inputs.sourceRunId }}
+          github-token: ${{ github.token }}
+      - name: Inspect staged worker artifact
+        id: staged
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          artifact_root="${GITHUB_WORKSPACE}/.release-worker-recovery/${{ matrix.name }}"
+          if [ ! -f "${artifact_root}/worker-success" ]; then
+            printf 'publish=false\n' >>"${GITHUB_OUTPUT}"
+            printf 'Skipping %s because worker-success is absent.\n' "${{ matrix.name }}" \
+              >>"${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          release_version=$(python3 release/github/prepare-worker.py release-version \
+            --config "${artifact_root}/worker-config.json")
+          if [[ "${release_version}" != *-SNAPSHOT ]]; then
+            printf 'publish=false\n' >>"${GITHUB_OUTPUT}"
+            printf 'Skipping %s because version %s is not a snapshot.\n' \
+              "${{ matrix.name }}" "${release_version}" >>"${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          if [ ! -d "${artifact_root}/maven-repository" ]; then
+            printf 'Missing staged Maven repository for %s.\n' "${{ matrix.name }}" >&2
+            exit 1
+          fi
+          printf 'release-version=%s\n' "${release_version}" >>"${GITHUB_OUTPUT}"
+          printf 'publish=true\n' >>"${GITHUB_OUTPUT}"
+      - name: Configure Maven Central snapshots
+        if: steps.staged.outputs.publish == 'true'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "11"
+          server-id: central-portal-snapshots
+          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
+          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
+      - name: Publish staged Maven snapshot
+        if: steps.staged.outputs.publish == 'true'
+        shell: bash
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          artifact_root="${GITHUB_WORKSPACE}/.release-worker-recovery/${{ matrix.name }}"
+          python3 release/central/repository.py deploy-snapshot \
+            --repository "${artifact_root}/maven-repository" \
+            --release-version "${{ steps.staged.outputs.release-version }}" \
+            --repository-id central-portal-snapshots \
+            --url https://central.sonatype.com/repository/maven-snapshots/ \
+            --maven-executable mvn

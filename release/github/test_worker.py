@@ -362,6 +362,21 @@ class WorkflowMatrixTests(unittest.TestCase):
             if "uses: ./.github/workflows/_release-worker.yml" in contents:
                 self.assertIn("secrets: inherit", contents, caller.name)
 
+    def test_staged_worker_artifacts_can_be_republished_without_rebuilding(self):
+        workflow = (
+            ROOT / ".github/workflows/publish-release-worker-artifacts.yml"
+        ).read_text()
+
+        self.assertIn("sourceRunId:", workflow)
+        self.assertIn("artifactPattern:", workflow)
+        self.assertIn("listWorkflowRunArtifacts", workflow)
+        self.assertIn("actions/download-artifact@v8", workflow)
+        self.assertIn("run-id: ${{ inputs.sourceRunId }}", workflow)
+        self.assertIn("max-parallel: 1", workflow)
+        self.assertIn('if [ ! -f "${artifact_root}/worker-success" ]', workflow)
+        self.assertIn("repository.py deploy-snapshot", workflow)
+        self.assertNotIn("run-release-worker", workflow)
+
     def test_github_actions_use_current_node24_runtimes(self):
         github_files = sorted((ROOT / ".github").rglob("*.yml"))
         github_files.extend(sorted((ROOT / ".github").rglob("*.yaml")))
