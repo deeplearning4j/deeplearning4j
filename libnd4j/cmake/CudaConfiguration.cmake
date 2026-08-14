@@ -442,7 +442,12 @@ function(configure_cuda_linking main_target_name)
             endif()
         endif()
 
-        if(ZLUDA_TARGET_BACKEND STREQUAL "AMD")
+        # Linux classifiers bundle the project-pinned ROCm user-space
+        # closure. Official Windows ZLUDA packages instead target AMD's Windows
+        # HIP SDK: no HIP headers or amdhip64 import/runtime library participate
+        # in this CUDA-ABI build, and the release plan deliberately carries no
+        # Linux ROCm SDK contract for that shard.
+        if(ZLUDA_TARGET_BACKEND STREQUAL "AMD" AND NOT WIN32)
             if(NOT ROCM_HIP_RUNTIME_LIBRARY OR
                NOT EXISTS "${ROCM_HIP_RUNTIME_LIBRARY}")
                 message(FATAL_ERROR

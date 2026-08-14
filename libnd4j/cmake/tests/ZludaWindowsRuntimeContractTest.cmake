@@ -6,6 +6,16 @@ endif()
 
 include("${LIBND4J_SOURCE_DIR}/cmake/ZludaConfiguration.cmake")
 
+file(READ "${LIBND4J_SOURCE_DIR}/cmake/CudaConfiguration.cmake"
+    _cuda_configuration)
+string(FIND "${_cuda_configuration}"
+    "if(ZLUDA_TARGET_BACKEND STREQUAL \"AMD\" AND NOT WIN32)"
+    _windows_hip_sdk_contract)
+if(_windows_hip_sdk_contract EQUAL -1)
+    message(FATAL_ERROR
+        "Windows ZLUDA must not require the Linux libamdhip64 packaging contract")
+endif()
+
 set(_fixture "${CMAKE_CURRENT_BINARY_DIR}/zluda-windows-runtime-contract")
 file(REMOVE_RECURSE "${_fixture}")
 file(MAKE_DIRECTORY "${_fixture}/bin" "${_fixture}/lib")
