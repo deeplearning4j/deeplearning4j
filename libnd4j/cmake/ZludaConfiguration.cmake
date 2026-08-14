@@ -442,6 +442,16 @@ function(configure_zluda_cuda_flags)
 
     message(STATUS "Configuring CUDA flags for ZLUDA compatibility...")
 
+    # CUDA's Windows static NVRTC archive is built against the static MSVC CRT.
+    # Keep every libnd4j C/C++ object on the same runtime contract so the final
+    # nd4jcuda.dll link does not mix MT_StaticRelease and MD_DynamicRelease.
+    # The JavaCPP ZLUDA wrapper follows the same /MT contract.
+    if(MSVC)
+        set(CMAKE_MSVC_RUNTIME_LIBRARY
+            "MultiThreaded$<$<CONFIG:Debug>:Debug>" PARENT_SCOPE)
+        message(STATUS "   Windows ZLUDA MSVC runtime: static (/MT)")
+    endif()
+
     # =========================================================================
     # NOTE: Architecture flags (-arch=sm_50) and --relocatable-device-code=false
     # are now handled centrally in CudaConfiguration.cmake when SD_ZLUDA is set.

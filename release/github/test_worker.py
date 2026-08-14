@@ -584,6 +584,18 @@ class WorkflowMatrixTests(unittest.TestCase):
             configuration,
         )
 
+        zluda_configuration = (
+            ROOT / "libnd4j/cmake/ZludaConfiguration.cmake"
+        ).read_text()
+        self.assertIn(
+            'set(CMAKE_MSVC_RUNTIME_LIBRARY\n            "MultiThreaded$<$<CONFIG:Debug>:Debug>" PARENT_SCOPE)',
+            zluda_configuration,
+        )
+        self.assertIn(
+            'Windows ZLUDA MSVC runtime: static (/MT)',
+            zluda_configuration,
+        )
+
         cublas_helper = (
             ROOT / "libnd4j/include/helpers/cuda/cublasHelper.cu"
         ).read_text()
