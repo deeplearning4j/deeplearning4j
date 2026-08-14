@@ -26,6 +26,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -58,6 +59,8 @@ import java.util.Map;
  */
 @Slf4j
 public class GGUFWriter implements Closeable {
+    private static final int INITIAL_HEADER_BYTES = 1024 * 1024;
+    private static final int MAX_HEADER_BYTES = 256 * 1024 * 1024;
 
     // GGUF metadata value types
     private static final int GGUF_TYPE_UINT8 = 0;
@@ -87,6 +90,8 @@ public class GGUFWriter implements Closeable {
     private boolean headerWritten = false;
     private long dataStartOffset = 0;
     private long currentDataOffset = 0;
+    private TensorRegistration activeTensor;
+    private long activeTensorBytes;
 
     /**
      * Information about a registered tensor
@@ -139,6 +144,9 @@ public class GGUFWriter implements Closeable {
     public void setAlignment(int alignment) {
         if (headerWritten) {
             throw new IllegalStateException("Cannot set alignment after header is written");
+        }
+        if (alignment <= 0) {
+            throw new IllegalArgumentException("GGUF alignment must be positive, got " + alignment);
         }
         this.alignment = alignment;
     }
@@ -211,7 +219,7 @@ public class GGUFWriter implements Closeable {
 
         // Write header
         headerBuffer.flip();
-        channel.write(headerBuffer);
+        writeFully(headerBuffer);
 
         // Calculate data start (aligned)
         long headerEnd = channel.position();
@@ -235,43 +243,81 @@ public class GGUFWriter implements Closeable {
      * @param data the tensor data bytes
      */
     public void writeTensorData(String name, byte[] data) throws IOException {
+        beginTensorData(name);
+        writeTensorDataChunk(data, 0, data.length);
+        endTensorData();
+    }
+
+    /**
+     * Begin streaming the payload for one registered tensor.
+     */
+    public void beginTensorData(String name) {
         if (!headerWritten) {
             throw new IllegalStateException("Must write header before tensor data");
         }
-
-        // Find the registered tensor
-        TensorRegistration reg = null;
-        int tensorIndex = 0;
-        for (int i = 0; i < tensorRegistrations.size(); i++) {
-            if (tensorRegistrations.get(i).name.equals(name)) {
-                reg = tensorRegistrations.get(i);
-                tensorIndex = i;
+        if (activeTensor != null) {
+            throw new IllegalStateException("Tensor data is already active: " + activeTensor.name);
+        }
+        TensorRegistration registration = null;
+        for (TensorRegistration candidate : tensorRegistrations) {
+            if (candidate.name.equals(name)) {
+                registration = candidate;
                 break;
             }
         }
-
-        if (reg == null) {
+        if (registration == null) {
             throw new IllegalArgumentException("Tensor not registered: " + name);
         }
-
-        // Verify size matches expected
-        if (data.length != reg.expectedSize) {
-            log.warn("Tensor {} size mismatch: expected {} bytes, got {} bytes",
-                    name, reg.expectedSize, data.length);
+        if (tensorDataOffsets.containsKey(name)) {
+            throw new IllegalStateException("Tensor was already written: " + name);
         }
-
-        // Record the offset
+        activeTensor = registration;
+        activeTensorBytes = 0;
         tensorDataOffsets.put(name, currentDataOffset);
+    }
 
-        // Write the data
-        ByteBuffer buffer = ByteBuffer.wrap(data);
-        channel.write(buffer);
+    /**
+     * Append one bounded chunk to the active tensor payload.
+     */
+    public void writeTensorDataChunk(byte[] data, int offset, int length) throws IOException {
+        if (activeTensor == null) {
+            throw new IllegalStateException("No tensor data stream is active");
+        }
+        if (offset < 0 || length < 0 || offset > data.length || length > data.length - offset) {
+            throw new IndexOutOfBoundsException("Tensor chunk outside source array");
+        }
+        if (length > activeTensor.expectedSize - activeTensorBytes) {
+            throw new IOException("Tensor " + activeTensor.name + " exceeds expected size "
+                    + activeTensor.expectedSize + " bytes");
+        }
+        ByteBuffer buffer = ByteBuffer.wrap(data, offset, length);
+        while (buffer.hasRemaining()) {
+            int written = channel.write(buffer);
+            if (written <= 0) {
+                throw new IOException("GGUF tensor write made no progress for " + activeTensor.name);
+            }
+        }
+        activeTensorBytes += length;
+        currentDataOffset += length;
+    }
 
-        // Update offset for next tensor
-        currentDataOffset += data.length;
-
+    /**
+     * Finish the active tensor and verify its exact encoded byte count.
+     */
+    public void endTensorData() throws IOException {
+        if (activeTensor == null) {
+            throw new IllegalStateException("No tensor data stream is active");
+        }
+        TensorRegistration completed = activeTensor;
+        long completedBytes = activeTensorBytes;
+        activeTensor = null;
+        activeTensorBytes = 0;
+        if (completedBytes != completed.expectedSize) {
+            throw new IOException("Tensor " + completed.name + " size mismatch: expected "
+                    + completed.expectedSize + " bytes, wrote " + completedBytes);
+        }
         log.debug("Wrote tensor {} ({} bytes) at offset {}",
-                name, data.length, tensorDataOffsets.get(name));
+                completed.name, completedBytes, tensorDataOffsets.get(completed.name));
     }
 
     /**
@@ -281,6 +327,9 @@ public class GGUFWriter implements Closeable {
     public void finalizeFile() throws IOException {
         if (!headerWritten) {
             throw new IllegalStateException("Header not written");
+        }
+        if (activeTensor != null) {
+            throw new IllegalStateException("Tensor data stream is still active: " + activeTensor.name);
         }
 
         // Check all tensors were written
@@ -294,15 +343,29 @@ public class GGUFWriter implements Closeable {
         channel.position(0);
         ByteBuffer headerBuffer = buildHeader();
         headerBuffer.flip();
-        channel.write(headerBuffer);
+        writeFully(headerBuffer);
 
         log.info("Finalized GGUF file: {} ({} tensors, {} bytes)",
                 outputFile.getName(), tensorRegistrations.size(), channel.size());
     }
 
     private ByteBuffer buildHeader() {
-        // Estimate size (will grow if needed)
-        ByteBuffer buffer = ByteBuffer.allocate(1024 * 1024).order(ByteOrder.LITTLE_ENDIAN);
+        int capacity = INITIAL_HEADER_BYTES;
+        while (true) {
+            try {
+                return buildHeader(capacity);
+            } catch (BufferOverflowException tooSmall) {
+                if (capacity >= MAX_HEADER_BYTES) {
+                    throw new IllegalStateException("GGUF header exceeds the supported "
+                            + MAX_HEADER_BYTES + " byte limit", tooSmall);
+                }
+                capacity = Math.min(MAX_HEADER_BYTES, Math.multiplyExact(capacity, 2));
+            }
+        }
+    }
+
+    private ByteBuffer buildHeader(int capacity) {
+        ByteBuffer buffer = ByteBuffer.allocate(capacity).order(ByteOrder.LITTLE_ENDIAN);
 
         // Magic: "GGUF"
         buffer.putInt(GGMLFormatDetector.GGUF_MAGIC);
@@ -348,6 +411,15 @@ public class GGUFWriter implements Closeable {
         return buffer;
     }
 
+    private void writeFully(ByteBuffer buffer) throws IOException {
+        while (buffer.hasRemaining()) {
+            int written = channel.write(buffer);
+            if (written <= 0) {
+                throw new IOException("GGUF header write made no progress");
+            }
+        }
+    }
+
     private void writeString(ByteBuffer buffer, String value) {
         byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
         buffer.putLong(bytes.length);
@@ -379,6 +451,20 @@ public class GGUFWriter implements Closeable {
         } else if (value instanceof Short) {
             buffer.putInt(GGUF_TYPE_INT16);
             buffer.putShort((Short) value);
+        } else if (value instanceof byte[]) {
+            byte[] arr = (byte[]) value;
+            buffer.putInt(GGUF_TYPE_ARRAY);
+            buffer.putInt(GGUF_TYPE_INT8);
+            buffer.putLong(arr.length);
+            buffer.put(arr);
+        } else if (value instanceof short[]) {
+            short[] arr = (short[]) value;
+            buffer.putInt(GGUF_TYPE_ARRAY);
+            buffer.putInt(GGUF_TYPE_INT16);
+            buffer.putLong(arr.length);
+            for (short v : arr) {
+                buffer.putShort(v);
+            }
         } else if (value instanceof int[]) {
             int[] arr = (int[]) value;
             buffer.putInt(GGUF_TYPE_ARRAY);
@@ -402,6 +488,22 @@ public class GGUFWriter implements Closeable {
             buffer.putLong(arr.length);
             for (float v : arr) {
                 buffer.putFloat(v);
+            }
+        } else if (value instanceof double[]) {
+            double[] arr = (double[]) value;
+            buffer.putInt(GGUF_TYPE_ARRAY);
+            buffer.putInt(GGUF_TYPE_FLOAT64);
+            buffer.putLong(arr.length);
+            for (double v : arr) {
+                buffer.putDouble(v);
+            }
+        } else if (value instanceof boolean[]) {
+            boolean[] arr = (boolean[]) value;
+            buffer.putInt(GGUF_TYPE_ARRAY);
+            buffer.putInt(GGUF_TYPE_BOOL);
+            buffer.putLong(arr.length);
+            for (boolean v : arr) {
+                buffer.put((byte) (v ? 1 : 0));
             }
         } else if (value instanceof String[]) {
             String[] arr = (String[]) value;
@@ -437,6 +539,27 @@ public class GGUFWriter implements Closeable {
                 buffer.putLong(list.size());
                 for (Object item : list) {
                     buffer.putFloat((Float) item);
+                }
+            } else if (list.get(0) instanceof Long) {
+                buffer.putInt(GGUF_TYPE_ARRAY);
+                buffer.putInt(GGUF_TYPE_INT64);
+                buffer.putLong(list.size());
+                for (Object item : list) {
+                    buffer.putLong((Long) item);
+                }
+            } else if (list.get(0) instanceof Double) {
+                buffer.putInt(GGUF_TYPE_ARRAY);
+                buffer.putInt(GGUF_TYPE_FLOAT64);
+                buffer.putLong(list.size());
+                for (Object item : list) {
+                    buffer.putDouble((Double) item);
+                }
+            } else if (list.get(0) instanceof Boolean) {
+                buffer.putInt(GGUF_TYPE_ARRAY);
+                buffer.putInt(GGUF_TYPE_BOOL);
+                buffer.putLong(list.size());
+                for (Object item : list) {
+                    buffer.put((byte) ((Boolean) item ? 1 : 0));
                 }
             } else {
                 throw new IllegalArgumentException("Unsupported list element type: " + list.get(0).getClass());

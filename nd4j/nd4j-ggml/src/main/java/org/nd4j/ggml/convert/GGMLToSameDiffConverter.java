@@ -281,56 +281,70 @@ public class GGMLToSameDiffConverter {
                 totalTensors, context != null ? "enabled" : "disabled");
 
         for (GGMLTensorInfo info : tensorInfos) {
-            validateRuntimeWeightPolicy(info);
-            INDArray array;
-            if (info.getDataType().isQuantized()) {
-                // Quantized tensors need dequantization or runtime-packed matmul storage.
-                byte[] data = reader.readTensorData(info);
-                boolean runtimePackedMatmul = shouldUseRuntimeQuantizedMatmul(info);
-                array = convertTensorData(data, info, runtimePackedMatmul);
-                // For RUNTIME_QUANTIZED_MATMUL: store companion metadata so the
-                // architecture builder can emit ggml_qmatmul instead of normal mmul.
-                // Key: tensorName + ".__q__"  Value: long[3] = [ggmlQuantType, N, K]
-                if (runtimePackedMatmul) {
-                    long[] shape = reverseShape(info.getShape());  // ND4J C-order shape
-                    if (shape != null && shape.length == 2) {
-                        long N = shape[0];
-                        long K = shape[1];
-                        int ggmlQuantType = info.getDataType().toGgmlQuantType();
-                        INDArray meta = Nd4j.createFromArray(new long[]{ggmlQuantType, N, K});
-                        weights.put(info.getName() + ".__q__", meta);
+            try {
+                validateRuntimeWeightPolicy(info);
+                INDArray array;
+                if (info.getDataType().isQuantized()) {
+                    // Quantized tensors need dequantization or runtime-packed matmul storage.
+                    byte[] data = reader.readTensorData(info);
+                    boolean runtimePackedMatmul = shouldUseRuntimeQuantizedMatmul(info);
+                    array = convertTensorData(data, info, runtimePackedMatmul);
+                    // For RUNTIME_QUANTIZED_MATMUL: store companion metadata so the
+                    // architecture builder can emit ggml_qmatmul instead of normal mmul.
+                    // Key: tensorName + ".__q__"  Value: long[3] = [ggmlQuantType, N, K]
+                    if (runtimePackedMatmul) {
+                        long[] shape = reverseShape(info.getShape());  // ND4J C-order shape
+                        if (shape != null && shape.length == 2) {
+                            long N = shape[0];
+                            long K = shape[1];
+                            int ggmlQuantType = info.getDataType().toGgmlQuantType();
+                            INDArray meta = Nd4j.createFromArray(new long[]{ggmlQuantType, N, K});
+                            weights.put(info.getName() + ".__q__", meta);
+                        }
                     }
+                } else {
+                    // Non-quantized tensors: use direct ByteBuffer to avoid heap copies
+                    ByteBuffer directData = reader.readTensorDataDirect(info);
+                    array = convertTensorDataDirect(directData, info);
                 }
-            } else {
-                // Non-quantized tensors: use direct ByteBuffer to avoid heap copies
-                ByteBuffer directData = reader.readTensorDataDirect(info);
-                array = convertTensorDataDirect(directData, info);
-            }
-            weights.put(info.getName(), array);
+                weights.put(info.getName(), array);
 
-            // Register with loading context for batch GPU transfer
-            if (context != null) {
-                context.onArrayLoaded(array);
-                context.scheduleTransfer(array);
-            }
+                // Register with loading context for batch GPU transfer
+                if (context != null) {
+                    context.onArrayLoaded(array);
+                    context.scheduleTransfer(array);
+                }
 
-            loadedCount++;
-            if (log.isDebugEnabled()) {
-                log.debug("Loaded tensor {}/{}: {} shape={} type={}",
-                        loadedCount, totalTensors, info.getName(), info.getShapeString(), info.getDataType());
-            } else if (loadedCount % 50 == 0 || loadedCount == totalTensors) {
-                log.info("Loading progress: {}/{} tensors ({}%)",
-                        loadedCount, totalTensors, (loadedCount * 100) / totalTensors);
+                loadedCount++;
+                if (log.isDebugEnabled()) {
+                    log.debug("Loaded tensor {}/{}: {} shape={} type={}",
+                            loadedCount, totalTensors, info.getName(), info.getShapeString(), info.getDataType());
+                } else if (loadedCount % 50 == 0 || loadedCount == totalTensors) {
+                    log.info("Loading progress: {}/{} tensors ({}%)",
+                            loadedCount, totalTensors, (loadedCount * 100) / totalTensors);
+                }
+            } catch (IOException failure) {
+                throw new IOException(tensorLoadFailure(loadedCount, totalTensors, info), failure);
+            } catch (RuntimeException failure) {
+                throw new IllegalStateException(
+                        tensorLoadFailure(loadedCount, totalTensors, info), failure);
             }
         }
 
         return weights;
     }
 
+    private static String tensorLoadFailure(int loadedCount, int totalTensors, GGMLTensorInfo info) {
+        return "Could not load GGUF tensor " + (loadedCount + 1) + "/" + totalTensors
+                + " " + info.getName() + " shape=" + info.getShapeString()
+                + " type=" + info.getDataType() + " storageBytes=" + info.getDataSize();
+    }
+
     private boolean shouldUseRuntimeQuantizedMatmul(GGMLTensorInfo info) {
         return options.isRuntimeQuantizedMatmul()
                 && isLinearWeight(info)
-                && isRuntimeQuantizationTypeAllowed(info.getDataType());
+                && isRuntimeQuantizationTypeAllowed(info.getDataType())
+                && hasRuntimePackedRowLayout(info);
     }
 
     private void validateRuntimeWeightPolicy(GGMLTensorInfo info) {
@@ -338,6 +352,12 @@ public class GGMLToSameDiffConverter {
             return;
         }
         if (!info.getDataType().isQuantized()) {
+            if (options.getQuantizationMode()
+                    == ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_MATMUL) {
+                log.info("Using dense runtime fallback for linear weight {} shape={} type={}",
+                        info.getName(), info.getShapeString(), info.getDataType());
+                return;
+            }
             throw new IllegalStateException("Packed " + options.getQuantizationMode()
                     + " requested, but linear weight " + info.getName()
                     + " is stored as " + info.getDataType());
@@ -347,6 +367,22 @@ public class GGMLToSameDiffConverter {
                     + " requested, but linear weight " + info.getName()
                     + " uses unsupported GGUF type " + info.getDataType());
         }
+        if (!hasRuntimePackedRowLayout(info)
+                && options.getQuantizationMode()
+                != ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_MATMUL) {
+            throw new IllegalStateException("Packed " + options.getQuantizationMode()
+                    + " requested, but linear weight " + info.getName()
+                    + " has GGUF row width " + info.getShape()[0]
+                    + " which is not divisible by " + info.getDataType().getBlockSize()
+                    + " for " + info.getDataType());
+        }
+    }
+
+    private static boolean hasRuntimePackedRowLayout(GGMLTensorInfo info) {
+        long[] shape = info.getShape();
+        int blockSize = info.getDataType().getBlockSize();
+        return shape != null && shape.length == 2 && shape[0] > 0 && blockSize > 0
+                && shape[0] % blockSize == 0;
     }
 
     private boolean isRuntimeQuantizationTypeAllowed(GGMLDataType dataType) {

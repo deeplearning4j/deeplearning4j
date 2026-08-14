@@ -363,7 +363,12 @@ final class SdxGgufModelPreparer {
             metadata.put("conversion_timestamp", String.valueOf(System.currentTimeMillis()));
             SDZSerializer.save(graph, destination.toFile(), false, metadata);
         } catch (GGMLImportException failure) {
-            throw new IOException("Could not import GGUF into canonical SDZ: " + source, failure);
+            throw new IOException("Could not import optimized GGUF into canonical SDZ: " + source,
+                    failure);
+        } catch (RuntimeException failure) {
+            throw new IOException("Runtime failure while importing optimized GGUF into canonical SDZ: "
+                    + source + " (" + failure.getClass().getSimpleName() + ": "
+                    + failure.getMessage() + ")", failure);
         }
     }
 
@@ -787,13 +792,8 @@ final class SdxGgufModelPreparer {
             if (Files.isRegularFile(optimized)) return optimized;
             Path temporary = Files.createTempFile(temporaryRoot, "requantize-", ".gguf");
             boolean published = false;
-            try (SameDiff graph = GGMLModelImport.importModel(
-                    source.toFile(), ConversionOptions.fp16())) {
-                GGMLModelExport.exportModel(graph, temporary.toFile(), ExportOptions.builder()
-                        .quantizationType(requantizeType)
-                        .includeTokenizer(true)
-                        .validateBeforeExport(true)
-                        .build());
+            try {
+                GGMLModelExport.requantize(source.toFile(), temporary.toFile(), requantizeType);
                 try {
                     Files.move(temporary, optimized, StandardCopyOption.ATOMIC_MOVE);
                 } catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
@@ -801,7 +801,7 @@ final class SdxGgufModelPreparer {
                 }
                 published = true;
                 return optimized;
-            } catch (GGMLImportException | GGMLExportException failure) {
+            } catch (GGMLExportException failure) {
                 throw new IOException("Could not create " + requantizeType
                         + " optimized GGUF derivative from " + source, failure);
             } finally {

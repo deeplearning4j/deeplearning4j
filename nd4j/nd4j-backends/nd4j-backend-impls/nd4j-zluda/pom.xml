@@ -353,6 +353,32 @@
             </build>
         </profile>
 
+        <!-- JavaCPP's Windows wrapper must match the /MT CUDA toolkit
+             archives linked by the ZLUDA native target. -->
+        <profile>
+            <id>msvc</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <compilerOptions>
+                                <compilerOption>/MT</compilerOption>
+                                <compilerOption>/std:c++17</compilerOption>
+                            </compilerOptions>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <!-- Profile for AMD GPU target -->
         <profile>
             <id>zluda-amd</id>

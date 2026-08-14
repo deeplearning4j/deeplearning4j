@@ -29,10 +29,16 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.ggml.GGMLExportException;
 import org.nd4j.ggml.GGMLModelExport;
 import org.nd4j.ggml.export.ExportOptions;
+import org.nd4j.ggml.format.GGMLDataType;
+import org.nd4j.ggml.format.GGMLTensorInfo;
+import org.nd4j.ggml.format.GGUFReader;
+import org.nd4j.ggml.format.GGUFWriter;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -325,7 +331,68 @@ class GGMLModelExportTest {
         assertEquals(cause, ex.getCause());
     }
 
+    @Test
+    @DisplayName("Test bounded BF16 to Q4_K GGUF requantization")
+    void testBoundedBFloat16ToQ4KRequantization() throws Exception {
+        File source = tempDir.resolve("source-bf16.gguf").toFile();
+        File output = tempDir.resolve("output-q4k.gguf").toFile();
+
+        int weightElements = 256 * 4128;
+        try (GGUFWriter writer = new GGUFWriter(source, 3)) {
+            writer.addMetadata("general.architecture", "llama");
+            writer.addMetadata("general.name", "bounded-requantization-test");
+            writer.addMetadata("tokenizer.ggml.tokens", List.of("<unk>", "<s>", "</s>"));
+            writer.registerTensor("blk.0.attn_q.weight", new long[]{256, 4128},
+                    GGMLDataType.GGML_TYPE_BF16);
+            writer.registerTensor("blk.0.attn_norm.weight", new long[]{256},
+                    GGMLDataType.GGML_TYPE_BF16);
+            writer.registerTensor("token_embd.weight", new long[]{256, 32},
+                    GGMLDataType.GGML_TYPE_BF16);
+            writer.writeHeader();
+            writer.writeTensorData("blk.0.attn_q.weight", bfloat16Data(weightElements));
+            writer.writeTensorData("blk.0.attn_norm.weight", bfloat16Data(256));
+            writer.writeTensorData("token_embd.weight", bfloat16Data(256 * 32));
+            writer.finalizeFile();
+        }
+
+        GGMLModelExport.requantize(source, output, ExportOptions.QuantizationType.Q4_K);
+
+        assertTrue(source.isFile(), "Requantization must preserve the verified source GGUF");
+        assertTrue(output.isFile());
+        assertTrue(output.length() < source.length());
+
+        try (GGUFReader reader = new GGUFReader(output)) {
+            assertEquals("bounded-requantization-test",
+                    reader.getHeader().getMetadata().get("general.name"));
+            assertEquals(GGMLDataType.GGML_TYPE_Q4_K,
+                    tensor(reader, "blk.0.attn_q.weight").getDataType());
+            assertEquals(GGMLDataType.GGML_TYPE_F32,
+                    tensor(reader, "blk.0.attn_norm.weight").getDataType());
+            assertEquals(GGMLDataType.GGML_TYPE_Q8_0,
+                    tensor(reader, "token_embd.weight").getDataType());
+            assertEquals(GGMLDataType.GGML_TYPE_Q4_K.calculateStorageBytes(weightElements),
+                    tensor(reader, "blk.0.attn_q.weight").getDataSize());
+        }
+    }
+
     // ========== Helper Methods ==========
+
+    private static GGMLTensorInfo tensor(GGUFReader reader, String name) throws Exception {
+        return reader.getTensorInfos().stream()
+                .filter(tensor -> name.equals(tensor.getName()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Missing tensor " + name));
+    }
+
+    private static byte[] bfloat16Data(int elements) {
+        ByteBuffer data = ByteBuffer.allocate(Math.multiplyExact(elements, Short.BYTES))
+                .order(ByteOrder.LITTLE_ENDIAN);
+        for (int i = 0; i < elements; i++) {
+            float value = (float) Math.sin(i * 0.0078125);
+            data.putShort((short) (Float.floatToRawIntBits(value) >>> 16));
+        }
+        return data.array();
+    }
 
     /**
      * Create a minimal LLaMA model for testing detection

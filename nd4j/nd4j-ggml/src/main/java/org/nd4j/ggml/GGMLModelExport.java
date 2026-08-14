@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.ggml.architecture.ExportArchitecture;
 import org.nd4j.ggml.architecture.ExportArchitectureRegistry;
 import org.nd4j.ggml.export.ExportOptions;
+import org.nd4j.ggml.export.GGUFRequantizer;
 import org.nd4j.ggml.export.SameDiffToGGMLConverter;
 
 import java.io.File;
@@ -177,7 +178,7 @@ public class GGMLModelExport {
 
     /**
      * Re-quantize an existing GGUF file with a different quantization type.
-     * This loads the GGUF, converts to SameDiff, then exports with new quantization.
+     * Tensor data is decoded and encoded in bounded chunks without materializing a SameDiff graph.
      *
      * @param inputGguf   the input GGUF file
      * @param outputGguf  the output GGUF file
@@ -199,23 +200,10 @@ public class GGMLModelExport {
      */
     public static void requantize(File inputGguf, File outputGguf,
                                    ExportOptions.QuantizationType targetQuant) throws GGMLExportException {
-        try {
-            log.info("Re-quantizing {} to {} quantization", inputGguf.getName(), targetQuant);
-
-            // Import the GGUF model
-            SameDiff model = GGMLModelImport.importModel(inputGguf);
-
-            // Export with new quantization
-            ExportOptions options = ExportOptions.builder()
-                    .quantizationType(targetQuant)
-                    .build();
-            exportModel(model, outputGguf, options);
-
-            log.info("Successfully re-quantized to: {}", outputGguf.getAbsolutePath());
-
-        } catch (GGMLImportException e) {
-            throw new GGMLExportException("Failed to import GGUF for re-quantization", e);
-        }
+        log.info("Streaming re-quantization of {} to {} quantization",
+                inputGguf.getName(), targetQuant);
+        GGUFRequantizer.requantize(inputGguf, outputGguf, targetQuant);
+        log.info("Successfully re-quantized to: {}", outputGguf.getAbsolutePath());
     }
 
     // ========== Inspection ==========

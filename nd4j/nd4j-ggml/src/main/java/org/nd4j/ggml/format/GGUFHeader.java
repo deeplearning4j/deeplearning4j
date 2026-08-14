@@ -438,7 +438,8 @@ public class GGUFHeader {
      * Get the data alignment in bytes
      */
     public int getAlignment() {
-        return getMetadataInt(KEY_GENERAL_ALIGNMENT, 32);
+        int configured = getMetadataInt(KEY_GENERAL_ALIGNMENT, 32);
+        return configured > 0 ? configured : 32;
     }
 
     // Helper methods for type-safe metadata access

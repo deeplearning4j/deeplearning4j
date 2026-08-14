@@ -442,14 +442,13 @@ function(configure_zluda_cuda_flags)
 
     message(STATUS "Configuring CUDA flags for ZLUDA compatibility...")
 
-    # Keep ZLUDA's Windows objects on the dynamic MSVC CRT used by
-    # libnd4j, JavaCPP, and the JavaCPP-generated launcher.  The static
-    # /MT contract conflicts with JavaCPP's /MD throw_exception.cpp object
-    # and produces libcpmt/msvcprt duplicate symbols at the DLL link.
+    # ZLUDA links the CUDA toolkit's static archives on Windows. Keep
+    # the native CMake targets and JavaCPP-generated launcher on the same
+    # static MSVC CRT so the linker does not mix libcpmt with msvcprt.
     if(MSVC)
         set(CMAKE_MSVC_RUNTIME_LIBRARY
-            "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" PARENT_SCOPE)
-        message(STATUS "   Windows ZLUDA MSVC runtime: dynamic (/MD)")
+            "MultiThreaded$<$<CONFIG:Debug>:Debug>" PARENT_SCOPE)
+        message(STATUS "   Windows ZLUDA MSVC runtime: static (/MT)")
     endif()
 
     # =========================================================================

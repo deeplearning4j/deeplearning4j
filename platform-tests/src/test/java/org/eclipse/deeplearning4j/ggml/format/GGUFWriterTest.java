@@ -525,6 +525,50 @@ class GGUFWriterTest {
         assertTrue(outputFile.exists());
     }
 
+    @Test
+    @DisplayName("Test streaming tensor chunks")
+    void testStreamingTensorChunks() throws Exception {
+        File outputFile = tempDir.resolve("streaming_tensor.gguf").toFile();
+        byte[] expected = new byte[16];
+        for (int i = 0; i < expected.length; i++) {
+            expected[i] = (byte) (i * 7);
+        }
+
+        try (GGUFWriter writer = new GGUFWriter(outputFile, 3)) {
+            writer.registerTensor("streamed", new long[]{4}, GGMLDataType.GGML_TYPE_F32);
+            writer.writeHeader();
+            writer.beginTensorData("streamed");
+            writer.writeTensorDataChunk(expected, 0, 3);
+            writer.writeTensorDataChunk(expected, 3, expected.length - 3);
+            writer.endTensorData();
+            writer.finalizeFile();
+        }
+
+        try (GGUFReader reader = new GGUFReader(outputFile)) {
+            GGMLTensorInfo tensor = reader.getTensorInfos().get(0);
+            assertArrayEquals(expected, reader.readTensorData(tensor));
+        }
+    }
+
+    @Test
+    @DisplayName("Test metadata header grows beyond initial buffer")
+    void testLargeMetadataHeader() throws Exception {
+        File outputFile = tempDir.resolve("large_metadata.gguf").toFile();
+        char[] characters = new char[2 * 1024 * 1024];
+        Arrays.fill(characters, 'x');
+        String largeValue = new String(characters);
+
+        try (GGUFWriter writer = new GGUFWriter(outputFile, 3)) {
+            writer.addMetadata("test.large_metadata", largeValue);
+            writer.writeHeader();
+            writer.finalizeFile();
+        }
+
+        try (GGUFReader reader = new GGUFReader(outputFile)) {
+            assertEquals(largeValue, reader.getHeader().getMetadata().get("test.large_metadata"));
+        }
+    }
+
     // ========== File Structure Tests ==========
 
     @Test
