@@ -18,4 +18,6 @@ Every successful worker publishes its verified staged Maven coordinates to the C
 
 Add or change classifiers in the provider release plans first. Keep `release/github/workflow-matrix.json` limited to workflow-to-shard and shard-to-runtime mappings. `release/github/test_worker.py` rejects workflow rows that do not resolve to an explicit release-plan variant and checks the historically distinct Linux compile ISA classifiers.
 
+A normal dispatch always runs the complete canonical matrix for its selected workflow. Partial reruns must set `targetedRetry=1` and provide one or more exact `shard--variant` values in `classifiers`; filters are rejected otherwise. This keeps recovery of a failed classifier explicit without allowing an intended complete release run to silently omit base or another variant.
+
 These workflows run the shared worker locally on GitHub runners; they do not provision AWS, Azure, or GCP virtual machines.

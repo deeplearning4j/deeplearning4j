@@ -27,6 +27,21 @@ class WorkflowMatrixTests(unittest.TestCase):
         self.assertIn("workflow:\n        description: Canonical release workflow matrix to execute.", workflow)
         self.assertIn("workflow: ${{ inputs.workflow }}", workflow)
 
+    def test_every_dispatch_caller_requires_explicit_targeted_retry_mode(self):
+        for workflow_name in self.matrix["workflows"]:
+            workflow = (ROOT / ".github/workflows" / workflow_name).read_text()
+            self.assertIn("      classifiers:\n", workflow, workflow_name)
+            self.assertIn("      targetedRetry:\n", workflow, workflow_name)
+            self.assertIn(
+                "      targetedRetry: ${{ inputs.targetedRetry }}",
+                workflow,
+                workflow_name,
+            )
+
+        reusable = (ROOT / ".github/workflows/_release-worker.yml").read_text()
+        self.assertIn("          TARGETED_RETRY: ${{ inputs.targetedRetry }}", reusable)
+        self.assertEqual(2, reusable.count('--selection-mode "$selection_mode"'))
+
     def test_every_covered_release_workflow_has_exactly_one_worker_mapping(self):
         self.assertEqual(
             set(self.plan["coveredWorkflows"]),
@@ -113,6 +128,7 @@ class WorkflowMatrixTests(unittest.TestCase):
             "build-deploy-android-arm64.yml",
             "linux",
             classifiers="android-arm64-vulkan--base",
+            selection_mode="targeted",
         )
         self.assertEqual(
             [("android-arm64-vulkan", "base")],
@@ -129,6 +145,27 @@ class WorkflowMatrixTests(unittest.TestCase):
                 "build-deploy-android-arm64.yml",
                 "linux",
                 classifiers="android-arm64-vulkan--missing",
+                selection_mode="targeted",
+            )
+
+    def test_complete_matrix_rejects_classifier_filters(self):
+        with self.assertRaisesRegex(ValueError, "selection_mode='targeted'"):
+            prepare_worker.workflow_rows(
+                self.plan,
+                self.matrix,
+                "build-deploy-windows.yml",
+                "host",
+                classifiers="windows-x86_64-cpu--avx2",
+            )
+
+    def test_targeted_matrix_requires_explicit_classifiers(self):
+        with self.assertRaisesRegex(ValueError, "requires at least one classifier"):
+            prepare_worker.workflow_rows(
+                self.plan,
+                self.matrix,
+                "build-deploy-windows.yml",
+                "host",
+                selection_mode="targeted",
             )
 
     def test_linux_compile_isa_rows_emit_distinct_classifiers(self):

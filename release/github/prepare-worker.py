@@ -95,6 +95,7 @@ def workflow_rows(
     group: str,
     runner_override: str = "",
     classifiers: str = "",
+    selection_mode: str = "complete",
 ) -> list[dict]:
     if matrix.get("schemaVersion") != 1:
         raise ValueError("workflow matrix schemaVersion must be 1")
@@ -108,6 +109,15 @@ def workflow_rows(
         for classifier in classifiers.split(",")
         if classifier.strip()
     }
+    if selection_mode not in {"complete", "targeted"}:
+        raise ValueError(f"unknown matrix selection mode {selection_mode!r}")
+    if requested and selection_mode != "targeted":
+        raise ValueError(
+            "classifier filters require selection_mode='targeted'; complete runs "
+            "must execute the canonical workflow matrix"
+        )
+    if selection_mode == "targeted" and not requested:
+        raise ValueError("targeted matrix selection requires at least one classifier")
     selections: list[tuple[str, dict, dict[str, dict], list[str]]] = []
     available: set[str] = set()
     for selection in workflows[workflow]:
@@ -254,6 +264,12 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Comma-separated exact shard--variant names to include",
     )
+    matrix_parser.add_argument(
+        "--selection-mode",
+        choices=("complete", "targeted"),
+        default="complete",
+        help="Complete runs reject filters; targeted runs require explicit classifiers",
+    )
 
     config_parser = subparsers.add_parser("config")
     config_parser.add_argument("--source", type=Path, default=ROOT)
@@ -285,6 +301,7 @@ def main() -> None:
             args.group,
             args.runner_override.strip(),
             args.classifiers.strip(),
+            args.selection_mode,
         ), separators=(",", ":")))
         return
 

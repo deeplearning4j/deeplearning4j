@@ -26,6 +26,10 @@ on:
         type: string
         required: false
         default: ""
+      targetedRetry:
+        type: string
+        required: false
+        default: "0"
       libnd4jUrl:
         type: string
         required: false
@@ -66,14 +70,19 @@ jobs:
           WORKFLOW: ${{ inputs.workflow }}
           RUNNER_OVERRIDE: ${{ inputs.runnerOverride }}
           CLASSIFIERS: ${{ inputs.classifiers }}
+          TARGETED_RETRY: ${{ inputs.targetedRetry }}
         run: |
           set -Eeuo pipefail
+          selection_mode=complete
+          if [[ "$TARGETED_RETRY" == "1" ]]; then
+            selection_mode=targeted
+          fi
           linux=$(python release/github/prepare-worker.py matrix \
             --workflow "$WORKFLOW" --group linux --runner-override "$RUNNER_OVERRIDE" \
-            --classifiers "$CLASSIFIERS")
+            --classifiers "$CLASSIFIERS" --selection-mode "$selection_mode")
           host=$(python release/github/prepare-worker.py matrix \
             --workflow "$WORKFLOW" --group host --runner-override "$RUNNER_OVERRIDE" \
-            --classifiers "$CLASSIFIERS")
+            --classifiers "$CLASSIFIERS" --selection-mode "$selection_mode")
           printf 'linux=%s\n' "$linux" >>"$GITHUB_OUTPUT"
           printf 'host=%s\n' "$host" >>"$GITHUB_OUTPUT"
 

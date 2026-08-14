@@ -19,6 +19,16 @@ on:
         description: Additional Maven flags passed to the shared worker.
         required: false
         default: ""
+      classifiers:
+        description: Comma-separated exact shard--variant names; requires targetedRetry=1.
+        required: false
+        default: ""
+      targetedRetry:
+        description: Explicitly run only the classifiers above instead of the complete matrix.
+        required: true
+        type: choice
+        options: ["0", "1"]
+        default: "0"
       libnd4jUrl:
         description: Optional prebuilt libnd4j archive URL.
         required: false
@@ -45,6 +55,8 @@ jobs:
       runnerOverride: ${{ inputs.runsOn }}
       buildThreads: ${{ inputs.buildThreads }}
       mvnFlags: ${{ inputs.mvnFlags }}
+      classifiers: ${{ inputs.classifiers }}
+      targetedRetry: ${{ inputs.targetedRetry }}
       libnd4jUrl: ${{ inputs.libnd4jUrl }}
       buildAot: ${{ inputs.buildAot }}
       aotAllSpins: ${{ inputs.aotAllSpins }}
