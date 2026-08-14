@@ -283,11 +283,22 @@ def parse_args() -> argparse.Namespace:
     config_parser.add_argument("--snapshot-version", default="")
     config_parser.add_argument("--run-id", required=True)
     config_parser.add_argument("--commit", required=True)
+
+    version_parser = subparsers.add_parser("release-version")
+    version_parser.add_argument("--config", type=Path, required=True)
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.command == "release-version":
+        config = load_json(args.config)
+        release_version = str(config.get("releaseVersion", "")).strip()
+        if not release_version:
+            raise ValueError(f"worker config {args.config} does not define releaseVersion")
+        print(release_version)
+        return
+
     plan = load_json(args.plan)
     if args.command == "matrix":
         matrix = load_json(args.matrix)

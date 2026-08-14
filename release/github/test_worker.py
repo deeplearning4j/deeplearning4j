@@ -299,6 +299,7 @@ class WorkflowMatrixTests(unittest.TestCase):
     def test_shared_worker_publishes_prebuilt_snapshots_with_existing_central_credentials(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
         workflow = (ROOT / ".github/workflows/_release-worker.yml").read_text()
+        preparer = (ROOT / "release/github/prepare-worker.py").read_text()
 
         self.assertIn("release-version:", action)
         self.assertIn("python-executable:", action)
@@ -306,23 +307,25 @@ class WorkflowMatrixTests(unittest.TestCase):
             'print(json.load(open(sys.argv[1], encoding="utf-8"))["releaseVersion"])',
             action,
         )
+        self.assertIn("worker-success", action)
+        self.assertIn('subparsers.add_parser("release-version")', preparer)
         self.assertIn("CENTRAL_SONATYPE_TOKEN_USERNAME:\n        required: true", workflow)
         self.assertIn("CENTRAL_SONATYPE_TOKEN_PASSWORD:\n        required: true", workflow)
+        self.assertEqual(2, workflow.count("name: Download staged worker result"))
         self.assertEqual(2, workflow.count("name: Publish staged Maven snapshot"))
         self.assertEqual(2, workflow.count("repository.py deploy-snapshot"))
         self.assertEqual(2, workflow.count("server-id: central-portal-snapshots"))
+        self.assertEqual(2, workflow.count('if [ ! -f "${artifact_root}/worker-success" ]'))
         self.assertEqual(
             2,
             workflow.count(
                 "--url https://central.sonatype.com/repository/maven-snapshots/"
             ),
         )
-        self.assertEqual(
-            4,
-            workflow.count(
-                "endsWith(steps.worker.outputs['release-version'], '-SNAPSHOT')"
-            ),
-        )
+        self.assertIn("needs: [matrix, linux]", workflow)
+        self.assertIn("needs: [matrix, host]", workflow)
+        self.assertIn("if: ${{ always() && needs.matrix.result == 'success'", workflow)
+        self.assertNotIn("endsWith(steps.worker.outputs['release-version']", workflow)
         for caller in sorted((ROOT / ".github/workflows").glob("build-deploy-*")):
             contents = caller.read_text()
             if "uses: ./.github/workflows/_release-worker.yml" in contents:

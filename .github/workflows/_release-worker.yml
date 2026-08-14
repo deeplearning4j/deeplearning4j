@@ -122,32 +122,6 @@ jobs:
           build-aot: ${{ inputs.buildAot }}
           aot-all-spins: ${{ inputs.aotAllSpins }}
           azure-cache-connection-string: ${{ secrets.AZURE_SCCACHE_CONNECTION_STRING }}
-      - name: Configure Maven Central snapshots
-        if: ${{ endsWith(steps.worker.outputs['release-version'], '-SNAPSHOT') }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "11"
-          server-id: central-portal-snapshots
-          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
-          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
-      - name: Publish staged Maven snapshot
-        if: ${{ endsWith(steps.worker.outputs['release-version'], '-SNAPSHOT') }}
-        shell: bash
-        env:
-          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-        run: |
-          set -Eeuo pipefail
-          deploy_args=(
-            release/central/repository.py deploy-snapshot
-            --repository "${{ steps.worker.outputs['artifact-root'] }}/maven-repository"
-            --release-version "${{ steps.worker.outputs['release-version'] }}"
-            --repository-id central-portal-snapshots
-            --url https://central.sonatype.com/repository/maven-snapshots/
-            --maven-executable mvn
-          )
-          "${{ steps.worker.outputs['python-executable'] }}" "${deploy_args[@]}"
       - name: Upload staged worker result
         if: always()
         uses: actions/upload-artifact@v4
@@ -192,32 +166,6 @@ jobs:
           build-aot: ${{ inputs.buildAot }}
           aot-all-spins: ${{ inputs.aotAllSpins }}
           azure-cache-connection-string: ${{ secrets.AZURE_SCCACHE_CONNECTION_STRING }}
-      - name: Configure Maven Central snapshots
-        if: ${{ endsWith(steps.worker.outputs['release-version'], '-SNAPSHOT') }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "11"
-          server-id: central-portal-snapshots
-          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
-          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
-      - name: Publish staged Maven snapshot
-        if: ${{ endsWith(steps.worker.outputs['release-version'], '-SNAPSHOT') }}
-        shell: bash
-        env:
-          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-        run: |
-          set -Eeuo pipefail
-          deploy_args=(
-            release/central/repository.py deploy-snapshot
-            --repository "${{ steps.worker.outputs['artifact-root'] }}/maven-repository"
-            --release-version "${{ steps.worker.outputs['release-version'] }}"
-            --repository-id central-portal-snapshots
-            --url https://central.sonatype.com/repository/maven-snapshots/
-            --maven-executable mvn
-          )
-          "${{ steps.worker.outputs['python-executable'] }}" "${deploy_args[@]}"
       - name: Upload staged worker result
         if: always()
         uses: actions/upload-artifact@v4
@@ -228,3 +176,127 @@ jobs:
           include-hidden-files: true
           compression-level: 0
           retention-days: 7
+
+  publish-linux:
+    needs: [matrix, linux]
+    if: ${{ always() && needs.matrix.result == 'success' && needs.matrix.outputs.linux != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.linux) }}
+    name: publish / ${{ matrix.name }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sourceRef }}
+      - name: Download staged worker result
+        uses: actions/download-artifact@v4
+        with:
+          name: release-worker-${{ matrix.artifactId }}
+          path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
+      - name: Inspect staged worker result
+        id: staged
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          artifact_root="${GITHUB_WORKSPACE}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}"
+          if [ ! -f "${artifact_root}/worker-success" ]; then
+            printf 'publish=false\n' >>"${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          release_version=$(python3 release/github/prepare-worker.py release-version \
+            --config "${artifact_root}/worker-config.json")
+          printf 'release-version=%s\n' "${release_version}" >>"${GITHUB_OUTPUT}"
+          if [[ "${release_version}" == *-SNAPSHOT ]]; then
+            printf 'publish=true\n' >>"${GITHUB_OUTPUT}"
+          else
+            printf 'publish=false\n' >>"${GITHUB_OUTPUT}"
+          fi
+      - name: Configure Maven Central snapshots
+        if: steps.staged.outputs.publish == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11"
+          server-id: central-portal-snapshots
+          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
+          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
+      - name: Publish staged Maven snapshot
+        if: steps.staged.outputs.publish == 'true'
+        shell: bash
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          artifact_root="${GITHUB_WORKSPACE}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}"
+          python3 release/central/repository.py deploy-snapshot \
+            --repository "${artifact_root}/maven-repository" \
+            --release-version "${{ steps.staged.outputs.release-version }}" \
+            --repository-id central-portal-snapshots \
+            --url https://central.sonatype.com/repository/maven-snapshots/ \
+            --maven-executable mvn
+
+  publish-host:
+    needs: [matrix, host]
+    if: ${{ always() && needs.matrix.result == 'success' && needs.matrix.outputs.host != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.host) }}
+    name: publish / ${{ matrix.name }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sourceRef }}
+      - name: Download staged worker result
+        uses: actions/download-artifact@v4
+        with:
+          name: release-worker-${{ matrix.artifactId }}
+          path: ${{ github.workspace }}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}
+      - name: Inspect staged worker result
+        id: staged
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          artifact_root="${GITHUB_WORKSPACE}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}"
+          if [ ! -f "${artifact_root}/worker-success" ]; then
+            printf 'publish=false\n' >>"${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          release_version=$(python3 release/github/prepare-worker.py release-version \
+            --config "${artifact_root}/worker-config.json")
+          printf 'release-version=%s\n' "${release_version}" >>"${GITHUB_OUTPUT}"
+          if [[ "${release_version}" == *-SNAPSHOT ]]; then
+            printf 'publish=true\n' >>"${GITHUB_OUTPUT}"
+          else
+            printf 'publish=false\n' >>"${GITHUB_OUTPUT}"
+          fi
+      - name: Configure Maven Central snapshots
+        if: steps.staged.outputs.publish == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11"
+          server-id: central-portal-snapshots
+          server-username: CENTRAL_SONATYPE_TOKEN_USERNAME
+          server-password: CENTRAL_SONATYPE_TOKEN_PASSWORD
+      - name: Publish staged Maven snapshot
+        if: steps.staged.outputs.publish == 'true'
+        shell: bash
+        env:
+          CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+        run: |
+          set -Eeuo pipefail
+          artifact_root="${GITHUB_WORKSPACE}/.release-worker/${{ matrix.shard }}/${{ matrix.variant }}"
+          python3 release/central/repository.py deploy-snapshot \
+            --repository "${artifact_root}/maven-repository" \
+            --release-version "${{ steps.staged.outputs.release-version }}" \
+            --repository-id central-portal-snapshots \
+            --url https://central.sonatype.com/repository/maven-snapshots/ \
+            --maven-executable mvn

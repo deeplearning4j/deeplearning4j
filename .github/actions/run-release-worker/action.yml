@@ -198,6 +198,7 @@ runs:
           --repository "${work_root}/m2" \
           --maven-output "${artifact_root}/maven-repository" \
           --sdk-output "${artifact_root}/sdk-assets"
+        printf 'success\n' >"${artifact_root}/worker-success"
 
     - name: Keep only third-party Maven dependencies in cache
       if: always()
