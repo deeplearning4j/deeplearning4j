@@ -66,8 +66,13 @@ runs:
       if: runner.os == 'Windows'
       uses: msys2/setup-msys2@v2
       with:
-        update: true
-        path-type: inherit
+        # Reuse the MSYS2 installation shipped on GitHub's Windows runners.
+        # A fresh release install plus update=true can block while generating
+        # the pacman keyring before the release worker ever starts.
+        release: false
+        update: false
+        msystem: MINGW64
+        path-type: minimal
         install: >-
           base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive
           automake patch mingw-w64-x86_64-make mingw-w64-x86_64-cmake
