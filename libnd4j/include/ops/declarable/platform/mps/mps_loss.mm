@@ -46,7 +46,7 @@ namespace platforms {
 // MSE = mean((predictions - labels)^2)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(mean_sqerr_loss, ENGINE_CPU) {
+PLATFORM_IMPL(mean_sqerr_loss, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
     auto labels = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -70,7 +70,7 @@ PLATFORM_IMPL(mean_sqerr_loss, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(mean_sqerr_loss, ENGINE_CPU) {
+PLATFORM_CHECK(mean_sqerr_loss, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
 
     Requirements req("MPS MEAN_SQERR_LOSS OP");
@@ -87,7 +87,7 @@ PLATFORM_CHECK(mean_sqerr_loss, ENGINE_CPU) {
 // MAE = mean(|predictions - labels|)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(mean_absolute_error, ENGINE_CPU) {
+PLATFORM_IMPL(mean_absolute_error, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
     auto labels = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -110,7 +110,7 @@ PLATFORM_IMPL(mean_absolute_error, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(mean_absolute_error, ENGINE_CPU) {
+PLATFORM_CHECK(mean_absolute_error, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
 
     Requirements req("MPS MEAN_ABSOLUTE_ERROR OP");
@@ -127,7 +127,7 @@ PLATFORM_CHECK(mean_absolute_error, ENGINE_CPU) {
 // L = 0.5 * x^2 if |x| <= delta, else delta * (|x| - 0.5 * delta)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(huber_loss, ENGINE_CPU) {
+PLATFORM_IMPL(huber_loss, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
     auto labels = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -160,7 +160,7 @@ PLATFORM_IMPL(huber_loss, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(huber_loss, ENGINE_CPU) {
+PLATFORM_CHECK(huber_loss, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
 
     Requirements req("MPS HUBER_LOSS OP");
@@ -177,7 +177,7 @@ PLATFORM_CHECK(huber_loss, ENGINE_CPU) {
 // BCE = -mean(labels * log(predictions) + (1 - labels) * log(1 - predictions))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(sigm_cross_entropy_loss, ENGINE_CPU) {
+PLATFORM_IMPL(sigm_cross_entropy_loss, ENGINE_MPS) {
     auto logits = INPUT_VARIABLE(0);
     auto labels = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -207,7 +207,7 @@ PLATFORM_IMPL(sigm_cross_entropy_loss, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(sigm_cross_entropy_loss, ENGINE_CPU) {
+PLATFORM_CHECK(sigm_cross_entropy_loss, ENGINE_MPS) {
     auto logits = INPUT_VARIABLE(0);
 
     Requirements req("MPS SIGM_CROSS_ENTROPY_LOSS OP");
@@ -224,7 +224,7 @@ PLATFORM_CHECK(sigm_cross_entropy_loss, ENGINE_CPU) {
 // CE = -sum(labels * log(softmax(logits)))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(softmax_cross_entropy_loss, ENGINE_CPU) {
+PLATFORM_IMPL(softmax_cross_entropy_loss, ENGINE_MPS) {
     auto logits = INPUT_VARIABLE(0);
     auto labels = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -279,7 +279,7 @@ PLATFORM_IMPL(softmax_cross_entropy_loss, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(softmax_cross_entropy_loss, ENGINE_CPU) {
+PLATFORM_CHECK(softmax_cross_entropy_loss, ENGINE_MPS) {
     auto logits = INPUT_VARIABLE(0);
 
     Requirements req("MPS SOFTMAX_CROSS_ENTROPY_LOSS OP");
@@ -296,7 +296,7 @@ PLATFORM_CHECK(softmax_cross_entropy_loss, ENGINE_CPU) {
 // Labels are class indices, not one-hot encoded
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
+PLATFORM_IMPL(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_MPS) {
     auto logits = INPUT_VARIABLE(0);
     auto labels = INPUT_VARIABLE(1);  // Integer class indices
     auto output = OUTPUT_VARIABLE(0);
@@ -340,7 +340,7 @@ PLATFORM_IMPL(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
+PLATFORM_CHECK(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_MPS) {
     auto logits = INPUT_VARIABLE(0);
 
     Requirements req("MPS SPARSE_SOFTMAX_CROSS_ENTROPY_LOSS OP");
@@ -357,7 +357,7 @@ PLATFORM_CHECK(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) {
 // 1 - cosine_similarity(predictions, labels)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(cosine_distance_loss, ENGINE_CPU) {
+PLATFORM_IMPL(cosine_distance_loss, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
     auto labels = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -386,7 +386,7 @@ PLATFORM_IMPL(cosine_distance_loss, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(cosine_distance_loss, ENGINE_CPU) {
+PLATFORM_CHECK(cosine_distance_loss, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
 
     Requirements req("MPS COSINE_DISTANCE_LOSS OP");
@@ -403,7 +403,7 @@ PLATFORM_CHECK(cosine_distance_loss, ENGINE_CPU) {
 // max(0, 1 - labels * predictions)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(hinge_loss, ENGINE_CPU) {
+PLATFORM_IMPL(hinge_loss, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
     auto labels = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -427,7 +427,7 @@ PLATFORM_IMPL(hinge_loss, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(hinge_loss, ENGINE_CPU) {
+PLATFORM_CHECK(hinge_loss, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
 
     Requirements req("MPS HINGE_LOSS OP");
@@ -444,7 +444,7 @@ PLATFORM_CHECK(hinge_loss, ENGINE_CPU) {
 // -mean(labels * log(predictions + eps) + (1 - labels) * log(1 - predictions + eps))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(log_loss, ENGINE_CPU) {
+PLATFORM_IMPL(log_loss, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
     auto labels = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -474,7 +474,7 @@ PLATFORM_IMPL(log_loss, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(log_loss, ENGINE_CPU) {
+PLATFORM_CHECK(log_loss, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
 
     Requirements req("MPS LOG_LOSS OP");
@@ -488,32 +488,32 @@ PLATFORM_CHECK(log_loss, ENGINE_CPU) {
 
 #else  // !HAVE_MPS
 
-PLATFORM_IMPL(mean_sqerr_loss, ENGINE_CPU)                           { return sd::Status::OK; }
-PLATFORM_CHECK(mean_sqerr_loss, ENGINE_CPU)                          { return Requirements("MPS MEAN_SQERR_LOSS STUB"); }
+PLATFORM_IMPL(mean_sqerr_loss, ENGINE_MPS)                           { return sd::Status::OK; }
+PLATFORM_CHECK(mean_sqerr_loss, ENGINE_MPS)                          { return Requirements("MPS MEAN_SQERR_LOSS STUB"); }
 
-PLATFORM_IMPL(mean_absolute_error, ENGINE_CPU)                       { return sd::Status::OK; }
-PLATFORM_CHECK(mean_absolute_error, ENGINE_CPU)                      { return Requirements("MPS MEAN_ABS_ERROR STUB"); }
+PLATFORM_IMPL(mean_absolute_error, ENGINE_MPS)                       { return sd::Status::OK; }
+PLATFORM_CHECK(mean_absolute_error, ENGINE_MPS)                      { return Requirements("MPS MEAN_ABS_ERROR STUB"); }
 
-PLATFORM_IMPL(huber_loss, ENGINE_CPU)                                { return sd::Status::OK; }
-PLATFORM_CHECK(huber_loss, ENGINE_CPU)                               { return Requirements("MPS HUBER_LOSS STUB"); }
+PLATFORM_IMPL(huber_loss, ENGINE_MPS)                                { return sd::Status::OK; }
+PLATFORM_CHECK(huber_loss, ENGINE_MPS)                               { return Requirements("MPS HUBER_LOSS STUB"); }
 
-PLATFORM_IMPL(sigm_cross_entropy_loss, ENGINE_CPU)                   { return sd::Status::OK; }
-PLATFORM_CHECK(sigm_cross_entropy_loss, ENGINE_CPU)                  { return Requirements("MPS SIGM_XENT_LOSS STUB"); }
+PLATFORM_IMPL(sigm_cross_entropy_loss, ENGINE_MPS)                   { return sd::Status::OK; }
+PLATFORM_CHECK(sigm_cross_entropy_loss, ENGINE_MPS)                  { return Requirements("MPS SIGM_XENT_LOSS STUB"); }
 
-PLATFORM_IMPL(softmax_cross_entropy_loss, ENGINE_CPU)                { return sd::Status::OK; }
-PLATFORM_CHECK(softmax_cross_entropy_loss, ENGINE_CPU)               { return Requirements("MPS SOFTMAX_XENT_LOSS STUB"); }
+PLATFORM_IMPL(softmax_cross_entropy_loss, ENGINE_MPS)                { return sd::Status::OK; }
+PLATFORM_CHECK(softmax_cross_entropy_loss, ENGINE_MPS)               { return Requirements("MPS SOFTMAX_XENT_LOSS STUB"); }
 
-PLATFORM_IMPL(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU)  { return sd::Status::OK; }
-PLATFORM_CHECK(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU) { return Requirements("MPS SPARSE_SOFTMAX_XENT STUB"); }
+PLATFORM_IMPL(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_MPS)  { return sd::Status::OK; }
+PLATFORM_CHECK(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_MPS) { return Requirements("MPS SPARSE_SOFTMAX_XENT STUB"); }
 
-PLATFORM_IMPL(cosine_distance_loss, ENGINE_CPU)                      { return sd::Status::OK; }
-PLATFORM_CHECK(cosine_distance_loss, ENGINE_CPU)                     { return Requirements("MPS COSINE_DIST_LOSS STUB"); }
+PLATFORM_IMPL(cosine_distance_loss, ENGINE_MPS)                      { return sd::Status::OK; }
+PLATFORM_CHECK(cosine_distance_loss, ENGINE_MPS)                     { return Requirements("MPS COSINE_DIST_LOSS STUB"); }
 
-PLATFORM_IMPL(hinge_loss, ENGINE_CPU)                                { return sd::Status::OK; }
-PLATFORM_CHECK(hinge_loss, ENGINE_CPU)                               { return Requirements("MPS HINGE_LOSS STUB"); }
+PLATFORM_IMPL(hinge_loss, ENGINE_MPS)                                { return sd::Status::OK; }
+PLATFORM_CHECK(hinge_loss, ENGINE_MPS)                               { return Requirements("MPS HINGE_LOSS STUB"); }
 
-PLATFORM_IMPL(log_loss, ENGINE_CPU)                                  { return sd::Status::OK; }
-PLATFORM_CHECK(log_loss, ENGINE_CPU)                                 { return Requirements("MPS LOG_LOSS STUB"); }
+PLATFORM_IMPL(log_loss, ENGINE_MPS)                                  { return sd::Status::OK; }
+PLATFORM_CHECK(log_loss, ENGINE_MPS)                                 { return Requirements("MPS LOG_LOSS STUB"); }
 
 #endif  // HAVE_MPS
 

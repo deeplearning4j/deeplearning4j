@@ -44,7 +44,7 @@ namespace platforms {
 // Simple RNN cell: h_t = tanh(W_x * x_t + W_h * h_{t-1} + b)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(simple_rnn, ENGINE_CPU) {
+PLATFORM_IMPL(simple_rnn, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);      // Input [batchSize, inSize]
     auto Wx = INPUT_VARIABLE(1);     // Input weights [inSize, numUnits]
     auto Wh = INPUT_VARIABLE(2);     // Hidden weights [numUnits, numUnits]
@@ -90,7 +90,7 @@ PLATFORM_IMPL(simple_rnn, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(simple_rnn, ENGINE_CPU) {
+PLATFORM_CHECK(simple_rnn, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SIMPLE_RNN OP");
@@ -106,7 +106,7 @@ PLATFORM_CHECK(simple_rnn, ENGINE_CPU) {
 // LSTM cell
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(lstmCell, ENGINE_CPU) {
+PLATFORM_IMPL(lstmCell, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);       // Input [batchSize, inSize]
     auto hPrev = INPUT_VARIABLE(1);   // Previous hidden state [batchSize, numUnits]
     auto cPrev = INPUT_VARIABLE(2);   // Previous cell state [batchSize, numUnits]
@@ -180,7 +180,7 @@ PLATFORM_IMPL(lstmCell, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(lstmCell, ENGINE_CPU) {
+PLATFORM_CHECK(lstmCell, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS LSTM_CELL OP");
@@ -196,7 +196,7 @@ PLATFORM_CHECK(lstmCell, ENGINE_CPU) {
 // GRU cell
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(gruCell, ENGINE_CPU) {
+PLATFORM_IMPL(gruCell, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);       // Input [batchSize, inSize]
     auto hPrev = INPUT_VARIABLE(1);   // Previous hidden state [batchSize, numUnits]
     auto Wru = INPUT_VARIABLE(2);     // Reset/Update weights [inSize, 2*numUnits]
@@ -271,7 +271,7 @@ PLATFORM_IMPL(gruCell, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(gruCell, ENGINE_CPU) {
+PLATFORM_CHECK(gruCell, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS GRU_CELL OP");
@@ -287,7 +287,7 @@ PLATFORM_CHECK(gruCell, ENGINE_CPU) {
 // Bidirectional RNN wrapper
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(static_bidirectional_rnn, ENGINE_CPU) {
+PLATFORM_IMPL(static_bidirectional_rnn, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);           // Input sequence [time, batch, features]
     auto WxFw = INPUT_VARIABLE(1);        // Forward input weights
     auto WhFw = INPUT_VARIABLE(2);        // Forward hidden weights
@@ -383,7 +383,7 @@ PLATFORM_IMPL(static_bidirectional_rnn, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(static_bidirectional_rnn, ENGINE_CPU) {
+PLATFORM_CHECK(static_bidirectional_rnn, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS STATIC_BIDIRECTIONAL_RNN OP");
@@ -397,17 +397,17 @@ PLATFORM_CHECK(static_bidirectional_rnn, ENGINE_CPU) {
 
 #else  // !HAVE_MPS
 
-PLATFORM_IMPL(simple_rnn, ENGINE_CPU)             { return sd::Status::OK; }
-PLATFORM_CHECK(simple_rnn, ENGINE_CPU)            { return Requirements("MPS SIMPLE_RNN STUB"); }
+PLATFORM_IMPL(simple_rnn, ENGINE_MPS)             { return sd::Status::OK; }
+PLATFORM_CHECK(simple_rnn, ENGINE_MPS)            { return Requirements("MPS SIMPLE_RNN STUB"); }
 
-PLATFORM_IMPL(lstmCell, ENGINE_CPU)               { return sd::Status::OK; }
-PLATFORM_CHECK(lstmCell, ENGINE_CPU)              { return Requirements("MPS LSTM_CELL STUB"); }
+PLATFORM_IMPL(lstmCell, ENGINE_MPS)               { return sd::Status::OK; }
+PLATFORM_CHECK(lstmCell, ENGINE_MPS)              { return Requirements("MPS LSTM_CELL STUB"); }
 
-PLATFORM_IMPL(gruCell, ENGINE_CPU)                { return sd::Status::OK; }
-PLATFORM_CHECK(gruCell, ENGINE_CPU)               { return Requirements("MPS GRU_CELL STUB"); }
+PLATFORM_IMPL(gruCell, ENGINE_MPS)                { return sd::Status::OK; }
+PLATFORM_CHECK(gruCell, ENGINE_MPS)               { return Requirements("MPS GRU_CELL STUB"); }
 
-PLATFORM_IMPL(static_bidirectional_rnn, ENGINE_CPU)  { return sd::Status::OK; }
-PLATFORM_CHECK(static_bidirectional_rnn, ENGINE_CPU) { return Requirements("MPS BIDIRECTIONAL_RNN STUB"); }
+PLATFORM_IMPL(static_bidirectional_rnn, ENGINE_MPS)  { return sd::Status::OK; }
+PLATFORM_CHECK(static_bidirectional_rnn, ENGINE_MPS) { return Requirements("MPS BIDIRECTIONAL_RNN STUB"); }
 
 #endif  // HAVE_MPS
 

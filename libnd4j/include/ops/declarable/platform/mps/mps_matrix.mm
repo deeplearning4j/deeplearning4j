@@ -85,7 +85,7 @@ static void transposeMPS(NDArray* input, NDArray* output, const std::vector<Long
     }
 }
 
-PLATFORM_IMPL(transpose, ENGINE_CPU) {
+PLATFORM_IMPL(transpose, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -116,7 +116,7 @@ PLATFORM_IMPL(transpose, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(transpose, ENGINE_CPU) {
+PLATFORM_CHECK(transpose, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS TRANSPOSE OP");
@@ -172,7 +172,7 @@ static void concatMPS(const std::vector<NDArray*>& inputs, NDArray* output, int 
     }
 }
 
-PLATFORM_IMPL(concat, ENGINE_CPU) {
+PLATFORM_IMPL(concat, ENGINE_MPS) {
     auto output = OUTPUT_VARIABLE(0);
 
     if (block.width() == 0) return sd::Status::OK;
@@ -197,7 +197,7 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(concat, ENGINE_CPU) {
+PLATFORM_CHECK(concat, ENGINE_MPS) {
     Requirements req("MPS CONCAT OP");
     req.expectTrue(block.isUseMPS(), IS_USE_MPS_MSG);
     req.expectTrue(mpsUtils::MPSDeviceManager::getInstance().isAvailable(), "MPS device must be available");
@@ -273,7 +273,7 @@ static void stackMPS(const std::vector<NDArray*>& inputs, NDArray* output, int a
     }
 }
 
-PLATFORM_IMPL(stack, ENGINE_CPU) {
+PLATFORM_IMPL(stack, ENGINE_MPS) {
     auto output = OUTPUT_VARIABLE(0);
 
     if (block.width() == 0) return sd::Status::OK;
@@ -293,7 +293,7 @@ PLATFORM_IMPL(stack, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(stack, ENGINE_CPU) {
+PLATFORM_CHECK(stack, ENGINE_MPS) {
     Requirements req("MPS STACK OP");
     req.expectTrue(block.isUseMPS(), IS_USE_MPS_MSG);
     req.expectTrue(mpsUtils::MPSDeviceManager::getInstance().isAvailable(), "MPS device must be available");
@@ -353,7 +353,7 @@ static void gatherMPS(NDArray* input, NDArray* indices, NDArray* output, int axi
     }
 }
 
-PLATFORM_IMPL(gather, ENGINE_CPU) {
+PLATFORM_IMPL(gather, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto indices = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -370,7 +370,7 @@ PLATFORM_IMPL(gather, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(gather, ENGINE_CPU) {
+PLATFORM_CHECK(gather, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS GATHER OP");
@@ -423,7 +423,7 @@ static void tileMPS(NDArray* input, NDArray* output, const std::vector<LongType>
     }
 }
 
-PLATFORM_IMPL(tile, ENGINE_CPU) {
+PLATFORM_IMPL(tile, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -446,7 +446,7 @@ PLATFORM_IMPL(tile, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(tile, ENGINE_CPU) {
+PLATFORM_CHECK(tile, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS TILE OP");
@@ -499,7 +499,7 @@ static void reverseMPS(NDArray* input, NDArray* output, const std::vector<int>& 
     }
 }
 
-PLATFORM_IMPL(reverse, ENGINE_CPU) {
+PLATFORM_IMPL(reverse, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -522,7 +522,7 @@ PLATFORM_IMPL(reverse, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reverse, ENGINE_CPU) {
+PLATFORM_CHECK(reverse, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS REVERSE OP");
@@ -581,7 +581,7 @@ static void padMPS(NDArray* input, NDArray* output, const std::vector<std::pair<
     }
 }
 
-PLATFORM_IMPL(pad, ENGINE_CPU) {
+PLATFORM_IMPL(pad, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto paddings = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
@@ -604,7 +604,7 @@ PLATFORM_IMPL(pad, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(pad, ENGINE_CPU) {
+PLATFORM_CHECK(pad, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS PAD OP");
@@ -656,7 +656,7 @@ static void sliceMPS(NDArray* input, NDArray* output, const std::vector<LongType
     }
 }
 
-PLATFORM_IMPL(slice, ENGINE_CPU) {
+PLATFORM_IMPL(slice, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -684,7 +684,7 @@ PLATFORM_IMPL(slice, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(slice, ENGINE_CPU) {
+PLATFORM_CHECK(slice, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS SLICE OP");
@@ -701,7 +701,7 @@ PLATFORM_CHECK(slice, ENGINE_CPU) {
 // Unstack
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(unstack, ENGINE_CPU) {
+PLATFORM_IMPL(unstack, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     int axis = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
     int numOutputs = block.outputWidth();
@@ -740,7 +740,7 @@ PLATFORM_IMPL(unstack, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(unstack, ENGINE_CPU) {
+PLATFORM_CHECK(unstack, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     Requirements req("MPS UNSTACK OP");
     req.expectTrue(block.isUseMPS(), IS_USE_MPS_MSG);
@@ -755,7 +755,7 @@ PLATFORM_CHECK(unstack, ENGINE_CPU) {
 // Repeat
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(repeat, ENGINE_CPU) {
+PLATFORM_IMPL(repeat, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -798,7 +798,7 @@ PLATFORM_IMPL(repeat, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(repeat, ENGINE_CPU) {
+PLATFORM_CHECK(repeat, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     Requirements req("MPS REPEAT OP");
     req.expectTrue(block.isUseMPS(), IS_USE_MPS_MSG);
@@ -813,7 +813,7 @@ PLATFORM_CHECK(repeat, ENGINE_CPU) {
 // Reverse sequence
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(reverse_sequence, ENGINE_CPU) {
+PLATFORM_IMPL(reverse_sequence, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto seqLens = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -865,7 +865,7 @@ PLATFORM_IMPL(reverse_sequence, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reverse_sequence, ENGINE_CPU) {
+PLATFORM_CHECK(reverse_sequence, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     Requirements req("MPS REVERSE_SEQUENCE OP");
     req.expectTrue(block.isUseMPS(), IS_USE_MPS_MSG);
@@ -880,7 +880,7 @@ PLATFORM_CHECK(reverse_sequence, ENGINE_CPU) {
 // Strided slice
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(strided_slice, ENGINE_CPU) {
+PLATFORM_IMPL(strided_slice, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -942,7 +942,7 @@ PLATFORM_IMPL(strided_slice, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(strided_slice, ENGINE_CPU) {
+PLATFORM_CHECK(strided_slice, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     Requirements req("MPS STRIDED_SLICE OP");
     req.expectTrue(block.isUseMPS(), IS_USE_MPS_MSG);
@@ -957,7 +957,7 @@ PLATFORM_CHECK(strided_slice, ENGINE_CPU) {
 // Scatter update
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(scatter_update, ENGINE_CPU) {
+PLATFORM_IMPL(scatter_update, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);       // [N, ...]
     auto indices = INPUT_VARIABLE(1); // [K]
     auto updates = INPUT_VARIABLE(2); // [K, ...]
@@ -988,7 +988,7 @@ PLATFORM_IMPL(scatter_update, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(scatter_update, ENGINE_CPU) {
+PLATFORM_CHECK(scatter_update, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     Requirements req("MPS SCATTER_UPDATE OP");
     req.expectTrue(block.isUseMPS(), IS_USE_MPS_MSG);
@@ -1003,7 +1003,7 @@ PLATFORM_CHECK(scatter_update, ENGINE_CPU) {
 // Gather ND
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(gather_nd, ENGINE_CPU) {
+PLATFORM_IMPL(gather_nd, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);       // Input tensor [d0, d1, ..., d_{n-1}]
     auto indices = INPUT_VARIABLE(1); // Index tensor [..., k]
     auto z = OUTPUT_VARIABLE(0);
@@ -1056,7 +1056,7 @@ PLATFORM_IMPL(gather_nd, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(gather_nd, ENGINE_CPU) {
+PLATFORM_CHECK(gather_nd, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     Requirements req("MPS GATHER_ND OP");
     req.expectTrue(block.isUseMPS(), IS_USE_MPS_MSG);
@@ -1069,47 +1069,47 @@ PLATFORM_CHECK(gather_nd, ENGINE_CPU) {
 
 #else  // !HAVE_MPS — stub implementations so the translation unit links on non-Apple platforms
 
-PLATFORM_IMPL(transpose, ENGINE_CPU)       { return sd::Status::OK; }
-PLATFORM_CHECK(transpose, ENGINE_CPU)      { return Requirements("MPS TRANSPOSE STUB"); }
+PLATFORM_IMPL(transpose, ENGINE_MPS)       { return sd::Status::OK; }
+PLATFORM_CHECK(transpose, ENGINE_MPS)      { return Requirements("MPS TRANSPOSE STUB"); }
 
-PLATFORM_IMPL(concat, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(concat, ENGINE_CPU)         { return Requirements("MPS CONCAT STUB"); }
+PLATFORM_IMPL(concat, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(concat, ENGINE_MPS)         { return Requirements("MPS CONCAT STUB"); }
 
-PLATFORM_IMPL(stack, ENGINE_CPU)           { return sd::Status::OK; }
-PLATFORM_CHECK(stack, ENGINE_CPU)          { return Requirements("MPS STACK STUB"); }
+PLATFORM_IMPL(stack, ENGINE_MPS)           { return sd::Status::OK; }
+PLATFORM_CHECK(stack, ENGINE_MPS)          { return Requirements("MPS STACK STUB"); }
 
-PLATFORM_IMPL(unstack, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(unstack, ENGINE_CPU)        { return Requirements("MPS UNSTACK STUB"); }
+PLATFORM_IMPL(unstack, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(unstack, ENGINE_MPS)        { return Requirements("MPS UNSTACK STUB"); }
 
-PLATFORM_IMPL(gather, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(gather, ENGINE_CPU)         { return Requirements("MPS GATHER STUB"); }
+PLATFORM_IMPL(gather, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(gather, ENGINE_MPS)         { return Requirements("MPS GATHER STUB"); }
 
-PLATFORM_IMPL(gather_nd, ENGINE_CPU)       { return sd::Status::OK; }
-PLATFORM_CHECK(gather_nd, ENGINE_CPU)      { return Requirements("MPS GATHER_ND STUB"); }
+PLATFORM_IMPL(gather_nd, ENGINE_MPS)       { return sd::Status::OK; }
+PLATFORM_CHECK(gather_nd, ENGINE_MPS)      { return Requirements("MPS GATHER_ND STUB"); }
 
-PLATFORM_IMPL(tile, ENGINE_CPU)            { return sd::Status::OK; }
-PLATFORM_CHECK(tile, ENGINE_CPU)           { return Requirements("MPS TILE STUB"); }
+PLATFORM_IMPL(tile, ENGINE_MPS)            { return sd::Status::OK; }
+PLATFORM_CHECK(tile, ENGINE_MPS)           { return Requirements("MPS TILE STUB"); }
 
-PLATFORM_IMPL(repeat, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(repeat, ENGINE_CPU)         { return Requirements("MPS REPEAT STUB"); }
+PLATFORM_IMPL(repeat, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(repeat, ENGINE_MPS)         { return Requirements("MPS REPEAT STUB"); }
 
-PLATFORM_IMPL(reverse, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(reverse, ENGINE_CPU)        { return Requirements("MPS REVERSE STUB"); }
+PLATFORM_IMPL(reverse, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(reverse, ENGINE_MPS)        { return Requirements("MPS REVERSE STUB"); }
 
-PLATFORM_IMPL(reverse_sequence, ENGINE_CPU) { return sd::Status::OK; }
-PLATFORM_CHECK(reverse_sequence, ENGINE_CPU){ return Requirements("MPS REVERSE_SEQ STUB"); }
+PLATFORM_IMPL(reverse_sequence, ENGINE_MPS) { return sd::Status::OK; }
+PLATFORM_CHECK(reverse_sequence, ENGINE_MPS){ return Requirements("MPS REVERSE_SEQ STUB"); }
 
-PLATFORM_IMPL(pad, ENGINE_CPU)             { return sd::Status::OK; }
-PLATFORM_CHECK(pad, ENGINE_CPU)            { return Requirements("MPS PAD STUB"); }
+PLATFORM_IMPL(pad, ENGINE_MPS)             { return sd::Status::OK; }
+PLATFORM_CHECK(pad, ENGINE_MPS)            { return Requirements("MPS PAD STUB"); }
 
-PLATFORM_IMPL(slice, ENGINE_CPU)           { return sd::Status::OK; }
-PLATFORM_CHECK(slice, ENGINE_CPU)          { return Requirements("MPS SLICE STUB"); }
+PLATFORM_IMPL(slice, ENGINE_MPS)           { return sd::Status::OK; }
+PLATFORM_CHECK(slice, ENGINE_MPS)          { return Requirements("MPS SLICE STUB"); }
 
-PLATFORM_IMPL(strided_slice, ENGINE_CPU)   { return sd::Status::OK; }
-PLATFORM_CHECK(strided_slice, ENGINE_CPU)  { return Requirements("MPS STRIDED_SLICE STUB"); }
+PLATFORM_IMPL(strided_slice, ENGINE_MPS)   { return sd::Status::OK; }
+PLATFORM_CHECK(strided_slice, ENGINE_MPS)  { return Requirements("MPS STRIDED_SLICE STUB"); }
 
-PLATFORM_IMPL(scatter_update, ENGINE_CPU)  { return sd::Status::OK; }
-PLATFORM_CHECK(scatter_update, ENGINE_CPU) { return Requirements("MPS SCATTER_UPDATE STUB"); }
+PLATFORM_IMPL(scatter_update, ENGINE_MPS)  { return sd::Status::OK; }
+PLATFORM_CHECK(scatter_update, ENGINE_MPS) { return Requirements("MPS SCATTER_UPDATE STUB"); }
 
 #endif  // HAVE_MPS
 

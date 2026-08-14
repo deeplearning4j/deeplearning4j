@@ -45,7 +45,7 @@ namespace platforms {
 // Reshape operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(reshape, ENGINE_CPU) {
+PLATFORM_IMPL(reshape, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -59,7 +59,7 @@ PLATFORM_IMPL(reshape, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reshape, ENGINE_CPU) {
+PLATFORM_CHECK(reshape, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS RESHAPE OP");
@@ -75,7 +75,7 @@ PLATFORM_CHECK(reshape, ENGINE_CPU) {
 // Flatten operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(flatten, ENGINE_CPU) {
+PLATFORM_IMPL(flatten, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -89,7 +89,7 @@ PLATFORM_IMPL(flatten, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(flatten, ENGINE_CPU) {
+PLATFORM_CHECK(flatten, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS FLATTEN OP");
@@ -105,7 +105,7 @@ PLATFORM_CHECK(flatten, ENGINE_CPU) {
 // Squeeze operation - remove dimensions of size 1
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(squeeze, ENGINE_CPU) {
+PLATFORM_IMPL(squeeze, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -118,7 +118,7 @@ PLATFORM_IMPL(squeeze, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(squeeze, ENGINE_CPU) {
+PLATFORM_CHECK(squeeze, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SQUEEZE OP");
@@ -134,7 +134,7 @@ PLATFORM_CHECK(squeeze, ENGINE_CPU) {
 // Unsqueeze/expand_dims operation - add dimension of size 1
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(expand_dims, ENGINE_CPU) {
+PLATFORM_IMPL(expand_dims, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -147,7 +147,7 @@ PLATFORM_IMPL(expand_dims, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(expand_dims, ENGINE_CPU) {
+PLATFORM_CHECK(expand_dims, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS EXPAND_DIMS OP");
@@ -163,7 +163,7 @@ PLATFORM_CHECK(expand_dims, ENGINE_CPU) {
 // Permute/transpose operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(permute, ENGINE_CPU) {
+PLATFORM_IMPL(permute, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -222,7 +222,7 @@ PLATFORM_IMPL(permute, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(permute, ENGINE_CPU) {
+PLATFORM_CHECK(permute, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS PERMUTE OP");
@@ -238,7 +238,7 @@ PLATFORM_CHECK(permute, ENGINE_CPU) {
 // Split operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(split, ENGINE_CPU) {
+PLATFORM_IMPL(split, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     int numOutputs = block.outputWidth();
     int axis = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
@@ -277,7 +277,7 @@ PLATFORM_IMPL(split, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(split, ENGINE_CPU) {
+PLATFORM_CHECK(split, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SPLIT OP");
@@ -293,7 +293,7 @@ PLATFORM_CHECK(split, ENGINE_CPU) {
 // Space to depth operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(space_to_depth, ENGINE_CPU) {
+PLATFORM_IMPL(space_to_depth, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);  // [batch, height, width, channels] or [batch, channels, height, width]
     auto z = OUTPUT_VARIABLE(0);
 
@@ -364,7 +364,7 @@ PLATFORM_IMPL(space_to_depth, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(space_to_depth, ENGINE_CPU) {
+PLATFORM_CHECK(space_to_depth, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SPACE_TO_DEPTH OP");
@@ -380,7 +380,7 @@ PLATFORM_CHECK(space_to_depth, ENGINE_CPU) {
 // Depth to space operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(depth_to_space, ENGINE_CPU) {
+PLATFORM_IMPL(depth_to_space, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -451,7 +451,7 @@ PLATFORM_IMPL(depth_to_space, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(depth_to_space, ENGINE_CPU) {
+PLATFORM_CHECK(depth_to_space, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS DEPTH_TO_SPACE OP");
@@ -467,7 +467,7 @@ PLATFORM_CHECK(depth_to_space, ENGINE_CPU) {
 // Batch to space operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(batch_to_space_nd, ENGINE_CPU) {
+PLATFORM_IMPL(batch_to_space_nd, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto blockShape = INPUT_VARIABLE(1);
     auto crops = INPUT_VARIABLE(2);
@@ -534,7 +534,7 @@ PLATFORM_IMPL(batch_to_space_nd, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(batch_to_space_nd, ENGINE_CPU) {
+PLATFORM_CHECK(batch_to_space_nd, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS BATCH_TO_SPACE_ND OP");
@@ -550,7 +550,7 @@ PLATFORM_CHECK(batch_to_space_nd, ENGINE_CPU) {
 // Space to batch operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(space_to_batch_nd, ENGINE_CPU) {
+PLATFORM_IMPL(space_to_batch_nd, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto blockShape = INPUT_VARIABLE(1);
     auto paddings = INPUT_VARIABLE(2);
@@ -615,7 +615,7 @@ PLATFORM_IMPL(space_to_batch_nd, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(space_to_batch_nd, ENGINE_CPU) {
+PLATFORM_CHECK(space_to_batch_nd, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SPACE_TO_BATCH_ND OP");
@@ -629,35 +629,35 @@ PLATFORM_CHECK(space_to_batch_nd, ENGINE_CPU) {
 
 #else  // !HAVE_MPS
 
-PLATFORM_IMPL(reshape, ENGINE_CPU)           { return sd::Status::OK; }
-PLATFORM_CHECK(reshape, ENGINE_CPU)          { return Requirements("MPS RESHAPE STUB"); }
+PLATFORM_IMPL(reshape, ENGINE_MPS)           { return sd::Status::OK; }
+PLATFORM_CHECK(reshape, ENGINE_MPS)          { return Requirements("MPS RESHAPE STUB"); }
 
-PLATFORM_IMPL(flatten, ENGINE_CPU)           { return sd::Status::OK; }
-PLATFORM_CHECK(flatten, ENGINE_CPU)          { return Requirements("MPS FLATTEN STUB"); }
+PLATFORM_IMPL(flatten, ENGINE_MPS)           { return sd::Status::OK; }
+PLATFORM_CHECK(flatten, ENGINE_MPS)          { return Requirements("MPS FLATTEN STUB"); }
 
-PLATFORM_IMPL(squeeze, ENGINE_CPU)           { return sd::Status::OK; }
-PLATFORM_CHECK(squeeze, ENGINE_CPU)          { return Requirements("MPS SQUEEZE STUB"); }
+PLATFORM_IMPL(squeeze, ENGINE_MPS)           { return sd::Status::OK; }
+PLATFORM_CHECK(squeeze, ENGINE_MPS)          { return Requirements("MPS SQUEEZE STUB"); }
 
-PLATFORM_IMPL(expand_dims, ENGINE_CPU)       { return sd::Status::OK; }
-PLATFORM_CHECK(expand_dims, ENGINE_CPU)      { return Requirements("MPS EXPAND_DIMS STUB"); }
+PLATFORM_IMPL(expand_dims, ENGINE_MPS)       { return sd::Status::OK; }
+PLATFORM_CHECK(expand_dims, ENGINE_MPS)      { return Requirements("MPS EXPAND_DIMS STUB"); }
 
-PLATFORM_IMPL(permute, ENGINE_CPU)           { return sd::Status::OK; }
-PLATFORM_CHECK(permute, ENGINE_CPU)          { return Requirements("MPS PERMUTE STUB"); }
+PLATFORM_IMPL(permute, ENGINE_MPS)           { return sd::Status::OK; }
+PLATFORM_CHECK(permute, ENGINE_MPS)          { return Requirements("MPS PERMUTE STUB"); }
 
-PLATFORM_IMPL(split, ENGINE_CPU)             { return sd::Status::OK; }
-PLATFORM_CHECK(split, ENGINE_CPU)            { return Requirements("MPS SPLIT STUB"); }
+PLATFORM_IMPL(split, ENGINE_MPS)             { return sd::Status::OK; }
+PLATFORM_CHECK(split, ENGINE_MPS)            { return Requirements("MPS SPLIT STUB"); }
 
-PLATFORM_IMPL(space_to_depth, ENGINE_CPU)    { return sd::Status::OK; }
-PLATFORM_CHECK(space_to_depth, ENGINE_CPU)   { return Requirements("MPS SPACE_TO_DEPTH STUB"); }
+PLATFORM_IMPL(space_to_depth, ENGINE_MPS)    { return sd::Status::OK; }
+PLATFORM_CHECK(space_to_depth, ENGINE_MPS)   { return Requirements("MPS SPACE_TO_DEPTH STUB"); }
 
-PLATFORM_IMPL(depth_to_space, ENGINE_CPU)    { return sd::Status::OK; }
-PLATFORM_CHECK(depth_to_space, ENGINE_CPU)   { return Requirements("MPS DEPTH_TO_SPACE STUB"); }
+PLATFORM_IMPL(depth_to_space, ENGINE_MPS)    { return sd::Status::OK; }
+PLATFORM_CHECK(depth_to_space, ENGINE_MPS)   { return Requirements("MPS DEPTH_TO_SPACE STUB"); }
 
-PLATFORM_IMPL(batch_to_space_nd, ENGINE_CPU)  { return sd::Status::OK; }
-PLATFORM_CHECK(batch_to_space_nd, ENGINE_CPU) { return Requirements("MPS BATCH_TO_SPACE_ND STUB"); }
+PLATFORM_IMPL(batch_to_space_nd, ENGINE_MPS)  { return sd::Status::OK; }
+PLATFORM_CHECK(batch_to_space_nd, ENGINE_MPS) { return Requirements("MPS BATCH_TO_SPACE_ND STUB"); }
 
-PLATFORM_IMPL(space_to_batch_nd, ENGINE_CPU)  { return sd::Status::OK; }
-PLATFORM_CHECK(space_to_batch_nd, ENGINE_CPU) { return Requirements("MPS SPACE_TO_BATCH_ND STUB"); }
+PLATFORM_IMPL(space_to_batch_nd, ENGINE_MPS)  { return sd::Status::OK; }
+PLATFORM_CHECK(space_to_batch_nd, ENGINE_MPS) { return Requirements("MPS SPACE_TO_BATCH_ND STUB"); }
 
 #endif  // HAVE_MPS
 

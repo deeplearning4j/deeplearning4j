@@ -102,7 +102,7 @@ static void reluMPS(NDArray* input, NDArray* output) {
     }
 }
 
-PLATFORM_IMPL(relu, ENGINE_CPU) {
+PLATFORM_IMPL(relu, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -113,7 +113,7 @@ PLATFORM_IMPL(relu, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(relu, ENGINE_CPU) {
+PLATFORM_CHECK(relu, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS RELU OP");
@@ -175,7 +175,7 @@ static void leakyReluMPS(NDArray* input, NDArray* output, float alpha) {
     }
 }
 
-PLATFORM_IMPL(leaky_relu, ENGINE_CPU) {
+PLATFORM_IMPL(leaky_relu, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -191,7 +191,7 @@ PLATFORM_IMPL(leaky_relu, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(leaky_relu, ENGINE_CPU) {
+PLATFORM_CHECK(leaky_relu, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS LEAKY_RELU OP");
@@ -253,7 +253,7 @@ static void sigmoidMPS(NDArray* input, NDArray* output) {
     }
 }
 
-PLATFORM_IMPL(sigmoid, ENGINE_CPU) {
+PLATFORM_IMPL(sigmoid, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -264,7 +264,7 @@ PLATFORM_IMPL(sigmoid, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(sigmoid, ENGINE_CPU) {
+PLATFORM_CHECK(sigmoid, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS SIGMOID OP");
@@ -326,7 +326,7 @@ static void tanhMPS(NDArray* input, NDArray* output) {
     }
 }
 
-PLATFORM_IMPL(tanh, ENGINE_CPU) {
+PLATFORM_IMPL(tanh, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -337,7 +337,7 @@ PLATFORM_IMPL(tanh, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(tanh, ENGINE_CPU) {
+PLATFORM_CHECK(tanh, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS TANH OP");
@@ -399,7 +399,7 @@ static void eluMPS(NDArray* input, NDArray* output, float alpha) {
     }
 }
 
-PLATFORM_IMPL(elu, ENGINE_CPU) {
+PLATFORM_IMPL(elu, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -415,7 +415,7 @@ PLATFORM_IMPL(elu, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(elu, ENGINE_CPU) {
+PLATFORM_CHECK(elu, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS ELU OP");
@@ -487,7 +487,7 @@ static void softmaxMPS(NDArray* input, NDArray* output) {
     }
 }
 
-PLATFORM_IMPL(softmax, ENGINE_CPU) {
+PLATFORM_IMPL(softmax, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -498,7 +498,7 @@ PLATFORM_IMPL(softmax, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(softmax, ENGINE_CPU) {
+PLATFORM_CHECK(softmax, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS SOFTMAX OP");
@@ -585,7 +585,7 @@ static void geluMPS(NDArray* input, NDArray* output) {
     }
 }
 
-PLATFORM_IMPL(gelu, ENGINE_CPU) {
+PLATFORM_IMPL(gelu, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -596,7 +596,7 @@ PLATFORM_IMPL(gelu, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(gelu, ENGINE_CPU) {
+PLATFORM_CHECK(gelu, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS GELU OP");
@@ -672,7 +672,7 @@ static void siluMPS(NDArray* input, NDArray* output) {
     }
 }
 
-PLATFORM_IMPL(silu, ENGINE_CPU) {
+PLATFORM_IMPL(silu, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -683,7 +683,7 @@ PLATFORM_IMPL(silu, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(silu, ENGINE_CPU) {
+PLATFORM_CHECK(silu, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS SILU OP");

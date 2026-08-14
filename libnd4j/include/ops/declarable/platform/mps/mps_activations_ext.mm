@@ -44,7 +44,7 @@ namespace platforms {
 // Hard Sigmoid: max(0, min(1, x * 0.2 + 0.5))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(hard_sigmoid, ENGINE_CPU) {
+PLATFORM_IMPL(hard_sigmoid, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -62,7 +62,7 @@ PLATFORM_IMPL(hard_sigmoid, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(hard_sigmoid, ENGINE_CPU) {
+PLATFORM_CHECK(hard_sigmoid, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS HARD_SIGMOID OP");
@@ -78,7 +78,7 @@ PLATFORM_CHECK(hard_sigmoid, ENGINE_CPU) {
 // Hard Swish: x * hard_sigmoid(x) = x * max(0, min(1, x/6 + 0.5))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(hardswish, ENGINE_CPU) {
+PLATFORM_IMPL(hardswish, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -97,7 +97,7 @@ PLATFORM_IMPL(hardswish, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(hardswish, ENGINE_CPU) {
+PLATFORM_CHECK(hardswish, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS HARDSWISH OP");
@@ -113,7 +113,7 @@ PLATFORM_CHECK(hardswish, ENGINE_CPU) {
 // Mish: x * tanh(softplus(x)) = x * tanh(log(1 + exp(x)))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(mish, ENGINE_CPU) {
+PLATFORM_IMPL(mish, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -132,7 +132,7 @@ PLATFORM_IMPL(mish, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(mish, ENGINE_CPU) {
+PLATFORM_CHECK(mish, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS MISH OP");
@@ -148,7 +148,7 @@ PLATFORM_CHECK(mish, ENGINE_CPU) {
 // Softplus: log(1 + exp(x))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(softplus, ENGINE_CPU) {
+PLATFORM_IMPL(softplus, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -165,7 +165,7 @@ PLATFORM_IMPL(softplus, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(softplus, ENGINE_CPU) {
+PLATFORM_CHECK(softplus, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SOFTPLUS OP");
@@ -181,7 +181,7 @@ PLATFORM_CHECK(softplus, ENGINE_CPU) {
 // Softsign: x / (1 + |x|)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(softsign, ENGINE_CPU) {
+PLATFORM_IMPL(softsign, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -199,7 +199,7 @@ PLATFORM_IMPL(softsign, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(softsign, ENGINE_CPU) {
+PLATFORM_CHECK(softsign, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SOFTSIGN OP");
@@ -215,7 +215,7 @@ PLATFORM_CHECK(softsign, ENGINE_CPU) {
 // PReLU: max(0, x) + alpha * min(0, x)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(prelu, ENGINE_CPU) {
+PLATFORM_IMPL(prelu, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto alpha = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -237,7 +237,7 @@ PLATFORM_IMPL(prelu, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(prelu, ENGINE_CPU) {
+PLATFORM_CHECK(prelu, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS PRELU OP");
@@ -253,7 +253,7 @@ PLATFORM_CHECK(prelu, ENGINE_CPU) {
 // SELU: scale * (max(0, x) + min(0, alpha * (exp(x) - 1)))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(selu, ENGINE_CPU) {
+PLATFORM_IMPL(selu, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -278,7 +278,7 @@ PLATFORM_IMPL(selu, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(selu, ENGINE_CPU) {
+PLATFORM_CHECK(selu, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SELU OP");
@@ -294,7 +294,7 @@ PLATFORM_CHECK(selu, ENGINE_CPU) {
 // CELU: max(0, x) + min(0, alpha * (exp(x/alpha) - 1))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(celu, ENGINE_CPU) {
+PLATFORM_IMPL(celu, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -321,7 +321,7 @@ PLATFORM_IMPL(celu, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(celu, ENGINE_CPU) {
+PLATFORM_CHECK(celu, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS CELU OP");
@@ -337,7 +337,7 @@ PLATFORM_CHECK(celu, ENGINE_CPU) {
 // ReLU6: min(max(0, x), 6)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(relu6, ENGINE_CPU) {
+PLATFORM_IMPL(relu6, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -355,7 +355,7 @@ PLATFORM_IMPL(relu6, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(relu6, ENGINE_CPU) {
+PLATFORM_CHECK(relu6, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS RELU6 OP");
@@ -371,7 +371,7 @@ PLATFORM_CHECK(relu6, ENGINE_CPU) {
 // Thresholded ReLU: x if x > theta, else 0
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(thresholdedrelu, ENGINE_CPU) {
+PLATFORM_IMPL(thresholdedrelu, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -394,7 +394,7 @@ PLATFORM_IMPL(thresholdedrelu, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(thresholdedrelu, ENGINE_CPU) {
+PLATFORM_CHECK(thresholdedrelu, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS THRESHOLDEDRELU OP");
@@ -410,7 +410,7 @@ PLATFORM_CHECK(thresholdedrelu, ENGINE_CPU) {
 // Log Softmax
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(log_softmax, ENGINE_CPU) {
+PLATFORM_IMPL(log_softmax, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -455,7 +455,7 @@ PLATFORM_IMPL(log_softmax, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(log_softmax, ENGINE_CPU) {
+PLATFORM_CHECK(log_softmax, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS LOG_SOFTMAX OP");

@@ -139,7 +139,7 @@ static void addMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(add, ENGINE_CPU) {
+PLATFORM_IMPL(add, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -151,7 +151,7 @@ PLATFORM_IMPL(add, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(add, ENGINE_CPU) {
+PLATFORM_CHECK(add, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -231,7 +231,7 @@ static void multiplyMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(multiply, ENGINE_CPU) {
+PLATFORM_IMPL(multiply, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -243,7 +243,7 @@ PLATFORM_IMPL(multiply, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(multiply, ENGINE_CPU) {
+PLATFORM_CHECK(multiply, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -292,7 +292,7 @@ static void subtractMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(subtract, ENGINE_CPU) {
+PLATFORM_IMPL(subtract, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -304,7 +304,7 @@ PLATFORM_IMPL(subtract, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(subtract, ENGINE_CPU) {
+PLATFORM_CHECK(subtract, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -351,7 +351,7 @@ static void divideMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(divide, ENGINE_CPU) {
+PLATFORM_IMPL(divide, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -363,7 +363,7 @@ PLATFORM_IMPL(divide, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(divide, ENGINE_CPU) {
+PLATFORM_CHECK(divide, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -397,7 +397,7 @@ static void sqrtMPS(NDArray* x, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(sqrt, ENGINE_CPU) {
+PLATFORM_IMPL(sqrt, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -408,7 +408,7 @@ PLATFORM_IMPL(sqrt, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(sqrt, ENGINE_CPU) {
+PLATFORM_CHECK(sqrt, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SQRT OP");
@@ -440,7 +440,7 @@ static void expMPS(NDArray* x, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(exp, ENGINE_CPU) {
+PLATFORM_IMPL(exp, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -451,7 +451,7 @@ PLATFORM_IMPL(exp, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(exp, ENGINE_CPU) {
+PLATFORM_CHECK(exp, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS EXP OP");
@@ -483,7 +483,7 @@ static void logMPS(NDArray* x, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(log, ENGINE_CPU) {
+PLATFORM_IMPL(log, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -494,7 +494,7 @@ PLATFORM_IMPL(log, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(log, ENGINE_CPU) {
+PLATFORM_CHECK(log, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS LOG OP");
@@ -539,7 +539,7 @@ static void powMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(pow, ENGINE_CPU) {
+PLATFORM_IMPL(pow, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -551,7 +551,7 @@ PLATFORM_IMPL(pow, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(pow, ENGINE_CPU) {
+PLATFORM_CHECK(pow, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -585,7 +585,7 @@ static void absMPS(NDArray* x, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(abs, ENGINE_CPU) {
+PLATFORM_IMPL(abs, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -596,7 +596,7 @@ PLATFORM_IMPL(abs, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(abs, ENGINE_CPU) {
+PLATFORM_CHECK(abs, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ABS OP");
@@ -628,7 +628,7 @@ static void negMPS(NDArray* x, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(neg, ENGINE_CPU) {
+PLATFORM_IMPL(neg, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -639,7 +639,7 @@ PLATFORM_IMPL(neg, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(neg, ENGINE_CPU) {
+PLATFORM_CHECK(neg, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS NEG OP");
@@ -657,35 +657,35 @@ PLATFORM_CHECK(neg, ENGINE_CPU) {
 
 #else  // !HAVE_MPS — register no-op stubs so the helper entries exist on all builds
 
-PLATFORM_IMPL(add, ENGINE_CPU)      { return sd::Status::OK; }
-PLATFORM_CHECK(add, ENGINE_CPU)     { return false; }
+PLATFORM_IMPL(add, ENGINE_MPS)      { return sd::Status::OK; }
+PLATFORM_CHECK(add, ENGINE_MPS)     { return false; }
 
-PLATFORM_IMPL(subtract, ENGINE_CPU) { return sd::Status::OK; }
-PLATFORM_CHECK(subtract, ENGINE_CPU){ return false; }
+PLATFORM_IMPL(subtract, ENGINE_MPS) { return sd::Status::OK; }
+PLATFORM_CHECK(subtract, ENGINE_MPS){ return false; }
 
-PLATFORM_IMPL(multiply, ENGINE_CPU) { return sd::Status::OK; }
-PLATFORM_CHECK(multiply, ENGINE_CPU){ return false; }
+PLATFORM_IMPL(multiply, ENGINE_MPS) { return sd::Status::OK; }
+PLATFORM_CHECK(multiply, ENGINE_MPS){ return false; }
 
-PLATFORM_IMPL(divide, ENGINE_CPU)   { return sd::Status::OK; }
-PLATFORM_CHECK(divide, ENGINE_CPU)  { return false; }
+PLATFORM_IMPL(divide, ENGINE_MPS)   { return sd::Status::OK; }
+PLATFORM_CHECK(divide, ENGINE_MPS)  { return false; }
 
-PLATFORM_IMPL(pow, ENGINE_CPU)      { return sd::Status::OK; }
-PLATFORM_CHECK(pow, ENGINE_CPU)     { return false; }
+PLATFORM_IMPL(pow, ENGINE_MPS)      { return sd::Status::OK; }
+PLATFORM_CHECK(pow, ENGINE_MPS)     { return false; }
 
-PLATFORM_IMPL(sqrt, ENGINE_CPU)     { return sd::Status::OK; }
-PLATFORM_CHECK(sqrt, ENGINE_CPU)    { return false; }
+PLATFORM_IMPL(sqrt, ENGINE_MPS)     { return sd::Status::OK; }
+PLATFORM_CHECK(sqrt, ENGINE_MPS)    { return false; }
 
-PLATFORM_IMPL(exp, ENGINE_CPU)      { return sd::Status::OK; }
-PLATFORM_CHECK(exp, ENGINE_CPU)     { return false; }
+PLATFORM_IMPL(exp, ENGINE_MPS)      { return sd::Status::OK; }
+PLATFORM_CHECK(exp, ENGINE_MPS)     { return false; }
 
-PLATFORM_IMPL(log, ENGINE_CPU)      { return sd::Status::OK; }
-PLATFORM_CHECK(log, ENGINE_CPU)     { return false; }
+PLATFORM_IMPL(log, ENGINE_MPS)      { return sd::Status::OK; }
+PLATFORM_CHECK(log, ENGINE_MPS)     { return false; }
 
-PLATFORM_IMPL(abs, ENGINE_CPU)      { return sd::Status::OK; }
-PLATFORM_CHECK(abs, ENGINE_CPU)     { return false; }
+PLATFORM_IMPL(abs, ENGINE_MPS)      { return sd::Status::OK; }
+PLATFORM_CHECK(abs, ENGINE_MPS)     { return false; }
 
-PLATFORM_IMPL(neg, ENGINE_CPU)      { return sd::Status::OK; }
-PLATFORM_CHECK(neg, ENGINE_CPU)     { return false; }
+PLATFORM_IMPL(neg, ENGINE_MPS)      { return sd::Status::OK; }
+PLATFORM_CHECK(neg, ENGINE_MPS)     { return false; }
 
 #endif  // HAVE_MPS
 

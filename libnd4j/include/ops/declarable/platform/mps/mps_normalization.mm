@@ -131,7 +131,7 @@ static void batchnormMPS(NDArray* input, NDArray* mean, NDArray* variance,
     }
 }
 
-PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
+PLATFORM_IMPL(batchnorm, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto mean = INPUT_VARIABLE(1);
     auto variance = INPUT_VARIABLE(2);
@@ -151,7 +151,7 @@ PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
+PLATFORM_CHECK(batchnorm, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS BATCHNORM OP");
@@ -227,7 +227,7 @@ static void layerNormMPS(NDArray* input, NDArray* gamma, NDArray* beta,
     }
 }
 
-PLATFORM_IMPL(layer_norm, ENGINE_CPU) {
+PLATFORM_IMPL(layer_norm, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     NDArray* gamma = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
     NDArray* beta = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -249,7 +249,7 @@ PLATFORM_IMPL(layer_norm, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(layer_norm, ENGINE_CPU) {
+PLATFORM_CHECK(layer_norm, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS LAYER_NORM OP");
@@ -323,7 +323,7 @@ static void instanceNormMPS(NDArray* input, NDArray* gamma, NDArray* beta,
     }
 }
 
-PLATFORM_IMPL(instance_norm, ENGINE_CPU) {
+PLATFORM_IMPL(instance_norm, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     NDArray* gamma = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
     NDArray* beta = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -341,7 +341,7 @@ PLATFORM_IMPL(instance_norm, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(instance_norm, ENGINE_CPU) {
+PLATFORM_CHECK(instance_norm, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS INSTANCE_NORM OP");
@@ -363,12 +363,12 @@ PLATFORM_CHECK(instance_norm, ENGINE_CPU) {
 //                readily available via the MPS inference API; defer to CPU)
 // ===========================================================================
 
-PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
+PLATFORM_IMPL(batchnorm_bp, ENGINE_MPS) {
     // Stub: CPU op handles gradient computation.
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
+PLATFORM_CHECK(batchnorm_bp, ENGINE_MPS) {
     Requirements req("MPS BATCHNORM_BP OP");
     // Always fall back to CPU.
     req.expectTrue(makeInfoVariable(false, "batchnorm_bp uses CPU fallback"), NO_MSG);

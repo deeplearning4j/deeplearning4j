@@ -68,7 +68,7 @@ static void greaterMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(greater, ENGINE_CPU) {
+PLATFORM_IMPL(greater, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -80,7 +80,7 @@ PLATFORM_IMPL(greater, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(greater, ENGINE_CPU) {
+PLATFORM_CHECK(greater, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -127,7 +127,7 @@ static void greaterEqualMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(greater_equal, ENGINE_CPU) {
+PLATFORM_IMPL(greater_equal, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -139,7 +139,7 @@ PLATFORM_IMPL(greater_equal, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(greater_equal, ENGINE_CPU) {
+PLATFORM_CHECK(greater_equal, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -186,7 +186,7 @@ static void lessMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(less, ENGINE_CPU) {
+PLATFORM_IMPL(less, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -198,7 +198,7 @@ PLATFORM_IMPL(less, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(less, ENGINE_CPU) {
+PLATFORM_CHECK(less, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -245,7 +245,7 @@ static void lessEqualMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(less_equal, ENGINE_CPU) {
+PLATFORM_IMPL(less_equal, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -257,7 +257,7 @@ PLATFORM_IMPL(less_equal, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(less_equal, ENGINE_CPU) {
+PLATFORM_CHECK(less_equal, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -304,7 +304,7 @@ static void equalMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(equals, ENGINE_CPU) {
+PLATFORM_IMPL(equals, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -316,7 +316,7 @@ PLATFORM_IMPL(equals, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(equals, ENGINE_CPU) {
+PLATFORM_CHECK(equals, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -363,7 +363,7 @@ static void notEqualMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(not_equals, ENGINE_CPU) {
+PLATFORM_IMPL(not_equals, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -375,7 +375,7 @@ PLATFORM_IMPL(not_equals, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(not_equals, ENGINE_CPU) {
+PLATFORM_CHECK(not_equals, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -422,7 +422,7 @@ static void maximumMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(maximum, ENGINE_CPU) {
+PLATFORM_IMPL(maximum, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -434,7 +434,7 @@ PLATFORM_IMPL(maximum, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(maximum, ENGINE_CPU) {
+PLATFORM_CHECK(maximum, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -481,7 +481,7 @@ static void minimumMPS(NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(minimum, ENGINE_CPU) {
+PLATFORM_IMPL(minimum, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -493,7 +493,7 @@ PLATFORM_IMPL(minimum, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(minimum, ENGINE_CPU) {
+PLATFORM_CHECK(minimum, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
@@ -529,7 +529,7 @@ static void whereMPS(NDArray* condition, NDArray* x, NDArray* y, NDArray* z) {
     }
 }
 
-PLATFORM_IMPL(where_np, ENGINE_CPU) {
+PLATFORM_IMPL(where_np, ENGINE_MPS) {
     auto condition = INPUT_VARIABLE(0);
     auto x = INPUT_VARIABLE(1);
     auto y = INPUT_VARIABLE(2);
@@ -542,7 +542,7 @@ PLATFORM_IMPL(where_np, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(where_np, ENGINE_CPU) {
+PLATFORM_CHECK(where_np, ENGINE_MPS) {
     auto condition = INPUT_VARIABLE(0);
     auto x = INPUT_VARIABLE(1);
 
@@ -562,32 +562,32 @@ PLATFORM_CHECK(where_np, ENGINE_CPU) {
 
 #else  // !HAVE_MPS — register no-op stubs
 
-PLATFORM_IMPL(greater, ENGINE_CPU)       { return sd::Status::OK; }
-PLATFORM_CHECK(greater, ENGINE_CPU)      { return false; }
+PLATFORM_IMPL(greater, ENGINE_MPS)       { return sd::Status::OK; }
+PLATFORM_CHECK(greater, ENGINE_MPS)      { return false; }
 
-PLATFORM_IMPL(greater_equal, ENGINE_CPU) { return sd::Status::OK; }
-PLATFORM_CHECK(greater_equal, ENGINE_CPU){ return false; }
+PLATFORM_IMPL(greater_equal, ENGINE_MPS) { return sd::Status::OK; }
+PLATFORM_CHECK(greater_equal, ENGINE_MPS){ return false; }
 
-PLATFORM_IMPL(less, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(less, ENGINE_CPU)         { return false; }
+PLATFORM_IMPL(less, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(less, ENGINE_MPS)         { return false; }
 
-PLATFORM_IMPL(less_equal, ENGINE_CPU)    { return sd::Status::OK; }
-PLATFORM_CHECK(less_equal, ENGINE_CPU)   { return false; }
+PLATFORM_IMPL(less_equal, ENGINE_MPS)    { return sd::Status::OK; }
+PLATFORM_CHECK(less_equal, ENGINE_MPS)   { return false; }
 
-PLATFORM_IMPL(equals, ENGINE_CPU)        { return sd::Status::OK; }
-PLATFORM_CHECK(equals, ENGINE_CPU)       { return false; }
+PLATFORM_IMPL(equals, ENGINE_MPS)        { return sd::Status::OK; }
+PLATFORM_CHECK(equals, ENGINE_MPS)       { return false; }
 
-PLATFORM_IMPL(not_equals, ENGINE_CPU)    { return sd::Status::OK; }
-PLATFORM_CHECK(not_equals, ENGINE_CPU)   { return false; }
+PLATFORM_IMPL(not_equals, ENGINE_MPS)    { return sd::Status::OK; }
+PLATFORM_CHECK(not_equals, ENGINE_MPS)   { return false; }
 
-PLATFORM_IMPL(maximum, ENGINE_CPU)       { return sd::Status::OK; }
-PLATFORM_CHECK(maximum, ENGINE_CPU)      { return false; }
+PLATFORM_IMPL(maximum, ENGINE_MPS)       { return sd::Status::OK; }
+PLATFORM_CHECK(maximum, ENGINE_MPS)      { return false; }
 
-PLATFORM_IMPL(minimum, ENGINE_CPU)       { return sd::Status::OK; }
-PLATFORM_CHECK(minimum, ENGINE_CPU)      { return false; }
+PLATFORM_IMPL(minimum, ENGINE_MPS)       { return sd::Status::OK; }
+PLATFORM_CHECK(minimum, ENGINE_MPS)      { return false; }
 
-PLATFORM_IMPL(where_np, ENGINE_CPU)      { return sd::Status::OK; }
-PLATFORM_CHECK(where_np, ENGINE_CPU)     { return false; }
+PLATFORM_IMPL(where_np, ENGINE_MPS)      { return sd::Status::OK; }
+PLATFORM_CHECK(where_np, ENGINE_MPS)     { return false; }
 
 #endif  // HAVE_MPS
 

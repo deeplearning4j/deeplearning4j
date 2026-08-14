@@ -355,16 +355,23 @@ class WorkflowMatrixTests(unittest.TestCase):
         image = (
             ROOT / "libnd4j/include/ops/declarable/platform/mps/mps_image.mm"
         ).read_text()
-        self.assertNotIn("PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU)", conv)
-        self.assertNotIn("PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU)", conv)
+        self.assertNotIn("PLATFORM_IMPL(depthwise_conv2d, ENGINE_MPS)", conv)
+        self.assertNotIn("PLATFORM_CHECK(depthwise_conv2d, ENGINE_MPS)", conv)
         self.assertEqual(
             2,
-            image.count("PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU)"),
+            image.count("PLATFORM_IMPL(depthwise_conv2d, ENGINE_MPS)"),
         )
         self.assertEqual(
             2,
-            image.count("PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU)"),
+            image.count("PLATFORM_CHECK(depthwise_conv2d, ENGINE_MPS)"),
         )
+
+        mps_dir = ROOT / "libnd4j/include/ops/declarable/platform/mps"
+        registration_sources = [mps_dir / "mpsUtils.h", *mps_dir.glob("mps_*.mm")]
+        for source in registration_sources:
+            contents = source.read_text()
+            self.assertNotIn("ENGINE_CPU", contents, source)
+            self.assertIn("ENGINE_MPS", contents, source)
 
         elementwise = (
             ROOT / "libnd4j/include/ops/declarable/platform/mps/mps_elementwise.mm"

@@ -45,7 +45,7 @@ namespace platforms {
 // Scaled Dot-Product Attention: softmax(Q * K^T / sqrt(d_k)) * V
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(dot_product_attention, ENGINE_CPU) {
+PLATFORM_IMPL(dot_product_attention, ENGINE_MPS) {
     auto queries = INPUT_VARIABLE(0);  // [batch, heads, seqQ, depth]
     auto keys = INPUT_VARIABLE(1);     // [batch, heads, seqK, depth]
     auto values = INPUT_VARIABLE(2);   // [batch, heads, seqK, depthV]
@@ -162,7 +162,7 @@ PLATFORM_IMPL(dot_product_attention, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(dot_product_attention, ENGINE_CPU) {
+PLATFORM_CHECK(dot_product_attention, ENGINE_MPS) {
     auto queries = INPUT_VARIABLE(0);
 
     Requirements req("MPS DOT_PRODUCT_ATTENTION OP");
@@ -178,7 +178,7 @@ PLATFORM_CHECK(dot_product_attention, ENGINE_CPU) {
 // Multi-Head Attention
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(multi_head_dot_product_attention, ENGINE_CPU) {
+PLATFORM_IMPL(multi_head_dot_product_attention, ENGINE_MPS) {
     auto queries = INPUT_VARIABLE(0);  // [batch, seqQ, embedDim]
     auto keys = INPUT_VARIABLE(1);     // [batch, seqK, embedDim]
     auto values = INPUT_VARIABLE(2);   // [batch, seqK, embedDim]
@@ -330,7 +330,7 @@ PLATFORM_IMPL(multi_head_dot_product_attention, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(multi_head_dot_product_attention, ENGINE_CPU) {
+PLATFORM_CHECK(multi_head_dot_product_attention, ENGINE_MPS) {
     auto queries = INPUT_VARIABLE(0);
 
     Requirements req("MPS MULTI_HEAD_DOT_PRODUCT_ATTENTION OP");
@@ -346,7 +346,7 @@ PLATFORM_CHECK(multi_head_dot_product_attention, ENGINE_CPU) {
 // Additive Attention (Bahdanau attention)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(additive_attention, ENGINE_CPU) {
+PLATFORM_IMPL(additive_attention, ENGINE_MPS) {
     auto queries = INPUT_VARIABLE(0);  // [batch, seqQ, depth]
     auto keys = INPUT_VARIABLE(1);     // [batch, seqK, depth]
     auto values = INPUT_VARIABLE(2);   // [batch, seqK, depthV]
@@ -424,7 +424,7 @@ PLATFORM_IMPL(additive_attention, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(additive_attention, ENGINE_CPU) {
+PLATFORM_CHECK(additive_attention, ENGINE_MPS) {
     auto queries = INPUT_VARIABLE(0);
 
     Requirements req("MPS ADDITIVE_ATTENTION OP");
@@ -440,7 +440,7 @@ PLATFORM_CHECK(additive_attention, ENGINE_CPU) {
 // Self-Attention (single sequence, no separate K/V)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(self_attention, ENGINE_CPU) {
+PLATFORM_IMPL(self_attention, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);      // [batch, seq, embed]
     auto Wqkv = INPUT_VARIABLE(1);   // [embed, 3*embed] - combined Q,K,V projection
     auto Wo = INPUT_VARIABLE(2);     // [embed, embed]
@@ -558,7 +558,7 @@ PLATFORM_IMPL(self_attention, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(self_attention, ENGINE_CPU) {
+PLATFORM_CHECK(self_attention, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SELF_ATTENTION OP");
@@ -572,17 +572,17 @@ PLATFORM_CHECK(self_attention, ENGINE_CPU) {
 
 #else  // !HAVE_MPS
 
-PLATFORM_IMPL(dot_product_attention, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(dot_product_attention, ENGINE_CPU)         { return Requirements("MPS DOT_PRODUCT_ATTENTION STUB"); }
+PLATFORM_IMPL(dot_product_attention, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(dot_product_attention, ENGINE_MPS)         { return Requirements("MPS DOT_PRODUCT_ATTENTION STUB"); }
 
-PLATFORM_IMPL(multi_head_dot_product_attention, ENGINE_CPU)  { return sd::Status::OK; }
-PLATFORM_CHECK(multi_head_dot_product_attention, ENGINE_CPU) { return Requirements("MPS MULTI_HEAD_ATTENTION STUB"); }
+PLATFORM_IMPL(multi_head_dot_product_attention, ENGINE_MPS)  { return sd::Status::OK; }
+PLATFORM_CHECK(multi_head_dot_product_attention, ENGINE_MPS) { return Requirements("MPS MULTI_HEAD_ATTENTION STUB"); }
 
-PLATFORM_IMPL(additive_attention, ENGINE_CPU)             { return sd::Status::OK; }
-PLATFORM_CHECK(additive_attention, ENGINE_CPU)            { return Requirements("MPS ADDITIVE_ATTENTION STUB"); }
+PLATFORM_IMPL(additive_attention, ENGINE_MPS)             { return sd::Status::OK; }
+PLATFORM_CHECK(additive_attention, ENGINE_MPS)            { return Requirements("MPS ADDITIVE_ATTENTION STUB"); }
 
-PLATFORM_IMPL(self_attention, ENGINE_CPU)                 { return sd::Status::OK; }
-PLATFORM_CHECK(self_attention, ENGINE_CPU)                { return Requirements("MPS SELF_ATTENTION STUB"); }
+PLATFORM_IMPL(self_attention, ENGINE_MPS)                 { return sd::Status::OK; }
+PLATFORM_CHECK(self_attention, ENGINE_MPS)                { return Requirements("MPS SELF_ATTENTION STUB"); }
 
 #endif  // HAVE_MPS
 

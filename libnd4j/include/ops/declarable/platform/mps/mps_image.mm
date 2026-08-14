@@ -142,7 +142,7 @@ static void resizeBilinearMPS(NDArray* input, NDArray* output, int newHeight, in
     }
 }
 
-PLATFORM_IMPL(resize_bilinear, ENGINE_CPU) {
+PLATFORM_IMPL(resize_bilinear, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -161,7 +161,7 @@ PLATFORM_IMPL(resize_bilinear, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(resize_bilinear, ENGINE_CPU) {
+PLATFORM_CHECK(resize_bilinear, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS RESIZE_BILINEAR OP");
@@ -266,7 +266,7 @@ static void resizeNearestMPS(NDArray* input, NDArray* output, int newHeight, int
     }
 }
 
-PLATFORM_IMPL(resize_nearest, ENGINE_CPU) {
+PLATFORM_IMPL(resize_nearest, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -280,7 +280,7 @@ PLATFORM_IMPL(resize_nearest, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(resize_nearest, ENGINE_CPU) {
+PLATFORM_CHECK(resize_nearest, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS RESIZE_NEAREST OP");
@@ -393,7 +393,7 @@ static void cropAndResizeMPS(NDArray* image, NDArray* boxes, NDArray* boxIndices
     }
 }
 
-PLATFORM_IMPL(crop_and_resize, ENGINE_CPU) {
+PLATFORM_IMPL(crop_and_resize, ENGINE_MPS) {
     auto image = INPUT_VARIABLE(0);
     auto boxes = INPUT_VARIABLE(1);
     auto boxIndices = INPUT_VARIABLE(2);
@@ -414,7 +414,7 @@ PLATFORM_IMPL(crop_and_resize, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(crop_and_resize, ENGINE_CPU) {
+PLATFORM_CHECK(crop_and_resize, ENGINE_MPS) {
     auto image = INPUT_VARIABLE(0);
 
     Requirements req("MPS CROP_AND_RESIZE OP");
@@ -558,7 +558,7 @@ static void depthwiseConv2dMPS(NDArray* input, NDArray* weights, NDArray* bias,
     }
 }
 
-PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
+PLATFORM_IMPL(depthwise_conv2d, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto weights = INPUT_VARIABLE(1);
     NDArray* bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -580,7 +580,7 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
+PLATFORM_CHECK(depthwise_conv2d, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto weights = INPUT_VARIABLE(1);
 
@@ -600,17 +600,17 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
 
 #else  // !HAVE_MPS
 
-PLATFORM_IMPL(resize_bilinear, ENGINE_CPU)    { return sd::Status::OK; }
-PLATFORM_CHECK(resize_bilinear, ENGINE_CPU)   { return Requirements("MPS RESIZE_BILINEAR STUB"); }
+PLATFORM_IMPL(resize_bilinear, ENGINE_MPS)    { return sd::Status::OK; }
+PLATFORM_CHECK(resize_bilinear, ENGINE_MPS)   { return Requirements("MPS RESIZE_BILINEAR STUB"); }
 
-PLATFORM_IMPL(resize_nearest, ENGINE_CPU)     { return sd::Status::OK; }
-PLATFORM_CHECK(resize_nearest, ENGINE_CPU)    { return Requirements("MPS RESIZE_NEAREST STUB"); }
+PLATFORM_IMPL(resize_nearest, ENGINE_MPS)     { return sd::Status::OK; }
+PLATFORM_CHECK(resize_nearest, ENGINE_MPS)    { return Requirements("MPS RESIZE_NEAREST STUB"); }
 
-PLATFORM_IMPL(crop_and_resize, ENGINE_CPU)    { return sd::Status::OK; }
-PLATFORM_CHECK(crop_and_resize, ENGINE_CPU)   { return Requirements("MPS CROP_AND_RESIZE STUB"); }
+PLATFORM_IMPL(crop_and_resize, ENGINE_MPS)    { return sd::Status::OK; }
+PLATFORM_CHECK(crop_and_resize, ENGINE_MPS)   { return Requirements("MPS CROP_AND_RESIZE STUB"); }
 
-PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU)   { return sd::Status::OK; }
-PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU)  { return Requirements("MPS DEPTHWISE_CONV2D STUB"); }
+PLATFORM_IMPL(depthwise_conv2d, ENGINE_MPS)   { return sd::Status::OK; }
+PLATFORM_CHECK(depthwise_conv2d, ENGINE_MPS)  { return Requirements("MPS DEPTHWISE_CONV2D STUB"); }
 
 #endif  // HAVE_MPS
 

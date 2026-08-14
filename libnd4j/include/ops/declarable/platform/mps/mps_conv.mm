@@ -121,7 +121,7 @@ static void conv2dMPS(NDArray* input, NDArray* weights, NDArray* bias,
     }
 }
 
-PLATFORM_IMPL(conv2d, ENGINE_CPU) {
+PLATFORM_IMPL(conv2d, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto weights = INPUT_VARIABLE(1);
     NDArray* bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -144,7 +144,7 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(conv2d, ENGINE_CPU) {
+PLATFORM_CHECK(conv2d, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto weights = INPUT_VARIABLE(1);
 
@@ -231,7 +231,7 @@ static void maxpool2dMPS(NDArray* input, NDArray* output,
     }
 }
 
-PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
+PLATFORM_IMPL(maxpool2d, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -249,7 +249,7 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
+PLATFORM_CHECK(maxpool2d, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS MAXPOOL2D OP");
@@ -304,7 +304,7 @@ static void avgpool2dMPS(NDArray* input, NDArray* output,
     }
 }
 
-PLATFORM_IMPL(avgpool2d, ENGINE_CPU) {
+PLATFORM_IMPL(avgpool2d, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -322,7 +322,7 @@ PLATFORM_IMPL(avgpool2d, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(avgpool2d, ENGINE_CPU) {
+PLATFORM_CHECK(avgpool2d, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS AVGPOOL2D OP");
@@ -344,12 +344,12 @@ PLATFORM_CHECK(avgpool2d, ENGINE_CPU) {
 //              fall back to CPU for now)
 // ===========================================================================
 
-PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(conv2d_bp, ENGINE_MPS) {
     // Stub: let the generic CPU op handle gradient computation.
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(conv2d_bp, ENGINE_MPS) {
     Requirements req("MPS CONV2D_BP OP");
     // Always fall back to CPU — return false.
     req.expectTrue(makeInfoVariable(false, "conv2d_bp uses CPU fallback"), NO_MSG);
@@ -361,11 +361,11 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
 // depthwise_conv2d_bp  (stub)
 // ===========================================================================
 
-PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_MPS) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_MPS) {
     Requirements req("MPS DEPTHWISE_CONV2D_BP OP");
     req.expectTrue(makeInfoVariable(false, "depthwise_conv2d_bp uses CPU fallback"), NO_MSG);
     req.logTheSuccess();
@@ -376,11 +376,11 @@ PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
 // maxpool2d_bp  (stub)
 // ===========================================================================
 
-PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(maxpool2d_bp, ENGINE_MPS) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(maxpool2d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(maxpool2d_bp, ENGINE_MPS) {
     Requirements req("MPS MAXPOOL2D_BP OP");
     req.expectTrue(makeInfoVariable(false, "maxpool2d_bp uses CPU fallback"), NO_MSG);
     req.logTheSuccess();
@@ -391,11 +391,11 @@ PLATFORM_CHECK(maxpool2d_bp, ENGINE_CPU) {
 // avgpool2d_bp  (stub)
 // ===========================================================================
 
-PLATFORM_IMPL(avgpool2d_bp, ENGINE_CPU) {
+PLATFORM_IMPL(avgpool2d_bp, ENGINE_MPS) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(avgpool2d_bp, ENGINE_CPU) {
+PLATFORM_CHECK(avgpool2d_bp, ENGINE_MPS) {
     Requirements req("MPS AVGPOOL2D_BP OP");
     req.expectTrue(makeInfoVariable(false, "avgpool2d_bp uses CPU fallback"), NO_MSG);
     req.logTheSuccess();

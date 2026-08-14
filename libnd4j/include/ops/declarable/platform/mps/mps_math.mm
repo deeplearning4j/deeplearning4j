@@ -44,7 +44,7 @@ namespace platforms {
 // Sine
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(sin, ENGINE_CPU) {
+PLATFORM_IMPL(sin, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -61,7 +61,7 @@ PLATFORM_IMPL(sin, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(sin, ENGINE_CPU) {
+PLATFORM_CHECK(sin, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SIN OP");
@@ -77,7 +77,7 @@ PLATFORM_CHECK(sin, ENGINE_CPU) {
 // Cosine
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(cos, ENGINE_CPU) {
+PLATFORM_IMPL(cos, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -94,7 +94,7 @@ PLATFORM_IMPL(cos, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(cos, ENGINE_CPU) {
+PLATFORM_CHECK(cos, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS COS OP");
@@ -110,7 +110,7 @@ PLATFORM_CHECK(cos, ENGINE_CPU) {
 // Tangent
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(tan, ENGINE_CPU) {
+PLATFORM_IMPL(tan, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -127,7 +127,7 @@ PLATFORM_IMPL(tan, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(tan, ENGINE_CPU) {
+PLATFORM_CHECK(tan, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS TAN OP");
@@ -143,7 +143,7 @@ PLATFORM_CHECK(tan, ENGINE_CPU) {
 // Arc Sine
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(asin, ENGINE_CPU) {
+PLATFORM_IMPL(asin, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -160,7 +160,7 @@ PLATFORM_IMPL(asin, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(asin, ENGINE_CPU) {
+PLATFORM_CHECK(asin, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ASIN OP");
@@ -176,7 +176,7 @@ PLATFORM_CHECK(asin, ENGINE_CPU) {
 // Arc Cosine
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(acos, ENGINE_CPU) {
+PLATFORM_IMPL(acos, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -193,7 +193,7 @@ PLATFORM_IMPL(acos, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(acos, ENGINE_CPU) {
+PLATFORM_CHECK(acos, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ACOS OP");
@@ -209,7 +209,7 @@ PLATFORM_CHECK(acos, ENGINE_CPU) {
 // Arc Tangent
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(atan, ENGINE_CPU) {
+PLATFORM_IMPL(atan, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -226,7 +226,7 @@ PLATFORM_IMPL(atan, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(atan, ENGINE_CPU) {
+PLATFORM_CHECK(atan, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ATAN OP");
@@ -242,7 +242,7 @@ PLATFORM_CHECK(atan, ENGINE_CPU) {
 // Arc Tangent 2 (atan2)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(atan2, ENGINE_CPU) {
+PLATFORM_IMPL(atan2, ENGINE_MPS) {
     auto y = INPUT_VARIABLE(0);
     auto x = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
@@ -261,7 +261,7 @@ PLATFORM_IMPL(atan2, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(atan2, ENGINE_CPU) {
+PLATFORM_CHECK(atan2, ENGINE_MPS) {
     auto y = INPUT_VARIABLE(0);
     auto x = INPUT_VARIABLE(1);
 
@@ -279,7 +279,7 @@ PLATFORM_CHECK(atan2, ENGINE_CPU) {
 // Hyperbolic Sine
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(sinh, ENGINE_CPU) {
+PLATFORM_IMPL(sinh, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -296,7 +296,7 @@ PLATFORM_IMPL(sinh, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(sinh, ENGINE_CPU) {
+PLATFORM_CHECK(sinh, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SINH OP");
@@ -312,7 +312,7 @@ PLATFORM_CHECK(sinh, ENGINE_CPU) {
 // Hyperbolic Cosine
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(cosh, ENGINE_CPU) {
+PLATFORM_IMPL(cosh, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -329,7 +329,7 @@ PLATFORM_IMPL(cosh, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(cosh, ENGINE_CPU) {
+PLATFORM_CHECK(cosh, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS COSH OP");
@@ -345,7 +345,7 @@ PLATFORM_CHECK(cosh, ENGINE_CPU) {
 // Inverse Hyperbolic Sine
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(asinh, ENGINE_CPU) {
+PLATFORM_IMPL(asinh, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -362,7 +362,7 @@ PLATFORM_IMPL(asinh, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(asinh, ENGINE_CPU) {
+PLATFORM_CHECK(asinh, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ASINH OP");
@@ -378,7 +378,7 @@ PLATFORM_CHECK(asinh, ENGINE_CPU) {
 // Inverse Hyperbolic Cosine
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(acosh, ENGINE_CPU) {
+PLATFORM_IMPL(acosh, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -395,7 +395,7 @@ PLATFORM_IMPL(acosh, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(acosh, ENGINE_CPU) {
+PLATFORM_CHECK(acosh, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ACOSH OP");
@@ -411,7 +411,7 @@ PLATFORM_CHECK(acosh, ENGINE_CPU) {
 // Inverse Hyperbolic Tangent
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(atanh, ENGINE_CPU) {
+PLATFORM_IMPL(atanh, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -428,7 +428,7 @@ PLATFORM_IMPL(atanh, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(atanh, ENGINE_CPU) {
+PLATFORM_CHECK(atanh, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ATANH OP");
@@ -444,7 +444,7 @@ PLATFORM_CHECK(atanh, ENGINE_CPU) {
 // Floor
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(Floor, ENGINE_CPU) {
+PLATFORM_IMPL(Floor, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -461,7 +461,7 @@ PLATFORM_IMPL(Floor, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(Floor, ENGINE_CPU) {
+PLATFORM_CHECK(Floor, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS FLOOR OP");
@@ -477,7 +477,7 @@ PLATFORM_CHECK(Floor, ENGINE_CPU) {
 // Ceiling
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(Ceil, ENGINE_CPU) {
+PLATFORM_IMPL(Ceil, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -494,7 +494,7 @@ PLATFORM_IMPL(Ceil, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(Ceil, ENGINE_CPU) {
+PLATFORM_CHECK(Ceil, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS CEIL OP");
@@ -510,7 +510,7 @@ PLATFORM_CHECK(Ceil, ENGINE_CPU) {
 // Round
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(Round, ENGINE_CPU) {
+PLATFORM_IMPL(Round, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -527,7 +527,7 @@ PLATFORM_IMPL(Round, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(Round, ENGINE_CPU) {
+PLATFORM_CHECK(Round, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ROUND OP");
@@ -543,7 +543,7 @@ PLATFORM_CHECK(Round, ENGINE_CPU) {
 // Sign
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(Sign, ENGINE_CPU) {
+PLATFORM_IMPL(Sign, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -563,7 +563,7 @@ PLATFORM_IMPL(Sign, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(Sign, ENGINE_CPU) {
+PLATFORM_CHECK(Sign, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SIGN OP");
@@ -579,7 +579,7 @@ PLATFORM_CHECK(Sign, ENGINE_CPU) {
 // Clip (clamp)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(clip_by_value, ENGINE_CPU) {
+PLATFORM_IMPL(clip_by_value, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -602,7 +602,7 @@ PLATFORM_IMPL(clip_by_value, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(clip_by_value, ENGINE_CPU) {
+PLATFORM_CHECK(clip_by_value, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS CLIP_BY_VALUE OP");
@@ -618,7 +618,7 @@ PLATFORM_CHECK(clip_by_value, ENGINE_CPU) {
 // Reciprocal (1/x)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(reciprocal, ENGINE_CPU) {
+PLATFORM_IMPL(reciprocal, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -635,7 +635,7 @@ PLATFORM_IMPL(reciprocal, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reciprocal, ENGINE_CPU) {
+PLATFORM_CHECK(reciprocal, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS RECIPROCAL OP");
@@ -651,7 +651,7 @@ PLATFORM_CHECK(reciprocal, ENGINE_CPU) {
 // Square (x^2)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(square, ENGINE_CPU) {
+PLATFORM_IMPL(square, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -668,7 +668,7 @@ PLATFORM_IMPL(square, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(square, ENGINE_CPU) {
+PLATFORM_CHECK(square, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SQUARE OP");
@@ -684,7 +684,7 @@ PLATFORM_CHECK(square, ENGINE_CPU) {
 // Cube (x^3)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(cube, ENGINE_CPU) {
+PLATFORM_IMPL(cube, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -701,7 +701,7 @@ PLATFORM_IMPL(cube, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(cube, ENGINE_CPU) {
+PLATFORM_CHECK(cube, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS CUBE OP");
@@ -717,7 +717,7 @@ PLATFORM_CHECK(cube, ENGINE_CPU) {
 // Rsqrt (1/sqrt(x))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(rsqrt, ENGINE_CPU) {
+PLATFORM_IMPL(rsqrt, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -734,7 +734,7 @@ PLATFORM_IMPL(rsqrt, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(rsqrt, ENGINE_CPU) {
+PLATFORM_CHECK(rsqrt, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS RSQRT OP");
@@ -750,7 +750,7 @@ PLATFORM_CHECK(rsqrt, ENGINE_CPU) {
 // Log1p (log(1 + x))
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(log1p, ENGINE_CPU) {
+PLATFORM_IMPL(log1p, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -767,7 +767,7 @@ PLATFORM_IMPL(log1p, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(log1p, ENGINE_CPU) {
+PLATFORM_CHECK(log1p, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS LOG1P OP");
@@ -783,7 +783,7 @@ PLATFORM_CHECK(log1p, ENGINE_CPU) {
 // Expm1 (exp(x) - 1)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(expm1, ENGINE_CPU) {
+PLATFORM_IMPL(expm1, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -800,7 +800,7 @@ PLATFORM_IMPL(expm1, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(expm1, ENGINE_CPU) {
+PLATFORM_CHECK(expm1, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS EXPM1 OP");
@@ -816,7 +816,7 @@ PLATFORM_CHECK(expm1, ENGINE_CPU) {
 // Erf (error function)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(erf, ENGINE_CPU) {
+PLATFORM_IMPL(erf, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -833,7 +833,7 @@ PLATFORM_IMPL(erf, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(erf, ENGINE_CPU) {
+PLATFORM_CHECK(erf, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ERF OP");
@@ -849,7 +849,7 @@ PLATFORM_CHECK(erf, ENGINE_CPU) {
 // Erfc (complementary error function)
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(erfc, ENGINE_CPU) {
+PLATFORM_IMPL(erfc, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -866,7 +866,7 @@ PLATFORM_IMPL(erfc, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(erfc, ENGINE_CPU) {
+PLATFORM_CHECK(erfc, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ERFC OP");
@@ -880,80 +880,80 @@ PLATFORM_CHECK(erfc, ENGINE_CPU) {
 
 #else  // !HAVE_MPS — register no-op stubs
 
-PLATFORM_IMPL(sin, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(sin, ENGINE_CPU)         { return false; }
+PLATFORM_IMPL(sin, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(sin, ENGINE_MPS)         { return false; }
 
-PLATFORM_IMPL(cos, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(cos, ENGINE_CPU)         { return false; }
+PLATFORM_IMPL(cos, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(cos, ENGINE_MPS)         { return false; }
 
-PLATFORM_IMPL(tan, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(tan, ENGINE_CPU)         { return false; }
+PLATFORM_IMPL(tan, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(tan, ENGINE_MPS)         { return false; }
 
-PLATFORM_IMPL(asin, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(asin, ENGINE_CPU)        { return false; }
+PLATFORM_IMPL(asin, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(asin, ENGINE_MPS)        { return false; }
 
-PLATFORM_IMPL(acos, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(acos, ENGINE_CPU)        { return false; }
+PLATFORM_IMPL(acos, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(acos, ENGINE_MPS)        { return false; }
 
-PLATFORM_IMPL(atan, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(atan, ENGINE_CPU)        { return false; }
+PLATFORM_IMPL(atan, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(atan, ENGINE_MPS)        { return false; }
 
-PLATFORM_IMPL(atan2, ENGINE_CPU)        { return sd::Status::OK; }
-PLATFORM_CHECK(atan2, ENGINE_CPU)       { return false; }
+PLATFORM_IMPL(atan2, ENGINE_MPS)        { return sd::Status::OK; }
+PLATFORM_CHECK(atan2, ENGINE_MPS)       { return false; }
 
-PLATFORM_IMPL(sinh, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(sinh, ENGINE_CPU)        { return false; }
+PLATFORM_IMPL(sinh, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(sinh, ENGINE_MPS)        { return false; }
 
-PLATFORM_IMPL(cosh, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(cosh, ENGINE_CPU)        { return false; }
+PLATFORM_IMPL(cosh, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(cosh, ENGINE_MPS)        { return false; }
 
-PLATFORM_IMPL(asinh, ENGINE_CPU)        { return sd::Status::OK; }
-PLATFORM_CHECK(asinh, ENGINE_CPU)       { return false; }
+PLATFORM_IMPL(asinh, ENGINE_MPS)        { return sd::Status::OK; }
+PLATFORM_CHECK(asinh, ENGINE_MPS)       { return false; }
 
-PLATFORM_IMPL(acosh, ENGINE_CPU)        { return sd::Status::OK; }
-PLATFORM_CHECK(acosh, ENGINE_CPU)       { return false; }
+PLATFORM_IMPL(acosh, ENGINE_MPS)        { return sd::Status::OK; }
+PLATFORM_CHECK(acosh, ENGINE_MPS)       { return false; }
 
-PLATFORM_IMPL(atanh, ENGINE_CPU)        { return sd::Status::OK; }
-PLATFORM_CHECK(atanh, ENGINE_CPU)       { return false; }
+PLATFORM_IMPL(atanh, ENGINE_MPS)        { return sd::Status::OK; }
+PLATFORM_CHECK(atanh, ENGINE_MPS)       { return false; }
 
-PLATFORM_IMPL(Floor, ENGINE_CPU)        { return sd::Status::OK; }
-PLATFORM_CHECK(Floor, ENGINE_CPU)       { return false; }
+PLATFORM_IMPL(Floor, ENGINE_MPS)        { return sd::Status::OK; }
+PLATFORM_CHECK(Floor, ENGINE_MPS)       { return false; }
 
-PLATFORM_IMPL(Ceil, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(Ceil, ENGINE_CPU)        { return false; }
+PLATFORM_IMPL(Ceil, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(Ceil, ENGINE_MPS)        { return false; }
 
-PLATFORM_IMPL(Round, ENGINE_CPU)        { return sd::Status::OK; }
-PLATFORM_CHECK(Round, ENGINE_CPU)       { return false; }
+PLATFORM_IMPL(Round, ENGINE_MPS)        { return sd::Status::OK; }
+PLATFORM_CHECK(Round, ENGINE_MPS)       { return false; }
 
-PLATFORM_IMPL(Sign, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(Sign, ENGINE_CPU)        { return false; }
+PLATFORM_IMPL(Sign, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(Sign, ENGINE_MPS)        { return false; }
 
-PLATFORM_IMPL(clip_by_value, ENGINE_CPU){ return sd::Status::OK; }
-PLATFORM_CHECK(clip_by_value, ENGINE_CPU){ return false; }
+PLATFORM_IMPL(clip_by_value, ENGINE_MPS){ return sd::Status::OK; }
+PLATFORM_CHECK(clip_by_value, ENGINE_MPS){ return false; }
 
-PLATFORM_IMPL(reciprocal, ENGINE_CPU)   { return sd::Status::OK; }
-PLATFORM_CHECK(reciprocal, ENGINE_CPU)  { return false; }
+PLATFORM_IMPL(reciprocal, ENGINE_MPS)   { return sd::Status::OK; }
+PLATFORM_CHECK(reciprocal, ENGINE_MPS)  { return false; }
 
-PLATFORM_IMPL(square, ENGINE_CPU)       { return sd::Status::OK; }
-PLATFORM_CHECK(square, ENGINE_CPU)      { return false; }
+PLATFORM_IMPL(square, ENGINE_MPS)       { return sd::Status::OK; }
+PLATFORM_CHECK(square, ENGINE_MPS)      { return false; }
 
-PLATFORM_IMPL(cube, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(cube, ENGINE_CPU)        { return false; }
+PLATFORM_IMPL(cube, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(cube, ENGINE_MPS)        { return false; }
 
-PLATFORM_IMPL(rsqrt, ENGINE_CPU)        { return sd::Status::OK; }
-PLATFORM_CHECK(rsqrt, ENGINE_CPU)       { return false; }
+PLATFORM_IMPL(rsqrt, ENGINE_MPS)        { return sd::Status::OK; }
+PLATFORM_CHECK(rsqrt, ENGINE_MPS)       { return false; }
 
-PLATFORM_IMPL(log1p, ENGINE_CPU)        { return sd::Status::OK; }
-PLATFORM_CHECK(log1p, ENGINE_CPU)       { return false; }
+PLATFORM_IMPL(log1p, ENGINE_MPS)        { return sd::Status::OK; }
+PLATFORM_CHECK(log1p, ENGINE_MPS)       { return false; }
 
-PLATFORM_IMPL(expm1, ENGINE_CPU)        { return sd::Status::OK; }
-PLATFORM_CHECK(expm1, ENGINE_CPU)       { return false; }
+PLATFORM_IMPL(expm1, ENGINE_MPS)        { return sd::Status::OK; }
+PLATFORM_CHECK(expm1, ENGINE_MPS)       { return false; }
 
-PLATFORM_IMPL(erf, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(erf, ENGINE_CPU)         { return false; }
+PLATFORM_IMPL(erf, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(erf, ENGINE_MPS)         { return false; }
 
-PLATFORM_IMPL(erfc, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(erfc, ENGINE_CPU)        { return false; }
+PLATFORM_IMPL(erfc, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(erfc, ENGINE_MPS)        { return false; }
 
 #endif  // HAVE_MPS
 

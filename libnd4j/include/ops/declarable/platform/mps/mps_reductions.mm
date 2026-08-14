@@ -100,7 +100,7 @@ static void reduceSumMPS(NDArray* input, NDArray* output, const std::vector<Long
     }
 }
 
-PLATFORM_IMPL(reduce_sum, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_sum, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -123,7 +123,7 @@ PLATFORM_IMPL(reduce_sum, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_sum, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_sum, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS REDUCE_SUM OP");
@@ -199,7 +199,7 @@ static void reduceMeanMPS(NDArray* input, NDArray* output, const std::vector<Lon
     }
 }
 
-PLATFORM_IMPL(reduce_mean, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_mean, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -222,7 +222,7 @@ PLATFORM_IMPL(reduce_mean, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_mean, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_mean, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS REDUCE_MEAN OP");
@@ -291,7 +291,7 @@ static void reduceMaxMPS(NDArray* input, NDArray* output, const std::vector<Long
     }
 }
 
-PLATFORM_IMPL(reduce_max, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_max, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -314,7 +314,7 @@ PLATFORM_IMPL(reduce_max, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_max, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_max, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS REDUCE_MAX OP");
@@ -383,7 +383,7 @@ static void reduceMinMPS(NDArray* input, NDArray* output, const std::vector<Long
     }
 }
 
-PLATFORM_IMPL(reduce_min, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_min, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -406,7 +406,7 @@ PLATFORM_IMPL(reduce_min, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_min, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_min, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS REDUCE_MIN OP");
@@ -471,7 +471,7 @@ static void reduceProdMPS(NDArray* input, NDArray* output, const std::vector<Lon
     }
 }
 
-PLATFORM_IMPL(reduce_prod, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_prod, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -494,7 +494,7 @@ PLATFORM_IMPL(reduce_prod, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_prod, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_prod, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS REDUCE_PROD OP");
@@ -618,7 +618,7 @@ static void reduceVarianceMPS(NDArray* input, NDArray* output, const std::vector
     }
 }
 
-PLATFORM_IMPL(reduce_variance, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_variance, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -645,7 +645,7 @@ PLATFORM_IMPL(reduce_variance, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_variance, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_variance, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS REDUCE_VARIANCE OP");
@@ -665,7 +665,7 @@ PLATFORM_CHECK(reduce_variance, ENGINE_CPU) {
 // Reduce Standard Deviation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(reduce_stdev, ENGINE_CPU) {
+PLATFORM_IMPL(reduce_stdev, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
@@ -699,7 +699,7 @@ PLATFORM_IMPL(reduce_stdev, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(reduce_stdev, ENGINE_CPU) {
+PLATFORM_CHECK(reduce_stdev, ENGINE_MPS) {
     auto input = INPUT_VARIABLE(0);
 
     Requirements req("MPS REDUCE_STDEV OP");
@@ -717,26 +717,26 @@ PLATFORM_CHECK(reduce_stdev, ENGINE_CPU) {
 
 #else  // !HAVE_MPS — register no-op stubs
 
-PLATFORM_IMPL(reduce_sum, ENGINE_CPU)      { return sd::Status::OK; }
-PLATFORM_CHECK(reduce_sum, ENGINE_CPU)     { return false; }
+PLATFORM_IMPL(reduce_sum, ENGINE_MPS)      { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_sum, ENGINE_MPS)     { return false; }
 
-PLATFORM_IMPL(reduce_mean, ENGINE_CPU)     { return sd::Status::OK; }
-PLATFORM_CHECK(reduce_mean, ENGINE_CPU)    { return false; }
+PLATFORM_IMPL(reduce_mean, ENGINE_MPS)     { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_mean, ENGINE_MPS)    { return false; }
 
-PLATFORM_IMPL(reduce_max, ENGINE_CPU)      { return sd::Status::OK; }
-PLATFORM_CHECK(reduce_max, ENGINE_CPU)     { return false; }
+PLATFORM_IMPL(reduce_max, ENGINE_MPS)      { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_max, ENGINE_MPS)     { return false; }
 
-PLATFORM_IMPL(reduce_min, ENGINE_CPU)      { return sd::Status::OK; }
-PLATFORM_CHECK(reduce_min, ENGINE_CPU)     { return false; }
+PLATFORM_IMPL(reduce_min, ENGINE_MPS)      { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_min, ENGINE_MPS)     { return false; }
 
-PLATFORM_IMPL(reduce_prod, ENGINE_CPU)     { return sd::Status::OK; }
-PLATFORM_CHECK(reduce_prod, ENGINE_CPU)    { return false; }
+PLATFORM_IMPL(reduce_prod, ENGINE_MPS)     { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_prod, ENGINE_MPS)    { return false; }
 
-PLATFORM_IMPL(reduce_variance, ENGINE_CPU) { return sd::Status::OK; }
-PLATFORM_CHECK(reduce_variance, ENGINE_CPU){ return false; }
+PLATFORM_IMPL(reduce_variance, ENGINE_MPS) { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_variance, ENGINE_MPS){ return false; }
 
-PLATFORM_IMPL(reduce_stdev, ENGINE_CPU)    { return sd::Status::OK; }
-PLATFORM_CHECK(reduce_stdev, ENGINE_CPU)   { return false; }
+PLATFORM_IMPL(reduce_stdev, ENGINE_MPS)    { return sd::Status::OK; }
+PLATFORM_CHECK(reduce_stdev, ENGINE_MPS)   { return false; }
 
 #endif  // HAVE_MPS
 

@@ -61,339 +61,339 @@ namespace platforms {
 // ============================================================================
 
 // Matrix multiplication on GPU
-DECLARE_PLATFORM(matmul, ENGINE_CPU);  // Note: MPS uses ENGINE_CPU as the selection engine
+DECLARE_PLATFORM(matmul, ENGINE_MPS);  // Note: MPS uses ENGINE_MPS as the selection engine
 
 // Batch matrix multiplication
-DECLARE_PLATFORM(batched_gemm, ENGINE_CPU);
+DECLARE_PLATFORM(batched_gemm, ENGINE_MPS);
 
 // ============================================================================
 // Convolution Operations (via MPSCNNConvolution)
 // ============================================================================
 
 // 2D Convolution
-DECLARE_PLATFORM(conv2d, ENGINE_CPU);
-DECLARE_PLATFORM(conv2d_bp, ENGINE_CPU);
+DECLARE_PLATFORM(conv2d, ENGINE_MPS);
+DECLARE_PLATFORM(conv2d_bp, ENGINE_MPS);
 
 // Depthwise separable convolution
-DECLARE_PLATFORM(depthwise_conv2d, ENGINE_CPU);
-DECLARE_PLATFORM(depthwise_conv2d_bp, ENGINE_CPU);
+DECLARE_PLATFORM(depthwise_conv2d, ENGINE_MPS);
+DECLARE_PLATFORM(depthwise_conv2d_bp, ENGINE_MPS);
 
 // ============================================================================
 // Pooling Operations (via MPSCNNPooling)
 // ============================================================================
 
 // Max pooling 2D
-DECLARE_PLATFORM(maxpool2d, ENGINE_CPU);
-DECLARE_PLATFORM(maxpool2d_bp, ENGINE_CPU);
+DECLARE_PLATFORM(maxpool2d, ENGINE_MPS);
+DECLARE_PLATFORM(maxpool2d_bp, ENGINE_MPS);
 
 // Average pooling 2D
-DECLARE_PLATFORM(avgpool2d, ENGINE_CPU);
-DECLARE_PLATFORM(avgpool2d_bp, ENGINE_CPU);
+DECLARE_PLATFORM(avgpool2d, ENGINE_MPS);
+DECLARE_PLATFORM(avgpool2d_bp, ENGINE_MPS);
 
 // ============================================================================
 // Normalization Operations
 // ============================================================================
 
 // Batch normalization (via MPSCNNBatchNormalization)
-DECLARE_PLATFORM(batchnorm, ENGINE_CPU);
-DECLARE_PLATFORM(batchnorm_bp, ENGINE_CPU);
+DECLARE_PLATFORM(batchnorm, ENGINE_MPS);
+DECLARE_PLATFORM(batchnorm_bp, ENGINE_MPS);
 
 // Instance normalization
-DECLARE_PLATFORM(instance_norm, ENGINE_CPU);
+DECLARE_PLATFORM(instance_norm, ENGINE_MPS);
 
 // Layer normalization
-DECLARE_PLATFORM(layer_norm, ENGINE_CPU);
+DECLARE_PLATFORM(layer_norm, ENGINE_MPS);
 
 // ============================================================================
 // Activation Functions (via MPSCNNNeuron)
 // ============================================================================
 
 // ReLU activation
-DECLARE_PLATFORM(relu, ENGINE_CPU);
+DECLARE_PLATFORM(relu, ENGINE_MPS);
 
 // Leaky ReLU
-DECLARE_PLATFORM(leaky_relu, ENGINE_CPU);
+DECLARE_PLATFORM(leaky_relu, ENGINE_MPS);
 
 // ELU activation
-DECLARE_PLATFORM(elu, ENGINE_CPU);
+DECLARE_PLATFORM(elu, ENGINE_MPS);
 
 // GELU activation
-DECLARE_PLATFORM(gelu, ENGINE_CPU);
+DECLARE_PLATFORM(gelu, ENGINE_MPS);
 
 // Softmax
-DECLARE_PLATFORM(softmax, ENGINE_CPU);
+DECLARE_PLATFORM(softmax, ENGINE_MPS);
 
 // Sigmoid
-DECLARE_PLATFORM(sigmoid, ENGINE_CPU);
+DECLARE_PLATFORM(sigmoid, ENGINE_MPS);
 
 // Tanh
-DECLARE_PLATFORM(tanh, ENGINE_CPU);
+DECLARE_PLATFORM(tanh, ENGINE_MPS);
 
 // SiLU/Swish
-DECLARE_PLATFORM(silu, ENGINE_CPU);
+DECLARE_PLATFORM(silu, ENGINE_MPS);
 
 // ============================================================================
 // Reduction Operations
 // ============================================================================
 
 // Sum reduction
-DECLARE_PLATFORM(reduce_sum, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_sum, ENGINE_MPS);
 
 // Mean reduction
-DECLARE_PLATFORM(reduce_mean, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_mean, ENGINE_MPS);
 
 // Max reduction
-DECLARE_PLATFORM(reduce_max, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_max, ENGINE_MPS);
 
 // Min reduction
-DECLARE_PLATFORM(reduce_min, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_min, ENGINE_MPS);
 
 // Product reduction
-DECLARE_PLATFORM(reduce_prod, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_prod, ENGINE_MPS);
 
 // Variance reduction
-DECLARE_PLATFORM(reduce_variance, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_variance, ENGINE_MPS);
 
 // Standard deviation reduction
-DECLARE_PLATFORM(reduce_stdev, ENGINE_CPU);
+DECLARE_PLATFORM(reduce_stdev, ENGINE_MPS);
 
 // ============================================================================
 // Element-wise Operations
 // ============================================================================
 
 // Element-wise addition
-DECLARE_PLATFORM(add, ENGINE_CPU);
+DECLARE_PLATFORM(add, ENGINE_MPS);
 
 // Element-wise subtraction
-DECLARE_PLATFORM(subtract, ENGINE_CPU);
+DECLARE_PLATFORM(subtract, ENGINE_MPS);
 
 // Element-wise multiplication
-DECLARE_PLATFORM(multiply, ENGINE_CPU);
+DECLARE_PLATFORM(multiply, ENGINE_MPS);
 
 // Element-wise division
-DECLARE_PLATFORM(divide, ENGINE_CPU);
+DECLARE_PLATFORM(divide, ENGINE_MPS);
 
 // Element-wise square root
-DECLARE_PLATFORM(sqrt, ENGINE_CPU);
+DECLARE_PLATFORM(sqrt, ENGINE_MPS);
 
 // Element-wise exponential
-DECLARE_PLATFORM(exp, ENGINE_CPU);
+DECLARE_PLATFORM(exp, ENGINE_MPS);
 
 // Element-wise natural logarithm
-DECLARE_PLATFORM(log, ENGINE_CPU);
+DECLARE_PLATFORM(log, ENGINE_MPS);
 
 // Element-wise power
-DECLARE_PLATFORM(pow, ENGINE_CPU);
+DECLARE_PLATFORM(pow, ENGINE_MPS);
 
 // Element-wise absolute value
-DECLARE_PLATFORM(abs, ENGINE_CPU);
+DECLARE_PLATFORM(abs, ENGINE_MPS);
 
 // Element-wise negative
-DECLARE_PLATFORM(neg, ENGINE_CPU);
+DECLARE_PLATFORM(neg, ENGINE_MPS);
 
 // ============================================================================
 // Image Operations (via MPSImageConvolution, etc.)
 // ============================================================================
 
 // Image resize/resample
-DECLARE_PLATFORM(resize_bilinear, ENGINE_CPU);
-DECLARE_PLATFORM(resize_nearest, ENGINE_CPU);
+DECLARE_PLATFORM(resize_bilinear, ENGINE_MPS);
+DECLARE_PLATFORM(resize_nearest, ENGINE_MPS);
 
 // Crop and resize
-DECLARE_PLATFORM(crop_and_resize, ENGINE_CPU);
+DECLARE_PLATFORM(crop_and_resize, ENGINE_MPS);
 
 // ============================================================================
 // RNN/LSTM/GRU Operations
 // ============================================================================
 
 // Simple RNN cell
-DECLARE_PLATFORM(simple_rnn, ENGINE_CPU);
+DECLARE_PLATFORM(simple_rnn, ENGINE_MPS);
 
 // LSTM cell
-DECLARE_PLATFORM(lstmCell, ENGINE_CPU);
+DECLARE_PLATFORM(lstmCell, ENGINE_MPS);
 
 // GRU cell
-DECLARE_PLATFORM(gruCell, ENGINE_CPU);
+DECLARE_PLATFORM(gruCell, ENGINE_MPS);
 
 // Bidirectional RNN
-DECLARE_PLATFORM(static_bidirectional_rnn, ENGINE_CPU);
+DECLARE_PLATFORM(static_bidirectional_rnn, ENGINE_MPS);
 
 // ============================================================================
 // Transform Operations
 // ============================================================================
 
 // Reshape
-DECLARE_PLATFORM(reshape, ENGINE_CPU);
+DECLARE_PLATFORM(reshape, ENGINE_MPS);
 
 // Flatten
-DECLARE_PLATFORM(flatten, ENGINE_CPU);
+DECLARE_PLATFORM(flatten, ENGINE_MPS);
 
 // Squeeze/Unsqueeze
-DECLARE_PLATFORM(squeeze, ENGINE_CPU);
-DECLARE_PLATFORM(expand_dims, ENGINE_CPU);
+DECLARE_PLATFORM(squeeze, ENGINE_MPS);
+DECLARE_PLATFORM(expand_dims, ENGINE_MPS);
 
 // Permute/Transpose
-DECLARE_PLATFORM(permute, ENGINE_CPU);
-DECLARE_PLATFORM(transpose, ENGINE_CPU);
+DECLARE_PLATFORM(permute, ENGINE_MPS);
+DECLARE_PLATFORM(transpose, ENGINE_MPS);
 
 // Split
-DECLARE_PLATFORM(split, ENGINE_CPU);
+DECLARE_PLATFORM(split, ENGINE_MPS);
 
 // Space/Depth transformations
-DECLARE_PLATFORM(space_to_depth, ENGINE_CPU);
-DECLARE_PLATFORM(depth_to_space, ENGINE_CPU);
-DECLARE_PLATFORM(batch_to_space_nd, ENGINE_CPU);
-DECLARE_PLATFORM(space_to_batch_nd, ENGINE_CPU);
+DECLARE_PLATFORM(space_to_depth, ENGINE_MPS);
+DECLARE_PLATFORM(depth_to_space, ENGINE_MPS);
+DECLARE_PLATFORM(batch_to_space_nd, ENGINE_MPS);
+DECLARE_PLATFORM(space_to_batch_nd, ENGINE_MPS);
 
 // ============================================================================
 // Embedding Operations
 // ============================================================================
 
 // Embedding lookup
-DECLARE_PLATFORM(embedding_lookup, ENGINE_CPU);
+DECLARE_PLATFORM(embedding_lookup, ENGINE_MPS);
 
 // One-hot encoding
-DECLARE_PLATFORM(onehot, ENGINE_CPU);
+DECLARE_PLATFORM(onehot, ENGINE_MPS);
 
 // Segment operations
-DECLARE_PLATFORM(segment_sum, ENGINE_CPU);
-DECLARE_PLATFORM(segment_mean, ENGINE_CPU);
-DECLARE_PLATFORM(segment_max, ENGINE_CPU);
-DECLARE_PLATFORM(segment_min, ENGINE_CPU);
-DECLARE_PLATFORM(segment_prod, ENGINE_CPU);
-DECLARE_PLATFORM(unsorted_segment_sum, ENGINE_CPU);
+DECLARE_PLATFORM(segment_sum, ENGINE_MPS);
+DECLARE_PLATFORM(segment_mean, ENGINE_MPS);
+DECLARE_PLATFORM(segment_max, ENGINE_MPS);
+DECLARE_PLATFORM(segment_min, ENGINE_MPS);
+DECLARE_PLATFORM(segment_prod, ENGINE_MPS);
+DECLARE_PLATFORM(unsorted_segment_sum, ENGINE_MPS);
 
 // ============================================================================
 // Attention Operations
 // ============================================================================
 
 // Scaled dot-product attention
-DECLARE_PLATFORM(dot_product_attention, ENGINE_CPU);
+DECLARE_PLATFORM(dot_product_attention, ENGINE_MPS);
 
 // Multi-head attention
-DECLARE_PLATFORM(multi_head_dot_product_attention, ENGINE_CPU);
+DECLARE_PLATFORM(multi_head_dot_product_attention, ENGINE_MPS);
 
 // Additive attention (Bahdanau)
-DECLARE_PLATFORM(additive_attention, ENGINE_CPU);
+DECLARE_PLATFORM(additive_attention, ENGINE_MPS);
 
 // Self-attention
-DECLARE_PLATFORM(self_attention, ENGINE_CPU);
+DECLARE_PLATFORM(self_attention, ENGINE_MPS);
 
 // ============================================================================
 // Sorting and Unique Operations
 // ============================================================================
 
 // Sort and argsort
-DECLARE_PLATFORM(sort, ENGINE_CPU);
-DECLARE_PLATFORM(argsort, ENGINE_CPU);
+DECLARE_PLATFORM(sort, ENGINE_MPS);
+DECLARE_PLATFORM(argsort, ENGINE_MPS);
 
 // Top-K operations
-DECLARE_PLATFORM(top_k, ENGINE_CPU);
-DECLARE_PLATFORM(in_top_k, ENGINE_CPU);
+DECLARE_PLATFORM(top_k, ENGINE_MPS);
+DECLARE_PLATFORM(in_top_k, ENGINE_MPS);
 
 // Unique operations
-DECLARE_PLATFORM(unique, ENGINE_CPU);
-DECLARE_PLATFORM(unique_with_counts, ENGINE_CPU);
+DECLARE_PLATFORM(unique, ENGINE_MPS);
+DECLARE_PLATFORM(unique_with_counts, ENGINE_MPS);
 
 // Argmax/Argmin
-DECLARE_PLATFORM(argmax, ENGINE_CPU);
-DECLARE_PLATFORM(argmin, ENGINE_CPU);
+DECLARE_PLATFORM(argmax, ENGINE_MPS);
+DECLARE_PLATFORM(argmin, ENGINE_MPS);
 
 // Histogram operations
-DECLARE_PLATFORM(histogram, ENGINE_CPU);
-DECLARE_PLATFORM(bincount, ENGINE_CPU);
+DECLARE_PLATFORM(histogram, ENGINE_MPS);
+DECLARE_PLATFORM(bincount, ENGINE_MPS);
 
 // ============================================================================
 // Comparison Operations (from mps_comparison.mm)
 // ============================================================================
 
-DECLARE_PLATFORM(greater, ENGINE_CPU);
-DECLARE_PLATFORM(greater_equal, ENGINE_CPU);
-DECLARE_PLATFORM(less, ENGINE_CPU);
-DECLARE_PLATFORM(less_equal, ENGINE_CPU);
-DECLARE_PLATFORM(equals, ENGINE_CPU);
-DECLARE_PLATFORM(not_equals, ENGINE_CPU);
-DECLARE_PLATFORM(maximum, ENGINE_CPU);
-DECLARE_PLATFORM(minimum, ENGINE_CPU);
-DECLARE_PLATFORM(where_np, ENGINE_CPU);
+DECLARE_PLATFORM(greater, ENGINE_MPS);
+DECLARE_PLATFORM(greater_equal, ENGINE_MPS);
+DECLARE_PLATFORM(less, ENGINE_MPS);
+DECLARE_PLATFORM(less_equal, ENGINE_MPS);
+DECLARE_PLATFORM(equals, ENGINE_MPS);
+DECLARE_PLATFORM(not_equals, ENGINE_MPS);
+DECLARE_PLATFORM(maximum, ENGINE_MPS);
+DECLARE_PLATFORM(minimum, ENGINE_MPS);
+DECLARE_PLATFORM(where_np, ENGINE_MPS);
 
 // ============================================================================
 // Math Operations (from mps_math.mm)
 // ============================================================================
 
-DECLARE_PLATFORM(sin, ENGINE_CPU);
-DECLARE_PLATFORM(cos, ENGINE_CPU);
-DECLARE_PLATFORM(tan, ENGINE_CPU);
-DECLARE_PLATFORM(asin, ENGINE_CPU);
-DECLARE_PLATFORM(acos, ENGINE_CPU);
-DECLARE_PLATFORM(atan, ENGINE_CPU);
-DECLARE_PLATFORM(atan2, ENGINE_CPU);
-DECLARE_PLATFORM(sinh, ENGINE_CPU);
-DECLARE_PLATFORM(cosh, ENGINE_CPU);
-DECLARE_PLATFORM(asinh, ENGINE_CPU);
-DECLARE_PLATFORM(acosh, ENGINE_CPU);
-DECLARE_PLATFORM(atanh, ENGINE_CPU);
-DECLARE_PLATFORM(Floor, ENGINE_CPU);
-DECLARE_PLATFORM(Ceil, ENGINE_CPU);
-DECLARE_PLATFORM(Round, ENGINE_CPU);
-DECLARE_PLATFORM(Sign, ENGINE_CPU);
-DECLARE_PLATFORM(clip_by_value, ENGINE_CPU);
-DECLARE_PLATFORM(reciprocal, ENGINE_CPU);
-DECLARE_PLATFORM(square, ENGINE_CPU);
-DECLARE_PLATFORM(cube, ENGINE_CPU);
-DECLARE_PLATFORM(rsqrt, ENGINE_CPU);
-DECLARE_PLATFORM(log1p, ENGINE_CPU);
-DECLARE_PLATFORM(expm1, ENGINE_CPU);
-DECLARE_PLATFORM(erf, ENGINE_CPU);
-DECLARE_PLATFORM(erfc, ENGINE_CPU);
+DECLARE_PLATFORM(sin, ENGINE_MPS);
+DECLARE_PLATFORM(cos, ENGINE_MPS);
+DECLARE_PLATFORM(tan, ENGINE_MPS);
+DECLARE_PLATFORM(asin, ENGINE_MPS);
+DECLARE_PLATFORM(acos, ENGINE_MPS);
+DECLARE_PLATFORM(atan, ENGINE_MPS);
+DECLARE_PLATFORM(atan2, ENGINE_MPS);
+DECLARE_PLATFORM(sinh, ENGINE_MPS);
+DECLARE_PLATFORM(cosh, ENGINE_MPS);
+DECLARE_PLATFORM(asinh, ENGINE_MPS);
+DECLARE_PLATFORM(acosh, ENGINE_MPS);
+DECLARE_PLATFORM(atanh, ENGINE_MPS);
+DECLARE_PLATFORM(Floor, ENGINE_MPS);
+DECLARE_PLATFORM(Ceil, ENGINE_MPS);
+DECLARE_PLATFORM(Round, ENGINE_MPS);
+DECLARE_PLATFORM(Sign, ENGINE_MPS);
+DECLARE_PLATFORM(clip_by_value, ENGINE_MPS);
+DECLARE_PLATFORM(reciprocal, ENGINE_MPS);
+DECLARE_PLATFORM(square, ENGINE_MPS);
+DECLARE_PLATFORM(cube, ENGINE_MPS);
+DECLARE_PLATFORM(rsqrt, ENGINE_MPS);
+DECLARE_PLATFORM(log1p, ENGINE_MPS);
+DECLARE_PLATFORM(expm1, ENGINE_MPS);
+DECLARE_PLATFORM(erf, ENGINE_MPS);
+DECLARE_PLATFORM(erfc, ENGINE_MPS);
 
 // ============================================================================
 // Matrix Operations (from mps_matrix.mm)
 // ============================================================================
 
-DECLARE_PLATFORM(concat, ENGINE_CPU);
-DECLARE_PLATFORM(stack, ENGINE_CPU);
-DECLARE_PLATFORM(unstack, ENGINE_CPU);
-DECLARE_PLATFORM(tile, ENGINE_CPU);
-DECLARE_PLATFORM(repeat, ENGINE_CPU);
-DECLARE_PLATFORM(reverse_sequence, ENGINE_CPU);
-DECLARE_PLATFORM(pad, ENGINE_CPU);
-DECLARE_PLATFORM(slice, ENGINE_CPU);
-DECLARE_PLATFORM(strided_slice, ENGINE_CPU);
-DECLARE_PLATFORM(scatter_update, ENGINE_CPU);
-DECLARE_PLATFORM(gather, ENGINE_CPU);
-DECLARE_PLATFORM(gather_nd, ENGINE_CPU);
-DECLARE_PLATFORM(reverse, ENGINE_CPU);
+DECLARE_PLATFORM(concat, ENGINE_MPS);
+DECLARE_PLATFORM(stack, ENGINE_MPS);
+DECLARE_PLATFORM(unstack, ENGINE_MPS);
+DECLARE_PLATFORM(tile, ENGINE_MPS);
+DECLARE_PLATFORM(repeat, ENGINE_MPS);
+DECLARE_PLATFORM(reverse_sequence, ENGINE_MPS);
+DECLARE_PLATFORM(pad, ENGINE_MPS);
+DECLARE_PLATFORM(slice, ENGINE_MPS);
+DECLARE_PLATFORM(strided_slice, ENGINE_MPS);
+DECLARE_PLATFORM(scatter_update, ENGINE_MPS);
+DECLARE_PLATFORM(gather, ENGINE_MPS);
+DECLARE_PLATFORM(gather_nd, ENGINE_MPS);
+DECLARE_PLATFORM(reverse, ENGINE_MPS);
 
 // ============================================================================
 // Extended Activation Operations (from mps_activations_ext.mm)
 // ============================================================================
 
-DECLARE_PLATFORM(hard_sigmoid, ENGINE_CPU);
-DECLARE_PLATFORM(hardswish, ENGINE_CPU);
-DECLARE_PLATFORM(mish, ENGINE_CPU);
-DECLARE_PLATFORM(softplus, ENGINE_CPU);
-DECLARE_PLATFORM(softsign, ENGINE_CPU);
-DECLARE_PLATFORM(prelu, ENGINE_CPU);
-DECLARE_PLATFORM(selu, ENGINE_CPU);
-DECLARE_PLATFORM(celu, ENGINE_CPU);
-DECLARE_PLATFORM(relu6, ENGINE_CPU);
-DECLARE_PLATFORM(thresholdedrelu, ENGINE_CPU);
-DECLARE_PLATFORM(log_softmax, ENGINE_CPU);
+DECLARE_PLATFORM(hard_sigmoid, ENGINE_MPS);
+DECLARE_PLATFORM(hardswish, ENGINE_MPS);
+DECLARE_PLATFORM(mish, ENGINE_MPS);
+DECLARE_PLATFORM(softplus, ENGINE_MPS);
+DECLARE_PLATFORM(softsign, ENGINE_MPS);
+DECLARE_PLATFORM(prelu, ENGINE_MPS);
+DECLARE_PLATFORM(selu, ENGINE_MPS);
+DECLARE_PLATFORM(celu, ENGINE_MPS);
+DECLARE_PLATFORM(relu6, ENGINE_MPS);
+DECLARE_PLATFORM(thresholdedrelu, ENGINE_MPS);
+DECLARE_PLATFORM(log_softmax, ENGINE_MPS);
 
 // ============================================================================
 // Loss Operations (from mps_loss.mm)
 // ============================================================================
 
-DECLARE_PLATFORM(mean_sqerr_loss, ENGINE_CPU);
-DECLARE_PLATFORM(mean_absolute_error, ENGINE_CPU);
-DECLARE_PLATFORM(huber_loss, ENGINE_CPU);
-DECLARE_PLATFORM(sigm_cross_entropy_loss, ENGINE_CPU);
-DECLARE_PLATFORM(softmax_cross_entropy_loss, ENGINE_CPU);
-DECLARE_PLATFORM(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_CPU);
-DECLARE_PLATFORM(cosine_distance_loss, ENGINE_CPU);
-DECLARE_PLATFORM(hinge_loss, ENGINE_CPU);
-DECLARE_PLATFORM(log_loss, ENGINE_CPU);
+DECLARE_PLATFORM(mean_sqerr_loss, ENGINE_MPS);
+DECLARE_PLATFORM(mean_absolute_error, ENGINE_MPS);
+DECLARE_PLATFORM(huber_loss, ENGINE_MPS);
+DECLARE_PLATFORM(sigm_cross_entropy_loss, ENGINE_MPS);
+DECLARE_PLATFORM(softmax_cross_entropy_loss, ENGINE_MPS);
+DECLARE_PLATFORM(sparse_softmax_cross_entropy_loss_with_logits, ENGINE_MPS);
+DECLARE_PLATFORM(cosine_distance_loss, ENGINE_MPS);
+DECLARE_PLATFORM(hinge_loss, ENGINE_MPS);
+DECLARE_PLATFORM(log_loss, ENGINE_MPS);
 
 }  // namespace platforms
 

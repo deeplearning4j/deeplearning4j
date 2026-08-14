@@ -129,7 +129,7 @@ static void matmulMPS(NDArray* a, NDArray* b, NDArray* c,
     }
 }
 
-PLATFORM_IMPL(matmul, ENGINE_CPU) {
+PLATFORM_IMPL(matmul, ENGINE_MPS) {
     auto a = INPUT_VARIABLE(0);
     auto b = INPUT_VARIABLE(1);
     auto c = OUTPUT_VARIABLE(0);
@@ -191,7 +191,7 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(matmul, ENGINE_CPU) {
+PLATFORM_CHECK(matmul, ENGINE_MPS) {
     auto a = INPUT_VARIABLE(0);
     auto b = INPUT_VARIABLE(1);
 
@@ -221,7 +221,7 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
 // tArgs: 0=alpha,  1=beta
 // ===========================================================================
 
-PLATFORM_IMPL(batched_gemm, ENGINE_CPU) {
+PLATFORM_IMPL(batched_gemm, ENGINE_MPS) {
     auto A = INPUT_VARIABLE(0);
     auto B = INPUT_VARIABLE(1);
     auto C = OUTPUT_VARIABLE(0);
@@ -263,7 +263,7 @@ PLATFORM_IMPL(batched_gemm, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(batched_gemm, ENGINE_CPU) {
+PLATFORM_CHECK(batched_gemm, ENGINE_MPS) {
     auto A = INPUT_VARIABLE(0);
     auto B = INPUT_VARIABLE(1);
     auto C = OUTPUT_VARIABLE(0);

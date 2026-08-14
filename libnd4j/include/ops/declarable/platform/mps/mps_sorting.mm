@@ -48,7 +48,7 @@ namespace platforms {
 // Sort operation along a specified axis
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(sort, ENGINE_CPU) {
+PLATFORM_IMPL(sort, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -93,7 +93,7 @@ PLATFORM_IMPL(sort, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(sort, ENGINE_CPU) {
+PLATFORM_CHECK(sort, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS SORT OP");
@@ -109,7 +109,7 @@ PLATFORM_CHECK(sort, ENGINE_CPU) {
 // Argsort - returns indices that would sort the array
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(argsort, ENGINE_CPU) {
+PLATFORM_IMPL(argsort, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);  // Integer output
 
@@ -170,7 +170,7 @@ PLATFORM_IMPL(argsort, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(argsort, ENGINE_CPU) {
+PLATFORM_CHECK(argsort, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ARGSORT OP");
@@ -186,7 +186,7 @@ PLATFORM_CHECK(argsort, ENGINE_CPU) {
 // Top-K operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(top_k, ENGINE_CPU) {
+PLATFORM_IMPL(top_k, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto values = OUTPUT_VARIABLE(0);   // Top K values
     auto indices = OUTPUT_VARIABLE(1);  // Indices of top K values
@@ -230,7 +230,7 @@ PLATFORM_IMPL(top_k, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(top_k, ENGINE_CPU) {
+PLATFORM_CHECK(top_k, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS TOP_K OP");
@@ -246,7 +246,7 @@ PLATFORM_CHECK(top_k, ENGINE_CPU) {
 // In Top-K operation - check if values are in top K
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(in_top_k, ENGINE_CPU) {
+PLATFORM_IMPL(in_top_k, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);  // [batch, classes]
     auto targets = INPUT_VARIABLE(1);       // [batch]
     auto z = OUTPUT_VARIABLE(0);            // [batch] boolean
@@ -284,7 +284,7 @@ PLATFORM_IMPL(in_top_k, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(in_top_k, ENGINE_CPU) {
+PLATFORM_CHECK(in_top_k, ENGINE_MPS) {
     auto predictions = INPUT_VARIABLE(0);
 
     Requirements req("MPS IN_TOP_K OP");
@@ -300,7 +300,7 @@ PLATFORM_CHECK(in_top_k, ENGINE_CPU) {
 // Unique operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(unique, ENGINE_CPU) {
+PLATFORM_IMPL(unique, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto values = OUTPUT_VARIABLE(0);   // Unique values
     auto indices = OUTPUT_VARIABLE(1);  // Indices in original
@@ -341,7 +341,7 @@ PLATFORM_IMPL(unique, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(unique, ENGINE_CPU) {
+PLATFORM_CHECK(unique, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS UNIQUE OP");
@@ -357,7 +357,7 @@ PLATFORM_CHECK(unique, ENGINE_CPU) {
 // Unique with counts
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(unique_with_counts, ENGINE_CPU) {
+PLATFORM_IMPL(unique_with_counts, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto values = OUTPUT_VARIABLE(0);   // Unique values
     auto indices = OUTPUT_VARIABLE(1);  // Indices in original
@@ -408,7 +408,7 @@ PLATFORM_IMPL(unique_with_counts, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(unique_with_counts, ENGINE_CPU) {
+PLATFORM_CHECK(unique_with_counts, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS UNIQUE_WITH_COUNTS OP");
@@ -424,7 +424,7 @@ PLATFORM_CHECK(unique_with_counts, ENGINE_CPU) {
 // Argmax operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(argmax, ENGINE_CPU) {
+PLATFORM_IMPL(argmax, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -471,7 +471,7 @@ PLATFORM_IMPL(argmax, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(argmax, ENGINE_CPU) {
+PLATFORM_CHECK(argmax, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ARGMAX OP");
@@ -487,7 +487,7 @@ PLATFORM_CHECK(argmax, ENGINE_CPU) {
 // Argmin operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(argmin, ENGINE_CPU) {
+PLATFORM_IMPL(argmin, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -534,7 +534,7 @@ PLATFORM_IMPL(argmin, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(argmin, ENGINE_CPU) {
+PLATFORM_CHECK(argmin, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS ARGMIN OP");
@@ -550,7 +550,7 @@ PLATFORM_CHECK(argmin, ENGINE_CPU) {
 // Histogram operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(histogram, ENGINE_CPU) {
+PLATFORM_IMPL(histogram, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
     auto z = OUTPUT_VARIABLE(0);
 
@@ -590,7 +590,7 @@ PLATFORM_IMPL(histogram, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(histogram, ENGINE_CPU) {
+PLATFORM_CHECK(histogram, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS HISTOGRAM OP");
@@ -606,7 +606,7 @@ PLATFORM_CHECK(histogram, ENGINE_CPU) {
 // Bincount operation
 //////////////////////////////////////////////////////////////////////////
 
-PLATFORM_IMPL(bincount, ENGINE_CPU) {
+PLATFORM_IMPL(bincount, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);  // Integer array
     auto z = OUTPUT_VARIABLE(0);
 
@@ -651,7 +651,7 @@ PLATFORM_IMPL(bincount, ENGINE_CPU) {
     return sd::Status::OK;
 }
 
-PLATFORM_CHECK(bincount, ENGINE_CPU) {
+PLATFORM_CHECK(bincount, ENGINE_MPS) {
     auto x = INPUT_VARIABLE(0);
 
     Requirements req("MPS BINCOUNT OP");
@@ -664,35 +664,35 @@ PLATFORM_CHECK(bincount, ENGINE_CPU) {
 
 #else  // !HAVE_MPS — register no-op stubs
 
-PLATFORM_IMPL(sort, ENGINE_CPU)              { return sd::Status::OK; }
-PLATFORM_CHECK(sort, ENGINE_CPU)             { return false; }
+PLATFORM_IMPL(sort, ENGINE_MPS)              { return sd::Status::OK; }
+PLATFORM_CHECK(sort, ENGINE_MPS)             { return false; }
 
-PLATFORM_IMPL(argsort, ENGINE_CPU)           { return sd::Status::OK; }
-PLATFORM_CHECK(argsort, ENGINE_CPU)          { return false; }
+PLATFORM_IMPL(argsort, ENGINE_MPS)           { return sd::Status::OK; }
+PLATFORM_CHECK(argsort, ENGINE_MPS)          { return false; }
 
-PLATFORM_IMPL(top_k, ENGINE_CPU)             { return sd::Status::OK; }
-PLATFORM_CHECK(top_k, ENGINE_CPU)            { return false; }
+PLATFORM_IMPL(top_k, ENGINE_MPS)             { return sd::Status::OK; }
+PLATFORM_CHECK(top_k, ENGINE_MPS)            { return false; }
 
-PLATFORM_IMPL(in_top_k, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(in_top_k, ENGINE_CPU)         { return false; }
+PLATFORM_IMPL(in_top_k, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(in_top_k, ENGINE_MPS)         { return false; }
 
-PLATFORM_IMPL(unique, ENGINE_CPU)            { return sd::Status::OK; }
-PLATFORM_CHECK(unique, ENGINE_CPU)           { return false; }
+PLATFORM_IMPL(unique, ENGINE_MPS)            { return sd::Status::OK; }
+PLATFORM_CHECK(unique, ENGINE_MPS)           { return false; }
 
-PLATFORM_IMPL(unique_with_counts, ENGINE_CPU){ return sd::Status::OK; }
-PLATFORM_CHECK(unique_with_counts, ENGINE_CPU){ return false; }
+PLATFORM_IMPL(unique_with_counts, ENGINE_MPS){ return sd::Status::OK; }
+PLATFORM_CHECK(unique_with_counts, ENGINE_MPS){ return false; }
 
-PLATFORM_IMPL(argmax, ENGINE_CPU)            { return sd::Status::OK; }
-PLATFORM_CHECK(argmax, ENGINE_CPU)           { return false; }
+PLATFORM_IMPL(argmax, ENGINE_MPS)            { return sd::Status::OK; }
+PLATFORM_CHECK(argmax, ENGINE_MPS)           { return false; }
 
-PLATFORM_IMPL(argmin, ENGINE_CPU)            { return sd::Status::OK; }
-PLATFORM_CHECK(argmin, ENGINE_CPU)           { return false; }
+PLATFORM_IMPL(argmin, ENGINE_MPS)            { return sd::Status::OK; }
+PLATFORM_CHECK(argmin, ENGINE_MPS)           { return false; }
 
-PLATFORM_IMPL(histogram, ENGINE_CPU)         { return sd::Status::OK; }
-PLATFORM_CHECK(histogram, ENGINE_CPU)        { return false; }
+PLATFORM_IMPL(histogram, ENGINE_MPS)         { return sd::Status::OK; }
+PLATFORM_CHECK(histogram, ENGINE_MPS)        { return false; }
 
-PLATFORM_IMPL(bincount, ENGINE_CPU)          { return sd::Status::OK; }
-PLATFORM_CHECK(bincount, ENGINE_CPU)         { return false; }
+PLATFORM_IMPL(bincount, ENGINE_MPS)          { return sd::Status::OK; }
+PLATFORM_CHECK(bincount, ENGINE_MPS)         { return false; }
 
 #endif  // HAVE_MPS
 
