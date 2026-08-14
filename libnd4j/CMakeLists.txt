@@ -236,8 +236,8 @@ if(WIN32 AND SD_CUDA)
             string(REGEX REPLACE "/FS" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
             # Fix quoted -Xcompiler with spaces: -Xcompiler=" /GR /EHsc" → -Xcompiler=/GR,/EHsc
             # The quotes+spaces break Ninja rsp file parsing (space splits into multiple tokens)
-            # IMPORTANT: Just REMOVE the entire -Xcompiler="..." since we re-add -EHsc via
-            # the custom compile template (-Xcompiler=-bigobj -Xcompiler=-EHsc -Xcompiler=-MD).
+            # IMPORTANT: Just REMOVE the entire -Xcompiler="..." since we re-add -EHsc and
+            # the selected MSVC runtime via the custom compile template below.
             # /GR is the default on MSVC and doesn't need to be explicitly set.
             string(REGEX REPLACE "-Xcompiler=\" [^\"]*\"" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
             # Also try without space after =
@@ -254,9 +254,15 @@ if(WIN32 AND SD_CUDA)
     # sccache wraps nvcc and decomposes the command line. Slash-prefixed MSVC flags
     # like /bigobj get interpreted as drive-relative paths (D:\bigobj) on Windows.
     # MSVC cl.exe accepts both / and - as option prefixes, so -bigobj == /bigobj.
-    # Hyphen prefix is sccache-safe and works with plain nvcc too.
+    # Hyphen prefix is sccache-safe and works with plain nvcc too. Windows ZLUDA
+    # statically links NVRTC, whose objects use /MT; normal CUDA keeps /MD.
+    if(SD_ZLUDA)
+        set(_sd_cuda_msvc_runtime_flag "-MT")
+    else()
+        set(_sd_cuda_msvc_runtime_flag "-MD")
+    endif()
     set(CMAKE_CUDA_COMPILE_OBJECT
-            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -Xcompiler=-bigobj -Xcompiler=-EHsc -Xcompiler=-MD -o <OBJECT> -c <SOURCE>"
+            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -Xcompiler=-bigobj -Xcompiler=-EHsc -Xcompiler=${_sd_cuda_msvc_runtime_flag} -o <OBJECT> -c <SOURCE>"
             CACHE STRING "" FORCE)
 
     # Debug: dump ALL variables that could contribute to CUDA compile command

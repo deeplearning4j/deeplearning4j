@@ -596,6 +596,20 @@ class WorkflowMatrixTests(unittest.TestCase):
             zluda_configuration,
         )
 
+        cmake_source = (ROOT / "libnd4j/CMakeLists.txt").read_text()
+        self.assertIn(
+            'if(SD_ZLUDA)\n        set(_sd_cuda_msvc_runtime_flag "-MT")',
+            cmake_source,
+        )
+        self.assertIn(
+            'set(_sd_cuda_msvc_runtime_flag "-MD")',
+            cmake_source,
+        )
+        self.assertIn(
+            '-Xcompiler=${_sd_cuda_msvc_runtime_flag}',
+            cmake_source,
+        )
+
         cublas_helper = (
             ROOT / "libnd4j/include/helpers/cuda/cublasHelper.cu"
         ).read_text()
