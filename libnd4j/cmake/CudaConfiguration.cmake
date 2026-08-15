@@ -510,6 +510,26 @@ function(configure_cuda_linking main_target_name)
         _cuda_shared_runtimes_pipe)
     list(JOIN _cuda_shared_runtime_roots "|"
         _cuda_shared_runtime_roots_pipe)
+    set(_cuda_runtime_stage_args
+        "-DRUNTIME_LIBRARIES_PIPE=${_cuda_shared_runtimes_pipe}"
+        "-DRUNTIME_SEARCH_ROOTS_PIPE=${_cuda_shared_runtime_roots_pipe}")
+    if(WIN32)
+        # A pipe-delimited value is safe as a CMake argument on POSIX, but it is
+        # a cmd.exe metacharacter. Passing the resolved generator-expression
+        # values through generated files keeps the post-link command valid on
+        # Windows even when paths contain spaces or other shell punctuation.
+        set(_cuda_runtime_libraries_file
+            "${CMAKE_CURRENT_BINARY_DIR}/${main_target_name}-runtime-libraries.txt")
+        set(_cuda_runtime_search_roots_file
+            "${CMAKE_CURRENT_BINARY_DIR}/${main_target_name}-runtime-search-roots.txt")
+        file(GENERATE OUTPUT "${_cuda_runtime_libraries_file}"
+            CONTENT "$<JOIN:${_cuda_shared_runtimes},\n>")
+        file(GENERATE OUTPUT "${_cuda_runtime_search_roots_file}"
+            CONTENT "$<JOIN:${_cuda_shared_runtime_roots},\n>")
+        set(_cuda_runtime_stage_args
+            "-DRUNTIME_LIBRARIES_FILE=${_cuda_runtime_libraries_file}"
+            "-DRUNTIME_SEARCH_ROOTS_FILE=${_cuda_runtime_search_roots_file}")
+    endif()
     set(_cuda_classifier_runtime_dir "")
     if(SD_ZLUDA)
         set(_cuda_classifier_runtime_dir
@@ -519,9 +539,8 @@ function(configure_cuda_linking main_target_name)
     # Always refresh the manifest and build-toolchain metadata. This also clears
     # compiler runtimes left by a previous Triton-enabled configuration.
     add_custom_command(TARGET ${main_target_name} POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-            "-DRUNTIME_LIBRARIES_PIPE=${_cuda_shared_runtimes_pipe}"
-            "-DRUNTIME_SEARCH_ROOTS_PIPE=${_cuda_shared_runtime_roots_pipe}"
+        COMMAND "${CMAKE_COMMAND}"
+            ${_cuda_runtime_stage_args}
             "-DPRIMARY_RUNTIME=$<TARGET_FILE:${main_target_name}>"
             "-DRUNTIME_POLICY=$<IF:$<BOOL:${SD_ZLUDA}>,zluda-amd,default>"
             "-DREADELF=${CMAKE_READELF}"

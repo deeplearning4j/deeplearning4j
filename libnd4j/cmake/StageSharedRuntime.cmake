@@ -13,11 +13,32 @@ if(POLICY CMP0009)
     cmake_policy(SET CMP0009 NEW)
 endif()
 
-if(NOT DEFINED RUNTIME_LIBRARIES_PIPE)
+if(DEFINED RUNTIME_LIBRARIES_FILE AND
+   NOT RUNTIME_LIBRARIES_FILE STREQUAL "")
+    if(NOT EXISTS "${RUNTIME_LIBRARIES_FILE}")
+        message(FATAL_ERROR
+            "Runtime library list file does not exist: '${RUNTIME_LIBRARIES_FILE}'")
+    endif()
+    file(READ "${RUNTIME_LIBRARIES_FILE}" _runtime_libraries_contents)
+    string(REPLACE "\r\n" "\n" _runtime_libraries_contents
+        "${_runtime_libraries_contents}")
+    string(REPLACE "\n" ";" _runtime_libraries
+        "${_runtime_libraries_contents}")
+    set(_runtime_libraries_without_empty "")
+    foreach(_runtime_library IN LISTS _runtime_libraries)
+        string(STRIP "${_runtime_library}" _runtime_library)
+        if(NOT _runtime_library STREQUAL "")
+            list(APPEND _runtime_libraries_without_empty "${_runtime_library}")
+        endif()
+    endforeach()
+    set(_runtime_libraries "${_runtime_libraries_without_empty}")
+elseif(DEFINED RUNTIME_LIBRARIES_PIPE)
+    string(REPLACE "|" ";" _runtime_libraries "${RUNTIME_LIBRARIES_PIPE}")
+else()
     message(FATAL_ERROR
-        "RUNTIME_LIBRARIES_PIPE must be defined when staging shared runtimes")
+        "RUNTIME_LIBRARIES_PIPE or RUNTIME_LIBRARIES_FILE must be defined "
+        "when staging shared runtimes")
 endif()
-string(REPLACE "|" ";" _runtime_libraries "${RUNTIME_LIBRARIES_PIPE}")
 list(REMOVE_DUPLICATES _runtime_libraries)
 
 foreach(_runtime_library IN LISTS _runtime_libraries)
@@ -331,10 +352,31 @@ endfunction()
 # Under the zluda-amd policy, libhsa-runtime is also host-owned because it must
 # match the installed amdgpu/KFD stack; it is deliberately outside the closure.
 set(_runtime_search_roots "")
-if(DEFINED RUNTIME_SEARCH_ROOTS_PIPE AND
-   NOT RUNTIME_SEARCH_ROOTS_PIPE STREQUAL "")
+if(DEFINED RUNTIME_SEARCH_ROOTS_FILE AND
+   NOT RUNTIME_SEARCH_ROOTS_FILE STREQUAL "")
+    if(NOT EXISTS "${RUNTIME_SEARCH_ROOTS_FILE}")
+        message(FATAL_ERROR
+            "Runtime search-root list file does not exist: '${RUNTIME_SEARCH_ROOTS_FILE}'")
+    endif()
+    file(READ "${RUNTIME_SEARCH_ROOTS_FILE}" _runtime_search_roots_contents)
+    string(REPLACE "\r\n" "\n" _runtime_search_roots_contents
+        "${_runtime_search_roots_contents}")
+    string(REPLACE "\n" ";" _runtime_search_roots
+        "${_runtime_search_roots_contents}")
+    set(_runtime_search_roots_without_empty "")
+    foreach(_runtime_search_root IN LISTS _runtime_search_roots)
+        string(STRIP "${_runtime_search_root}" _runtime_search_root)
+        if(NOT _runtime_search_root STREQUAL "")
+            list(APPEND _runtime_search_roots_without_empty "${_runtime_search_root}")
+        endif()
+    endforeach()
+    set(_runtime_search_roots "${_runtime_search_roots_without_empty}")
+elseif(DEFINED RUNTIME_SEARCH_ROOTS_PIPE AND
+       NOT RUNTIME_SEARCH_ROOTS_PIPE STREQUAL "")
     string(REPLACE "|" ";" _runtime_search_roots
         "${RUNTIME_SEARCH_ROOTS_PIPE}")
+endif()
+if(_runtime_search_roots)
     set(_normalized_runtime_search_roots "")
     foreach(_runtime_search_root IN LISTS _runtime_search_roots)
         if(NOT IS_DIRECTORY "${_runtime_search_root}")
