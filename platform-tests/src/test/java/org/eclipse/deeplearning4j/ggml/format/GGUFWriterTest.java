@@ -90,6 +90,27 @@ class GGUFWriterTest {
         });
     }
 
+    @Test
+    @DisplayName("Test zero alignment metadata uses the GGUF default")
+    void testZeroAlignmentMetadataUsesDefault() throws Exception {
+        File outputFile = tempDir.resolve("zero_alignment.gguf").toFile();
+        try (GGUFWriter writer = new GGUFWriter(outputFile, 3)) {
+            assertThrows(IllegalArgumentException.class, () -> writer.setAlignment(0));
+            writer.addMetadataInt("general.alignment", 0);
+            writer.registerTensor("tensor", new long[]{4}, GGMLDataType.GGML_TYPE_F32);
+            writer.writeHeader();
+            writer.writeTensorData("tensor", new byte[4 * Float.BYTES]);
+            writer.finalizeFile();
+        }
+
+        try (GGUFReader reader = new GGUFReader(outputFile)) {
+            assertEquals(32, reader.getHeader().getAlignment());
+            assertEquals(1, reader.getTensorInfos().size());
+            assertEquals(4 * Float.BYTES,
+                    reader.readTensorData(reader.getTensorInfos().get(0)).length);
+        }
+    }
+
     // ========== Metadata Tests ==========
 
     @Test

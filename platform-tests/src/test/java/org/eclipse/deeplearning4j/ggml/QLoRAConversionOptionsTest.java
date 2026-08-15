@@ -219,6 +219,10 @@ class QLoRAConversionOptionsTest {
      * <p>Q8_0 block layout: 2 bytes F16 scale + 32 bytes INT8 quants = 34 bytes/block.</p>
      */
     private File createTinyQ8_0GGUFFile() throws IOException {
+        return createTinyQ8_0GGUFFile(false);
+    }
+
+    private File createTinyQ8_0GGUFFile(boolean includeDenseFallback) throws IOException {
         // Q8_0: block=32, 34 bytes/block.  Shape [32,32]=1024 elements = 32 blocks = 1088 bytes.
         // GGUF stores shapes column-major: [innerDim, outerDim], so we write [32, 32].
         // The converter reverses this to ND4J [32, 32] (symmetric for square).
@@ -230,7 +234,9 @@ class QLoRAConversionOptionsTest {
 
         byte[] q8Data = nonZeroQ8_0Data(NUM_BLOCKS, BLOCK_SIZE, BYTES_PER_BLOCK);
 
-        File file = tempDir.resolve("tiny_q8_0.gguf").toFile();
+        File file = tempDir.resolve(includeDenseFallback
+                ? "tiny_q8_0_mixed.gguf"
+                : "tiny_q8_0.gguf").toFile();
         try (GGUFWriter writer = new GGUFWriter(file, 2)) {
             writer.addMetadataString("general.architecture", "generic");
 
@@ -240,12 +246,21 @@ class QLoRAConversionOptionsTest {
             writer.registerTensor("token_embd.weight", new long[]{32, 32}, GGMLDataType.GGML_TYPE_Q8_0);
             // F32 bias (non-quantized): shape [8]
             writer.registerTensor("blk.0.attn_q.bias", new long[]{8}, GGMLDataType.GGML_TYPE_F32);
+            if (includeDenseFallback) {
+                // Hybrid models can contain rank-2 weights whose innermost row is too narrow
+                // for any packed runtime block. They must remain dense.
+                writer.registerTensor("blk.0.ssm_conv.weight", new long[]{4, 32},
+                        GGMLDataType.GGML_TYPE_F32);
+            }
 
             writer.writeHeader();
 
             writer.writeTensorData("blk.0.attn_q.weight", q8Data);
             writer.writeTensorData("token_embd.weight", q8Data);
             writer.writeTensorData("blk.0.attn_q.bias", new byte[8 * 4]); // 8 × 4 bytes F32
+            if (includeDenseFallback) {
+                writer.writeTensorData("blk.0.ssm_conv.weight", new byte[4 * 32 * 4]);
+            }
 
             writer.finalizeFile();
         }
@@ -393,6 +408,23 @@ class QLoRAConversionOptionsTest {
     }
 
     @Test
+    @DisplayName("runtime quantized matmul permits a dense rank-2 fallback weight")
+    void testRuntimeQuantizedMatmulPermitsDenseRank2Fallback()
+            throws IOException, GGMLImportException {
+        File gguf = createTinyQ8_0GGUFFile(true);
+
+        SameDiff sd = GGMLModelImport.importModel(
+                gguf, ConversionOptions.forTrainingQuantized());
+        INDArray dense = sd.getVariable("blk_0_ssm_conv_weight").getArr();
+
+        assertNotNull(dense);
+        assertNotEquals(DataType.INT8, dense.dataType());
+        assertArrayEquals(new long[]{32L, 4L}, dense.shape());
+        assertNull(sd.getVariable("blk_0_ssm_conv_weight___q__"),
+                "Dense fallback weights must not receive packed qmatmul metadata");
+    }
+
+    @Test
     @DisplayName("forTrainingQuantized: weight variables are sd.var not sd.constant (trainable)")
     void testWeightVariablesAreTrainable() throws IOException, GGMLImportException {
         File gguf = createTinyQ8_0GGUFFile();
@@ -478,8 +510,17 @@ class QLoRAConversionOptionsTest {
 
         IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> GGMLModelImport.importModel(gguf, opts));
-        assertTrue(exception.getMessage().contains("unsupported GGUF type"));
-        assertTrue(exception.getMessage().contains("GGML_TYPE_Q8_0"));
+        assertTrue(causeChainContains(exception, "unsupported GGUF type"));
+        assertTrue(causeChainContains(exception, "GGML_TYPE_Q8_0"));
+    }
+
+    private static boolean causeChainContains(Throwable failure, String text) {
+        for (Throwable current = failure; current != null; current = current.getCause()) {
+            if (current.getMessage() != null && current.getMessage().contains(text)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void restoreProperty(String name, String previousValue) {

@@ -556,6 +556,10 @@ class WorkflowMatrixTests(unittest.TestCase):
             "<libnd4j.cuda.assembly.skip>true</libnd4j.cuda.assembly.skip>",
             pom,
         )
+        self.assertIn("<id>zluda-msvc</id>", pom)
+        self.assertIn("<family>windows</family>", pom)
+        self.assertIn("<name>libnd4j.zluda</name>", pom)
+        self.assertIn("<compilerOption>/MT</compilerOption>", pom)
 
         api_pom = (
             ROOT

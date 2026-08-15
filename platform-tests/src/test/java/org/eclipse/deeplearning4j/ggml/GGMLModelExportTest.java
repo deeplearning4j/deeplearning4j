@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.ggml;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,8 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.ggml.GGMLExportException;
 import org.nd4j.ggml.GGMLModelExport;
+import org.nd4j.ggml.GGMLModelImport;
+import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.export.ExportOptions;
 import org.nd4j.ggml.format.GGMLDataType;
 import org.nd4j.ggml.format.GGMLTensorInfo;
@@ -348,10 +351,16 @@ class GGMLModelExportTest {
                     GGMLDataType.GGML_TYPE_BF16);
             writer.registerTensor("token_embd.weight", new long[]{256, 32},
                     GGMLDataType.GGML_TYPE_BF16);
+            writer.registerTensor("blk.0.ssm_in.weight", new long[]{96, 64},
+                    GGMLDataType.GGML_TYPE_BF16);
+            writer.registerTensor("blk.0.ssm_conv.weight", new long[]{4, 64},
+                    GGMLDataType.GGML_TYPE_BF16);
             writer.writeHeader();
             writer.writeTensorData("blk.0.attn_q.weight", bfloat16Data(weightElements));
             writer.writeTensorData("blk.0.attn_norm.weight", bfloat16Data(256));
             writer.writeTensorData("token_embd.weight", bfloat16Data(256 * 32));
+            writer.writeTensorData("blk.0.ssm_in.weight", bfloat16Data(96 * 64));
+            writer.writeTensorData("blk.0.ssm_conv.weight", bfloat16Data(4 * 64));
             writer.finalizeFile();
         }
 
@@ -370,8 +379,42 @@ class GGMLModelExportTest {
                     tensor(reader, "blk.0.attn_norm.weight").getDataType());
             assertEquals(GGMLDataType.GGML_TYPE_Q8_0,
                     tensor(reader, "token_embd.weight").getDataType());
+            assertEquals(GGMLDataType.GGML_TYPE_Q8_0,
+                    tensor(reader, "blk.0.ssm_in.weight").getDataType(),
+                    "A narrow row divisible by 32 must fall back from Q4_K to Q8_0");
+            assertEquals(GGMLDataType.GGML_TYPE_BF16,
+                    tensor(reader, "blk.0.ssm_conv.weight").getDataType(),
+                    "A row narrower than every runtime quant block must remain dense");
             assertEquals(GGMLDataType.GGML_TYPE_Q4_K.calculateStorageBytes(weightElements),
                     tensor(reader, "blk.0.attn_q.weight").getDataSize());
+        }
+    }
+
+    @Test
+    @DisplayName("Test cached Qwen3.5 BF16 to Q4_K runtime import")
+    void testCachedQwen35BFloat16ToQ4KRuntimeImport() throws Exception {
+        File source = new File(System.getProperty("user.home"),
+                ".cache/dl4j-llm-models/Qwen3.5-0.8B-BF16.gguf");
+        Assumptions.assumeTrue(source.isFile(), "Cached Qwen3.5 BF16 GGUF is unavailable");
+        File output = tempDir.resolve("qwen35-optimized-q4k.gguf").toFile();
+
+        GGMLModelExport.requantize(source, output, ExportOptions.QuantizationType.Q4_K);
+
+        ConversionOptions options = ConversionOptions.builder()
+                .quantizationMode(ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_MATMUL)
+                .targetDataType(DataType.HALF)
+                .forTraining(false)
+                .preserveTokenizerInfo(true)
+                .build();
+        try (SameDiff graph = GGMLModelImport.importModel(output, options)) {
+            assertNotNull(graph);
+            assertNotNull(graph.getVariable("lm_logits"));
+            assertArrayEquals(new long[]{-1, -1, 2048},
+                    graph.getVariable("gdn_q_0").getShape(),
+                    "GDN Q slice must use the logical packed-weight matrix dimension");
+            assertArrayEquals(new long[]{-1, -1, 2048},
+                    graph.getVariable("gdn_v_0").getShape(),
+                    "GDN V slice must use the logical packed-weight matrix dimension");
         }
     }
 

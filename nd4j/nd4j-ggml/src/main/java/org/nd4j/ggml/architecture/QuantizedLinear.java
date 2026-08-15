@@ -56,15 +56,45 @@ public final class QuantizedLinear {
      * stored as packed bytes, so their INDArray shape is storage layout, not matrix shape.
      */
     public static int logicalOutputDim(Map<String, INDArray> weights, String ggufWeightName, INDArray weight) {
-        INDArray meta = (ggufWeightName != null && weights != null) ? weights.get(ggufWeightName + ".__q__") : null;
-        if (meta != null) {
-            long n = meta.getLong(1);
-            if (n > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Quantized weight output dimension exceeds int range: " + n);
-            }
-            return (int) n;
+        return logicalDimension(weights, ggufWeightName, weight, 1, 0, "output");
+    }
+
+    /**
+     * Logical input dimension {@code K} for a GGUF linear weight. Runtime-quantized weights are
+     * stored as packed bytes, so their INDArray shape is storage layout, not matrix shape.
+     */
+    public static int logicalInputDim(Map<String, INDArray> weights, String ggufWeightName, INDArray weight) {
+        return logicalDimension(weights, ggufWeightName, weight, 2, 1, "input");
+    }
+
+    private static int logicalDimension(Map<String, INDArray> weights, String ggufWeightName,
+                                        INDArray weight, int metadataIndex, int denseShapeIndex,
+                                        String dimensionName) {
+        if (weight == null) {
+            throw new IllegalArgumentException("Missing linear weight " + ggufWeightName);
         }
-        return (int) weight.shape()[0];
+        INDArray meta = (ggufWeightName != null && weights != null)
+                ? weights.get(ggufWeightName + ".__q__") : null;
+        long value;
+        if (meta != null) {
+            if (meta.length() <= metadataIndex) {
+                throw new IllegalArgumentException("Malformed quantized metadata for " + ggufWeightName
+                        + ": expected [quantType,N,K], length=" + meta.length());
+            }
+            value = meta.getLong(metadataIndex);
+        } else {
+            long[] shape = weight.shape();
+            if (shape == null || shape.length <= denseShapeIndex) {
+                throw new IllegalArgumentException("Linear weight " + ggufWeightName
+                        + " must have dense [N,K] shape, got " + java.util.Arrays.toString(shape));
+            }
+            value = shape[denseShapeIndex];
+        }
+        if (value <= 0 || value > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Linear weight " + ggufWeightName + " has invalid logical "
+                    + dimensionName + " dimension " + value);
+        }
+        return (int) value;
     }
 
     /**

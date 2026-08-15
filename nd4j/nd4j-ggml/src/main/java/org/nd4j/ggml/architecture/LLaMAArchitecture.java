@@ -792,30 +792,56 @@ public class LLaMAArchitecture implements ModelArchitecture {
             return input;
         }
 
-        // GDN parameters — derive Q/K/V dimensions from weight shapes.
+        // GDN parameters — derive Q/K/V dimensions from logical matrix shapes.
+        // Runtime-quantized weights are stored as one-dimensional packed byte arrays; their
+        // INDArray storage shape is not the original [N,K] matrix shape.
         // GatedDeltaRule requires Q and K to share D_k, while V has D_v (may differ).
         // The gate/output weights have size H*D_v (the value/output dimension).
         // QKV layout: [Q(H*D_k), K(H*D_k), V(H*D_v)] where 2*H*D_k + H*D_v = qkvDim.
-        int qkvDim = (int) qkvWeight.shape()[0];
-        int numGdnHeads = (int) ssmA.shape()[0];
+        int qkvDim = QuantizedLinear.logicalOutputDim(
+                weights, prefix + ".attn_qkv.weight", qkvWeight);
+        int numGdnHeads = ssmA == null ? 0 : Math.toIntExact(ssmA.length());
 
-        // Derive D_v from gate/output weights, then solve for D_k
+        // Derive D_v from gate/output weights, then solve for D_k.
         int vDim;
         if (gateWeight != null) {
-            vDim = (int) gateWeight.shape()[0];   // gate output = H * D_v
+            vDim = QuantizedLinear.logicalOutputDim(
+                    weights, prefix + ".attn_gate.weight", gateWeight);
         } else if (outWeight != null) {
-            vDim = (int) outWeight.shape()[1];     // output projection input = H * D_v
+            vDim = QuantizedLinear.logicalInputDim(
+                    weights, prefix + ".ssm_out.weight", outWeight);
         } else {
-            vDim = qkvDim / 3;  // fallback: equal split
+            throw new IllegalStateException("Layer " + layerIdx
+                    + " GDN has neither gate nor output projection weights");
         }
-        int qkDim = (qkvDim - vDim) / 2;  // Q and K each get (qkvDim - vDim) / 2
-        int headDimQK = qkDim / numGdnHeads;   // D_k (shared by Q and K)
-        int headDimV = vDim / numGdnHeads;       // D_v
+
+        int combinedQkDim = qkvDim - vDim;
+        if (numGdnHeads <= 0) {
+            throw new IllegalStateException("Layer " + layerIdx
+                    + " GDN has invalid head count " + numGdnHeads
+                    + " from " + prefix + ".ssm_a");
+        }
+        if (combinedQkDim <= 0 || combinedQkDim % 2 != 0) {
+            throw new IllegalStateException("Layer " + layerIdx
+                    + " GDN has inconsistent logical projection dimensions: qkvDim=" + qkvDim
+                    + ", vDim=" + vDim + ", expected qkvDim-vDim to be positive and even");
+        }
+        int qkDim = combinedQkDim / 2;
+        if (qkDim % numGdnHeads != 0 || vDim % numGdnHeads != 0) {
+            throw new IllegalStateException("Layer " + layerIdx
+                    + " GDN projection dimensions are not divisible by head count " + numGdnHeads
+                    + ": qkDim=" + qkDim + ", vDim=" + vDim);
+        }
+        int headDimQK = qkDim / numGdnHeads;
+        int headDimV = vDim / numGdnHeads;
 
         if (layerIdx == 0) {
             log.info("Layer {} GDN: gdnHeads={}, headDimQK={}, headDimV={}, qkvDim={}, qkDim={}, vDim={}, gateDim={}",
                     layerIdx, numGdnHeads, headDimQK, headDimV, qkvDim, qkDim, vDim,
-                    gateWeight != null ? gateWeight.shape()[0] : 0);
+                    gateWeight != null
+                            ? QuantizedLinear.logicalOutputDim(
+                                    weights, prefix + ".attn_gate.weight", gateWeight)
+                            : 0);
             log.info("Layer {} GDN weights: ssmA={} alpha={} beta={} dtBias={} ssmNorm={} gate={} out={}",
                     layerIdx,
                     ssmA != null ? Arrays.toString(ssmA.shape()) + " vals=" + ssmA : "null",

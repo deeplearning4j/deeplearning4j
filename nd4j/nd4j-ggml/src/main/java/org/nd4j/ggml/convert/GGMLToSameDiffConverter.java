@@ -148,8 +148,21 @@ public class GGMLToSameDiffConverter {
 
             log.info("Using architecture: {}", architecture.getName());
 
-            // Build SameDiff graph
-            SameDiff sd = architecture.buildGraph(metadata, weights, options);
+            // Build SameDiff graph. Keep this phase distinct from tensor loading so importer
+            // failures identify the architecture configuration that reached graph construction.
+            SameDiff sd;
+            try {
+                sd = architecture.buildGraph(metadata, weights, options);
+            } catch (RuntimeException failure) {
+                throw new GGMLImportException("Could not build " + architecture.getName()
+                        + " SameDiff graph after loading " + weights.size() + " entries"
+                        + " (modelArchitecture=" + metadata.getArchitecture()
+                        + ", layers=" + metadata.getNumLayers()
+                        + ", hiddenSize=" + metadata.getHiddenSize()
+                        + ", attentionHeads=" + metadata.getNumAttentionHeads()
+                        + ", kvHeads=" + metadata.getNumKVHeads()
+                        + ", quantizationMode=" + options.getQuantizationMode() + ")", failure);
+            }
 
             // Add metadata
             addMetadataToGraph(sd, metadata);
