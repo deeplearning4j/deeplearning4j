@@ -328,7 +328,8 @@ class SdxLlmCoreTokenizerTest {
         assertTrue(exports.contains("sdxLlmGenerateStreaming"));
         assertTrue(exports.contains("sdxLlmRenderChatPrompt"));
         assertTrue(exports.contains("sdxLlmParseChatResult"));
-        assertEquals("sdx-prepared-text-model-v4", SdxGgufModelPreparer.PREPARED_SCHEMA);
+        assertEquals("sdx-prepared-text-model-v5", SdxGgufModelPreparer.PREPARED_SCHEMA);
+        assertEquals("ggml-runtime-packed-gdn-v2", SdxGgufModelPreparer.GRAPH_IMPORT_ABI);
     }
 
     @Test
@@ -346,7 +347,8 @@ class SdxLlmCoreTokenizerTest {
                         null,
                         "android-arm64-nnapi-accelerator",
                         cache.toString(),
-                        "{\"verifiedSourceSha256\":\"" + "0".repeat(64) +
+                        "{\"graphImportAbi\":\"" + SdxGgufModelPreparer.GRAPH_IMPORT_ABI +
+                                "\",\"verifiedSourceSha256\":\"" + "0".repeat(64) +
                                 "\",\"verifiedSourceBytes\":16}"));
         assertEquals(
                 "Verified source SHA-256 did not match the GGUF bytes",

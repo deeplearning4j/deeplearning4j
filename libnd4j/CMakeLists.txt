@@ -564,6 +564,16 @@ endif()
 
 if(WIN32 AND SD_CUDA)
     function(apply_cuda_target_fixes)
+        # CUDA's static toolkit archives require /MT for ZLUDA. Keep the
+        # ordinary Windows CUDA pipeline on /MD while applying the same CRT
+        # to both the CXX object files and CUDA host objects.
+        if(SD_ZLUDA)
+            set(_sd_target_msvc_runtime
+                "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        else()
+            set(_sd_target_msvc_runtime
+                "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+        endif()
         get_property(all_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
         foreach(target ${all_targets})
             if(TARGET ${target})
@@ -579,7 +589,7 @@ if(WIN32 AND SD_CUDA)
                     set_target_properties(${target} PROPERTIES
                             CUDA_RESOLVE_DEVICE_SYMBOLS ON
                             CUDA_SEPARABLE_COMPILATION ON
-                            MSVC_RUNTIME_LIBRARY "MultiThreadedDLL"
+                            MSVC_RUNTIME_LIBRARY "${_sd_target_msvc_runtime}"
                     )
                 endif()
             endif()

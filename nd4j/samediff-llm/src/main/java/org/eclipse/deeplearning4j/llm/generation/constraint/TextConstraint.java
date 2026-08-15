@@ -66,6 +66,22 @@ public interface TextConstraint {
     boolean canExtend(String currentText, String piece);
 
     /**
+     * Return a constraint view that requires any template-opened output blocks to close
+     * before arbitrary content can continue. Constraints without output blocks return
+     * themselves, so callers can apply this generically without knowing block names or
+     * payload protocols.
+     *
+     * <p>The returned view must preserve the already-emitted prefix and may only narrow
+     * the language accepted by this constraint.</p>
+     *
+     * @param currentText text emitted when the output-block budget was exhausted
+     * @return a constraint restricted to closing open output blocks, or {@code this}
+     */
+    default TextConstraint requireOutputBlockClosure(String currentText) {
+        return this;
+    }
+
+    /**
      * Whether a tokenizer-declared special/control token is legal at this exact
      * constraint state. Special tokens are rejected by default so protocol
      * sentinels cannot be consumed as ordinary string content. Constraints that

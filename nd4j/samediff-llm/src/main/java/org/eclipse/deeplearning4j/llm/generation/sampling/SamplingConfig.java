@@ -173,6 +173,23 @@ public class SamplingConfig {
     private int minNewTokens = 0;
 
     /**
+     * Maximum number of generated tokens that template-owned output blocks may consume
+     * before constrained decoding requires their closing delimiters. The block type is
+     * intentionally not named here: this applies to every output block discovered from
+     * the active model chat template. Default 0 disables this boundary.
+     */
+    @Builder.Default
+    private int maxOutputBlockTokens = 0;
+
+    /**
+     * Tokens reserved at the end of the total generation budget for output-block closures
+     * and the following structured payload. When the remaining budget reaches this value,
+     * arbitrary block content is no longer admitted. Default 0 disables this boundary.
+     */
+    @Builder.Default
+    private int structuredOutputTokenReserve = 0;
+
+    /**
      * Random seed for reproducible sampling.
      * Set to null for non-deterministic behavior.
      */
@@ -489,6 +506,13 @@ public class SamplingConfig {
             throw new IllegalArgumentException("topP must be in [0, 1]; got: " + topP);
         if (minP < 0.0 || minP > 1.0)
             throw new IllegalArgumentException("minP must be in [0, 1]; got: " + minP);
+        if (maxOutputBlockTokens < 0)
+            throw new IllegalArgumentException(
+                    "maxOutputBlockTokens must be >= 0; got: " + maxOutputBlockTokens);
+        if (structuredOutputTokenReserve < 0)
+            throw new IllegalArgumentException(
+                    "structuredOutputTokenReserve must be >= 0; got: "
+                            + structuredOutputTokenReserve);
     }
 
     /**

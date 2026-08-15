@@ -239,4 +239,78 @@ public class TestDspViewCaptureCorrectness {
             if (reference != null) reference.close();
         }
     }
+
+    private static SameDiff buildMaskedStaticSliceGraph() {
+        SameDiff g = SameDiff.create();
+        SDVariable x = g.placeHolder("x", DataType.FLOAT, 2, 3, 8);
+        g.stridedSlice("even", x,
+                new long[]{99, 99, 0}, new long[]{-99, -99, 8}, new long[]{1, 1, 2},
+                0b011, 0b011, 0, 0, 0);
+        g.stridedSlice("odd", x,
+                new long[]{99, 99, 1}, new long[]{-99, -99, 8}, new long[]{1, 1, 2},
+                0b011, 0b011, 0, 0, 0);
+        g.stridedSlice("tail", x,
+                new long[]{99, 99, 0}, new long[]{-99, -99, 7}, new long[]{1, 1, 2},
+                0b011, 0b011, 0, 0, 0);
+        g.setOutputs("even", "odd", "tail");
+        return g;
+    }
+
+    @Test
+    @DisplayName("masked static strided slice uses post-mask coordinates during frozen DSP execution")
+    void testMaskedStaticStridedSliceFrozenExecution() {
+        SameDiff compiled = null;
+        try {
+            Nd4j.getEnvironment().setTritonCompileAll(true);
+            Nd4j.getEnvironment().setTritonGraphCapture(true);
+            Nd4j.getEnvironment().setTritonMergedCaptureThroughViews(true);
+            Nd4j.getEnvironment().setTritonSectionFusion(true);
+            Nd4j.getEnvironment().setDspFreezeMergeSegments(true);
+
+            compiled = buildMaskedStaticSliceGraph();
+            compiled.setDspAutoCompileEnabled(true);
+            compiled.setDspNativeAutoCompileEnabled(true);
+            compiled.setGraphExecutionMode(GraphExecutionMode.AUTO);
+
+            String[] outputs = {"even", "odd", "tail"};
+            int[] starts = {0, 1, 0};
+            int[] ends = {8, 8, 7};
+            for (int step = 0; step < STEPS; step++) {
+                INDArray input = Nd4j.arange(48).castTo(DataType.FLOAT)
+                        .reshape(2, 3, 8).addi(step * 100.0);
+                Map<String, INDArray> actual = compiled.output(
+                        Collections.singletonMap("x", input), outputs);
+
+                for (int outputIndex = 0; outputIndex < outputs.length; outputIndex++) {
+                    int columns = 4;
+                    float[] expectedValues = new float[2 * 3 * columns];
+                    int position = 0;
+                    for (int batch = 0; batch < 2; batch++) {
+                        for (int row = 0; row < 3; row++) {
+                            for (int column = starts[outputIndex]; column < ends[outputIndex]; column += 2) {
+                                expectedValues[position++] =
+                                        step * 100.0f + batch * 24.0f + row * 8.0f + column;
+                            }
+                        }
+                    }
+                    INDArray expected = Nd4j.createFromArray(expectedValues).reshape(2, 3, columns);
+                    INDArray output = actual.get(outputs[outputIndex]);
+
+                    assertArrayEquals(new long[]{2, 3, columns}, output.shape(),
+                            "step=" + step + " output=" + outputs[outputIndex] + " shape");
+                    double maxDiff = Transforms.abs(output.sub(expected)).maxNumber().doubleValue();
+                    assertTrue(maxDiff <= 1e-6,
+                            String.format("step=%d output=%s masked static slice maxDiff=%g",
+                                    step, outputs[outputIndex], maxDiff));
+                }
+            }
+
+            DspPlanAssertions.assertPhaseReached(compiled, PlanPhase.SHAPES_FROZEN,
+                    "masked static slice should reach frozen slot-by-slot execution");
+            DspPlanAssertions.assertNoCaptureFailures(compiled,
+                    "masked static slice after " + STEPS + " executions");
+        } finally {
+            if (compiled != null) compiled.close();
+        }
+    }
 }

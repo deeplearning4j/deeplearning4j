@@ -1701,9 +1701,16 @@ public class GenerationPipeline implements AutoCloseable {
         if (sampling.hasConstraint()) {
             ConstraintConfig constraintConfig = sampling.getConstraintConfig();
             constraintMasker = new ConstraintMasker(
-                    constraintConfig.buildConstraint(), constraintConfig.getEvalTopK());
-            log.info("[Constraint] Constrained in-graph KV decoding active: type={} evalTopK={}",
-                    constraintConfig.getType(), constraintConfig.getEvalTopK());
+                    constraintConfig.buildConstraint(),
+                    constraintConfig.getEvalTopK(),
+                    maxNewTokens,
+                    sampling.getMaxOutputBlockTokens(),
+                    sampling.getStructuredOutputTokenReserve());
+            log.info("[Constraint] Constrained in-graph KV decoding active: type={} evalTopK={} "
+                            + "maxOutputBlockTokens={} structuredOutputTokenReserve={}",
+                    constraintConfig.getType(), constraintConfig.getEvalTopK(),
+                    sampling.getMaxOutputBlockTokens(),
+                    sampling.getStructuredOutputTokenReserve());
         }
         suppressStopsUnderFloor(prefillLogits, logitsSamplePos, sampling, generatedSoFar.size(), stopTokenIds);
         int firstTokenId = sampleToken(
@@ -5153,6 +5160,8 @@ public class GenerationPipeline implements AutoCloseable {
 
         // Apply constraint masking before all other sampling transforms.
         if (masker != null && tokenizer != null) {
+            masker.enforceOutputBlockBudget(
+                    generatedSoFar == null ? 0 : generatedSoFar.size());
             float[] rawLogits = slice.toFloatVector();
             String nonFiniteFailure = nonFiniteLogitsFailure(rawLogits, masker, generatedSoFar);
             if (nonFiniteFailure != null) {

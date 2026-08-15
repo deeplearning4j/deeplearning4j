@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.llm.generation.constraint;
 
+import org.eclipse.deeplearning4j.llm.tokenizer.ChatTemplate;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -1090,6 +1091,82 @@ class ConstraintAutomatonTest {
         List<Integer> all = new java.util.ArrayList<>();
         for (int idx : topK) all.add(idx);
         assertTrue(all.contains(0) && all.contains(1) && all.contains(2));
+    }
+
+    // =========================================================================
+    // Template-owned output-block budgets
+    // =========================================================================
+
+    @Test
+    void outputBlockBudget_forcesGenericBlockClosureBeforePayload() {
+        TextConstraint constraint = outputBlockToolConstraint(List.of(
+                new ChatTemplate.OutputBlockDefinition(
+                        "analysis", "<analysis>", "</analysis>")));
+        ConstraintMasker masker = new ConstraintMasker(
+                constraint, 1, 12, 5, 4);
+        masker.decodedTextEmitted("working");
+
+        masker.enforceOutputBlockBudget(4);
+        assertFalse(masker.isOutputBlockClosureRequired());
+        assertTrue(masker.getConstraint().canExtend("working", " longer"));
+
+        masker.enforceOutputBlockBudget(5);
+        assertTrue(masker.isOutputBlockClosureRequired());
+        assertFalse(masker.getConstraint().canExtend("working", " longer"));
+        assertTrue(masker.getConstraint().canExtend(
+                "working",
+                "</analysis><|tool_call_start|>[submit()]<|tool_call_end|>"));
+    }
+
+    @Test
+    void outputBlockBudget_payloadReserveCanCloseBeforeBlockLimit() {
+        TextConstraint constraint = outputBlockToolConstraint(List.of(
+                new ChatTemplate.OutputBlockDefinition(
+                        "trace", "<trace>", "</trace>")));
+        ConstraintMasker masker = new ConstraintMasker(
+                constraint, 1, 10, 9, 4);
+        masker.decodedTextEmitted("trace body");
+
+        masker.enforceOutputBlockBudget(5);
+        assertFalse(masker.isOutputBlockClosureRequired());
+        masker.enforceOutputBlockBudget(6);
+        assertTrue(masker.isOutputBlockClosureRequired(),
+                "reserve boundary (10 - 4) must win over the later block cap");
+    }
+
+    @Test
+    void outputBlockBudget_preservesPartialAndNestedClosingDelimiters() {
+        TextConstraint constraint = outputBlockToolConstraint(List.of(
+                new ChatTemplate.OutputBlockDefinition(
+                        "outer", "<outer>", "</outer>"),
+                new ChatTemplate.OutputBlockDefinition(
+                        "inner", "<inner>", "</inner>")));
+        String current = "work</inn";
+        TextConstraint forced = constraint.requireOutputBlockClosure(current);
+
+        assertFalse(forced.canExtend(current, "more"));
+        assertTrue(forced.canExtend(
+                current,
+                "er></outer><|tool_call_start|>[submit()]<|tool_call_end|>"));
+    }
+
+    @Test
+    void outputBlockBudget_rejectsImpossibleReserve() {
+        TextConstraint constraint = outputBlockToolConstraint(List.of(
+                new ChatTemplate.OutputBlockDefinition(
+                        "analysis", "<analysis>", "</analysis>")));
+        assertThrows(IllegalArgumentException.class,
+                () -> new ConstraintMasker(constraint, 1, 8, 4, 9));
+    }
+
+    private static TextConstraint outputBlockToolConstraint(
+            List<ChatTemplate.OutputBlockDefinition> blocks) {
+        return ConstraintConfig.builder()
+                .type(NativeToolCallConstraint.TYPE)
+                .toolNames(List.of("submit"))
+                .outputBlocks(blocks)
+                .build()
+                .buildConstraint();
     }
 
     // =========================================================================

@@ -329,11 +329,23 @@ public class ConstraintConfig {
     private static final class OutputBlockSequenceConstraint implements TextConstraint {
         private final List<ChatTemplate.OutputBlockDefinition> blocks;
         private final TextConstraint payload;
+        private final String forcedClosurePrefix;
+        private final String forcedClosureSuffix;
 
         private OutputBlockSequenceConstraint(
                 List<ChatTemplate.OutputBlockDefinition> blocks, TextConstraint payload) {
+            this(blocks, payload, null, null);
+        }
+
+        private OutputBlockSequenceConstraint(
+                List<ChatTemplate.OutputBlockDefinition> blocks,
+                TextConstraint payload,
+                String forcedClosurePrefix,
+                String forcedClosureSuffix) {
             this.blocks = List.copyOf(blocks);
             this.payload = payload;
+            this.forcedClosurePrefix = forcedClosurePrefix;
+            this.forcedClosureSuffix = forcedClosureSuffix;
         }
 
         @Override
@@ -341,6 +353,9 @@ public class ConstraintConfig {
             String current = currentText == null ? "" : currentText;
             String extension = piece == null ? "" : piece;
             BlockState before = state(current);
+            if (forcedClosureSuffix != null && !before.blocksClosed) {
+                return canExtendForcedClosure(current, extension);
+            }
             BlockState after = state(current + extension);
             if (!after.blocksClosed) {
                 return true;
@@ -364,9 +379,25 @@ public class ConstraintConfig {
         }
 
         @Override
+        public TextConstraint requireOutputBlockClosure(String currentText) {
+            String current = currentText == null ? "" : currentText;
+            BlockState blockState = state(current);
+            if (blockState.blocksClosed || forcedClosureSuffix != null) {
+                return this;
+            }
+            String closures = remainingClosures(blockState.openBlockIndex);
+            int overlap = closingPrefixOverlap(current, closures);
+            return new OutputBlockSequenceConstraint(
+                    blocks, payload, current, closures.substring(overlap));
+        }
+
+        @Override
         public boolean allowsSpecialToken(String currentText, String piece) {
             BlockState current = state(currentText == null ? "" : currentText);
             if (!current.blocksClosed) {
+                if (forcedClosureSuffix != null) {
+                    return canExtend(currentText, piece);
+                }
                 String expected = blocks.get(current.openBlockIndex).getClosingDelimiter();
                 return expected.equals(piece) && canExtend(currentText, piece);
             }
@@ -387,6 +418,44 @@ public class ConstraintConfig {
         @Override
         public String type() {
             return "output_blocks_then_" + payload.type();
+        }
+
+        private boolean canExtendForcedClosure(String current, String extension) {
+            if (forcedClosurePrefix == null || !current.startsWith(forcedClosurePrefix)) {
+                return false;
+            }
+            String currentProgress = current.substring(forcedClosurePrefix.length());
+            if (!forcedClosureSuffix.startsWith(currentProgress)) {
+                return false;
+            }
+            String candidateProgress = currentProgress + extension;
+            if (forcedClosureSuffix.startsWith(candidateProgress)) {
+                return true;
+            }
+            if (!candidateProgress.startsWith(forcedClosureSuffix)) {
+                return false;
+            }
+            String rawPayload = candidateProgress.substring(forcedClosureSuffix.length());
+            String payloadText = rawPayload.stripLeading();
+            return payloadText.isEmpty() || payload.canExtend("", payloadText);
+        }
+
+        private String remainingClosures(int openBlockIndex) {
+            StringBuilder closures = new StringBuilder();
+            for (int index = openBlockIndex; index >= 0; index--) {
+                closures.append(blocks.get(index).getClosingDelimiter());
+            }
+            return closures.toString();
+        }
+
+        private static int closingPrefixOverlap(String current, String closures) {
+            int max = Math.min(current.length(), closures.length());
+            for (int length = max; length > 0; length--) {
+                if (current.regionMatches(current.length() - length, closures, 0, length)) {
+                    return length;
+                }
+            }
+            return 0;
         }
 
         private BlockState state(String text) {

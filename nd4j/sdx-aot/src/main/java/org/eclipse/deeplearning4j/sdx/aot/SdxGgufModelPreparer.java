@@ -48,7 +48,8 @@ import java.util.Map;
  * shared; only the {@link SdxTargetProfile} compiler/provider policy is backend specific.
  */
 final class SdxGgufModelPreparer {
-    static final String PREPARED_SCHEMA = "sdx-prepared-text-model-v4";
+    static final String PREPARED_SCHEMA = "sdx-prepared-text-model-v5";
+    static final String GRAPH_IMPORT_ABI = "ggml-runtime-packed-gdn-v2";
     static final String RESOLVED_SCHEMA = "sdx-resolved-text-model-v1";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -701,6 +702,7 @@ final class SdxGgufModelPreparer {
             this.tensorBatchSize = tensorBatchSize;
             this.useMemoryMapping = useMemoryMapping;
             ObjectNode canonical = MAPPER.createObjectNode();
+            canonical.put("graphImportAbi", GRAPH_IMPORT_ABI);
             canonical.put("conversionMode", conversionMode.name());
             canonical.put("requantizeType", requantizeType == null ? "NONE" : requantizeType.name());
             canonical.put("kvQuantFormat", kvQuantFormat);
@@ -711,6 +713,11 @@ final class SdxGgufModelPreparer {
         }
 
         static PreparationProfile from(JsonNode options) {
+            String graphImportAbi = options.path("graphImportAbi").asText("");
+            if (!GRAPH_IMPORT_ABI.equals(graphImportAbi)) {
+                throw new IllegalArgumentException("graphImportAbi must be " + GRAPH_IMPORT_ABI
+                        + " but was '" + graphImportAbi + "'");
+            }
             String modeText = options.path("conversionMode")
                     .asText(ConversionOptions.QuantizationMode.DEQUANTIZE_TO_FLOAT16.name())
                     .trim().toUpperCase(Locale.ROOT);

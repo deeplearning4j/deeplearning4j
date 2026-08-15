@@ -82,9 +82,13 @@ class TestQuantizedLinearAttach {
 
         assertEquals(n, QuantizedLinear.logicalOutputDim(weights, "blk.0.attn_k.weight", packed),
                 "Packed byte length must not be used as the logical output dimension");
-        assertEquals(3, QuantizedLinear.logicalOutputDim(Collections.emptyMap(), null,
-                Nd4j.zeros(DataType.FLOAT, 3, 5)),
+        assertEquals(k, QuantizedLinear.logicalInputDim(weights, "blk.0.attn_k.weight", packed),
+                "Packed byte length must not be used as the logical input dimension");
+        INDArray dense = Nd4j.zeros(DataType.FLOAT, 3, 5);
+        assertEquals(3, QuantizedLinear.logicalOutputDim(Collections.emptyMap(), null, dense),
                 "Dense weights still use their leading matrix dimension");
+        assertEquals(5, QuantizedLinear.logicalInputDim(Collections.emptyMap(), null, dense),
+                "Dense weights still use their trailing matrix dimension");
     }
 
     @Test

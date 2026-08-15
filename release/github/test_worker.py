@@ -613,6 +613,14 @@ class WorkflowMatrixTests(unittest.TestCase):
             '-Xcompiler=${_sd_cuda_msvc_runtime_flag}',
             cmake_source,
         )
+        self.assertIn(
+            'if(SD_ZLUDA)\n            set(_sd_target_msvc_runtime',
+            cmake_source,
+        )
+        self.assertIn(
+            'MSVC_RUNTIME_LIBRARY "${_sd_target_msvc_runtime}"',
+            cmake_source,
+        )
 
         cublas_helper = (
             ROOT / "libnd4j/include/helpers/cuda/cublasHelper.cu"

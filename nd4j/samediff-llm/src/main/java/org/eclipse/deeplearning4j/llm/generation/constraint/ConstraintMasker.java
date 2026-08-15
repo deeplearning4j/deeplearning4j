@@ -73,10 +73,14 @@ import java.util.function.IntFunction;
  */
 public class ConstraintMasker {
 
-    private final TextConstraint constraint;
+    private TextConstraint constraint;
     private final ConstraintVocabCache cache;
     /** Number of top-logit candidates evaluated before falling back to full vocab. */
     private final int evalTopK;
+    /** Generated-token count at which open output blocks must start closing. */
+    private final int outputBlockClosureToken;
+    /** Whether the budget boundary has already narrowed the active constraint. */
+    private boolean outputBlockClosureRequired;
     /** Accumulated text emitted by the model so far. */
     private String emittedText;
 
@@ -87,7 +91,27 @@ public class ConstraintMasker {
      * @param evalTopK   how many top-logit candidates to evaluate first (must be &gt; 0)
      */
     public ConstraintMasker(TextConstraint constraint, int evalTopK) {
-        this(constraint, evalTopK, new ConstraintVocabCache());
+        this(constraint, evalTopK, new ConstraintVocabCache(), Integer.MAX_VALUE, 0, 0);
+    }
+
+    /**
+     * Constructs a masker with a generated-token budget for template-owned output blocks.
+     * A zero block limit or payload reserve disables that individual boundary.
+     *
+     * @param constraint                  constraint automaton to enforce
+     * @param evalTopK                    number of top-logit candidates evaluated first
+     * @param maxGeneratedTokens          total generation budget for this run
+     * @param maxOutputBlockTokens        maximum tokens allowed before closing output blocks; zero disables
+     * @param structuredOutputTokenReserve tokens protected for block closures and the structured payload; zero disables
+     */
+    public ConstraintMasker(
+            TextConstraint constraint,
+            int evalTopK,
+            int maxGeneratedTokens,
+            int maxOutputBlockTokens,
+            int structuredOutputTokenReserve) {
+        this(constraint, evalTopK, new ConstraintVocabCache(), maxGeneratedTokens,
+                maxOutputBlockTokens, structuredOutputTokenReserve);
     }
 
     /**
@@ -99,18 +123,72 @@ public class ConstraintMasker {
      * @param cache      the vocab cache to use
      */
     public ConstraintMasker(TextConstraint constraint, int evalTopK, ConstraintVocabCache cache) {
+        this(constraint, evalTopK, cache, Integer.MAX_VALUE, 0, 0);
+    }
+
+    ConstraintMasker(
+            TextConstraint constraint,
+            int evalTopK,
+            ConstraintVocabCache cache,
+            int maxGeneratedTokens,
+            int maxOutputBlockTokens,
+            int structuredOutputTokenReserve) {
         if (constraint == null) throw new IllegalArgumentException("constraint must not be null");
         if (evalTopK <= 0) throw new IllegalArgumentException("evalTopK must be > 0; got: " + evalTopK);
         if (cache == null) throw new IllegalArgumentException("cache must not be null");
+        if (maxGeneratedTokens <= 0) {
+            throw new IllegalArgumentException(
+                    "maxGeneratedTokens must be positive; got: " + maxGeneratedTokens);
+        }
+        if (maxOutputBlockTokens < 0) {
+            throw new IllegalArgumentException(
+                    "maxOutputBlockTokens must be >= 0; got: " + maxOutputBlockTokens);
+        }
+        if (structuredOutputTokenReserve < 0
+                || structuredOutputTokenReserve > maxGeneratedTokens) {
+            throw new IllegalArgumentException(
+                    "structuredOutputTokenReserve must be between 0 and maxGeneratedTokens; got: "
+                            + structuredOutputTokenReserve + " for " + maxGeneratedTokens);
+        }
         this.constraint = constraint;
         this.evalTopK = evalTopK;
         this.cache = cache;
+        int blockBoundary = maxOutputBlockTokens > 0
+                ? maxOutputBlockTokens : Integer.MAX_VALUE;
+        int reserveBoundary = structuredOutputTokenReserve > 0
+                ? maxGeneratedTokens - structuredOutputTokenReserve : Integer.MAX_VALUE;
+        this.outputBlockClosureToken = Math.min(blockBoundary, reserveBoundary);
+        this.outputBlockClosureRequired = false;
         this.emittedText = "";
     }
 
     // -------------------------------------------------------------------------
     // Core masking logic
     // -------------------------------------------------------------------------
+
+    /**
+     * Narrows the active constraint once the configured output-block budget is exhausted.
+     * The transition is monotonic and template-generic: constraints without open output
+     * blocks simply return themselves.
+     *
+     * @param generatedTokenCount tokens already emitted before the next sampling step
+     */
+    public void enforceOutputBlockBudget(int generatedTokenCount) {
+        if (generatedTokenCount < 0) {
+            throw new IllegalArgumentException(
+                    "generatedTokenCount must be >= 0; got: " + generatedTokenCount);
+        }
+        if (outputBlockClosureRequired || generatedTokenCount < outputBlockClosureToken) {
+            return;
+        }
+        constraint = constraint.requireOutputBlockClosure(emittedText);
+        outputBlockClosureRequired = true;
+    }
+
+    /** Returns whether the configured budget boundary has been reached. */
+    public boolean isOutputBlockClosureRequired() {
+        return outputBlockClosureRequired;
+    }
 
     /**
      * Applies the constraint mask to the raw logits array.
