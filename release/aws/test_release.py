@@ -2740,31 +2740,54 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertTrue(all(Path(call[0][1]).name == "cross-platform.sh" for call in calls))
         self.assertTrue(all(call[1]["DL4J_MAVEN_GOAL"] == "install" for call in calls))
 
-    def test_cross_platform_test_dependencies_follow_the_worker_platform(self):
-        root = Path(__file__).parents[2]
-        namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
-        poms = (
-            root / "nd4j/samediff-llm/pom.xml",
-            root / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx-model/pom.xml",
-            root / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx/pom.xml",
+    def test_sdx_release_component_is_opt_in_and_publishable(self):
+        build = {
+            "backend": "cpu",
+            "javacppPlatform": "windows-x86_64",
+            "profiles": ["cpu", "sdx"],
+            "modules": [":nd4j-native", ":nd4j-native-preset"],
+        }
+        rules = {
+            "mode": "classifier",
+            "artifactIds": ["nd4j-native", "nd4j-native-preset"],
+            "classifierTokens": ["windows-x86_64"],
+        }
+        self.assertTrue(build_platform.sdx_enabled_for_build(build))
+        build_platform.enable_sdx_release_component(build, rules)
+        self.assertEqual(
+            {
+                ":nd4j-sdx-preset",
+                ":nd4j-sdx-model",
+                ":nd4j-sdx",
+                ":nd4j-sdx-litertlm",
+            },
+            set(build["modules"]) & set(build_platform.SDX_MODULES),
         )
-        for pom in poms:
-            dependencies = ET.parse(pom).getroot().findall(
-                "./m:dependencies/m:dependency", namespace
-            )
-            classified_native = [
-                dependency.find("m:classifier", namespace)
-                for dependency in dependencies
-                if dependency.findtext("m:artifactId", namespaces=namespace)
-                == "nd4j-native"
-                and dependency.find("m:classifier", namespace) is not None
-            ]
-            self.assertTrue(classified_native, pom)
-            self.assertEqual(
-                ["${javacpp.platform}"],
-                [classifier.text for classifier in classified_native],
-                pom,
-            )
+        self.assertEqual(
+            set(build_platform.SDX_ARTIFACT_IDS),
+            set(rules["unclassifiedArtifactIds"]),
+        )
+        self.assertIn("nd4j-sdx", build_platform.required_classifier_artifact_ids(build, rules))
+
+        non_sdx = dict(build, profiles=["cpu"])
+        self.assertFalse(build_platform.sdx_enabled_for_build(non_sdx))
+
+    def test_native_sdx_command_contains_profile_and_modules(self):
+        root = Path(__file__).parents[2]
+        script = root / "build-scripts/release/native-platform.sh"
+        env = os.environ.copy()
+        env.update({
+            "DL4J_FAMILY": "windows-cpu",
+            "DL4J_BUILD_THREADS": "4",
+            "DL4J_BUILD_SDX": "1",
+            "DL4J_MAVEN_GOAL": "install",
+        })
+        command = subprocess.check_output(
+            [str(script), "--print"], cwd=root, env=env, text=True
+        )
+        self.assertIn("-Psdx", command)
+        for module in ("nd4j-sdx-model", "nd4j-sdx"):
+            self.assertIn(module, command)
 
     def test_triton_cpu_patch_uses_raw_bits_when_gcc_lacks_float16(self):
         root = Path(__file__).parents[2]

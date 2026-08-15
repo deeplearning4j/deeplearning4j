@@ -49,8 +49,14 @@ ROCM_BUILD_COMPONENTS = (
 )
 DOWNLOAD_RETRIES = 4
 TRANSIENT_HTTP_STATUSES = {408, 429, 500, 502, 503, 504}
-
-
+SDX_MODULES = (
+    ":nd4j-sdx-preset",
+    ":nd4j-sdx-model",
+    ":nd4j-sdx",
+    ":nd4j-sdx-litertlm",
+)
+SDX_ARTIFACT_IDS = tuple(module.removeprefix(":") for module in SDX_MODULES)
+SDX_UNCLASSIFIED_ARTIFACT_IDS = SDX_ARTIFACT_IDS
 SCCACHE_ASSETS = {
     ("linux", "x86_64"): (
         "x86_64-unknown-linux-musl",
@@ -817,6 +823,33 @@ def has_base_platform_variant(build: dict) -> bool:
     )
 
 
+def sdx_enabled_for_build(build: dict) -> bool:
+    """Return whether this matrix slice owns the opt-in desktop SDX component."""
+    return (
+        "sdx" in build.get("profiles", [])
+        and build.get("backend") == "cpu"
+        and build.get("javacppPlatform") in {
+            "linux-x86_64", "linux-arm64", "windows-x86_64", "macosx-arm64"
+        }
+        and not build.get("zludaVersion")
+    )
+
+
+def enable_sdx_release_component(build: dict, rules: dict) -> None:
+    """Make the declarative SDX profile publishable without changing other lanes."""
+    if not sdx_enabled_for_build(build):
+        return
+    build["modules"] = list(dict.fromkeys([*build.get("modules", []), *SDX_MODULES]))
+    if rules.get("mode", "all") != "classifier":
+        return
+    rules["artifactIds"] = list(dict.fromkeys([
+        *rules.get("artifactIds", []), *SDX_ARTIFACT_IDS
+    ]))
+    rules["unclassifiedArtifactIds"] = list(dict.fromkeys([
+        *rules.get("unclassifiedArtifactIds", []), *SDX_UNCLASSIFIED_ARTIFACT_IDS
+    ]))
+
+
 def required_classifier_artifact_ids(build: dict, rules: dict) -> tuple[str, ...]:
     """Return the published runtime artifacts that must carry each classifier."""
     if rules.get("mode", "all") != "classifier":
@@ -842,6 +875,10 @@ def required_classifier_artifact_ids(build: dict, rules: dict) -> tuple[str, ...
         required = ("nd4j-vulkan",)
     else:
         return ()
+    if sdx_enabled_for_build(build):
+        # nd4j-sdx is the only SDX artifact with a platform classifier; the
+        # model, preset, and optional provider remain unclassified Java jars.
+        required = (*required, "nd4j-sdx")
     owned = set(rules.get("artifactIds", []))
     missing_owned = [artifact_id for artifact_id in required if artifact_id not in owned]
     if missing_owned:
@@ -2112,6 +2149,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
     """Invoke the exact shared scripts used by each GitHub platform workflow."""
     build, shard_id = shard["build"], shard["id"]
     rules = shard.get("artifactRules", {})
+    enable_sdx_release_component(build, rules)
     reset_unclassified_artifacts(repository, build, rules, release_version)
     prepare_openblas(source, build, env, config)
     prebuilt_libnd4j_url = prepare_prebuilt_libnd4j(source, build, env)
@@ -2135,6 +2173,10 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_CUDA_VERSION": str(build.get("cudaVersion", "")),
             "DL4J_ZLUDA_TARGET": zluda_target(build),
             "DL4J_LIBND4J_URL": prebuilt_libnd4j_url,
+            "DL4J_BUILD_SDX": "1" if sdx_enabled_for_build(build) else "0",
+            "DL4J_SDX_NATIVE_LIBRARY": "nd4jcpu",
+            "DL4J_SDX_PLATFORM_LINKS": "nd4jcpu",
+            "DL4J_SDX_OUTPUT_PATH": str(source / "libnd4j/blasbuild/cpu"),
         })
         if family == "vulkan-mlir" and variant.get("mlir"):
             # native-platform.sh uses platform.classifier for the JavaCPP
@@ -2227,6 +2269,10 @@ def main() -> None:
     build = shard["build"]
     env = os.environ.copy()
     env["MAVEN_OPTS"] = f"-Xmx{build.get('mavenHeapGiB', 16)}g -Dmaven.repo.local={args.repository}"
+    env["DL4J_BUILD_SDX"] = "1" if sdx_enabled_for_build(build) else "0"
+    env["DL4J_SDX_NATIVE_LIBRARY"] = "nd4jcpu"
+    env["DL4J_SDX_PLATFORM_LINKS"] = "nd4jcpu"
+    env["DL4J_SDX_OUTPUT_PATH"] = str(args.source / "libnd4j/blasbuild/cpu")
     driver_started_at = int(time.time())
     driver_timer = time.monotonic()
     compiler_cache, sccache_started = configure_compiler_cache(

@@ -7,8 +7,10 @@ name: Java Hotfix Release
 #   - GGUF format parsing, quantization type support
 #   - API-level bug fixes in nd4j-api or nd4j-common
 #
-# The native backend libraries (nd4j-native, nd4j-cuda-*) are NOT rebuilt or deployed.
-# Consumers of this hotfix release must already have a compatible native backend installed.
+# The native backend libraries (nd4j-native, nd4j-cuda-*) and the native SDX binding
+# (nd4j-sdx) are NOT rebuilt or deployed. The SDX model, preset, and optional provider
+# jars are Java-only and are safe to publish here; consumers still need a compatible
+# native backend/binding for execution.
 
 on:
   workflow_dispatch:
@@ -121,10 +123,12 @@ jobs:
         run: |
           # These are the Java-only modules that can be released without native rebuilds.
           # Order matters: nd4j-common and nd4j-api are dependencies of the others.
-          MODULES=":nd4j-common,:nd4j-api,:nd4j-ggml,:samediff-llm,:samediff-pipeline-ggml"
+          # SDX is explicitly opted into because its model/preset/LiteRT-LM jars are
+          # independent of the native nd4j-sdx binding build.
+          MODULES=":nd4j-common,:nd4j-api,:nd4j-ggml,:nd4j-sdx-preset,:nd4j-sdx-model,:nd4j-sdx-litertlm,:samediff-llm,:samediff-pipeline-ggml"
 
           DEPLOY_CMD="mvn --no-transfer-progress --batch-mode"
-          DEPLOY_CMD="${DEPLOY_CMD} -pl ${MODULES} --also-make"
+          DEPLOY_CMD="${DEPLOY_CMD} -Psdx -pl ${MODULES} --also-make"
           DEPLOY_CMD="${DEPLOY_CMD} -DskipTests -Dmaven.test.skip=true -Dsamediff.native.tests=false -DskipTestResourceEnforcement=true"
           DEPLOY_CMD="${DEPLOY_CMD} -Dmaven.javadoc.failOnError=false"
           DEPLOY_CMD="${DEPLOY_CMD} -Denforcer.skip"
@@ -147,7 +151,7 @@ jobs:
         shell: bash
         run: |
           echo "=== Verifying built artifacts ==="
-          for module in nd4j-common nd4j-api nd4j-ggml samediff-llm samediff-pipeline-ggml; do
+          for module in nd4j-common nd4j-api nd4j-ggml nd4j-sdx-preset nd4j-sdx-model nd4j-sdx-litertlm samediff-llm samediff-pipeline-ggml; do
             JAR=$(find . -path "*/${module}/target/${module}-*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" -not -name "*-tests.jar" | head -1)
             if [ -n "${JAR}" ]; then
               echo "OK: ${module} -> $(basename ${JAR}) ($(du -h ${JAR} | cut -f1))"

@@ -13,9 +13,14 @@ set -Eeuo pipefail
 : "${DL4J_ANDROID_API:=24}"
 : "${DL4J_NATIVE_ONLY:=0}"
 : "${DL4J_MAVEN_ALSO_MAKE:=1}"
+: "${DL4J_BUILD_SDX:=0}"
 case "$DL4J_NATIVE_ONLY" in
   0|1) ;;
   *) printf 'DL4J_NATIVE_ONLY must be 0 or 1: %s\n' "$DL4J_NATIVE_ONLY" >&2; exit 2 ;;
+esac
+case "$DL4J_BUILD_SDX" in
+  0|1) ;;
+  *) printf 'DL4J_BUILD_SDX must be 0 or 1: %s\n' "$DL4J_BUILD_SDX" >&2; exit 2 ;;
 esac
 case "$DL4J_MAVEN_ALSO_MAKE" in
   0|1) ;;
@@ -25,6 +30,9 @@ esac
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 : "${DL4J_NATIVE_OUTPUT_ROOT:=${REPO_ROOT}/libnd4j/blasbuild}"
+: "${DL4J_SDX_NATIVE_LIBRARY:=nd4jcpu}"
+: "${DL4J_SDX_PLATFORM_LINKS:=${DL4J_SDX_NATIVE_LIBRARY}}"
+: "${DL4J_SDX_OUTPUT_PATH:=${REPO_ROOT}/libnd4j/blasbuild/cpu}"
 case "$DL4J_NATIVE_OUTPUT_ROOT" in
   /*) ;;
   *) printf 'DL4J_NATIVE_OUTPUT_ROOT must be absolute: %s\n' "$DL4J_NATIVE_OUTPUT_ROOT" >&2; exit 2 ;;
@@ -36,6 +44,19 @@ repo=()
 [ -z "${DL4J_MAVEN_REPOSITORY}" ] || repo=("-Dmaven.repo.local=${DL4J_MAVEN_REPOSITORY}")
 also_make=()
 [ "$DL4J_MAVEN_ALSO_MAKE" != 1 ] || also_make=(--also-make)
+sdx_profile=()
+sdx_maven_flags=()
+if [ "$DL4J_BUILD_SDX" = 1 ]; then
+  sdx_profile=(-Psdx)
+  sdx_maven_flags=(
+    "-Dsdx.native.library=${DL4J_SDX_NATIVE_LIBRARY}"
+    "-Dsdx.platform.links=${DL4J_SDX_PLATFORM_LINKS}"
+    "-Dlibnd4j.outputPath=${DL4J_SDX_OUTPUT_PATH}"
+  )
+fi
+append_sdx_modules() {
+  [ "$DL4J_BUILD_SDX" != 1 ] || modules+=,:nd4j-sdx-preset,:nd4j-sdx-model,:nd4j-sdx,:nd4j-sdx-litertlm
+}
 
 variant_cpu() {
   local classifier=$1
@@ -73,8 +94,9 @@ case "${DL4J_FAMILY}" in
     # Native compilation must be independently receiptable. Callers that only need
     # the CMake product should not fail on unrelated Java modules in the full reactor.
     [ "$DL4J_NATIVE_ONLY" != 1 ] || modules=:libnd4j
+    [ "$DL4J_NATIVE_ONLY" = 1 ] || append_sdx_modules
     variant_cpu "${platform}"
-    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress "${profiles[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false "-Djavacpp.platform=${platform}" --batch-mode -DskipTests "${extra[@]}" "${VARIANT[@]}" -pl "${modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
+    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress "${profiles[@]}" "${sdx_profile[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false "-Djavacpp.platform=${platform}" --batch-mode -DskipTests "${extra[@]}" "${VARIANT[@]}" "${sdx_maven_flags[@]}" -pl "${modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
     ;;
   linux-cuda|windows-cuda)
     : "${DL4J_CUDA_VERSION:?DL4J_CUDA_VERSION is required}"
@@ -102,8 +124,9 @@ case "${DL4J_FAMILY}" in
   windows-cpu)
     modules=:nd4j-native-preset,:nd4j-native
     [ -n "${DL4J_LIBND4J_URL}" ] || modules+=,:libnd4j
+    [ "$DL4J_NATIVE_ONLY" = 1 ] || append_sdx_modules
     variant_cpu windows-x86_64
-    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Pcpu "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests "${VARIANT[@]}" -pl "${modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
+    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} -Dlibnd4j.generate.flatc=ON -Dlibnd4j.sdx.standalone=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Pcpu "${sdx_profile[@]}" "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -DskipTests "${VARIANT[@]}" "${sdx_maven_flags[@]}" -pl "${modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
     ;;
   android-arm64-vulkan|android-x86_64-vulkan)
     case "${DL4J_FAMILY}" in
