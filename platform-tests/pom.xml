@@ -603,6 +603,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- SDX model tests are hosted here; the publication module remains test-free. -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-sdx-model</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+
         <!-- Apache PDFBox for PDF to image conversion -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
