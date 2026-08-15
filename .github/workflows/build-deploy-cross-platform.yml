@@ -98,7 +98,11 @@ jobs:
       serverId: ${{ inputs.serverId }}
       deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
       dryRun: ${{ inputs.dryRun }}
-    secrets: inherit
+    secrets:
+      SONATYPE_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+      PACKAGES_GPG_PASS: ${{ secrets.PACKAGES_GPG_PASS }}
+      CENTRAL_SONATYPE_TOKEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+      CENTRAL_SONATYPE_TOKEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
 
   release:
     if: inputs.publishSourceRunId == '' && inputs.javaOnly != '1'
