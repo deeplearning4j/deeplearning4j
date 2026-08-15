@@ -125,7 +125,7 @@ jobs:
 
           DEPLOY_CMD="mvn --no-transfer-progress --batch-mode"
           DEPLOY_CMD="${DEPLOY_CMD} -pl ${MODULES} --also-make"
-          DEPLOY_CMD="${DEPLOY_CMD} -DskipTests -Dmaven.test.skip=true -DskipTestResourceEnforcement=true"
+          DEPLOY_CMD="${DEPLOY_CMD} -DskipTests -Dmaven.test.skip=true -Dsamediff.native.tests=false -DskipTestResourceEnforcement=true"
           DEPLOY_CMD="${DEPLOY_CMD} -Dmaven.javadoc.failOnError=false"
           DEPLOY_CMD="${DEPLOY_CMD} -Denforcer.skip"
 

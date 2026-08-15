@@ -71,28 +71,6 @@
             <artifactId>tokenizers-native</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>tokenizers-native</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform}</classifier>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- SameDiff graph-construction tests require an actual backend. -->
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform}</classifier>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -119,6 +97,41 @@
         </dependency>
 
     </dependencies>
+
+    <!-- Native backends are needed only when running the module's tests. Keep them
+         out of Java-only snapshot publication, which deliberately skips tests. -->
+    <profiles>
+        <profile>
+            <id>samediff-native-test-dependencies</id>
+            <activation>
+                <property>
+                    <name>!samediff.native.tests</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>tokenizers-native</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform}</classifier>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform}</classifier>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>
