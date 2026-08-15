@@ -107,6 +107,10 @@ public class JsonObjectConstraint implements TextConstraint {
                     s.escapeNext = true;
                 } else if (c == '"') {
                     s.inString = false;
+                } else if (c <= 0x1f) {
+                    // RFC 8259 requires control characters in strings to be escaped.
+                    s.invalid = true;
+                    return s;
                 }
                 // All other characters inside a string are just content — skip depth tracking.
             } else {
@@ -135,12 +139,56 @@ public class JsonObjectConstraint implements TextConstraint {
                         s.inString = true;
                         break;
                     default:
-                        // Numbers, colons, commas, whitespace — no structural impact.
+                        // JSON admits only SP, HTAB, LF, and CR as structural whitespace.
+                        // Reject other control characters instead of giving generation a
+                        // non-advancing form-feed/vertical-tab loop.
+                        if (c <= 0x1f && !isJsonWhitespace(c)) {
+                            s.invalid = true;
+                            return s;
+                        }
+                        // Numbers, colons, commas, and legal JSON whitespace have no
+                        // structural impact in this deliberately lightweight automaton.
                         break;
                 }
             }
         }
         return s;
+    }
+
+    static boolean isJsonWhitespace(char value) {
+        return value == ' ' || value == '\t' || value == '\r' || value == '\n';
+    }
+
+    static String stripLeadingJsonWhitespace(String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+        int start = 0;
+        while (start < value.length() && isJsonWhitespace(value.charAt(start))) {
+            start++;
+        }
+        return value.substring(start);
+    }
+
+    static String stripJsonWhitespace(String value) {
+        String leadingStripped = stripLeadingJsonWhitespace(value);
+        int end = leadingStripped.length();
+        while (end > 0 && isJsonWhitespace(leadingStripped.charAt(end - 1))) {
+            end--;
+        }
+        return leadingStripped.substring(0, end);
+    }
+
+    static boolean isOnlyJsonWhitespace(String value) {
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        for (int index = 0; index < value.length(); index++) {
+            if (!isJsonWhitespace(value.charAt(index))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -165,7 +213,7 @@ public class JsonObjectConstraint implements TextConstraint {
             char c = text.charAt(i);
             if (c == '{') {
                 break;
-            } else if (Character.isWhitespace(c)) {
+            } else if (isJsonWhitespace(c)) {
                 continue;
             } else {
                 // First non-whitespace is not '{' — not a JSON object prefix.
@@ -192,7 +240,7 @@ public class JsonObjectConstraint implements TextConstraint {
 
     @Override
     public boolean isAccepting(String currentText) {
-        if (currentText == null || currentText.trim().isEmpty()) {
+        if (currentText == null || stripJsonWhitespace(currentText).isEmpty()) {
             return false;
         }
         // Must start with '{' (ignoring leading whitespace).
@@ -202,7 +250,7 @@ public class JsonObjectConstraint implements TextConstraint {
             if (c == '{') {
                 foundOpen = true;
                 break;
-            } else if (!Character.isWhitespace(c)) {
+            } else if (!isJsonWhitespace(c)) {
                 return false;
             }
         }

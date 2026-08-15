@@ -73,6 +73,7 @@ public final class SdxTextGenerationConfig {
         String actualSequenceLength = findActualSequenceLength(graph);
 
         KvContract kv = deriveKvContract(graph, ioConfig);
+        String kvDtype = deriveKvDtype(graph, kv);
         List<ModelIOConfig.RecurrentStatePair> recurrent =
                 new ArrayList<>(ModelIOConfig.findRecurrentStatePairs(graph, ioConfig));
         recurrent.sort(Comparator.comparing(
@@ -127,8 +128,7 @@ public final class SdxTextGenerationConfig {
 
         ObjectNode execution = root.putObject("execution");
         execution.put("kvLayout", "BSHD");
-        execution.put("kvDtype", sdxDtype(
-                graph.getVariable(kv.keyInputs.get(0)), true, "KV cache"));
+        execution.put("kvDtype", kvDtype);
         execution.put("maskDtype", sdxDtype(
                 graph.getVariable(causalMask), false, "causal mask"));
         execution.put("planOwnsKvScatter", true);
@@ -197,6 +197,32 @@ public final class SdxTextGenerationConfig {
                     "value", layer));
         }
         return new KvContract(keyInputs, valueInputs, keyOutputs, valueOutputs);
+    }
+
+    private static String deriveKvDtype(SameDiff graph, KvContract kv) throws IOException {
+        List<String> tensors = new ArrayList<>();
+        tensors.addAll(kv.keyInputs);
+        tensors.addAll(kv.valueInputs);
+        tensors.addAll(kv.keyOutputs);
+        tensors.addAll(kv.valueOutputs);
+
+        String expectedDtype = null;
+        String expectedTensor = null;
+        for (String tensor : tensors) {
+            String dtype = sdxDtype(
+                    graph.getVariable(tensor), true, "KV tensor '" + tensor + "'");
+            if (expectedDtype == null) {
+                expectedDtype = dtype;
+                expectedTensor = tensor;
+            } else if (!expectedDtype.equals(dtype)) {
+                throw new IOException("KV dtype contract mismatch: '" + expectedTensor + "' is "
+                        + expectedDtype + " but '" + tensor + "' is " + dtype);
+            }
+        }
+        if (expectedDtype == null) {
+            throw new IOException("SameDiff graph has no KV tensors");
+        }
+        return expectedDtype;
     }
 
     private static Map<Integer, String> indexKvInputs(

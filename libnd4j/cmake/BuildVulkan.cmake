@@ -144,7 +144,7 @@ function(setup_vulkan_build)
             "-DOTOOL=${CMAKE_OTOOL}"
             "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${MAIN_LIB_NAME}>"
-            -P "${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
+            "-P${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
         VERBATIM)
 
     message(STATUS "Vulkan build configured:")

@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.dsp.model.SdxTargetProfile;
 import org.nd4j.dsp.runtime.SdxRuntime;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
@@ -329,7 +330,24 @@ class SdxLlmCoreTokenizerTest {
         assertTrue(exports.contains("sdxLlmRenderChatPrompt"));
         assertTrue(exports.contains("sdxLlmParseChatResult"));
         assertEquals("sdx-prepared-text-model-v5", SdxGgufModelPreparer.PREPARED_SCHEMA);
-        assertEquals("ggml-runtime-packed-gdn-v2", SdxGgufModelPreparer.GRAPH_IMPORT_ABI);
+        assertEquals("ggml-runtime-packed-gdn-v3", SdxGgufModelPreparer.GRAPH_IMPORT_ABI);
+    }
+
+    @Test
+    void runtimeQuantizedProfilesKeepPackedActivationsAndKvStateFloat32() {
+        for (String mode : List.of(
+                "RUNTIME_QUANTIZED_MATMUL",
+                "RUNTIME_QUANTIZED_INT8",
+                "RUNTIME_QUANTIZED_INT4")) {
+            JsonNode options = new ObjectMapper().createObjectNode()
+                    .put("graphImportAbi", SdxGgufModelPreparer.GRAPH_IMPORT_ABI)
+                    .put("conversionMode", mode);
+
+            SdxGgufModelPreparer.PreparationProfile profile =
+                    SdxGgufModelPreparer.PreparationProfile.from(options);
+
+            assertEquals(DataType.FLOAT, profile.conversionOptions().getTargetDataType(), mode);
+        }
     }
 
     @Test

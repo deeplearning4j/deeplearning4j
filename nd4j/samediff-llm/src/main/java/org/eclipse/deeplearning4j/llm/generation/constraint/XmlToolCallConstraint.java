@@ -99,6 +99,7 @@ public final class XmlToolCallConstraint implements TextConstraint {
         String current = currentText == null ? "" : currentText;
         String extension = piece == null ? "" : piece;
         return !extension.isEmpty() && !isAccepting(current)
+                && !repeatsOpenStructuredValueWhitespace(current, extension)
                 && validPrefix(current + extension, false);
     }
 
@@ -114,6 +115,41 @@ public final class XmlToolCallConstraint implements TextConstraint {
     @Override
     public boolean isAccepting(String currentText) {
         return currentText != null && validPrefix(currentText, true);
+    }
+
+    private boolean repeatsOpenStructuredValueWhitespace(
+            String current, String extension) {
+        int functionStart = current.indexOf(ChatTemplate.XML_FUNCTION_START);
+        if (functionStart < 0) {
+            return false;
+        }
+        int functionNameStart = functionStart + ChatTemplate.XML_FUNCTION_START.length();
+        int functionNameEnd = current.indexOf(">\n", functionNameStart);
+        if (functionNameEnd < 0) {
+            return false;
+        }
+        String toolName = current.substring(functionNameStart, functionNameEnd);
+
+        int parameterStart = current.lastIndexOf(ChatTemplate.XML_PARAMETER_START);
+        if (parameterStart < 0) {
+            return false;
+        }
+        int parameterNameStart = parameterStart + ChatTemplate.XML_PARAMETER_START.length();
+        int parameterNameEnd = current.indexOf(">\n", parameterNameStart);
+        if (parameterNameEnd < 0) {
+            return false;
+        }
+        int valueStart = parameterNameEnd + 2;
+        if (current.indexOf(PARAMETER_CLOSE, valueStart) >= 0) {
+            return false;
+        }
+
+        String argumentName = current.substring(parameterNameStart, parameterNameEnd);
+        Map<String, Object> schema = argumentSchemas(
+                parameterSchemasByTool.get(toolName)).get(argumentName);
+        return schema != null
+                && NativeToolCallConstraint.repeatsStructuredValueWhitespace(
+                        current.substring(valueStart), extension, schema);
     }
 
     private boolean validPrefix(String text, boolean requireComplete) {

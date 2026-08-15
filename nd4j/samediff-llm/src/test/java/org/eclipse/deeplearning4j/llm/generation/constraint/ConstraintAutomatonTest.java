@@ -109,6 +109,18 @@ class ConstraintAutomatonTest {
     }
 
     @Test
+    void jsonObject_rejectsNonJsonControlWhitespace() {
+        JsonObjectConstraint constraint = new JsonObjectConstraint();
+
+        assertFalse(constraint.canExtend("{\"type\": ", "\f"),
+                "form feed is not RFC 8259 structural whitespace");
+        assertFalse(constraint.canExtend("{\"type\": \"PER", "\f"),
+                "unescaped controls are illegal inside JSON strings");
+        assertTrue(constraint.canExtend("{\"type\": ", "\t"),
+                "JSON tab whitespace remains legal");
+    }
+
+    @Test
     void jsonObject_multiByteTokenAccepted() {
         // Simulates a multi-byte piece being appended (e.g., " \"value\"}" from a single token).
         JsonObjectConstraint c = new JsonObjectConstraint();
@@ -1148,6 +1160,64 @@ class ConstraintAutomatonTest {
         assertTrue(forced.canExtend(
                 current,
                 "er></outer><|tool_call_start|>[submit()]<|tool_call_end|>"));
+    }
+
+    @Test
+    void outputBlocksThenXmlToolCall_rejectsControlAndWhitespaceLoops() {
+        Map<String, Object> entitySchema = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "name", Map.of("type", "string"),
+                        "type", Map.of(
+                                "type", "string",
+                                "enum", List.of("PERSON", "COMPANY"))),
+                "required", List.of("name", "type"),
+                "additionalProperties", false);
+        Map<String, Object> entitiesSchema = Map.of(
+                "type", "array",
+                "items", entitySchema,
+                "minItems", 1,
+                "maxItems", 4);
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of("entities", entitiesSchema),
+                "required", List.of("entities"),
+                "additionalProperties", false);
+
+        TextConstraint constraint = ConstraintConfig.builder()
+                .type(XmlToolCallConstraint.TYPE)
+                .toolNames(List.of("submit_entities"))
+                .toolArgumentNames(Map.of(
+                        "submit_entities", List.of("entities")))
+                .toolParameterSchemas(Map.of(
+                        "submit_entities", parameters))
+                .outputBlocks(List.of(
+                        new ChatTemplate.OutputBlockDefinition(
+                                "analysis", "<analysis>", "</analysis>"),
+                        new ChatTemplate.OutputBlockDefinition(
+                                "trace", "<trace>", "</trace>")))
+                .build()
+                .buildConstraint();
+
+        String beforeValueWhitespace = "reasoning</trace></analysis>\n"
+                + "<tool_call>\n<function=submit_entities>\n"
+                + "<parameter=entities>\n"
+                + "[{\"name\":\"Alex Rivera\",\"type\":";
+        assertTrue(constraint.canExtend(beforeValueWhitespace, " "),
+                "one structural whitespace token remains legal");
+
+        String valuePrefix = beforeValueWhitespace + " ";
+        assertFalse(constraint.canExtend(valuePrefix, "\f"),
+                "form feed must never enter a JSON-valued XML parameter");
+        assertFalse(constraint.canExtend(valuePrefix, "\t"),
+                "structured whitespace must not self-loop across tokens");
+
+        String completion = "\"PERSON\"}]\n</parameter>\n"
+                + "</function>\n</tool_call>";
+        assertTrue(constraint.canExtend(valuePrefix, completion),
+                "masking whitespace must leave the schema-owned value and XML close selectable");
+        assertTrue(constraint.isAccepting(valuePrefix + completion),
+                "multiple output blocks must transition into one complete native XML tool call");
     }
 
     @Test

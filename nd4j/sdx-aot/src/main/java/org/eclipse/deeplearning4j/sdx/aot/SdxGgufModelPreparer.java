@@ -49,7 +49,7 @@ import java.util.Map;
  */
 final class SdxGgufModelPreparer {
     static final String PREPARED_SCHEMA = "sdx-prepared-text-model-v5";
-    static final String GRAPH_IMPORT_ABI = "ggml-runtime-packed-gdn-v2";
+    static final String GRAPH_IMPORT_ABI = "ggml-runtime-packed-gdn-v3";
     static final String RESOLVED_SCHEMA = "sdx-resolved-text-model-v1";
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -774,6 +774,11 @@ final class SdxGgufModelPreparer {
         private static DataType targetDataType(ConversionOptions.QuantizationMode mode) {
             switch (mode) {
                 case DEQUANTIZE_TO_FLOAT32:
+                case RUNTIME_QUANTIZED_MATMUL:
+                case RUNTIME_QUANTIZED_INT8:
+                case RUNTIME_QUANTIZED_INT4:
+                    // Packed QMatMul produces FP32 activations. Keep graph state, including
+                    // prefill/decode KV tensors, in the same dtype for the native SDX contract.
                     return DataType.FLOAT;
                 case DEQUANTIZE_TO_BFLOAT16:
                     return DataType.BFLOAT16;

@@ -531,7 +531,7 @@ function(configure_cuda_linking main_target_name)
             "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${main_target_name}>"
             "-DPACKAGE_DIR=${_cuda_classifier_runtime_dir}"
-            -P "${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
+            "-P${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
         VERBATIM)
 
     # JVM library

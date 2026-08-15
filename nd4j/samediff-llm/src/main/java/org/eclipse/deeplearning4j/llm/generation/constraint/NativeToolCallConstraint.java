@@ -189,6 +189,21 @@ public final class NativeToolCallConstraint implements TextConstraint {
         return Character.isWhitespace(codePoint) || Character.isSpaceChar(codePoint);
     }
 
+    static boolean repeatsStructuredValueWhitespace(
+            String currentValue, String extension, Map<String, Object> schema) {
+        String type = schema != null && schema.get("type") instanceof String
+                ? (String) schema.get("type") : "";
+        if (type.isEmpty() || "string".equals(type)
+                || !JsonObjectConstraint.isOnlyJsonWhitespace(extension)
+                || isInsideQuotedLiteral(currentValue)) {
+            return false;
+        }
+        return currentValue != null
+                && !currentValue.isEmpty()
+                && JsonObjectConstraint.isJsonWhitespace(
+                        currentValue.charAt(currentValue.length() - 1));
+    }
+
     private static boolean isInsideQuotedLiteral(String text) {
         boolean quoted = false;
         boolean escaped = false;
@@ -679,7 +694,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
 
     static boolean validCompleteValue(
             String rawValue, Map<String, Object> schema) {
-        String value = rawValue == null ? "" : rawValue.trim();
+        String value = JsonObjectConstraint.stripJsonWhitespace(rawValue);
         if (value.isEmpty()) {
             return false;
         }
@@ -702,7 +717,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
 
     static boolean validValuePrefix(
             String rawValue, Map<String, Object> schema) {
-        String value = rawValue == null ? "" : rawValue.stripLeading();
+        String value = JsonObjectConstraint.stripLeadingJsonWhitespace(rawValue);
         if (value.isEmpty()) {
             return true;
         }
@@ -847,7 +862,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
     }
 
     private static NativeStringState parseNativeString(String raw) {
-        String value = raw == null ? "" : raw.stripLeading();
+        String value = JsonObjectConstraint.stripLeadingJsonWhitespace(raw);
         if (value.isEmpty() || value.charAt(0) != '"') {
             return NativeStringState.invalid();
         }
@@ -903,7 +918,9 @@ public final class NativeToolCallConstraint implements TextConstraint {
                 continue;
             }
             if (current == '"') {
-                if (!value.substring(index + 1).isBlank()) {
+                if (!value.substring(index + 1).isEmpty()
+                        && !JsonObjectConstraint.isOnlyJsonWhitespace(
+                                value.substring(index + 1))) {
                     return NativeStringState.invalid();
                 }
                 return new NativeStringState(true, true, decoded.toString());
@@ -933,7 +950,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
         List<Object> completeValues = new ArrayList<>();
         int lastIndex = state.items.size() - 1;
         for (int index = 0; index < lastIndex; index++) {
-            String item = state.items.get(index).trim();
+            String item = JsonObjectConstraint.stripJsonWhitespace(state.items.get(index));
             Map<String, Object> itemSchema = arrayItemSchema(schema, index);
             if (itemSchema == null) {
                 return false;
@@ -955,7 +972,8 @@ public final class NativeToolCallConstraint implements TextConstraint {
             }
             completeValues.add(parsed);
         }
-        String current = lastIndex < 0 ? "" : state.items.get(lastIndex).stripLeading();
+        String current = lastIndex < 0 ? ""
+                : JsonObjectConstraint.stripLeadingJsonWhitespace(state.items.get(lastIndex));
         if (completeValues.size() >= maxItems) {
             return lastIndex == 0 && current.isEmpty();
         }
@@ -1037,7 +1055,8 @@ public final class NativeToolCallConstraint implements TextConstraint {
             return null;
         }
         NativeStringState partial = parseNativeString(
-                lastMember.substring(colon + 1).stripLeading());
+                JsonObjectConstraint.stripLeadingJsonWhitespace(
+                        lastMember.substring(colon + 1)));
         if (!partial.valid || partial.closed) {
             return null;
         }
@@ -1213,18 +1232,20 @@ public final class NativeToolCallConstraint implements TextConstraint {
             Map<String, Map<String, Object>> properties,
             Object additionalProperties,
             List<String> seen) {
-        String member = rawMember == null ? "" : rawMember.trim();
+        String member = JsonObjectConstraint.stripJsonWhitespace(rawMember);
         int colon = topLevelColon(member);
         if (colon <= 0) {
             return null;
         }
-        NativeStringState name = parseNativeString(member.substring(0, colon).trim());
+        NativeStringState name = parseNativeString(
+                JsonObjectConstraint.stripJsonWhitespace(member.substring(0, colon)));
         if (!name.valid || !name.closed || seen.contains(name.value)) {
             return null;
         }
         Map<String, Object> valueSchema = objectPropertySchema(
                 name.value, properties, additionalProperties);
-        String value = member.substring(colon + 1).trim();
+        String value = JsonObjectConstraint.stripJsonWhitespace(
+                member.substring(colon + 1));
         if (valueSchema == null || !validCompleteValue(value, valueSchema)) {
             return null;
         }
@@ -1236,8 +1257,8 @@ public final class NativeToolCallConstraint implements TextConstraint {
             Map<String, Map<String, Object>> properties,
             Object additionalProperties,
             List<String> seen) {
-        String member = rawMember == null ? "" : rawMember.stripLeading();
-        if (member.isBlank()) {
+        String member = JsonObjectConstraint.stripLeadingJsonWhitespace(rawMember);
+        if (member.isEmpty()) {
             return hasAvailableObjectProperty(properties, additionalProperties, seen);
         }
 
@@ -1272,7 +1293,8 @@ public final class NativeToolCallConstraint implements TextConstraint {
                     member, name.value, propertyNameSchema);
         }
 
-        NativeStringState name = parseNativeString(member.substring(0, colon).trim());
+        NativeStringState name = parseNativeString(
+                JsonObjectConstraint.stripJsonWhitespace(member.substring(0, colon)));
         if (!name.valid || !name.closed || seen.contains(name.value)) {
             return false;
         }
@@ -1281,7 +1303,8 @@ public final class NativeToolCallConstraint implements TextConstraint {
         if (valueSchema == null) {
             return false;
         }
-        String value = member.substring(colon + 1).stripLeading();
+        String value = JsonObjectConstraint.stripLeadingJsonWhitespace(
+                member.substring(colon + 1));
         return value.isEmpty() || validValuePrefix(value, valueSchema);
     }
 
@@ -1354,7 +1377,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
     }
 
     private static ObjectPrefixState parseObjectPrefix(String raw) {
-        String value = raw == null ? "" : raw.stripLeading();
+        String value = JsonObjectConstraint.stripLeadingJsonWhitespace(raw);
         if (value.isEmpty() || value.charAt(0) != '{') {
             return ObjectPrefixState.invalid();
         }
@@ -1388,7 +1411,9 @@ public final class NativeToolCallConstraint implements TextConstraint {
             if (current == '}' || current == ']') {
                 if (current == '}' && stack.isEmpty()) {
                     members.add(value.substring(start, index));
-                    if (!value.substring(index + 1).isBlank()) {
+                    if (!value.substring(index + 1).isEmpty()
+                            && !JsonObjectConstraint.isOnlyJsonWhitespace(
+                                    value.substring(index + 1))) {
                         return ObjectPrefixState.invalid();
                     }
                     return new ObjectPrefixState(true, true, members);
@@ -1413,7 +1438,7 @@ public final class NativeToolCallConstraint implements TextConstraint {
                 || !value.matches("[ \\t\\r\\n]*-?[0-9]*(\\.[0-9]*)?([eE][+-]?[0-9]*)?[ \\t\\r\\n]*")) {
             return false;
         }
-        String trimmed = value.trim();
+        String trimmed = JsonObjectConstraint.stripJsonWhitespace(value);
         boolean trailingJsonWhitespace = !value.isEmpty()
                 && isJsonWhitespace(value.charAt(value.length() - 1));
         if ("-".equals(trimmed)
@@ -1431,11 +1456,11 @@ public final class NativeToolCallConstraint implements TextConstraint {
     }
 
     private static boolean isJsonWhitespace(char value) {
-        return value == ' ' || value == '\t' || value == '\r' || value == '\n';
+        return JsonObjectConstraint.isJsonWhitespace(value);
     }
 
     private static ArrayPrefixState parseArrayPrefix(String raw) {
-        String value = raw == null ? "" : raw.stripLeading();
+        String value = JsonObjectConstraint.stripLeadingJsonWhitespace(raw);
         if (value.isEmpty() || value.charAt(0) != '[') {
             return ArrayPrefixState.invalid();
         }
@@ -1453,6 +1478,8 @@ public final class NativeToolCallConstraint implements TextConstraint {
                     escaped = true;
                 } else if (current == '"') {
                     quoted = false;
+                } else if (current <= 0x1f) {
+                    return ArrayPrefixState.invalid();
                 }
                 continue;
             }
@@ -1467,7 +1494,9 @@ public final class NativeToolCallConstraint implements TextConstraint {
             if (current == '}' || current == ']' || current == ')') {
                 if (current == ']' && stack.isEmpty()) {
                     items.add(value.substring(start, index));
-                    if (!value.substring(index + 1).isBlank()) {
+                    if (!value.substring(index + 1).isEmpty()
+                            && !JsonObjectConstraint.isOnlyJsonWhitespace(
+                                    value.substring(index + 1))) {
                         return ArrayPrefixState.invalid();
                     }
                     return new ArrayPrefixState(true, true, items);

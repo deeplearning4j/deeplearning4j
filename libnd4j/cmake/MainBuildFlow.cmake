@@ -1117,7 +1117,7 @@ function(configure_cpu_linking main_target_name)
             "-DOTOOL=${CMAKE_OTOOL}"
             "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}"
             "-DOUTPUT_DIR=$<TARGET_FILE_DIR:${main_target_name}>"
-            -P "${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
+            "-P${CMAKE_SOURCE_DIR}/cmake/StageSharedRuntime.cmake"
         VERBATIM)
 
     install(TARGETS ${main_target_name} DESTINATION .)
