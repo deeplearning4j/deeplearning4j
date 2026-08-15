@@ -24,6 +24,12 @@ import java.util.Optional;
  */
 public final class ModelSamplingDefaults {
 
+    /** Generation mode for model-family sampling recommendations. */
+    public enum GenerationMode {
+        NON_THINKING_TEXT,
+        THINKING_TEXT
+    }
+
     private ModelSamplingDefaults() {
     }
 
@@ -37,7 +43,36 @@ public final class ModelSamplingDefaults {
     public static Optional<SamplingConfig> forModel(
             ModelFamily family,
             String modelIdentity) {
+        return forModel(family, modelIdentity, GenerationMode.NON_THINKING_TEXT);
+    }
+
+    /**
+     * Resolve published defaults for a model variant and generation mode.
+     *
+     * @param family existing SameDiff-LLM model family
+     * @param modelIdentity model id and/or artifact model name
+     * @param mode requested text generation mode
+     * @return defaults when the exact family variant has published recommendations
+     */
+    public static Optional<SamplingConfig> forModel(
+            ModelFamily family,
+            String modelIdentity,
+            GenerationMode mode) {
+        GenerationMode effectiveMode = mode == null
+                ? GenerationMode.NON_THINKING_TEXT : mode;
         if (family == ModelFamily.QWEN35) {
+            if (effectiveMode == GenerationMode.THINKING_TEXT) {
+                // Qwen3.5 thinking text recommendation:
+                // temperature=1.0, top_p=0.95, top_k=20, min_p=0.0,
+                // presence_penalty=1.5, repetition_penalty=1.0.
+                return Optional.of(
+                        SamplingConfig.sample(1.0d, 20, 0.95d)
+                                .toBuilder()
+                                .minP(0.0d)
+                                .presencePenalty(1.5d)
+                                .repetitionPenalty(1.0d)
+                                .build());
+            }
             // Qwen3.5 non-thinking text recommendation:
             // temperature=1.0, top_p=1.0, top_k=20, min_p=0.0,
             // presence_penalty=2.0, repetition_penalty=1.0.

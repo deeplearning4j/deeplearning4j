@@ -50,6 +50,23 @@ class ModelSamplingDefaultsTest {
     }
 
     @Test
+    void resolvesOfficialQwen35ThinkingTextDefaultsSeparately() {
+        SamplingConfig sampling = ModelSamplingDefaults.forModel(
+                        ModelFamily.QWEN35,
+                        "Qwen/Qwen3.5-2B",
+                        ModelSamplingDefaults.GenerationMode.THINKING_TEXT)
+                .orElseThrow();
+
+        assertTrue(sampling.isDoSample());
+        assertEquals(1.0d, sampling.getTemperature());
+        assertEquals(20, sampling.getTopK());
+        assertEquals(0.95d, sampling.getTopP());
+        assertEquals(0.0d, sampling.getMinP());
+        assertEquals(1.5d, sampling.getPresencePenalty());
+        assertEquals(1.0d, sampling.getRepetitionPenalty());
+    }
+
+    @Test
     void acceptsNormalizedArtifactNames() {
         assertTrue(ModelSamplingDefaults.forModel(
                 ModelFamily.LFM2,

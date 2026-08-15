@@ -77,11 +77,6 @@ jobs:
   java-hotfix-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-
       - uses: actions/checkout@v7
 
       - name: Set up Java for publishing
@@ -130,7 +125,7 @@ jobs:
 
           DEPLOY_CMD="mvn --no-transfer-progress --batch-mode"
           DEPLOY_CMD="${DEPLOY_CMD} -pl ${MODULES} --also-make"
-          DEPLOY_CMD="${DEPLOY_CMD} -DskipTests -DskipTestResourceEnforcement=true"
+          DEPLOY_CMD="${DEPLOY_CMD} -DskipTests -Dmaven.test.skip=true -DskipTestResourceEnforcement=true"
           DEPLOY_CMD="${DEPLOY_CMD} -Dmaven.javadoc.failOnError=false"
           DEPLOY_CMD="${DEPLOY_CMD} -Denforcer.skip"
 
