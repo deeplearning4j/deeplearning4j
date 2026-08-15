@@ -38,6 +38,41 @@ on:
         required: false
         default: false
 
+  workflow_call:
+    inputs:
+      releaseVersion:
+        description: Release version or current snapshot version.
+        required: true
+        type: string
+      snapshotVersion:
+        description: Snapshot version ending in -SNAPSHOT.
+        required: true
+        type: string
+      serverId:
+        description: Maven server id configured by setup-java.
+        required: false
+        default: central
+        type: string
+      deployToReleaseStaging:
+        description: Deploy to release staging (1) or snapshots (0).
+        required: false
+        default: '0'
+        type: string
+      dryRun:
+        description: Build without deploying.
+        required: false
+        default: 'false'
+        type: string
+    secrets:
+      SONATYPE_GPG_KEY:
+        required: true
+      PACKAGES_GPG_PASS:
+        required: true
+      CENTRAL_SONATYPE_TOKEN_USERNAME:
+        required: true
+      CENTRAL_SONATYPE_TOKEN_PASSWORD:
+        required: true
+
 jobs:
   java-hotfix-release:
     runs-on: ubuntu-latest
@@ -54,7 +89,7 @@ jobs:
         with:
           java-version: 21
           distribution: 'temurin'
-          server-id: ${{ github.event.inputs.serverId }}
+          server-id: ${{ inputs.serverId }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -64,20 +99,20 @@ jobs:
       - name: Validate inputs
         shell: bash
         run: |
-          if [[ "${{ github.event.inputs.snapshotVersion }}" != *-SNAPSHOT ]]; then
+          if [[ "${{ inputs.snapshotVersion }}" != *-SNAPSHOT ]]; then
             echo "Error: snapshotVersion must end with -SNAPSHOT"
             exit 1
           fi
-          echo "Release version: ${{ github.event.inputs.releaseVersion }}"
-          echo "Snapshot version: ${{ github.event.inputs.snapshotVersion }}"
-          echo "Deploy to release staging: ${{ github.event.inputs.deployToReleaseStaging }}"
-          echo "Dry run: ${{ github.event.inputs.dryRun }}"
+          echo "Release version: ${{ inputs.releaseVersion }}"
+          echo "Snapshot version: ${{ inputs.snapshotVersion }}"
+          echo "Deploy to release staging: ${{ inputs.deployToReleaseStaging }}"
+          echo "Dry run: ${{ inputs.dryRun }}"
 
       - name: Update versions for release
-        if: github.event.inputs.deployToReleaseStaging == '1'
+        if: inputs.deployToReleaseStaging == '1'
         shell: bash
         run: |
-          bash ./update-versions.sh "${{ github.event.inputs.snapshotVersion }}" "${{ github.event.inputs.releaseVersion }}"
+          bash ./update-versions.sh "${{ inputs.snapshotVersion }}" "${{ inputs.releaseVersion }}"
 
       - name: Build and deploy Java-only modules
         shell: bash
@@ -99,14 +134,14 @@ jobs:
           DEPLOY_CMD="${DEPLOY_CMD} -Dmaven.javadoc.failOnError=false"
           DEPLOY_CMD="${DEPLOY_CMD} -Denforcer.skip"
 
-          if [ "${{ github.event.inputs.dryRun }}" == "true" ]; then
+          if [ "${{ inputs.dryRun }}" == "true" ]; then
             echo "=== DRY RUN: building but not deploying ==="
             DEPLOY_CMD="${DEPLOY_CMD} install"
           else
             DEPLOY_CMD="${DEPLOY_CMD} deploy"
           fi
 
-          if [ "${{ github.event.inputs.deployToReleaseStaging }}" == "1" ]; then
+          if [ "${{ inputs.deployToReleaseStaging }}" == "1" ]; then
             DEPLOY_CMD="${DEPLOY_CMD} -Prelease -Dlocal.software.repository=sonatype"
           fi
 

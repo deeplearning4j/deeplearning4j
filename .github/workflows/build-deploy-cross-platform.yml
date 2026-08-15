@@ -49,6 +49,32 @@ on:
         type: choice
         options: ["0", "1"]
         default: "0"
+      javaOnly:
+        description: Publish Java-only modules without running native release workers.
+        required: false
+        type: choice
+        options: ["0", "1"]
+        default: "0"
+      releaseVersion:
+        description: Release or current snapshot version for Java-only publishing.
+        required: false
+        default: 1.0.0-SNAPSHOT
+      snapshotVersion:
+        description: Snapshot version ending in -SNAPSHOT.
+        required: false
+        default: 1.0.0-SNAPSHOT
+      serverId:
+        description: Maven server id configured by setup-java.
+        required: false
+        default: central
+      deployToReleaseStaging:
+        description: Deploy to release staging (1) or snapshots (0).
+        required: false
+        default: "0"
+      dryRun:
+        description: Build without deploying.
+        required: false
+        default: "false"
       publishSourceRunId:
         description: Publish staged release-worker artifacts from this run ID without rebuilding.
         required: false
@@ -63,8 +89,19 @@ permissions:
   contents: read
 
 jobs:
+  java-only:
+    if: inputs.javaOnly == '1'
+    uses: ./.github/workflows/java-hotfix-release.yml
+    with:
+      releaseVersion: ${{ inputs.releaseVersion }}
+      snapshotVersion: ${{ inputs.snapshotVersion }}
+      serverId: ${{ inputs.serverId }}
+      deployToReleaseStaging: ${{ inputs.deployToReleaseStaging }}
+      dryRun: ${{ inputs.dryRun }}
+    secrets: inherit
+
   release:
-    if: inputs.publishSourceRunId == ''
+    if: inputs.publishSourceRunId == '' && inputs.javaOnly != '1'
     uses: ./.github/workflows/_release-worker.yml
     with:
       workflow: ${{ inputs.workflow }}
@@ -80,7 +117,7 @@ jobs:
     secrets: inherit
 
   publish-staged:
-    if: inputs.publishSourceRunId != ''
+    if: inputs.publishSourceRunId != '' && inputs.javaOnly != '1'
     uses: ./.github/workflows/publish-release-worker-artifacts.yml
     with:
       sourceRunId: ${{ inputs.publishSourceRunId }}
