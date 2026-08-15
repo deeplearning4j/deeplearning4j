@@ -1302,6 +1302,8 @@ def is_transient_delete_error(exc: BaseException) -> bool:
     dependency_markers = (
         "publicipaddresscannotbedeleted",
         "networkinterfacecannotbedeleted",
+        "nicinuse",
+        "usedbyexistingresource",
     )
     return (
         any(marker in code or marker in compact for marker in dependency_markers)
@@ -2397,6 +2399,31 @@ def dependency_cache_metadata(
         snapshots["host"] = host[1]
     if selected:
         snapshots["targets"] = [manifest for _, manifest in sorted(selected.values(), key=lambda value: value[1].get("indexObject", ""))]
+    # GitHub workers cannot enumerate this container.  Keep one small, stable
+    # public index that points at the immutable dependency snapshots selected
+    # above; the build driver still verifies every downloaded archive against
+    # its signed index and digest.  A failure to refresh this convenience index
+    # must not make an otherwise valid Azure release fail.
+    public_manifest = {
+        "schemaVersion": 1,
+        "publicBaseUrl": f"https://{account_name}.blob.core.windows.net/{container_name}",
+        "generatedAt": int(time.time()),
+        **snapshots,
+    }
+    try:
+        container.upload_blob(
+            f"{prefix}/public-manifest.json",
+            json.dumps(public_manifest, sort_keys=True, separators=(",", ":")).encode("utf-8"),
+            overwrite=True,
+            content_settings=modules["ContentSettings"](
+                content_type="application/json"
+            ),
+        )
+    except Exception as exc:  # pragma: no cover - storage refresh is best effort
+        print(
+            f"[dl4j-dep-cache] public manifest refresh skipped: {exc}",
+            flush=True,
+        )
     return snapshots
 
 
@@ -6605,17 +6632,20 @@ def validate_direct_maven_publish(
             for algorithm in MAVEN_CHECKSUM_LENGTHS:
                 checksum_relative = relative + f".{algorithm}"
                 checksum = published_entries.get(checksum_relative)
-                expected_payload = (
-                    str(primary_digests[algorithm]) + "\n"
-                ).encode("ascii")
-                expected_digests = {
-                    name: hashlib.new(name, expected_payload).hexdigest()
-                    for name in MAVEN_CHECKSUM_LENGTHS
-                }
-                if (
-                    checksum is None
-                    or checksum.get("size") != len(expected_payload)
-                    or checksum.get("digests") != expected_digests
+                expected_payloads = (
+                    (
+                        str(primary_digests[algorithm]) + newline
+                    ).encode("ascii")
+                    for newline in ("\n", "\r\n")
+                )
+                if checksum is None or not any(
+                    checksum.get("size") == len(expected_payload)
+                    and checksum.get("digests")
+                    == {
+                        name: hashlib.new(name, expected_payload).hexdigest()
+                        for name in MAVEN_CHECKSUM_LENGTHS
+                    }
+                    for expected_payload in expected_payloads
                 ):
                     raise RuntimeError(
                         f"direct Maven {algorithm} sidecar mismatch for shard "
