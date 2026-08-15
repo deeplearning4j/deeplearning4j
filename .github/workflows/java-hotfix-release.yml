@@ -125,7 +125,7 @@ jobs:
           # Order matters: nd4j-common and nd4j-api are dependencies of the others.
           # SDX is explicitly opted into because its model/preset/LiteRT-LM jars are
           # independent of the native nd4j-sdx binding build.
-          MODULES=":nd4j-common,:nd4j-api,:nd4j-ggml,:nd4j-sdx-preset,:nd4j-sdx-model,:nd4j-sdx-litertlm,:samediff-llm,:samediff-pipeline-ggml"
+          MODULES=":nd4j-common,:nd4j-api,:nd4j-ggml,:nd4j-sdx-preset,:nd4j-sdx-model,:nd4j-sdx-litertlm,:samediff-llm,:samediff-pipeline-ggml,:samediff-audio"
 
           DEPLOY_CMD="mvn --no-transfer-progress --batch-mode"
           DEPLOY_CMD="${DEPLOY_CMD} -Psdx -pl ${MODULES} --also-make"
@@ -151,7 +151,7 @@ jobs:
         shell: bash
         run: |
           echo "=== Verifying built artifacts ==="
-          for module in nd4j-common nd4j-api nd4j-ggml nd4j-sdx-preset nd4j-sdx-model nd4j-sdx-litertlm samediff-llm samediff-pipeline-ggml; do
+          for module in nd4j-common nd4j-api nd4j-ggml nd4j-sdx-preset nd4j-sdx-model nd4j-sdx-litertlm samediff-llm samediff-pipeline-ggml samediff-audio; do
             JAR=$(find . -path "*/${module}/target/${module}-*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" -not -name "*-tests.jar" | head -1)
             if [ -n "${JAR}" ]; then
               echo "OK: ${module} -> $(basename ${JAR}) ($(du -h ${JAR} | cut -f1))"
