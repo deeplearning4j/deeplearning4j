@@ -162,16 +162,57 @@ endfunction()
 
 function(_shared_runtime_needed_names _out_var _library_path)
     if(WIN32)
-        if(NOT DEFINED OBJDUMP OR OBJDUMP STREQUAL "" OR NOT EXISTS "${OBJDUMP}")
-            message(FATAL_ERROR
-                "OBJDUMP from the active CMake toolchain is required to inspect '${_library_path}'")
+        # MSVC generators do not define CMAKE_OBJDUMP. Prefer it when a
+        # MinGW/LLVM toolchain supplied one, but use the matching Visual Studio
+        # dumpbin executable for the normal MSVC path. dumpbin lives beside
+        # cl.exe, so this remains tied to the active CMake compiler rather than
+        # depending on a machine-specific PATH entry.
+        set(_windows_dependency_inspector "")
+        set(_windows_dependency_mode "")
+        if(DEFINED OBJDUMP AND NOT OBJDUMP STREQUAL "" AND EXISTS "${OBJDUMP}")
+            set(_windows_dependency_inspector "${OBJDUMP}")
+            set(_windows_dependency_mode "objdump")
+        else()
+            get_filename_component(_cxx_compiler_dir "${CXX_COMPILER}" DIRECTORY)
+            find_program(_dumpbin_executable
+                NAMES dumpbin.exe dumpbin
+                HINTS "${_cxx_compiler_dir}")
+            if(_dumpbin_executable)
+                set(_windows_dependency_inspector "${_dumpbin_executable}")
+                set(_windows_dependency_mode "dumpbin")
+            endif()
         endif()
-        execute_process(
-            COMMAND "${OBJDUMP}" -p "${_library_path}"
-            RESULT_VARIABLE _needed_result
-            OUTPUT_VARIABLE _needed_output
-            ERROR_VARIABLE _needed_error)
-        set(_needed_pattern "DLL Name:[ \t]*[^\r\n]+")
+        if(_windows_dependency_inspector STREQUAL "")
+            message(FATAL_ERROR
+                "A Windows dependency inspector is required to inspect '${_library_path}': "
+                "CMAKE_OBJDUMP/OBJDUMP was not configured and dumpbin.exe was not found beside CXX_COMPILER")
+        endif()
+        if(_windows_dependency_mode STREQUAL "objdump")
+            execute_process(
+                COMMAND "${_windows_dependency_inspector}" -p "${_library_path}"
+                RESULT_VARIABLE _needed_result
+                OUTPUT_VARIABLE _needed_output
+                ERROR_VARIABLE _needed_error)
+            set(_needed_pattern "DLL Name:[ \t]*[^\r\n]+")
+        else()
+            execute_process(
+                COMMAND "${_windows_dependency_inspector}" /DEPENDENTS "${_library_path}"
+                RESULT_VARIABLE _needed_result
+                OUTPUT_VARIABLE _needed_output
+                ERROR_VARIABLE _needed_error)
+            # dumpbin prints one DLL basename per indented line after
+            # "Image has the following dependencies:". Parse only those lines
+            # so the header and summary text cannot become runtime names.
+            string(REPLACE "\r\n" "\n" _needed_output "${_needed_output}")
+            string(REPLACE "\n" ";" _needed_lines "${_needed_output}")
+            set(_needed_entries "")
+            foreach(_needed_line IN LISTS _needed_lines)
+                string(STRIP "${_needed_line}" _needed_line)
+                if(_needed_line MATCHES "^[^ \t/\\\\]+\\\\.(dll|DLL)$")
+                    list(APPEND _needed_entries "${_needed_line}")
+                endif()
+            endforeach()
+        endif()
     elseif(APPLE)
         if(NOT DEFINED OTOOL OR OTOOL STREQUAL "" OR NOT EXISTS "${OTOOL}")
             message(FATAL_ERROR
@@ -200,10 +241,14 @@ function(_shared_runtime_needed_names _out_var _library_path)
             "Failed to inspect runtime dependencies of '${_library_path}': ${_needed_error}")
     endif()
 
-    string(REGEX MATCHALL "${_needed_pattern}" _needed_entries "${_needed_output}")
+    if(NOT (WIN32 AND _windows_dependency_mode STREQUAL "dumpbin"))
+        string(REGEX MATCHALL "${_needed_pattern}" _needed_entries "${_needed_output}")
+    endif()
     set(_needed_names "")
     foreach(_needed_entry IN LISTS _needed_entries)
-        if(WIN32)
+        if(WIN32 AND _windows_dependency_mode STREQUAL "dumpbin")
+            set(_needed_name "${_needed_entry}")
+        elseif(WIN32)
             string(REGEX REPLACE ".*DLL Name:[ \t]*" "" _needed_name "${_needed_entry}")
         elseif(APPLE)
             string(STRIP "${_needed_entry}" _needed_name)
