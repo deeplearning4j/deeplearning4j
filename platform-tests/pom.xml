@@ -603,10 +603,20 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- SDX model tests are hosted here; the publication module remains test-free. -->
+        <!-- SDX tests are hosted here; the publication modules remain test-free. -->
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-sdx-model</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-sdx</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-sdx-litertlm</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
 

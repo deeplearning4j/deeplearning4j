@@ -76,62 +76,7 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Desktop execution-gate dependencies. The large model test is property-gated. -->
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>samediff-llm</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-ggml</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <classifier>${javacpp.platform}</classifier>
-            <scope>test</scope>
-        </dependency>
-        <!--
-            Surefire 3.3.0 uses JUnit Platform APIs newer than the repository's
-            managed 1.8.0-M1 line. Keep the complete test platform aligned, as
-            already done by sdx-aot, so this reusable binding module can run its
-            transport smoke tests without changing the repository-wide stack.
-        -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>5.10.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-launcher</artifactId>
-            <version>1.10.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-engine</artifactId>
-            <version>1.10.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-commons</artifactId>
-            <version>1.10.2</version>
-            <scope>test</scope>
-        </dependency>
+        <!-- SDX runtime is a publication unit; tests are hosted by platform-tests. -->
     </dependencies>
 
     <build>
@@ -217,17 +162,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.platform</groupId>
-                        <artifactId>junit-platform-launcher</artifactId>
-                        <version>1.10.2</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
