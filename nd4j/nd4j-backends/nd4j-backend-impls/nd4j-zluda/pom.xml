@@ -44,6 +44,13 @@
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cuda</libnd4j.outputPath>
         <zluda.runtime.package>${libnd4j.outputPath}/zluda-runtime-package</zluda.runtime.package>
+        <!-- The runtime package is produced by CMake and uses the native
+             library names of the target platform. Keep these checks in sync
+             with the files JavaCPP will extract from the classifier. -->
+        <zluda.native.library>libnd4jcuda.so</zluda.native.library>
+        <zluda.cuda.abi.library>libcuda.so</zluda.cuda.abi.library>
+        <zluda.accelerator.runtime.library>libamdhip64.so</zluda.accelerator.runtime.library>
+        <zluda.jni.library>libjnind4jcuda.so</zluda.jni.library>
         <module.name>nd4j.zluda</module.name>
     </properties>
 
@@ -180,20 +187,20 @@
                                 </goals>
                                 <configuration>
                                     <target name="verify-zluda-cmake-runtime-package">
-                                        <fail message="CMake ZLUDA runtime package is missing libnd4jcuda.so">
-                                            <condition><not><available file="${zluda.runtime.package}/libnd4jcuda.so"/></not></condition>
+                                        <fail message="CMake ZLUDA runtime package is missing ${zluda.native.library}">
+                                            <condition><not><available file="${zluda.runtime.package}/${zluda.native.library}"/></not></condition>
                                         </fail>
-                                        <fail message="CMake ZLUDA runtime package is missing the ZLUDA CUDA ABI">
-                                            <condition><not><available file="${zluda.runtime.package}/libcuda.so"/></not></condition>
+                                        <fail message="CMake ZLUDA runtime package is missing the ZLUDA CUDA ABI (${zluda.cuda.abi.library})">
+                                            <condition><not><available file="${zluda.runtime.package}/${zluda.cuda.abi.library}"/></not></condition>
                                         </fail>
-                                        <fail message="CMake ZLUDA runtime package is missing the AMD HIP runtime">
-                                            <condition><not><available file="${zluda.runtime.package}/libamdhip64.so"/></not></condition>
+                                        <fail message="CMake ZLUDA runtime package is missing its accelerator runtime (${zluda.accelerator.runtime.library})">
+                                            <condition><not><available file="${zluda.runtime.package}/${zluda.accelerator.runtime.library}"/></not></condition>
                                         </fail>
                                         <fail message="CMake ZLUDA runtime package is missing its closure manifest">
                                             <condition><not><available file="${zluda.runtime.package}/shared-runtime-manifest.txt"/></not></condition>
                                         </fail>
-                                        <fail message="JavaCPP ZLUDA JNI library was not generated">
-                                            <condition><not><available file="${javacpp.build.output.path}/libjnind4jcuda.so"/></not></condition>
+                                        <fail message="JavaCPP ZLUDA JNI library was not generated (${zluda.jni.library})">
+                                            <condition><not><available file="${javacpp.build.output.path}/${zluda.jni.library}"/></not></condition>
                                         </fail>
                                     </target>
                                 </configuration>
@@ -362,6 +369,12 @@
                     <family>windows</family>
                 </os>
             </activation>
+            <properties>
+                <zluda.native.library>nd4jcuda.dll</zluda.native.library>
+                <zluda.cuda.abi.library>nvcuda.dll</zluda.cuda.abi.library>
+                <zluda.accelerator.runtime.library>nvcudart_hybrid64.dll</zluda.accelerator.runtime.library>
+                <zluda.jni.library>jnind4jcuda.dll</zluda.jni.library>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
