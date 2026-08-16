@@ -112,7 +112,9 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.assertNotIn("zluda-zluda", row["name"], workflow)
                 self.assertNotIn("zluda-zluda", row["artifactId"], workflow)
                 if "-zluda" in row["shard"]:
-                    self.assertIn("-rocm-7.2.4", row["artifactId"], workflow)
+                    self.assertRegex(
+                        row["artifactId"], r"-rocm-[0-9]+\.[0-9]+\.[0-9]+$", workflow
+                    )
                 self.assertEqual(row["name"], row["artifactId"], workflow)
                 self.assertTrue(
                     row["dependencyCacheKey"].startswith(f'{row["shard"]}-'), workflow

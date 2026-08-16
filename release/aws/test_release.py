@@ -1305,6 +1305,50 @@ class ReleaseValidationTest(unittest.TestCase):
                         rules.get("unclassifiedArtifactIds", []),
                     )
 
+    def test_rocm_6_2_4_zluda_shards_are_published_for_every_cloud(self):
+        root = Path(__file__).parents[2]
+        expected = {
+            "linux-x86_64-zluda-rocm-6.2.4": ("linux", "linux-x86_64"),
+            "windows-x86_64-zluda-rocm-6.2.4": ("windows", "windows-x86_64"),
+        }
+        for provider in ("aws", "gcp", "azure"):
+            plan = json.loads(
+                (root / f"release/{provider}/release-plan.json").read_text(encoding="utf-8")
+            )
+            by_id = {shard["id"]: shard for shard in plan["shards"]}
+            for shard_id, (os_name, platform_name) in expected.items():
+                with self.subTest(provider=provider, shard=shard_id):
+                    shard = by_id[shard_id]
+                    build = shard["build"]
+                    self.assertEqual(os_name, shard["os"])
+                    self.assertEqual(platform_name, build["javacppPlatform"])
+                    self.assertEqual("6.2.4", build["rocmVersion"])
+                    self.assertEqual(
+                        [f"{platform_name}-zluda-rocm-6.2.4"],
+                        shard["artifactRules"]["classifierTokens"],
+                    )
+                    self.assertEqual(
+                        "-cuda-12.9-zluda-rocm-6.2.4",
+                        build["variants"][0]["classifierSuffix"],
+                    )
+                    self.assertEqual(
+                        "-zluda-rocm-6.2.4",
+                        build["variants"][0]["platformExtension"],
+                    )
+                    self.assertIn("-Drocm.version=6.2.4", build["mavenArgs"])
+                    if os_name == "linux":
+                        self.assertTrue(build["rocmBuildOnly"])
+                        self.assertEqual(
+                            [
+                                "hip", "rocblas", "hipblaslt", "rocsparse",
+                                "rocm-smi", "miopen",
+                            ],
+                            build["rocmBuildComponents"],
+                        )
+                    else:
+                        self.assertNotIn("rocmBuildOnly", build)
+                        self.assertNotIn("rocmBuildComponents", build)
+
     def test_windows_workers_import_visual_studio_environment_before_build(self):
         root = Path(__file__).parents[2]
         for provider in ("aws", "gcp", "azure"):
@@ -2236,11 +2280,14 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual(
             (
                 "rocm-hip-runtime-dev", "hsa-rocr-dev",
+                "libnuma-dev", "libdrm-dev",
                 "rocblas-dev", "hipblaslt-dev", "rocsparse-dev",
                 "rocm-smi-lib", "miopen-hip-dev",
             ),
             spec["packages"],
         )
+        six_spec = build_platform.rocm_build_spec({**build, "rocmVersion": "6.2.4"})
+        self.assertIn("hsakmt-roct-dev", six_spec["packages"])
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
             files = (

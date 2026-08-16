@@ -29,6 +29,35 @@ ZLUDA_TARGET = "AMD"
 ZLUDA_LINUX_LINKER_PACKAGE = "lld"
 ZLUDA_LINUX_RPATH_EDITOR_PACKAGE = "patchelf"
 ROCM_BUILD_SDKS = {
+    "6.2.4": {
+        "installer_name": "amdgpu-install_6.2.60204-1_all.deb",
+        "installer_url": (
+            "https://repo.radeon.com/amdgpu-install/6.2.4/ubuntu/jammy/"
+            "amdgpu-install_6.2.60204-1_all.deb"
+        ),
+        # ROCm 6.2 publishes the ROCt development package separately. Keep
+        # it in the managed SDK so the version-matched HSA runtime closure
+        # includes libhsakmt.so.1 without relying on the host.
+        "hsakmt_source_url": (
+            "https://github.com/ROCm/rocm-systems/archive/refs/tags/"
+            "rocm-6.2.4.tar.gz"
+        ),
+        "hsakmt_source_subdirectory": "projects/rocr-runtime",
+        "component_packages": {
+            "hip": (
+                "rocm-hip-runtime-dev",
+                "hsa-rocr-dev",
+                "hsakmt-roct-dev",
+                "libnuma-dev",
+                "libdrm-dev",
+            ),
+            "rocblas": ("rocblas-dev",),
+            "hipblaslt": ("hipblaslt-dev",),
+            "rocsparse": ("rocsparse-dev",),
+            "rocm-smi": ("rocm-smi-lib",),
+            "miopen": ("miopen-hip-dev",),
+        },
+    },
     "7.2.4": {
         "installer_name": "amdgpu-install_7.2.4.70204-1_all.deb",
         "installer_url": (
@@ -1864,8 +1893,8 @@ def build_rocm_hsakmt(
             f"found {len(source_candidates)}"
         )
     source = source_candidates[0].parent
-    # ROCm 7.2.x publishes the ROCt source with a static-only target even when
-    # BUILD_SHARED_LIBS=ON. ZLUDA needs the version-matched user-space thunk
+    # Some ROCm releases publish the ROCt source with a static-only target
+    # even when BUILD_SHARED_LIBS=ON. ZLUDA needs the version-matched user-space thunk
     # as a shared object so the HSA runtime can resolve libhsakmt.so.1 at load
     # time. Adapt only the downloaded build recipe; the repository source stays
     # untouched and the resulting library remains beneath ROCM_PATH.
