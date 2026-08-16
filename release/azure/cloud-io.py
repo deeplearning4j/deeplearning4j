@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """Dependency-free Azure worker transport for Blob Storage and the kill switch.
 
-The helper authenticates with the VM's managed identity through Azure IMDS, so
-workers never receive storage keys or release/publication credentials.
+Azure VMs authenticate through managed identity. Non-VM workers, such as GitHub
+Actions, use the controller-provided SAS or account-key connection string from
+their secret environment; credentials are never written to worker files/logs.
 """
 
 import argparse
 import base64
+import binascii
 import datetime as dt
+import hashlib
+import hmac
 import http.client
 import json
 import mimetypes
@@ -45,20 +49,14 @@ def request(url, *, method="GET", data=None, headers=None, authenticated=False,
     accepted_statuses = set(accepted_statuses)
     for attempt in range(attempts):
         if authenticated:
-            sas = storage_sas()
-            if sas:
-                separator = "&" if "?" in url else "?"
-                request_url = url + separator + sas
-            else:
-                request_url = url
-                headers["Authorization"] = "Bearer " + access_token(client_id)
-                headers["x-ms-version"] = STORAGE_API_VERSION
-                headers["x-ms-date"] = dt.datetime.now(dt.timezone.utc).strftime(
-                    "%a, %d %b %Y %H:%M:%S GMT"
-                )
+            request_url, request_headers = storage_authentication(
+                url, method, payload, headers, client_id
+            )
         else:
-            request_url = url
-        req = urllib.request.Request(request_url, data=payload, headers=headers, method=method)
+            request_url, request_headers = url, headers
+        req = urllib.request.Request(
+            request_url, data=payload, headers=request_headers, method=method
+        )
         try:
             with urllib.request.urlopen(req, timeout=60) as response:
                 return response.read()
@@ -138,6 +136,117 @@ def storage_sas():
         if part.startswith("SharedAccessSignature="):
             return part.split("=", 1)[1].lstrip("?")
     return ""
+
+
+def storage_connection_parts():
+    """Return the Azure connection-string fields exposed to CI workers."""
+    connection = (
+        os.environ.get("DL4J_AZURE_CONNECTION_STRING")
+        or os.environ.get("SCCACHE_AZURE_CONNECTION_STRING")
+        or ""
+    )
+    parts = {}
+    for item in connection.split(";"):
+        if "=" not in item:
+            continue
+        key, value = item.split("=", 1)
+        parts[key.strip().lower()] = value.strip()
+    return parts
+
+
+def storage_shared_key():
+    """Return (account, decoded key) for an Azure account-key connection string."""
+    parts = storage_connection_parts()
+    account = parts.get("accountname")
+    encoded_key = parts.get("accountkey")
+    if not account or not encoded_key:
+        return None
+    try:
+        return account, base64.b64decode(encoded_key)
+    except (ValueError, binascii.Error) as exc:
+        raise RuntimeError("invalid Azure AccountKey in storage connection string") from exc
+
+
+def _header_value(headers, name):
+    wanted = name.lower()
+    for key, value in headers.items():
+        if key.lower() == wanted:
+            return str(value)
+    return ""
+
+
+def _canonicalized_headers(headers):
+    values = []
+    for key, value in headers.items():
+        key = key.lower()
+        if not key.startswith("x-ms-"):
+            continue
+        value = re.sub(r"\s+", " ", str(value).strip())
+        values.append((key, value))
+    return "".join(f"{key}:{value}\n" for key, value in sorted(values))
+
+
+def _canonicalized_resource(url, account):
+    parsed = urllib.parse.urlsplit(url)
+    resource = f"/{account}{urllib.parse.unquote(parsed.path or '/')}"
+    query = {}
+    for key, value in urllib.parse.parse_qsl(parsed.query, keep_blank_values=True):
+        query.setdefault(key.lower(), []).append(urllib.parse.unquote(value))
+    for key in sorted(query):
+        resource += f"\n{key}:{','.join(sorted(query[key]))}"
+    return resource
+
+
+def _shared_key_authorization(url, method, payload, headers, account, key):
+    content_length = "" if payload is None or len(payload) == 0 else str(len(payload))
+    string_to_sign = "\n".join(
+        (
+            method.upper(),
+            _header_value(headers, "Content-Encoding"),
+            _header_value(headers, "Content-Language"),
+            content_length,
+            _header_value(headers, "Content-MD5"),
+            _header_value(headers, "Content-Type"),
+            _header_value(headers, "Date"),
+            _header_value(headers, "If-Modified-Since"),
+            _header_value(headers, "If-Match"),
+            _header_value(headers, "If-None-Match"),
+            _header_value(headers, "If-Unmodified-Since"),
+            _header_value(headers, "Range"),
+            _canonicalized_headers(headers),
+            _canonicalized_resource(url, account),
+        )
+    )
+    digest = hmac.new(key, string_to_sign.encode("utf-8"), hashlib.sha256).digest()
+    return f"SharedKey {account}:{base64.b64encode(digest).decode('ascii')}"
+
+
+def storage_authentication(url, method, payload, headers, client_id=None):
+    """Build SAS, account-key, or managed-identity authentication for a request."""
+    request_headers = dict(headers)
+    sas = storage_sas()
+    if sas:
+        separator = "&" if "?" in url else "?"
+        return url + separator + sas, request_headers
+
+    shared_key = storage_shared_key()
+    if shared_key:
+        account, key = shared_key
+        request_headers["x-ms-version"] = STORAGE_API_VERSION
+        request_headers["x-ms-date"] = dt.datetime.now(dt.timezone.utc).strftime(
+            "%a, %d %b %Y %H:%M:%S GMT"
+        )
+        request_headers["Authorization"] = _shared_key_authorization(
+            url, method, payload, request_headers, account, key
+        )
+        return url, request_headers
+
+    request_headers["Authorization"] = "Bearer " + access_token(client_id)
+    request_headers["x-ms-version"] = STORAGE_API_VERSION
+    request_headers["x-ms-date"] = dt.datetime.now(dt.timezone.utc).strftime(
+        "%a, %d %b %Y %H:%M:%S GMT"
+    )
+    return url, request_headers
 
 
 def parse_bucket(value):
@@ -350,23 +459,14 @@ def download_file(bucket, name, path, client_id=None):
     try:
         for attempt in range(attempts):
             offset = staged.stat().st_size if staged.exists() else 0
-            sas = storage_sas()
-            request_url = url
-            if sas:
-                request_url += ("&" if "?" in request_url else "?") + sas
-                headers = {}
-            else:
-                headers = {
-                    "Authorization": "Bearer " + access_token(client_id),
-                    "x-ms-version": STORAGE_API_VERSION,
-                    "x-ms-date": dt.datetime.now(dt.timezone.utc).strftime(
-                        "%a, %d %b %Y %H:%M:%S GMT"
-                    ),
-                }
+            headers = {}
             if offset:
                 headers["Range"] = f"bytes={offset}-"
             if etag:
                 headers["If-Match"] = etag
+            request_url, headers = storage_authentication(
+                url, "GET", None, headers, client_id
+            )
             req = urllib.request.Request(request_url, headers=headers, method="GET")
             try:
                 with urllib.request.urlopen(req, timeout=120) as response:
