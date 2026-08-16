@@ -366,6 +366,12 @@ class ReleaseValidationTest(unittest.TestCase):
             self.assertIn("mingw-w64-x86_64-vulkan-headers", source, worker)
             self.assertIn("mingw-w64-x86_64-vulkan-loader", source, worker)
 
+        action_source = (root / ".github/actions/run-release-worker/action.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("mingw-w64-x86_64-vulkan-headers", action_source)
+        self.assertIn("mingw-w64-x86_64-vulkan-loader", action_source)
+
     def test_smoke_overrides_instance_and_build_threads(self):
         shard = self.shard()
         shard["build"] = {"buildThreads": 48}
