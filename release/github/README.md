@@ -20,6 +20,6 @@ Add or change classifiers in the provider release plans first. Keep `release/git
 
 A normal dispatch always runs the complete canonical matrix for its selected workflow. Partial reruns must set `targetedRetry=1` and provide one or more exact `shard--variant` values in `classifiers`; filters are rejected otherwise. This keeps recovery of a failed classifier explicit without allowing an intended complete release run to silently omit base or another variant.
 
-ZLUDA is labeled by its CUDA ABI version in the canonical matrix (for example, `linux-x86_64-zluda--cuda-12.9`). The `--` token is only the internal shard/variant selector delimiter; it is never emitted in artifact IDs or Maven filenames. Older `--zluda` selectors remain accepted and normalize to the CUDA-versioned variant.
+ZLUDA is selected by its CUDA ABI variant in the internal matrix (for example, `linux-x86_64-zluda--cuda-12.9`). Published worker IDs and Maven classifiers are single-hyphen, ROCm-qualified names such as `linux-x86_64-cuda-12.9-zluda-rocm-7.2.4`; they never contain `--` or duplicate `zluda-zluda`. Older `--zluda` selectors remain accepted and normalize to the CUDA-versioned variant.
 
 These workflows run the shared worker locally on GitHub runners; they do not provision AWS, Azure, or GCP virtual machines.

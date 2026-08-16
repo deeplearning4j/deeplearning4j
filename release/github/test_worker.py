@@ -111,6 +111,8 @@ class WorkflowMatrixTests(unittest.TestCase):
                 self.assertNotIn("--", row["artifactId"], workflow)
                 self.assertNotIn("zluda-zluda", row["name"], workflow)
                 self.assertNotIn("zluda-zluda", row["artifactId"], workflow)
+                if "-zluda" in row["shard"]:
+                    self.assertIn("-rocm-7.2.4", row["artifactId"], workflow)
                 self.assertEqual(row["name"], row["artifactId"], workflow)
                 self.assertTrue(
                     row["dependencyCacheKey"].startswith(f'{row["shard"]}-'), workflow
@@ -223,9 +225,13 @@ class WorkflowMatrixTests(unittest.TestCase):
             [("windows-x86_64-zluda", "cuda-12.9")],
             [(row["shard"], row["variant"]) for row in rows],
         )
-        self.assertEqual("windows-x86_64-zluda-cuda-12.9", rows[0]["artifactId"])
+        self.assertEqual(
+            "windows-x86_64-cuda-12.9-zluda-rocm-7.2.4",
+            rows[0]["artifactId"],
+        )
         self.assertNotIn("--", rows[0]["artifactId"])
         self.assertNotIn("zluda-zluda", rows[0]["artifactId"])
+        self.assertIn("-rocm-7.2.4", rows[0]["artifactId"])
 
     def test_legacy_zluda_selector_maps_to_cuda_versioned_variant(self):
         rows = prepare_worker.workflow_rows(

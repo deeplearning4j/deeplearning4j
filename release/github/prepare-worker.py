@@ -138,21 +138,40 @@ def plan_shards(plan: dict) -> dict[str, dict]:
     return shards
 
 
-def public_artifact_id(shard_id: str, variant_name: str) -> str:
+def public_artifact_id(
+    shard_id: str, variant_name: str, variant: dict | None = None
+) -> str:
     """Return the public row ID for one planned shard/variant.
 
-    Selectors deliberately use ``--`` internally.  Public IDs use one hyphen,
-    and a variant that is already encoded in the shard ID is not appended a
-    second time (for example ``linux-x86_64-compat`` + ``compat``).
+    Selectors deliberately use ``--`` internally. Public IDs always use single
+    hyphens. ZLUDA rows additionally carry the complete ROCm-qualified native
+    classifier suffix so distinct ROCm runtimes cannot share a staging ID. The
+    ``-zluda`` shard marker is removed before appending that suffix to avoid
+    emitting ``zluda-zluda``.
     """
     shard_id = str(shard_id).strip("-")
     variant_name = str(variant_name).strip("-")
     if not shard_id or not variant_name:
         raise ValueError("release artifact ID cannot be empty")
-    if shard_id == variant_name or shard_id.endswith(f"-{variant_name}"):
+
+    classifier_suffix = ""
+    if variant:
+        candidate = str(variant.get("classifierSuffix", "")).strip("-")
+        if "-zluda-rocm-" in candidate:
+            classifier_suffix = candidate
+
+    if classifier_suffix:
+        base_shard = (
+            shard_id[: -len("-zluda")]
+            if shard_id.endswith("-zluda")
+            else shard_id
+        )
+        value = f"{base_shard}-{classifier_suffix}"
+    elif shard_id == variant_name or shard_id.endswith(f"-{variant_name}"):
         value = shard_id
     else:
         value = f"{shard_id}-{variant_name}"
+
     artifact_id = re.sub(r"-+", "-", value).strip("-")
     if not artifact_id:
         raise ValueError("release artifact ID cannot be empty")
@@ -322,7 +341,7 @@ def workflow_rows(
             if requested and selector not in requested:
                 continue
             variant = by_name[variant_name]
-            artifact_id = public_artifact_id(shard_id, variant_name)
+            artifact_id = public_artifact_id(shard_id, variant_name, variant)
             previous_selector = public_ids.get(artifact_id)
             if previous_selector and previous_selector != selector:
                 raise ValueError(
