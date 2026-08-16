@@ -199,23 +199,27 @@ def _canonicalized_resource(url, account):
 
 def _shared_key_authorization(url, method, payload, headers, account, key):
     content_length = "" if payload is None or len(payload) == 0 else str(len(payload))
-    string_to_sign = "\n".join(
-        (
-            method.upper(),
-            _header_value(headers, "Content-Encoding"),
-            _header_value(headers, "Content-Language"),
-            content_length,
-            _header_value(headers, "Content-MD5"),
-            _header_value(headers, "Content-Type"),
-            _header_value(headers, "Date"),
-            _header_value(headers, "If-Modified-Since"),
-            _header_value(headers, "If-Match"),
-            _header_value(headers, "If-None-Match"),
-            _header_value(headers, "If-Unmodified-Since"),
-            _header_value(headers, "Range"),
-            _canonicalized_headers(headers),
-            _canonicalized_resource(url, account),
-        )
+    standard_fields = (
+        method.upper(),
+        _header_value(headers, "Content-Encoding"),
+        _header_value(headers, "Content-Language"),
+        content_length,
+        _header_value(headers, "Content-MD5"),
+        _header_value(headers, "Content-Type"),
+        _header_value(headers, "Date"),
+        _header_value(headers, "If-Modified-Since"),
+        _header_value(headers, "If-Match"),
+        _header_value(headers, "If-None-Match"),
+        _header_value(headers, "If-Unmodified-Since"),
+        _header_value(headers, "Range"),
+    )
+    # Canonicalized x-ms headers already end in a newline. Do not add a
+    # second separator before the canonicalized resource.
+    string_to_sign = (
+        "\n".join(standard_fields)
+        + "\n"
+        + _canonicalized_headers(headers)
+        + _canonicalized_resource(url, account)
     )
     digest = hmac.new(key, string_to_sign.encode("utf-8"), hashlib.sha256).digest()
     return f"SharedKey {account}:{base64.b64encode(digest).decode('ascii')}"
