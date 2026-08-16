@@ -39,10 +39,15 @@ ROCM_BUILD_SDKS = {
         # it in the managed SDK so the version-matched HSA runtime closure
         # includes libhsakmt.so.1 without relying on the host.
         "hsakmt_source_url": (
-            "https://github.com/ROCm/rocm-systems/archive/refs/tags/"
+            "https://github.com/ROCm/ROCT-Thunk-Interface/archive/refs/tags/"
             "rocm-6.2.4.tar.gz"
         ),
-        "hsakmt_source_subdirectory": "projects/rocr-runtime",
+        # ROCm 6.2 still publishes ROCt/HSAKMT as a standalone repository.
+        # Its archive root is the CMake source root and BUILD_SHARED_LIBS
+        # already selects the required libhsakmt.so.1 target.
+        "hsakmt_source_subdirectory": "",
+        "hsakmt_cmake_subdirectory": "",
+        "hsakmt_rewrite_static_target": False,
         "component_packages": {
             "hip": (
                 "rocm-hip-runtime-dev",
@@ -73,6 +78,8 @@ ROCM_BUILD_SDKS = {
             "rocm-7.2.4.tar.gz"
         ),
         "hsakmt_source_subdirectory": "projects/rocr-runtime",
+        "hsakmt_cmake_subdirectory": "libhsakmt",
+        "hsakmt_rewrite_static_target": True,
         "component_packages": {
             # Keep the complete user-space HIP/ROCr/ROCt closure in the
             # versioned SDK archive. The kernel amdgpu/KFD driver remains host-owned.
@@ -827,15 +834,23 @@ def configure_compiler_cache(
     return compiler_cache, True
 
 
+def variant_platform_extension(variant: dict) -> str:
+    """Return the exact JavaCPP platform extension declared by a release variant."""
+    return str(variant.get("platformExtension", variant.get("suffix", "")))
+
+
+def variant_libnd4j_classifier(build: dict, variant: dict) -> str:
+    """Return the exact libnd4j classifier declared by a release variant."""
+    classifier_suffix = variant.get("classifierSuffix", variant.get("suffix", ""))
+    return f"{build['javacppPlatform']}{classifier_suffix}"
+
+
 def variant_flags(build: dict, variant: dict) -> list[str]:
-    platform = build["javacppPlatform"]
     backend = build["backend"]
     helper = variant.get("helper", "")
     extension = variant.get("extension", "")
-    suffix = variant.get("suffix", "")
-    classifier_suffix = variant.get("classifierSuffix", suffix)
-    platform_extension = variant.get("platformExtension", suffix)
-    flags = [f"-Dlibnd4j.classifier={platform}{classifier_suffix}"]
+    platform_extension = variant_platform_extension(variant)
+    flags = [f"-Dlibnd4j.classifier={variant_libnd4j_classifier(build, variant)}"]
     if platform_extension:
         flags.append(f"-Djavacpp.platform.extension={platform_extension}")
     if helper:
@@ -858,10 +873,7 @@ def variant_flags(build: dict, variant: dict) -> list[str]:
 
 def variant_artifact_classifier(build: dict, variant: dict) -> str:
     """Return the attached JavaCPP JAR classifier for a release variant."""
-    platform_extension = variant.get(
-        "platformExtension", variant.get("suffix", "")
-    )
-    return f"{build['javacppPlatform']}{platform_extension}"
+    return f"{build['javacppPlatform']}{variant_platform_extension(variant)}"
 
 
 def has_base_platform_variant(build: dict) -> bool:
@@ -1688,6 +1700,8 @@ def rocm_build_spec(build: dict) -> dict | None:
         "installer_url": sdk["installer_url"],
         "hsakmt_source_url": sdk["hsakmt_source_url"],
         "hsakmt_source_subdirectory": sdk["hsakmt_source_subdirectory"],
+        "hsakmt_cmake_subdirectory": sdk["hsakmt_cmake_subdirectory"],
+        "hsakmt_rewrite_static_target": sdk["hsakmt_rewrite_static_target"],
     }
 
 
@@ -1834,6 +1848,17 @@ def attest_rocm_build_toolchain(
     return attested
 
 
+def rocm_hsakmt_source_candidates(extracted: Path, spec: dict) -> list[Path]:
+    """Locate the one declared ROCt CMake source root in an extracted archive."""
+    source_subdirectory = str(spec["hsakmt_source_subdirectory"]).strip("/")
+    source_pattern = (
+        f"*/{source_subdirectory}/CMakeLists.txt"
+        if source_subdirectory
+        else "*/CMakeLists.txt"
+    )
+    return sorted(extracted.glob(source_pattern))
+
+
 def build_rocm_hsakmt(
     build: dict,
     spec: dict,
@@ -1853,13 +1878,13 @@ def build_rocm_hsakmt(
         "amd64", "x86_64"
     }:
         raise RuntimeError("managed ROCt bootstrap requires a Linux x86_64 builder")
-    source_archive = temporary_directory / "rocm-systems.tar.gz"
+    source_archive = temporary_directory / "roct-source.tar.gz"
     download_with_retry(
         str(spec["hsakmt_source_url"]),
         source_archive,
         f"ROCm {spec['version']} ROCt source",
     )
-    extracted = temporary_directory / "rocm-systems-source"
+    extracted = temporary_directory / "roct-source"
     extracted.mkdir(parents=True, exist_ok=True)
     with tarfile.open(source_archive, "r:gz") as archive:
         root = extracted.resolve()
@@ -1871,7 +1896,7 @@ def build_rocm_hsakmt(
             if destination != root and root not in destination.parents:
                 raise RuntimeError(f"unsafe ROCm source archive member: {member.name!r}")
             if member.issym() or member.islnk():
-                # The upstream rocm-systems tarball contains harmless in-tree
+                # Upstream ROCt source archives may contain harmless in-tree
                 # links. Validate their normalized target before extraction so
                 # the archive can retain those links without permitting a link
                 # to escape the extraction root.
@@ -1884,9 +1909,7 @@ def build_rocm_hsakmt(
                         f"{member.linkname!r}"
                     )
         archive.extractall(extracted)
-    source_candidates = list(
-        extracted.rglob(f"{spec['hsakmt_source_subdirectory']}/CMakeLists.txt")
-    )
+    source_candidates = rocm_hsakmt_source_candidates(extracted, spec)
     if len(source_candidates) != 1:
         raise RuntimeError(
             "ROCm source archive must contain exactly one ROCt source tree; "
@@ -1898,23 +1921,33 @@ def build_rocm_hsakmt(
     # as a shared object so the HSA runtime can resolve libhsakmt.so.1 at load
     # time. Adapt only the downloaded build recipe; the repository source stays
     # untouched and the resulting library remains beneath ROCM_PATH.
-    hsakmt_cmake = source / "libhsakmt" / "CMakeLists.txt"
-    hsakmt_cmake_text = hsakmt_cmake.read_text(encoding="utf-8")
-    static_target = 'add_library (${HSAKMT_TARGET} STATIC "")'
-    shared_target = 'add_library (${HSAKMT_TARGET} SHARED "")'
-    if static_target not in hsakmt_cmake_text:
+    hsakmt_cmake_subdirectory = str(spec["hsakmt_cmake_subdirectory"]).strip("/")
+    hsakmt_cmake = (
+        source / hsakmt_cmake_subdirectory / "CMakeLists.txt"
+        if hsakmt_cmake_subdirectory
+        else source / "CMakeLists.txt"
+    )
+    if not hsakmt_cmake.is_file():
         raise RuntimeError(
-            "version-matched ROCt source no longer exposes the expected "
-            "static HSAKMT target; refusing to create an unverified runtime"
+            f"version-matched ROCt source is missing {hsakmt_cmake.relative_to(source)}"
         )
-    hsakmt_cmake.write_text(
-        hsakmt_cmake_text.replace(static_target, shared_target, 1),
-        encoding="utf-8",
-    )
-    print(
-        "[dl4j-rocm] adapting downloaded ROCt target to shared libhsakmt.so.1",
-        flush=True,
-    )
+    if spec["hsakmt_rewrite_static_target"]:
+        hsakmt_cmake_text = hsakmt_cmake.read_text(encoding="utf-8")
+        static_target = 'add_library (${HSAKMT_TARGET} STATIC "")'
+        shared_target = 'add_library (${HSAKMT_TARGET} SHARED "")'
+        if static_target not in hsakmt_cmake_text:
+            raise RuntimeError(
+                "version-matched ROCt source no longer exposes the expected "
+                "static HSAKMT target; refusing to create an unverified runtime"
+            )
+        hsakmt_cmake.write_text(
+            hsakmt_cmake_text.replace(static_target, shared_target, 1),
+            encoding="utf-8",
+        )
+        print(
+            "[dl4j-rocm] adapting downloaded ROCt target to shared libhsakmt.so.1",
+            flush=True,
+        )
     cmake_build = temporary_directory / "rocr-runtime-build"
     threads = str(max(1, int(build.get("buildThreads") or env.get("DL4J_BUILD_THREADS", "4"))))
     cmake_environment = env.copy()
@@ -1998,6 +2031,8 @@ def prepare_rocm_build_toolchain(
             "installerUrl": spec["installer_url"],
             "hsakmtSourceUrl": spec["hsakmt_source_url"],
             "hsakmtSourceSubdirectory": spec["hsakmt_source_subdirectory"],
+            "hsakmtCmakeSubdirectory": spec["hsakmt_cmake_subdirectory"],
+            "hsakmtRewriteStaticTarget": spec["hsakmt_rewrite_static_target"],
             "destination": str(rocm_root),
         },
     )
@@ -2424,6 +2459,8 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_FAMILY": family,
             "DL4J_HELPER": shared_variant_helper(variant),
             "DL4J_EXTENSION": variant.get("extension", ""),
+            "DL4J_PLATFORM_EXTENSION": variant_platform_extension(variant),
+            "DL4J_CLASSIFIER": variant_libnd4j_classifier(build, variant),
             "DL4J_BUILD_THREADS": str(build.get("buildThreads", 16)),
             "DL4J_MVN_FLAGS": str(build.get("workflowMvnFlags", "")),
             "DL4J_MAVEN_GOAL": "install",

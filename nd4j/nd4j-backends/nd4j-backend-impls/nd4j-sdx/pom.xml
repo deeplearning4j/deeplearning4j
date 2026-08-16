@@ -44,7 +44,7 @@
         <libnd4j.outputPath>${libnd4jhome}/blasbuild/cpu</libnd4j.outputPath>
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/dsp/runtime/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <javacpp.platform.build>${javacpp.platform}</javacpp.platform.build>
-        <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
+        <javacpp.compiler.options></javacpp.compiler.options>
         <sdx.native.library>nd4jcpu</sdx.native.library>
         <sdx.platform.links>nd4jcpu</sdx.platform.links>
         <sdx.android.variant>vulkan</sdx.android.variant>
@@ -201,6 +201,19 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>os-unix-linker-flags</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>!mac os x</name>
+                </os>
+            </activation>
+            <properties>
+                <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
+            </properties>
+        </profile>
+
         <profile>
             <id>android-arm64</id>
             <properties>

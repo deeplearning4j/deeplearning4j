@@ -1349,6 +1349,48 @@ class ReleaseValidationTest(unittest.TestCase):
                         self.assertNotIn("rocmBuildOnly", build)
                         self.assertNotIn("rocmBuildComponents", build)
 
+    def test_rocm_hsakmt_sources_match_each_upstream_archive_layout(self):
+        standalone = build_platform.ROCM_BUILD_SDKS["6.2.4"]
+        self.assertEqual(
+            "https://github.com/ROCm/ROCT-Thunk-Interface/archive/refs/tags/"
+            "rocm-6.2.4.tar.gz",
+            standalone["hsakmt_source_url"],
+        )
+        self.assertEqual("", standalone["hsakmt_source_subdirectory"])
+        self.assertEqual("", standalone["hsakmt_cmake_subdirectory"])
+        self.assertFalse(standalone["hsakmt_rewrite_static_target"])
+
+        monorepo = build_platform.ROCM_BUILD_SDKS["7.2.4"]
+        self.assertEqual("projects/rocr-runtime", monorepo["hsakmt_source_subdirectory"])
+        self.assertEqual("libhsakmt", monorepo["hsakmt_cmake_subdirectory"])
+        self.assertTrue(monorepo["hsakmt_rewrite_static_target"])
+
+        with tempfile.TemporaryDirectory() as temp:
+            extracted = Path(temp)
+            standalone_root = extracted / "ROCT-Thunk-Interface-rocm-6.2.4"
+            standalone_root.mkdir()
+            (standalone_root / "CMakeLists.txt").write_text(
+                "project(hsakmt)\n", encoding="utf-8"
+            )
+            candidates = build_platform.rocm_hsakmt_source_candidates(
+                extracted, standalone
+            )
+            self.assertEqual([standalone_root / "CMakeLists.txt"], candidates)
+
+        with tempfile.TemporaryDirectory() as temp:
+            extracted = Path(temp)
+            monorepo_root = (
+                extracted / "rocm-systems-rocm-7.2.4" / "projects" / "rocr-runtime"
+            )
+            monorepo_root.mkdir(parents=True)
+            (monorepo_root / "CMakeLists.txt").write_text(
+                "project(rocr-runtime)\n", encoding="utf-8"
+            )
+            candidates = build_platform.rocm_hsakmt_source_candidates(
+                extracted, monorepo
+            )
+            self.assertEqual([monorepo_root / "CMakeLists.txt"], candidates)
+
     def test_windows_workers_import_visual_studio_environment_before_build(self):
         root = Path(__file__).parents[2]
         for provider in ("aws", "gcp", "azure"):
@@ -2712,6 +2754,8 @@ class ReleaseValidationTest(unittest.TestCase):
         zluda = command(
             DL4J_FAMILY="zluda",
             DL4J_CUDA_VERSION="12.9",
+            DL4J_PLATFORM_EXTENSION="-zluda",
+            DL4J_CLASSIFIER="linux-x86_64-cuda-12.9-zluda",
         )
         self.assertIn("-Dlibnd4j.zluda=AMD", zluda)
         self.assertFalse(any("zluda.root" in argument for argument in zluda))
@@ -2728,6 +2772,8 @@ class ReleaseValidationTest(unittest.TestCase):
         windows_zluda = command(
             DL4J_FAMILY="windows-zluda",
             DL4J_CUDA_VERSION="12.9",
+            DL4J_PLATFORM_EXTENSION="-zluda",
+            DL4J_CLASSIFIER="windows-x86_64-cuda-12.9-zluda",
             DL4J_ZLUDA_TARGET="AMD",
         )
         self.assertIn("-Dlibnd4j.classifier=windows-x86_64-cuda-12.9-zluda", windows_zluda)
@@ -2741,6 +2787,28 @@ class ReleaseValidationTest(unittest.TestCase):
             ":nd4j-zluda-12.9-platform,:libnd4j",
             windows_zluda[windows_zluda.index("-pl") + 1],
         )
+
+        for rocm_version in ("7.2.4", "6.2.4"):
+            extension = f"-zluda-rocm-{rocm_version}"
+            for family, platform_name in (
+                ("zluda", "linux-x86_64"),
+                ("windows-zluda", "windows-x86_64"),
+            ):
+                with self.subTest(rocm=rocm_version, family=family):
+                    classifier = (
+                        f"{platform_name}-cuda-12.9-zluda-rocm-{rocm_version}"
+                    )
+                    versioned = command(
+                        DL4J_FAMILY=family,
+                        DL4J_CUDA_VERSION="12.9",
+                        DL4J_PLATFORM_EXTENSION=extension,
+                        DL4J_CLASSIFIER=classifier,
+                    )
+                    self.assertIn(
+                        f"-Djavacpp.platform.extension={extension}", versioned
+                    )
+                    self.assertIn(f"-Dlibnd4j.classifier={classifier}", versioned)
+                    self.assertNotIn("-Djavacpp.platform.extension=-zluda", versioned)
 
     def test_vulkan_native_family_tracks_worker_os(self):
         build = {
@@ -2798,6 +2866,42 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual(
             "windows-zluda",
             build_platform.shared_native_family({"os": "windows", "build": build}, variant),
+        )
+
+    def test_zluda_native_driver_passes_exact_release_classifier_contract(self):
+        variant = {
+            "name": "zluda",
+            "classifierSuffix": "-cuda-12.9-zluda-rocm-6.2.4",
+            "platformExtension": "-zluda-rocm-6.2.4",
+        }
+        shard = {
+            "id": "linux-x86_64-zluda-rocm-6.2.4",
+            "os": "linux",
+            "workloads": ["maven"],
+            "build": {
+                "backend": "cuda",
+                "cudaVersion": "12.9",
+                "javacppPlatform": "linux-x86_64",
+                "zludaVersion": "v6",
+                "mavenArgs": ["-Dlibnd4j.zluda=AMD"],
+                "modules": [],
+                "variants": [variant],
+            },
+        }
+        calls = []
+        with patch.object(build_platform, "prepare_openblas"), patch.object(
+            build_platform,
+            "run",
+            side_effect=lambda command, _cwd, env: calls.append((command, env.copy())),
+        ):
+            build_platform.build_native_platform(
+                Path("/source"), shard, Path("/m2"), {}, None
+            )
+        invocation = calls[0][1]
+        self.assertEqual("-zluda-rocm-6.2.4", invocation["DL4J_PLATFORM_EXTENSION"])
+        self.assertEqual(
+            "linux-x86_64-cuda-12.9-zluda-rocm-6.2.4",
+            invocation["DL4J_CLASSIFIER"],
         )
 
     def test_aws_cuda_compile_variant_uses_workflow_compile_classifier_path(self):
@@ -2870,6 +2974,39 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("-Psdx", command)
         for module in ("nd4j-sdx-model", "nd4j-sdx"):
             self.assertIn(module, command)
+
+    def test_sdx_gnu_linker_flag_is_not_active_on_macos(self):
+        root = Path(__file__).parents[2]
+        namespace = {"m": "http://maven.apache.org/POM/4.0.0"}
+        pom = ET.parse(
+            root
+            / "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-sdx/pom.xml"
+        ).getroot()
+        self.assertEqual(
+            "",
+            pom.findtext(
+                "m:properties/m:javacpp.compiler.options", namespaces=namespace
+            ),
+        )
+        profiles = {
+            profile.findtext("m:id", namespaces=namespace): profile
+            for profile in pom.findall("m:profiles/m:profile", namespace)
+        }
+        unix_flags = profiles["os-unix-linker-flags"]
+        self.assertEqual(
+            "unix",
+            unix_flags.findtext("m:activation/m:os/m:family", namespaces=namespace),
+        )
+        self.assertEqual(
+            "!mac os x",
+            unix_flags.findtext("m:activation/m:os/m:name", namespaces=namespace),
+        )
+        self.assertEqual(
+            "-Wl,--no-undefined",
+            unix_flags.findtext(
+                "m:properties/m:javacpp.compiler.options", namespaces=namespace
+            ),
+        )
 
     def test_triton_cpu_patch_uses_raw_bits_when_gcc_lacks_float16(self):
         root = Path(__file__).parents[2]

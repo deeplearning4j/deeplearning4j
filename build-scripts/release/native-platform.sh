@@ -5,6 +5,8 @@ set -Eeuo pipefail
 : "${DL4J_BUILD_THREADS:?DL4J_BUILD_THREADS is required}"
 : "${DL4J_HELPER:=}"
 : "${DL4J_EXTENSION:=}"
+: "${DL4J_PLATFORM_EXTENSION:=}"
+: "${DL4J_CLASSIFIER:=}"
 : "${DL4J_MVN_FLAGS:=}"
 : "${DL4J_MAVEN_GOAL:=deploy}"
 : "${DL4J_MAVEN_REPOSITORY:=}"
@@ -170,6 +172,8 @@ case "${DL4J_FAMILY}" in
     ;;
   zluda|windows-zluda)
     : "${DL4J_CUDA_VERSION:?DL4J_CUDA_VERSION is required}"
+    : "${DL4J_PLATFORM_EXTENSION:?DL4J_PLATFORM_EXTENSION is required}"
+    : "${DL4J_CLASSIFIER:?DL4J_CLASSIFIER is required}"
     : "${DL4J_ZLUDA_TARGET:=AMD}"
     platform=linux-x86_64
     zluda_profiles=(-Pcuda -Pzluda -Pzluda-platform)
@@ -180,7 +184,7 @@ case "${DL4J_FAMILY}" in
       zluda_win=(-Dlibnd4j.platform=windows-x86_64 -Dlibnd4j.oom.killer=OFF)
     fi
     zluda_modules+=,:libnd4j
-    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} "${zluda_profiles[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" -Djavacpp.platform.extension=-zluda "-Dlibnd4j.classifier=${platform}-cuda-${DL4J_CUDA_VERSION}-zluda" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" ${zluda_win[@]+"${zluda_win[@]}"} --batch-mode -DskipTests -pl "${zluda_modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
+    command=(mvn ${split_flags[@]+"${split_flags[@]}"} ${repo[@]+"${repo[@]}"} "${zluda_profiles[@]}" -Dlibnd4j.generate.flatc=ON -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda '-Dlibnd4j.compute=8.6 9.0' -Dlibnd4j.cpu.compile.skip=true "-Dlibnd4j.zluda=${DL4J_ZLUDA_TARGET}" "-Djavacpp.platform.extension=${DL4J_PLATFORM_EXTENSION}" "-Dlibnd4j.classifier=${DL4J_CLASSIFIER}" -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 "-Dlibnd4j.buildthreads=${DL4J_BUILD_THREADS}" "-Djavacpp.platform=${platform}" ${zluda_win[@]+"${zluda_win[@]}"} --batch-mode -DskipTests -pl "${zluda_modules}" ${also_make[@]+"${also_make[@]}"} "${DL4J_MAVEN_GOAL}")
     ;;
   *) printf 'Unsupported DL4J_FAMILY=%s\n' "${DL4J_FAMILY}" >&2; exit 2;;
 esac
