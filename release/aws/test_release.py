@@ -2228,8 +2228,9 @@ class ReleaseValidationTest(unittest.TestCase):
         spec = build_platform.rocm_build_spec(build)
         self.assertEqual(
             (
-                "rocm-hip-runtime-dev", "rocblas-dev", "hipblaslt-dev",
-                "rocsparse-dev", "rocm-smi-lib", "miopen-hip-dev",
+                "rocm-hip-runtime-dev", "hsa-rocr-dev", "hsakmt-roct-dev",
+                "rocblas-dev", "hipblaslt-dev", "rocsparse-dev",
+                "rocm-smi-lib", "miopen-hip-dev",
             ),
             spec["packages"],
         )
@@ -2328,6 +2329,8 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("lld", flattened)
         self.assertIn("patchelf", flattened)
         self.assertIn("rocm-hip-runtime-dev", flattened)
+        self.assertIn("hsa-rocr-dev", flattened)
+        self.assertIn("hsakmt-roct-dev", flattened)
         self.assertIn("rocblas-dev", flattened)
         self.assertIn("hipblaslt-dev", flattened)
         self.assertIn("rocsparse-dev", flattened)

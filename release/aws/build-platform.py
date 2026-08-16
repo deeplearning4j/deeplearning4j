@@ -35,7 +35,13 @@ ROCM_BUILD_SDKS = {
             "amdgpu-install_7.2.4.70204-1_all.deb"
         ),
         "component_packages": {
-            "hip": ("rocm-hip-runtime-dev",),
+            # Keep the complete user-space HIP/ROCr/ROCt closure in the
+            # versioned SDK archive. The kernel amdgpu/KFD driver remains host-owned.
+            "hip": (
+                "rocm-hip-runtime-dev",
+                "hsa-rocr-dev",
+                "hsakmt-roct-dev",
+            ),
             "rocblas": ("rocblas-dev",),
             "hipblaslt": ("hipblaslt-dev",),
             "rocsparse": ("rocsparse-dev",),
@@ -1798,6 +1804,9 @@ def prepare_rocm_build_toolchain(
     os_release = Path("/etc/os-release")
     if os_release.is_file():
         os_contract = os_release.read_text(encoding="utf-8")
+    # A pre-provisioned ROCM_PATH selects the versioned user-space SDK. The
+    # default remains /opt/rocm for disposable release containers.
+    rocm_root = Path(env.get("ROCM_PATH", "/opt/rocm"))
     cache_identity = toolchain_cache_identity(
         "rocm-sdk",
         {
@@ -1807,11 +1816,15 @@ def prepare_rocm_build_toolchain(
             "version": spec["version"],
             "components": list(spec["components"]),
             "packages": list(spec["packages"]),
+            "runtimeClosure": [
+                "libamdhip64.so",
+                "libhsa-runtime64.so.1",
+                "libhsakmt.so.1",
+            ],
             "installerUrl": spec["installer_url"],
-            "destination": "/opt/rocm",
+            "destination": str(rocm_root),
         },
     )
-    rocm_root = Path("/opt/rocm")
     rocm_ready = True
     cache_seed_required = False
     try:
