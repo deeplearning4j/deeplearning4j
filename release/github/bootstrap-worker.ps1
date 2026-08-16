@@ -44,11 +44,10 @@ $flatcPath = $flatc.FullName.Replace('\', '/')
 Add-Content -Path $env:GITHUB_ENV -Value "DL4J_FLATC_EXECUTABLE=$flatcPath"
 Write-Host "[dl4j-bootstrap] flatc=$flatcVersion path=$flatcPath"
 
-if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
-  # nvcc uses MSVC as its Windows host compiler. GitHub-hosted runners have
-  # Visual Studio installed, but its compiler environment is not active in a
-  # normal PowerShell/Git Bash step, so materialize vcvars64 for this step and
-  # persist the required variables for the later shared-worker step.
+# JavaCPP's Windows SDX builder uses MSVC's cl.exe. GitHub-hosted Windows
+# runners have Visual Studio installed, but its compiler environment is not
+# active in a normal PowerShell/Git Bash step, so materialize vcvars64 for this
+# worker and persist the required variables for the later shared-worker step.
   $vsWhereRoot = ${env:ProgramFiles(x86)}
   if (-not $vsWhereRoot) { $vsWhereRoot = $env:ProgramFiles }
   $vsWhere = Join-Path $vsWhereRoot 'Microsoft Visual Studio\Installer\vswhere.exe'
@@ -108,6 +107,7 @@ if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
   }
   Write-Host "[dl4j-bootstrap] visual-studio=$vsInstall cl=$((Get-Command cl.exe).Source)"
 
+if ($Shard -match 'cuda-12-([69])' -or $Shard -match 'zluda') {
   $cudaVersion = if ($Shard -match '12-6') { '12.6' } else { '12.9' }
   $installer = Join-Path $env:RUNNER_TEMP 'install_cuda_windows.ps1'
   Invoke-WebRequest 'https://raw.githubusercontent.com/KonduitAI/cuda-install/1bd33888dea7d372de612ec9ecc87343ec8dba4a/.github/actions/install-cuda-windows/install_cuda_windows.ps1' -OutFile $installer -UseBasicParsing
