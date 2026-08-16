@@ -1804,9 +1804,10 @@ def prepare_rocm_build_toolchain(
     os_release = Path("/etc/os-release")
     if os_release.is_file():
         os_contract = os_release.read_text(encoding="utf-8")
-    # A pre-provisioned ROCM_PATH selects the versioned user-space SDK. The
-    # default remains /opt/rocm for disposable release containers.
-    rocm_root = Path(env.get("ROCM_PATH", "/opt/rocm"))
+    # ROCM_PATH is the explicit version selector. When it is not supplied,
+    # use the versioned prefix created by the ROCm repository installer rather
+    # than assuming that the installer also creates an /opt/rocm symlink.
+    rocm_root = Path(env.get("ROCM_PATH", f"/opt/rocm-{spec['version']}"))
     cache_identity = toolchain_cache_identity(
         "rocm-sdk",
         {

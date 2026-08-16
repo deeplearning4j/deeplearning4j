@@ -2307,7 +2307,7 @@ class ReleaseValidationTest(unittest.TestCase):
         }
         with patch.object(
                 build_platform, "attest_rocm_build_toolchain",
-                side_effect=[RuntimeError("missing"), None]), patch.object(
+                side_effect=[RuntimeError("missing"), None]) as attest, patch.object(
                 build_platform, "download_with_retry") as download, patch.object(
                 build_platform, "run") as run_command, patch.object(
                 build_platform.platform, "system", return_value="Linux"), patch.object(
@@ -2320,6 +2320,10 @@ class ReleaseValidationTest(unittest.TestCase):
             environment = {}
             build_platform.prepare_rocm_build_toolchain(build, environment)
         download.assert_called_once()
+        self.assertEqual(
+            Path("/opt/rocm-7.2.4"),
+            attest.call_args_list[0].kwargs["root"],
+        )
         self.assertEqual("/usr/bin/ld.lld", environment["DL4J_ZLUDA_LINKER"])
         self.assertEqual(
             "/usr/bin/patchelf", environment["DL4J_ZLUDA_PATCHELF"]
