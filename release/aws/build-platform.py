@@ -317,7 +317,9 @@ def restore_remote_dependency_cache(
     def download_object(object_name: str, destination: Path, description: str) -> None:
         if public_base_url:
             download_with_retry(
-                f"{public_base_url}/{object_name.lstrip('/')}",
+                append_azure_sas(
+                    f"{public_base_url}/{object_name.lstrip('/')}", env
+                ),
                 destination,
                 description,
             )
@@ -1431,6 +1433,26 @@ def download_with_retry(url: str, destination: Path, description: str) -> None:
         raise
 
 
+def append_azure_sas(url: str, env: dict[str, str]) -> str:
+    """Authenticate public dependency snapshots from GitHub with the shared SAS."""
+    connection = (
+        env.get("DL4J_AZURE_CONNECTION_STRING")
+        or env.get("SCCACHE_AZURE_CONNECTION_STRING")
+        or ""
+    )
+    sas = next(
+        (
+            part.split("=", 1)[1].lstrip("?")
+            for part in connection.split(";")
+            if part.startswith("SharedAccessSignature=")
+        ),
+        "",
+    )
+    if not sas:
+        return url
+    return url + ("&" if "?" in url else "?") + sas
+
+
 def toolchain_cache_identity(name: str, contract: dict) -> str:
     payload = json.dumps(
         {"schemaVersion": 1, "name": name, "contract": contract},
@@ -1646,6 +1668,16 @@ def attest_rocm_build_toolchain(
         "lib64/libamdhip64.so",
         "lib/x86_64-linux-gnu/libamdhip64.so",
     ))
+    hsa_runtime = _first_existing_file(rocm_root, (
+        "lib/libhsa-runtime64.so.1",
+        "lib64/libhsa-runtime64.so.1",
+        "lib/x86_64-linux-gnu/libhsa-runtime64.so.1",
+    ))
+    hsakmt_runtime = _first_existing_file(rocm_root, (
+        "lib/libhsakmt.so.1",
+        "lib64/libhsakmt.so.1",
+        "lib/x86_64-linux-gnu/libhsakmt.so.1",
+    ))
     miopen_header = rocm_root / "include/miopen/miopen.h"
     miopen_runtime = _first_existing_file(rocm_root, (
         "lib/libMIOpen.so",
@@ -1690,6 +1722,10 @@ def attest_rocm_build_toolchain(
             failures.append(f"{description} is missing at {path}")
     if hip_runtime is None:
         failures.append(f"HIP runtime library is missing below {rocm_root}")
+    if hsa_runtime is None:
+        failures.append(f"HSA runtime library is missing below {rocm_root}")
+    if hsakmt_runtime is None:
+        failures.append(f"HSAKMT runtime library is missing below {rocm_root}")
     if "rocblas" in spec["components"]:
         if not rocblas_header.is_file():
             failures.append(f"rocBLAS header is missing at {rocblas_header}")
@@ -1722,6 +1758,8 @@ def attest_rocm_build_toolchain(
         "hipHeader": hip_header,
         "hipcc": hipcc,
         "hipRuntime": hip_runtime,
+        "hsaRuntime": hsa_runtime,
+        "hsakmtRuntime": hsakmt_runtime,
         "rocblasHeader": rocblas_header,
         "rocblasRuntime": rocblas_runtime,
         "hipblasltRuntime": hipblaslt_runtime,
@@ -1736,6 +1774,7 @@ def attest_rocm_build_toolchain(
             f"rocmVersion={spec['version']} rocmBuildOnly=true "
             f"components={','.join(spec['components'])} root={rocm_root} "
             f"hipHeader={hip_header} hipRuntime={hip_runtime} "
+            f"hsaRuntime={hsa_runtime} hsakmtRuntime={hsakmt_runtime} "
             f"rocblasHeader={rocblas_header} rocblasRuntime={rocblas_runtime} "
             f"hipblasltRuntime={hipblaslt_runtime} "
             f"rocsparseRuntime={rocsparse_runtime} rocmSmiRuntime={rocm_smi_runtime} "

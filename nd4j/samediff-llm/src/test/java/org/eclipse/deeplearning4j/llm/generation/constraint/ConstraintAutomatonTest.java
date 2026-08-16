@@ -329,6 +329,35 @@ class ConstraintAutomatonTest {
     }
 
     @Test
+    void nativeToolCall_schemaPatternRejectsImpossibleStringPrefixes() {
+        Map<String, Object> label = Map.of(
+                "type", "string",
+                "pattern", "^[A-Z][A-Z0-9_]*$");
+        Map<String, Object> parameters = Map.of(
+                "type", "object",
+                "properties", Map.of(
+                        "labels", Map.of("type", "array", "items", label)),
+                "required", List.of("labels"),
+                "additionalProperties", false);
+        NativeToolCallConstraint constraint = new NativeToolCallConstraint(
+                List.of("submit_schema"),
+                Map.of("submit_schema", List.of("labels")),
+                Map.of(),
+                Map.of("submit_schema", parameters));
+
+        String valuePrefix = "<|tool_call_start|>[submit_schema(labels=[\"";
+        assertTrue(constraint.canExtend(valuePrefix, "C"),
+                "a prefix that already matches and may extend must remain selectable");
+        assertFalse(constraint.canExtend(valuePrefix, "Co"),
+                "an anchored uppercase schema must reject a lowercase continuation immediately");
+        assertFalse(constraint.canExtend(valuePrefix, "company"),
+                "an impossible lowercase prefix must be masked before the quote can dead-end");
+        assertTrue(constraint.canExtend(valuePrefix, "COMPANY"));
+        assertTrue(constraint.isAccepting(
+                valuePrefix + "COMPANY\"])]<|tool_call_end|>"));
+    }
+
+    @Test
     void nativeToolCall_schemaRejectsMalformedNestedObjectPrefixes() {
         Map<String, Object> entity = Map.of(
                 "type", "object",

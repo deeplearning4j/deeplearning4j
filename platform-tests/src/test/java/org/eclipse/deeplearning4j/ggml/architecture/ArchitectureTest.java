@@ -22,14 +22,21 @@ package org.eclipse.deeplearning4j.ggml.architecture;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.ggml.architecture.ArchitectureConfig;
 import org.nd4j.ggml.architecture.ArchitectureRegistry;
 import org.nd4j.ggml.architecture.GenericArchitecture;
 import org.nd4j.ggml.architecture.LLaMAArchitecture;
 import org.nd4j.ggml.architecture.MistralArchitecture;
 import org.nd4j.ggml.architecture.ModelArchitecture;
+import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.format.GGMLMetadata;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -213,6 +220,44 @@ class ArchitectureTest {
         // Verify we can get both known architectures
         assertNotNull(ArchitectureRegistry.getArchitecture("llama"));
         assertNotNull(ArchitectureRegistry.getArchitecture("generic"));
+    }
+
+    @Test
+    @DisplayName("Tied LLaMA output projection reuses the embedding graph variable")
+    void testTiedOutputProjectionReusesEmbeddingVariable() {
+        LLaMAArchitecture arch = new LLaMAArchitecture() {
+            @Override
+            public ArchitectureConfig getConfig(GGMLMetadata metadata) {
+                return ArchitectureConfig.builder()
+                        .numLayers(0)
+                        .numMtpLayers(0)
+                        .hiddenSize(4)
+                        .intermediateSize(8)
+                        .numAttentionHeads(1)
+                        .numKVHeads(1)
+                        .vocabSize(16)
+                        .contextLength(8)
+                        .headDim(4)
+                        .build();
+            }
+        };
+        INDArray tiedWeight = Nd4j.linspace(DataType.FLOAT, 0.0, 0.1, 64).reshape(16, 4);
+        Map<String, INDArray> weights = new HashMap<>();
+        weights.put("token_embd.weight", tiedWeight);
+
+        SameDiff graph = arch.buildGraph(
+                GGMLMetadata.builder().architecture("llama").build(),
+                weights,
+                ConversionOptions.builder()
+                        .targetDataType(DataType.FLOAT)
+                        .lastPositionLogitsOnly(true)
+                        .build());
+
+        assertTrue(graph.hasVariable("model.embed_tokens.weight"));
+        assertArrayEquals(tiedWeight.shape(), graph.getVariable("model.embed_tokens.weight").getArr().shape());
+        assertFalse(graph.hasVariable("lm_head.weight"),
+                "Tied weights must not serialize the vocabulary table under a second variable");
+        assertTrue(graph.hasVariable("lm_logits_last"));
     }
 
     @Test

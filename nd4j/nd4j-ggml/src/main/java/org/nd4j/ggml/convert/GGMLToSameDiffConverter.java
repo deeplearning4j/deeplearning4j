@@ -34,6 +34,7 @@ import org.nd4j.ggml.quantization.DequantizerFactory;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -72,6 +73,34 @@ public class GGMLToSameDiffConverter {
         ModelSizeInfo sizeInfo = estimateModelSize(ggmlFile);
         try (ModelLoadingContext context = ModelLoadingContext.builder()
                 .sizeInfo(sizeInfo)
+                .asyncEnabled(true)
+                .useBatchedNativeTransfer(true)
+                .build()) {
+            return convert(ggmlFile, context);
+        }
+    }
+
+    /**
+     * Convert a GGML/GGUF file to SameDiff graph on an explicitly selected device.
+     *
+     * <p>This overload is required by pooled model servers: their execution lane owns a stable
+     * device affinity, so model loading must not independently choose a different "best" device.
+     * The caller remains responsible for selecting the device dynamically.</p>
+     *
+     * @param ggmlFile the GGML/GGUF file to convert
+     * @param targetDevice the device that must own imported model weights
+     * @return the converted SameDiff graph
+     * @throws GGMLImportException if conversion fails
+     */
+    public SameDiff convert(File ggmlFile, DeviceDescriptor targetDevice)
+            throws GGMLImportException {
+        if (targetDevice == null) {
+            throw new IllegalArgumentException("targetDevice must not be null");
+        }
+        ModelSizeInfo sizeInfo = estimateModelSize(ggmlFile);
+        try (ModelLoadingContext context = ModelLoadingContext.builder()
+                .sizeInfo(sizeInfo)
+                .targetDevice(targetDevice)
                 .asyncEnabled(true)
                 .useBatchedNativeTransfer(true)
                 .build()) {
@@ -289,6 +318,7 @@ public class GGMLToSameDiffConverter {
         Map<String, INDArray> weights = new LinkedHashMap<>();
         int totalTensors = tensorInfos.size();
         int loadedCount = 0;
+        boolean compactTokenEmbedding = shouldUseCompactTokenEmbedding(tensorInfos);
 
         log.info("Loading {} tensors from GGUF file (batch GPU transfer: {})",
                 totalTensors, context != null ? "enabled" : "disabled");
@@ -301,7 +331,8 @@ public class GGMLToSameDiffConverter {
                     // Quantized tensors need dequantization or runtime-packed matmul storage.
                     byte[] data = reader.readTensorData(info);
                     boolean runtimePackedMatmul = shouldUseRuntimeQuantizedMatmul(info);
-                    array = convertTensorData(data, info, runtimePackedMatmul);
+                    array = convertTensorData(data, info, runtimePackedMatmul,
+                            getTargetDataType(info, compactTokenEmbedding));
                     // For RUNTIME_QUANTIZED_MATMUL: store companion metadata so the
                     // architecture builder can emit ggml_qmatmul instead of normal mmul.
                     // Key: tensorName + ".__q__"  Value: long[3] = [ggmlQuantType, N, K]
@@ -318,7 +349,8 @@ public class GGMLToSameDiffConverter {
                 } else {
                     // Non-quantized tensors: use direct ByteBuffer to avoid heap copies
                     ByteBuffer directData = reader.readTensorDataDirect(info);
-                    array = convertTensorDataDirect(directData, info);
+                    array = convertTensorDataDirect(directData, info,
+                            getTargetDataType(info, compactTokenEmbedding));
                 }
                 weights.put(info.getName(), array);
 
@@ -436,6 +468,7 @@ public class GGMLToSameDiffConverter {
         Map<String, INDArray> weights = new LinkedHashMap<>();
         int totalTensors = tensorInfos.size();
         int loadedCount = 0;
+        boolean compactTokenEmbedding = shouldUseCompactTokenEmbedding(tensorInfos);
 
         log.info("Loading {} tensors from GGML file (batch GPU transfer: {})",
                 totalTensors, context != null ? "enabled" : "disabled");
@@ -444,7 +477,8 @@ public class GGMLToSameDiffConverter {
             validateRuntimeWeightPolicy(info);
             byte[] data = reader.readTensorData(info);
             boolean runtimePackedMatmul = shouldUseRuntimeQuantizedMatmul(info);
-            INDArray array = convertTensorData(data, info, runtimePackedMatmul);
+            INDArray array = convertTensorData(data, info, runtimePackedMatmul,
+                    getTargetDataType(info, compactTokenEmbedding));
             if (runtimePackedMatmul) {
                 long[] shape = reverseShape(info.getShape());
                 long N = shape[0];
@@ -471,7 +505,8 @@ public class GGMLToSameDiffConverter {
         return weights;
     }
 
-    private INDArray convertTensorData(byte[] data, GGMLTensorInfo info, boolean allowRuntimePackedMatmul) {
+    private INDArray convertTensorData(byte[] data, GGMLTensorInfo info,
+                                       boolean allowRuntimePackedMatmul, DataType targetType) {
         GGMLDataType dataType = info.getDataType();
         long[] ggufShape = info.getShape();
 
@@ -484,9 +519,9 @@ public class GGMLToSameDiffConverter {
         long[] shape = reverseShape(ggufShape);
 
         if (dataType.isQuantized()) {
-            return handleQuantizedTensor(data, dataType, shape, allowRuntimePackedMatmul);
+            return handleQuantizedTensor(data, dataType, shape, allowRuntimePackedMatmul, targetType);
         } else {
-            return handleNonQuantizedTensor(data, dataType, shape);
+            return handleNonQuantizedTensor(data, dataType, shape, targetType);
         }
     }
 
@@ -506,8 +541,7 @@ public class GGMLToSameDiffConverter {
     }
 
     private INDArray handleQuantizedTensor(byte[] data, GGMLDataType dataType, long[] shape,
-                                          boolean allowRuntimePackedMatmul) {
-        DataType targetType = getTargetDataType();
+                                          boolean allowRuntimePackedMatmul, DataType targetType) {
 
         switch (options.getQuantizationMode()) {
             case PRESERVE_QUANTIZATION:
@@ -547,7 +581,8 @@ public class GGMLToSameDiffConverter {
      * Convert tensor data from a direct ByteBuffer, avoiding the intermediate byte[] heap copy.
      * Used for non-quantized tensors where the raw bytes can be used directly.
      */
-    private INDArray convertTensorDataDirect(ByteBuffer directData, GGMLTensorInfo info) {
+    private INDArray convertTensorDataDirect(ByteBuffer directData, GGMLTensorInfo info,
+                                             DataType targetType) {
         long[] shape = reverseShape(info.getShape());
         GGMLDataType dataType = info.getDataType();
         DataType nd4jType = dataType.getNd4jType();
@@ -558,8 +593,6 @@ public class GGMLToSameDiffConverter {
         long numElements = 1;
         for (long dim : shape) numElements *= dim;
         if (numElements < 1) numElements = 1;
-
-        DataType targetType = getTargetDataType();
 
         // directData is already a direct ByteBuffer in little-endian order.
         // Create ND4J DataBuffer directly from it — no heap copy needed.
@@ -573,7 +606,8 @@ public class GGMLToSameDiffConverter {
         return castFloatingTarget(array, nd4jType, targetType);
     }
 
-    private INDArray handleNonQuantizedTensor(byte[] data, GGMLDataType dataType, long[] shape) {
+    private INDArray handleNonQuantizedTensor(byte[] data, GGMLDataType dataType, long[] shape,
+                                              DataType targetType) {
         DataType nd4jType = dataType.getNd4jType();
         if (nd4jType == null) {
             throw new IllegalStateException("No ND4J type mapping for: " + dataType);
@@ -595,8 +629,6 @@ public class GGMLToSameDiffConverter {
         // Cast to target dtype if needed — non-quantized tensors (e.g. F16 norm weights
         // in Q8_0 files) must match the target dtype to avoid mixed-precision errors
         // in the SameDiff graph (e.g. FLOAT / HALF mismatches in RMSNorm).
-        DataType targetType = getTargetDataType();
-
         switch (nd4jType) {
             case FLOAT: {
                 float[] floatData = new float[Math.toIntExact(numElements)];
@@ -643,6 +675,33 @@ public class GGMLToSameDiffConverter {
             return array.castTo(targetType);
         }
         return array;
+    }
+
+    private boolean shouldUseCompactTokenEmbedding(List<GGMLTensorInfo> tensorInfos) {
+        DataType embeddingDataType = options.getEmbeddingDataType();
+        if (embeddingDataType == null) {
+            return false;
+        }
+        if (!embeddingDataType.isFPType()) {
+            throw new IllegalArgumentException("embeddingDataType must be floating point, but was "
+                    + embeddingDataType);
+        }
+
+        // A tied input/output table must retain the graph compute dtype: otherwise the final
+        // projection would cast the entire vocabulary table back to that dtype at runtime.
+        boolean hasDedicatedOutputProjection = tensorInfos.stream()
+                .anyMatch(info -> "output.weight".equals(info.getName()));
+        if (hasDedicatedOutputProjection) {
+            log.info("Storing token_embd.weight as {} and casting only gathered rows", embeddingDataType);
+        }
+        return hasDedicatedOutputProjection;
+    }
+
+    private DataType getTargetDataType(GGMLTensorInfo info, boolean compactTokenEmbedding) {
+        if (compactTokenEmbedding && "token_embd.weight".equals(info.getName())) {
+            return options.getEmbeddingDataType();
+        }
+        return getTargetDataType();
     }
 
     private DataType getTargetDataType() {

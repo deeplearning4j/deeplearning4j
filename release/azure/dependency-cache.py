@@ -17,6 +17,7 @@ from pathlib import Path, PurePosixPath
 import posixpath
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 from typing import Any
@@ -66,7 +67,7 @@ def cloud_command(
     missing_exit_code: int | None = None,
 ) -> list[str]:
     command = [
-        os.environ.get("PYTHON", "python3"),
+        os.environ.get("PYTHON") or sys.executable,
         str(cloud_io),
         action,
         "--bucket",

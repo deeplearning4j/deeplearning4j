@@ -25,6 +25,20 @@ if(_windows_sdx_hip_sdk_contract EQUAL -1)
     message(FATAL_ERROR
         "Windows ZLUDA SDX must not require the Linux libamdhip64 packaging contract")
 endif()
+string(FIND "${_sdx_configuration}"
+    "(NOT WIN32 AND NOT ROCM_HSA_RUNTIME_LIBRARY)"
+    _windows_sdx_hsa_sdk_contract)
+if(_windows_sdx_hsa_sdk_contract EQUAL -1)
+    message(FATAL_ERROR
+        "Windows ZLUDA SDX must not require the Linux libhsa-runtime64 packaging contract")
+endif()
+string(FIND "${_sdx_configuration}"
+    "(NOT WIN32 AND NOT ROCM_HSAKMT_RUNTIME_LIBRARY)"
+    _windows_sdx_hsakmt_sdk_contract)
+if(_windows_sdx_hsakmt_sdk_contract EQUAL -1)
+    message(FATAL_ERROR
+        "Windows ZLUDA SDX must not require the Linux libhsakmt packaging contract")
+endif()
 
 set(_fixture "${CMAKE_CURRENT_BINARY_DIR}/zluda-windows-runtime-contract")
 file(REMOVE_RECURSE "${_fixture}")

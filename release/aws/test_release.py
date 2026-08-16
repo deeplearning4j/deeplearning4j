@@ -1277,13 +1277,14 @@ class ReleaseValidationTest(unittest.TestCase):
                     self.assertEqual(expectation["profiles"], build["profiles"])
                     self.assertEqual(expectation["modules"], set(build["modules"]))
                     self.assertEqual([{
-                        "name": "zluda",
+                        "name": "cuda-12.9",
                         "classifierSuffix": "-cuda-12.9-zluda",
                         "platformExtension": "-zluda",
                     }], build["variants"])
                     self.assertIn("-Dlibnd4j.zluda=AMD", build["mavenArgs"])
                     self.assertNotIn("-Dlibnd4j.zluda=rocm6", build["mavenArgs"])
                     self.assertEqual(expectation["artifactIds"], set(rules["artifactIds"]))
+                    self.assertEqual("nd4j-zluda-12.9", rules.get("classifierPrimaryArtifact"))
                     self.assertEqual(
                         [f"{platform}-zluda"],
                         shard["artifactRules"]["classifierTokens"],
@@ -2246,6 +2247,8 @@ class ReleaseValidationTest(unittest.TestCase):
                 root / "lib/librocm_smi64.so",
                 root / "include/miopen/miopen.h",
                 root / "lib/libMIOpen.so",
+                root / "lib/libhsa-runtime64.so.1",
+                root / "lib/libhsakmt.so.1",
             )
             for path in files:
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -2260,10 +2263,24 @@ class ReleaseValidationTest(unittest.TestCase):
                     build, environment, root=root
                 )
             self.assertEqual(files[1], attested["hipHeader"])
+            self.assertEqual(files[11], attested["hsaRuntime"])
+            self.assertEqual(files[12], attested["hsakmtRuntime"])
             self.assertEqual(str(root), environment["ROCM_PATH"])
             self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_ROCM"])
             self.assertEqual("1", environment["DL4J_ZLUDA_REQUIRE_MIOPEN"])
             self.assertIn("hardwareProbe=skipped", output.getvalue())
+            files[11].unlink()
+            with self.assertRaisesRegex(RuntimeError, "HSA runtime"):
+                build_platform.attest_rocm_build_toolchain(
+                    build, environment, root=root
+                )
+            files[11].write_text("sdk", encoding="utf-8")
+            files[12].unlink()
+            with self.assertRaisesRegex(RuntimeError, "HSAKMT runtime"):
+                build_platform.attest_rocm_build_toolchain(
+                    build, environment, root=root
+                )
+            files[12].write_text("sdk", encoding="utf-8")
             files[9].unlink()
             with self.assertRaisesRegex(RuntimeError, "MIOpen header"):
                 build_platform.attest_rocm_build_toolchain(

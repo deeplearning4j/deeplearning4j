@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.ggml.convert.ConversionOptions;
 import org.nd4j.ggml.convert.GGMLToSameDiffConverter;
 import org.nd4j.ggml.format.*;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
 
 import java.io.File;
 import java.io.IOException;
@@ -127,6 +128,27 @@ public class GGMLModelImport {
             throws GGMLImportException {
         GGMLMetadata metadata = inspectModel(file);
         SameDiff model = importModel(file, options);
+        return new ImportedModel(model, metadata);
+    }
+
+    /**
+     * Import a model and its metadata on an explicitly selected device.
+     *
+     * <p>Pooled model servers use this overload to keep model weight residency aligned with the
+     * execution lane's device affinity instead of running a second device-selection heuristic.</p>
+     *
+     * @param file the GGML/GGUF file
+     * @param options conversion options
+     * @param targetDevice the device that must own imported model weights
+     * @return the converted SameDiff graph and its source metadata
+     * @throws GGMLImportException if inspection or import fails
+     */
+    public static ImportedModel importModelWithMetadata(
+            File file, ConversionOptions options, DeviceDescriptor targetDevice)
+            throws GGMLImportException {
+        GGMLMetadata metadata = inspectModel(file);
+        GGMLToSameDiffConverter converter = new GGMLToSameDiffConverter(options);
+        SameDiff model = converter.convert(file, targetDevice);
         return new ImportedModel(model, metadata);
     }
 

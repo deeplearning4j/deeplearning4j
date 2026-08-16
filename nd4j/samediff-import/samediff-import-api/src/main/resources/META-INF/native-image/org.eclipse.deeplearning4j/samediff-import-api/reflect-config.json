@@ -748,5 +748,85 @@
     "allDeclaredConstructors": true,
     "allPublicMethods": true,
     "allDeclaredFields": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.AntClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.EquinoxClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.EquinoxContextFinderClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.FelixClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.JBossClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.WeblogicClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.WebsphereLibertyClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.WebsphereTraditionalClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.OSGiDefaultClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.SpringBootRestartClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.TomcatWebappClassLoaderBaseHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.CxfContainerClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.PlexusClassWorldsClassRealmClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.QuarkusClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.UnoOneJarClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.ParentLastDelegationOrderTestClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.JPMSClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.URLClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.ClassGraphClassLoaderHandler",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "nonapi.io.github.classgraph.classloaderhandler.FallbackClassLoaderHandler",
+    "allDeclaredMethods": true
   }
 ]

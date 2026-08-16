@@ -181,13 +181,21 @@ function(configure_sdx_triton_linking main_target_name)
 
     if(SD_ZLUDA)
         if(NOT ZLUDA_RUNTIME_LIBRARIES OR
-           (NOT WIN32 AND NOT ROCM_HIP_RUNTIME_LIBRARY))
+           (NOT WIN32 AND NOT ROCM_HIP_RUNTIME_LIBRARY) OR
+           (NOT WIN32 AND NOT ROCM_HSA_RUNTIME_LIBRARY) OR
+           (NOT WIN32 AND NOT ROCM_HSAKMT_RUNTIME_LIBRARY))
             message(FATAL_ERROR
                 "ZLUDA SDX target requires the platform runtime closure used by nd4jcuda")
         endif()
         list(APPEND _sdx_shared_runtimes ${ZLUDA_RUNTIME_LIBRARIES})
         if(ROCM_HIP_RUNTIME_LIBRARY)
             list(APPEND _sdx_shared_runtimes "${ROCM_HIP_RUNTIME_LIBRARY}")
+        endif()
+        if(ROCM_HSA_RUNTIME_LIBRARY)
+            list(APPEND _sdx_shared_runtimes "${ROCM_HSA_RUNTIME_LIBRARY}")
+        endif()
+        if(ROCM_HSAKMT_RUNTIME_LIBRARY)
+            list(APPEND _sdx_shared_runtimes "${ROCM_HSAKMT_RUNTIME_LIBRARY}")
         endif()
         if(HAVE_MIOPEN AND MIOPEN_LIBRARY)
             list(APPEND _sdx_shared_runtimes "${MIOPEN_LIBRARY}")

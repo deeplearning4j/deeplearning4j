@@ -21,6 +21,7 @@
 #include <dsp/NativeOpsDsp.h>
 #include <graph/SdzReader.h>
 #include <graph/DspDeviceDispatch.h>
+#include <graph/DspDiagnostics.h>
 #include <graph/NativeDynamicShapePlan.h>
 
 #include <array/DataTypeUtils.h>
@@ -285,6 +286,46 @@ inline void setContextError(sdx_context* context, const std::string& error) {
       setLastError(context->model->runtime, error);
     }
   }
+}
+
+std::string describePublicInput(
+    const sdx_context* context,
+    int publicIndex) {
+  std::string description = "public_input=" + std::to_string(publicIndex);
+  if (context == nullptr || publicIndex < 0 ||
+      publicIndex >= context->num_inputs ||
+      static_cast<size_t>(publicIndex) >= context->public_to_plan_input.size()) {
+    return description;
+  }
+
+  const int planIndex =
+      context->public_to_plan_input[static_cast<size_t>(publicIndex)];
+  description += " plan_input=" + std::to_string(planIndex);
+  const char* inputName =
+      getPlanExternalInputName(context->plan_handle, planIndex);
+  description += " name=";
+  description += inputName == nullptr ? "<unnamed>" : inputName;
+
+  auto* plan = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(
+      context->plan_handle);
+  if (plan == nullptr) return description;
+  const auto* slots = plan->getSlots();
+  const int numSlots = plan->getNumSlots();
+  const int externalSource = -(planIndex + 1);
+  int consumers = 0;
+  for (int slotIndex = 0; slotIndex < numSlots; ++slotIndex) {
+    const auto& slot = slots[slotIndex];
+    for (int opInput = 0; opInput < slot.wiring.numInputs; ++opInput) {
+      if (slot.wiring.inputSourceIndices[opInput] != externalSource) continue;
+      description += consumers++ == 0 ? " consumers=[" : ",";
+      description += "slot=" + std::to_string(slotIndex);
+      description += ":op=";
+      description += slot.ident.opName.empty() ? "<unnamed>" : slot.ident.opName;
+      description += ":input=" + std::to_string(opInput);
+    }
+  }
+  description += consumers == 0 ? " consumers=[]" : "]";
+  return description;
 }
 
 inline bool isValidBackend(int backend) {
@@ -1631,7 +1672,12 @@ static sdx_status_t runInternal(
     std::string error;
     auto status = wrapTensorView(inputs[i], &wrapped, &error);
     if (status != SDX_STATUS_OK) {
-      setContextError(context, "Input tensor[" + std::to_string(i) + "] invalid: " + error);
+      const std::string inputDescription = describePublicInput(context, i);
+      const std::string message =
+          "Input tensor[" + std::to_string(i) + "] " + inputDescription +
+          " invalid: " + error;
+      DSP_DIAG(EXECUTE, "SDX_INPUT_BIND_FAILURE %s", message.c_str());
+      setContextError(context, message);
       return status;
     }
     context->input_wrappers[idx] = std::move(wrapped);

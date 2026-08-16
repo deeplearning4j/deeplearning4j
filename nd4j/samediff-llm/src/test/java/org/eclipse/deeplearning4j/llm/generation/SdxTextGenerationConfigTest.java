@@ -79,7 +79,8 @@ class SdxTextGenerationConfigTest {
         assertEquals(2, config.path("formatVersion").asInt());
         assertEquals("causal-lm-in-graph-state-v2", config.path("profile").asText());
         assertEquals("lm_logits_last", config.path("io").path("logits").asText());
-        assertEquals("lm_logits", config.path("io").path("prefillLogits").asText());
+        assertTrue(config.path("io").path("prefillLogits").isMissingNode(),
+                "prefill must reuse last-position logits instead of materializing [B,S,V]");
         assertEquals("k_rope_0",
                 config.path("io").path("prefillKeyOutputs").get(0).asText());
         assertEquals("v_heads_0",

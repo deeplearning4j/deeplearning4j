@@ -74,7 +74,9 @@ public class CudaDeviceContextProvider implements DeviceContextProvider {
         Integer previousDevice = affinityMap.get(threadId);
         int prevDev = (previousDevice != null) ? previousDevice : -1;
 
-        // Update affinity map FIRST so getDeviceForCurrentThread() returns consistent values
+        // Publish the intended affinity before native initialization so callbacks observe the
+        // target device. If native switching fails, the catch block reconciles this map with the
+        // actual CUDA device before the failure escapes.
         affinityMap.put(threadId, deviceId);
 
         if (prevDev != deviceId) {
@@ -82,15 +84,57 @@ public class CudaDeviceContextProvider implements DeviceContextProvider {
         }
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        try {
+            // Actually set device (triggers C++ ContextBuffers::release() + lazy reinit)
+            nativeOps.setDevice(deviceId);
 
-        // Actually set device (triggers C++ ContextBuffers::release() + lazy reinit)
-        nativeOps.setDevice(deviceId);
+            // Reset cached CudaContext ThreadLocal so it's recreated with fresh streams
+            AtomicAllocator.getInstance().getMemoryHandler().resetCachedContext();
 
-        // Reset cached CudaContext ThreadLocal so it's recreated with fresh streams
-        AtomicAllocator.getInstance().getMemoryHandler().resetCachedContext();
+            // Return fresh context with valid stream pointers
+            return buildContext();
+        } catch (RuntimeException | Error failure) {
+            reconcileAffinityAfterFailedSwitch(
+                    threadId, previousDevice, deviceId, nativeOps, failure);
+            throw failure;
+        }
+    }
 
-        // Return fresh context with valid stream pointers
-        return buildContext();
+    /**
+     * Keep Java affinity state aligned with CUDA even when a switch fails part way through.
+     * Native {@code setDevice} may fail before changing devices or a later context reset may fail
+     * after it changed devices, so restoring the old map value unconditionally is also incorrect.
+     */
+    private void reconcileAffinityAfterFailedSwitch(
+            long threadId,
+            Integer previousDevice,
+            int requestedDevice,
+            NativeOps nativeOps,
+            Throwable switchFailure) {
+        try {
+            int actualDevice = nativeOps.getDevice();
+            if (actualDevice >= 0) {
+                affinityMap.put(threadId, actualDevice);
+            } else if (previousDevice != null) {
+                affinityMap.put(threadId, previousDevice);
+            } else {
+                affinityMap.remove(threadId);
+            }
+            log.warn(
+                    "CUDA device switch to {} failed; reconciled thread {} affinity to native device {}",
+                    requestedDevice, threadId, actualDevice);
+        } catch (RuntimeException | Error queryFailure) {
+            if (previousDevice != null) {
+                affinityMap.put(threadId, previousDevice);
+            } else {
+                affinityMap.remove(threadId);
+            }
+            switchFailure.addSuppressed(queryFailure);
+            log.warn(
+                    "CUDA device switch to {} failed and native device could not be queried; "
+                            + "restored thread {} affinity to {}",
+                    requestedDevice, threadId, previousDevice);
+        }
     }
 
     @Override

@@ -159,6 +159,11 @@ runs:
         INPUT_BUILD_AOT: ${{ inputs.build-aot }}
         INPUT_AOT_ALL_SPINS: ${{ inputs.aot-all-spins }}
         SCCACHE_AZURE_CONNECTION_STRING: ${{ inputs.azure-cache-connection-string }}
+        DL4J_AZURE_CONNECTION_STRING: ${{ inputs.azure-cache-connection-string }}
+        # The shared build driver uses these checked-in transports for the same
+        # Azure dependency/toolchain archives that seed on Azure workers.
+        DL4J_DEPENDENCY_CACHE_HELPER: ${{ github.workspace }}/release/azure/dependency-cache.py
+        DL4J_CLOUD_IO: ${{ github.workspace }}/release/azure/cloud-io.py
       run: |
         set -Eeuo pipefail
         artifact_root="${GITHUB_WORKSPACE}/.release-worker/${INPUT_SHARD}/${INPUT_VARIANT}"

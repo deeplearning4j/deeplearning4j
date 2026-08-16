@@ -568,6 +568,21 @@ def _selector_parts(selector: str) -> tuple[str, str | None]:
     return tuple(selector.rsplit("--", 1))  # type: ignore[return-value]
 
 
+def _canonical_variant_name(shard: dict[str, Any], variant: str | None) -> str | None:
+    """Map the legacy ZLUDA label to the CUDA-versioned plan variant."""
+    if variant != "zluda":
+        return variant
+    build = shard.get("build", {})
+    if not build.get("zludaVersion"):
+        return variant
+    names = [
+        str(item.get("name"))
+        for item in build.get("variants", [])
+        if str(item.get("name")) != "zluda"
+    ]
+    return names[0] if len(names) == 1 else variant
+
+
 def selected_executions(
     plan: dict[str, Any],
     selectors: list[str] | None = None,
@@ -589,6 +604,7 @@ def selected_executions(
             if parent not in by_id:
                 raise ValueError(f"unknown shard selector: {selector}")
             if variant is not None:
+                variant = _canonical_variant_name(by_id[parent], variant)
                 names = {
                     item["name"] for item in by_id[parent]["build"]["variants"]
                 }
@@ -624,6 +640,7 @@ def selected_executions(
         if parent not in by_id:
             raise ValueError(f"unknown excluded shard: {value}")
         if variant:
+            variant = _canonical_variant_name(by_id[parent], variant)
             names = {item["name"] for item in by_id[parent]["build"]["variants"]}
             if variant not in names:
                 raise ValueError(f"unknown excluded variant: {value}")
@@ -653,6 +670,7 @@ def matrix_coverage(plan: dict[str, Any], shard_ids: Iterable[str]) -> set[str]:
         shard = by_id.get(parent)
         if not shard:
             continue
+        variant = _canonical_variant_name(shard, variant)
         if variant is None:
             covered.update(
                 f"{parent}--{item['name']}" for item in shard["build"]["variants"]
@@ -724,7 +742,14 @@ def maven_repository_matrix_coverage(
                 ):
                     covered.add(f"{shard['id']}--{variant['name']}")
                 continue
-            primary_artifact = classifier_artifacts[0]
+            primary_artifact = str(
+                rules.get("classifierPrimaryArtifact") or classifier_artifacts[0]
+            )
+            if primary_artifact not in classifier_artifacts:
+                raise ValueError(
+                    f"classifierPrimaryArtifact {primary_artifact!r} is not in artifactIds "
+                    f"for shard {shard['id']!r}"
+                )
             classifier_suffix = variant.get("classifierSuffix")
             if classifier_suffix is None:
                 classifier_suffix = variant.get(
@@ -737,6 +762,14 @@ def maven_repository_matrix_coverage(
             # ``-compile``, or ``-zluda``).  Accept the historical spelling
             # too, but make the actual published Maven2 layout authoritative.
             classifier_suffixes = {classifier_suffix}
+            # Some plans use classifierSuffix for the internal selector while
+            # platformExtension is the actual Maven classifier (ZLUDA is the
+            # current example: selector `-cuda-12.9-zluda` vs published
+            # `-zluda`). Account for both spellings, preferring the
+            # platform-specific artifact that is actually present.
+            platform_extension = variant.get("platformExtension")
+            if platform_extension is not None:
+                classifier_suffixes.add(str(platform_extension))
             primary_backend = str(primary_artifact).removeprefix("nd4j-")
             backend_suffix = f"-{primary_backend}"
             if primary_backend and classifier_suffix.startswith(backend_suffix):
@@ -7184,7 +7217,10 @@ def attested_shard_variants(
         raw = shard_manifest["variants"]
         if not isinstance(raw, list) or any(not isinstance(item, str) for item in raw):
             raise RuntimeError("shard manifest variants must be a string list")
-        declared = set(raw)
+        declared = {
+            _canonical_variant_name(planned, item) or item
+            for item in raw
+        }
         if len(declared) != len(raw):
             raise RuntimeError("shard manifest variants contain duplicates")
     file_names = {

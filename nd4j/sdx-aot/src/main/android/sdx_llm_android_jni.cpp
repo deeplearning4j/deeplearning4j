@@ -290,6 +290,23 @@ Java_ai_kompile_chat_local_android_model_SdxAndroidLlmNative_nativeParseChatResu
 }
 
 extern "C" JNIEXPORT jint JNICALL
+Java_ai_kompile_chat_local_android_model_SdxAndroidLlmNative_nativeLastResultJson(
+        JNIEnv* env, jclass, jlong runtime, jlong model, jlongArray out_json) {
+    if (!prepare_output(env, out_json)) {
+        return SDX_LLM_STATUS_INVALID_ARGUMENT;
+    }
+
+    char* output = nullptr;
+    const sdx_llm_status_t status = sdxLlmLastResultJson(
+            from_handle<sdx_llm_runtime_t>(runtime),
+            from_handle<sdx_llm_model_t>(model), &output);
+    if (!env->ExceptionCheck()) {
+        publish_output(env, out_json, output);
+    }
+    return status;
+}
+
+extern "C" JNIEXPORT jint JNICALL
 Java_ai_kompile_chat_local_android_model_SdxAndroidLlmNative_nativeGenerateStreaming(
         JNIEnv* env, jclass, jlong runtime, jlong model, jbyteArray prompt,
         jbyteArray options_json, jobject on_chunk, jobject should_cancel,

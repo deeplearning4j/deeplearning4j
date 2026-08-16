@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -44,7 +45,7 @@ class Qwen35DesktopExecutionGateTest {
     private static final String PROMPT_PROPERTY = "sdx.qwen.promptTokenIds";
 
     @Test
-    void exactQwenBundleGeneratesFirstTokenOnStrictOpenVinoWithoutFallback()
+    void exactQwenBundleGeneratesPrefillAndWarmDecodeTokensWithoutFallback()
             throws Exception {
         String ggufValue = System.getProperty(MODEL_PROPERTY);
         Path gguf = ggufValue == null || ggufValue.trim().isEmpty()
@@ -80,8 +81,8 @@ class Qwen35DesktopExecutionGateTest {
              SdxTextSession session = loaded.createTextSession()) {
             SdxTextSession.GenerationResult result = session.generate(
                     promptTokenIds,
-                    new SdxTextSession.GenerationOptions(1)
-                            .minNewTokens(1)
+                    new SdxTextSession.GenerationOptions(2)
+                            .minNewTokens(2)
                             .temperature(0.0)
                             .topK(0)
                             .topP(1.0),
@@ -107,7 +108,8 @@ class Qwen35DesktopExecutionGateTest {
                     report.executionCount(),
                     Arrays.toString(result.tokenIds()));
 
-            assertEquals(1, result.tokenCount(), "The desktop gate must emit a first token");
+            assertEquals(2, result.tokenCount(),
+                    "The desktop gate must cross prefill into the first decode warmup step");
             assertTrue(report.backendReportAvailable(),
                     "A requested route is not execution proof; the native report is required");
             assertEquals(SdxRuntime.SDX_BACKEND_OPENVINO, report.requestedBackend());
@@ -132,6 +134,8 @@ class Qwen35DesktopExecutionGateTest {
                 "GGUF import omitted model.embed_tokens.weight");
         assertTrue(graph.getVariable("model.embed_tokens.weight").getArr() != null,
                 "GGUF import left model.embed_tokens.weight unbound before SDZ export");
+        assertFalse(graph.hasVariable("lm_head.weight"),
+                "Qwen3.5 ties its output head to the embedding; duplicating it adds about 970 MiB");
         System.out.printf(
                 "SDX_DESKTOP_EXPORT graph_ops=%d graph_variables=%d embedding_elements=%d%n",
                 graph.getOps().size(),
@@ -144,8 +148,8 @@ class Qwen35DesktopExecutionGateTest {
                         .maxPrefillLength(128)
                         .padId(248044)
                         .eosIds(Collections.singletonList(248046))
-                        .maxNewTokens(1)
-                        .minNewTokens(1)
+                        .maxNewTokens(2)
+                        .minNewTokens(2)
                         .temperature(0.0)
                         .topK(0)
                         .topP(1.0)
@@ -163,6 +167,8 @@ class Qwen35DesktopExecutionGateTest {
                 "SDZ round trip omitted model.embed_tokens.weight");
         assertTrue(roundTrip.getVariable("model.embed_tokens.weight").getArr() != null,
                 "SDZ round trip lost model.embed_tokens.weight data");
+        assertFalse(roundTrip.hasVariable("lm_head.weight"),
+                "SDZ round trip must retain the tied output-head alias without a duplicate table");
         System.out.printf(
                 "SDX_DESKTOP_EXPORT_ROUND_TRIP graph_ops=%d graph_variables=%d "
                         + "embedding_elements=%d%n",

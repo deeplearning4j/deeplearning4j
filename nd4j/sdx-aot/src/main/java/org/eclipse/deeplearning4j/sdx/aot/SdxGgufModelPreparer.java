@@ -705,6 +705,10 @@ final class SdxGgufModelPreparer {
             canonical.put("graphImportAbi", GRAPH_IMPORT_ABI);
             canonical.put("conversionMode", conversionMode.name());
             canonical.put("requantizeType", requantizeType == null ? "NONE" : requantizeType.name());
+            // These graph-shaping fields participate in the cache identity so an older
+            // FP32-embedding/full-logits bundle cannot be reopened after this profile changes.
+            canonical.put("embeddingDataType", DataType.HALF.name());
+            canonical.put("logitsMode", "LAST_POSITION_ONLY");
             canonical.put("kvQuantFormat", kvQuantFormat);
             canonical.put("tensorBatchSize", tensorBatchSize);
             canonical.put("useMemoryMapping", useMemoryMapping);
@@ -763,6 +767,8 @@ final class SdxGgufModelPreparer {
             return ConversionOptions.builder()
                     .quantizationMode(conversionMode)
                     .targetDataType(targetDataType(conversionMode))
+                    .embeddingDataType(DataType.HALF)
+                    .lastPositionLogitsOnly(true)
                     .forTraining(false)
                     .preserveTokenizerInfo(true)
                     .kvQuantFormat(kvQuantFormat)

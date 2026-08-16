@@ -76,6 +76,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   -Dqwen.config=CUDA_GRAPHS       select specific config(s), comma-separated
  *   -Dqwen.max.tokens=50            max generation tokens
  *   -Dqwen.prompt="Hello"           custom test prompt
+ *   -Dqwen.prompt.repeat=128        repeat the prompt to exercise long-prefill recurrent state
  *   -Dqwen.tokenizer.path=/path     path to tokenizer.json (optional, extracted from GGUF if absent)
  *   -Dqwen.prefill.lastPositionLogits=true  exercise production last-position prefill optimization
  *
@@ -247,7 +248,12 @@ public class TestQwen35Pipeline {
     private static final String DEFAULT_PROMPT = "What is the capital of France?";
 
     private static String getTestPrompt() {
-        return System.getProperty("qwen.prompt", DEFAULT_PROMPT);
+        String prompt = System.getProperty("qwen.prompt", DEFAULT_PROMPT);
+        int repeat = Integer.parseInt(System.getProperty("qwen.prompt.repeat", "1"));
+        if (repeat <= 0) {
+            throw new IllegalArgumentException("qwen.prompt.repeat must be positive: " + repeat);
+        }
+        return repeat == 1 ? prompt : (prompt + " ").repeat(repeat).trim();
     }
 
     // ─── Setup ──────────────────────────────────────────────────────────
@@ -284,6 +290,7 @@ public class TestQwen35Pipeline {
         // Import GGUF → SameDiff
         t0 = System.currentTimeMillis();
         ctx.model = GGMLModelImport.importModel(downloadResult.getModelFile().getAbsolutePath());
+        assertSerializedGdnDecayCoefficient(ctx.model);
         ctx.importMs = System.currentTimeMillis() - t0;
         ctx.modelOps = ctx.model.ops().length;
         log.info("Import: {}ms, {} ops", ctx.importMs, ctx.modelOps);
@@ -301,6 +308,25 @@ public class TestQwen35Pipeline {
         log.info("Tokenizer loaded, vocab size: {}", ctx.tokenizer.getVocabSize());
 
         return ctx;
+    }
+
+    private static void assertSerializedGdnDecayCoefficient(SameDiff model) {
+        String gateName = "gdn_gate_decay_0";
+        var gateOp = model.getVariableOutputOp(gateName);
+        assertNotNull(gateOp, "Qwen GDN gate must have a producer");
+        assertEquals("multiply", gateOp.opName(),
+                "GGUF ssm_a already stores -exp(A_log); the importer must multiply it directly");
+
+        String[] gateInputs = model.getInputsForOp(gateOp);
+        assertTrue(Arrays.asList(gateInputs).contains("gdn_decay_coefficient_0"),
+                () -> "GDN gate must consume the serialized GGUF decay coefficient directly: "
+                        + Arrays.toString(gateInputs));
+
+        var coefficientOp = model.getVariableOutputOp("gdn_decay_coefficient_0");
+        assertNotNull(coefficientOp, "GGUF decay coefficient must be cast into accumulation dtype");
+        assertTrue(Arrays.asList(model.getInputsForOp(coefficientOp))
+                        .contains("model.layers.0.gdn.a"),
+                "The GDN decay coefficient must originate from the serialized ssm_a tensor");
     }
 
     // ─── Config Application ─────────────────────────────────────────────

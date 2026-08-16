@@ -140,8 +140,11 @@ public class LFM2Architecture implements ModelArchitecture {
         }
         SDVariable tokenEmbed = sd.var("model.embed_tokens.weight", tokenEmbedWeight);
 
-        // Gather embeddings: [batch, seq_len, hidden_size]
-        SDVariable hidden = sd.gather("embedded", tokenEmbed, inputIds, 0);
+        // Gather compact embedding rows before restoring the model working dtype.
+        boolean compactEmbedding = tokenEmbed.dataType() != dtype;
+        SDVariable hidden = sd.gather(
+                compactEmbedding ? "embedded_storage" : "embedded", tokenEmbed, inputIds, 0);
+        hidden = GGMLDTypePolicy.castTo(hidden, "embedded", dtype);
 
         // Build transformer layers
         List<String> outputNames = new ArrayList<>();
@@ -171,10 +174,13 @@ public class LFM2Architecture implements ModelArchitecture {
         }
         SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
 
-        // Logits in FP32 to prevent overflow.
-        QuantizedLinear.matMulFloatOutput(
-                sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
-        outputNames.add("lm_logits");
+        // General graph consumers may need every prompt-position logit. The mobile
+        // generation profile does not, so leave the full-vocabulary sequence branch out.
+        if (!options.isLastPositionLogitsOnly()) {
+            QuantizedLinear.matMulFloatOutput(
+                    sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
+            outputNames.add("lm_logits");
+        }
 
         // Project only the real final token for fixed-buffer prefill. Using shape(S)-1 here would
         // select a right-padding token whenever actualSequenceLength < S and would corrupt the

@@ -441,6 +441,20 @@ class ReleasePlanTests(unittest.TestCase):
                     "nd4j-cuda-12.9-1.0.0-SNAPSHOT-linux-x86_64.jar"
                 )
             ),
+            SimpleNamespace(
+                name=(
+                    f"{prefix}/org/eclipse/deeplearning4j/nd4j-cuda-12.9-preset/"
+                    "1.0.0-SNAPSHOT/nd4j-cuda-12.9-preset-1.0.0-SNAPSHOT-"
+                    "linux-x86_64-zluda.jar"
+                )
+            ),
+            SimpleNamespace(
+                name=(
+                    f"{prefix}/org/eclipse/deeplearning4j/nd4j-zluda-12.9/"
+                    "1.0.0-SNAPSHOT/nd4j-zluda-12.9-1.0.0-SNAPSHOT-"
+                    "linux-x86_64-zluda.jar"
+                )
+            ),
         ]
 
         covered = release.maven_repository_matrix_coverage(
@@ -453,6 +467,7 @@ class ReleasePlanTests(unittest.TestCase):
                 "linux-x86_64-cpu--avx2",
                 "windows-x86_64-cpu--base",
                 "linux-x86_64-cuda-12-9--base",
+                "linux-x86_64-zluda--cuda-12.9",
             },
             covered,
         )
@@ -5049,7 +5064,9 @@ class WorkerTransportTests(unittest.TestCase):
         self.assertIn("$MavenExe = Join-Path $MavenHome.FullName 'bin\\mvn.cmd'", source)
         self.assertIn("& $MavenExe --version", source)
         self.assertIn("Invoke-NativeChecked -Description 'Maven toolchain validation'", source)
-        self.assertIn("$RustBinCandidates = @((Join-Path $env:CARGO_HOME 'bin'))", source)
+        self.assertIn("$RustBinCandidates = @(", source)
+        self.assertIn("(Join-Path $ToolchainRoot 'bin')", source)
+        self.assertIn("(Join-Path $ToolchainRoot 'rust\\bin')", source)
         self.assertIn("$RustupExe = Join-Path $RustBin 'rustup.exe'", source)
         self.assertIn("$CargoExe = Join-Path $RustBin 'cargo.exe'", source)
         self.assertIn("& $RustupExe toolchain install stable-x86_64-pc-windows-gnu", source)

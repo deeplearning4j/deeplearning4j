@@ -178,6 +178,93 @@ function Invoke-WebRequestWithRetry {
   }
 }
 
+function Get-ToolchainIdentity {
+  param(
+    [Parameter(Mandatory=$true)][string]$Name,
+    [Parameter(Mandatory=$true)][object]$Contract
+  )
+  $Payload = [ordered]@{
+    schemaVersion = 1
+    name = $Name
+    contract = $Contract
+  } | ConvertTo-Json -Compress -Depth 20
+  $Sha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    $Bytes = [Text.Encoding]::UTF8.GetBytes($Payload)
+    return (($Sha256.ComputeHash($Bytes) | ForEach-Object { $_.ToString('x2') }) -join '')
+  }
+  finally {
+    $Sha256.Dispose()
+  }
+}
+
+function Test-ToolchainCacheConfigured {
+  return $null -ne $Config.compilerCache -and
+    $null -ne $Config.compilerCache.toolchainCache -and
+    -not [string]::IsNullOrWhiteSpace([string]$Config.compilerCache.account) -and
+    -not [string]::IsNullOrWhiteSpace([string]$Config.compilerCache.container) -and
+    -not [string]::IsNullOrWhiteSpace([string]$Config.compilerCache.toolchainCache.keyPrefix)
+}
+
+function Restore-ToolchainDependency {
+  param(
+    [Parameter(Mandatory=$true)][string]$Name,
+    [Parameter(Mandatory=$true)][string]$Identity,
+    [Parameter(Mandatory=$true)][string]$Destination
+  )
+  if (-not (Test-ToolchainCacheConfigured)) { return $false }
+  $Bucket = "$($Config.compilerCache.account)/$($Config.compilerCache.container)"
+  $Prefix = [string]$Config.compilerCache.toolchainCache.keyPrefix
+  Write-Phase 'dependency-cache' 'started' "dependency=$Name identity=$Identity operation=restore"
+  $PreviousErrorActionPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'
+    $CacheOutput = & $script:PythonExe $DependencyCache restore --cloud-io $CloudIo --bucket $Bucket --prefix $Prefix --name $Name --identity $Identity --destination $Destination --client-id $Config.managedIdentityClientId 2>&1
+    $Code = $LASTEXITCODE
+  }
+  finally {
+    $ErrorActionPreference = $PreviousErrorActionPreference
+  }
+  $CacheOutput | ForEach-Object { Write-Output $_ }
+  if ($Code -eq 0) {
+    Write-Phase 'dependency-cache' 'complete' "dependency=$Name identity=$Identity operation=restore result=hit"
+    return $true
+  }
+  if ($Code -eq 3) {
+    Write-Phase 'dependency-cache' 'complete' "dependency=$Name identity=$Identity operation=restore result=miss"
+    return $false
+  }
+  Write-Phase 'dependency-cache' 'failed' "dependency=$Name identity=$Identity operation=restore exitCode=$Code"
+  throw "Toolchain cache restore failed for $Name/$Identity with exit code $Code"
+}
+
+function Publish-ToolchainDependency {
+  param(
+    [Parameter(Mandatory=$true)][string]$Name,
+    [Parameter(Mandatory=$true)][string]$Identity,
+    [Parameter(Mandatory=$true)][string]$Source
+  )
+  if (-not (Test-ToolchainCacheConfigured)) { return }
+  $Bucket = "$($Config.compilerCache.account)/$($Config.compilerCache.container)"
+  $Prefix = [string]$Config.compilerCache.toolchainCache.keyPrefix
+  Write-Phase 'dependency-cache' 'started' "dependency=$Name identity=$Identity operation=publish"
+  $PreviousErrorActionPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'
+    $CacheOutput = & $script:PythonExe $DependencyCache publish --cloud-io $CloudIo --bucket $Bucket --prefix $Prefix --name $Name --identity $Identity --source $Source --client-id $Config.managedIdentityClientId 2>&1
+    $Code = $LASTEXITCODE
+  }
+  finally {
+    $ErrorActionPreference = $PreviousErrorActionPreference
+  }
+  $CacheOutput | ForEach-Object { Write-Output $_ }
+  if ($Code -ne 0) {
+    Write-Phase 'dependency-cache' 'failed' "dependency=$Name identity=$Identity operation=publish exitCode=$Code"
+    throw "Toolchain cache publish failed for $Name/$Identity with exit code $Code"
+  }
+  Write-Phase 'dependency-cache' 'complete' "dependency=$Name identity=$Identity operation=publish result=stored"
+}
+
 function Invoke-KillSwitchProbe {
   & $script:PythonExe $CloudIo kill-enabled --bucket $Config.killSwitchBucket --object $Config.runKillSwitchObject --emergency-object $Config.killSwitchObject --controller-epoch $Config.controllerEpoch --client-id $Config.managedIdentityClientId *> $null
   return $LASTEXITCODE
@@ -640,11 +727,88 @@ function Import-VisualStudioEnvironment {
 
 function Install-CommonToolchains {
   Write-Phase 'toolchain-packages' 'started'
+  $MsysIdentity = Get-ToolchainIdentity 'msys2' ([ordered]@{
+    cacheSchema = 2
+    version = '20260611'
+    platform = 'windows-x86_64'
+    packages = 'base-devel,git,tar,pkg-config,unzip,p7zip,zip,autoconf,autoconf-archive,automake,patch,make,diffutils,grep,gzip,mingw-w64-x86_64-make,mingw-w64-x86_64-gnupg,mingw-w64-x86_64-cmake,mingw-w64-x86_64-nasm,mingw-w64-x86_64-toolchain,mingw-w64-x86_64-libtool,mingw-w64-x86_64-gcc,mingw-w64-x86_64-gcc-fortran,mingw-w64-x86_64-libwinpthread-git,mingw-w64-x86_64-SDL2,mingw-w64-x86_64-ragel,mingw-w64-x86_64-sed,mingw-w64-x86_64-ninja,mingw-w64-x86_64-vulkan-headers,mingw-w64-x86_64-vulkan-loader'
+  })
+  # Restore-ToolchainDependency emits phase lines as well as its Boolean result.
+  # Consume the lines while retaining the actual result; assigning the raw
+  # pipeline would turn any log line into a truthy array and create a false hit.
+  $script:LastToolchainRestoreResult = $false
+  Restore-ToolchainDependency 'msys2' $MsysIdentity 'C:\tools\msys64' | ForEach-Object {
+    if ($_ -is [bool]) {
+      $script:LastToolchainRestoreResult = [bool]$_
+    } else {
+      Write-Output $_
+    }
+  }
+  $MsysRestored = $script:LastToolchainRestoreResult
+  if ($MsysRestored) {
+    # A cache marker is not enough: Rust's GNU target requires the actual
+    # MinGW binutils and compiler, especially dlltool.exe, to be present.
+    $MsysCacheUsable =
+      (Test-Path -LiteralPath 'C:\tools\msys64\usr\bin\bash.exe') -and
+      (Test-Path -LiteralPath 'C:\tools\msys64\usr\bin\pacman.exe') -and
+      (Test-Path -LiteralPath 'C:\tools\msys64\mingw64\bin\dlltool.exe') -and
+      (Test-Path -LiteralPath 'C:\tools\msys64\mingw64\bin\gcc.exe') -and
+      (Test-Path -LiteralPath 'C:\tools\msys64\mingw64\bin\g++.exe')
+    if (-not $MsysCacheUsable) {
+      Write-Phase 'dependency-cache' 'complete' "dependency=msys2 identity=$MsysIdentity operation=restore result=invalid"
+      Remove-Item -LiteralPath 'C:\tools\msys64' -Recurse -Force -ErrorAction SilentlyContinue
+      $MsysRestored = $false
+    }
+  }
+  $RustIdentity = Get-ToolchainIdentity 'rust-cbindgen' ([ordered]@{
+    cacheSchema = 2
+    rust = 'stable-x86_64-pc-windows-gnu'
+    cbindgen = 'latest-locked'
+    platform = 'windows-x86_64'
+  })
+  $script:LastToolchainRestoreResult = $false
+  Restore-ToolchainDependency 'rust-cbindgen' $RustIdentity $ToolchainRoot | ForEach-Object {
+    if ($_ -is [bool]) {
+      $script:LastToolchainRestoreResult = [bool]$_
+    } else {
+      Write-Output $_
+    }
+  }
+  $RustRestored = $script:LastToolchainRestoreResult
+  if ($RustRestored) {
+    # A cache index is not sufficient evidence that the archive is usable.
+    # Validate the executable contract before suppressing the Rust installer;
+    # this prevents an incomplete archive from becoming a persistent false hit.
+    $RustCacheProbeCandidates = @(
+      (Join-Path $env:CARGO_HOME 'bin'),
+      (Join-Path $ToolchainRoot 'cargo\bin'),
+      (Join-Path $ToolchainRoot 'bin'),
+      (Join-Path $ToolchainRoot 'rust\bin')
+    ) | Select-Object -Unique
+    $RustCacheUsable = $false
+    foreach ($RustCacheCandidate in $RustCacheProbeCandidates) {
+      $HasCargo = Test-Path -LiteralPath (Join-Path $RustCacheCandidate 'cargo.exe')
+      $HasRust = (Test-Path -LiteralPath (Join-Path $RustCacheCandidate 'rustup.exe')) -or
+        (Test-Path -LiteralPath (Join-Path $RustCacheCandidate 'rustc.exe'))
+      if ($HasCargo -and $HasRust) {
+        $RustCacheUsable = $true
+        break
+      }
+    }
+    if (-not $RustCacheUsable) {
+      Write-Phase 'dependency-cache' 'complete' "dependency=rust-cbindgen identity=$RustIdentity operation=restore result=invalid"
+      Remove-Item -LiteralPath $ToolchainRoot -Recurse -Force -ErrorAction SilentlyContinue
+      New-Item -ItemType Directory -Force -Path $ToolchainRoot,$env:CARGO_HOME,$env:RUSTUP_HOME | Out-Null
+      $RustRestored = $false
+    }
+  }
   $ToolchainInstalled = $false
   for ($ChocolateyAttempt = 1; $ChocolateyAttempt -le 8 -and -not $ToolchainInstalled; $ChocolateyAttempt++) {
     try {
+      $ChocolateyPackages = @('cmake','git','maven','ninja','temurin11','7zip','visualstudio2022buildtools','visualstudio2022-workload-vctools')
+      if (-not $RustRestored) { $ChocolateyPackages += 'rust' }
       Invoke-NativeChecked -Description 'Chocolatey toolchain installation' -SuccessCodes @(0, 1641, 3010) -Command {
-        choco install -y --no-progress cmake git maven ninja temurin11 7zip rustup.install visualstudio2022buildtools visualstudio2022-workload-vctools
+        choco install -y --no-progress @ChocolateyPackages
       }
       $ToolchainInstalled = $true
     }
@@ -656,20 +820,22 @@ function Install-CommonToolchains {
       Start-Sleep -Seconds $ChocolateyBackoff
     }
   }
-  $MsysInstalled = $false
-  for ($MsysAttempt = 1; $MsysAttempt -le 8 -and -not $MsysInstalled; $MsysAttempt++) {
-    try {
-      Invoke-NativeChecked -Description 'Chocolatey MSYS2 installation' -SuccessCodes @(0, 1641, 3010) -Command {
-        choco install -y --no-progress msys2 --params "/NoUpdate"
+  if (-not $MsysRestored) {
+    $MsysInstalled = $false
+    for ($MsysAttempt = 1; $MsysAttempt -le 8 -and -not $MsysInstalled; $MsysAttempt++) {
+      try {
+        Invoke-NativeChecked -Description 'Chocolatey MSYS2 installation' -SuccessCodes @(0, 1641, 3010) -Command {
+          choco install -y --no-progress msys2 --params "/NoUpdate"
+        }
+        $MsysInstalled = $true
       }
-      $MsysInstalled = $true
-    }
-    catch {
-      if ($MsysAttempt -ge 8) { throw }
-      $MsysBackoff = [Math]::Min(60, 15 * $MsysAttempt)
-      Write-Warning "Chocolatey MSYS2 installation attempt $MsysAttempt failed: $($_.Exception.Message)"
-      Write-Phase 'toolchain-packages' 'retrying' "group=msys2 attempt=$MsysAttempt backoffSeconds=$MsysBackoff"
-      Start-Sleep -Seconds $MsysBackoff
+      catch {
+        if ($MsysAttempt -ge 8) { throw }
+        $MsysBackoff = [Math]::Min(60, 15 * $MsysAttempt)
+        Write-Warning "Chocolatey MSYS2 installation attempt $MsysAttempt failed: $($_.Exception.Message)"
+        Write-Phase 'toolchain-packages' 'retrying' "group=msys2 attempt=$MsysAttempt backoffSeconds=$MsysBackoff"
+        Start-Sleep -Seconds $MsysBackoff
+      }
     }
   }
   Write-Phase 'toolchain-packages' 'complete'
@@ -696,46 +862,128 @@ function Install-CommonToolchains {
     & $MavenExe --version
   }
   Write-Phase 'msys-toolchain' 'started'
-  Invoke-NativeChecked -Description 'MSYS2 toolchain installation' -Command {
-    & C:\tools\msys64\usr\bin\bash.exe -lc "pacman-key --init && pacman-key --populate msys2 && pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja mingw-w64-x86_64-vulkan-headers mingw-w64-x86_64-vulkan-loader"
+  if (-not $MsysRestored) {
+    Invoke-NativeChecked -Description 'MSYS2 toolchain installation' -Command {
+      & C:\tools\msys64\usr\bin\bash.exe -lc "pacman-key --init && pacman-key --populate msys2 && pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch make diffutils grep gzip mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-sed mingw-w64-x86_64-ninja mingw-w64-x86_64-vulkan-headers mingw-w64-x86_64-vulkan-loader"
+    }
+    Publish-ToolchainDependency 'msys2' $MsysIdentity 'C:\tools\msys64'
   }
   Write-Phase 'msys-toolchain' 'complete'
-  $RustBinCandidates = @((Join-Path $env:CARGO_HOME 'bin'))
+  # Keep runtime discovery aligned with the cache validator. Cached Rust
+  # toolchains may be rooted directly under toolchains\bin/rust\bin rather
+  # than CARGO_HOME\bin; omitting those paths turns a valid cache into a
+  # bootstrap failure after restore.
+  $RustBinCandidates = @(
+    (Join-Path $env:CARGO_HOME 'bin'),
+    (Join-Path $ToolchainRoot 'cargo\bin'),
+    (Join-Path $ToolchainRoot 'bin'),
+    (Join-Path $ToolchainRoot 'rust\bin')
+  ) | Select-Object -Unique
   if ($env:USERPROFILE) {
     $RustBinCandidates += (Join-Path $env:USERPROFILE '.cargo\bin')
   }
   $RustBinCandidates += (Join-Path $env:SystemRoot 'System32\config\systemprofile\.cargo\bin')
+  $RustBinCandidates += 'C:\ProgramData\chocolatey\bin'
+  $RustBinCandidates += @(Get-ChildItem 'C:\Program Files\Rust*' -Directory -ErrorAction SilentlyContinue |
+    ForEach-Object { Join-Path $_.FullName 'bin' })
   $RustBin = $RustBinCandidates |
     Where-Object {
-      (Test-Path -LiteralPath (Join-Path $_ 'rustup.exe')) -and
-      (Test-Path -LiteralPath (Join-Path $_ 'cargo.exe'))
+      (Test-Path -LiteralPath (Join-Path $_ 'cargo.exe')) -and
+      ((Test-Path -LiteralPath (Join-Path $_ 'rustup.exe')) -or
+       (Test-Path -LiteralPath (Join-Path $_ 'rustc.exe')))
     } |
     Select-Object -First 1
-  if (-not $RustBin) {
-    throw "rustup.install completed without creating rustup.exe and cargo.exe in: $($RustBinCandidates -join ', ')"
-  }
-  $env:CARGO_HOME = Split-Path -Parent $RustBin
-  $env:PATH = "$RustBin;$env:PATH"
-  $RustupExe = Join-Path $RustBin 'rustup.exe'
-  $CargoExe = Join-Path $RustBin 'cargo.exe'
-  $CbindgenExe = Join-Path $RustBin 'cbindgen.exe'
-  if (-not (Test-Path -LiteralPath $CbindgenExe)) {
-    Invoke-NativeChecked -Description 'Rust GNU toolchain installation' -Command {
-      & $RustupExe toolchain install stable-x86_64-pc-windows-gnu
+  if (-not $RustBin -and -not $RustRestored) {
+    # Keep a deterministic fallback for images where the Chocolatey Rust
+    # package is unavailable. The official installer honors the worker's
+    # CARGO_HOME/RUSTUP_HOME and creates the GNU host toolchain in-place.
+    $RustupInitExe = Join-Path $ToolchainRoot 'rustup-init.exe'
+    Invoke-WebRequestWithRetry `
+      -Uri 'https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe' `
+      -OutFile $RustupInitExe `
+      -Description 'Rustup host installer'
+    Invoke-NativeChecked -Description 'Rustup host bootstrap' -Command {
+      & $RustupInitExe -y --default-toolchain stable-x86_64-pc-windows-gnu --profile minimal --no-modify-path
     }
-    Invoke-NativeChecked -Description 'Rust GNU toolchain selection' -Command {
-      & $RustupExe default stable-x86_64-pc-windows-gnu
+    Remove-Item -LiteralPath $RustupInitExe -Force -ErrorAction SilentlyContinue
+    $RustBin = $RustBinCandidates |
+      Where-Object {
+        (Test-Path -LiteralPath (Join-Path $_ 'cargo.exe')) -and
+        ((Test-Path -LiteralPath (Join-Path $_ 'rustup.exe')) -or
+         (Test-Path -LiteralPath (Join-Path $_ 'rustc.exe')))
+      } |
+      Select-Object -First 1
+  }
+  if (-not $RustBin) {
+    throw "Rust bootstrap completed without creating cargo.exe plus rustup.exe or rustc.exe in: $($RustBinCandidates -join ', ')"
+  }
+  $RustBinPath = [IO.Path]::GetFullPath([string]$RustBin).TrimEnd('\')
+  $RustToolchainRoot = Join-Path $ToolchainRoot 'rust'
+  if ($RustBinPath.StartsWith('C:\ProgramData\chocolatey', [StringComparison]::OrdinalIgnoreCase)) {
+    # Chocolatey's Rust package exposes machine-wide shims and keeps the real
+    # GNU toolchain outside the cache source. Stage that toolchain under the
+    # worker root so cbindgen and the compiler are published together.
+    $ChocolateyRustRoot = 'C:\ProgramData\chocolatey\lib\rust\tools'
+    if (-not (Test-Path -LiteralPath (Join-Path $ChocolateyRustRoot 'bin\cargo.exe'))) {
+      throw "Chocolatey Rust installation is missing cargo.exe under $ChocolateyRustRoot"
+    }
+    Remove-Item -LiteralPath $RustToolchainRoot -Recurse -Force -ErrorAction SilentlyContinue
+    Copy-Item -LiteralPath $ChocolateyRustRoot -Destination $RustToolchainRoot -Recurse -Force
+    $RustBin = Join-Path $RustToolchainRoot 'bin'
+    $RustBinPath = $RustBin
+    $env:CARGO_HOME = Join-Path $ToolchainRoot 'cargo'
+    $env:RUSTUP_HOME = Join-Path $ToolchainRoot 'rustup'
+  } else {
+    $env:CARGO_HOME = Split-Path -Parent $RustBin
+  }
+  $RustInstallBin = Join-Path $env:CARGO_HOME 'bin'
+  New-Item -ItemType Directory -Force -Path $RustInstallBin | Out-Null
+  $env:PATH = "$RustInstallBin;$RustBin;$env:PATH"
+  $RustupExe = Join-Path $RustBin 'rustup.exe'
+  if (-not (Test-Path -LiteralPath $RustupExe)) {
+    $RustupExe = $null
+  }
+  $RustcExe = Join-Path $RustBin 'rustc.exe'
+  $CargoExe = Join-Path $RustBin 'cargo.exe'
+  $CbindgenExe = Join-Path $RustInstallBin 'cbindgen.exe'
+  if (-not (Test-Path -LiteralPath $CbindgenExe)) {
+    $CbindgenExe = Join-Path $RustBin 'cbindgen.exe'
+  }
+  if (-not (Test-Path -LiteralPath $CbindgenExe)) {
+    if ($RustupExe) {
+      Invoke-NativeChecked -Description 'Rust GNU toolchain installation' -Command {
+        & $RustupExe toolchain install stable-x86_64-pc-windows-gnu
+      }
+      Invoke-NativeChecked -Description 'Rust GNU toolchain selection' -Command {
+        & $RustupExe default stable-x86_64-pc-windows-gnu
+      }
+    } elseif (-not (Test-Path -LiteralPath $RustcExe)) {
+      throw "Rust installation at $RustBin has cargo.exe but neither rustup.exe nor rustc.exe"
     }
     $env:CARGO_BUILD_TARGET = 'x86_64-pc-windows-gnu'
     Invoke-NativeChecked -Description 'cbindgen installation' -Command {
       & $CargoExe install --locked cbindgen
     }
+    $CbindgenExe = Join-Path $RustInstallBin 'cbindgen.exe'
+    if (-not (Test-Path -LiteralPath $CbindgenExe)) {
+      $CbindgenExe = Join-Path $RustBin 'cbindgen.exe'
+    }
+  }
+  if (-not $RustRestored) {
+    Publish-ToolchainDependency 'rust-cbindgen' $RustIdentity $ToolchainRoot
   }
   $SccacheVersion = 'v0.17.0'
   $SccacheFile = "sccache-$SccacheVersion-x86_64-pc-windows-msvc"
   $SccacheSha256 = 'caf1932d76a909c909b7a2e41443cdfe3c79a49a380da1a22fa422e1d00d3ca7'
   $SccacheDir = Join-Path $ToolchainRoot 'sccache'
   $SccacheExe = Join-Path $SccacheDir 'sccache.exe'
+  $SccacheIdentity = Get-ToolchainIdentity 'sccache' ([ordered]@{
+    version = $SccacheVersion
+    archive = "$SccacheFile.tar.gz"
+    sha256 = $SccacheSha256
+    platform = 'windows-x86_64'
+  })
+  $SccacheRestored = Restore-ToolchainDependency 'sccache' $SccacheIdentity $SccacheDir
   if (-not (Test-Path -LiteralPath $script:WindowsTarExe)) {
     throw "Windows tar.exe was not found at $script:WindowsTarExe"
   }
@@ -762,6 +1010,9 @@ function Install-CommonToolchains {
     }
     Copy-Item (Join-Path $env:TEMP "$SccacheFile\sccache.exe") $SccacheExe -Force
     Remove-Item -LiteralPath $SccacheArchive -Force
+  }
+  if (-not $SccacheRestored) {
+    Publish-ToolchainDependency 'sccache' $SccacheIdentity $SccacheDir
   }
   $env:PATH = "$SccacheDir;$env:PATH"
   $env:SCCACHE_DIR = Join-Path $SourceRoot 'sccache'

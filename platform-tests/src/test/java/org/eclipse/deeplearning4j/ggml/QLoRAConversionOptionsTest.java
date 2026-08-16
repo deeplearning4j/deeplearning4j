@@ -219,10 +219,15 @@ class QLoRAConversionOptionsTest {
      * <p>Q8_0 block layout: 2 bytes F16 scale + 32 bytes INT8 quants = 34 bytes/block.</p>
      */
     private File createTinyQ8_0GGUFFile() throws IOException {
-        return createTinyQ8_0GGUFFile(false);
+        return createTinyQ8_0GGUFFile(false, false);
     }
 
     private File createTinyQ8_0GGUFFile(boolean includeDenseFallback) throws IOException {
+        return createTinyQ8_0GGUFFile(includeDenseFallback, false);
+    }
+
+    private File createTinyQ8_0GGUFFile(boolean includeDenseFallback,
+                                         boolean includeOutputProjection) throws IOException {
         // Q8_0: block=32, 34 bytes/block.  Shape [32,32]=1024 elements = 32 blocks = 1088 bytes.
         // GGUF stores shapes column-major: [innerDim, outerDim], so we write [32, 32].
         // The converter reverses this to ND4J [32, 32] (symmetric for square).
@@ -234,9 +239,9 @@ class QLoRAConversionOptionsTest {
 
         byte[] q8Data = nonZeroQ8_0Data(NUM_BLOCKS, BLOCK_SIZE, BYTES_PER_BLOCK);
 
-        File file = tempDir.resolve(includeDenseFallback
-                ? "tiny_q8_0_mixed.gguf"
-                : "tiny_q8_0.gguf").toFile();
+        String variant = includeOutputProjection ? "_untied"
+                : includeDenseFallback ? "_mixed" : "";
+        File file = tempDir.resolve("tiny_q8_0" + variant + ".gguf").toFile();
         try (GGUFWriter writer = new GGUFWriter(file, 2)) {
             writer.addMetadataString("general.architecture", "generic");
 
@@ -244,6 +249,9 @@ class QLoRAConversionOptionsTest {
             writer.registerTensor("blk.0.attn_q.weight", new long[]{32, 32}, GGMLDataType.GGML_TYPE_Q8_0);
             // Q8_0 token embedding: same storage, but must be dequantized because gather cannot consume packed bytes.
             writer.registerTensor("token_embd.weight", new long[]{32, 32}, GGMLDataType.GGML_TYPE_Q8_0);
+            if (includeOutputProjection) {
+                writer.registerTensor("output.weight", new long[]{32, 32}, GGMLDataType.GGML_TYPE_Q8_0);
+            }
             // F32 bias (non-quantized): shape [8]
             writer.registerTensor("blk.0.attn_q.bias", new long[]{8}, GGMLDataType.GGML_TYPE_F32);
             if (includeDenseFallback) {
@@ -257,6 +265,9 @@ class QLoRAConversionOptionsTest {
 
             writer.writeTensorData("blk.0.attn_q.weight", q8Data);
             writer.writeTensorData("token_embd.weight", q8Data);
+            if (includeOutputProjection) {
+                writer.writeTensorData("output.weight", q8Data);
+            }
             writer.writeTensorData("blk.0.attn_q.bias", new byte[8 * 4]); // 8 × 4 bytes F32
             if (includeDenseFallback) {
                 writer.writeTensorData("blk.0.ssm_conv.weight", new byte[4 * 32 * 4]);
@@ -352,6 +363,31 @@ class QLoRAConversionOptionsTest {
                 "token_embd.weight must preserve signed dequantized Q8_0 values for gather");
         assertNull(sd.getVariable("token_embd_weight___q__"),
                 "token_embd.weight must not receive ggml_qmatmul companion metadata");
+    }
+
+    @Test
+    @DisplayName("compact embeddings use FP16 only with a dedicated output projection")
+    void testCompactTokenEmbeddingRequiresDedicatedOutputProjection()
+            throws IOException, GGMLImportException {
+        ConversionOptions options = ConversionOptions.builder()
+                .quantizationMode(ConversionOptions.QuantizationMode.RUNTIME_QUANTIZED_MATMUL)
+                .targetDataType(DataType.FLOAT)
+                .embeddingDataType(DataType.HALF)
+                .build();
+
+        SameDiff untied = GGMLModelImport.importModel(
+                createTinyQ8_0GGUFFile(false, true), options);
+        assertEquals(DataType.HALF,
+                untied.getVariable("token_embd_weight").getArr().dataType(),
+                "The input-only embedding table should use compact FP16 storage");
+        assertEquals(DataType.INT8,
+                untied.getVariable("output_weight").getArr().dataType(),
+                "The dedicated output projection should remain runtime-packed");
+
+        SameDiff tied = GGMLModelImport.importModel(createTinyQ8_0GGUFFile(), options);
+        assertEquals(DataType.FLOAT,
+                tied.getVariable("token_embd_weight").getArr().dataType(),
+                "A tied input/output table must retain the graph compute dtype");
     }
 
     @Test

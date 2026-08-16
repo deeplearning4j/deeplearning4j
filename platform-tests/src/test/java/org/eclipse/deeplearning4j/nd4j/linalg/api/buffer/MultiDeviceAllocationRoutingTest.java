@@ -1,5 +1,6 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.api.buffer;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
@@ -20,6 +21,13 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * infrastructure to identify where the chain breaks.
  */
 public class MultiDeviceAllocationRoutingTest {
+
+    @BeforeAll
+    static void initializeNd4jBackend() {
+        // NativeOpsHolder reads the backend-owned native.ops property. Initialize ND4J first so
+        // randomized JUnit method order cannot poison the holder before backend discovery.
+        Nd4j.getBackend();
+    }
 
     /**
      * Step 1: Verify that BackendRegistry discovers all GPU devices.
@@ -278,5 +286,35 @@ public class MultiDeviceAllocationRoutingTest {
         // Restore original device
         DeviceMemoryManager.getInstance().switchDevice(originalDevice, "test", "restore");
         arr.close();
+    }
+
+    /**
+     * The public affinity API must bind both Java bookkeeping and the native CUDA context.
+     * A getter-only assertion is insufficient because the historical defect reported the
+     * requested device while subsequent native allocations still landed on the old GPU.
+     */
+    @Test
+    public void testAffinityBindingRoutesNativeAllocation() {
+        // Initialize the selected ND4J backend before reading its native-ops configuration.
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        assumeTrue(numDevices >= 2, "Need at least 2 GPUs");
+
+        int originalDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        int targetDevice = (originalDevice == 0) ? 1 : 0;
+        try {
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(targetDevice);
+
+            assertEquals(targetDevice, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                    "Java affinity must report the requested device");
+            assertEquals(targetDevice, nativeOps.getDevice(),
+                    "Native CUDA context must follow the public affinity binding");
+            try (INDArray array = Nd4j.create(DataType.FLOAT, 1024 * 1024)) {
+                assertEquals(targetDevice, nativeOps.dbDeviceId(array.data().opaqueBuffer()),
+                        "Allocation after affinity binding must land on the requested device");
+            }
+        } finally {
+            Nd4j.getAffinityManager().setDeviceForCurrentThread(originalDevice);
+        }
     }
 }

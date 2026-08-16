@@ -382,6 +382,21 @@ def _selector_parts(selector: str) -> tuple[str, str | None]:
     return tuple(selector.rsplit("--", 1))  # type: ignore[return-value]
 
 
+def _canonical_variant_name(shard: dict[str, Any], variant: str | None) -> str | None:
+    """Map the legacy ZLUDA label to the CUDA-versioned plan variant."""
+    if variant != "zluda":
+        return variant
+    build = shard.get("build", {})
+    if not build.get("zludaVersion"):
+        return variant
+    names = [
+        str(item.get("name"))
+        for item in build.get("variants", [])
+        if str(item.get("name")) != "zluda"
+    ]
+    return names[0] if len(names) == 1 else variant
+
+
 def selected_executions(
     plan: dict[str, Any], selectors: list[str] | None = None, exclusions: list[str] | None = None
 ) -> list[dict[str, Any]]:
@@ -403,12 +418,13 @@ def selected_executions(
             seen.add(key)
             shard = copy.deepcopy(by_id[parent])
             if variant is not None:
+                variant = _canonical_variant_name(shard, variant)
                 variants = [item for item in shard["build"]["variants"] if item["name"] == variant]
                 if not variants:
                     raise ValueError(f"unknown variant selector: {selector}")
                 shard["build"]["variants"] = variants
                 shard["parentShard"] = parent
-                shard["id"] = selector
+                shard["id"] = f"{parent}--{variant}"
             selected.append(shard)
     result: list[dict[str, Any]] = []
     excluded_lanes = {value for value in exclusions if "--" not in value}
@@ -418,6 +434,7 @@ def selected_executions(
         if parent not in by_id:
             raise ValueError(f"unknown excluded shard: {value}")
         if variant:
+            variant = _canonical_variant_name(by_id[parent], variant)
             names = {item["name"] for item in by_id[parent]["build"]["variants"]}
             if variant not in names:
                 raise ValueError(f"unknown excluded variant: {value}")
@@ -443,6 +460,7 @@ def matrix_coverage(plan: dict[str, Any], shard_ids: Iterable[str]) -> set[str]:
         shard = by_id.get(parent)
         if not shard:
             continue
+        variant = _canonical_variant_name(shard, variant)
         if variant is None:
             covered.update(f"{parent}--{item['name']}" for item in shard["build"]["variants"])
         elif any(item["name"] == variant for item in shard["build"]["variants"]):

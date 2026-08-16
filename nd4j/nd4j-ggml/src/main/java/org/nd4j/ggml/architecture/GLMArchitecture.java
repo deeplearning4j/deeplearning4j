@@ -157,8 +157,11 @@ public class GLMArchitecture implements ModelArchitecture {
         }
         SDVariable tokenEmbed = sd.var("model.embed_tokens.weight", tokenEmbedWeight);
 
-        // Gather embeddings: [batch, seq_len, hidden_size]
-        SDVariable hidden = sd.gather("embedded", tokenEmbed, inputIds, 0);
+        // Keep the large table compact and cast only the gathered prompt rows.
+        boolean compactEmbedding = tokenEmbed.dataType() != dtype;
+        SDVariable hidden = sd.gather(
+                compactEmbedding ? "embedded_storage" : "embedded", tokenEmbed, inputIds, 0);
+        hidden = GGMLDTypePolicy.castTo(hidden, "embedded", dtype);
 
         // Build transformer layers
         for (int layer = 0; layer < config.getNumLayers(); layer++) {

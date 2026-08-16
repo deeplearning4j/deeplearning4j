@@ -156,6 +156,9 @@ class NnapiGraphBackend : public GraphBackend {
       int sourceIndex;   // nd4j source index (<0 = external, >=0 = outputSlot)
       uint32_t operand;  // NNAPI operand index
       bool isOutput;
+      DataType sourceDataType;
+      DataType bindingDataType;
+      std::vector<LongType> dimensions;
     };
     std::vector<OperandMapping> inputMappings;
     std::vector<OperandMapping> outputMappings;

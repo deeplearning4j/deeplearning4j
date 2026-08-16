@@ -160,8 +160,12 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
         SDVariable tokenEmbed = sd.var("model.embed_tokens.weight", tokenEmbedWeight);
 
-        // Gather embeddings: [batch, seq_len, hidden_size]
-        SDVariable hidden = sd.gather("embedded", tokenEmbed, inputIds, 0);
+        // Gather only the prompt rows from compact embedding storage, then restore the
+        // model working dtype. Casting gathered rows avoids a full-table FP16 -> FP32 copy.
+        boolean compactEmbedding = tokenEmbed.dataType() != dtype;
+        SDVariable hidden = sd.gather(
+                compactEmbedding ? "embedded_storage" : "embedded", tokenEmbed, inputIds, 0);
+        hidden = GGMLDTypePolicy.castTo(hidden, "embedded", dtype);
 
         // Build transformer layers
         List<String> outputNames = new ArrayList<>();
@@ -195,18 +199,23 @@ public class LLaMAArchitecture implements ModelArchitecture {
         // Final RMS normalization
         hidden = buildRMSNorm(sd, hidden, "model.norm", weights, config, dtype);
 
-        // Output projection (LM head)
+        // Output projection (LM head). Preserve tied-weight identity instead of registering the
+        // embedding INDArray a second time: SDZ serializes graph variables independently, so a
+        // duplicate lm_head variable would add another full vocabulary table to the bundle.
         INDArray outputWeight = weights.get("output.weight");
-        if (outputWeight == null) {
-            // Some models tie weights
-            outputWeight = tokenEmbedWeight;
-        }
-        SDVariable lmHead = sd.var("lm_head.weight", outputWeight);
+        SDVariable lmHead = outputWeight == null
+                ? tokenEmbed
+                : sd.var("lm_head.weight", outputWeight);
 
-        // Logits: [batch, seq_len, vocab_size]
-        // Upcast to FP32: hidden=1024 dot products easily overflow FP16 (±65504) at vocab scale.
-        SDVariable logits = QuantizedLinear.matMulFloatOutput(sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
-        outputNames.add("lm_logits");
+        // Full logits are useful to general graph consumers, but generation-only mobile bundles
+        // consume only the final position. Omitting this branch prevents allocation of
+        // [batch, sequence, vocabulary] during prefill.
+        if (!options.isLastPositionLogitsOnly()) {
+            // Upcast to FP32: hidden=1024 dot products easily overflow FP16 (±65504) at vocab scale.
+            QuantizedLinear.matMulFloatOutput(
+                    sd, "lm_logits", hidden, lmHead, weights, "output.weight", dtype);
+            outputNames.add("lm_logits");
+        }
 
         // Last-position logits: [batch, 1, vocab_size] — TTFT optimisation.
         // Slice the hidden states at actual_sequence_length-1 (runtime-derived, NOT a baked
@@ -925,16 +934,16 @@ public class LLaMAArchitecture implements ModelArchitecture {
         }
         beta = GGMLDTypePolicy.castForAccumulation(beta, "gdn_beta_compute_" + layerIdx);
 
-        // 7. Compute gate (decay) in log-domain: g = -exp(A_log) * softplus(a_proj + dt_bias)
-        // Reference: g = -self.A_log.float().exp() * F.softplus(a.float() + self.dt_bias)
-        // The GatedDeltaRule op applies exp(g) internally, so g must be negative for decay < 1
-        // NOTE: GGUF stores ssm_a as -A_log (negative values). The reference formula uses
-        // exp(A_log) with positive A_log. Since ssmA = -A_log, we compute exp(-ssmA) = exp(A_log).
+        // 7. Compute gate (decay) in log-domain.
+        // Hugging Face: g = -exp(A_log) * softplus(a_proj + dt_bias).
+        // GGUF already stores ssm_a as -exp(A_log), matching llama.cpp's direct multiply:
+        // gate = softplus(alpha + dt_bias) * ssm_a. Do not exponentiate or negate it again.
+        // The GatedDeltaRule op applies exp(g) internally, so the negative coefficient produces
+        // a decay factor in (0, 1].
         SDVariable gateDecay;
         if (ssmA != null && alphaWeight != null) {
-            SDVariable aLog = GGMLDTypePolicy.castForAccumulation(
-                    sd.var(attnPrefix + "a", ssmA), "gdn_a_log_" + layerIdx);
-            SDVariable expALog = sd.math.exp(aLog.neg());                // exp(-ssmA) = exp(A_log): [H]
+            SDVariable decayCoefficient = GGMLDTypePolicy.castForAccumulation(
+                    sd.var(attnPrefix + "a", ssmA), "gdn_decay_coefficient_" + layerIdx);
             SDVariable wAlpha = sd.var(attnPrefix + "alpha.weight", alphaWeight);
             SDVariable aProj = GGMLDTypePolicy.castForAccumulation(
                     QuantizedLinear.matMul(sd, "gdn_alpha_proj_" + layerIdx, input, wAlpha,
@@ -946,8 +955,8 @@ public class LLaMAArchitecture implements ModelArchitecture {
                 aProj = aProj.add("gdn_a_plus_bias_" + layerIdx, dtBiasAccum);
             }
             SDVariable sp = sd.nn.softplus("gdn_softplus_" + layerIdx, aProj); // softplus(a + bias): [B,L,H]
-            // g = -exp(A_log) * softplus(a + bias), broadcast [H] * [B,L,H] -> [B,L,H]
-            gateDecay = sp.mul(expALog).neg("gdn_gate_decay_" + layerIdx);
+            // g = ssm_a * softplus(a + bias), broadcast [H] * [B,L,H] -> [B,L,H]
+            gateDecay = sp.mul("gdn_gate_decay_" + layerIdx, decayCoefficient);
         } else if (ssmA != null) {
             // Fallback: use ssmA directly as log-domain gate (negative)
             SDVariable a = GGMLDTypePolicy.castForAccumulation(

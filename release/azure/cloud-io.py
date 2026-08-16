@@ -45,12 +45,20 @@ def request(url, *, method="GET", data=None, headers=None, authenticated=False,
     accepted_statuses = set(accepted_statuses)
     for attempt in range(attempts):
         if authenticated:
-            headers["Authorization"] = "Bearer " + access_token(client_id)
-            headers["x-ms-version"] = STORAGE_API_VERSION
-            headers["x-ms-date"] = dt.datetime.now(dt.timezone.utc).strftime(
-                "%a, %d %b %Y %H:%M:%S GMT"
-            )
-        req = urllib.request.Request(url, data=payload, headers=headers, method=method)
+            sas = storage_sas()
+            if sas:
+                separator = "&" if "?" in url else "?"
+                request_url = url + separator + sas
+            else:
+                request_url = url
+                headers["Authorization"] = "Bearer " + access_token(client_id)
+                headers["x-ms-version"] = STORAGE_API_VERSION
+                headers["x-ms-date"] = dt.datetime.now(dt.timezone.utc).strftime(
+                    "%a, %d %b %Y %H:%M:%S GMT"
+                )
+        else:
+            request_url = url
+        req = urllib.request.Request(request_url, data=payload, headers=headers, method=method)
         try:
             with urllib.request.urlopen(req, timeout=60) as response:
                 return response.read()
@@ -111,6 +119,25 @@ def access_token(client_id=None):
     _TOKEN["expires"] = float(value.get("expires_on", now + 3000))
     _TOKEN["client_id"] = client_id
     return _TOKEN["value"]
+
+
+def storage_sas():
+    """Return a configured Azure SAS query for non-VM workers.
+
+    Azure VMs continue to use managed identity. GitHub Actions has no IMDS
+    endpoint, so the shared release action exposes the controller-issued SAS
+    through the same secret used by sccache; it is never written to a worker
+    config or log.
+    """
+    connection = (
+        os.environ.get("DL4J_AZURE_CONNECTION_STRING")
+        or os.environ.get("SCCACHE_AZURE_CONNECTION_STRING")
+        or ""
+    )
+    for part in connection.split(";"):
+        if part.startswith("SharedAccessSignature="):
+            return part.split("=", 1)[1].lstrip("?")
+    return ""
 
 
 def parse_bucket(value):
@@ -323,18 +350,24 @@ def download_file(bucket, name, path, client_id=None):
     try:
         for attempt in range(attempts):
             offset = staged.stat().st_size if staged.exists() else 0
-            headers = {
-                "Authorization": "Bearer " + access_token(client_id),
-                "x-ms-version": STORAGE_API_VERSION,
-                "x-ms-date": dt.datetime.now(dt.timezone.utc).strftime(
-                    "%a, %d %b %Y %H:%M:%S GMT"
-                ),
-            }
+            sas = storage_sas()
+            request_url = url
+            if sas:
+                request_url += ("&" if "?" in request_url else "?") + sas
+                headers = {}
+            else:
+                headers = {
+                    "Authorization": "Bearer " + access_token(client_id),
+                    "x-ms-version": STORAGE_API_VERSION,
+                    "x-ms-date": dt.datetime.now(dt.timezone.utc).strftime(
+                        "%a, %d %b %Y %H:%M:%S GMT"
+                    ),
+                }
             if offset:
                 headers["Range"] = f"bytes={offset}-"
             if etag:
                 headers["If-Match"] = etag
-            req = urllib.request.Request(url, headers=headers, method="GET")
+            req = urllib.request.Request(request_url, headers=headers, method="GET")
             try:
                 with urllib.request.urlopen(req, timeout=120) as response:
                     status = getattr(response, "status", response.getcode())

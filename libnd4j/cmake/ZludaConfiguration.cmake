@@ -258,7 +258,7 @@ function(setup_zluda)
     setup_zluda_amd()
     foreach(_zluda_amd_variable
             ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY
-            HAVE_MIOPEN MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR)
+            ROCM_HSA_RUNTIME_LIBRARY ROCM_HSAKMT_RUNTIME_LIBRARY HAVE_MIOPEN MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR)
         set(${_zluda_amd_variable} "${${_zluda_amd_variable}}" PARENT_SCOPE)
     endforeach()
 
@@ -285,16 +285,14 @@ function(setup_zluda_amd)
     set(HAVE_MIOPEN FALSE)
 
     # Find ROCm installation
+    # ROCM_PATH is the sole version selector. Keep the unversioned /opt/rocm
+    # symlink only as a conventional fallback; release workers set ROCM_PATH to
+    # the attested, versioned SDK root before configuring CMake.
     set(ROCM_SEARCH_PATHS
         $ENV{ROCM_PATH}
         $ENV{ROCM_HOME}
         $ENV{HIP_PATH}
         /opt/rocm
-        /opt/rocm-6.0
-        /opt/rocm-5.7
-        /opt/rocm-5.6
-        /opt/rocm-5.5
-        /opt/rocm-5.4
     )
 
     find_path(ROCM_PATH
@@ -315,6 +313,39 @@ function(setup_zluda_amd)
                 PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu
                 NO_DEFAULT_PATH
             )
+            find_library(ROCM_HSA_RUNTIME_LIBRARY
+                NAMES hsa-runtime64 libhsa-runtime64.so.1
+                HINTS ${ROCM_PATH}
+                PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu
+                NO_DEFAULT_PATH
+            )
+            find_library(ROCM_HSAKMT_RUNTIME_LIBRARY
+                NAMES hsakmt libhsakmt.so.1
+                HINTS ${ROCM_PATH}
+                PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu
+                NO_DEFAULT_PATH
+            )
+
+            # HIP, HSA, and ROCt are one versioned ROCm user-space contract. Resolve
+            # all three below the selected SDK so a classifier cannot combine
+            # newer HIP/HSA libraries with an older host HSA or ROCt thunk.
+            get_filename_component(_rocm_path_real "${ROCM_PATH}" REALPATH)
+            foreach(_rocm_runtime_variable IN ITEMS
+                    ROCM_HIP_RUNTIME_LIBRARY ROCM_HSA_RUNTIME_LIBRARY
+                    ROCM_HSAKMT_RUNTIME_LIBRARY)
+                if(${_rocm_runtime_variable})
+                    get_filename_component(_rocm_runtime_real
+                        "${${_rocm_runtime_variable}}" REALPATH)
+                    file(RELATIVE_PATH _rocm_runtime_relative
+                        "${_rocm_path_real}" "${_rocm_runtime_real}")
+                    if(_rocm_runtime_relative STREQUAL ".." OR
+                       _rocm_runtime_relative MATCHES "^[.][.]/" OR
+                       IS_ABSOLUTE "${_rocm_runtime_relative}")
+                        message(FATAL_ERROR
+                            "${_rocm_runtime_variable} must resolve below the selected ROCM_PATH '${ROCM_PATH}', got '${${_rocm_runtime_variable}}'")
+                    endif()
+                endif()
+            endforeach()
         endif()
 
         # ROCm headers are scoped to the MIOpen translation units in
@@ -350,9 +381,12 @@ function(setup_zluda_amd)
         if(DEFINED ENV{DL4J_ZLUDA_REQUIRE_ROCM}
                 AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_ROCM}" STREQUAL ""
                 AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_ROCM}" STREQUAL "0"
-                AND NOT WIN32 AND NOT ROCM_HIP_RUNTIME_LIBRARY)
+                AND NOT WIN32 AND
+                (NOT ROCM_HIP_RUNTIME_LIBRARY OR
+                 NOT ROCM_HSA_RUNTIME_LIBRARY OR
+                 NOT ROCM_HSAKMT_RUNTIME_LIBRARY))
             message(FATAL_ERROR
-                "Build-only ZLUDA contract requires libamdhip64 below ${ROCM_PATH}")
+                "Build-only ZLUDA contract requires version-matched libamdhip64, libhsa-runtime64, and libhsakmt below ${ROCM_PATH}")
         endif()
         if(DEFINED ENV{DL4J_ZLUDA_REQUIRE_MIOPEN}
                 AND NOT "$ENV{DL4J_ZLUDA_REQUIRE_MIOPEN}" STREQUAL ""
@@ -364,7 +398,7 @@ function(setup_zluda_amd)
 
         foreach(_zluda_amd_variable
                 ROCM_PATH ROCM_INCLUDE_DIR ROCM_LIB_DIR ROCM_HIP_RUNTIME_LIBRARY
-                HAVE_MIOPEN MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR)
+                ROCM_HSA_RUNTIME_LIBRARY ROCM_HSAKMT_RUNTIME_LIBRARY HAVE_MIOPEN MIOPEN_LIBRARY MIOPEN_INCLUDE_DIR)
             set(${_zluda_amd_variable} "${${_zluda_amd_variable}}" PARENT_SCOPE)
         endforeach()
     else()

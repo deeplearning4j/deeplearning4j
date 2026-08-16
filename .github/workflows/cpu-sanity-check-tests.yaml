@@ -51,10 +51,6 @@ jobs:
 
     runs-on: ${{ matrix.runs_on }}
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/update-deps-linux
@@ -160,10 +156,6 @@ jobs:
 
     runs-on: windows-2022
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       
       - name: Free Disk Space (Windows)
@@ -312,10 +304,6 @@ jobs:
 
     runs-on: macos-13
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
 
       - name: Set up Java for publishing to OSSRH

@@ -86,6 +86,16 @@ class WorkflowMatrixTests(unittest.TestCase):
             actual.update(row["selector"] for row in rows)
         self.assertEqual(expected, actual)
 
+    def test_public_artifact_id_does_not_duplicate_shard_suffix(self):
+        self.assertEqual(
+            "linux-x86_64-compat",
+            prepare_worker.public_artifact_id("linux-x86_64-compat", "compat"),
+        )
+        self.assertEqual(
+            "linux-x86_64-cpu-base",
+            prepare_worker.public_artifact_id("linux-x86_64-cpu", "base"),
+        )
+
     def test_every_matrix_row_is_an_explicit_plan_variant(self):
         plan_shards = prepare_worker.plan_shards(self.plan)
         for workflow in self.plan["coveredWorkflows"]:
@@ -99,6 +109,8 @@ class WorkflowMatrixTests(unittest.TestCase):
             for row in rows:
                 self.assertNotIn("--", row["name"], workflow)
                 self.assertNotIn("--", row["artifactId"], workflow)
+                self.assertNotIn("zluda-zluda", row["name"], workflow)
+                self.assertNotIn("zluda-zluda", row["artifactId"], workflow)
                 self.assertEqual(row["name"], row["artifactId"], workflow)
                 self.assertTrue(
                     row["dependencyCacheKey"].startswith(f'{row["shard"]}-'), workflow
@@ -204,13 +216,31 @@ class WorkflowMatrixTests(unittest.TestCase):
             self.matrix,
             "build-deploy-cross-platform.yml",
             "host",
+            classifiers="windows-x86_64-zluda--cuda-12.9",
+            selection_mode="targeted",
+        )
+        self.assertEqual(
+            [("windows-x86_64-zluda", "cuda-12.9")],
+            [(row["shard"], row["variant"]) for row in rows],
+        )
+        self.assertEqual("windows-x86_64-zluda-cuda-12.9", rows[0]["artifactId"])
+        self.assertNotIn("--", rows[0]["artifactId"])
+        self.assertNotIn("zluda-zluda", rows[0]["artifactId"])
+
+    def test_legacy_zluda_selector_maps_to_cuda_versioned_variant(self):
+        rows = prepare_worker.workflow_rows(
+            self.plan,
+            self.matrix,
+            "build-deploy-cross-platform.yml",
+            "host",
             classifiers="windows-x86_64-zluda--zluda",
             selection_mode="targeted",
         )
         self.assertEqual(
-            [("windows-x86_64-zluda", "zluda")],
+            [("windows-x86_64-zluda", "cuda-12.9")],
             [(row["shard"], row["variant"]) for row in rows],
         )
+        self.assertEqual("windows-x86_64-zluda--cuda-12.9", rows[0]["selector"])
 
     def test_classifier_filter_rejects_unknown_row(self):
         with self.assertRaisesRegex(ValueError, "does not contain requested classifiers"):
@@ -352,6 +382,7 @@ class WorkflowMatrixTests(unittest.TestCase):
     def test_every_worker_reuses_native_and_maven_dependency_downloads(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
         workflow = (ROOT / ".github/workflows/_release-worker.yml").read_text()
+        preparer = (ROOT / "release/github/prepare-worker.py").read_text()
 
         self.assertIn("name: Restore Maven dependency repository", action)
         self.assertIn(
@@ -369,6 +400,10 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertEqual(4, workflow.count("dl4j-dependency-v4-${{ runner.os }}-"))
         self.assertNotIn("if: matrix.dependencyCacheKey != ''", workflow)
+        self.assertIn("DL4J_DEPENDENCY_CACHE_HELPER: ${{ github.workspace }}/release/azure/dependency-cache.py", action)
+        self.assertIn("DL4J_CLOUD_IO: ${{ github.workspace }}/release/azure/cloud-io.py", action)
+        self.assertIn("toolchainCache", preparer)
+        self.assertIn("deeplearning4j/releases/toolchain-cache/v1", preparer)
 
     def test_shared_worker_publishes_prebuilt_snapshots_with_existing_central_credentials(self):
         action = (ROOT / ".github/actions/run-release-worker/action.yml").read_text()
@@ -769,6 +804,18 @@ class WorkerConfigTests(unittest.TestCase):
                 target["compatibility"]["javacppPlatform"]
                 for target in dependency_cache["targets"]
             },
+        )
+
+    def test_legacy_direct_zluda_variant_is_normalized(self):
+        config = prepare_worker.worker_config(
+            self.args(
+                shard="windows-x86_64-zluda",
+                variant="zluda",
+            )
+        )
+        self.assertEqual(
+            ["cuda-12.9"],
+            [variant["name"] for variant in config["shard"]["build"]["variants"]],
         )
 
     def test_default_threads_are_capped_to_the_runner_cpu_count(self):

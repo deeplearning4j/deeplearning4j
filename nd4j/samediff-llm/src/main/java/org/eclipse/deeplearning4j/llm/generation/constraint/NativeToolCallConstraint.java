@@ -764,8 +764,24 @@ public final class NativeToolCallConstraint implements TextConstraint {
             return false;
         }
 
+        if (!validPatternPrefix(value, schema)) {
+            return false;
+        }
         List<String> allowed = allowedStringValues(schema);
         return allowed.isEmpty() || allowed.stream().anyMatch(item -> item.startsWith(value));
+    }
+
+    private static boolean validPatternPrefix(String value, Map<String, Object> schema) {
+        Object configuredPattern = schema.get("pattern");
+        if (!(configuredPattern instanceof String) || ((String) configuredPattern).isEmpty()) {
+            return true;
+        }
+        try {
+            var matcher = Pattern.compile((String) configuredPattern).matcher(value);
+            return matcher.find() || matcher.hitEnd();
+        } catch (java.util.regex.PatternSyntaxException invalidSchema) {
+            return false;
+        }
     }
 
     private static boolean validIncompleteStringEscapePrefix(

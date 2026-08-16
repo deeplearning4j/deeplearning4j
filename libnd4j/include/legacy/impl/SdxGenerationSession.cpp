@@ -16,6 +16,7 @@
 #include <array/NDArray.h>
 #include <array/NDArrayFactory.h>
 #include <execution/LaunchContext.h>
+#include <graph/DspDiagnostics.h>
 #include <ops/declarable/helpers/autoregressive_decode.h>
 #include <ops/declarable/helpers/token_sample.h>
 
@@ -471,7 +472,7 @@ bool sampleFromLogits(
 
 bool copyPrefillKv(
     NDArray* source,
-    int32_t contextLength,
+    int32_t cacheCapacity,
     DataType expectedType,
     std::unique_ptr<NDArray>* out,
     std::string* error) {
@@ -481,7 +482,7 @@ bool copyPrefillKv(
   }
   if (source->rankOf() != 4 || source->sizeAt(0) != 1 ||
       source->sizeAt(1) <= 0 || source->sizeAt(2) <= 0 ||
-      source->sizeAt(3) <= 0 || source->sizeAt(1) > contextLength) {
+      source->sizeAt(3) <= 0 || source->sizeAt(1) > cacheCapacity) {
     if (error != nullptr) {
       *error = "prefill KV tensor must use BSHD [1, sequence, heads, dim]";
     }
@@ -503,7 +504,7 @@ bool copyPrefillKv(
   }
 
   auto destination = createArray(
-      {1, static_cast<LongType>(contextLength), source->sizeAt(2),
+      {1, static_cast<LongType>(cacheCapacity), source->sizeAt(2),
        source->sizeAt(3)},
       expectedType);
   assignScalar(destination.get(), 0.0);
@@ -571,8 +572,48 @@ bool copyRecurrentArray(
     std::unique_ptr<NDArray>* out,
     std::string* error) {
   if (!validateRecurrentArray(source, state, error)) return false;
+
+  // Recurrent outputs are borrowed from the prefill plan and may have just
+  // returned from an accelerator segment. The decode context consumes public
+  // inputs through the host-only sdx_tensor_view_t ABI, so this context
+  // boundary must produce an independently owned, host-materialized buffer.
+  // Generic NDArray::assign can preserve device-authoritative state for a
+  // borrowed output and leave buffer() null in CPU accelerator builds.
+  source->syncToHost();
+  void* sourceBuffer = source->buffer();
+  if (source->lengthOf() > 0 && sourceBuffer == nullptr) {
+    if (error != nullptr) {
+      *error = "prefill recurrent state has no host buffer: " + state.output;
+    }
+    return false;
+  }
+
   auto destination = createRecurrentArray(state);
-  destination->assign(source);
+  void* destinationBuffer = destination->buffer();
+  if (destination->lengthOf() > 0 && destinationBuffer == nullptr) {
+    if (error != nullptr) {
+      *error = "decode recurrent state allocation has no host buffer: " +
+               state.input;
+    }
+    return false;
+  }
+
+  const size_t elementSize =
+      sd::DataTypeUtils::sizeOfElement(state.dataType);
+  const uint64_t elements = static_cast<uint64_t>(source->lengthOf());
+  if (elementSize != 0 &&
+      elements > std::numeric_limits<size_t>::max() / elementSize) {
+    if (error != nullptr) {
+      *error = "recurrent state byte size overflow: " + state.output;
+    }
+    return false;
+  }
+  const size_t bytes = static_cast<size_t>(elements) * elementSize;
+  if (bytes > 0) {
+    std::memcpy(destinationBuffer, sourceBuffer, bytes);
+    destination->tickWriteHost();
+  }
+
   *out = std::move(destination);
   return true;
 }
@@ -613,6 +654,7 @@ struct sdx_generation_session {
   bool reachedEos = false;
   int32_t promptTokenCount = 0;
   int32_t cachePosition = 0;
+  int32_t activeContextCapacity = 0;
   LongType lastToken = -1;
   int32_t totalGenerated = 0;
   std::vector<LongType> history;
@@ -670,6 +712,7 @@ void clearExecutionState(sdx_generation_session_t* session) {
   session->reachedEos = false;
   session->promptTokenCount = 0;
   session->cachePosition = 0;
+  session->activeContextCapacity = 0;
   session->lastToken = -1;
   session->totalGenerated = 0;
   session->history.clear();
@@ -876,6 +919,11 @@ sdx_status_t runPrefill(
     int32_t capacity,
     int32_t* count) {
   const auto start = Clock::now();
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_BEGIN phase=prefill prompt_tokens=%d cache_capacity=%d",
+      promptCount,
+      session->activeContextCapacity);
   std::string error;
   if (!addPrefillInputs(session, prompt, promptCount, &error)) {
     return fail(session, SDX_STATUS_INVALID_ARGUMENT, error);
@@ -910,10 +958,19 @@ sdx_status_t runPrefill(
     return fail(session, SDX_STATUS_INVALID_ARGUMENT, error);
   }
 
+  const auto prefillExecuteStart = Clock::now();
+  DSP_DIAG(TIMING, "SDX_PHASE_BEGIN phase=prefill_plan_execute");
   status = sd::dsp::runtime::detail::runOwnedArrays(
       session->prefillContext, session->prefillPublic);
   if (status != SDX_STATUS_OK) return status;
   captureExecutionReport(session, session->prefillContext);
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_END phase=prefill_plan_execute elapsed_us=%llu plan_phase=%d execution_count=%d",
+      static_cast<unsigned long long>(
+          elapsedNanos(prefillExecuteStart, Clock::now()) / 1000ULL),
+      session->lastExecutionReport.plan_phase,
+      session->lastExecutionReport.execution_count);
   if (cancellationRequested(session, callbacks)) {
     session->lastPrefillNanos = elapsedNanos(start, Clock::now());
     return SDX_STATUS_OK;
@@ -945,6 +1002,14 @@ sdx_status_t runPrefill(
     return fail(session, SDX_STATUS_EXECUTION_FAILED, error);
   }
 
+  const auto stateTransferStart = Clock::now();
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_BEGIN phase=prefill_state_transfer cache_capacity=%d kv_tensors=%zu recurrent_states=%zu",
+      session->activeContextCapacity,
+      session->metadata.prefillKeyOutputs.size() +
+          session->metadata.prefillValueOutputs.size(),
+      session->metadata.recurrentStates.size());
   std::vector<std::unique_ptr<NDArray>> fullKv;
   fullKv.reserve(
       session->metadata.prefillKeyOutputs.size() +
@@ -961,7 +1026,7 @@ sdx_status_t runPrefill(
     if (!copyPrefillKv(
             sd::dsp::runtime::detail::contextOutputArray(
                 session->prefillContext, index),
-            session->metadata.contextLength,
+            session->activeContextCapacity,
             session->metadata.kvDataType,
             &destination,
             &error)) {
@@ -981,7 +1046,7 @@ sdx_status_t runPrefill(
     if (!copyPrefillKv(
             sd::dsp::runtime::detail::contextOutputArray(
                 session->prefillContext, index),
-            session->metadata.contextLength,
+            session->activeContextCapacity,
             session->metadata.kvDataType,
             &destination,
             &error)) {
@@ -1012,6 +1077,11 @@ sdx_status_t runPrefill(
     }
     recurrentStates.push_back(std::move(destination));
   }
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_END phase=prefill_state_transfer elapsed_us=%llu",
+      static_cast<unsigned long long>(
+          elapsedNanos(stateTransferStart, Clock::now()) / 1000ULL));
 
   destroyContext(&session->prefillContext);
   session->prefillPublic.clear();
@@ -1051,6 +1121,10 @@ sdx_status_t runPrefill(
   session->cachePosition = promptCount;
   commitToken(session, firstToken, callbacks, output, capacity, count);
   session->lastPrefillNanos = elapsedNanos(start, Clock::now());
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_END phase=prefill elapsed_us=%llu emitted_tokens=1",
+      static_cast<unsigned long long>(session->lastPrefillNanos / 1000ULL));
   return SDX_STATUS_OK;
 }
 
@@ -1069,7 +1143,7 @@ bool addDecodeInputs(
       ->p(0, session->lastToken);
 
   auto mask = createArray(
-      {1, 1, 1, static_cast<LongType>(metadata.contextLength)},
+      {1, 1, 1, static_cast<LongType>(session->activeContextCapacity)},
       metadata.maskDataType);
   assignScalar(mask.get(), maskFillValue(metadata.maskDataType));
   for (int32_t i = 0; i <= session->cachePosition; ++i) {
@@ -1205,6 +1279,11 @@ sdx_status_t warmDecode(
     int32_t* count,
     uint64_t* decodeNanos) {
   const auto start = Clock::now();
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_BEGIN phase=decode_warmup cache_position=%d cache_capacity=%d",
+      session->cachePosition,
+      session->activeContextCapacity);
   std::string error;
   if (!addDecodeInputs(session, &error)) {
     return fail(session, SDX_STATUS_INVALID_ARGUMENT, error);
@@ -1276,10 +1355,22 @@ sdx_status_t warmDecode(
     if (status != SDX_STATUS_OK) return status;
   }
 
+  const auto slotWarmupStart = Clock::now();
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_BEGIN phase=decode_slot_by_slot_warmup public_inputs=%zu",
+      session->decodePublic.size());
   status = sd::dsp::runtime::detail::runOwnedArrays(
       session->decodeContext, session->decodePublic);
   if (status != SDX_STATUS_OK) return status;
   captureExecutionReport(session, session->decodeContext);
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_END phase=decode_slot_by_slot_warmup elapsed_us=%llu plan_phase=%d execution_count=%d",
+      static_cast<unsigned long long>(
+          elapsedNanos(slotWarmupStart, Clock::now()) / 1000ULL),
+      session->lastExecutionReport.plan_phase,
+      session->lastExecutionReport.execution_count);
 
   NDArray* logits =
       sd::dsp::runtime::detail::contextOutputArray(
@@ -1325,8 +1416,15 @@ sdx_status_t warmDecode(
     }
     destination->assign(source);
   }
+  const auto freezeStart = Clock::now();
+  DSP_DIAG(TIMING, "SDX_PHASE_BEGIN phase=decode_freeze_shapes");
   status = sdxFreezeShapes(session->decodeContext);
   if (status != SDX_STATUS_OK) return status;
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_END phase=decode_freeze_shapes elapsed_us=%llu",
+      static_cast<unsigned long long>(
+          elapsedNanos(freezeStart, Clock::now()) / 1000ULL));
 
   session->dummyEmbedding =
       createArray({1, 1, 1}, DataType::FLOAT32);
@@ -1338,9 +1436,14 @@ sdx_status_t warmDecode(
   session->cachePosition++;
   session->decodeReady = true;
   commitToken(session, nextToken, callbacks, output, capacity, count);
+  const uint64_t warmupNanos = elapsedNanos(start, Clock::now());
   if (decodeNanos != nullptr) {
-    *decodeNanos += elapsedNanos(start, Clock::now());
+    *decodeNanos += warmupNanos;
   }
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_END phase=decode_warmup elapsed_us=%llu emitted_tokens=1",
+      static_cast<unsigned long long>(warmupNanos / 1000ULL));
   return SDX_STATUS_OK;
 }
 
@@ -1379,7 +1482,7 @@ sdx_status_t runNativeDecode(
     uint64_t* decodeNanos) {
   if (requestedTokens <= 0) return SDX_STATUS_OK;
   const int32_t remainingContext =
-      session->metadata.contextLength - session->cachePosition;
+      session->activeContextCapacity - session->cachePosition;
   const int32_t steps = std::min(requestedTokens, remainingContext);
   if (steps <= 0) return SDX_STATUS_OK;
 
@@ -1484,6 +1587,12 @@ sdx_status_t runNativeDecode(
 
   const auto start = Clock::now();
   const int32_t before = *count;
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_BEGIN phase=native_decode steps=%d cache_position=%d cache_capacity=%d",
+      steps,
+      session->cachePosition,
+      session->activeContextCapacity);
   try {
     sd::ops::helpers::autoregressiveDecode(
         session->dummyEmbedding.get(),
@@ -1531,9 +1640,15 @@ sdx_status_t runNativeDecode(
         "native decode callback count does not match token count");
   }
   session->cachePosition += emitted;
+  const uint64_t nativeDecodeNanos = elapsedNanos(start, Clock::now());
   if (decodeNanos != nullptr) {
-    *decodeNanos += elapsedNanos(start, Clock::now());
+    *decodeNanos += nativeDecodeNanos;
   }
+  DSP_DIAG(
+      TIMING,
+      "SDX_PHASE_END phase=native_decode elapsed_us=%llu emitted_tokens=%d",
+      static_cast<unsigned long long>(nativeDecodeNanos / 1000ULL),
+      emitted);
   return SDX_STATUS_OK;
 }
 
@@ -1546,7 +1661,7 @@ int32_t finishReason(
   if (cancellationRequested(session, callbacks)) {
     return SDX_GENERATION_FINISH_CANCELLED;
   }
-  if (session->cachePosition >= session->metadata.contextLength &&
+  if (session->cachePosition >= session->activeContextCapacity &&
       generatedThisCall < requested) {
     return SDX_GENERATION_FINISH_CONTEXT_LIMIT;
   }
@@ -1612,7 +1727,7 @@ sdx_status_t continueLocked(
       !cancellationRequested(session, callbacks) &&
       *count < policy.maxNewTokens &&
       !session->decodeReady &&
-      session->cachePosition < session->metadata.contextLength) {
+      session->cachePosition < session->activeContextCapacity) {
     sdx_status_t status = warmDecode(
         session,
         policy,
@@ -1627,7 +1742,7 @@ sdx_status_t continueLocked(
   if (!session->reachedEos &&
       !cancellationRequested(session, callbacks) &&
       *count < policy.maxNewTokens &&
-      session->cachePosition < session->metadata.contextLength) {
+      session->cachePosition < session->activeContextCapacity) {
     sdx_status_t status = runNativeDecode(
         session,
         policy.maxNewTokens - *count,
@@ -1771,6 +1886,20 @@ SDX_API sdx_status_t sdxGenerationGenerate(
 
   clearExecutionState(session);
   session->cancelRequested.store(false, std::memory_order_release);
+  const int32_t reservedNewTokens =
+      std::max(policy.maxNewTokens, session->metadata.sampling.maxNewTokens);
+  const int64_t requestedCapacity =
+      static_cast<int64_t>(numPromptTokens) + reservedNewTokens;
+  session->activeContextCapacity = static_cast<int32_t>(std::min<int64_t>(
+      session->metadata.contextLength, requestedCapacity));
+  DSP_DIAG(
+      TIMING,
+      "SDX_CACHE_CAPACITY prompt_tokens=%d request_tokens=%d reserved_tokens=%d active=%d model_context=%d",
+      numPromptTokens,
+      policy.maxNewTokens,
+      reservedNewTokens,
+      session->activeContextCapacity,
+      session->metadata.contextLength);
   session->history.reserve(
       static_cast<size_t>(numPromptTokens + policy.maxNewTokens));
   for (int32_t i = 0; i < numPromptTokens; ++i) {

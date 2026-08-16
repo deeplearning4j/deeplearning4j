@@ -9,6 +9,8 @@ import hashlib
 import json
 import os
 import re
+import urllib.error
+import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -17,6 +19,10 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PLAN = ROOT / "release/aws/release-plan.json"
 DEFAULT_MATRIX = ROOT / "release/github/workflow-matrix.json"
 AZURE_CACHE_PREFIX = "deeplearning4j/releases/compiler-cache/v1"
+PUBLIC_DEPENDENCY_CACHE_MANIFEST_URL = (
+    "https://dl4jrel26302370c1eeb25.blob.core.windows.net/releases/"
+    "deeplearning4j/releases/dependency-cache/v2/public-manifest.json"
+)
 PUBLIC_DEPENDENCY_CACHE = {
     "publicBaseUrl": (
         "https://dl4jrel26302370c1eeb25.blob.core.windows.net/releases"
@@ -67,6 +73,57 @@ PUBLIC_DEPENDENCY_CACHE = {
 }
 
 
+def load_public_dependency_cache() -> dict:
+    """Load the controller-maintained cache index, with a safe static fallback.
+
+    GitHub workers must not enumerate the release container or receive storage
+    credentials.  Azure publishes this small manifest after each controller
+    refresh; the immutable archives it references are still verified by the
+    build driver.  A stale-but-known-good index keeps older branches usable when
+    the manifest is temporarily unavailable.
+    """
+    manifest_url = os.environ.get(
+        "DL4J_DEPENDENCY_CACHE_MANIFEST_URL", PUBLIC_DEPENDENCY_CACHE_MANIFEST_URL
+    )
+    connection = os.environ.get("DL4J_AZURE_CONNECTION_STRING") or os.environ.get(
+        "SCCACHE_AZURE_CONNECTION_STRING", ""
+    )
+    sas = next(
+        (
+            part.split("=", 1)[1].lstrip("?")
+            for part in connection.split(";")
+            if part.startswith("SharedAccessSignature=")
+        ),
+        "",
+    )
+    if sas and "?" not in manifest_url:
+        manifest_url = f"{manifest_url}?{sas}"
+    try:
+        request = urllib.request.Request(
+            manifest_url, headers={"User-Agent": "dl4j-github-release-worker"}
+        )
+        with urllib.request.urlopen(request, timeout=8) as response:
+            candidate = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError, urllib.error.URLError, urllib.error.HTTPError):
+        return copy.deepcopy(PUBLIC_DEPENDENCY_CACHE)
+
+    if not isinstance(candidate, dict) or candidate.get("schemaVersion") != 1:
+        return copy.deepcopy(PUBLIC_DEPENDENCY_CACHE)
+    if not isinstance(candidate.get("publicBaseUrl"), str):
+        return copy.deepcopy(PUBLIC_DEPENDENCY_CACHE)
+    host = candidate.get("host")
+    targets = candidate.get("targets")
+    if not isinstance(host, dict) or not isinstance(targets, list):
+        return copy.deepcopy(PUBLIC_DEPENDENCY_CACHE)
+    if not all(
+        isinstance(item, dict)
+        and all(isinstance(item.get(key), str) and item[key] for key in ("identity", "indexObject", "archiveObject"))
+        for item in [host, *targets]
+    ):
+        return copy.deepcopy(PUBLIC_DEPENDENCY_CACHE)
+    return candidate
+
+
 def load_json(path: Path) -> dict:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
@@ -82,11 +139,54 @@ def plan_shards(plan: dict) -> dict[str, dict]:
 
 
 def public_artifact_id(shard_id: str, variant_name: str) -> str:
-    """Return a stable external ID without the internal ``--`` selector delimiter."""
-    artifact_id = re.sub(r"-+", "-", f"{shard_id}-{variant_name}").strip("-")
+    """Return the public row ID for one planned shard/variant.
+
+    Selectors deliberately use ``--`` internally.  Public IDs use one hyphen,
+    and a variant that is already encoded in the shard ID is not appended a
+    second time (for example ``linux-x86_64-compat`` + ``compat``).
+    """
+    shard_id = str(shard_id).strip("-")
+    variant_name = str(variant_name).strip("-")
+    if not shard_id or not variant_name:
+        raise ValueError("release artifact ID cannot be empty")
+    if shard_id == variant_name or shard_id.endswith(f"-{variant_name}"):
+        value = shard_id
+    else:
+        value = f"{shard_id}-{variant_name}"
+    artifact_id = re.sub(r"-+", "-", value).strip("-")
     if not artifact_id:
         raise ValueError("release artifact ID cannot be empty")
     return artifact_id
+
+
+def canonical_variant_name(shard: dict, variant_name: str) -> str:
+    """Resolve legacy ZLUDA selectors to the CUDA-versioned variant name.
+
+    The release plans use ``cuda-12.9`` as the public variant label because
+    ZLUDA is a CUDA 12.9 ABI variant. Older dispatches used ``zluda`` as the
+    label; accepting that alias keeps queued/manual workflow invocations
+    compatible without emitting duplicate ``zluda-zluda`` artifact IDs.
+    """
+    if variant_name != "zluda":
+        return variant_name
+    build = shard.get("build", {})
+    if not build.get("zludaVersion"):
+        return variant_name
+    variants = build.get("variants", [])
+    canonical_names = [
+        str(variant.get("name"))
+        for variant in variants
+        if str(variant.get("name")) != "zluda"
+    ]
+    return canonical_names[0] if len(canonical_names) == 1 else variant_name
+
+
+def canonical_selector(shards: dict[str, dict], selector: str) -> str:
+    """Normalize a selector while retaining ``--`` as the internal delimiter."""
+    shard_id, delimiter, variant_name = selector.partition("--")
+    if not delimiter or shard_id not in shards:
+        return selector
+    return f"{shard_id}--{canonical_variant_name(shards[shard_id], variant_name)}"
 
 
 def dependency_cache_key(shard_id: str, variant: dict) -> str:
@@ -137,7 +237,7 @@ def workflow_rows(
     shards = plan_shards(plan)
     runtimes = matrix.get("shards", {})
     requested = {
-        classifier.strip()
+        canonical_selector(shards, classifier.strip())
         for classifier in classifiers.split(",")
         if classifier.strip()
     }
@@ -158,9 +258,13 @@ def workflow_rows(
             if shard_id not in shards:
                 continue
             variants = shards[shard_id]["build"].get("variants", [])
-            variant_names = [str(variant["name"]) for variant in variants]
+            variant_names = [
+                canonical_variant_name(shards[shard_id], str(variant["name"]))
+                for variant in variants
+            ]
             selected_names = [
-                str(name) for name in (selection.get("variants") or variant_names)
+                canonical_variant_name(shards[shard_id], str(name))
+                for name in (selection.get("variants") or variant_names)
             ]
             selectors.update(f"{shard_id}--{name}" for name in selected_names)
         return selectors
@@ -184,8 +288,14 @@ def workflow_rows(
             raise ValueError(f"workflow matrix has no runtime for shard {shard_id!r}")
         runtime = runtimes[shard_id]
         variants = shards[shard_id]["build"].get("variants", [])
-        by_name = {str(variant["name"]): variant for variant in variants}
-        selected_names = [str(name) for name in (selection.get("variants") or list(by_name))]
+        by_name = {
+            canonical_variant_name(shards[shard_id], str(variant["name"])): variant
+            for variant in variants
+        }
+        selected_names = [
+            canonical_variant_name(shards[shard_id], str(name))
+            for name in (selection.get("variants") or list(by_name))
+        ]
         for variant_name in selected_names:
             if variant_name not in by_name:
                 raise ValueError(
@@ -203,6 +313,7 @@ def workflow_rows(
         )
 
     rows: list[dict] = []
+    public_ids: dict[str, str] = {}
     for shard_id, runtime, by_name, selected_names in selections:
         if runtime.get("group") != group:
             continue
@@ -212,6 +323,13 @@ def workflow_rows(
                 continue
             variant = by_name[variant_name]
             artifact_id = public_artifact_id(shard_id, variant_name)
+            previous_selector = public_ids.get(artifact_id)
+            if previous_selector and previous_selector != selector:
+                raise ValueError(
+                    "workflow matrix maps multiple selectors to public artifact ID "
+                    f"{artifact_id!r}: {previous_selector}, {selector}"
+                )
+            public_ids[artifact_id] = selector
             row = {
                 "name": artifact_id,
                 "artifactId": artifact_id,
@@ -253,7 +371,8 @@ def worker_config(args: argparse.Namespace) -> dict:
         raise ValueError(f"unknown shard {args.shard!r}")
     shard = copy.deepcopy(shards[args.shard])
     variants = shard["build"].get("variants", [])
-    selected = [variant for variant in variants if variant["name"] == args.variant]
+    variant_name = canonical_variant_name(shard, args.variant)
+    selected = [variant for variant in variants if variant["name"] == variant_name]
     if len(selected) != 1:
         raise ValueError(f"unknown variant {args.shard}--{args.variant}")
     shard["build"]["variants"] = selected
@@ -291,14 +410,19 @@ def worker_config(args: argparse.Namespace) -> dict:
         # Published dependency snapshots are immutable and anonymously readable.
         # Keep them separate from the authenticated compiler-object cache so a
         # GitHub worker can restore LLVM/MLIR without receiving storage keys.
-        "dependencyCache": copy.deepcopy(PUBLIC_DEPENDENCY_CACHE),
+        "dependencyCache": load_public_dependency_cache(),
     }
     if args.azure_cache:
         config["compilerCache"] = {
             "backend": "azure",
+            "account": "dl4jrel26302370c1eeb25",
             "connectionStringEnv": "SCCACHE_AZURE_CONNECTION_STRING",
             "container": "releases",
             "keyPrefix": AZURE_CACHE_PREFIX,
+            "toolchainCache": {
+                "schemaVersion": 1,
+                "keyPrefix": "deeplearning4j/releases/toolchain-cache/v1",
+            },
         }
     return config
 

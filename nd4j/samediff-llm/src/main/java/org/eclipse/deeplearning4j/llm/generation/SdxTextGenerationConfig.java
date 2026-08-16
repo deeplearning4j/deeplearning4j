@@ -261,8 +261,11 @@ public final class SdxTextGenerationConfig {
     private static LogitsContract deriveLogitsContract(
             SameDiff graph, ModelIOConfig ioConfig) throws IOException {
         Set<String> outputs = new LinkedHashSet<>(graph.outputs());
-        if (outputs.contains("lm_logits") && outputs.contains("lm_logits_last")) {
-            return new LogitsContract("lm_logits", "lm_logits_last");
+        if (outputs.contains("lm_logits_last")) {
+            // Native generation consumes only the final prompt/decode position. Prefer the
+            // dedicated [B,1,V] projection even when the graph also exposes full [B,S,V]
+            // logits, and support generation-only mobile graphs that omit the full branch.
+            return new LogitsContract("lm_logits_last", "lm_logits_last");
         }
         String discovered = requireGraphOutput(
                 graph, ioConfig.getLogitsOutputName(), "logits output");

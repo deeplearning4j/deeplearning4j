@@ -119,13 +119,14 @@ public class CudaAffinityManager extends BasicAffinityManager {
         int attempts = Math.max(1, CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
         for (int i = 0; i < attempts; i++) {
             deviceId = getNextDevice(threadId);
-            affinityMap.put(threadId, deviceId);
             try {
+                // CudaDeviceContextProvider owns both the native switch and the affinity-map
+                // transaction. Do not pre-publish or erase the mapping here: on a partial native
+                // failure the provider reconciles it to CUDA's actual current device.
                 contextProvider.switchDevice(deviceId, "CudaAffinityManager.getDeviceForCurrentThread", "first-time-init");
                 return deviceId;
             } catch (RuntimeException e) {
                 lastException = e;
-                affinityMap.remove(threadId);
                 logger.warn("Failed to set CUDA device [{}] for thread [{}]: {}", deviceId, threadId, e.getMessage());
                 if (deviceId != null && deviceId >= 0) {
                     CudaEnvironment.getInstance().getConfiguration().banDevice(deviceId);
@@ -169,13 +170,18 @@ public class CudaAffinityManager extends BasicAffinityManager {
     }
 
     /**
-     * Set the device ID for the current thread.
+     * Explicitly binds the current thread through CUDA's single device-context authority.
+     * Updating only {@link #affinityMap} is not sufficient: native allocations and launch
+     * contexts would remain on the previous device while Java reported the new one.
+     *
      * @param deviceId the device ID to set
      */
     @Override
     public void setDeviceForCurrentThread(int deviceId) {
-        long threadId = Thread.currentThread().getId();
-        affinityMap.put(threadId, deviceId);
+        contextProvider.switchDevice(
+                deviceId, CudaAffinityManager.class.getName(), "setDeviceForCurrentThread");
+        logger.debug("CudaAffinityManager: thread {} bound to device {}",
+                Thread.currentThread().getId(), deviceId);
     }
 
 

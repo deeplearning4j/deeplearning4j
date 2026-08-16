@@ -50,6 +50,8 @@
         <zluda.native.library>libnd4jcuda.so</zluda.native.library>
         <zluda.cuda.abi.library>libcuda.so</zluda.cuda.abi.library>
         <zluda.accelerator.runtime.library>libamdhip64.so</zluda.accelerator.runtime.library>
+        <zluda.hsa.runtime.library>libhsa-runtime64.so.1</zluda.hsa.runtime.library>
+        <zluda.hsakmt.runtime.library>libhsakmt.so.1</zluda.hsakmt.runtime.library>
         <zluda.jni.library>libjnind4jcuda.so</zluda.jni.library>
         <module.name>nd4j.zluda</module.name>
     </properties>
@@ -195,6 +197,22 @@
                                         </fail>
                                         <fail message="CMake ZLUDA runtime package is missing its accelerator runtime (${zluda.accelerator.runtime.library})">
                                             <condition><not><available file="${zluda.runtime.package}/${zluda.accelerator.runtime.library}"/></not></condition>
+                                        </fail>
+                                        <fail message="CMake ZLUDA runtime package is missing the HSA runtime matched to its ROCm SDK (${zluda.hsa.runtime.library})">
+                                            <condition>
+                                                <and>
+                                                    <not><os family="windows"/></not>
+                                                    <not><available file="${zluda.runtime.package}/${zluda.hsa.runtime.library}"/></not>
+                                                </and>
+                                            </condition>
+                                        </fail>
+                                        <fail message="CMake ZLUDA runtime package is missing the ROCt thunk matched to its HSA runtime (${zluda.hsakmt.runtime.library})">
+                                            <condition>
+                                                <and>
+                                                    <not><os family="windows"/></not>
+                                                    <not><available file="${zluda.runtime.package}/${zluda.hsakmt.runtime.library}"/></not>
+                                                </and>
+                                            </condition>
                                         </fail>
                                         <fail message="CMake ZLUDA runtime package is missing its closure manifest">
                                             <condition><not><available file="${zluda.runtime.package}/shared-runtime-manifest.txt"/></not></condition>

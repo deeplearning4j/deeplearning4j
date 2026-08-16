@@ -1216,6 +1216,7 @@
       ],
       "artifactRules": {
         "mode": "classifier",
+        "classifierPrimaryArtifact": "nd4j-zluda-12.9",
         "artifactIds": [
           "nd4j-cuda-12.9-preset",
           "nd4j-zluda-12.9",
@@ -1240,6 +1241,8 @@
               "org/nd4j/linalg/jcublas/bindings/{classifier}/libnd4jcuda.so",
               "org/nd4j/linalg/jcublas/bindings/{classifier}/libcuda.so",
               "org/nd4j/linalg/jcublas/bindings/{classifier}/libamdhip64.so",
+              "org/nd4j/linalg/jcublas/bindings/{classifier}/libhsa-runtime64.so.1",
+              "org/nd4j/linalg/jcublas/bindings/{classifier}/libhsakmt.so.1",
               "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt"
             ],
             "runtimeManifest": "org/nd4j/linalg/jcublas/bindings/{classifier}/shared-runtime-manifest.txt",
@@ -1286,7 +1289,7 @@
         ],
         "variants": [
           {
-            "name": "zluda",
+            "name": "cuda-12.9",
             "classifierSuffix": "-cuda-12.9-zluda",
             "platformExtension": "-zluda"
           }
@@ -1313,6 +1316,7 @@
       ],
       "artifactRules": {
         "mode": "classifier",
+        "classifierPrimaryArtifact": "nd4j-zluda-12.9",
         "artifactIds": [
           "nd4j-cuda-12.9-preset",
           "nd4j-cuda-backend-common",
@@ -1358,7 +1362,7 @@
         ],
         "variants": [
           {
-            "name": "zluda",
+            "name": "cuda-12.9",
             "classifierSuffix": "-cuda-12.9-zluda",
             "platformExtension": "-zluda"
           }

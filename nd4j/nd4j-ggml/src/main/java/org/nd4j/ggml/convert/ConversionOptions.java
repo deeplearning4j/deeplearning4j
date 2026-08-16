@@ -49,6 +49,22 @@ public class ConversionOptions {
     private DataType targetDataType = DataType.FLOAT16;
 
     /**
+     * Optional compact storage type for the token embedding table. This may differ
+     * from {@link #targetDataType} when the graph casts only the gathered rows back
+     * to the model working type. It is applied only when the model has a dedicated
+     * output projection, so tied embeddings never trigger a full-table runtime cast.
+     */
+    private DataType embeddingDataType;
+
+    /**
+     * Emit only the last-position logits projection for generation-only graphs.
+     * This removes the unused {@code [batch, sequence, vocabulary]} branch from
+     * mobile compiled bundles while retaining {@code [batch, 1, vocabulary]}.
+     */
+    @Builder.Default
+    private boolean lastPositionLogitsOnly = false;
+
+    /**
      * Whether to preserve tokenizer information in metadata
      */
     @Builder.Default

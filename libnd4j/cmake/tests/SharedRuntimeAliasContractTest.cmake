@@ -125,9 +125,12 @@ endif()
 set(_managed_source "${_test_root}/MIOpenContract.cpp")
 set(_managed_runtime "${_runtime_root}/libMIOpenContract-concrete.so.7")
 set(_managed_link_alias "${_runtime_root}/libMIOpenContract.so")
-set(_host_hsa_source "${_test_root}/hsa-runtime.cpp")
-set(_host_hsa_runtime "${_runtime_root}/libhsa-runtime64.so.1.99")
-set(_host_hsa_link_alias "${_runtime_root}/libhsa-runtime64.so")
+set(_selected_hsakmt_source "${_test_root}/hsakmt.cpp")
+set(_selected_hsakmt_runtime "${_runtime_root}/libhsakmt.so.1.99")
+set(_selected_hsakmt_link_alias "${_runtime_root}/libhsakmt.so")
+set(_selected_hsa_source "${_test_root}/hsa-runtime.cpp")
+set(_selected_hsa_runtime "${_runtime_root}/libhsa-runtime64.so.1.99")
+set(_selected_hsa_link_alias "${_runtime_root}/libhsa-runtime64.so")
 set(_primary_source "${_test_root}/primary.cpp")
 set(_primary_runtime "${_test_root}/libprimary.so")
 set(_primary_output "${_test_root}/primary-output")
@@ -142,12 +145,15 @@ if(DEFINED TEST_PATCHELF AND
 endif()
 file(WRITE "${_managed_source}"
     "extern \"C\" int dl4j_managed_runtime_contract() { return 7; }\n")
-file(WRITE "${_host_hsa_source}"
-    "extern \"C\" int dl4j_host_hsa_contract() { return 11; }\n")
+file(WRITE "${_selected_hsakmt_source}"
+    "extern \"C\" int dl4j_selected_hsakmt_contract() { return 5; }\n")
+file(WRITE "${_selected_hsa_source}"
+    "extern \"C\" int dl4j_selected_hsakmt_contract();\n"
+    "extern \"C\" int dl4j_selected_hsa_contract() { return dl4j_selected_hsakmt_contract() + 11; }\n")
 file(WRITE "${_primary_source}"
     "extern \"C\" int dl4j_managed_runtime_contract();\n"
-    "extern \"C\" int dl4j_host_hsa_contract();\n"
-    "extern \"C\" int dl4j_primary_contract() { return dl4j_managed_runtime_contract() + dl4j_host_hsa_contract(); }\n")
+    "extern \"C\" int dl4j_selected_hsa_contract();\n"
+    "extern \"C\" int dl4j_primary_contract() { return dl4j_managed_runtime_contract() + dl4j_selected_hsa_contract(); }\n")
 execute_process(
     COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
         -Wl,-soname,libMIOpenContract.so.1
@@ -169,28 +175,49 @@ if(NOT _managed_symlink_result EQUAL 0)
 endif()
 execute_process(
     COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
-        -Wl,-soname,libhsa-runtime64.so.1
-        -o "${_host_hsa_runtime}" "${_host_hsa_source}"
-    RESULT_VARIABLE _host_hsa_compile_result
-    ERROR_VARIABLE _host_hsa_compile_error)
-if(NOT _host_hsa_compile_result EQUAL 0)
+        -Wl,-soname,libhsakmt.so.1
+        -o "${_selected_hsakmt_runtime}" "${_selected_hsakmt_source}"
+    RESULT_VARIABLE _selected_hsakmt_compile_result
+    ERROR_VARIABLE _selected_hsakmt_compile_error)
+if(NOT _selected_hsakmt_compile_result EQUAL 0)
     message(FATAL_ERROR
-        "Failed to compile host-HSA fixture: ${_host_hsa_compile_error}")
+        "Failed to compile selected-ROCm HSAKMT fixture: ${_selected_hsakmt_compile_error}")
 endif()
 execute_process(
     COMMAND "${CMAKE_COMMAND}" -E create_symlink
-        "libhsa-runtime64.so.1.99" "${_host_hsa_link_alias}"
-    RESULT_VARIABLE _host_hsa_symlink_result
-    ERROR_VARIABLE _host_hsa_symlink_error)
-if(NOT _host_hsa_symlink_result EQUAL 0)
+        "libhsakmt.so.1.99" "${_selected_hsakmt_link_alias}"
+    RESULT_VARIABLE _selected_hsakmt_symlink_result
+    ERROR_VARIABLE _selected_hsakmt_symlink_error)
+if(NOT _selected_hsakmt_symlink_result EQUAL 0)
     message(FATAL_ERROR
-        "Failed to create host-HSA link alias: ${_host_hsa_symlink_error}")
+        "Failed to create selected-ROCm HSAKMT link alias: ${_selected_hsakmt_symlink_error}")
+endif()
+execute_process(
+    COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
+        -Wl,-soname,libhsa-runtime64.so.1
+        "-L${_runtime_root}" -lhsakmt
+        -o "${_selected_hsa_runtime}" "${_selected_hsa_source}"
+    RESULT_VARIABLE _selected_hsa_compile_result
+    ERROR_VARIABLE _selected_hsa_compile_error)
+if(NOT _selected_hsa_compile_result EQUAL 0)
+    message(FATAL_ERROR
+        "Failed to compile selected-ROCm HSA fixture: ${_selected_hsa_compile_error}")
+endif()
+execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E create_symlink
+        "libhsa-runtime64.so.1.99" "${_selected_hsa_link_alias}"
+    RESULT_VARIABLE _selected_hsa_symlink_result
+    ERROR_VARIABLE _selected_hsa_symlink_error)
+if(NOT _selected_hsa_symlink_result EQUAL 0)
+    message(FATAL_ERROR
+        "Failed to create selected-ROCm HSA link alias: ${_selected_hsa_symlink_error}")
 endif()
 execute_process(
     COMMAND "${TEST_CXX_COMPILER}" -shared -fPIC
         -Wl,-soname,libprimary.so
         -Wl,--no-as-needed
-        "-L${_runtime_root}" -lMIOpenContract -lhsa-runtime64
+        "-L${_runtime_root}" "-Wl,-rpath-link,${_runtime_root}"
+        -lMIOpenContract -lhsa-runtime64
         -o "${_primary_runtime}" "${_primary_source}"
     RESULT_VARIABLE _primary_compile_result
     ERROR_VARIABLE _primary_compile_error)
@@ -248,26 +275,35 @@ if(_managed_runtime_index EQUAL -1 OR
         "libMIOpenContract.so.1 identity: ${_primary_manifest_entries}")
 endif()
 list(FIND _primary_manifest_entries "libhsa-runtime64.so.1"
-    _host_hsa_manifest_index)
-if(_primary_runtime_policy STREQUAL "zluda-amd")
-    if(NOT _host_hsa_manifest_index EQUAL -1 OR
-       EXISTS "${_primary_output}/libhsa-runtime64.so.1" OR
-       EXISTS "${_primary_package}/libhsa-runtime64.so.1")
-        message(FATAL_ERROR
-            "ZLUDA classifier packaged host-owned HSA runtime: "
-            "${_primary_manifest_entries}")
-    endif()
-elseif(_host_hsa_manifest_index EQUAL -1)
+    _selected_hsa_manifest_index)
+list(FIND _primary_manifest_entries "libhsa-runtime64.so"
+    _selected_hsa_alias_index)
+if(_selected_hsa_manifest_index EQUAL -1 OR
+   NOT _selected_hsa_alias_index EQUAL -1 OR
+   NOT EXISTS "${_primary_output}/libhsa-runtime64.so.1" OR
+   NOT EXISTS "${_primary_package}/libhsa-runtime64.so.1")
     message(FATAL_ERROR
-        "Default shared-runtime policy unexpectedly excluded HSA fixture")
+        "Runtime closure did not preserve exactly one canonical HSA identity "
+        "from the selected ROCm SDK: ${_primary_manifest_entries}")
+endif()
+list(FIND _primary_manifest_entries "libhsakmt.so.1"
+    _selected_hsakmt_manifest_index)
+list(FIND _primary_manifest_entries "libhsakmt.so"
+    _selected_hsakmt_alias_index)
+if(_selected_hsakmt_manifest_index EQUAL -1 OR
+   NOT _selected_hsakmt_alias_index EQUAL -1 OR
+   NOT EXISTS "${_primary_output}/libhsakmt.so.1" OR
+   NOT EXISTS "${_primary_package}/libhsakmt.so.1")
+    message(FATAL_ERROR
+        "Runtime closure did not preserve the canonical ROCt thunk required by "
+        "the selected HSA runtime: ${_primary_manifest_entries}")
 endif()
 
 set(_required_packaged_runtimes
-    libprimary.so libMIOpenContract.so.1 shared-runtime-manifest.txt)
+    libprimary.so libMIOpenContract.so.1 libhsa-runtime64.so.1
+    libhsakmt.so.1 shared-runtime-manifest.txt)
 if(_primary_runtime_policy STREQUAL "zluda-amd")
     list(APPEND _required_packaged_runtimes libMIOpenContract.so)
-else()
-    list(APPEND _required_packaged_runtimes libhsa-runtime64.so.1)
 endif()
 foreach(_packaged_runtime IN LISTS _required_packaged_runtimes)
     if(NOT EXISTS "${_primary_package}/${_packaged_runtime}")
@@ -277,7 +313,8 @@ foreach(_packaged_runtime IN LISTS _required_packaged_runtimes)
 endforeach()
 if(_primary_runtime_policy STREQUAL "zluda-amd")
     foreach(_packaged_runtime IN ITEMS
-            libprimary.so libMIOpenContract.so.1)
+            libprimary.so libMIOpenContract.so.1 libhsa-runtime64.so.1
+            libhsakmt.so.1)
         execute_process(
             COMMAND "${TEST_PATCHELF}" --print-rpath
                 "${_primary_package}/${_packaged_runtime}"
@@ -316,6 +353,8 @@ if(_primary_runtime_policy STREQUAL "zluda-amd")
     if(NOT _primary_needed_result EQUAL 0 OR
        NOT _primary_needed_section MATCHES
            "\\[libMIOpenContract[.]so[.]1\\]" OR
+       NOT _primary_needed_section MATCHES
+           "\\[libhsa-runtime64[.]so[.]1\\]" OR
        _primary_needed_section MATCHES
            "\\[libMIOpenContract[.]so\\]")
         message(FATAL_ERROR

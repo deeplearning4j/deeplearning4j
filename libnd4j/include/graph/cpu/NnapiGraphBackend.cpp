@@ -1285,7 +1285,16 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
 
         uint32_t opIdx = addOperand(model, arr, nextOperand, contiguousCopies);
         sourceToOperand[srcIdx] = opIdx;
-        compiled.inputMappings.push_back({srcIdx, opIdx, false});
+        std::vector<LongType> dimensions(static_cast<size_t>(arr->rankOf()));
+        for (int dimension = 0; dimension < arr->rankOf(); dimension++) {
+          dimensions[static_cast<size_t>(dimension)] = arr->sizeAt(dimension);
+        }
+        DataType bindingDataType = isNnapiSupportedType(arr->dataType())
+                                       ? arr->dataType()
+                                       : DataType::FLOAT32;
+        compiled.inputMappings.push_back(
+            {srcIdx, opIdx, false, arr->dataType(), bindingDataType,
+             std::move(dimensions)});
       }
     }
   }
@@ -1347,7 +1356,16 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       outputOperands.push_back(opIdx);
 
       if (externalOutputSet.count(outIdx)) {
-        compiled.outputMappings.push_back({outIdx, opIdx, true});
+        std::vector<LongType> dimensions(static_cast<size_t>(arr->rankOf()));
+        for (int dimension = 0; dimension < arr->rankOf(); dimension++) {
+          dimensions[static_cast<size_t>(dimension)] = arr->sizeAt(dimension);
+        }
+        DataType bindingDataType = isNnapiSupportedType(arr->dataType())
+                                       ? arr->dataType()
+                                       : DataType::FLOAT32;
+        compiled.outputMappings.push_back(
+            {outIdx, opIdx, true, arr->dataType(), bindingDataType,
+             std::move(dimensions)});
       }
     }
 
@@ -1623,6 +1641,21 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     return Status::KERNEL_FAILURE;
   }
 
+  auto matchesCompiledDescriptor = [](NDArray* array, DataType expectedDataType,
+                                      const std::vector<LongType>& expectedDimensions) {
+    if (!array || array->dataType() != expectedDataType ||
+        static_cast<size_t>(array->rankOf()) != expectedDimensions.size()) {
+      return false;
+    }
+    for (int dimension = 0; dimension < array->rankOf(); dimension++) {
+      if (array->sizeAt(dimension) !=
+          expectedDimensions[static_cast<size_t>(dimension)]) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Create execution
   ANeuralNetworksExecution* execution = nullptr;
   int result = ANeuralNetworksExecution_create(compiled->compilation, &execution);
@@ -1653,6 +1686,21 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       return Status::KERNEL_FAILURE;
     }
 
+    if (!matchesCompiledDescriptor(arr, mapping.sourceDataType,
+                                   mapping.dimensions)) {
+      DSP_DIAG(
+          EXECUTE,
+          "NNAPI_OPERAND_DESCRIPTOR_MISMATCH kind=input seg[%d-%d] input=%u "
+          "source_slot=%d expected_dtype=%d actual_dtype=%d expected_rank=%zu "
+          "actual_rank=%d",
+          startSlot, endSlot, idx, mapping.sourceIndex,
+          static_cast<int>(mapping.sourceDataType),
+          static_cast<int>(arr->dataType()), mapping.dimensions.size(),
+          arr->rankOf());
+      ANeuralNetworksExecution_free(execution);
+      return Status::KERNEL_FAILURE;
+    }
+
     // Ensure data is on host and contiguous
     arr->syncToHost();
 
@@ -1663,11 +1711,23 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       contiguousInputCopies.push_back(std::move(copy));
     }
 
-    // If type isn't NNAPI-compatible, cast to float32
-    if (!isNnapiSupportedType(contiguous->dataType())) {
-      auto cast = std::make_unique<NDArray>(contiguous->cast(DataType::FLOAT32));
+    // Bind the representation that addOperand() compiled into the model.
+    if (contiguous->dataType() != mapping.bindingDataType) {
+      auto cast = std::make_unique<NDArray>(contiguous->cast(mapping.bindingDataType));
       contiguous = cast.get();
       contiguousInputCopies.push_back(std::move(cast));
+    }
+    if (!matchesCompiledDescriptor(contiguous, mapping.bindingDataType,
+                                   mapping.dimensions)) {
+      DSP_DIAG(EXECUTE,
+               "NNAPI_OPERAND_DESCRIPTOR_MISMATCH kind=bound_input "
+               "seg[%d-%d] input=%u source_slot=%d expected_dtype=%d "
+               "actual_dtype=%d",
+               startSlot, endSlot, idx, mapping.sourceIndex,
+               static_cast<int>(mapping.bindingDataType),
+               static_cast<int>(contiguous->dataType()));
+      ANeuralNetworksExecution_free(execution);
+      return Status::KERNEL_FAILURE;
     }
 
     void* buffer = contiguous->buffer();
@@ -1682,7 +1742,17 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
   }
 
-  // Set outputs
+  // Bind every output to an independent host-owned buffer described by the
+  // compiled operand contract. NNAPI must never write directly into mutable
+  // DynamicShapePlan arrays: those arrays may be views, aliases, or have been
+  // replaced since compilation. Unsupported source types (notably BFLOAT16)
+  // use the FLOAT32 representation selected by addOperand(). The staging arrays
+  // remain alive until ANeuralNetworksEvent_wait() completes.
+  std::vector<NDArray*> boundOutputs;
+  boundOutputs.reserve(compiled->outputMappings.size());
+  std::vector<std::unique_ptr<NDArray>> stagedOutputCopies;
+  stagedOutputCopies.reserve(compiled->outputMappings.size());
+
   for (uint32_t idx = 0; idx < compiled->outputMappings.size(); idx++) {
     auto& mapping = compiled->outputMappings[idx];
     NDArray* arr = nullptr;
@@ -1696,17 +1766,46 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
     }
-
-    // Output must be contiguous for NNAPI to write into
-    if (!isDenseCOrder(arr)) {
-      DSP_DIAG(EXECUTE, "NnapiGraphBackend: output array at source %d is not contiguous",
-                mapping.sourceIndex);
+    if (!matchesCompiledDescriptor(arr, mapping.sourceDataType,
+                                   mapping.dimensions)) {
+      DSP_DIAG(
+          EXECUTE,
+          "NNAPI_OPERAND_DESCRIPTOR_MISMATCH kind=output seg[%d-%d] output=%u "
+          "source_slot=%d expected_dtype=%d actual_dtype=%d expected_rank=%zu "
+          "actual_rank=%d",
+          startSlot, endSlot, idx, mapping.sourceIndex,
+          static_cast<int>(mapping.sourceDataType),
+          static_cast<int>(arr->dataType()), mapping.dimensions.size(),
+          arr->rankOf());
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
     }
 
-    void* buffer = arr->buffer();
-    size_t bufferSize = arr->lengthOf() * arr->sizeOfT();
+    std::vector<LongType> stagingShape = mapping.dimensions;
+    auto staging = std::make_unique<NDArray>(
+        'c', stagingShape, mapping.bindingDataType, arr->getContext());
+    NDArray* boundOutput = staging.get();
+    boundOutputs.push_back(boundOutput);
+    stagedOutputCopies.push_back(std::move(staging));
+
+    void* buffer = boundOutput->buffer();
+    size_t bufferSize = boundOutput->lengthOf() * boundOutput->sizeOfT();
+    if (bufferSize > 0 && !buffer) {
+      DSP_DIAG(EXECUTE,
+               "NnapiGraphBackend: staging buffer is null for output %u "
+               "source slot %d bytes=%zu",
+               idx, mapping.sourceIndex, bufferSize);
+      ANeuralNetworksExecution_free(execution);
+      return Status::KERNEL_FAILURE;
+    }
+    DSP_DIAG(
+        EXECUTE,
+        "NNAPI_OUTPUT_STAGING seg[%d-%d] output=%u source_slot=%d "
+        "source_dtype=%d binding_dtype=%d storage_bytes=%zu bound_bytes=%zu",
+        startSlot, endSlot, idx, mapping.sourceIndex,
+        static_cast<int>(mapping.sourceDataType),
+        static_cast<int>(mapping.bindingDataType),
+        arr->lengthOf() * arr->sizeOfT(), bufferSize);
 
     result = ANeuralNetworksExecution_setOutput(
         execution, idx, nullptr, buffer, bufferSize);
@@ -1745,14 +1844,29 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     return Status::KERNEL_FAILURE;
   }
 
-  // Mark output arrays as having been written on host
-  for (auto& mapping : compiled->outputMappings) {
-    if (mapping.sourceIndex >= 0 && mapping.sourceIndex < totalOutputSlots && outputSlots) {
-      NDArray* arr = outputSlots[mapping.sourceIndex];
-      if (arr) {
-        arr->tickWriteHost();
-      }
+  // Publish accelerator outputs only after the event completed. Staging data
+  // is copied or converted into the DynamicShapePlan-owned target here.
+  for (uint32_t idx = 0; idx < compiled->outputMappings.size(); idx++) {
+    auto& mapping = compiled->outputMappings[idx];
+    if (mapping.sourceIndex < 0 || mapping.sourceIndex >= totalOutputSlots || !outputSlots) {
+      continue;
     }
+
+    NDArray* arr = outputSlots[mapping.sourceIndex];
+    NDArray* boundOutput = boundOutputs[idx];
+    if (!arr || !boundOutput) {
+      continue;
+    }
+
+    boundOutput->tickWriteHost();
+    arr->assign(boundOutput);
+    DSP_DIAG(EXECUTE,
+             "NNAPI_OUTPUT_COPYBACK seg[%d-%d] output=%u source_slot=%d "
+             "source_dtype=%d binding_dtype=%d",
+             startSlot, endSlot, idx, mapping.sourceIndex,
+             static_cast<int>(mapping.sourceDataType),
+             static_cast<int>(mapping.bindingDataType));
+    arr->tickWriteHost();
   }
 
   DSP_DIAG(EXECUTE,
