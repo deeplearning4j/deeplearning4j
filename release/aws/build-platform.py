@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import platform
+import posixpath
 import shutil
 import subprocess
 import sys
@@ -1834,13 +1835,22 @@ def build_rocm_hsakmt(
             member_path = Path(member.name)
             if member_path.is_absolute() or ".." in member_path.parts:
                 raise RuntimeError(f"unsafe ROCm source archive member: {member.name!r}")
-            if member.issym() or member.islnk():
-                raise RuntimeError(
-                    f"symbolic links are not allowed in ROCm source archive: {member.name!r}"
-                )
             destination = (extracted / member.name).resolve()
             if destination != root and root not in destination.parents:
                 raise RuntimeError(f"unsafe ROCm source archive member: {member.name!r}")
+            if member.issym() or member.islnk():
+                # The upstream rocm-systems tarball contains harmless in-tree
+                # links. Validate their normalized target before extraction so
+                # the archive can retain those links without permitting a link
+                # to escape the extraction root.
+                link_target = posixpath.normpath(
+                    posixpath.join(posixpath.dirname(member.name), member.linkname)
+                )
+                if link_target == ".." or link_target.startswith("../"):
+                    raise RuntimeError(
+                        f"unsafe ROCm source archive link: {member.name!r} -> "
+                        f"{member.linkname!r}"
+                    )
         archive.extractall(extracted)
     source_candidates = list(
         extracted.rglob(f"{spec['hsakmt_source_subdirectory']}/CMakeLists.txt")
