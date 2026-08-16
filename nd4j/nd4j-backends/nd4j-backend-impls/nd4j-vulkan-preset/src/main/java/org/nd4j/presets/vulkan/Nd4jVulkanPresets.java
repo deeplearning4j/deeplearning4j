@@ -172,6 +172,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jvulkan"}),
                 @Platform(value = "android-arm64",
                         preload = {"libnd4jvulkan"}),
+                @Platform(extension = {"-compile"})
         })
 public class Nd4jVulkanPresets implements LoadEnabled, BuildEnabled, InfoMapper {
 

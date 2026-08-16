@@ -148,11 +148,15 @@ import org.nd4j.presets.SharedCompilerRuntime;
                 @Platform(value = "linux-arm64", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
-                @Platform(extension = {"-cudnn","-", "-compile", "-zluda"})})
+                @Platform(extension = {"-cudnn", "-", "-compile", "-zluda",
+                        "-zluda-rocm-7.2.4", "-zluda-rocm-6.2.4"})})
 public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
     private static final String JAVACPP_PHASE_PROPERTY =
             "platform.nd4j.javacpp.phase";
     private static final String JAVACPP_PARSE_PHASE = "parse";
+    private static final String CUDA_BINDINGS_RESOURCE_ROOT =
+            "org/nd4j/linalg/jcublas/bindings/";
+    private static final String ZLUDA_EXTENSION = "-zluda";
 
     private Logger logger;
     private java.util.Properties properties;
@@ -189,7 +193,7 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
             SharedCompilerRuntime.configure(
                     properties,
                     Nd4jCudaPresets.class,
-                    "org/nd4j/linalg/jcublas/bindings/");
+                    CUDA_BINDINGS_RESOURCE_ROOT);
         }
 
         // Only apply the CUDA toolkit preloads at load time.
@@ -197,11 +201,13 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
             return;
         }
 
-        String extension = Loader.loadProperties().getProperty(
-                "platform.extension", properties.getProperty("platform.extension"));
-        boolean zludaClassifier = "-zluda".equals(extension);
-        if (zludaClassifier) {
-            String classifierResource = "/org/nd4j/linalg/jcublas/bindings/"
+        String extension = Loader.loadProperties().getProperty("platform.extension");
+        if (extension == null || extension.isEmpty()) {
+            extension = resolveBundledZludaExtension(
+                    properties, platform, Nd4jCudaPresets.class.getClassLoader());
+        }
+        if (isZludaExtension(extension)) {
+            String classifierResource = "/" + CUDA_BINDINGS_RESOURCE_ROOT
                     + platform + extension + "/";
             if (!resources.contains(classifierResource)) {
                 // Extract the complete dependency closure before loading any member.
@@ -252,6 +258,32 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         if (i > 0) {
             resources.add("/org/bytedeco/cuda/");
         }
+    }
+
+    static String resolveBundledZludaExtension(
+            ClassProperties properties, String platform, ClassLoader resourceLoader) {
+        if (platform == null || platform.isEmpty() || resourceLoader == null) {
+            return null;
+        }
+        List<String> extensions = properties.get("platform.extension");
+        for (int i = extensions.size() - 1; i >= 0; i--) {
+            String extension = extensions.get(i);
+            if (!isZludaExtension(extension)) {
+                continue;
+            }
+            String manifestResource = CUDA_BINDINGS_RESOURCE_ROOT
+                    + platform + extension + "/"
+                    + SharedCompilerRuntime.MANIFEST_NAME;
+            if (resourceLoader.getResource(manifestResource) != null) {
+                return extension;
+            }
+        }
+        return null;
+    }
+
+    static boolean isZludaExtension(String extension) {
+        return ZLUDA_EXTENSION.equals(extension)
+                || extension != null && extension.startsWith(ZLUDA_EXTENSION + "-");
     }
 
     private static int sharedRuntimePreloadCount(List<String> preloads) {
