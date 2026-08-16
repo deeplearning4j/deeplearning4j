@@ -2354,6 +2354,8 @@ class ReleaseValidationTest(unittest.TestCase):
         )
         six_spec = build_platform.rocm_build_spec({**build, "rocmVersion": "6.2.4"})
         self.assertIn("hsakmt-roct-dev", six_spec["packages"])
+        self.assertTrue(six_spec["hsakmt_disable_static_drm_target"])
+        self.assertFalse(spec["hsakmt_disable_static_drm_target"])
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
             files = (

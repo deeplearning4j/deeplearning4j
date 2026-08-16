@@ -1704,6 +1704,7 @@ def rocm_build_spec(build: dict) -> dict | None:
         "hsakmt_source_subdirectory": sdk["hsakmt_source_subdirectory"],
         "hsakmt_cmake_subdirectory": sdk["hsakmt_cmake_subdirectory"],
         "hsakmt_rewrite_static_target": sdk["hsakmt_rewrite_static_target"],
+        "hsakmt_disable_static_drm_target": sdk.get("hsakmt_disable_static_drm_target", False),
     }
 
 
