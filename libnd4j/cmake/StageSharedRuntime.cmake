@@ -585,6 +585,117 @@ if(_runtime_search_roots)
     list(REMOVE_DUPLICATES _runtime_alias_entries)
 endif()
 
+# JavaCPP preloads the manifest entries in order. The closure walk above is
+# intentionally breadth-first so it can discover every transitive dependency,
+# but breadth-first order is unsafe for ELF constructors: a consumer such as
+# MIOpen may be loaded before libamd_comgr or librocprofiler-register. Build the
+# dependency graph from each staged library's DT_NEEDED names and emit a stable
+# dependency-first topological order. The graph is derived from the binaries and
+# aliases; no ROCm library names are hardcoded here.
+if(_runtime_libraries)
+    set(_runtime_dependency_edges "")
+    foreach(_runtime_consumer IN LISTS _runtime_libraries)
+        get_filename_component(_runtime_consumer_real
+            "${_runtime_consumer}" REALPATH)
+        _shared_runtime_needed_names(_runtime_consumer_needed
+            "${_runtime_consumer_real}")
+        foreach(_runtime_needed_name IN LISTS _runtime_consumer_needed)
+            set(_runtime_dependency_real "")
+            foreach(_runtime_dependency IN LISTS _runtime_libraries)
+                _shared_runtime_loader_name(_runtime_dependency_loader
+                    "${_runtime_dependency}")
+                if(WIN32)
+                    string(TOLOWER "${_runtime_dependency_loader}"
+                        _runtime_dependency_loader_compare)
+                    string(TOLOWER "${_runtime_needed_name}"
+                        _runtime_needed_compare)
+                else()
+                    set(_runtime_dependency_loader_compare
+                        "${_runtime_dependency_loader}")
+                    set(_runtime_needed_compare "${_runtime_needed_name}")
+                endif()
+                if(_runtime_dependency_loader_compare STREQUAL
+                   _runtime_needed_compare)
+                    get_filename_component(_runtime_dependency_real
+                        "${_runtime_dependency}" REALPATH)
+                    break()
+                endif()
+            endforeach()
+
+            # A DT_NEEDED entry may use a compatibility filename whose target has
+            # a different SONAME. Resolve that alias to its canonical staged path.
+            if(NOT _runtime_dependency_real)
+                foreach(_runtime_alias_entry IN LISTS _runtime_alias_entries)
+                    string(REPLACE "|" ";" _runtime_alias_parts
+                        "${_runtime_alias_entry}")
+                    list(GET _runtime_alias_parts 0 _runtime_alias_source)
+                    list(GET _runtime_alias_parts 1 _runtime_alias_name)
+                    if(WIN32)
+                        string(TOLOWER "${_runtime_alias_name}"
+                            _runtime_alias_compare)
+                        string(TOLOWER "${_runtime_needed_name}"
+                            _runtime_needed_compare)
+                    else()
+                        set(_runtime_alias_compare "${_runtime_alias_name}")
+                        set(_runtime_needed_compare "${_runtime_needed_name}")
+                    endif()
+                    if(_runtime_alias_compare STREQUAL _runtime_needed_compare)
+                        get_filename_component(_runtime_dependency_real
+                            "${_runtime_alias_source}" REALPATH)
+                        break()
+                    endif()
+                endforeach()
+            endif()
+
+            if(_runtime_dependency_real AND
+               NOT _runtime_dependency_real STREQUAL _runtime_consumer_real)
+                list(APPEND _runtime_dependency_edges
+                    "${_runtime_consumer_real}|${_runtime_dependency_real}")
+            endif()
+        endforeach()
+    endforeach()
+    list(REMOVE_DUPLICATES _runtime_dependency_edges)
+
+    set(_runtime_ordered_libraries "")
+    set(_runtime_remaining_libraries "${_runtime_libraries}")
+    while(_runtime_remaining_libraries)
+        set(_runtime_order_progress FALSE)
+        foreach(_runtime_candidate IN LISTS _runtime_remaining_libraries)
+            get_filename_component(_runtime_candidate_real
+                "${_runtime_candidate}" REALPATH)
+            set(_runtime_candidate_blocked FALSE)
+            foreach(_runtime_edge IN LISTS _runtime_dependency_edges)
+                string(REPLACE "|" ";" _runtime_edge_parts "${_runtime_edge}")
+                list(GET _runtime_edge_parts 0 _runtime_edge_consumer)
+                list(GET _runtime_edge_parts 1 _runtime_edge_dependency)
+                if(NOT _runtime_edge_consumer STREQUAL
+                   _runtime_candidate_real)
+                    continue()
+                endif()
+                list(FIND _runtime_remaining_libraries
+                    "${_runtime_edge_dependency}" _runtime_dependency_index)
+                if(NOT _runtime_dependency_index EQUAL -1)
+                    set(_runtime_candidate_blocked TRUE)
+                    break()
+                endif()
+            endforeach()
+            if(NOT _runtime_candidate_blocked)
+                list(APPEND _runtime_ordered_libraries
+                    "${_runtime_candidate_real}")
+                list(REMOVE_ITEM _runtime_remaining_libraries
+                    "${_runtime_candidate}")
+                set(_runtime_order_progress TRUE)
+            endif()
+        endforeach()
+        if(NOT _runtime_order_progress)
+            message(FATAL_ERROR
+                "Shared-runtime dependency graph contains a cycle; cannot produce "
+                "a dependency-first preload manifest")
+        endif()
+    endwhile()
+    set(_runtime_libraries "${_runtime_ordered_libraries}")
+endif()
+
 # ZLUDA classifiers may use CUDA headers and static implementation archives at
 # build time, but the final backend must have no dynamic NVIDIA runtime
 # dependency. CUDA ABI names implemented by ZLUDA and AMD/ROCm names are allowed
@@ -822,7 +933,9 @@ if(DEFINED RUNTIME_POLICY AND RUNTIME_POLICY STREQUAL "zluda-amd" AND
     endforeach()
 endif()
 
-list(SORT _staged_runtime_names)
+# Preserve the dependency-first order produced above. Sorting here would make
+# manifest preload order alphabetical and reintroduce consumer-before-dependency
+# failures on ROCm/ZLUDA.
 list(LENGTH _staged_runtime_names _runtime_count)
 set(_runtime_manifest
     "# nd4j-shared-runtime-manifest-v1\n# runtime-count=${_runtime_count}\n")

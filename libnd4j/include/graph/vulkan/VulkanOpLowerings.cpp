@@ -415,9 +415,19 @@ static mlir::Value convertScalar(mlir::OpBuilder& builder, mlir::Location loc,
                : mlir::Value(builder.create<mlir::arith::FPToSIOp>(
                      loc, destinationInteger, value));
   }
-  if (sourceInteger && destinationInteger &&
-      sourceInteger.getWidth() == destinationInteger.getWidth()) {
-    return value;
+  if (sourceInteger && destinationInteger) {
+    const unsigned sourceWidth = sourceInteger.getWidth();
+    const unsigned destinationWidth = destinationInteger.getWidth();
+    if (sourceWidth == destinationWidth) return value;
+    if (sourceWidth < destinationWidth) {
+      return destinationUnsigned
+                 ? mlir::Value(builder.create<mlir::arith::ExtUIOp>(
+                       loc, destinationInteger, value))
+                 : mlir::Value(builder.create<mlir::arith::ExtSIOp>(
+                       loc, destinationInteger, value));
+    }
+    return builder.create<mlir::arith::TruncIOp>(
+        loc, destinationInteger, value);
   }
   return {};
 }
@@ -989,6 +999,16 @@ static mlir::Value emitParameterizedUnary(
 
 static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
   switch (semantic) {
+    case VulkanKernelRecipe::BOOLEAN_NOT:
+      return UnaryCallback{
+          [](mlir::OpBuilder& b, mlir::Location loc, mlir::Type,
+             mlir::Value x) {
+            auto integerType = llvm::cast<mlir::IntegerType>(x.getType());
+            mlir::Value one = b.create<mlir::arith::ConstantIntOp>(
+                loc, 1, integerType);
+            // BOOL values are normalized to 0/1 before reaching this callback.
+            return b.create<mlir::arith::XOrIOp>(loc, x, one);
+          }};
     case VulkanKernelRecipe::SILU:
       return UnaryCallback{emitSilu};
     case VulkanKernelRecipe::ABS:
@@ -1213,6 +1233,42 @@ static UnaryCallback unaryCallbackFor(VulkanKernelRecipe semantic) {
 
 static BinaryCallback binaryCallbackFor(VulkanKernelRecipe semantic) {
   switch (semantic) {
+    case VulkanKernelRecipe::EQUAL:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value a, mlir::Value c) {
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OEQ, a, c);
+      }};
+    case VulkanKernelRecipe::NOT_EQUAL:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value a, mlir::Value c) {
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::UNE, a, c);
+      }};
+    case VulkanKernelRecipe::LESS:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value a, mlir::Value c) {
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OLT, a, c);
+      }};
+    case VulkanKernelRecipe::LESS_EQUAL:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value a, mlir::Value c) {
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OLE, a, c);
+      }};
+    case VulkanKernelRecipe::GREATER:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value a, mlir::Value c) {
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OGT, a, c);
+      }};
+    case VulkanKernelRecipe::GREATER_EQUAL:
+      return BinaryCallback{[](mlir::OpBuilder& b, mlir::Location loc,
+                               mlir::Value a, mlir::Value c) {
+        return b.create<mlir::arith::CmpFOp>(
+            loc, mlir::arith::CmpFPredicate::OGE, a, c);
+      }};
     case VulkanKernelRecipe::ADD:
       return BinaryCallback{
           [](mlir::OpBuilder& b, mlir::Location loc, mlir::Value a,
@@ -1617,6 +1673,38 @@ static mlir::Value emitIntegerBinary(mlir::OpBuilder& builder,
                                      mlir::Value lhs, mlir::Value rhs,
                                      bool isUnsigned) {
   switch (semantic) {
+    case VulkanKernelRecipe::EQUAL:
+      return builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::eq, lhs, rhs);
+    case VulkanKernelRecipe::NOT_EQUAL:
+      return builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::ne, lhs, rhs);
+    case VulkanKernelRecipe::LESS:
+      return builder.create<mlir::arith::CmpIOp>(
+          loc, isUnsigned ? mlir::arith::CmpIPredicate::ult
+                          : mlir::arith::CmpIPredicate::slt,
+          lhs, rhs);
+    case VulkanKernelRecipe::LESS_EQUAL:
+      return builder.create<mlir::arith::CmpIOp>(
+          loc, isUnsigned ? mlir::arith::CmpIPredicate::ule
+                          : mlir::arith::CmpIPredicate::sle,
+          lhs, rhs);
+    case VulkanKernelRecipe::GREATER:
+      return builder.create<mlir::arith::CmpIOp>(
+          loc, isUnsigned ? mlir::arith::CmpIPredicate::ugt
+                          : mlir::arith::CmpIPredicate::sgt,
+          lhs, rhs);
+    case VulkanKernelRecipe::GREATER_EQUAL:
+      return builder.create<mlir::arith::CmpIOp>(
+          loc, isUnsigned ? mlir::arith::CmpIPredicate::uge
+                          : mlir::arith::CmpIPredicate::sge,
+          lhs, rhs);
+    case VulkanKernelRecipe::BOOLEAN_AND:
+      return builder.create<mlir::arith::AndIOp>(loc, lhs, rhs);
+    case VulkanKernelRecipe::BOOLEAN_OR:
+      return builder.create<mlir::arith::OrIOp>(loc, lhs, rhs);
+    case VulkanKernelRecipe::BOOLEAN_XOR:
+      return builder.create<mlir::arith::XOrIOp>(loc, lhs, rhs);
     case VulkanKernelRecipe::ADD:
       return builder.create<mlir::arith::AddIOp>(loc, lhs, rhs);
     case VulkanKernelRecipe::SUBTRACT:
@@ -4483,6 +4571,98 @@ mlir::LogicalResult StructuredComputeToSpirv::matchAndRewrite(
 // preserve arbitrary MemRef strides, offsets, and broadcast views.
 //
 
+mlir::LogicalResult ElementwiseTernaryToSpirv::matchAndRewrite(
+    mlir::linalg::GenericOp op,
+    mlir::PatternRewriter& rewriter) const {
+  mlir::Location loc = op.getLoc();
+  auto ternaryAttr = op->getAttrOfType<mlir::BoolAttr>(kTernaryAttr);
+  if (!ternaryAttr || !ternaryAttr.getValue()) return mlir::failure();
+
+  const auto* emitter = emitterForOperation(op);
+  if (emitter == nullptr || emitter->family != VulkanKernelFamily::TERNARY) {
+    return mlir::failure();
+  }
+  mlir::ValueRange inputs = op.getInputs();
+  mlir::ValueRange outputs = op.getOutputs();
+  if (inputs.size() != 3 || outputs.size() != 1) {
+    return op.emitOpError(
+        "ElementwiseTernaryToSpirv: expected three inputs and one output");
+  }
+
+  mlir::Value condition = inputs[0];
+  mlir::Value trueValue = inputs[1];
+  mlir::Value falseValue = inputs[2];
+  mlir::Value output = outputs[0];
+  auto conditionType = llvm::dyn_cast<mlir::MemRefType>(condition.getType());
+  auto trueType = llvm::dyn_cast<mlir::MemRefType>(trueValue.getType());
+  auto falseType = llvm::dyn_cast<mlir::MemRefType>(falseValue.getType());
+  auto outputType = llvm::dyn_cast<mlir::MemRefType>(output.getType());
+  if (!conditionType || !trueType || !falseType || !outputType ||
+      conditionType.getRank() > outputType.getRank() ||
+      trueType.getRank() > outputType.getRank() ||
+      falseType.getRank() > outputType.getRank()) {
+    return op.emitOpError(
+        "ElementwiseTernaryToSpirv: invalid broadcast MemRef ranks");
+  }
+
+  auto computeAttr = op->getAttrOfType<mlir::TypeAttr>(kAccumulatorTypeAttr);
+  mlir::Type computeType = computeAttr ? computeAttr.getValue() : mlir::Type{};
+  if (!llvm::isa<mlir::FloatType>(computeType) &&
+      !llvm::isa<mlir::IntegerType>(computeType)) {
+    return op.emitOpError(
+        "ElementwiseTernaryToSpirv: requires numeric branch computation");
+  }
+
+  auto readBoolAttr = [&](llvm::StringRef name) {
+    auto attr = op->getAttrOfType<mlir::BoolAttr>(name);
+    return attr && attr.getValue();
+  };
+  const bool conditionUnsigned = readBoolAttr("nd4j.input0_unsigned");
+  const bool trueUnsigned = readBoolAttr("nd4j.input1_unsigned");
+  const bool falseUnsigned = readBoolAttr("nd4j.input2_unsigned");
+  const bool outputUnsigned = readBoolAttr("nd4j.output_unsigned");
+
+  mlir::Value oneIdx = idxConst(rewriter, loc, 1);
+  mlir::Value totalN = idxConst(rewriter, loc, 1);
+  for (int64_t d = 0; d < outputType.getRank(); ++d) {
+    totalN = rewriter.create<mlir::arith::MulIOp>(
+        loc, totalN, rewriter.create<mlir::memref::DimOp>(loc, output, d));
+  }
+  auto launch = createGpuLaunch(rewriter, loc, totalN, oneIdx, oneIdx);
+  mlir::Value linearIndex = launch.getBlockIds().x;
+  rewriter.setInsertionPointToEnd(&launch.getBody().front());
+
+  auto outputIndices = logicalIndices(rewriter, loc, linearIndex, output);
+  auto conditionIndices = broadcastIndices(
+      rewriter, loc, outputIndices, condition);
+  auto trueIndices = broadcastIndices(rewriter, loc, outputIndices, trueValue);
+  auto falseIndices = broadcastIndices(
+      rewriter, loc, outputIndices, falseValue);
+  mlir::Value conditionValue = loadAsScalar(
+      rewriter, loc, condition, conditionIndices, rewriter.getI32Type(),
+      conditionUnsigned, true);
+  mlir::Value conditionIsTrue = rewriter.create<mlir::arith::CmpIOp>(
+      loc, mlir::arith::CmpIPredicate::ne, conditionValue,
+      rewriter.create<mlir::arith::ConstantIntOp>(
+          loc, 0, rewriter.getI32Type()));
+  mlir::Value trueScalar = loadAsScalar(
+      rewriter, loc, trueValue, trueIndices, computeType,
+      trueUnsigned, readBoolAttr("nd4j.input1_unsigned"));
+  mlir::Value falseScalar = loadAsScalar(
+      rewriter, loc, falseValue, falseIndices, computeType,
+      falseUnsigned, readBoolAttr("nd4j.input2_unsigned"));
+  mlir::Value result = rewriter.create<mlir::arith::SelectOp>(
+      loc, conditionIsTrue, trueScalar, falseScalar);
+  if (!storeScalar(rewriter, loc, result, output, outputIndices,
+                   trueUnsigned, outputUnsigned)) {
+    return op.emitOpError(
+        "ElementwiseTernaryToSpirv: result storage conversion failed");
+  }
+  rewriter.create<mlir::gpu::TerminatorOp>(loc);
+  rewriter.eraseOp(op);
+  return mlir::success();
+}
+
 mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
     mlir::linalg::GenericOp op,
     mlir::PatternRewriter& rewriter) const {
@@ -4497,7 +4677,9 @@ mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
 
   const auto* emitter = emitterForOperation(op);
   if (emitter == nullptr ||
-      emitter->family != VulkanKernelFamily::ELEMENTWISE_BINARY) {
+      (emitter->family != VulkanKernelFamily::ELEMENTWISE_BINARY &&
+       emitter->family != VulkanKernelFamily::COMPARISON &&
+       emitter->family != VulkanKernelFamily::LOGICAL)) {
     return mlir::failure();
   }
 
@@ -4582,7 +4764,7 @@ mlir::LogicalResult ElementwiseBinaryToSpirv::matchAndRewrite(
     result = callback(rewriter, loc, aVal, bVal);
   } else {
     result = emitIntegerBinary(
-        rewriter, loc, emitter->recipe, aVal, bVal, cUnsigned);
+        rewriter, loc, emitter->recipe, aVal, bVal, aUnsigned);
   }
   if (!result) {
     return op.emitOpError(
@@ -4742,6 +4924,8 @@ mlir::LogicalResult ElementwiseUnaryToSpirv::matchAndRewrite(
           rewriter, loc, computeType, emitter->recipe, xVal,
           scalar0, scalar1, inputUnsigned);
     } else if (computeFloat) {
+      result = callback(rewriter, loc, computeType, xVal);
+    } else if (callback) {
       result = callback(rewriter, loc, computeType, xVal);
     } else if (emitter->recipe == VulkanKernelRecipe::SQUARE ||
                emitter->recipe == VulkanKernelRecipe::CUBE) {
@@ -8715,6 +8899,7 @@ void populateVulkanLoweringPatterns(mlir::RewritePatternSet& patterns) {
 
   // ── Wave 1 patterns ───────────────────────────────────────────────────────
   patterns.add<ElementwiseBinaryToSpirv>(ctx, /*benefit=*/2);
+  patterns.add<ElementwiseTernaryToSpirv>(ctx, /*benefit=*/2);
   patterns.add<ElementwiseUnaryToSpirv>(ctx, /*benefit=*/2);
   patterns.add<MultiOutputElementwiseToSpirv>(ctx, /*benefit=*/3);
   patterns.add<BatchedMatrixListToSpirv>(ctx, /*benefit=*/3);

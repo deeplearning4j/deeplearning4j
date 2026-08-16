@@ -205,6 +205,14 @@ std::vector<const char*> VulkanDeviceContext::selectExtensions(
     exts.push_back(VK_KHR_16BIT_STORAGE_EXTENSION_NAME);
   }
 
+#ifdef VK_KHR_8BIT_STORAGE_EXTENSION_NAME
+  // 8-bit storage is core in Vulkan 1.2 and extension-backed before that.
+  if (apiVer < VK_API_VERSION_1_2 && features2Available &&
+      has(VK_KHR_8BIT_STORAGE_EXTENSION_NAME)) {
+    exts.push_back(VK_KHR_8BIT_STORAGE_EXTENSION_NAME);
+  }
+#endif
+
   // Timeline semaphores: core in Vulkan 1.2+; extension in 1.0/1.1.
   if (apiVer < VK_API_VERSION_1_2 && features2Available &&
       has(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME)) {
@@ -359,6 +367,13 @@ bool VulkanDeviceContext::initialize() {
   const bool hasFloat16Int8FeatureStruct =
       apiVer >= VK_API_VERSION_1_2 ||
       extensionEnabled(VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME);
+#ifdef VK_KHR_8BIT_STORAGE_EXTENSION_NAME
+  const bool hasStorage8FeatureStruct =
+      apiVer >= VK_API_VERSION_1_2 ||
+      extensionEnabled(VK_KHR_8BIT_STORAGE_EXTENSION_NAME);
+#else
+  const bool hasStorage8FeatureStruct = false;
+#endif
   const auto getPhysicalDeviceFeatures2 =
       mgr.physicalDeviceFeatures2Fn();
 
@@ -398,6 +413,11 @@ bool VulkanDeviceContext::initialize() {
   VkPhysicalDevice16BitStorageFeatures storage16Features = {};
   storage16Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
 
+#ifdef VK_KHR_8BIT_STORAGE_EXTENSION_NAME
+  VkPhysicalDevice8BitStorageFeatures storage8Features = {};
+  storage8Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+#endif
+
   VkPhysicalDeviceShaderFloat16Int8Features fp16int8Features = {};
   fp16int8Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
 
@@ -415,6 +435,12 @@ bool VulkanDeviceContext::initialize() {
       *queryTail = &storage16Features;
       queryTail = &storage16Features.pNext;
     }
+#ifdef VK_KHR_8BIT_STORAGE_EXTENSION_NAME
+    if (hasStorage8FeatureStruct) {
+      *queryTail = &storage8Features;
+      queryTail = &storage8Features.pNext;
+    }
+#endif
     if (hasFloat16Int8FeatureStruct) {
       *queryTail = &fp16int8Features;
       queryTail = &fp16int8Features.pNext;
@@ -432,6 +458,10 @@ bool VulkanDeviceContext::initialize() {
                  fp16int8Features.shaderInt8 == VK_TRUE;
     caps_.storage16 = hasStorage16FeatureStruct &&
                       storage16Features.storageBuffer16BitAccess == VK_TRUE;
+#ifdef VK_KHR_8BIT_STORAGE_EXTENSION_NAME
+    caps_.storage8 = hasStorage8FeatureStruct &&
+                     storage8Features.storageBuffer8BitAccess == VK_TRUE;
+#endif
     if (queryTimeline) {
       caps_.timelineSem = timelineFeatures.timelineSemaphore == VK_TRUE;
     }
@@ -517,10 +547,11 @@ bool VulkanDeviceContext::initialize() {
     caps_.subgroupSize = sgProps.subgroupSize;
   }
 
-  sd_printf("VulkanDeviceContext: device=%d fp16=%s storage16=%s fp64=%s int8=%s timeline=%s externalPeer=%s subgroup=%u\n",
+  sd_printf("VulkanDeviceContext: device=%d fp16=%s storage16=%s storage8=%s fp64=%s int8=%s timeline=%s externalPeer=%s subgroup=%u\n",
             deviceId_,
             caps_.fp16 ? "yes" : "no",
             caps_.storage16 ? "yes" : "no",
+            caps_.storage8 ? "yes" : "no",
             caps_.fp64 ? "yes" : "no",
             caps_.int8 ? "yes" : "no",
             caps_.timelineSem ? "yes" : "no",
@@ -558,6 +589,12 @@ bool VulkanDeviceContext::initialize() {
   enableStorage16.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
   enableStorage16.storageBuffer16BitAccess = caps_.storage16 ? VK_TRUE : VK_FALSE;
 
+#ifdef VK_KHR_8BIT_STORAGE_EXTENSION_NAME
+  VkPhysicalDevice8BitStorageFeatures enableStorage8 = {};
+  enableStorage8.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
+  enableStorage8.storageBuffer8BitAccess = caps_.storage8 ? VK_TRUE : VK_FALSE;
+#endif
+
   VkPhysicalDeviceShaderFloat16Int8Features enableFp16 = {};
   enableFp16.sType          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
   enableFp16.shaderFloat16  = caps_.fp16 ? VK_TRUE : VK_FALSE;
@@ -587,6 +624,12 @@ bool VulkanDeviceContext::initialize() {
       *enableTail = &enableStorage16;
       enableTail = &enableStorage16.pNext;
     }
+#ifdef VK_KHR_8BIT_STORAGE_EXTENSION_NAME
+    if (hasStorage8FeatureStruct) {
+      *enableTail = &enableStorage8;
+      enableTail = &enableStorage8.pNext;
+    }
+#endif
     if (hasFloat16Int8FeatureStruct) {
       *enableTail = &enableFp16;
       enableTail = &enableFp16.pNext;

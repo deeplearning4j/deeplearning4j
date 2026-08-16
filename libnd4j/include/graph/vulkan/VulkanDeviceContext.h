@@ -48,6 +48,7 @@ struct VulkanDeviceCaps {
   bool int64          = false;  // shaderInt64 enabled on the logical device
   bool int8           = false;  // shaderInt8 enabled on the logical device
   bool storage16      = false;  // storageBuffer16BitAccess enabled on the logical device
+  bool storage8       = false;  // storageBuffer8BitAccess enabled on the logical device
   bool timelineSem    = false;  // VK_KHR_timeline_semaphore or Vulkan 1.2 core
   bool memoryBudget   = false;  // VK_EXT_memory_budget
   bool extMemHost     = false;  // VK_EXT_external_memory_host (zero-copy staging)

@@ -36,6 +36,8 @@ constexpr uint32_t kFloat =
 constexpr uint32_t kNumeric32 =
     VULKAN_DTYPE_FLOAT | VULKAN_DTYPE_SIGNED_INT32 |
     VULKAN_DTYPE_UNSIGNED_INT32;
+constexpr uint32_t kNumeric32WithBool =
+    kNumeric32 | VULKAN_DTYPE_BOOL;
 constexpr uint32_t kNumericWithIndex =
     kNumeric32 | VULKAN_DTYPE_INDEX;
 // Structural shape/sizes operands may use the framework's wider integer dtype.
@@ -775,10 +777,63 @@ const std::vector<VulkanKernelEmitterInfo>& buildCatalog() {
         VulkanArgumentSchema::OPTIONAL_SCALAR);
 #endif
 
-    // Comparison, logical, and select descriptors are intentionally absent
-    // until VulkanDeviceCaps exposes storageBuffer8BitAccess. ND4J BOOL is
-    // byte-addressed storage, so advertising those hashes without that genuine
-    // capability gate would create a catalogue entry that cannot dispatch.
+    // BOOL descriptors are admitted here; the recorder validates the real
+    // storageBuffer8BitAccess feature before claiming a dispatch.
+#if NOT_EXCLUDED(OP_equals)
+    registerEmitter<sd::ops::equals>(
+        result, VulkanKernelRecipe::EQUAL,
+        kNumeric32WithBool, kGeneralLayout);
+#endif
+#if NOT_EXCLUDED(OP_not_equals)
+    registerEmitter<sd::ops::not_equals>(
+        result, VulkanKernelRecipe::NOT_EQUAL,
+        kNumeric32WithBool, kGeneralLayout);
+#endif
+#if NOT_EXCLUDED(OP_less)
+    registerEmitter<sd::ops::less>(
+        result, VulkanKernelRecipe::LESS,
+        kNumeric32WithBool, kGeneralLayout);
+#endif
+#if NOT_EXCLUDED(OP_less_equal)
+    registerEmitter<sd::ops::less_equal>(
+        result, VulkanKernelRecipe::LESS_EQUAL,
+        kNumeric32WithBool, kGeneralLayout);
+#endif
+#if NOT_EXCLUDED(OP_greater)
+    registerEmitter<sd::ops::greater>(
+        result, VulkanKernelRecipe::GREATER,
+        kNumeric32WithBool, kGeneralLayout);
+#endif
+#if NOT_EXCLUDED(OP_greater_equal)
+    registerEmitter<sd::ops::greater_equal>(
+        result, VulkanKernelRecipe::GREATER_EQUAL,
+        kNumeric32WithBool, kGeneralLayout);
+#endif
+#if NOT_EXCLUDED(OP_boolean_and)
+    registerEmitter<sd::ops::boolean_and>(
+        result, VulkanKernelRecipe::BOOLEAN_AND,
+        kNumeric32WithBool, kGeneralLayout);
+#endif
+#if NOT_EXCLUDED(OP_boolean_or)
+    registerEmitter<sd::ops::boolean_or>(
+        result, VulkanKernelRecipe::BOOLEAN_OR,
+        kNumeric32WithBool, kGeneralLayout);
+#endif
+#if NOT_EXCLUDED(OP_boolean_xor)
+    registerEmitter<sd::ops::boolean_xor>(
+        result, VulkanKernelRecipe::BOOLEAN_XOR,
+        kNumeric32WithBool, kGeneralLayout);
+#endif
+#if NOT_EXCLUDED(OP_boolean_not)
+    registerEmitter<sd::ops::boolean_not>(
+        result, VulkanKernelRecipe::BOOLEAN_NOT,
+        kNumeric32WithBool, kStridedLayout);
+#endif
+#if NOT_EXCLUDED(OP_select)
+    registerEmitter<sd::ops::select>(
+        result, VulkanKernelRecipe::SELECT,
+        kNumeric32WithBool, kGeneralLayout);
+#endif
 #if NOT_EXCLUDED(OP_cast)
     registerEmitter<sd::ops::cast>(
         result, VulkanKernelRecipe::CAST,

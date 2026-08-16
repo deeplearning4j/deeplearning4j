@@ -217,7 +217,7 @@ Status VulkanEagerExecutor::execute(LongType descriptorHash, Context& context,
   slot.ident.opHash = descriptorHash;
   slot.ident.op = op;
   if (op->getOpName() != nullptr) slot.ident.opName = *op->getOpName();
-  slot.opTraits_ = op->getOpDescriptor()->getTraits();
+  slot.opTraits_ = op->getOpDescriptor()->getTraits64();
   slot.targetDeviceId = stream.deviceId();
   slot.wiring.numInputs = static_cast<int>(inputs.size());
   slot.wiring.numOutputs = static_cast<int>(outputs.size());

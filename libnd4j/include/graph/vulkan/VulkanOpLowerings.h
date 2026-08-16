@@ -204,6 +204,20 @@ class SD_LIB_EXPORT ElementwiseBinaryToSpirv
   static constexpr const char* kBinaryAttr  = "nd4j.binary";
 };
 
+// Lowers descriptor-selected ternary elementwise operations such as select.
+// The condition is represented by ND4J's byte-addressed BOOL storage ABI.
+class SD_LIB_EXPORT ElementwiseTernaryToSpirv
+    : public mlir::OpRewritePattern<mlir::linalg::GenericOp> {
+ public:
+  using OpRewritePattern<mlir::linalg::GenericOp>::OpRewritePattern;
+
+  mlir::LogicalResult matchAndRewrite(mlir::linalg::GenericOp op,
+                                      mlir::PatternRewriter& rewriter) const override;
+
+ private:
+  static constexpr const char* kTernaryAttr = "nd4j.ternary";
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  Wave 1: ElementwiseUnaryToSpirv
 // ─────────────────────────────────────────────────────────────────────────────

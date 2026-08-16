@@ -157,12 +157,14 @@ struct VulkanPolicy {
   static constexpr bool batchedMatrixList = false;
   static constexpr bool indexedAccumulation = false;
   static constexpr bool indexedTadMovement = false;
+  static constexpr bool ternary = false;
 };
 struct MatmulPolicy : VulkanPolicy { static constexpr bool matmul = true; };
 struct RmsNormPolicy : VulkanPolicy { static constexpr bool rmsNorm = true; };
 struct RopePolicy : VulkanPolicy { static constexpr bool rope = true; };
 struct BinaryPolicy : VulkanPolicy { static constexpr bool binary = true; };
 struct UnaryPolicy : VulkanPolicy { static constexpr bool unary = true; };
+struct TernaryPolicy : VulkanPolicy { static constexpr bool ternary = true; };
 struct SoftmaxPolicy : VulkanPolicy { static constexpr bool softmax = true; };
 struct LayerNormPolicy : VulkanPolicy { static constexpr bool layerNorm = true; };
 struct GatherPolicy : VulkanPolicy { static constexpr bool gather = true; };
@@ -335,8 +337,8 @@ static void selectMlirIntegerTypes(const VulkanDeviceCaps& caps,
 /// Select only storage ABIs whose required feature state is represented by
 /// VulkanDeviceCaps. Float16/32/64 use the real feature gates above; signed and
 /// unsigned 32-bit integers are core storage types, while 64-bit integer
-/// storage is enabled only when shaderInt64 is available. Narrow integers
-/// remain unsupported.
+/// storage is enabled only when shaderInt64 is available. BOOL uses its
+/// byte-addressed storage ABI only when storageBuffer8BitAccess is enabled.
 static bool selectMlirScalarTypes(sd::DataType dataType,
                                   const VulkanDeviceCaps& caps,
                                   std::string& storageType,
@@ -349,7 +351,14 @@ static bool selectMlirScalarTypes(sd::DataType dataType,
     return selectMlirFloatTypes(
         dataType, caps, storageType, accumulatorType);
   }
-  if (!DataTypeUtils::isZ(dataType) || DataTypeUtils::isB(dataType)) {
+  if (DataTypeUtils::isB(dataType)) {
+    if (!caps.storage8) return false;
+    storageType = "i8";
+    accumulatorType = "i32";
+    isUnsigned = true;
+    return true;
+  }
+  if (!DataTypeUtils::isZ(dataType)) {
     return false;
   }
   BUILD_SINGLE_SELECTOR(dataType, selectMlirIntegerTypes,
@@ -2226,10 +2235,34 @@ static bool opIsRecordableTyped(const NativeSlot& slot,
   }
 
   // ── Argument-free, same-shape elementwise subset ─────────────────────────
+  if constexpr (Policy::ternary) {
+    const auto* emitter = emitterForSlot(slot);
+    if (emitter == nullptr || numIn != 3 || numOut != 1 ||
+        slot.args.numIArgs != 0 || !hasNoBoolDtypeOrStringArgs(slot) ||
+        !DataTypeUtils::isB(inputs[0]->dataType()) ||
+        inputs[1]->dataType() != inputs[2]->dataType() ||
+        inputs[1]->dataType() != outputs[0]->dataType() ||
+        !inputs[1]->isSameShape(inputs[2]) ||
+        !inputs[1]->isSameShape(outputs[0])) {
+      return false;
+    }
+    return true;
+  }
+
   if constexpr (Policy::binary) {
     const auto* emitter = emitterForSlot(slot);
     if (emitter == nullptr || numOut != 1 || slot.args.numIArgs != 0 ||
         !hasNoBoolDtypeOrStringArgs(slot)) {
+      return false;
+    }
+    if (emitter->family == VulkanKernelFamily::LOGICAL &&
+        (numIn != 2 || !DataTypeUtils::isB(inputs[0]->dataType()) ||
+         !DataTypeUtils::isB(inputs[1]->dataType()) ||
+         !DataTypeUtils::isB(outputs[0]->dataType()))) {
+      return false;
+    }
+    if (emitter->family == VulkanKernelFamily::COMPARISON &&
+        !DataTypeUtils::isB(outputs[0]->dataType())) {
       return false;
     }
     if (isActivationBackward(*emitter)) {
@@ -3463,6 +3496,17 @@ static bool validateCatalogOp(const NativeSlot& slot,
     case VulkanKernelFamily::ELEMENTWISE_UNARY:
       return validateVulkanOp<UnaryPolicy>(
           slot, inputs, numIn, outputs, numOut, caps);
+    case VulkanKernelFamily::COMPARISON:
+    case VulkanKernelFamily::LOGICAL:
+      if (emitter->recipe == VulkanKernelRecipe::BOOLEAN_NOT) {
+        return validateVulkanOp<UnaryPolicy>(
+            slot, inputs, numIn, outputs, numOut, caps);
+      }
+      return validateVulkanOp<BinaryPolicy>(
+          slot, inputs, numIn, outputs, numOut, caps);
+    case VulkanKernelFamily::TERNARY:
+      return validateVulkanOp<TernaryPolicy>(
+          slot, inputs, numIn, outputs, numOut, caps);
     case VulkanKernelFamily::NORMALIZATION:
       return false;
     case VulkanKernelFamily::DATA_MOVEMENT:
@@ -3491,12 +3535,6 @@ static bool validateCatalogOp(const NativeSlot& slot,
           slot, inputs, numIn, outputs, numOut, caps);
     case VulkanKernelFamily::UNKNOWN:
     case VulkanKernelFamily::ATTENTION:
-    case VulkanKernelFamily::COMPARISON:
-    case VulkanKernelFamily::LOGICAL:
-    case VulkanKernelFamily::TERNARY:
-      // Boolean storage requires storageBuffer8BitAccess, which is not yet
-      // represented by VulkanDeviceCaps. Do not claim these kernels until that
-      // genuine device capability can be checked.
       return false;
   }
   return false;
@@ -4672,6 +4710,96 @@ static std::string emitVulkanOp(const NativeSlot& slot,
     return ss.str();
   }
 
+  // ── elementwise ternary (select) ─────────────────────────────────────────
+  if constexpr (Policy::ternary) {
+    const auto* emitter = emitterForSlot(slot);
+    if (emitter == nullptr || numIn != 3 || numOut != 1) return "";
+
+    std::string conditionTs, conditionAcc;
+    std::string trueTs, trueAcc;
+    std::string falseTs, falseAcc;
+    std::string outputTs, outputAcc;
+    bool conditionUnsigned = false;
+    bool trueUnsigned = false;
+    bool falseUnsigned = false;
+    bool outputUnsigned = false;
+    if (!selectMlirScalarTypes(inputs[0]->dataType(), caps, conditionTs,
+                               conditionAcc, conditionUnsigned) ||
+        !selectMlirScalarTypes(inputs[1]->dataType(), caps, trueTs, trueAcc,
+                               trueUnsigned) ||
+        !selectMlirScalarTypes(inputs[2]->dataType(), caps, falseTs, falseAcc,
+                               falseUnsigned) ||
+        !selectMlirScalarTypes(outputs[0]->dataType(), caps, outputTs,
+                               outputAcc, outputUnsigned) ||
+        trueAcc != falseAcc || outputAcc != trueAcc) {
+      return "";
+    }
+
+    const int rank = outputs[0]->rankOf();
+    std::ostringstream dimensions;
+    std::string iteratorTypes;
+    for (int d = 0; d < rank; ++d) {
+      if (d != 0) {
+        dimensions << ", ";
+        iteratorTypes += ", ";
+      }
+      dimensions << "d" << d;
+      iteratorTypes += "\"parallel\"";
+    }
+    const std::string dims = dimensions.str();
+    auto broadcastMap = [&](NDArray* input) {
+      std::ostringstream results;
+      const int offset = rank - input->rankOf();
+      for (int d = 0; d < input->rankOf(); ++d) {
+        if (d != 0) results << ", ";
+        results << (input->sizeAt(d) == 1
+                        ? "0"
+                        : "d" + std::to_string(offset + d));
+      }
+      return "affine_map<(" + dims + ") -> (" + results.str() + ")>";
+    };
+    const std::string conditionType = mlirMemrefBody(inputs[0], conditionTs);
+    const std::string trueType = mlirMemrefBody(inputs[1], trueTs);
+    const std::string falseType = mlirMemrefBody(inputs[2], falseTs);
+    const std::string outputType = mlirMemrefBody(outputs[0], outputTs);
+    const std::string outputMap =
+        "affine_map<(" + dims + ") -> (" + dims + ")>";
+
+    ss << "module {\n"
+       << "  func.func @main(%condition: memref<" << conditionType << ">, "
+       << "%true_value: memref<" << trueType << ">, "
+       << "%false_value: memref<" << falseType << ">, "
+       << "%output: memref<" << outputType << ">) {\n"
+       << "    linalg.generic {" << emitterIdentityAttributes(slot)
+       << ", nd4j.accumulator_type = " << trueAcc
+       << ", nd4j.ternary = true, nd4j.input0_unsigned = "
+       << (conditionUnsigned ? "true" : "false")
+       << ", nd4j.input1_unsigned = "
+       << (trueUnsigned ? "true" : "false")
+       << ", nd4j.input2_unsigned = "
+       << (falseUnsigned ? "true" : "false")
+       << ", nd4j.output_unsigned = "
+       << (outputUnsigned ? "true" : "false") << ",\n"
+       << "                    indexing_maps = ["
+       << broadcastMap(inputs[0]) << ", "
+       << broadcastMap(inputs[1]) << ", "
+       << broadcastMap(inputs[2]) << ", " << outputMap << "],\n"
+       << "                    iterator_types = [" << iteratorTypes << "]}\n"
+       << "      ins(%condition, %true_value, %false_value : memref<"
+       << conditionType << ">, memref<" << trueType << ">, memref<"
+       << falseType << ">)\n"
+       << "      outs(%output : memref<" << outputType << ">) {\n"
+       << "      ^bb0(%condition_value: " << conditionTs
+       << ", %true_block: " << trueTs << ", %false_block: " << falseTs
+       << ", %output_block: " << outputTs << "):\n"
+       << "        linalg.yield %output_block : " << outputTs << "\n"
+       << "    }\n"
+       << "    return\n"
+       << "  }\n"
+       << "}\n";
+    return ss.str();
+  }
+
   // ── elementwise binary ───────────────────────────────────────────────────
   if constexpr (Policy::binary) {
     const auto* emitter = emitterForSlot(slot);
@@ -4739,6 +4867,13 @@ static std::string emitVulkanOp(const NativeSlot& slot,
         !selectMlirScalarTypes(outputs[0]->dataType(), caps, cTs, cAcc,
                                cUnsigned)) {
       return "";
+    }
+    if (emitter != nullptr &&
+        (emitter->family == VulkanKernelFamily::COMPARISON ||
+         emitter->family == VulkanKernelFamily::LOGICAL)) {
+      // Comparisons/logical operations compute in the operand domain and
+      // convert their i1/i32 result to the byte-addressed BOOL output ABI.
+      cAcc = aAcc;
     }
     const std::string aType = mlirMemrefBody(inputs[0], aTs);
     const std::string bType = mlirMemrefBody(inputs[1], bTs);
@@ -6884,6 +7019,17 @@ static std::string emitCatalogOp(const NativeSlot& slot,
     case VulkanKernelFamily::ELEMENTWISE_UNARY:
       return emitVulkanOp<UnaryPolicy>(
           slot, inputs, numIn, outputs, numOut, caps);
+    case VulkanKernelFamily::COMPARISON:
+    case VulkanKernelFamily::LOGICAL:
+      if (emitter->recipe == VulkanKernelRecipe::BOOLEAN_NOT) {
+        return emitVulkanOp<UnaryPolicy>(
+            slot, inputs, numIn, outputs, numOut, caps);
+      }
+      return emitVulkanOp<BinaryPolicy>(
+          slot, inputs, numIn, outputs, numOut, caps);
+    case VulkanKernelFamily::TERNARY:
+      return emitVulkanOp<TernaryPolicy>(
+          slot, inputs, numIn, outputs, numOut, caps);
     case VulkanKernelFamily::NORMALIZATION:
       return "";
     case VulkanKernelFamily::DATA_MOVEMENT:
@@ -6912,9 +7058,6 @@ static std::string emitCatalogOp(const NativeSlot& slot,
           slot, inputs, numIn, outputs, numOut, caps);
     case VulkanKernelFamily::UNKNOWN:
     case VulkanKernelFamily::ATTENTION:
-    case VulkanKernelFamily::COMPARISON:
-    case VulkanKernelFamily::LOGICAL:
-    case VulkanKernelFamily::TERNARY:
       return "";
   }
   return "";
