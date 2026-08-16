@@ -1851,6 +1851,28 @@ def build_rocm_hsakmt(
             f"found {len(source_candidates)}"
         )
     source = source_candidates[0].parent
+    # ROCm 7.2.x publishes the ROCt source with a static-only target even when
+    # BUILD_SHARED_LIBS=ON. ZLUDA needs the version-matched user-space thunk
+    # as a shared object so the HSA runtime can resolve libhsakmt.so.1 at load
+    # time. Adapt only the downloaded build recipe; the repository source stays
+    # untouched and the resulting library remains beneath ROCM_PATH.
+    hsakmt_cmake = source / "libhsakmt" / "CMakeLists.txt"
+    hsakmt_cmake_text = hsakmt_cmake.read_text(encoding="utf-8")
+    static_target = 'add_library (${HSAKMT_TARGET} STATIC "")'
+    shared_target = 'add_library (${HSAKMT_TARGET} SHARED "")'
+    if static_target not in hsakmt_cmake_text:
+        raise RuntimeError(
+            "version-matched ROCt source no longer exposes the expected "
+            "static HSAKMT target; refusing to create an unverified runtime"
+        )
+    hsakmt_cmake.write_text(
+        hsakmt_cmake_text.replace(static_target, shared_target, 1),
+        encoding="utf-8",
+    )
+    print(
+        "[dl4j-rocm] adapting downloaded ROCt target to shared libhsakmt.so.1",
+        flush=True,
+    )
     cmake_build = temporary_directory / "rocr-runtime-build"
     threads = str(max(1, int(build.get("buildThreads") or env.get("DL4J_BUILD_THREADS", "4"))))
     cmake_environment = env.copy()
