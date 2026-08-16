@@ -33,6 +33,58 @@ final class VulkanLevel2 implements Level2 {
         return triangular.add(triangular.transpose()).sub(diagonal);
     }
 
+    private static INDArray banded(INDArray a, int rows, int columns, int kl, int ku) {
+        INDArray matrix = Nd4j.zeros(a.dataType(), rows, columns);
+        for (int column = 0; column < columns; column++) {
+            int first = Math.max(0, column - ku);
+            int last = Math.min(rows - 1, column + kl);
+            for (int row = first; row <= last; row++) {
+                int bandRow = ku + row - column;
+                if (bandRow >= 0 && bandRow < a.rows()) {
+                    matrix.putScalar(row, column, a.getDouble(bandRow, column));
+                }
+            }
+        }
+        return matrix;
+    }
+
+    private static INDArray bandSymmetric(INDArray a, char uplo, int n) {
+        int bandwidth = a.rows() - 1;
+        boolean upper = uplo == 'U' || uplo == 'u';
+        INDArray matrix = Nd4j.zeros(a.dataType(), n, n);
+        for (int column = 0; column < n; column++) {
+            int first = upper ? Math.max(0, column - bandwidth) : column;
+            int last = upper ? column : Math.min(n - 1, column + bandwidth);
+            for (int row = first; row <= last; row++) {
+                int bandRow = upper ? bandwidth + row - column : row - column;
+                double value = a.getDouble(bandRow, column);
+                matrix.putScalar(row, column, value);
+                matrix.putScalar(column, row, value);
+            }
+        }
+        return matrix;
+    }
+
+    private static INDArray bandTriangular(INDArray a, char uplo, char diag) {
+        int n = (int) a.columns();
+        int bandwidth = a.rows() - 1;
+        boolean upper = uplo == 'U' || uplo == 'u';
+        INDArray matrix = Nd4j.zeros(a.dataType(), n, n);
+        for (int column = 0; column < n; column++) {
+            int first = upper ? Math.max(0, column - bandwidth) : column;
+            int last = upper ? column : Math.min(n - 1, column + bandwidth);
+            for (int row = first; row <= last; row++) {
+                int bandRow = upper ? bandwidth + row - column : row - column;
+                matrix.putScalar(row, column, a.getDouble(bandRow, column));
+            }
+        }
+        if (diag == 'U' || diag == 'u') {
+            INDArray identity = Nd4j.eye(n).castTo(a.dataType());
+            matrix = matrix.mul(Nd4j.onesLike(matrix).sub(identity)).add(identity);
+        }
+        return matrix;
+    }
+
     private static int packedOrder(INDArray packed) {
         long length = packed.length();
         int n = (int) ((Math.sqrt(8.0 * length + 1.0) - 1.0) * 0.5);
@@ -99,7 +151,10 @@ final class VulkanLevel2 implements Level2 {
     @Override
     public void gbmv(char order, char transA, int kl, int ku, double alpha,
                      INDArray a, INDArray x, double beta, INDArray y) {
-        gemvImpl(transA, alpha, a, x, beta, y);
+        boolean transpose = transposed(transA);
+        int rows = transpose ? (int) x.length() : (int) y.length();
+        int columns = transpose ? (int) y.length() : (int) x.length();
+        gemvImpl(transA, alpha, banded(a, rows, columns, kl, ku), x, beta, y);
     }
 
     @Override
@@ -111,7 +166,7 @@ final class VulkanLevel2 implements Level2 {
     @Override
     public void sbmv(char order, char uplo, double alpha, INDArray a, INDArray x,
                      double beta, INDArray y) {
-        gemvImpl('N', alpha, symmetric(a, uplo), x, beta, y);
+        gemvImpl('N', alpha, bandSymmetric(a, uplo, (int) x.length()), x, beta, y);
     }
 
     @Override
@@ -156,12 +211,14 @@ final class VulkanLevel2 implements Level2 {
 
     @Override
     public void tbmv(char order, char uplo, char transA, char diag, INDArray a, INDArray x) {
-        gemvImpl(transA, 1.0, triangular(a, uplo, diag), x, 0.0, x);
+        gemvImpl(transA, 1.0, bandTriangular(a, uplo, diag), x, 0.0, x);
     }
 
     @Override
     public void tbsv(char order, char uplo, char transA, char diag, INDArray a, INDArray x) {
-        trsv(order, uplo, transA, diag, a, x);
+        INDArray result = Nd4j.getExecutioner().exec(new TriangularSolve(
+                bandTriangular(a, uplo, diag), x, uplo == 'L' || uplo == 'l', transposed(transA)))[0];
+        x.assign(result);
     }
 
     @Override
