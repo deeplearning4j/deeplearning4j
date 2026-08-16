@@ -1878,6 +1878,15 @@ def build_rocm_hsakmt(
     cmake_environment = env.copy()
     cmake_environment["ROCM_PATH"] = str(rocm_root)
     cmake_environment["ROCM_HOME"] = str(rocm_root)
+    try:
+        rocm_major, rocm_minor, rocm_patch = (
+            int(part) for part in str(spec["version"]).split(".")
+        )
+    except (TypeError, ValueError):
+        raise RuntimeError(
+            f"ROCm version must be semantic major.minor.patch, got {spec['version']!r}"
+        ) from None
+    rocm_patch_version = f"{rocm_major}{rocm_minor:02d}{rocm_patch:02d}"
     run(
         [
             "cmake", "-S", str(source), "-B", str(cmake_build),
@@ -1889,7 +1898,7 @@ def build_rocm_hsakmt(
             "-DENABLE_LDCONFIG=OFF",
             "-DHSAKMT_WERROR=OFF",
             "-DADDRESS_SANITIZER=OFF",
-            "-DROCM_PATCH_VERSION=70204",
+            f"-DROCM_PATCH_VERSION={rocm_patch_version}",
         ],
         source,
         cmake_environment,
