@@ -2294,6 +2294,18 @@ def zluda_target(build: dict) -> str:
     return arguments[0]
 
 
+def zluda_rocm_classifier_suffix(build: dict) -> str:
+    """Return the ROCm-qualified ZLUDA suffix used by native coordinates."""
+    if not build.get("zludaVersion"):
+        return "-zluda"
+    rocm_version = str(build.get("rocmVersion", "")).strip()
+    if not rocm_version:
+        raise RuntimeError(
+            "ZLUDA releases must declare rocmVersion so native classifiers are unambiguous"
+        )
+    return f"-zluda-rocm-{rocm_version}"
+
+
 def attest_zluda_configuration(build: dict) -> None:
     version = build.get("zludaVersion")
     if not version:
@@ -2313,12 +2325,17 @@ def attest_zluda_configuration(build: dict) -> None:
             f"{native_cuda_artifact_id} must not mediate the ZLUDA classifier"
         )
     variants = build.get("variants", [])
-    expected_classifier_suffix = f"-cuda-{build.get('cudaVersion', '')}-zluda"
+    try:
+        rocm_suffix = zluda_rocm_classifier_suffix(build)
+    except RuntimeError as error:
+        failures.append(str(error))
+        rocm_suffix = "-zluda"
+    expected_classifier_suffix = f"-cuda-{build.get('cudaVersion', '')}{rocm_suffix}"
     if not variants or any(
             variant.get("classifierSuffix") != expected_classifier_suffix
-            or variant.get("platformExtension") != "-zluda"
+            or variant.get("platformExtension") != rocm_suffix
             for variant in variants):
-        failures.append("ZLUDA classifier/platform extension is not active")
+        failures.append("ZLUDA classifier/platform extension is not ROCm-qualified")
     if failures:
         raise RuntimeError("ZLUDA configuration attestation failed: " + "; ".join(failures))
     print(

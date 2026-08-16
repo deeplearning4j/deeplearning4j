@@ -39,6 +39,11 @@
         <!-- CUDA identifies the build-time ABI/toolchain. The runtime payload
              and dependency graph are owned entirely by the ZLUDA artifact. -->
         <cuda.version>12.9</cuda.version>
+        <!-- ZLUDA native coordinates are versioned by both CUDA ABI and the
+             ROCm user-space runtime bundled in the classifier. -->
+        <rocm.version>7.2.4</rocm.version>
+        <zluda.linux.classifier>linux-x86_64-zluda-rocm-${rocm.version}</zluda.linux.classifier>
+        <zluda.windows.classifier>windows-x86_64-zluda-rocm-${rocm.version}</zluda.windows.classifier>
         <nd4j.backend>nd4j-zluda-${cuda.version}</nd4j.backend>
     </properties>
 
@@ -64,7 +69,7 @@
                     <groupId>${project.groupId}</groupId>
                     <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
-                    <classifier>linux-x86_64-zluda</classifier>
+                    <classifier>${zluda.linux.classifier}</classifier>
                 </dependency>
             </dependencies>
         </profile>
@@ -81,7 +86,7 @@
                     <groupId>${project.groupId}</groupId>
                     <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
-                    <classifier>linux-x86_64-zluda</classifier>
+                    <classifier>${zluda.linux.classifier}</classifier>
                 </dependency>
             </dependencies>
         </profile>
@@ -98,7 +103,7 @@
                     <groupId>${project.groupId}</groupId>
                     <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
-                    <classifier>windows-x86_64-zluda</classifier>
+                    <classifier>${zluda.windows.classifier}</classifier>
                 </dependency>
             </dependencies>
         </profile>
@@ -115,7 +120,7 @@
                     <groupId>${project.groupId}</groupId>
                     <artifactId>${nd4j.backend}</artifactId>
                     <version>${project.version}</version>
-                    <classifier>windows-x86_64-zluda</classifier>
+                    <classifier>${zluda.windows.classifier}</classifier>
                 </dependency>
             </dependencies>
         </profile>

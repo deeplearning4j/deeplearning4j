@@ -758,15 +758,17 @@ def maven_repository_matrix_coverage(
             classifier_suffix = str(classifier_suffix)
             # CUDA/ZLUDA artifactIds already contain the backend/version
             # (for example ``nd4j-cuda-12.9``), while Maven classifiers use
-            # only the platform plus the variant extension (``-cudnn``,
-            # ``-compile``, or ``-zluda``).  Accept the historical spelling
-            # too, but make the actual published Maven2 layout authoritative.
+            # the platform plus the variant extension (``-cudnn``,
+            # ``-compile``, or ``-zluda-rocm-7.2.4``). Accept the historical
+            # spelling too, but make the actual published Maven2 layout
+            # authoritative.
             classifier_suffixes = {classifier_suffix}
             # Some plans use classifierSuffix for the internal selector while
             # platformExtension is the actual Maven classifier (ZLUDA is the
-            # current example: selector `-cuda-12.9-zluda` vs published
-            # `-zluda`). Account for both spellings, preferring the
-            # platform-specific artifact that is actually present.
+            # current example: selector
+            # `-cuda-12.9-zluda-rocm-7.2.4` vs published
+            # `-zluda-rocm-7.2.4`). Account for both spellings, preferring
+            # the platform-specific artifact that is actually present.
             platform_extension = variant.get("platformExtension")
             if platform_extension is not None:
                 classifier_suffixes.add(str(platform_extension))

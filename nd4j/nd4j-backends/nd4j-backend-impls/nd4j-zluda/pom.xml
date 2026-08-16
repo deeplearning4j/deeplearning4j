@@ -39,6 +39,9 @@
         <!-- ZLUDA executes binaries produced by this exact CUDA toolchain line.
              Keep the version in the published Maven identity. -->
         <cuda.version>12.9</cuda.version>
+        <!-- The release plan passes the selected ROCm version so the native
+             classifier and manifest identify the exact AMD runtime bundle. -->
+        <rocm.version>7.2.4</rocm.version>
         <cudnn.version>9.10</cudnn.version>
         <javacpp-presets.cuda.version>1.5.12</javacpp-presets.cuda.version>
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
@@ -279,6 +282,7 @@
                                             <Automatic-Module-Name>${module.name}.binary</Automatic-Module-Name>
                                             <ND4J-ZLUDA-Target>AMD</ND4J-ZLUDA-Target>
                                             <ND4J-ZLUDA-CUDA-Build-Version>${cuda.version}</ND4J-ZLUDA-CUDA-Build-Version>
+                                            <ND4J-ZLUDA-ROCm-Version>${rocm.version}</ND4J-ZLUDA-ROCm-Version>
                                         </manifestEntries>
                                     </archive>
                                 </configuration>

@@ -445,14 +445,14 @@ class ReleasePlanTests(unittest.TestCase):
                 name=(
                     f"{prefix}/org/eclipse/deeplearning4j/nd4j-cuda-12.9-preset/"
                     "1.0.0-SNAPSHOT/nd4j-cuda-12.9-preset-1.0.0-SNAPSHOT-"
-                    "linux-x86_64-zluda.jar"
+                    "linux-x86_64-zluda-rocm-7.2.4.jar"
                 )
             ),
             SimpleNamespace(
                 name=(
                     f"{prefix}/org/eclipse/deeplearning4j/nd4j-zluda-12.9/"
                     "1.0.0-SNAPSHOT/nd4j-zluda-12.9-1.0.0-SNAPSHOT-"
-                    "linux-x86_64-zluda.jar"
+                    "linux-x86_64-zluda-rocm-7.2.4.jar"
                 )
             ),
         ]
@@ -1446,8 +1446,8 @@ class AzureSafetyTests(unittest.TestCase):
                 "javacppPlatform": "linux-x86_64",
                 "variants": [{
                     "name": "zluda",
-                    "classifierSuffix": "-cuda-12.9-zluda",
-                    "platformExtension": "-zluda",
+                    "classifierSuffix": "-cuda-12.9-zluda-rocm-7.2.4",
+                    "platformExtension": "-zluda-rocm-7.2.4",
                 }],
             },
         }
@@ -1456,7 +1456,7 @@ class AzureSafetyTests(unittest.TestCase):
             "files": [{
                 "path": (
                     "maven-repository/org/nd4j/nd4j-cuda-12.9/1.0.0/"
-                    "nd4j-cuda-12.9-1.0.0-linux-x86_64-zluda.jar"
+                    "nd4j-cuda-12.9-1.0.0-linux-x86_64-zluda-rocm-7.2.4.jar"
                 ),
             }],
         }
@@ -5462,7 +5462,7 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
     def test_direct_publish_schema_three_cross_attests_checksum_sidecars(self):
         primary_path = (
             "org/eclipse/deeplearning4j/nd4j-zluda-12.9/1.0.0-SNAPSHOT/"
-            "nd4j-zluda-12.9-1.0.0-SNAPSHOT-linux-x86_64-zluda.jar"
+            "nd4j-zluda-12.9-1.0.0-SNAPSHOT-linux-x86_64-zluda-rocm-7.2.4.jar"
         )
 
         def digests(payload):
@@ -5492,7 +5492,7 @@ class MavenRepositoryPublicationTests(unittest.TestCase):
 
         metadata_payload = self._snapshot_metadata(
             "nd4j-zluda-12.9",
-            [("jar", "linux-x86_64-zluda")],
+            [("jar", "linux-x86_64-zluda-rocm-7.2.4")],
         )
         info = {
             "schemaVersion": 3,

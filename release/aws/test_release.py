@@ -1081,6 +1081,10 @@ class ReleaseValidationTest(unittest.TestCase):
             pom.findtext("m:properties/m:cuda.version", namespaces=namespace),
         )
         self.assertEqual(
+            "7.2.4",
+            pom.findtext("m:properties/m:rocm.version", namespaces=namespace),
+        )
+        self.assertEqual(
             "nd4j-zluda-${cuda.version}",
             pom.findtext("m:properties/m:nd4j.backend", namespaces=namespace),
         )
@@ -1095,10 +1099,10 @@ class ReleaseValidationTest(unittest.TestCase):
         )
 
         expected_profiles = {
-            "zluda-linux-amd64": ("Linux", None, "amd64", "linux-x86_64-zluda"),
-            "zluda-linux-x86_64": ("Linux", None, "x86_64", "linux-x86_64-zluda"),
-            "zluda-windows-amd64": (None, "windows", "amd64", "windows-x86_64-zluda"),
-            "zluda-windows-x86_64": (None, "windows", "x86_64", "windows-x86_64-zluda"),
+            "zluda-linux-amd64": ("Linux", None, "amd64", "${zluda.linux.classifier}"),
+            "zluda-linux-x86_64": ("Linux", None, "x86_64", "${zluda.linux.classifier}"),
+            "zluda-windows-amd64": (None, "windows", "amd64", "${zluda.windows.classifier}"),
+            "zluda-windows-x86_64": (None, "windows", "x86_64", "${zluda.windows.classifier}"),
         }
         profiles = {
             profile.findtext("m:id", namespaces=namespace): profile
@@ -1271,26 +1275,27 @@ class ReleaseValidationTest(unittest.TestCase):
                             archive_contract["requiredRuntimeAliases"],
                         )
                     else:
-                        self.assertNotIn("rocmVersion", build)
+                        self.assertEqual("7.2.4", build["rocmVersion"])
                         self.assertNotIn("rocmBuildOnly", build)
                         self.assertNotIn("rocmBuildComponents", build)
                     self.assertEqual(expectation["profiles"], build["profiles"])
                     self.assertEqual(expectation["modules"], set(build["modules"]))
                     self.assertEqual([{
                         "name": "cuda-12.9",
-                        "classifierSuffix": "-cuda-12.9-zluda",
-                        "platformExtension": "-zluda",
+                        "classifierSuffix": "-cuda-12.9-zluda-rocm-7.2.4",
+                        "platformExtension": "-zluda-rocm-7.2.4",
                     }], build["variants"])
                     self.assertIn("-Dlibnd4j.zluda=AMD", build["mavenArgs"])
+                    self.assertIn("-Drocm.version=7.2.4", build["mavenArgs"])
                     self.assertNotIn("-Dlibnd4j.zluda=rocm6", build["mavenArgs"])
                     self.assertEqual(expectation["artifactIds"], set(rules["artifactIds"]))
                     self.assertEqual("nd4j-zluda-12.9", rules.get("classifierPrimaryArtifact"))
                     self.assertEqual(
-                        [f"{platform}-zluda"],
+                        [f"{platform}-zluda-rocm-7.2.4"],
                         shard["artifactRules"]["classifierTokens"],
                     )
                     self.assertEqual(
-                        f"{platform}-zluda",
+                        f"{platform}-zluda-rocm-7.2.4",
                         build_platform.variant_artifact_classifier(
                             build, build["variants"][0]
                         ),
@@ -1812,7 +1817,7 @@ class ReleaseValidationTest(unittest.TestCase):
                 ],
                 "nd4j-cuda-12.9": [
                     f"nd4j-cuda-12.9-{version}.jar",
-                    f"nd4j-cuda-12.9-{version}-linux-x86_64-zluda.jar",
+                    f"nd4j-cuda-12.9-{version}-linux-x86_64-zluda-rocm-7.2.4.jar",
                 ],
             }
             for artifact_id, names in artifacts.items():
@@ -1827,7 +1832,7 @@ class ReleaseValidationTest(unittest.TestCase):
             build_platform.stage_repository(repository, output, {
                 "mode": "classifier",
                 "artifactIds": list(artifacts),
-                "classifierTokens": ["linux-x86_64-zluda"],
+                "classifierTokens": ["linux-x86_64-zluda-rocm-7.2.4"],
                 "unclassifiedArtifactIds": [
                     "nd4j-zluda-12.9",
                     "nd4j-zluda-12.9-platform",
@@ -1843,7 +1848,7 @@ class ReleaseValidationTest(unittest.TestCase):
             )
             self.assertIn(f"nd4j-zluda-12.9-{version}.jar", staged)
             self.assertIn(f"nd4j-zluda-12.9-platform-{version}.jar", staged)
-            self.assertIn(f"nd4j-cuda-12.9-{version}-linux-x86_64-zluda.jar", staged)
+            self.assertIn(f"nd4j-cuda-12.9-{version}-linux-x86_64-zluda-rocm-7.2.4.jar", staged)
             self.assertNotIn(f"nd4j-cuda-12.9-{version}.jar", staged)
             self.assertNotIn(f"nd4j-zluda-12.9-{version}-sources.jar", staged)
             self.assertNotIn(f"nd4j-zluda-12.9-platform-{version}-sources.jar", staged)
@@ -1981,8 +1986,8 @@ class ReleaseValidationTest(unittest.TestCase):
                 },
                 {
                     "name": "zluda",
-                    "classifierSuffix": "-cuda-12.9-zluda",
-                    "platformExtension": "-zluda",
+                    "classifierSuffix": "-cuda-12.9-zluda-rocm-7.2.4",
+                    "platformExtension": "-zluda-rocm-7.2.4",
                 },
                 ("nd4j-zluda-12.9", "nd4j-cuda-12.9-preset"),
             ),
@@ -2057,7 +2062,7 @@ class ReleaseValidationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             repository = Path(temporary_directory)
             version = "1.0.0-SNAPSHOT"
-            classifier = "linux-x86_64-zluda"
+            classifier = "linux-x86_64-zluda-rocm-7.2.4"
             artifact_id = "nd4j-zluda-12.9"
             preset_id = "nd4j-cuda-12.9-preset"
             native_root = (
@@ -2068,13 +2073,14 @@ class ReleaseValidationTest(unittest.TestCase):
                 "backend": "cuda",
                 "cudaVersion": "12.9",
                 "zludaVersion": "v6",
+                "rocmVersion": "7.2.4",
                 "javacppPlatform": "linux-x86_64",
                 "modules": [f":{artifact_id}", f":{preset_id}"],
             }
             variant = {
                 "name": "zluda",
-                "classifierSuffix": "-cuda-12.9-zluda",
-                "platformExtension": "-zluda",
+                "classifierSuffix": "-cuda-12.9-zluda-rocm-7.2.4",
+                "platformExtension": "-zluda-rocm-7.2.4",
             }
             rules = {
                 "mode": "classifier",
@@ -2186,14 +2192,15 @@ class ReleaseValidationTest(unittest.TestCase):
             "backend": "cuda",
             "cudaVersion": "12.9",
             "zludaVersion": "v6",
+            "rocmVersion": "7.2.4",
             "javacppPlatform": "linux-x86_64",
             "profiles": ["cuda", "sdx", "zluda"],
             "modules": [":nd4j-cuda-12.9-preset", ":nd4j-zluda-12.9"],
             "mavenArgs": ["-Dlibnd4j.zluda=AMD"],
             "variants": [{
                 "name": "zluda",
-                "classifierSuffix": "-cuda-12.9-zluda",
-                "platformExtension": "-zluda",
+                "classifierSuffix": "-cuda-12.9-zluda-rocm-7.2.4",
+                "platformExtension": "-zluda-rocm-7.2.4",
             }],
         }
         for platform in ("linux-x86_64", "windows-x86_64"):

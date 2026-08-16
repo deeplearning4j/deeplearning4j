@@ -1225,7 +1225,7 @@
           "nd4j-presets-common"
         ],
         "classifierTokens": [
-          "linux-x86_64-zluda"
+          "linux-x86_64-zluda-rocm-7.2.4"
         ],
         "unclassifiedArtifactIds": [
           "nd4j-cuda-backend-common",
@@ -1285,13 +1285,14 @@
         ],
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",
-          "-Dlibnd4j.zluda=AMD"
+          "-Dlibnd4j.zluda=AMD",
+          "-Drocm.version=7.2.4"
         ],
         "variants": [
           {
             "name": "cuda-12.9",
-            "classifierSuffix": "-cuda-12.9-zluda",
-            "platformExtension": "-zluda"
+            "classifierSuffix": "-cuda-12.9-zluda-rocm-7.2.4",
+            "platformExtension": "-zluda-rocm-7.2.4"
           }
         ],
         "buildThreads": 48
@@ -1325,7 +1326,7 @@
           "nd4j-presets-common"
         ],
         "classifierTokens": [
-          "windows-x86_64-zluda"
+          "windows-x86_64-zluda-rocm-7.2.4"
         ],
         "unclassifiedArtifactIds": [
           "nd4j-cuda-backend-common",
@@ -1340,6 +1341,7 @@
         "backend": "cuda",
         "cudaVersion": "12.9",
         "zludaVersion": "v6",
+        "rocmVersion": "7.2.4",
         "javacppPlatform": "windows-x86_64",
         "profiles": [
           "cuda",
@@ -1358,13 +1360,14 @@
         "mavenArgs": [
           "-Dlibnd4j.compute=8.6 9.0",
           "-Dlibnd4j.zluda=AMD",
+          "-Drocm.version=7.2.4",
           "-Dlibnd4j.oom.killer=OFF"
         ],
         "variants": [
           {
             "name": "cuda-12.9",
-            "classifierSuffix": "-cuda-12.9-zluda",
-            "platformExtension": "-zluda"
+            "classifierSuffix": "-cuda-12.9-zluda-rocm-7.2.4",
+            "platformExtension": "-zluda-rocm-7.2.4"
           }
         ],
         "buildThreads": 48
