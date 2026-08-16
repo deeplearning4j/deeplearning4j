@@ -201,11 +201,39 @@ def canonical_variant_name(shard: dict, variant_name: str) -> str:
 
 
 def canonical_selector(shards: dict[str, dict], selector: str) -> str:
-    """Normalize a selector while retaining ``--`` as the internal delimiter."""
+    """Normalize an internal selector or published artifact ID.
+
+    Workflow dispatches historically documented the public artifact IDs
+    (single-hyphen names), while the matrix resolver uses shard--variant
+    internally. Accept both forms so a copied published classifier can be
+    retried without requiring callers to reconstruct the internal selector.
+    """
+    selector = selector.strip()
     shard_id, delimiter, variant_name = selector.partition("--")
-    if not delimiter or shard_id not in shards:
-        return selector
-    return f"{shard_id}--{canonical_variant_name(shards[shard_id], variant_name)}"
+    if delimiter and shard_id in shards:
+        return f"{shard_id}--{canonical_variant_name(shards[shard_id], variant_name)}"
+
+    matches: list[str] = []
+    for candidate_shard_id, shard in shards.items():
+        variants = shard.get("build", {}).get("variants", [])
+        for variant in variants:
+            candidate_variant_name = canonical_variant_name(
+                shard, str(variant["name"])
+            )
+            if (
+                public_artifact_id(
+                    candidate_shard_id, candidate_variant_name, variant
+                )
+                == selector
+            ):
+                matches.append(f"{candidate_shard_id}--{candidate_variant_name}")
+
+    if len(matches) > 1:
+        raise ValueError(
+            f"published classifier {selector!r} is ambiguous: "
+            + ", ".join(sorted(matches))
+        )
+    return matches[0] if matches else selector
 
 
 def dependency_cache_key(shard_id: str, variant: dict) -> str:

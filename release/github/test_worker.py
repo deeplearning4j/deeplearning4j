@@ -250,6 +250,39 @@ class WorkflowMatrixTests(unittest.TestCase):
         )
         self.assertEqual("windows-x86_64-zluda--cuda-12.9", rows[0]["selector"])
 
+    def test_public_classifier_id_resolves_to_internal_selector(self):
+        rows = prepare_worker.workflow_rows(
+            self.plan,
+            self.matrix,
+            "build-deploy-windows.yml",
+            "host",
+            classifiers="windows-x86_64-cpu-avx2",
+            selection_mode="targeted",
+        )
+        self.assertEqual(
+            [("windows-x86_64-cpu", "avx2")],
+            [(row["shard"], row["variant"]) for row in rows],
+        )
+        self.assertEqual("windows-x86_64-cpu--avx2", rows[0]["selector"])
+
+    def test_public_zluda_classifier_id_auto_resolves_canonical_workflow(self):
+        rows = prepare_worker.workflow_rows(
+            self.plan,
+            self.matrix,
+            "build-deploy-cross-platform.yml",
+            "host",
+            classifiers="windows-x86_64-cuda-12.9-zluda-rocm-7.2.4",
+            selection_mode="targeted",
+        )
+        self.assertEqual(
+            [("windows-x86_64-zluda", "cuda-12.9")],
+            [(row["shard"], row["variant"]) for row in rows],
+        )
+        self.assertEqual(
+            "windows-x86_64-cuda-12.9-zluda-rocm-7.2.4",
+            rows[0]["artifactId"],
+        )
+
     def test_classifier_filter_rejects_unknown_row(self):
         with self.assertRaisesRegex(ValueError, "does not contain requested classifiers"):
             prepare_worker.workflow_rows(
