@@ -34,13 +34,21 @@ ROCM_BUILD_SDKS = {
             "https://repo.radeon.com/amdgpu-install/7.2.4/ubuntu/jammy/"
             "amdgpu-install_7.2.4.70204-1_all.deb"
         ),
+        # ROCm 7.2 folded ROCt into the hsa-rocr development package and no
+        # longer publishes a standalone hsakmt-roct-dev package.  Keep the
+        # matching ROCm source revision here so the managed SDK still contains
+        # the user-space libhsakmt.so.1 required by ROCr and ZLUDA.
+        "hsakmt_source_url": (
+            "https://github.com/ROCm/rocm-systems/archive/refs/tags/"
+            "rocm-7.2.4.tar.gz"
+        ),
+        "hsakmt_source_subdirectory": "projects/rocr-runtime",
         "component_packages": {
             # Keep the complete user-space HIP/ROCr/ROCt closure in the
             # versioned SDK archive. The kernel amdgpu/KFD driver remains host-owned.
             "hip": (
                 "rocm-hip-runtime-dev",
                 "hsa-rocr-dev",
-                "hsakmt-roct-dev",
             ),
             "rocblas": ("rocblas-dev",),
             "hipblaslt": ("hipblaslt-dev",),
@@ -1645,6 +1653,8 @@ def rocm_build_spec(build: dict) -> dict | None:
         "packages": packages,
         "installer_name": sdk["installer_name"],
         "installer_url": sdk["installer_url"],
+        "hsakmt_source_url": sdk["hsakmt_source_url"],
+        "hsakmt_source_subdirectory": sdk["hsakmt_source_subdirectory"],
     }
 
 
@@ -1791,6 +1801,96 @@ def attest_rocm_build_toolchain(
     return attested
 
 
+def build_rocm_hsakmt(
+    build: dict,
+    spec: dict,
+    rocm_root: Path,
+    env: dict[str, str],
+    temporary_directory: Path,
+) -> Path:
+    """Build the version-matched ROCt thunk when the ROCm SDK omits it."""
+    existing = _first_existing_file(rocm_root, (
+        "lib/libhsakmt.so.1",
+        "lib64/libhsakmt.so.1",
+        "lib/x86_64-linux-gnu/libhsakmt.so.1",
+    ))
+    if existing is not None:
+        return existing
+    if platform.system().lower() != "linux" or platform.machine().lower() not in {
+        "amd64", "x86_64"
+    }:
+        raise RuntimeError("managed ROCt bootstrap requires a Linux x86_64 builder")
+    source_archive = temporary_directory / "rocm-systems.tar.gz"
+    download_with_retry(
+        str(spec["hsakmt_source_url"]),
+        source_archive,
+        f"ROCm {spec['version']} ROCt source",
+    )
+    extracted = temporary_directory / "rocm-systems-source"
+    extracted.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(source_archive, "r:gz") as archive:
+        root = extracted.resolve()
+        for member in archive.getmembers():
+            member_path = Path(member.name)
+            if member_path.is_absolute() or ".." in member_path.parts:
+                raise RuntimeError(f"unsafe ROCm source archive member: {member.name!r}")
+            if member.issym() or member.islnk():
+                raise RuntimeError(
+                    f"symbolic links are not allowed in ROCm source archive: {member.name!r}"
+                )
+            destination = (extracted / member.name).resolve()
+            if destination != root and root not in destination.parents:
+                raise RuntimeError(f"unsafe ROCm source archive member: {member.name!r}")
+        archive.extractall(extracted)
+    source_candidates = list(
+        extracted.rglob(f"{spec['hsakmt_source_subdirectory']}/CMakeLists.txt")
+    )
+    if len(source_candidates) != 1:
+        raise RuntimeError(
+            "ROCm source archive must contain exactly one ROCt source tree; "
+            f"found {len(source_candidates)}"
+        )
+    source = source_candidates[0].parent
+    cmake_build = temporary_directory / "rocr-runtime-build"
+    threads = str(max(1, int(build.get("buildThreads") or env.get("DL4J_BUILD_THREADS", "4"))))
+    cmake_environment = env.copy()
+    cmake_environment["ROCM_PATH"] = str(rocm_root)
+    cmake_environment["ROCM_HOME"] = str(rocm_root)
+    run(
+        [
+            "cmake", "-S", str(source), "-B", str(cmake_build),
+            "-DBUILD_ROCR=OFF",
+            "-DBUILD_SHARED_LIBS=ON",
+            "-DCMAKE_BUILD_TYPE=Release",
+            f"-DCMAKE_INSTALL_PREFIX={rocm_root}",
+            "-DCMAKE_INSTALL_LIBDIR=lib",
+            "-DENABLE_LDCONFIG=OFF",
+            "-DHSAKMT_WERROR=OFF",
+            "-DADDRESS_SANITIZER=OFF",
+            "-DROCM_PATCH_VERSION=70204",
+        ],
+        source,
+        cmake_environment,
+    )
+    run(
+        ["cmake", "--build", str(cmake_build), "--target", "hsakmt", "--parallel", threads],
+        source,
+        cmake_environment,
+    )
+    run(["cmake", "--install", str(cmake_build)], source, cmake_environment)
+    installed = _first_existing_file(rocm_root, (
+        "lib/libhsakmt.so.1",
+        "lib64/libhsakmt.so.1",
+        "lib/x86_64-linux-gnu/libhsakmt.so.1",
+    ))
+    if installed is None:
+        raise RuntimeError(
+            f"ROCt bootstrap completed without libhsakmt.so.1 below {rocm_root}"
+        )
+    print(f"[dl4j-rocm] built managed HSAKMT runtime: {installed}", flush=True)
+    return installed
+
+
 def prepare_rocm_build_toolchain(
     build: dict, env: dict[str, str], config: dict | None = None
 ) -> None:
@@ -1823,6 +1923,8 @@ def prepare_rocm_build_toolchain(
                 "libhsakmt.so.1",
             ],
             "installerUrl": spec["installer_url"],
+            "hsakmtSourceUrl": spec["hsakmt_source_url"],
+            "hsakmtSourceSubdirectory": spec["hsakmt_source_subdirectory"],
             "destination": str(rocm_root),
         },
     )
@@ -1840,9 +1942,15 @@ def prepare_rocm_build_toolchain(
         )
         cache_seed_required = not rocm_ready
         if rocm_ready:
-            attest_rocm_build_toolchain(
-                build, env, root=rocm_root, emit=False
-            )
+            try:
+                attest_rocm_build_toolchain(
+                    build, env, root=rocm_root, emit=False
+                )
+            except RuntimeError:
+                # Older cache entries may predate the managed ROCt closure.
+                # Treat them as a seed candidate and repair them in place.
+                rocm_ready = False
+                cache_seed_required = True
 
     linker = shutil.which("ld.lld", path=env.get("PATH"))
     rpath_editor = shutil.which("patchelf", path=env.get("PATH"))
@@ -1883,6 +1991,13 @@ def prepare_rocm_build_toolchain(
                 run([
                     "apt-get", "install", "-y", "--no-install-recommends", *packages,
                 ], Path("/"), install_env)
+            build_rocm_hsakmt(
+                build,
+                spec,
+                rocm_root,
+                install_env,
+                Path(temporary_directory),
+            )
 
     attest_rocm_build_toolchain(build, env, root=rocm_root)
     if cache_seed_required:
