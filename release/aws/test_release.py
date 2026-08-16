@@ -1359,11 +1359,13 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertEqual("", standalone["hsakmt_source_subdirectory"])
         self.assertEqual("", standalone["hsakmt_cmake_subdirectory"])
         self.assertFalse(standalone["hsakmt_rewrite_static_target"])
+        self.assertTrue(standalone["hsakmt_disable_static_drm_target"])
 
         monorepo = build_platform.ROCM_BUILD_SDKS["7.2.4"]
         self.assertEqual("projects/rocr-runtime", monorepo["hsakmt_source_subdirectory"])
         self.assertEqual("libhsakmt", monorepo["hsakmt_cmake_subdirectory"])
         self.assertTrue(monorepo["hsakmt_rewrite_static_target"])
+        self.assertFalse(monorepo["hsakmt_disable_static_drm_target"])
 
         with tempfile.TemporaryDirectory() as temp:
             extracted = Path(temp)
@@ -1390,6 +1392,28 @@ class ReleaseValidationTest(unittest.TestCase):
                 extracted, monorepo
             )
             self.assertEqual([monorepo_root / "CMakeLists.txt"], candidates)
+
+    def test_rocm_hsakmt_static_target_is_guarded_for_shared_build(self):
+        source = (
+            "## Create separate target file for static builds\n"
+            "add_library ( ${HSAKMT_STATIC_DRM_TARGET} STATIC ${HSAKMT_SRC})\n"
+            "install ( EXPORT ${HSAKMT_STATIC_DRM_TARGET}Targets\n"
+            "  COMPONENT devel)\n"
+            "\n###########################\n"
+            "# Packaging directives\n"
+        )
+        adapted = build_platform.disable_rocm_hsakmt_static_target(source)
+        self.assertIn(
+            "if ( NOT BUILD_SHARED_LIBS)\n## Create separate target file for static builds",
+            adapted,
+        )
+        self.assertIn("\nendif()\n\n###########################", adapted)
+        self.assertEqual(
+            adapted,
+            build_platform.disable_rocm_hsakmt_static_target(adapted),
+        )
+        with self.assertRaisesRegex(RuntimeError, "static HSAKMT target block"):
+            build_platform.disable_rocm_hsakmt_static_target("# Packaging directives\n")
 
     def test_windows_workers_import_visual_studio_environment_before_build(self):
         root = Path(__file__).parents[2]

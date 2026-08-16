@@ -48,6 +48,7 @@ ROCM_BUILD_SDKS = {
         "hsakmt_source_subdirectory": "",
         "hsakmt_cmake_subdirectory": "",
         "hsakmt_rewrite_static_target": False,
+        "hsakmt_disable_static_drm_target": True,
         "component_packages": {
             "hip": (
                 "rocm-hip-runtime-dev",
@@ -80,6 +81,7 @@ ROCM_BUILD_SDKS = {
         "hsakmt_source_subdirectory": "projects/rocr-runtime",
         "hsakmt_cmake_subdirectory": "libhsakmt",
         "hsakmt_rewrite_static_target": True,
+        "hsakmt_disable_static_drm_target": False,
         "component_packages": {
             # Keep the complete user-space HIP/ROCr/ROCt closure in the
             # versioned SDK archive. The kernel amdgpu/KFD driver remains host-owned.
@@ -1859,6 +1861,41 @@ def rocm_hsakmt_source_candidates(extracted: Path, spec: dict) -> list[Path]:
     return sorted(extracted.glob(source_pattern))
 
 
+def disable_rocm_hsakmt_static_target(cmake_text: str) -> str:
+    """Guard an upstream static-only DRM target during shared runtime builds."""
+    start_marker = "## Create separate target file for static builds\n"
+    end_marker = "\n###########################\n# Packaging directives\n"
+    start = cmake_text.find(start_marker)
+    if start < 0:
+        raise RuntimeError(
+            "version-matched ROCt source does not expose the expected static "
+            "HSAKMT target block"
+        )
+    end = cmake_text.find(end_marker, start + len(start_marker))
+    if end < 0:
+        raise RuntimeError(
+            "version-matched ROCt source does not expose the static HSAKMT "
+            "target block terminator"
+        )
+    if cmake_text[:start].endswith("if ( NOT BUILD_SHARED_LIBS)\n"):
+        return cmake_text
+    block = cmake_text[start:end]
+    if "${HSAKMT_STATIC_DRM_TARGET}" not in block:
+        raise RuntimeError(
+            "version-matched ROCt static target block is missing its expected "
+            "DRM target"
+        )
+    if "if ( NOT BUILD_SHARED_LIBS)" in block:
+        return cmake_text
+    return (
+        cmake_text[:start]
+        + "if ( NOT BUILD_SHARED_LIBS)\n"
+        + block
+        + "endif()\n"
+        + cmake_text[end:]
+    )
+
+
 def build_rocm_hsakmt(
     build: dict,
     spec: dict,
@@ -1931,23 +1968,35 @@ def build_rocm_hsakmt(
         raise RuntimeError(
             f"version-matched ROCt source is missing {hsakmt_cmake.relative_to(source)}"
         )
-    if spec["hsakmt_rewrite_static_target"]:
+    hsakmt_cmake_text = None
+    if (
+        spec["hsakmt_rewrite_static_target"]
+        or spec["hsakmt_disable_static_drm_target"]
+    ):
         hsakmt_cmake_text = hsakmt_cmake.read_text(encoding="utf-8")
-        static_target = 'add_library (${HSAKMT_TARGET} STATIC "")'
-        shared_target = 'add_library (${HSAKMT_TARGET} SHARED "")'
-        if static_target not in hsakmt_cmake_text:
-            raise RuntimeError(
-                "version-matched ROCt source no longer exposes the expected "
-                "static HSAKMT target; refusing to create an unverified runtime"
+        if spec["hsakmt_disable_static_drm_target"]:
+            adapted = disable_rocm_hsakmt_static_target(hsakmt_cmake_text)
+            if adapted != hsakmt_cmake_text:
+                hsakmt_cmake_text = adapted
+                print(
+                    "[dl4j-rocm] disabling upstream static HSAKMT DRM target "
+                    "for shared runtime build",
+                    flush=True,
+                )
+        if spec["hsakmt_rewrite_static_target"]:
+            static_target = 'add_library (${HSAKMT_TARGET} STATIC "")'
+            shared_target = 'add_library (${HSAKMT_TARGET} SHARED "")'
+            if static_target not in hsakmt_cmake_text:
+                raise RuntimeError(
+                    "version-matched ROCt source no longer exposes the expected "
+                    "static HSAKMT target; refusing to create an unverified runtime"
+                )
+            hsakmt_cmake_text = hsakmt_cmake_text.replace(static_target, shared_target, 1)
+            print(
+                "[dl4j-rocm] adapting downloaded ROCt target to shared libhsakmt.so.1",
+                flush=True,
             )
-        hsakmt_cmake.write_text(
-            hsakmt_cmake_text.replace(static_target, shared_target, 1),
-            encoding="utf-8",
-        )
-        print(
-            "[dl4j-rocm] adapting downloaded ROCt target to shared libhsakmt.so.1",
-            flush=True,
-        )
+        hsakmt_cmake.write_text(hsakmt_cmake_text, encoding="utf-8")
     cmake_build = temporary_directory / "rocr-runtime-build"
     threads = str(max(1, int(build.get("buildThreads") or env.get("DL4J_BUILD_THREADS", "4"))))
     cmake_environment = env.copy()
