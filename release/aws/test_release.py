@@ -1580,6 +1580,20 @@ class ReleaseValidationTest(unittest.TestCase):
                 "m:configuration/m:classOrPackageName", namespaces=namespace
             ),
         )
+        cleanup_execution = profile.find(
+            ".//m:execution[m:id='cleanup-zluda-cmake-build']", namespace
+        )
+        self.assertIsNotNone(cleanup_execution)
+        self.assertEqual(
+            "prepare-package", cleanup_execution.findtext("m:phase", namespaces=namespace)
+        )
+        cleanup_fileset = cleanup_execution.find(
+            ".//m:fileset", namespace
+        )
+        self.assertIsNotNone(cleanup_fileset)
+        excludes = cleanup_fileset.attrib.get("excludes", "")
+        self.assertIn("zluda-runtime-package/**", excludes)
+        self.assertIn("javacpp-build-toolchain.properties", excludes)
 
     def test_zluda_cmake_scopes_rocm_to_amd_native_call_sites(self):
         root = Path(__file__).parents[2]

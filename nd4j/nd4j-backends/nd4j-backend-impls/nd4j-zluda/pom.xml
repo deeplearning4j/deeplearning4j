@@ -232,6 +232,27 @@
                                     </target>
                                 </configuration>
                             </execution>
+                            <!-- The CMake output directory contains the full native build
+                                 tree plus a self-contained classifier package. Once the
+                                 runtime package and JNI wrapper have been validated,
+                                 discard build-only objects before Maven copies the package
+                                 into target/classes; otherwise the duplicate native closure
+                                 can exhaust GitHub runner disk during prepare-package. -->
+                            <execution>
+                                <id>cleanup-zluda-cmake-build</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="cleanup-zluda-cmake-build">
+                                        <delete includeEmptyDirs="true">
+                                            <fileset dir="${libnd4j.outputPath}"
+                                                     excludes="zluda-runtime-package/**,javacpp-build-toolchain.properties"/>
+                                        </delete>
+                                    </target>
+                                </configuration>
+                            </execution>
                         </executions>
                     </plugin>
                     <plugin>
