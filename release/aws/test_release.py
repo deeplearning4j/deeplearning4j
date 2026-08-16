@@ -2835,11 +2835,13 @@ class ReleaseValidationTest(unittest.TestCase):
                         DL4J_CUDA_VERSION="12.9",
                         DL4J_PLATFORM_EXTENSION=extension,
                         DL4J_CLASSIFIER=classifier,
+                        DL4J_ROCM_VERSION=rocm_version,
                     )
                     self.assertIn(
                         f"-Djavacpp.platform.extension={extension}", versioned
                     )
                     self.assertIn(f"-Dlibnd4j.classifier={classifier}", versioned)
+                    self.assertIn(f"-Drocm.version={rocm_version}", versioned)
                     self.assertNotIn("-Djavacpp.platform.extension=-zluda", versioned)
 
     def test_vulkan_native_family_tracks_worker_os(self):

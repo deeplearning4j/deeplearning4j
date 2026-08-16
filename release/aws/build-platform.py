@@ -2516,6 +2516,7 @@ def build_native_platform(source: Path, shard: dict, repository: Path, env: dict
             "DL4J_MAVEN_GOAL": "install",
             "DL4J_MAVEN_REPOSITORY": str(repository),
             "DL4J_CUDA_VERSION": str(build.get("cudaVersion", "")),
+            "DL4J_ROCM_VERSION": str(build.get("rocmVersion", "")),
             "DL4J_ZLUDA_TARGET": zluda_target(build),
             "DL4J_LIBND4J_URL": prebuilt_libnd4j_url,
             "DL4J_BUILD_SDX": "1" if sdx_enabled_for_build(build) else "0",
