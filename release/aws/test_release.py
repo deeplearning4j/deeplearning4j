@@ -2335,6 +2335,7 @@ class ReleaseValidationTest(unittest.TestCase):
         self.assertIn("patchelf", flattened)
         self.assertIn("rocm-hip-runtime-dev", flattened)
         self.assertIn("hsa-rocr-dev", flattened)
+        self.assertIn("libnuma-dev", flattened)
         self.assertNotIn("hsakmt-roct-dev", flattened)
         self.assertIn("rocblas-dev", flattened)
         hsakmt.assert_called_once()

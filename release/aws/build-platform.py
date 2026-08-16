@@ -50,6 +50,8 @@ ROCM_BUILD_SDKS = {
             "hip": (
                 "rocm-hip-runtime-dev",
                 "hsa-rocr-dev",
+                # ROCt/HSAKMT discovers libnuma through CMake at source-build time.
+                "libnuma-dev",
             ),
             "rocblas": ("rocblas-dev",),
             "hipblaslt": ("hipblaslt-dev",),
