@@ -23,6 +23,10 @@ on:
         description: Comma-separated published classifier IDs; requires targetedRetry=1.
         required: false
         default: ""
+      releaseWorkflow:
+        description: Matrix workflow name from release/github/workflow-matrix.json.
+        required: false
+        default: "build-deploy-linux-cuda-12.9.yml"
       targetedRetry:
         description: Explicitly run only the classifiers above instead of the complete matrix.
         required: true
@@ -50,7 +54,7 @@ jobs:
   release:
     uses: ./.github/workflows/_release-worker.yml
     with:
-      workflow: build-deploy-linux-cuda-12.9.yml
+      workflow: ${{ inputs.releaseWorkflow }}
       sourceRef: ${{ inputs.commitId || github.sha }}
       runnerOverride: ${{ inputs.runsOn }}
       buildThreads: ${{ inputs.buildThreads }}
