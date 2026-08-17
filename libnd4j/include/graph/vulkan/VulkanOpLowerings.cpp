@@ -8807,7 +8807,7 @@ mlir::LogicalResult DataMovementToSpirv::matchAndRewrite(
             auto lastValue = loadAsAccumulator(
                 rewriter, loc, source,
                 mlir::SmallVector<mlir::Value>{lastIndex}, accumulator);
-            auto chosen = rewriter.create<mlir::arith::SelectOp>(
+            mlir::Value chosen = rewriter.create<mlir::arith::SelectOp>(
                 loc, loop.getResult(2), loop.getResult(0), lastValue);
             rewriter.create<mlir::scf::YieldOp>(loc, chosen);
             rewriter.setInsertionPointToStart(guarded.elseBlock());
