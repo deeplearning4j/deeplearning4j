@@ -288,6 +288,47 @@ if(_sd_external_project STREQUAL "LLVM")
     endif()
 endif()
 
+# MinGW's object-library export define is not propagated to this upstream MLIR
+# source, so ArmSMEStubs.cpp sees __declspec(dllimport) while it is compiling
+# the stub definitions themselves.  Vulkan does not consume the Arm SME runtime,
+# but the shared MLIR execution-engine build still compiles this source on
+# Windows.  Normalize the producer-side export annotation without changing
+# native ELF or MSVC behavior.
+if(_sd_external_project STREQUAL "LLVM")
+    set(_sd_arm_sme_stubs_file
+        "${SOURCE_DIR}/mlir/lib/ExecutionEngine/ArmSMEStubs.cpp")
+    if(EXISTS "${_sd_arm_sme_stubs_file}")
+        file(READ "${_sd_arm_sme_stubs_file}" _sd_arm_sme_stubs_source)
+        set(_sd_mingw_arm_sme_marker "// SD_MINGW_ARMSME_EXPORT_V1")
+        string(FIND "${_sd_arm_sme_stubs_source}"
+            "${_sd_mingw_arm_sme_marker}"
+            _sd_mingw_arm_sme_marker_pos)
+        if(_sd_mingw_arm_sme_marker_pos EQUAL -1)
+            set(_sd_mingw_arm_sme_anchor
+                "#endif // (defined(_WIN32) || defined(__CYGWIN__))\n")
+            set(_sd_mingw_arm_sme_patch [=[
+#if defined(_WIN32) && defined(__GNUC__)
+// SD_MINGW_ARMSME_EXPORT_V1
+#undef MLIR_ARMSMEABISTUBS_EXPORTED
+#define MLIR_ARMSMEABISTUBS_EXPORTED __declspec(dllexport)
+#endif
+]=])
+            string(REPLACE
+                "${_sd_mingw_arm_sme_anchor}"
+                "${_sd_mingw_arm_sme_anchor}${_sd_mingw_arm_sme_patch}\n"
+                _sd_arm_sme_stubs_patched
+                "${_sd_arm_sme_stubs_source}")
+            if(_sd_arm_sme_stubs_patched STREQUAL _sd_arm_sme_stubs_source)
+                message(FATAL_ERROR
+                    "patch_external_llvm_coexistence: failed to patch MinGW "
+                    "ArmSME export annotations in ${_sd_arm_sme_stubs_file}")
+            endif()
+            file(WRITE "${_sd_arm_sme_stubs_file}"
+                "${_sd_arm_sme_stubs_patched}")
+        endif()
+    endif()
+endif()
+
 # The pinned MLIR SCF-to-SPIR-V conversion represents scf.for results with
 # Function-scope variables. Upstream initializes those variables only from
 # scf.yield in the loop body, so a zero-trip loop reads undefined data instead
