@@ -2249,7 +2249,6 @@ function(setup_triton)
                 # runtime they were linked with (and do not silently exit before
                 # producing generated .inc files).
                 ${_TRITON_LLVM_BUILD_ENV}
-                -- # End environment assignments before the build command.
                 # MLIRExecutionEngineShared is EXCLUDE_FROM_LIBMLIR, so include it
             # explicitly in the same build invocation. Keeping both goals in one
             # generator call avoids rebuilding the complete dependency graph.
