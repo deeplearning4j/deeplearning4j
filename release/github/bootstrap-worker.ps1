@@ -18,9 +18,19 @@ $gitBash = 'C:\Program Files\Git\bin\bash.exe'
 if (-not (Test-Path -LiteralPath $gitBash)) {
   throw "Git Bash was not installed at $gitBash"
 }
+# Hosted runners can expose a preinstalled MinGW toolchain at a different root
+# than the MSYS2 shell. Preserve the directory that actually supplied gcc so
+# native generators (llvm-tblgen, mlir-tblgen) can resolve their libstdc++/
+# libwinpthread runtime DLLs when MSYS Makefiles launches them.
+$gccCommand = Get-Command gcc.exe -ErrorAction SilentlyContinue
+$compilerMingwPath = if ($gccCommand) { Split-Path -Parent $gccCommand.Source } else { $mingwPath }
 Add-Content -Path $env:GITHUB_PATH -Value $msysPath
 Add-Content -Path $env:GITHUB_PATH -Value $mingwPath
+if ($compilerMingwPath -ne $mingwPath) {
+  Add-Content -Path $env:GITHUB_PATH -Value $compilerMingwPath
+}
 Add-Content -Path $env:GITHUB_ENV -Value "DL4J_BASH_EXE=$gitBash"
+Write-Host "[dl4j-bootstrap] mingw-runtime=$compilerMingwPath"
 
 # Use the exact upstream host compiler for schema generation. The MinGW-built
 # flatc from the same source tree has crashed while executing on hosted Windows
