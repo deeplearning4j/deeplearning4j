@@ -822,6 +822,8 @@ static VulkanKernelRecipe legacySemanticFor(
       if (opNum == SafeDivide) return VulkanKernelRecipe::SAFE_DIVIDE;
       if (opNum == LogicalOr) return VulkanKernelRecipe::BOOLEAN_OR;
       if (opNum == LogicalXor) return VulkanKernelRecipe::BOOLEAN_XOR;
+      if (opNum == LogicalNot)
+        return VulkanKernelRecipe::LOGICAL_NOT_BINARY;
       if (opNum == LogicalAnd) return VulkanKernelRecipe::BOOLEAN_AND;
       if (opNum == PowDerivative) return VulkanKernelRecipe::POW_DERIVATIVE;
       if (opNum == LeakyRELU) return VulkanKernelRecipe::LEAKY_RELU;
